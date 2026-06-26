@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.util.PresenceLine;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -67,7 +68,13 @@ public final class MentionPresenceEvents {
 
     @SubscribeEvent
     public static void onServerChat(ServerChatEvent event) {
-        if (!mentionsBrennan(event.getRawText())) {
+        String rawText = event.getRawText();
+        boolean mentionsDev = mentionsBrennan(rawText);
+        // Feed every chat line to the echo journal (it logs a beat only when an echo is around);
+        // a @dev mention here also counts as dev contact for the chat-contents privacy guard.
+        RemoteEchoEncounters.onPrimaryPlayerChat(event.getPlayer(), rawText, mentionsDev);
+
+        if (!mentionsDev) {
             return;
         }
         ServerPlayer sender = event.getPlayer();

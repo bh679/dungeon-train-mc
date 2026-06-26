@@ -70,8 +70,14 @@ public final class RemoteEchoEncounters {
     /** Embed bar colour for the encounter story — greyish-blue (Blue Grey), distinct from death-red. */
     private static final int EMBED_COLOR = 0x607D8B;
 
+    /** How many of the echo's items the story names. */
+    private static final int HIGHLIGHT_ITEM_COUNT = 2;
+    /** Max characters of a quoted chat message in the story (privacy + embed length). */
+    private static final int CHAT_CONTENTS_MAX = 120;
+
     /** Echo spawned but no player was within range at the time; promoted to ACTIVE on first close approach. */
-    private record PendingEcho(ResourceKey<Level> dimension, ReincarnationRecord record) {}
+    private record PendingEcho(ResourceKey<Level> dimension, ReincarnationRecord record,
+                               EchoItemHighlights.Highlights highlights) {}
     private static final Map<UUID, PendingEcho> PENDING = new HashMap<>();
 
     private static final Map<UUID, EchoEncounter> ACTIVE = new HashMap<>();
@@ -98,16 +104,19 @@ public final class RemoteEchoEncounters {
         if (!DungeonTrainConfig.isEchoEncounterToDiscord()) return;
         if (!(mob.level() instanceof ServerLevel level)) return;
         if (ACTIVE.size() >= MAX_ACTIVE) return;
+        // The mob is fully geared by now (PlayerMob applies the snapshot before this seam fires), and
+        // it is often gone by post-time — so snapshot its best items here, once, for the story.
+        EchoItemHighlights.Highlights highlights = EchoItemHighlights.snapshot(mob, HIGHLIGHT_ITEM_COUNT);
         Player nearest = level.getNearestPlayer(mob, PRIMARY_PLAYER_RADIUS);
         if (!(nearest instanceof ServerPlayer player)) {
             // No audience in range yet — park for retroactive promotion in scan().
-            PENDING.put(mob.getUUID(), new PendingEcho(level.dimension(), record));
+            PENDING.put(mob.getUUID(), new PendingEcho(level.dimension(), record, highlights));
             return;
         }
 
         UUID echoId = mob.getUUID();
         EchoEncounter enc = new EchoEncounter(echoId, level.dimension(), record.playerId(),
-                record.name(), player.getUUID(), record.carriage(), level.getGameTime());
+                record.name(), player.getUUID(), record.carriage(), level.getGameTime(), highlights);
         enc.log(EchoEvent.SPAWNED);
         enc.lastOnDeck = CarriageDeck.isOnCarriageDeck(Trains.allCarriages(level), mob);
         ACTIVE.put(echoId, enc);
@@ -141,6 +150,36 @@ public final class RemoteEchoEncounters {
     public static void onReceivedGift(ServerPlayer player, UUID echoId) {
         EchoEncounter enc = forPlayer(echoId, player);
         if (enc != null) enc.log(EchoEvent.RECEIVED_GIFT);
+    }
+
+    /**
+     * The primary player used chat while one of their echoes was around. Logs the CHAT beat once per
+     * encounter; whether the message contents are quoted is random per encounter, but forced to
+     * note-only when there was recent dev contact (a {@code @dev} ping here, or a relayed message from
+     * the dev within the window — see {@link DevContactTracker}). A {@code @dev} mention here also
+     * counts as dev contact going forward.
+     */
+    public static void onPrimaryPlayerChat(ServerPlayer sender, String text, boolean mentionsDev) {
+        if (ACTIVE.isEmpty()) return;
+        long now = System.currentTimeMillis();
+        boolean devRecent = mentionsDev
+                || DevContactTracker.isRecent(now, DevContactTracker.DEV_COMM_WINDOW_MILLIS);
+        if (mentionsDev) DevContactTracker.mark(now);
+
+        UUID senderId = sender.getUUID();
+        for (EchoEncounter enc : ACTIVE.values()) {
+            if (!senderId.equals(enc.primaryPlayerId) || enc.has(EchoEvent.CHAT)) continue;
+            enc.log(EchoEvent.CHAT);
+            // Note-only when dev contact is recent; otherwise a coin-flip on whether to quote.
+            if (!devRecent && sender.level().getRandom().nextBoolean()) {
+                enc.chatLine = truncate(text, CHAT_CONTENTS_MAX);
+            }
+        }
+    }
+
+    /** A relayed Discord message authored by the dev arrived — stamp dev contact (called off-thread). */
+    public static void markDevContact() {
+        DevContactTracker.mark(System.currentTimeMillis());
     }
 
     /**
@@ -181,6 +220,10 @@ public final class RemoteEchoEncounters {
                 // Gone from this level (unloaded as the train moved on, or removed) → left behind.
                 endEcho(level, enc.echoId, EndReason.LEFT_BEHIND);
                 continue;
+            }
+            // Note any better gear the echo has picked up since spawn (independent of the audience).
+            if (echo instanceof PlayerMobEntity pm) {
+                EchoItemHighlights.collectUpgrades(pm, enc);
             }
             ServerPlayer player = level.getServer().getPlayerList().getPlayer(enc.primaryPlayerId);
             if (player == null) continue; // audience offline; keep journaling geometry-only beats next tick
@@ -228,7 +271,8 @@ public final class RemoteEchoEncounters {
                 if (carriages == null) carriages = Trains.allCarriages(level);
                 ReincarnationRecord rec = entry.getValue().record();
                 EchoEncounter enc = new EchoEncounter(echo.getUUID(), level.dimension(),
-                        rec.playerId(), rec.name(), player.getUUID(), rec.carriage(), tick);
+                        rec.playerId(), rec.name(), player.getUUID(), rec.carriage(), tick,
+                        entry.getValue().highlights());
                 enc.log(EchoEvent.SPAWNED);
                 enc.log(EchoEvent.MET);
                 enc.lastOnDeck = CarriageDeck.isOnCarriageDeck(carriages, echo);
@@ -280,7 +324,8 @@ public final class RemoteEchoEncounters {
             if (player != null) {
                 EchoEncounter enc = new EchoEncounter(victimId, level.dimension(),
                         pending.record().playerId(), pending.record().name(),
-                        player.getUUID(), pending.record().carriage(), level.getGameTime());
+                        player.getUUID(), pending.record().carriage(), level.getGameTime(),
+                        pending.highlights());
                 enc.log(EchoEvent.SPAWNED);
                 boolean byPrimary = killer instanceof ServerPlayer p && p.getUUID().equals(player.getUUID());
                 finishEncounter(level, enc, byPrimary ? EndReason.ECHO_SLAIN_BY_YOU : EndReason.ECHO_SLAIN);
@@ -324,6 +369,13 @@ public final class RemoteEchoEncounters {
     }
 
     // ---------------- internals ----------------
+
+    /** Trim and cap a chat line for the story, appending an ellipsis when shortened. */
+    private static String truncate(String text, int max) {
+        String trimmed = text.strip();
+        if (trimmed.length() <= max) return trimmed;
+        return trimmed.substring(0, max - 1).stripTrailing() + "…";
+    }
 
     /** The journal for {@code echoId} iff {@code player} is its primary; else {@code null}. */
     private static EchoEncounter forPlayer(UUID echoId, ServerPlayer player) {
