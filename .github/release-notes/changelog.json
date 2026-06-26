@@ -2545,9 +2545,9 @@
       ],
       "pr": 589,
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.367.0",
+      "released_at": "2026-06-26T09:52:26Z"
     },
     {
       "id": "worldgen-cycle-memo",
@@ -2560,9 +2560,9 @@
       ],
       "pr": 590,
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.367.0",
+      "released_at": "2026-06-26T09:52:26Z"
     },
     {
       "id": "editor-menus-master-toggle",
@@ -2576,9 +2576,9 @@
       ],
       "pr": 593,
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.367.0",
+      "released_at": "2026-06-26T09:52:26Z"
     },
     {
       "id": "echo-story-gear-and-chat",
@@ -2593,9 +2593,9 @@
       ],
       "pr": 595,
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.367.0",
+      "released_at": "2026-06-26T09:52:26Z"
     },
     {
       "id": "editor-mirror-block-variants",
@@ -2610,9 +2610,9 @@
       ],
       "pr": 596,
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.367.0",
+      "released_at": "2026-06-26T09:52:26Z"
     }
   ]
 }
