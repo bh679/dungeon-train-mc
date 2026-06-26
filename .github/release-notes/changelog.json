@@ -2676,6 +2676,21 @@
       "released": true,
       "released_in": "v0.370.0",
       "released_at": "2026-06-26T12:38:56Z"
+    },
+    {
+      "id": "editor-part-menu-look-direction",
+      "version": "0.370.0",
+      "type": "fix",
+      "title": "Editor part menus stay open by look direction",
+      "summary": "In the carriage-template editor, the FLOOR/WALLS/ROOF/DOORS part menus used to vanish the moment your crosshair left a solid block \u2014 looking at an open doorway, a part set to none, the hollow interior, or the roof gap closed them. They now stay visible as long as you're inside the carriage plot and looking toward a part, so you can edit a part even while facing its empty space.",
+      "highlights": [
+        "Part menus track look direction instead of requiring a solid block under the crosshair",
+        "Editing a wall/door side while facing its open air now targets the side you're looking at"
+      ],
+      "date": "2026-06-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

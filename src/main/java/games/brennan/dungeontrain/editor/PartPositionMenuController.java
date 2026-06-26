@@ -123,14 +123,9 @@ public final class PartPositionMenuController {
             return;
         }
 
-        HitResult hit = player.pick(HOVER_REACH, 1.0f, false);
-        CarriagePartKind kind = null;
-        BlockPos hitLocal = null;
-        if (hit instanceof BlockHitResult b && b.getType() != HitResult.Type.MISS) {
-            hitLocal = b.getBlockPos().subtract(plotOrigin);
-            kind = CarriagePartKind.kindAtLocalPos(
-                hitLocal.getX(), hitLocal.getY(), hitLocal.getZ(), dims);
-        }
+        BlockPos hitLocal = resolveHoveredLocal(player, plotOrigin, dims);
+        CarriagePartKind kind = hitLocal == null ? null
+            : CarriagePartKind.kindAtLocalPos(hitLocal.getX(), hitLocal.getY(), hitLocal.getZ(), dims);
 
         if (kind == null) {
             String prev = LAST_HOVER.get(uuid);
@@ -156,6 +151,110 @@ public final class PartPositionMenuController {
         LAST_HOVER.put(uuid, key);
         DungeonTrainNet.sendTo(player,
             buildSyncPacket(variant, kindCentre, kind, inwardFace));
+    }
+
+    /**
+     * Local block pos (relative to {@code plotOrigin}) the player is "looking
+     * at" within the carriage shell, or {@code null} if their look ray never
+     * crosses it.
+     *
+     * <p>Primary path: the live block-pick — when the crosshair lands on an
+     * actual part block, that exact block is returned (unchanged precision for
+     * the common case). Fallback: when the pick misses or hits a non-part block
+     * (open doorway, {@code none} part, hollow interior, the roof gap), a
+     * geometric {@link #shellFaceLocal} ray-vs-shell test recovers the part the
+     * player is facing — so the menu tracks look direction rather than only
+     * appearing on solid blocks.</p>
+     */
+    private static BlockPos resolveHoveredLocal(ServerPlayer player, BlockPos plotOrigin, CarriageDims dims) {
+        HitResult hit = player.pick(HOVER_REACH, 1.0f, false);
+        if (hit instanceof BlockHitResult b && b.getType() != HitResult.Type.MISS) {
+            BlockPos local = b.getBlockPos().subtract(plotOrigin);
+            if (CarriagePartKind.kindAtLocalPos(local.getX(), local.getY(), local.getZ(), dims) != null) {
+                return local;
+            }
+        }
+        return shellFaceLocal(player, plotOrigin, dims);
+    }
+
+    /**
+     * Geometric fallback: intersect the player's eye ray against the carriage
+     * shell box (plot-local {@code [0..L)×[0..H)×[0..W)}) and return a local
+     * block pos on the crossed face, classified to the part the player is
+     * looking toward. Returns {@code null} when the ray never crosses the box
+     * (e.g. standing in the outer plot margin looking away).
+     *
+     * <p>The editing player is normally inside the box, so the ray exits through
+     * exactly one face (the {@code tFar} crossing). When the eye is outside but
+     * looking in, the entry face ({@code tNear}) is used instead. The crossed
+     * axis is snapped to the shell coordinate; the other two axes are clamped
+     * into the range that kind actually owns so
+     * {@link CarriagePartKind#kindAtLocalPos} classifies the face unambiguously
+     * (walls/floor/roof don't bleed into the door corner columns).</p>
+     */
+    private static BlockPos shellFaceLocal(ServerPlayer player, BlockPos plotOrigin, CarriageDims dims) {
+        int L = dims.length(), H = dims.height(), W = dims.width();
+        Vec3 eye = player.getEyePosition();
+        Vec3 dir = player.getViewVector(1.0f);
+        double[] o = { eye.x, eye.y, eye.z };
+        double[] d = { dir.x, dir.y, dir.z };
+        double[] lo = { plotOrigin.getX(), plotOrigin.getY(), plotOrigin.getZ() };
+        double[] hi = { plotOrigin.getX() + L, plotOrigin.getY() + H, plotOrigin.getZ() + W };
+
+        double tNear = Double.NEGATIVE_INFINITY, tFar = Double.POSITIVE_INFINITY;
+        int nearAxis = -1, farAxis = -1;
+        boolean nearIsLo = false, farIsLo = false;
+        for (int a = 0; a < 3; a++) {
+            if (Math.abs(d[a]) < 1.0e-8) {
+                // Ray parallel to this slab: a miss if the eye is outside it.
+                if (o[a] < lo[a] || o[a] > hi[a]) return null;
+                continue;
+            }
+            double tEnter = ((d[a] > 0 ? lo[a] : hi[a]) - o[a]) / d[a];
+            double tExit  = ((d[a] > 0 ? hi[a] : lo[a]) - o[a]) / d[a];
+            if (tEnter > tNear) { tNear = tEnter; nearAxis = a; nearIsLo = d[a] > 0; }
+            if (tExit  < tFar)  { tFar  = tExit;  farAxis  = a; farIsLo  = d[a] < 0; }
+        }
+        if (tNear > tFar) return null; // ray misses the box
+
+        // Inside the box → tNear < 0, use the forward exit face. Outside but
+        // looking in → tNear >= 0, use the entry face.
+        boolean useExit = tNear < 0.0;
+        double t = useExit ? tFar : tNear;
+        int axis = useExit ? farAxis : nearAxis;
+        boolean isLo = useExit ? farIsLo : nearIsLo;
+        double maxT = L + H + W + HOVER_REACH; // generous: any in-box exit qualifies
+        if (axis < 0 || t < 0.0 || t > maxT) return null;
+
+        Vec3 hp = eye.add(dir.scale(t));
+        int lx = (int) Math.floor(hp.x - plotOrigin.getX());
+        int ly = (int) Math.floor(hp.y - plotOrigin.getY());
+        int lz = (int) Math.floor(hp.z - plotOrigin.getZ());
+
+        // Snap the crossed axis to the shell index and clamp the other two into
+        // the range the resulting kind owns (see kindAtLocalPos precedence).
+        switch (axis) {
+            case 0 -> { // X face → DOORS (owns full width × height at x∈{0,L-1})
+                lx = isLo ? 0 : L - 1;
+                ly = clamp(ly, 0, H - 1);
+                lz = clamp(lz, 0, W - 1);
+            }
+            case 1 -> { // Y face → FLOOR / ROOF (own the inner rectangle only)
+                ly = isLo ? 0 : H - 1;
+                lx = clamp(lx, 1, L - 2);
+                lz = clamp(lz, 1, W - 2);
+            }
+            default -> { // Z face → WALLS (own the z-edges over the interior x-range)
+                lz = isLo ? 0 : W - 1;
+                lx = clamp(lx, 1, L - 2);
+                ly = clamp(ly, 0, H - 1);
+            }
+        }
+        return new BlockPos(lx, ly, lz);
+    }
+
+    private static int clamp(int v, int min, int max) {
+        return v < min ? min : (v > max ? max : v);
     }
 
     /**
@@ -326,11 +425,7 @@ public final class PartPositionMenuController {
         BlockPos plotOrigin = CarriageEditor.plotOrigin(variant, dims);
         if (plotOrigin == null) return;
 
-        BlockPos hitLocal = null;
-        HitResult hit = player.pick(HOVER_REACH, 1.0f, false);
-        if (hit instanceof BlockHitResult b && b.getType() != HitResult.Type.MISS) {
-            hitLocal = b.getBlockPos().subtract(plotOrigin);
-        }
+        BlockPos hitLocal = resolveHoveredLocal(player, plotOrigin, dims);
         int targetIndex = chosenPlacementIndex(kind, dims, hitLocal);
 
         List<CarriagePartKind.Placement> placements = kind.placements(dims);
@@ -439,16 +534,14 @@ public final class PartPositionMenuController {
         };
 
         BlockPos plotOrigin = CarriageEditor.plotOrigin(standingIn, dims);
-        // Re-raycast on the server to determine which placement the player
-        // is currently looking at — the edit was just dispatched from the
-        // client so the crosshair is almost certainly still on the same
-        // part. If the player has since looked away, hitLocal is null and
-        // chosenPlacementOrigin falls back to the first placement.
-        BlockPos hitLocal = null;
-        HitResult hit = player.pick(HOVER_REACH, 1.0f, false);
-        if (hit instanceof BlockHitResult b && b.getType() != HitResult.Type.MISS) {
-            hitLocal = b.getBlockPos().subtract(plotOrigin);
-        }
+        // Re-resolve on the server which placement the player is looking at —
+        // the edit was just dispatched from the client so the crosshair is
+        // almost certainly still on the same part. Uses the same block-pick +
+        // geometric-shell fallback as hover, so the side stays correct even
+        // when facing a part's air (open door / none). Null only if looking
+        // clear of the shell, in which case chosenPlacementOrigin falls back
+        // to the first placement.
+        BlockPos hitLocal = resolveHoveredLocal(player, plotOrigin, dims);
         Vec3 kindCentre = anchorCentreForHit(plotOrigin, dims, packet.kind(), hitLocal);
         Direction inwardFace = canonicalInwardFace(packet.kind(), kindCentre, plotOrigin, dims);
 
