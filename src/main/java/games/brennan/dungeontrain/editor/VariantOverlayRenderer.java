@@ -688,6 +688,10 @@ public final class VariantOverlayRenderer {
 
         StringBuilder keyBuf = new StringBuilder(64);
         keyBuf.append(category.name()).append('|');
+        // Include the focused stage (effective: explicit selection, else the first stage) so selecting /
+        // deselecting — or adding / deleting a stage that shifts the default — re-pushes the snapshot and
+        // the highlight updates live (steady-state still dedups to zero packets).
+        keyBuf.append("sel:").append(EditorStageSelection.effective()).append('|');
         for (EditorTypeMenusPacket.Menu m : menus) {
             BlockPos p = m.worldPos();
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
@@ -720,7 +724,7 @@ public final class VariantOverlayRenderer {
         LOGGER.info("[DungeonTrain] EditorTypeMenus: send {} menus (category {}, first '{}' with {} variants @ {}) to {}",
             menus.size(), category, first.typeName(), first.variants().size(), first.worldPos(),
             player.getName().getString());
-        DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(menus));
+        DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(menus, EditorStageSelection.effective()));
     }
 
     /** Send the empty type-menus packet if the player previously had a non-empty snapshot. */

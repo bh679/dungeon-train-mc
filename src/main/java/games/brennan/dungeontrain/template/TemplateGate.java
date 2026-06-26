@@ -82,6 +82,24 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
         return levelEligible(level) && phases.contains(phase);
     }
 
+    /**
+     * True when this gate and {@code other} share at least one eligible {@code (level, phase)} — i.e.
+     * their difficulty-level bands intersect <b>and</b> their phase sets intersect ({@link #ALL} max is
+     * treated as {@code +∞}). Powers the editor's per-stage carriage-preview fallback: a slot with
+     * nothing explicitly linked to the selected stage still shows parts whose effective gate overlaps
+     * the stage's gate (same level band + dimension) rather than airing out.
+     */
+    public boolean overlaps(TemplateGate other) {
+        if (other == null) return false;
+        int myMax = (maxLevel == ALL) ? Integer.MAX_VALUE : maxLevel;
+        int otherMax = (other.maxLevel == ALL) ? Integer.MAX_VALUE : other.maxLevel;
+        if (minLevel > otherMax || other.minLevel > myMax) return false;   // level bands disjoint
+        for (TrainPhase p : phases) {
+            if (other.phases.contains(p)) return true;                     // shared dimension
+        }
+        return false;
+    }
+
     /** Copy with {@code minLevel} replaced (re-clamped by the canonical constructor). */
     public TemplateGate withMinLevel(int newMin) {
         return new TemplateGate(newMin, maxLevel, phases);

@@ -36,6 +36,11 @@
         "NETHER"
       ],
       "stage": "nether"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "walls": [
@@ -100,6 +105,18 @@
         "NETHER"
       ],
       "stage": "nether"
+    },
+    {
+      "name": "sandwindow",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "desert"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "sideMode": "one",
+      "stage": "desert"
     }
   ],
   "roof": [
@@ -158,6 +175,16 @@
         "NETHER"
       ],
       "stage": "nether"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
+    },
+    {
+      "name": "sandstoneopen",
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "doors": [
@@ -211,6 +238,11 @@
         "NETHER"
       ],
       "stage": "nether"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ]
 }

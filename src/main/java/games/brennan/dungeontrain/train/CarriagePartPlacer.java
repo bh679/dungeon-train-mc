@@ -109,19 +109,45 @@ public final class CarriagePartPlacer {
             //   * in-carriage part swap via PartPositionMenuController,
             //     where no base stamp runs first and the previous variant's
             //     blocks are still in the cells.
-            for (int dx = 0; dx < placementSize.getX(); dx++) {
-                for (int dy = 0; dy < placementSize.getY(); dy++) {
-                    for (int dz = 0; dz < placementSize.getZ(); dz++) {
-                        SilentBlockOps.setBlockSilentNoCascade(
-                            level, stampOrigin.offset(dx, dy, dz), AIR, null);
-                    }
-                }
-            }
+            eraseRegion(level, stampOrigin, placementSize);
             StructurePlaceSettings settings = new StructurePlaceSettings()
                 .setIgnoreEntities(true)
                 .setMirror(p.mirror());
             template.placeInWorld(level, stampOrigin, stampOrigin, settings, level.getRandom(), 3);
             applyVariantBlocksForPlacement(level, carriageOrigin, kind, name, dims, seed, carriageIndex, p);
+        }
+    }
+
+    /**
+     * Air out every placement region of {@code kind} <b>without</b> stamping any template — the
+     * counterpart to {@link #placeAtPerPlacement} for the stage-filtered editor preview. When a
+     * carriage is previewed for a selected {@link games.brennan.dungeontrain.editor.EditorStageSelection
+     * stage}, a swappable slot with no part linked to that stage is cleared to air here, leaving the
+     * carriage's base shell outside the swappable bands intact (the "Keep shell, swap parts" preview).
+     *
+     * <p>Uses the same per-cell {@link SilentBlockOps#setBlockSilentNoCascade silent, no-cascade} clear
+     * that {@link #placeAtPerPlacement} runs as its pre-erase, so any 2-tall paired-half block already
+     * in the region (door / bed / tall flower) doesn't drop a dangling half via the shape-update
+     * cascade.</p>
+     */
+    public static void eraseKind(ServerLevel level, BlockPos carriageOrigin,
+                                 CarriagePartKind kind, CarriageDims dims) {
+        List<CarriagePartKind.Placement> placements = kind.placements(dims);
+        Vec3i placementSize = kind.dims(dims);
+        for (CarriagePartKind.Placement p : placements) {
+            eraseRegion(level, carriageOrigin.offset(p.originOffset()), placementSize);
+        }
+    }
+
+    /** Clear an {@code placementSize}-sized box rooted at {@code stampOrigin} to air, silently and without cascade. */
+    private static void eraseRegion(ServerLevel level, BlockPos stampOrigin, Vec3i placementSize) {
+        for (int dx = 0; dx < placementSize.getX(); dx++) {
+            for (int dy = 0; dy < placementSize.getY(); dy++) {
+                for (int dz = 0; dz < placementSize.getZ(); dz++) {
+                    SilentBlockOps.setBlockSilentNoCascade(
+                        level, stampOrigin.offset(dx, dy, dz), AIR, null);
+                }
+            }
         }
     }
 

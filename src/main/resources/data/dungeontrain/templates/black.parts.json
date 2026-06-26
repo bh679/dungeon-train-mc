@@ -1,27 +1,71 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 4,
   "floor": [
     {
-      "name": "none",
-      "weight": 1
+      "name": "dark",
+      "weight": 1,
+      "stage": "nether"
+    },
+    {
+      "name": "standard",
+      "weight": 1,
+      "stage": "stone"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "walls": [
     {
-      "name": "none",
-      "weight": 1
+      "name": "dark",
+      "weight": 1,
+      "stage": "nether"
+    },
+    {
+      "name": "standard",
+      "weight": 1,
+      "stage": "stone"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "roof": [
     {
-      "name": "none",
-      "weight": 1
+      "name": "dark",
+      "weight": 1,
+      "stage": "nether"
+    },
+    {
+      "name": "standard",
+      "weight": 1,
+      "stage": "stone"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "doors": [
     {
       "name": "standard",
-      "weight": 1
+      "weight": 1,
+      "stage": "stone"
+    },
+    {
+      "name": "dark",
+      "weight": 1,
+      "stage": "nether"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ]
 }

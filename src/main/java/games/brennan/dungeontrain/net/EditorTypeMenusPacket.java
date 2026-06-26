@@ -36,7 +36,13 @@ import java.util.List;
  * exits or switches categories — same lifecycle as
  * {@link EditorPlotLabelsPacket}.</p>
  */
-public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPayload {
+public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) implements CustomPacketPayload {
+
+    public EditorTypeMenusPacket {
+        // Global "focused stage" for the per-stage carriage preview (empty = none). Normalise null → ""
+        // so encode can write it directly and selectedStageId() never returns null on the client.
+        if (selectedStageId == null) selectedStageId = "";
+    }
 
     /**
      * A single billboarded type menu.
@@ -226,7 +232,7 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
         );
 
     public static EditorTypeMenusPacket empty() {
-        return new EditorTypeMenusPacket(Collections.emptyList());
+        return new EditorTypeMenusPacket(Collections.emptyList(), "");
     }
 
     public boolean isEmpty() {
@@ -234,6 +240,9 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
     }
 
     public void encode(FriendlyByteBuf buf) {
+        // Written first so decode reads it before the "no menus" early-return — keeps the buffer
+        // symmetric for the empty() snapshot.
+        buf.writeUtf(selectedStageId, 64);
         buf.writeVarInt(menus.size());
         for (Menu m : menus) {
             buf.writeBlockPos(m.worldPos());
@@ -301,8 +310,9 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
     }
 
     public static EditorTypeMenusPacket decode(FriendlyByteBuf buf) {
+        String selectedStageId = buf.readUtf(64);
         int n = buf.readVarInt();
-        if (n <= 0) return EditorTypeMenusPacket.empty();
+        if (n <= 0) return new EditorTypeMenusPacket(Collections.emptyList(), selectedStageId);
         List<Menu> out = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
             BlockPos pos = buf.readBlockPos();
@@ -335,7 +345,7 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
             out.add(new Menu(pos, typeName, variants, isCompanion,
                 activeCategoryId, categoryBar, typeStrip, isPackageMenu, isStagesMenu));
         }
-        return new EditorTypeMenusPacket(out);
+        return new EditorTypeMenusPacket(out, selectedStageId);
     }
 
     @Override

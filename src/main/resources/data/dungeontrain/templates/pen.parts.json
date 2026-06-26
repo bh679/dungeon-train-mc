@@ -84,7 +84,7 @@
     },
     {
       "name": "darkopen",
-      "weight": 1,
+      "weight": 20,
       "sideMode": "either",
       "phases": [
         "NETHER"
@@ -99,6 +99,21 @@
         "NETHER"
       ],
       "stage": "nether"
+    },
+    {
+      "name": "sandstoneopen",
+      "weight": 20,
+      "stage": "desert"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
+    },
+    {
+      "name": "sandwindow",
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "roof": [
@@ -147,6 +162,16 @@
         "NETHER"
       ],
       "stage": "nether"
+    },
+    {
+      "name": "sandstoneopen",
+      "weight": 5,
+      "stage": "desert"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "doors": [
@@ -168,6 +193,11 @@
         "NETHER"
       ],
       "stage": "nether"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ]
 }
