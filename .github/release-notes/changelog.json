@@ -2531,6 +2531,23 @@
       "released": true,
       "released_in": "v0.366.0",
       "released_at": "2026-06-26T00:44:06Z"
+    },
+    {
+      "id": "nether-transition-block-fade",
+      "version": "0.366.0",
+      "type": "feat",
+      "title": "Tunnels & tracks fade into the Nether block by block",
+      "summary": "Crossing into the Nether transition, the train's stone-brick tunnels and tracks now dissolve into their dark Nether forms one block at a time \u2014 a grainy crossfade that thickens toward the core, in step with the ground turning to netherrack \u2014 instead of every section switching over all at once. The whole transition is also stretched out much longer for a more gradual descent into the Nether.",
+      "highlights": [
+        "Tunnels and tracks crossfade block-by-block between their Overworld and Nether-dark looks",
+        "Dark blocks creep in as a grainy dither that thickens toward the Nether core",
+        "The Nether transition is now far longer and more gradual"
+      ],
+      "pr": 589,
+      "date": "2026-06-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
