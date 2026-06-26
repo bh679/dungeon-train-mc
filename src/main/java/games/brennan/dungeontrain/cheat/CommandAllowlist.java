@@ -44,13 +44,13 @@ public final class CommandAllowlist {
     /**
      * Non-DT-namespaced roots that don't taint a run: vanilla permission-0
      * social/info commands everyone may run, plus benign "end / reset the run"
-     * actions — {@code /kill} (dying / ending a run) and {@code /new-world} (the
-     * dev world-roll command). {@code /feedback} (player bug-report submission)
-     * is also exempt.
+     * actions — {@code /new-world} (the dev world-roll command) and bare
+     * {@code /kill} (self-kill only — see {@link #isAllowed}). {@code /feedback}
+     * (player bug-report submission) is also exempt.
      */
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
-        "feedback", "kill", "new-world");
+        "feedback", "new-world");
 
     private CommandAllowlist() {}
 
@@ -78,6 +78,7 @@ public final class CommandAllowlist {
             }
             return false; // cinematographer, spawn, speed, carriages, tracks, narrative give/reset/…
         }
+        if (root.equals("kill")) return sub.isEmpty(); // bare /kill (self) only; /kill @e taints
         return ALLOWED_ROOTS.contains(root);
     }
 
