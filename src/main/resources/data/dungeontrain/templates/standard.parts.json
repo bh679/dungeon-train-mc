@@ -8,7 +8,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "wood",
@@ -17,7 +18,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "standard",
@@ -26,21 +28,29 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "nether",
       "weight": 1,
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
     },
     {
       "name": "dark",
       "weight": 20,
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "walls": [
@@ -52,7 +62,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "standard",
@@ -62,20 +73,39 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "dark",
       "weight": 1,
+      "sideMode": "either",
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "roof": [
     {
-      "name": "none",
-      "weight": 2
+      "name": "sandstone",
+      "weight": 2,
+      "stage": "desert"
+    },
+    {
+      "name": "dark",
+      "weight": 1,
+      "stage": "nether"
+    },
+    {
+      "name": "standard",
+      "weight": 1,
+      "stage": "stone"
     }
   ],
   "doors": [
@@ -87,7 +117,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "standard",
@@ -97,7 +128,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "wooddoor",
@@ -107,7 +139,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "open_wall",
@@ -118,14 +151,21 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "dark",
       "weight": 1,
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ]
 }
