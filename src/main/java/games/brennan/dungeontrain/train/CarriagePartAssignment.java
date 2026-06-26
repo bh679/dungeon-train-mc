@@ -312,7 +312,16 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
      * {@code null} context — editor preview, slash command, template load — skips gating entirely.
      */
     public String pick(CarriagePartKind kind, long seed, int carriageIndex, GateContext gateCtx) {
-        List<WeightedName> list = applyGate(entries(kind), gateCtx);
+        return pickFrom(kind, seed, carriageIndex, applyGate(entries(kind), gateCtx));
+    }
+
+    /**
+     * Weighted draw of a single name from an explicit candidate {@code list} (already gate- or
+     * stage-filtered by the caller). An empty list yields {@link CarriagePartKind#NONE} — defensive:
+     * the gate path always passes a non-empty list, and the stage path checks emptiness before calling.
+     */
+    private String pickFrom(CarriagePartKind kind, long seed, int carriageIndex, List<WeightedName> list) {
+        if (list.isEmpty()) return CarriagePartKind.NONE;
         if (list.size() == 1) return list.get(0).name();
         long mixed = seed ^ ((long) carriageIndex * MIX) ^ ((long) kind.ordinal() * 0xC6BC279692B5C323L);
         return weightedPick(list, mixed);
@@ -386,12 +395,41 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
     public List<String> pickPerPlacement(CarriagePartKind kind, long seed, int carriageIndex,
                                          boolean flatbedAtBack, boolean flatbedAtFront,
                                          GateContext gateCtx) {
+        return pickPerPlacementFrom(kind, seed, carriageIndex, flatbedAtBack, flatbedAtFront,
+            applyGate(entries(kind), gateCtx));
+    }
+
+    /**
+     * Stage-filtered per-placement pick for the editor's per-stage carriage preview: keep only the
+     * entries whose {@code stageId} matches {@code stageId} (case-insensitive) — <b>no</b> gate
+     * filtering and <b>no</b> ungated fallback. Returns an <b>empty list</b> when nothing is linked to
+     * the stage, the signal for the caller ({@code CarriagePlacer.stampPartsOverlay}) to air out that
+     * swappable slot rather than leaving the base geometry. When at least one entry is linked, the
+     * shared {@link #pickPerPlacementFrom} core runs the same SideMode/EndMode/weighted logic as the
+     * gated path, so a stamped stage part honours its mirror / end tags exactly as it would at spawn.
+     */
+    public List<String> pickPerPlacementForStage(CarriagePartKind kind, long seed, int carriageIndex,
+                                                 boolean flatbedAtBack, boolean flatbedAtFront,
+                                                 String stageId) {
+        List<WeightedName> filtered = filterByStage(entries(kind), stageId);
+        if (filtered.isEmpty()) return List.of();
+        return pickPerPlacementFrom(kind, seed, carriageIndex, flatbedAtBack, flatbedAtFront, filtered);
+    }
+
+    /**
+     * Shared per-placement core for {@link #pickPerPlacement} (gate-filtered) and
+     * {@link #pickPerPlacementForStage} (stage-filtered): pick one name per placement from an explicit,
+     * pre-filtered candidate {@code list}, honouring each entry's {@link SideMode} and (for DOORS)
+     * {@link EndMode}. For one-placement kinds (FLOOR / ROOF) this is a single-element list.
+     */
+    private List<String> pickPerPlacementFrom(CarriagePartKind kind, long seed, int carriageIndex,
+                                              boolean flatbedAtBack, boolean flatbedAtFront,
+                                              List<WeightedName> list) {
         boolean twoPlacements = kind == CarriagePartKind.WALLS || kind == CarriagePartKind.DOORS;
         if (!twoPlacements) {
-            return List.of(pick(kind, seed, carriageIndex, gateCtx));
+            return List.of(pickFrom(kind, seed, carriageIndex, list));
         }
 
-        List<WeightedName> list = applyGate(entries(kind), gateCtx);
         // End-mode filter applies to DOORS only; WALLS keep their full list.
         boolean applyEndFilter = kind == CarriagePartKind.DOORS;
         List<WeightedName> poolBack  = applyEndFilter ? filterByEndMode(list, flatbedAtBack)  : list;
@@ -498,6 +536,23 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
             if (gateCtx.allows(e.effectiveGate())) gated.add(e);
         }
         return gated.isEmpty() ? list : gated;
+    }
+
+    /**
+     * Keep only entries explicitly linked to Stage {@code stageId} (case-insensitive) — the candidate
+     * pool for the editor's per-stage carriage preview. Unlike {@link #applyGate}, there is <b>no</b>
+     * fallback to the full list: an empty result is meaningful ("nothing assigned to this stage") and
+     * tells the caller to air out the slot. {@link CarriagePartKind#NONE} sentinels carry no stage
+     * link, so a {@code [none]}-only kind correctly filters to empty.
+     */
+    private static List<WeightedName> filterByStage(List<WeightedName> list, String stageId) {
+        if (stageId == null || stageId.isBlank()) return List.of();
+        String key = stageId.toLowerCase(Locale.ROOT);
+        List<WeightedName> out = new ArrayList<>(list.size());
+        for (WeightedName e : list) {
+            if (e.stageId() != null && e.stageId().toLowerCase(Locale.ROOT).equals(key)) out.add(e);
+        }
+        return out;
     }
 
     /** Weighted-cumulative pick from a non-empty list. Returns the first entry's name when total weight is 0. */

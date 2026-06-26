@@ -301,10 +301,11 @@ public final class CommandMenuRenderer {
                 leftEnd, cy + halfH - padY,
                 0xB0FFCC33);
         } else {
+            int leftAccent = splitHalfAccentFor(split.leftEntry());
             drawQuad(poseStack, buffer,
                 leftStart, cy - halfH + padY,
                 leftEnd, cy + halfH - padY,
-                0x30FFFFFF);
+                leftAccent != 0 ? leftAccent : 0x30FFFFFF);
         }
         float leftCenterX = (leftStart + leftEnd) / 2f;
         String leftText = typingLeft ? CommandMenuState.typedBuffer() + "_" : labelFor(split.leftEntry());
@@ -324,10 +325,11 @@ public final class CommandMenuRenderer {
                 rightEnd, cy + halfH - padY,
                 0xB0FFCC33);
         } else {
+            int rightAccent = splitHalfAccentFor(split.rightEntry());
             drawQuad(poseStack, buffer,
                 rightStart, cy - halfH + padY,
                 rightEnd, cy + halfH - padY,
-                0x30FFFFFF);
+                rightAccent != 0 ? rightAccent : 0x30FFFFFF);
         }
         float rightCenterX = (rightStart + rightEnd) / 2f;
         String rightText = typingRight ? CommandMenuState.typedBuffer() + "_" : labelFor(split.rightEntry());
@@ -467,6 +469,19 @@ public final class CommandMenuRenderer {
         if (entry instanceof CommandMenuEntry.DrillIn d && d.highlighted()) {
             return 0x80FFAA33;
         }
+        return 0;
+    }
+
+    /**
+     * Persistent "you're here" amber accent for a highlighted {@link CommandMenuEntry.Run}/
+     * {@link CommandMenuEntry.Stay}/{@link CommandMenuEntry.DrillIn} — the same tint full-width rows
+     * use — so a highlighted half of a {@link CommandMenuEntry.Split} reads identically. Returns 0 for
+     * everything else (including Toggle/SaveAction, whose own tints {@code drawSplitRow} leaves alone).
+     */
+    private static int splitHalfAccentFor(CommandMenuEntry entry) {
+        if (entry instanceof CommandMenuEntry.Run r && r.highlighted()) return 0x80FFAA33;
+        if (entry instanceof CommandMenuEntry.Stay s && s.highlighted()) return 0x80FFAA33;
+        if (entry instanceof CommandMenuEntry.DrillIn d && d.highlighted()) return 0x80FFAA33;
         return 0;
     }
 

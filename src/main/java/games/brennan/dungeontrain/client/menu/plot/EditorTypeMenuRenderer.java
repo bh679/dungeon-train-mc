@@ -248,6 +248,8 @@ public final class EditorTypeMenuRenderer {
     private static final String NEW_LABEL = "+ New";
 
     private static volatile List<EditorTypeMenusPacket.Menu> CACHE = List.of();
+    /** Global "focused stage" id for the per-stage carriage preview ("" = none); mirrors the server selection. */
+    private static volatile String SELECTED_STAGE = "";
     private static volatile Hovered HOVERED = Hovered.NONE;
 
     /**
@@ -297,6 +299,7 @@ public final class EditorTypeMenuRenderer {
     public static void applySnapshot(EditorTypeMenusPacket packet) {
         if (packet.isEmpty()) {
             CACHE = List.of();
+            SELECTED_STAGE = "";
             HOVERED = Hovered.NONE;
             PACKAGE_BASIS = null;
             stagesRemoveMode = false;
@@ -305,6 +308,7 @@ public final class EditorTypeMenuRenderer {
         }
         List<EditorTypeMenusPacket.Menu> menus = List.copyOf(packet.menus());
         CACHE = menus;
+        SELECTED_STAGE = packet.selectedStageId();
         // Keep PACKAGE_BASIS sticky across snapshots that still carry a
         // package menu (so category switches don't reorient the panel); drop
         // it if the new snapshot has no package menu, so the next appearance
@@ -321,6 +325,11 @@ public final class EditorTypeMenuRenderer {
 
     public static List<EditorTypeMenusPacket.Menu> menus() {
         return CACHE;
+    }
+
+    /** The globally focused stage id for the per-stage carriage preview, or "" when none is selected. */
+    public static String selectedStage() {
+        return SELECTED_STAGE;
     }
 
     public static Hovered hovered() {
