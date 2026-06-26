@@ -33,6 +33,7 @@
     "client.AdvancementsScreenAccessor",
     "client.AdvancementWidgetHideDescMixin",
     "client.DeathScreenMoveTextMixin",
+    "client.BookViewScreenNoPauseMixin",
     "client.CameraCinematicMixin",
     "client.GameRendererSnapshotMixin",
     "client.LevelRendererVoidSkyMixin",
