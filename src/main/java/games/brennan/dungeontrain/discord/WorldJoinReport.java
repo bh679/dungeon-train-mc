@@ -69,14 +69,14 @@ public final class WorldJoinReport {
                 return "";
             }
             data.markJoinReportPosted();
-            return build(data);
+            return build(data, server.isDedicatedServer());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] world-join Discord report failed: {}", t.toString());
             return "";
         }
     }
 
-    private static String build(DungeonTrainWorldData data) {
+    private static String build(DungeonTrainWorldData data, boolean dedicatedServer) {
         // Seed + mode + groupSize as one record; the rest of the regen inputs from the world data.
         var cfg = data.getGenerationConfig();
         var dims = data.dims();
@@ -86,17 +86,21 @@ public final class WorldJoinReport {
                 + " · dims " + dims.length() + "×" + dims.width() + "×" + dims.height()
                 + " · Y " + data.getTrainY()
                 + " · " + data.startingDimension();
-        return buildSuffix(modVersion(), regenLine, installedMods());
+        String launcherLine = "**Launcher:** " + LauncherInfo.describe(dedicatedServer);
+        return buildSuffix(modVersion(), regenLine, launcherLine, installedMods());
     }
 
     /**
      * Pure assembly of the suffix from its parts — package-private so the formatting + truncation can
-     * be unit-tested without a running server. The header is the version banner plus the regen line;
-     * the installed mods follow as a collapsed spoiler, truncated to keep the whole suffix under
-     * {@link #MAX_SUFFIX_CHARS}.
+     * be unit-tested without a running server. The header is the version banner, the regen line, and
+     * the launcher line; the installed mods follow as a collapsed spoiler, truncated to keep the whole
+     * suffix under {@link #MAX_SUFFIX_CHARS} (the spoiler sizes off the header length, so the launcher
+     * line's room is reserved automatically).
      */
-    static String buildSuffix(String version, String regenLine, List<String> mods) {
-        String header = "🚂 **Dungeon Train v" + version + "** — world info\n" + regenLine + "\n";
+    static String buildSuffix(String version, String regenLine, String launcherLine, List<String> mods) {
+        String header = "🚂 **Dungeon Train v" + version + "** — world info\n"
+                + regenLine + "\n"
+                + launcherLine + "\n";
         return header + modsSpoiler(header.length(), mods);
     }
 

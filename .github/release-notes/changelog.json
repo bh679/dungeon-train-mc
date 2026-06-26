@@ -2644,6 +2644,22 @@
       "released": true,
       "released_in": "v0.369.0",
       "released_at": "2026-06-26T11:39:09Z"
+    },
+    {
+      "id": "world-info-launcher",
+      "version": "0.369.0",
+      "type": "feat",
+      "title": "Launcher info in the world-info Discord post",
+      "summary": "The one-time world-info message posted to Discord when you start a new world now reports which launcher you're running under \u2014 Modrinth, CurseForge, the vanilla launcher, or a dedicated server \u2014 alongside the launcher version when it's available. Makes it easier to reproduce and debug a run from its world-info post.",
+      "highlights": [
+        "World-info Discord post now shows your launcher (Modrinth / CurseForge / vanilla / dedicated server)",
+        "Includes the launcher version when the launcher reports it"
+      ],
+      "pr": 601,
+      "date": "2026-06-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
