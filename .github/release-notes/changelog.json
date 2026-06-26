@@ -2606,6 +2606,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-mirror-block-variants",
+      "version": "0.367.0",
+      "type": "feat",
+      "title": "Editor mirror now reflects block variants",
+      "summary": "The template editor's XYZ mirror gains an opt-in \"V\" toggle that also mirrors per-cell block-variant pools across the enabled axes \u2014 so you can author one half of a carriage or part and get the symmetric variants for free. Off by default, so existing templates are unchanged.",
+      "highlights": [
+        "New V checkbox beside the X / Y / Z mirror toggles in the editor menu",
+        "Variant pools mirror live as you add, paste, or break \u2014 with a save-time backstop",
+        "Block facing, slab/stair half, and lock-group ids all reflect correctly"
+      ],
+      "pr": 596,
+      "date": "2026-06-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
