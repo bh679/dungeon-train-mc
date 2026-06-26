@@ -133,10 +133,9 @@ public final class EditorTypeMenuInputHandler {
             mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
         }
 
-        // Stages management panel — its rows are Stages (NAME → edit that stage), and its header /
-        // "+ New" footer open the Stages window (which has the create-stage typing row).
+        // Stages management panel — toolbar (Add / Remove) + inline-editable stage rows.
         if (menu.isStagesMenu()) {
-            handleStagesMenu(hit, menu);
+            handleStagesMenu(hit, menu, shift);
             return;
         }
 
@@ -312,6 +311,8 @@ public final class EditorTypeMenuInputHandler {
                 LOGGER.debug("[DungeonTrain] EditorTypeMenu weight: {}", cmd);
                 CommandRunner.run(cmd);
             }
+            // Stage selector cell → open the Stage / Custom picker (chip when linked, ◆? when Custom).
+            case STAGE -> openStagePicker(variant);
             // Gate cells: while the row is Stage-linked its cells show the Stage's (read-only) gate,
             // so a click opens the picker (re-pick / Custom) instead of editing — which would
             // silently detach. Custom rows edit the inline gate as before.
@@ -335,21 +336,60 @@ public final class EditorTypeMenuInputHandler {
             variant.category(), variant.modelId(), variant.modelName(), variant.stageId()));
     }
 
+    /** Lowercase phase tokens for the Stages panel's inline dimension cells (TrainPhase ordinal order). */
+    private static final String[] STAGE_PHASE_TOKENS = {"overworld", "nether", "void", "end"};
+
     /**
-     * Click routing for the world-space Stages panel: a stage row's NAME opens that Stage's edit
-     * screen; the header / "+ New" footer open the Stages window (with its create-stage typing row).
+     * Click routing for the world-space Stages panel:
+     * <ul>
+     *   <li>{@code + Add} → opens the Stages window (with its create-stage typing row).</li>
+     *   <li>{@code – Remove} → toggles remove-mode; a stage-row click then deletes that stage.</li>
+     *   <li>A stage row's {@code ≥ / ≤ / O N V E} cells edit that stage's gate live (inline).</li>
+     *   <li>A stage row's name → its edit screen (or deletes it while remove-mode is on).</li>
+     * </ul>
      */
-    private static void handleStagesMenu(Hovered hit, EditorTypeMenusPacket.Menu menu) {
+    private static void handleStagesMenu(Hovered hit, EditorTypeMenusPacket.Menu menu, boolean shift) {
         switch (hit.cell()) {
-            case NAME -> {
-                if (hit.variantIdx() < 0 || hit.variantIdx() >= menu.variants().size()) return;
-                String stageId = menu.variants().get(hit.variantIdx()).modelId();
-                CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.StageEditScreen(stageId));
-            }
-            case NEW, HEADER -> CommandMenuState.openAt(
+            case STAGE_ADD, HEADER -> CommandMenuState.openAt(
                 new games.brennan.dungeontrain.client.menu.StagesListScreen());
-            default -> {}
+            case STAGE_REMOVE -> EditorTypeMenuRenderer.toggleStagesRemoveMode();
+            case NAME -> {
+                String id = stageIdAt(menu, hit);
+                if (id == null) return;
+                if (EditorTypeMenuRenderer.isStagesRemoveMode()) {
+                    CommandRunner.run("dungeontrain editor stage delete " + id);
+                    EditorTypeMenuRenderer.clearStagesRemoveMode();
+                } else {
+                    CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.StageEditScreen(id));
+                }
+            }
+            case MIN_LEVEL -> {
+                String id = stageIdAt(menu, hit);
+                if (id != null) CommandRunner.run(EditorPlotTeleport.stageLevelCommandFor(
+                    id, "minlevel", shift ? "dec" : "inc"));
+            }
+            case MAX_LEVEL -> {
+                String id = stageIdAt(menu, hit);
+                if (id != null) CommandRunner.run(EditorPlotTeleport.stageLevelCommandFor(
+                    id, "maxlevel", shift ? "dec" : "inc"));
+            }
+            case PHASE -> {
+                String id = stageIdAt(menu, hit);
+                int slot = hit.slotIdx();
+                if (id == null || slot < 0 || slot >= STAGE_PHASE_TOKENS.length) return;
+                int mask = menu.variants().get(hit.variantIdx()).phaseMask();
+                boolean on = (mask & (1 << slot)) != 0;
+                String action = shift ? "others" : (on ? "off" : "on");
+                CommandRunner.run(EditorPlotTeleport.stagePhaseCommandFor(id, STAGE_PHASE_TOKENS[slot], action));
+            }
+            default -> { }
         }
+    }
+
+    /** The stage id of the row {@code hit} points at, or null when out of range. */
+    private static String stageIdAt(EditorTypeMenusPacket.Menu menu, Hovered hit) {
+        if (hit.variantIdx() < 0 || hit.variantIdx() >= menu.variants().size()) return null;
+        return menu.variants().get(hit.variantIdx()).modelId();
     }
 
     /** Lowercase phase tokens indexed by {@code TrainPhase} ordinal (OVERWORLD/NETHER/VOID/END). */
