@@ -75,7 +75,10 @@ public enum TrainPhase {
      * carriage-selection time. Returns {@link #OVERWORLD} when the bands are off.
      */
     public static TrainPhase phaseAt(ServerLevel overworld, int worldX) {
-        if (NetherBand.isInNetherBiome(overworld, worldX)) {
+        // Use the wider "netherrack present" band (not the strict ≥0.5 biome core) so a NETHER-gated
+        // template / Stage spawns across the visible Nether stretch — otherwise NETHER only triggers
+        // ~coreFade/2 + the mountain-rise blocks deep into the band ("deep into the Nether").
+        if (NetherBand.isInNetherBand(overworld, worldX)) {
             return NETHER;
         }
         return switch (DisintegrationBand.zoneAt(overworld, worldX)) {

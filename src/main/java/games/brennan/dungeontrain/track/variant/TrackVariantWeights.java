@@ -75,11 +75,23 @@ public final class TrackVariantWeights {
         return clamp(m.weight());
     }
 
-    /** Spawn {@link TemplateGate gate} for {@code (kind, name)}; {@link TemplateGate#DEFAULT} if none. */
+    /**
+     * The <b>effective</b> spawn {@link TemplateGate gate} for {@code (kind, name)}: the linked
+     * Stage's gate when this entry is Stage-linked, else its inline gate ({@link TemplateGate#DEFAULT}
+     * if none). Resolution is an O(1) {@link games.brennan.dungeontrain.editor.StageStore} lookup.
+     */
     public static synchronized TemplateGate gateFor(TrackKind kind, String name) {
         if (name == null) return TemplateGate.DEFAULT;
         TemplateMeta m = CURRENT.get(kind).get(name.toLowerCase(Locale.ROOT));
-        return m == null ? TemplateGate.DEFAULT : m.gate();
+        if (m == null) return TemplateGate.DEFAULT;
+        return games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), m.stageId());
+    }
+
+    /** The Stage id {@code (kind, name)} is linked to, or {@code null} when its gate is Custom. */
+    public static synchronized String stageIdFor(TrackKind kind, String name) {
+        if (name == null) return null;
+        TemplateMeta m = CURRENT.get(kind).get(name.toLowerCase(Locale.ROOT));
+        return m == null ? null : m.stageId();
     }
 
     /** Update one weight on disk and in memory, keeping the entry's gate. Returns the clamped value. */
@@ -113,6 +125,30 @@ public final class TrackVariantWeights {
         LOGGER.info("[DungeonTrain] Set track gate {}:{}={} (persisted to {}).",
             kind.id(), key, gate, configPath(kind));
         return gate;
+    }
+
+    /**
+     * Link {@code (kind, name)} to the named Stage ({@code stageId}), or detach to Custom when
+     * {@code stageId} is null (snapshotting the Stage's current gate inline). Weight preserved.
+     * Persists. See {@link CarriageWeights#setStage}.
+     */
+    public static synchronized String setStage(TrackKind kind, String name, String stageId) throws IOException {
+        String key = name.toLowerCase(Locale.ROOT);
+        String link = (stageId == null || stageId.isBlank()) ? null : stageId.toLowerCase(Locale.ROOT);
+        Map<String, TemplateMeta> next = new HashMap<>(CURRENT.get(kind));
+        TemplateMeta prev = next.get(key);
+        int weight = prev == null ? DEFAULT : prev.weight();
+        TemplateGate inline = prev == null ? TemplateGate.DEFAULT : prev.gate();
+        if (link == null && prev != null && prev.stageId() != null) {
+            inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, prev.stageId());
+        }
+        next.put(key, new TemplateMeta(weight, inline, link));
+        CURRENT.put(kind, next);
+        writeConfig(kind, next);
+        trySaveToSource(kind, next);
+        LOGGER.info("[DungeonTrain] Set track stage {}:{}={} (persisted to {}).",
+            kind.id(), key, link == null ? "<custom>" : link, configPath(kind));
+        return link;
     }
 
     /** Remove the entry for {@code (kind, name)}. Returns true if removed. */

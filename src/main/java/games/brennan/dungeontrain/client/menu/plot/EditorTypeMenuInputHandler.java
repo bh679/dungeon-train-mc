@@ -133,6 +133,12 @@ public final class EditorTypeMenuInputHandler {
             mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
         }
 
+        // Stages management panel — toolbar (Add / Remove) + inline-editable stage rows.
+        if (menu.isStagesMenu()) {
+            handleStagesMenu(hit, menu, shift);
+            return;
+        }
+
         // Category bar click → run "dt editor <id>" (CommandRunner expects
         // bare command text, no leading slash — the chat path adds it).
         if (hit.cell() == EditorTypeMenuRenderer.CellKind.CATEGORY) {
@@ -266,6 +272,13 @@ public final class EditorTypeMenuInputHandler {
 
         switch (hit.cell()) {
             case NAME -> {
+                // Shift-click a gateable template's name opens the Stage / Custom picker (the
+                // floating-menu entry point for linking a template to a Stage). Plain click teleports.
+                if (shift && EditorPlotTeleport.stageApplyCommandFor(
+                        variant.category(), variant.modelId(), variant.modelName(), "custom") != null) {
+                    openStagePicker(variant);
+                    return;
+                }
                 String cmd = EditorPlotTeleport.commandFor(
                     variant.category(), variant.modelId(), variant.modelName());
                 if (cmd == null) return;
@@ -298,11 +311,85 @@ public final class EditorTypeMenuInputHandler {
                 LOGGER.debug("[DungeonTrain] EditorTypeMenu weight: {}", cmd);
                 CommandRunner.run(cmd);
             }
-            case MIN_LEVEL -> dispatchLevel(menu, variant, "minlevel", shift);
-            case MAX_LEVEL -> dispatchLevel(menu, variant, "maxlevel", shift);
-            case PHASE -> dispatchPhase(menu, variant, hit.slotIdx(), shift);
+            // Stage selector cell → open the Stage / Custom picker (chip when linked, ◆? when Custom).
+            case STAGE -> openStagePicker(variant);
+            // Gate cells: while the row is Stage-linked its cells show the Stage's (read-only) gate,
+            // so a click opens the picker (re-pick / Custom) instead of editing — which would
+            // silently detach. Custom rows edit the inline gate as before.
+            case MIN_LEVEL -> { if (!openPickerIfLinked(variant)) dispatchLevel(menu, variant, "minlevel", shift); }
+            case MAX_LEVEL -> { if (!openPickerIfLinked(variant)) dispatchLevel(menu, variant, "maxlevel", shift); }
+            case PHASE -> { if (!openPickerIfLinked(variant)) dispatchPhase(menu, variant, hit.slotIdx(), shift); }
             default -> {}
         }
+    }
+
+    /** Open the Stage / Custom picker for {@code variant} when it is Stage-linked; returns whether it did. */
+    private static boolean openPickerIfLinked(EditorTypeMenusPacket.Variant variant) {
+        if (!variant.isStageLinked()) return false;
+        openStagePicker(variant);
+        return true;
+    }
+
+    /** Open the {@link games.brennan.dungeontrain.client.menu.StagePickerScreen} for {@code variant}. */
+    private static void openStagePicker(EditorTypeMenusPacket.Variant variant) {
+        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.StagePickerScreen(
+            variant.category(), variant.modelId(), variant.modelName(), variant.stageId()));
+    }
+
+    /** Lowercase phase tokens for the Stages panel's inline dimension cells (TrainPhase ordinal order). */
+    private static final String[] STAGE_PHASE_TOKENS = {"overworld", "nether", "void", "end"};
+
+    /**
+     * Click routing for the world-space Stages panel:
+     * <ul>
+     *   <li>{@code + Add} → opens the Stages window (with its create-stage typing row).</li>
+     *   <li>{@code – Remove} → toggles remove-mode; a stage-row click then deletes that stage.</li>
+     *   <li>A stage row's {@code ≥ / ≤ / O N V E} cells edit that stage's gate live (inline).</li>
+     *   <li>A stage row's name → its edit screen (or deletes it while remove-mode is on).</li>
+     * </ul>
+     */
+    private static void handleStagesMenu(Hovered hit, EditorTypeMenusPacket.Menu menu, boolean shift) {
+        switch (hit.cell()) {
+            case STAGE_ADD, HEADER -> CommandMenuState.openAt(
+                new games.brennan.dungeontrain.client.menu.StagesListScreen());
+            case STAGE_REMOVE -> EditorTypeMenuRenderer.toggleStagesRemoveMode();
+            case NAME -> {
+                String id = stageIdAt(menu, hit);
+                if (id == null) return;
+                if (EditorTypeMenuRenderer.isStagesRemoveMode()) {
+                    CommandRunner.run("dungeontrain editor stage delete " + id);
+                    EditorTypeMenuRenderer.clearStagesRemoveMode();
+                } else {
+                    CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.StageEditScreen(id));
+                }
+            }
+            case MIN_LEVEL -> {
+                String id = stageIdAt(menu, hit);
+                if (id != null) CommandRunner.run(EditorPlotTeleport.stageLevelCommandFor(
+                    id, "minlevel", shift ? "dec" : "inc"));
+            }
+            case MAX_LEVEL -> {
+                String id = stageIdAt(menu, hit);
+                if (id != null) CommandRunner.run(EditorPlotTeleport.stageLevelCommandFor(
+                    id, "maxlevel", shift ? "dec" : "inc"));
+            }
+            case PHASE -> {
+                String id = stageIdAt(menu, hit);
+                int slot = hit.slotIdx();
+                if (id == null || slot < 0 || slot >= STAGE_PHASE_TOKENS.length) return;
+                int mask = menu.variants().get(hit.variantIdx()).phaseMask();
+                boolean on = (mask & (1 << slot)) != 0;
+                String action = shift ? "others" : (on ? "off" : "on");
+                CommandRunner.run(EditorPlotTeleport.stagePhaseCommandFor(id, STAGE_PHASE_TOKENS[slot], action));
+            }
+            default -> { }
+        }
+    }
+
+    /** The stage id of the row {@code hit} points at, or null when out of range. */
+    private static String stageIdAt(EditorTypeMenusPacket.Menu menu, Hovered hit) {
+        if (hit.variantIdx() < 0 || hit.variantIdx() >= menu.variants().size()) return null;
+        return menu.variants().get(hit.variantIdx()).modelId();
     }
 
     /** Lowercase phase tokens indexed by {@code TrainPhase} ordinal (OVERWORLD/NETHER/VOID/END). */

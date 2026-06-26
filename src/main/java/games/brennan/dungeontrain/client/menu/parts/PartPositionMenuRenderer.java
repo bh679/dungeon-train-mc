@@ -72,12 +72,14 @@ public final class PartPositionMenuRenderer {
     static final double ROW_HEIGHT = 0.30;
     static final double HEADER_HEIGHT = 0.32;
     static final double TOOLBAR_HEIGHT = 0.32;
-    /** Width of one grid column (name + weight + gate cells, plus optional side/end/[X] chips). */
-    static final double COLUMN_WIDTH = 3.2;
-    /** Minimum panel width — fits the toolbar labels and the weight+gate cell strip without crowding the name. */
-    static final double MIN_PANEL_WIDTH = 3.6;
+    /** Width of one grid column (name + weight + stage + gate cells, plus optional side/end/[X] chips). */
+    static final double COLUMN_WIDTH = 3.6;
+    /** Minimum panel width — fits the toolbar labels and the weight+stage+gate cell strip without crowding the name. */
+    static final double MIN_PANEL_WIDTH = 4.0;
     /** Bumped minimum for door rows so the extra side+end cells don't crowd the name text. */
-    static final double DOOR_MIN_PANEL_WIDTH = 4.4;
+    static final double DOOR_MIN_PANEL_WIDTH = 4.8;
+    /** Width of the per-entry Stage selector cell (◆? when Custom; spans the gate cells when linked). */
+    static final double STAGE_CELL_WIDTH = 0.40;
     /** Width of the X chip on the right of each entry row when remove-mode is on. */
     static final double X_CELL_WIDTH = 0.30;
     /** Width of the weight cell on the right side of each entry row. */
@@ -103,6 +105,12 @@ public final class PartPositionMenuRenderer {
     static final int PHASE_ON_COLOR = 0xFF66FF66;
     /** Phase letter colour when the dimension is disabled. */
     static final int PHASE_OFF_COLOR = 0xFF777777;
+    /** Stage chip colour (linked) — matches the template-type editor's STAGE_COLOR. */
+    static final int STAGE_COLOR = 0xFF66E0FF;
+    /** Dim marker colour for the Custom (unlinked) Stage selector. */
+    static final int STAGE_CUSTOM_COLOR = 0xFF99AABB;
+    /** Marker drawn in the Stage selector cell on a Custom (unlinked) part entry. */
+    static final String STAGE_CUSTOM_MARKER = "◆?";
 
     private PartPositionMenuRenderer() {}
 
@@ -264,10 +272,15 @@ public final class PartPositionMenuRenderer {
             double maxCellL = maxCellR - MAX_LEVEL_CELL_WIDTH;
             double minCellR = maxCellL;
             double minCellL = minCellR - MIN_LEVEL_CELL_WIDTH;
-            double weightCellR = minCellL;
+            // Stage selector cell sits left of the gate cells. weight/name layout is identical whether
+            // linked or Custom (weightCellR == stageCellL), so only the gate region drawing branches.
+            double stageCellR = minCellL;
+            double stageCellL = stageCellR - STAGE_CELL_WIDTH;
+            double weightCellR = stageCellL;
             double weightCellL = weightCellR - WEIGHT_CELL_WIDTH;
             double nameCellL = colXL;
             double nameCellR = weightCellL;
+            boolean stageLinked = entry.stageId() != null && !entry.stageId().isEmpty();
 
             // Name highlight (just the name area)
             boolean nameHover = hovered.kind() == PartPositionMenu.CellKind.ENTRY_NAME && hovered.index() == i;
@@ -288,9 +301,26 @@ public final class PartPositionMenuRenderer {
                 (weightCellL + weightCellR) / 2.0, rowCY,
                 weightHover ? 0xFF000000 : 0xFFFFFFFF);
 
+            // Stage selector cell. Linked → a chip spanning the gate area (cells hidden); Custom → a
+            // small ◆? marker before the editable cells. Click opens the Stage / Custom picker.
+            boolean stageHover = hovered.kind() == PartPositionMenu.CellKind.ENTRY_STAGE && hovered.index() == i;
+            if (stageLinked) {
+                if (stageHover) drawQuad(ps, buffer, stageCellL + 0.005, rowBottom + 0.005,
+                    phaseCellR - 0.005, rowTop - 0.005, 0x60FFCC33);
+                drawCenteredText(ps, buffer, font, "◆ " + entry.stageId(),
+                    (stageCellL + phaseCellR) / 2.0, rowCY, stageHover ? 0xFF000000 : STAGE_COLOR);
+            } else {
+                if (stageHover) drawQuad(ps, buffer, stageCellL + 0.005, rowBottom + 0.005,
+                    stageCellR - 0.005, rowTop - 0.005, 0x60FFCC33);
+                drawCenteredText(ps, buffer, font, STAGE_CUSTOM_MARKER,
+                    (stageCellL + stageCellR) / 2.0, rowCY, stageHover ? 0xFF000000 : STAGE_CUSTOM_COLOR);
+            }
+
             // Gate cells — Diff-Level band (≥min / ≤max) + dimension letters
-            // (O N V E). Shown for every kind; mirrors the template-type editor.
+            // (O N V E). Shown for every kind; mirrors the template-type editor. Hidden behind the
+            // Stage chip while linked.
             var gate = entry.gate();
+            if (!stageLinked) {
 
             // Min-level cell (≥N) — click bumps +1, shift-click −1.
             boolean minHover = hovered.kind() == PartPositionMenu.CellKind.ENTRY_MIN_LEVEL && hovered.index() == i;
@@ -323,6 +353,7 @@ public final class PartPositionMenuRenderer {
                     lx + phaseLetterW / 2.0, rowCY,
                     phaseHover ? 0xFF000000 : (on ? PHASE_ON_COLOR : PHASE_OFF_COLOR));
             }
+            } // end if (!stageLinked) — gate cells hidden behind the Stage chip while linked
 
             // Side-mode cell (walls/doors only) — click cycles BOTH→ONE→EITHER.
             if (showSideMode) {

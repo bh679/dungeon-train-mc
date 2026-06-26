@@ -34,6 +34,8 @@ public final class TemplateWeightCodec {
     public static final String K_MIN = "minLevel";
     public static final String K_MAX = "maxLevel";
     public static final String K_PHASES = "phases";
+    /** Optional link to a named Stage (its gate becomes the entry's effective gate). Absent = Custom. */
+    public static final String K_STAGE = "stage";
     /** String accepted (and never emitted — absence means the same) for {@link TemplateGate#ALL}. */
     public static final String MAX_ALL = "all";
 
@@ -54,7 +56,17 @@ public final class TemplateWeightCodec {
             if (we == null || !we.isJsonPrimitive() || !we.getAsJsonPrimitive().isNumber()) return null;
             Integer w = finiteRound(we);
             if (w == null) return null;
-            return new TemplateMeta(clampWeight.applyAsInt(w), parseGate(o));
+            return new TemplateMeta(clampWeight.applyAsInt(w), parseGate(o), parseStage(o));
+        }
+        return null;
+    }
+
+    /** The optional Stage link on an entry object; {@code null} (Custom) when absent or blank. */
+    public static String parseStage(JsonObject o) {
+        JsonElement el = o.get(K_STAGE);
+        if (el != null && el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()) {
+            String s = el.getAsString().trim().toLowerCase(Locale.ROOT);
+            return s.isEmpty() ? null : s;
         }
         return null;
     }
@@ -122,7 +134,9 @@ public final class TemplateWeightCodec {
         JsonObject out = new JsonObject();
         for (Map.Entry<String, TemplateMeta> e : new TreeMap<>(byId).entrySet()) {
             TemplateMeta meta = e.getValue();
-            if (meta.gate().isDefault()) {
+            // Bare-int only when both axes are at their no-op default: default inline gate AND
+            // no Stage link. A linked entry always takes the object form (it carries "stage").
+            if (meta.gate().isDefault() && meta.stageId() == null) {
                 out.addProperty(e.getKey(), meta.weight());
             } else {
                 out.add(e.getKey(), entryObject(meta));
@@ -135,6 +149,7 @@ public final class TemplateWeightCodec {
         JsonObject o = new JsonObject();
         o.addProperty(K_WEIGHT, meta.weight());
         writeGateFields(o, meta.gate());
+        if (meta.stageId() != null) o.addProperty(K_STAGE, meta.stageId());
         return o;
     }
 

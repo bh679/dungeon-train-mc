@@ -42,6 +42,8 @@ public final class PartPositionMenu {
         CLOSE,
         ENTRY_NAME,
         ENTRY_WEIGHT,
+        /** Per-entry Stage selector — click opens the Stage / Custom picker (chip when linked). */
+        ENTRY_STAGE,
         ENTRY_MIN_LEVEL,
         ENTRY_MAX_LEVEL,
         ENTRY_PHASE,

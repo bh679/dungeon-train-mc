@@ -152,8 +152,13 @@ public final class PartPositionMenuRaycast {
         double maxCellL = maxCellR - PartPositionMenuRenderer.MAX_LEVEL_CELL_WIDTH;
         double minCellR = maxCellL;
         double minCellL = minCellR - PartPositionMenuRenderer.MIN_LEVEL_CELL_WIDTH;
-        double weightCellR = minCellL;
+        double stageCellR = minCellL;
+        double stageCellL = stageCellR - PartPositionMenuRenderer.STAGE_CELL_WIDTH;
+        double weightCellR = stageCellL;
         double weightCellL = weightCellR - PartPositionMenuRenderer.WEIGHT_CELL_WIDTH;
+
+        WeightedName stageEntry = (idx >= 0 && idx < entries.size()) ? entries.get(idx) : null;
+        boolean stageLinked = stageEntry != null && stageEntry.stageId() != null && !stageEntry.stageId().isEmpty();
 
         if (removeMode && hitX >= colXR - PartPositionMenuRenderer.X_CELL_WIDTH) {
             return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_REMOVE_X, idx);
@@ -164,7 +169,11 @@ public final class PartPositionMenuRaycast {
         if (showSideMode && hitX >= sideCellL && hitX <= sideCellR) {
             return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_SIDE_MODE, idx);
         }
-        if (hitX >= phaseCellL && hitX <= phaseCellR) {
+        // Linked: the Stage chip spans the whole gate region (stage + min + max + phase).
+        if (stageLinked && hitX >= stageCellL && hitX <= phaseCellR) {
+            return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_STAGE, idx);
+        }
+        if (!stageLinked && hitX >= phaseCellL && hitX <= phaseCellR) {
             int letters = PartPositionMenuRenderer.PHASE_LETTERS.length;
             double letterW = (phaseCellR - phaseCellL) / letters;
             int slot = (int) Math.floor((hitX - phaseCellL) / letterW);
@@ -172,11 +181,15 @@ public final class PartPositionMenuRaycast {
             if (slot >= letters) slot = letters - 1;
             return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_PHASE, idx, slot);
         }
-        if (hitX >= maxCellL && hitX <= maxCellR) {
+        if (!stageLinked && hitX >= maxCellL && hitX <= maxCellR) {
             return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_MAX_LEVEL, idx);
         }
-        if (hitX >= minCellL && hitX <= minCellR) {
+        if (!stageLinked && hitX >= minCellL && hitX <= minCellR) {
             return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_MIN_LEVEL, idx);
+        }
+        // Custom Stage marker cell (between weight and min).
+        if (!stageLinked && hitX >= stageCellL && hitX <= stageCellR) {
+            return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_STAGE, idx);
         }
         if (hitX >= weightCellL && hitX <= weightCellR) {
             return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_WEIGHT, idx);

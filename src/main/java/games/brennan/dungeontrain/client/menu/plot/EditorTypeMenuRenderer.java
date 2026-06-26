@@ -95,6 +95,12 @@ public final class EditorTypeMenuRenderer {
         MAX_LEVEL,
         /** Spawn-gate phase cell — {@code slotIdx} = phase ordinal (0..3); click toggles that phase. */
         PHASE,
+        /** Per-template Stage selector — click opens the Stage / Custom picker (chip when linked). */
+        STAGE,
+        /** Stages panel "+ Add" toolbar button — opens the create-stage prompt. */
+        STAGE_ADD,
+        /** Stages panel "– Remove" toolbar button — toggles remove-mode (then a stage-row click deletes). */
+        STAGE_REMOVE,
         /** Package row — clicking activates that package. */
         PKG_NAME,
         /** Package Save cell — falls through to the X-menu's flat package screen for typing. */
@@ -202,6 +208,36 @@ public final class EditorTypeMenuRenderer {
     private static final int PHASE_OFF_COLOR = 0xFF777777;
     /** Bright green text for the "+ New" label so it stands out from variant rows. */
     private static final int NEW_COLOR = 0xFFAAFFAA;
+    /** Cyan-ish text for a Stage chip / the Stage selector marker. */
+    private static final int STAGE_COLOR = 0xFF66E0FF;
+    /** Dim marker for the Custom Stage selector (no stage linked). */
+    private static final int STAGE_CUSTOM_COLOR = 0xFF99AABB;
+    /** Red band behind stage rows while remove-mode is active. */
+    private static final int REMOVE_ROW_BG = 0x60FF4444;
+    /** Green "+ Add" / red "– Remove" toolbar button text. */
+    private static final int STAGE_ADD_COLOR = 0xFFAAFFAA;
+    private static final int STAGE_REMOVE_COLOR = 0xFFFF9999;
+
+    /** Marker drawn in the Stage selector cell on a Custom (unlinked) template row. */
+    private static final String STAGE_CUSTOM_MARKER = "◆?";
+
+    /** Client-only "remove mode" for the Stages panel — a stage-row click then deletes that stage. */
+    private static volatile boolean stagesRemoveMode = false;
+
+    /** Whether the Stages panel is in remove-mode (a row click deletes). */
+    public static boolean isStagesRemoveMode() {
+        return stagesRemoveMode;
+    }
+
+    /** Toggle the Stages-panel remove-mode (driven by the "– Remove" toolbar button). */
+    public static void toggleStagesRemoveMode() {
+        stagesRemoveMode = !stagesRemoveMode;
+    }
+
+    /** Force remove-mode off (called when the Stages panel is dismissed / snapshot cleared). */
+    public static void clearStagesRemoveMode() {
+        stagesRemoveMode = false;
+    }
     /** Slightly dimmed text for collapsed tabs so the expanded tab reads as primary. */
     private static final int COLLAPSED_TAB_COLOR = 0xFFCCCCCC;
     /** Bright white text on the active category button — boosted contrast over the green backdrop. */
@@ -263,6 +299,7 @@ public final class EditorTypeMenuRenderer {
             CACHE = List.of();
             HOVERED = Hovered.NONE;
             PACKAGE_BASIS = null;
+            stagesRemoveMode = false;
             LOGGER.info("[DungeonTrain] EditorTypeMenus: snapshot cleared");
             return;
         }
@@ -348,6 +385,7 @@ public final class EditorTypeMenuRenderer {
     public static double halfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
         if (menu.isPackageMenu()) return packageHalfWidth();
         if (menu.isNavMenu()) return navHalfWidth(menu, font);
+        if (menu.isStagesMenu()) return stagesHalfWidth(menu, font);
         return companionHalfWidth(menu, font);
     }
 
@@ -641,6 +679,10 @@ public final class EditorTypeMenuRenderer {
             if (!menu.variants().isEmpty()) total += 1;
             return total;
         }
+        // Stages: header + Add/Remove toolbar + one row per stage (no "+ New" footer).
+        if (menu.isStagesMenu()) {
+            return 2 + menu.variants().size();
+        }
         return 1 + menu.variants().size() + (menu.variants().isEmpty() ? 0 : 1);
     }
 
@@ -700,6 +742,9 @@ public final class EditorTypeMenuRenderer {
         }
         if (menu.isNavMenu()) {
             return hitForNav(menuIdx, menu, font, hitX, hitY);
+        }
+        if (menu.isStagesMenu()) {
+            return hitForStagesMenu(menuIdx, menu, font, hitX, hitY);
         }
         return hitForCompanion(menuIdx, menu, font, hitX, hitY);
     }
@@ -840,10 +885,14 @@ public final class EditorTypeMenuRenderer {
         boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
         if (!hasWeight) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
 
-        RightCells rc = rightCells(colLeft, colRight, true, /*allowGate*/ true, variant.phaseMask());
+        RightCells rc = rightCells(colLeft, colRight, true, /*allowGate*/ true, variant.phaseMask(),
+            /*showStage*/ true, variant.isStageLinked());
         if (hitX < rc.nameRight()) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
         if (!rc.showGate()) return new Hovered(menuIdx, variantIdx, CellKind.WEIGHT);
         if (hitX < rc.weightR()) return new Hovered(menuIdx, variantIdx, CellKind.WEIGHT);
+        // Stage selector cell — when linked it spans the rest of the gate area (no min/max/phase).
+        if (rc.linked()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE);
+        if (rc.showStage() && hitX < rc.stageR()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE);
         if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
         if (hitX < rc.maxR()) return new Hovered(menuIdx, variantIdx, CellKind.MAX_LEVEL);
         // Phase cell — resolve which of the 4 letters was hit.
@@ -898,6 +947,8 @@ public final class EditorTypeMenuRenderer {
             drawPackageMenu(ps, buffer, font, menu, hovered);
         } else if (menu.isNavMenu()) {
             drawNavMenu(ps, buffer, font, menu, hovered);
+        } else if (menu.isStagesMenu()) {
+            drawStagesMenu(ps, buffer, font, menu, hovered);
         } else {
             drawCompanionMenu(ps, buffer, font, menu, hovered);
         }
@@ -942,9 +993,10 @@ public final class EditorTypeMenuRenderer {
             boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
             CellKind hoverCell = hovered.variantIdx == vi ? hovered.cell : CellKind.NONE;
 
-            // Companion (sub-variant) rows carry no per-template spawn gate — allowGate=false.
+            // Companion (sub-variant) rows carry no per-template spawn gate — allowGate=false,
+            // showStage=false.
             drawVariantRow(ps, buffer, font, variant, -halfW, rowBottom, halfW, rowTop,
-                rowCY, hasWeight, false, hoverCell, hovered.slotIdx(),
+                rowCY, hasWeight, false, false, hoverCell, hovered.slotIdx(),
                 activeModelId, activeModelName);
         }
 
@@ -1094,9 +1146,10 @@ public final class EditorTypeMenuRenderer {
             boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
             CellKind hoverCell = hovered.variantIdx == vi ? hovered.cell : CellKind.NONE;
 
-            // Nav (top-level template) rows carry the per-template spawn gate — allowGate=true.
+            // Nav (top-level template) rows carry the per-template spawn gate + a Stage selector —
+            // allowGate=true, showStage=true.
             drawVariantRow(ps, buffer, font, variant, expColLeft, rowBottom, expColRight, rowTop,
-                rowCY, hasWeight, true, hoverCell, hovered.slotIdx(),
+                rowCY, hasWeight, true, true, hoverCell, hovered.slotIdx(),
                 activeModelId, activeModelName);
 
             // Sub-variants — horizontal cells across one or more lines.
@@ -1179,10 +1232,10 @@ public final class EditorTypeMenuRenderer {
      * (panel-local) — companion menus pass the full panel width, nav menus
      * pass the expanded column's bounds.
      */
-    /** Right-area cell boundaries for a variant row (name | weight | min | max | phase). */
-    private record RightCells(boolean hasWeight, boolean showGate,
+    /** Right-area cell boundaries for a variant row (name | weight | [stage] | min | max | phase). */
+    private record RightCells(boolean hasWeight, boolean showGate, boolean showStage, boolean linked,
                               double nameRight, double weightL, double weightR,
-                              double minR, double maxR) {
+                              double stageR, double minR, double maxR) {
         /** Sub-cell width of one phase letter within the phase cell [{@code maxR}, {@code rowRight}]. */
         double phaseSubW(double rowRight) { return (rowRight - maxR) / PHASE_LETTERS.length; }
     }
@@ -1191,38 +1244,59 @@ public final class EditorTypeMenuRenderer {
      * Compute the right-hand cell layout for a variant row. No weight ⇒ the whole row is the name
      * cell. Weight but no gate ⇒ the right {@link #WEIGHT_CELL_FRACTION} is the weight cell (legacy
      * behaviour). Gate present ⇒ the right {@link #GATE_AREA_FRACTION} splits into
-     * weight | min | max | phase. A {@code phaseMask} of {@link EditorTypeMenusPacket.Variant#NO_GATE}
-     * (or {@code allowGate == false}) keeps the legacy weight-only layout.
+     * weight | [stage] | min | max | phase. When {@code showStage} a Stage selector cell is inserted
+     * after the weight cell; if the row is {@code linked} that selector spans the rest (the min/max/
+     * phase cells are hidden behind the Stage chip). A {@code phaseMask} of
+     * {@link EditorTypeMenusPacket.Variant#NO_GATE} (or {@code allowGate == false}) keeps the legacy
+     * weight-only layout.
      */
     private static RightCells rightCells(double rowLeft, double rowRight, boolean hasWeight,
-                                         boolean allowGate, int phaseMask) {
+                                         boolean allowGate, int phaseMask, boolean showStage, boolean linked) {
         if (!hasWeight) {
-            return new RightCells(false, false, rowRight, rowRight, rowRight, rowRight, rowRight);
+            return new RightCells(false, false, false, false,
+                rowRight, rowRight, rowRight, rowRight, rowRight, rowRight);
         }
         double colW = rowRight - rowLeft;
         boolean showGate = allowGate && phaseMask != EditorTypeMenusPacket.Variant.NO_GATE;
         if (!showGate) {
             double wl = rowRight - colW * WEIGHT_CELL_FRACTION;
-            return new RightCells(true, false, wl, wl, rowRight, rowRight, rowRight);
+            return new RightCells(true, false, false, false, wl, wl, rowRight, rowRight, rowRight, rowRight);
         }
         double gateLeft = rowRight - colW * GATE_AREA_FRACTION;
-        // weight | min | max = 1 unit each; phase = 1.6 units (room for 4 letters).
+        if (showStage && linked) {
+            // weight | Stage chip (spans the rest). No min/max/phase cells.
+            double unit = (rowRight - gateLeft) / 4.6;
+            double weightR = gateLeft + unit;
+            return new RightCells(true, true, true, true, gateLeft, gateLeft, weightR,
+                rowRight, rowRight, rowRight);
+        }
+        if (showStage) {
+            // weight | stage | min | max | phase. Units: 1 | 1.1 | 1 | 1 | 1.6 = 5.7.
+            double unit = (rowRight - gateLeft) / 5.7;
+            double weightR = gateLeft + unit;
+            double stageR = weightR + 1.1 * unit;
+            double minR = stageR + unit;
+            double maxR = minR + unit;
+            return new RightCells(true, true, true, false, gateLeft, gateLeft, weightR, stageR, minR, maxR);
+        }
+        // Legacy gate row (no stage selector): weight | min | max | phase = 4.6 units.
         double unit = (rowRight - gateLeft) / 4.6;
         double weightR = gateLeft + unit;
         double minR = weightR + unit;
         double maxR = minR + unit;
-        return new RightCells(true, true, gateLeft, gateLeft, weightR, minR, maxR);
+        return new RightCells(true, true, false, false, gateLeft, gateLeft, weightR, weightR, minR, maxR);
     }
 
     private static void drawVariantRow(
         PoseStack ps, MultiBufferSource buffer, Font font,
         EditorTypeMenusPacket.Variant variant,
         double rowLeft, double rowBottom, double rowRight, double rowTop,
-        double rowCY, boolean hasWeight, boolean allowGate,
+        double rowCY, boolean hasWeight, boolean allowGate, boolean showStage,
         CellKind hoverCell, int hoverSlot,
         String activeModelId, String activeModelName
     ) {
-        RightCells rc = rightCells(rowLeft, rowRight, hasWeight, allowGate, variant.phaseMask());
+        RightCells rc = rightCells(rowLeft, rowRight, hasWeight, allowGate, variant.phaseMask(),
+            showStage, variant.isStageLinked());
 
         // Provenance tint — orange for imported variants (highest priority),
         // blue for user-authored, no tint for bundled.
@@ -1249,8 +1323,12 @@ public final class EditorTypeMenuRenderer {
                 rc.nameRight() - 0.005, rowTop - 0.005, HOVER_COLOR);
             case WEIGHT -> drawQuad(ps, buffer, rc.weightL() + 0.005, rowBottom + 0.005,
                 rc.weightR() - 0.005, rowTop - 0.005, HOVER_COLOR);
+            case STAGE -> {
+                if (rc.showStage()) drawQuad(ps, buffer, rc.weightR() + 0.005, rowBottom + 0.005,
+                    rc.stageR() - 0.005, rowTop - 0.005, HOVER_COLOR);
+            }
             case MIN_LEVEL -> {
-                if (rc.showGate()) drawQuad(ps, buffer, rc.weightR() + 0.005, rowBottom + 0.005,
+                if (rc.showGate()) drawQuad(ps, buffer, rc.stageR() + 0.005, rowBottom + 0.005,
                     rc.minR() - 0.005, rowTop - 0.005, HOVER_COLOR);
             }
             case MAX_LEVEL -> {
@@ -1280,8 +1358,20 @@ public final class EditorTypeMenuRenderer {
 
         if (!rc.showGate()) return;
 
+        // Stage selector cell. Linked → a chip spanning the gate area (cells hidden); Custom → a small
+        // marker before the editable cells. Either way clicking it opens the Stage / Custom picker.
+        if (rc.showStage()) {
+            if (rc.linked()) {
+                double chipCX = (rc.weightR() + rowRight) / 2.0;
+                drawCenteredText(ps, buffer, font, "◆ " + variant.stageId(), chipCX, rowCY, STAGE_COLOR);
+                return; // no min/max/phase while linked
+            }
+            double stageCX = (rc.weightR() + rc.stageR()) / 2.0;
+            drawCenteredText(ps, buffer, font, STAGE_CUSTOM_MARKER, stageCX, rowCY, STAGE_CUSTOM_COLOR);
+        }
+
         // Min / Max Diff-Level cells.
-        double minCX = (rc.weightR() + rc.minR()) / 2.0;
+        double minCX = (rc.stageR() + rc.minR()) / 2.0;
         drawCenteredText(ps, buffer, font, "≥" + variant.minLevel(), minCX, rowCY, LEVEL_COLOR);
         double maxCX = (rc.minR() + rc.maxR()) / 2.0;
         String maxLabel = variant.maxLevel() < 0 ? "≤∞" : "≤" + variant.maxLevel();
@@ -1295,6 +1385,133 @@ public final class EditorTypeMenuRenderer {
             drawCenteredText(ps, buffer, font, PHASE_LETTERS[slot], cx, rowCY,
                 on ? PHASE_ON_COLOR : PHASE_OFF_COLOR);
         }
+    }
+
+    // ---------- Stages management panel ----------
+
+    /** Half-width for the Stages panel — fits the widest stage name beside the inline gate cells. */
+    private static double stagesHalfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
+        double headerW = font.width(menu.typeName()) * TEXT_SCALE + 2 * PAD_X;
+        double toolbarW = font.width("+ Add    – Remove ✓") * TEXT_SCALE + 2 * PAD_X;
+        double maxNameW = 0;
+        for (EditorTypeMenusPacket.Variant v : menu.variants()) {
+            double w = font.width(v.name()) * TEXT_SCALE + 2 * PAD_X;
+            if (w > maxNameW) maxNameW = w;
+        }
+        // Stage rows reserve GATE_AREA_FRACTION for min|max|phase, so the name fits in the rest.
+        double scaledForName = maxNameW / (1.0 - GATE_AREA_FRACTION);
+        double w = Math.max(MIN_HALF_W * 2.0, Math.max(Math.max(headerW, toolbarW), scaledForName));
+        return w / 2.0;
+    }
+
+    /** Cell boundaries for a Stages-panel row: name | min | max | phase (no weight cell). */
+    private record StageRowCells(double nameRight, double minR, double maxR) {
+        double phaseSubW(double rowRight) { return (rowRight - maxR) / PHASE_LETTERS.length; }
+    }
+
+    private static StageRowCells stageRowCells(double rowLeft, double rowRight) {
+        double colW = rowRight - rowLeft;
+        double gateLeft = rowRight - colW * GATE_AREA_FRACTION;
+        double unit = (rowRight - gateLeft) / 3.6; // min | max | phase = 1 | 1 | 1.6
+        double minR = gateLeft + unit;
+        double maxR = minR + unit;
+        return new StageRowCells(gateLeft, minR, maxR);
+    }
+
+    /**
+     * The global Stages management panel: a "Stages" header, an Add / Remove toolbar row, and one
+     * inline-editable row per stage ({@code name | ≥min | ≤max | O N V E}). In remove-mode every stage
+     * row tints red and a click deletes it; otherwise the gate cells edit the stage's gate live.
+     */
+    private static void drawStagesMenu(PoseStack ps, MultiBufferSource buffer, Font font,
+                                       EditorTypeMenusPacket.Menu menu, Hovered hovered) {
+        double halfW = halfWidth(menu, font);
+        double halfH = halfHeight(menu, font);
+        double topY = halfH;
+        boolean removeMode = isStagesRemoveMode();
+
+        drawQuad(ps, buffer, -halfW, -halfH, halfW, halfH, BACKDROP_COLOR);
+
+        // Header.
+        double headerTop = topY, headerBottom = topY - ROW_H, headerCY = (headerTop + headerBottom) / 2.0;
+        drawQuad(ps, buffer, -halfW, headerBottom, halfW, headerTop, HEADER_BG);
+        drawCenteredText(ps, buffer, font, menu.typeName(), 0, headerCY, HEADER_COLOR);
+
+        // Toolbar row: [+ Add] | [– Remove].
+        double tbTop = headerBottom, tbBottom = tbTop - ROW_H, tbCY = (tbTop + tbBottom) / 2.0;
+        drawQuad(ps, buffer, -halfW, tbTop - 0.005, halfW, tbTop + 0.005, ROW_SEP_COLOR);
+        if (removeMode) drawQuad(ps, buffer, 0.005, tbBottom + 0.005, halfW - 0.005, tbTop - 0.005, REMOVE_ROW_BG);
+        if (hovered.cell == CellKind.STAGE_ADD)
+            drawQuad(ps, buffer, -halfW + 0.005, tbBottom + 0.005, -0.005, tbTop - 0.005, HOVER_COLOR);
+        if (hovered.cell == CellKind.STAGE_REMOVE)
+            drawQuad(ps, buffer, 0.005, tbBottom + 0.005, halfW - 0.005, tbTop - 0.005, HOVER_COLOR);
+        drawCenteredText(ps, buffer, font, "+ Add", -halfW / 2.0, tbCY, STAGE_ADD_COLOR);
+        drawCenteredText(ps, buffer, font, removeMode ? "– Remove ✓" : "– Remove", halfW / 2.0, tbCY, STAGE_REMOVE_COLOR);
+
+        // Stage rows.
+        for (int vi = 0; vi < menu.variants().size(); vi++) {
+            EditorTypeMenusPacket.Variant v = menu.variants().get(vi);
+            double rowTop = topY - (vi + 2) * ROW_H;
+            double rowBottom = rowTop - ROW_H;
+            double rowCY = (rowTop + rowBottom) / 2.0;
+            drawQuad(ps, buffer, -halfW, rowTop - 0.005, halfW, rowTop + 0.005, ROW_SEP_COLOR);
+            if (removeMode) drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005, halfW - 0.005, rowTop - 0.005, REMOVE_ROW_BG);
+
+            StageRowCells rc = stageRowCells(-halfW, halfW);
+            CellKind hoverCell = hovered.variantIdx == vi ? hovered.cell : CellKind.NONE;
+            switch (hoverCell) {
+                case NAME -> drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005, rc.nameRight() - 0.005, rowTop - 0.005, HOVER_COLOR);
+                case MIN_LEVEL -> drawQuad(ps, buffer, rc.nameRight() + 0.005, rowBottom + 0.005, rc.minR() - 0.005, rowTop - 0.005, HOVER_COLOR);
+                case MAX_LEVEL -> drawQuad(ps, buffer, rc.minR() + 0.005, rowBottom + 0.005, rc.maxR() - 0.005, rowTop - 0.005, HOVER_COLOR);
+                case PHASE -> {
+                    if (hovered.slotIdx() >= 0 && hovered.slotIdx() < PHASE_LETTERS.length) {
+                        double subW = rc.phaseSubW(halfW);
+                        double l = rc.maxR() + hovered.slotIdx() * subW;
+                        drawQuad(ps, buffer, l + 0.005, rowBottom + 0.005, l + subW - 0.005, rowTop - 0.005, HOVER_COLOR);
+                    }
+                }
+                default -> { }
+            }
+
+            double nameCX = (-halfW + rc.nameRight()) / 2.0;
+            drawCenteredText(ps, buffer, font, v.name(), nameCX, rowCY, removeMode ? STAGE_REMOVE_COLOR : NAME_COLOR);
+            double minCX = (rc.nameRight() + rc.minR()) / 2.0;
+            drawCenteredText(ps, buffer, font, "≥" + v.minLevel(), minCX, rowCY, LEVEL_COLOR);
+            double maxCX = (rc.minR() + rc.maxR()) / 2.0;
+            drawCenteredText(ps, buffer, font, v.maxLevel() < 0 ? "≤∞" : "≤" + v.maxLevel(), maxCX, rowCY, LEVEL_COLOR);
+            double subW = rc.phaseSubW(halfW);
+            for (int slot = 0; slot < PHASE_LETTERS.length; slot++) {
+                boolean on = (v.phaseMask() & (1 << slot)) != 0;
+                double cx = rc.maxR() + (slot + 0.5) * subW;
+                drawCenteredText(ps, buffer, font, PHASE_LETTERS[slot], cx, rowCY, on ? PHASE_ON_COLOR : PHASE_OFF_COLOR);
+            }
+        }
+    }
+
+    private static Hovered hitForStagesMenu(int menuIdx, EditorTypeMenusPacket.Menu menu, Font font,
+                                            double hitX, double hitY) {
+        double halfW = halfWidth(menu, font);
+        double halfH = halfHeight(menu, font);
+        if (hitX < -halfW || hitX > halfW || hitY < -halfH || hitY > halfH) return Hovered.NONE;
+        int rows = rowCount(menu, font);
+        int rowFromTop = (int) Math.floor((halfH - hitY) / ROW_H);
+        if (rowFromTop < 0 || rowFromTop >= rows) return Hovered.NONE;
+        if (rowFromTop == 0) return new Hovered(menuIdx, -1, CellKind.HEADER);
+        if (rowFromTop == 1) {
+            return hitX < 0 ? new Hovered(menuIdx, -1, CellKind.STAGE_ADD)
+                            : new Hovered(menuIdx, -1, CellKind.STAGE_REMOVE);
+        }
+        int variantIdx = rowFromTop - 2;
+        if (variantIdx < 0 || variantIdx >= menu.variants().size()) return Hovered.NONE;
+        StageRowCells rc = stageRowCells(-halfW, halfW);
+        if (hitX < rc.nameRight()) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+        if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
+        if (hitX < rc.maxR()) return new Hovered(menuIdx, variantIdx, CellKind.MAX_LEVEL);
+        double subW = rc.phaseSubW(halfW);
+        int slot = subW > 0 ? (int) ((hitX - rc.maxR()) / subW) : 0;
+        if (slot < 0) slot = 0;
+        if (slot >= PHASE_LETTERS.length) slot = PHASE_LETTERS.length - 1;
+        return new Hovered(menuIdx, variantIdx, CellKind.PHASE, slot);
     }
 
     /**

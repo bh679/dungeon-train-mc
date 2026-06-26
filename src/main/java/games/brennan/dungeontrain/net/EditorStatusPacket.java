@@ -58,7 +58,7 @@ import java.util.Set;
 public record EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode,
                                  int weight, int minLevel, int maxLevel, int phaseMask,
                                  boolean partMenuEnabled, boolean mirrorX, boolean mirrorY, boolean mirrorZ,
-                                 boolean mirrorVariants, Set<String> excludedContents)
+                                 boolean mirrorVariants, Set<String> excludedContents, String stageId)
     implements CustomPacketPayload {
 
     /** Sentinel for "weight is not applicable to this model". */
@@ -74,6 +74,16 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         excludedContents = (excludedContents == null || excludedContents.isEmpty())
             ? Collections.emptySet()
             : Set.copyOf(excludedContents);
+        if (stageId == null) stageId = "";
+    }
+
+    /** Back-compat constructor for Custom (unlinked) statuses — leaves {@code stageId} empty. */
+    public EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode,
+                              int weight, int minLevel, int maxLevel, int phaseMask,
+                              boolean partMenuEnabled, boolean mirrorX, boolean mirrorY, boolean mirrorZ,
+                              boolean mirrorVariants, Set<String> excludedContents) {
+        this(category, model, modelId, modelName, devmode, weight, minLevel, maxLevel, phaseMask,
+            partMenuEnabled, mirrorX, mirrorY, mirrorZ, mirrorVariants, excludedContents, "");
     }
 
     public static final Type<EditorStatusPacket> TYPE =
@@ -87,7 +97,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
 
     public static EditorStatusPacket empty() {
         return new EditorStatusPacket("", "", "", "", false, NO_WEIGHT,
-            0, MAX_LEVEL_ALL, ALL_PHASES_MASK, true, false, false, false, false, Collections.emptySet());
+            0, MAX_LEVEL_ALL, ALL_PHASES_MASK, true, false, false, false, false, Collections.emptySet(), "");
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -107,6 +117,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         buf.writeBoolean(mirrorVariants);
         buf.writeVarInt(excludedContents.size());
         for (String s : excludedContents) buf.writeUtf(s);
+        buf.writeUtf(stageId == null ? "" : stageId, 64);
     }
 
     public static EditorStatusPacket decode(FriendlyByteBuf buf) {
@@ -132,7 +143,8 @@ public record EditorStatusPacket(String category, String model, String modelId, 
             excluded = new LinkedHashSet<>(n);
             for (int i = 0; i < n; i++) excluded.add(buf.readUtf(64));
         }
-        return new EditorStatusPacket(c, m, id, name, d, w, minLv, maxLv, phases, pme, mx, my, mz, mv, excluded);
+        String stageId = buf.readUtf(64);
+        return new EditorStatusPacket(c, m, id, name, d, w, minLv, maxLv, phases, pme, mx, my, mz, mv, excluded, stageId);
     }
 
     @Override
@@ -145,6 +157,6 @@ public record EditorStatusPacket(String category, String model, String modelId, 
             packet.category, packet.model, packet.modelId, packet.modelName,
             packet.devmode, packet.weight, packet.minLevel, packet.maxLevel, packet.phaseMask,
             packet.partMenuEnabled, packet.mirrorX, packet.mirrorY, packet.mirrorZ, packet.mirrorVariants,
-            packet.excludedContents));
+            packet.excludedContents, packet.stageId));
     }
 }

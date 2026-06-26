@@ -329,7 +329,8 @@ public final class VariantOverlayRenderer {
             DungeonTrainNet.sendTo(player, new EditorStatusPacket(
                 "Parts", partModel, partModel, partLoc.name(), partDevmode, EditorStatusPacket.NO_WEIGHT,
                 0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
-                partMenuEnabled, partMirror[0], partMirror[1], partMirror[2], partMirror[3], Collections.emptySet()));
+                partMenuEnabled, partMirror[0], partMirror[1], partMirror[2], partMirror[3],
+                Collections.emptySet(), ""));
             return;
         }
 
@@ -353,6 +354,9 @@ public final class VariantOverlayRenderer {
         int minLevel = gate.minLevel();
         int maxLevel = gate.maxLevel();
         int phaseMask = TrainPhase.toMask(gate.phases());
+        // Stage link for the standing model — the keyboard gate controls render the Stage chip
+        // instead of the editable steppers when this is non-empty.
+        String stageId = l.model().stageId();
         boolean[] mirror = mirrorAxesAt(player, dims);
         // Dedup key includes displayName (not just id) so walking from one
         // named variant to another in the same kind invalidates the cache —
@@ -363,14 +367,14 @@ public final class VariantOverlayRenderer {
             ? ""
             : String.join(",", new TreeSet<>(excludedContents));
         String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight
-            + "|" + minLevel + "|" + maxLevel + "|" + phaseMask
+            + "|" + minLevel + "|" + maxLevel + "|" + phaseMask + "|" + stageId
             + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + mirror[3] + "|" + excludedKey;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
             l.category().displayName(), l.model().displayName(), l.model().id(), modelName,
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
-            mirror[0], mirror[1], mirror[2], mirror[3], excludedContents));
+            mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId));
     }
 
     /**
@@ -680,6 +684,7 @@ public final class VariantOverlayRenderer {
             baseMenus, player, dims, category);
         menus = appendCompanionMenu(menus, player, dims, category);
         menus = appendPackageMenu(menus, dims);
+        menus = appendStagesMenu(menus, dims);
 
         StringBuilder keyBuf = new StringBuilder(64);
         keyBuf.append(category.name()).append('|');
@@ -693,7 +698,10 @@ public final class VariantOverlayRenderer {
                 // otherwise only weight changes would refresh the panel.
                 keyBuf.append(v.name()).append('=').append(v.weight())
                     .append('@').append(v.minLevel()).append('-').append(v.maxLevel())
-                    .append('p').append(v.phaseMask()).append(',');
+                    .append('p').append(v.phaseMask())
+                    // Include the Stage link so linking / detaching re-pushes the snapshot (the chip
+                    // replaces the cells) and the stage rows refresh as stages are added/edited.
+                    .append('s').append(v.stageId()).append(',');
             }
             keyBuf.append("];");
         }
@@ -819,6 +827,24 @@ public final class VariantOverlayRenderer {
             anchor, "Packages", java.util.List.of(),
             false, "", java.util.List.of(), java.util.List.of(),
             /*isPackageMenu*/ true));
+        return out;
+    }
+
+    /**
+     * Append the global Stages management panel (a {@code isStagesMenu} {@link EditorTypeMenusPacket.Menu})
+     * beside the carriages nav menu / package menu, mirroring {@link #appendPackageMenu}. Unlike the
+     * package menu its variant rows carry real data (one gated row per Stage + a "+ New Stage" row),
+     * built by {@link EditorTypeMenus#buildStagesMenu}. Shown in every category so the Stages list is
+     * always reachable next to the template-type list. Unchanged list when there is no anchor.
+     */
+    private static java.util.List<EditorTypeMenusPacket.Menu> appendStagesMenu(
+        java.util.List<EditorTypeMenusPacket.Menu> baseMenus, CarriageDims dims
+    ) {
+        EditorTypeMenusPacket.Menu stages = EditorTypeMenus.buildStagesMenu(dims);
+        if (stages == null) return baseMenus;
+        java.util.List<EditorTypeMenusPacket.Menu> out = new java.util.ArrayList<>(baseMenus.size() + 1);
+        out.addAll(baseMenus);
+        out.add(stages);
         return out;
     }
 

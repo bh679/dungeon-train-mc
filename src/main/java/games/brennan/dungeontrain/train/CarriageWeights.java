@@ -98,10 +98,23 @@ public record CarriageWeights(Map<String, TemplateMeta> byId) {
         return clamp(m.weight());
     }
 
-    /** The spawn {@link TemplateGate gate} for {@code id}, or {@link TemplateGate#DEFAULT} if absent. */
+    /**
+     * The <b>effective</b> spawn {@link TemplateGate gate} for {@code id}: the linked Stage's gate
+     * when this entry is Stage-linked, else its inline gate ({@link TemplateGate#DEFAULT} if absent).
+     * This is what the generator and the editor row display read, so a Stage edit retunes every
+     * linked carriage with no further change. Resolution is an O(1)
+     * {@link games.brennan.dungeontrain.editor.StageStore} map lookup.
+     */
     public TemplateGate gateFor(String id) {
         TemplateMeta m = byId.get(id);
-        return m == null ? TemplateGate.DEFAULT : m.gate();
+        if (m == null) return TemplateGate.DEFAULT;
+        return games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), m.stageId());
+    }
+
+    /** The Stage id this carriage is linked to, or {@code null} when it has a Custom inline gate. */
+    public String stageIdFor(String id) {
+        TemplateMeta m = byId.get(id);
+        return m == null ? null : m.stageId();
     }
 
     public static int clamp(int value) {
@@ -167,6 +180,32 @@ public record CarriageWeights(Map<String, TemplateMeta> byId) {
         LOGGER.info("[DungeonTrain] Set carriage gate {}={} (persisted to {}).",
                 key, gate, configPath());
         return gate;
+    }
+
+    /**
+     * Link {@code id} to the named Stage ({@code stageId}, lower-cased), or detach to Custom when
+     * {@code stageId} is null. On detach the previously-effective gate (the Stage's gate, if it was
+     * linked) is snapshotted into the inline gate so the manual cells reappear pre-filled; on link
+     * the inline gate is kept as the detach snapshot. Weight is preserved. Persists.
+     */
+    public static synchronized String setStage(String id, String stageId) throws IOException {
+        String key = id.toLowerCase(Locale.ROOT);
+        String link = (stageId == null || stageId.isBlank()) ? null : stageId.toLowerCase(Locale.ROOT);
+        Map<String, TemplateMeta> next = new HashMap<>(current.byId());
+        TemplateMeta prev = next.get(key);
+        int weight = prev == null ? DEFAULT : prev.weight();
+        TemplateGate inline = prev == null ? TemplateGate.DEFAULT : prev.gate();
+        // Detach (link == null) from a previously-linked entry: freeze the Stage's current gate.
+        if (link == null && prev != null && prev.stageId() != null) {
+            inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, prev.stageId());
+        }
+        next.put(key, new TemplateMeta(weight, inline, link));
+        current = new CarriageWeights(next);
+        writeConfig(current);
+        trySaveToSource(current);
+        LOGGER.info("[DungeonTrain] Set carriage stage {}={} (persisted to {}).",
+                key, link == null ? "<custom>" : link, configPath());
+        return link;
     }
 
     /**

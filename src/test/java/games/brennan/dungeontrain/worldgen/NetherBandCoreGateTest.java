@@ -42,4 +42,25 @@ final class NetherBandCoreGateTest {
         // Overworld gap before the band (cycle offset < owGap).
         assertFalse(NetherBand.isInNetherBiome(NETHER_ONLY, 50), "overworld-gap column is not Nether");
     }
+
+    @Test
+    @DisplayName("isInNetherBand = netherrack present (netherRamp > 0); it is a superset of the biome core")
+    void bandIsWiderThanCore() {
+        long period = NETHER_ONLY.period();
+        boolean foundBandButNotCore = false;
+        for (int x = -50; x <= period + 50; x++) {
+            boolean band = NetherBand.isInNetherBand(NETHER_ONLY, x);
+            boolean core = NetherBand.isInNetherBiome(NETHER_ONLY, x);
+            // Spec: End-wins, then netherRamp > 0.
+            boolean expected = NETHER_ONLY.endMiddleRamp(x) <= 0.0 && NETHER_ONLY.netherRamp(x) > 0.0;
+            assertEquals(expected, band, "band spec mismatch at worldX=" + x);
+            // Every core column is also in-band (the train phase gate must cover the whole core).
+            if (core) assertTrue(band, "core column must also be in-band at worldX=" + x);
+            if (band && !core) foundBandButNotCore = true;
+        }
+        // The netherrack crossfade (0 < netherRamp < 0.5) is the whole point: in-band, below the core —
+        // so a NETHER-gated template spawns there instead of only deep in the core.
+        assertTrue(foundBandButNotCore,
+            "the netherrack crossfade must read as in-band while below the biome core");
+    }
 }

@@ -80,6 +80,8 @@ public record PartAssignmentSyncPacket(
             buf.writeVarInt(e.gate().minLevel());
             buf.writeVarInt(e.gate().maxLevel());
             buf.writeByte(TrainPhase.toMask(e.gate().phases()));
+            // Optional Stage link — empty when Custom (inline gate).
+            buf.writeUtf(e.stageId() == null ? "" : e.stageId());
         }
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
@@ -115,7 +117,8 @@ public record PartAssignmentSyncPacket(
             int maxLevel = buf.readVarInt();
             int phaseMask = buf.readByte() & 0xFF;
             TemplateGate gate = new TemplateGate(minLevel, maxLevel, TrainPhase.fromMask(phaseMask));
-            entries.add(new WeightedName(name, weight, mode, endMode, gate));
+            String stageId = buf.readUtf(64);
+            entries.add(new WeightedName(name, weight, mode, endMode, gate, stageId));
         }
         Vec3 anchor = readVec3(buf);
         Vec3 right  = readVec3(buf);
