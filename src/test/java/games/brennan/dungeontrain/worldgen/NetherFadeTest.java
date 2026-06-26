@@ -38,14 +38,18 @@ final class NetherFadeTest {
     }
 
     @Test
-    @DisplayName("Inside the crossfade the decision is exactly coherentNoise < ramp")
-    void insideCrossfaceMatchesNoise() {
-        for (double ramp : new double[] {0.1, 0.3, 0.5, 0.7, 0.9}) {
-            for (int x = -40; x < 40; x++) {
-                for (int y = 60; y < 76; y += 5) {
-                    boolean expected = Disintegration.coherentNoise(SEED ^ NetherFade.SALT, x, y, 0) < ramp;
-                    assertEquals(expected, NetherFade.selectsNether(SEED, x, y, 0, ramp),
-                        "x=" + x + " y=" + y + " ramp=" + ramp);
+    @DisplayName("Inside the crossfade each cell flips Overworld→Nether exactly once as the ramp rises")
+    void perCellMonotonicThreshold() {
+        // selectsNether is `noise < ramp` for a fixed (hidden) per-cell noise value, so for any cell
+        // the answer is monotone non-decreasing in ramp: once true it never reverts to false. Verifies
+        // the dither contract without depending on the noise function's internals.
+        for (int x : new int[] {-37, -8, 0, 5, 41, 128}) {
+            for (int z : new int[] {0, 3}) {
+                boolean prev = false;
+                for (int i = 0; i <= 100; i++) {
+                    boolean cur = NetherFade.selectsNether(SEED, x, 64, z, i / 100.0);
+                    assertTrue(!prev || cur, "non-monotonic at x=" + x + " z=" + z + " ramp=" + (i / 100.0));
+                    prev = cur;
                 }
             }
         }

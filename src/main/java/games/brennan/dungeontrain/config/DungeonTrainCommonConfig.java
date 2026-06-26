@@ -124,7 +124,7 @@ public final class DungeonTrainCommonConfig {
     /** Blocks over which the mountain rock crossfades to netherrack on each side of the core. */
     public static final int MIN_NETHER_CORE_FADE_BLOCKS = 0;
     public static final int MAX_NETHER_CORE_FADE_BLOCKS = 10_000;
-    public static final int DEFAULT_NETHER_CORE_FADE_BLOCKS = 120;
+    public static final int DEFAULT_NETHER_CORE_FADE_BLOCKS = 600;
     /** Blocks of real Nether world-gen at the centre of the band. */
     public static final int MIN_NETHER_CORE_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_CORE_HOLD_BLOCKS = 100_000_000;
@@ -302,7 +302,8 @@ public final class DungeonTrainCommonConfig {
                         MIN_NETHER_MOUNTAIN_HOLD_BLOCKS, MAX_NETHER_MOUNTAIN_HOLD_BLOCKS);
         ModConfigSpec.IntValue netherCoreFadeBlocks = b
                 .comment("Blocks over which the mountain rock crossfades to netherrack on each side of the core (the",
-                        "'netherrack' transition stage). Default 120.")
+                        "'netherrack' transition stage). Also the span the tunnel/track block-level fade dithers",
+                        "across. Default 600.")
                 .defineInRange("netherCoreFadeBlocks", DEFAULT_NETHER_CORE_FADE_BLOCKS,
                         MIN_NETHER_CORE_FADE_BLOCKS, MAX_NETHER_CORE_FADE_BLOCKS);
         ModConfigSpec.IntValue netherCoreHoldBlocks = b
