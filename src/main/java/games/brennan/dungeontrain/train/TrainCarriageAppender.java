@@ -213,8 +213,27 @@ public final class TrainCarriageAppender {
 
     /** True while {@code trainId} is inside its (renewing) resume-recovery grace window. */
     private static boolean isResumeHoldActive(UUID trainId, long nowTick) {
-        Long until = RESUME_GRACE_UNTIL_TICK.get(trainId);
-        return until != null && nowTick <= until;
+        return withinResumeGrace(RESUME_GRACE_UNTIL_TICK.get(trainId), nowTick);
+    }
+
+    /**
+     * Pure core: is the resume-grace window still open at {@code nowTick}? The window is open
+     * (inclusive) up to and including its deadline tick; a {@code null} deadline means no grace
+     * was ever granted (a normal walk-away, not a pause/resume). Package-private + pure for unit
+     * testing alongside {@link #shouldRetainOnWalkAway} / {@link #decideEdgeAction}.
+     */
+    static boolean withinResumeGrace(Long graceUntilTick, long nowTick) {
+        return graceUntilTick != null && nowTick <= graceUntilTick;
+    }
+
+    /**
+     * Pure core: may {@link #updateTrain}'s bail still renew the grace this tick? Only while the
+     * recovery hasn't reached its hard cap (measured from the resume start), so a genuine
+     * post-resume walk-away eventually stops renewing and releases instead of holding forever. A
+     * {@code null} start means no active recovery — never renew.
+     */
+    static boolean shouldRenewResumeGrace(Long startedAtTick, long nowTick, int capTicks) {
+        return startedAtTick != null && nowTick - startedAtTick < capTicks;
     }
 
     /**
@@ -1589,10 +1608,8 @@ public final class TrainCarriageAppender {
             // genuine walk-away (no pause) never sets a grace deadline, so it releases as
             // before.
             long nowTick = level.getGameTime();
-            Long graceUntil = RESUME_GRACE_UNTIL_TICK.get(trainId);
-            if (graceUntil != null && nowTick <= graceUntil) {
-                Long startedAt = RESUME_STARTED_TICK.get(trainId);
-                if (startedAt != null && nowTick - startedAt < RESUME_HOLD_CAP_TICKS) {
+            if (withinResumeGrace(RESUME_GRACE_UNTIL_TICK.get(trainId), nowTick)) {
+                if (shouldRenewResumeGrace(RESUME_STARTED_TICK.get(trainId), nowTick, RESUME_HOLD_CAP_TICKS)) {
                     RESUME_GRACE_UNTIL_TICK.put(trainId, nowTick + RESUME_GRACE_RENEW_TICKS);
                 }
                 return false; // resume grace active — hold the window, do not release

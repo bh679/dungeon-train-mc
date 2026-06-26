@@ -366,4 +366,36 @@ final class TrainCarriageAppenderTest {
     void retain_serialized_releasable() {
         assertFalse(TrainCarriageAppender.shouldRetainOnWalkAway(true));
     }
+
+    // ---- Resume-grace window state machine (pause/resume regen fix) ----
+    //
+    // withinResumeGrace + shouldRenewResumeGrace are the pure cores behind the updateTrain
+    // walk-away bail: on a singleplayer resume, ResumeWatchdog grants a grace deadline; the
+    // bail holds the force-loads (and the whole-train resume-hold) while the window is open,
+    // renewing it each tick the rider is still not near — but only until a hard cap measured
+    // from the resume start, so a genuine post-resume walk-away eventually releases.
+
+    @Test
+    @DisplayName("withinResumeGrace: no deadline (normal walk-away) → not held")
+    void grace_noDeadline_notHeld() {
+        assertFalse(TrainCarriageAppender.withinResumeGrace(null, 100L));
+    }
+
+    @Test
+    @DisplayName("withinResumeGrace: open through the deadline tick (inclusive), closed after")
+    void grace_inclusiveDeadline() {
+        assertTrue(TrainCarriageAppender.withinResumeGrace(150L, 100L));  // before
+        assertTrue(TrainCarriageAppender.withinResumeGrace(150L, 150L));  // exactly at deadline
+        assertFalse(TrainCarriageAppender.withinResumeGrace(150L, 151L)); // past deadline
+    }
+
+    @Test
+    @DisplayName("shouldRenewResumeGrace: renews within the cap, stops at/after it")
+    void grace_renewUntilCap() {
+        int cap = 200;
+        assertFalse(TrainCarriageAppender.shouldRenewResumeGrace(null, 50L, cap)); // no recovery
+        assertTrue(TrainCarriageAppender.shouldRenewResumeGrace(0L, 199L, cap));   // within cap
+        assertFalse(TrainCarriageAppender.shouldRenewResumeGrace(0L, 200L, cap));  // exactly at cap
+        assertFalse(TrainCarriageAppender.shouldRenewResumeGrace(0L, 260L, cap));  // past cap → release
+    }
 }
