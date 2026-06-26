@@ -2707,6 +2707,18 @@
       "released": true,
       "released_in": "v0.371.0",
       "released_at": "2026-06-26T14:30:22Z"
+    },
+    {
+      "id": "feedback-kill-allowlist",
+      "version": "0.372.0",
+      "type": "fix",
+      "title": "/feedback allowed in Free Play; /kill restricted to self only",
+      "summary": "Using /feedback (the bug-report command) no longer flags your run as Free Play. /kill with a target selector (e.g. /kill @e) now correctly taints the run \u2014 only bare /kill (self) remains clean.",
+      "highlights": [],
+      "date": "2026-06-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
