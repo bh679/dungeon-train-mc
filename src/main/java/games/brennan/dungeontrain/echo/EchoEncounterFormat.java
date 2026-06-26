@@ -27,6 +27,11 @@ final class EchoEncounterFormat {
         StringBuilder out = new StringBuilder();
         out.append(opener(playerName, enc));
 
+        String items = items(enc);
+        if (items != null) {
+            out.append(' ').append(items);
+        }
+
         String middle = middle(playerName, enc);
         if (!middle.isEmpty()) {
             out.append("\n\n").append(middle);
@@ -41,6 +46,22 @@ final class EchoEncounterFormat {
                 : "";
         return "A remote echo of " + enc.sourceName + where
                 + " stepped aboard " + playerName + "'s train.";
+    }
+
+    /**
+     * One sentence naming the echo's most notable gear (already rendered with stats/enchants/trim),
+     * or {@code null} when it carried nothing worth mentioning. Sits right after the opener as
+     * scene-setting before the action.
+     */
+    private static String items(EchoEncounter enc) {
+        List<String> items = enc.bestItems;
+        if (items.isEmpty()) {
+            return null;
+        }
+        if (items.size() == 1) {
+            return "It still bore " + items.get(0) + ".";
+        }
+        return "It still bore " + items.get(0) + " and " + items.get(1) + ".";
     }
 
     /** The middle beats (everything but SPAWNED), each as a sentence, joined into one paragraph. */

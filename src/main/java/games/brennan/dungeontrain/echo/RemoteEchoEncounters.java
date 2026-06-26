@@ -57,8 +57,11 @@ public final class RemoteEchoEncounters {
     /** Embed bar colour for the encounter story — greyish-blue (Blue Grey), distinct from death-red. */
     private static final int EMBED_COLOR = 0x607D8B;
 
+    /** How many of the echo's items the story names. */
+    private static final int HIGHLIGHT_ITEM_COUNT = 2;
+
     /** Echo spawned but no player was within range at the time; promoted to ACTIVE on first close approach. */
-    private record PendingEcho(ResourceKey<Level> dimension, ReincarnationRecord record) {}
+    private record PendingEcho(ResourceKey<Level> dimension, ReincarnationRecord record, List<String> bestItems) {}
     private static final Map<UUID, PendingEcho> PENDING = new HashMap<>();
 
     private static final Map<UUID, EchoEncounter> ACTIVE = new HashMap<>();
@@ -76,16 +79,19 @@ public final class RemoteEchoEncounters {
         if (!DungeonTrainConfig.isEchoEncounterToDiscord()) return;
         if (!(mob.level() instanceof ServerLevel level)) return;
         if (ACTIVE.size() >= MAX_ACTIVE) return;
+        // The mob is fully geared by now (PlayerMob applies the snapshot before this seam fires), and
+        // it is often gone by post-time — so snapshot its best items here, once, for the story.
+        List<String> bestItems = EchoItemHighlights.topItems(mob, HIGHLIGHT_ITEM_COUNT);
         Player nearest = level.getNearestPlayer(mob, PRIMARY_PLAYER_RADIUS);
         if (!(nearest instanceof ServerPlayer player)) {
             // No audience in range yet — park for retroactive promotion in scan().
-            PENDING.put(mob.getUUID(), new PendingEcho(level.dimension(), record));
+            PENDING.put(mob.getUUID(), new PendingEcho(level.dimension(), record, bestItems));
             return;
         }
 
         UUID echoId = mob.getUUID();
         EchoEncounter enc = new EchoEncounter(echoId, level.dimension(), record.playerId(),
-                record.name(), player.getUUID(), record.carriage(), level.getGameTime());
+                record.name(), player.getUUID(), record.carriage(), level.getGameTime(), bestItems);
         enc.log(EchoEvent.SPAWNED);
         enc.lastOnDeck = CarriageDeck.isOnCarriageDeck(Trains.allCarriages(level), mob);
         ACTIVE.put(echoId, enc);
@@ -188,7 +194,8 @@ public final class RemoteEchoEncounters {
                 if (carriages == null) carriages = Trains.allCarriages(level);
                 ReincarnationRecord rec = entry.getValue().record();
                 EchoEncounter enc = new EchoEncounter(echo.getUUID(), level.dimension(),
-                        rec.playerId(), rec.name(), player.getUUID(), rec.carriage(), tick);
+                        rec.playerId(), rec.name(), player.getUUID(), rec.carriage(), tick,
+                        entry.getValue().bestItems());
                 enc.log(EchoEvent.SPAWNED);
                 enc.log(EchoEvent.MET);
                 enc.lastOnDeck = CarriageDeck.isOnCarriageDeck(carriages, echo);
@@ -226,7 +233,8 @@ public final class RemoteEchoEncounters {
             if (player != null) {
                 EchoEncounter enc = new EchoEncounter(victimId, level.dimension(),
                         pending.record().playerId(), pending.record().name(),
-                        player.getUUID(), pending.record().carriage(), level.getGameTime());
+                        player.getUUID(), pending.record().carriage(), level.getGameTime(),
+                        pending.bestItems());
                 enc.log(EchoEvent.SPAWNED);
                 boolean byPrimary = killer instanceof ServerPlayer p && p.getUUID().equals(player.getUUID());
                 post(level, enc, byPrimary ? EndReason.ECHO_SLAIN_BY_YOU : EndReason.ECHO_SLAIN);

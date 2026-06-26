@@ -31,6 +31,8 @@ final class EchoEncounter {
     /** The carriage depth the echo is themed to (where the source player died); {@code <0} if unknown. */
     final int sourceCarriage;
     final long spawnTick;
+    /** Up to two pre-rendered descriptors of the echo's most notable items, best-first; never null. */
+    final List<String> bestItems;
 
     private final List<EchoEvent> beats = new ArrayList<>();
     private final EnumSet<EchoEvent> seen = EnumSet.noneOf(EchoEvent.class);
@@ -43,7 +45,7 @@ final class EchoEncounter {
     byte[] photo = null;
 
     EchoEncounter(UUID echoId, ResourceKey<Level> dimension, UUID sourcePlayerId, String sourceName,
-                  UUID primaryPlayerId, int sourceCarriage, long spawnTick) {
+                  UUID primaryPlayerId, int sourceCarriage, long spawnTick, List<String> bestItems) {
         this.echoId = echoId;
         this.dimension = dimension;
         this.sourcePlayerId = sourcePlayerId;
@@ -51,6 +53,7 @@ final class EchoEncounter {
         this.primaryPlayerId = primaryPlayerId;
         this.sourceCarriage = sourceCarriage;
         this.spawnTick = spawnTick;
+        this.bestItems = bestItems == null ? List.of() : List.copyOf(bestItems);
     }
 
     /** Record a beat the first time it happens; later repeats are ignored. Returns true if newly logged. */
