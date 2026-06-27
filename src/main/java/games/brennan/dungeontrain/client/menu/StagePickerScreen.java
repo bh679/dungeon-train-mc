@@ -39,6 +39,11 @@ public final class StagePickerScreen implements MenuScreen {
     private final CarriagePartKind partsKind;
     private final String partsName;
 
+    // Group-member mode (Sub-Variants companion).
+    private final boolean groupMemberMode;
+    private final String groupParentId;
+    private final String groupMemberId;
+
     public StagePickerScreen(String category, String modelId, String modelName, String currentStageId) {
         this.category = category == null ? "" : category;
         this.modelId = modelId == null ? "" : modelId;
@@ -48,6 +53,9 @@ public final class StagePickerScreen implements MenuScreen {
         this.partsVariantId = "";
         this.partsKind = null;
         this.partsName = "";
+        this.groupMemberMode = false;
+        this.groupParentId = "";
+        this.groupMemberId = "";
     }
 
     private StagePickerScreen(String variantId, CarriagePartKind kind, String name, String currentStageId) {
@@ -59,11 +67,36 @@ public final class StagePickerScreen implements MenuScreen {
         this.category = "";
         this.modelId = "";
         this.modelName = "";
+        this.groupMemberMode = false;
+        this.groupParentId = "";
+        this.groupMemberId = "";
+    }
+
+    private StagePickerScreen(String parentId, String memberId, String currentStageId) {
+        this.groupMemberMode = true;
+        this.groupParentId = parentId == null ? "" : parentId;
+        this.groupMemberId = memberId == null ? "" : memberId;
+        this.currentStageId = currentStageId == null ? "" : currentStageId;
+        this.partsMode = false;
+        this.partsVariantId = "";
+        this.partsKind = null;
+        this.partsName = "";
+        this.category = "";
+        this.modelId = "";
+        this.modelName = "";
     }
 
     /** Picker for a carriage-part entry — links it via a {@link PartAssignmentEditPacket} on pick. */
     public static StagePickerScreen forParts(String variantId, CarriagePartKind kind, String name, String currentStageId) {
         return new StagePickerScreen(variantId, kind, name, currentStageId);
+    }
+
+    /**
+     * Picker for a contents <em>group member</em> (Sub-Variants companion row) — links it via the
+     * {@code stage apply contents-group <parent> <member> <token>} command on pick.
+     */
+    public static StagePickerScreen forGroupMember(String parentId, String memberId, String currentStageId) {
+        return new StagePickerScreen(parentId, memberId, currentStageId);
     }
 
     @Override
@@ -97,6 +130,10 @@ public final class StagePickerScreen implements MenuScreen {
                     PartAssignmentEditPacket.Op.SET_STAGE, partsVariantId, partsKind, partsName, 0, stageId));
                 CommandMenuState.close();
             });
+        }
+        if (groupMemberMode) {
+            String cmd = EditorPlotTeleport.groupMemberStageApplyCommandFor(groupParentId, groupMemberId, token);
+            return new CommandMenuEntry.Run(label, cmd, highlighted);
         }
         String cmd = EditorPlotTeleport.stageApplyCommandFor(category, modelId, modelName, token);
         return new CommandMenuEntry.Run(label, cmd, highlighted);

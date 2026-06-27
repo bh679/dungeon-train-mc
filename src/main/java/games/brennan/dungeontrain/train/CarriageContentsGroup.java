@@ -3,11 +3,14 @@ package games.brennan.dungeontrain.train;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import games.brennan.dungeontrain.template.TemplateGate;
+import games.brennan.dungeontrain.template.TemplateWeightCodec;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Random;
 
 /**
@@ -19,14 +22,16 @@ import java.util.Random;
  * sidecar alongside the parent's optional {@code .nbt} (group-only parents
  * have no {@code .nbt} — the group resolution short-circuits placement).</p>
  *
- * <p>JSON schema:</p>
+ * <p>JSON schema (v2 — each member may carry an optional spawn gate / Stage link, omitted when
+ * ungated so v1 sidecars round-trip unchanged):</p>
  * <pre>
  * {
- *   "schemaVersion": 1,
+ *   "schemaVersion": 2,
  *   "selfWeight": 1,
  *   "variants": [
  *     {"id": "container_wooden", "weight": 5},
- *     {"id": "container_metal",  "weight": 2}
+ *     {"id": "piglin", "weight": 2, "minLevel": 4, "phases": ["NETHER"]},
+ *     {"id": "cagedzombie", "weight": 2, "stage": "early"}
  *   ]
  * }
  * </pre>
@@ -44,7 +49,8 @@ import java.util.Random;
 public record CarriageContentsGroup(int selfWeight, List<Member> members) {
 
     public static final String SCHEMA_KEY = "schemaVersion";
-    public static final int SCHEMA_VERSION = 1;
+    /** v2 added per-member spawn gate + Stage link. v1 sidecars (id+weight only) read as ungated. */
+    public static final int SCHEMA_VERSION = 2;
 
     /** Minimum allowed member weight. 0 excludes the member from the draw. */
     public static final int MIN_WEIGHT = 0;
@@ -58,8 +64,14 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
     /** Shared zero-member sentinel — "no group" should use {@code Optional.empty()} at the store level instead. */
     public static final CarriageContentsGroup EMPTY = new CarriageContentsGroup(Collections.emptyList());
 
-    /** Single weighted entry in the group. */
-    public record Member(String id, int weight) {
+    /**
+     * Single weighted entry in the group, with an optional per-member spawn {@link TemplateGate gate}
+     * and {@link #stageId() Stage link}. Mirrors {@code TemplateMeta} at the member level: when
+     * {@code stageId != null} the linked Stage's gate is the effective gate; otherwise {@code gate}
+     * (the inline Custom gate) applies. A bare {@code (id, weight)} member is eligible everywhere —
+     * identical to the pre-gate behaviour.
+     */
+    public record Member(String id, int weight, TemplateGate gate, String stageId) {
         public Member {
             if (id == null) throw new IllegalArgumentException("Member id must not be null");
             String norm = id.toLowerCase(Locale.ROOT);
@@ -69,7 +81,21 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
             }
             id = norm;
             weight = clampWeight(weight);
+            if (gate == null) gate = TemplateGate.DEFAULT;
+            if (stageId != null) {
+                String s = stageId.trim().toLowerCase(Locale.ROOT);
+                stageId = s.isEmpty() ? null : s;
+            }
         }
+
+        /** Back-compat: a member with the default (eligible-everywhere) gate and no Stage link. */
+        public Member(String id, int weight) {
+            this(id, weight, TemplateGate.DEFAULT, null);
+        }
+
+        public Member withWeight(int newWeight) { return new Member(id, newWeight, gate, stageId); }
+        public Member withGate(TemplateGate newGate) { return new Member(id, weight, newGate, stageId); }
+        public Member withStage(String newStageId) { return new Member(id, weight, gate, newStageId); }
     }
 
     public CarriageContentsGroup {
@@ -106,6 +132,16 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
 
     public boolean isEmpty() {
         return members.isEmpty();
+    }
+
+    /** The member with {@code id} (case-insensitive), or empty when this group has no such member. */
+    public Optional<Member> member(String id) {
+        if (id == null) return Optional.empty();
+        String norm = id.toLowerCase(Locale.ROOT);
+        for (Member m : members) {
+            if (m.id().equals(norm)) return Optional.of(m);
+        }
+        return Optional.empty();
     }
 
     /**
@@ -174,6 +210,10 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
             JsonObject entry = new JsonObject();
             entry.addProperty("id", m.id());
             entry.addProperty("weight", m.weight());
+            // Non-default gate fields (minLevel/maxLevel/phases) + optional Stage link — omitted when
+            // the member is ungated, so v1-shaped members round-trip byte-identically.
+            TemplateWeightCodec.writeGateFields(entry, m.gate());
+            if (m.stageId() != null) entry.addProperty(TemplateWeightCodec.K_STAGE, m.stageId());
             arr.add(entry);
         }
         o.add("variants", arr);
@@ -220,7 +260,8 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
                     weight = DEFAULT_WEIGHT;
                 }
             }
-            out.add(new Member(norm, weight));
+            out.add(new Member(norm, weight,
+                TemplateWeightCodec.parseGate(entry), TemplateWeightCodec.parseStage(entry)));
         }
         return new CarriageContentsGroup(selfWeight, out);
     }

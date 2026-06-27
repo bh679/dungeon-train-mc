@@ -914,9 +914,18 @@ public final class VariantOverlayRenderer {
             for (var m : groupOpt.get().members()) {
                 EditorPlotLabels.Provenance memberProv = EditorPlotLabels.provenanceOf(
                     games.brennan.dungeontrain.editor.CarriageContentsStore.fileForId(m.id()));
+                // Members carry a per-member spawn gate + optional Stage link — surface the same
+                // gate/Stage cells the top-level Contents rows use. The leading "(default)" self-row
+                // above stays weight-only (it inherits the parent's top-level gate).
+                games.brennan.dungeontrain.template.TemplateGate g =
+                    StageStore.effectiveGate(m.gate(), m.stageId());
                 rows.add(new EditorTypeMenusPacket.Variant(
-                    m.id(), m.weight(), cat, m.id(), m.id(),
-                    memberProv.isUser(), memberProv.isImported()));
+                    m.id(), m.weight(),
+                    g.minLevel(), g.maxLevel(),
+                    games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
+                    cat, m.id(), m.id(),
+                    memberProv.isUser(), memberProv.isImported(),
+                    m.stageId() == null ? "" : m.stageId()));
             }
         }
 

@@ -97,6 +97,35 @@ public final class EditorPlotTeleport {
     }
 
     /**
+     * Build the slash command bumping a group <em>member</em>'s spawn-gate level bound
+     * ({@code sub} = {@code minlevel}/{@code maxlevel}) in {@code dir} ({@code inc}/{@code dec}).
+     * The member ({@code memberId}) lives in {@code parentId}'s {@code .group.json} sidecar. Mirrors
+     * {@link #levelCommandFor} but targets a group member instead of a top-level contents id.
+     */
+    public static String groupMemberLevelCommandFor(String parentId, String memberId, String sub, String dir) {
+        return "dungeontrain editor contents group " + sub + " " + parentId + " " + memberId + " " + dir;
+    }
+
+    /**
+     * Build the slash command toggling a group member's spawn-gate dimension
+     * ({@code phaseToken} = {@code overworld|nether|void|end}; {@code action} = {@code on}/{@code off}/
+     * {@code others}). Mirrors {@link #phaseCommandFor} for a group member.
+     */
+    public static String groupMemberPhaseCommandFor(String parentId, String memberId,
+                                                    String phaseToken, String action) {
+        return "dungeontrain editor contents group phase " + parentId + " " + memberId
+            + " " + phaseToken + " " + action;
+    }
+
+    /**
+     * Build the slash command linking a group member to a Stage ({@code stageToken} = a stage id, or
+     * {@code custom} to detach). Mirrors {@link #stageApplyCommandFor} for a group member.
+     */
+    public static String groupMemberStageApplyCommandFor(String parentId, String memberId, String stageToken) {
+        return "dungeontrain editor stage apply contents-group " + parentId + " " + memberId + " " + stageToken;
+    }
+
+    /**
      * Build the slash command that links the template identified by
      * {@code (category, modelId, modelName)} to a Stage ({@code stageToken} = a stage id, or
      * {@code custom} to detach). Mirrors {@link #levelCommandFor}'s category mapping; null for
