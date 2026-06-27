@@ -1117,6 +1117,9 @@ public final class NarrativeDeathScreen extends Screen {
                 } else {
                     Component submit = Component.translatable("gui.dungeontrain.death.narr.bug_submit");
                     int sw = this.font.width(submit) + 16;
+                    // Prompt above the button inviting a report (red state only).
+                    drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.narr.bug_prompt"),
+                            slotX + sw / 2, rowY - this.font.lineHeight - 2, BTN_BUG_LIGHT);
                     bugReportRect = drawBevel(g, slotX, rowY, sw, h, submit, BTN_BUG_BG, BTN_BUG_LIGHT, BTN_DARK, BTN_BUG_TEXT);
                 }
             } else if (page.kind() == Kind.SURVEY && page.survey() != null

@@ -96,6 +96,7 @@
   "gui.dungeontrain.death.narr.bug_intro": "The creator also keeps a fault-log — telling what broke helps mend the line.",
   "gui.dungeontrain.death.narr.bug_comment_hint": "Please share as much details as possible",
   "gui.dungeontrain.death.narr.bug_log_notice": "Your recent game logs will be attached to help diagnose this.",
+  "gui.dungeontrain.death.narr.bug_prompt": "Did you hit a bug?",
   "gui.dungeontrain.death.narr.bug_submit": "Submit Bug",
   "gui.dungeontrain.death.narr.bug_submitted": "Bug Submitted",
   "gui.dungeontrain.death.narr.feedback_sent": "Sent",
