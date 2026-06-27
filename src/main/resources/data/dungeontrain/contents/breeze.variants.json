@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 8,
+  "variants": {
+    "3,0,2": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:breeze", "difficulty": {"min": 10, "max": "all"}}, {"state": "minecraft:copper_block", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,0,0": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:breeze", "difficulty": {"min": 15, "max": "all"}}, {"state": "minecraft:copper_block", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,0,4": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:breeze", "difficulty": {"min": 20, "max": "all"}}, {"state": "minecraft:copper_block", "rotation": {"mode": "lock", "dirs": ["north"]}}]
+  }
+}
