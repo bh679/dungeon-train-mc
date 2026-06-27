@@ -2734,6 +2734,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "carriage-stage-theme-sync",
+      "version": "0.372.0",
+      "type": "fix",
+      "title": "Carriages switch theme in step with the world around them",
+      "summary": "Train carriages now change their look to match the dimension they're passing through right at the border, instead of lagging far behind it. Crossing into the End from the void and back into the Overworld from the Nether now re-theme the train promptly.",
+      "highlights": [
+        "No more stretches of out-of-place carriages deep into the End or after leaving the Nether"
+      ],
+      "date": "2026-06-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
