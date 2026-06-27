@@ -2829,6 +2829,18 @@
       "released": true,
       "released_in": "v0.375.0",
       "released_at": "2026-06-27T14:49:53Z"
+    },
+    {
+      "id": "echo-stat-decimal",
+      "version": "0.375.1",
+      "type": "fix",
+      "title": "Echo item stat rounding",
+      "summary": "Echo item stats now round to one decimal place (e.g. 7.5 attack), dropping the trailing .0 for whole numbers",
+      "highlights": [],
+      "date": "2026-06-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

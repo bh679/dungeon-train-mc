@@ -222,8 +222,7 @@ final class EchoItemHighlights {
         return pattern + " trim in " + material;
     }
 
-    /** Drop a trailing ".0" so whole stats read "8" not "8.0". */
     private static String number(double value) {
-        return value == Math.rint(value) ? Integer.toString((int) value) : Double.toString(value);
+        return value == Math.rint(value) ? Integer.toString((int) value) : String.format("%.1f", value);
     }
 }
