@@ -908,7 +908,10 @@ public final class NarrativeDeathScreen extends Screen {
             if (pages.get(i).kind() == Kind.SURVEY) surveyOrdinal++;
         }
         String introKey;
-        if (surveyOrdinal <= 1) {
+        if (e != null && e.id().equals(BUG_REPORT_ID)) {
+            // The bug question is practical, not an emotional feedback plea — use its own short intro.
+            introKey = "gui.dungeontrain.death.narr.bug_intro";
+        } else if (surveyOrdinal <= 1) {
             introKey = "gui.dungeontrain.death.narr.survey_intro";
         } else {
             if (surveyIntro2Choice < 0) {
@@ -923,23 +926,25 @@ public final class NarrativeDeathScreen extends Screen {
             y += 4;
             int selected = scores.getOrDefault(e.id(), -1);
             if (!e.options().isEmpty()) {
-                // Multiple-choice: full-width labelled tiles stacked vertically (option labels don't
-                // fit a compact numeric row). The chosen 0-based index is stored as the score.
+                // Multiple-choice: labelled tiles in a single row across the content width. The chosen
+                // 0-based index is stored as the score.
                 List<String> options = e.options();
-                int boxW = Math.min(w, 256);
-                int tileH = 18, gap = 4;
-                int sx = cx - boxW / 2;
-                for (int i = 0; i < options.size(); i++) {
+                int n = options.size();
+                int gap = 4;
+                int cellW = (w - (n - 1) * gap) / n;
+                int tileH = 20;
+                int sx = cx - w / 2;
+                for (int i = 0; i < n; i++) {
                     int value = e.scaleMin() + i; // scaleMin is 0 for choices → value is the index
-                    int ty = y + i * (tileH + gap);
+                    int tx = sx + i * (cellW + gap);
                     boolean sel = selected == value;
-                    g.fill(sx, ty, sx + boxW, ty + tileH, fade(sel ? BTN_PRI_BG : SCORE_BG));
-                    drawBorder(g, sx, ty, boxW, tileH, sel ? BTN_PRI_LIGHT : SCORE_BORDER);
-                    drawCenteredStr(g, options.get(i), cx, ty + (tileH - this.font.lineHeight) / 2 + 1,
+                    g.fill(tx, y, tx + cellW, y + tileH, fade(sel ? BTN_PRI_BG : SCORE_BG));
+                    drawBorder(g, tx, y, cellW, tileH, sel ? BTN_PRI_LIGHT : SCORE_BORDER);
+                    drawCenteredStr(g, options.get(i), tx + cellW / 2, y + (tileH - this.font.lineHeight) / 2 + 1,
                             sel ? 0xFFFFFFFF : SCORE_TEXT);
-                    scoreRects.add(new Rect(sx, ty, boxW, tileH));
+                    scoreRects.add(new Rect(tx, y, cellW, tileH));
                 }
-                y += options.size() * (tileH + gap) + 4;
+                y += tileH + 8;
             } else if (e.scaleMax() >= e.scaleMin()) {
                 // The 0–N rating row — only for scale questions. A text question
                 // (scaleMax < scaleMin) shows no tiles; its answer box is the sole input.
