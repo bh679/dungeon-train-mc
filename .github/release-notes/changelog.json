@@ -2813,6 +2813,22 @@
       "released": true,
       "released_in": "v0.374.0",
       "released_at": "2026-06-27T14:17:16Z"
+    },
+    {
+      "id": "death-screen-bug-button",
+      "version": "0.375.0",
+      "type": "feat",
+      "title": "Report a bug straight from the death screen",
+      "summary": "When a run ends, a new red \"Submit Bug\" button on the death screen takes you straight to the bug-report question \u2014 no paging through every feedback prompt \u2014 and your recent logs ride along to help diagnose it. Once you've answered, the button turns green to confirm the report was sent, and any feedback question you've already answered now shows a \"Sent\" badge.",
+      "highlights": [
+        "New \"Submit Bug\" shortcut on the death screen jumps straight to the bug report, under a \"Did you hit a bug?\" prompt.",
+        "Feedback questions now show a green \"Sent\" badge once your answer has been submitted."
+      ],
+      "pr": 613,
+      "date": "2026-06-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
