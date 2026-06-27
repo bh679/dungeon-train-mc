@@ -2764,6 +2764,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "evoker-breeze-elder-enemies",
+      "version": "0.373.0",
+      "type": "content",
+      "title": "New enemy carriages: Evoker, Breeze, and Elder Guardian",
+      "summary": "Three new enemy carriage types have been added to the train \u2014 Evoker, Breeze, and Elder Guardian \u2014 each with their own loot. The stone stage now scales up to level 10.",
+      "highlights": [
+        "Evoker carriage with totem and rare loot",
+        "Breeze carriage with wind charge drops",
+        "Elder Guardian carriage with mining fatigue threat",
+        "Stone stage extended to max level 10"
+      ],
+      "date": "2026-06-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
