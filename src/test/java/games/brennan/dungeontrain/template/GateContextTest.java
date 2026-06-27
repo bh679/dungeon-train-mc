@@ -11,7 +11,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * from. {@link GateContext#groupAnchorPIdx} is the carriage-INDEX anchor (Diff-Level frame, matches
  * the HUD/mobs); {@link GateContext#groupRealStartX} is the REAL overworld X of the group (dimension
  * frame, matches the tracks/band — counts the inter-group half-flatbed pads). The
- * {@code ServerLevel}-bound resolver is exercised in-game; this locks the tiling + pad math.
+ * {@code ServerLevel}-bound resolvers are exercised in-game; this locks the tiling + pad math.
+ *
+ * <p>{@code groupRealStartX} is the static estimate of a group's world-X. In real generation the
+ * appender places appended groups relative to the previous group's live position plus a per-group
+ * gap, so the actual placement drifts ahead of this estimate (see {@link #realStartAheadOfPadFree});
+ * {@link GateContext#forCarriageAtWorldX} closes that drift by gating on the carriage's ACTUAL placed
+ * world-X instead of this formula. That resolver needs a {@code ServerLevel}, so it is verified
+ * in-game, not here.</p>
  */
 final class GateContextTest {
 
