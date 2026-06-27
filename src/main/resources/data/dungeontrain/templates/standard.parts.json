@@ -56,6 +56,11 @@
       "name": "copper",
       "weight": 1,
       "stage": "copper"
+    },
+    {
+      "name": "tuff",
+      "weight": 5,
+      "stage": "copper"
     }
   ],
   "walls": [
