@@ -27,7 +27,7 @@
   },
   "stone": {
     "name": "stone",
-    "maxLevel": 7,
+    "maxLevel": 10,
     "phases": [
       "OVERWORLD",
       "VOID"
