@@ -203,6 +203,14 @@ public final class TrainAssembler {
         int subLevelLength = wrapWithPads ? (groupSize * length + 2 * halfPadLen) : length;
         int enclosedStartOffset = wrapWithPads ? halfPadLen : 0;
 
+        // The group's first enclosed carriage's ACTUAL world-X. `origin` is the real placement
+        // corner (the seed uses the formula; the appender uses the live-relative placed position),
+        // so this is the same world-X frame the band terrain / track gate on — feeding it to the
+        // shell / contents / parts dimension gate makes the whole group's stage flip in lockstep
+        // with the band beneath it, instead of trailing it by the appender's accumulated MIN_GAP /
+        // collision drift (worst at the End and on leaving the Nether). See GateContext.forCarriageAtWorldX.
+        int groupAnchorWorldX = origin.getX() + enclosedStartOffset;
+
         int cleared = clearSubLevelVolume(level, origin, subLevelLength, dims);
         long tAfterClear = System.nanoTime();
         if (cleared > 0) {
@@ -223,9 +231,10 @@ public final class TrainAssembler {
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
             BlockPos carriageOrigin = origin.offset(enclosedStartOffset + slot * length, 0, 0);
-            // Gate the shell pick by this carriage's Diff-Level + worldgen phase (derived from its
-            // pIdx, so it is deterministic and matches the contents/track gates).
-            GateContext gateCtx = GateContext.forCarriage(level, carriagePIdx, length);
+            // Gate the shell pick by this carriage's Diff-Level + worldgen phase. Phase comes from
+            // the group's ACTUAL placed world-X so it matches the contents / parts / track gates and
+            // the band terrain (Diff-Level still derives from pIdx — see GateContext.forCarriageAtWorldX).
+            GateContext gateCtx = GateContext.forCarriageAtWorldX(level, groupAnchorWorldX, carriagePIdx, length);
             CarriageVariant variant = CarriagePlacer.enclosedVariantForIndex(carriagePIdx, genCfg, gateCtx);
             enclosedBySlot[slot] = variant;
 
@@ -244,7 +253,7 @@ public final class TrainAssembler {
             // land in shipyard space, not world space.
             Set<BlockPos> carriageBlocks = CarriagePlacer.placeAt(
                 level, carriageOrigin, variant, dims, genCfg, carriagePIdx,
-                false, flatbedAtBack, flatbedAtFront);
+                false, flatbedAtBack, flatbedAtFront, groupAnchorWorldX);
             if (carriageBlocks.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] spawnGroup produced empty enclosed block set anchorPIdx={} slot={} carriagePIdx={} variant={} at {}",
                     anchorPIdx, slot, carriagePIdx, variant.id(), carriageOrigin);
@@ -296,7 +305,7 @@ public final class TrainAssembler {
             int carriagePIdx = anchorPIdx + slot;
             BlockPos carriageShipyardOrigin = shipyardOrigin.offset(enclosedStartOffset + slot * length, 0, 0);
             CarriageVariant variant = enclosedBySlot[slot];
-            CarriagePlacer.applyContentsBlocksAt(level, carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx);
+            CarriagePlacer.applyContentsBlocksAt(level, carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx, groupAnchorWorldX);
             // Stash for the appender's tick handler to fire once the
             // placement-collision tracker confirms this group has settled.
             // FLATBEDs (variant.type == FLATBED) have null entries — the
@@ -304,7 +313,7 @@ public final class TrainAssembler {
             // record for the group) keeps the model trivially correct if
             // groupSize ever moves to mixed-variant groups.
             pendingEntities[slot] = new PendingContentsEntitySpawn(
-                carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx);
+                carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx, groupAnchorWorldX);
         }
         long tAfterContents = System.nanoTime();
 

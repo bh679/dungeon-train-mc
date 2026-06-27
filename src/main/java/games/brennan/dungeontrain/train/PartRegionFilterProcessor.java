@@ -76,7 +76,7 @@ public final class PartRegionFilterProcessor extends StructureProcessor {
         ServerLevel level, BlockPos carriageOrigin,
         CarriageVariant variant, CarriageDims dims,
         long seed, int carriageIndex,
-        boolean flatbedAtBack, boolean flatbedAtFront
+        boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX
     ) {
         Optional<CarriagePartAssignment> assignment = CarriageVariantPartsStore.get(variant);
         if (assignment.isEmpty()) return Optional.empty();
@@ -85,7 +85,7 @@ public final class PartRegionFilterProcessor extends StructureProcessor {
 
         // Use the same gate the overlay uses so the claimed-box set matches the gated picks
         // CarriagePlacer.stampPartsOverlay will actually stamp.
-        GateContext gateCtx = CarriagePlacer.partGateContext(level, carriageIndex, dims);
+        GateContext gateCtx = CarriagePlacer.partGateContext(level, carriageIndex, dims, groupAnchorWorldX);
         List<BoundingBox> boxes = new ArrayList<>();
         for (CarriagePartKind kind : CarriagePartKind.values()) {
             List<CarriagePartKind.Placement> placements = kind.placements(dims);

@@ -25,12 +25,18 @@ import net.minecraft.core.BlockPos;
  * @param carriageIndex  The carriage's pIdx — same value used as both the
  *                       contents-pick index AND the diagnostic-tag suffix
  *                       ({@code dungeontrain_contents_pidx_<carriageIndex>}).
+ * @param groupAnchorWorldX The group's actual placed world-X, captured at the block pass so the
+ *                       deferred entity pass resolves the SAME dimension gate as the blocks — the
+ *                       train may have moved a few blocks by the time this fires, so re-deriving the
+ *                       world-X live could flip the phase across a band boundary. See
+ *                       {@link games.brennan.dungeontrain.template.GateContext#forCarriageAtWorldX}.
  */
 public record PendingContentsEntitySpawn(
     BlockPos shipyardOrigin,
     CarriageVariant variant,
     CarriageDims dims,
     CarriageGenerationConfig config,
-    int carriageIndex
+    int carriageIndex,
+    int groupAnchorWorldX
 ) {
 }
