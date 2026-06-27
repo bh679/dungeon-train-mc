@@ -2719,6 +2719,21 @@
       "released": true,
       "released_in": "v0.372.0",
       "released_at": "2026-06-26T23:58:21Z"
+    },
+    {
+      "id": "copy-variant-grouping-on-duplicate",
+      "version": "0.372.0",
+      "type": "feat",
+      "title": "Duplicating a template keeps its block-variant grouping",
+      "summary": "When you create a new part, carriage, or contents template from 'Current', the editor now also copies the block-variant grouping (locked cells that roll the same variant together), not just the per-cell variant options. Duplicated locked groups stay grouped instead of having to be re-linked by hand.",
+      "highlights": [
+        "New-from-current now carries over variant lock groups, not just variant options",
+        "Applies to part, carriage, and contents duplicates"
+      ],
+      "date": "2026-06-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
