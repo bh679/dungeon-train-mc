@@ -20,8 +20,14 @@ import java.util.List;
  *
  * <p>Each blob is a small gzipped log tail (latest.log / debug.log) or the newest crash report; the
  * client keeps the payload well under the per-blob cap by tailing each source.</p>
+ *
+ * <p>{@code systemInfo} carries a short, plain-text system-spec summary collected client-side for a
+ * "Lag" report (allocated game memory, CPU/GPU, OS, launcher — see {@code SystemSpecCollector}); it
+ * is empty for every other answer. The server folds it into the Discord feedback post — see
+ * {@link BugReportSink}.</p>
  */
-public record BugReportLogsPacket(String optionLabel, List<LogBlob> files) implements CustomPacketPayload {
+public record BugReportLogsPacket(String optionLabel, String systemInfo, List<LogBlob> files)
+        implements CustomPacketPayload {
 
     /** One collected log file: its display name and gzipped bytes. */
     public record LogBlob(String filename, byte[] bytes) {}
@@ -30,6 +36,8 @@ public record BugReportLogsPacket(String optionLabel, List<LogBlob> files) imple
     private static final int MAX_BLOB = 4 * 1024 * 1024;
     /** Hard cap on the number of attached files (defends decode against a hostile count). */
     private static final int MAX_FILES = 8;
+    /** Defensive cap on the system-spec string on decode (the client builds it well under 2 KB). */
+    private static final int MAX_SYSINFO = 8 * 1024;
 
     public static final Type<BugReportLogsPacket> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "bug_report_logs"));
@@ -39,6 +47,7 @@ public record BugReportLogsPacket(String optionLabel, List<LogBlob> files) imple
 
     private static void encode(RegistryFriendlyByteBuf buf, BugReportLogsPacket p) {
         buf.writeUtf(p.optionLabel());
+        buf.writeUtf(p.systemInfo() == null ? "" : p.systemInfo());
         int count = Math.min(p.files().size(), MAX_FILES);
         buf.writeVarInt(count);
         for (int i = 0; i < count; i++) {
@@ -50,6 +59,7 @@ public record BugReportLogsPacket(String optionLabel, List<LogBlob> files) imple
 
     private static BugReportLogsPacket decode(RegistryFriendlyByteBuf buf) {
         String optionLabel = buf.readUtf();
+        String systemInfo = buf.readUtf(MAX_SYSINFO);
         int count = Math.min(Math.max(0, buf.readVarInt()), MAX_FILES);
         List<LogBlob> files = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
@@ -57,7 +67,7 @@ public record BugReportLogsPacket(String optionLabel, List<LogBlob> files) imple
             byte[] bytes = buf.readByteArray(MAX_BLOB);
             files.add(new LogBlob(name, bytes));
         }
-        return new BugReportLogsPacket(optionLabel, List.copyOf(files));
+        return new BugReportLogsPacket(optionLabel, systemInfo, List.copyOf(files));
     }
 
     @Override
@@ -68,7 +78,7 @@ public record BugReportLogsPacket(String optionLabel, List<LogBlob> files) imple
     public static void handle(BugReportLogsPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
-            BugReportSink.accept(player, packet.optionLabel(), packet.files());
+            BugReportSink.accept(player, packet.optionLabel(), packet.systemInfo(), packet.files());
         });
     }
 }
