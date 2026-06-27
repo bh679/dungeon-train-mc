@@ -2731,9 +2731,9 @@
         "Applies to part, carriage, and contents duplicates"
       ],
       "date": "2026-06-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.373.0",
+      "released_at": "2026-06-27T07:20:56Z"
     },
     {
       "id": "carriage-stage-theme-sync",
@@ -2745,9 +2745,9 @@
         "No more stretches of out-of-place carriages deep into the End or after leaving the Nether"
       ],
       "date": "2026-06-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.373.0",
+      "released_at": "2026-06-27T07:20:56Z"
     },
     {
       "id": "copper-carriage-parts",
@@ -2761,9 +2761,9 @@
         "New copper stage with retuned copper/desert/stone level bands"
       ],
       "date": "2026-06-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.373.0",
+      "released_at": "2026-06-27T07:20:56Z"
     },
     {
       "id": "evoker-breeze-elder-enemies",
@@ -2778,9 +2778,9 @@
         "Stone stage extended to max level 10"
       ],
       "date": "2026-06-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.373.0",
+      "released_at": "2026-06-27T07:20:56Z"
     }
   ]
 }
