@@ -39,6 +39,11 @@
       "name": "sandstone",
       "weight": 1,
       "stage": "desert"
+    },
+    {
+      "name": "copper",
+      "weight": 1,
+      "stage": "copper"
     }
   ],
   "doors": [
@@ -56,6 +61,11 @@
       "name": "sandstone",
       "weight": 1,
       "stage": "desert"
+    },
+    {
+      "name": "copper",
+      "weight": 1,
+      "stage": "copper"
     }
   ]
 }
