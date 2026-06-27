@@ -2,17 +2,7 @@
   "schemaVersion": 4,
   "floor": [
     {
-      "name": "dark",
-      "weight": 1,
-      "stage": "nether"
-    },
-    {
-      "name": "standard",
-      "weight": 1,
-      "stage": "stone"
-    },
-    {
-      "name": "sandstone",
+      "name": "obsidian",
       "weight": 1,
       "stage": "desert"
     }
@@ -49,6 +39,11 @@
       "name": "sandstone",
       "weight": 1,
       "stage": "desert"
+    },
+    {
+      "name": "copper",
+      "weight": 1,
+      "stage": "copper"
     }
   ],
   "doors": [
@@ -66,6 +61,11 @@
       "name": "sandstone",
       "weight": 1,
       "stage": "desert"
+    },
+    {
+      "name": "copper",
+      "weight": 1,
+      "stage": "copper"
     }
   ]
 }

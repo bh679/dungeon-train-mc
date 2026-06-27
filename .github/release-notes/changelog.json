@@ -2748,6 +2748,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "copper-carriage-parts",
+      "version": "0.372.0",
+      "type": "content",
+      "title": "Copper carriages, new floors, and a copper stage",
+      "summary": "A new copper theme runs through the train: oxidized-copper walls (solid, windowed, open, and rusted), matching copper roofs (solid, open, and windowed) and a copper door now appear on carriages. Two new floors join the mix \u2014 obsidian and tuff \u2014 and a dedicated copper stage governs where these coppery carriages show up along the run, with the copper, desert, and stone level bands retuned around it.",
+      "highlights": [
+        "New copper-themed walls, roofs, and door parts across multiple carriage templates",
+        "New obsidian and tuff floor parts",
+        "New copper stage with retuned copper/desert/stone level bands"
+      ],
+      "date": "2026-06-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
