@@ -146,9 +146,10 @@ public final class CarriagePlacer {
      * preview is stable across re-entries.</p>
      */
     public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
-        // Editor preview: no group context, so end-mode tags fall back to BOTH-behaviour.
-        String base = stampBase(level, origin, variant, dims, 0L, 0, false, false);
-        String overlay = stampPartsOverlay(level, origin, variant, dims, 0L, 0, false, false);
+        // Editor preview: no group context, so end-mode tags fall back to BOTH-behaviour and the
+        // dimension gate uses the pIdx-formula fallback (no real placed world-X here).
+        String base = stampBase(level, origin, variant, dims, 0L, 0, false, false, GateContext.WORLDX_FROM_PIDX);
+        String overlay = stampPartsOverlay(level, origin, variant, dims, 0L, 0, false, false, GateContext.WORLDX_FROM_PIDX);
         return finishPlace(level, origin, variant, dims, base, overlay);
     }
 
@@ -215,10 +216,26 @@ public final class CarriagePlacer {
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
         boolean applyContents, boolean flatbedAtBack, boolean flatbedAtFront
     ) {
+        return placeAt(level, origin, variant, dims, config, carriageIndex,
+            applyContents, flatbedAtBack, flatbedAtFront, GateContext.WORLDX_FROM_PIDX);
+    }
+
+    /**
+     * 10-arg spawn variant — same as the 9-arg overload but also takes the carriage group's
+     * <b>actual placed world-X</b> ({@code groupAnchorWorldX}) so the shell / contents / parts
+     * dimension gate resolves from where the carriage is physically stamped (the track's frame),
+     * not the static {@code pIdx → X} formula. See {@link GateContext#forCarriageAtWorldX}. Pass
+     * {@link GateContext#WORLDX_FROM_PIDX} for the formula fallback (editor / templates / tests).
+     */
+    public static Set<BlockPos> placeAt(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
+        boolean applyContents, boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX
+    ) {
         String base = stampBase(level, origin, variant, dims,
-            config.seed(), carriageIndex, flatbedAtBack, flatbedAtFront);
+            config.seed(), carriageIndex, flatbedAtBack, flatbedAtFront, groupAnchorWorldX);
         String overlay = stampPartsOverlay(level, origin, variant, dims,
-            config.seed(), carriageIndex, flatbedAtBack, flatbedAtFront);
+            config.seed(), carriageIndex, flatbedAtBack, flatbedAtFront, groupAnchorWorldX);
 
         // Variant-block overlays are position-based and assume a stable NBT-
         // backed basis. legacyPlaceAt's hardcoded geometry doesn't qualify,
@@ -241,7 +258,7 @@ public final class CarriagePlacer {
         // afterwards so contents blocks are included in the returned set.
         if (applyContents && (base != null || overlay != null)) {
             applyContents(level, origin, variant, dims, config, carriageIndex,
-                /*placeBlocks*/ true, /*spawnEntities*/ true);
+                /*placeBlocks*/ true, /*spawnEntities*/ true, groupAnchorWorldX);
         }
 
         return finishPlace(level, origin, variant, dims, base, overlay);
@@ -263,7 +280,7 @@ public final class CarriagePlacer {
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
         applyContents(level, origin, variant, dims, config, carriageIndex,
-            /*placeBlocks*/ true, /*spawnEntities*/ true);
+            /*placeBlocks*/ true, /*spawnEntities*/ true, GateContext.WORLDX_FROM_PIDX);
     }
 
     /**
@@ -280,13 +297,13 @@ public final class CarriagePlacer {
      */
     public static CarriageContents applyContentsBlocksAt(
         ServerLevel level, BlockPos origin, CarriageVariant variant,
-        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex, int groupAnchorWorldX
     ) {
         if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
             return null;
         }
         return applyContents(level, origin, variant, dims, config, carriageIndex,
-            /*placeBlocks*/ true, /*spawnEntities*/ false);
+            /*placeBlocks*/ true, /*spawnEntities*/ false, groupAnchorWorldX);
     }
 
     /**
@@ -300,7 +317,7 @@ public final class CarriagePlacer {
      */
     public static void applyContentsEntitiesAt(
         ServerLevel level, BlockPos origin, CarriageVariant variant,
-        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex, int groupAnchorWorldX
     ) {
         // Shell + parts mob-variant entity-pass — runs for every variant
         // including FLATBED. The block pass already AIRed mob-entry cells
@@ -308,12 +325,12 @@ public final class CarriagePlacer {
         // forced to the COMMAND_BLOCK sentinel by the canonical
         // VariantState constructor). Subject to the same 48-block player-
         // distance gate that wraps this entity pass.
-        spawnShellAndPartsVariantMobs(level, origin, variant, dims, config.seed(), carriageIndex);
+        spawnShellAndPartsVariantMobs(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
         if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
             return;
         }
         applyContents(level, origin, variant, dims, config, carriageIndex,
-            /*placeBlocks*/ false, /*spawnEntities*/ true);
+            /*placeBlocks*/ false, /*spawnEntities*/ true, groupAnchorWorldX);
     }
 
     /**
@@ -325,9 +342,9 @@ public final class CarriagePlacer {
      */
     private static void spawnShellAndPartsVariantMobs(ServerLevel level, BlockPos origin,
                                                        CarriageVariant variant, CarriageDims dims,
-                                                       long seed, int carriageIndex) {
+                                                       long seed, int carriageIndex, int groupAnchorWorldX) {
         spawnShellVariantMobs(level, origin, variant, dims, seed, carriageIndex);
-        spawnPartsVariantMobs(level, origin, variant, dims, seed, carriageIndex);
+        spawnPartsVariantMobs(level, origin, variant, dims, seed, carriageIndex, groupAnchorWorldX);
     }
 
     private static void spawnShellVariantMobs(ServerLevel level, BlockPos origin,
@@ -350,13 +367,13 @@ public final class CarriagePlacer {
 
     private static void spawnPartsVariantMobs(ServerLevel level, BlockPos origin,
                                                CarriageVariant variant, CarriageDims dims,
-                                               long seed, int carriageIndex) {
+                                               long seed, int carriageIndex, int groupAnchorWorldX) {
         Optional<CarriagePartAssignment> assignment =
             games.brennan.dungeontrain.editor.CarriageVariantPartsStore.get(variant);
         if (assignment.isEmpty()) return;
         CarriagePartAssignment a = assignment.get();
         if (a.allNone()) return;
-        GateContext gateCtx = partGateContext(level, carriageIndex, dims);
+        GateContext gateCtx = partGateContext(level, carriageIndex, dims, groupAnchorWorldX);
         for (CarriagePartKind kind : CarriagePartKind.values()) {
             java.util.List<String> picks = a.pickPerPlacement(kind, seed, carriageIndex, gateCtx);
             CarriagePartPlacer.spawnPartVariantMobsAt(level, origin, kind, picks, dims, seed, carriageIndex);
@@ -372,10 +389,10 @@ public final class CarriagePlacer {
      * all three resolve the identical gated pool — the stamped part, its claimed footprint, and its
      * baked mobs always agree. Mirrors the contents gate at the {@code applyContents} call site.
      */
-    static GateContext partGateContext(ServerLevel level, int carriageIndex, CarriageDims dims) {
+    static GateContext partGateContext(ServerLevel level, int carriageIndex, CarriageDims dims, int groupAnchorWorldX) {
         return carriageIndex == CarriageContentsPlacer.EDITOR_SENTINEL_PIDX
             ? null
-            : GateContext.forCarriage(level, carriageIndex, dims.length());
+            : GateContext.forCarriageAtWorldX(level, groupAnchorWorldX, carriageIndex, dims.length());
     }
 
     /**
@@ -399,7 +416,7 @@ public final class CarriagePlacer {
     private static CarriageContents applyContents(
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
-        boolean placeBlocks, boolean spawnEntities
+        boolean placeBlocks, boolean spawnEntities, int groupAnchorWorldX
     ) {
         if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
             return null;
@@ -407,10 +424,11 @@ public final class CarriagePlacer {
         try {
             // Editor preview / template-load path uses EDITOR_SENTINEL_PIDX — bypass the spawn gate
             // so the editor still rolls from the full candidate pool. Real carriages derive the gate
-            // from their own pIdx so the block pass and deferred entity pass agree.
+            // from their group's real placed world-X (groupAnchorWorldX) so the block pass and the
+            // deferred entity pass agree AND the dimension flips in lockstep with the band terrain.
             GateContext gateCtx = carriageIndex == CarriageContentsPlacer.EDITOR_SENTINEL_PIDX
                 ? null
-                : GateContext.forCarriage(level, carriageIndex, dims.length());
+                : GateContext.forCarriageAtWorldX(level, groupAnchorWorldX, carriageIndex, dims.length());
             CarriageContents contents = CarriageContentsRegistry.pick(config.seed(), carriageIndex, variant, gateCtx);
             // Clear any entities left over from a previous carriage at this
             // shipyard position — the block-only clearBoundingBox in
@@ -477,14 +495,14 @@ public final class CarriagePlacer {
      */
     private static String stampBase(ServerLevel level, BlockPos origin, CarriageVariant variant,
                                     CarriageDims dims, long seed, int carriageIndex,
-                                    boolean flatbedAtBack, boolean flatbedAtFront) {
+                                    boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX) {
         Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
         if (stored.isPresent()) {
             // Filter cells the parts overlay will claim — keeps the base from
             // stamping (and the parts overlay from having to pre-erase) any
             // 2-tall paired-half block whose cascade would drop an item.
             Optional<PartRegionFilterProcessor> filter = PartRegionFilterProcessor.forVariant(
-                level, origin, variant, dims, seed, carriageIndex, flatbedAtBack, flatbedAtFront);
+                level, origin, variant, dims, seed, carriageIndex, flatbedAtBack, flatbedAtFront, groupAnchorWorldX);
             // Silent-clear claimed cells first so any leftover content (rolling-
             // window cycle, returning to a saved chunk) doesn't show through
             // the parts template's air cells (e.g. an open-doorway frame).
@@ -722,13 +740,13 @@ public final class CarriagePlacer {
      */
     private static String stampPartsOverlay(ServerLevel level, BlockPos origin, CarriageVariant variant,
                                              CarriageDims dims, long seed, int carriageIndex,
-                                             boolean flatbedAtBack, boolean flatbedAtFront) {
+                                             boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX) {
         Optional<CarriagePartAssignment> assignment = CarriageVariantPartsStore.get(variant);
         if (assignment.isEmpty()) return null;
         CarriagePartAssignment a = assignment.get();
         if (a.allNone()) return null;
 
-        GateContext gateCtx = partGateContext(level, carriageIndex, dims);
+        GateContext gateCtx = partGateContext(level, carriageIndex, dims, groupAnchorWorldX);
         StringBuilder desc = new StringBuilder();
         for (CarriagePartKind kind : CarriagePartKind.values()) {
             // Pick once per placement so walls / doors honour the per-entry

@@ -829,7 +829,7 @@ public final class TrainCarriageAppender {
             if (p == null) continue;
             try {
                 CarriagePlacer.applyContentsEntitiesAt(level,
-                    p.shipyardOrigin(), p.variant(), p.dims(), p.config(), p.carriageIndex());
+                    p.shipyardOrigin(), p.variant(), p.dims(), p.config(), p.carriageIndex(), p.groupAnchorWorldX());
                 fired++;
             } catch (Throwable t) {
                 LOGGER.warn("[DungeonTrain] Deferred contents-entity spawn failed for pIdx={} origin={}: {}",

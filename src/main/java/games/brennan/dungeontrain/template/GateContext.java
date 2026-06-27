@@ -106,4 +106,39 @@ public record GateContext(int level, TrainPhase phase) {
             groupRealStartX(carriagePIdx, groupSize, carriageLength));
         return new GateContext(diffLevel, phase);
     }
+
+    /**
+     * Sentinel {@code groupAnchorWorldX} for {@link #forCarriageAtWorldX} meaning "no real placed
+     * world-X is known here" — the editor / template-load / test call sites that never had a real
+     * placement. It makes {@code forCarriageAtWorldX} fall back to {@link #forCarriage}'s static
+     * {@code pIdx → X} formula, so those paths behave exactly as before.
+     */
+    public static final int WORLDX_FROM_PIDX = Integer.MIN_VALUE;
+
+    /**
+     * Like {@link #forCarriage} but resolves the {@link TrainPhase Dimension} from the carriage
+     * group's <b>actual placed world-X</b> ({@code groupAnchorWorldX}) instead of the static
+     * {@link #groupRealStartX} formula. The static formula assumes every group sits at exactly
+     * {@code groupIdx × subLevelStride} from a train origin at X = 0, but the appender places each
+     * appended group <em>relative</em> to the previous group's live world position plus a per-group
+     * {@code MIN_GAP} and collision nudge ({@code TrainCarriageAppender.planSpawnPlacement}), so the
+     * formula drifts ever further behind the real placement the farther along +X a group sits —
+     * which is why carriages were slow to swap stage at the End (the farthest band) and on leaving
+     * the Nether. Feeding the real placed world-X (the same frame the track uses via
+     * {@link #atWorldX}) makes a carriage's dimension flip in lockstep with the band beneath it.
+     *
+     * <p>The Diff-Level axis is unchanged — still the carriage-index frame ({@link #groupAnchorPIdx})
+     * so it stays consistent with the boarding HUD / mob / contents difficulty. When
+     * {@code groupAnchorWorldX == }{@link #WORLDX_FROM_PIDX} this delegates to {@link #forCarriage}.</p>
+     */
+    public static GateContext forCarriageAtWorldX(ServerLevel level, int groupAnchorWorldX,
+                                                  int carriagePIdx, int carriageLength) {
+        if (groupAnchorWorldX == WORLDX_FROM_PIDX) {
+            return forCarriage(level, carriagePIdx, carriageLength);
+        }
+        int groupSize = DungeonTrainWorldData.get(level.getServer().overworld()).getGenerationConfig().groupSize();
+        int diffLevel = DifficultyProgression.tierForTravelled(groupAnchorPIdx(carriagePIdx, groupSize));
+        TrainPhase phase = TrainPhase.phaseAt(level.getServer().overworld(), groupAnchorWorldX);
+        return new GateContext(diffLevel, phase);
+    }
 }
