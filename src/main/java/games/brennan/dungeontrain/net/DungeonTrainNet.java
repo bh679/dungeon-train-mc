@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "34";
+    public static final String PROTOCOL_VERSION = "35";
 
     private DungeonTrainNet() {}
 
@@ -78,6 +78,9 @@ public final class DungeonTrainNet {
         registrar.playToClient(DeathStatsPacket.TYPE, DeathStatsPacket.STREAM_CODEC, DeathStatsPacket::handle);
         // Scenic ride photo for the top-level death report, client → server when the death screen opens.
         registrar.playToServer(DeathPhotoPacket.TYPE, DeathPhotoPacket.STREAM_CODEC, DeathPhotoPacket::handle);
+        // Bug-report logs: client → server when the player reports a bug on the death-screen survey;
+        // archived under logs/<version>/<user>/ and posted as Discord attachments to the feedback feed.
+        registrar.playToServer(BugReportLogsPacket.TYPE, BugReportLogsPacket.STREAM_CODEC, BugReportLogsPacket::handle);
 
         // Spawn intro cinematic: server → joining player to start it; client → server when it ends.
         registrar.playToClient(CinematicIntroPacket.TYPE, CinematicIntroPacket.STREAM_CODEC, CinematicIntroPacket::handle);

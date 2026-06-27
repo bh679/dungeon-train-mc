@@ -4,6 +4,7 @@ import games.brennan.discordpresence.client.SurveyClientState;
 import games.brennan.discordpresence.network.DPNetwork;
 import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
+import games.brennan.dungeontrain.net.BugReportLogsPacket;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathPhotoPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -160,6 +161,10 @@ public final class NarrativeDeathScreen extends Screen {
     // alpha flashes it solid. Above this the lowest text alpha drawn is a safe ~5/255.
     private static final float UI_EPS = 0.02f;
 
+    // The bug-report survey question (data-driven dp_surveys/bug_report.json): a multiple-choice
+    // question whose non-"No" answers trigger client-side log collection + a BugReportLogsPacket.
+    private static final String BUG_REPORT_ID = "dungeontrain:bug_report";
+
     private final Map<String, Integer> scores = new HashMap<>();
     private final Map<String, String> comments = new HashMap<>();
     private final Set<String> submitted = new HashSet<>();
@@ -271,12 +276,19 @@ public final class NarrativeDeathScreen extends Screen {
             String qid = p.survey().id();
             commentBox.setValue(comments.getOrDefault(qid, ""));
             commentBox.setResponder(s -> comments.put(qid, s));
-            // A text question (no rating scale) makes the box the sole answer, so prompt for it
-            // directly; a scale question's comment just explains the score.
-            boolean hasScale = p.survey().scaleMax() >= p.survey().scaleMin();
-            commentBox.setHint(Component.translatable(hasScale
-                    ? "gui.dungeontrain.death.narr.comment"
-                    : "gui.dungeontrain.death.narr.answer"));
+            // The bug question asks for a detailed free-text description; otherwise a text question
+            // (no rating scale) makes the box the sole answer (prompt for it directly), and a scale
+            // question's comment just explains the score.
+            String hintKey;
+            if (qid.equals(BUG_REPORT_ID)) {
+                hintKey = "gui.dungeontrain.death.narr.bug_comment_hint";
+            } else {
+                boolean hasScale = p.survey().scaleMax() >= p.survey().scaleMin();
+                hintKey = hasScale
+                        ? "gui.dungeontrain.death.narr.comment"
+                        : "gui.dungeontrain.death.narr.answer";
+            }
+            commentBox.setHint(Component.translatable(hintKey));
             addRenderableWidget(commentBox);
         }
 
@@ -909,14 +921,32 @@ public final class NarrativeDeathScreen extends Screen {
         if (e != null) {
             y = drawQuestion(g, e.prompt(), cx, w, y);
             y += 4;
-            // The 0–N rating row — only for scale questions. A text question
-            // (scaleMax < scaleMin) shows no tiles; its answer box is the sole input.
-            if (e.scaleMax() >= e.scaleMin()) {
+            int selected = scores.getOrDefault(e.id(), -1);
+            if (!e.options().isEmpty()) {
+                // Multiple-choice: full-width labelled tiles stacked vertically (option labels don't
+                // fit a compact numeric row). The chosen 0-based index is stored as the score.
+                List<String> options = e.options();
+                int boxW = Math.min(w, 256);
+                int tileH = 18, gap = 4;
+                int sx = cx - boxW / 2;
+                for (int i = 0; i < options.size(); i++) {
+                    int value = e.scaleMin() + i; // scaleMin is 0 for choices → value is the index
+                    int ty = y + i * (tileH + gap);
+                    boolean sel = selected == value;
+                    g.fill(sx, ty, sx + boxW, ty + tileH, fade(sel ? BTN_PRI_BG : SCORE_BG));
+                    drawBorder(g, sx, ty, boxW, tileH, sel ? BTN_PRI_LIGHT : SCORE_BORDER);
+                    drawCenteredStr(g, options.get(i), cx, ty + (tileH - this.font.lineHeight) / 2 + 1,
+                            sel ? 0xFFFFFFFF : SCORE_TEXT);
+                    scoreRects.add(new Rect(sx, ty, boxW, tileH));
+                }
+                y += options.size() * (tileH + gap) + 4;
+            } else if (e.scaleMax() >= e.scaleMin()) {
+                // The 0–N rating row — only for scale questions. A text question
+                // (scaleMax < scaleMin) shows no tiles; its answer box is the sole input.
                 int n = e.scaleMax() - e.scaleMin() + 1;
                 int tile = 22, gap = 4;
                 int rowW = n * tile + (n - 1) * gap;
                 int sx = cx - rowW / 2;
-                int selected = scores.getOrDefault(e.id(), -1);
                 for (int i = 0; i < n; i++) {
                     int score = e.scaleMin() + i;
                     int tx = sx + i * (tile + gap);
@@ -934,6 +964,14 @@ public final class NarrativeDeathScreen extends Screen {
                 commentBox.setY(y);
                 commentBox.setWidth(boxW);
                 y += 16 + 6;
+            }
+            // Privacy notice: only when the bug question has a real-bug option selected (not "No"),
+            // warning that recent logs will be attached to the report.
+            if (e.id().equals(BUG_REPORT_ID) && selected >= 0 && selected < e.options().size()
+                    && !e.options().get(selected).equalsIgnoreCase("No")) {
+                y = drawCentered(g, Component.translatable("gui.dungeontrain.death.narr.bug_log_notice"),
+                        cx, w, y, SUBLINE);
+                y += 4;
             }
         }
         return y;
@@ -1113,6 +1151,30 @@ public final class NarrativeDeathScreen extends Screen {
         }
         DPNetwork.sendToServer(new SurveySubmitPayload(e.id(), score, comment));
         submitted.add(e.id());
+        maybeSendBugLogs(e, score);
+    }
+
+    /**
+     * For the bug-report question: when the player chose a real-bug option (anything but "No"),
+     * collect their recent logs off-thread and ship them to the server (which archives + posts them
+     * to Discord). Best-effort — a missed/empty collection simply sends nothing.
+     */
+    private void maybeSendBugLogs(SurveyQuestionPayload.Entry e, int score) {
+        if (e == null || !e.id().equals(BUG_REPORT_ID)) return;
+        if (score < 0 || score >= e.options().size()) return;
+        String label = e.options().get(score);
+        if (label.equalsIgnoreCase("No")) return; // not a bug → collect nothing
+        LogCollector.collectAsync().thenAccept(files -> {
+            if (files == null || files.isEmpty()) return;
+            // Hop back to the client thread to send the packet (collection ran on a worker thread).
+            Minecraft.getInstance().execute(() -> {
+                try {
+                    DungeonTrainNet.sendToServer(new BugReportLogsPacket(label, files));
+                } catch (Exception ex) {
+                    LOGGER.warn("[DungeonTrain] Failed to send bug-report logs: {}", ex.toString());
+                }
+            });
+        });
     }
 
     private void boardAnew() {

@@ -1,0 +1,6 @@
+{
+  "prompt": "Did you face any bugs in this run?",
+  "options": ["The Train Disappeared", "Lag", "Other", "No"],
+  "allow_comment": true,
+  "order": 200
+}
