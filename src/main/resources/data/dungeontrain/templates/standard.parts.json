@@ -51,6 +51,11 @@
       "name": "sandstone",
       "weight": 1,
       "stage": "desert"
+    },
+    {
+      "name": "copper",
+      "weight": 1,
+      "stage": "copper"
     }
   ],
   "walls": [
@@ -89,6 +94,11 @@
       "name": "sandstone",
       "weight": 1,
       "stage": "desert"
+    },
+    {
+      "name": "copper",
+      "weight": 1,
+      "stage": "copper"
     }
   ],
   "roof": [
@@ -106,6 +116,11 @@
       "name": "standard",
       "weight": 1,
       "stage": "stone"
+    },
+    {
+      "name": "copper",
+      "weight": 1,
+      "stage": "copper"
     }
   ],
   "doors": [
@@ -166,6 +181,11 @@
       "name": "sandstone",
       "weight": 1,
       "stage": "desert"
+    },
+    {
+      "name": "copper",
+      "weight": 1,
+      "stage": "copper"
     }
   ]
 }

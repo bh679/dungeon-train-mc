@@ -1,7 +1,17 @@
 {
+  "copper": {
+    "name": "copper",
+    "minLevel": 10,
+    "maxLevel": 20,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END"
+    ]
+  },
   "desert": {
     "name": "desert",
-    "minLevel": 20,
+    "minLevel": 10,
     "maxLevel": 70,
     "phases": [
       "OVERWORLD",
@@ -17,7 +27,7 @@
   },
   "stone": {
     "name": "stone",
-    "maxLevel": 20,
+    "maxLevel": 10,
     "phases": [
       "OVERWORLD",
       "VOID"
