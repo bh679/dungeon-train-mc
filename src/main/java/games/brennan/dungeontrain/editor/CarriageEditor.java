@@ -417,6 +417,11 @@ public final class CarriageEditor {
             for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
                 copy.put(e.localPos(), e.states());
             }
+            // Carry over the lock-id grouping so duplicated cells that share a
+            // random pick stay grouped (states pass only copies candidate lists).
+            for (java.util.Map.Entry<net.minecraft.core.BlockPos, Integer> lk : sourceSidecar.allLockIds().entrySet()) {
+                copy.setLockId(lk.getKey(), lk.getValue());
+            }
             copy.save(target);
         }
 
