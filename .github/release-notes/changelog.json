@@ -2797,6 +2797,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "bug-report-feedback-logs",
+      "version": "0.373.0",
+      "type": "feat",
+      "title": "Report bugs from the death screen",
+      "summary": "The after-death feedback survey now asks whether you hit any bugs this run. Pick what happened \u2014 Train Vanished, Lag, or Other (or No) \u2014 and add as much detail as you like. If you report a bug, your most recent game logs are bundled up and sent along so the creator can finally see what went wrong on your machine.",
+      "highlights": [
+        "New \"Did you face any bugs in this run?\" feedback question",
+        "Reporting a bug attaches your recent logs so the creator can diagnose issues they can't reproduce"
+      ],
+      "pr": 611,
+      "date": "2026-06-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
