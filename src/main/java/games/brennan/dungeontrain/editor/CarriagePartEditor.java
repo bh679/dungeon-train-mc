@@ -362,10 +362,11 @@ public final class CarriagePartEditor {
      *
      * <p>Mirrors the same logic baked inline into
      * {@link CarriageEditor#duplicate} and
-     * {@link CarriageContentsEditor#duplicate}. Lock-id groupings are not
-     * carried across — the {@link CarriageVariantBlocks.Entry} record only
-     * exposes {@code (localPos, states)}, matching the precedent. A follow-up
-     * change can promote lockIds across all three duplicate paths together.
+     * {@link CarriageContentsEditor#duplicate}. The {@link CarriageVariantBlocks.Entry}
+     * record only exposes {@code (localPos, states)}, so lock-id groupings —
+     * cells sharing a non-zero lock-id render the same random index together —
+     * are copied separately via {@link CarriagePartVariantBlocks#allLockIds()}
+     * after the states pass, so the duplicate keeps its variant grouping too.
      */
     static void copyVariantSidecar(CarriagePartKind kind, String sourceName, String targetName, CarriageDims dims) throws IOException {
         Vec3i partSize = kind.dims(dims);
@@ -375,6 +376,12 @@ public final class CarriagePartEditor {
         CarriagePartVariantBlocks copy = CarriagePartVariantBlocks.empty();
         for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
             copy.put(e.localPos(), e.states());
+        }
+        // Carry over the lock-id grouping (states pass above only copies the
+        // candidate lists; lockIds live in a parallel map). setLockId requires
+        // the cell to exist — guaranteed since every entry was just put().
+        for (java.util.Map.Entry<BlockPos, Integer> lk : sourceSidecar.allLockIds().entrySet()) {
+            copy.setLockId(lk.getKey(), lk.getValue());
         }
         copy.save(kind, targetName);
         LOGGER.info("[DungeonTrain] Part editor copyVariantSidecar: {} entries copied from {}:{} to {}:{}",

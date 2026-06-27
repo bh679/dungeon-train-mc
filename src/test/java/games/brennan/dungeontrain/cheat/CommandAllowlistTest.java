@@ -109,15 +109,25 @@ class CommandAllowlistTest {
         assertFalse(CommandAllowlist.taints("w Steve hi"));
         assertFalse(CommandAllowlist.taints("trigger objective"));
         assertFalse(CommandAllowlist.taints("list"));
+        assertFalse(CommandAllowlist.taints("feedback"));
+        assertFalse(CommandAllowlist.taints("feedback some bug report text"));
     }
 
     @Test
-    @DisplayName("/kill and /new-world (end / reset the run) are allowed")
+    @DisplayName("/kill (bare, self-only) and /new-world (end / reset the run) are allowed")
     void runControlAllowed() {
         assertFalse(CommandAllowlist.taints("kill"));
         assertFalse(CommandAllowlist.taints("/kill"));
         assertFalse(CommandAllowlist.taints("new-world"));
         assertFalse(CommandAllowlist.taints("new-world fresh"));
+    }
+
+    @Test
+    @DisplayName("/kill with a target selector or player name taints")
+    void killWithTargetTaints() {
+        assertTrue(CommandAllowlist.taints("kill @e"));
+        assertTrue(CommandAllowlist.taints("kill SomePlayer"));
+        assertTrue(CommandAllowlist.taints("/kill @e[type=zombie]"));
     }
 
     @Test
