@@ -35,6 +35,20 @@ public final class ClientStages {
         return List.of();
     }
 
+    /**
+     * The globally focused stage id for the editor's per-stage carriage preview, or {@code ""} when no
+     * stage is selected. Mirrored from the server in the same type-menu snapshot {@link #all()} reads,
+     * so the Stages window can highlight the selected row and toggle it on re-click.
+     */
+    public static String selectedStageId() {
+        return EditorTypeMenuRenderer.selectedStage();
+    }
+
+    /** True iff {@code id} is the currently selected stage. */
+    public static boolean isSelected(String id) {
+        return id != null && id.equals(selectedStageId());
+    }
+
     /** The Stage with this id, or {@code null}. */
     public static Info byId(String id) {
         if (id == null) return null;

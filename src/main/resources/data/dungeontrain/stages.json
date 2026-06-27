@@ -1,10 +1,11 @@
 {
   "desert": {
     "name": "desert",
-    "minLevel": 40,
-    "maxLevel": 40,
+    "minLevel": 20,
+    "maxLevel": 70,
     "phases": [
-      "OVERWORLD"
+      "OVERWORLD",
+      "VOID"
     ]
   },
   "nether": {
@@ -16,6 +17,7 @@
   },
   "stone": {
     "name": "stone",
+    "maxLevel": 20,
     "phases": [
       "OVERWORLD",
       "VOID"

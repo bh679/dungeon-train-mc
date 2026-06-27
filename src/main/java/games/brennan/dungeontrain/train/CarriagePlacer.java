@@ -149,7 +149,12 @@ public final class CarriagePlacer {
         // Editor preview: no group context, so end-mode tags fall back to BOTH-behaviour and the
         // dimension gate uses the pIdx-formula fallback (no real placed world-X here).
         String base = stampBase(level, origin, variant, dims, 0L, 0, false, false, GateContext.WORLDX_FROM_PIDX);
-        String overlay = stampPartsOverlay(level, origin, variant, dims, 0L, 0, false, false, GateContext.WORLDX_FROM_PIDX);
+        // Preview each carriage for the focused Stage: keep the base shell, stamp only stage-linked
+        // parts (or gate-overlapping ones), air out the rest. Defaults to the first stage when none is
+        // explicitly selected; null (no stages exist at all) = today's unfiltered preview.
+        String stageFilter = games.brennan.dungeontrain.editor.EditorStageSelection.effective();
+        String overlay = stampPartsOverlay(level, origin, variant, dims, 0L, 0, false, false,
+            GateContext.WORLDX_FROM_PIDX, stageFilter);
         return finishPlace(level, origin, variant, dims, base, overlay);
     }
 
@@ -235,7 +240,7 @@ public final class CarriagePlacer {
         String base = stampBase(level, origin, variant, dims,
             config.seed(), carriageIndex, flatbedAtBack, flatbedAtFront, groupAnchorWorldX);
         String overlay = stampPartsOverlay(level, origin, variant, dims,
-            config.seed(), carriageIndex, flatbedAtBack, flatbedAtFront, groupAnchorWorldX);
+            config.seed(), carriageIndex, flatbedAtBack, flatbedAtFront, groupAnchorWorldX, /*stageFilter*/ null);
 
         // Variant-block overlays are position-based and assume a stable NBT-
         // backed basis. legacyPlaceAt's hardcoded geometry doesn't qualify,
@@ -740,11 +745,19 @@ public final class CarriagePlacer {
      */
     private static String stampPartsOverlay(ServerLevel level, BlockPos origin, CarriageVariant variant,
                                              CarriageDims dims, long seed, int carriageIndex,
-                                             boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX) {
+                                             boolean flatbedAtBack, boolean flatbedAtFront,
+                                             int groupAnchorWorldX, String stageFilter) {
         Optional<CarriagePartAssignment> assignment = CarriageVariantPartsStore.get(variant);
         if (assignment.isEmpty()) return null;
         CarriagePartAssignment a = assignment.get();
-        if (a.allNone()) return null;
+        // Stage preview still processes an all-NONE assignment so its swappable slots air out over the
+        // kept base shell; the normal path keeps its early-out (base shows through unchanged).
+        if (a.allNone() && stageFilter == null) return null;
+
+        if (stageFilter != null) {
+            return stampPartsOverlayForStage(level, origin, a, dims, seed, carriageIndex,
+                flatbedAtBack, flatbedAtFront, stageFilter);
+        }
 
         GateContext gateCtx = partGateContext(level, carriageIndex, dims, groupAnchorWorldX);
         StringBuilder desc = new StringBuilder();
@@ -777,6 +790,52 @@ public final class CarriagePlacer {
             }
         }
         return desc.length() == 0 ? null : "parts(" + desc + ")";
+    }
+
+    /**
+     * Stage-filtered editor-preview overlay — the "Keep shell, swap parts" view for a focused
+     * {@link games.brennan.dungeontrain.editor.EditorStageSelection Stage}. Editor-only: reached
+     * solely from the 4-arg {@link #placeAt} when a stage is selected; every spawn path passes
+     * {@code stageFilter == null} and never lands here.
+     *
+     * <p>The base shell is left as {@code stampBase} placed it. Then, per swappable kind, the whole
+     * slot is aired out ({@link CarriagePartPlacer#eraseKind}) and only the part linked to the selected
+     * stage is stamped back on top — so an unassigned slot reads as air while the carriage's non-slot
+     * structure stays. Unlike the gated path there is no ungated fallback: nothing linked ⇒ air.</p>
+     */
+    private static String stampPartsOverlayForStage(ServerLevel level, BlockPos origin, CarriagePartAssignment a,
+                                                    CarriageDims dims, long seed, int carriageIndex,
+                                                    boolean flatbedAtBack, boolean flatbedAtFront, String stageFilter) {
+        // The selected stage's own gate — the tier-2 fallback target: when a slot has nothing explicitly
+        // linked to the stage, any part whose effective gate overlaps this gate shows instead of air.
+        games.brennan.dungeontrain.template.TemplateGate stageGate =
+            games.brennan.dungeontrain.editor.StageStore.gateOf(stageFilter).orElse(null);
+        StringBuilder desc = new StringBuilder();
+        for (CarriagePartKind kind : CarriagePartKind.values()) {
+            java.util.List<String> picks = a.pickPerPlacementForStage(
+                kind, seed, carriageIndex, flatbedAtBack, flatbedAtFront, stageFilter, stageGate);
+            // Air out the whole slot first (drop the base shell inside this swappable band), then stamp
+            // any stage-linked placement on top. Nothing linked (or template missing) ⇒ the slot stays air.
+            CarriagePartPlacer.eraseKind(level, origin, kind, dims);
+            boolean stamped = false;
+            for (String picked : picks) {
+                if (!CarriagePartKind.NONE.equals(picked)
+                    && CarriagePartTemplateStore.get(level, kind, picked, dims).isPresent()) {
+                    stamped = true;
+                    break;
+                }
+            }
+            if (!stamped) continue;
+            CarriagePartPlacer.placeAtPerPlacement(level, origin, kind, picks, dims, seed, carriageIndex);
+            if (desc.length() > 0) desc.append(",");
+            desc.append(kind.id()).append("=");
+            if (picks.size() == 1 || picks.get(0).equals(picks.get(picks.size() - 1))) {
+                desc.append(picks.get(0));
+            } else {
+                desc.append(String.join("/", picks));
+            }
+        }
+        return "parts(stage:" + stageFilter + (desc.length() == 0 ? " —" : " " + desc) + ")";
     }
 
     private static Set<BlockPos> finishPlace(ServerLevel level, BlockPos origin,

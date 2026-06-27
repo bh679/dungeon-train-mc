@@ -214,6 +214,8 @@ public final class EditorTypeMenuRenderer {
     private static final int STAGE_CUSTOM_COLOR = 0xFF99AABB;
     /** Red band behind stage rows while remove-mode is active. */
     private static final int REMOVE_ROW_BG = 0x60FF4444;
+    /** Persistent green tint behind the stage row that is the focused per-stage carriage preview. */
+    private static final int SELECTED_ROW_BG = 0x6055DD55;
     /** Green "+ Add" / red "– Remove" toolbar button text. */
     private static final int STAGE_ADD_COLOR = 0xFFAAFFAA;
     private static final int STAGE_REMOVE_COLOR = 0xFFFF9999;
@@ -248,6 +250,8 @@ public final class EditorTypeMenuRenderer {
     private static final String NEW_LABEL = "+ New";
 
     private static volatile List<EditorTypeMenusPacket.Menu> CACHE = List.of();
+    /** Global "focused stage" id for the per-stage carriage preview ("" = none); mirrors the server selection. */
+    private static volatile String SELECTED_STAGE = "";
     private static volatile Hovered HOVERED = Hovered.NONE;
 
     /**
@@ -297,6 +301,7 @@ public final class EditorTypeMenuRenderer {
     public static void applySnapshot(EditorTypeMenusPacket packet) {
         if (packet.isEmpty()) {
             CACHE = List.of();
+            SELECTED_STAGE = "";
             HOVERED = Hovered.NONE;
             PACKAGE_BASIS = null;
             stagesRemoveMode = false;
@@ -305,6 +310,7 @@ public final class EditorTypeMenuRenderer {
         }
         List<EditorTypeMenusPacket.Menu> menus = List.copyOf(packet.menus());
         CACHE = menus;
+        SELECTED_STAGE = packet.selectedStageId();
         // Keep PACKAGE_BASIS sticky across snapshots that still carry a
         // package menu (so category switches don't reorient the panel); drop
         // it if the new snapshot has no package menu, so the next appearance
@@ -321,6 +327,11 @@ public final class EditorTypeMenuRenderer {
 
     public static List<EditorTypeMenusPacket.Menu> menus() {
         return CACHE;
+    }
+
+    /** The globally focused stage id for the per-stage carriage preview, or "" when none is selected. */
+    public static String selectedStage() {
+        return SELECTED_STAGE;
     }
 
     public static Hovered hovered() {
@@ -1456,6 +1467,9 @@ public final class EditorTypeMenuRenderer {
             double rowCY = (rowTop + rowBottom) / 2.0;
             drawQuad(ps, buffer, -halfW, rowTop - 0.005, halfW, rowTop + 0.005, ROW_SEP_COLOR);
             if (removeMode) drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005, halfW - 0.005, rowTop - 0.005, REMOVE_ROW_BG);
+            // Persistent green tint on the focused stage (the one driving the per-stage carriage preview).
+            boolean selectedRow = !removeMode && !SELECTED_STAGE.isEmpty() && SELECTED_STAGE.equals(v.modelId());
+            if (selectedRow) drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005, halfW - 0.005, rowTop - 0.005, SELECTED_ROW_BG);
 
             StageRowCells rc = stageRowCells(-halfW, halfW);
             CellKind hoverCell = hovered.variantIdx == vi ? hovered.cell : CellKind.NONE;

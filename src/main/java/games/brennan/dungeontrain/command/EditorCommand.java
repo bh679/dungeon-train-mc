@@ -1105,6 +1105,13 @@ public final class EditorCommand {
                         .executes(c -> runStageRename(c.getSource(), StringArgumentType.getString(c, "id"),
                             StringArgumentType.getString(c, "name"))))))
             .then(Commands.literal("list").executes(c -> runStageList(c.getSource())))
+            // Focus a stage: previews every carriage for it (assigned parts stamped, unassigned slots
+            // aired out over the kept base shell) and defaults newly-added parts to it. Re-selecting the
+            // same id toggles the preview off; `deselect` clears it explicitly.
+            .then(Commands.literal("select")
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGE_SUGGESTIONS)
+                    .executes(c -> runStageSelect(c.getSource(), StringArgumentType.getString(c, "id")))))
+            .then(Commands.literal("deselect").executes(c -> runStageDeselect(c.getSource())))
             // Gate editing for a stage reuses the shared min/max/phase builders, keyed on the stage id.
             .then(minLevelSingle(STAGE_SUGGESTIONS, EditorCommand::applyStageGate))
             .then(maxLevelSingle(STAGE_SUGGESTIONS, EditorCommand::applyStageGate))
@@ -1174,6 +1181,11 @@ public final class EditorCommand {
                 source.sendFailure(Component.literal("No such stage: " + rawId).withStyle(ChatFormatting.RED));
                 return 0;
             }
+            // If the deleted stage was the focused preview, drop the selection and restore normal preview.
+            if (games.brennan.dungeontrain.editor.EditorStageSelection.isSelected(rawId)) {
+                games.brennan.dungeontrain.editor.EditorStageSelection.clear();
+                restampCarriagePlotsForStage(source);
+            }
             source.sendSuccess(() -> Component.literal("Editor: deleted stage '"
                 + rawId.toLowerCase(java.util.Locale.ROOT) + "'. Linked templates fall back to their inline gate.")
                 .withStyle(ChatFormatting.YELLOW), true);
@@ -1217,6 +1229,60 @@ public final class EditorCommand {
                 + ".." + maxStr + ", phases [" + phaseStr + "]").withStyle(ChatFormatting.GRAY), false);
         }
         return stages.size();
+    }
+
+    /**
+     * Toggle the focused {@link games.brennan.dungeontrain.editor.EditorStageSelection stage}: select
+     * {@code rawId} if it isn't already focused, else clear (re-selecting the same row deselects). On
+     * change, re-stamp the carriage plots so the per-stage preview refreshes; the client highlight
+     * follows automatically via the per-tick type-menu snapshot.
+     */
+    private static int runStageSelect(CommandSourceStack source, String rawId) {
+        String id = rawId == null ? "" : rawId.toLowerCase(java.util.Locale.ROOT);
+        if (!games.brennan.dungeontrain.editor.StageStore.exists(id)) {
+            source.sendFailure(Component.literal("No such stage: " + rawId).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        boolean nowSelected = !games.brennan.dungeontrain.editor.EditorStageSelection.isSelected(id);
+        if (nowSelected) {
+            games.brennan.dungeontrain.editor.EditorStageSelection.select(id);
+        } else {
+            games.brennan.dungeontrain.editor.EditorStageSelection.clear();
+        }
+        restampCarriagePlotsForStage(source);
+        if (nowSelected) {
+            source.sendSuccess(() -> Component.literal("Editor: previewing carriages for stage '" + id
+                + "'. Added parts default to this stage.").withStyle(ChatFormatting.GREEN), false);
+        } else {
+            source.sendSuccess(() -> Component.literal("Editor: stage preview off ('" + id + "').")
+                .withStyle(ChatFormatting.YELLOW), false);
+        }
+        return 1;
+    }
+
+    /** Clear any focused stage and restore the normal carriage preview. */
+    private static int runStageDeselect(CommandSourceStack source) {
+        games.brennan.dungeontrain.editor.EditorStageSelection.clear();
+        restampCarriagePlotsForStage(source);
+        source.sendSuccess(() -> Component.literal("Editor: stage preview off.")
+            .withStyle(ChatFormatting.YELLOW), false);
+        return 1;
+    }
+
+    /**
+     * Re-stamp every carriage plot so the per-stage preview reflects the current selection — but only
+     * when CARRIAGES is the stamped category. In any other category the carriage plots are cleared, so
+     * repainting them here would wrongly resurrect carriages over the active category's plots; the
+     * selection still applies and the preview appears next time the player enters CARRIAGES.
+     */
+    private static void restampCarriagePlotsForStage(CommandSourceStack source) {
+        if (EditorStampedCategoryState.current().orElse(null) != EditorCategory.CARRIAGES) return;
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        for (games.brennan.dungeontrain.train.CarriageVariant v
+                : games.brennan.dungeontrain.train.CarriageVariantRegistry.allVariants()) {
+            CarriageEditor.stampPlot(overworld, v, dims);
+        }
     }
 
     private static String phaseTokens(TemplateGate g) {

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "variants": {
     "6,0,1": { "lockId": 1, "states": [{"state": "minecraft:black_concrete", "weight": 9}, "minecraft:sculk"] },
     "6,0,0": { "lockId": 1, "states": [{"state": "minecraft:black_concrete", "weight": 9}, "minecraft:sculk"] },

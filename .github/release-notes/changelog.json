@@ -2688,6 +2688,49 @@
         "Editing a wall/door side while facing its open air now targets the side you're looking at"
       ],
       "date": "2026-06-26",
+      "released": true,
+      "released_in": "v0.371.0",
+      "released_at": "2026-06-26T14:30:22Z"
+    },
+    {
+      "id": "sandstone-carriage-variants",
+      "version": "0.371.0",
+      "type": "content",
+      "title": "New sandstone carriage parts",
+      "summary": "Fresh sandstone carriage parts join the rotation \u2014 windowed, broken, and open-lattice sandstone walls plus an open sandstone roof \u2014 woven into several existing carriages for more variety on the train.",
+      "highlights": [
+        "Windowed, broken, and open sandstone wall variants",
+        "New open sandstone roof part"
+      ],
+      "pr": 604,
+      "date": "2026-06-26",
+      "released": true,
+      "released_in": "v0.371.0",
+      "released_at": "2026-06-26T14:30:22Z"
+    },
+    {
+      "id": "feedback-kill-allowlist",
+      "version": "0.372.0",
+      "type": "fix",
+      "title": "/feedback allowed in Free Play; /kill restricted to self only",
+      "summary": "Using /feedback (the bug-report command) no longer flags your run as Free Play. /kill with a target selector (e.g. /kill @e) now correctly taints the run \u2014 only bare /kill (self) remains clean.",
+      "highlights": [],
+      "date": "2026-06-26",
+      "released": true,
+      "released_in": "v0.372.0",
+      "released_at": "2026-06-26T23:58:21Z"
+    },
+    {
+      "id": "copy-variant-grouping-on-duplicate",
+      "version": "0.372.0",
+      "type": "feat",
+      "title": "Duplicating a template keeps its block-variant grouping",
+      "summary": "When you create a new part, carriage, or contents template from 'Current', the editor now also copies the block-variant grouping (locked cells that roll the same variant together), not just the per-cell variant options. Duplicated locked groups stay grouped instead of having to be re-linked by hand.",
+      "highlights": [
+        "New-from-current now carries over variant lock groups, not just variant options",
+        "Applies to part, carriage, and contents duplicates"
+      ],
+      "date": "2026-06-27",
       "released": false,
       "released_in": null,
       "released_at": null
