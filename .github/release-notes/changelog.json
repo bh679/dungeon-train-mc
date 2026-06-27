@@ -2731,9 +2731,9 @@
         "Applies to part, carriage, and contents duplicates"
       ],
       "date": "2026-06-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.373.0",
+      "released_at": "2026-06-27T07:20:56Z"
     },
     {
       "id": "carriage-stage-theme-sync",
@@ -2745,9 +2745,9 @@
         "No more stretches of out-of-place carriages deep into the End or after leaving the Nether"
       ],
       "date": "2026-06-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.373.0",
+      "released_at": "2026-06-27T07:20:56Z"
     },
     {
       "id": "copper-carriage-parts",
@@ -2761,13 +2761,30 @@
         "New copper stage with retuned copper/desert/stone level bands"
       ],
       "date": "2026-06-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.373.0",
+      "released_at": "2026-06-27T07:20:56Z"
+    },
+    {
+      "id": "evoker-breeze-elder-enemies",
+      "version": "0.373.0",
+      "type": "content",
+      "title": "New enemy carriages: Evoker, Breeze, and Elder Guardian",
+      "summary": "Three new enemy carriage types have been added to the train \u2014 Evoker, Breeze, and Elder Guardian \u2014 each with their own loot. The stone stage now scales up to level 10.",
+      "highlights": [
+        "Evoker carriage with totem and rare loot",
+        "Breeze carriage with wind charge drops",
+        "Elder Guardian carriage with mining fatigue threat",
+        "Stone stage extended to max level 10"
+      ],
+      "date": "2026-06-27",
+      "released": true,
+      "released_in": "v0.373.0",
+      "released_at": "2026-06-27T07:20:56Z"
     },
     {
       "id": "subvariant-stage-gating",
-      "version": "0.372.0",
+      "version": "0.373.0",
       "type": "feat",
       "title": "Editor: stage & spawn-gating for content sub-variants",
       "summary": "The in-game content editor now lets you gate individual sub-variants of a content group, not just top-level variants. Each member of a group (e.g. the mobs inside an \"enemies\" group) can be linked to a Stage or given its own spawn band (Diff-Level range + dimensions), straight from the Sub-Variants panel \u2014 so you can make one sub-variant appear only in the Nether while another stays in the Overworld.",

@@ -61,6 +61,18 @@
     {
       "id": "witch",
       "weight": 1
+    },
+    {
+      "id": "evoker",
+      "weight": 1
+    },
+    {
+      "id": "breeze",
+      "weight": 1
+    },
+    {
+      "id": "elder",
+      "weight": 1
     }
   ]
 }
