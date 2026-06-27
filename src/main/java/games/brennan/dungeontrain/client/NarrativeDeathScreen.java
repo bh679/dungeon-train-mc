@@ -130,6 +130,16 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int BTN_QUIT_TEXT  = 0xFFFFFFFF;
     private static final int BTN_PRI_BG     = 0xFF3C6B41;
     private static final int BTN_PRI_LIGHT  = 0xFF5C9162;
+    // Red "Submit Bug" shortcut button (start page, beside Next Screen).
+    private static final int BTN_BUG_BG     = 0xFF8B3A3A;
+    private static final int BTN_BUG_LIGHT  = 0xFFB45C5C;
+    private static final int BTN_BUG_TEXT   = 0xFFFFFFFF;
+    // Faded-green "Bug Submitted" status variant: the primary-green bevel at ~80% alpha
+    // (0xCC). drawBevel→fade() then scales by uiAlpha, so it lands at ~80% once settled.
+    private static final int BTN_DONE_BG    = 0xCC3C6B41;
+    private static final int BTN_DONE_LIGHT = 0xCC5C9162;
+    private static final int BTN_DONE_DARK  = 0xCC1E1F21;
+    private static final int BTN_DONE_TEXT  = 0xCCFFFFFF;
     private static final int SCORE_BG       = 0xFF1A1813;
     private static final int SCORE_BORDER   = 0xFF4A443C;
     private static final int SCORE_TEXT     = 0xFFCDBB95;
@@ -223,6 +233,12 @@ public final class NarrativeDeathScreen extends Screen {
     // Clickable regions, recomputed each render() and read by mouseClicked().
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
     private Rect photosRect;
+    // Red "Submit Bug" shortcut (start page only); null when absent or shown as the
+    // non-clickable green "Bug Submitted" status.
+    private Rect bugReportRect;
+    // Set when the bug page is opened via the shortcut, so the next Next Screen on that
+    // page returns to the start page instead of advancing forward.
+    private boolean returnToStartAfterBug = false;
     private final List<Rect> scoreRects = new ArrayList<>();
 
     // ---- Cargo (GEAR) page: inline cargo icons + scrollable advancements row ----
@@ -275,7 +291,10 @@ public final class NarrativeDeathScreen extends Screen {
             commentBox.setMaxLength(256);
             String qid = p.survey().id();
             commentBox.setValue(comments.getOrDefault(qid, ""));
-            commentBox.setResponder(s -> comments.put(qid, s));
+            // Editing an already-sent answer clears its "Sent" badge so the new text
+            // re-submits on Next Screen. setValue above runs before this responder is
+            // attached, so re-entering the page doesn't spuriously fire it.
+            commentBox.setResponder(s -> { comments.put(qid, s); submitted.remove(qid); });
             // The bug question asks for a detailed free-text description; otherwise a text question
             // (no rating scale) makes the box the sole answer (prompt for it directly), and a scale
             // question's comment just explains the score.
@@ -387,6 +406,7 @@ public final class NarrativeDeathScreen extends Screen {
         platformLeaveRect = null;
         continueRect = null;
         backRect = null;
+        bugReportRect = null;
         containersRect = null;
         booksRect = null;
         seeAllRect = null;
@@ -1050,6 +1070,31 @@ public final class NarrativeDeathScreen extends Screen {
         }
     }
 
+    /** Index of the data-driven bug-report survey page, or -1 if it isn't in this run's set. */
+    private int bugPageIndex() {
+        for (int i = 0; i < pages.size(); i++) {
+            Page p = pages.get(i);
+            if (p.kind() == Kind.SURVEY && p.survey() != null && BUG_REPORT_ID.equals(p.survey().id())) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * True once the bug-report question has been submitted with a real-bug answer (anything
+     * but "No"). Drives the start-page shortcut's red "Submit Bug" → green "Bug Submitted"
+     * flip; a "No" answer (or a later change/clear of the answer) keeps it red.
+     */
+    private boolean bugReported() {
+        int idx = bugPageIndex();
+        if (idx < 0 || !submitted.contains(BUG_REPORT_ID)) return false;
+        SurveyQuestionPayload.Entry e = pages.get(idx).survey();
+        int sel = scores.getOrDefault(BUG_REPORT_ID, -1);
+        if (sel < 0 || sel >= e.options().size()) return false;
+        return !e.options().get(sel).equalsIgnoreCase("No");
+    }
+
     private void drawFooter(GuiGraphics g, Page page, int mouseX, int mouseY) {
         int rowY = this.height - 28;
 
@@ -1060,6 +1105,29 @@ public final class NarrativeDeathScreen extends Screen {
             int bw = 120, h = 18;
             int bx = this.width / 2 - bw / 2;
             continueRect = drawBevel(g, bx, rowY, bw, h, cont, BTN_BG, BTN_LIGHT, BTN_DARK, BTN_TEXT);
+
+            // Right of Next Screen: the bug shortcut (start page) or a per-form "Sent" badge.
+            int slotX = bx + bw + 8;
+            if (page.kind() == Kind.FALL && bugPageIndex() >= 0) {
+                if (bugReported()) {
+                    // Faded-green status — not clickable (bugReportRect stays null).
+                    Component done = Component.translatable("gui.dungeontrain.death.narr.bug_submitted");
+                    int dw = this.font.width(done) + 16;
+                    drawBevel(g, slotX, rowY, dw, h, done, BTN_DONE_BG, BTN_DONE_LIGHT, BTN_DONE_DARK, BTN_DONE_TEXT);
+                } else {
+                    Component submit = Component.translatable("gui.dungeontrain.death.narr.bug_submit");
+                    int sw = this.font.width(submit) + 16;
+                    // Prompt above the button inviting a report (red state only).
+                    drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.narr.bug_prompt"),
+                            slotX + sw / 2, rowY - this.font.lineHeight - 2, BTN_BUG_LIGHT);
+                    bugReportRect = drawBevel(g, slotX, rowY, sw, h, submit, BTN_BUG_BG, BTN_BUG_LIGHT, BTN_DARK, BTN_BUG_TEXT);
+                }
+            } else if (page.kind() == Kind.SURVEY && page.survey() != null
+                    && submitted.contains(page.survey().id())) {
+                // Confirmation that this feedback form was sent (clears if the answer changes).
+                drawChip(g, slotX, rowY + 2, Component.translatable("gui.dungeontrain.death.narr.feedback_sent"),
+                        CHIP_RB_BORDER, CHIP_RB_TEXT);
+            }
         }
 
         // Bare back-arrow (icon only), left of the button row — hidden on page 0.
@@ -1084,6 +1152,12 @@ public final class NarrativeDeathScreen extends Screen {
             if (reboardRect != null && reboardRect.has(mx, my)) { boardAnew(); return true; }
             if (leaveRect != null && leaveRect.has(mx, my)) { leaveOrQuit(); return true; }
             Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
+            if (bugReportRect != null && bugReportRect.has(mx, my)) {
+                // Jump straight to the bug-report question; Next Screen there returns here.
+                returnToStartAfterBug = true;
+                startTransition(bugPageIndex());
+                return true;
+            }
             if (page.kind() == Kind.PLATFORM) {
                 if (boardAnewRect != null && boardAnewRect.has(mx, my)) { boardAnew(); return true; }
                 if (platformLeaveRect != null && platformLeaveRect.has(mx, my)) { leaveOrQuit(); return true; }
@@ -1097,9 +1171,14 @@ public final class NarrativeDeathScreen extends Screen {
                 return true;
             }
             if (page.kind() == Kind.SURVEY && page.survey() != null) {
+                String qid = page.survey().id();
                 for (int i = 0; i < scoreRects.size(); i++) {
                     if (scoreRects.get(i).has(mx, my)) {
-                        scores.put(page.survey().id(), page.survey().scaleMin() + i);
+                        int value = page.survey().scaleMin() + i;
+                        // Changing the answer clears its "Sent" badge so it re-submits on
+                        // Next Screen; re-clicking the same tile is a no-op for that state.
+                        if (value != scores.getOrDefault(qid, -1)) submitted.remove(qid);
+                        scores.put(qid, value);
                         return true;
                     }
                 }
@@ -1129,13 +1208,22 @@ public final class NarrativeDeathScreen extends Screen {
             // unanswered question must not block Continue.
             maybeSubmit(page.survey());
         }
-        if (currentPage < pages.size() - 1) {
+        // Bug page reached via the start-page shortcut: Next Screen returns to the start
+        // (page 0) instead of paging forward. Consume the flag either way.
+        boolean returnToStart = returnToStartAfterBug
+                && page.kind() == Kind.SURVEY && page.survey() != null
+                && BUG_REPORT_ID.equals(page.survey().id());
+        returnToStartAfterBug = false;
+        if (returnToStart) {
+            startTransition(0);
+        } else if (currentPage < pages.size() - 1) {
             startTransition(currentPage + 1);
         }
     }
 
     private void back() {
         if (uiBusy) return;
+        returnToStartAfterBug = false;
         if (currentPage > 0) {
             startTransition(currentPage - 1);
         }
