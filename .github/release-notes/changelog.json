@@ -2716,9 +2716,9 @@
       "summary": "Using /feedback (the bug-report command) no longer flags your run as Free Play. /kill with a target selector (e.g. /kill @e) now correctly taints the run \u2014 only bare /kill (self) remains clean.",
       "highlights": [],
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.372.0",
+      "released_at": "2026-06-26T23:58:21Z"
     },
     {
       "id": "copy-variant-grouping-on-duplicate",
