@@ -2781,6 +2781,22 @@
       "released": true,
       "released_in": "v0.373.0",
       "released_at": "2026-06-27T07:20:56Z"
+    },
+    {
+      "id": "subvariant-stage-gating",
+      "version": "0.373.0",
+      "type": "feat",
+      "title": "Editor: stage & spawn-gating for content sub-variants",
+      "summary": "The in-game content editor now lets you gate individual sub-variants of a content group, not just top-level variants. Each member of a group (e.g. the mobs inside an \"enemies\" group) can be linked to a Stage or given its own spawn band (Diff-Level range + dimensions), straight from the Sub-Variants panel \u2014 so you can make one sub-variant appear only in the Nether while another stays in the Overworld.",
+      "highlights": [
+        "Sub-variant rows now show the same Stage chip and level/dimension cells as top-level content variants; the \"(default)\" row stays weight-only.",
+        "Gated sub-variants are filtered at spawn time; if a band excludes every member, the group parent's own contents fill the slot instead."
+      ],
+      "pr": 610,
+      "date": "2026-06-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

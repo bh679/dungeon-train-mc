@@ -206,7 +206,7 @@ public final class CarriageContentsRegistry {
         if (ctx.fallbackToDefault) {
             return CarriageContents.of(ContentsType.DEFAULT);
         }
-        return resolveGroup(ctx.picked, ctx.parentRng, safeAllow);
+        return resolveGroup(ctx.picked, ctx.parentRng, safeAllow, gateCtx);
     }
 
     /** Synchronised pool snapshot + top-level weighted pick. */
@@ -294,21 +294,44 @@ public final class CarriageContentsRegistry {
      * level — it operates only on parents at top-level pick time, by
      * design. Once a parent passes the allow-list and gets picked, its full
      * sub-variant pool runs unfiltered.
+     *
+     * <p>Members carry their own spawn {@link TemplateGate gate} (or a linked Stage's gate). When
+     * {@code gateCtx != null} out-of-band / out-of-phase members are dropped before the draw,
+     * mirroring the top-level pool gating in {@link #buildPickContext}. Unlike that pool, the
+     * synthetic <b>self</b> entry is always kept — it is the parent's own contents, already
+     * gate-cleared at the top-level pick — so the slot stays fillable even when the gate excludes
+     * every member. Filtering is therefore <b>strict</b> (no ungated fallback): falling back would
+     * spawn a member outside its allowed band, defeating the gate.</p>
      */
     @SuppressWarnings("unused") // allow-list intentionally not used inside group resolution
     private static CarriageContents resolveGroup(
-        CarriageContents picked, Random parentRng, CarriageContentsAllowList allow
+        CarriageContents picked, Random parentRng, CarriageContentsAllowList allow, GateContext gateCtx
     ) {
         Optional<CarriageContentsGroup> groupOpt = CarriageContentsGroupStore.get(picked.id());
         if (groupOpt.isEmpty() || groupOpt.get().isEmpty()) return picked;
         CarriageContentsGroup group = groupOpt.get();
 
-        // Pool: synthetic self + every explicit member, no allow-list filter.
+        // Members eligible for the current spawn context — the per-member gate (or its linked Stage's
+        // gate) filters here. Strict: an emptied member pool falls through to self-only, never the
+        // ungated list (see method doc).
+        List<CarriageContentsGroup.Member> members = group.members();
+        if (gateCtx != null) {
+            List<CarriageContentsGroup.Member> gated = new ArrayList<>(members.size());
+            for (CarriageContentsGroup.Member m : members) {
+                if (gateCtx.allows(games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), m.stageId()))) {
+                    gated.add(m);
+                }
+            }
+            if (members.size() != gated.size() && gated.isEmpty()) warnGroupGateEmptyOnce(picked.id());
+            members = gated;
+        }
+
+        // Pool: synthetic self + every eligible member, no allow-list filter.
         // Self-weight is read from the group sidecar (defaults to
         // CarriageContentsGroup.DEFAULT_SELF_WEIGHT for pre-v1.1 files).
-        List<PoolEntry> pool = new ArrayList<>(group.members().size() + 1);
+        List<PoolEntry> pool = new ArrayList<>(members.size() + 1);
         pool.add(new PoolEntry(SELF_TOKEN, group.selfWeight()));
-        for (CarriageContentsGroup.Member m : group.members()) {
+        for (CarriageContentsGroup.Member m : members) {
             pool.add(new PoolEntry(m.id(), m.weight()));
         }
 
@@ -380,6 +403,16 @@ public final class CarriageContentsRegistry {
             GATE_EMPTY_WARNED = true;
             LOGGER.warn("[DungeonTrain] Min/max-level + phase gates emptied the carriage contents pool — "
                 + "falling back to the ungated pool. Check the contents' level bands and phases.");
+        }
+    }
+
+    /** De-duped per-parent warning when a group's per-member gates exclude every member for a pick. */
+    private static final Set<String> GROUP_GATE_EMPTY_WARNED = ConcurrentHashMap.newKeySet();
+    private static void warnGroupGateEmptyOnce(String parentId) {
+        if (GROUP_GATE_EMPTY_WARNED.add(parentId)) {
+            LOGGER.warn("[DungeonTrain] Contents group '{}' — per-member gates excluded every sub-variant for this "
+                + "spawn context; only the parent's own contents are eligible. Check the members' level bands / phases.",
+                parentId);
         }
     }
 

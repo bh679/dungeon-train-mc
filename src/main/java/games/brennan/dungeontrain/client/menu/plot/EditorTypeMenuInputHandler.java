@@ -274,9 +274,11 @@ public final class EditorTypeMenuInputHandler {
             case NAME -> {
                 // Shift-click a gateable template's name opens the Stage / Custom picker (the
                 // floating-menu entry point for linking a template to a Stage). Plain click teleports.
-                if (shift && EditorPlotTeleport.stageApplyCommandFor(
+                // Skipped on Sub-Variants rows — they have a dedicated STAGE cell, and the shortcut
+                // would misfire on the weight-only "(default)" self-row (not a gateable member).
+                if (shift && !isSubVariants(menu) && EditorPlotTeleport.stageApplyCommandFor(
                         variant.category(), variant.modelId(), variant.modelName(), "custom") != null) {
-                    openStagePicker(variant);
+                    openStagePicker(menu, variant);
                     return;
                 }
                 String cmd = EditorPlotTeleport.commandFor(
@@ -312,26 +314,36 @@ public final class EditorTypeMenuInputHandler {
                 CommandRunner.run(cmd);
             }
             // Stage selector cell → open the Stage / Custom picker (chip when linked, ◆? when Custom).
-            case STAGE -> openStagePicker(variant);
+            case STAGE -> openStagePicker(menu, variant);
             // Gate cells: while the row is Stage-linked its cells show the Stage's (read-only) gate,
             // so a click opens the picker (re-pick / Custom) instead of editing — which would
             // silently detach. Custom rows edit the inline gate as before.
-            case MIN_LEVEL -> { if (!openPickerIfLinked(variant)) dispatchLevel(menu, variant, "minlevel", shift); }
-            case MAX_LEVEL -> { if (!openPickerIfLinked(variant)) dispatchLevel(menu, variant, "maxlevel", shift); }
-            case PHASE -> { if (!openPickerIfLinked(variant)) dispatchPhase(menu, variant, hit.slotIdx(), shift); }
+            case MIN_LEVEL -> { if (!openPickerIfLinked(menu, variant)) dispatchLevel(menu, variant, "minlevel", shift); }
+            case MAX_LEVEL -> { if (!openPickerIfLinked(menu, variant)) dispatchLevel(menu, variant, "maxlevel", shift); }
+            case PHASE -> { if (!openPickerIfLinked(menu, variant)) dispatchPhase(menu, variant, hit.slotIdx(), shift); }
             default -> {}
         }
     }
 
     /** Open the Stage / Custom picker for {@code variant} when it is Stage-linked; returns whether it did. */
-    private static boolean openPickerIfLinked(EditorTypeMenusPacket.Variant variant) {
+    private static boolean openPickerIfLinked(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant) {
         if (!variant.isStageLinked()) return false;
-        openStagePicker(variant);
+        openStagePicker(menu, variant);
         return true;
     }
 
-    /** Open the {@link games.brennan.dungeontrain.client.menu.StagePickerScreen} for {@code variant}. */
-    private static void openStagePicker(EditorTypeMenusPacket.Variant variant) {
+    /**
+     * Open the {@link games.brennan.dungeontrain.client.menu.StagePickerScreen} for {@code variant}.
+     * Sub-Variants companion rows target the contents <em>group member</em> picker (parent = the
+     * companion's first/"default" row); all other rows use the top-level (category, model) picker.
+     */
+    private static void openStagePicker(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant) {
+        if (isSubVariants(menu)) {
+            String parentId = menu.variants().get(0).modelId();
+            CommandMenuState.openAt(games.brennan.dungeontrain.client.menu.StagePickerScreen
+                .forGroupMember(parentId, variant.modelId(), variant.stageId()));
+            return;
+        }
         CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.StagePickerScreen(
             variant.category(), variant.modelId(), variant.modelName(), variant.stageId()));
     }
@@ -398,11 +410,20 @@ public final class EditorTypeMenuInputHandler {
     /** Lowercase phase tokens indexed by {@code TrainPhase} ordinal (OVERWORLD/NETHER/VOID/END). */
     private static final String[] PHASE_TOKENS = {"overworld", "nether", "void", "end"};
 
-    /** Bump a per-template gate level bound. Gate cells render only on top-level template rows. */
+    /**
+     * Bump a per-template gate level bound. On Sub-Variants rows this targets the group member's
+     * gate (in the parent's {@code .group.json}); elsewhere the top-level template gate.
+     */
     private static void dispatchLevel(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant,
                                       String sub, boolean shift) {
-        if (isSubVariants(menu)) return;
         String dir = shift ? "dec" : "inc";
+        if (isSubVariants(menu)) {
+            String parentId = menu.variants().get(0).modelId();
+            String cmd = EditorPlotTeleport.groupMemberLevelCommandFor(parentId, variant.modelId(), sub, dir);
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu group {} : {}", sub, cmd);
+            CommandRunner.run(cmd);
+            return;
+        }
         String cmd = EditorPlotTeleport.levelCommandFor(
             variant.category(), variant.modelId(), variant.modelName(), sub, dir);
         if (cmd == null) return;
@@ -417,10 +438,17 @@ public final class EditorTypeMenuInputHandler {
      */
     private static void dispatchPhase(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant,
                                       int slot, boolean shift) {
-        if (isSubVariants(menu)) return;
         if (slot < 0 || slot >= PHASE_TOKENS.length) return;
         boolean on = (variant.phaseMask() & (1 << slot)) != 0;
         String action = shift ? "others" : (on ? "off" : "on");
+        if (isSubVariants(menu)) {
+            String parentId = menu.variants().get(0).modelId();
+            String cmd = EditorPlotTeleport.groupMemberPhaseCommandFor(
+                parentId, variant.modelId(), PHASE_TOKENS[slot], action);
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu group phase {} {}: {}", PHASE_TOKENS[slot], action, cmd);
+            CommandRunner.run(cmd);
+            return;
+        }
         String cmd = EditorPlotTeleport.phaseCommandFor(
             variant.category(), variant.modelId(), variant.modelName(),
             PHASE_TOKENS[slot], action);

@@ -486,6 +486,11 @@ public final class EditorCommand {
                                         StringArgumentType.getString(ctx, "parent"),
                                         StringArgumentType.getString(ctx, "child"),
                                         IntegerArgumentType.getInteger(ctx, "value")))))))
+                    // Per-member spawn gate (min/max Diff-Level + phase) — the Sub-Variants companion's
+                    // gate cells dispatch these (parent + child keyed, like set-weight above).
+                    .then(minLevelGroup())
+                    .then(maxLevelGroup())
+                    .then(phaseGroup())
                     .then(Commands.literal("remove")
                         .then(Commands.argument("parent", StringArgumentType.word())
                             .suggests(CONTENTS_SUGGESTIONS)
@@ -1128,6 +1133,13 @@ public final class EditorCommand {
                         .then(Commands.argument("stage", StringArgumentType.word()).suggests(STAGE_OR_CUSTOM_SUGGESTIONS)
                             .executes(c -> applyContentsStage(c.getSource(),
                                 StringArgumentType.getString(c, "id"), StringArgumentType.getString(c, "stage"))))))
+                .then(Commands.literal("contents-group")
+                    .then(Commands.argument("parent", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
+                        .then(Commands.argument("child", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
+                            .then(Commands.argument("stage", StringArgumentType.word()).suggests(STAGE_OR_CUSTOM_SUGGESTIONS)
+                                .executes(c -> applyGroupMemberStage(c.getSource(),
+                                    StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                                    StringArgumentType.getString(c, "stage")))))))
                 .then(Commands.literal("tracks")
                     .then(Commands.argument("kind", StringArgumentType.word()).suggests(TRACK_KIND_SUGGESTIONS)
                         .then(Commands.argument("name", StringArgumentType.word()).suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
@@ -1564,6 +1576,133 @@ public final class EditorCommand {
             }
         }
         return runContentsGroupWeightSet(source, parentRaw, childRaw, current + delta);
+    }
+
+    /**
+     * Read-modify-write a group <em>member</em>'s spawn {@link TemplateGate} in {@code parentRaw}'s
+     * {@code .group.json}. Mirrors {@link #applyContentsGate} but keyed on (parent, member); editing
+     * the inline gate detaches any Stage link (matches the top-level {@code setGate} contract — the UI
+     * routes linked rows to the picker instead of here, so this only fires on Custom members).
+     */
+    private static int applyGroupMemberGate(CommandSourceStack source, String parentRaw, String memberRaw,
+                                            java.util.function.UnaryOperator<TemplateGate> op) {
+        CarriageContents parent = parseContents(source, parentRaw);
+        if (parent == null) return 0;
+        CarriageContents member = parseContents(source, memberRaw);
+        if (member == null) return 0;
+        java.util.Optional<CarriageContentsGroup> existing = CarriageContentsGroupStore.get(parent.id());
+        if (existing.isEmpty()) {
+            source.sendFailure(Component.literal("No contents group defined for '" + parent.id() + "'.")
+                .withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        java.util.Optional<CarriageContentsGroup.Member> mOpt = existing.get().member(member.id());
+        if (mOpt.isEmpty()) {
+            source.sendFailure(Component.literal("'" + member.id() + "' is not a member of group '"
+                + parent.id() + "'.").withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        try {
+            CarriageContentsGroup.Member m = mOpt.get();
+            TemplateGate current = games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), m.stageId());
+            TemplateGate next = op.apply(current);
+            CarriageContentsGroup.Member updated = new CarriageContentsGroup.Member(m.id(), m.weight(), next, null);
+            CarriageContentsGroupStore.save(parent.id(), existing.get().withMember(updated));
+            gateSuccess(source, parent.id() + ":" + member.id(), next,
+                CarriageContentsGroupStore.fileForId(parent.id()).toString());
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "contents group", parent.id() + ":" + member.id(), t);
+        }
+    }
+
+    /**
+     * Link a group member to a Stage ({@code stageToken}; {@code custom}/blank detaches). Mirrors
+     * {@link #applyContentsStage}; detach snapshots the live Stage gate inline (so the band the member
+     * had is preserved as a Custom gate), matching {@code CarriageContentsWeights.setStage}.
+     */
+    private static int applyGroupMemberStage(CommandSourceStack source, String parentRaw, String memberRaw, String stageToken) {
+        CarriageContents parent = parseContents(source, parentRaw);
+        if (parent == null) return 0;
+        CarriageContents member = parseContents(source, memberRaw);
+        if (member == null) return 0;
+        java.util.Optional<CarriageContentsGroup> existing = CarriageContentsGroupStore.get(parent.id());
+        if (existing.isEmpty()) {
+            source.sendFailure(Component.literal("No contents group defined for '" + parent.id() + "'.")
+                .withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        java.util.Optional<CarriageContentsGroup.Member> mOpt = existing.get().member(member.id());
+        if (mOpt.isEmpty()) {
+            source.sendFailure(Component.literal("'" + member.id() + "' is not a member of group '"
+                + parent.id() + "'.").withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        String link = resolveStageLink(source, stageToken);
+        if (link == INVALID_STAGE) return 0;
+        try {
+            CarriageContentsGroup.Member m = mOpt.get();
+            TemplateGate inline = m.gate();
+            if (link == null && m.stageId() != null) {
+                inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, m.stageId());
+            }
+            CarriageContentsGroup.Member updated = new CarriageContentsGroup.Member(m.id(), m.weight(), inline, link);
+            CarriageContentsGroupStore.save(parent.id(), existing.get().withMember(updated));
+            stageApplySuccess(source, "contents group", parent.id() + ":" + member.id(), link);
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "contents group stage", parent.id() + ":" + member.id(), t);
+        }
+    }
+
+    // ---- Brigadier subtree builders (contents group member: parent + child) ----
+
+    private static LiteralArgumentBuilder<CommandSourceStack> minLevelGroup() {
+        return Commands.literal("minlevel")
+            .then(Commands.argument("parent", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
+                .then(Commands.argument("child", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
+                    .then(Commands.literal("inc").executes(c -> applyGroupMemberGate(c.getSource(),
+                        StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                        g -> g.withMinLevel(g.minLevel() + 1))))
+                    .then(Commands.literal("dec").executes(c -> applyGroupMemberGate(c.getSource(),
+                        StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                        g -> g.withMinLevel(g.minLevel() - 1))))
+                    .then(Commands.argument("value", IntegerArgumentType.integer(0, TemplateGate.MAX_LEVEL))
+                        .executes(c -> applyGroupMemberGate(c.getSource(),
+                            StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                            g -> g.withMinLevel(IntegerArgumentType.getInteger(c, "value")))))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> maxLevelGroup() {
+        return Commands.literal("maxlevel")
+            .then(Commands.argument("parent", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
+                .then(Commands.argument("child", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
+                    .then(Commands.literal("inc").executes(c -> applyGroupMemberGate(c.getSource(),
+                        StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                        EditorCommand::maxLevelInc)))
+                    .then(Commands.literal("dec").executes(c -> applyGroupMemberGate(c.getSource(),
+                        StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                        EditorCommand::maxLevelDec)))
+                    .then(Commands.argument("value", IntegerArgumentType.integer(TemplateGate.ALL, TemplateGate.MAX_LEVEL))
+                        .executes(c -> applyGroupMemberGate(c.getSource(),
+                            StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                            g -> g.withMaxLevel(IntegerArgumentType.getInteger(c, "value")))))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> phaseGroup() {
+        return Commands.literal("phase")
+            .then(Commands.argument("parent", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
+                .then(Commands.argument("child", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
+                    .then(Commands.argument("phase", StringArgumentType.word()).suggests(PHASE_SUGGESTIONS)
+                        .then(Commands.literal("on").executes(c -> applyGroupMemberGate(c.getSource(),
+                            StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                            g -> togglePhase(g, StringArgumentType.getString(c, "phase"), true))))
+                        .then(Commands.literal("off").executes(c -> applyGroupMemberGate(c.getSource(),
+                            StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                            g -> togglePhase(g, StringArgumentType.getString(c, "phase"), false))))
+                        .then(Commands.literal("others").executes(c -> applyGroupMemberGate(c.getSource(),
+                            StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                            g -> toggleOtherPhases(g, StringArgumentType.getString(c, "phase"))))))));
     }
 
     /**

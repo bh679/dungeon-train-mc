@@ -422,14 +422,19 @@ public final class EditorTypeMenuRenderer {
         double newW = font.width(NEW_LABEL) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         boolean anyWeight = false;
+        boolean anyGate = false;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
             double w = font.width(v.name()) * TEXT_SCALE + 2 * PAD_X;
             if (w > maxNameW) maxNameW = w;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT) anyWeight = true;
+            if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT
+                && v.phaseMask() != EditorTypeMenusPacket.Variant.NO_GATE) anyGate = true;
         }
-        // If any row has a weight cell, the name fills only (1 - WEIGHT_CELL_FRACTION)
-        // of the panel; size the panel so the longest name fits in that fraction.
-        double nameSpaceFraction = anyWeight ? (1.0 - WEIGHT_CELL_FRACTION) : 1.0;
+        // Reserve the gate area (weight|stage|min|max|phase) when any row carries a gate — e.g. the
+        // Sub-Variants companion's member rows — else just the weight cell, so the longest name still
+        // fits in the remaining fraction.
+        double nameSpaceFraction = anyGate ? (1.0 - GATE_AREA_FRACTION)
+            : (anyWeight ? (1.0 - WEIGHT_CELL_FRACTION) : 1.0);
         double scaledForName = maxNameW / nameSpaceFraction;
         double w = Math.max(MIN_HALF_W * 2.0, Math.max(Math.max(headerW, newW), scaledForName));
         return w / 2.0;
@@ -785,13 +790,33 @@ public final class EditorTypeMenuRenderer {
         EditorTypeMenusPacket.Variant variant = menu.variants().get(variantIdx);
 
         boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
-        if (hasWeight) {
+        if (!hasWeight) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+
+        // Sub-Variants companion rows carry the same gate + Stage cells as top-level rows; other
+        // companions keep the legacy weight-only hit logic. A NO_GATE row (e.g. the "(default)"
+        // self-row) collapses to name|weight via rightCells() regardless.
+        boolean gated = games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
+            .equals(menu.typeName());
+        if (!gated) {
             double weightCellLeft = halfW - (halfW * 2.0) * WEIGHT_CELL_FRACTION;
-            if (hitX >= weightCellLeft) {
-                return new Hovered(menuIdx, variantIdx, CellKind.WEIGHT);
-            }
+            return hitX >= weightCellLeft
+                ? new Hovered(menuIdx, variantIdx, CellKind.WEIGHT)
+                : new Hovered(menuIdx, variantIdx, CellKind.NAME);
         }
-        return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+        RightCells rc = rightCells(-halfW, halfW, true, /*allowGate*/ true, variant.phaseMask(),
+            /*showStage*/ true, variant.isStageLinked());
+        if (hitX < rc.nameRight()) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+        if (!rc.showGate()) return new Hovered(menuIdx, variantIdx, CellKind.WEIGHT);
+        if (hitX < rc.weightR()) return new Hovered(menuIdx, variantIdx, CellKind.WEIGHT);
+        if (rc.linked()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE);
+        if (rc.showStage() && hitX < rc.stageR()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE);
+        if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
+        if (hitX < rc.maxR()) return new Hovered(menuIdx, variantIdx, CellKind.MAX_LEVEL);
+        double subW = rc.phaseSubW(halfW);
+        int slot = subW > 0 ? (int) ((hitX - rc.maxR()) / subW) : 0;
+        if (slot < 0) slot = 0;
+        if (slot >= PHASE_LETTERS.length) slot = PHASE_LETTERS.length - 1;
+        return new Hovered(menuIdx, variantIdx, CellKind.PHASE, slot);
     }
 
     private static Hovered hitForNav(int menuIdx, EditorTypeMenusPacket.Menu menu, Font font,
@@ -1004,10 +1029,13 @@ public final class EditorTypeMenuRenderer {
             boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
             CellKind hoverCell = hovered.variantIdx == vi ? hovered.cell : CellKind.NONE;
 
-            // Companion (sub-variant) rows carry no per-template spawn gate — allowGate=false,
-            // showStage=false.
+            // The Sub-Variants companion's member rows carry a per-member spawn gate + Stage selector
+            // (same cells as top-level Contents rows); other companions stay weight-only. The
+            // "(default)" self-row has NO_GATE, so drawVariantRow collapses it to name|weight anyway.
+            boolean gated = games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
+                .equals(menu.typeName());
             drawVariantRow(ps, buffer, font, variant, -halfW, rowBottom, halfW, rowTop,
-                rowCY, hasWeight, false, false, hoverCell, hovered.slotIdx(),
+                rowCY, hasWeight, gated, gated, hoverCell, hovered.slotIdx(),
                 activeModelId, activeModelName);
         }
 
