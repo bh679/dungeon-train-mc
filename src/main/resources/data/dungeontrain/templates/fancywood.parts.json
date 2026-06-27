@@ -9,6 +9,11 @@
       "name": "sandstone",
       "weight": 1,
       "stage": "desert"
+    },
+    {
+      "name": "tuff",
+      "weight": 1,
+      "stage": "copper"
     }
   ],
   "walls": [
@@ -52,6 +57,12 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "desert"
+    },
+    {
+      "name": "copperopen",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "copper"
     }
   ],
   "roof": [
@@ -100,6 +111,16 @@
       "name": "sandstoneopen",
       "weight": 1,
       "stage": "desert"
+    },
+    {
+      "name": "copperopen",
+      "weight": 1,
+      "stage": "copper"
+    },
+    {
+      "name": "copperwindow",
+      "weight": 1,
+      "stage": "copper"
     }
   ],
   "doors": [

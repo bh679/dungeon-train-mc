@@ -210,6 +210,16 @@
     },
     {
       "name": "copper",
+      "weight": 10,
+      "stage": "copper"
+    },
+    {
+      "name": "copperwindow",
+      "weight": 30,
+      "stage": "copper"
+    },
+    {
+      "name": "copperopen",
       "weight": 1,
       "stage": "copper"
     }
