@@ -2870,9 +2870,9 @@
       ],
       "pr": 616,
       "date": "2026-06-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.377.0",
+      "released_at": "2026-06-28T10:56:00Z"
     },
     {
       "id": "survey-results-channel",
@@ -2884,9 +2884,9 @@
         "Survey answers mirrored to a dedicated channel with a jump-link to the thread"
       ],
       "date": "2026-06-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.377.0",
+      "released_at": "2026-06-28T10:56:00Z"
     }
   ]
 }
