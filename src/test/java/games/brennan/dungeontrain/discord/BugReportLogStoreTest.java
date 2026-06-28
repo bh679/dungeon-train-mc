@@ -1,6 +1,11 @@
 package games.brennan.dungeontrain.discord;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -36,5 +41,21 @@ class BugReportLogStoreTest {
     @Test
     void sanitizeReplacesSpacesAndUnsafeCharsWithUnderscore() {
         assertEquals("Some_Name_", BugReportLogStore.sanitize("Some Name!"));
+    }
+
+    @Test
+    void uniqueChildReturnsBaseWhenFree(@TempDir Path parent) {
+        Path stamp = parent.resolve("2026-06-27_16.05.43");
+        assertEquals(stamp, BugReportLogStore.uniqueChild(parent, "2026-06-27_16.05.43"));
+    }
+
+    @Test
+    void uniqueChildSuffixesOnSameSecondCollisions(@TempDir Path parent) throws IOException {
+        String base = "2026-06-27_16.05.43";
+        Files.createDirectory(parent.resolve(base));
+        assertEquals(parent.resolve(base + "_2"), BugReportLogStore.uniqueChild(parent, base));
+
+        Files.createDirectory(parent.resolve(base + "_2"));
+        assertEquals(parent.resolve(base + "_3"), BugReportLogStore.uniqueChild(parent, base));
     }
 }
