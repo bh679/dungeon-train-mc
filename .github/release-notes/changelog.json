@@ -2873,6 +2873,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "survey-results-channel",
+      "version": "0.376.0",
+      "type": "chore",
+      "title": "Feedback survey responses collected in a dedicated channel",
+      "summary": "Feedback-survey answers now also post to a dedicated Discord survey-results channel (in addition to each player's thread), with a link back to the original, so the team can review feedback in one place.",
+      "highlights": [
+        "Survey answers mirrored to a dedicated channel with a jump-link to the thread"
+      ],
+      "date": "2026-06-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

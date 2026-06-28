@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,6 +42,28 @@ class DungeonTrainRelayRoutingTest {
         assertNull(DungeonTrain.manifestWebhookOverrideForBranch("dev/some-feature"));
         assertNull(DungeonTrain.manifestWebhookOverrideForBranch("claude/worktree-slug"));
         assertNull(DungeonTrain.manifestWebhookOverrideForBranch("?"));
+    }
+
+    @Test
+    void surveyResultsCopyRoutesToDedicatedCapOnlyOnMain() {
+        // The survey-results copy posts to the dedicated survey-results cap ONLY on a main build;
+        // every other branch returns null → the copy falls through to the build's default cap (dev).
+        String main = DungeonTrain.surveyResultsWebhookOverrideForBranch("main");
+        assertNotNull(main, "main must route the survey copy to a dedicated cap");
+        assertTrue(main.endsWith("/hook"), "survey-results cap must target the relay /hook, was: " + main);
+        assertNull(DungeonTrain.surveyResultsWebhookOverrideForBranch("dev/some-feature"));
+        assertNull(DungeonTrain.surveyResultsWebhookOverrideForBranch("claude/worktree-slug"));
+        assertNull(DungeonTrain.surveyResultsWebhookOverrideForBranch("?"));
+    }
+
+    @Test
+    void surveyLinkGuildIdSplitsMainVsDev() {
+        // The jump-link guild id matches the channel the original posted into: live server on main,
+        // dev server otherwise (so the link resolves in the right server).
+        assertEquals(DungeonTrain.LIVE_GUILD_ID, DungeonTrain.linkGuildIdForBranch("main"));
+        assertEquals(DungeonTrain.DEV_GUILD_ID, DungeonTrain.linkGuildIdForBranch("dev/some-feature"));
+        assertEquals(DungeonTrain.DEV_GUILD_ID, DungeonTrain.linkGuildIdForBranch("claude/worktree-slug"));
+        assertEquals(DungeonTrain.DEV_GUILD_ID, DungeonTrain.linkGuildIdForBranch("?"));
     }
 
     @Test
