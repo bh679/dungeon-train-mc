@@ -82,6 +82,30 @@ public class DungeonTrain {
      */
     private static final String RELAY_PUBLIC_BASE_URL =
             "https://brennan.games/api/dp-relay/55800db451a785a14030978edf0e352179a160287da24981";
+    /**
+     * Survey-results channel capability. Each feedback-survey answer ALSO posts a copy (the same
+     * embed plus a jump-link back to the threaded original) into a dedicated, flat survey-results
+     * channel — so all feedback is browsable in one place instead of buried in per-player threads.
+     * Routes here on RELEASE ({@code main}) builds; dev/test builds fall through to the build's
+     * default cap (the dev channel), keeping the dev preview intact. Non-secret + revocable like the
+     * others; the real survey-results webhook lives only on the relay (its {@code SURVEY_WEBHOOK_URL},
+     * mapped to this cap in the relay's {@code .env} / {@code CAPS} registry, never in the jar).
+     */
+    private static final String RELAY_SURVEY_RESULTS_BASE_URL =
+            "https://brennan.games/api/dp-relay/425a859527bbab2b6defc48e483abd3b32b277c448e11ddf";
+
+    /**
+     * Discord guild (server) ids used to build the survey copy's jump-link back to the threaded
+     * original ({@code https://discord.com/channels/{guild}/{thread}/{message}}). DP cannot learn the
+     * guild id at runtime in relay-mode, so DT supplies it: the original answer posts into the build's
+     * default channel (live community feed on {@code main}, dev channel otherwise), so the link's
+     * guild must match that channel's server. Non-secret. Blank → the copy posts without a link.
+     *
+     * <p>The live community feed and the dev channel both live in the "Dungeon Train MC" server, so
+     * both ids are the same value.</p>
+     */
+    static final String LIVE_GUILD_ID = "680177367381049356";
+    static final String DEV_GUILD_ID = "680177367381049356";
 
     /**
      * True for any non-release build — the same branch-ref dev signal the title screen + version HUD
@@ -132,6 +156,34 @@ public class DungeonTrain {
      */
     static String manifestWebhookOverrideForBranch(String branch) {
         return "main".equals(branch) ? RELAY_PUBLIC_BASE_URL + "/hook" : null;
+    }
+
+    /**
+     * Where the survey-results copy should post. On a RELEASE ({@code main}) build it routes to the
+     * dedicated survey-results channel cap; on a dev/test build it returns {@code null} so the copy
+     * falls through to the build's default cap (the dev channel) — the dev preview. The threaded
+     * answer (and its maintainer ping) is unaffected either way.
+     */
+    public static String surveyResultsWebhookOverride() {
+        return surveyResultsWebhookOverrideForBranch(VersionInfo.BRANCH);
+    }
+
+    /**
+     * Pure branch-&gt;survey-results-destination mapping (package-private for unit testing). Only a
+     * {@code main} build routes the copy to the dedicated cap; every other branch returns {@code null}
+     * → the copy posts to the build's default cap (the dev channel).
+     */
+    static String surveyResultsWebhookOverrideForBranch(String branch) {
+        return "main".equals(branch) ? RELAY_SURVEY_RESULTS_BASE_URL + "/hook" : null;
+    }
+
+    /**
+     * Guild id for the survey copy's jump-link on this build: the live community server on a
+     * {@code main} build, the dev server otherwise — matching the channel the threaded original was
+     * posted into. {@code ""} (the unset default) → the copy posts without a link.
+     */
+    static String linkGuildIdForBranch(String branch) {
+        return "main".equals(branch) ? LIVE_GUILD_ID : DEV_GUILD_ID;
     }
 
     /**
@@ -300,6 +352,14 @@ public class DungeonTrain {
             @Override public List<String> surveyPingUserIds() {
                 return List.of(BRENNAN_DISCORD_ID);
             }
+            // Also drop a COPY of every survey answer into a dedicated, flat survey-results channel
+            // (on top of the per-player thread), so feedback is browsable in one place. The copy is the
+            // same embed plus a jump-link back to the threaded original. On a main build it routes to the
+            // survey-results cap; on a dev build the override is null so the copy lands in the dev channel
+            // (preview parity). The guild id (needed for the link) follows the same dev-vs-live split.
+            @Override public boolean surveyResultsCopyEnabled() { return true; }
+            @Override public String surveyResultsWebhookUrl() { return surveyResultsWebhookOverride(); }
+            @Override public String surveyResultsLinkGuildId() { return linkGuildIdForBranch(VersionInfo.BRANCH); }
         });
 
         // One-line dev-vs-live routing signal at startup: states which Discord channel this build
