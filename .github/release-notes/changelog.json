@@ -2887,6 +2887,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "main-menu-discord-chat-panel",
+      "version": "0.376.0",
+      "type": "feat",
+      "title": "Discord chat panel on the main menu",
+      "summary": "A Discord panel now sits on the title screen so you can read your conversation with the dev and community \u2014 including your feedback-survey replies and bug reports \u2014 without leaving the menu. Messages get a \ud83d\udc40 reaction in Discord once you've seen them here. Click the panel to bring it forward; click away to tuck it behind the title.",
+      "highlights": [
+        "Read your Discord message history from the main menu",
+        "Your feedback-survey and bug-report history shows up there too",
+        "Messages you've seen get a \ud83d\udc40 in Discord",
+        "Click to bring the panel forward, click away to send it back"
+      ],
+      "pr": 618,
+      "date": "2026-06-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
