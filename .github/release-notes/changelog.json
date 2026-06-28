@@ -2900,9 +2900,9 @@
       ],
       "pr": 622,
       "date": "2026-06-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.378.0",
+      "released_at": "2026-06-28T11:48:56Z"
     },
     {
       "id": "maze-group-variant-rebalance",
@@ -2913,9 +2913,9 @@
       "highlights": [],
       "pr": 622,
       "date": "2026-06-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.378.0",
+      "released_at": "2026-06-28T11:48:56Z"
     }
   ]
 }
