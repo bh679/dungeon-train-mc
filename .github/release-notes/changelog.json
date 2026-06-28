@@ -2861,7 +2861,7 @@
     },
     {
       "id": "bug-report-log-subgroups",
-      "version": "0.376.0",
+      "version": "0.377.0",
       "type": "fix",
       "title": "Repeat bug reports no longer overwrite earlier logs",
       "summary": "When you send a bug report after dying, your game logs are archived on the server. Sending more than one report from the same game version used to overwrite the previous report's logs \u2014 each submission now lands in its own timestamped folder, so nothing is lost.",
@@ -2870,13 +2870,13 @@
       ],
       "pr": 616,
       "date": "2026-06-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.377.0",
+      "released_at": "2026-06-28T10:56:00Z"
     },
     {
       "id": "survey-results-channel",
-      "version": "0.376.0",
+      "version": "0.377.0",
       "type": "chore",
       "title": "Feedback survey responses collected in a dedicated channel",
       "summary": "Feedback-survey answers now also post to a dedicated Discord survey-results channel (in addition to each player's thread), with a link back to the original, so the team can review feedback in one place.",
@@ -2884,9 +2884,9 @@
         "Survey answers mirrored to a dedicated channel with a jump-link to the thread"
       ],
       "date": "2026-06-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.377.0",
+      "released_at": "2026-06-28T10:56:00Z"
     }
   ]
 }
