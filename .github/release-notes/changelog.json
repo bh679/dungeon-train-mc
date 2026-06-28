@@ -2838,9 +2838,9 @@
       "summary": "Echo item stats now round to one decimal place (e.g. 7.5 attack), dropping the trailing .0 for whole numbers",
       "highlights": [],
       "date": "2026-06-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.376.0",
+      "released_at": "2026-06-28T00:15:29Z"
     },
     {
       "id": "lag-report-system-specs",
@@ -2855,9 +2855,9 @@
       ],
       "pr": 615,
       "date": "2026-06-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.376.0",
+      "released_at": "2026-06-28T00:15:29Z"
     }
   ]
 }
