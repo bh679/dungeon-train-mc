@@ -2887,6 +2887,35 @@
       "released": true,
       "released_in": "v0.377.0",
       "released_at": "2026-06-28T10:56:00Z"
+    },
+    {
+      "id": "train-survives-world-save",
+      "version": "0.378.0",
+      "type": "fix",
+      "title": "Train no longer vanishes when the world saves",
+      "summary": "Fixed the train disappearing (and regenerating from scratch) when the world autosaved. The whole train is now held in place across every save, so riding through an autosave \u2014 or running /save-all \u2014 keeps every carriage and its contents intact.",
+      "highlights": [
+        "Train survives autosaves and manual saves",
+        "No more lost or regenerated carriages on save"
+      ],
+      "pr": 622,
+      "date": "2026-06-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "maze-group-variant-rebalance",
+      "version": "0.378.0",
+      "type": "content",
+      "title": "Maze room variety rebalance",
+      "summary": "Tuned how often the maze carriage's room layouts appear \u2014 the 2nd-level, hall, two-way, sides, and up variants now roll more often relative to the rest.",
+      "highlights": [],
+      "pr": 622,
+      "date": "2026-06-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
