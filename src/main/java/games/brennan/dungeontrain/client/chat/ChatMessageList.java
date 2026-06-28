@@ -52,6 +52,7 @@ public final class ChatMessageList extends AbstractWidget {
     private Component status = Component.translatable("gui.dungeontrain.menu_chat.loading");
     private int totalHeight;
     private int scroll;
+    private boolean selected; // click-selected → drawn on top at full opacity; otherwise behind + faded
 
     public ChatMessageList(int x, int y, int width, int height) {
         super(x, y, width, height, Component.translatable("gui.dungeontrain.menu_chat.title"));
@@ -59,6 +60,16 @@ public final class ChatMessageList extends AbstractWidget {
 
     public void setOnSeen(Consumer<ChatHistory.Message> onSeen) {
         this.onSeen = onSeen == null ? m -> {} : onSeen;
+    }
+
+    /** Whether the given mouse position is over the panel. */
+    public boolean isWithin(double mx, double my) {
+        return mx >= getX() && mx <= getX() + width && my >= getY() && my <= getY() + height;
+    }
+
+    /** Click-selected → the panel is drawn in front at full opacity instead of behind + faded. */
+    public boolean isSelected() {
+        return selected;
     }
 
     /** Show a one-line status (loading / offline / empty) instead of a list. */
@@ -166,17 +177,32 @@ public final class ChatMessageList extends AbstractWidget {
 
     // --- rendering ---
 
+    private static final float FADED_ALPHA = 0.9f; // 10% faded while not selected
+
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        g.fill(getX(), getY(), getX() + width, getY() + height, BG);
-        g.fill(getX(), getY(), getX() + width, getY() + 1, BORDER);
-        g.fill(getX(), getY() + height - 1, getX() + width, getY() + height, BORDER);
-        g.fill(getX(), getY(), getX() + 1, getY() + height, BORDER);
-        g.fill(getX() + width - 1, getY(), getX() + width, getY() + height, BORDER);
+        if (selected) {
+            return; // drawn on top at full opacity after the screen's logo/splash (see MainMenuChatPanel)
+        }
+        draw(g, FADED_ALPHA);
+    }
+
+    /** Draw the panel on top of everything at full opacity — used while it's click-selected. */
+    public void renderRaised(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        draw(g, 1.0f);
+    }
+
+    private void draw(GuiGraphics g, float alpha) {
+        int border = sa(BORDER, alpha);
+        g.fill(getX(), getY(), getX() + width, getY() + height, sa(BG, alpha));
+        g.fill(getX(), getY(), getX() + width, getY() + 1, border);
+        g.fill(getX(), getY() + height - 1, getX() + width, getY() + height, border);
+        g.fill(getX(), getY(), getX() + 1, getY() + height, border);
+        g.fill(getX() + width - 1, getY(), getX() + width, getY() + height, border);
 
         Component title = Component.translatable("gui.dungeontrain.menu_chat.title");
-        g.drawString(font, title, getX() + PAD, getY() + (TITLE_H - font.lineHeight) / 2, TITLE_COLOR, true);
-        g.fill(getX() + 1, getY() + TITLE_H - 1, getX() + width - 1, getY() + TITLE_H, BORDER);
+        g.drawString(font, title, getX() + PAD, getY() + (TITLE_H - font.lineHeight) / 2, sa(TITLE_COLOR, alpha), true);
+        g.fill(getX() + 1, getY() + TITLE_H - 1, getX() + width - 1, getY() + TITLE_H, border);
 
         int cTop = contentTop();
         int cHeight = contentHeight();
@@ -184,7 +210,7 @@ public final class ChatMessageList extends AbstractWidget {
             List<FormattedCharSequence> lines = font.split(status, contentWidth());
             int sy = cTop + Math.max(0, (cHeight - lines.size() * font.lineHeight) / 2);
             for (FormattedCharSequence l : lines) {
-                g.drawString(font, l, getX() + PAD, sy, STATUS, false);
+                g.drawString(font, l, getX() + PAD, sy, sa(STATUS, alpha), false);
                 sy += font.lineHeight;
             }
             return;
@@ -198,7 +224,7 @@ public final class ChatMessageList extends AbstractWidget {
             if (entryBottom >= cTop && entryTop <= cTop + cHeight) {
                 int ly = entryTop;
                 for (Line line : e.lines) {
-                    g.drawString(font, line.seq, getX() + PAD + line.indent, ly, line.color, false);
+                    g.drawString(font, line.seq, getX() + PAD + line.indent, ly, sa(line.color, alpha), false);
                     ly += font.lineHeight;
                 }
                 maybeMarkSeen(e, entryTop, entryBottom, cTop, cHeight);
@@ -206,7 +232,14 @@ public final class ChatMessageList extends AbstractWidget {
         }
         g.disableScissor();
 
-        renderScrollbar(g, cTop, cHeight);
+        renderScrollbar(g, cTop, cHeight, alpha);
+    }
+
+    /** Scale a packed ARGB colour's alpha by {@code f} (drives the not-selected fade). */
+    private static int sa(int argb, float f) {
+        int a = Math.round(((argb >>> 24) & 0xFF) * f);
+        a = Math.max(0, Math.min(255, a));
+        return (a << 24) | (argb & 0x00FFFFFF);
     }
 
     private void maybeMarkSeen(Entry e, int entryTop, int entryBottom, int cTop, int cHeight) {
@@ -218,7 +251,7 @@ public final class ChatMessageList extends AbstractWidget {
         }
     }
 
-    private void renderScrollbar(GuiGraphics g, int cTop, int cHeight) {
+    private void renderScrollbar(GuiGraphics g, int cTop, int cHeight, float alpha) {
         int max = maxScroll();
         if (max <= 0) {
             return;
@@ -226,7 +259,17 @@ public final class ChatMessageList extends AbstractWidget {
         int trackX = getX() + width - SCROLLBAR_W - 1;
         int thumbH = Math.max(12, (int) ((long) cHeight * cHeight / totalHeight));
         int thumbY = cTop + (int) ((long) (cHeight - thumbH) * scroll / max);
-        g.fill(trackX, thumbY, trackX + SCROLLBAR_W, thumbY + thumbH, SCROLLBAR);
+        g.fill(trackX, thumbY, trackX + SCROLLBAR_W, thumbY + thumbH, sa(SCROLLBAR, alpha));
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (isWithin(mouseX, mouseY)) {
+            selected = !selected; // click toggles front ↔ behind
+            return true;
+        }
+        selected = false; // click off the panel (background) → send to back
+        return false;
     }
 
     @Override

@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.client.chat;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
@@ -30,13 +32,15 @@ public final class MainMenuChatPanel {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int PANEL_WIDTH = 140;
+    private static final int PANEL_WIDTH = 140;   // preferred width; narrows to fit on small windows
+    private static final int MIN_PANEL_WIDTH = 64; // floor; the gutter is width/2-100, so this shows down
+                                                   // to ~344 GUI-wide (covers fullscreen's higher GUI scale)
     private static final int MARGIN = 6;
     private static final int TOP = 30;
     private static final int BOTTOM_MARGIN = 30;
     private static final int MIN_HEIGHT = 80;
     private static final int CENTER_BUTTON_HALF = 100; // vanilla title buttons are 200px wide, centered
-    private static final int CLEARANCE = 8;
+    private static final int CLEARANCE = 4;
 
     private MainMenuChatPanel() {}
 
@@ -58,16 +62,22 @@ public final class MainMenuChatPanel {
 
         int screenW = event.getScreen().width;
         int screenH = event.getScreen().height;
-        int x = screenW - PANEL_WIDTH - MARGIN;
         int height = screenH - TOP - BOTTOM_MARGIN;
 
-        // Don't overlap the centered button column or render a uselessly short panel.
-        if (x < screenW / 2 + CENTER_BUTTON_HALF + CLEARANCE || height < MIN_HEIGHT) {
-            LOGGER.debug("Menu chat: not enough room for the chat panel (w={}, h={}); skipping.", screenW, screenH);
+        // Dock in the right gutter, narrowing the panel to whatever space clears the centered button
+        // column. Skip only when even a minimal panel would overlap the buttons or be too short.
+        int rightEdge = screenW - MARGIN;
+        int leftLimit = screenW / 2 + CENTER_BUTTON_HALF + CLEARANCE;
+        int available = rightEdge - leftLimit;
+        if (available < MIN_PANEL_WIDTH || height < MIN_HEIGHT) {
+            LOGGER.debug("Menu chat: not enough room for the chat panel (w={}, h={}, avail={}); skipping.",
+                    screenW, screenH, available);
             return;
         }
+        int panelWidth = Math.min(PANEL_WIDTH, available);
+        int x = rightEdge - panelWidth;
 
-        ChatMessageList list = new ChatMessageList(x, TOP, PANEL_WIDTH, height);
+        ChatMessageList list = new ChatMessageList(x, TOP, panelWidth, height);
         AtomicReference<String> threadId = new AtomicReference<>();
         list.setOnSeen(m -> {
             String tid = threadId.get();
@@ -85,5 +95,30 @@ public final class MainMenuChatPanel {
             threadId.set(history.threadId());
             list.setHistory(history);
         }, mc);
+    }
+
+    /**
+     * After the whole screen (incl. the Dungeon Train logo + splash) has drawn, paint the panel on top
+     * when it's click-selected — so it sits in front rather than behind the title. When not selected the
+     * panel draws in the normal widget pass (behind the logo, 10% faded); see {@link ChatMessageList}.
+     */
+    @SubscribeEvent
+    public static void onRenderPost(ScreenEvent.Render.Post event) {
+        ChatMessageList list = find(event.getScreen());
+        if (list != null && list.isSelected()) {
+            list.renderRaised(event.getGuiGraphics(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
+        }
+    }
+
+    private static ChatMessageList find(Screen screen) {
+        if (!(screen instanceof TitleScreen)) {
+            return null;
+        }
+        for (GuiEventListener child : screen.children()) {
+            if (child instanceof ChatMessageList list) {
+                return list;
+            }
+        }
+        return null;
     }
 }
