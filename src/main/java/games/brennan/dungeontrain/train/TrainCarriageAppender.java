@@ -9,10 +9,13 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.world.StartingDimension;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -2477,6 +2480,38 @@ public final class TrainCarriageAppender {
             LOGGER.debug("[DungeonTrain] Resume hold: force-loaded {} previously-unticketed carriage(s) of trainId={} ({} total held) so the resume-fling can't cull the train",
                 held, trainId, current.size());
         }
+    }
+
+    /**
+     * Pin <em>every</em> loaded train resident and grant each a resume-grace window — the shared
+     * core behind both {@code ResumeWatchdog} (a singleplayer pause/resume) and the save hold
+     * ({@code MinecraftServerSaveMixin}). Resolves the train level from world data, then for
+     * each loaded train grants {@code graceTicks} of grace ({@link #grantResumeGrace}) and
+     * force-loads the whole train ({@link #holdWholeTrainForResume}), so a transient "rider not
+     * near" — a resume fling, or an autosave hitch — can't cull and unrecoverably regenerate any
+     * carriage. Both holds self-drain back to the trailing-N window once the rider is stably
+     * aboard ({@link #reconcileForceLoads}; un-serialized groups stay per
+     * {@link #shouldRetainOnWalkAway}).
+     *
+     * <p>No-op (returns {@code 0}) when this world has no train, the train level isn't loaded, or
+     * no train is currently loaded. Server-thread only.</p>
+     *
+     * @return the number of loaded trains held this call.
+     */
+    public static int holdAllLoadedTrains(MinecraftServer server, int graceTicks) {
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
+        if (!data.startsWithTrain()) return 0;
+        StartingDimension startingDim = data.startingDimension();
+        ServerLevel trainLevel = server.getLevel(startingDim.levelKey());
+        if (trainLevel == null) return 0;
+        Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(trainLevel);
+        if (trains.isEmpty()) return 0;
+        long nowTick = trainLevel.getGameTime();
+        for (Map.Entry<UUID, List<Trains.Carriage>> entry : trains.entrySet()) {
+            grantResumeGrace(entry.getKey(), nowTick, graceTicks);
+            holdWholeTrainForResume(trainLevel, entry.getKey(), entry.getValue());
+        }
+        return trains.size();
     }
 
     /**
