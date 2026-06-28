@@ -13,6 +13,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.slf4j.Logger;
 
+import java.lang.ref.WeakReference;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -21,7 +22,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * player's per-player Discord thread from the relay (keyed by the launcher's Minecraft UUID — there's
  * no Minecraft server at the menu) and marks messages 👀 as the player sees them.
  *
- * <p>Phase 1 is read + seen only; sending and the offline inbox are later features. Shown only when the
+ * <p>Reads + 👀-marks the thread, and on open drains the relay's offline inbox to badge how many
+ * real-person replies arrived while the player was away (see {@link RelayChatClient#drainInbox}). Shown only when the
  * DiscordPresence network-access consent is granted ({@link RelayChatClient#canConnect()}) — a player
  * who declined networking is prompted through the existing Discord welcome flow, not here. Like
  * {@link games.brennan.dungeontrain.client.TitleScreenLayoutHandler}, it bails quietly when there isn't
@@ -41,6 +43,13 @@ public final class MainMenuChatPanel {
     private static final int MIN_HEIGHT = 80;
     private static final int CENTER_BUTTON_HALF = 100; // vanilla title buttons are 200px wide, centered
     private static final int CLEARANCE = 4;
+
+    // Draining the inbox advances a server-side cursor, so it must run ONCE per title-screen visit — not
+    // on every Init.Post (the screen re-inits on resize, firing it repeatedly on the same instance). We
+    // remember which screen we've drained for and cache the count, so re-inits reuse it (a fresh widget
+    // starts at 0) instead of re-draining to an empty result and losing the badge.
+    private static WeakReference<Screen> drainedScreen;
+    private static int cachedUnread;
 
     private MainMenuChatPanel() {}
 
@@ -105,6 +114,27 @@ public final class MainMenuChatPanel {
             threadId.set(history.threadId());
             list.setHistory(history);
         }, mc);
+
+        // Drain the offline inbox once per title-screen visit — badge how many real-person replies arrived
+        // while away. Draining marks them delivered (advances the cursor), so re-inits of this same screen
+        // must NOT re-drain; they reuse the cached count instead.
+        Screen screen = event.getScreen();
+        if (drainedScreen == null || drainedScreen.get() != screen) {
+            drainedScreen = new WeakReference<>(screen);
+            cachedUnread = 0;
+            RelayChatClient.drainInbox(uuid).thenAcceptAsync(inbox -> {
+                if (inbox != null) {
+                    cachedUnread = inbox.unread();
+                    // Apply to whatever list is current now (a resize may have rebuilt it since the drain).
+                    ChatMessageList current = find(screen);
+                    if (current != null) {
+                        current.setUnread(cachedUnread);
+                    }
+                }
+            }, mc);
+        } else {
+            list.setUnread(cachedUnread); // re-init of an already-drained screen → reuse the count
+        }
     }
 
     /**

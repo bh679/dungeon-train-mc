@@ -69,6 +69,30 @@ public final class RelayChatClient {
     }
 
     /**
+     * Drain the player's offline inbox: the real-person thread replies that arrived while they were away,
+     * plus an {@code unread} count. Marks them delivered server-side (advances the relay's cursor), so a
+     * later open only reports what's newly arrived. Resolves to {@code null} on any error (no consent, no
+     * thread yet, network/parse failure) — the panel simply shows no badge.
+     */
+    public static CompletableFuture<ChatInbox> drainInbox(UUID uuid) {
+        if (uuid == null || !canConnect()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        URI uri = URI.create(DungeonTrain.relayBaseUrl() + "/chat/inbox?uuid=" + noDashes(uuid));
+        HttpRequest req = HttpRequest.newBuilder(uri)
+                .timeout(REQUEST_TIMEOUT)
+                .header("Accept", "application/json")
+                .GET()
+                .build();
+        return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                .thenApply(RelayChatClient::parseInbox)
+                .exceptionally(t -> {
+                    LOGGER.debug("Menu chat: inbox drain failed: {}", t.toString());
+                    return null;
+                });
+    }
+
+    /**
      * Tell the relay the player has seen {@code messageId} in their thread, so it adds a 👀 reaction
      * on Discord. Fire-and-forget; {@code channelId} is the thread id from the loaded history.
      */
@@ -146,6 +170,33 @@ public final class RelayChatClient {
             return new ChatHistory(threadId, messages, hasMore);
         } catch (Exception e) {
             LOGGER.debug("Menu chat: could not parse history: {}", e.toString());
+            return null;
+        }
+    }
+
+    private static ChatInbox parseInbox(HttpResponse<String> resp) {
+        if (resp == null || resp.statusCode() < 200 || resp.statusCode() >= 300) {
+            return null;
+        }
+        try {
+            JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
+            String threadId = optString(root, "threadId");
+            int unread = root.has("unread") && root.get("unread").isJsonPrimitive()
+                    ? root.get("unread").getAsInt() : 0;
+            List<ChatHistory.Message> messages = new ArrayList<>();
+            if (root.has("messages") && root.get("messages").isJsonArray()) {
+                for (JsonElement el : root.getAsJsonArray("messages")) {
+                    if (el != null && el.isJsonObject()) {
+                        ChatHistory.Message m = parseMessage(el.getAsJsonObject());
+                        if (m != null) {
+                            messages.add(m);
+                        }
+                    }
+                }
+            }
+            return new ChatInbox(threadId, Math.max(0, unread), messages);
+        } catch (Exception e) {
+            LOGGER.debug("Menu chat: could not parse inbox: {}", e.toString());
             return null;
         }
     }

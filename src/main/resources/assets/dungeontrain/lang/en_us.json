@@ -55,6 +55,7 @@
   "gui.dungeontrain.menu_chat.loading": "Loading messages…",
   "gui.dungeontrain.menu_chat.empty": "No messages yet. Say hi in Discord!",
   "gui.dungeontrain.menu_chat.offline": "Couldn't reach Discord.",
+  "gui.dungeontrain.menu_chat.unread": "+%s",
   "gui.dungeontrain.menu_chat.input_hint": "Message Discord…",
   "gui.dungeontrain.death.new_world": "New World",
   "gui.dungeontrain.death.stats.title": "Run Stats",
