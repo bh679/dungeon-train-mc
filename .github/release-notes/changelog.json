@@ -2907,6 +2907,21 @@
       "released_at": null
     },
     {
+      "id": "menu-chat-send",
+      "version": "0.376.0",
+      "type": "feat",
+      "title": "Reply to Discord from the main-menu chat panel",
+      "summary": "The title-screen Discord panel is now two-way: type a message and send it straight to your own Discord thread without leaving the menu. Anything you send while you're offline is queued and delivered automatically the next time you open the panel.",
+      "highlights": [
+        "Send messages from the main-menu Discord panel",
+        "Offline messages queue and send when you reconnect"
+      ],
+      "date": "2026-06-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "menu-chat-offline-inbox",
       "version": "0.377.0",
       "type": "feat",

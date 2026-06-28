@@ -94,7 +94,17 @@ public final class MainMenuChatPanel {
                 RelayChatClient.markSeen(uuid, tid, m.id());
             }
         });
+        // Submit → echo it locally now and hand it to the outbox, which delivers immediately when online
+        // and keeps it queued (flushing on the next open/launch) when the relay is unreachable.
+        list.setOnSubmit(text -> {
+            String name = mc.getUser() != null ? mc.getUser().getName() : "Me";
+            list.appendOutgoing(name, text);
+            ChatOutbox.get().submit(uuid, text);
+        });
         event.addListener(list);
+
+        // Flush anything queued from a prior offline session as soon as the panel opens.
+        ChatOutbox.get().flush();
 
         RelayChatClient.fetchHistory(uuid).thenAcceptAsync(history -> {
             if (history == null) {

@@ -116,6 +116,32 @@ public final class RelayChatClient {
                 });
     }
 
+    /**
+     * Post {@code content} into the player's own Discord thread (relay {@code POST /<CAP>/chat/send}),
+     * which forwards it through the webhook as the player. Async; resolves to {@code true} only on a 2xx
+     * — the {@link ChatOutbox} keeps a message queued until this confirms delivery (at-least-once). Any
+     * error (no consent, no thread yet, network failure) resolves to {@code false} so it stays queued.
+     */
+    public static CompletableFuture<Boolean> sendMessage(UUID uuid, String content) {
+        if (uuid == null || content == null || content.isBlank() || !canConnect()) {
+            return CompletableFuture.completedFuture(false);
+        }
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", noDashes(uuid));
+        body.addProperty("content", content);
+        HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + "/chat/send"))
+                .timeout(REQUEST_TIMEOUT)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
+                .build();
+        return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                .thenApply(resp -> resp.statusCode() >= 200 && resp.statusCode() < 300)
+                .exceptionally(t -> {
+                    LOGGER.debug("Menu chat: send failed: {}", t.toString());
+                    return false;
+                });
+    }
+
     private static String noDashes(UUID uuid) {
         return uuid.toString().replace("-", "");
     }
