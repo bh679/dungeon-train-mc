@@ -4,10 +4,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,6 +33,9 @@ public final class ChatMessageList extends AbstractWidget {
     private static final int TITLE_H = 13;
     private static final int SCROLLBAR_W = 3;
     private static final int MSG_GAP = 5;
+    private static final int INPUT_H = 16;   // single-line send box docked at the bottom
+    private static final int INPUT_GAP = 4;  // gap between the message list and the input box
+    private static final int MAX_SEND_CHARS = 2000; // Discord's hard limit; the relay clamps too
 
     private static final int BG = 0xC00E0E14;
     private static final int BORDER = 0xFF2B2B38;
@@ -49,17 +54,36 @@ public final class ChatMessageList extends AbstractWidget {
     private final List<Entry> entries = new ArrayList<>();
     private final Set<String> reportedSeen = new HashSet<>();
     private Consumer<ChatHistory.Message> onSeen = m -> {};
+    private Consumer<String> onSubmit = t -> {};
     private Component status = Component.translatable("gui.dungeontrain.menu_chat.loading");
     private int totalHeight;
     private int scroll;
+    private int localSeq; // synthetic ids for optimistic outgoing echoes
     private boolean selected; // click-selected → drawn on top at full opacity; otherwise behind + faded
+
+    /**
+     * The send box. Owned + manually rendered (not a registered screen widget) so it tracks the panel's
+     * raise/fade passes — it draws on top only when the panel is raised, never behind the title logo.
+     */
+    private final EditBox input;
 
     public ChatMessageList(int x, int y, int width, int height) {
         super(x, y, width, height, Component.translatable("gui.dungeontrain.menu_chat.title"));
+        this.input = new EditBox(font, getX() + PAD, inputTop(), inputWidth(), INPUT_H,
+                Component.translatable("gui.dungeontrain.menu_chat.input_hint"));
+        this.input.setMaxLength(MAX_SEND_CHARS);
+        this.input.setHint(Component.translatable("gui.dungeontrain.menu_chat.input_hint"));
+        this.input.setVisible(true);  // we gate drawing ourselves; visible=true lets it consume input
+        this.input.setFocused(false); // focused only while the panel is raised
     }
 
     public void setOnSeen(Consumer<ChatHistory.Message> onSeen) {
         this.onSeen = onSeen == null ? m -> {} : onSeen;
+    }
+
+    /** Fired with the trimmed text when the player submits the send box (Enter). */
+    public void setOnSubmit(Consumer<String> onSubmit) {
+        this.onSubmit = onSubmit == null ? t -> {} : onSubmit;
     }
 
     /** Whether the given mouse position is over the panel. */
@@ -106,7 +130,22 @@ public final class ChatMessageList extends AbstractWidget {
     }
 
     private int contentHeight() {
-        return height - TITLE_H - PAD;
+        return height - TITLE_H - PAD - INPUT_H - INPUT_GAP; // reserve the bottom input row
+    }
+
+    /** Top y of the docked send box (a fixed PAD above the bottom border). */
+    private int inputTop() {
+        return getY() + height - PAD - INPUT_H;
+    }
+
+    private int inputWidth() {
+        return Math.max(16, width - PAD * 2);
+    }
+
+    /** Whether {@code (mx,my)} is over the send box (only meaningful while the panel is raised). */
+    private boolean overInput(double mx, double my) {
+        return mx >= getX() + PAD && mx <= getX() + PAD + inputWidth()
+                && my >= inputTop() && my <= inputTop() + INPUT_H;
     }
 
     private int maxScroll() {
@@ -184,15 +223,15 @@ public final class ChatMessageList extends AbstractWidget {
         if (selected) {
             return; // drawn on top at full opacity after the screen's logo/splash (see MainMenuChatPanel)
         }
-        draw(g, FADED_ALPHA);
+        draw(g, FADED_ALPHA, false, mouseX, mouseY, partialTick);
     }
 
     /** Draw the panel on top of everything at full opacity — used while it's click-selected. */
     public void renderRaised(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        draw(g, 1.0f);
+        draw(g, 1.0f, true, mouseX, mouseY, partialTick);
     }
 
-    private void draw(GuiGraphics g, float alpha) {
+    private void draw(GuiGraphics g, float alpha, boolean raised, int mouseX, int mouseY, float partialTick) {
         int border = sa(BORDER, alpha);
         g.fill(getX(), getY(), getX() + width, getY() + height, sa(BG, alpha));
         g.fill(getX(), getY(), getX() + width, getY() + 1, border);
@@ -213,26 +252,30 @@ public final class ChatMessageList extends AbstractWidget {
                 g.drawString(font, l, getX() + PAD, sy, sa(STATUS, alpha), false);
                 sy += font.lineHeight;
             }
-            return;
-        }
-
-        g.enableScissor(getX() + 1, cTop, getX() + width - 1, cTop + cHeight);
-        int y = cTop - scroll;
-        for (Entry e : entries) {
-            int entryTop = y + e.top;
-            int entryBottom = entryTop + e.height();
-            if (entryBottom >= cTop && entryTop <= cTop + cHeight) {
-                int ly = entryTop;
-                for (Line line : e.lines) {
-                    g.drawString(font, line.seq, getX() + PAD + line.indent, ly, sa(line.color, alpha), false);
-                    ly += font.lineHeight;
+        } else {
+            g.enableScissor(getX() + 1, cTop, getX() + width - 1, cTop + cHeight);
+            int y = cTop - scroll;
+            for (Entry e : entries) {
+                int entryTop = y + e.top;
+                int entryBottom = entryTop + e.height();
+                if (entryBottom >= cTop && entryTop <= cTop + cHeight) {
+                    int ly = entryTop;
+                    for (Line line : e.lines) {
+                        g.drawString(font, line.seq, getX() + PAD + line.indent, ly, sa(line.color, alpha), false);
+                        ly += font.lineHeight;
+                    }
+                    maybeMarkSeen(e, entryTop, entryBottom, cTop, cHeight);
                 }
-                maybeMarkSeen(e, entryTop, entryBottom, cTop, cHeight);
             }
+            g.disableScissor();
+            renderScrollbar(g, cTop, cHeight, alpha);
         }
-        g.disableScissor();
 
-        renderScrollbar(g, cTop, cHeight, alpha);
+        // The send box draws only on the raised pass — full opacity, on top of the title logo. When the
+        // panel is faded/behind we leave the bottom row empty rather than show a half-lit input.
+        if (raised) {
+            input.render(g, mouseX, mouseY, partialTick);
+        }
     }
 
     /** Scale a packed ARGB colour's alpha by {@code f} (drives the not-selected fade). */
@@ -265,11 +308,82 @@ public final class ChatMessageList extends AbstractWidget {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (isWithin(mouseX, mouseY)) {
-            selected = !selected; // click toggles front ↔ behind
+            if (!selected) {
+                selected = true;              // first click raises and readies the send box for typing
+                focusInput(true);
+            } else if (overInput(mouseX, mouseY)) {
+                input.mouseClicked(mouseX, mouseY, button); // place the caret within the box
+                focusInput(true);
+            } else {
+                selected = false;             // a second click on the body sends it back
+                focusInput(false);
+            }
             return true;
         }
         selected = false; // click off the panel (background) → send to back
+        focusInput(false);
         return false;
+    }
+
+    private void focusInput(boolean focused) {
+        input.setFocused(focused);
+    }
+
+    @Override
+    public boolean keyPressed(int key, int scan, int mods) {
+        if (!selected || !input.isFocused()) {
+            return super.keyPressed(key, scan, mods);
+        }
+        if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+            submitInput();
+            return true;
+        }
+        if (key == GLFW.GLFW_KEY_ESCAPE) {
+            selected = false; // Esc lowers the panel (TitleScreen has no other Esc action)
+            focusInput(false);
+            return true;
+        }
+        return input.keyPressed(key, scan, mods) || super.keyPressed(key, scan, mods);
+    }
+
+    @Override
+    public boolean charTyped(char c, int mods) {
+        if (selected && input.isFocused()) {
+            return input.charTyped(c, mods);
+        }
+        return false;
+    }
+
+    private void submitInput() {
+        String text = input.getValue();
+        if (text == null) {
+            return;
+        }
+        text = text.trim();
+        if (text.isEmpty()) {
+            return; // never send a blank line
+        }
+        input.setValue("");
+        onSubmit.accept(text);
+    }
+
+    /**
+     * Optimistically echo a just-sent message as a self-styled line and jump to it. The real message
+     * reappears from Discord on the next open; if the player somehow sends before history finishes
+     * loading, {@link #setHistory} replaces this entry — harmless, since the message was still queued/sent.
+     */
+    public void appendOutgoing(String authorName, String content) {
+        if (content == null || content.isBlank()) {
+            return;
+        }
+        this.status = null;
+        String name = authorName == null || authorName.isBlank() ? "Me" : authorName;
+        ChatHistory.Message m = new ChatHistory.Message(
+                "local-" + (localSeq++), null, name, false, true, content,
+                List.of(), List.of(), null, true); // isWebhook=true → styled as self, never marked seen
+        entries.add(buildEntry(m, contentWidth()));
+        layout();
+        this.scroll = maxScroll();
     }
 
     @Override
