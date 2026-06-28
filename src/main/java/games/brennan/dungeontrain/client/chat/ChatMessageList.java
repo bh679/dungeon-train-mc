@@ -35,6 +35,7 @@ public final class ChatMessageList extends AbstractWidget {
     private static final int BG = 0xC00E0E14;
     private static final int BORDER = 0xFF2B2B38;
     private static final int TITLE_COLOR = 0xFF8AB4F8;
+    private static final int UNREAD_COLOR = 0xFFF2A33C; // amber "+N" badge for offline messages
     private static final int AUTHOR_INBOUND = 0xFFFFFFFF;
     private static final int AUTHOR_SELF = 0xFF9BE6A0;
     private static final int CONTENT = 0xFFCBD0DA;
@@ -52,6 +53,7 @@ public final class ChatMessageList extends AbstractWidget {
     private Component status = Component.translatable("gui.dungeontrain.menu_chat.loading");
     private int totalHeight;
     private int scroll;
+    private int unread; // offline messages that arrived since last open (relay inbox) → "+N" title badge
     private boolean selected; // click-selected → drawn on top at full opacity; otherwise behind + faded
 
     public ChatMessageList(int x, int y, int width, int height) {
@@ -60,6 +62,11 @@ public final class ChatMessageList extends AbstractWidget {
 
     public void setOnSeen(Consumer<ChatHistory.Message> onSeen) {
         this.onSeen = onSeen == null ? m -> {} : onSeen;
+    }
+
+    /** Set the count of offline messages that arrived since last open — rendered as a "+N" title badge. */
+    public void setUnread(int unread) {
+        this.unread = Math.max(0, unread);
     }
 
     /** Whether the given mouse position is over the panel. */
@@ -201,7 +208,12 @@ public final class ChatMessageList extends AbstractWidget {
         g.fill(getX() + width - 1, getY(), getX() + width, getY() + height, border);
 
         Component title = Component.translatable("gui.dungeontrain.menu_chat.title");
-        g.drawString(font, title, getX() + PAD, getY() + (TITLE_H - font.lineHeight) / 2, sa(TITLE_COLOR, alpha), true);
+        int titleY = getY() + (TITLE_H - font.lineHeight) / 2;
+        g.drawString(font, title, getX() + PAD, titleY, sa(TITLE_COLOR, alpha), true);
+        if (unread > 0) {
+            Component badge = Component.translatable("gui.dungeontrain.menu_chat.unread", unread);
+            g.drawString(font, badge, getX() + PAD + font.width(title) + 4, titleY, sa(UNREAD_COLOR, alpha), true);
+        }
         g.fill(getX() + 1, getY() + TITLE_H - 1, getX() + width - 1, getY() + TITLE_H, border);
 
         int cTop = contentTop();
