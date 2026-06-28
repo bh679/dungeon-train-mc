@@ -991,11 +991,14 @@ public final class NarrativeDeathScreen extends Screen {
                 y += 16 + 6;
             }
             // Privacy notice: only when the bug question has a real-bug option selected (not "No"),
-            // warning that recent logs will be attached to the report.
+            // warning that recent logs will be attached. For "Lag" the notice also mentions the
+            // system-spec summary that gets collected to diagnose performance.
             if (e.id().equals(BUG_REPORT_ID) && selected >= 0 && selected < e.options().size()
                     && !e.options().get(selected).equalsIgnoreCase("No")) {
-                y = drawCentered(g, Component.translatable("gui.dungeontrain.death.narr.bug_log_notice"),
-                        cx, w, y, SUBLINE);
+                String noticeKey = e.options().get(selected).equalsIgnoreCase("Lag")
+                        ? "gui.dungeontrain.death.narr.bug_log_notice_lag"
+                        : "gui.dungeontrain.death.narr.bug_log_notice";
+                y = drawCentered(g, Component.translatable(noticeKey), cx, w, y, SUBLINE);
                 y += 4;
             }
         }
@@ -1250,19 +1253,26 @@ public final class NarrativeDeathScreen extends Screen {
     /**
      * For the bug-report question: when the player chose a real-bug option (anything but "No"),
      * collect their recent logs off-thread and ship them to the server (which archives + posts them
-     * to Discord). Best-effort — a missed/empty collection simply sends nothing.
+     * to Discord). For a "Lag" answer specifically, a short system-spec summary (allocated game
+     * memory, CPU/GPU, OS, launcher) is gathered on the render thread and sent alongside the logs so
+     * lag reports carry the hardware context needed to diagnose them. Best-effort — a missed/empty
+     * collection simply sends nothing.
      */
     private void maybeSendBugLogs(SurveyQuestionPayload.Entry e, int score) {
         if (e == null || !e.id().equals(BUG_REPORT_ID)) return;
         if (score < 0 || score >= e.options().size()) return;
         String label = e.options().get(score);
         if (label.equalsIgnoreCase("No")) return; // not a bug → collect nothing
+        // Build the system spec on the render thread (it reads GL/FPS state) — Lag answers only.
+        final String spec = label.equalsIgnoreCase("Lag") ? SystemSpecCollector.collect() : "";
         LogCollector.collectAsync().thenAccept(files -> {
-            if (files == null || files.isEmpty()) return;
+            List<BugReportLogsPacket.LogBlob> blobs = files == null ? List.of() : files;
+            // Nothing useful to report (no logs and, for non-lag answers, no spec) → send nothing.
+            if (blobs.isEmpty() && spec.isEmpty()) return;
             // Hop back to the client thread to send the packet (collection ran on a worker thread).
             Minecraft.getInstance().execute(() -> {
                 try {
-                    DungeonTrainNet.sendToServer(new BugReportLogsPacket(label, files));
+                    DungeonTrainNet.sendToServer(new BugReportLogsPacket(label, spec, blobs));
                 } catch (Exception ex) {
                     LOGGER.warn("[DungeonTrain] Failed to send bug-report logs: {}", ex.toString());
                 }
