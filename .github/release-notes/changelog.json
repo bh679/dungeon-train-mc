@@ -2858,6 +2858,21 @@
       "released": true,
       "released_in": "v0.376.0",
       "released_at": "2026-06-28T00:15:29Z"
+    },
+    {
+      "id": "bug-report-log-subgroups",
+      "version": "0.376.0",
+      "type": "fix",
+      "title": "Repeat bug reports no longer overwrite earlier logs",
+      "summary": "When you send a bug report after dying, your game logs are archived on the server. Sending more than one report from the same game version used to overwrite the previous report's logs \u2014 each submission now lands in its own timestamped folder, so nothing is lost.",
+      "highlights": [
+        "Each bug-report submission is archived to its own timestamped subfolder"
+      ],
+      "pr": 616,
+      "date": "2026-06-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
