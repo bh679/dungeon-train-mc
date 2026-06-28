@@ -2841,6 +2841,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "lag-report-system-specs",
+      "version": "0.376.0",
+      "type": "feat",
+      "title": "Lag bug reports now include your system specs",
+      "summary": "When you report a \"Lag\" bug from the death-screen feedback survey, the report now includes a quick snapshot of your setup \u2014 the memory your launcher gave the game, plus CPU, GPU, RAM, OS and current FPS \u2014 so performance problems are far easier to diagnose. Other bug types are unchanged.",
+      "highlights": [
+        "Reporting \"Lag\" now attaches your system specs (CPU, GPU, RAM, OS, FPS)",
+        "Includes the memory CurseForge/Modrinth allocated to the game (max heap / -Xmx)",
+        "Specs are collected only for lag reports; other bug answers are unaffected"
+      ],
+      "pr": 615,
+      "date": "2026-06-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
