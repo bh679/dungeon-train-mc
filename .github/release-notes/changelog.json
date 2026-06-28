@@ -2905,6 +2905,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "menu-chat-offline-inbox",
+      "version": "0.377.0",
+      "type": "feat",
+      "title": "See new Discord messages waiting at the menu",
+      "summary": "The title-screen Discord panel now badges how many new messages arrived while you were away. The relay keeps replies people send to your thread, and the count shows up next to \"Discord\" the next time you open the menu.",
+      "highlights": [
+        "A \"+N\" badge on the Discord panel shows messages you haven't seen yet",
+        "Replies sent while you were offline are kept and counted for your next visit"
+      ],
+      "pr": 620,
+      "date": "2026-06-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
