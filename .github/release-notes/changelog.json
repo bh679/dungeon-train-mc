@@ -2945,6 +2945,22 @@
       "released": true,
       "released_in": "v0.380.0",
       "released_at": "2026-07-03T05:37:45Z"
+    },
+    {
+      "id": "lock-tested-sable-version",
+      "version": "0.380.0",
+      "type": "fix",
+      "title": "Locked to the tested Sable version",
+      "summary": "Dungeon Train now requires the exact version of Sable it was built and tested against. If a different Sable is installed, the game stops at startup with a clear message naming the version it needs, instead of loading against an untested physics build (which could crash or break the train). The modpacks already include the correct Sable, so most players won't notice a change.",
+      "highlights": [
+        "Refuses to start against a mismatched Sable version, with a clear 'requires Sable' message",
+        "Protects against crashes and broken trains from an untested Sable build"
+      ],
+      "pr": 626,
+      "date": "2026-07-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

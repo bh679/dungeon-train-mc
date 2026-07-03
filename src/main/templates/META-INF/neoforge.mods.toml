@@ -13,10 +13,13 @@ displayURL="https://github.com/bh679/dungeon-train-mc"
 credits="Original game by Brennan Hatton (brennanhatton.itch.io/dungeontrain)."
 logoFile="logo.png"
 
+# Sable is pinned to EXACTLY the tested version (rendered from sable_mod_version in
+# gradle.properties). Sable rewrites collision/physics, so DT is compiled against one
+# specific build — the loader must reject any other Sable rather than run untested.
 [[dependencies.${mod_id}]]
     modId="sable"
     type="required"
-    versionRange="[1.2.1,)"
+    versionRange="[${sable_mod_version}]"
     ordering="AFTER"
     side="BOTH"
 

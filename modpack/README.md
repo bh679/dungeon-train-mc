@@ -125,17 +125,29 @@ Every mod release triggers it — including the ~22 quiet auto-release cascade t
 ## ⚠️ Sable-pin coupling
 
 `modpack.config.json` pins Sable to the **exact** version Dungeon Train is built and
-tested against (`sable_version` in `gradle.properties`). When you bump `sable_version`,
-**update both pins** in `modpack.config.json` → `sable`:
+tested against (`sable_version` in `gradle.properties`). On top of that, the mod itself
+**hard-locks** Sable: DT's `neoforge.mods.toml` declares the Sable dependency as
+`versionRange="[${sable_mod_version}]"` — an exact-match range — so NeoForge refuses to load
+DT against any Sable but the tested one (a swapped or drifted Sable fails at load with a clear
+"requires Sable" error instead of silently running against an untested physics engine).
 
-1. CurseForge: open <https://www.curseforge.com/minecraft/mc-mods/sable/files/all>, filter to the
+When you bump `sable_version`, **update all four** version fields:
+
+1. `gradle.properties` → `sable_mod_version`: the **bare modId version** Sable declares in its
+   own `neoforge.mods.toml` (e.g. `2.0.2` — no `+mc…` suffix). This is what DT's exact lock
+   renders to.
+2. CurseForge: open <https://www.curseforge.com/minecraft/mc-mods/sable/files/all>, filter to the
    NeoForge build for the new `sable_version` (e.g. `sable-neoforge-1.21.1-2.0.2.jar`), copy the
    numeric file ID from its URL (`/files/<id>`), and set `sable.file_id`.
-2. Modrinth: open <https://modrinth.com/mod/sable/versions>, filter to the matching NeoForge 1.21.1
+3. Modrinth: open <https://modrinth.com/mod/sable/versions>, filter to the matching NeoForge 1.21.1
    build, copy the version id from its URL (`/version/<id>`), and set `sable.modrinth_version`.
-3. Set `sable.version` to the new `sable_version`.
+4. Set `sable.version` (in `modpack.config.json`) to the new `sable_version`.
 
-If these drift, a pack ships an old Sable against a newer DT.
+If these drift, a pack ships an old Sable against a newer DT — or DT refuses to load. CI's
+`scripts/modpack/check-sable-pin.py` (in the `modpack-checks` job) enforces the version chain:
+`sable_mod_version` must equal `sable_version`'s leading semver, and `modpack.config.json` →
+`sable.version` must equal `sable_version`. (It can't derive the CurseForge `file_id` /
+Modrinth `modrinth_version` from a version string, so those stay human-maintained.)
 
 ## Companion-mod pins
 
