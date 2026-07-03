@@ -2916,6 +2916,22 @@
       "released": true,
       "released_in": "v0.378.0",
       "released_at": "2026-06-28T11:48:56Z"
+    },
+    {
+      "id": "forward-carriage-vanish-low-sim",
+      "version": "0.379.0",
+      "type": "fix",
+      "title": "Carriages no longer vanish at low simulation distance",
+      "summary": "Fixed the train permanently losing carriages \u2014 appearing to vanish or regenerate \u2014 when playing at a low Simulation Distance. Carriages generated ahead of the train are now kept loaded until they've been saved, so they reliably come back instead of disappearing for good.",
+      "highlights": [
+        "Carriages no longer vanish permanently when riding with a low simulation distance",
+        "Newly generated carriages ahead of the train stay loaded until saved, then reload reliably as you approach"
+      ],
+      "pr": 623,
+      "date": "2026-07-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
