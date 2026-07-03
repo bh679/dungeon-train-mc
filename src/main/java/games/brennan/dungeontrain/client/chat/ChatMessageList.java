@@ -123,10 +123,10 @@ public final class ChatMessageList extends AbstractWidget {
             return;
         }
         int wrap = contentWidth();
-        for (ChatHistory.Message m : history.messages()) {
-            if (isAutomatedReport(m)) {
-                continue; // keep the menu a conversation — hide advancement/difficulty/death/join-leave reports
-            }
+        // Conversation-only view: human replies, the player's dev-tagged / conversation-adjacent /
+        // menu-sent chat lines, and compact survey answers — see MenuChatFilter for the full rules.
+        for (ChatHistory.Message m : MenuChatFilter.filterHistory(history.messages(),
+                ChatOutbox.get()::isSentByMe)) {
             entries.add(buildEntry(m, wrap));
             knownIds.add(m.id());
         }
@@ -136,44 +136,6 @@ public final class ChatMessageList extends AbstractWidget {
         }
         layout();
         this.scroll = maxScroll(); // newest at the bottom
-    }
-
-    /**
-     * Whether a thread message is an automated game report (advancement / difficulty / death / join-leave)
-     * rather than conversation. Hidden from the menu chat; human messages, genuine survey answers, and
-     * bug-report attachments are kept.
-     *
-     * <p>Two signals: DiscordPresence <b>bot</b> posts ({@code isBot} but not a webhook — advancement
-     * embeds + the "Carriage +N · Difficulty Level M" state lines), and report <b>title markers</b>.
-     * Colour can't be used: the difficulty report reuses the survey embed colour (both go through
-     * {@code postSurveyResponse}), so only the {@code ⚔}/{@code 💀}/{@code 👋} title markers separate a
-     * difficulty/death/leave report from a genuine survey answer (which carries a question title).</p>
-     */
-    private static boolean isAutomatedReport(ChatHistory.Message m) {
-        if (m == null) {
-            return false;
-        }
-        if (m.isBot() && !m.isWebhook()) {
-            return true; // DP bot: advancement embeds + "Carriage +N · Difficulty Level M" lines
-        }
-        if (m.hasEmbeds()) {
-            for (ChatHistory.Embed e : m.embeds()) {
-                if (e != null && isReportTitle(e.title())) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean isReportTitle(String title) {
-        if (title == null) {
-            return false;
-        }
-        String t = title.strip();
-        return t.startsWith("⚔") || t.startsWith("💀") || t.startsWith("👋") || t.startsWith("🎮")
-                || t.contains("reached Difficulty Level") || t.contains("left the game")
-                || t.contains("entered Free Play");
     }
 
     private int contentWidth() {
@@ -221,7 +183,7 @@ public final class ChatMessageList extends AbstractWidget {
 
     private Entry buildEntry(ChatHistory.Message m, int wrap) {
         Entry e = new Entry(m);
-        ChatHistory.Embed survey = surveyEmbed(m);
+        ChatHistory.Embed survey = MenuChatFilter.surveyEmbed(m);
         if (survey != null) {
             buildSurveyLines(e, survey, wrap);
             if (!e.lines.isEmpty()) {
@@ -233,7 +195,8 @@ public final class ChatMessageList extends AbstractWidget {
                 m.isInbound() ? AUTHOR_INBOUND : AUTHOR_SELF, 0));
 
         if (m.content() != null && !m.content().isBlank()) {
-            for (FormattedCharSequence l : font.split(Component.literal(m.content()), wrap)) {
+            String shown = MenuChatFilter.prettifyMentions(m.content()); // "<@123…>" → "@dev"
+            for (FormattedCharSequence l : font.split(Component.literal(shown), wrap)) {
                 e.lines.add(new Line(l, CONTENT, 0));
             }
         }
@@ -253,32 +216,24 @@ public final class ChatMessageList extends AbstractWidget {
         return e;
     }
 
-    /** The survey-answer embed on a message ("📋 Feedback — …"), or null when it isn't one. */
-    private static ChatHistory.Embed surveyEmbed(ChatHistory.Message m) {
-        if (m == null || !m.hasEmbeds()) {
-            return null;
-        }
-        for (ChatHistory.Embed e : m.embeds()) {
-            String t = e == null ? null : e.title();
-            if (t != null && (t.strip().startsWith("📋") || t.contains("Feedback —"))) {
-                return e;
-            }
-        }
-        return null;
-    }
-
     /**
-     * Compact survey render: the score on its own line ("9/10", or the chosen option) then the comment
-     * in quotes beneath it — dropping the "📋 Feedback" title and the question prompt.
+     * Compact survey render: one labeled score line ("Recommend 9/10", "Bug — Other" — the label matched
+     * from the bundled survey definitions via {@link SurveyLabels}, dropped when unknown) then the comment
+     * in quotes beneath it — no "📋 Feedback" title, no question-prompt sentence.
      */
     private void buildSurveyLines(Entry e, ChatHistory.Embed embed, int wrap) {
-        String score = fieldValue(embed, "Rating");
-        if (score == null) {
-            score = fieldValue(embed, "Answer"); // multiple-choice questions post the option here
+        String label = SurveyLabels.labelFor(embed.description()); // the embed description is the prompt
+        String rating = fieldValue(embed, "Rating");
+        String option = rating == null ? fieldValue(embed, "Answer") : null; // multiple-choice option
+        String scoreLine = null;
+        if (rating != null && !rating.isBlank()) {
+            String s = rating.replace(" ", ""); // "9 / 10" → "9/10"
+            scoreLine = label != null ? label + " " + s : s;
+        } else if (option != null && !option.isBlank()) {
+            scoreLine = label != null ? label + " — " + option : option;
         }
-        if (score != null && !score.isBlank()) {
-            String s = score.replace(" ", ""); // "9 / 10" → "9/10"
-            for (FormattedCharSequence l : font.split(Component.literal(s), wrap)) {
+        if (scoreLine != null) {
+            for (FormattedCharSequence l : font.split(Component.literal(scoreLine), wrap)) {
                 e.lines.add(new Line(l, EMBED_ACCENT, 0));
             }
         }
@@ -443,6 +398,9 @@ public final class ChatMessageList extends AbstractWidget {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!this.visible) {
+            return false; // hidden until the dev has messaged (see MainMenuChatPanel) — swallow nothing
+        }
         if (isWithin(mouseX, mouseY)) {
             if (!selected) {
                 selected = true;              // first click raises and readies the send box for typing
@@ -530,7 +488,7 @@ public final class ChatMessageList extends AbstractWidget {
      * scrolled up reading history isn't yanked down. Returns {@code true} if it was newly appended.
      */
     public boolean appendInbound(ChatHistory.Message m) {
-        if (m == null || m.id() == null || knownIds.contains(m.id()) || isAutomatedReport(m)) {
+        if (m == null || m.id() == null || knownIds.contains(m.id()) || MenuChatFilter.isAutomatedReport(m)) {
             return false;
         }
         boolean atBottom = scroll >= maxScroll();
@@ -553,7 +511,7 @@ public final class ChatMessageList extends AbstractWidget {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (status != null || maxScroll() == 0
+        if (!this.visible || status != null || maxScroll() == 0
                 || mouseX < getX() || mouseX > getX() + width
                 || mouseY < getY() || mouseY > getY() + height) {
             return false;

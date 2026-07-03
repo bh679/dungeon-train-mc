@@ -25,8 +25,10 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * <p>Reads + 👀-marks the thread, and on open drains the relay's offline inbox to badge how many
  * real-person replies arrived while the player was away (see {@link RelayChatClient#drainInbox}). Shown only when the
- * DiscordPresence network-access consent is granted ({@link RelayChatClient#canConnect()}) — a player
- * who declined networking is prompted through the existing Discord welcome flow, not here. Like
+ * DiscordPresence network-access consent is granted ({@link RelayChatClient#canConnect()}) <b>and</b>
+ * someone has actually written in the player's thread ({@link MenuChatFilter#hasDevHistory}) — a player
+ * who declined networking is prompted through the existing Discord welcome flow, not here, and one who
+ * was never messaged gets no empty chat dock. Like
  * {@link games.brennan.dungeontrain.client.TitleScreenLayoutHandler}, it bails quietly when there isn't
  * room (a small window, or another mod rewrote the menu) rather than overlapping the centered buttons.</p>
  */
@@ -51,6 +53,13 @@ public final class MainMenuChatPanel {
     // starts at 0) instead of re-draining to an empty result and losing the badge.
     private static WeakReference<Screen> drainedScreen;
     private static int cachedUnread;
+
+    // The panel exists only once someone on Discord (the dev) has actually written in the player's
+    // thread — a player who was never messaged shouldn't see an empty chat dock on the title screen.
+    // The verdict comes from the filtered history (or a live/drained inbox arrival, which is always a
+    // real person) and is cached for the session, so revisits render instantly instead of popping in
+    // after each async fetch.
+    private static boolean knownDevHistory;
 
     private MainMenuChatPanel() {}
 
@@ -88,6 +97,7 @@ public final class MainMenuChatPanel {
         int x = rightEdge - panelWidth;
 
         ChatMessageList list = new ChatMessageList(x, TOP, panelWidth, height);
+        list.visible = knownDevHistory; // hidden until the dev has messaged (revealed by history/inbox below)
         AtomicReference<String> threadId = new AtomicReference<>();
         list.setOnSeen(m -> {
             String tid = threadId.get();
@@ -110,9 +120,16 @@ public final class MainMenuChatPanel {
         RelayChatClient.fetchHistory(uuid).thenAcceptAsync(history -> {
             if (history == null) {
                 list.setStatus(Component.translatable("gui.dungeontrain.menu_chat.offline"));
-                return;
+                return; // couldn't reach the relay — visibility verdict unchanged (stays hidden or cached)
             }
             threadId.set(history.threadId());
+            // Fresh verdict each load: the panel appears only once a real person has written in the
+            // thread. (Never un-reveals mid-session — a live arrival may have revealed it already, and
+            // Discord can lag behind the gateway-fed inbox by a moment.)
+            if (MenuChatFilter.hasDevHistory(history.messages())) {
+                knownDevHistory = true;
+                list.visible = true;
+            }
             list.setHistory(history);
         }, mc);
 
@@ -130,6 +147,9 @@ public final class MainMenuChatPanel {
                     ChatMessageList current = find(screen);
                     if (current != null) {
                         current.setUnread(cachedUnread);
+                        if (inbox.messages() != null && !inbox.messages().isEmpty()) {
+                            reveal(current); // inbox rows are always a real person → the dev has messaged
+                        }
                     }
                 }
             }, mc);
@@ -198,14 +218,23 @@ public final class MainMenuChatPanel {
                     added++;
                 }
             }
-            // Only badge when the player isn't actively watching (panel raised) — they've seen it otherwise.
-            if (added > 0 && !current.isSelected()) {
-                current.addUnread(added);
+            if (added > 0) {
+                reveal(current); // a live reply is always a real person → the dev has messaged
+                // Only badge when the player isn't actively watching (panel raised) — they've seen it otherwise.
+                if (!current.isSelected()) {
+                    current.addUnread(added);
+                }
             }
         }, mc).exceptionally(t -> {
             polling.set(false);
             return null;
         });
+    }
+
+    /** Reveal the panel and remember the verdict for the rest of the session. */
+    private static void reveal(ChatMessageList list) {
+        knownDevHistory = true;
+        list.visible = true;
     }
 
     private static ChatMessageList find(Screen screen) {

@@ -15,6 +15,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -26,7 +27,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * so a failed send has nowhere to retry from but the client — this is that store.
  *
  * <p>Backed by a small JSON file in the MC config dir ({@code dungeontrain-chat-outbox.json}:
- * {@code {"pending":[{key, uuid, content}]}}), written through atomically (tmp + rename) like
+ * {@code {"pending":[{key, uuid, content}], "sent":[messageId…]}} — {@code sent} remembers the Discord
+ * ids of delivered menu sends so {@link MenuChatFilter} can always show the player's own lines),
+ * written through atomically (tmp + rename) like
  * {@link games.brennan.discordpresence.reincarnation.ReincarnationOutbox}. Best-effort: a missing or
  * corrupt file yields an empty queue and never throws into the render thread.</p>
  *
@@ -50,9 +53,12 @@ public final class ChatOutbox {
 
     /** Bounded so a permanently-offline client can't grow the file without limit (oldest evicted). */
     static final int MAX_ITEMS = 200;
+    /** Delivered-message ids kept for the history filter ("this line was mine") — oldest evicted. */
+    static final int MAX_SENT_IDS = 500;
     private static final String FILE_NAME = "dungeontrain-chat-outbox.json";
 
     private final LinkedHashMap<String, Item> pending = new LinkedHashMap<>(); // key -> item (oldest first)
+    private final Set<String> sent = new LinkedHashSet<>();                    // delivered Discord msg ids (oldest first)
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();         // keys with a send in progress
     private Path file;
     private boolean loaded;
@@ -107,10 +113,10 @@ public final class ChatOutbox {
                 inFlight.remove(it.key());
                 continue;
             }
-            RelayChatClient.sendMessage(uuid, it.content()).whenComplete((ok, t) -> {
+            RelayChatClient.sendMessage(uuid, it.content()).whenComplete((result, t) -> {
                 inFlight.remove(it.key());
-                if (Boolean.TRUE.equals(ok)) {
-                    remove(it.key());
+                if (result != null && result.ok()) {
+                    delivered(it.key(), result.id());
                 }
             });
         }
@@ -122,6 +128,30 @@ public final class ChatOutbox {
         return pending.size();
     }
 
+    /**
+     * Whether {@code messageId} is one of this client's own delivered menu sends — the history filter
+     * always shows those (they're by definition addressed to the dev), even without a mention.
+     */
+    public synchronized boolean isSentByMe(String messageId) {
+        if (messageId == null || messageId.isBlank()) {
+            return false;
+        }
+        ensureLoaded();
+        return sent.contains(messageId);
+    }
+
+    /** Remove a delivered item and remember the Discord message id it became (when the relay returned one). */
+    private synchronized void delivered(String key, String messageId) {
+        boolean dirty = pending.remove(key) != null;
+        if (messageId != null && !messageId.isBlank() && sent.add(messageId)) {
+            trimSent();
+            dirty = true;
+        }
+        if (dirty) {
+            save();
+        }
+    }
+
     private synchronized void remove(String key) {
         if (pending.remove(key) != null) {
             save();
@@ -131,6 +161,14 @@ public final class ChatOutbox {
     private void trim() {
         Iterator<String> it = pending.keySet().iterator();
         while (pending.size() > MAX_ITEMS && it.hasNext()) {
+            it.next();
+            it.remove();
+        }
+    }
+
+    private void trimSent() {
+        Iterator<String> it = sent.iterator();
+        while (sent.size() > MAX_SENT_IDS && it.hasNext()) {
             it.next();
             it.remove();
         }
@@ -170,7 +208,19 @@ public final class ChatOutbox {
                     }
                 }
             }
+            JsonElement sentArr = obj.get("sent");
+            if (sentArr != null && sentArr.isJsonArray()) {
+                for (JsonElement el : sentArr.getAsJsonArray()) {
+                    if (el != null && el.isJsonPrimitive()) {
+                        String id = el.getAsString();
+                        if (!id.isBlank()) {
+                            sent.add(id);
+                        }
+                    }
+                }
+            }
             trim();
+            trimSent();
             LOGGER.debug("Menu chat: loaded {} queued message(s) from the outbox.", pending.size());
         } catch (Exception e) {
             LOGGER.warn("Menu chat: failed to read outbox {}; starting empty.", file, e);
@@ -194,6 +244,11 @@ public final class ChatOutbox {
             }
             JsonObject obj = new JsonObject();
             obj.add("pending", arr);
+            JsonArray sentArr = new JsonArray();
+            for (String id : sent) {
+                sentArr.add(id);
+            }
+            obj.add("sent", sentArr);
             if (target.getParent() != null) {
                 Files.createDirectories(target.getParent());
             }
