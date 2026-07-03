@@ -367,6 +367,23 @@ final class TrainCarriageAppenderTest {
         assertFalse(TrainCarriageAppender.shouldRetainOnWalkAway(true));
     }
 
+    // ---- Spawn-time hold policy (forward-carriage vanish fix) ----
+    //
+    // shouldHoldSpawnedGroup is the pure decision core routed by BOTH auto-spawn lanes
+    // (forward + backward). A freshly-spawned group must be held resident until it serializes,
+    // so Sable's per-tick simulation-distance cull can't drop an un-serialized forward group
+    // into a null-pointer holding entry that reloadFromHolding can't revive (the "train vanishes"
+    // report). This test locks the lanes symmetric so a future change can't silently re-introduce
+    // the forward-only-unheld regression. The live ticket→serialize→drain cycle stays a Gate 2
+    // in-game probe (the suite has no Sable bootstrap).
+
+    @Test
+    @DisplayName("shouldHoldSpawnedGroup: both auto-spawn lanes hold new groups (forward/backward symmetric)")
+    void holdSpawnedGroup_symmetricAcrossLanes() {
+        assertTrue(TrainCarriageAppender.shouldHoldSpawnedGroup(true));   // forward lane
+        assertTrue(TrainCarriageAppender.shouldHoldSpawnedGroup(false));  // backward lane
+    }
+
     // ---- Resume-grace window state machine (pause/resume regen fix) ----
     //
     // withinResumeGrace + shouldRenewResumeGrace are the pure cores behind the updateTrain

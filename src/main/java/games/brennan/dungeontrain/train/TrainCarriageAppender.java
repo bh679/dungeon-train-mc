@@ -1908,11 +1908,17 @@ public final class TrainCarriageAppender {
             LAST_SPAWNED_SHIP_FORWARD.put(trainId, newShip);
             LAST_SPAWNED_TICK_FORWARD.put(trainId, now);
             recordPostSpawnCollisionCheck(trainId, newShip, forwardAnchor, train);
-            // NB: forward auto-spawns are intentionally NOT held-resident — they
-            // sit ahead of the player and reload naturally on approach, and
-            // holding every one until autosave would balloon memory on a long
-            // forward ride. Bootstrap forward groups ARE held (their cull is the
-            // ghost source); the backward lane below holds its spawns.
+            // Hold the new forward group resident until it has serialized at least once —
+            // symmetric with the backward lane (forceLoadSpawnedBackward) and the bootstrap
+            // lane (holdGroupResident). Sable's per-tick simulation-distance cull can otherwise
+            // drop a just-spawned forward group — at low sim distance, the SAME tick it appears,
+            // while it sits ahead of the player and outside the ticking bubble — into a holding
+            // entry with a null serialization pointer that reloadFromHolding can't revive,
+            // permanently losing the carriage (the "train vanishes on autosave" report). The hold
+            // self-drains via reconcileForceLoads once the next save mints a pointer (bounded by
+            // autosave cadence); after that a cull lands in reloadable holding — the "reloads on
+            // approach" the old behaviour intended, now made recoverable.
+            if (shouldHoldSpawnedGroup(true)) holdGroupResident(level, trainId, newShip);
             announceSpawn(level, forwardAnchor);
             didForwardSpawn = true;
         }
@@ -1927,8 +1933,10 @@ public final class TrainCarriageAppender {
             recordPostSpawnCollisionCheck(trainId, newShip, backwardAnchor, train);
             // Force-load the new trailing carriage immediately, before any cull
             // pass can move it to holding (it isn't in the visible train yet,
-            // so the per-tick window above can't cover it this tick).
-            forceLoadSpawnedBackward(level, trainId, newShip);
+            // so the per-tick window above can't cover it this tick). Gated on the
+            // same shouldHoldSpawnedGroup policy as the forward lane, so the two lanes
+            // are provably symmetric at a single tested decision point.
+            if (shouldHoldSpawnedGroup(false)) forceLoadSpawnedBackward(level, trainId, newShip);
             announceSpawn(level, backwardAnchor);
             didBackwardSpawn = true;
         }
@@ -2485,6 +2493,24 @@ public final class TrainCarriageAppender {
      */
     static boolean shouldRetainOnWalkAway(boolean hasSerializationPointer) {
         return !hasSerializationPointer;
+    }
+
+    /**
+     * Spawn-time hold policy (pure core): a freshly-spawned group of EITHER auto-spawn lane
+     * (forward or backward) is held resident until it has serialized at least once. Culling an
+     * un-serialized sub-level yields a null-pointer holding entry {@code snatchAndLoad} can't
+     * revive (the "train vanishes on autosave" report — actually a per-tick simulation-distance
+     * cull of the just-spawned forward edge, not the save itself), so a later cull must always land
+     * in <em>reloadable</em> holding. Holding both lanes symmetrically removes the dependency on the
+     * player's simulation distance; the hold self-drains via {@link #reconcileForceLoads} once a
+     * save mints a serialization pointer, so memory stays bounded by autosave cadence.
+     *
+     * <p>Constant by design (both lanes hold). Exists as a named, unit-tested decision point so a
+     * future change can't silently re-introduce a lane-asymmetric hold policy — the exact regression
+     * that lost forward carriages. Package-private + pure, like {@link #shouldRetainOnWalkAway}.</p>
+     */
+    static boolean shouldHoldSpawnedGroup(boolean forward) {
+        return true;
     }
 
     /**
