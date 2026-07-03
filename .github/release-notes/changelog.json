@@ -2936,6 +2936,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "menu-chat-live-receive",
+      "version": "0.377.0",
+      "type": "feat",
+      "title": "Live replies + a cleaner Discord panel on the main menu",
+      "summary": "The title-screen Discord panel now updates live \u2014 replies from the community appear while you're sitting on the menu, no reopening needed. It also reads like a real conversation: automated game notices (advancements, difficulty, deaths, entering Free Play) are tucked away, and your feedback-survey answers show compactly as a score plus your comment.",
+      "highlights": [
+        "Discord replies stream into the menu panel live while it's open",
+        "Automated game notices are hidden from the menu chat \u2014 just conversation",
+        "Feedback-survey answers show simply as a score + your comment"
+      ],
+      "pr": 625,
+      "date": "2026-07-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
