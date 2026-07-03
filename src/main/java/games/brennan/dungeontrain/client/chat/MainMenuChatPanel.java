@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 
 import java.lang.ref.WeakReference;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -142,12 +143,69 @@ public final class MainMenuChatPanel {
      * when it's click-selected — so it sits in front rather than behind the title. When not selected the
      * panel draws in the normal widget pass (behind the logo, 10% faded); see {@link ChatMessageList}.
      */
+    // Live-receive poll: while the panel is open, peek the relay inbox every few seconds and stream in
+    // new Discord replies (the gateway tap already captured them, so peek is cheap + Discord-API-free).
+    private static final long POLL_INTERVAL_MS = 3500;
+    private static long lastPollMs;
+    private static final AtomicBoolean polling = new AtomicBoolean(false);
+
     @SubscribeEvent
     public static void onRenderPost(ScreenEvent.Render.Post event) {
         ChatMessageList list = find(event.getScreen());
-        if (list != null && list.isSelected()) {
+        if (list == null) {
+            return; // not the title screen (or the panel was skipped) → nothing to draw or poll
+        }
+        if (list.isSelected()) {
             list.renderRaised(event.getGuiGraphics(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
         }
+        pollLive(event.getScreen());
+    }
+
+    /**
+     * The live half of 2-way chat: while the title-screen panel is shown, poll the relay inbox with a
+     * non-destructive {@code peek} every {@link #POLL_INTERVAL_MS} and append any new replies to the list.
+     * Cheap — the relay serves from its in-memory, gateway-fed inbox (no Discord API call). Draining stays
+     * owned by the once-per-open path; peek never advances the cursor, so we dedupe by message id. Polling
+     * stops on its own when the player leaves the menu (this only runs while a TitleScreen panel exists).
+     */
+    private static void pollLive(Screen screen) {
+        if (!RelayChatClient.canConnect()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastPollMs < POLL_INTERVAL_MS || !polling.compareAndSet(false, true)) {
+            return; // throttled, or a poll is already in flight
+        }
+        lastPollMs = now;
+        Minecraft mc = Minecraft.getInstance();
+        UUID uuid = mc.getUser() != null ? mc.getUser().getProfileId() : null;
+        if (uuid == null) {
+            polling.set(false);
+            return;
+        }
+        RelayChatClient.peekInbox(uuid).thenAcceptAsync(inbox -> {
+            polling.set(false);
+            if (inbox == null || inbox.messages() == null) {
+                return;
+            }
+            ChatMessageList current = find(screen);
+            if (current == null) {
+                return; // screen changed while the peek was in flight
+            }
+            int added = 0;
+            for (ChatHistory.Message m : inbox.messages()) {
+                if (current.appendInbound(m)) {
+                    added++;
+                }
+            }
+            // Only badge when the player isn't actively watching (panel raised) — they've seen it otherwise.
+            if (added > 0 && !current.isSelected()) {
+                current.addUnread(added);
+            }
+        }, mc).exceptionally(t -> {
+            polling.set(false);
+            return null;
+        });
     }
 
     private static ChatMessageList find(Screen screen) {

@@ -54,6 +54,7 @@ public final class ChatMessageList extends AbstractWidget {
 
     private final List<Entry> entries = new ArrayList<>();
     private final Set<String> reportedSeen = new HashSet<>();
+    private final Set<String> knownIds = new HashSet<>(); // message ids already shown → dedupe live appends
     private Consumer<ChatHistory.Message> onSeen = m -> {};
     private Consumer<String> onSubmit = t -> {};
     private Component status = Component.translatable("gui.dungeontrain.menu_chat.loading");
@@ -116,16 +117,63 @@ public final class ChatMessageList extends AbstractWidget {
         this.status = null;
         this.entries.clear();
         this.reportedSeen.clear();
+        this.knownIds.clear();
         if (history == null || history.messages() == null || history.messages().isEmpty()) {
             setStatus(Component.translatable("gui.dungeontrain.menu_chat.empty"));
             return;
         }
         int wrap = contentWidth();
         for (ChatHistory.Message m : history.messages()) {
+            if (isAutomatedReport(m)) {
+                continue; // keep the menu a conversation — hide advancement/difficulty/death/join-leave reports
+            }
             entries.add(buildEntry(m, wrap));
+            knownIds.add(m.id());
+        }
+        if (entries.isEmpty()) {
+            setStatus(Component.translatable("gui.dungeontrain.menu_chat.empty")); // thread was all reports
+            return;
         }
         layout();
         this.scroll = maxScroll(); // newest at the bottom
+    }
+
+    /**
+     * Whether a thread message is an automated game report (advancement / difficulty / death / join-leave)
+     * rather than conversation. Hidden from the menu chat; human messages, genuine survey answers, and
+     * bug-report attachments are kept.
+     *
+     * <p>Two signals: DiscordPresence <b>bot</b> posts ({@code isBot} but not a webhook — advancement
+     * embeds + the "Carriage +N · Difficulty Level M" state lines), and report <b>title markers</b>.
+     * Colour can't be used: the difficulty report reuses the survey embed colour (both go through
+     * {@code postSurveyResponse}), so only the {@code ⚔}/{@code 💀}/{@code 👋} title markers separate a
+     * difficulty/death/leave report from a genuine survey answer (which carries a question title).</p>
+     */
+    private static boolean isAutomatedReport(ChatHistory.Message m) {
+        if (m == null) {
+            return false;
+        }
+        if (m.isBot() && !m.isWebhook()) {
+            return true; // DP bot: advancement embeds + "Carriage +N · Difficulty Level M" lines
+        }
+        if (m.hasEmbeds()) {
+            for (ChatHistory.Embed e : m.embeds()) {
+                if (e != null && isReportTitle(e.title())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean isReportTitle(String title) {
+        if (title == null) {
+            return false;
+        }
+        String t = title.strip();
+        return t.startsWith("⚔") || t.startsWith("💀") || t.startsWith("👋") || t.startsWith("🎮")
+                || t.contains("reached Difficulty Level") || t.contains("left the game")
+                || t.contains("entered Free Play");
     }
 
     private int contentWidth() {
@@ -173,6 +221,13 @@ public final class ChatMessageList extends AbstractWidget {
 
     private Entry buildEntry(ChatHistory.Message m, int wrap) {
         Entry e = new Entry(m);
+        ChatHistory.Embed survey = surveyEmbed(m);
+        if (survey != null) {
+            buildSurveyLines(e, survey, wrap);
+            if (!e.lines.isEmpty()) {
+                return e; // compact survey: just the "X/10" score + the comment, no author/question clutter
+            }
+        }
         String author = m.authorName() == null ? "?" : m.authorName();
         e.lines.add(new Line(FormattedCharSequence.forward(author, net.minecraft.network.chat.Style.EMPTY),
                 m.isInbound() ? AUTHOR_INBOUND : AUTHOR_SELF, 0));
@@ -196,6 +251,75 @@ public final class ChatMessageList extends AbstractWidget {
             }
         }
         return e;
+    }
+
+    /** The survey-answer embed on a message ("📋 Feedback — …"), or null when it isn't one. */
+    private static ChatHistory.Embed surveyEmbed(ChatHistory.Message m) {
+        if (m == null || !m.hasEmbeds()) {
+            return null;
+        }
+        for (ChatHistory.Embed e : m.embeds()) {
+            String t = e == null ? null : e.title();
+            if (t != null && (t.strip().startsWith("📋") || t.contains("Feedback —"))) {
+                return e;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Compact survey render: the score on its own line ("9/10", or the chosen option) then the comment
+     * in quotes beneath it — dropping the "📋 Feedback" title and the question prompt.
+     */
+    private void buildSurveyLines(Entry e, ChatHistory.Embed embed, int wrap) {
+        String score = fieldValue(embed, "Rating");
+        if (score == null) {
+            score = fieldValue(embed, "Answer"); // multiple-choice questions post the option here
+        }
+        if (score != null && !score.isBlank()) {
+            String s = score.replace(" ", ""); // "9 / 10" → "9/10"
+            for (FormattedCharSequence l : font.split(Component.literal(s), wrap)) {
+                e.lines.add(new Line(l, EMBED_ACCENT, 0));
+            }
+        }
+        String comment = commentValue(embed);
+        if (comment != null && !comment.isBlank()) {
+            for (FormattedCharSequence l : font.split(Component.literal("\"" + comment + "\""), wrap)) {
+                e.lines.add(new Line(l, CONTENT, 0));
+            }
+        }
+    }
+
+    /** Value of the embed field named {@code name} (case-insensitive), or null. */
+    private static String fieldValue(ChatHistory.Embed embed, String name) {
+        if (embed == null || embed.fields() == null) {
+            return null;
+        }
+        for (ChatHistory.Field f : embed.fields()) {
+            if (f != null && f.name() != null && f.name().equalsIgnoreCase(name)) {
+                return f.value();
+            }
+        }
+        return null;
+    }
+
+    /** The comment field — the first field that isn't the score ("Rating"/"Answer"). */
+    private static String commentValue(ChatHistory.Embed embed) {
+        if (embed == null || embed.fields() == null) {
+            return null;
+        }
+        for (ChatHistory.Field f : embed.fields()) {
+            if (f == null || f.name() == null) {
+                continue;
+            }
+            if (f.name().equalsIgnoreCase("Rating") || f.name().equalsIgnoreCase("Answer")) {
+                continue;
+            }
+            if (f.value() != null && !f.value().isBlank()) {
+                return f.value();
+            }
+        }
+        return null;
     }
 
     private void addEmbed(Entry e, ChatHistory.Embed embed, int wrap) {
@@ -394,8 +518,37 @@ public final class ChatMessageList extends AbstractWidget {
                 "local-" + (localSeq++), null, name, false, true, content,
                 List.of(), List.of(), null, true); // isWebhook=true → styled as self, never marked seen
         entries.add(buildEntry(m, contentWidth()));
+        knownIds.add(m.id());
         layout();
         this.scroll = maxScroll();
+    }
+
+    /**
+     * Append a live inbound reply (from the relay inbox poll) if it isn't already shown. Real-person
+     * replies are inbound-styled and flow through {@link #maybeMarkSeen}, so one the player sees still
+     * earns its 👀. Keeps the view pinned to the bottom only when it was already there, so a player
+     * scrolled up reading history isn't yanked down. Returns {@code true} if it was newly appended.
+     */
+    public boolean appendInbound(ChatHistory.Message m) {
+        if (m == null || m.id() == null || knownIds.contains(m.id()) || isAutomatedReport(m)) {
+            return false;
+        }
+        boolean atBottom = scroll >= maxScroll();
+        this.status = null;
+        entries.add(buildEntry(m, contentWidth()));
+        knownIds.add(m.id());
+        layout();
+        if (atBottom) {
+            this.scroll = maxScroll(); // follow the conversation only if already at the bottom
+        }
+        return true;
+    }
+
+    /** Increment the unread badge for live arrivals — distinct from {@link #setUnread} which replaces it. */
+    public void addUnread(int n) {
+        if (n > 0) {
+            this.unread += n;
+        }
     }
 
     @Override

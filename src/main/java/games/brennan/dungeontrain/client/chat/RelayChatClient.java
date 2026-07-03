@@ -93,6 +93,30 @@ public final class RelayChatClient {
     }
 
     /**
+     * Peek the player's inbox <em>without</em> advancing the delivery cursor (relay {@code &peek=1}).
+     * Used to poll for live replies while the panel is open: repeated calls keep returning the current
+     * undelivered set (the caller dedupes by message id), while the once-per-open {@link #drainInbox}
+     * still owns the cursor + the "arrived while away" badge. Resolves to {@code null} on any error.
+     */
+    public static CompletableFuture<ChatInbox> peekInbox(UUID uuid) {
+        if (uuid == null || !canConnect()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        URI uri = URI.create(DungeonTrain.relayBaseUrl() + "/chat/inbox?uuid=" + noDashes(uuid) + "&peek=1");
+        HttpRequest req = HttpRequest.newBuilder(uri)
+                .timeout(REQUEST_TIMEOUT)
+                .header("Accept", "application/json")
+                .GET()
+                .build();
+        return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                .thenApply(RelayChatClient::parseInbox)
+                .exceptionally(t -> {
+                    LOGGER.debug("Menu chat: inbox peek failed: {}", t.toString());
+                    return null;
+                });
+    }
+
+    /**
      * Tell the relay the player has seen {@code messageId} in their thread, so it adds a 👀 reaction
      * on Discord. Fire-and-forget; {@code channelId} is the thread id from the loaded history.
      */
