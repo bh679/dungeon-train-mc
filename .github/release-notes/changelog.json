@@ -2932,6 +2932,19 @@
       "released": true,
       "released_in": "v0.379.0",
       "released_at": "2026-07-03T04:18:08Z"
+    },
+    {
+      "id": "quieter-holding-reload-logs",
+      "version": "0.380.0",
+      "type": "fix",
+      "title": "Quieter logs while riding long trains",
+      "summary": "Long trains no longer flood the server log with a harmless, repeated Sable holding-handshake message during travel, and the matching redundant per-tick work is trimmed. No gameplay change.",
+      "highlights": [],
+      "pr": 624,
+      "date": "2026-07-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

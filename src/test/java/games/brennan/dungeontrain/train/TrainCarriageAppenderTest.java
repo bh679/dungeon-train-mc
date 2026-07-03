@@ -415,4 +415,63 @@ final class TrainCarriageAppenderTest {
         assertFalse(TrainCarriageAppender.shouldRenewResumeGrace(0L, 200L, cap));  // exactly at cap
         assertFalse(TrainCarriageAppender.shouldRenewResumeGrace(0L, 260L, cap));  // past cap → release
     }
+
+    // ---- Reload-from-holding throttle (Sable snatch-miss log-spam fix) ----
+    //
+    // claimReloadIssue gates SableShipyard.reloadFromHolding to one call per
+    // held-edge episode. A held edge sits in RELOAD_DEFER for the whole ~200-tick
+    // surfacing window; the reload is a no-op there (entry present in Sable's global
+    // holding map yet absent from the chunk's, so snatchAndLoad snatches nothing),
+    // and each call re-triggers Sable's benign "wasn't present in the holding chunk"
+    // ERROR 1:1. The helper returns true only the first time per (trainId, direction,
+    // subLevelId) and re-arms when the held edge changes. Each test uses a distinct
+    // random trainId so the shared static latch maps stay isolated. The clear-on-
+    // resolve and per-tick prune wiring is exercised end-to-end by the Gate 2 ride.
+
+    @Test
+    @DisplayName("claimReloadIssue: true once per held-edge episode, false on repeat")
+    void claimReload_oncePerEpisode() {
+        UUID train = UUID.randomUUID();
+        UUID edge = new UUID(1L, 1L);
+        assertTrue(TrainCarriageAppender.claimReloadIssue(train, true, edge));   // first tick issues
+        assertFalse(TrainCarriageAppender.claimReloadIssue(train, true, edge));  // same edge next tick
+        assertFalse(TrainCarriageAppender.claimReloadIssue(train, true, edge));  // still throttled
+    }
+
+    @Test
+    @DisplayName("claimReloadIssue: a new sub-level (edge changed) re-arms the throttle")
+    void claimReload_newEdgeRearms() {
+        UUID train = UUID.randomUUID();
+        UUID edgeA = new UUID(2L, 1L);
+        UUID edgeB = new UUID(2L, 2L);
+        assertTrue(TrainCarriageAppender.claimReloadIssue(train, true, edgeA));
+        assertFalse(TrainCarriageAppender.claimReloadIssue(train, true, edgeA));
+        assertTrue(TrainCarriageAppender.claimReloadIssue(train, true, edgeB));  // new episode → issue once
+        assertFalse(TrainCarriageAppender.claimReloadIssue(train, true, edgeB));
+        // edgeA again is now a fresh episode (the stored id is B).
+        assertTrue(TrainCarriageAppender.claimReloadIssue(train, true, edgeA));
+    }
+
+    @Test
+    @DisplayName("claimReloadIssue: forward and backward latches are independent")
+    void claimReload_directionIndependent() {
+        UUID train = UUID.randomUUID();
+        UUID edge = new UUID(3L, 1L);
+        assertTrue(TrainCarriageAppender.claimReloadIssue(train, true, edge));   // forward issues
+        assertTrue(TrainCarriageAppender.claimReloadIssue(train, false, edge));  // backward issues (separate map)
+        assertFalse(TrainCarriageAppender.claimReloadIssue(train, true, edge));  // forward now throttled
+        assertFalse(TrainCarriageAppender.claimReloadIssue(train, false, edge)); // backward now throttled
+    }
+
+    @Test
+    @DisplayName("claimReloadIssue: different trains don't share throttle state")
+    void claimReload_perTrain() {
+        UUID trainA = UUID.randomUUID();
+        UUID trainB = UUID.randomUUID();
+        UUID edge = new UUID(4L, 1L);
+        assertTrue(TrainCarriageAppender.claimReloadIssue(trainA, true, edge));
+        assertTrue(TrainCarriageAppender.claimReloadIssue(trainB, true, edge));  // independent train → issues
+        assertFalse(TrainCarriageAppender.claimReloadIssue(trainA, true, edge));
+        assertFalse(TrainCarriageAppender.claimReloadIssue(trainB, true, edge));
+    }
 }

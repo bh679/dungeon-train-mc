@@ -150,6 +150,20 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Boolean> EDGE_UNRESOLVED_WARNED_FORWARD = new ConcurrentHashMap<>();
     private static final Map<UUID, Boolean> EDGE_UNRESOLVED_WARNED_BACKWARD = new ConcurrentHashMap<>();
     /**
+     * Per-train, per-direction: the sub-level ID Dungeon Train last issued a
+     * reload-from-holding for. A held edge sits in the {@code RELOAD_DEFER} state
+     * for the whole ~200-tick surfacing window, but {@link Shipyard#reloadFromHolding}
+     * is a no-op there (the entry lives in Sable's global holding map yet is absent
+     * from the chunk's map, so its {@code snatchAndLoad} snatches nothing) — and
+     * each call makes Sable log its benign "wasn't present in the holding chunk"
+     * ERROR 1:1. Recovery is the trailing force-load window + {@code findAll}, not
+     * this call, so we issue it only ONCE per held-edge episode: re-armed when the
+     * edge changes (new uuid), cleared on resolve alongside {@code EDGE_UNRESOLVED_*}.
+     * Collapses thousands of no-op calls (and their ERROR spam) to a handful.
+     */
+    private static final Map<UUID, UUID> RELOAD_ISSUED_FORWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, UUID> RELOAD_ISSUED_BACKWARD = new ConcurrentHashMap<>();
+    /**
      * Ticks a registry edge may stay unresolved before one WARN fires. 200 ≈
      * 10 s — comfortably past the few-tick {@code findAll} surfacing lag and the
      * holding-reload round-trip, so only a genuinely stuck edge trips it.
@@ -1132,6 +1146,8 @@ public final class TrainCarriageAppender {
         EDGE_UNRESOLVED_SINCE_BACKWARD.clear();
         EDGE_UNRESOLVED_WARNED_FORWARD.clear();
         EDGE_UNRESOLVED_WARNED_BACKWARD.clear();
+        RELOAD_ISSUED_FORWARD.clear();
+        RELOAD_ISSUED_BACKWARD.clear();
         // Force-load window tracking. The live Sable tickets themselves are
         // swept separately via Shipyard.releaseAllForceLoads() on the
         // train-wipe path (TrainAssembler.deleteExistingTrains), which has a
@@ -1478,6 +1494,8 @@ public final class TrainCarriageAppender {
         EDGE_UNRESOLVED_SINCE_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         EDGE_UNRESOLVED_WARNED_FORWARD.keySet().retainAll(trainsTouchedThisTick);
         EDGE_UNRESOLVED_WARNED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
+        RELOAD_ISSUED_FORWARD.keySet().retainAll(trainsTouchedThisTick);
+        RELOAD_ISSUED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         clearDropouts(level, seenThisTick);
     }
 
@@ -2134,10 +2152,19 @@ public final class TrainCarriageAppender {
                 // trailing force-load window (engaged via backwardExtensionWanted)
                 // then keeps it resident so it can't be re-culled before the
                 // next group places one stride behind its live pose.
-                boolean reloaded = shipyard.reloadFromHolding(uuid);
-                if (reloaded) {
-                    LOGGER.debug("[DungeonTrain] Reloaded held registry-edge group anchor={} (subLevelId={}) for trainId={} — {} lane resumes once it surfaces",
-                        edgeAnchor, uuid, trainId, forward ? "forward" : "backward");
+                //
+                // Issue the reload only ONCE per held-edge episode: the edge stays
+                // in RELOAD_DEFER for the whole surfacing window, but the call does
+                // not itself load anything here (see RELOAD_ISSUED_* / claimReloadIssue)
+                // — re-calling it every tick just re-triggers Sable's benign
+                // "wasn't present in the holding chunk" ERROR. Recovery is the
+                // force-load window + findAll, which run regardless.
+                if (claimReloadIssue(trainId, forward, uuid)) {
+                    boolean reloaded = shipyard.reloadFromHolding(uuid);
+                    if (reloaded) {
+                        LOGGER.debug("[DungeonTrain] Reloaded held registry-edge group anchor={} (subLevelId={}) for trainId={} — {} lane resumes once it surfaces",
+                            edgeAnchor, uuid, trainId, forward ? "forward" : "backward");
+                    }
                 }
                 warnEdgeUnresolvedIfStuck(trainId, forward, edgeAnchor, uuid, level.getGameTime(), "held→reload");
                 return new EdgeReference(action, null);
@@ -2153,6 +2180,23 @@ public final class TrainCarriageAppender {
     private static void clearEdgeUnresolved(UUID trainId, boolean forward) {
         (forward ? EDGE_UNRESOLVED_SINCE_FORWARD : EDGE_UNRESOLVED_SINCE_BACKWARD).remove(trainId);
         (forward ? EDGE_UNRESOLVED_WARNED_FORWARD : EDGE_UNRESOLVED_WARNED_BACKWARD).remove(trainId);
+        // Re-arm the reload-from-holding throttle: once this edge resolves, a later
+        // held edge in the same direction (a different sub-level) should issue once.
+        (forward ? RELOAD_ISSUED_FORWARD : RELOAD_ISSUED_BACKWARD).remove(trainId);
+    }
+
+    /**
+     * Claim the single reload-from-holding issue for a held edge episode. Returns
+     * {@code true} only the first call per {@code (trainId, forward, subLevelId)} —
+     * subsequent ticks on the same held edge return {@code false} (the reload is a
+     * no-op that would only re-spam Sable's benign snatch-miss ERROR). A new
+     * {@code subLevelId} in the same direction re-arms it (a genuinely new episode),
+     * as does {@link #clearEdgeUnresolved} once the edge resolves. See
+     * {@code RELOAD_ISSUED_*}.
+     */
+    static boolean claimReloadIssue(UUID trainId, boolean forward, UUID subLevelId) {
+        Map<UUID, UUID> issued = forward ? RELOAD_ISSUED_FORWARD : RELOAD_ISSUED_BACKWARD;
+        return !subLevelId.equals(issued.put(trainId, subLevelId));
     }
 
     /**
