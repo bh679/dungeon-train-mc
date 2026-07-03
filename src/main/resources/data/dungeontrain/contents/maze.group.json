@@ -1,26 +1,26 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "selfWeight": 1,
   "variants": [
     {
       "id": "2ndlevel",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "hall",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "twoway",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "sides",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "up",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "maze5",
