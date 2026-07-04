@@ -127,9 +127,11 @@ public final class TitleScreenLayoutHandler {
         // they can still find their way to the channel without being
         // re-prompted by a modal.
         boolean optedOut = ClientDisplayConfig.isDeveloperPopupOptedOut();
+        // Stand down while the menu-chat envelope pulses over unread messages — one pulse at a time.
         Button discord = optedOut
                 ? new PulsingDiscordButton(slotX + halfW + GAP, slotY, halfW, slotH,
-                        DISCORD_LABEL, b -> openDiscord(titleScreen))
+                        DISCORD_LABEL, b -> openDiscord(titleScreen),
+                        games.brennan.dungeontrain.client.chat.MenuChatButtonHandler::hasUnreadPulse)
                 : Button.builder(DISCORD_LABEL, b -> openDiscord(titleScreen))
                         .bounds(slotX + halfW + GAP, slotY, halfW, slotH)
                         .build();

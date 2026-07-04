@@ -124,6 +124,22 @@ public class DungeonTrain {
     }
 
     /**
+     * The relay capability base URL this build talks to (dev channel for dev/test builds, live on
+     * {@code main}). Public so client-side features with no Minecraft-server connection — e.g. the
+     * title-screen chat panel — can reach the relay directly with the same dev/live routing the
+     * in-game Discord relay uses.
+     */
+    public static String relayBaseUrl() {
+        // Dev/test override (self-hosting or a local mock relay) — mirrors the relay's own
+        // DISCORD_API_BASE test seam. Unset in normal use → the branch-routed dev/live cap.
+        String override = System.getenv("DUNGEONTRAIN_RELAY_BASE_URL");
+        if (override != null && !override.isBlank()) {
+            return override;
+        }
+        return discordRelayBaseUrl();
+    }
+
+    /**
      * Where the redesigned "manifest" public death report should post. On a RELEASE ({@code main}) build
      * it routes to the dedicated PUBLIC channel cap; on a dev/test build it returns {@code null} so the
      * report falls through to the build's default cap (the dev channel) — keeping the dev preview intact.
