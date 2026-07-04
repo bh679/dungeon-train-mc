@@ -2966,15 +2966,14 @@
       "id": "main-menu-dev-chat",
       "version": "0.381.1",
       "type": "feat",
-      "title": "Chat with the dev from the main menu",
-      "summary": "You can now talk with the dev without leaving the game. Once the dev has replied in your Discord thread, an envelope button appears on the title screen (above the accessibility button); unread messages pop up a callout quoting the start of the oldest one and gently pulse the button. The envelope opens a dedicated chat window showing just the conversation \u2014 the dev's replies, your dev-tagged or menu-sent messages, and your survey answers in compact form \u2014 with new replies streaming in live and a box to write back. Anything you send while offline is queued and delivered when you reconnect, and in Discord the dev sees \u2705 when a message has reached your game and \ud83d\udc40 once you've actually read it.",
+      "title": "Talk with the dev from the main menu",
+      "summary": "You can now talk directly with the dev without leaving the game. When the dev sends you a message, an envelope appears on the title screen \u2014 unread messages pop up a preview and make the envelope pulse. Open it for a simple conversation window: the dev's replies arrive live while you're there, and you can write back any time. Messages you send while offline are delivered automatically when you reconnect, and your feedback answers appear in the conversation too.",
       "highlights": [
-        "An envelope appears on the title screen once the dev has messaged you \u2014 no empty chat dock before that",
-        "Unread messages show a popup + pulsing envelope; opening the chat clears them",
-        "A dedicated chat window with live two-way messaging \u2014 replies stream in while it's open",
-        "Offline sends queue up and deliver automatically when you're back",
-        "Only conversation shows \u2014 automated game reports stay out; surveys compact to a score + comment",
-        "Delivery receipts in Discord: \u2705 = reached your game, \ud83d\udc40 = read"
+        "Talk directly with the dev, right from the main menu",
+        "An envelope appears on the title screen when the dev has messaged you",
+        "Unread messages show a preview popup and a pulsing envelope",
+        "Replies arrive live while the chat is open, and you can write back",
+        "Messages sent while offline are delivered when you reconnect"
       ],
       "pr": 618,
       "date": "2026-07-04",
