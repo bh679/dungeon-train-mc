@@ -3046,6 +3046,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "maze-zombiesrooms-prefab-tweaks",
+      "version": "0.383.0",
+      "type": "content",
+      "title": "Maze and zombie-room prefab tweaks",
+      "summary": "Rebalanced the maze dungeon's copper stage odds and refreshed variant data for the zombie-room and corridor prefabs.",
+      "highlights": [
+        "Copper stage now appears more often in the maze dungeon",
+        "Zombie-room encounters rebalanced (command block/mob spawn odds)"
+      ],
+      "date": "2026-07-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
