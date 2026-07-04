@@ -3010,9 +3010,9 @@
       ],
       "pr": 629,
       "date": "2026-07-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.383.0",
+      "released_at": "2026-07-04T09:31:29Z"
     },
     {
       "id": "worldload-sable-log-burst",
@@ -3026,9 +3026,9 @@
       ],
       "pr": 630,
       "date": "2026-07-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.383.0",
+      "released_at": "2026-07-04T09:31:29Z"
     },
     {
       "id": "quartz-build-set-and-content",
@@ -3043,9 +3043,9 @@
       ],
       "pr": 631,
       "date": "2026-07-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.383.0",
+      "released_at": "2026-07-04T09:31:29Z"
     }
   ]
 }
