@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 8,
   "variants": {
     "1,0,4": { "lockId": 1, "states": ["minecraft:tuff_bricks", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}] },
     "1,1,4": { "lockId": 1, "states": ["minecraft:tuff_bricks", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}] },

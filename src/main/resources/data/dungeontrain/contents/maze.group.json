@@ -36,7 +36,8 @@
     },
     {
       "id": "copper",
-      "weight": 1
+      "weight": 7,
+      "stage": "copper"
     }
   ]
 }
