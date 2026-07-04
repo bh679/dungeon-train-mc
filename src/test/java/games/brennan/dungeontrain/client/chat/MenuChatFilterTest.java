@@ -28,33 +28,33 @@ class MenuChatFilterTest {
     // --- fixtures -------------------------------------------------------------
 
     private static ChatHistory.Message human(String id, String ts) {
-        return new ChatHistory.Message(id, "dev1", "Brennan", false, false, "hey! saw your run", List.of(), List.of(), ts, false);
+        return new ChatHistory.Message(id, "dev1", "Brennan", false, false, "hey! saw your run", List.of(), List.of(), ts, false, false);
     }
 
     private static ChatHistory.Message playerChat(String id, String content, String ts) {
-        return new ChatHistory.Message(id, "wh", "Steve", false, true, content, List.of(), List.of(), ts, true);
+        return new ChatHistory.Message(id, "wh", "Steve", false, true, content, List.of(), List.of(), ts, true, false);
     }
 
     private static ChatHistory.Message botPost(String id) {
         return new ChatHistory.Message(id, "bot1", "Dungeon Train", true, false, "Carriage +3 · Difficulty Level 2",
-                List.of(), List.of(), T0, false);
+                List.of(), List.of(), T0, false, false);
     }
 
     private static ChatHistory.Message webhookEmbed(String id, String title) {
         return new ChatHistory.Message(id, "wh", "Steve", false, true, null,
-                List.of(new ChatHistory.Embed(title, "desc", null, List.of())), List.of(), T0, true);
+                List.of(new ChatHistory.Embed(title, "desc", null, List.of())), List.of(), T0, true, false);
     }
 
     private static ChatHistory.Message surveyAnswer(String id, String prompt, ChatHistory.Field... fields) {
         return new ChatHistory.Message(id, "wh", "Steve", false, true, null,
                 List.of(new ChatHistory.Embed("📋 Feedback — Steve", prompt, null, List.of(fields))),
-                List.of(), T0, true);
+                List.of(), T0, true, false);
     }
 
     private static ChatHistory.Message attachmentPost(String id) {
         return new ChatHistory.Message(id, "wh", "Steve", false, true, "bug logs attached", List.of(),
                 List.of(new ChatHistory.Attachment("latest.log.gz", 1234L, "application/gzip", "http://x")),
-                T0, true);
+                T0, true, false);
     }
 
     private static Set<String> shownIds(List<ChatHistory.Message> messages) {

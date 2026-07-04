@@ -121,6 +121,19 @@ public final class RelayChatClient {
      * on Discord. Fire-and-forget; {@code channelId} is the thread id from the loaded history.
      */
     public static void markSeen(UUID uuid, String channelId, String messageId) {
+        mark(uuid, channelId, messageId, "seen");
+    }
+
+    /**
+     * Tell the relay this client has <em>received</em> {@code messageId} (fetched it to the machine —
+     * the player may not have read it yet), so it adds the ✅ delivered receipt on Discord. Batched and
+     * deduped by {@link ChatReceipts}; fire-and-forget like {@link #markSeen}.
+     */
+    public static void markLoaded(UUID uuid, String channelId, String messageId) {
+        mark(uuid, channelId, messageId, "loaded");
+    }
+
+    private static void mark(UUID uuid, String channelId, String messageId, String kind) {
         if (uuid == null || channelId == null || messageId == null || messageId.isBlank() || !canConnect()) {
             return;
         }
@@ -128,6 +141,7 @@ public final class RelayChatClient {
         body.addProperty("uuid", noDashes(uuid));
         body.addProperty("channelId", channelId);
         body.addProperty("messageId", messageId);
+        body.addProperty("kind", kind);
         HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + "/chat/seen"))
                 .timeout(REQUEST_TIMEOUT)
                 .header("Content-Type", "application/json")
@@ -135,7 +149,7 @@ public final class RelayChatClient {
                 .build();
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .exceptionally(t -> {
-                    LOGGER.debug("Menu chat: seen mark failed: {}", t.toString());
+                    LOGGER.debug("Menu chat: {} mark failed: {}", kind, t.toString());
                     return null;
                 });
     }
@@ -263,7 +277,8 @@ public final class RelayChatClient {
                 parseAttachments(o),
                 // history rows carry "timestamp"; relay inbox rows (inbox.js toPublic) use "ts"
                 optString(o, "timestamp") != null ? optString(o, "timestamp") : optString(o, "ts"),
-                optBool(o, "seen"));
+                optBool(o, "seen"),
+                optBool(o, "delivered"));
     }
 
     private static List<ChatHistory.Embed> parseEmbeds(JsonObject o) {

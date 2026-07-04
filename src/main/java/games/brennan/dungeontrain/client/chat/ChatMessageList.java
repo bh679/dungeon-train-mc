@@ -505,7 +505,7 @@ public final class ChatMessageList extends AbstractWidget {
         String name = authorName == null || authorName.isBlank() ? "Me" : authorName;
         ChatHistory.Message m = new ChatHistory.Message(
                 "local-" + (localSeq++), null, name, false, true, content,
-                List.of(), List.of(), null, true); // isWebhook=true → styled as self, never marked seen
+                List.of(), List.of(), null, true, true); // isWebhook=true → styled as self, never marked
         entries.add(buildEntry(m, contentWidth()));
         knownIds.add(m.id());
         layout();

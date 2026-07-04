@@ -3005,7 +3005,8 @@
         "The dev chat opens in its own window from an envelope button on the title screen",
         "The button only appears once the dev has messaged you; a popup flags unread messages",
         "Replies stream in live while the window is open, and you can write back",
-        "Only conversation shows \u2014 plus survey answers compacted like \"Bug \u2014 Other\""
+        "Only conversation shows \u2014 plus survey answers compacted like \"Bug \u2014 Other\"",
+        "In Discord, \u2705 shows a message reached your game and \ud83d\udc40 that you've read it"
       ],
       "pr": 625,
       "date": "2026-07-03",

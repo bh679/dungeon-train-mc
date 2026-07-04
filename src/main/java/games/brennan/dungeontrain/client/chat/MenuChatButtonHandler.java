@@ -121,8 +121,12 @@ public final class MenuChatButtonHandler {
 
         // Fresh visibility verdict: the button appears only once a real person has written in the thread.
         RelayChatClient.fetchHistory(uuid).thenAcceptAsync(history -> {
-            if (history != null && MenuChatFilter.hasDevHistory(history.messages())) {
-                reveal();
+            if (history != null) {
+                // Reaching the menu means the client has these — ✅ them (even with the envelope hidden).
+                ChatReceipts.markLoaded(uuid, history.threadId(), history.messages());
+                if (MenuChatFilter.hasDevHistory(history.messages())) {
+                    reveal();
+                }
             }
         }, mc);
 
@@ -187,6 +191,9 @@ public final class MenuChatButtonHandler {
         if (inbox == null) {
             return;
         }
+        Minecraft mc = Minecraft.getInstance();
+        UUID uuid = mc.getUser() != null ? mc.getUser().getProfileId() : null;
+        ChatReceipts.markLoaded(uuid, inbox.threadId(), inbox.messages());
         List<ChatHistory.Message> messages = inbox.messages();
         boolean hasRows = messages != null && !messages.isEmpty();
         if (hasRows) {

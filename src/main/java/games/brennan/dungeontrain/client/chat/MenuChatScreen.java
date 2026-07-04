@@ -68,6 +68,10 @@ public final class MenuChatScreen extends Screen {
         ChatOutbox.get().flush();
 
         RelayChatClient.fetchHistory(uuid).thenAcceptAsync(history -> {
+            if (history != null) {
+                // ✅ the fetched messages regardless of which init owns the list — the data arrived.
+                ChatReceipts.markLoaded(uuid, history.threadId(), history.messages());
+            }
             if (this.list != l) {
                 return; // resized while in flight — the newer init's fetch owns the current list
             }
@@ -84,8 +88,11 @@ public final class MenuChatScreen extends Screen {
         if (!drained) {
             drained = true;
             RelayChatClient.drainInbox(uuid).thenAcceptAsync(inbox -> {
-                if (inbox != null && this.list == l) {
-                    l.setUnread(inbox.unread());
+                if (inbox != null) {
+                    ChatReceipts.markLoaded(uuid, inbox.threadId(), inbox.messages());
+                    if (this.list == l) {
+                        l.setUnread(inbox.unread());
+                    }
                 }
             }, mc);
         }
@@ -94,6 +101,7 @@ public final class MenuChatScreen extends Screen {
     @Override
     public void tick() {
         MenuChatLivePoll.poll(uuid, inbox -> {
+            ChatReceipts.markLoaded(uuid, inbox.threadId(), inbox.messages());
             if (list != null && inbox.messages() != null) {
                 for (ChatHistory.Message m : inbox.messages()) {
                     list.appendInbound(m);
