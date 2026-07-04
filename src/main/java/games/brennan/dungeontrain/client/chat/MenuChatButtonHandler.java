@@ -149,7 +149,7 @@ public final class MenuChatButtonHandler {
         }
         Minecraft mc = Minecraft.getInstance();
         UUID uuid = mc.getUser() != null ? mc.getUser().getProfileId() : null;
-        MenuChatLivePoll.poll(uuid, MenuChatButtonHandler::applyInbox);
+        MenuChatLivePoll.poll(uuid, false, MenuChatButtonHandler::applyInbox); // peek only — never consumes
 
         if (button.visible && unread > 0 && preview != null) {
             drawPulse(event.getGuiGraphics(), button);

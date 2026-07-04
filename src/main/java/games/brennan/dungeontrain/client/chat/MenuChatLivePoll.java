@@ -24,11 +24,16 @@ final class MenuChatLivePoll {
     private MenuChatLivePoll() {}
 
     /**
-     * Peek the inbox if the throttle allows, delivering a non-null {@link ChatInbox} to {@code onInbox}
+     * Poll the inbox if the throttle allows, delivering a non-null {@link ChatInbox} to {@code onInbox}
      * on the render thread. No-ops (silently) when consent is missing, a poll is already in flight, the
-     * interval hasn't elapsed, or the peek fails — the next loop simply tries again.
+     * interval hasn't elapsed, or the request fails — the next loop simply tries again.
+     *
+     * @param drain true while the chat window is open — the arriving message is shown immediately, so
+     *              it counts as read and the relay's delivery cursor advances (otherwise the title
+     *              screen's unread popup would resurrect a message the player just watched arrive).
+     *              The title-screen surface passes false: peeks never consume anything.
      */
-    static void poll(UUID uuid, Consumer<ChatInbox> onInbox) {
+    static void poll(UUID uuid, boolean drain, Consumer<ChatInbox> onInbox) {
         if (uuid == null || !RelayChatClient.canConnect()) {
             return;
         }
@@ -38,7 +43,7 @@ final class MenuChatLivePoll {
         }
         lastPollMs = now;
         Minecraft mc = Minecraft.getInstance();
-        RelayChatClient.peekInbox(uuid).thenAcceptAsync(inbox -> {
+        (drain ? RelayChatClient.drainInbox(uuid) : RelayChatClient.peekInbox(uuid)).thenAcceptAsync(inbox -> {
             inFlight.set(false);
             if (inbox != null) {
                 onInbox.accept(inbox);

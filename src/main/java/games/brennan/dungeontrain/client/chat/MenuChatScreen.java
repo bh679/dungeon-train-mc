@@ -100,7 +100,9 @@ public final class MenuChatScreen extends Screen {
 
     @Override
     public void tick() {
-        MenuChatLivePoll.poll(uuid, inbox -> {
+        // drain=true: a reply arriving while the window is open is shown immediately, so it's read —
+        // advancing the cursor keeps the title screen's unread popup from resurrecting it after close.
+        MenuChatLivePoll.poll(uuid, true, inbox -> {
             ChatReceipts.markLoaded(uuid, inbox.threadId(), inbox.messages());
             if (list != null && inbox.messages() != null) {
                 for (ChatHistory.Message m : inbox.messages()) {
