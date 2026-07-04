@@ -1,11 +1,21 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.ship.KinematicDriver;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.level.Level;
 import org.joml.Quaterniond;
 import org.joml.Vector3d;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for the pivot-drift compensation math extracted from
@@ -148,5 +158,79 @@ final class TrainTransformProviderTest {
         assertEquals(currentBefore.x, currentPivot.x, EPS);
         assertEquals(currentBefore.y, currentPivot.y, EPS);
         assertEquals(currentBefore.z, currentPivot.z, EPS);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Resume-after-cull re-anchor (Part 2 of the jitter fix). When a carriage
+    // sub-level is culled to Sable holding it stops being ticked; on reload the
+    // deterministic formula catches canonicalPos up to its correct (sibling-
+    // aligned) position in a single frame. The re-anchor re-bases the spawn
+    // baseline onto that already-correct position so future ticks stay smooth,
+    // WITHOUT changing any emitted absolute position (zero drift).
+
+    /** Constant world velocity of +2 blocks/s along X (0.1 block/tick at 20 Hz). */
+    private static final Vector3d VEL = new Vector3d(2, 0, 0);
+    private static final double DT = 1.0 / 20.0;
+
+    private static TrainTransformProvider newProvider() {
+        ResourceKey<Level> dim = ResourceKey.create(
+            Registries.DIMENSION, ResourceLocation.fromNamespaceAndPath("minecraft", "overworld"));
+        return new TrainTransformProvider(
+            VEL, new BlockPos(0, 0, 0), dim, 0, 1,
+            new CarriageDims(9, 7, 7), UUID.randomUUID());
+    }
+
+    /** Drive one physics tick at {@code gameTime} from a stable spawn pose; return emitted X. */
+    private static double tick(TrainTransformProvider p, long gameTime) {
+        Vector3d spawnPose = new Vector3d(1000, 64, 0);
+        Vector3d pivot = new Vector3d(2.0e7, 100, 2.0e7); // shipyard-space pivot (stable)
+        KinematicDriver.TickOutput out = p.nextTransform(
+            new KinematicDriver.TickInput(spawnPose, new Quaterniond(), pivot, gameTime));
+        return out.position().x();
+    }
+
+    @Test
+    @DisplayName("gap-resume: emitted position equals pure extrapolation (zero drift)")
+    void nextTransform_gapResume_emitsSameAbsolutePositionAsNonRebased() {
+        TrainTransformProvider p = newProvider();
+        tick(p, 0);   // baseline captured: spawnWorldPos.x = 1000, spawnGameTick = 0
+        tick(p, 1);
+        tick(p, 2);
+        // Simulate a cull: ticks 3..99 never fired. Reload at tick 100.
+        double atGap = tick(p, 100);
+        // Correct catch-up = spawnWorldPos0 + velocity * 100 * DT = 1000 + 2*100*0.05 = 1010.
+        assertEquals(1000.0 + 2.0 * 100 * DT, atGap, 1e-6);
+    }
+
+    @Test
+    @DisplayName("gap-resume: after re-anchor the next contiguous tick advances by exactly velocity*dt")
+    void nextTransform_afterGapRebase_nextTickAdvancesByOneStep() {
+        TrainTransformProvider p = newProvider();
+        tick(p, 0);
+        tick(p, 1);
+        double atGap = tick(p, 100);   // re-anchor: spawnWorldPos.x := 1010, spawnGameTick := 100
+        double next = tick(p, 101);    // contiguous — one step from the re-based anchor
+        assertEquals(atGap + 2.0 * DT, next, 1e-6);
+    }
+
+    @Test
+    @DisplayName("no gap: contiguous ticks extrapolate identically to a never-culled driver")
+    void nextTransform_noGap_matchesContinuousExtrapolation() {
+        TrainTransformProvider p = newProvider();
+        tick(p, 0);
+        double t50 = 0;
+        for (long t = 1; t <= 50; t++) t50 = tick(p, t);
+        // 50 contiguous ticks: 1000 + 2*50*0.05 = 1005. Re-anchor must never fire here.
+        assertEquals(1000.0 + 2.0 * 50 * DT, t50, 1e-6);
+    }
+
+    @Test
+    @DisplayName("shouldReanchor: true only when the tick gap exceeds one and a baseline exists")
+    void shouldReanchor_truthTable() {
+        assertFalse(TrainTransformProvider.shouldReanchor(-1L, 100L)); // no baseline yet
+        assertFalse(TrainTransformProvider.shouldReanchor(10L, 11L));  // contiguous (gap 1)
+        assertFalse(TrainTransformProvider.shouldReanchor(10L, 10L));  // same tick (gap 0)
+        assertTrue(TrainTransformProvider.shouldReanchor(10L, 12L));   // gap 2
+        assertTrue(TrainTransformProvider.shouldReanchor(10L, 1310L)); // large cull gap
     }
 }

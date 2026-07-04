@@ -91,5 +91,19 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# vivecraft (VR). Optional, player-installed — NOT bundled, NOT a compile dep. Dungeon Train
+# ships a CLIENT-side compat mixin (dungeontrain.vivecraft.mixins.json, gated by VivecraftMixinPlugin)
+# so VR melee works while standing on a Sable sub-level (train carriage). Metadata only; the mixin
+# no-ops cleanly when Vivecraft is absent. Client-only, so side="CLIENT".
+[[dependencies.${mod_id}]]
+    modId="vivecraft"
+    type="optional"
+    versionRange="[1.0,)"
+    ordering="AFTER"
+    side="CLIENT"
+
 [[mixins]]
     config="${mod_id}.mixins.json"
+
+[[mixins]]
+    config="${mod_id}.vivecraft.mixins.json"

@@ -30,14 +30,27 @@ public final class PulsingDiscordButton extends Button {
     /** Blue tint (24-bit RGB; alpha is pulsed separately). */
     private static final int BLUE_RGB = 0x60_C0_FF;
 
+    /** While true, the pulse overlay is skipped — so two title-screen pulses never compete for attention. */
+    private final java.util.function.BooleanSupplier suppressPulse;
+
     public PulsingDiscordButton(int x, int y, int width, int height, Component message, OnPress onPress) {
+        this(x, y, width, height, message, onPress, () -> false);
+    }
+
+    public PulsingDiscordButton(int x, int y, int width, int height, Component message, OnPress onPress,
+                                java.util.function.BooleanSupplier suppressPulse) {
         super(x, y, width, height, message, onPress, DEFAULT_NARRATION);
+        this.suppressPulse = suppressPulse == null ? () -> false : suppressPulse;
     }
 
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         // Standard button render first (sprite background + label).
         super.renderWidget(g, mouseX, mouseY, partialTick);
+
+        if (suppressPulse.getAsBoolean()) {
+            return; // a louder affordance (e.g. the unread-message envelope) is pulsing right now
+        }
 
         // Pulsing blue 1-pixel border overlay.
         long now = Util.getMillis();
