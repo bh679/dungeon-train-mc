@@ -2977,9 +2977,9 @@
       ],
       "pr": 618,
       "date": "2026-07-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.382.0",
+      "released_at": "2026-07-04T07:39:17Z"
     },
     {
       "id": "train-jitter-cull-reload-fix",
@@ -2993,9 +2993,9 @@
       ],
       "pr": 628,
       "date": "2026-07-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.382.0",
+      "released_at": "2026-07-04T07:39:17Z"
     }
   ]
 }
