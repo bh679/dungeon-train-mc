@@ -2999,13 +2999,13 @@
       "id": "menu-chat-live-receive",
       "version": "0.377.0",
       "type": "feat",
-      "title": "Live two-way chat on the main menu",
-      "summary": "The title-screen Discord panel is now a real conversation with the dev. It appears only once someone has actually replied in your thread, updates live while you sit on the menu, and shows just the conversation: your in-game messages that tagged the dev (or were part of an exchange), the replies you got, and your feedback-survey answers as a compact score plus comment. Automated game notices (advancements, difficulty, deaths, entering Free Play, join lines) stay out of it.",
+      "title": "Chat with the dev from the main menu",
+      "summary": "Dev chat now lives in its own window. Once the dev has replied in your Discord thread, a small envelope button appears on the title screen (above the accessibility button); if there are unread messages, a callout pops up quoting the start of the oldest one. The window shows just the conversation \u2014 dev replies, your dev-tagged or menu-sent messages, and compact survey answers \u2014 updates live while open, and lets you reply straight to Discord. Automated game notices (advancements, difficulty, deaths, entering Free Play, join lines) stay out of it.",
       "highlights": [
-        "Discord replies stream into the menu panel live while it's open",
-        "The panel only appears once the dev has messaged you \u2014 no empty chat dock",
-        "Only conversation shows: dev replies, your dev-tagged messages, and compact survey answers",
-        "Survey answers read simply, like \"Bug \u2014 Other\" or a score, plus your comment"
+        "The dev chat opens in its own window from an envelope button on the title screen",
+        "The button only appears once the dev has messaged you; a popup flags unread messages",
+        "Replies stream in live while the window is open, and you can write back",
+        "Only conversation shows \u2014 plus survey answers compacted like \"Bug \u2014 Other\""
       ],
       "pr": 625,
       "date": "2026-07-03",

@@ -210,6 +210,22 @@ public final class MenuChatFilter {
         return MENTION.matcher(content).replaceAll("@dev");
     }
 
+    /**
+     * A short quotable preview of a message for the title screen's unread callout: mention-prettified,
+     * trimmed, cut to {@code maxChars} with an ellipsis. Blank content previews as a bare ellipsis so
+     * the callout still reads sensibly.
+     */
+    public static String preview(String content, int maxChars) {
+        String p = prettifyMentions(content == null ? "" : content).strip();
+        if (p.isEmpty()) {
+            return "…";
+        }
+        if (p.length() <= maxChars) {
+            return p;
+        }
+        return p.substring(0, maxChars).stripTrailing() + "…";
+    }
+
     /** Discord ISO-8601 timestamp → {@link Instant}, or null when absent/unparseable. */
     static Instant parseTimestamp(String iso) {
         if (iso == null || iso.isBlank()) {

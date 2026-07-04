@@ -161,6 +161,16 @@ class MenuChatFilterTest {
     }
 
     @Test
+    void previewTruncatesForTheUnreadCallout() {
+        assertEquals("short", MenuChatFilter.preview("short", 10));
+        assertEquals("exactly10!", MenuChatFilter.preview("exactly10!", 10));
+        assertEquals("the third…", MenuChatFilter.preview("the third one, right after the tunnel", 10));
+        assertEquals("hey @dev t…", MenuChatFilter.preview("hey <@123456789> the train vanished!", 10));
+        assertEquals("…", MenuChatFilter.preview("   ", 10));
+        assertEquals("…", MenuChatFilter.preview(null, 10));
+    }
+
+    @Test
     void timestampParsingIsLenient() {
         assertNotNull(MenuChatFilter.parseTimestamp(T0));
         assertNull(MenuChatFilter.parseTimestamp("not-a-time"));

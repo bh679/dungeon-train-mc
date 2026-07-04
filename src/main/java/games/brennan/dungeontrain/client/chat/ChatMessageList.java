@@ -65,19 +65,33 @@ public final class ChatMessageList extends AbstractWidget {
     private boolean selected; // click-selected → drawn on top at full opacity; otherwise behind + faded
 
     /**
+     * Standalone = the list lives in its own {@link MenuChatScreen} rather than docked on the title
+     * screen: always full opacity, input always rendered, no raise/fade/click-to-select dance (that
+     * existed only because the docked panel fought the title logo for z-order), and Esc is left for the
+     * screen to close.
+     */
+    private final boolean standalone;
+
+    /**
      * The send box. Owned + manually rendered (not a registered screen widget) so it tracks the panel's
      * raise/fade passes — it draws on top only when the panel is raised, never behind the title logo.
      */
     private final EditBox input;
 
     public ChatMessageList(int x, int y, int width, int height) {
+        this(x, y, width, height, false);
+    }
+
+    public ChatMessageList(int x, int y, int width, int height, boolean standalone) {
         super(x, y, width, height, Component.translatable("gui.dungeontrain.menu_chat.title"));
+        this.standalone = standalone;
+        this.selected = standalone; // standalone is always "raised": full opacity, input live
         this.input = new EditBox(font, getX() + PAD, inputTop(), inputWidth(), INPUT_H,
                 Component.translatable("gui.dungeontrain.menu_chat.input_hint"));
         this.input.setMaxLength(MAX_SEND_CHARS);
         this.input.setHint(Component.translatable("gui.dungeontrain.menu_chat.input_hint"));
         this.input.setVisible(true);  // we gate drawing ourselves; visible=true lets it consume input
-        this.input.setFocused(false); // focused only while the panel is raised
+        this.input.setFocused(standalone); // docked: focused only while raised; standalone: ready to type
     }
 
     public void setOnSeen(Consumer<ChatHistory.Message> onSeen) {
@@ -306,8 +320,12 @@ public final class ChatMessageList extends AbstractWidget {
 
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        if (standalone) {
+            draw(g, 1.0f, true, mouseX, mouseY, partialTick); // own screen: nothing to fight for z-order
+            return;
+        }
         if (selected) {
-            return; // drawn on top at full opacity after the screen's logo/splash (see MainMenuChatPanel)
+            return; // drawn on top at full opacity after the screen's logo/splash (raised pass)
         }
         draw(g, FADED_ALPHA, false, mouseX, mouseY, partialTick);
     }
@@ -399,7 +417,17 @@ public final class ChatMessageList extends AbstractWidget {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (!this.visible) {
-            return false; // hidden until the dev has messaged (see MainMenuChatPanel) — swallow nothing
+            return false; // hidden until the dev has messaged — swallow nothing
+        }
+        if (standalone) {
+            if (!isWithin(mouseX, mouseY)) {
+                return false;
+            }
+            if (overInput(mouseX, mouseY)) {
+                input.mouseClicked(mouseX, mouseY, button); // place the caret within the box
+            }
+            focusInput(true); // always raised — a click anywhere on the panel readies typing
+            return true;
         }
         if (isWithin(mouseX, mouseY)) {
             if (!selected) {
@@ -433,7 +461,10 @@ public final class ChatMessageList extends AbstractWidget {
             return true;
         }
         if (key == GLFW.GLFW_KEY_ESCAPE) {
-            selected = false; // Esc lowers the panel (TitleScreen has no other Esc action)
+            if (standalone) {
+                return false; // let the owning screen close on Esc
+            }
+            selected = false; // Esc lowers the docked panel (TitleScreen has no other Esc action)
             focusInput(false);
             return true;
         }
