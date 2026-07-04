@@ -2961,6 +2961,41 @@
       "released": true,
       "released_in": "v0.381.0",
       "released_at": "2026-07-03T10:26:48Z"
+    },
+    {
+      "id": "main-menu-dev-chat",
+      "version": "0.381.1",
+      "type": "feat",
+      "title": "Talk with the dev from the main menu",
+      "summary": "You can now talk directly with the dev without leaving the game. When the dev sends you a message, an envelope appears on the title screen \u2014 unread messages pop up a preview and make the envelope pulse. Open it for a simple conversation window: the dev's replies arrive live while you're there, and you can write back any time. Messages you send while offline are delivered automatically when you reconnect, and your feedback answers appear in the conversation too.",
+      "highlights": [
+        "Talk directly with the dev, right from the main menu",
+        "An envelope appears on the title screen when the dev has messaged you",
+        "Unread messages show a preview popup and a pulsing envelope",
+        "Replies arrive live while the chat is open, and you can write back",
+        "Messages sent while offline are delivered when you reconnect"
+      ],
+      "pr": 618,
+      "date": "2026-07-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "train-jitter-cull-reload-fix",
+      "version": "0.382.0",
+      "type": "fix",
+      "title": "Smoother rides on long trains \u2014 carriages no longer stutter or teleport",
+      "summary": "Fixed carriages jittering or jumping across large distances while you ride a long, moving train, and cleared the physics-desync errors that came with it. Carriages near you now stay loaded smoothly as the train slides along, so the ride holds together even far from where the train started.",
+      "highlights": [
+        "Carriages near you stay put instead of snapping to a new spot after the game briefly unloaded them",
+        "Long trains no longer thrash between loaded and unloaded as you travel, keeping the whole train steady around you"
+      ],
+      "pr": 628,
+      "date": "2026-07-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

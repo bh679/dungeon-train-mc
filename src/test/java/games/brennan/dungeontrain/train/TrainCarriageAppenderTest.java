@@ -474,4 +474,41 @@ final class TrainCarriageAppenderTest {
         assertFalse(TrainCarriageAppender.claimReloadIssue(trainA, true, edge));
         assertFalse(TrainCarriageAppender.claimReloadIssue(trainB, true, edge));
     }
+
+    // shouldHoldGroupNearPlayer is the pure decision core for the near-player
+    // resident WINDOW hold (Part 1 of the jitter fix): pin a loaded group iff a
+    // player is near AND the group's carriage range [anchor, highest] overlaps
+    // the render-distance-bounded near window [nearMin, nearMax]. Window, not a
+    // cap — it slides with the player and never dumps the near set all at once.
+
+    @Test
+    @DisplayName("shouldHoldGroupNearPlayer: group inside / overlapping the near window → hold")
+    void holdGroup_overlap() {
+        // group [6,8] fully inside window [0,20]
+        assertTrue(TrainCarriageAppender.shouldHoldGroupNearPlayer(true, 6, 8, 0, 20));
+        // group [0,2] overlaps window low edge [2,10]
+        assertTrue(TrainCarriageAppender.shouldHoldGroupNearPlayer(true, 0, 2, 2, 10));
+        // group [10,12] overlaps window high edge [0,10]
+        assertTrue(TrainCarriageAppender.shouldHoldGroupNearPlayer(true, 10, 12, 0, 10));
+    }
+
+    @Test
+    @DisplayName("shouldHoldGroupNearPlayer: group entirely outside the near window → no hold")
+    void holdGroup_noOverlap() {
+        // group [0,2] entirely below window [10,20]
+        assertFalse(TrainCarriageAppender.shouldHoldGroupNearPlayer(true, 0, 2, 10, 20));
+        // group [30,32] entirely above window [0,20]
+        assertFalse(TrainCarriageAppender.shouldHoldGroupNearPlayer(true, 30, 32, 0, 20));
+    }
+
+    @Test
+    @DisplayName("shouldHoldGroupNearPlayer: no player near (sentinel window) → never hold")
+    void holdGroup_notNear() {
+        // sentinel window (MAX,MIN) passed when no player is near
+        assertFalse(TrainCarriageAppender.shouldHoldGroupNearPlayer(
+            false, 6, 8, Integer.MAX_VALUE, Integer.MIN_VALUE));
+        // even if the flag were mistakenly true, an inverted window holds nothing
+        assertFalse(TrainCarriageAppender.shouldHoldGroupNearPlayer(
+            true, 6, 8, Integer.MAX_VALUE, Integer.MIN_VALUE));
+    }
 }
