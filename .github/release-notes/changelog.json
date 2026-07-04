@@ -3013,6 +3013,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "worldload-sable-log-burst",
+      "version": "0.383.0",
+      "type": "fix",
+      "title": "Quieter world-load \u2014 no more Sable sub-level log spam",
+      "summary": "Freshly-loaded trains now settle for a brief moment before departing, so entering a world no longer prints a one-time burst of harmless \"non-existent sub-level\" errors to the log. The train runs identically once it's moving \u2014 this is a startup and logging cleanup, not a gameplay change.",
+      "highlights": [
+        "World-load no longer logs a burst of harmless Sable sub-level errors",
+        "Trains ease into motion from a brief standstill when a world loads"
+      ],
+      "pr": 630,
+      "date": "2026-07-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
