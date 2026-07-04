@@ -53,8 +53,15 @@ public final class MenuChatButtonHandler {
     private static final int POPUP_MAX_TEXT_WIDTH = 150;
     private static final int POPUP_PAD = 4;
     private static final int POPUP_BG = 0xF0100010;     // vanilla-tooltip dark
-    private static final int POPUP_BORDER = 0xFF8AB4F8; // the panel's Discord blue
     private static final int POPUP_TEXT = 0xFFFFFFFF;
+
+    // Unread pulse — the same wall-clock sine as PulsingDiscordButton, so the two title-screen
+    // affordances breathe alike. The popup border holds the pulse hue at full alpha while the button
+    // border pulses, visually tying the callout to the envelope it's talking about.
+    private static final long PULSE_PERIOD_MS = 1500L;
+    private static final int PULSE_PEAK_ALPHA = 200;
+    private static final int PULSE_RGB = 0x60_C0_FF;
+    private static final int POPUP_BORDER = 0xFF000000 | PULSE_RGB;
 
     // Session cache: once we know the dev has messaged, the button shows instantly on every title-screen
     // visit instead of popping in after each async history fetch. Never un-reveals mid-session.
@@ -141,8 +148,38 @@ public final class MenuChatButtonHandler {
         MenuChatLivePoll.poll(uuid, MenuChatButtonHandler::applyInbox);
 
         if (button.visible && unread > 0 && preview != null) {
+            drawPulse(event.getGuiGraphics(), button);
             drawPopup(event.getGuiGraphics(), button);
         }
+    }
+
+    /**
+     * Whether the envelope is currently pulsing over unread messages — other title-screen pulses (the
+     * opted-out Discord button) stand down while this one is active, so only one thing breathes at a time.
+     */
+    public static boolean hasUnreadPulse() {
+        SpriteIconButton button = buttonRef.get();
+        return button != null && button.visible && unread > 0;
+    }
+
+    /** The same sine-pulsing 1-pixel border as {@code PulsingDiscordButton}, hugging the envelope. */
+    private static void drawPulse(GuiGraphics g, SpriteIconButton button) {
+        long now = net.minecraft.Util.getMillis();
+        float phase = (float) (now % PULSE_PERIOD_MS) / (float) PULSE_PERIOD_MS;
+        float wave = (net.minecraft.util.Mth.sin(phase * 2.0F * (float) Math.PI) + 1.0F) * 0.5F;
+        int alpha = (int) (wave * PULSE_PEAK_ALPHA);
+        if (alpha <= 0) {
+            return;
+        }
+        int colour = (alpha << 24) | PULSE_RGB;
+        int x = button.getX();
+        int y = button.getY();
+        int w = button.getWidth();
+        int h = button.getHeight();
+        g.fill(x - 1, y - 1, x + w + 1, y, colour);
+        g.fill(x - 1, y + h, x + w + 1, y + h + 1, colour);
+        g.fill(x - 1, y, x, y + h, colour);
+        g.fill(x + w, y, x + w + 1, y + h, colour);
     }
 
     /** Apply a peeked inbox: inbox rows are always a real person, so any row also reveals the button. */
