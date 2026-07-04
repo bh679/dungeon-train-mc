@@ -4,27 +4,27 @@
   "variants": [
     {
       "id": "2ndlevel",
-      "weight": 2
+      "weight": 4
     },
     {
       "id": "hall",
-      "weight": 2
+      "weight": 4
     },
     {
       "id": "twoway",
-      "weight": 2
+      "weight": 4
     },
     {
       "id": "sides",
-      "weight": 2
+      "weight": 4
     },
     {
       "id": "up",
-      "weight": 2
+      "weight": 4
     },
     {
       "id": "maze5",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "doors",
@@ -32,6 +32,10 @@
     },
     {
       "id": "maze6",
+      "weight": 1
+    },
+    {
+      "id": "copper",
       "weight": 1
     }
   ]
