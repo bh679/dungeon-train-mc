@@ -482,22 +482,6 @@ public final class TrainCarriageAppender {
      */
     private static final int TRAILING_FORCELOAD_GROUPS = 4;
 
-    /**
-     * Maximum number of currently-loaded groups (sub-levels) the near-player
-     * whole-train hold will pin resident at once. While a player is near a
-     * train, {@link #maintainTrailingForceLoadWindow} pins every loaded group
-     * — not just the trailing-N — so mid/rear carriages that leave the player's
-     * simulation bubble mid-ride don't cull → reload → catch-up-teleport (the
-     * `[tripwire]` jitter). These groups are already loaded (they're in the
-     * visible train), so pinning loads no new chunks; the cap only bounds
-     * memory on a pathologically long train. Above the cap the hold falls back
-     * to the trailing-N window (the resume re-anchor in
-     * {@link TrainTransformProvider} keeps any residual far-carriage reload a
-     * single clean teleport). Default {@code 12} — well above a typical
-     * ~3-4-group train (9-10 carriages at {@code groupSize} 3), so it rarely
-     * binds. See {@link #shouldHoldWholeTrainNearPlayer}.
-     */
-    private static final int NEAR_PLAYER_RESIDENT_GROUP_CAP = 12;
 
     /**
      * Maximum distance (in blocks, world space) from any player to a
@@ -1836,9 +1820,12 @@ public final class TrainCarriageAppender {
         // playerNear: true iff a player is in this train's vicinity this tick.
         // In auto mode the no-near-players bail above already returned, but
         // manual mode skips that bail — so read the flag directly rather than
-        // assuming near. Drives the near-player whole-train resident hold.
+        // assuming near. globalMin/MaxNeededPIdx is the render-distance-bounded
+        // carriage window around near players (sentinel MAX/MIN when none),
+        // which drives the near-player resident window hold.
         maintainTrailingForceLoadWindow(
-            level, trainId, train, backwardExtensionWanted, !nearPlayerPIdxs.isEmpty());
+            level, trainId, train, backwardExtensionWanted,
+            !nearPlayerPIdxs.isEmpty(), globalMinNeededPIdx, globalMaxNeededPIdx);
 
         if (!needsForward && !needsBackward) return false;
 
@@ -2290,24 +2277,35 @@ public final class TrainCarriageAppender {
      * ({@link #releaseTrainForceLoads}), or a train wipe.</p>
      */
     /**
-     * Decide whether {@link #maintainTrailingForceLoadWindow} should pin the
-     * WHOLE currently-loaded train resident (vs just the trailing-N window).
-     * True iff a player is near the train AND the loaded train is small enough
-     * to pin without unbounded memory. Pure + package-private for unit testing,
-     * mirroring the {@link #shouldRetainOnWalkAway} / {@link #decideEdgeAction}
-     * pure-decision convention.
+     * Decide whether one loaded group should be pinned resident by the
+     * near-player window hold. True iff a player is near the train AND the
+     * group's carriage range {@code [anchorPIdx, groupHighestPIdx]} overlaps the
+     * render-distance-bounded near-player window {@code [nearMinPIdx, nearMaxPIdx]}
+     * ({@code globalMinNeededPIdx}/{@code globalMaxNeededPIdx} from
+     * {@link #updateTrain}). Pure + package-private for unit testing, mirroring
+     * the {@link #shouldRetainOnWalkAway} / {@link #decideEdgeAction} convention.
      *
-     * @param playerNear       at least one player is within the train's vicinity
-     * @param loadedGroupCount number of currently-loaded groups (sub-levels)
-     * @param cap              max groups to pin ({@link #NEAR_PLAYER_RESIDENT_GROUP_CAP})
+     * <p>This is a WINDOW test, not a cap: the held set is naturally bounded by
+     * render distance and slides with the player, so it never dumps the
+     * near-player set all at once (the mass-release churn a fixed group cap
+     * produced once a long ride exceeded it).</p>
+     *
+     * <p>When no player is near, callers pass the sentinel window
+     * {@code nearMinPIdx = Integer.MAX_VALUE}, {@code nearMaxPIdx = Integer.MIN_VALUE},
+     * which fails the {@code playerNear} guard and the overlap test — no hold.</p>
      */
-    static boolean shouldHoldWholeTrainNearPlayer(boolean playerNear, int loadedGroupCount, int cap) {
-        return playerNear && loadedGroupCount <= cap;
+    static boolean shouldHoldGroupNearPlayer(
+        boolean playerNear, int anchorPIdx, int groupHighestPIdx, int nearMinPIdx, int nearMaxPIdx
+    ) {
+        return playerNear
+            && nearMinPIdx <= nearMaxPIdx
+            && groupHighestPIdx >= nearMinPIdx
+            && anchorPIdx <= nearMaxPIdx;
     }
 
     private static void maintainTrailingForceLoadWindow(
         ServerLevel level, UUID trainId, List<Trains.Carriage> train,
-        boolean needsBackward, boolean playerNear
+        boolean needsBackward, boolean playerNear, int nearMinPIdx, int nearMaxPIdx
     ) {
         // Sticky: stay engaged once we've started force-loading this train, so a
         // pause in backward travel never drops (then re-acquires) the window.
@@ -2327,26 +2325,39 @@ public final class TrainCarriageAppender {
         // regenerate. Holding the full set until the grace lapses (rider stably aboard)
         // closes that window; reconcile drains it back to the trailing-N the moment it
         // lapses (#547/#548).
-        // Hold the WHOLE loaded train resident when (a) a singleplayer resume
-        // is being protected (#547/#548), or (b) a player is near and the train
-        // is small enough to pin under the cap. Case (b) closes the steady-state
-        // riding hole: mid/rear carriages that leave the player's sim bubble but
-        // sit outside the trailing-N window would otherwise cull → reload →
-        // catch-up-teleport (the `[tripwire]` jitter) and network movement to
-        // clients that culled them (Sable's "non-existent sub-level" error).
-        // Pinning already-loaded groups loads no new chunks; it only stops Sable
-        // culling them, so those drivers keep ticking every tick (no gap, no
-        // catch-up). Above the cap we fall back to the trailing-N window.
+        // Build the force-load target set. A singleplayer resume still pins the
+        // WHOLE train transiently (#547/#548). Otherwise the target is the UNION
+        // of the trailing-N window (backward-gen) and a render-distance-bounded
+        // near-player WINDOW: every loaded group whose carriage range overlaps
+        // [nearMinPIdx, nearMaxPIdx]. The window closes the steady-state riding
+        // hole — mid/rear carriages that leave the player's sim bubble but sit
+        // outside the trailing-N would otherwise cull → reload → catch-up-
+        // teleport (the `[tripwire]` jitter) and network movement to clients
+        // that culled them (Sable's "non-existent sub-level" error). Pinning
+        // already-loaded groups loads no new chunks; it only stops Sable culling
+        // them, so those drivers keep ticking (no gap, no catch-up). Because it
+        // is a window (not a fixed cap) it slides with the player and never dumps
+        // the near-player set all at once — the mass-release churn a group cap
+        // caused once a long ride exceeded it.
         Set<UUID> target;
-        if (isResumeHoldActive(trainId, level.getGameTime())
-                || shouldHoldWholeTrainNearPlayer(playerNear, byId.size(), NEAR_PLAYER_RESIDENT_GROUP_CAP)) {
+        if (isResumeHoldActive(trainId, level.getGameTime())) {
             target = new HashSet<>(byId.keySet());
         } else {
-            // The train list is one entry per group/sub-level, so target the
-            // backmost-N GROUPS directly (not × groupSize).
-            target = active
-                ? backmostForceLoadTargets(ids, TRAILING_FORCELOAD_GROUPS)
-                : Set.of();
+            target = new HashSet<>();
+            if (active) {
+                // The train list is one entry per group/sub-level, so target the
+                // backmost-N GROUPS directly (not × groupSize).
+                target.addAll(backmostForceLoadTargets(ids, TRAILING_FORCELOAD_GROUPS));
+            }
+            if (playerNear) {
+                for (Trains.Carriage c : train) {
+                    TrainTransformProvider p = c.provider();
+                    if (shouldHoldGroupNearPlayer(
+                            true, p.getPIdx(), p.getGroupHighestPIdx(), nearMinPIdx, nearMaxPIdx)) {
+                        target.add(c.ship().subLevelId());
+                    }
+                }
+            }
         }
 
         reconcileForceLoads(level, trainId, target, byId);
