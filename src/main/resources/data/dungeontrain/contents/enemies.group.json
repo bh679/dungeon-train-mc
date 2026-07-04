@@ -76,6 +76,16 @@
       "id": "elder",
       "weight": 1,
       "minLevel": 11
+    },
+    {
+      "id": "shulker",
+      "weight": 2,
+      "minLevel": 20
+    },
+    {
+      "id": "evoker2",
+      "weight": 3,
+      "minLevel": 30
     }
   ]
 }
