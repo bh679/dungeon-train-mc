@@ -2996,6 +2996,23 @@
       "released": true,
       "released_in": "v0.382.0",
       "released_at": "2026-07-04T07:39:17Z"
+    },
+    {
+      "id": "vivecraft-vr-melee-train",
+      "version": "0.382.0",
+      "type": "feat",
+      "title": "Basic Vivecraft (VR) support on the train",
+      "summary": "Play with the Vivecraft VR mod? Two things are better on the train now. Your melee swings can finally find mobs on a moving carriage \u2014 the hit-detection query used to abort on Sable's moving sub-levels and hit nothing. And a VR-only log-spam that hitched your frame rate while riding is fixed. No effect unless you install Vivecraft yourself \u2014 it's not part of the modpack.",
+      "highlights": [
+        "VR (Vivecraft) melee can now target mobs while you're on a moving carriage",
+        "Fixed VR-only frame hitching caused by log spam on the train",
+        "Vivecraft-only \u2014 nothing changes unless you install it (it's not in the modpack)"
+      ],
+      "pr": 629,
+      "date": "2026-07-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
