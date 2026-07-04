@@ -2996,6 +2996,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "quartz-build-set-and-content",
+      "version": "0.382.0",
+      "type": "content",
+      "title": "Quartz build set and new dungeon content",
+      "summary": "A new quartz-themed build set (walls, floor, roof, doors) joins the dungeon templates, and new copper, shulker, and evoker enemy content has been added alongside tweaks to elder and maze encounters.",
+      "highlights": [
+        "New quartz walls, floor, roof, and door parts",
+        "New copper, shulker, and evoker2 content prefabs",
+        "Quartz stage level range extended (40-50 -> 40-60)"
+      ],
+      "pr": 631,
+      "date": "2026-07-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
