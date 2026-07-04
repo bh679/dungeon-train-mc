@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client.vivecraft;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import games.brennan.dungeontrain.client.vivecraft.SwingAabbClamp;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
@@ -31,8 +32,8 @@ import java.util.List;
  * precision is preserved — we only repair the broad-phase box.</p>
  *
  * <p>An absurdly large AABB is the unambiguous signature of the sub-level coordinate mismatch: a real
- * VR swing box is only a few blocks across, so {@link #MAX_SANE_SWING_SIZE} is far above any
- * legitimate query yet far below the mismatch. Using that as the trigger keeps the wrap a zero-cost
+ * VR swing box is only a few blocks across, so {@link SwingAabbClamp#MAX_SANE_SWING_SIZE} is far above
+ * any legitimate query yet far below the mismatch. Using that as the trigger keeps the wrap a zero-cost
  * pass-through in every normal (non-train / non-VR) case and avoids per-tick sub-level lookups on the
  * render thread.</p>
  *
@@ -43,16 +44,6 @@ import java.util.List;
 @Mixin(targets = "org.vivecraft.client_vr.gameplay.trackers.SwingTracker", remap = false)
 public abstract class SwingTrackerSubLevelAabbMixin {
 
-    /**
-     * Average side length ({@link AABB#getSize()}) above which a swing query is treated as the
-     * sub-level coordinate mismatch. Comfortably above any real melee box (a few blocks) and far
-     * below both Sable's 100000 abort threshold and the ~6.8M produced by the mismatch.
-     */
-    private static final double MAX_SANE_SWING_SIZE = 256.0;
-
-    /** VR melee reach (blocks) to inflate the player's bounding box by when rebuilding the box. */
-    private static final double MELEE_REACH = 4.0;
-
     @WrapOperation(
         method = "activeProcess",
         at = @At(
@@ -62,10 +53,9 @@ public abstract class SwingTrackerSubLevelAabbMixin {
                    + "Ljava/util/List;"))
     private List<Entity> dungeontrain$clampSwingAabbToSubLevel(
             ClientLevel level, Entity entity, AABB area, Operation<List<Entity>> original) {
-        if (entity != null && area.getSize() > MAX_SANE_SWING_SIZE) {
-            AABB clamped = entity.getBoundingBox().inflate(MELEE_REACH);
-            return original.call(level, entity, clamped);
-        }
-        return original.call(level, entity, area);
+        // Decision + rebuild live in SwingAabbClamp (unit-tested). Null entity (no exclusion) can't
+        // supply a bounding box, so pass the query through untouched.
+        AABB query = entity != null ? SwingAabbClamp.forSwingQuery(area, entity.getBoundingBox()) : area;
+        return original.call(level, entity, query);
     }
 }
