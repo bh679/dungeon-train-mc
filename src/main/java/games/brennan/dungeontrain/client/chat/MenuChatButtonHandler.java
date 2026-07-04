@@ -176,15 +176,18 @@ public final class MenuChatButtonHandler {
     private static void drawPopup(GuiGraphics g, SpriteIconButton button) {
         Font font = Minecraft.getInstance().font;
         Component text = Component.translatable("gui.dungeontrain.menu_chat.popup", preview);
-        List<FormattedCharSequence> lines = font.split(text, POPUP_MAX_TEXT_WIDTH);
+        // Keep the callout in the right gutter: its left edge shares the envelope's x (which already
+        // clears the centered button column), growing rightward/upward — never over the menu buttons.
+        int x = button.getX();
+        int avail = g.guiWidth() - x - 6;
+        int wrapWidth = Math.max(40, Math.min(POPUP_MAX_TEXT_WIDTH, avail - POPUP_PAD * 2));
+        List<FormattedCharSequence> lines = font.split(text, wrapWidth);
         int textW = 0;
         for (FormattedCharSequence line : lines) {
             textW = Math.max(textW, font.width(line));
         }
         int w = textW + POPUP_PAD * 2;
         int h = lines.size() * font.lineHeight + POPUP_PAD * 2;
-        // Right-aligned to the button's right edge, floating just above it; clamped on-screen.
-        int x = Math.max(4, button.getX() + BUTTON_SIZE - w);
         int y = Math.max(4, button.getY() - h - GAP);
 
         g.fill(x, y, x + w, y + h, POPUP_BG);
