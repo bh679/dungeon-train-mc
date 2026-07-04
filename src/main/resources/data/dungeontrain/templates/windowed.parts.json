@@ -51,6 +51,16 @@
       "name": "tuff",
       "weight": 10,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 10,
+      "stage": "quartz"
+    },
+    {
+      "name": "obsidian",
+      "weight": 1,
+      "stage": "quartz"
     }
   ],
   "walls": [
@@ -139,6 +149,23 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "sideMode": "one",
+      "stage": "quartz"
+    },
+    {
+      "name": "quartzwindow",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "quartz"
+    },
+    {
+      "name": "quartzwindow2",
+      "weight": 1,
+      "stage": "quartz"
     }
   ],
   "roof": [
@@ -222,6 +249,16 @@
       "name": "copperopen",
       "weight": 1,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "stage": "quartz"
+    },
+    {
+      "name": "quartswindow",
+      "weight": 1,
+      "stage": "quartz"
     }
   ],
   "doors": [
@@ -285,6 +322,11 @@
       "name": "copper",
       "weight": 1,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "stage": "quartz"
     }
   ]
 }

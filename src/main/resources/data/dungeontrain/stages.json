@@ -25,6 +25,16 @@
       "END"
     ]
   },
+  "quartz": {
+    "name": "quartz",
+    "minLevel": 40,
+    "maxLevel": 50,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END"
+    ]
+  },
   "stone": {
     "name": "stone",
     "maxLevel": 10,

@@ -61,6 +61,16 @@
       "name": "tuff",
       "weight": 15,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 10,
+      "stage": "quartz"
+    },
+    {
+      "name": "obsidian",
+      "weight": 1,
+      "stage": "quartz"
     }
   ],
   "walls": [
@@ -104,6 +114,11 @@
       "name": "copper",
       "weight": 1,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "stage": "quartz"
     }
   ],
   "roof": [
@@ -126,6 +141,11 @@
       "name": "copper",
       "weight": 1,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "stage": "quartz"
     }
   ],
   "doors": [
@@ -191,6 +211,11 @@
       "name": "copper",
       "weight": 1,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "stage": "quartz"
     }
   ]
 }

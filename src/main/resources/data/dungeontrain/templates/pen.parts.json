@@ -135,6 +135,28 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "copper"
+    },
+    {
+      "name": "quartzopen",
+      "weight": 20,
+      "sideMode": "either",
+      "stage": "quartz"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "quartz"
+    },
+    {
+      "name": "quartzwindow2",
+      "weight": 1,
+      "stage": "quartz"
+    },
+    {
+      "name": "quartzwindow",
+      "weight": 1,
+      "stage": "quartz"
     }
   ],
   "roof": [
@@ -208,6 +230,16 @@
       "name": "copper",
       "weight": 1,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "stage": "quartz"
+    },
+    {
+      "name": "quartswindow",
+      "weight": 4,
+      "stage": "quartz"
     }
   ],
   "doors": [
@@ -239,6 +271,11 @@
       "name": "copper",
       "weight": 1,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "stage": "quartz"
     }
   ]
 }
