@@ -93,10 +93,47 @@ public final class RelayChatClient {
     }
 
     /**
+     * Peek the player's inbox <em>without</em> advancing the delivery cursor (relay {@code &peek=1}).
+     * Used to poll for live replies while the panel is open: repeated calls keep returning the current
+     * undelivered set (the caller dedupes by message id), while the once-per-open {@link #drainInbox}
+     * still owns the cursor + the "arrived while away" badge. Resolves to {@code null} on any error.
+     */
+    public static CompletableFuture<ChatInbox> peekInbox(UUID uuid) {
+        if (uuid == null || !canConnect()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        URI uri = URI.create(DungeonTrain.relayBaseUrl() + "/chat/inbox?uuid=" + noDashes(uuid) + "&peek=1");
+        HttpRequest req = HttpRequest.newBuilder(uri)
+                .timeout(REQUEST_TIMEOUT)
+                .header("Accept", "application/json")
+                .GET()
+                .build();
+        return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                .thenApply(RelayChatClient::parseInbox)
+                .exceptionally(t -> {
+                    LOGGER.debug("Menu chat: inbox peek failed: {}", t.toString());
+                    return null;
+                });
+    }
+
+    /**
      * Tell the relay the player has seen {@code messageId} in their thread, so it adds a 👀 reaction
      * on Discord. Fire-and-forget; {@code channelId} is the thread id from the loaded history.
      */
     public static void markSeen(UUID uuid, String channelId, String messageId) {
+        mark(uuid, channelId, messageId, "seen");
+    }
+
+    /**
+     * Tell the relay this client has <em>received</em> {@code messageId} (fetched it to the machine —
+     * the player may not have read it yet), so it adds the ✅ delivered receipt on Discord. Batched and
+     * deduped by {@link ChatReceipts}; fire-and-forget like {@link #markSeen}.
+     */
+    public static void markLoaded(UUID uuid, String channelId, String messageId) {
+        mark(uuid, channelId, messageId, "loaded");
+    }
+
+    private static void mark(UUID uuid, String channelId, String messageId, String kind) {
         if (uuid == null || channelId == null || messageId == null || messageId.isBlank() || !canConnect()) {
             return;
         }
@@ -104,6 +141,7 @@ public final class RelayChatClient {
         body.addProperty("uuid", noDashes(uuid));
         body.addProperty("channelId", channelId);
         body.addProperty("messageId", messageId);
+        body.addProperty("kind", kind);
         HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + "/chat/seen"))
                 .timeout(REQUEST_TIMEOUT)
                 .header("Content-Type", "application/json")
@@ -111,20 +149,30 @@ public final class RelayChatClient {
                 .build();
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .exceptionally(t -> {
-                    LOGGER.debug("Menu chat: seen mark failed: {}", t.toString());
+                    LOGGER.debug("Menu chat: {} mark failed: {}", kind, t.toString());
                     return null;
                 });
     }
 
     /**
-     * Post {@code content} into the player's own Discord thread (relay {@code POST /<CAP>/chat/send}),
-     * which forwards it through the webhook as the player. Async; resolves to {@code true} only on a 2xx
-     * — the {@link ChatOutbox} keeps a message queued until this confirms delivery (at-least-once). Any
-     * error (no consent, no thread yet, network failure) resolves to {@code false} so it stays queued.
+     * Outcome of a menu send: {@code ok} is true only on a relay 2xx (the {@link ChatOutbox} keeps a
+     * message queued until then — at-least-once); {@code id} is the Discord message id the relay got
+     * back from the webhook ({@code {ok, id}}), or null when it didn't return one. The outbox records
+     * delivered ids so the history filter can always show the player's own menu sends.
      */
-    public static CompletableFuture<Boolean> sendMessage(UUID uuid, String content) {
+    public record SendResult(boolean ok, String id) {
+        static final SendResult FAILED = new SendResult(false, null);
+    }
+
+    /**
+     * Post {@code content} into the player's own Discord thread (relay {@code POST /<CAP>/chat/send}),
+     * which forwards it through the webhook as the player. Async; {@link SendResult#ok()} only on a 2xx
+     * — the {@link ChatOutbox} keeps a message queued until this confirms delivery (at-least-once). Any
+     * error (no consent, no thread yet, network failure) resolves to a failed result so it stays queued.
+     */
+    public static CompletableFuture<SendResult> sendMessage(UUID uuid, String content) {
         if (uuid == null || content == null || content.isBlank() || !canConnect()) {
-            return CompletableFuture.completedFuture(false);
+            return CompletableFuture.completedFuture(SendResult.FAILED);
         }
         JsonObject body = new JsonObject();
         body.addProperty("uuid", noDashes(uuid));
@@ -135,11 +183,23 @@ public final class RelayChatClient {
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
                 .build();
         return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                .thenApply(resp -> resp.statusCode() >= 200 && resp.statusCode() < 300)
+                .thenApply(RelayChatClient::parseSendResult)
                 .exceptionally(t -> {
                     LOGGER.debug("Menu chat: send failed: {}", t.toString());
-                    return false;
+                    return SendResult.FAILED;
                 });
+    }
+
+    private static SendResult parseSendResult(HttpResponse<String> resp) {
+        if (resp == null || resp.statusCode() < 200 || resp.statusCode() >= 300) {
+            return SendResult.FAILED;
+        }
+        try {
+            JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
+            return new SendResult(true, optString(root, "id"));
+        } catch (Exception e) {
+            return new SendResult(true, null); // delivered (2xx) — just no id to remember
+        }
     }
 
     private static String noDashes(UUID uuid) {
@@ -215,8 +275,10 @@ public final class RelayChatClient {
                 optString(o, "content"),
                 parseEmbeds(o),
                 parseAttachments(o),
-                optString(o, "timestamp"),
-                optBool(o, "seen"));
+                // history rows carry "timestamp"; relay inbox rows (inbox.js toPublic) use "ts"
+                optString(o, "timestamp") != null ? optString(o, "timestamp") : optString(o, "ts"),
+                optBool(o, "seen"),
+                optBool(o, "delivered"));
     }
 
     private static List<ChatHistory.Embed> parseEmbeds(JsonObject o) {

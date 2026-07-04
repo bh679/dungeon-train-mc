@@ -57,6 +57,8 @@
   "gui.dungeontrain.menu_chat.offline": "Couldn't reach Discord.",
   "gui.dungeontrain.menu_chat.unread": "+%s",
   "gui.dungeontrain.menu_chat.input_hint": "Message Discord…",
+  "gui.dungeontrain.menu_chat.button": "Dev messages",
+  "gui.dungeontrain.menu_chat.popup": "The Dev sent you a message: \"%s\"",
   "gui.dungeontrain.death.new_world": "New World",
   "gui.dungeontrain.death.stats.title": "Run Stats",
   "gui.dungeontrain.death.stats.mobs": "Mobs killed",

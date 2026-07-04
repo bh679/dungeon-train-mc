@@ -3,9 +3,6 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
-import games.brennan.dungeontrain.train.Trains;
-import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
@@ -14,10 +11,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.slf4j.Logger;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Protects the train's sub-levels across a singleplayer pause→resume (#547) — the
@@ -88,28 +81,16 @@ public final class ResumeWatchdog {
         long gapMs = (now - prev) / 1_000_000L;
         if (gapMs < RESUME_GAP_MS) return;            // normal cadence — not a resume
 
-        DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
-        if (!data.startsWithTrain()) return;
-        StartingDimension startingDim = data.startingDimension();
-        ServerLevel trainLevel = server.getLevel(startingDim.levelKey());
-        if (trainLevel == null) return;
-
-        Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(trainLevel);
-        if (trains.isEmpty()) return;
-
         // Protect every train on this resume tick: grant the grace window and pin the whole
         // train resident so the transient rider-fling can't cull (and regenerate) any carriage.
-        // No per-player resolution is needed — the hold is independent of where riders are,
-        // and it self-drains once they re-anchor.
-        long gameTick = trainLevel.getGameTime();
-        for (Map.Entry<UUID, List<Trains.Carriage>> entry : trains.entrySet()) {
-            UUID trainId = entry.getKey();
-            TrainCarriageAppender.grantResumeGrace(trainId, gameTick, RESUME_GRACE_TICKS);
-            TrainCarriageAppender.holdWholeTrainForResume(trainLevel, trainId, entry.getValue());
+        // No per-player resolution is needed — the hold is independent of where riders are, and
+        // it self-drains once they re-anchor. This is the same whole-train hold the save guard
+        // applies (MinecraftServerSaveMixin) — shared in TrainCarriageAppender#holdAllLoadedTrains.
+        int held = TrainCarriageAppender.holdAllLoadedTrains(server, RESUME_GRACE_TICKS);
+        if (held > 0) {
+            LOGGER.info("[DungeonTrain] Resume after {}ms pause — held {} train(s) resident through the resume fling (#547)",
+                    gapMs, held);
         }
-
-        LOGGER.info("[DungeonTrain] Resume after {}ms pause — held {} train(s) resident through the resume fling (#547)",
-                gapMs, trains.size());
     }
 
     @SubscribeEvent

@@ -2861,7 +2861,7 @@
     },
     {
       "id": "bug-report-log-subgroups",
-      "version": "0.376.0",
+      "version": "0.377.0",
       "type": "fix",
       "title": "Repeat bug reports no longer overwrite earlier logs",
       "summary": "When you send a bug report after dying, your game logs are archived on the server. Sending more than one report from the same game version used to overwrite the previous report's logs \u2014 each submission now lands in its own timestamped folder, so nothing is lost.",
@@ -2870,13 +2870,13 @@
       ],
       "pr": 616,
       "date": "2026-06-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.377.0",
+      "released_at": "2026-06-28T10:56:00Z"
     },
     {
       "id": "survey-results-channel",
-      "version": "0.376.0",
+      "version": "0.377.0",
       "type": "chore",
       "title": "Feedback survey responses collected in a dedicated channel",
       "summary": "Feedback-survey answers now also post to a dedicated Discord survey-results channel (in addition to each player's thread), with a link back to the original, so the team can review feedback in one place.",
@@ -2884,9 +2884,67 @@
         "Survey answers mirrored to a dedicated channel with a jump-link to the thread"
       ],
       "date": "2026-06-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.377.0",
+      "released_at": "2026-06-28T10:56:00Z"
+    },
+    {
+      "id": "train-survives-world-save",
+      "version": "0.378.0",
+      "type": "fix",
+      "title": "Train no longer vanishes when the world saves",
+      "summary": "Fixed the train disappearing (and regenerating from scratch) when the world autosaved. The whole train is now held in place across every save, so riding through an autosave \u2014 or running /save-all \u2014 keeps every carriage and its contents intact.",
+      "highlights": [
+        "Train survives autosaves and manual saves",
+        "No more lost or regenerated carriages on save"
+      ],
+      "pr": 622,
+      "date": "2026-06-28",
+      "released": true,
+      "released_in": "v0.378.0",
+      "released_at": "2026-06-28T11:48:56Z"
+    },
+    {
+      "id": "maze-group-variant-rebalance",
+      "version": "0.378.0",
+      "type": "content",
+      "title": "Maze room variety rebalance",
+      "summary": "Tuned how often the maze carriage's room layouts appear \u2014 the 2nd-level, hall, two-way, sides, and up variants now roll more often relative to the rest.",
+      "highlights": [],
+      "pr": 622,
+      "date": "2026-06-28",
+      "released": true,
+      "released_in": "v0.378.0",
+      "released_at": "2026-06-28T11:48:56Z"
+    },
+    {
+      "id": "forward-carriage-vanish-low-sim",
+      "version": "0.379.0",
+      "type": "fix",
+      "title": "Carriages no longer vanish at low simulation distance",
+      "summary": "Fixed the train permanently losing carriages \u2014 appearing to vanish or regenerate \u2014 when playing at a low Simulation Distance. Carriages generated ahead of the train are now kept loaded until they've been saved, so they reliably come back instead of disappearing for good.",
+      "highlights": [
+        "Carriages no longer vanish permanently when riding with a low simulation distance",
+        "Newly generated carriages ahead of the train stay loaded until saved, then reload reliably as you approach"
+      ],
+      "pr": 623,
+      "date": "2026-07-03",
+      "released": true,
+      "released_in": "v0.379.0",
+      "released_at": "2026-07-03T04:18:08Z"
+    },
+    {
+      "id": "quieter-holding-reload-logs",
+      "version": "0.380.0",
+      "type": "fix",
+      "title": "Quieter logs while riding long trains",
+      "summary": "Long trains no longer flood the server log with a harmless, repeated Sable holding-handshake message during travel, and the matching redundant per-tick work is trimmed. No gameplay change.",
+      "highlights": [],
+      "pr": 624,
+      "date": "2026-07-03",
+      "released": true,
+      "released_in": "v0.380.0",
+      "released_at": "2026-07-03T05:37:45Z"
     },
     {
       "id": "main-menu-discord-chat-panel",
@@ -2933,6 +2991,25 @@
       ],
       "pr": 620,
       "date": "2026-06-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "menu-chat-live-receive",
+      "version": "0.377.0",
+      "type": "feat",
+      "title": "Chat with the dev from the main menu",
+      "summary": "Dev chat now lives in its own window. Once the dev has replied in your Discord thread, a small envelope button appears on the title screen (above the accessibility button); if there are unread messages, a callout pops up quoting the start of the oldest one. The window shows just the conversation \u2014 dev replies, your dev-tagged or menu-sent messages, and compact survey answers \u2014 updates live while open, and lets you reply straight to Discord. Automated game notices (advancements, difficulty, deaths, entering Free Play, join lines) stay out of it.",
+      "highlights": [
+        "The dev chat opens in its own window from an envelope button on the title screen",
+        "The button only appears once the dev has messaged you; a popup flags unread messages",
+        "Replies stream in live while the window is open, and you can write back",
+        "Only conversation shows \u2014 plus survey answers compacted like \"Bug \u2014 Other\"",
+        "In Discord, \u2705 shows a message reached your game and \ud83d\udc40 that you've read it"
+      ],
+      "pr": 625,
+      "date": "2026-07-03",
       "released": false,
       "released_in": null,
       "released_at": null

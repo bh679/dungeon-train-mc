@@ -8,8 +8,10 @@ import java.util.List;
  * {@link RelayChatClient}; never holds raw Discord objects.
  *
  * <p>Messages are ordered oldest→newest. {@code seen} reflects whether the bot has already added the
- * 👀 reaction (so the panel doesn't re-mark it). Feedback-survey answers arrive as {@link Embed}s and
- * bug-report submissions as {@link Attachment}s, since both already live in the same thread.</p>
+ * 👀 reaction (player scrolled it into view) and {@code delivered} the ✅ one (the client fetched it —
+ * see {@link ChatReceipts}), so neither receipt is ever re-marked. Feedback-survey answers arrive as
+ * {@link Embed}s and bug-report submissions as {@link Attachment}s, since both already live in the same
+ * thread.</p>
  */
 public record ChatHistory(String threadId, List<Message> messages, boolean hasMore) {
 
@@ -23,7 +25,8 @@ public record ChatHistory(String threadId, List<Message> messages, boolean hasMo
             List<Embed> embeds,
             List<Attachment> attachments,
             String timestamp,
-            boolean seen) {
+            boolean seen,
+            boolean delivered) {
 
         /** A real Discord-side message (dev/community/bot) — the kind the panel marks 👀 when seen. */
         public boolean isInbound() {

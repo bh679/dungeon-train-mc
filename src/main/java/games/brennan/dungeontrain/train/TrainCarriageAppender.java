@@ -9,10 +9,13 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.world.StartingDimension;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -146,6 +149,20 @@ public final class TrainCarriageAppender {
     /** One-shot WARN latch per direction; reset alongside {@code EDGE_UNRESOLVED_SINCE_*}. */
     private static final Map<UUID, Boolean> EDGE_UNRESOLVED_WARNED_FORWARD = new ConcurrentHashMap<>();
     private static final Map<UUID, Boolean> EDGE_UNRESOLVED_WARNED_BACKWARD = new ConcurrentHashMap<>();
+    /**
+     * Per-train, per-direction: the sub-level ID Dungeon Train last issued a
+     * reload-from-holding for. A held edge sits in the {@code RELOAD_DEFER} state
+     * for the whole ~200-tick surfacing window, but {@link Shipyard#reloadFromHolding}
+     * is a no-op there (the entry lives in Sable's global holding map yet is absent
+     * from the chunk's map, so its {@code snatchAndLoad} snatches nothing) — and
+     * each call makes Sable log its benign "wasn't present in the holding chunk"
+     * ERROR 1:1. Recovery is the trailing force-load window + {@code findAll}, not
+     * this call, so we issue it only ONCE per held-edge episode: re-armed when the
+     * edge changes (new uuid), cleared on resolve alongside {@code EDGE_UNRESOLVED_*}.
+     * Collapses thousands of no-op calls (and their ERROR spam) to a handful.
+     */
+    private static final Map<UUID, UUID> RELOAD_ISSUED_FORWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, UUID> RELOAD_ISSUED_BACKWARD = new ConcurrentHashMap<>();
     /**
      * Ticks a registry edge may stay unresolved before one WARN fires. 200 ≈
      * 10 s — comfortably past the few-tick {@code findAll} surfacing lag and the
@@ -1129,6 +1146,8 @@ public final class TrainCarriageAppender {
         EDGE_UNRESOLVED_SINCE_BACKWARD.clear();
         EDGE_UNRESOLVED_WARNED_FORWARD.clear();
         EDGE_UNRESOLVED_WARNED_BACKWARD.clear();
+        RELOAD_ISSUED_FORWARD.clear();
+        RELOAD_ISSUED_BACKWARD.clear();
         // Force-load window tracking. The live Sable tickets themselves are
         // swept separately via Shipyard.releaseAllForceLoads() on the
         // train-wipe path (TrainAssembler.deleteExistingTrains), which has a
@@ -1475,6 +1494,8 @@ public final class TrainCarriageAppender {
         EDGE_UNRESOLVED_SINCE_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         EDGE_UNRESOLVED_WARNED_FORWARD.keySet().retainAll(trainsTouchedThisTick);
         EDGE_UNRESOLVED_WARNED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
+        RELOAD_ISSUED_FORWARD.keySet().retainAll(trainsTouchedThisTick);
+        RELOAD_ISSUED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         clearDropouts(level, seenThisTick);
     }
 
@@ -1887,11 +1908,17 @@ public final class TrainCarriageAppender {
             LAST_SPAWNED_SHIP_FORWARD.put(trainId, newShip);
             LAST_SPAWNED_TICK_FORWARD.put(trainId, now);
             recordPostSpawnCollisionCheck(trainId, newShip, forwardAnchor, train);
-            // NB: forward auto-spawns are intentionally NOT held-resident — they
-            // sit ahead of the player and reload naturally on approach, and
-            // holding every one until autosave would balloon memory on a long
-            // forward ride. Bootstrap forward groups ARE held (their cull is the
-            // ghost source); the backward lane below holds its spawns.
+            // Hold the new forward group resident until it has serialized at least once —
+            // symmetric with the backward lane (forceLoadSpawnedBackward) and the bootstrap
+            // lane (holdGroupResident). Sable's per-tick simulation-distance cull can otherwise
+            // drop a just-spawned forward group — at low sim distance, the SAME tick it appears,
+            // while it sits ahead of the player and outside the ticking bubble — into a holding
+            // entry with a null serialization pointer that reloadFromHolding can't revive,
+            // permanently losing the carriage (the "train vanishes on autosave" report). The hold
+            // self-drains via reconcileForceLoads once the next save mints a pointer (bounded by
+            // autosave cadence); after that a cull lands in reloadable holding — the "reloads on
+            // approach" the old behaviour intended, now made recoverable.
+            if (shouldHoldSpawnedGroup(true)) holdGroupResident(level, trainId, newShip);
             announceSpawn(level, forwardAnchor);
             didForwardSpawn = true;
         }
@@ -1906,8 +1933,10 @@ public final class TrainCarriageAppender {
             recordPostSpawnCollisionCheck(trainId, newShip, backwardAnchor, train);
             // Force-load the new trailing carriage immediately, before any cull
             // pass can move it to holding (it isn't in the visible train yet,
-            // so the per-tick window above can't cover it this tick).
-            forceLoadSpawnedBackward(level, trainId, newShip);
+            // so the per-tick window above can't cover it this tick). Gated on the
+            // same shouldHoldSpawnedGroup policy as the forward lane, so the two lanes
+            // are provably symmetric at a single tested decision point.
+            if (shouldHoldSpawnedGroup(false)) forceLoadSpawnedBackward(level, trainId, newShip);
             announceSpawn(level, backwardAnchor);
             didBackwardSpawn = true;
         }
@@ -2123,10 +2152,19 @@ public final class TrainCarriageAppender {
                 // trailing force-load window (engaged via backwardExtensionWanted)
                 // then keeps it resident so it can't be re-culled before the
                 // next group places one stride behind its live pose.
-                boolean reloaded = shipyard.reloadFromHolding(uuid);
-                if (reloaded) {
-                    LOGGER.debug("[DungeonTrain] Reloaded held registry-edge group anchor={} (subLevelId={}) for trainId={} — {} lane resumes once it surfaces",
-                        edgeAnchor, uuid, trainId, forward ? "forward" : "backward");
+                //
+                // Issue the reload only ONCE per held-edge episode: the edge stays
+                // in RELOAD_DEFER for the whole surfacing window, but the call does
+                // not itself load anything here (see RELOAD_ISSUED_* / claimReloadIssue)
+                // — re-calling it every tick just re-triggers Sable's benign
+                // "wasn't present in the holding chunk" ERROR. Recovery is the
+                // force-load window + findAll, which run regardless.
+                if (claimReloadIssue(trainId, forward, uuid)) {
+                    boolean reloaded = shipyard.reloadFromHolding(uuid);
+                    if (reloaded) {
+                        LOGGER.debug("[DungeonTrain] Reloaded held registry-edge group anchor={} (subLevelId={}) for trainId={} — {} lane resumes once it surfaces",
+                            edgeAnchor, uuid, trainId, forward ? "forward" : "backward");
+                    }
                 }
                 warnEdgeUnresolvedIfStuck(trainId, forward, edgeAnchor, uuid, level.getGameTime(), "held→reload");
                 return new EdgeReference(action, null);
@@ -2142,6 +2180,23 @@ public final class TrainCarriageAppender {
     private static void clearEdgeUnresolved(UUID trainId, boolean forward) {
         (forward ? EDGE_UNRESOLVED_SINCE_FORWARD : EDGE_UNRESOLVED_SINCE_BACKWARD).remove(trainId);
         (forward ? EDGE_UNRESOLVED_WARNED_FORWARD : EDGE_UNRESOLVED_WARNED_BACKWARD).remove(trainId);
+        // Re-arm the reload-from-holding throttle: once this edge resolves, a later
+        // held edge in the same direction (a different sub-level) should issue once.
+        (forward ? RELOAD_ISSUED_FORWARD : RELOAD_ISSUED_BACKWARD).remove(trainId);
+    }
+
+    /**
+     * Claim the single reload-from-holding issue for a held edge episode. Returns
+     * {@code true} only the first call per {@code (trainId, forward, subLevelId)} —
+     * subsequent ticks on the same held edge return {@code false} (the reload is a
+     * no-op that would only re-spam Sable's benign snatch-miss ERROR). A new
+     * {@code subLevelId} in the same direction re-arms it (a genuinely new episode),
+     * as does {@link #clearEdgeUnresolved} once the edge resolves. See
+     * {@code RELOAD_ISSUED_*}.
+     */
+    static boolean claimReloadIssue(UUID trainId, boolean forward, UUID subLevelId) {
+        Map<UUID, UUID> issued = forward ? RELOAD_ISSUED_FORWARD : RELOAD_ISSUED_BACKWARD;
+        return !subLevelId.equals(issued.put(trainId, subLevelId));
     }
 
     /**
@@ -2441,6 +2496,24 @@ public final class TrainCarriageAppender {
     }
 
     /**
+     * Spawn-time hold policy (pure core): a freshly-spawned group of EITHER auto-spawn lane
+     * (forward or backward) is held resident until it has serialized at least once. Culling an
+     * un-serialized sub-level yields a null-pointer holding entry {@code snatchAndLoad} can't
+     * revive (the "train vanishes on autosave" report — actually a per-tick simulation-distance
+     * cull of the just-spawned forward edge, not the save itself), so a later cull must always land
+     * in <em>reloadable</em> holding. Holding both lanes symmetrically removes the dependency on the
+     * player's simulation distance; the hold self-drains via {@link #reconcileForceLoads} once a
+     * save mints a serialization pointer, so memory stays bounded by autosave cadence.
+     *
+     * <p>Constant by design (both lanes hold). Exists as a named, unit-tested decision point so a
+     * future change can't silently re-introduce a lane-asymmetric hold policy — the exact regression
+     * that lost forward carriages. Package-private + pure, like {@link #shouldRetainOnWalkAway}.</p>
+     */
+    static boolean shouldHoldSpawnedGroup(boolean forward) {
+        return true;
+    }
+
+    /**
      * Force-load EVERY carriage of {@code train} and track them in
      * {@link #FORCELOADED_BY_TRAIN}, so a singleplayer pause/resume can't cull any part
      * of the train while the rider is transiently flung off the deck (Sable carry hasn't
@@ -2477,6 +2550,38 @@ public final class TrainCarriageAppender {
             LOGGER.debug("[DungeonTrain] Resume hold: force-loaded {} previously-unticketed carriage(s) of trainId={} ({} total held) so the resume-fling can't cull the train",
                 held, trainId, current.size());
         }
+    }
+
+    /**
+     * Pin <em>every</em> loaded train resident and grant each a resume-grace window — the shared
+     * core behind both {@code ResumeWatchdog} (a singleplayer pause/resume) and the save hold
+     * ({@code MinecraftServerSaveMixin}). Resolves the train level from world data, then for
+     * each loaded train grants {@code graceTicks} of grace ({@link #grantResumeGrace}) and
+     * force-loads the whole train ({@link #holdWholeTrainForResume}), so a transient "rider not
+     * near" — a resume fling, or an autosave hitch — can't cull and unrecoverably regenerate any
+     * carriage. Both holds self-drain back to the trailing-N window once the rider is stably
+     * aboard ({@link #reconcileForceLoads}; un-serialized groups stay per
+     * {@link #shouldRetainOnWalkAway}).
+     *
+     * <p>No-op (returns {@code 0}) when this world has no train, the train level isn't loaded, or
+     * no train is currently loaded. Server-thread only.</p>
+     *
+     * @return the number of loaded trains held this call.
+     */
+    public static int holdAllLoadedTrains(MinecraftServer server, int graceTicks) {
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
+        if (!data.startsWithTrain()) return 0;
+        StartingDimension startingDim = data.startingDimension();
+        ServerLevel trainLevel = server.getLevel(startingDim.levelKey());
+        if (trainLevel == null) return 0;
+        Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(trainLevel);
+        if (trains.isEmpty()) return 0;
+        long nowTick = trainLevel.getGameTime();
+        for (Map.Entry<UUID, List<Trains.Carriage>> entry : trains.entrySet()) {
+            grantResumeGrace(entry.getKey(), nowTick, graceTicks);
+            holdWholeTrainForResume(trainLevel, entry.getKey(), entry.getValue());
+        }
+        return trains.size();
     }
 
     /**

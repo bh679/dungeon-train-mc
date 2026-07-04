@@ -54,6 +54,7 @@ public final class ChatMessageList extends AbstractWidget {
 
     private final List<Entry> entries = new ArrayList<>();
     private final Set<String> reportedSeen = new HashSet<>();
+    private final Set<String> knownIds = new HashSet<>(); // message ids already shown → dedupe live appends
     private Consumer<ChatHistory.Message> onSeen = m -> {};
     private Consumer<String> onSubmit = t -> {};
     private Component status = Component.translatable("gui.dungeontrain.menu_chat.loading");
@@ -64,19 +65,33 @@ public final class ChatMessageList extends AbstractWidget {
     private boolean selected; // click-selected → drawn on top at full opacity; otherwise behind + faded
 
     /**
+     * Standalone = the list lives in its own {@link MenuChatScreen} rather than docked on the title
+     * screen: always full opacity, input always rendered, no raise/fade/click-to-select dance (that
+     * existed only because the docked panel fought the title logo for z-order), and Esc is left for the
+     * screen to close.
+     */
+    private final boolean standalone;
+
+    /**
      * The send box. Owned + manually rendered (not a registered screen widget) so it tracks the panel's
      * raise/fade passes — it draws on top only when the panel is raised, never behind the title logo.
      */
     private final EditBox input;
 
     public ChatMessageList(int x, int y, int width, int height) {
+        this(x, y, width, height, false);
+    }
+
+    public ChatMessageList(int x, int y, int width, int height, boolean standalone) {
         super(x, y, width, height, Component.translatable("gui.dungeontrain.menu_chat.title"));
+        this.standalone = standalone;
+        this.selected = standalone; // standalone is always "raised": full opacity, input live
         this.input = new EditBox(font, getX() + PAD, inputTop(), inputWidth(), INPUT_H,
                 Component.translatable("gui.dungeontrain.menu_chat.input_hint"));
         this.input.setMaxLength(MAX_SEND_CHARS);
         this.input.setHint(Component.translatable("gui.dungeontrain.menu_chat.input_hint"));
         this.input.setVisible(true);  // we gate drawing ourselves; visible=true lets it consume input
-        this.input.setFocused(false); // focused only while the panel is raised
+        this.input.setFocused(standalone); // docked: focused only while raised; standalone: ready to type
     }
 
     public void setOnSeen(Consumer<ChatHistory.Message> onSeen) {
@@ -116,13 +131,22 @@ public final class ChatMessageList extends AbstractWidget {
         this.status = null;
         this.entries.clear();
         this.reportedSeen.clear();
+        this.knownIds.clear();
         if (history == null || history.messages() == null || history.messages().isEmpty()) {
             setStatus(Component.translatable("gui.dungeontrain.menu_chat.empty"));
             return;
         }
         int wrap = contentWidth();
-        for (ChatHistory.Message m : history.messages()) {
+        // Conversation-only view: human replies, the player's dev-tagged / conversation-adjacent /
+        // menu-sent chat lines, and compact survey answers — see MenuChatFilter for the full rules.
+        for (ChatHistory.Message m : MenuChatFilter.filterHistory(history.messages(),
+                ChatOutbox.get()::isSentByMe)) {
             entries.add(buildEntry(m, wrap));
+            knownIds.add(m.id());
+        }
+        if (entries.isEmpty()) {
+            setStatus(Component.translatable("gui.dungeontrain.menu_chat.empty")); // thread was all reports
+            return;
         }
         layout();
         this.scroll = maxScroll(); // newest at the bottom
@@ -173,12 +197,20 @@ public final class ChatMessageList extends AbstractWidget {
 
     private Entry buildEntry(ChatHistory.Message m, int wrap) {
         Entry e = new Entry(m);
+        ChatHistory.Embed survey = MenuChatFilter.surveyEmbed(m);
+        if (survey != null) {
+            buildSurveyLines(e, survey, wrap);
+            if (!e.lines.isEmpty()) {
+                return e; // compact survey: just the "X/10" score + the comment, no author/question clutter
+            }
+        }
         String author = m.authorName() == null ? "?" : m.authorName();
         e.lines.add(new Line(FormattedCharSequence.forward(author, net.minecraft.network.chat.Style.EMPTY),
                 m.isInbound() ? AUTHOR_INBOUND : AUTHOR_SELF, 0));
 
         if (m.content() != null && !m.content().isBlank()) {
-            for (FormattedCharSequence l : font.split(Component.literal(m.content()), wrap)) {
+            String shown = MenuChatFilter.prettifyMentions(m.content()); // "<@123…>" → "@dev"
+            for (FormattedCharSequence l : font.split(Component.literal(shown), wrap)) {
                 e.lines.add(new Line(l, CONTENT, 0));
             }
         }
@@ -196,6 +228,67 @@ public final class ChatMessageList extends AbstractWidget {
             }
         }
         return e;
+    }
+
+    /**
+     * Compact survey render: one labeled score line ("Recommend 9/10", "Bug — Other" — the label matched
+     * from the bundled survey definitions via {@link SurveyLabels}, dropped when unknown) then the comment
+     * in quotes beneath it — no "📋 Feedback" title, no question-prompt sentence.
+     */
+    private void buildSurveyLines(Entry e, ChatHistory.Embed embed, int wrap) {
+        String label = SurveyLabels.labelFor(embed.description()); // the embed description is the prompt
+        String rating = fieldValue(embed, "Rating");
+        String option = rating == null ? fieldValue(embed, "Answer") : null; // multiple-choice option
+        String scoreLine = null;
+        if (rating != null && !rating.isBlank()) {
+            String s = rating.replace(" ", ""); // "9 / 10" → "9/10"
+            scoreLine = label != null ? label + " " + s : s;
+        } else if (option != null && !option.isBlank()) {
+            scoreLine = label != null ? label + " — " + option : option;
+        }
+        if (scoreLine != null) {
+            for (FormattedCharSequence l : font.split(Component.literal(scoreLine), wrap)) {
+                e.lines.add(new Line(l, EMBED_ACCENT, 0));
+            }
+        }
+        String comment = commentValue(embed);
+        if (comment != null && !comment.isBlank()) {
+            for (FormattedCharSequence l : font.split(Component.literal("\"" + comment + "\""), wrap)) {
+                e.lines.add(new Line(l, CONTENT, 0));
+            }
+        }
+    }
+
+    /** Value of the embed field named {@code name} (case-insensitive), or null. */
+    private static String fieldValue(ChatHistory.Embed embed, String name) {
+        if (embed == null || embed.fields() == null) {
+            return null;
+        }
+        for (ChatHistory.Field f : embed.fields()) {
+            if (f != null && f.name() != null && f.name().equalsIgnoreCase(name)) {
+                return f.value();
+            }
+        }
+        return null;
+    }
+
+    /** The comment field — the first field that isn't the score ("Rating"/"Answer"). */
+    private static String commentValue(ChatHistory.Embed embed) {
+        if (embed == null || embed.fields() == null) {
+            return null;
+        }
+        for (ChatHistory.Field f : embed.fields()) {
+            if (f == null || f.name() == null) {
+                continue;
+            }
+            if (f.name().equalsIgnoreCase("Rating") || f.name().equalsIgnoreCase("Answer")) {
+                continue;
+            }
+            if (f.value() != null && !f.value().isBlank()) {
+                return f.value();
+            }
+        }
+        return null;
     }
 
     private void addEmbed(Entry e, ChatHistory.Embed embed, int wrap) {
@@ -227,8 +320,12 @@ public final class ChatMessageList extends AbstractWidget {
 
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        if (standalone) {
+            draw(g, 1.0f, true, mouseX, mouseY, partialTick); // own screen: nothing to fight for z-order
+            return;
+        }
         if (selected) {
-            return; // drawn on top at full opacity after the screen's logo/splash (see MainMenuChatPanel)
+            return; // drawn on top at full opacity after the screen's logo/splash (raised pass)
         }
         draw(g, FADED_ALPHA, false, mouseX, mouseY, partialTick);
     }
@@ -319,6 +416,19 @@ public final class ChatMessageList extends AbstractWidget {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!this.visible) {
+            return false; // hidden until the dev has messaged — swallow nothing
+        }
+        if (standalone) {
+            if (!isWithin(mouseX, mouseY)) {
+                return false;
+            }
+            if (overInput(mouseX, mouseY)) {
+                input.mouseClicked(mouseX, mouseY, button); // place the caret within the box
+            }
+            focusInput(true); // always raised — a click anywhere on the panel readies typing
+            return true;
+        }
         if (isWithin(mouseX, mouseY)) {
             if (!selected) {
                 selected = true;              // first click raises and readies the send box for typing
@@ -351,7 +461,10 @@ public final class ChatMessageList extends AbstractWidget {
             return true;
         }
         if (key == GLFW.GLFW_KEY_ESCAPE) {
-            selected = false; // Esc lowers the panel (TitleScreen has no other Esc action)
+            if (standalone) {
+                return false; // let the owning screen close on Esc
+            }
+            selected = false; // Esc lowers the docked panel (TitleScreen has no other Esc action)
             focusInput(false);
             return true;
         }
@@ -392,15 +505,44 @@ public final class ChatMessageList extends AbstractWidget {
         String name = authorName == null || authorName.isBlank() ? "Me" : authorName;
         ChatHistory.Message m = new ChatHistory.Message(
                 "local-" + (localSeq++), null, name, false, true, content,
-                List.of(), List.of(), null, true); // isWebhook=true → styled as self, never marked seen
+                List.of(), List.of(), null, true, true); // isWebhook=true → styled as self, never marked
         entries.add(buildEntry(m, contentWidth()));
+        knownIds.add(m.id());
         layout();
         this.scroll = maxScroll();
     }
 
+    /**
+     * Append a live inbound reply (from the relay inbox poll) if it isn't already shown. Real-person
+     * replies are inbound-styled and flow through {@link #maybeMarkSeen}, so one the player sees still
+     * earns its 👀. Keeps the view pinned to the bottom only when it was already there, so a player
+     * scrolled up reading history isn't yanked down. Returns {@code true} if it was newly appended.
+     */
+    public boolean appendInbound(ChatHistory.Message m) {
+        if (m == null || m.id() == null || knownIds.contains(m.id()) || MenuChatFilter.isAutomatedReport(m)) {
+            return false;
+        }
+        boolean atBottom = scroll >= maxScroll();
+        this.status = null;
+        entries.add(buildEntry(m, contentWidth()));
+        knownIds.add(m.id());
+        layout();
+        if (atBottom) {
+            this.scroll = maxScroll(); // follow the conversation only if already at the bottom
+        }
+        return true;
+    }
+
+    /** Increment the unread badge for live arrivals — distinct from {@link #setUnread} which replaces it. */
+    public void addUnread(int n) {
+        if (n > 0) {
+            this.unread += n;
+        }
+    }
+
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (status != null || maxScroll() == 0
+        if (!this.visible || status != null || maxScroll() == 0
                 || mouseX < getX() || mouseX > getX() + width
                 || mouseY < getY() || mouseY > getY() + height) {
             return false;
