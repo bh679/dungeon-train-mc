@@ -474,4 +474,29 @@ final class TrainCarriageAppenderTest {
         assertFalse(TrainCarriageAppender.claimReloadIssue(trainA, true, edge));
         assertFalse(TrainCarriageAppender.claimReloadIssue(trainB, true, edge));
     }
+
+    // shouldHoldWholeTrainNearPlayer is the pure decision core for the
+    // near-player whole-train residency hold (Part 1 of the jitter fix): pin
+    // every loaded group only when a player is near AND the loaded train fits
+    // under the memory cap; otherwise fall back to the trailing-N window.
+
+    @Test
+    @DisplayName("shouldHoldWholeTrainNearPlayer: near + under cap → hold whole train")
+    void holdWholeTrain_nearUnderCap() {
+        assertTrue(TrainCarriageAppender.shouldHoldWholeTrainNearPlayer(true, 4, 12));
+        assertTrue(TrainCarriageAppender.shouldHoldWholeTrainNearPlayer(true, 12, 12)); // boundary inclusive
+    }
+
+    @Test
+    @DisplayName("shouldHoldWholeTrainNearPlayer: near + over cap → fall back to trailing-N")
+    void holdWholeTrain_nearOverCap() {
+        assertFalse(TrainCarriageAppender.shouldHoldWholeTrainNearPlayer(true, 13, 12));
+    }
+
+    @Test
+    @DisplayName("shouldHoldWholeTrainNearPlayer: no player near → never whole-train hold")
+    void holdWholeTrain_notNear() {
+        assertFalse(TrainCarriageAppender.shouldHoldWholeTrainNearPlayer(false, 1, 12));
+        assertFalse(TrainCarriageAppender.shouldHoldWholeTrainNearPlayer(false, 100, 12));
+    }
 }

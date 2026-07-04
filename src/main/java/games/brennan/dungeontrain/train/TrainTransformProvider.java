@@ -131,6 +131,14 @@ public final class TrainTransformProvider implements KinematicDriver {
     // needed; never read from another thread.
     private long physicsTickCounter;
     private Vector3d prevEffectivePos;
+    // gameTime of the previous {@link #nextTransform} call (-1 before the
+    // first call). Used to detect a resume-after-cull: when Sable culls this
+    // carriage's sub-level to holding it drops out of the kinematic ticker,
+    // so on reload the next call sees gameTime advanced by many ticks. That
+    // gap makes the deterministic formula catch up in a single frame — the
+    // correct (sibling-aligned) position, but emitted as one large teleport.
+    // See {@link #shouldReanchor} and the re-anchor block in nextTransform.
+    private long lastNextTransformGameTick = -1L;
     private double lastLoggedComDeltaX = Double.NaN;
     private int tripwireCooldown;
     private double lastPivotX = Double.NaN;
@@ -573,6 +581,20 @@ public final class TrainTransformProvider implements KinematicDriver {
         return new Vector3d(canonicalPos).add(comDelta);
     }
 
+    /**
+     * True iff {@code nowGameTick} follows {@code lastGameTick} with a gap of
+     * more than one tick — i.e. this driver skipped at least one physics tick
+     * (its sub-level was culled to holding and has just reloaded). Extracted as
+     * a pure helper so the re-anchor decision is unit-testable without a
+     * Minecraft/Sable bootstrap, mirroring {@link #computeEffectivePosition}.
+     *
+     * <p>{@code lastGameTick == -1} (before the first call) never re-anchors:
+     * the first call establishes the spawn baseline, it is not a resume.</p>
+     */
+    static boolean shouldReanchor(long lastGameTick, long nowGameTick) {
+        return lastGameTick != -1L && (nowGameTick - lastGameTick) > 1L;
+    }
+
     @Override
     public TickOutput nextTransform(TickInput input) {
         long currentGameTick = input.gameTime();
@@ -651,6 +673,25 @@ public final class TrainTransformProvider implements KinematicDriver {
             }
             canonicalPos.set(prevCanonX, prevCanonY, prevCanonZ);
         }
+
+        // Resume-after-cull re-anchor. When this sub-level was culled to
+        // holding it dropped out of SableKinematicTicker and stopped being
+        // ticked; on reload gameTime has jumped by the missed ticks, so the
+        // deterministic step above just caught canonicalPos up to its correct
+        // (sibling-aligned) position in a single frame. Re-base the spawn
+        // anchor onto that already-correct position so future ticks extrapolate
+        // from here — the emitted absolute position is bit-identical (zero
+        // drift), only the internal basis moves — and reset the tripwire
+        // baseline so the expected one-frame catch-up doesn't fire the probe.
+        // The >1 gap guard (see shouldReanchor) keeps the tripwire fully armed
+        // for TRUE anomalies: a large delta with NO tick gap is still a real
+        // regression and still fires.
+        if (shouldReanchor(lastNextTransformGameTick, currentGameTick)) {
+            spawnWorldPos.set(canonicalPos);
+            spawnGameTick = currentGameTick;
+            if (prevEffectivePos != null) prevEffectivePos.set(canonicalPos);
+        }
+        lastNextTransformGameTick = currentGameTick;
 
         TickOutput next = computeCompensatedTransform(input);
         logPhysicsProbe(input, next);

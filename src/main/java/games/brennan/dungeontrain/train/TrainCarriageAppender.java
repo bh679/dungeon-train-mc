@@ -483,6 +483,23 @@ public final class TrainCarriageAppender {
     private static final int TRAILING_FORCELOAD_GROUPS = 4;
 
     /**
+     * Maximum number of currently-loaded groups (sub-levels) the near-player
+     * whole-train hold will pin resident at once. While a player is near a
+     * train, {@link #maintainTrailingForceLoadWindow} pins every loaded group
+     * — not just the trailing-N — so mid/rear carriages that leave the player's
+     * simulation bubble mid-ride don't cull → reload → catch-up-teleport (the
+     * `[tripwire]` jitter). These groups are already loaded (they're in the
+     * visible train), so pinning loads no new chunks; the cap only bounds
+     * memory on a pathologically long train. Above the cap the hold falls back
+     * to the trailing-N window (the resume re-anchor in
+     * {@link TrainTransformProvider} keeps any residual far-carriage reload a
+     * single clean teleport). Default {@code 12} — well above a typical
+     * ~3-4-group train (9-10 carriages at {@code groupSize} 3), so it rarely
+     * binds. See {@link #shouldHoldWholeTrainNearPlayer}.
+     */
+    private static final int NEAR_PLAYER_RESIDENT_GROUP_CAP = 12;
+
+    /**
      * Maximum distance (in blocks, world space) from any player to a
      * placement-settled carriage's current world position at which the
      * carriage's deferred contents-entity spawn will fire. Carriages further
@@ -1816,7 +1833,12 @@ public final class TrainCarriageAppender {
         // at its spawn site (it isn't in `train` yet this tick). Pass the
         // PRE-defer backward intent so a one-tick reference defer never drops the
         // window (which is what would let Sable re-cull a just-reloaded edge).
-        maintainTrailingForceLoadWindow(level, trainId, train, backwardExtensionWanted);
+        // playerNear: true iff a player is in this train's vicinity this tick.
+        // In auto mode the no-near-players bail above already returned, but
+        // manual mode skips that bail — so read the flag directly rather than
+        // assuming near. Drives the near-player whole-train resident hold.
+        maintainTrailingForceLoadWindow(
+            level, trainId, train, backwardExtensionWanted, !nearPlayerPIdxs.isEmpty());
 
         if (!needsForward && !needsBackward) return false;
 
@@ -2267,9 +2289,25 @@ public final class TrainCarriageAppender {
      * out of the backmost-N), the walk-away bail
      * ({@link #releaseTrainForceLoads}), or a train wipe.</p>
      */
+    /**
+     * Decide whether {@link #maintainTrailingForceLoadWindow} should pin the
+     * WHOLE currently-loaded train resident (vs just the trailing-N window).
+     * True iff a player is near the train AND the loaded train is small enough
+     * to pin without unbounded memory. Pure + package-private for unit testing,
+     * mirroring the {@link #shouldRetainOnWalkAway} / {@link #decideEdgeAction}
+     * pure-decision convention.
+     *
+     * @param playerNear       at least one player is within the train's vicinity
+     * @param loadedGroupCount number of currently-loaded groups (sub-levels)
+     * @param cap              max groups to pin ({@link #NEAR_PLAYER_RESIDENT_GROUP_CAP})
+     */
+    static boolean shouldHoldWholeTrainNearPlayer(boolean playerNear, int loadedGroupCount, int cap) {
+        return playerNear && loadedGroupCount <= cap;
+    }
+
     private static void maintainTrailingForceLoadWindow(
         ServerLevel level, UUID trainId, List<Trains.Carriage> train,
-        boolean needsBackward
+        boolean needsBackward, boolean playerNear
     ) {
         // Sticky: stay engaged once we've started force-loading this train, so a
         // pause in backward travel never drops (then re-acquires) the window.
@@ -2289,8 +2327,19 @@ public final class TrainCarriageAppender {
         // regenerate. Holding the full set until the grace lapses (rider stably aboard)
         // closes that window; reconcile drains it back to the trailing-N the moment it
         // lapses (#547/#548).
+        // Hold the WHOLE loaded train resident when (a) a singleplayer resume
+        // is being protected (#547/#548), or (b) a player is near and the train
+        // is small enough to pin under the cap. Case (b) closes the steady-state
+        // riding hole: mid/rear carriages that leave the player's sim bubble but
+        // sit outside the trailing-N window would otherwise cull → reload →
+        // catch-up-teleport (the `[tripwire]` jitter) and network movement to
+        // clients that culled them (Sable's "non-existent sub-level" error).
+        // Pinning already-loaded groups loads no new chunks; it only stops Sable
+        // culling them, so those drivers keep ticking every tick (no gap, no
+        // catch-up). Above the cap we fall back to the trailing-N window.
         Set<UUID> target;
-        if (isResumeHoldActive(trainId, level.getGameTime())) {
+        if (isResumeHoldActive(trainId, level.getGameTime())
+                || shouldHoldWholeTrainNearPlayer(playerNear, byId.size(), NEAR_PLAYER_RESIDENT_GROUP_CAP)) {
             target = new HashSet<>(byId.keySet());
         } else {
             // The train list is one entry per group/sub-level, so target the
