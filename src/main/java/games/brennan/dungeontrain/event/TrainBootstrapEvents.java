@@ -208,6 +208,15 @@ public final class TrainBootstrapEvents {
         ManagedShip existing = findTrain(target);
         if (existing != null) return existing;
 
+        // Open this dimension's world-load motion-grace window BEFORE any
+        // carriage is spawned, so the seed group AND the bootstrap eager-fill
+        // (and, on the respawn-into-a-new-dimension path, the per-tick
+        // appender's first groups) all hold at their spawn position until the
+        // joining client has registered every sub-level. Suppresses the
+        // one-time Sable "non-existent sub-level" snapshot-vs-full-sync burst
+        // at world-load. See TrainTransformProvider#beginLoadGrace.
+        TrainTransformProvider.beginLoadGrace(target.dimension(), target.getGameTime());
+
         int trainY = data.getTrainY();
         BlockPos trainOrigin = new BlockPos(0, trainY, 0);
         CarriageDims dims = data.dims();
