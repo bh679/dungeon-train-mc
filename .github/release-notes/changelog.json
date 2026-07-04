@@ -3058,9 +3058,9 @@
         "Zombie-room encounters rebalanced (command block/mob spawn odds)"
       ],
       "date": "2026-07-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.384.0",
+      "released_at": "2026-07-04T10:04:28Z"
     }
   ]
 }
