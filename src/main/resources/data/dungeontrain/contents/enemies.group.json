@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "selfWeight": 10,
   "variants": [
     {
@@ -64,15 +64,18 @@
     },
     {
       "id": "evoker",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 4
     },
     {
       "id": "breeze",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 3
     },
     {
       "id": "elder",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 11
     }
   ]
 }
