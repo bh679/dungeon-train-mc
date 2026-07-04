@@ -48,7 +48,9 @@ public final class MenuChatScreen extends Screen {
         l.setOnSeen(m -> {
             String tid = threadId.get();
             if (tid != null) {
-                RelayChatClient.markSeen(uuid, tid, m.id());
+                // Through the receipts queue: the ✅ for a just-arrived message fires a frame earlier,
+                // and two unspaced reaction PUTs on one message lose the second to Discord's rate limit.
+                ChatReceipts.markSeen(uuid, tid, m.id());
             }
         });
         // Submit → echo locally now, deliver via the durable outbox (immediate when online, queued and
