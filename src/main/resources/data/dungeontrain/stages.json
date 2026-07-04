@@ -28,7 +28,7 @@
   "quartz": {
     "name": "quartz",
     "minLevel": 40,
-    "maxLevel": 50,
+    "maxLevel": 60,
     "phases": [
       "OVERWORLD",
       "VOID",
