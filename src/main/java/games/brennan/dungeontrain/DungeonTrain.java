@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.WorldJoinReport;
+import games.brennan.dungeontrain.logging.SableAabbLogFilter;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -252,6 +253,13 @@ public class DungeonTrain {
         // {@link Level#TRACE} to re-enable them when diagnosing a
         // regression of the train-hop fix.
         Configurator.setLevel("games.brennan.dungeontrain.jitter", Level.DEBUG);
+
+        // Suppress ONE spammy Sable log line — the per-call stack-trace-capturing "Aborting entity
+        // get for abnormally large AABB" ERROR — without touching Sable's log level. It fires on the
+        // render thread ~15×/sec when a Vivecraft (VR) player stands on a sub-level (train carriage),
+        // hitching frames. Root-caused for Vivecraft by SwingTrackerSubLevelAabbMixin; this is the
+        // always-on belt so the storm can't resurface from any other trigger. See SableAabbLogFilter.
+        SableAabbLogFilter.install();
 
         LOGGER.info("Dungeon Train constructor — mod loading");
     }
