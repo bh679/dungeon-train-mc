@@ -2947,69 +2947,37 @@
       "released_at": "2026-07-03T05:37:45Z"
     },
     {
-      "id": "main-menu-discord-chat-panel",
-      "version": "0.376.0",
-      "type": "feat",
-      "title": "Discord chat panel on the main menu",
-      "summary": "A Discord panel now sits on the title screen so you can read your conversation with the dev and community \u2014 including your feedback-survey replies and bug reports \u2014 without leaving the menu. Messages get a \ud83d\udc40 reaction in Discord once you've seen them here. Click the panel to bring it forward; click away to tuck it behind the title.",
+      "id": "lock-tested-sable-version",
+      "version": "0.380.0",
+      "type": "fix",
+      "title": "Locked to the tested Sable version",
+      "summary": "Dungeon Train now requires the exact version of Sable it was built and tested against. If a different Sable is installed, the game stops at startup with a clear message naming the version it needs, instead of loading against an untested physics build (which could crash or break the train). The modpacks already include the correct Sable, so most players won't notice a change.",
       "highlights": [
-        "Read your Discord message history from the main menu",
-        "Your feedback-survey and bug-report history shows up there too",
-        "Messages you've seen get a \ud83d\udc40 in Discord",
-        "Click to bring the panel forward, click away to send it back"
+        "Refuses to start against a mismatched Sable version, with a clear 'requires Sable' message",
+        "Protects against crashes and broken trains from an untested Sable build"
       ],
-      "pr": 618,
-      "date": "2026-06-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "pr": 626,
+      "date": "2026-07-03",
+      "released": true,
+      "released_in": "v0.381.0",
+      "released_at": "2026-07-03T10:26:48Z"
     },
     {
-      "id": "menu-chat-send",
-      "version": "0.376.0",
-      "type": "feat",
-      "title": "Reply to Discord from the main-menu chat panel",
-      "summary": "The title-screen Discord panel is now two-way: type a message and send it straight to your own Discord thread without leaving the menu. Anything you send while you're offline is queued and delivered automatically the next time you open the panel.",
-      "highlights": [
-        "Send messages from the main-menu Discord panel",
-        "Offline messages queue and send when you reconnect"
-      ],
-      "date": "2026-06-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "menu-chat-offline-inbox",
-      "version": "0.377.0",
-      "type": "feat",
-      "title": "See new Discord messages waiting at the menu",
-      "summary": "The title-screen Discord panel now badges how many new messages arrived while you were away. The relay keeps replies people send to your thread, and the count shows up next to \"Discord\" the next time you open the menu.",
-      "highlights": [
-        "A \"+N\" badge on the Discord panel shows messages you haven't seen yet",
-        "Replies sent while you were offline are kept and counted for your next visit"
-      ],
-      "pr": 620,
-      "date": "2026-06-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "menu-chat-live-receive",
-      "version": "0.377.0",
+      "id": "main-menu-dev-chat",
+      "version": "0.381.1",
       "type": "feat",
       "title": "Chat with the dev from the main menu",
-      "summary": "Dev chat now lives in its own window. Once the dev has replied in your Discord thread, a small envelope button appears on the title screen (above the accessibility button); if there are unread messages, a callout pops up quoting the start of the oldest one. The window shows just the conversation \u2014 dev replies, your dev-tagged or menu-sent messages, and compact survey answers \u2014 updates live while open, and lets you reply straight to Discord. Automated game notices (advancements, difficulty, deaths, entering Free Play, join lines) stay out of it.",
+      "summary": "You can now talk with the dev without leaving the game. Once the dev has replied in your Discord thread, an envelope button appears on the title screen (above the accessibility button); unread messages pop up a callout quoting the start of the oldest one and gently pulse the button. The envelope opens a dedicated chat window showing just the conversation \u2014 the dev's replies, your dev-tagged or menu-sent messages, and your survey answers in compact form \u2014 with new replies streaming in live and a box to write back. Anything you send while offline is queued and delivered when you reconnect, and in Discord the dev sees \u2705 when a message has reached your game and \ud83d\udc40 once you've actually read it.",
       "highlights": [
-        "The dev chat opens in its own window from an envelope button on the title screen",
-        "The button only appears once the dev has messaged you; a popup flags unread messages",
-        "Replies stream in live while the window is open, and you can write back",
-        "Only conversation shows \u2014 plus survey answers compacted like \"Bug \u2014 Other\"",
-        "In Discord, \u2705 shows a message reached your game and \ud83d\udc40 that you've read it"
+        "An envelope appears on the title screen once the dev has messaged you \u2014 no empty chat dock before that",
+        "Unread messages show a popup + pulsing envelope; opening the chat clears them",
+        "A dedicated chat window with live two-way messaging \u2014 replies stream in while it's open",
+        "Offline sends queue up and deliver automatically when you're back",
+        "Only conversation shows \u2014 automated game reports stay out; surveys compact to a score + comment",
+        "Delivery receipts in Discord: \u2705 = reached your game, \ud83d\udc40 = read"
       ],
-      "pr": 625,
-      "date": "2026-07-03",
+      "pr": 618,
+      "date": "2026-07-04",
       "released": false,
       "released_in": null,
       "released_at": null

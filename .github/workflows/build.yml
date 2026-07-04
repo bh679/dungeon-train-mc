@@ -60,8 +60,14 @@ jobs:
         # project+version pin (which would silently drop it from the .mrpack). No network.
         run: python3 scripts/modpack/build-mrpack.py --check-config
 
+      - name: Sable version pin chain (gradle <-> mods.toml lock <-> modpack)
+        # Fails CI if sable_mod_version (DT's exact mods.toml lock) or the modpack's
+        # sable.version drift from gradle.properties sable_version. No network.
+        run: python3 scripts/modpack/check-sable-pin.py
+
       - name: Modpack manifest + relation tests
         run: |
           python3 scripts/modpack/test_build_manifest.py
           python3 scripts/modpack/test_check_relations.py
           python3 scripts/modpack/test_build_mrpack.py
+          python3 scripts/modpack/test_check_sable_pin.py
