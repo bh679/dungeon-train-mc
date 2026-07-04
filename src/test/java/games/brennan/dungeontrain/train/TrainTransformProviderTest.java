@@ -84,6 +84,56 @@ final class TrainTransformProviderTest {
         assertEquals(-1.0, result.z, 1e-9);
     }
 
+    // ── World-load motion-grace elapsed-tick math ──────────────────────────
+    // effectiveElapsedTicks is the pure core of the load-grace hold that
+    // suppresses the join-time Sable "non-existent sub-level" burst: a
+    // freshly-spawned carriage reports 0 elapsed ticks (holds at spawn) until
+    // the dimension's grace deadline, then advances one tick at a time.
+
+    /** Sentinel used for "this dimension was never granted a grace window". */
+    private static final long NO_GRACE = Long.MIN_VALUE;
+
+    @Test
+    @DisplayName("during grace: carriage holds (0 elapsed) then starts smoothly at the deadline")
+    void effectiveElapsedTicks_holdsThenStartsSmoothly() {
+        long spawn = 1000L;      // seed/eager-fill carriages spawn at load tick
+        long holdUntil = 1020L;  // spawn + WORLD_LOAD_MOTION_GRACE_TICKS
+
+        // Every tick inside the window holds at the spawn position.
+        assertEquals(0L, TrainTransformProvider.effectiveElapsedTicks(1000L, spawn, holdUntil));
+        assertEquals(0L, TrainTransformProvider.effectiveElapsedTicks(1010L, spawn, holdUntil));
+        assertEquals(0L, TrainTransformProvider.effectiveElapsedTicks(1019L, spawn, holdUntil));
+        // At the deadline still 0; the very next tick is a single 1-tick step —
+        // a smooth start, never a jump of the whole grace window.
+        assertEquals(0L, TrainTransformProvider.effectiveElapsedTicks(1020L, spawn, holdUntil));
+        assertEquals(1L, TrainTransformProvider.effectiveElapsedTicks(1021L, spawn, holdUntil));
+        assertEquals(5L, TrainTransformProvider.effectiveElapsedTicks(1025L, spawn, holdUntil));
+    }
+
+    @Test
+    @DisplayName("no grace window → normal elapsed = currentTick − spawnTick (no MIN_VALUE underflow)")
+    void effectiveElapsedTicks_noGraceBehavesNormally() {
+        long spawn = 1000L;
+        // The sentinel must NOT underflow the subtraction (max() is taken
+        // first), so behaviour is identical to the pre-grace formula.
+        assertEquals(0L, TrainTransformProvider.effectiveElapsedTicks(1000L, spawn, NO_GRACE));
+        assertEquals(7L, TrainTransformProvider.effectiveElapsedTicks(1007L, spawn, NO_GRACE));
+        // Never negative even if a stale/future spawn tick is passed.
+        assertEquals(0L, TrainTransformProvider.effectiveElapsedTicks(995L, spawn, NO_GRACE));
+    }
+
+    @Test
+    @DisplayName("carriage appended after the grace deadline is unaffected (lockstep preserved)")
+    void effectiveElapsedTicks_appendedAfterGraceIgnoresHold() {
+        long holdUntil = 1020L;
+        long spawn = 1050L; // appended during normal play, well past the window
+        // holdUntil is in this carriage's past, so its own spawn tick is the
+        // origin — exactly the pre-change behaviour, so it joins the moving
+        // train in lockstep.
+        assertEquals(0L, TrainTransformProvider.effectiveElapsedTicks(1050L, spawn, holdUntil));
+        assertEquals(3L, TrainTransformProvider.effectiveElapsedTicks(1053L, spawn, holdUntil));
+    }
+
     @Test
     @DisplayName("helper does not mutate its Vector3dc inputs")
     void computeEffectivePosition_doesNotMutateInputs() {

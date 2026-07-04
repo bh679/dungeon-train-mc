@@ -62,6 +62,79 @@ public final class TrainTransformProvider implements KinematicDriver {
     // deltas; on Sable per-carriage we expect this to never fire.
     private static final double PIVOT_MOVE_EPSILON = 1e-6;
 
+    /**
+     * World-load motion grace: a freshly-(re)loaded train holds at its spawn
+     * position for this many ticks before it begins to move. This suppresses a
+     * one-time burst of Sable "Received a sub-level movement packet for a
+     * non-existent sub-level" errors at the world-load/join instant.
+     *
+     * <p>Root cause: Sable sends a carriage's movement snapshot (over UDP) and
+     * its full-sync ({@code ClientboundStartTrackingSubLevelPacket}, over TCP,
+     * which is what actually registers the {@code ClientSubLevel} client-side)
+     * in the SAME tracking tick. The UDP snapshot can be processed on the
+     * client before the TCP full-sync lands, so the sub-level doesn't exist yet
+     * and Sable logs an error — once per carriage until the full-sync arrives.
+     * DT makes this fire because the carriages move every tick from tick 0.</p>
+     *
+     * <p>A stationary carriage emits NO movement snapshot at all (Sable's
+     * {@code sendMovementUpdates} skips a sub-level whose pose is within
+     * tolerance of its last-networked pose), so holding the whole train still
+     * until the joining client has registered every sub-level closes the race
+     * regardless of transport. ~1 s at 20 TPS — long enough to cover the
+     * bootstrap eager-fill and the client's first packet-processing pass, short
+     * enough to read as a natural standstill start. Tunable. See
+     * {@link #beginLoadGrace} and {@link #MOTION_HOLD_UNTIL}.</p>
+     */
+    private static final long WORLD_LOAD_MOTION_GRACE_TICKS = 20L;
+
+    /**
+     * Per-dimension tick until which newly-spawned carriages hold at their
+     * spawn position (see {@link #WORLD_LOAD_MOTION_GRACE_TICKS}). Keyed by
+     * dimension so a fresh train spawned into any dimension — world-load
+     * bootstrap or a respawn into a not-yet-visited dimension — gets its own
+     * grace window. A carriage whose {@code spawnGameTick} is already past the
+     * dimension's hold deadline (every carriage appended during normal play) is
+     * unaffected: {@code max(spawnGameTick, holdUntil)} leaves its time origin
+     * untouched, so appended carriages join the moving train in lockstep with
+     * zero behaviour change. Static + process-lifetime like
+     * {@link games.brennan.dungeontrain.ship.sable.SableManagedShip}'s driver
+     * map; re-seeded on each server start (fresh process ⇒ fresh map).
+     */
+    private static final java.util.Map<ResourceKey<Level>, Long> MOTION_HOLD_UNTIL =
+        new ConcurrentHashMap<>();
+
+    /**
+     * Open a world-load motion-grace window for {@code level} starting at
+     * {@code currentGameTick}. Called once when a fresh train is spawned into a
+     * dimension (see {@code TrainBootstrapEvents.ensureTrainSpawned}), before
+     * any carriage's first kinematic tick — so the seed group, the bootstrap
+     * eager-fill, and (on the respawn path) the per-tick appender's first
+     * groups all share one hold deadline and start moving together.
+     */
+    public static void beginLoadGrace(ResourceKey<Level> level, long currentGameTick) {
+        MOTION_HOLD_UNTIL.put(level, currentGameTick + WORLD_LOAD_MOTION_GRACE_TICKS);
+    }
+
+    /**
+     * Elapsed ticks since a carriage's effective motion origin, clamped so a
+     * held carriage never advances (or runs backward). The effective origin is
+     * {@code max(spawnGameTick, holdUntilTick)}: during a level's world-load
+     * grace window a freshly-spawned carriage ({@code spawnGameTick <=
+     * holdUntilTick}) is pinned to {@code holdUntilTick} and reports 0 elapsed
+     * ticks until that deadline; every carriage appended later
+     * ({@code spawnGameTick > holdUntilTick}) is unaffected.
+     *
+     * <p>Taking {@code max()} BEFORE the subtraction is deliberate: it keeps
+     * the "no grace" sentinel ({@link Long#MIN_VALUE} for a dimension that was
+     * never granted a window) from underflowing {@code currentGameTick -
+     * holdUntilTick}. Pure/static so it unit-tests without a Minecraft
+     * bootstrap.</p>
+     */
+    static long effectiveElapsedTicks(long currentGameTick, long spawnGameTick, long holdUntilTick) {
+        long effectiveOrigin = Math.max(spawnGameTick, holdUntilTick);
+        return Math.max(0L, currentGameTick - effectiveOrigin);
+    }
+
     private volatile Vector3d targetVelocity;
     private final BlockPos shipyardOrigin;
     private final ResourceKey<Level> dimensionKey;
@@ -651,7 +724,14 @@ public final class TrainTransformProvider implements KinematicDriver {
         double prevCanonX = canonicalPos.x;
         double prevCanonY = canonicalPos.y;
         double prevCanonZ = canonicalPos.z;
-        long elapsedTicks = currentGameTick - spawnGameTick;
+        // Hold a freshly-(re)loaded carriage at its spawn position until this
+        // dimension's world-load grace window expires, then advance smoothly
+        // (elapsed steps 0 → 0 → 1, no jump). A no-op for every carriage
+        // appended during normal play (holdUntil is already in the past, so the
+        // effective origin stays spawnGameTick). See beginLoadGrace /
+        // WORLD_LOAD_MOTION_GRACE_TICKS.
+        long holdUntil = MOTION_HOLD_UNTIL.getOrDefault(dimensionKey, Long.MIN_VALUE);
+        long elapsedTicks = effectiveElapsedTicks(currentGameTick, spawnGameTick, holdUntil);
         canonicalPos.set(
             spawnWorldPos.x + targetVelocity.x() * elapsedTicks * PHYSICS_DT,
             spawnWorldPos.y + targetVelocity.y() * elapsedTicks * PHYSICS_DT,
