@@ -317,6 +317,7 @@ public final class EditorStatusHudOverlay {
         // The part-position menu has no event-bus subscriber of its own; reset
         // it from here so every client-side editor renderer wipes in unison.
         PartPositionMenu.clearForLogout();
+        games.brennan.dungeontrain.client.menu.templateblocks.TemplateBlocksMenu.clearForLogout();
     }
 
     @SubscribeEvent
