@@ -49,6 +49,9 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_SHOWN_BEFORE;
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue FREE_PLAY_CONFIRM_OPTED_OUT;
+    public static final ModConfigSpec.BooleanValue DEV_CONSENT_GRANTED;
+    public static final ModConfigSpec.DoubleValue DEV_CONSENT_GRANT_SESSION;
+    public static final ModConfigSpec.DoubleValue DEV_CONSENT_LAST_MSG_TO_DEV;
     public static final ModConfigSpec.BooleanValue OPENED_ADVANCEMENTS_BEFORE;
     public static final ModConfigSpec.BooleanValue RIDE_SNAPSHOTS_ENABLED;
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_INTERVAL_SECONDS;
@@ -71,6 +74,9 @@ public final class ClientDisplayConfig {
         DEVELOPER_POPUP_SHOWN_BEFORE = pair.getLeft().developerPopupShownBefore;
         DEVELOPER_POPUP_OPTED_OUT = pair.getLeft().developerPopupOptedOut;
         FREE_PLAY_CONFIRM_OPTED_OUT = pair.getLeft().freePlayConfirmOptedOut;
+        DEV_CONSENT_GRANTED = pair.getLeft().devConsentGranted;
+        DEV_CONSENT_GRANT_SESSION = pair.getLeft().devConsentGrantSession;
+        DEV_CONSENT_LAST_MSG_TO_DEV = pair.getLeft().devConsentLastMsgToDev;
         OPENED_ADVANCEMENTS_BEFORE = pair.getLeft().openedAdvancementsBefore;
         RIDE_SNAPSHOTS_ENABLED = pair.getLeft().rideSnapshotsEnabled;
         RIDE_SNAPSHOT_INTERVAL_SECONDS = pair.getLeft().rideSnapshotIntervalSeconds;
@@ -114,6 +120,18 @@ public final class ClientDisplayConfig {
                 .define("optedOut", false);
         b.pop();
 
+        b.push("devMessageConsent");
+        ModConfigSpec.BooleanValue devConsentGranted = b
+                .comment("Whether the player has ever accepted a Developer message (typed @Dev to a consent prompt). Together with the session/timestamp below this governs whether relayed Developer messages appear in in-game chat. Persisted so consent can survive a world reload. Managed automatically — not meant to be edited by hand.")
+                .define("granted", false);
+        ModConfigSpec.DoubleValue devConsentGrantSession = b
+                .comment("Internal: the server session token in which consent was last granted (millis). Managed automatically.")
+                .defineInRange("grantSessionMillis", 0.0, 0.0, Double.MAX_VALUE);
+        ModConfigSpec.DoubleValue devConsentLastMsgToDev = b
+                .comment("Internal: wall-clock millis of the player's last message to the dev (in-game chat after consent, or a menu-chat send). Anchors the 20-minute consent window. Managed automatically.")
+                .defineInRange("lastMessageToDevMillis", 0.0, 0.0, Double.MAX_VALUE);
+        b.pop();
+
         b.push("advancementsHint");
         ModConfigSpec.BooleanValue openedAdvancementsBefore = b
                 .comment("Whether the player has ever opened the advancements screen on this install. While false, earning a Dungeon Train gameplay advancement shows a one-line chat hint reminding the player of the (rebindable) key that opens advancements. Flips to true the first time the advancements screen is closed, permanently silencing the hint. Reset this to false to see the hint again.")
@@ -153,7 +171,8 @@ public final class ClientDisplayConfig {
                 .defineInRange("maxOnDisk", 64, 8, 256);
         b.pop();
 
-        return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut, openedAdvancementsBefore,
+        return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
+                devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk);
@@ -271,6 +290,32 @@ public final class ClientDisplayConfig {
         FREE_PLAY_CONFIRM_OPTED_OUT.save();
     }
 
+    // ----- Developer-message consent state (see DevMessageConsentClient) -----
+
+    /** Has the player ever accepted a Developer message (typed @Dev to a consent prompt)? */
+    public static boolean isDevConsentGranted() {
+        return isLoaded() && DEV_CONSENT_GRANTED.get();
+    }
+
+    /** Server session token (millis) consent was last granted in; {@code 0.0} if never. */
+    public static double getDevConsentGrantSession() {
+        return isLoaded() ? DEV_CONSENT_GRANT_SESSION.get() : 0.0;
+    }
+
+    /** Wall-clock millis of the player's last message to the dev; {@code 0.0} if never. */
+    public static double getDevConsentLastMsgToDev() {
+        return isLoaded() ? DEV_CONSENT_LAST_MSG_TO_DEV.get() : 0.0;
+    }
+
+    /** Persist the whole consent triple in one write (single {@code .save()}). No-op pre-load. */
+    public static void setDevConsentState(boolean granted, double grantSession, double lastMsgToDevMs) {
+        if (!isLoaded()) return;
+        DEV_CONSENT_GRANTED.set(granted);
+        DEV_CONSENT_GRANT_SESSION.set(grantSession);
+        DEV_CONSENT_LAST_MSG_TO_DEV.set(lastMsgToDevMs);
+        DEV_CONSENT_GRANTED.save();
+    }
+
     // ----- Advancements keybind hint state -----
 
     /**
@@ -364,6 +409,9 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue developerPopupShownBefore,
             ModConfigSpec.BooleanValue developerPopupOptedOut,
             ModConfigSpec.BooleanValue freePlayConfirmOptedOut,
+            ModConfigSpec.BooleanValue devConsentGranted,
+            ModConfigSpec.DoubleValue devConsentGrantSession,
+            ModConfigSpec.DoubleValue devConsentLastMsgToDev,
             ModConfigSpec.BooleanValue openedAdvancementsBefore,
             ModConfigSpec.BooleanValue rideSnapshotsEnabled,
             ModConfigSpec.IntValue rideSnapshotIntervalSeconds,

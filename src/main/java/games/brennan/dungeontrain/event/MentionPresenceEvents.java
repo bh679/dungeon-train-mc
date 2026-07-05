@@ -74,6 +74,14 @@ public final class MentionPresenceEvents {
         // a @dev mention here also counts as dev contact for the chat-contents privacy guard.
         RemoteEchoEncounters.onPrimaryPlayerChat(event.getPlayer(), rawText, mentionsDev);
 
+        // Dev-message consent: any chat line slides the 20-minute window once consent is granted; a
+        // @Dev typed while a Developer message is held accepts consent, flushing it into in-game chat.
+        ServerPlayer chatter = event.getPlayer();
+        DevMessageConsent.onPlayerChatted(chatter);
+        if (mentionsDev && DevMessageConsent.hasPending(chatter.getUUID())) {
+            DevMessageConsent.onConsentAccepted(chatter);
+        }
+
         if (!mentionsDev) {
             return;
         }

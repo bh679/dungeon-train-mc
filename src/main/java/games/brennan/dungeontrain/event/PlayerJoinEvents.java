@@ -202,6 +202,7 @@ public final class PlayerJoinEvents {
             PENDING.remove(player.getUUID());
             CinematicIntroService.forget(player.getUUID());
             EditorWelcome.forget(player.getUUID());
+            DevMessageConsent.forget(player.getUUID());
         }
     }
 
