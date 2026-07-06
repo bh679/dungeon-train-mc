@@ -3077,6 +3077,23 @@
       "released": true,
       "released_in": "v0.385.0",
       "released_at": "2026-07-06T10:29:20Z"
+    },
+    {
+      "id": "difficulty-command",
+      "version": "0.386.0",
+      "type": "feat",
+      "title": "New /dungeontrain difficulty command",
+      "summary": "Server operators can now set the run's difficulty on the fly with /dungeontrain difficulty <level>, instead of waiting to earn it by travelling. The whole game shifts to match at once \u2014 the difficulty shown on the HUD, the mobs and their gear, the carriage stages that generate ahead, the loot, and villager trades. It re-anchors each time you run it and drifts with real travel afterward; /dungeontrain difficulty auto clears it and returns to normal progression.",
+      "highlights": [
+        "Set any difficulty level instantly for testing or custom runs",
+        "Shifts the HUD, mobs, carriage stages, loot and trades together",
+        "/dungeontrain difficulty auto restores automatic, travel-based scaling"
+      ],
+      "pr": 634,
+      "date": "2026-07-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
