@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 8,
+  "variants": {
+    "6,1,0": { "lockId": 1, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "6,5,0": { "lockId": 1, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "0,1,0": { "lockId": 1, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "0,5,0": { "lockId": 1, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "6,0,0": { "lockId": 1, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "6,6,0": { "lockId": 1, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "0,0,0": { "lockId": 1, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "0,6,0": { "lockId": 1, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "6,2,0": { "lockId": 1, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "6,4,0": { "lockId": 1, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "0,2,0": { "lockId": 1, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "0,4,0": { "lockId": 1, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "5,1,0": { "lockId": 2, "states": ["minecraft:mud_brick_wall[east=low,north=none,south=none,up=true,waterlogged=false,west=none]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "5,5,0": { "lockId": 2, "states": ["minecraft:mud_brick_wall[east=low,north=none,south=none,up=true,waterlogged=false,west=none]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "1,1,0": { "lockId": 2, "states": ["minecraft:mud_brick_wall[east=none,north=none,south=none,up=true,waterlogged=false,west=low]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "1,5,0": { "lockId": 2, "states": ["minecraft:mud_brick_wall[east=none,north=none,south=none,up=true,waterlogged=false,west=low]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "4,0,0": { "lockId": 3, "states": ["minecraft:mud_brick_wall[east=low,north=none,south=none,up=true,waterlogged=false,west=none]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "4,6,0": { "lockId": 3, "states": ["minecraft:mud_brick_wall[east=low,north=none,south=none,up=true,waterlogged=false,west=none]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "2,0,0": { "lockId": 3, "states": ["minecraft:mud_brick_wall[east=none,north=none,south=none,up=true,waterlogged=false,west=low]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "2,6,0": { "lockId": 3, "states": ["minecraft:mud_brick_wall[east=none,north=none,south=none,up=true,waterlogged=false,west=low]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "5,0,0": { "lockId": 4, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "5,6,0": { "lockId": 4, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "1,0,0": { "lockId": 4, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "1,6,0": { "lockId": 4, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud"] },
+    "6,3,0": { "lockId": 5, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud", {"state": "minecraft:mud_brick_wall[east=none,north=none,south=none,up=true,waterlogged=false,west=none]", "weight": 5}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 3, "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "0,3,0": { "lockId": 5, "states": [{"state": "minecraft:packed_mud", "weight": 2}, {"state": "minecraft:mud_bricks", "weight": 3}, "minecraft:mud", {"state": "minecraft:mud_brick_wall[east=none,north=none,south=none,up=true,waterlogged=false,west=none]", "weight": 5}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 3, "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "3,6,0": { "lockId": 6, "states": ["minecraft:mud_brick_wall[east=none,north=none,south=none,up=true,waterlogged=false,west=low]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "3,0,0": { "lockId": 6, "states": ["minecraft:mud_brick_wall[east=none,north=none,south=none,up=true,waterlogged=false,west=low]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] }
+  }
+}
