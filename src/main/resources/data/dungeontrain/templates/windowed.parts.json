@@ -252,11 +252,16 @@
     },
     {
       "name": "quartz",
-      "weight": 1,
+      "weight": 10,
       "stage": "quartz"
     },
     {
       "name": "quartswindow",
+      "weight": 30,
+      "stage": "quartz"
+    },
+    {
+      "name": "quartsopen",
       "weight": 1,
       "stage": "quartz"
     }
