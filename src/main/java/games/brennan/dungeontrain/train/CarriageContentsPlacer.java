@@ -370,12 +370,13 @@ public final class CarriageContentsPlacer {
 
         BlockPos origin = interiorOrigin(carriageOrigin);
         // Difficulty gate: drop out-of-band eggs from each cell's candidate pool
-        // before the pick, using the carriage's own positional tier so this pass
-        // and the deferred mob pass always agree. Editor previews (sentinel pIdx)
-        // are never gated.
+        // before the pick, using the carriage's own positional tier (offset-aware,
+        // so an admin /dungeontrain difficulty re-themes contents in step with the
+        // shell template) so this pass and the deferred mob pass always agree.
+        // Editor previews (sentinel pIdx) are never gated.
         boolean filterByDifficulty = carriageIndex != EDITOR_SENTINEL_PIDX;
         int diffTier = filterByDifficulty
-            ? DifficultyProgression.tierForTravelled(Math.abs(carriageIndex)) : 0;
+            ? DifficultyProgression.positionTier(carriageIndex) : 0;
         for (var entry : sidecar.entries()) {
             VariantState picked = filterByDifficulty
                 ? sidecar.resolve(entry.localPos(), seed, carriageIndex, diffTier)
@@ -934,9 +935,9 @@ public final class CarriageContentsPlacer {
         CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
         if (sidecar.isEmpty()) return;
         BlockPos origin = interiorOrigin(carriageOrigin);
-        // Same carriage-positional tier the block pass used, so both passes agree
-        // on which eggs are in-band. (EDITOR_SENTINEL_PIDX already early-returned.)
-        int diffTier = DifficultyProgression.tierForTravelled(Math.abs(carriagePIdx));
+        // Same carriage-positional tier the block pass used (offset-aware), so both
+        // passes agree on which eggs are in-band. (EDITOR_SENTINEL_PIDX already early-returned.)
+        int diffTier = DifficultyProgression.positionTier(carriagePIdx);
         int spawned = 0;
         for (var entry : sidecar.entries()) {
             VariantState picked = sidecar.resolve(entry.localPos(), seed, carriagePIdx, diffTier);

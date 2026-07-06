@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.advancement.FarStartAdvancement;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
+import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
@@ -182,14 +183,20 @@ public final class AchievementEvents {
         if (delta == 0) return;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         run.recordCartMovement(delta);
+        // Carriage-distance milestones read the EFFECTIVE progress (raw travel + the
+        // admin difficulty offset), so an admin-set difficulty is treated as genuine
+        // progress here too. The forward/backward subtotals below stay on the real
+        // signed movement — "The Long Way Back" is about actual back-and-forth travel.
+        int effectiveTravelled = Math.abs(
+            DifficultyProgression.effectiveTravelled(run.travelledCarriageIndex()));
         ModAdvancementTriggers.CARTS_IN_RUN.get()
-            .trigger(player, Math.abs(run.travelledCarriageIndex()));
+            .trigger(player, effectiveTravelled);
         ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get()
             .trigger(player, run.cartsForwardSinceDeath(), run.cartsBackwardSinceDeath());
         // "The Far Start" — same travelled-carriage counter as carts_100 but a
         // longer haul, reached while still carrying the (unread, unburned)
         // starting book. Gated cheaply, so the inventory scan only runs past the threshold.
-        FarStartAdvancement.checkAndGrant(player, Math.abs(run.travelledCarriageIndex()));
+        FarStartAdvancement.checkAndGrant(player, effectiveTravelled);
     }
 
     // ---------------- Biome-diversity milestones ----------------

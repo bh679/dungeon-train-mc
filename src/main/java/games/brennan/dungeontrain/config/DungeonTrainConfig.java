@@ -51,10 +51,10 @@ public final class DungeonTrainConfig {
     public static final int DEFAULT_CARRIAGES_PER_TIER = 20;
     /** Max tier directly requestable via {@code /dungeontrain difficulty <tier>}. */
     public static final int MAX_REQUESTED_DIFFICULTY_TIER = 1000;
-    /** Generous symmetric bound for the persisted offset — it's always a (requested - auto) difference, never set directly. */
-    public static final int MIN_DIFFICULTY_TIER_OFFSET = -1_000_000;
-    public static final int MAX_DIFFICULTY_TIER_OFFSET = 1_000_000;
-    public static final int DEFAULT_DIFFICULTY_TIER_OFFSET = 0;
+    /** Generous symmetric bound for the persisted travelled offset — it's always a computed (target - raw) difference, never set directly. */
+    public static final int MIN_DIFFICULTY_TRAVELLED_OFFSET = -1_000_000;
+    public static final int MAX_DIFFICULTY_TRAVELLED_OFFSET = 1_000_000;
+    public static final int DEFAULT_DIFFICULTY_TRAVELLED_OFFSET = 0;
     public static final boolean DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS = false;
     public static final int MIN_PROGRESSION_LEVEL_DELAY = 0;
     public static final int MAX_PROGRESSION_LEVEL_DELAY = 100;
@@ -99,7 +99,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.IntValue GROUP_SIZE;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_ENABLED;
     public static final ModConfigSpec.IntValue CARRIAGES_PER_TIER;
-    public static final ModConfigSpec.IntValue DIFFICULTY_TIER_OFFSET;
+    public static final ModConfigSpec.IntValue DIFFICULTY_TRAVELLED_OFFSET;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_AFFECTS_BABY_MOBS;
     public static final ModConfigSpec.IntValue PROGRESSION_LEVEL_DELAY;
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_NO_HOSTILES;
@@ -129,7 +129,7 @@ public final class DungeonTrainConfig {
         GROUP_SIZE = pair.getLeft().groupSize;
         DIFFICULTY_ENABLED = pair.getLeft().difficultyEnabled;
         CARRIAGES_PER_TIER = pair.getLeft().carriagesPerTier;
-        DIFFICULTY_TIER_OFFSET = pair.getLeft().difficultyTierOffset;
+        DIFFICULTY_TRAVELLED_OFFSET = pair.getLeft().difficultyTravelledOffset;
         DIFFICULTY_AFFECTS_BABY_MOBS = pair.getLeft().difficultyAffectsBabyMobs;
         PROGRESSION_LEVEL_DELAY = pair.getLeft().progressionLevelDelay;
         FIRST_LEVEL_NO_HOSTILES = pair.getLeft().firstLevelNoHostiles;
@@ -182,9 +182,9 @@ public final class DungeonTrainConfig {
         ModConfigSpec.IntValue carriagesPerTier = b
                 .comment("Number of carriages per tier step. tierIndex = floor(abs(pIdx) / carriagesPerTier), clamped to the loaded tier list. Game default 20; set to 1 for fast-paced/testing progression.")
                 .defineInRange("carriagesPerTier", DEFAULT_CARRIAGES_PER_TIER, MIN_CARRIAGES_PER_TIER, MAX_CARRIAGES_PER_TIER);
-        ModConfigSpec.IntValue difficultyTierOffset = b
-                .comment("Signed offset added to the automatic difficulty tier (mob gearing + villager trade caps): effective tier = max(0, autoTier + this). 0 (default) = fully automatic. Set via /dungeontrain difficulty <tier>, which recomputes this as (requestedTier - currentAutoTier) so the effective tier becomes exactly what was requested at that moment; the offset then stays fixed while the automatic tier keeps drifting with travelled distance, until the next command invocation re-anchors it. /dungeontrain difficulty auto resets this to 0. Does not affect the boarding HUD or the deterministic per-carriage world-gen tier — both keep reflecting real travelled distance / carriage position.")
-                .defineInRange("difficultyTierOffset", DEFAULT_DIFFICULTY_TIER_OFFSET, MIN_DIFFICULTY_TIER_OFFSET, MAX_DIFFICULTY_TIER_OFFSET);
+        ModConfigSpec.IntValue difficultyTravelledOffset = b
+                .comment("Signed offset (in carriages) added to every player's live travelled-carriage progress for difficulty purposes: the game behaves as if each player had travelled this many extra carriages. Shifts the boarding HUD (Diff-Car + Diff-Level), the onboarding stages (no-hostiles/slimes), mob gearing, villager trade caps, carriage-distance achievements, and Discord level-up posts — all together. 0 (default) = fully automatic. Set via /dungeontrain difficulty <tier>, which recomputes this as (target carriages for the requested tier - current raw progress) so the effective tier becomes exactly what was requested at that moment; the offset then stays fixed while real travel keeps moving the effective value, until the next command invocation re-anchors it. /dungeontrain difficulty auto resets this to 0. Does NOT affect the deterministic per-carriage world-gen tier (that keys off carriage position, not player progress).")
+                .defineInRange("difficultyTravelledOffset", DEFAULT_DIFFICULTY_TRAVELLED_OFFSET, MIN_DIFFICULTY_TRAVELLED_OFFSET, MAX_DIFFICULTY_TRAVELLED_OFFSET);
         ModConfigSpec.BooleanValue difficultyAffectsBabyMobs = b
                 .comment("When true, baby mobs (zombies, piglins, etc.) also receive difficulty gear and effects. Default false to avoid silly visuals (baby zombies in netherite).")
                 .define("difficultyAffectsBabyMobs", DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS);
@@ -260,7 +260,7 @@ public final class DungeonTrainConfig {
                         MIN_INTRO_DURATION_TICKS, MAX_INTRO_DURATION_TICKS);
         b.pop();
         return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
-                difficultyEnabled, carriagesPerTier, difficultyTierOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
+                difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
@@ -313,13 +313,15 @@ public final class DungeonTrainConfig {
     }
 
     /**
-     * Signed offset added to the automatic difficulty tier for mob gearing and villager
-     * trade caps ({@code effective = max(0, autoTier + offset)}). 0 (default) = no
-     * adjustment. Re-anchored by {@code /dungeontrain difficulty <tier>}; cleared to 0 by
+     * Signed offset (in carriages) added to every player's live travelled-carriage
+     * progress for difficulty purposes — the game behaves as if each player had
+     * travelled this many extra carriages (shifts HUD, onboarding, mob gear, trades,
+     * achievements, Discord). 0 (default) = no adjustment. Re-anchored by
+     * {@code /dungeontrain difficulty <tier>}; cleared to 0 by
      * {@code /dungeontrain difficulty auto}.
      */
-    public static int getDifficultyTierOffset() {
-        return isLoaded() ? DIFFICULTY_TIER_OFFSET.get() : DEFAULT_DIFFICULTY_TIER_OFFSET;
+    public static int getDifficultyTravelledOffset() {
+        return isLoaded() ? DIFFICULTY_TRAVELLED_OFFSET.get() : DEFAULT_DIFFICULTY_TRAVELLED_OFFSET;
     }
 
     public static boolean getDifficultyAffectsBabyMobs() {
@@ -456,12 +458,12 @@ public final class DungeonTrainConfig {
         CARRIAGES_PER_TIER.save();
     }
 
-    /** Sets the difficulty-tier offset directly; pass 0 to clear it (fully automatic). */
-    public static void setDifficultyTierOffset(int value) {
+    /** Sets the difficulty travelled-carriage offset directly; pass 0 to clear it (fully automatic). */
+    public static void setDifficultyTravelledOffset(int value) {
         if (!isLoaded()) return;
-        int clamped = Math.max(MIN_DIFFICULTY_TIER_OFFSET, Math.min(MAX_DIFFICULTY_TIER_OFFSET, value));
-        DIFFICULTY_TIER_OFFSET.set(clamped);
-        DIFFICULTY_TIER_OFFSET.save();
+        int clamped = Math.max(MIN_DIFFICULTY_TRAVELLED_OFFSET, Math.min(MAX_DIFFICULTY_TRAVELLED_OFFSET, value));
+        DIFFICULTY_TRAVELLED_OFFSET.set(clamped);
+        DIFFICULTY_TRAVELLED_OFFSET.save();
     }
 
     public static void setDifficultyAffectsBabyMobs(boolean value) {
@@ -480,7 +482,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue groupSize,
             ModConfigSpec.BooleanValue difficultyEnabled,
             ModConfigSpec.IntValue carriagesPerTier,
-            ModConfigSpec.IntValue difficultyTierOffset,
+            ModConfigSpec.IntValue difficultyTravelledOffset,
             ModConfigSpec.BooleanValue difficultyAffectsBabyMobs,
             ModConfigSpec.IntValue progressionLevelDelay,
             ModConfigSpec.BooleanValue firstLevelNoHostiles,

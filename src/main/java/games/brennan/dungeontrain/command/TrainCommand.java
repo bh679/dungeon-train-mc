@@ -42,9 +42,11 @@ import java.util.UUID;
  *     count, persists to config, and resizes any active train live (rolling
  *     window grows or shrinks on the next tick).
  *   - {@code /dungeontrain difficulty [<tier>|auto]} — bare form reports the
- *     current effective tier; {@code <tier>} re-anchors a persistent offset so
- *     mob gearing and villager trade caps read exactly that tier right now
- *     (drifting with travelled distance afterward, until re-anchored again);
+ *     current effective tier; {@code <tier>} re-anchors a persistent
+ *     travelled-carriage offset so the game treats every player as if they'd
+ *     travelled far enough to be exactly that tier right now — shifting the HUD,
+ *     onboarding stages, mob gear, villager trades, carriage achievements, and
+ *     Discord together (drifting with real travel afterward, until re-anchored);
  *     {@code auto} clears the offset, resuming fully automatic scaling.
  */
 public final class TrainCommand {
@@ -196,40 +198,43 @@ public final class TrainCommand {
 
     private static int runDifficulty(CommandSourceStack source, int requestedTier) {
         ServerLevel level = source.getLevel();
-        int autoTier = DifficultyProgression.tierForTravelled(DifficultyProgression.maxTravelledCarriageIndex(level));
-        int offset = requestedTier - autoTier;
-        DungeonTrainConfig.setDifficultyTierOffset(offset);
+        int rawTravelled = DifficultyProgression.rawMaxTravelledCarriageIndex(level);
+        int offset = DifficultyProgression.travelledOffsetForRequestedTier(
+            requestedTier, rawTravelled,
+            DungeonTrainConfig.getCarriagesPerTier(), DungeonTrainConfig.getProgressionLevelDelay());
+        DungeonTrainConfig.setDifficultyTravelledOffset(offset);
 
-        LOGGER.info("[DungeonTrain] /dungeontrain difficulty {} — offset set to {} (automatic tier {}); newly-spawned mobs and trades now at tier {}",
-            requestedTier, offset, autoTier, requestedTier);
+        LOGGER.info("[DungeonTrain] /dungeontrain difficulty {} — travelled-offset set to {} (raw progress {} carriages); treating players as difficulty {}",
+            requestedTier, offset, rawTravelled, requestedTier);
         source.sendSuccess(() -> Component.literal(
-            "Difficulty level set to " + requestedTier + " (automatic tier " + autoTier + " " + formatSigned(offset) + " offset)."
-                + " The offset stays fixed as you travel, so the effective level will drift away from " + requestedTier
-                + " as the automatic tier changes — run this again any time to re-anchor it, or 'difficulty auto' to clear it entirely."
-                + " Only newly-spawned mobs and villager trades are affected; already-spawned mobs keep their existing gear."
+            "Difficulty level set to " + requestedTier + " — the game now treats everyone as if they'd travelled "
+                + formatSigned(offset) + " carriages, so the HUD, mob spawns, onboarding stages, loot, and villager"
+                + " trades all shift to match. The offset stays fixed as you travel, so the effective level drifts"
+                + " with real progress — run this again to re-anchor it, or 'difficulty auto' to clear it."
+                + " Already-spawned mobs keep their existing gear."
         ), true);
         return 1;
     }
 
     private static int runDifficultyAuto(CommandSourceStack source) {
-        DungeonTrainConfig.setDifficultyTierOffset(DungeonTrainConfig.DEFAULT_DIFFICULTY_TIER_OFFSET);
+        DungeonTrainConfig.setDifficultyTravelledOffset(DungeonTrainConfig.DEFAULT_DIFFICULTY_TRAVELLED_OFFSET);
 
-        LOGGER.info("[DungeonTrain] /dungeontrain difficulty auto — offset cleared; resuming fully automatic scaling");
+        LOGGER.info("[DungeonTrain] /dungeontrain difficulty auto — travelled-offset cleared; resuming fully automatic scaling");
         source.sendSuccess(() -> Component.literal(
-            "Difficulty offset cleared. Mob gearing and villager trades now follow the automatic tier exactly."
+            "Difficulty offset cleared. Everything now follows your real travelled distance again."
         ), true);
         return 1;
     }
 
     private static int runDifficultyStatus(CommandSourceStack source) {
         ServerLevel level = source.getLevel();
-        int offset = DungeonTrainConfig.getDifficultyTierOffset();
-        int autoTier = DifficultyProgression.tierForTravelled(DifficultyProgression.maxTravelledCarriageIndex(level));
+        int offset = DungeonTrainConfig.getDifficultyTravelledOffset();
         int effective = DifficultyProgression.currentTier(level);
 
         String message = offset == 0
             ? "Difficulty level is " + effective + ", fully automatic (no offset)."
-            : "Difficulty level is " + effective + " (automatic tier " + autoTier + " " + formatSigned(offset) + " offset).";
+            : "Difficulty level is " + effective + " (offset " + formatSigned(offset)
+                + " carriages active — run 'difficulty auto' to clear).";
         source.sendSuccess(() -> Component.literal(message), false);
         return 1;
     }

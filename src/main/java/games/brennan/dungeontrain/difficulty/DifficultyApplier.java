@@ -112,9 +112,9 @@ public final class DifficultyApplier {
     public static boolean apply(Mob mob, int carriageIndex, RandomSource rng,
                                 boolean applyEffects, boolean scaleStatsByLevel) {
         // carriageIndex here is always live player progress (maxTravelledCarriageIndex),
-        // never a carriage's fixed position — safe to route through the difficulty-tier
-        // offset, unlike the position-keyed tierForTravelled call sites elsewhere.
-        int tierIndex = DifficultyProgression.effectiveTierForCurrentProgress(carriageIndex);
+        // which already folds in the difficulty travelled-offset at its source — so a
+        // plain tierForTravelled here picks up an admin offset without double-applying.
+        int tierIndex = DifficultyProgression.tierForTravelled(carriageIndex);
         // Tier 0 = vanilla baseline; no equipment, effects, or enchantments.
         // Real progression starts at tier 1 once the player has actually
         // travelled `carriagesPerTier` carriages while boarded.

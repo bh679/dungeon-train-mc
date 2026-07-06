@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.editor.BlockVariantPrefabStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsMenuController;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
+import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.editor.ContainerContentsRoller;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.EntityVariantApplicator;
@@ -231,8 +232,10 @@ public final class PrefabUseHandler {
         // — matches what the player would find in a naturally-generated carriage
         // at that distance, instead of always rolling as start-of-run.
         long worldSeed = serverLevel.getSeed();
-        int placedCarriageIndex = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
-            .travelledCarriageIndex();
+        // Effective (offset-inclusive) progress so a placed container rolls at the
+        // player's admin-set difficulty too, matching the naturally-generated carriages.
+        int placedCarriageIndex = DifficultyProgression.effectiveTravelled(
+            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex());
         CompoundTag baseNbt = be.saveWithFullMetadata(serverLevel.registryAccess());
         CompoundTag rolled = ContainerContentsRoller.roll(
             loaded.get().pool(), placedState, pos, worldSeed, placedCarriageIndex, baseNbt,
