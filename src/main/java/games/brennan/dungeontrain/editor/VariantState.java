@@ -174,6 +174,15 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
             && difficulty.isDefault();
     }
 
+    /**
+     * Return a copy with {@code state} (and its block-entity payload) replaced — the stage-wide
+     * block-replace rewrite. Every other field (weight, rotation, loot link, half, difficulty)
+     * is preserved. Not meaningful for mob entries (their state is the sentinel).
+     */
+    public VariantState withState(BlockState newState, @Nullable CompoundTag newBlockEntityNbt) {
+        return new VariantState(newState, newBlockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty);
+    }
+
     /** Return a copy with {@code weight} replaced (clamped ≥ 1 by the canonical constructor). */
     public VariantState withWeight(int newWeight) {
         return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId, entityId, half, difficulty);

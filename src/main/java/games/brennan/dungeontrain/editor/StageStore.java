@@ -190,6 +190,7 @@ public final class StageStore {
     public static synchronized void clearCache() {
         current = Collections.emptyMap();
         WARNED_MISSING.clear();
+        StageBlockIndex.invalidateAll();
     }
 
     // ---------- mutators (write-through) ----------
@@ -272,6 +273,7 @@ public final class StageStore {
      */
     private static void write(Map<String, Stage> stages) throws IOException {
         writeJson(configPath(), configDelta(stages, bundled));
+        StageBlockIndex.invalidateAll();
         trySaveToSource(stages);
     }
 

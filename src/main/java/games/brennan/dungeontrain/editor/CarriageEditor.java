@@ -216,6 +216,17 @@ public final class CarriageEditor {
     }
 
     /**
+     * Stamp every registered carriage plot — the whole-row refresh the per-stage preview uses when
+     * the focused stage (or the stage-linked content) changes. Callers gate on the CARRIAGES
+     * category being stamped; see {@code EditorCommand.restampCarriagePlotsForStage}.
+     */
+    public static void stampAllPlots(ServerLevel overworld, CarriageDims dims) {
+        for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
+            stampPlot(overworld, variant, dims);
+        }
+    }
+
+    /**
      * Erase + re-stamp the dirty slice of the +X row after a variant has been
      * removed from {@link CarriageVariantRegistry}. {@code oldDeletedIndex} is
      * the registry index the variant occupied <b>before</b> {@code unregister},

@@ -568,13 +568,38 @@ public final class CarriagePartEditor {
      * Stamp every registered part plot across all four kinds. Called by the
      * CARRIAGES editor-category entry so switching into the category paints
      * the full 2D parts grid alongside the carriage plots.
+     *
+     * <p>When {@link EditorPartsStageFilter} is active and a stage is
+     * {@linkplain EditorStageSelection#effective() effective}, plots whose
+     * {@code (kind, name)} is not linked to that stage are aired out instead
+     * (footprint erased, bedrock cage kept so the slot still reads as a
+     * plot — the parts-grid analogue of the carriage preview airing unlinked
+     * slots). {@link #stampPlot} itself stays unfiltered so entering or
+     * saving a hidden part still paints it.</p>
      */
     public static void stampAllPlots(ServerLevel level, CarriageDims dims) {
+        java.util.Set<StageBlockIndex.PartRef> used = null;
+        if (EditorPartsStageFilter.isActive()) {
+            String stageId = EditorStageSelection.effective();
+            if (stageId != null) used = java.util.Set.copyOf(StageBlockIndex.partsForStage(stageId));
+        }
         for (CarriagePartKind kind : CarriagePartKind.values()) {
             for (String name : CarriagePartRegistry.registeredNames(kind)) {
-                stampPlot(level, kind, name, dims);
+                if (used == null || used.contains(new StageBlockIndex.PartRef(kind, name))) {
+                    stampPlot(level, kind, name, dims);
+                } else {
+                    airOutPlot(level, kind, name, dims);
+                }
             }
         }
+    }
+
+    /** Erase a plot's footprint but keep (re-draw) the bedrock cage — the filtered-out state. */
+    private static void airOutPlot(ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims) {
+        BlockPos origin = plotOrigin(kind, name, dims);
+        if (origin == null) return;
+        CarriagePartPlacer.eraseAt(level, origin, kind, dims);
+        setOutline(level, origin, kind, dims);
     }
 
     /**

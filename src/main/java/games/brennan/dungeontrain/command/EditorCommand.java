@@ -59,6 +59,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -228,6 +229,27 @@ public final class EditorCommand {
             for (String id : games.brennan.dungeontrain.editor.StageStore.allIds()) builder.suggest(id);
             return builder.buildFuture();
         };
+
+    /** Blocks used by the previously-typed stage — for {@code stage replaceblock <id> <from>}. */
+    private static final SuggestionProvider<CommandSourceStack> STAGE_BLOCK_SUGGESTIONS =
+        (ctx, builder) -> {
+            try {
+                String id = StringArgumentType.getString(ctx, "id");
+                ServerLevel overworld = ctx.getSource().getServer().overworld();
+                for (String blockId : games.brennan.dungeontrain.editor.StageBlockIndex
+                        .blocksForStage(overworld, id).aggregatedBlockIds()) {
+                    builder.suggest(blockId);
+                }
+            } catch (IllegalArgumentException ignored) {
+                // "id" not parsed yet — nothing to suggest.
+            }
+            return builder.buildFuture();
+        };
+
+    /** Every registered block id — for {@code stage replaceblock … <to>}. */
+    private static final SuggestionProvider<CommandSourceStack> ALL_BLOCK_SUGGESTIONS =
+        (ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggestResource(
+            net.minecraft.core.registries.BuiltInRegistries.BLOCK.keySet(), builder);
 
     private static final SuggestionProvider<CommandSourceStack> PART_KIND_SUGGESTIONS =
         (ctx, builder) -> {
@@ -1117,6 +1139,28 @@ public final class EditorCommand {
                 .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGE_SUGGESTIONS)
                     .executes(c -> runStageSelect(c.getSource(), StringArgumentType.getString(c, "id")))))
             .then(Commands.literal("deselect").executes(c -> runStageDeselect(c.getSource())))
+            // Duplicate a stage WITH its content set: part copies + duplicated .parts.json entries.
+            .then(Commands.literal("duplicate")
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGE_SUGGESTIONS)
+                    .executes(c -> runStageDuplicate(c.getSource(), StringArgumentType.getString(c, "id"), null))
+                    .then(Commands.argument("newid", StringArgumentType.word())
+                        .executes(c -> runStageDuplicate(c.getSource(), StringArgumentType.getString(c, "id"),
+                            StringArgumentType.getString(c, "newid"))))))
+            // Chat listing of the stage's parts and their unique blocks (debug / discoverability).
+            .then(Commands.literal("blocks")
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGE_SUGGESTIONS)
+                    .executes(c -> runStageBlocks(c.getSource(), StringArgumentType.getString(c, "id")))))
+            // Stage-wide block replacement across every linked part (structural NBT + variant sidecars).
+            .then(Commands.literal("replaceblock")
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGE_SUGGESTIONS)
+                    .then(Commands.argument("from", ResourceLocationArgument.id()).suggests(STAGE_BLOCK_SUGGESTIONS)
+                        .then(Commands.argument("to", ResourceLocationArgument.id()).suggests(ALL_BLOCK_SUGGESTIONS)
+                            .executes(c -> runStageReplaceBlock(c.getSource(),
+                                StringArgumentType.getString(c, "id"),
+                                ResourceLocationArgument.getId(c, "from"),
+                                ResourceLocationArgument.getId(c, "to")))))))
+            // Toggle "hide part plots not used by the focused stage" on the parts grid.
+            .then(Commands.literal("filterparts").executes(c -> runStageFilterParts(c.getSource())))
             // Gate editing for a stage reuses the shared min/max/phase builders, keyed on the stage id.
             .then(minLevelSingle(STAGE_SUGGESTIONS, EditorCommand::applyStageGate))
             .then(maxLevelSingle(STAGE_SUGGESTIONS, EditorCommand::applyStageGate))
@@ -1262,6 +1306,10 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.EditorStageSelection.clear();
         }
         restampCarriagePlotsForStage(source);
+        // The parts-grid filter tracks the focused stage — repaint it too when active.
+        if (games.brennan.dungeontrain.editor.EditorPartsStageFilter.isActive()) {
+            restampPartsGridForStage(source);
+        }
         if (nowSelected) {
             source.sendSuccess(() -> Component.literal("Editor: previewing carriages for stage '" + id
                 + "'. Added parts default to this stage.").withStyle(ChatFormatting.GREEN), false);
@@ -1276,9 +1324,121 @@ public final class EditorCommand {
     private static int runStageDeselect(CommandSourceStack source) {
         games.brennan.dungeontrain.editor.EditorStageSelection.clear();
         restampCarriagePlotsForStage(source);
+        if (games.brennan.dungeontrain.editor.EditorPartsStageFilter.isActive()) {
+            restampPartsGridForStage(source);
+        }
         source.sendSuccess(() -> Component.literal("Editor: stage preview off.")
             .withStyle(ChatFormatting.YELLOW), false);
         return 1;
+    }
+
+    /**
+     * Duplicate stage {@code rawId} (and its parts + assignment entries) as {@code rawNewId}, or an
+     * auto-derived {@code <id>_copy} when {@code rawNewId} is null. Full engine in
+     * {@link games.brennan.dungeontrain.editor.StageDuplicator}.
+     */
+    private static int runStageDuplicate(CommandSourceStack source, String rawId, String rawNewId) {
+        try {
+            games.brennan.dungeontrain.editor.StageDuplicator.Result r =
+                games.brennan.dungeontrain.editor.StageDuplicator.duplicate(
+                    source.getServer().overworld(), rawId, rawNewId);
+            String skippedNote = r.skippedParts().isEmpty() ? ""
+                : ", " + r.skippedParts().size() + " part(s) skipped (missing template)";
+            source.sendSuccess(() -> Component.literal("Editor: duplicated stage '" + r.sourceStageId()
+                + "' → '" + r.newStageId() + "' — " + r.partCopies().size() + " part(s) copied, "
+                + r.entriesAdded() + " assignment entr" + (r.entriesAdded() == 1 ? "y" : "ies")
+                + " added across " + r.touchedVariantIds().size() + " template(s)" + skippedNote + ".")
+                .withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "stage duplicate", rawId, t);
+        }
+    }
+
+    /** Chat listing of a stage's linked parts and their unique blocks. */
+    private static int runStageBlocks(CommandSourceStack source, String rawId) {
+        String id = rawId == null ? "" : rawId.toLowerCase(java.util.Locale.ROOT);
+        if (!games.brennan.dungeontrain.editor.StageStore.exists(id)) {
+            source.sendFailure(Component.literal("No such stage: " + rawId).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        games.brennan.dungeontrain.editor.StageBlockIndex.StageBlocks blocks =
+            games.brennan.dungeontrain.editor.StageBlockIndex.blocksForStage(
+                source.getServer().overworld(), id);
+        if (blocks.parts().isEmpty()) {
+            source.sendSuccess(() -> Component.literal("Editor: stage '" + id
+                + "' has no linked parts.").withStyle(ChatFormatting.GRAY), false);
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("Editor: stage '" + id + "' uses "
+            + blocks.parts().size() + " part(s), " + blocks.aggregatedBlockIds().size()
+            + " unique block(s):").withStyle(ChatFormatting.AQUA), false);
+        for (games.brennan.dungeontrain.editor.StageBlockIndex.PartBlocks pb : blocks.parts()) {
+            source.sendSuccess(() -> Component.literal("  • " + pb.part().kind().id() + ":"
+                + pb.part().name() + " — " + String.join(", ", pb.blockIds()))
+                .withStyle(ChatFormatting.GRAY), false);
+        }
+        return blocks.parts().size();
+    }
+
+    /** Stage-wide block replacement — see {@link games.brennan.dungeontrain.editor.StageBlockReplacer}. */
+    private static int runStageReplaceBlock(CommandSourceStack source, String rawId,
+                                            net.minecraft.resources.ResourceLocation fromId,
+                                            net.minecraft.resources.ResourceLocation toId) {
+        try {
+            java.util.Optional<net.minecraft.world.level.block.Block> from =
+                net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(fromId);
+            java.util.Optional<net.minecraft.world.level.block.Block> to =
+                net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(toId);
+            if (from.isEmpty() || to.isEmpty()) {
+                source.sendFailure(Component.literal("Unknown block: "
+                    + (from.isEmpty() ? fromId : toId)).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+            games.brennan.dungeontrain.editor.StageBlockReplacer.Result r =
+                games.brennan.dungeontrain.editor.StageBlockReplacer.replaceAcrossStage(
+                    source.getServer().overworld(), rawId.toLowerCase(java.util.Locale.ROOT),
+                    from.get(), to.get());
+            if (r.isEmpty()) {
+                source.sendSuccess(() -> Component.literal("Editor: no occurrences of " + fromId
+                    + " in stage '" + rawId + "'.").withStyle(ChatFormatting.YELLOW), false);
+                return 0;
+            }
+            source.sendSuccess(() -> Component.literal("Editor: replaced " + fromId + " → " + toId
+                + " across " + r.partsTouched().size() + " part(s) ("
+                + r.paletteStatesRewritten() + " structural, " + r.sidecarStatesRewritten()
+                + " variant state(s)). Plots re-stamped — unsaved plot edits were reset.")
+                .withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "stage replaceblock", rawId, t);
+        }
+    }
+
+    /** Toggle the parts-grid stage filter and repaint the grid. */
+    private static int runStageFilterParts(CommandSourceStack source) {
+        boolean active = games.brennan.dungeontrain.editor.EditorPartsStageFilter.toggle();
+        restampPartsGridForStage(source);
+        if (active) {
+            source.sendSuccess(() -> Component.literal(
+                "Editor: parts grid filtered to the focused stage's parts.")
+                .withStyle(ChatFormatting.GREEN), false);
+        } else {
+            source.sendSuccess(() -> Component.literal("Editor: parts grid filter off.")
+                .withStyle(ChatFormatting.YELLOW), false);
+        }
+        return 1;
+    }
+
+    /**
+     * Repaint the parts grid so the {@link games.brennan.dungeontrain.editor.EditorPartsStageFilter}
+     * state is reflected — same CARRIAGES-stamped guard as {@link #restampCarriagePlotsForStage}.
+     */
+    private static void restampPartsGridForStage(CommandSourceStack source) {
+        if (EditorStampedCategoryState.current().orElse(null) != EditorCategory.CARRIAGES) return;
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        CarriagePartEditor.stampAllPlots(overworld, dims);
     }
 
     /**
