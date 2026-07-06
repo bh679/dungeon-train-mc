@@ -7,7 +7,7 @@
         {
           "type": "minecraft:item",
           "name": "minecraft:wheat",
-          "weight": 18
+          "weight": 19
         },
         {
           "type": "minecraft:item",
@@ -17,17 +17,17 @@
         {
           "type": "minecraft:item",
           "name": "minecraft:carrot",
-          "weight": 16
+          "weight": 15
         },
         {
           "type": "minecraft:item",
           "name": "minecraft:bread",
-          "weight": 10
+          "weight": 9
         },
         {
           "type": "minecraft:item",
           "name": "minecraft:apple",
-          "weight": 2
+          "weight": 4
         }
       ]
     }

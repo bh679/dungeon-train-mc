@@ -12,10 +12,13 @@ import net.minecraft.server.level.ServerLevel;
  * out-of-phase candidates from the weighted pool <b>before</b> the weighted pick — the same shape
  * as the mob difficulty-band drop, one layer up.
  *
- * <p>Both fields are pure functions of position (carriage pIdx / world-X) + live config, so the
- * gated pool is deterministic and reproducible across reloads, and the block pass and deferred
- * entity pass of the same carriage resolve an identical context without sharing extra state. A
- * {@code null} {@code GateContext} (passed by editor previews / tests) means "no gating".</p>
+ * <p>Both fields are functions of position (carriage pIdx / world-X) + live config, so the gated
+ * pool is reproducible across reloads (for a given config) and the block pass and deferred entity
+ * pass of the same carriage resolve an identical context without sharing extra state. The Diff-Level
+ * axis additionally folds in the {@code /dungeontrain difficulty} offset (via
+ * {@link DifficultyProgression#positionTier}), so an admin difficulty shift re-themes the carriage
+ * stage generated ahead; the {@link TrainPhase phase} axis is offset-free (dimension bands never
+ * move). A {@code null} {@code GateContext} (passed by editor previews / tests) means "no gating".</p>
  */
 public record GateContext(int level, TrainPhase phase) {
 
@@ -101,7 +104,7 @@ public record GateContext(int level, TrainPhase phase) {
      */
     public static GateContext forCarriage(ServerLevel level, int carriagePIdx, int carriageLength) {
         int groupSize = DungeonTrainWorldData.get(level.getServer().overworld()).getGenerationConfig().groupSize();
-        int diffLevel = DifficultyProgression.tierForTravelled(groupAnchorPIdx(carriagePIdx, groupSize));
+        int diffLevel = DifficultyProgression.positionTier(groupAnchorPIdx(carriagePIdx, groupSize));
         TrainPhase phase = TrainPhase.phaseAt(level.getServer().overworld(),
             groupRealStartX(carriagePIdx, groupSize, carriageLength));
         return new GateContext(diffLevel, phase);
@@ -137,7 +140,7 @@ public record GateContext(int level, TrainPhase phase) {
             return forCarriage(level, carriagePIdx, carriageLength);
         }
         int groupSize = DungeonTrainWorldData.get(level.getServer().overworld()).getGenerationConfig().groupSize();
-        int diffLevel = DifficultyProgression.tierForTravelled(groupAnchorPIdx(carriagePIdx, groupSize));
+        int diffLevel = DifficultyProgression.positionTier(groupAnchorPIdx(carriagePIdx, groupSize));
         TrainPhase phase = TrainPhase.phaseAt(level.getServer().overworld(), groupAnchorWorldX);
         return new GateContext(diffLevel, phase);
     }

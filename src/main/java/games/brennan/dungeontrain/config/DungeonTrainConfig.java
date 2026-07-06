@@ -49,6 +49,12 @@ public final class DungeonTrainConfig {
     public static final int MIN_CARRIAGES_PER_TIER = 1;
     public static final int MAX_CARRIAGES_PER_TIER = 1000;
     public static final int DEFAULT_CARRIAGES_PER_TIER = 20;
+    /** Max tier directly requestable via {@code /dungeontrain difficulty <tier>}. */
+    public static final int MAX_REQUESTED_DIFFICULTY_TIER = 1000;
+    /** Generous symmetric bound for the persisted travelled offset — it's always a computed (target - raw) difference, never set directly. */
+    public static final int MIN_DIFFICULTY_TRAVELLED_OFFSET = -1_000_000;
+    public static final int MAX_DIFFICULTY_TRAVELLED_OFFSET = 1_000_000;
+    public static final int DEFAULT_DIFFICULTY_TRAVELLED_OFFSET = 0;
     public static final boolean DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS = false;
     public static final int MIN_PROGRESSION_LEVEL_DELAY = 0;
     public static final int MAX_PROGRESSION_LEVEL_DELAY = 100;
@@ -70,6 +76,8 @@ public final class DungeonTrainConfig {
     public static final boolean DEFAULT_DEATH_REPORT_TO_DISCORD = true;
 
     public static final boolean DEFAULT_FREE_PLAY_NOTICE_TO_DISCORD = true;
+
+    public static final boolean DEFAULT_DEV_MESSAGE_CONSENT_TO_DISCORD = true;
 
     public static final boolean DEFAULT_ECHO_ENCOUNTER_TO_DISCORD = true;
 
@@ -93,6 +101,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.IntValue GROUP_SIZE;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_ENABLED;
     public static final ModConfigSpec.IntValue CARRIAGES_PER_TIER;
+    public static final ModConfigSpec.IntValue DIFFICULTY_TRAVELLED_OFFSET;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_AFFECTS_BABY_MOBS;
     public static final ModConfigSpec.IntValue PROGRESSION_LEVEL_DELAY;
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_NO_HOSTILES;
@@ -103,6 +112,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.IntValue RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN;
     public static final ModConfigSpec.BooleanValue DEATH_REPORT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue FREE_PLAY_NOTICE_TO_DISCORD;
+    public static final ModConfigSpec.BooleanValue DEV_MESSAGE_CONSENT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue ECHO_ENCOUNTER_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue WORLD_JOIN_REPORT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
@@ -122,6 +132,7 @@ public final class DungeonTrainConfig {
         GROUP_SIZE = pair.getLeft().groupSize;
         DIFFICULTY_ENABLED = pair.getLeft().difficultyEnabled;
         CARRIAGES_PER_TIER = pair.getLeft().carriagesPerTier;
+        DIFFICULTY_TRAVELLED_OFFSET = pair.getLeft().difficultyTravelledOffset;
         DIFFICULTY_AFFECTS_BABY_MOBS = pair.getLeft().difficultyAffectsBabyMobs;
         PROGRESSION_LEVEL_DELAY = pair.getLeft().progressionLevelDelay;
         FIRST_LEVEL_NO_HOSTILES = pair.getLeft().firstLevelNoHostiles;
@@ -132,6 +143,7 @@ public final class DungeonTrainConfig {
         RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN = pair.getLeft().randomBookFromBookshelfOneIn;
         DEATH_REPORT_TO_DISCORD = pair.getLeft().deathReportToDiscord;
         FREE_PLAY_NOTICE_TO_DISCORD = pair.getLeft().freePlayNoticeToDiscord;
+        DEV_MESSAGE_CONSENT_TO_DISCORD = pair.getLeft().devMessageConsentToDiscord;
         ECHO_ENCOUNTER_TO_DISCORD = pair.getLeft().echoEncounterToDiscord;
         WORLD_JOIN_REPORT_TO_DISCORD = pair.getLeft().worldJoinReportToDiscord;
         DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = pair.getLeft().difficultyLevelNoticeToDiscord;
@@ -174,6 +186,9 @@ public final class DungeonTrainConfig {
         ModConfigSpec.IntValue carriagesPerTier = b
                 .comment("Number of carriages per tier step. tierIndex = floor(abs(pIdx) / carriagesPerTier), clamped to the loaded tier list. Game default 20; set to 1 for fast-paced/testing progression.")
                 .defineInRange("carriagesPerTier", DEFAULT_CARRIAGES_PER_TIER, MIN_CARRIAGES_PER_TIER, MAX_CARRIAGES_PER_TIER);
+        ModConfigSpec.IntValue difficultyTravelledOffset = b
+                .comment("Signed offset (in carriages) added to every player's live travelled-carriage progress for difficulty purposes: the game behaves as if each player had travelled this many extra carriages. Shifts the boarding HUD (Diff-Car + Diff-Level), the onboarding stages (no-hostiles/slimes), mob gearing, villager trade caps, carriage-distance achievements, and Discord level-up posts — all together. 0 (default) = fully automatic. Set via /dungeontrain difficulty <tier>, which recomputes this as (target carriages for the requested tier - current raw progress) so the effective tier becomes exactly what was requested at that moment; the offset then stays fixed while real travel keeps moving the effective value, until the next command invocation re-anchors it. /dungeontrain difficulty auto resets this to 0. Does NOT affect the deterministic per-carriage world-gen tier (that keys off carriage position, not player progress).")
+                .defineInRange("difficultyTravelledOffset", DEFAULT_DIFFICULTY_TRAVELLED_OFFSET, MIN_DIFFICULTY_TRAVELLED_OFFSET, MAX_DIFFICULTY_TRAVELLED_OFFSET);
         ModConfigSpec.BooleanValue difficultyAffectsBabyMobs = b
                 .comment("When true, baby mobs (zombies, piglins, etc.) also receive difficulty gear and effects. Default false to avoid silly visuals (baby zombies in netherite).")
                 .define("difficultyAffectsBabyMobs", DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS);
@@ -216,6 +231,12 @@ public final class DungeonTrainConfig {
                         "once per run/world. Requires the bundled Discord Presence mod with a webhookUrl configured in",
                         "config/discordpresence-server.toml.")
                 .define("freePlayNoticeToDiscord", DEFAULT_FREE_PLAY_NOTICE_TO_DISCORD);
+        ModConfigSpec.BooleanValue devMessageConsentToDiscord = b
+                .comment("Post a short embed to Discord for the Developer-message consent handshake: one when the",
+                        "in-game consent prompt is shown to a player (the Developer has a message waiting), and one",
+                        "when the player accepts (types @Dev). Both post into that player's Discord thread. Requires",
+                        "the bundled Discord Presence mod with a webhookUrl configured in config/discordpresence-server.toml.")
+                .define("devMessageConsentToDiscord", DEFAULT_DEV_MESSAGE_CONSENT_TO_DISCORD);
         ModConfigSpec.BooleanValue echoEncounterToDiscord = b
                 .comment("Post a short 'encounter story' to Discord when a player's run with a REMOTE echo ends — a",
                         "PlayerMob embodying a player who died in another world (requires PlayerMob + Discord Presence's",
@@ -249,10 +270,10 @@ public final class DungeonTrainConfig {
                         MIN_INTRO_DURATION_TICKS, MAX_INTRO_DURATION_TICKS);
         b.pop();
         return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
-                difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs, progressionLevelDelay,
+                difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
-                freePlayNoticeToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
+                freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks);
     }
 
@@ -299,6 +320,18 @@ public final class DungeonTrainConfig {
 
     public static int getCarriagesPerTier() {
         return isLoaded() ? CARRIAGES_PER_TIER.get() : DEFAULT_CARRIAGES_PER_TIER;
+    }
+
+    /**
+     * Signed offset (in carriages) added to every player's live travelled-carriage
+     * progress for difficulty purposes — the game behaves as if each player had
+     * travelled this many extra carriages (shifts HUD, onboarding, mob gear, trades,
+     * achievements, Discord). 0 (default) = no adjustment. Re-anchored by
+     * {@code /dungeontrain difficulty <tier>}; cleared to 0 by
+     * {@code /dungeontrain difficulty auto}.
+     */
+    public static int getDifficultyTravelledOffset() {
+        return isLoaded() ? DIFFICULTY_TRAVELLED_OFFSET.get() : DEFAULT_DIFFICULTY_TRAVELLED_OFFSET;
     }
 
     public static boolean getDifficultyAffectsBabyMobs() {
@@ -348,6 +381,11 @@ public final class DungeonTrainConfig {
     /** Whether to post a notice to Discord when a player's run enters Free Play (via the bundled Discord Presence mod). */
     public static boolean isFreePlayNoticeToDiscord() {
         return isLoaded() ? FREE_PLAY_NOTICE_TO_DISCORD.get() : DEFAULT_FREE_PLAY_NOTICE_TO_DISCORD;
+    }
+
+    /** Whether to post the Developer-message consent notices (requested / accepted) to Discord. */
+    public static boolean isDevMessageConsentToDiscord() {
+        return isLoaded() ? DEV_MESSAGE_CONSENT_TO_DISCORD.get() : DEFAULT_DEV_MESSAGE_CONSENT_TO_DISCORD;
     }
 
     /** Whether to post a remote-echo encounter story to Discord when such an encounter ends. */
@@ -435,6 +473,14 @@ public final class DungeonTrainConfig {
         CARRIAGES_PER_TIER.save();
     }
 
+    /** Sets the difficulty travelled-carriage offset directly; pass 0 to clear it (fully automatic). */
+    public static void setDifficultyTravelledOffset(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(MIN_DIFFICULTY_TRAVELLED_OFFSET, Math.min(MAX_DIFFICULTY_TRAVELLED_OFFSET, value));
+        DIFFICULTY_TRAVELLED_OFFSET.set(clamped);
+        DIFFICULTY_TRAVELLED_OFFSET.save();
+    }
+
     public static void setDifficultyAffectsBabyMobs(boolean value) {
         if (!isLoaded()) return;
         DIFFICULTY_AFFECTS_BABY_MOBS.set(value);
@@ -451,6 +497,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue groupSize,
             ModConfigSpec.BooleanValue difficultyEnabled,
             ModConfigSpec.IntValue carriagesPerTier,
+            ModConfigSpec.IntValue difficultyTravelledOffset,
             ModConfigSpec.BooleanValue difficultyAffectsBabyMobs,
             ModConfigSpec.IntValue progressionLevelDelay,
             ModConfigSpec.BooleanValue firstLevelNoHostiles,
@@ -461,6 +508,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue randomBookFromBookshelfOneIn,
             ModConfigSpec.BooleanValue deathReportToDiscord,
             ModConfigSpec.BooleanValue freePlayNoticeToDiscord,
+            ModConfigSpec.BooleanValue devMessageConsentToDiscord,
             ModConfigSpec.BooleanValue echoEncounterToDiscord,
             ModConfigSpec.BooleanValue worldJoinReportToDiscord,
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,

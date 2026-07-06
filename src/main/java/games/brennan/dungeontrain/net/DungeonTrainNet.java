@@ -112,6 +112,11 @@ public final class DungeonTrainNet {
         registrar.playToClient(CaptureEchoPacket.TYPE, CaptureEchoPacket.STREAM_CODEC, CaptureEchoPacket::handle);
         registrar.playToServer(EchoPhotoPacket.TYPE, EchoPhotoPacket.STREAM_CODEC, EchoPhotoPacket::handle);
 
+        // Developer-message consent: client → server login sync of persisted consent state;
+        // server → client push when consent is granted in-game so the client persists it.
+        registrar.playToServer(ConsentSyncPacket.TYPE, ConsentSyncPacket.STREAM_CODEC, ConsentSyncPacket::handle);
+        registrar.playToClient(ConsentUpdatePacket.TYPE, ConsentUpdatePacket.STREAM_CODEC, ConsentUpdatePacket::handle);
+
         // World disintegration band: server → joining player with the per-world
         // carriage length + train flag, so the client can fade the sky/fog toward
         // the End look across the band.
