@@ -27,7 +27,7 @@
         {
           "type": "minecraft:item",
           "name": "minecraft:apple",
-          "weight": 2
+          "weight": 3
         }
       ]
     }
