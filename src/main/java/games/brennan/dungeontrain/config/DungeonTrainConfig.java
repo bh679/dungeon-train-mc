@@ -77,6 +77,8 @@ public final class DungeonTrainConfig {
 
     public static final boolean DEFAULT_FREE_PLAY_NOTICE_TO_DISCORD = true;
 
+    public static final boolean DEFAULT_DEV_MESSAGE_CONSENT_TO_DISCORD = true;
+
     public static final boolean DEFAULT_ECHO_ENCOUNTER_TO_DISCORD = true;
 
     public static final boolean DEFAULT_WORLD_JOIN_REPORT_TO_DISCORD = true;
@@ -110,6 +112,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.IntValue RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN;
     public static final ModConfigSpec.BooleanValue DEATH_REPORT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue FREE_PLAY_NOTICE_TO_DISCORD;
+    public static final ModConfigSpec.BooleanValue DEV_MESSAGE_CONSENT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue ECHO_ENCOUNTER_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue WORLD_JOIN_REPORT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
@@ -140,6 +143,7 @@ public final class DungeonTrainConfig {
         RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN = pair.getLeft().randomBookFromBookshelfOneIn;
         DEATH_REPORT_TO_DISCORD = pair.getLeft().deathReportToDiscord;
         FREE_PLAY_NOTICE_TO_DISCORD = pair.getLeft().freePlayNoticeToDiscord;
+        DEV_MESSAGE_CONSENT_TO_DISCORD = pair.getLeft().devMessageConsentToDiscord;
         ECHO_ENCOUNTER_TO_DISCORD = pair.getLeft().echoEncounterToDiscord;
         WORLD_JOIN_REPORT_TO_DISCORD = pair.getLeft().worldJoinReportToDiscord;
         DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = pair.getLeft().difficultyLevelNoticeToDiscord;
@@ -227,6 +231,12 @@ public final class DungeonTrainConfig {
                         "once per run/world. Requires the bundled Discord Presence mod with a webhookUrl configured in",
                         "config/discordpresence-server.toml.")
                 .define("freePlayNoticeToDiscord", DEFAULT_FREE_PLAY_NOTICE_TO_DISCORD);
+        ModConfigSpec.BooleanValue devMessageConsentToDiscord = b
+                .comment("Post a short embed to Discord for the Developer-message consent handshake: one when the",
+                        "in-game consent prompt is shown to a player (the Developer has a message waiting), and one",
+                        "when the player accepts (types @Dev). Both post into that player's Discord thread. Requires",
+                        "the bundled Discord Presence mod with a webhookUrl configured in config/discordpresence-server.toml.")
+                .define("devMessageConsentToDiscord", DEFAULT_DEV_MESSAGE_CONSENT_TO_DISCORD);
         ModConfigSpec.BooleanValue echoEncounterToDiscord = b
                 .comment("Post a short 'encounter story' to Discord when a player's run with a REMOTE echo ends — a",
                         "PlayerMob embodying a player who died in another world (requires PlayerMob + Discord Presence's",
@@ -263,7 +273,7 @@ public final class DungeonTrainConfig {
                 difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
-                freePlayNoticeToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
+                freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks);
     }
 
@@ -371,6 +381,11 @@ public final class DungeonTrainConfig {
     /** Whether to post a notice to Discord when a player's run enters Free Play (via the bundled Discord Presence mod). */
     public static boolean isFreePlayNoticeToDiscord() {
         return isLoaded() ? FREE_PLAY_NOTICE_TO_DISCORD.get() : DEFAULT_FREE_PLAY_NOTICE_TO_DISCORD;
+    }
+
+    /** Whether to post the Developer-message consent notices (requested / accepted) to Discord. */
+    public static boolean isDevMessageConsentToDiscord() {
+        return isLoaded() ? DEV_MESSAGE_CONSENT_TO_DISCORD.get() : DEFAULT_DEV_MESSAGE_CONSENT_TO_DISCORD;
     }
 
     /** Whether to post a remote-echo encounter story to Discord when such an encounter ends. */
@@ -493,6 +508,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue randomBookFromBookshelfOneIn,
             ModConfigSpec.BooleanValue deathReportToDiscord,
             ModConfigSpec.BooleanValue freePlayNoticeToDiscord,
+            ModConfigSpec.BooleanValue devMessageConsentToDiscord,
             ModConfigSpec.BooleanValue echoEncounterToDiscord,
             ModConfigSpec.BooleanValue worldJoinReportToDiscord,
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,

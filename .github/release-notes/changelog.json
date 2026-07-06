@@ -3061,6 +3061,22 @@
       "released": true,
       "released_in": "v0.384.0",
       "released_at": "2026-07-04T10:04:28Z"
+    },
+    {
+      "id": "dev-message-consent",
+      "version": "0.385.0",
+      "type": "feat",
+      "title": "Consent prompt for Developer messages",
+      "summary": "If the developer sends you a message while you're in a world, you'll see a prompt asking if you want to receive it \u2014 type @Dev to accept. Once you accept, further messages from the developer show up in your chat automatically for the rest of your session (or for 20 minutes after you last replied). If you don't accept, the message is never shown in your in-game chat, but you can still find it in the main-menu chat panel.",
+      "highlights": [
+        "New: an opt-in prompt before Developer messages appear in your in-game chat",
+        "Accepting once keeps future messages flowing for the session (or ~20 minutes of activity)"
+      ],
+      "pr": 633,
+      "date": "2026-07-06",
+      "released": true,
+      "released_in": "v0.385.0",
+      "released_at": "2026-07-06T10:29:20Z"
     }
   ]
 }
