@@ -415,9 +415,10 @@ public class DungeonTrain {
             }
         }
 
-        // Feed relayed Discord messages from the dev into the remote-echo chat privacy guard via
-        // DiscordPresence's inbound-message seam (InboundDiscordHooks, discordpresence 0.41.0+).
-        // Tolerate a DP build predating the seam: degrade to the @-mention guard only.
+        // Feed relayed Discord messages from the dev into the remote-echo chat privacy guard and the
+        // in-game dev-message consent flow via DiscordPresence's inbound-message seams
+        // (InboundDiscordHooks 0.41.0+, DiscordCommandHooks 0.43.0+ — see DiscordInboundBridge).
+        // Tolerate a DP build predating either seam: degrade to whichever guard is still available.
         if (ModList.get().isLoaded("discordpresence")) {
             try {
                 DiscordInboundBridge.install();
