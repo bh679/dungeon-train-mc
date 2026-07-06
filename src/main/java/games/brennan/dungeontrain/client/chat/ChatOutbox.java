@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.DevMessageConsentClient;
 import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
@@ -76,6 +77,8 @@ public final class ChatOutbox {
         if (uuid == null || content == null || content.isBlank()) {
             return;
         }
+        // A main-menu chat message to the dev resets the dev-message-consent 20-minute window.
+        DevMessageConsentClient.noteMenuMessageToDev();
         ensureLoaded();
         String key = UUID.randomUUID().toString(); // dedup handle (see class doc); never collides
         pending.put(key, new Item(key, uuid.toString(), content));
