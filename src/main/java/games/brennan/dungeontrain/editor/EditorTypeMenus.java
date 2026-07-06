@@ -410,6 +410,27 @@ public final class EditorTypeMenus {
         );
     }
 
+    /** Z offset for the Stage Blocks panel — one wide slot past the Stages panel, same {@code -Z} side. */
+    private static final int STAGE_PANEL_Z_OFFSET = -18;
+
+    /**
+     * Anchor for the Stage Blocks panel (the "stage V menu") — the next sibling billboard past the
+     * Stages panel on the {@code -Z} strip at the editor door. Same fallthrough as
+     * {@link #stagesMenuAnchor}: {@code null} when no carriage variants are registered.
+     */
+    public static BlockPos stagePanelAnchor(CarriageDims dims) {
+        List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
+        if (variants.isEmpty()) return null;
+        BlockPos firstOrigin = CarriageEditor.plotOrigin(variants.get(0), dims);
+        if (firstOrigin == null) return null;
+        Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
+        return new BlockPos(
+            firstOrigin.getX() - MENU_GAP,
+            firstOrigin.getY() + footprint.getY() + Y_ANCHOR_LIFT,
+            firstOrigin.getZ() + footprint.getZ() / 2 + STAGE_PANEL_Z_OFFSET
+        );
+    }
+
     /**
      * The Stages management panel: one gated row per Stage (name + min/max/dimension cells, edited via
      * the {@code editor stage …} commands) plus a synthetic "+ New Stage" row whose name-cell click

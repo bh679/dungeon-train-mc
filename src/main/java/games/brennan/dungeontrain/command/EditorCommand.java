@@ -1242,6 +1242,9 @@ public final class EditorCommand {
                 games.brennan.dungeontrain.editor.EditorStageSelection.clear();
                 restampCarriagePlotsForStage(source);
             }
+            // Close any Stage Blocks panels showing the deleted stage.
+            games.brennan.dungeontrain.editor.StagePanelController.closeForStage(
+                source.getServer(), rawId);
             source.sendSuccess(() -> Component.literal("Editor: deleted stage '"
                 + rawId.toLowerCase(java.util.Locale.ROOT) + "'. Linked templates fall back to their inline gate.")
                 .withStyle(ChatFormatting.YELLOW), true);

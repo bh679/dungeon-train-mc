@@ -125,6 +125,15 @@ public final class VariantOverlayRenderer {
      */
     private static final Map<UUID, String> LAST_TYPE_MENUS_KEY = new HashMap<>();
 
+    /**
+     * Per-player dedup key for the Stages-panel block icon strips — just
+     * {@code StageBlockIndex.generation()}, which moves on any part/sidecar/
+     * assignment/stage mutation. Steady-state generates zero packets; the
+     * strip payload itself is read from the index's cache, never recomputed
+     * inside this per-tick path.
+     */
+    private static final Map<UUID, String> LAST_STAGE_STRIPS_KEY = new HashMap<>();
+
     private VariantOverlayRenderer() {}
 
     /**
@@ -145,6 +154,7 @@ public final class VariantOverlayRenderer {
         LAST_OUTLINE_SNAPSHOT_KEY.clear();
         LAST_PLOT_LABELS_KEY.clear();
         LAST_TYPE_MENUS_KEY.clear();
+        LAST_STAGE_STRIPS_KEY.clear();
     }
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -177,6 +187,7 @@ public final class VariantOverlayRenderer {
         clearOutlineIfStale(player);
         clearPlotLabelsIfStale(player);
         clearTypeMenusIfStale(player);
+        clearStageStripsIfStale(player);
     }
 
     /**
@@ -195,6 +206,7 @@ public final class VariantOverlayRenderer {
             pushLockIdSnapshot(player);
             pushPlotLabelsSnapshot(player, dims);
             pushTypeMenusSnapshot(player, dims);
+            pushStageStripsSnapshot(player, level);
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
@@ -731,6 +743,45 @@ public final class VariantOverlayRenderer {
     private static void clearTypeMenusIfStale(ServerPlayer player) {
         if (LAST_TYPE_MENUS_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player, EditorTypeMenusPacket.empty());
+        }
+    }
+
+    /**
+     * Push the Stages-panel block icon strips ({@link games.brennan.dungeontrain.net.StageBlockStripsPacket})
+     * when the stage-blocks index has changed since the player's last push. The dedup key is just
+     * the index {@link StageBlockIndex#generation() generation} — the payload builds from the
+     * index's cache, so steady-state ticks do no aggregation work and send nothing.
+     */
+    private static void pushStageStripsSnapshot(ServerPlayer player, ServerLevel level) {
+        UUID uuid = player.getUUID();
+        if (EditorStampedCategoryState.current().isEmpty()) {
+            clearStageStripsIfStale(player);
+            return;
+        }
+        String key = "g" + StageBlockIndex.generation();
+        if (key.equals(LAST_STAGE_STRIPS_KEY.get(uuid))) return;
+        LAST_STAGE_STRIPS_KEY.put(uuid, key);
+
+        java.util.List<games.brennan.dungeontrain.net.StageBlockStripsPacket.Strip> strips =
+            new java.util.ArrayList<>();
+        for (Map.Entry<String, java.util.List<String>> e
+                : StageBlockIndex.blockStripForAllStages(level).entrySet()) {
+            java.util.List<String> ids = e.getValue();
+            int cap = games.brennan.dungeontrain.net.StageBlockStripsPacket.STRIP_CAP;
+            java.util.List<String> capped = ids.size() <= cap
+                ? ids : java.util.List.copyOf(ids.subList(0, cap));
+            strips.add(new games.brennan.dungeontrain.net.StageBlockStripsPacket.Strip(
+                e.getKey(), capped, ids.size()));
+        }
+        DungeonTrainNet.sendTo(player,
+            new games.brennan.dungeontrain.net.StageBlockStripsPacket(strips));
+    }
+
+    /** Send the empty strips packet if the player previously had a non-empty snapshot. */
+    private static void clearStageStripsIfStale(ServerPlayer player) {
+        if (LAST_STAGE_STRIPS_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.StageBlockStripsPacket.empty());
         }
     }
 
