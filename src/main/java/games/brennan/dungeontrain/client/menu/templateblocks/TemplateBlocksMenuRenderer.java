@@ -30,9 +30,10 @@ import java.util.List;
 
 /**
  * World-space renderer for {@link TemplateBlocksMenu}. Draws a flat list of
- * blocks used in the plot — each row is {@code [icon] name ×count [Swap]} —
- * anchored at the server-supplied basis, wrapping into columns like the
- * block-variant menu. Mirrors the geometry / helpers of
+ * blocks used in the plot — each row is {@code [icon] name | count | [Swap]},
+ * with count in its own aligned column — anchored at the server-supplied
+ * basis, wrapping into columns like the block-variant menu. Mirrors the
+ * geometry / helpers of
  * {@link games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenuRenderer}.
  */
 @EventBusSubscriber(
@@ -59,9 +60,10 @@ public final class TemplateBlocksMenuRenderer {
 
     static final double ROW_HEIGHT = 0.30;
     static final double HEADER_HEIGHT = 0.34;
-    static final double COLUMN_WIDTH = 2.05;
+    static final double COLUMN_WIDTH = 2.43;
     static final double MIN_PANEL_WIDTH = 2.6;
     static final double SWAP_CELL_WIDTH = 0.60;
+    static final double COUNT_CELL_WIDTH = 0.38;
     static final double CLOSE_CELL_WIDTH = 0.42;
     static final double TEXT_SCALE = 0.012;
     static final double ICON_SIZE = 0.22;
@@ -154,17 +156,20 @@ public final class TemplateBlocksMenuRenderer {
 
             double swapR = colXL + colActualW - 0.02;
             double swapL = swapR - SWAP_CELL_WIDTH;
+            double countR = swapL - 0.02;
+            double countL = countR - COUNT_CELL_WIDTH;
 
             // Row body background (preview zone).
-            drawQuad(ps, buffer, colXL + 0.01, rowBot + 0.01, swapL - 0.01, rowTop - 0.01,
+            drawQuad(ps, buffer, colXL + 0.01, rowBot + 0.01, countL - 0.01, rowTop - 0.01,
                 rowHover ? 0x80FFCC33 : 0x20FFFFFF);
             // Swap button.
             drawQuad(ps, buffer, swapL + 0.01, rowBot + 0.02, swapR, rowTop - 0.02,
                 swapHover ? 0xC033FF88 : 0x50339955);
 
             drawBlockIcon(ps, buffer, entry.blockId(), colXL, rowCY);
-            String label = TemplateBlocksMenu.shortLabel(entry.blockId()) + "  x" + entry.count();
+            String label = TemplateBlocksMenu.shortLabel(entry.blockId());
             drawLeftText(ps, buffer, font, label, colXL + NAME_TEXT_LEFT_OFFSET, rowCY, 0xFFFFFFFF);
+            drawCenteredText(ps, buffer, font, "x" + entry.count(), (countL + countR) / 2.0, rowCY, 0xFFCCCCCC);
             drawCenteredText(ps, buffer, font, "Swap", (swapL + swapR) / 2.0, rowCY, 0xFFEAFFEA);
         }
     }

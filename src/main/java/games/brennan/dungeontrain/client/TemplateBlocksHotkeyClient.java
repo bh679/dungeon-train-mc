@@ -16,10 +16,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 /**
  * Client-side keymap for opening the template-blocks world-space menu.
  *
- * <p>Unbound by default (Z and C are already taken by the variant-place and
- * container-contents keys) — bind it from the vanilla Controls menu, or use
- * the primary trigger {@code /dungeontrain editor blocks}. A press toggles
- * the menu open/closed via {@link TemplateBlocksMenuTogglePacket}; the server
+ * <p>Defaults to V — rebindable from the vanilla Controls menu, or use the
+ * alternate trigger {@code /dungeontrain editor blocks}. A press toggles the
+ * menu open/closed via {@link TemplateBlocksMenuTogglePacket}; the server
  * validates that the player is OP and standing in an editor plot.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -31,7 +30,7 @@ public final class TemplateBlocksHotkeyClient {
     private static final KeyMapping KEY = new KeyMapping(
         NAME,
         InputConstants.Type.KEYSYM,
-        InputConstants.UNKNOWN.getValue(),
+        InputConstants.KEY_V,
         CATEGORY
     );
 
