@@ -86,10 +86,38 @@ public final class DifficultyProgression {
 
     /**
      * Current difficulty tier: {@link #maxTravelledCarriageIndex} mapped through
-     * {@link #tierForTravelled}. Returns 0 when no players are online.
+     * {@link #tierForTravelled}, then shifted by the
+     * {@link #effectiveTierForCurrentProgress difficulty-tier offset}. Returns 0 when
+     * no players are online and no offset is set.
      */
     public static int currentTier(ServerLevel serverLevel) {
-        return tierForTravelled(maxTravelledCarriageIndex(serverLevel));
+        return effectiveTierForCurrentProgress(maxTravelledCarriageIndex(serverLevel));
+    }
+
+    /**
+     * Live-progress tier for {@code rawMaxTravelled}: the automatic
+     * {@link #tierForTravelled} value plus the configured
+     * {@link DungeonTrainConfig#getDifficultyTierOffset() difficulty-tier offset},
+     * clamped to 0. {@code /dungeontrain difficulty <tier>} re-anchors the offset so
+     * the effective tier becomes exactly the requested value <em>at that moment</em> —
+     * the offset then stays fixed while the automatic tier keeps drifting with travelled
+     * distance, until the next command invocation re-anchors it (or
+     * {@code difficulty auto}, which resets the offset to 0). Only for call sites keyed
+     * on <em>live player progress</em> (mob gearing, villager trade caps) — never on a
+     * carriage's position/pIdx, which must stay deterministic for world generation and
+     * so calls {@link #tierForTravelled} directly instead.
+     */
+    static int effectiveTierForCurrentProgress(int rawMaxTravelled) {
+        return applyOffset(tierForTravelled(rawMaxTravelled), DungeonTrainConfig.getDifficultyTierOffset());
+    }
+
+    /**
+     * Pure offset application: {@code max(0, autoTier + offset)}. Extracted from
+     * {@link #effectiveTierForCurrentProgress} so the offset logic is unit-testable
+     * without a config/level bootstrap, mirroring {@link #effectiveTier}.
+     */
+    static int applyOffset(int autoTier, int offset) {
+        return Math.max(0, autoTier + offset);
     }
 
     /**

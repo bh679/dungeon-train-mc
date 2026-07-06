@@ -7,6 +7,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.event.CinematicIntroService;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
@@ -40,6 +41,11 @@ import java.util.UUID;
  *   - {@code /dungeontrain carriages <count>} — sets the default carriage
  *     count, persists to config, and resizes any active train live (rolling
  *     window grows or shrinks on the next tick).
+ *   - {@code /dungeontrain difficulty [<tier>|auto]} — bare form reports the
+ *     current effective tier; {@code <tier>} re-anchors a persistent offset so
+ *     mob gearing and villager trade caps read exactly that tier right now
+ *     (drifting with travelled distance afterward, until re-anchored again);
+ *     {@code auto} clears the offset, resuming fully automatic scaling.
  */
 public final class TrainCommand {
 
@@ -67,6 +73,13 @@ public final class TrainCommand {
             .then(Commands.literal("tracks")
                 .then(Commands.literal("on").executes(ctx -> runTracks(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runTracks(ctx.getSource(), false))))
+            .then(Commands.literal("difficulty")
+                .executes(ctx -> runDifficultyStatus(ctx.getSource()))
+                .then(Commands.argument("tier",
+                        IntegerArgumentType.integer(0, DungeonTrainConfig.MAX_REQUESTED_DIFFICULTY_TIER))
+                    .executes(ctx -> runDifficulty(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "tier"))))
+                .then(Commands.literal("auto")
+                    .executes(ctx -> runDifficultyAuto(ctx.getSource()))))
             .then(Commands.literal("cinematic")
                 .executes(ctx -> runCinematic(ctx.getSource(), CinematicIntroService.StartMode.SPAWN))
                 .then(Commands.literal("spawn")
@@ -179,6 +192,51 @@ public final class TrainCommand {
                 + ". Existing tracks are preserved; this only affects future chunk loads and per-tick scans."
         ), true);
         return 1;
+    }
+
+    private static int runDifficulty(CommandSourceStack source, int requestedTier) {
+        ServerLevel level = source.getLevel();
+        int autoTier = DifficultyProgression.tierForTravelled(DifficultyProgression.maxTravelledCarriageIndex(level));
+        int offset = requestedTier - autoTier;
+        DungeonTrainConfig.setDifficultyTierOffset(offset);
+
+        LOGGER.info("[DungeonTrain] /dungeontrain difficulty {} — offset set to {} (automatic tier {}); newly-spawned mobs and trades now at tier {}",
+            requestedTier, offset, autoTier, requestedTier);
+        source.sendSuccess(() -> Component.literal(
+            "Difficulty level set to " + requestedTier + " (automatic tier " + autoTier + " " + formatSigned(offset) + " offset)."
+                + " The offset stays fixed as you travel, so the effective level will drift away from " + requestedTier
+                + " as the automatic tier changes — run this again any time to re-anchor it, or 'difficulty auto' to clear it entirely."
+                + " Only newly-spawned mobs and villager trades are affected; already-spawned mobs keep their existing gear."
+        ), true);
+        return 1;
+    }
+
+    private static int runDifficultyAuto(CommandSourceStack source) {
+        DungeonTrainConfig.setDifficultyTierOffset(DungeonTrainConfig.DEFAULT_DIFFICULTY_TIER_OFFSET);
+
+        LOGGER.info("[DungeonTrain] /dungeontrain difficulty auto — offset cleared; resuming fully automatic scaling");
+        source.sendSuccess(() -> Component.literal(
+            "Difficulty offset cleared. Mob gearing and villager trades now follow the automatic tier exactly."
+        ), true);
+        return 1;
+    }
+
+    private static int runDifficultyStatus(CommandSourceStack source) {
+        ServerLevel level = source.getLevel();
+        int offset = DungeonTrainConfig.getDifficultyTierOffset();
+        int autoTier = DifficultyProgression.tierForTravelled(DifficultyProgression.maxTravelledCarriageIndex(level));
+        int effective = DifficultyProgression.currentTier(level);
+
+        String message = offset == 0
+            ? "Difficulty level is " + effective + ", fully automatic (no offset)."
+            : "Difficulty level is " + effective + " (automatic tier " + autoTier + " " + formatSigned(offset) + " offset).";
+        source.sendSuccess(() -> Component.literal(message), false);
+        return 1;
+    }
+
+    /** Formats a signed int with an explicit sign for non-negative values too, e.g. "+3" / "-4". */
+    private static String formatSigned(int value) {
+        return (value >= 0 ? "+" : "") + value;
     }
 
     private static int runCinematic(CommandSourceStack source, CinematicIntroService.StartMode requested) {

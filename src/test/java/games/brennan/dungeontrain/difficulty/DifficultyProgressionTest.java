@@ -93,6 +93,47 @@ final class DifficultyProgressionTest {
     }
 
     @Test
+    @DisplayName("applyOffset: zero offset leaves autoTier unchanged")
+    void applyOffset_zeroIsNoop() {
+        assertEquals(3, DifficultyProgression.applyOffset(3, 0));
+        assertEquals(0, DifficultyProgression.applyOffset(0, 0));
+    }
+
+    @Test
+    @DisplayName("applyOffset: a positive offset adds to autoTier")
+    void applyOffset_positiveAdds() {
+        assertEquals(10, DifficultyProgression.applyOffset(0, 10));
+        assertEquals(13, DifficultyProgression.applyOffset(3, 10));
+    }
+
+    @Test
+    @DisplayName("applyOffset: a negative offset subtracts from autoTier")
+    void applyOffset_negativeSubtracts() {
+        assertEquals(1, DifficultyProgression.applyOffset(5, -4));
+        assertEquals(2, DifficultyProgression.applyOffset(5, -3));
+    }
+
+    @Test
+    @DisplayName("applyOffset: clamps at 0 — a large negative offset never goes below 0")
+    void applyOffset_clampsAtZero() {
+        assertEquals(0, DifficultyProgression.applyOffset(2, -10));
+        assertEquals(0, DifficultyProgression.applyOffset(0, -1));
+    }
+
+    @Test
+    @DisplayName("applyOffset: re-anchoring worked example — 0->10, 0->3, travel to auto=2 drifts to 5, re-anchor to 1")
+    void applyOffset_reanchoringWorkedExample() {
+        // auto=0, request 10 -> offset=10, effective=10
+        assertEquals(10, DifficultyProgression.applyOffset(0, 10));
+        // auto=0, request 3 -> offset re-anchored to 3, effective=3
+        assertEquals(3, DifficultyProgression.applyOffset(0, 3));
+        // player travels forward, auto rises to 2; the SAME offset=3 now drifts the effective tier up to 5
+        assertEquals(5, DifficultyProgression.applyOffset(2, 3));
+        // re-anchor: request 1 while auto=2 -> new offset = 1-2 = -1, effective = max(0, 2-1) = 1
+        assertEquals(1, DifficultyProgression.applyOffset(2, -1));
+    }
+
+    @Test
     @DisplayName("downgradeLootId swaps the rich loot prefabs to starter when active")
     void downgradeLootId_swapsRichWhenActive() {
         assertEquals("starter", DifficultyProgression.downgradeLootId("loot", true));
