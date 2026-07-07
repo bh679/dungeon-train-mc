@@ -38,6 +38,16 @@
       "id": "copper",
       "weight": 7,
       "stage": "copper"
+    },
+    {
+      "id": "stone",
+      "weight": 7,
+      "stage": "stone"
+    },
+    {
+      "id": "desert",
+      "weight": 7,
+      "stage": "desert"
     }
   ]
 }
