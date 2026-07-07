@@ -109,8 +109,10 @@ public final class StagePanelMenuInputHandler {
         }
         String stageId = StagePanelMenu.stageId();
         switch (hit.kind()) {
-            case CLOSE -> DungeonTrainNet.sendToServer(
-                new StagePanelEditPacket(StagePanelEditPacket.Op.CLOSE, stageId, ""));
+            // The panel exists only while a stage is selected, so the X closes it by DESELECTING the
+            // stage (the single open/close axis) rather than an independent panel close.
+            case CLOSE -> games.brennan.dungeontrain.client.menu.CommandRunner.run(
+                "dungeontrain editor stage deselect");
             case HIDE_TOGGLE -> DungeonTrainNet.sendToServer(
                 new StagePanelEditPacket(StagePanelEditPacket.Op.TOGGLE_HIDE_UNUSED, stageId, ""));
             case DUPLICATE -> CommandMenuState.openAt(new StageDuplicateNameScreen(stageId));

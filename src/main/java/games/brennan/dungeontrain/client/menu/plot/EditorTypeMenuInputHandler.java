@@ -398,18 +398,12 @@ public final class EditorTypeMenuInputHandler {
                 CommandRunner.run(EditorPlotTeleport.stagePhaseCommandFor(id, STAGE_PHASE_TOKENS[slot], action));
             }
             case STAGE_BLOCKS -> {
-                // The row's icon strip toggles the Stage Blocks panel for that stage. Inert while
-                // remove-mode is armed so a mis-click can't open a panel mid-delete.
+                // The row's icon strip just SELECTS the stage (which auto-opens/closes its panel) —
+                // it is no longer an independent panel open/close. Same select-toggle as the name
+                // cell. Inert while remove-mode is armed so a mis-click can't act mid-delete.
                 if (EditorTypeMenuRenderer.isStagesRemoveMode()) return;
                 String id = stageIdAt(menu, hit);
-                if (id == null) return;
-                boolean openOnSame = games.brennan.dungeontrain.client.menu.stagepanel.StagePanelMenu.isActive()
-                    && id.equalsIgnoreCase(games.brennan.dungeontrain.client.menu.stagepanel.StagePanelMenu.stageId());
-                games.brennan.dungeontrain.net.DungeonTrainNet.sendToServer(
-                    new games.brennan.dungeontrain.net.StagePanelEditPacket(
-                    openOnSame ? games.brennan.dungeontrain.net.StagePanelEditPacket.Op.CLOSE
-                               : games.brennan.dungeontrain.net.StagePanelEditPacket.Op.OPEN,
-                    id, ""));
+                if (id != null) CommandRunner.run("dungeontrain editor stage select " + id);
             }
             default -> { }
         }
