@@ -409,7 +409,7 @@ public final class EditorTypeMenuInputHandler {
                     new games.brennan.dungeontrain.net.StagePanelEditPacket(
                     openOnSame ? games.brennan.dungeontrain.net.StagePanelEditPacket.Op.CLOSE
                                : games.brennan.dungeontrain.net.StagePanelEditPacket.Op.OPEN,
-                    id, "", ""));
+                    id, ""));
             }
             default -> { }
         }

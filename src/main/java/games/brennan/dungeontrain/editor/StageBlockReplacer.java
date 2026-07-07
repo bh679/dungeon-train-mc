@@ -62,14 +62,17 @@ public final class StageBlockReplacer {
     private StageBlockReplacer() {}
 
     /**
-     * Replace {@code from} with {@code to} across every part of stage {@code stageId}. Runs on the
-     * server thread.
+     * Replace {@code from} with the held block {@code to} across every part of stage {@code stageId},
+     * preserving orientation. {@code toBeNbt} is the held item's captured block-entity data (see
+     * #636's swap), applied to rewritten variant candidates when {@code to} carries a block entity.
+     * Runs on the server thread.
      *
      * @throws IOException on unknown stage, same/air replacement, or a config-dir write failure.
      *                     Source-tree promotion failures are warn-logged, never thrown.
      */
     public static Result replaceAcrossStage(ServerLevel level, String stageId,
-                                            Block from, Block to) throws IOException {
+                                            Block from, Block to,
+                                            net.minecraft.nbt.CompoundTag toBeNbt) throws IOException {
         if (from == null || to == null) throw new IOException("Unknown block.");
         if (from == to) throw new IOException("Source and replacement are the same block.");
         if (to == Blocks.AIR) throw new IOException("Replacing with air is not supported.");
@@ -83,7 +86,7 @@ public final class StageBlockReplacer {
         int sidecarCount = 0;
         for (StageBlockIndex.PartRef ref : StageBlockIndex.partsForStage(stageId)) {
             int p = rewriteTemplate(level, blockLookup, ref, dims, from, to);
-            int s = rewriteSidecar(ref, dims, from, to);
+            int s = rewriteSidecar(ref, dims, from, to, toBeNbt);
             if (p > 0 || s > 0) touched.add(ref);
             paletteCount += p;
             sidecarCount += s;
@@ -187,7 +190,7 @@ public final class StageBlockReplacer {
 
     /** Rewrite matching candidates in the part's variants sidecar. Returns states rewritten. */
     private static int rewriteSidecar(StageBlockIndex.PartRef ref, CarriageDims dims,
-                                      Block from, Block to) throws IOException {
+                                      Block from, Block to, CompoundTag toBeNbt) throws IOException {
         Vec3i partSize = ref.kind().dims(dims);
         CarriagePartVariantBlocks sidecar =
             CarriagePartVariantBlocks.loadFor(ref.kind(), ref.name(), partSize);
@@ -200,8 +203,8 @@ public final class StageBlockReplacer {
             for (VariantState s : entry.states()) {
                 if (!s.isMob() && !CarriageVariantBlocks.isEmptyPlaceholder(s.state())
                         && s.state().is(from)) {
-                    // BE→non-BE strips the stale payload; BE→BE keeps it best-effort.
-                    CompoundTag nbt = (to instanceof EntityBlock) ? s.blockEntityNbt() : null;
+                    // New block carries a BE → apply the held item's BE data (like #636); else drop.
+                    CompoundTag nbt = (to instanceof EntityBlock) ? toBeNbt : null;
                     updated.add(s.withState(transfer(s.state(), to), nbt));
                     changed = true;
                     rewritten++;

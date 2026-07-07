@@ -1314,6 +1314,14 @@ public final class EditorCommand {
         if (games.brennan.dungeontrain.editor.EditorPartsStageFilter.isActive()) {
             restampPartsGridForStage(source);
         }
+        // Auto-open the Stage Blocks panel for the selecting player on the focused stage (close on
+        // deselect) — the panel follows the selection.
+        net.minecraft.server.level.ServerPlayer selPlayer = source.getPlayer();
+        if (nowSelected) {
+            games.brennan.dungeontrain.editor.StagePanelController.openFor(selPlayer, id);
+        } else {
+            games.brennan.dungeontrain.editor.StagePanelController.closeFor(selPlayer);
+        }
         if (nowSelected) {
             source.sendSuccess(() -> Component.literal("Editor: previewing carriages for stage '" + id
                 + "'. Added parts default to this stage.").withStyle(ChatFormatting.GREEN), false);
@@ -1331,6 +1339,7 @@ public final class EditorCommand {
         if (games.brennan.dungeontrain.editor.EditorPartsStageFilter.isActive()) {
             restampPartsGridForStage(source);
         }
+        games.brennan.dungeontrain.editor.StagePanelController.closeFor(source.getPlayer());
         source.sendSuccess(() -> Component.literal("Editor: stage preview off.")
             .withStyle(ChatFormatting.YELLOW), false);
         return 1;
@@ -1399,10 +1408,11 @@ public final class EditorCommand {
                     + (from.isEmpty() ? fromId : toId)).withStyle(ChatFormatting.RED));
                 return 0;
             }
+            // Command path supplies an explicit <to> and no held item → no block-entity payload.
             games.brennan.dungeontrain.editor.StageBlockReplacer.Result r =
                 games.brennan.dungeontrain.editor.StageBlockReplacer.replaceAcrossStage(
                     source.getServer().overworld(), rawId.toLowerCase(java.util.Locale.ROOT),
-                    from.get(), to.get());
+                    from.get(), to.get(), null);
             if (r.isEmpty()) {
                 source.sendSuccess(() -> Component.literal("Editor: no occurrences of " + fromId
                     + " in stage '" + rawId + "'.").withStyle(ChatFormatting.YELLOW), false);

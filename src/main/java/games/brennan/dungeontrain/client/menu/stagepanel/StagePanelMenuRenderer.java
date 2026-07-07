@@ -32,13 +32,13 @@ import java.util.List;
 /**
  * World-space renderer for the Stage Blocks panel — a cylindrical live billboard beside the Stages
  * panel (server-sent {@link StagePanelMenu#anchor()} at the editor door, basis rebuilt per frame
- * via {@link EditorPlotLabelsRenderer#basis}, same as the type menus — NOT the block-variant
- * menu's frozen face basis).
+ * via {@link EditorPlotLabelsRenderer#basis}, same as the type menus).
  *
- * <p>Three sub-screens: ROOT (header → Duplicate/Hide-unused/Close toolbar → aggregated block grid
- * → parts list with per-part icon strips), REPLACE_SEARCH (pick the replacement block), and
- * CONFIRM_REPLACE (red band before the irreversible stage-wide rewrite — the removeMode colour
- * family). {@link #hitFor} mirrors this layout exactly for {@link StagePanelMenuRaycast}.</p>
+ * <p>Single screen: header → {@code [Duplicate] [Hide unused] [X]} toolbar → the stage's
+ * usage-ordered block <b>list</b> (icon + name + count column, mirroring #636's V menu) → a
+ * {@code Parts (N)} list with per-part icon strips. Clicking a block row (or a part-strip icon)
+ * swaps that block across the whole stage with the player's held block. {@link #hitFor} mirrors
+ * this layout exactly for {@link StagePanelMenuRaycast}.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class StagePanelMenuRenderer {
@@ -64,16 +64,12 @@ public final class StagePanelMenuRenderer {
     static final double ROW_H = 0.30;
     static final double PAD_X = 0.10;
 
-    /** ROOT / CONFIRM panel half-width. */
-    static final double ROOT_HALF_W = 2.2;
-    /** REPLACE_SEARCH half-width — wide enough for full block ids. */
-    static final double SEARCH_HALF_W = 3.0;
+    static final double HALF_W = 2.6;
 
-    /** Aggregated grid columns / display cap ("+K more" row past the cap). */
-    static final int BLOCK_COLS = 4;
-    static final int BLOCKS_DISPLAY_CAP = 32;
-    /** Search results shown per filter pass (single column). */
-    static final int SEARCH_RESULT_ROWS = 12;
+    /** Max block rows shown in the list; the rest collapse into a "+K more" row. */
+    static final int BLOCKS_DISPLAY_CAP = 24;
+    /** Right-hand reserve for the usage count column. */
+    static final double COUNT_COL_W = 0.55;
     /** Icon sizing (shared with the Stages-panel strips). */
     static final double ICON_SIZE = 0.22;
     static final double ICON_SLOT = 0.24;
@@ -91,16 +87,13 @@ public final class StagePanelMenuRenderer {
     private static final int HEADER_BG = 0x60FFEEBB;
     private static final int HEADER_COLOR = 0xFFFFEEBB;
     private static final int NAME_COLOR = 0xFFFFFFFF;
+    private static final int COUNT_COLOR = 0xFFBBD0FF;
     private static final int LABEL_COLOR = 0xFFBBD0FF;
     private static final int DIM_COLOR = 0xFF999999;
     private static final int DUPLICATE_COLOR = 0xFFAAFFAA;
     private static final int CLOSE_COLOR = 0xFFFF9999;
     /** Orange active-state tint (the Lock-cell family) behind "Hide unused: ON". */
     private static final int HIDE_ON_BG = 0x80CC7733;
-    /** Red confirm colours — the removeMode family. */
-    private static final int CONFIRM_BG = 0x80AA4040;
-    private static final int CONFIRM_HOVER = 0xC0FF6666;
-    private static final int CONFIRM_TEXT = 0xFFFFBBBB;
 
     private StagePanelMenuRenderer() {}
 
@@ -136,11 +129,7 @@ public final class StagePanelMenuRenderer {
             ps.scale(worldScale, worldScale, worldScale);
         }
 
-        switch (StagePanelMenu.screen()) {
-            case ROOT -> drawRoot(ps, buffer, font);
-            case REPLACE_SEARCH -> drawSearch(ps, buffer, font);
-            case CONFIRM_REPLACE -> drawConfirm(ps, buffer, font);
-        }
+        drawRoot(ps, buffer, font);
 
         ps.popPose();
         buffer.endBatch(PANEL_QUAD);
@@ -150,39 +139,26 @@ public final class StagePanelMenuRenderer {
     // ---------- layout ----------
 
     static double halfWidth() {
-        return StagePanelMenu.screen() == StagePanelMenu.Screen.REPLACE_SEARCH
-            ? SEARCH_HALF_W : ROOT_HALF_W;
+        return HALF_W;
     }
 
-    /** Cells shown in the aggregated grid (server already caps the list; the client caps again). */
-    static int shownBlockCells() {
+    /** Block rows shown in the list (server already usage-caps; the client caps display again). */
+    static int shownBlockRows() {
         return Math.min(StagePanelMenu.blocks().size(), BLOCKS_DISPLAY_CAP);
     }
 
-    static int blockGridRows() {
-        int cells = shownBlockCells();
-        return cells == 0 ? 1 : (cells + BLOCK_COLS - 1) / BLOCK_COLS;
-    }
-
-    /** True when a "+K more" label row follows the grid — against the REAL total, not the wire cap. */
+    /** True when a "+K more" label row follows the list — against the REAL total, not the wire cap. */
     static boolean hasOverflowRow() {
-        return StagePanelMenu.totalBlocks() > shownBlockCells();
+        return StagePanelMenu.totalBlocks() > shownBlockRows();
     }
 
     static int partRows() {
         return Math.max(1, StagePanelMenu.parts().size());
     }
 
+    /** header + toolbar + block rows [+ overflow] + parts header + part rows. */
     static int rowCount() {
-        return switch (StagePanelMenu.screen()) {
-            // header + toolbar + grid rows [+ overflow] + parts header + part rows
-            case ROOT -> 2 + blockGridRows() + (hasOverflowRow() ? 1 : 0) + 1 + partRows();
-            // header + field + results
-            case REPLACE_SEARCH -> 2 + Math.min(
-                StagePanelMenu.filteredBlockIds().size(), SEARCH_RESULT_ROWS);
-            // header + from + to + note + buttons
-            case CONFIRM_REPLACE -> 5;
-        };
+        return 2 + shownBlockRows() + (hasOverflowRow() ? 1 : 0) + 1 + partRows();
     }
 
     static double halfHeight() {
@@ -192,9 +168,10 @@ public final class StagePanelMenuRenderer {
     // ---------- ROOT ----------
 
     private static void drawRoot(PoseStack ps, MultiBufferSource buffer, Font font) {
-        double halfW = halfWidth();
+        double halfW = HALF_W;
         double halfH = halfHeight();
         double topY = halfH;
+        double w = halfW * 2.0;
         StagePanelMenu.Hit hovered = StagePanelMenu.hovered();
 
         drawQuad(ps, buffer, -halfW, -halfH, halfW, halfH, BACKDROP_COLOR);
@@ -206,7 +183,6 @@ public final class StagePanelMenuRenderer {
 
         // Toolbar: Duplicate | Hide unused | X.
         double tbTop = topY - ROW_H, tbBottom = tbTop - ROW_H, tbCY = (tbTop + tbBottom) / 2.0;
-        double w = halfW * 2.0;
         double dupR = -halfW + w * TOOLBAR_DUP_FRACTION;
         double hideR = dupR + w * TOOLBAR_HIDE_FRACTION;
         drawQuad(ps, buffer, -halfW, tbTop - 0.005, halfW, tbTop + 0.005, ROW_SEP_COLOR);
@@ -224,37 +200,33 @@ public final class StagePanelMenuRenderer {
             (dupR + hideR) / 2.0, tbCY, NAME_COLOR);
         drawCenteredText(ps, buffer, font, "X", (hideR + halfW) / 2.0, tbCY, CLOSE_COLOR);
 
-        // Aggregated block grid.
-        List<String> blocks = StagePanelMenu.blocks();
-        int shown = shownBlockCells();
-        int gridRows = blockGridRows();
-        double cellW = w / BLOCK_COLS;
+        // Block list — icon + name + count column; a click swaps the row's block with the held block.
+        List<StageBlocksSyncPacket.BlockCount> blocks = StagePanelMenu.blocks();
+        int shown = shownBlockRows();
         int rowBase = 2;
+        double countCX = halfW - COUNT_COL_W / 2.0 - PAD_X;
+        double nameMaxW = (countCX - COUNT_COL_W / 2.0) - (-halfW + PAD_X + ICON_SLOT) - PAD_X;
         if (shown == 0) {
-            double cy = topY - (rowBase + 0.5) * ROW_H;
-            drawCenteredText(ps, buffer, font, "(no blocks)", 0, cy, DIM_COLOR);
-        } else {
-            for (int i = 0; i < shown; i++) {
-                int row = i / BLOCK_COLS;
-                int col = i % BLOCK_COLS;
-                double rowTop = topY - (rowBase + row) * ROW_H;
-                double rowCY = rowTop - ROW_H / 2.0;
-                double cellL = -halfW + col * cellW;
-                if (hovered.kind() == StagePanelMenu.CellKind.BLOCK_CELL && hovered.index() == i) {
-                    drawQuad(ps, buffer, cellL + 0.005, rowTop - ROW_H + 0.005,
-                        cellL + cellW - 0.005, rowTop - 0.005, HOVER_COLOR);
-                }
-                MenuBlockIcons.drawBlockIcon(ps, buffer, blocks.get(i),
-                    cellL + PAD_X + ICON_SIZE / 2.0, rowCY, ICON_SIZE);
-                drawLeftText(ps, buffer, font, shortenBlockLabel(blocks.get(i), font, cellW - ICON_SLOT - 2 * PAD_X),
-                    cellL + PAD_X + ICON_SLOT, rowCY, NAME_COLOR);
-            }
+            drawCenteredText(ps, buffer, font, "(no blocks)", 0, topY - (rowBase + 0.5) * ROW_H, DIM_COLOR);
         }
-        int nextRow = rowBase + gridRows;
+        for (int i = 0; i < shown; i++) {
+            StageBlocksSyncPacket.BlockCount bc = blocks.get(i);
+            double rowTop = topY - (rowBase + i) * ROW_H;
+            double rowCY = rowTop - ROW_H / 2.0;
+            drawQuad(ps, buffer, -halfW, rowTop - 0.005, halfW, rowTop + 0.005, ROW_SEP_COLOR);
+            if (hovered.kind() == StagePanelMenu.CellKind.BLOCK_ROW && hovered.index() == i) {
+                drawQuad(ps, buffer, -halfW + 0.005, rowTop - ROW_H + 0.005, halfW - 0.005, rowTop - 0.005, HOVER_COLOR);
+            }
+            MenuBlockIcons.drawBlockIcon(ps, buffer, bc.blockId(),
+                -halfW + PAD_X + ICON_SIZE / 2.0, rowCY, ICON_SIZE);
+            drawLeftText(ps, buffer, font, shortenBlockLabel(bc.blockId(), font, nameMaxW),
+                -halfW + PAD_X + ICON_SLOT, rowCY, NAME_COLOR);
+            drawCenteredText(ps, buffer, font, "×" + bc.count(), countCX, rowCY, COUNT_COLOR);
+        }
+        int nextRow = rowBase + shown;
         if (hasOverflowRow()) {
-            double cy = topY - (nextRow + 0.5) * ROW_H;
             drawCenteredText(ps, buffer, font, "+" + (StagePanelMenu.totalBlocks() - shown) + " more",
-                0, cy, DIM_COLOR);
+                0, topY - (nextRow + 0.5) * ROW_H, DIM_COLOR);
             nextRow++;
         }
 
@@ -267,8 +239,8 @@ public final class StagePanelMenuRenderer {
 
         List<StageBlocksSyncPacket.PartEntry> parts = StagePanelMenu.parts();
         if (parts.isEmpty()) {
-            double cy = topY - (nextRow + 0.5) * ROW_H;
-            drawCenteredText(ps, buffer, font, "No parts linked to this stage.", 0, cy, DIM_COLOR);
+            drawCenteredText(ps, buffer, font, "No parts linked to this stage.",
+                0, topY - (nextRow + 0.5) * ROW_H, DIM_COLOR);
             return;
         }
         double nameRight = -halfW + w * PART_NAME_FRACTION;
@@ -295,111 +267,19 @@ public final class StagePanelMenuRenderer {
         }
     }
 
-    // ---------- REPLACE_SEARCH ----------
-
-    private static void drawSearch(PoseStack ps, MultiBufferSource buffer, Font font) {
-        double halfW = halfWidth();
-        double halfH = halfHeight();
-        double topY = halfH;
-        StagePanelMenu.Hit hovered = StagePanelMenu.hovered();
-
-        drawQuad(ps, buffer, -halfW, -halfH, halfW, halfH, BACKDROP_COLOR);
-
-        // Header: "< Back" chip (left quarter) + "Replace <from>".
-        double headerCY = topY - ROW_H / 2.0;
-        drawQuad(ps, buffer, -halfW, topY - ROW_H, halfW, topY, HEADER_BG);
-        double backR = -halfW + halfW * 0.5;
-        if (hovered.kind() == StagePanelMenu.CellKind.SEARCH_BACK) {
-            drawQuad(ps, buffer, -halfW + 0.005, topY - ROW_H + 0.005, backR - 0.005, topY - 0.005, HOVER_COLOR);
-        }
-        drawLeftText(ps, buffer, font, "< Back", -halfW + PAD_X, headerCY, CLOSE_COLOR);
-        drawCenteredText(ps, buffer, font, "Replace " + stripNamespace(StagePanelMenu.replaceFrom()),
-            halfW * 0.25, headerCY, HEADER_COLOR);
-
-        // Search field row.
-        double fTop = topY - ROW_H, fCY = fTop - ROW_H / 2.0;
-        if (hovered.kind() == StagePanelMenu.CellKind.SEARCH_FIELD) {
-            drawQuad(ps, buffer, -halfW + 0.005, fTop - ROW_H + 0.005, halfW - 0.005, fTop - 0.005, HOVER_COLOR);
-        }
-        drawLeftText(ps, buffer, font, "Search: " + StagePanelMenu.searchBuffer() + "_",
-            -halfW + PAD_X, fCY, LABEL_COLOR);
-
-        // Result rows.
-        List<String> filtered = StagePanelMenu.filteredBlockIds();
-        int rows = Math.min(filtered.size(), SEARCH_RESULT_ROWS);
-        for (int i = 0; i < rows; i++) {
-            double rowTop = topY - (2 + i) * ROW_H;
-            double rowCY = rowTop - ROW_H / 2.0;
-            drawQuad(ps, buffer, -halfW, rowTop - 0.005, halfW, rowTop + 0.005, ROW_SEP_COLOR);
-            if (hovered.kind() == StagePanelMenu.CellKind.SEARCH_RESULT && hovered.index() == i) {
-                drawQuad(ps, buffer, -halfW + 0.005, rowTop - ROW_H + 0.005, halfW - 0.005, rowTop - 0.005, HOVER_COLOR);
-            }
-            MenuBlockIcons.drawBlockIcon(ps, buffer, filtered.get(i),
-                -halfW + PAD_X + ICON_SIZE / 2.0, rowCY, ICON_SIZE);
-            drawLeftText(ps, buffer, font, filtered.get(i), -halfW + PAD_X + ICON_SLOT, rowCY, NAME_COLOR);
-        }
-    }
-
-    // ---------- CONFIRM_REPLACE ----------
-
-    private static void drawConfirm(PoseStack ps, MultiBufferSource buffer, Font font) {
-        double halfW = halfWidth();
-        double halfH = halfHeight();
-        double topY = halfH;
-        StagePanelMenu.Hit hovered = StagePanelMenu.hovered();
-
-        drawQuad(ps, buffer, -halfW, -halfH, halfW, halfH, BACKDROP_COLOR);
-
-        double headerCY = topY - ROW_H / 2.0;
-        drawQuad(ps, buffer, -halfW, topY - ROW_H, halfW, topY, CONFIRM_BG);
-        drawCenteredText(ps, buffer, font, "Replace across stage '" + StagePanelMenu.stageId() + "'",
-            0, headerCY, CONFIRM_TEXT);
-
-        double fromCY = topY - 1.5 * ROW_H;
-        MenuBlockIcons.drawBlockIcon(ps, buffer, StagePanelMenu.replaceFrom(),
-            -halfW + PAD_X + ICON_SIZE / 2.0, fromCY, ICON_SIZE);
-        drawLeftText(ps, buffer, font, StagePanelMenu.replaceFrom(), -halfW + PAD_X + ICON_SLOT, fromCY, NAME_COLOR);
-
-        double toCY = topY - 2.5 * ROW_H;
-        drawLeftText(ps, buffer, font, "→", -halfW + PAD_X, toCY, HEADER_COLOR);
-        MenuBlockIcons.drawBlockIcon(ps, buffer, StagePanelMenu.replaceTo(),
-            -halfW + PAD_X + 0.30 + ICON_SIZE / 2.0, toCY, ICON_SIZE);
-        drawLeftText(ps, buffer, font, StagePanelMenu.replaceTo(), -halfW + PAD_X + 0.30 + ICON_SLOT, toCY, NAME_COLOR);
-
-        double noteCY = topY - 3.5 * ROW_H;
-        drawCenteredText(ps, buffer, font, "Rewrites " + StagePanelMenu.parts().size()
-            + " part(s) — no undo.", 0, noteCY, CONFIRM_TEXT);
-
-        double btnTop = topY - 4 * ROW_H, btnBottom = btnTop - ROW_H, btnCY = (btnTop + btnBottom) / 2.0;
-        boolean yesHover = hovered.kind() == StagePanelMenu.CellKind.CONFIRM_YES;
-        boolean noHover = hovered.kind() == StagePanelMenu.CellKind.CONFIRM_NO;
-        drawQuad(ps, buffer, -halfW + 0.005, btnBottom + 0.005, -0.005, btnTop - 0.005,
-            yesHover ? CONFIRM_HOVER : CONFIRM_BG);
-        if (noHover) drawQuad(ps, buffer, 0.005, btnBottom + 0.005, halfW - 0.005, btnTop - 0.005, HOVER_COLOR);
-        drawCenteredText(ps, buffer, font, "Confirm", -halfW / 2.0, btnCY, NAME_COLOR);
-        drawCenteredText(ps, buffer, font, "Cancel", halfW / 2.0, btnCY, NAME_COLOR);
-    }
-
     // ---------- hit testing (shared with StagePanelMenuRaycast) ----------
 
     static StagePanelMenu.Hit hitFor(double hitX, double hitY) {
-        double halfW = halfWidth();
+        double halfW = HALF_W;
         double halfH = halfHeight();
         if (hitX < -halfW || hitX > halfW || hitY < -halfH || hitY > halfH) {
             return StagePanelMenu.Hit.NONE;
         }
         int rowFromTop = (int) Math.floor((halfH - hitY) / ROW_H);
         if (rowFromTop < 0 || rowFromTop >= rowCount()) return StagePanelMenu.Hit.NONE;
-        return switch (StagePanelMenu.screen()) {
-            case ROOT -> hitForRoot(rowFromTop, hitX, halfW);
-            case REPLACE_SEARCH -> hitForSearch(rowFromTop, hitX, halfW);
-            case CONFIRM_REPLACE -> hitForConfirm(rowFromTop, hitX, halfW);
-        };
-    }
-
-    private static StagePanelMenu.Hit hitForRoot(int rowFromTop, double hitX, double halfW) {
         double w = halfW * 2.0;
-        if (rowFromTop == 0) return StagePanelMenu.Hit.NONE;
+
+        if (rowFromTop == 0) return StagePanelMenu.Hit.NONE; // header
         if (rowFromTop == 1) {
             double dupR = -halfW + w * TOOLBAR_DUP_FRACTION;
             double hideR = dupR + w * TOOLBAR_HIDE_FRACTION;
@@ -407,19 +287,12 @@ public final class StagePanelMenuRenderer {
             if (hitX < hideR) return new StagePanelMenu.Hit(StagePanelMenu.CellKind.HIDE_TOGGLE, -1, -1);
             return new StagePanelMenu.Hit(StagePanelMenu.CellKind.CLOSE, -1, -1);
         }
-        int gridRows = blockGridRows();
-        int shown = shownBlockCells();
+        int shown = shownBlockRows();
         int row = rowFromTop - 2;
-        if (row < gridRows) {
-            if (shown == 0) return StagePanelMenu.Hit.NONE;
-            int col = (int) ((hitX + halfW) / (w / BLOCK_COLS));
-            if (col < 0) col = 0;
-            if (col >= BLOCK_COLS) col = BLOCK_COLS - 1;
-            int idx = row * BLOCK_COLS + col;
-            if (idx >= shown) return StagePanelMenu.Hit.NONE;
-            return new StagePanelMenu.Hit(StagePanelMenu.CellKind.BLOCK_CELL, idx, -1);
+        if (row < shown) {
+            return new StagePanelMenu.Hit(StagePanelMenu.CellKind.BLOCK_ROW, row, -1);
         }
-        row -= gridRows;
+        row -= shown;
         if (hasOverflowRow()) {
             if (row == 0) return StagePanelMenu.Hit.NONE;
             row--;
@@ -434,26 +307,6 @@ public final class StagePanelMenuRenderer {
         int drawn = Math.min(parts.get(partIdx).blockIds().size(), PART_ROW_ICONS);
         if (iconIdx < 0 || iconIdx >= drawn) return StagePanelMenu.Hit.NONE;
         return new StagePanelMenu.Hit(StagePanelMenu.CellKind.PART_BLOCK, partIdx, iconIdx);
-    }
-
-    private static StagePanelMenu.Hit hitForSearch(int rowFromTop, double hitX, double halfW) {
-        if (rowFromTop == 0) {
-            return hitX < -halfW + halfW * 0.5
-                ? new StagePanelMenu.Hit(StagePanelMenu.CellKind.SEARCH_BACK, -1, -1)
-                : StagePanelMenu.Hit.NONE;
-        }
-        if (rowFromTop == 1) return new StagePanelMenu.Hit(StagePanelMenu.CellKind.SEARCH_FIELD, -1, -1);
-        int idx = rowFromTop - 2;
-        int rows = Math.min(StagePanelMenu.filteredBlockIds().size(), SEARCH_RESULT_ROWS);
-        if (idx < 0 || idx >= rows) return StagePanelMenu.Hit.NONE;
-        return new StagePanelMenu.Hit(StagePanelMenu.CellKind.SEARCH_RESULT, idx, -1);
-    }
-
-    private static StagePanelMenu.Hit hitForConfirm(int rowFromTop, double hitX, double halfW) {
-        if (rowFromTop != 4) return StagePanelMenu.Hit.NONE;
-        return hitX < 0
-            ? new StagePanelMenu.Hit(StagePanelMenu.CellKind.CONFIRM_YES, -1, -1)
-            : new StagePanelMenu.Hit(StagePanelMenu.CellKind.CONFIRM_NO, -1, -1);
     }
 
     // ---------- text / label helpers ----------

@@ -76,7 +76,7 @@ public final class StagePanelController {
         switch (packet.op()) {
             case OPEN -> open(player, packet.stageId());
             case CLOSE -> close(player);
-            case REPLACE_BLOCK -> replaceBlock(player, packet);
+            case SWAP_BLOCK -> swapBlock(player, packet);
             case TOGGLE_HIDE_UNUSED -> toggleHideUnused(player);
         }
     }
@@ -100,36 +100,78 @@ public final class StagePanelController {
         DungeonTrainNet.sendTo(player, StageBlocksSyncPacket.closed());
     }
 
-    private static void replaceBlock(ServerPlayer player, StagePanelEditPacket packet) {
+    /**
+     * Auto-open the panel for {@code player} on {@code stageId} (the stage-select hook) — silent
+     * no-op when the stage is gone or no editor category is stamped, so a command-block / console
+     * {@code stage select} doesn't spam or NPE. Unlike the {@code OPEN} packet op it emits no
+     * "enter a category first" hint (selection can happen outside CARRIAGES).
+     */
+    public static void openFor(ServerPlayer player, String stageId) {
+        if (player == null) return;
+        String id = stageId == null ? "" : stageId.toLowerCase(Locale.ROOT);
+        if (!StageStore.exists(id) || EditorStampedCategoryState.current().isEmpty()) return;
+        OPEN.put(player.getUUID(), id);
+        sendSync(player, id);
+    }
+
+    /** Close the panel for {@code player} (the stage-deselect hook). No-op when none is open. */
+    public static void closeFor(ServerPlayer player) {
+        if (player == null || !OPEN.containsKey(player.getUUID())) return;
+        close(player);
+    }
+
+    /**
+     * Stage-wide swap of the clicked block with the player's <b>held block</b>, orientation-
+     * preserving — the "click to replace from hand" flow (reuses #636's held-item capture, applied
+     * across every part the stage uses via {@link StageBlockReplacer}). No target-from-list, no
+     * confirm: a single click swaps.
+     */
+    private static void swapBlock(ServerPlayer player, StagePanelEditPacket packet) {
         String stageId = packet.stageId() == null ? "" : packet.stageId().toLowerCase(Locale.ROOT);
         if (!stageId.equals(OPEN.get(player.getUUID()))) {
             actionBar(player, "Open the stage's panel first", ChatFormatting.YELLOW);
             return;
         }
-        Optional<Block> from = blockById(packet.fromBlockId());
-        Optional<Block> to = blockById(packet.toBlockId());
-        if (from.isEmpty() || to.isEmpty()) {
-            actionBar(player, "Unknown block: "
-                + (from.isEmpty() ? packet.fromBlockId() : packet.toBlockId()), ChatFormatting.RED);
+        Optional<Block> from = blockById(packet.blockId());
+        if (from.isEmpty()) {
+            actionBar(player, "Unknown block: " + packet.blockId(), ChatFormatting.RED);
             return;
         }
+        // Replacement comes from the hand (mirrors #636's SWAP_BLOCK) — must be a placeable block.
+        net.minecraft.world.item.ItemStack held = player.getMainHandItem();
+        if (held.isEmpty() || !(held.getItem() instanceof net.minecraft.world.item.BlockItem blockItem)) {
+            actionBar(player, "Hold a block to replace with", ChatFormatting.YELLOW);
+            return;
+        }
+        Block to = blockItem.getBlock();
+        if (to == from.get()) {
+            actionBar(player, "Held block is the same as the selected block", ChatFormatting.YELLOW);
+            return;
+        }
+        net.minecraft.nbt.CompoundTag heldBeNbt = null;
+        if (to.defaultBlockState().hasBlockEntity()) {
+            net.minecraft.world.item.component.CustomData data =
+                held.get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA);
+            heldBeNbt = data == null ? null : data.copyTag();
+        }
+        String fromId = packet.blockId();
+        String toId = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(to).toString();
         try {
             StageBlockReplacer.Result r = StageBlockReplacer.replaceAcrossStage(
-                player.getServer().overworld(), stageId, from.get(), to.get());
+                player.getServer().overworld(), stageId, from.get(), to, heldBeNbt);
             if (r.isEmpty()) {
-                player.sendSystemMessage(Component.literal("Editor: no occurrences of "
-                    + packet.fromBlockId() + " in stage '" + stageId + "'.")
-                    .withStyle(ChatFormatting.YELLOW));
+                player.sendSystemMessage(Component.literal("Editor: no occurrences of " + fromId
+                    + " in stage '" + stageId + "'.").withStyle(ChatFormatting.YELLOW));
             } else {
-                player.sendSystemMessage(Component.literal("Editor: replaced " + packet.fromBlockId()
-                    + " → " + packet.toBlockId() + " across " + r.partsTouched().size()
-                    + " part(s) (" + r.paletteStatesRewritten() + " structural, "
-                    + r.sidecarStatesRewritten() + " variant state(s)). Plots re-stamped — unsaved "
-                    + "plot edits were reset.").withStyle(ChatFormatting.GREEN));
+                player.sendSystemMessage(Component.literal("Editor: swapped " + fromId + " → " + toId
+                    + " across " + r.partsTouched().size() + " part(s) ("
+                    + r.paletteStatesRewritten() + " structural, " + r.sidecarStatesRewritten()
+                    + " variant state(s)). Plots re-stamped — unsaved plot edits were reset.")
+                    .withStyle(ChatFormatting.GREEN));
             }
         } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Stage panel replace failed for '{}': {}", stageId, e.toString());
-            actionBar(player, "Replace failed: " + e.getMessage(), ChatFormatting.RED);
+            LOGGER.warn("[DungeonTrain] Stage panel swap failed for '{}': {}", stageId, e.toString());
+            actionBar(player, "Swap failed: " + e.getMessage(), ChatFormatting.RED);
         }
         // Data changed for everyone — refresh every open panel, not just the actor's.
         resyncAllOpen(player.getServer());
@@ -169,10 +211,13 @@ public final class StagePanelController {
             .map(games.brennan.dungeontrain.template.Stage::name).orElse(stageId);
         if (stageName.length() > 64) stageName = stageName.substring(0, 64);
 
-        List<String> aggregated = blocks.aggregatedBlockIds();
-        List<String> cappedBlocks = aggregated.size() <= StageBlocksSyncPacket.BLOCKS_CAP
-            ? aggregated
-            : List.copyOf(aggregated.subList(0, StageBlocksSyncPacket.BLOCKS_CAP));
+        List<StageBlockIndex.BlockUse> aggregated = blocks.aggregated();
+        List<StageBlocksSyncPacket.BlockCount> cappedBlocks = new ArrayList<>();
+        int blockLimit = Math.min(aggregated.size(), StageBlocksSyncPacket.BLOCKS_CAP);
+        for (int i = 0; i < blockLimit; i++) {
+            StageBlockIndex.BlockUse u = aggregated.get(i);
+            cappedBlocks.add(new StageBlocksSyncPacket.BlockCount(u.blockId(), u.count()));
+        }
 
         List<StageBlocksSyncPacket.PartEntry> parts = new ArrayList<>(blocks.parts().size());
         for (StageBlockIndex.PartBlocks pb : blocks.parts()) {

@@ -411,18 +411,18 @@ public final class EditorTypeMenus {
     }
 
     /**
-     * Z offset for the Stage Blocks panel — one wide slot past the Stages panel, same {@code -Z}
-     * side. 12 blocks past the Stages panel's -10 because the Stages panel's half-width grows with
-     * its longest stage name + the row icon strip; the extra clearance keeps the two billboards
-     * visually separate for realistic name lengths (input handling is double-dispatch-guarded
-     * regardless).
+     * X offset for the Stage Blocks panel — it now sits at the <b>same Z</b> as the Stages panel
+     * ({@link #STAGES_MENU_Z_OFFSET}) but shifted this many blocks toward {@code +X}, so the two
+     * read as a side-by-side pair at the door rather than stacked along {@code -Z}. Tunable; the
+     * billboards face the player, so exact non-overlap is view-dependent — input handling is
+     * double-dispatch-guarded regardless.
      */
-    private static final int STAGE_PANEL_Z_OFFSET = -22;
+    private static final int STAGE_PANEL_X_OFFSET = 6;
 
     /**
-     * Anchor for the Stage Blocks panel (the "stage V menu") — the next sibling billboard past the
-     * Stages panel on the {@code -Z} strip at the editor door. Same fallthrough as
-     * {@link #stagesMenuAnchor}: {@code null} when no carriage variants are registered.
+     * Anchor for the Stage Blocks panel (the "stage V menu") — the sibling billboard beside the
+     * Stages panel: same Z, offset {@code +X}. Same fallthrough as {@link #stagesMenuAnchor}:
+     * {@code null} when no carriage variants are registered.
      */
     public static BlockPos stagePanelAnchor(CarriageDims dims) {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
@@ -431,9 +431,9 @@ public final class EditorTypeMenus {
         if (firstOrigin == null) return null;
         Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
         return new BlockPos(
-            firstOrigin.getX() - MENU_GAP,
+            firstOrigin.getX() - MENU_GAP + STAGE_PANEL_X_OFFSET,
             firstOrigin.getY() + footprint.getY() + Y_ANCHOR_LIFT,
-            firstOrigin.getZ() + footprint.getZ() / 2 + STAGE_PANEL_Z_OFFSET
+            firstOrigin.getZ() + footprint.getZ() / 2 + STAGES_MENU_Z_OFFSET
         );
     }
 

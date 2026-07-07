@@ -19,22 +19,28 @@ import java.util.List;
  *
  * <p>{@code open == false} closes the panel client-side; every other field is empty/ignored.
  * Server replies with this to {@link StagePanelEditPacket} OPEN / TOGGLE_HIDE_UNUSED /
- * REPLACE_BLOCK ops, and pushes {@link #closed()} when the shown stage is deleted.</p>
+ * SWAP_BLOCK ops, and pushes {@link #closed()} when the shown stage is deleted.</p>
+ *
+ * <p>The aggregated {@code blocks} are <b>usage-ordered</b> (most-used first) and carry a display
+ * {@code count} for the panel's count column — mirroring #636's {@code TemplateBlocksSyncPacket}.</p>
  */
 public record StageBlocksSyncPacket(
     boolean open,
     String stageId,
     String stageName,
     BlockPos anchorPos,
-    List<String> blocks,
+    List<BlockCount> blocks,
     int totalBlocks,
     List<PartEntry> parts,
     boolean hideUnused
 ) implements CustomPacketPayload {
 
+    /** One aggregated block row: registry id + rounded usage count (usage-ordered by the server). */
+    public record BlockCount(String blockId, int count) {}
+
     /**
      * One part row: the part's kind ordinal + name, up to {@link #PART_STRIP_CAP} of its block
-     * ids, and the real unique count for the {@code +K} label.
+     * ids (usage-ordered), and the real unique count for the {@code +K} label.
      */
     public record PartEntry(byte kindOrd, String partName, List<String> blockIds, int totalUnique) {}
 
@@ -65,7 +71,10 @@ public record StageBlocksSyncPacket(
         buf.writeUtf(stageName);
         buf.writeBlockPos(anchorPos);
         buf.writeVarInt(blocks.size());
-        for (String id : blocks) buf.writeUtf(id);
+        for (BlockCount b : blocks) {
+            buf.writeUtf(b.blockId());
+            buf.writeVarInt(b.count());
+        }
         buf.writeVarInt(totalBlocks);
         buf.writeVarInt(parts.size());
         for (PartEntry p : parts) {
@@ -87,8 +96,8 @@ public record StageBlocksSyncPacket(
         String stageName = buf.readUtf(256);
         BlockPos anchor = buf.readBlockPos();
         int nBlocks = buf.readVarInt();
-        List<String> blocks = new ArrayList<>(nBlocks);
-        for (int i = 0; i < nBlocks; i++) blocks.add(buf.readUtf(256));
+        List<BlockCount> blocks = new ArrayList<>(nBlocks);
+        for (int i = 0; i < nBlocks; i++) blocks.add(new BlockCount(buf.readUtf(256), buf.readVarInt()));
         int totalBlocks = buf.readVarInt();
         int nParts = buf.readVarInt();
         List<PartEntry> parts = new ArrayList<>(nParts);

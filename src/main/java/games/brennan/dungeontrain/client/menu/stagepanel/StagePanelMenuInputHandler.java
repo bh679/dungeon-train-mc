@@ -84,11 +84,6 @@ public final class StagePanelMenuInputHandler {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.screen instanceof StagePanelSearchScreen
-            && (!StagePanelMenu.isActive()
-                || StagePanelMenu.screen() != StagePanelMenu.Screen.REPLACE_SEARCH)) {
-            mc.setScreen(null);
-        }
         if (!StagePanelMenu.isActive()) return;
         if (mc.screen == null) {
             StagePanelMenuRaycast.updateHovered();
@@ -115,14 +110,14 @@ public final class StagePanelMenuInputHandler {
         String stageId = StagePanelMenu.stageId();
         switch (hit.kind()) {
             case CLOSE -> DungeonTrainNet.sendToServer(
-                new StagePanelEditPacket(StagePanelEditPacket.Op.CLOSE, stageId, "", ""));
+                new StagePanelEditPacket(StagePanelEditPacket.Op.CLOSE, stageId, ""));
             case HIDE_TOGGLE -> DungeonTrainNet.sendToServer(
-                new StagePanelEditPacket(StagePanelEditPacket.Op.TOGGLE_HIDE_UNUSED, stageId, "", ""));
+                new StagePanelEditPacket(StagePanelEditPacket.Op.TOGGLE_HIDE_UNUSED, stageId, ""));
             case DUPLICATE -> CommandMenuState.openAt(new StageDuplicateNameScreen(stageId));
-            case BLOCK_CELL -> {
-                List<String> blocks = StagePanelMenu.blocks();
+            case BLOCK_ROW -> {
+                var blocks = StagePanelMenu.blocks();
                 if (hit.index() >= 0 && hit.index() < blocks.size()) {
-                    StagePanelMenu.enterReplaceSearch(blocks.get(hit.index()));
+                    swap(stageId, blocks.get(hit.index()).blockId());
                 }
             }
             case PART_BLOCK -> {
@@ -130,26 +125,17 @@ public final class StagePanelMenuInputHandler {
                 if (hit.index() >= 0 && hit.index() < parts.size()) {
                     List<String> ids = parts.get(hit.index()).blockIds();
                     if (hit.secondary() >= 0 && hit.secondary() < ids.size()) {
-                        StagePanelMenu.enterReplaceSearch(ids.get(hit.secondary()));
+                        swap(stageId, ids.get(hit.secondary()));
                     }
                 }
             }
-            case SEARCH_BACK -> StagePanelMenu.backToRoot();
-            case SEARCH_FIELD -> mc.setScreen(new StagePanelSearchScreen());
-            case SEARCH_RESULT -> {
-                List<String> filtered = StagePanelMenu.filteredBlockIds();
-                if (hit.index() >= 0 && hit.index() < filtered.size()) {
-                    StagePanelMenu.chooseReplacement(filtered.get(hit.index()));
-                }
-            }
-            case CONFIRM_YES -> {
-                DungeonTrainNet.sendToServer(new StagePanelEditPacket(
-                    StagePanelEditPacket.Op.REPLACE_BLOCK, stageId,
-                    StagePanelMenu.replaceFrom(), StagePanelMenu.replaceTo()));
-                StagePanelMenu.backToRoot();
-            }
-            case CONFIRM_NO -> StagePanelMenu.backToRoot();
             default -> { }
         }
+    }
+
+    /** Send an immediate stage-wide swap of {@code blockId} with the player's held block (#636 style). */
+    private static void swap(String stageId, String blockId) {
+        DungeonTrainNet.sendToServer(
+            new StagePanelEditPacket(StagePanelEditPacket.Op.SWAP_BLOCK, stageId, blockId));
     }
 }

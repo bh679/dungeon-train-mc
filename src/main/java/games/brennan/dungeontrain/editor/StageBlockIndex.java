@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
@@ -17,6 +18,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -24,7 +26,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -61,11 +62,31 @@ public final class StageBlockIndex {
         }
     }
 
-    /** Unique blocks for one part — sorted registry ids from palette + variants sidecar. */
-    public record PartBlocks(PartRef part, List<String> blockIds) {}
+    /**
+     * A block and its usage tally, rounded to a whole number for display. Usage weights structural
+     * placements as 1 each and variant candidates fractionally by weight (see {@link #compute}).
+     */
+    public record BlockUse(String blockId, int count) {}
 
-    /** Per-stage aggregation: the parts (in stable resolution order) and the union of their blocks. */
-    public record StageBlocks(String stageId, List<PartBlocks> parts, List<String> aggregatedBlockIds) {}
+    /** Unique blocks for one part — usage-ordered (most-used first). */
+    public record PartBlocks(PartRef part, List<BlockUse> uses) {
+        /** Block ids in usage order — for the row / per-part icon strips. */
+        public List<String> blockIds() {
+            List<String> ids = new ArrayList<>(uses.size());
+            for (BlockUse u : uses) ids.add(u.blockId());
+            return ids;
+        }
+    }
+
+    /** Per-stage aggregation: parts (stable resolution order) + the usage-ordered union of blocks. */
+    public record StageBlocks(String stageId, List<PartBlocks> parts, List<BlockUse> aggregated) {
+        /** Aggregated block ids in usage order — for the Stages-panel row strips. */
+        public List<String> aggregatedBlockIds() {
+            List<String> ids = new ArrayList<>(aggregated.size());
+            for (BlockUse u : aggregated) ids.add(u.blockId());
+            return ids;
+        }
+    }
 
     /** Keyed on lowercased stage id. Cleared wholesale by {@link #invalidateAll()}. */
     private static final Map<String, StageBlocks> CACHE = new ConcurrentHashMap<>();
@@ -177,47 +198,83 @@ public final class StageBlockIndex {
     private static StageBlocks compute(ServerLevel level, String key) {
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         List<PartBlocks> parts = new ArrayList<>();
-        Set<String> aggregated = new TreeSet<>();
+        Map<String, Double> stageScore = new HashMap<>();
         for (PartRef ref : partsForStage(key)) {
-            Set<String> blocks = new TreeSet<>();
-            collectPaletteBlocks(level, ref, dims, blocks);
-            collectSidecarBlocks(ref, dims, blocks);
-            parts.add(new PartBlocks(ref, List.copyOf(blocks)));
-            aggregated.addAll(blocks);
+            Map<String, Double> partScore = new HashMap<>();
+            scorePart(level, ref, dims, partScore);
+            parts.add(new PartBlocks(ref, toOrderedUses(partScore)));
+            partScore.forEach((id, s) -> stageScore.merge(id, s, Double::sum));
         }
-        return new StageBlocks(key, List.copyOf(parts), List.copyOf(aggregated));
+        return new StageBlocks(key, List.copyOf(parts), toOrderedUses(stageScore));
     }
 
-    /** Structural blocks from the part's NBT template — every palette, defensively. */
-    private static void collectPaletteBlocks(ServerLevel level, PartRef ref, CarriageDims dims,
-                                             Set<String> into) {
-        Optional<StructureTemplate> template =
-            CarriagePartTemplateStore.get(level, ref.kind(), ref.name(), dims);
-        if (template.isEmpty()) return;
-        for (StructureTemplate.Palette palette : palettesOf(template.get())) {
-            for (StructureTemplate.StructureBlockInfo info : palette.blocks()) {
-                addBlockId(info.state(), into);
-            }
-        }
-    }
-
-    /** Variant candidates from the part's {@code .variants.json} sidecar (mob entries skipped). */
-    private static void collectSidecarBlocks(PartRef ref, CarriageDims dims, Set<String> into) {
+    /**
+     * Accumulate a usage score per block for one part (mirrors {@code TemplateBlocksMenuController.
+     * buildBlockList}'s base-vs-variant split, but weighted and read from the part files):
+     * <ul>
+     *   <li>Structural palette positions <b>without</b> a variant cell → {@code +1.0} per placement.</li>
+     *   <li>Variant cells → each candidate contributes {@code weight / cellTotalWeight} (a low-weight
+     *       alternative counts for a fraction of a use), so nothing is double-counted with the base.</li>
+     * </ul>
+     */
+    private static void scorePart(ServerLevel level, PartRef ref, CarriageDims dims,
+                                  Map<String, Double> into) {
         CarriagePartVariantBlocks sidecar =
             CarriagePartVariantBlocks.loadFor(ref.kind(), ref.name(), ref.kind().dims(dims));
+
+        // Flagged (variant-cell) local positions — skipped in the structural pass below.
+        Set<BlockPos> flagged = new java.util.HashSet<>();
         for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
+            flagged.add(entry.localPos());
+        }
+
+        // Structural base — one use per non-variant, non-air palette position.
+        Optional<StructureTemplate> template =
+            CarriagePartTemplateStore.get(level, ref.kind(), ref.name(), dims);
+        if (template.isPresent()) {
+            for (StructureTemplate.Palette palette : palettesOf(template.get())) {
+                for (StructureTemplate.StructureBlockInfo info : palette.blocks()) {
+                    if (flagged.contains(info.pos())) continue;
+                    String id = blockId(info.state());
+                    if (id != null) into.merge(id, 1.0, Double::sum);
+                }
+            }
+        }
+
+        // Variant candidates — fractional by weight within each cell.
+        for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
+            int total = 0;
+            for (VariantState s : entry.states()) {
+                if (!s.isMob() && blockId(s.state()) != null) total += s.weight();
+            }
+            if (total <= 0) continue;
             for (VariantState s : entry.states()) {
                 if (s.isMob()) continue;
-                addBlockId(s.state(), into);
+                String id = blockId(s.state());
+                if (id != null) into.merge(id, (double) s.weight() / total, Double::sum);
             }
         }
     }
 
-    /** Add {@code state}'s block registry id, skipping air and the empty-placeholder sentinel. */
-    private static void addBlockId(BlockState state, Set<String> into) {
-        if (state == null || state.isAir()) return;
-        if (CarriageVariantBlocks.isEmptyPlaceholder(state)) return;
-        into.add(BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString());
+    /** Order a score map most-used first (tie-break block id asc), rounding the score for display. */
+    private static List<BlockUse> toOrderedUses(Map<String, Double> score) {
+        List<Map.Entry<String, Double>> entries = new ArrayList<>(score.entrySet());
+        entries.sort((a, b) -> {
+            int byScore = Double.compare(b.getValue(), a.getValue());
+            return byScore != 0 ? byScore : a.getKey().compareTo(b.getKey());
+        });
+        List<BlockUse> out = new ArrayList<>(entries.size());
+        for (Map.Entry<String, Double> e : entries) {
+            out.add(new BlockUse(e.getKey(), Math.max(1, (int) Math.round(e.getValue()))));
+        }
+        return List.copyOf(out);
+    }
+
+    /** Block registry id of {@code state}, or {@code null} for air / the empty-placeholder sentinel. */
+    private static String blockId(BlockState state) {
+        if (state == null || state.isAir()) return null;
+        if (CarriageVariantBlocks.isEmptyPlaceholder(state)) return null;
+        return BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
     }
 
     /**
