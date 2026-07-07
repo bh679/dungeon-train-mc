@@ -75,6 +75,11 @@ public final class EditorPartVisibility {
      * action.
      */
     public static void hideUnused(String stageId) {
+        // No focused stage → nothing to filter to; show all rather than hiding every part.
+        if (stageId == null || stageId.isBlank()) {
+            showAll();
+            return;
+        }
         Set<StageBlockIndex.PartRef> used = new HashSet<>(StageBlockIndex.partsForStage(stageId));
         Set<StageBlockIndex.PartRef> next = new HashSet<>();
         for (CarriagePartKind kind : CarriagePartKind.values()) {

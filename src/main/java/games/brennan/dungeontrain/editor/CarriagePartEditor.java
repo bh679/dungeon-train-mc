@@ -227,8 +227,6 @@ public final class CarriagePartEditor {
         if (server == null) return;
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        BlockPos origin = plotOrigin(kind, name, dims);
-        if (origin == null) origin = nextFreePlotOrigin(kind, dims);
 
         CarriageEditor.rememberReturn(player);
         PART_SESSIONS.put(player.getUUID(), new PartSession(kind, name));
@@ -239,12 +237,24 @@ public final class CarriagePartEditor {
         // rebuilds from disk, so an unsaved name drops naturally.
         CarriagePartRegistry.register(kind, name);
         // Entering a part always displays it — you can't edit what the hide-unused filter hides,
-        // and a brand-new part is exempt from any prior hide snapshot.
+        // and a brand-new part is exempt from any prior hide snapshot. Do this BEFORE computing the
+        // origin: un-hiding shifts the compacted layout, so plotOrigin must be read on the final
+        // layout (else the stamp/teleport/plotContaining/save slots diverge — data corruption).
+        boolean wasHidden = !EditorPartVisibility.isDisplayed(kind, name);
         EditorPartVisibility.show(kind, name);
 
-        CarriagePartPlacer.eraseAt(overworld, origin, kind, dims);
-        stampCurrent(overworld, origin, kind, name, dims);
-        setOutline(overworld, origin, kind, dims);
+        BlockPos origin = plotOrigin(kind, name, dims);
+        if (origin == null) origin = nextFreePlotOrigin(kind, dims);
+
+        if (wasHidden) {
+            // Un-hiding re-inserts this part into the middle of the row, shifting its siblings —
+            // restamp the whole grid so every plot lands on its final slot.
+            stampAllPlots(overworld, dims);
+        } else {
+            CarriagePartPlacer.eraseAt(overworld, origin, kind, dims);
+            stampCurrent(overworld, origin, kind, name, dims);
+            setOutline(overworld, origin, kind, dims);
+        }
 
         Vec3i size = kind.dims(dims);
         double tx = origin.getX() + size.getX() / 2.0;
