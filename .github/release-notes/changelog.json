@@ -3173,6 +3173,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "death-screen-overworld-only",
+      "version": "0.390.0",
+      "type": "fix",
+      "title": "Death-screen New World/Same World always start in the Overworld",
+      "summary": "The death screen's \"New World\" and \"Same World\" buttons now always start your next run in the Overworld, instead of an occasional random chance of starting fresh in the Nether or the End. The vanilla in-place \"Respawn\" button is unaffected and keeps its existing chance of relocating you to a different dimension.",
+      "highlights": [
+        "Death-screen New World/Same World starts are always Overworld now",
+        "Vanilla Respawn's dimension-shift chance is unchanged"
+      ],
+      "pr": 643,
+      "date": "2026-07-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
