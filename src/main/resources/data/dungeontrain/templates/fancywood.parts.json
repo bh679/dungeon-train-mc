@@ -14,6 +14,11 @@
       "name": "tuff",
       "weight": 1,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "stage": "quartz"
     }
   ],
   "walls": [
@@ -63,6 +68,42 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "quartz"
+    },
+    {
+      "name": "quartzwindow",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "quartz"
+    },
+    {
+      "name": "quartzwindow2",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "quartz"
+    },
+    {
+      "name": "quartzopen",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "quartz"
+    },
+    {
+      "name": "mudwindows",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mud"
+    },
+    {
+      "name": "mudopen",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mud"
     }
   ],
   "roof": [
@@ -121,6 +162,26 @@
       "name": "copperwindow",
       "weight": 1,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "stage": "quartz"
+    },
+    {
+      "name": "quartswindow",
+      "weight": 1,
+      "stage": "quartz"
+    },
+    {
+      "name": "mud",
+      "weight": 1,
+      "stage": "mud"
+    },
+    {
+      "name": "mudopen",
+      "weight": 1,
+      "stage": "mud"
     }
   ],
   "doors": [
@@ -140,6 +201,19 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "desert"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "quartz"
+    },
+    {
+      "name": "mud",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "mud"
     }
   ]
 }

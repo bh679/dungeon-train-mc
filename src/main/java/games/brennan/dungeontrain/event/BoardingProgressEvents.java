@@ -324,7 +324,10 @@ public final class BoardingProgressEvents {
      */
     private static void broadcastPerPlayer(ServerLevel level) {
         for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
-            int travelled = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex();
+            // Effective (offset-inclusive) progress so the HUD Diff-Car/Diff-Level and
+            // the Discord level-up post reflect an admin difficulty offset.
+            int travelled = DifficultyProgression.effectiveTravelled(
+                player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex());
             Integer last = LAST_BROADCAST.get(player.getUUID());
             if (last != null && last == travelled) continue;
             LAST_BROADCAST.put(player.getUUID(), travelled);
@@ -338,9 +341,10 @@ public final class BoardingProgressEvents {
         }
     }
 
-    /** Send a player a snapshot packet for their current travelled value. */
+    /** Send a player a snapshot packet for their current (offset-inclusive) travelled value. */
     public static void sendPlayerHudPacket(ServerPlayer player) {
-        int travelled = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex();
+        int travelled = DifficultyProgression.effectiveTravelled(
+            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex());
         LAST_BROADCAST.put(player.getUUID(), travelled);
         LAST_NOTIFIED_TIER.put(player.getUUID(), DifficultyProgression.tierForTravelled(travelled));
         DungeonTrainNet.sendTo(player, packetFor(travelled));

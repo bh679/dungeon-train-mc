@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 8,
   "variants": {
     "3,3,0": { "lockId": 1, "states": [{"state": "minecraft:stripped_oak_wood[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:oak_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
     "3,4,0": { "lockId": 1, "states": [{"state": "minecraft:stripped_oak_wood[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:oak_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },

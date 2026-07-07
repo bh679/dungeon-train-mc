@@ -30,13 +30,14 @@ public final class DifficultyProgression {
     private DifficultyProgression() {}
 
     /**
-     * Highest signed {@link PlayerRunState#travelledCarriageIndex()} across all
-     * currently online players. Tier math downstream uses {@code abs(...)}, so
-     * "max signed" gives the furthest-progressed leader's contribution. Returns
-     * 0 when no players are online — entities spawned during world load default
-     * to tier 0 (vanilla baseline).
+     * Raw highest signed {@link PlayerRunState#travelledCarriageIndex()} across all
+     * currently online players, with <strong>no</strong> difficulty offset applied.
+     * Tier math downstream uses {@code abs(...)}, so "max signed" gives the
+     * furthest-progressed leader's contribution. Returns 0 when no players are online.
+     * The {@code /dungeontrain difficulty} command re-anchors its offset against this
+     * raw value.
      */
-    public static int maxTravelledCarriageIndex(ServerLevel serverLevel) {
+    public static int rawMaxTravelledCarriageIndex(ServerLevel serverLevel) {
         int max = 0;
         boolean any = false;
         for (ServerPlayer player : serverLevel.getServer().getPlayerList().getPlayers()) {
@@ -47,6 +48,46 @@ public final class DifficultyProgression {
             }
         }
         return max;
+    }
+
+    /**
+     * Furthest-progressed leader's travelled-carriage value <strong>with the
+     * {@link DungeonTrainConfig#getDifficultyTravelledOffset() difficulty offset}
+     * applied</strong> ({@link #effectiveTravelled}). This is the single chokepoint
+     * every live-progress difficulty consumer reads — mob-gear tier, the onboarding
+     * stage gate, the starter-loot window, and villager trade caps — so an admin
+     * offset shifts them all together. Entities spawned during world load (no players
+     * online) default to the offset applied to 0.
+     */
+    public static int maxTravelledCarriageIndex(ServerLevel serverLevel) {
+        return effectiveTravelled(rawMaxTravelledCarriageIndex(serverLevel));
+    }
+
+    /**
+     * A raw travelled-carriage value shifted by the configured
+     * {@link DungeonTrainConfig#getDifficultyTravelledOffset() difficulty offset} — the
+     * game treats the player as having travelled this many extra carriages for all
+     * difficulty/HUD/achievement purposes. With the default offset of 0 this returns
+     * {@code rawTravelled} unchanged.
+     */
+    public static int effectiveTravelled(int rawTravelled) {
+        return rawTravelled + DungeonTrainConfig.getDifficultyTravelledOffset();
+    }
+
+    /**
+     * The travelled-carriage offset that makes the effective difficulty tier become
+     * exactly {@code requestedTier} right now, given the leader's current
+     * {@code rawTravelled}. Solves {@code effectiveTier(rawTravelled + offset) == requestedTier}
+     * by targeting the low end of the requested tier's carriage range
+     * ({@code (requestedTier + delay) * carriagesPerTier}) and subtracting current raw
+     * progress. Pure (params in) so it is unit-testable without a config bootstrap; the
+     * command passes the live {@link DungeonTrainConfig#getCarriagesPerTier()} /
+     * {@link DungeonTrainConfig#getProgressionLevelDelay()} values.
+     */
+    public static int travelledOffsetForRequestedTier(int requestedTier, int rawTravelled,
+                                                       int carriagesPerTier, int progressionLevelDelay) {
+        int target = (requestedTier + Math.max(0, progressionLevelDelay)) * Math.max(1, carriagesPerTier);
+        return target - rawTravelled;
     }
 
     /**
@@ -85,25 +126,54 @@ public final class DifficultyProgression {
     }
 
     /**
-     * Current difficulty tier: {@link #maxTravelledCarriageIndex} mapped through
-     * {@link #tierForTravelled}. Returns 0 when no players are online.
+     * Current difficulty tier: {@link #maxTravelledCarriageIndex} (already
+     * offset-inclusive) mapped through {@link #tierForTravelled}. Returns 0 when no
+     * players are online and no offset is set.
      */
     public static int currentTier(ServerLevel serverLevel) {
         return tierForTravelled(maxTravelledCarriageIndex(serverLevel));
     }
 
     /**
-     * The boarding-HUD "Diff-Level" of the column at {@code worldX}, derived purely from position:
-     * the carriage-equivalent index there is {@code floorDiv(worldX, carriageLength)} (for a
-     * carriage this equals its own pIdx, since the train is anchored at world-X 0), mapped through
-     * {@link #tierForTravelled}. Used by the per-template spawn gate
+     * The template-gate "Diff-Level" of the column at {@code worldX}, derived from position: the
+     * carriage-equivalent index there is {@code floorDiv(worldX, carriageLength)} (for a carriage
+     * this equals its own pIdx, since the train is anchored at world-X 0), mapped through
+     * {@link #positionTier}. Used by the per-template spawn gate
      * ({@link games.brennan.dungeontrain.template.TemplateGate}) so every weighted template kind —
      * carriages, contents, track, pillars, tunnels — shares one position-derived level scale.
-     * Deterministic and player-independent (unlike {@link #currentTier}), which keeps the gated
-     * selection reproducible across reloads. Pure (params in) so it is unit-testable.
+     * With no admin difficulty offset this is player-independent and reproducible across reloads;
+     * a {@code /dungeontrain difficulty} offset shifts it so the carriage stage that generates
+     * ahead re-themes to match (reproducible for a given offset). Reads config via
+     * {@link #positionTier}.
      */
     public static int levelAtWorldX(int worldX, int carriageLength) {
-        return tierForTravelled(Math.floorDiv(worldX, Math.max(1, carriageLength)));
+        return positionTier(Math.floorDiv(worldX, Math.max(1, carriageLength)));
+    }
+
+    /**
+     * Effective difficulty tier for a carriage/column at signed {@code positionIndex} (a carriage
+     * pIdx or world-X carriage-equivalent), with the
+     * {@link DungeonTrainConfig#getDifficultyTravelledOffset() difficulty offset} applied to its
+     * absolute distance from the train origin (clamped at 0). This is the <em>position-frame</em>
+     * analogue of {@link #effectiveTravelled} (the <em>player-progress</em> frame): it lets an
+     * admin difficulty offset shift which stage-gated templates, contents variants, and loot tier a
+     * carriage generates with — so cranking difficulty re-themes the carriages generated ahead, not
+     * just the mobs riding on them. With the default offset of 0 this is exactly
+     * {@code tierForTravelled(abs(positionIndex))} — the original position-derived,
+     * reload-reproducible level.
+     */
+    public static int positionTier(int positionIndex) {
+        return tierForTravelled(shiftedPosition(positionIndex, DungeonTrainConfig.getDifficultyTravelledOffset()));
+    }
+
+    /**
+     * Pure {@code max(0, abs(positionIndex) + offset)} — the offset-shifted absolute carriage
+     * distance behind {@link #positionTier}. {@code abs} first (position is a magnitude), then the
+     * offset, then a floor at 0 so a negative offset (lowered difficulty) can't wrap a small
+     * distance back up into a positive tier. Pure (params in) so it is unit-testable.
+     */
+    static int shiftedPosition(int positionIndex, int offset) {
+        return Math.max(0, Math.abs(positionIndex) + offset);
     }
 
     /**

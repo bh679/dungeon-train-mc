@@ -61,6 +61,21 @@
       "name": "tuff",
       "weight": 15,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 10,
+      "stage": "quartz"
+    },
+    {
+      "name": "obsidian",
+      "weight": 1,
+      "stage": "quartz"
+    },
+    {
+      "name": "mudbricks",
+      "weight": 1,
+      "stage": "mud"
     }
   ],
   "walls": [
@@ -104,6 +119,16 @@
       "name": "copper",
       "weight": 1,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "stage": "quartz"
+    },
+    {
+      "name": "mudbricks",
+      "weight": 1,
+      "stage": "mud"
     }
   ],
   "roof": [
@@ -126,6 +151,16 @@
       "name": "copper",
       "weight": 1,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "stage": "quartz"
+    },
+    {
+      "name": "mud",
+      "weight": 1,
+      "stage": "mud"
     }
   ],
   "doors": [
@@ -191,6 +226,16 @@
       "name": "copper",
       "weight": 1,
       "stage": "copper"
+    },
+    {
+      "name": "quartz",
+      "weight": 1,
+      "stage": "quartz"
+    },
+    {
+      "name": "mud",
+      "weight": 1,
+      "stage": "mud"
     }
   ]
 }

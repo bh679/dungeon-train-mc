@@ -18,10 +18,30 @@
       "VOID"
     ]
   },
+  "mud": {
+    "name": "mud",
+    "minLevel": 60,
+    "maxLevel": 80,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END"
+    ]
+  },
   "nether": {
     "name": "nether",
     "phases": [
       "NETHER",
+      "END"
+    ]
+  },
+  "quartz": {
+    "name": "quartz",
+    "minLevel": 40,
+    "maxLevel": 60,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
       "END"
     ]
   },

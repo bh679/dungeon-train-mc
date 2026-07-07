@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 8,
+  "variants": {
+    "3,0,2": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 9}, {"entity": "minecraft:shulker", "difficulty": {"min": 20, "max": "all"}}],
+    "6,4,4": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 9}, {"entity": "minecraft:shulker", "difficulty": {"min": 24, "max": "all"}}],
+    "1,3,4": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 9}, {"entity": "minecraft:shulker", "difficulty": {"min": 27, "max": "all"}}],
+    "0,3,2": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 9}, {"entity": "minecraft:shulker", "difficulty": {"min": 34, "max": "all"}}],
+    "1,1,0": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 9}, {"entity": "minecraft:shulker", "difficulty": {"min": 30, "max": "all"}}],
+    "3,4,0": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 9}, {"entity": "minecraft:shulker", "difficulty": {"min": 25, "max": "all"}}],
+    "6,2,1": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 9}, {"entity": "minecraft:shulker", "difficulty": {"min": 28, "max": "all"}}],
+    "3,2,4": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 9}, {"entity": "minecraft:shulker", "difficulty": {"min": 22, "max": "all"}}],
+    "1,4,0": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 9}, {"entity": "minecraft:shulker", "difficulty": {"min": 32, "max": "all"}}],
+    "3,0,0": [{"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "loot"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "loot_irongold"}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "3,0,4": [{"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot_irongold"}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}]
+  }
+}

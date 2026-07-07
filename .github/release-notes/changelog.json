@@ -3010,9 +3010,9 @@
       ],
       "pr": 629,
       "date": "2026-07-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.383.0",
+      "released_at": "2026-07-04T09:31:29Z"
     },
     {
       "id": "worldload-sable-log-burst",
@@ -3026,6 +3026,133 @@
       ],
       "pr": 630,
       "date": "2026-07-04",
+      "released": true,
+      "released_in": "v0.383.0",
+      "released_at": "2026-07-04T09:31:29Z"
+    },
+    {
+      "id": "quartz-build-set-and-content",
+      "version": "0.382.0",
+      "type": "content",
+      "title": "Quartz build set and new dungeon content",
+      "summary": "A new quartz-themed build set (walls, floor, roof, doors) joins the dungeon templates, and new copper, shulker, and evoker enemy content has been added alongside tweaks to elder and maze encounters.",
+      "highlights": [
+        "New quartz walls, floor, roof, and door parts",
+        "New copper, shulker, and evoker2 content prefabs",
+        "Quartz stage level range extended (40-50 -> 40-60)"
+      ],
+      "pr": 631,
+      "date": "2026-07-04",
+      "released": true,
+      "released_in": "v0.383.0",
+      "released_at": "2026-07-04T09:31:29Z"
+    },
+    {
+      "id": "maze-zombiesrooms-prefab-tweaks",
+      "version": "0.383.1",
+      "type": "content",
+      "title": "Maze and zombie-room prefab tweaks",
+      "summary": "Rebalanced the maze dungeon's copper stage odds and refreshed variant data for the zombie-room and corridor prefabs.",
+      "highlights": [
+        "Copper stage now appears more often in the maze dungeon",
+        "Zombie-room encounters rebalanced (command block/mob spawn odds)"
+      ],
+      "date": "2026-07-04",
+      "released": true,
+      "released_in": "v0.384.0",
+      "released_at": "2026-07-04T10:04:28Z"
+    },
+    {
+      "id": "dev-message-consent",
+      "version": "0.385.0",
+      "type": "feat",
+      "title": "Consent prompt for Developer messages",
+      "summary": "If the developer sends you a message while you're in a world, you'll see a prompt asking if you want to receive it \u2014 type @Dev to accept. Once you accept, further messages from the developer show up in your chat automatically for the rest of your session (or for 20 minutes after you last replied). If you don't accept, the message is never shown in your in-game chat, but you can still find it in the main-menu chat panel.",
+      "highlights": [
+        "New: an opt-in prompt before Developer messages appear in your in-game chat",
+        "Accepting once keeps future messages flowing for the session (or ~20 minutes of activity)"
+      ],
+      "pr": 633,
+      "date": "2026-07-06",
+      "released": true,
+      "released_in": "v0.385.0",
+      "released_at": "2026-07-06T10:29:20Z"
+    },
+    {
+      "id": "difficulty-command",
+      "version": "0.386.0",
+      "type": "feat",
+      "title": "New /dungeontrain difficulty command",
+      "summary": "Server operators can now set the run's difficulty on the fly with /dungeontrain difficulty <level>, instead of waiting to earn it by travelling. The whole game shifts to match at once \u2014 the difficulty shown on the HUD, the mobs and their gear, the carriage stages that generate ahead, the loot, and villager trades. It re-anchors each time you run it and drifts with real travel afterward; /dungeontrain difficulty auto clears it and returns to normal progression.",
+      "highlights": [
+        "Set any difficulty level instantly for testing or custom runs",
+        "Shifts the HUD, mobs, carriage stages, loot and trades together",
+        "/dungeontrain difficulty auto restores automatic, travel-based scaling"
+      ],
+      "pr": 634,
+      "date": "2026-07-06",
+      "released": true,
+      "released_in": "v0.386.0",
+      "released_at": "2026-07-06T23:39:47Z"
+    },
+    {
+      "id": "template-blocks-menu",
+      "version": "0.387.0",
+      "type": "feat",
+      "title": "Template Blocks menu \u2014 reskin a build in one pass",
+      "summary": "A new in-editor Template Blocks menu lets builders swap a block everywhere in a build at once (walls, floors, variants and all) with whatever they're holding, while keeping doors, stairs, and slabs facing the right way. Also added a new mud building set \u2014 doors, floors, roofs, and walls \u2014 for browner, earthier builds.",
+      "highlights": [
+        "New Template Blocks menu (press V, or /dungeontrain editor blocks) \u2014 swap a block everywhere in a build in one click",
+        "New mud building set: doors, floors, roofs, and walls"
+      ],
+      "pr": 636,
+      "date": "2026-07-07",
+      "released": true,
+      "released_in": "v0.388.0",
+      "released_at": "2026-07-07T05:01:57Z"
+    },
+    {
+      "id": "relay-echo-usage-reporting",
+      "version": "0.387.0",
+      "type": "chore",
+      "title": "Echo appearances counted in the community data",
+      "summary": "When a fallen player's echo returns in another world, the mod now reports it to the community data dashboard so we can see how often each death is remembered. No change to how echoes look or behave in-game.",
+      "highlights": [],
+      "pr": 635,
+      "date": "2026-07-07",
+      "released": true,
+      "released_in": "v0.388.0",
+      "released_at": "2026-07-07T05:01:57Z"
+    },
+    {
+      "id": "new-maze-stages-mushroom-rooms",
+      "version": "0.388.0",
+      "type": "content",
+      "title": "New maze stages (Stone, Desert, Quartz) + mushroom rooms",
+      "summary": "The maze dungeon now has Stone, Desert, and Quartz stages alongside the existing Copper stage, so its theme changes as you go deeper into a run. Two new mushroom-themed rooms can also show up \u2014 a mushroom feature room, and a fuller mushroom grove later on. Bookshelf and pot arrangements in library rooms also look a bit more consistent.",
+      "highlights": [
+        "New Stone, Desert, and Quartz maze stages (joins the existing Copper stage)",
+        "New mushroom feature room and mushroom grove room",
+        "Minor visual polish to bookshelf/pot layouts in library rooms"
+      ],
+      "pr": 637,
+      "date": "2026-07-07",
+      "released": true,
+      "released_in": "v0.388.1",
+      "released_at": "2026-07-07T05:41:59Z"
+    },
+    {
+      "id": "overworld-only-world-start",
+      "version": "0.389.0",
+      "type": "fix",
+      "title": "New worlds always start in the Overworld",
+      "summary": "New Dungeon Train worlds can now only be created with an Overworld start \u2014 the Nether and End starting-dimension options have been removed from the Create World screen. Worlds that already started in the Nether or End are unaffected and keep working exactly as before.",
+      "highlights": [
+        "Removed the Nether/End starting-dimension world types from world creation",
+        "Existing Nether/End-start worlds are unaffected and continue to work"
+      ],
+      "pr": 639,
+      "date": "2026-07-07",
       "released": false,
       "released_in": null,
       "released_at": null
