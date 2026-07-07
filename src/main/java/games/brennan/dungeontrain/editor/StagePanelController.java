@@ -185,12 +185,21 @@ public final class StagePanelController {
 
     private static void toggleHideUnused(ServerPlayer player) {
         boolean active = EditorPartsStageFilter.toggle();
+        // Bulk-set per-part visibility from the toggle: ON snapshots the focused stage's parts as
+        // the only displayed ones; OFF displays all. Manual per-part checkboxes and new parts stay
+        // put afterward — the snapshot only fires on this toggle.
+        if (active) {
+            EditorPartVisibility.hideUnused(EditorStageSelection.effective());
+        } else {
+            EditorPartVisibility.showAll();
+        }
         ServerLevel overworld = player.getServer().overworld();
         if (EditorStampedCategoryState.current().orElse(null) == EditorCategory.CARRIAGES) {
             CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
             CarriagePartEditor.stampAllPlots(overworld, dims);
         }
-        actionBar(player, active ? "Parts grid filtered to the focused stage" : "Parts grid filter off",
+        actionBar(player, active ? "Parts grid showing only the focused stage's parts"
+                : "Parts grid showing all parts",
             active ? ChatFormatting.GREEN : ChatFormatting.YELLOW);
         // The flag is global — reflect the new button state on every open panel.
         resyncAllOpen(player.getServer());

@@ -272,6 +272,14 @@ public final class EditorTypeMenuInputHandler {
 
         switch (hit.cell()) {
             case NAME -> {
+                // Shift-click a PART row's name toggles that part's editor-grid visibility (the
+                // ☑/☐ checkbox). Plain click enters the part to edit it. Parts aren't gateable
+                // templates, so the Stage-picker shortcut below never applies to them.
+                if (shift && "PARTS".equals(variant.category())) {
+                    CommandRunner.run("dungeontrain editor part display "
+                        + variant.modelId() + " " + variant.modelName() + " toggle");
+                    return;
+                }
                 // Shift-click a gateable template's name opens the Stage / Custom picker (the
                 // floating-menu entry point for linking a template to a Stage). Plain click teleports.
                 // Skipped on Sub-Variants rows — they have a dedicated STAGE cell, and the shortcut

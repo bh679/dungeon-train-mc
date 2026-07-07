@@ -132,21 +132,16 @@ public final class CarriagePartEditor {
     }
 
     /**
-     * The parts that occupy slots on {@code kind}'s row in the current layout, in slot order. Plain
-     * registry order normally; when the {@link EditorPartsStageFilter hide-unused filter} is active
-     * and a stage is {@linkplain EditorStageSelection#effective() focused}, only the parts linked to
-     * that stage — so the visible parts <b>compact</b> to the front of the row with no gaps for the
-     * hidden ones.
+     * The parts that occupy slots on {@code kind}'s row in the current layout, in slot order — the
+     * {@linkplain EditorPartVisibility#isDisplayed displayed} parts in registry order, so hidden
+     * parts leave no gap (the visible ones <b>compact</b> to the front of the row). Visibility is
+     * driven by the hide-unused toggle, per-part checkboxes, and the new-part exemption; when nothing
+     * is hidden this is plain registry order (byte-identical to the pre-visibility behaviour).
      */
     private static List<String> layoutNames(CarriagePartKind kind) {
-        List<String> all = CarriagePartRegistry.registeredNames(kind);
-        if (!EditorPartsStageFilter.isActive()) return all;
-        String stageId = EditorStageSelection.effective();
-        if (stageId == null) return all;
-        java.util.Set<StageBlockIndex.PartRef> used = java.util.Set.copyOf(StageBlockIndex.partsForStage(stageId));
         List<String> visible = new java.util.ArrayList<>();
-        for (String n : all) {
-            if (used.contains(new StageBlockIndex.PartRef(kind, n))) visible.add(n);
+        for (String n : CarriagePartRegistry.registeredNames(kind)) {
+            if (EditorPartVisibility.isDisplayed(kind, n)) visible.add(n);
         }
         return visible;
     }
@@ -233,6 +228,9 @@ public final class CarriagePartEditor {
         // Server-restart cleanup is automatic: CarriagePartRegistry.reload()
         // rebuilds from disk, so an unsaved name drops naturally.
         CarriagePartRegistry.register(kind, name);
+        // Entering a part always displays it — you can't edit what the hide-unused filter hides,
+        // and a brand-new part is exempt from any prior hide snapshot.
+        EditorPartVisibility.show(kind, name);
 
         CarriagePartPlacer.eraseAt(overworld, origin, kind, dims);
         stampCurrent(overworld, origin, kind, name, dims);
@@ -316,9 +314,11 @@ public final class CarriagePartEditor {
         String sourceName = sourceNameHolder[0];
 
         // Allocate the next free slot before registering so the index lands at
-        // the end of the list (allocation depends on registeredNames().size()).
+        // the end of the list (allocation depends on the current layout size).
         BlockPos targetOrigin = nextFreePlotOrigin(kind, dims);
         CarriagePartRegistry.register(kind, name);
+        // New parts are always displayed — exempt from any active hide-unused snapshot.
+        EditorPartVisibility.show(kind, name);
 
         CarriagePartPlacer.eraseAt(overworld, targetOrigin, kind, dims);
         if (seed != null) {

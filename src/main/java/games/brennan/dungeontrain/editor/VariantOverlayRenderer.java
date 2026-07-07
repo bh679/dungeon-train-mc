@@ -134,6 +134,9 @@ public final class VariantOverlayRenderer {
      */
     private static final Map<UUID, String> LAST_STAGE_STRIPS_KEY = new HashMap<>();
 
+    /** Per-player dedup key for the part-visibility mirror — just {@code EditorPartVisibility.generation()}. */
+    private static final Map<UUID, String> LAST_PART_VIS_KEY = new HashMap<>();
+
     private VariantOverlayRenderer() {}
 
     /**
@@ -155,6 +158,7 @@ public final class VariantOverlayRenderer {
         LAST_PLOT_LABELS_KEY.clear();
         LAST_TYPE_MENUS_KEY.clear();
         LAST_STAGE_STRIPS_KEY.clear();
+        LAST_PART_VIS_KEY.clear();
     }
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -188,6 +192,7 @@ public final class VariantOverlayRenderer {
         clearPlotLabelsIfStale(player);
         clearTypeMenusIfStale(player);
         clearStageStripsIfStale(player);
+        clearPartVisibilityIfStale(player);
     }
 
     /**
@@ -212,6 +217,7 @@ public final class VariantOverlayRenderer {
             pushPlotLabelsSnapshot(player, dims);
             pushTypeMenusSnapshot(player, dims);
             pushStageStripsSnapshot(player, level);
+            pushPartVisibilitySnapshot(player);
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
@@ -790,6 +796,38 @@ public final class VariantOverlayRenderer {
         if (LAST_STAGE_STRIPS_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player,
                 games.brennan.dungeontrain.net.StageBlockStripsPacket.empty());
+        }
+    }
+
+    /**
+     * Push the per-part visibility mirror ({@link games.brennan.dungeontrain.net.PartVisibilityPacket})
+     * when {@link EditorPartVisibility#generation()} moved since the player's last push — the
+     * part-list ☑/☐ glyphs read it. Generation-keyed, so steady-state ticks send nothing.
+     */
+    private static void pushPartVisibilitySnapshot(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        if (EditorStampedCategoryState.current().isEmpty()) {
+            clearPartVisibilityIfStale(player);
+            return;
+        }
+        String key = "g" + EditorPartVisibility.generation();
+        if (key.equals(LAST_PART_VIS_KEY.get(uuid))) return;
+        LAST_PART_VIS_KEY.put(uuid, key);
+
+        java.util.List<games.brennan.dungeontrain.net.PartVisibilityPacket.Entry> entries =
+            new java.util.ArrayList<>();
+        for (StageBlockIndex.PartRef ref : EditorPartVisibility.hiddenSnapshot()) {
+            entries.add(new games.brennan.dungeontrain.net.PartVisibilityPacket.Entry(
+                (byte) ref.kind().ordinal(), ref.name()));
+        }
+        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.PartVisibilityPacket(entries));
+    }
+
+    /** Send the empty visibility packet if the player previously had a non-empty snapshot. */
+    private static void clearPartVisibilityIfStale(ServerPlayer player) {
+        if (LAST_PART_VIS_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.PartVisibilityPacket.empty());
         }
     }
 

@@ -309,6 +309,7 @@ public final class EditorTypeMenuRenderer {
             stagesRemoveMode = false;
             // Editor exited — drop the row icon strips and close the Stage Blocks panel too.
             games.brennan.dungeontrain.client.menu.ClientStageBlocks.clear();
+            games.brennan.dungeontrain.client.menu.ClientPartVisibility.clear();
             games.brennan.dungeontrain.client.menu.stagepanel.StagePanelMenu.closeLocal();
             LOGGER.info("[DungeonTrain] EditorTypeMenus: snapshot cleared");
             return;
@@ -1390,9 +1391,19 @@ public final class EditorTypeMenuRenderer {
             default -> { }
         }
 
-        // Name (centred within its cell).
+        // Name (centred within its cell). Part rows carry a [x]/[ ] visibility checkbox prefix
+        // (shift-click the row toggles it) — read from the ClientPartVisibility mirror. Bracket
+        // glyphs are used over ☑/☐ so they render on every font.
         double nameCX = (rowLeft + rc.nameRight()) / 2.0;
-        drawCenteredText(ps, buffer, font, variant.name(), nameCX, rowCY, NAME_COLOR);
+        String label = variant.name();
+        if ("PARTS".equals(variant.category())) {
+            games.brennan.dungeontrain.train.CarriagePartKind pk =
+                games.brennan.dungeontrain.train.CarriagePartKind.fromId(variant.modelId());
+            boolean shown = pk == null
+                || games.brennan.dungeontrain.client.menu.ClientPartVisibility.isDisplayed(pk, variant.name());
+            label = (shown ? "[x] " : "[ ] ") + variant.name();
+        }
+        drawCenteredText(ps, buffer, font, label, nameCX, rowCY, NAME_COLOR);
 
         if (!rc.hasWeight()) return;
 

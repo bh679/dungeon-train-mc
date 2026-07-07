@@ -637,6 +637,20 @@ public final class EditorCommand {
                         .executes(c -> runPartEnter(c.getSource(),
                             StringArgumentType.getString(c, "kind"),
                             StringArgumentType.getString(c, "name"))))))
+            // Toggle / set a part's editor-grid visibility (the part-list ☑/☐ checkbox).
+            .then(Commands.literal("display")
+                .then(Commands.argument("kind", StringArgumentType.word())
+                    .suggests(PART_KIND_SUGGESTIONS)
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .suggests(PART_NAME_SUGGESTIONS)
+                        .executes(c -> runPartDisplay(c.getSource(),
+                            StringArgumentType.getString(c, "kind"),
+                            StringArgumentType.getString(c, "name"), "toggle"))
+                        .then(Commands.argument("mode", StringArgumentType.word())
+                            .executes(c -> runPartDisplay(c.getSource(),
+                                StringArgumentType.getString(c, "kind"),
+                                StringArgumentType.getString(c, "name"),
+                                StringArgumentType.getString(c, "mode")))))))
             .then(Commands.literal("new")
                 .then(Commands.argument("kind", StringArgumentType.word())
                     .suggests(PART_KIND_SUGGESTIONS)
@@ -1310,10 +1324,8 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.EditorStageSelection.clear();
         }
         restampCarriagePlotsForStage(source);
-        // The parts-grid filter tracks the focused stage — repaint it too when active.
-        if (games.brennan.dungeontrain.editor.EditorPartsStageFilter.isActive()) {
-            restampPartsGridForStage(source);
-        }
+        // Parts-grid visibility is decoupled from selection now (it's driven by the hide-unused
+        // snapshot + per-part checkboxes), so changing the focused stage does not re-filter it.
         // Auto-open the Stage Blocks panel for the selecting player on the focused stage (close on
         // deselect) — the panel follows the selection.
         net.minecraft.server.level.ServerPlayer selPlayer = source.getPlayer();
@@ -1336,9 +1348,6 @@ public final class EditorCommand {
     private static int runStageDeselect(CommandSourceStack source) {
         games.brennan.dungeontrain.editor.EditorStageSelection.clear();
         restampCarriagePlotsForStage(source);
-        if (games.brennan.dungeontrain.editor.EditorPartsStageFilter.isActive()) {
-            restampPartsGridForStage(source);
-        }
         games.brennan.dungeontrain.editor.StagePanelController.closeFor(source.getPlayer());
         source.sendSuccess(() -> Component.literal("Editor: stage preview off.")
             .withStyle(ChatFormatting.YELLOW), false);
@@ -1429,21 +1438,46 @@ public final class EditorCommand {
         }
     }
 
-    /** Toggle the parts-grid stage filter and repaint the grid. */
+    /** Toggle the hide-unused parts filter — bulk-set per-part visibility from the focused stage. */
     private static int runStageFilterParts(CommandSourceStack source) {
         boolean active = games.brennan.dungeontrain.editor.EditorPartsStageFilter.toggle();
+        if (active) {
+            games.brennan.dungeontrain.editor.EditorPartVisibility.hideUnused(
+                games.brennan.dungeontrain.editor.EditorStageSelection.effective());
+        } else {
+            games.brennan.dungeontrain.editor.EditorPartVisibility.showAll();
+        }
         restampPartsGridForStage(source);
         // The filter flag doesn't move the stage-blocks generation — reflect the new button state
         // on any open Stage Blocks panels explicitly (mirrors the panel-op path).
         games.brennan.dungeontrain.editor.StagePanelController.resyncAllOpen(source.getServer());
         if (active) {
             source.sendSuccess(() -> Component.literal(
-                "Editor: parts grid filtered to the focused stage's parts.")
+                "Editor: parts grid showing only the focused stage's parts.")
                 .withStyle(ChatFormatting.GREEN), false);
         } else {
-            source.sendSuccess(() -> Component.literal("Editor: parts grid filter off.")
+            source.sendSuccess(() -> Component.literal("Editor: parts grid showing all parts.")
                 .withStyle(ChatFormatting.YELLOW), false);
         }
+        return 1;
+    }
+
+    /** Toggle / set one part's editor-grid visibility (the part-list ☑/☐ checkbox). */
+    private static int runPartDisplay(CommandSourceStack source, String rawKind, String name, String mode) {
+        CarriagePartKind kind = CarriagePartKind.fromId(rawKind);
+        if (kind == null) {
+            source.sendFailure(Component.literal("Unknown part kind: " + rawKind).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        String n = name.toLowerCase(java.util.Locale.ROOT);
+        boolean displayed = switch (mode == null ? "toggle" : mode.toLowerCase(java.util.Locale.ROOT)) {
+            case "on", "show" -> { games.brennan.dungeontrain.editor.EditorPartVisibility.setHidden(kind, n, false); yield true; }
+            case "off", "hide" -> { games.brennan.dungeontrain.editor.EditorPartVisibility.setHidden(kind, n, true); yield false; }
+            default -> games.brennan.dungeontrain.editor.EditorPartVisibility.toggle(kind, n);
+        };
+        restampPartsGridForStage(source);
+        source.sendSuccess(() -> Component.literal("Editor: part " + kind.id() + ":" + n
+            + (displayed ? " shown." : " hidden.")).withStyle(ChatFormatting.GRAY), false);
         return 1;
     }
 
