@@ -198,4 +198,17 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
     public VariantState withDifficulty(VariantDifficulty newDifficulty) {
         return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, newDifficulty);
     }
+
+    /**
+     * Return a copy with {@code state} (and its {@code blockEntityNbt})
+     * replaced, keeping every other field (weight, rotation, half,
+     * difficulty, loot link, entity id) intact. Used by the template
+     * block-swap menu to re-skin a candidate while preserving its authored
+     * spawn behaviour. Passing a {@code newBeNbt} of {@code null} clears any
+     * block-entity payload the old block carried (the new block rarely shares
+     * its NBT shape).
+     */
+    public VariantState withState(BlockState newState, @Nullable CompoundTag newBeNbt) {
+        return new VariantState(newState, newBeNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty);
+    }
 }

@@ -186,6 +186,7 @@
   "gui.dungeontrain.options.mode.looping": "Looping",
   "key.dungeontrain.command_menu": "Toggle Command Menu",
   "key.dungeontrain.variant_place": "Place Block Variant (hold + right-click; tap to open menu)",
+  "key.dungeontrain.template_blocks": "Open Template Blocks Menu (or /dungeontrain editor blocks)",
   "key.categories.dungeontrain": "Dungeon Train",
   "item.dungeontrain.variant_clipboard": "Block Variant Clipboard",
   "item.dungeontrain.random_book": "Random Book",
