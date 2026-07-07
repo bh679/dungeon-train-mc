@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "selfWeight": 1,
   "variants": [
     {
@@ -40,6 +40,10 @@
     },
     {
       "id": "worship2",
+      "weight": 1
+    },
+    {
+      "id": "mushroom",
       "weight": 1
     }
   ]
