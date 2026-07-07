@@ -147,6 +147,11 @@ public final class StagePanelMenuRenderer {
         return Math.min(StagePanelMenu.blocks().size(), BLOCKS_DISPLAY_CAP);
     }
 
+    /** Rows the block section occupies — the shown rows, or one reserved row for the empty placeholder. */
+    static int blockSectionRows() {
+        return Math.max(1, shownBlockRows());
+    }
+
     /** True when a "+K more" label row follows the list — against the REAL total, not the wire cap. */
     static boolean hasOverflowRow() {
         return StagePanelMenu.totalBlocks() > shownBlockRows();
@@ -156,9 +161,9 @@ public final class StagePanelMenuRenderer {
         return Math.max(1, StagePanelMenu.parts().size());
     }
 
-    /** header + toolbar + block rows [+ overflow] + parts header + part rows. */
+    /** header + toolbar + block rows (min 1 for the empty placeholder) [+ overflow] + parts header + part rows. */
     static int rowCount() {
-        return 2 + shownBlockRows() + (hasOverflowRow() ? 1 : 0) + 1 + partRows();
+        return 2 + blockSectionRows() + (hasOverflowRow() ? 1 : 0) + 1 + partRows();
     }
 
     static double halfHeight() {
@@ -223,7 +228,8 @@ public final class StagePanelMenuRenderer {
                 -halfW + PAD_X + ICON_SLOT, rowCY, NAME_COLOR);
             drawCenteredText(ps, buffer, font, "×" + bc.count(), countCX, rowCY, COUNT_COLOR);
         }
-        int nextRow = rowBase + shown;
+        // Reserve one row for the empty placeholder so the Parts subheader doesn't overlap it.
+        int nextRow = rowBase + blockSectionRows();
         if (hasOverflowRow()) {
             drawCenteredText(ps, buffer, font, "+" + (StagePanelMenu.totalBlocks() - shown) + " more",
                 0, topY - (nextRow + 0.5) * ROW_H, DIM_COLOR);
@@ -288,11 +294,14 @@ public final class StagePanelMenuRenderer {
             return new StagePanelMenu.Hit(StagePanelMenu.CellKind.CLOSE, -1, -1);
         }
         int shown = shownBlockRows();
+        int blockRows = blockSectionRows();
         int row = rowFromTop - 2;
-        if (row < shown) {
-            return new StagePanelMenu.Hit(StagePanelMenu.CellKind.BLOCK_ROW, row, -1);
+        if (row < blockRows) {
+            // The reserved empty-placeholder row (shown == 0) isn't a clickable block.
+            return shown == 0 ? StagePanelMenu.Hit.NONE
+                : new StagePanelMenu.Hit(StagePanelMenu.CellKind.BLOCK_ROW, row, -1);
         }
-        row -= shown;
+        row -= blockRows;
         if (hasOverflowRow()) {
             if (row == 0) return StagePanelMenu.Hit.NONE;
             row--;

@@ -132,6 +132,12 @@ public final class StagePanelController {
             actionBar(player, "Open the stage's panel first", ChatFormatting.YELLOW);
             return;
         }
+        // Editor-presence gate (the OPEN map isn't cleared on editor exit) — never rewrite part files
+        // for a player who has left the editor. Mirrors open()'s stamped-category check.
+        if (EditorStampedCategoryState.current().isEmpty()) {
+            actionBar(player, "Enter an editor category first", ChatFormatting.YELLOW);
+            return;
+        }
         Optional<Block> from = blockById(packet.blockId());
         if (from.isEmpty()) {
             actionBar(player, "Unknown block: " + packet.blockId(), ChatFormatting.RED);
