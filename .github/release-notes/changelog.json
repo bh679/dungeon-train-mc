@@ -3153,9 +3153,9 @@
       ],
       "pr": 639,
       "date": "2026-07-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.390.0",
+      "released_at": "2026-07-07T08:01:21Z"
     },
     {
       "id": "editor-overlay-play-perf",
@@ -3170,9 +3170,9 @@
       ],
       "pr": 640,
       "date": "2026-07-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.390.0",
+      "released_at": "2026-07-07T08:01:21Z"
     },
     {
       "id": "death-screen-overworld-only",
@@ -3186,9 +3186,9 @@
       ],
       "pr": 643,
       "date": "2026-07-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.390.0",
+      "released_at": "2026-07-07T08:01:21Z"
     }
   ]
 }
