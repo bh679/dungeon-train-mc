@@ -3094,6 +3094,35 @@
       "released": true,
       "released_in": "v0.386.0",
       "released_at": "2026-07-06T23:39:47Z"
+    },
+    {
+      "id": "template-blocks-menu",
+      "version": "0.387.0",
+      "type": "feat",
+      "title": "Template Blocks menu \u2014 reskin a build in one pass",
+      "summary": "A new in-editor Template Blocks menu lets builders swap a block everywhere in a build at once (walls, floors, variants and all) with whatever they're holding, while keeping doors, stairs, and slabs facing the right way. Also added a new mud building set \u2014 doors, floors, roofs, and walls \u2014 for browner, earthier builds.",
+      "highlights": [
+        "New Template Blocks menu (press V, or /dungeontrain editor blocks) \u2014 swap a block everywhere in a build in one click",
+        "New mud building set: doors, floors, roofs, and walls"
+      ],
+      "pr": 636,
+      "date": "2026-07-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "relay-echo-usage-reporting",
+      "version": "0.387.0",
+      "type": "chore",
+      "title": "Echo appearances counted in the community data",
+      "summary": "When a fallen player's echo returns in another world, the mod now reports it to the community data dashboard so we can see how often each death is remembered. No change to how echoes look or behave in-game.",
+      "highlights": [],
+      "pr": 635,
+      "date": "2026-07-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

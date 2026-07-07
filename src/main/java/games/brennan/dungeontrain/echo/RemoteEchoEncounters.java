@@ -101,6 +101,9 @@ public final class RemoteEchoEncounters {
      * near enough to be the story's audience.
      */
     public static void onRemoteEchoSpawned(PlayerMobEntity mob, ReincarnationRecord record) {
+        // The pool record was consumed the moment PlayerMob embodied it — report usage before any
+        // journal gating so the relay's per-death echo count doesn't depend on the story feature.
+        EchoUsageReporter.report(record, mob);
         if (!DungeonTrainConfig.isEchoEncounterToDiscord()) return;
         if (!(mob.level() instanceof ServerLevel level)) return;
         if (ACTIVE.size() >= MAX_ACTIVE) return;

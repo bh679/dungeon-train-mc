@@ -42,6 +42,9 @@ public final class DungeonTrainNet {
         registrar.playToClient(BlockVariantSyncPacket.TYPE, BlockVariantSyncPacket.STREAM_CODEC, BlockVariantSyncPacket::handle);
         registrar.playToServer(BlockVariantEditPacket.TYPE, BlockVariantEditPacket.STREAM_CODEC, BlockVariantEditPacket::handle);
         registrar.playToServer(BlockVariantMenuTogglePacket.TYPE, BlockVariantMenuTogglePacket.STREAM_CODEC, BlockVariantMenuTogglePacket::handle);
+        registrar.playToServer(TemplateBlocksMenuTogglePacket.TYPE, TemplateBlocksMenuTogglePacket.STREAM_CODEC, TemplateBlocksMenuTogglePacket::handle);
+        registrar.playToClient(TemplateBlocksSyncPacket.TYPE, TemplateBlocksSyncPacket.STREAM_CODEC, TemplateBlocksSyncPacket::handle);
+        registrar.playToServer(TemplateBlocksEditPacket.TYPE, TemplateBlocksEditPacket.STREAM_CODEC, TemplateBlocksEditPacket::handle);
         registrar.playToClient(BlockVariantLockIdsPacket.TYPE, BlockVariantLockIdsPacket.STREAM_CODEC, BlockVariantLockIdsPacket::handle);
         registrar.playToClient(BlockVariantOutlinePacket.TYPE, BlockVariantOutlinePacket.STREAM_CODEC, BlockVariantOutlinePacket::handle);
         registrar.playToClient(EditorPlotLabelsPacket.TYPE, EditorPlotLabelsPacket.STREAM_CODEC, EditorPlotLabelsPacket::handle);

@@ -18,6 +18,16 @@
       "VOID"
     ]
   },
+  "mud": {
+    "name": "mud",
+    "minLevel": 60,
+    "maxLevel": 80,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END"
+    ]
+  },
   "nether": {
     "name": "nether",
     "phases": [

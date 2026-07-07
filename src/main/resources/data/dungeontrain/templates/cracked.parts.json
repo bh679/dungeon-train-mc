@@ -29,6 +29,11 @@
       "name": "obsidian",
       "weight": 4,
       "stage": "quartz"
+    },
+    {
+      "name": "mudbricks",
+      "weight": 1,
+      "stage": "mud"
     }
   ],
   "walls": [
@@ -102,7 +107,26 @@
     {
       "name": "quartz",
       "weight": 1,
+      "sideMode": "one",
       "stage": "quartz"
+    },
+    {
+      "name": "quartz_broken",
+      "weight": 10,
+      "sideMode": "either",
+      "stage": "quartz"
+    },
+    {
+      "name": "mudopen",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mud"
+    },
+    {
+      "name": "mudbricks",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mud"
     }
   ],
   "roof": [
@@ -163,6 +187,16 @@
       "name": "quartz",
       "weight": 1,
       "stage": "quartz"
+    },
+    {
+      "name": "mud",
+      "weight": 1,
+      "stage": "mud"
+    },
+    {
+      "name": "mudopen",
+      "weight": 1,
+      "stage": "mud"
     }
   ],
   "doors": [
@@ -210,6 +244,11 @@
       "name": "quartz",
       "weight": 1,
       "stage": "quartz"
+    },
+    {
+      "name": "mud",
+      "weight": 1,
+      "stage": "mud"
     }
   ]
 }
