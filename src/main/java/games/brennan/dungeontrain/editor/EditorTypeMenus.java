@@ -120,7 +120,9 @@ public final class EditorTypeMenus {
     ) {
         List<String> names = CarriagePartRegistry.registeredNames(kind);
         if (names.isEmpty()) return;
-        BlockPos firstOrigin = CarriagePartEditor.plotOrigin(kind, names.get(0), dims);
+        // Anchor on the row's fixed slot-0 origin, NOT the first part's plotOrigin — the latter is
+        // null when that part is hidden by the visibility filter, which would drop the whole list.
+        BlockPos firstOrigin = CarriagePartEditor.rowOrigin(kind, dims);
         if (firstOrigin == null) return;
         Vec3i footprint = kind.dims(dims);
         BlockPos anchor = anchorForXRow(firstOrigin, footprint);

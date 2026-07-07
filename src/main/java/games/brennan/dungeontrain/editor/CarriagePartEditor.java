@@ -121,6 +121,16 @@ public final class CarriagePartEditor {
         return slotOrigin(kind, layoutNames(kind).size(), dims);
     }
 
+    /**
+     * World origin of {@code kind}'s row start (slot 0) — a fixed position independent of which
+     * parts are displayed. Menu anchors use this instead of the first part's {@link #plotOrigin}
+     * (which is {@code null} when that part is hidden), so a part list still anchors even when its
+     * first — or every — part is hidden by the visibility filter.
+     */
+    public static BlockPos rowOrigin(CarriagePartKind kind, CarriageDims dims) {
+        return slotOrigin(kind, 0, dims);
+    }
+
     /** World origin of the {@code index}-th slot on {@code kind}'s row, or {@code null} for a negative index. */
     private static BlockPos slotOrigin(CarriagePartKind kind, int index, CarriageDims dims) {
         if (index < 0) return null;
