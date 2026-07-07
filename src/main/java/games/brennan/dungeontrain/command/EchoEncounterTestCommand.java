@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -49,10 +50,14 @@ import java.util.UUID;
  * {@code event.CommandEvents}.
  *
  * <ul>
- *   <li>{@code /dtechotest summon [name]} — spawn a PlayerMob in front of you and open a remote-echo
- *       journal for it (as if it had spawned as a remote echo of {@code name}). Interact with it —
- *       approach, crouch, hit it / let it hit you, trade, shove it off the deck, kill it — then the
- *       story posts when it dies, you die, or you run {@code finish}.</li>
+ *   <li>{@code /dtechotest summon [name] [relayId]} — spawn a PlayerMob in front of you and open a
+ *       remote-echo journal for it (as if it had spawned as a remote echo of {@code name}). Interact
+ *       with it — approach, crouch, hit it / let it hit you, trade, shove it off the deck, kill it —
+ *       then the story posts when it dies, you die, or you run {@code finish}. With {@code relayId}
+ *       the record poses as a relay-imported life ({@code discordpresence:<relayId>}), so
+ *       {@link games.brennan.dungeontrain.echo.EchoUsageReporter} fires a real
+ *       {@code /reincarnations/used} report for that id — the dev path for verifying echo-usage
+ *       counting end-to-end.</li>
  *   <li>{@code /dtechotest finish} — end every open journal now and post its story.</li>
  * </ul>
  *
@@ -72,16 +77,19 @@ public final class EchoEncounterTestCommand {
         dispatcher.register(Commands.literal("dtechotest")
             .requires(s -> s.hasPermission(2))
             .then(Commands.literal("summon")
-                .executes(ctx -> summon(ctx, "TestSoul"))
+                .executes(ctx -> summon(ctx, "TestSoul", 0))
                 .then(Commands.argument("name", StringArgumentType.word())
-                    .executes(ctx -> summon(ctx, StringArgumentType.getString(ctx, "name")))))
+                    .executes(ctx -> summon(ctx, StringArgumentType.getString(ctx, "name"), 0))
+                    .then(Commands.argument("relayId", IntegerArgumentType.integer(1))
+                        .executes(ctx -> summon(ctx, StringArgumentType.getString(ctx, "name"),
+                            IntegerArgumentType.getInteger(ctx, "relayId"))))))
             .then(Commands.literal("upgrade")
                 .executes(EchoEncounterTestCommand::upgrade))
             .then(Commands.literal("finish")
                 .executes(EchoEncounterTestCommand::finish)));
     }
 
-    private static int summon(CommandContext<CommandSourceStack> ctx, String name) {
+    private static int summon(CommandContext<CommandSourceStack> ctx, String name, int relayId) {
         CommandSourceStack source = ctx.getSource();
         ServerPlayer player = source.getPlayer();
         if (player == null) {
@@ -131,9 +139,16 @@ public final class EchoEncounterTestCommand {
         // story's "best items" line — captured below in onRemoteEchoSpawned — has something to describe.
         gearUp(mob, level.registryAccess());
 
-        ReincarnationRecord record = new ReincarnationRecord(
-            "dttest", UUID.randomUUID().toString(), UUID.randomUUID(), name,
-            TEST_CARRIAGE, "", new CompoundTag(), List.of());
+        // With a relayId the record poses as a relay-imported life, so the usage reporter fires a
+        // real /reincarnations/used POST for it (dev relay on dev builds); without one, "dttest"
+        // keeps the reporter silent — a synthetic life never touched the relay's pool.
+        ReincarnationRecord record = relayId > 0
+            ? new ReincarnationRecord(
+                "discordpresence", String.valueOf(relayId), UUID.randomUUID(), name,
+                TEST_CARRIAGE, "", new CompoundTag(), List.of())
+            : new ReincarnationRecord(
+                "dttest", UUID.randomUUID().toString(), UUID.randomUUID(), name,
+                TEST_CARRIAGE, "", new CompoundTag(), List.of());
         RemoteEchoEncounters.onRemoteEchoSpawned(mob, record);
 
         source.sendSuccess(() -> Component.literal(
