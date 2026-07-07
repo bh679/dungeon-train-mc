@@ -83,6 +83,9 @@ public final class DungeonTrainConfig {
 
     public static final boolean DEFAULT_WORLD_JOIN_REPORT_TO_DISCORD = true;
 
+    /** Default for POSTing per-join world-info telemetry (world/train seeds + regen inputs + mods) to the relay. */
+    public static final boolean DEFAULT_WORLD_INFO_TO_RELAY = true;
+
     public static final boolean DEFAULT_DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = true;
 
     /** Play the fly-up spawn cinematic the first time each player enters a world. */
@@ -115,6 +118,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue DEV_MESSAGE_CONSENT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue ECHO_ENCOUNTER_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue WORLD_JOIN_REPORT_TO_DISCORD;
+    public static final ModConfigSpec.BooleanValue WORLD_INFO_TO_RELAY;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_ENABLED;
     public static final ModConfigSpec.IntValue INTRO_CINEMATIC_DURATION_TICKS;
@@ -146,6 +150,7 @@ public final class DungeonTrainConfig {
         DEV_MESSAGE_CONSENT_TO_DISCORD = pair.getLeft().devMessageConsentToDiscord;
         ECHO_ENCOUNTER_TO_DISCORD = pair.getLeft().echoEncounterToDiscord;
         WORLD_JOIN_REPORT_TO_DISCORD = pair.getLeft().worldJoinReportToDiscord;
+        WORLD_INFO_TO_RELAY = pair.getLeft().worldInfoToRelay;
         DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = pair.getLeft().difficultyLevelNoticeToDiscord;
         INTRO_CINEMATIC_ENABLED = pair.getLeft().introCinematicEnabled;
         INTRO_CINEMATIC_DURATION_TICKS = pair.getLeft().introCinematicDurationTicks;
@@ -251,6 +256,15 @@ public final class DungeonTrainConfig {
                         "player's Discord thread — useful for reproducing and debugging a player's run. Requires the",
                         "bundled Discord Presence mod with a webhookUrl configured in config/discordpresence-server.toml.")
                 .define("worldJoinReportToDiscord", DEFAULT_WORLD_JOIN_REPORT_TO_DISCORD);
+        ModConfigSpec.BooleanValue worldInfoToRelay = b
+                .comment("Send a small per-join 'world info' telemetry record to the Dungeon Train relay so the",
+                        "private data explorer's Mods and Seeds cards can populate: the world seed, the train",
+                        "generation seed plus the inputs needed to regenerate the same train (mode, group size,",
+                        "carriage dims, train Y, starting dimension), the Dungeon Train version, the launcher, and",
+                        "the list of installed mods + versions. Fires on every join (the relay dedupes identical",
+                        "records); carries no chat, location, or personal data beyond the Minecraft UUID + name",
+                        "already sent to Discord. Independent of worldJoinReportToDiscord.")
+                .define("worldInfoToRelay", DEFAULT_WORLD_INFO_TO_RELAY);
         ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord = b
                 .comment("Post a short embed to Discord each time a player's difficulty tier increases — i.e. they",
                         "have advanced far enough through carriages to reach the next Difficulty Level. Fires once per",
@@ -274,7 +288,7 @@ public final class DungeonTrainConfig {
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
-                difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks);
+                worldInfoToRelay, difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks);
     }
 
     /**
@@ -398,6 +412,11 @@ public final class DungeonTrainConfig {
         return isLoaded() ? WORLD_JOIN_REPORT_TO_DISCORD.get() : DEFAULT_WORLD_JOIN_REPORT_TO_DISCORD;
     }
 
+    /** Whether to POST per-join world-info telemetry (world/train seeds + regen inputs + mods) to the relay. */
+    public static boolean isWorldInfoToRelay() {
+        return isLoaded() ? WORLD_INFO_TO_RELAY.get() : DEFAULT_WORLD_INFO_TO_RELAY;
+    }
+
     /** Whether to post a notice to Discord each time a player's difficulty tier increases. */
     public static boolean isDifficultyLevelNoticeToDiscord() {
         return isLoaded() ? DIFFICULTY_LEVEL_NOTICE_TO_DISCORD.get() : DEFAULT_DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
@@ -511,6 +530,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue devMessageConsentToDiscord,
             ModConfigSpec.BooleanValue echoEncounterToDiscord,
             ModConfigSpec.BooleanValue worldJoinReportToDiscord,
+            ModConfigSpec.BooleanValue worldInfoToRelay,
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,
             ModConfigSpec.BooleanValue introCinematicEnabled,
             ModConfigSpec.IntValue introCinematicDurationTicks
