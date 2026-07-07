@@ -97,7 +97,7 @@ public final class StageBlockReplacer {
         if (!touched.isEmpty()
                 && EditorStampedCategoryState.current().orElse(null) == EditorCategory.CARRIAGES) {
             for (StageBlockIndex.PartRef ref : touched) {
-                CarriagePartEditor.stampPlotFiltered(level, ref.kind(), ref.name(), dims);
+                CarriagePartEditor.stampPlot(level, ref.kind(), ref.name(), dims);
             }
             if (EditorStageSelection.effective() != null) {
                 CarriageEditor.stampAllPlots(level, dims);

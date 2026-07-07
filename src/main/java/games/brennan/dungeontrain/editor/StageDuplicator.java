@@ -132,9 +132,10 @@ public final class StageDuplicator {
         // 4. Refresh the editor world (only meaningful while CARRIAGES is stamped).
         if (EditorStampedCategoryState.current().orElse(null) == EditorCategory.CARRIAGES) {
             for (Map.Entry<StageBlockIndex.PartRef, String> copy : partCopies.entrySet()) {
-                // Filtered: with the stage filter on and the SOURCE stage focused, the copies
-                // (linked to the NEW stage) correctly appear aired-out until that stage is focused.
-                CarriagePartEditor.stampPlotFiltered(level, copy.getKey().kind(), copy.getValue(), dims);
+                // stampPlot is filter-aware via plotOrigin: with the stage filter on and the SOURCE
+                // stage focused, the copies (linked to the NEW stage) have no slot yet and no-op —
+                // they appear once the new stage is focused and the grid re-stamps.
+                CarriagePartEditor.stampPlot(level, copy.getKey().kind(), copy.getValue(), dims);
             }
             if (EditorStageSelection.effective() != null) {
                 CarriageEditor.stampAllPlots(level, dims);

@@ -93,17 +93,36 @@ public final class CarriagePartEditor {
     private CarriagePartEditor() {}
 
     /**
-     * Plot origin for {@code (kind, name)} at the given world dims. Returns
-     * {@code null} when the name isn't currently registered — callers
-     * creating a brand-new part should register first, or use
-     * {@link #nextFreePlotOrigin} to grab the next free slot on the kind's
-     * row.
+     * Plot origin for {@code (kind, name)} at the given world dims — the part's slot in the
+     * <b>current grid layout</b>. Returns {@code null} when the name has no slot: either it isn't
+     * registered, or the {@link EditorPartsStageFilter hide-unused filter} is active and the part
+     * isn't linked to the focused stage (hidden parts have no plot). When the filter is off the
+     * layout is plain registry order, so this is byte-identical to the pre-filter behaviour.
      *
-     * <p>X and Z both step by (kind footprint extent + {@link #PLOT_GAP}) so
-     * plots line up with a consistent 5-block gap regardless of dims.</p>
+     * <p>X and Z both step by (kind footprint extent + {@link #PLOT_GAP}) so plots line up with a
+     * consistent gap regardless of dims.</p>
      */
     public static BlockPos plotOrigin(CarriagePartKind kind, String name, CarriageDims dims) {
-        int index = nameIndex(kind, name);
+        return slotOrigin(kind, layoutNames(kind).indexOf(name), dims);
+    }
+
+    /** Plot origin for an id-record-shaped part template. Returns {@code null} when the name has no slot. */
+    public static BlockPos plotOrigin(CarriagePartTemplateId id, CarriageDims dims) {
+        return plotOrigin(id.kind(), id.name(), dims);
+    }
+
+    /**
+     * Plot origin for {@code kind} with a generic name that isn't registered
+     * yet — used by {@code /editor part enter <kind> <new_name>} before the
+     * first save. Picks the next free X slot on the kind's <b>current layout</b> (the visible
+     * subset when the filter is active — a new part defaults to the focused stage, so it appears).
+     */
+    public static BlockPos nextFreePlotOrigin(CarriagePartKind kind, CarriageDims dims) {
+        return slotOrigin(kind, layoutNames(kind).size(), dims);
+    }
+
+    /** World origin of the {@code index}-th slot on {@code kind}'s row, or {@code null} for a negative index. */
+    private static BlockPos slotOrigin(CarriagePartKind kind, int index, CarriageDims dims) {
         if (index < 0) return null;
         return new BlockPos(
             FIRST_PLOT_X + index * xSlotStride(kind, dims),
@@ -112,29 +131,24 @@ public final class CarriagePartEditor {
         );
     }
 
-    /** Plot origin for an id-record-shaped part template. Returns {@code null} when the name isn't registered. */
-    public static BlockPos plotOrigin(CarriagePartTemplateId id, CarriageDims dims) {
-        return plotOrigin(id.kind(), id.name(), dims);
-    }
-
     /**
-     * Plot origin for {@code kind} with a generic name that isn't registered
-     * yet — used by {@code /editor part enter <kind> <new_name>} before the
-     * first save. Picks the next free X slot on the kind's row so the new
-     * plot doesn't clobber an existing one.
+     * The parts that occupy slots on {@code kind}'s row in the current layout, in slot order. Plain
+     * registry order normally; when the {@link EditorPartsStageFilter hide-unused filter} is active
+     * and a stage is {@linkplain EditorStageSelection#effective() focused}, only the parts linked to
+     * that stage — so the visible parts <b>compact</b> to the front of the row with no gaps for the
+     * hidden ones.
      */
-    public static BlockPos nextFreePlotOrigin(CarriagePartKind kind, CarriageDims dims) {
-        int index = CarriagePartRegistry.registeredNames(kind).size();
-        return new BlockPos(
-            FIRST_PLOT_X + index * xSlotStride(kind, dims),
-            PLOT_Y,
-            rowStartZ(kind, dims)
-        );
-    }
-
-    private static int nameIndex(CarriagePartKind kind, String name) {
-        List<String> names = CarriagePartRegistry.registeredNames(kind);
-        return names.indexOf(name);
+    private static List<String> layoutNames(CarriagePartKind kind) {
+        List<String> all = CarriagePartRegistry.registeredNames(kind);
+        if (!EditorPartsStageFilter.isActive()) return all;
+        String stageId = EditorStageSelection.effective();
+        if (stageId == null) return all;
+        java.util.Set<StageBlockIndex.PartRef> used = java.util.Set.copyOf(StageBlockIndex.partsForStage(stageId));
+        List<String> visible = new java.util.ArrayList<>();
+        for (String n : all) {
+            if (used.contains(new StageBlockIndex.PartRef(kind, n))) visible.add(n);
+        }
+        return visible;
     }
 
     /** X stride between adjacent name slots on the kind's row: kind X extent + gap. */
@@ -565,86 +579,44 @@ public final class CarriagePartEditor {
     }
 
     /**
-     * Stamp every registered part plot across all four kinds. Called by the
-     * CARRIAGES editor-category entry so switching into the category paints
-     * the full 2D parts grid alongside the carriage plots.
+     * Stamp the parts grid across all four kinds. Called by the CARRIAGES editor-category entry so
+     * switching into the category paints the grid alongside the carriage plots, and on every
+     * hide-unused toggle / stage-selection change.
      *
-     * <p>When {@link EditorPartsStageFilter} is active and a stage is
-     * {@linkplain EditorStageSelection#effective() effective}, plots whose
-     * {@code (kind, name)} is not linked to that stage are aired out instead
-     * (footprint erased, bedrock cage kept so the slot still reads as a
-     * plot — the parts-grid analogue of the carriage preview airing unlinked
-     * slots). {@link #stampPlot} itself stays unfiltered so entering or
-     * saving a hidden part still paints it.</p>
+     * <p>Each kind's row is first cleared across its whole registry-order extent (so no stale
+     * frame or block survives from a prior layout), then the {@linkplain #layoutNames current
+     * layout} is stamped — the full registry order normally, or, when the
+     * {@link EditorPartsStageFilter hide-unused filter} is active, only the focused stage's parts,
+     * <b>compacted to the front of the row with the hidden parts' frames removed entirely</b>.</p>
      */
     public static void stampAllPlots(ServerLevel level, CarriageDims dims) {
-        java.util.Set<StageBlockIndex.PartRef> used = null;
-        if (EditorPartsStageFilter.isActive()) {
-            String stageId = EditorStageSelection.effective();
-            if (stageId != null) used = java.util.Set.copyOf(StageBlockIndex.partsForStage(stageId));
-        }
         for (CarriagePartKind kind : CarriagePartKind.values()) {
-            for (String name : CarriagePartRegistry.registeredNames(kind)) {
-                if (used == null || used.contains(new StageBlockIndex.PartRef(kind, name))) {
-                    stampPlot(level, kind, name, dims);
-                } else {
-                    airOutPlot(level, kind, name, dims);
-                }
+            clearRowExtent(level, kind, CarriagePartRegistry.registeredNames(kind).size(), dims);
+            for (String name : layoutNames(kind)) {
+                stampPlot(level, kind, name, dims);
             }
         }
     }
 
-    /** Erase a plot's footprint but keep (re-draw) the bedrock cage — the filtered-out state. */
-    private static void airOutPlot(ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims) {
-        BlockPos origin = plotOrigin(kind, name, dims);
-        if (origin == null) return;
-        CarriagePartPlacer.eraseAt(level, origin, kind, dims);
-        setOutline(level, origin, kind, dims);
-    }
-
-    /**
-     * Stamp a single plot honouring the {@link EditorPartsStageFilter} — the whole-grid semantics
-     * of {@link #stampAllPlots} applied to one {@code (kind, name)}. Programmatic restamps
-     * (deletion row shifts, stage-wide block replaces, stage duplication) go through this so they
-     * can't resurrect a plot the filter airs out; {@link #stampPlot} stays unfiltered for the
-     * enter/save flows, which must always paint the plot the author is working in.
-     */
-    public static void stampPlotFiltered(ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims) {
-        if (isHiddenByFilter(kind, name)) {
-            airOutPlot(level, kind, name, dims);
-        } else {
-            stampPlot(level, kind, name, dims);
+    /** Erase footprint + cage for the first {@code slots} slots on {@code kind}'s row (the widest it can be). */
+    private static void clearRowExtent(ServerLevel level, CarriagePartKind kind, int slots, CarriageDims dims) {
+        for (int i = 0; i < slots; i++) {
+            BlockPos o = slotOrigin(kind, i, dims);
+            CarriagePartPlacer.eraseAt(level, o, kind, dims);
+            clearOutline(level, o, kind, dims);
         }
     }
 
-    private static boolean isHiddenByFilter(CarriagePartKind kind, String name) {
-        if (!EditorPartsStageFilter.isActive()) return false;
-        String stageId = EditorStageSelection.effective();
-        if (stageId == null) return false;
-        return !StageBlockIndex.partsForStage(stageId).contains(new StageBlockIndex.PartRef(kind, name));
-    }
-
     /**
-     * Erase + re-stamp the dirty slice of a kind's +X row after a name has
-     * been removed from {@link CarriagePartRegistry}. Same shape as
-     * {@link CarriageEditor#restampRowAfterDeletion} but scoped to a single
-     * {@code kind}'s row in the parts grid. Erases positions
-     * {@code [oldDeletedIndex, oldCount)} on the kind's row then re-stamps
-     * every name whose new index ≥ {@code oldDeletedIndex}. Must run
-     * <b>after</b> {@link CarriagePartRegistry#unregister}.
+     * Clear + re-stamp a kind's row after a name has been removed from
+     * {@link CarriagePartRegistry}. Erases the whole old row extent
+     * {@code [0, oldCount)} (covering the deleted slot and every slot that shifts down) then
+     * re-stamps the current layout. Must run <b>after</b> {@link CarriagePartRegistry#unregister}.
      */
     public static void restampRowAfterDeletion(ServerLevel level, CarriagePartKind kind, int oldDeletedIndex, int oldCount, CarriageDims dims) {
-        int step = xSlotStride(kind, dims);
-        int rowZ = rowStartZ(kind, dims);
-        for (int i = oldDeletedIndex; i < oldCount; i++) {
-            BlockPos pos = new BlockPos(FIRST_PLOT_X + i * step, PLOT_Y, rowZ);
-            CarriagePartPlacer.eraseAt(level, pos, kind, dims);
-            clearOutline(level, pos, kind, dims);
-        }
-        List<String> remaining = CarriagePartRegistry.registeredNames(kind);
-        for (int i = oldDeletedIndex; i < remaining.size(); i++) {
-            // Filtered: a row shift must not resurrect plots the stage filter airs out.
-            stampPlotFiltered(level, kind, remaining.get(i), dims);
+        clearRowExtent(level, kind, oldCount, dims);
+        for (String name : layoutNames(kind)) {
+            stampPlot(level, kind, name, dims);
         }
     }
 
@@ -660,12 +632,14 @@ public final class CarriagePartEditor {
         clearOutline(level, origin, kind, dims);
     }
 
-    /** Erase every registered part plot. Hung off {@link EditorCategory#clearAllPlots}. */
+    /**
+     * Erase every part plot. Hung off {@link EditorCategory#clearAllPlots}. Clears each kind's whole
+     * registry-order extent (not per current-layout slot) so a compacted / filtered grid leaves no
+     * stale frames behind on category exit.
+     */
     public static void clearAllPlots(ServerLevel level, CarriageDims dims) {
         for (CarriagePartKind kind : CarriagePartKind.values()) {
-            for (String name : CarriagePartRegistry.registeredNames(kind)) {
-                clearPlot(level, kind, name, dims);
-            }
+            clearRowExtent(level, kind, CarriagePartRegistry.registeredNames(kind).size(), dims);
         }
     }
 

@@ -41,12 +41,12 @@ public final class EditorLayout {
     public static final int GAP = 5;
 
     /**
-     * First Z slot of the parts grid inside the CARRIAGES view. Sits
-     * {@code GAP + 1} blocks past the carriage row's max-width footprint
-     * so the cage of a max-width carriage and the cage of the first parts
-     * row are separated by visible air.
+     * First Z slot of the parts grid inside the CARRIAGES view. Sits one {@link #GAP} past the
+     * carriage row's max-width footprint — the same inter-plot spacing used everywhere else
+     * ({@code GAP - 2 = 3} air blocks between the carriage cage and the first parts-row cage), so
+     * the parts grid reads as a sibling of the carriage row rather than a distant block.
      */
-    public static final int PARTS_FIRST_Z = CarriageDims.MAX_WIDTH + GAP + 3;
+    public static final int PARTS_FIRST_Z = CarriageDims.MAX_WIDTH + GAP;
 
     /**
      * Maximum Z occupied by the CARRIAGES view at max dims — parts grid
