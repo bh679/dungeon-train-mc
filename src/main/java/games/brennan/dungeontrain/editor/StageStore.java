@@ -197,11 +197,15 @@ public final class StageStore {
 
     /**
      * Create a new Stage {@code id} (default gate, name = id). No-op returning the existing Stage if
-     * the id is already taken. Returns the resulting Stage, or {@code null} for an invalid id.
+     * the id is already taken. Returns the resulting Stage, or {@code null} for an invalid id —
+     * enforcing the documented {@code ^[a-z0-9_]{1,32}$} contract here (command args arrive via
+     * {@code StringArgumentType.word()}, which also admits {@code - . +}; those must be rejected or
+     * downstream consumers that embed the id into part names inherit the violation).
      */
     public static synchronized Stage add(String id) throws IOException {
         String key = normalise(id);
         if (key == null) return null;
+        if (!CarriagePartRegistry.NAME_PATTERN.matcher(key).matches()) return null;
         Stage existing = current.get(key);
         if (existing != null) return existing;
         Stage created = new Stage(key, key, TemplateGate.DEFAULT);

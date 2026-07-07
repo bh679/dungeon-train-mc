@@ -118,7 +118,10 @@ public final class CarriageVariantRegistry {
      */
     public static synchronized boolean register(CarriageVariant.Custom variant) {
         if (CarriageVariant.isReservedBuiltinName(variant.name())) return false;
-        return CUSTOMS.add(variant.name());
+        boolean added = CUSTOMS.add(variant.name());
+        // Variant set feeds StageBlockIndex.partsForStage (it iterates allVariants()).
+        if (added) games.brennan.dungeontrain.editor.StageBlockIndex.invalidateAll();
+        return added;
     }
 
     /**
@@ -128,7 +131,10 @@ public final class CarriageVariantRegistry {
      */
     public static synchronized boolean unregister(String id) {
         if (CarriageVariant.isReservedBuiltinName(id)) return false;
-        return CUSTOMS.remove(id.toLowerCase(Locale.ROOT));
+        boolean removed = CUSTOMS.remove(id.toLowerCase(Locale.ROOT));
+        // The removed variant's .parts.json stage links vanish from the index's inputs.
+        if (removed) games.brennan.dungeontrain.editor.StageBlockIndex.invalidateAll();
+        return removed;
     }
 
     /** Classpath prefix for shipped carriage templates (and the legacy customs manifest). */
@@ -144,6 +150,7 @@ public final class CarriageVariantRegistry {
         CUSTOMS.clear();
         int bundled = loadBundledScan();
         int config = loadConfigDir();
+        games.brennan.dungeontrain.editor.StageBlockIndex.invalidateAll();
 
         LOGGER.info("[DungeonTrain] Carriage variant registry loaded — {} built-in + {} custom ({} bundled, {} config)",
             BUILTINS.size(), CUSTOMS.size(), bundled, config);
@@ -225,6 +232,7 @@ public final class CarriageVariantRegistry {
 
     public static synchronized void clear() {
         CUSTOMS.clear();
+        games.brennan.dungeontrain.editor.StageBlockIndex.invalidateAll();
     }
 
     public static synchronized List<String> customIds() {

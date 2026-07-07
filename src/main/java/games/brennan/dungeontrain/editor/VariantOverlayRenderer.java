@@ -201,6 +201,11 @@ public final class VariantOverlayRenderer {
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
 
+        // Refresh any open Stage Blocks panels when the stage-blocks index moved (part saves,
+        // sidecar edits, chat-command replaces/duplicates) — generation-guarded, so steady-state
+        // ticks are one long comparison.
+        StagePanelController.resyncIfStale(level.getServer());
+
         for (ServerPlayer player : players) {
             updateEditorStatus(player, dims);
             pushLockIdSnapshot(player);
@@ -762,10 +767,13 @@ public final class VariantOverlayRenderer {
         if (key.equals(LAST_STAGE_STRIPS_KEY.get(uuid))) return;
         LAST_STAGE_STRIPS_KEY.put(uuid, key);
 
+        // Always aggregate against the overworld — the editor plots and their dims live there,
+        // and this tick may be for another dimension the player is standing in.
+        ServerLevel overworld = level.getServer().overworld();
         java.util.List<games.brennan.dungeontrain.net.StageBlockStripsPacket.Strip> strips =
             new java.util.ArrayList<>();
         for (Map.Entry<String, java.util.List<String>> e
-                : StageBlockIndex.blockStripForAllStages(level).entrySet()) {
+                : StageBlockIndex.blockStripForAllStages(overworld).entrySet()) {
             java.util.List<String> ids = e.getValue();
             int cap = games.brennan.dungeontrain.net.StageBlockStripsPacket.STRIP_CAP;
             java.util.List<String> capped = ids.size() <= cap

@@ -57,6 +57,7 @@ public final class StagePanelMenu {
     private static String stageName = "";
     private static BlockPos anchor = BlockPos.ZERO;
     private static List<String> blocks = List.of();
+    private static int totalBlocks = 0;
     private static List<StageBlocksSyncPacket.PartEntry> parts = List.of();
     private static boolean hideUnused = false;
     private static Screen screen = Screen.ROOT;
@@ -79,6 +80,7 @@ public final class StagePanelMenu {
         stageName = packet.stageName();
         anchor = packet.anchorPos();
         blocks = packet.blocks();
+        totalBlocks = packet.totalBlocks();
         parts = packet.parts();
         hideUnused = packet.hideUnused();
         if (stageChanged) {
@@ -97,6 +99,7 @@ public final class StagePanelMenu {
         stageName = "";
         anchor = BlockPos.ZERO;
         blocks = List.of();
+        totalBlocks = 0;
         parts = List.of();
         hideUnused = false;
         screen = Screen.ROOT;
@@ -159,6 +162,8 @@ public final class StagePanelMenu {
     public static String stageName() { return stageName; }
     public static BlockPos anchor() { return anchor; }
     public static List<String> blocks() { return blocks; }
+    /** The stage's REAL unique-block count — {@link #blocks()} is wire-capped below it. */
+    public static int totalBlocks() { return totalBlocks; }
     public static List<StageBlocksSyncPacket.PartEntry> parts() { return parts; }
     public static boolean hideUnused() { return hideUnused; }
     public static Screen screen() { return screen; }

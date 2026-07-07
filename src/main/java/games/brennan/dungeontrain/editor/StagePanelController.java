@@ -49,7 +49,23 @@ public final class StagePanelController {
     /** Player → the stage id their panel is open on (lowercased). */
     private static final Map<UUID, String> OPEN = new ConcurrentHashMap<>();
 
+    /**
+     * The {@link StageBlockIndex#generation()} the open panels were last synced at — the same
+     * change signal the row strips key on, so a part save / sidecar edit / stage duplicate made
+     * OUTSIDE the panel (in a plot, or via chat commands) refreshes every open panel too, not
+     * just the two panel-op paths. Checked once per level tick by {@link #resyncIfStale}.
+     */
+    private static volatile long lastSyncedGeneration = -1;
+
     private StagePanelController() {}
+
+    /** Resync every open panel when the stage-blocks index has changed since the last sync. */
+    public static void resyncIfStale(MinecraftServer server) {
+        long gen = StageBlockIndex.generation();
+        if (gen == lastSyncedGeneration) return;
+        lastSyncedGeneration = gen;
+        resyncAllOpen(server);
+    }
 
     /** Apply a {@link StagePanelEditPacket} op, with OP validation. Runs on the server thread. */
     public static void applyEdit(ServerPlayer player, StagePanelEditPacket packet) {
@@ -134,6 +150,11 @@ public final class StagePanelController {
 
     /** Compose + send the panel snapshot for {@code stageId} to {@code player}. */
     public static void sendSync(ServerPlayer player, String stageId) {
+        // The editor category was cleared (editor exit) — the panel has no context; close it.
+        if (EditorStampedCategoryState.current().isEmpty()) {
+            close(player);
+            return;
+        }
         ServerLevel overworld = player.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         BlockPos anchor = EditorTypeMenus.stagePanelAnchor(dims);
@@ -142,8 +163,11 @@ public final class StagePanelController {
             return;
         }
         StageBlockIndex.StageBlocks blocks = StageBlockIndex.blocksForStage(overworld, stageId);
+        // Display names are unbounded (greedyString rename) — clamp to the wire budget so a long
+        // name can never desync the client (decode allows 256; header text truncates fine).
         String stageName = StageStore.get(stageId)
             .map(games.brennan.dungeontrain.template.Stage::name).orElse(stageId);
+        if (stageName.length() > 64) stageName = stageName.substring(0, 64);
 
         List<String> aggregated = blocks.aggregatedBlockIds();
         List<String> cappedBlocks = aggregated.size() <= StageBlocksSyncPacket.BLOCKS_CAP
@@ -161,7 +185,7 @@ public final class StagePanelController {
         }
 
         DungeonTrainNet.sendTo(player, new StageBlocksSyncPacket(true, stageId, stageName, anchor,
-            cappedBlocks, parts, EditorPartsStageFilter.isActive()));
+            cappedBlocks, aggregated.size(), parts, EditorPartsStageFilter.isActive()));
     }
 
     /** Re-send the snapshot to every player with an open panel (shared data changed). */
@@ -208,5 +232,12 @@ public final class StagePanelController {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         OPEN.clear();
+        lastSyncedGeneration = -1;
+    }
+
+    /** Drop the disconnecting player's open-panel entry (the client resets via LoggingOut). */
+    @SubscribeEvent
+    public static void onPlayerLoggedOut(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+        OPEN.remove(event.getEntity().getUUID());
     }
 }

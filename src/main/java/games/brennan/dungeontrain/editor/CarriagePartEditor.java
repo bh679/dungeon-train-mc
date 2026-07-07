@@ -603,6 +603,28 @@ public final class CarriagePartEditor {
     }
 
     /**
+     * Stamp a single plot honouring the {@link EditorPartsStageFilter} — the whole-grid semantics
+     * of {@link #stampAllPlots} applied to one {@code (kind, name)}. Programmatic restamps
+     * (deletion row shifts, stage-wide block replaces, stage duplication) go through this so they
+     * can't resurrect a plot the filter airs out; {@link #stampPlot} stays unfiltered for the
+     * enter/save flows, which must always paint the plot the author is working in.
+     */
+    public static void stampPlotFiltered(ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims) {
+        if (isHiddenByFilter(kind, name)) {
+            airOutPlot(level, kind, name, dims);
+        } else {
+            stampPlot(level, kind, name, dims);
+        }
+    }
+
+    private static boolean isHiddenByFilter(CarriagePartKind kind, String name) {
+        if (!EditorPartsStageFilter.isActive()) return false;
+        String stageId = EditorStageSelection.effective();
+        if (stageId == null) return false;
+        return !StageBlockIndex.partsForStage(stageId).contains(new StageBlockIndex.PartRef(kind, name));
+    }
+
+    /**
      * Erase + re-stamp the dirty slice of a kind's +X row after a name has
      * been removed from {@link CarriagePartRegistry}. Same shape as
      * {@link CarriageEditor#restampRowAfterDeletion} but scoped to a single
@@ -621,7 +643,8 @@ public final class CarriagePartEditor {
         }
         List<String> remaining = CarriagePartRegistry.registeredNames(kind);
         for (int i = oldDeletedIndex; i < remaining.size(); i++) {
-            stampPlot(level, kind, remaining.get(i), dims);
+            // Filtered: a row shift must not resurrect plots the stage filter airs out.
+            stampPlotFiltered(level, kind, remaining.get(i), dims);
         }
     }
 

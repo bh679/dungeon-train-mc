@@ -1422,6 +1422,9 @@ public final class EditorCommand {
     private static int runStageFilterParts(CommandSourceStack source) {
         boolean active = games.brennan.dungeontrain.editor.EditorPartsStageFilter.toggle();
         restampPartsGridForStage(source);
+        // The filter flag doesn't move the stage-blocks generation — reflect the new button state
+        // on any open Stage Blocks panels explicitly (mirrors the panel-op path).
+        games.brennan.dungeontrain.editor.StagePanelController.resyncAllOpen(source.getServer());
         if (active) {
             source.sendSuccess(() -> Component.literal(
                 "Editor: parts grid filtered to the focused stage's parts.")

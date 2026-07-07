@@ -43,8 +43,12 @@ public final class StageDuplicator {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Longest stage id that still leaves ≥1 char for the base part name in {@code <base>_<id>}. */
-    private static final int MAX_STAGE_ID_FOR_COPY_NAMES = 30;
+    /**
+     * Longest stage id that still leaves ≥1 char for the base part name in every copy-name shape,
+     * including the collision path {@code <base>_<id>_<n>} with a two-digit {@code n}:
+     * {@code 1 + (1 + id) + (1 + 2) ≤ 32 ⇒ id ≤ 27}.
+     */
+    private static final int MAX_STAGE_ID_FOR_COPY_NAMES = 27;
 
     /** What a {@link #duplicate} run did — feed for chat feedback. */
     public record Result(String sourceStageId, String newStageId,
@@ -128,7 +132,9 @@ public final class StageDuplicator {
         // 4. Refresh the editor world (only meaningful while CARRIAGES is stamped).
         if (EditorStampedCategoryState.current().orElse(null) == EditorCategory.CARRIAGES) {
             for (Map.Entry<StageBlockIndex.PartRef, String> copy : partCopies.entrySet()) {
-                CarriagePartEditor.stampPlot(level, copy.getKey().kind(), copy.getValue(), dims);
+                // Filtered: with the stage filter on and the SOURCE stage focused, the copies
+                // (linked to the NEW stage) correctly appear aired-out until that stage is focused.
+                CarriagePartEditor.stampPlotFiltered(level, copy.getKey().kind(), copy.getValue(), dims);
             }
             if (EditorStageSelection.effective() != null) {
                 CarriageEditor.stampAllPlots(level, dims);
@@ -183,28 +189,34 @@ public final class StageDuplicator {
 
     /**
      * Validate / derive the new stage id: {@code requested} when given, else {@code <src>_copy}
-     * (numeric suffix on collision). Must match the shared {@code [a-z0-9_]{1,32}} name contract
-     * and not already exist.
+     * (numeric suffix on collision). Both branches must satisfy the shared {@code [a-z0-9_]{1,32}}
+     * name contract — pre-contract installs may hold stage ids with {@code - . +} (created before
+     * {@link StageStore#add} validated), and a derived {@code <src>_copy} inherits those chars, so
+     * the derived id is checked too, not just the requested one.
      */
     static String resolveNewStageId(String sourceId, @Nullable String requested) throws IOException {
         if (requested != null && !requested.isBlank()) {
             String id = requested.trim().toLowerCase(Locale.ROOT);
-            if (!CarriageVariant.NAME_PATTERN.matcher(id).matches()) {
-                throw new IOException("Invalid stage id '" + id + "' — use 1-32 of [a-z0-9_].");
-            }
-            if (StageStore.exists(id)) {
-                throw new IOException("Stage '" + id + "' already exists.");
-            }
-            return id;
+            return validateNewStageId(id);
         }
         String base = truncate(sourceId, 32 - "_copy".length()) + "_copy";
-        if (!StageStore.exists(base)) return base;
+        if (!StageStore.exists(base)) return validateNewStageId(base);
         for (int n = 2; n <= 99; n++) {
             String candidate = truncate(sourceId, 32 - "_copy".length() - Integer.toString(n).length())
                 + "_copy" + n;
-            if (!StageStore.exists(candidate)) return candidate;
+            if (!StageStore.exists(candidate)) return validateNewStageId(candidate);
         }
         throw new IOException("Cannot derive a free copy id from '" + sourceId + "' — pass one explicitly.");
+    }
+
+    private static String validateNewStageId(String id) throws IOException {
+        if (!CarriageVariant.NAME_PATTERN.matcher(id).matches()) {
+            throw new IOException("Invalid stage id '" + id + "' — use 1-32 of [a-z0-9_].");
+        }
+        if (StageStore.exists(id)) {
+            throw new IOException("Stage '" + id + "' already exists.");
+        }
+        return id;
     }
 
     /**
@@ -219,12 +231,25 @@ public final class StageDuplicator {
         String suffix = "_" + newStageId;
         String candidate = truncate(baseName, 32 - suffix.length()) + suffix;
         for (int n = 2; n <= 99; n++) {
-            if (!isTaken(kind, candidate)) return candidate;
+            if (!isTaken(kind, candidate)) return validateCopyName(kind, baseName, candidate);
             String num = "_" + n;
             candidate = truncate(baseName, 32 - suffix.length() - num.length()) + suffix + num;
         }
-        if (!isTaken(kind, candidate)) return candidate;
+        if (!isTaken(kind, candidate)) return validateCopyName(kind, baseName, candidate);
         throw new IOException("Cannot allocate a copy name for part " + kind.id() + ":" + baseName + ".");
+    }
+
+    /**
+     * Backstop against the part-name contract — a name {@link CarriagePartRegistry#register}
+     * would silently reject must fail loudly here, BEFORE any file is written, not leave orphaned
+     * NBT/sidecar copies plus {@code .parts.json} entries pointing at an unregistered part.
+     */
+    private static String validateCopyName(CarriagePartKind kind, String baseName, String candidate) throws IOException {
+        if (!CarriagePartRegistry.NAME_PATTERN.matcher(candidate).matches()) {
+            throw new IOException("Derived part copy name '" + candidate + "' (from " + kind.id() + ":"
+                + baseName + ") violates the [a-z0-9_]{1,32} name contract.");
+        }
+        return candidate;
     }
 
     private static boolean isTaken(CarriagePartKind kind, String name) {

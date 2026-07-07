@@ -27,6 +27,7 @@ public record StageBlocksSyncPacket(
     String stageName,
     BlockPos anchorPos,
     List<String> blocks,
+    int totalBlocks,
     List<PartEntry> parts,
     boolean hideUnused
 ) implements CustomPacketPayload {
@@ -54,7 +55,7 @@ public record StageBlocksSyncPacket(
 
     /** The close-panel sentinel. */
     public static StageBlocksSyncPacket closed() {
-        return new StageBlocksSyncPacket(false, "", "", BlockPos.ZERO, List.of(), List.of(), false);
+        return new StageBlocksSyncPacket(false, "", "", BlockPos.ZERO, List.of(), 0, List.of(), false);
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -65,6 +66,7 @@ public record StageBlocksSyncPacket(
         buf.writeBlockPos(anchorPos);
         buf.writeVarInt(blocks.size());
         for (String id : blocks) buf.writeUtf(id);
+        buf.writeVarInt(totalBlocks);
         buf.writeVarInt(parts.size());
         for (PartEntry p : parts) {
             buf.writeByte(p.kindOrd());
@@ -80,11 +82,14 @@ public record StageBlocksSyncPacket(
         boolean open = buf.readBoolean();
         if (!open) return closed();
         String stageId = buf.readUtf(64);
-        String stageName = buf.readUtf(64);
+        // Display names are unbounded server-side (greedyString rename); the sender clamps to 64
+        // but decode stays generous so a cap drift can never DecoderException-kick the client.
+        String stageName = buf.readUtf(256);
         BlockPos anchor = buf.readBlockPos();
         int nBlocks = buf.readVarInt();
         List<String> blocks = new ArrayList<>(nBlocks);
         for (int i = 0; i < nBlocks; i++) blocks.add(buf.readUtf(256));
+        int totalBlocks = buf.readVarInt();
         int nParts = buf.readVarInt();
         List<PartEntry> parts = new ArrayList<>(nParts);
         for (int i = 0; i < nParts; i++) {
@@ -98,7 +103,7 @@ public record StageBlocksSyncPacket(
         }
         boolean hideUnused = buf.readBoolean();
         return new StageBlocksSyncPacket(true, stageId, stageName, anchor,
-            List.copyOf(blocks), List.copyOf(parts), hideUnused);
+            List.copyOf(blocks), totalBlocks, List.copyOf(parts), hideUnused);
     }
 
     @Override

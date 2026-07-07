@@ -164,9 +164,9 @@ public final class StagePanelMenuRenderer {
         return cells == 0 ? 1 : (cells + BLOCK_COLS - 1) / BLOCK_COLS;
     }
 
-    /** True when a "+K more" label row follows the grid. */
+    /** True when a "+K more" label row follows the grid — against the REAL total, not the wire cap. */
     static boolean hasOverflowRow() {
-        return StagePanelMenu.blocks().size() > shownBlockCells();
+        return StagePanelMenu.totalBlocks() > shownBlockCells();
     }
 
     static int partRows() {
@@ -253,7 +253,8 @@ public final class StagePanelMenuRenderer {
         int nextRow = rowBase + gridRows;
         if (hasOverflowRow()) {
             double cy = topY - (nextRow + 0.5) * ROW_H;
-            drawCenteredText(ps, buffer, font, "+" + (blocks.size() - shown) + " more", 0, cy, DIM_COLOR);
+            drawCenteredText(ps, buffer, font, "+" + (StagePanelMenu.totalBlocks() - shown) + " more",
+                0, cy, DIM_COLOR);
             nextRow++;
         }
 

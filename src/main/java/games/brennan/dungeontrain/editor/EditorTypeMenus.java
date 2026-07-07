@@ -410,8 +410,14 @@ public final class EditorTypeMenus {
         );
     }
 
-    /** Z offset for the Stage Blocks panel — one wide slot past the Stages panel, same {@code -Z} side. */
-    private static final int STAGE_PANEL_Z_OFFSET = -18;
+    /**
+     * Z offset for the Stage Blocks panel — one wide slot past the Stages panel, same {@code -Z}
+     * side. 12 blocks past the Stages panel's -10 because the Stages panel's half-width grows with
+     * its longest stage name + the row icon strip; the extra clearance keeps the two billboards
+     * visually separate for realistic name lengths (input handling is double-dispatch-guarded
+     * regardless).
+     */
+    private static final int STAGE_PANEL_Z_OFFSET = -22;
 
     /**
      * Anchor for the Stage Blocks panel (the "stage V menu") — the next sibling billboard past the
