@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "36";
+    public static final String PROTOCOL_VERSION = "39";
 
     private DungeonTrainNet() {}
 
@@ -121,6 +121,16 @@ public final class DungeonTrainNet {
         // carriage length + train flag, so the client can fade the sky/fog toward
         // the End look across the band.
         registrar.playToClient(VoidBandSyncPacket.TYPE, VoidBandSyncPacket.STREAM_CODEC, VoidBandSyncPacket::handle);
+
+        // Stage Blocks panel: per-stage row icon strips for the Stages panel (S2C, own channel —
+        // pushed only when StageBlockIndex.generation() moves), the panel detail sync (S2C), and
+        // the panel ops (C2S: open/close/replace/hide-unused).
+        registrar.playToClient(StageBlockStripsPacket.TYPE, StageBlockStripsPacket.STREAM_CODEC, StageBlockStripsPacket::handle);
+        registrar.playToClient(StageBlocksSyncPacket.TYPE, StageBlocksSyncPacket.STREAM_CODEC, StageBlocksSyncPacket::handle);
+        registrar.playToServer(StagePanelEditPacket.TYPE, StagePanelEditPacket.STREAM_CODEC, StagePanelEditPacket::handle);
+
+        // Per-part editor-grid visibility (hidden set) — S2C mirror for the part-list ☑/☐ glyphs.
+        registrar.playToClient(PartVisibilityPacket.TYPE, PartVisibilityPacket.STREAM_CODEC, PartVisibilityPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

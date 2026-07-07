@@ -120,7 +120,9 @@ public final class EditorTypeMenus {
     ) {
         List<String> names = CarriagePartRegistry.registeredNames(kind);
         if (names.isEmpty()) return;
-        BlockPos firstOrigin = CarriagePartEditor.plotOrigin(kind, names.get(0), dims);
+        // Anchor on the row's fixed slot-0 origin, NOT the first part's plotOrigin — the latter is
+        // null when that part is hidden by the visibility filter, which would drop the whole list.
+        BlockPos firstOrigin = CarriagePartEditor.rowOrigin(kind, dims);
         if (firstOrigin == null) return;
         Vec3i footprint = kind.dims(dims);
         BlockPos anchor = anchorForXRow(firstOrigin, footprint);
@@ -405,6 +407,33 @@ public final class EditorTypeMenus {
         Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
         return new BlockPos(
             firstOrigin.getX() - MENU_GAP,
+            firstOrigin.getY() + footprint.getY() + Y_ANCHOR_LIFT,
+            firstOrigin.getZ() + footprint.getZ() / 2 + STAGES_MENU_Z_OFFSET
+        );
+    }
+
+    /**
+     * X offset for the Stage Blocks panel — it now sits at the <b>same Z</b> as the Stages panel
+     * ({@link #STAGES_MENU_Z_OFFSET}) but shifted this many blocks toward {@code +X}, so the two
+     * read as a side-by-side pair at the door rather than stacked along {@code -Z}. Tunable; the
+     * billboards face the player, so exact non-overlap is view-dependent — input handling is
+     * double-dispatch-guarded regardless.
+     */
+    private static final int STAGE_PANEL_X_OFFSET = 6;
+
+    /**
+     * Anchor for the Stage Blocks panel (the "stage V menu") — the sibling billboard beside the
+     * Stages panel: same Z, offset {@code +X}. Same fallthrough as {@link #stagesMenuAnchor}:
+     * {@code null} when no carriage variants are registered.
+     */
+    public static BlockPos stagePanelAnchor(CarriageDims dims) {
+        List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
+        if (variants.isEmpty()) return null;
+        BlockPos firstOrigin = CarriageEditor.plotOrigin(variants.get(0), dims);
+        if (firstOrigin == null) return null;
+        Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
+        return new BlockPos(
+            firstOrigin.getX() - MENU_GAP + STAGE_PANEL_X_OFFSET,
             firstOrigin.getY() + footprint.getY() + Y_ANCHOR_LIFT,
             firstOrigin.getZ() + footprint.getZ() / 2 + STAGES_MENU_Z_OFFSET
         );

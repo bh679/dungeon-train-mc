@@ -378,6 +378,7 @@ public final class CarriagePartVariantBlocks {
             w.write(toJsonText());
         }
         CACHE.put(cacheKey(kind, name), this);
+        StageBlockIndex.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved part variant sidecar for {}:{} ({} entries) to {}",
             kind.id(), name, entries.size(), file);
     }
@@ -451,15 +452,18 @@ public final class CarriagePartVariantBlocks {
         Path file = configPathFor(kind, name);
         boolean existed = Files.deleteIfExists(file);
         CACHE.remove(cacheKey(kind, name));
+        StageBlockIndex.invalidateAll();
         if (existed) LOGGER.info("[DungeonTrain] Deleted part variant sidecar {}:{} ({})", kind.id(), name, file);
         return existed;
     }
 
     public static synchronized void invalidate(CarriagePartKind kind, String name) {
         CACHE.remove(cacheKey(kind, name));
+        StageBlockIndex.invalidateAll();
     }
 
     public static synchronized void clearCache() {
         CACHE.clear();
+        StageBlockIndex.invalidateAll();
     }
 }

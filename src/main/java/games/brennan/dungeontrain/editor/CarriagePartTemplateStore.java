@@ -86,6 +86,7 @@ public final class CarriagePartTemplateStore {
 
     public static synchronized void clearCache() {
         CACHE.clear();
+        StageBlockIndex.invalidateAll();
     }
 
     public static synchronized Optional<StructureTemplate> get(
@@ -107,6 +108,7 @@ public final class CarriagePartTemplateStore {
         CompoundTag tag = template.save(new CompoundTag());
         NbtIo.writeCompressed(tag, file);
         CACHE.put(key(kind, name), Optional.of(template));
+        StageBlockIndex.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved part template {}:{} to {}", kind.id(), name, file);
     }
 
@@ -145,6 +147,7 @@ public final class CarriagePartTemplateStore {
         Path file = fileFor(kind, name);
         boolean existed = Files.deleteIfExists(file);
         CACHE.put(key(kind, name), Optional.empty());
+        StageBlockIndex.invalidateAll();
         if (existed) LOGGER.info("[DungeonTrain] Deleted part template {}:{} ({})", kind.id(), name, file);
         return existed;
     }

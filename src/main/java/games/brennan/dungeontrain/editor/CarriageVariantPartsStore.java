@@ -81,10 +81,12 @@ public final class CarriageVariantPartsStore {
 
     public static synchronized void clearCache() {
         CACHE.clear();
+        StageBlockIndex.invalidateAll();
     }
 
     public static synchronized void invalidate(String id) {
         CACHE.remove(id.toLowerCase(Locale.ROOT));
+        StageBlockIndex.invalidateAll();
     }
 
     public static synchronized Optional<CarriagePartAssignment> get(CarriageVariant variant) {
@@ -105,6 +107,7 @@ public final class CarriageVariantPartsStore {
             w.write(pretty);
         }
         CACHE.put(variant.id(), Optional.of(assignment));
+        StageBlockIndex.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved parts assignment for {} to {}", variant.id(), file);
         trySaveToSource(variant, assignment);
     }
@@ -126,6 +129,7 @@ public final class CarriageVariantPartsStore {
         Path file = fileFor(variant);
         boolean existed = Files.deleteIfExists(file);
         CACHE.put(variant.id(), Optional.empty());
+        StageBlockIndex.invalidateAll();
         if (existed) LOGGER.info("[DungeonTrain] Deleted parts assignment for {} ({})", variant.id(), file);
         tryDeleteFromSource(variant);
         return existed;

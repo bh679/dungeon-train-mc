@@ -89,6 +89,8 @@ public final class EditorTypeMenuRenderer {
      */
     public enum CellKind {
         NONE, HEADER, NAME, WEIGHT, NEW, CATEGORY, TYPE_TAB, SUB_VARIANT,
+        /** Per-part editor-grid visibility toggle — the {@code [x]}/{@code [ ]} cell on PARTS rows; click flips it. */
+        PART_VISIBLE,
         /** Spawn-gate min Diff-Level cell — click +1, shift-click -1. */
         MIN_LEVEL,
         /** Spawn-gate max Diff-Level cell — click +1, shift-click -1 (cycles through "all"). */
@@ -101,6 +103,8 @@ public final class EditorTypeMenuRenderer {
         STAGE_ADD,
         /** Stages panel "– Remove" toolbar button — toggles remove-mode (then a stage-row click deletes). */
         STAGE_REMOVE,
+        /** Stages panel row icon strip — click toggles the Stage Blocks panel for that stage. */
+        STAGE_BLOCKS,
         /** Package row — clicking activates that package. */
         PKG_NAME,
         /** Package Save cell — falls through to the X-menu's flat package screen for typing. */
@@ -305,6 +309,10 @@ public final class EditorTypeMenuRenderer {
             HOVERED = Hovered.NONE;
             PACKAGE_BASIS = null;
             stagesRemoveMode = false;
+            // Editor exited — drop the row icon strips and close the Stage Blocks panel too.
+            games.brennan.dungeontrain.client.menu.ClientStageBlocks.clear();
+            games.brennan.dungeontrain.client.menu.ClientPartVisibility.clear();
+            games.brennan.dungeontrain.client.menu.stagepanel.StagePanelMenu.closeLocal();
             LOGGER.info("[DungeonTrain] EditorTypeMenus: snapshot cleared");
             return;
         }
@@ -423,12 +431,14 @@ public final class EditorTypeMenuRenderer {
         double maxNameW = 0;
         boolean anyWeight = false;
         boolean anyGate = false;
+        boolean anyPart = false;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
             double w = font.width(v.name()) * TEXT_SCALE + 2 * PAD_X;
             if (w > maxNameW) maxNameW = w;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT) anyWeight = true;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT
                 && v.phaseMask() != EditorTypeMenusPacket.Variant.NO_GATE) anyGate = true;
+            if ("PARTS".equals(v.category())) anyPart = true;
         }
         // Reserve the gate area (weight|stage|min|max|phase) when any row carries a gate — e.g. the
         // Sub-Variants companion's member rows — else just the weight cell, so the longest name still
@@ -436,6 +446,9 @@ public final class EditorTypeMenuRenderer {
         double nameSpaceFraction = anyGate ? (1.0 - GATE_AREA_FRACTION)
             : (anyWeight ? (1.0 - WEIGHT_CELL_FRACTION) : 1.0);
         double scaledForName = maxNameW / nameSpaceFraction;
+        // PARTS companion rows carry the same leading [x]/[ ] checkbox column drawn by drawVariantRow —
+        // reserve its width here too (mirrors expandedColumnWidth) so names aren't clipped.
+        if (anyPart) scaledForName += partVisCellW(font);
         double w = Math.max(MIN_HALF_W * 2.0, Math.max(Math.max(headerW, newW), scaledForName));
         return w / 2.0;
     }
@@ -454,19 +467,31 @@ public final class EditorTypeMenuRenderer {
         double maxNameW = 0;
         boolean anyWeight = false;
         boolean anyGate = false;
+        boolean anyPart = false;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
             double w = font.width(v.name()) * TEXT_SCALE + 2 * PAD_X;
             if (w > maxNameW) maxNameW = w;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT) anyWeight = true;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT
                 && v.phaseMask() != EditorTypeMenusPacket.Variant.NO_GATE) anyGate = true;
+            if ("PARTS".equals(v.category())) anyPart = true;
         }
         // Reserve the gate area (weight|min|max|phase) when any row carries a gate, else just the
         // weight cell — so the longest name still fits in the remaining fraction.
         double nameSpaceFraction = anyGate ? (1.0 - GATE_AREA_FRACTION)
             : (anyWeight ? (1.0 - WEIGHT_CELL_FRACTION) : 1.0);
         double scaledForName = maxNameW / nameSpaceFraction;
+        // PARTS rows carry a leading [x]/[ ] visibility checkbox column — widen the column so the
+        // longest name still fits beside it. Same helper the draw + hit paths use.
+        if (anyPart) scaledForName += partVisCellW(font);
         return Math.max(MIN_HALF_W * 2.0, Math.max(Math.max(headerW, newW), scaledForName));
+    }
+
+    /** Width of the leading {@code [x]}/{@code [ ]} visibility toggle cell on PARTS rows —
+     *  drawn, hit-tested, and reserved in {@link #expandedColumnWidth} through this one helper so
+     *  the checkbox column lands at the same X in every path. */
+    private static double partVisCellW(Font font) {
+        return font.width("[x]") * TEXT_SCALE + PAD_X;
     }
 
     /**
@@ -790,7 +815,14 @@ public final class EditorTypeMenuRenderer {
         EditorTypeMenusPacket.Variant variant = menu.variants().get(variantIdx);
 
         boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
-        if (!hasWeight) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+        if (!hasWeight) {
+            // PARTS rows carry a leading [x]/[ ] visibility checkbox column (see drawVariantRow /
+            // CellKind.PART_VISIBLE). Left edge is -halfW here, matching the draw's rowLeft.
+            if ("PARTS".equals(variant.category()) && hitX < -halfW + partVisCellW(font)) {
+                return new Hovered(menuIdx, variantIdx, CellKind.PART_VISIBLE);
+            }
+            return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+        }
 
         // Sub-Variants companion rows carry the same gate + Stage cells as top-level rows; other
         // companions keep the legacy weight-only hit logic. A NO_GATE row (e.g. the "(default)"
@@ -919,7 +951,14 @@ public final class EditorTypeMenuRenderer {
         if (spanOffset != 0) return Hovered.NONE;
         if (hitX < colLeft || hitX > colRight) return Hovered.NONE;
         boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
-        if (!hasWeight) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+        if (!hasWeight) {
+            // PARTS rows carry a leading [x]/[ ] visibility checkbox column (see drawVariantRow /
+            // CellKind.PART_VISIBLE). Left edge is colLeft here, matching the draw's rowLeft.
+            if ("PARTS".equals(variant.category()) && hitX < colLeft + partVisCellW(font)) {
+                return new Hovered(menuIdx, variantIdx, CellKind.PART_VISIBLE);
+            }
+            return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+        }
 
         RightCells rc = rightCells(colLeft, colRight, true, /*allowGate*/ true, variant.phaseMask(),
             /*showStage*/ true, variant.isStageLinked());
@@ -1337,6 +1376,11 @@ public final class EditorTypeMenuRenderer {
         RightCells rc = rightCells(rowLeft, rowRight, hasWeight, allowGate, variant.phaseMask(),
             showStage, variant.isStageLinked());
 
+        // PARTS rows carry a dedicated leading [x]/[ ] visibility checkbox column (CellKind.PART_VISIBLE);
+        // visR is its right edge. Non-part rows have no checkbox, so visR == rowLeft (a no-op below).
+        boolean isPart = "PARTS".equals(variant.category());
+        double visR = isPart ? rowLeft + partVisCellW(font) : rowLeft;
+
         // Provenance tint — orange for imported variants (highest priority),
         // blue for user-authored, no tint for bundled.
         if (variant.isImported()) {
@@ -1358,8 +1402,10 @@ public final class EditorTypeMenuRenderer {
 
         // Hover highlight — per cell.
         switch (hoverCell) {
-            case NAME -> drawQuad(ps, buffer, rowLeft + 0.005, rowBottom + 0.005,
+            case NAME -> drawQuad(ps, buffer, visR + 0.005, rowBottom + 0.005,
                 rc.nameRight() - 0.005, rowTop - 0.005, HOVER_COLOR);
+            case PART_VISIBLE -> drawQuad(ps, buffer, rowLeft + 0.005, rowBottom + 0.005,
+                visR - 0.005, rowTop - 0.005, HOVER_COLOR);
             case WEIGHT -> drawQuad(ps, buffer, rc.weightL() + 0.005, rowBottom + 0.005,
                 rc.weightR() - 0.005, rowTop - 0.005, HOVER_COLOR);
             case STAGE -> {
@@ -1385,9 +1431,20 @@ public final class EditorTypeMenuRenderer {
             default -> { }
         }
 
-        // Name (centred within its cell).
-        double nameCX = (rowLeft + rc.nameRight()) / 2.0;
-        drawCenteredText(ps, buffer, font, variant.name(), nameCX, rowCY, NAME_COLOR);
+        // Name (centred within its cell). PARTS rows draw a dedicated [x]/[ ] visibility checkbox in
+        // its own leading column [rowLeft, visR] (its own clickable cell — CellKind.PART_VISIBLE) and
+        // centre the name in the space to its right. State comes from the ClientPartVisibility mirror;
+        // bracket glyphs are used over ☑/☐ so they render on every font.
+        if (isPart) {
+            games.brennan.dungeontrain.train.CarriagePartKind pk =
+                games.brennan.dungeontrain.train.CarriagePartKind.fromId(variant.modelId());
+            boolean shown = pk == null
+                || games.brennan.dungeontrain.client.menu.ClientPartVisibility.isDisplayed(pk, variant.name());
+            drawCenteredText(ps, buffer, font, shown ? "[x]" : "[ ]", (rowLeft + visR) / 2.0, rowCY, NAME_COLOR);
+            drawCenteredText(ps, buffer, font, variant.name(), (visR + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
+        } else {
+            drawCenteredText(ps, buffer, font, variant.name(), (rowLeft + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
+        }
 
         if (!rc.hasWeight()) return;
 
@@ -1428,7 +1485,18 @@ public final class EditorTypeMenuRenderer {
 
     // ---------- Stages management panel ----------
 
-    /** Half-width for the Stages panel — fits the widest stage name beside the inline gate cells. */
+    /** Icon edge length for a stage row's block strip. */
+    static final double STAGE_ICON_SIZE = 0.22;
+    /** Horizontal slot pitch per icon in the strip. */
+    static final double STAGE_ICON_SLOT = 0.24;
+    /** Icons drawn per row before the rest collapse into a "+K" label. */
+    static final int STAGE_ROW_ICONS = 5;
+    /** Fixed width of the icons band: {@link #STAGE_ROW_ICONS} slots + room for the "+K" label. */
+    static final double STAGE_ICON_STRIP_W = STAGE_ROW_ICONS * STAGE_ICON_SLOT + 0.30;
+    /** Dim placeholder glyph colour for a stage with no blocks yet (keeps the click affordance). */
+    private static final int STAGE_STRIP_PLACEHOLDER_COLOR = 0x88888888;
+
+    /** Half-width for the Stages panel — fits the widest stage name + the icons band beside the gate cells. */
     private static double stagesHalfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
         double headerW = font.width(menu.typeName()) * TEXT_SCALE + 2 * PAD_X;
         double toolbarW = font.width("+ Add    – Remove ✓") * TEXT_SCALE + 2 * PAD_X;
@@ -1437,14 +1505,15 @@ public final class EditorTypeMenuRenderer {
             double w = font.width(v.name()) * TEXT_SCALE + 2 * PAD_X;
             if (w > maxNameW) maxNameW = w;
         }
-        // Stage rows reserve GATE_AREA_FRACTION for min|max|phase, so the name fits in the rest.
-        double scaledForName = maxNameW / (1.0 - GATE_AREA_FRACTION);
+        // Stage rows reserve GATE_AREA_FRACTION for min|max|phase; the fixed icons band sits just
+        // left of the gate cells, so the name must fit in the remainder past both.
+        double scaledForName = (maxNameW + STAGE_ICON_STRIP_W) / (1.0 - GATE_AREA_FRACTION);
         double w = Math.max(MIN_HALF_W * 2.0, Math.max(Math.max(headerW, toolbarW), scaledForName));
         return w / 2.0;
     }
 
-    /** Cell boundaries for a Stages-panel row: name | min | max | phase (no weight cell). */
-    private record StageRowCells(double nameRight, double minR, double maxR) {
+    /** Cell boundaries for a Stages-panel row: name | icons | min | max | phase (no weight cell). */
+    private record StageRowCells(double nameRight, double iconsRight, double minR, double maxR) {
         double phaseSubW(double rowRight) { return (rowRight - maxR) / PHASE_LETTERS.length; }
     }
 
@@ -1454,7 +1523,7 @@ public final class EditorTypeMenuRenderer {
         double unit = (rowRight - gateLeft) / 3.6; // min | max | phase = 1 | 1 | 1.6
         double minR = gateLeft + unit;
         double maxR = minR + unit;
-        return new StageRowCells(gateLeft, minR, maxR);
+        return new StageRowCells(gateLeft - STAGE_ICON_STRIP_W, gateLeft, minR, maxR);
     }
 
     /**
@@ -1503,7 +1572,8 @@ public final class EditorTypeMenuRenderer {
             CellKind hoverCell = hovered.variantIdx == vi ? hovered.cell : CellKind.NONE;
             switch (hoverCell) {
                 case NAME -> drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005, rc.nameRight() - 0.005, rowTop - 0.005, HOVER_COLOR);
-                case MIN_LEVEL -> drawQuad(ps, buffer, rc.nameRight() + 0.005, rowBottom + 0.005, rc.minR() - 0.005, rowTop - 0.005, HOVER_COLOR);
+                case STAGE_BLOCKS -> drawQuad(ps, buffer, rc.nameRight() + 0.005, rowBottom + 0.005, rc.iconsRight() - 0.005, rowTop - 0.005, HOVER_COLOR);
+                case MIN_LEVEL -> drawQuad(ps, buffer, rc.iconsRight() + 0.005, rowBottom + 0.005, rc.minR() - 0.005, rowTop - 0.005, HOVER_COLOR);
                 case MAX_LEVEL -> drawQuad(ps, buffer, rc.minR() + 0.005, rowBottom + 0.005, rc.maxR() - 0.005, rowTop - 0.005, HOVER_COLOR);
                 case PHASE -> {
                     if (hovered.slotIdx() >= 0 && hovered.slotIdx() < PHASE_LETTERS.length) {
@@ -1517,7 +1587,8 @@ public final class EditorTypeMenuRenderer {
 
             double nameCX = (-halfW + rc.nameRight()) / 2.0;
             drawCenteredText(ps, buffer, font, v.name(), nameCX, rowCY, removeMode ? STAGE_REMOVE_COLOR : NAME_COLOR);
-            double minCX = (rc.nameRight() + rc.minR()) / 2.0;
+            drawStageBlockStrip(ps, buffer, font, v.modelId(), rc.nameRight(), rowCY);
+            double minCX = (rc.iconsRight() + rc.minR()) / 2.0;
             drawCenteredText(ps, buffer, font, "≥" + v.minLevel(), minCX, rowCY, LEVEL_COLOR);
             double maxCX = (rc.minR() + rc.maxR()) / 2.0;
             drawCenteredText(ps, buffer, font, v.maxLevel() < 0 ? "≤∞" : "≤" + v.maxLevel(), maxCX, rowCY, LEVEL_COLOR);
@@ -1527,6 +1598,34 @@ public final class EditorTypeMenuRenderer {
                 double cx = rc.maxR() + (slot + 0.5) * subW;
                 drawCenteredText(ps, buffer, font, PHASE_LETTERS[slot], cx, rowCY, on ? PHASE_ON_COLOR : PHASE_OFF_COLOR);
             }
+        }
+    }
+
+    /**
+     * The block icon strip on a stage row — up to {@link #STAGE_ROW_ICONS} icons from
+     * {@link ClientStageBlocks} plus a "+K" overflow label, or a dim placeholder glyph when the
+     * stage has no blocks yet (the strip stays clickable as the Stage Blocks panel affordance).
+     */
+    private static void drawStageBlockStrip(PoseStack ps, MultiBufferSource buffer, Font font,
+                                            String stageId, double stripLeft, double rowCY) {
+        games.brennan.dungeontrain.net.StageBlockStripsPacket.Strip strip =
+            games.brennan.dungeontrain.client.menu.ClientStageBlocks.stripFor(stageId);
+        if (strip.blockIds().isEmpty()) {
+            drawCenteredText(ps, buffer, font, "▦", stripLeft + STAGE_ICON_STRIP_W / 2.0, rowCY,
+                STAGE_STRIP_PLACEHOLDER_COLOR);
+            return;
+        }
+        int drawn = Math.min(strip.blockIds().size(), STAGE_ROW_ICONS);
+        for (int i = 0; i < drawn; i++) {
+            double cx = stripLeft + (i + 0.5) * STAGE_ICON_SLOT;
+            games.brennan.dungeontrain.client.menu.MenuBlockIcons.drawBlockIcon(
+                ps, buffer, strip.blockIds().get(i), cx, rowCY, STAGE_ICON_SIZE);
+        }
+        if (strip.totalUnique() > drawn) {
+            double labelCX = stripLeft + drawn * STAGE_ICON_SLOT
+                + (STAGE_ICON_STRIP_W - drawn * STAGE_ICON_SLOT) / 2.0;
+            drawCenteredText(ps, buffer, font, "+" + (strip.totalUnique() - drawn),
+                labelCX, rowCY, LEVEL_COLOR);
         }
     }
 
@@ -1547,6 +1646,7 @@ public final class EditorTypeMenuRenderer {
         if (variantIdx < 0 || variantIdx >= menu.variants().size()) return Hovered.NONE;
         StageRowCells rc = stageRowCells(-halfW, halfW);
         if (hitX < rc.nameRight()) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+        if (hitX < rc.iconsRight()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE_BLOCKS);
         if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
         if (hitX < rc.maxR()) return new Hovered(menuIdx, variantIdx, CellKind.MAX_LEVEL);
         double subW = rc.phaseSubW(halfW);

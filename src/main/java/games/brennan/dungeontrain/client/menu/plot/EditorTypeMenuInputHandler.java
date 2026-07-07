@@ -287,6 +287,15 @@ public final class EditorTypeMenuInputHandler {
                 LOGGER.debug("[DungeonTrain] EditorTypeMenu teleport: {}", cmd);
                 CommandRunner.run(cmd);
             }
+            // Dedicated per-part visibility checkbox cell (its own leading column on PARTS rows) — a
+            // plain click toggles that part's editor-grid visibility. Replaces the old shift-click-
+            // the-name shortcut; the hit-test only yields PART_VISIBLE for PARTS rows.
+            case PART_VISIBLE -> {
+                String cmd = "dungeontrain editor part display "
+                    + variant.modelId() + " " + variant.modelName() + " toggle";
+                LOGGER.debug("[DungeonTrain] EditorTypeMenu part-visible: {}", cmd);
+                CommandRunner.run(cmd);
+            }
             case WEIGHT -> {
                 String dir = shift ? "dec" : "inc";
                 // Sub-variants companion menu: weight cells reference per-member
@@ -396,6 +405,14 @@ public final class EditorTypeMenuInputHandler {
                 boolean on = (mask & (1 << slot)) != 0;
                 String action = shift ? "others" : (on ? "off" : "on");
                 CommandRunner.run(EditorPlotTeleport.stagePhaseCommandFor(id, STAGE_PHASE_TOKENS[slot], action));
+            }
+            case STAGE_BLOCKS -> {
+                // The row's icon strip just SELECTS the stage (which auto-opens/closes its panel) —
+                // it is no longer an independent panel open/close. Same select-toggle as the name
+                // cell. Inert while remove-mode is armed so a mis-click can't act mid-delete.
+                if (EditorTypeMenuRenderer.isStagesRemoveMode()) return;
+                String id = stageIdAt(menu, hit);
+                if (id != null) CommandRunner.run("dungeontrain editor stage select " + id);
             }
             default -> { }
         }
