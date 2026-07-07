@@ -3091,9 +3091,9 @@
       ],
       "pr": 634,
       "date": "2026-07-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.386.0",
+      "released_at": "2026-07-06T23:39:47Z"
     }
   ]
 }
