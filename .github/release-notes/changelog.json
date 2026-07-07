@@ -3156,6 +3156,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-overlay-play-perf",
+      "version": "0.389.0",
+      "type": "perf",
+      "title": "Editor tooling no longer runs during normal play",
+      "summary": "The in-game editor's plot-detection was running on every server tick for every player \u2014 even during normal play with the editor closed, and on dedicated servers where nobody is editing. It now only runs when you're up at the editor build area, so regular gameplay no longer pays for that editor overhead. Most noticeable on longer, content-heavy trains and on dedicated servers.",
+      "highlights": [
+        "Editor overlay skipped during normal play (all game modes)",
+        "Recovers up to ~9ms of server time per tick on a long train",
+        "Applies to singleplayer and dedicated servers"
+      ],
+      "pr": 640,
+      "date": "2026-07-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

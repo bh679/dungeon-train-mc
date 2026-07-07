@@ -180,9 +180,20 @@ public final class VariantOverlayRenderer {
     }
 
     /**
-     * Call once per server level tick. Cheap when no players are in an
-     * editor plot — the outer loop over {@code level.players()} short-circuits
-     * via {@link CarriageEditor#plotContaining}.
+     * Minimum player Y for the editor overlay to do any work. Every editor plot
+     * sits in the sky at {@code PLOT_Y = 250} (see {@link EditorLayout}); gameplay
+     * and trains run far below. A player under this line can't be at a plot, so the
+     * per-player {@code plotContaining} locate cascade is skipped entirely for them.
+     * That cascade used to run every tick for every player even during normal play
+     * with the editor closed (~9ms/tick on a long train — the profiler's "overlay"
+     * cost). Set a few blocks below 250 for standing-on-the-plot-floor margin.
+     */
+    private static final int EDITOR_Y_MIN = 245;
+
+    /**
+     * Call once per server level tick. Cheap when no players are up at the editor
+     * build area ({@code y >= EDITOR_Y_MIN}): every player below that is
+     * short-circuited before any {@code plotContaining} scan runs.
      */
     public static void onLevelTick(ServerLevel level) {
         List<ServerPlayer> players = level.players();
@@ -191,6 +202,15 @@ public final class VariantOverlayRenderer {
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
 
         for (ServerPlayer player : players) {
+            // Editor plots live in the sky at PLOT_Y=250; trains run far below. Skip the whole
+            // editor-overlay locate cascade for anyone not up at the build area — this is the
+            // ~9ms/tick the profiler flagged, which ran unconditionally during normal play.
+            // forget() clears any lingering editor HUD once on the way out, then no-ops (cheap
+            // map checks), so a player descending from the build area doesn't keep stale overlay.
+            if (player.getBlockY() < EDITOR_Y_MIN) {
+                forget(player);
+                continue;
+            }
             updateEditorStatus(player, dims);
             pushLockIdSnapshot(player);
             pushPlotLabelsSnapshot(player, dims);
