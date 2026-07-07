@@ -25,7 +25,6 @@ import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ChunkPos;
@@ -35,7 +34,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.LevelChunkSection;
 import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -596,16 +594,9 @@ public final class TrackGenerator {
             SilentBlockOps.setBlockSilent(level, pos, state);
             return;
         }
-        int sIdx = chunk.getSectionIndex(pos.getY());
-        LevelChunkSection section = chunk.getSection(sIdx);
-        int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
-        int lx = pos.getX() & 15;
-        int lz = pos.getZ() & 15;
-        int ly = pos.getY() - baseY;
-        if (section.getBlockState(lx, ly, lz).hasBlockEntity()) chunk.removeBlockEntity(pos);
-        section.setBlockState(lx, ly, lz, state, false);
-        chunk.setUnsaved(true);
-        level.getChunkSource().blockChanged(pos);
+        // Shared section-local writer — see SilentBlockOps (this method's original
+        // body, lifted so the carriage-spawn placement can reuse the same path).
+        SilentBlockOps.setBlockSectionLocal(level, chunk, pos, state);
     }
 
     /**

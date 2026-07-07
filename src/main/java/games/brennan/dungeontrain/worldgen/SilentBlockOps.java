@@ -1,12 +1,15 @@
 package games.brennan.dungeontrain.worldgen;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -88,6 +91,69 @@ public final class SilentBlockOps {
     /** Clear the block at {@code pos} to air silently. */
     public static void clearBlockSilent(ServerLevel level, BlockPos pos) {
         setBlockSilent(level, pos, AIR);
+    }
+
+    /**
+     * Stamp {@code state} at {@code pos} the cheapest possible way: a raw
+     * write into the {@link LevelChunkSection} palette with
+     * {@code lightUpdate = false} — <b>no</b> light-engine {@code checkBlock},
+     * <b>no</b> neighbour-shape cascade, <b>no</b> {@code LevelChunk.setBlockState}
+     * bookkeeping (heightmap / POI / block-entity ticking / Sable's
+     * {@code LevelChunk.setBlockState} physics-neighbourhood mixin). Only a
+     * batched client {@code blockChanged} + {@code setUnsaved} follow. This is
+     * the corridor-cleanup / bedrock-floor path (see
+     * {@code TrackGenerator.writeTrackCell} and {@code BedrockFloorEvents}),
+     * lifted here so the carriage-spawn placement can reuse it.
+     *
+     * <p><b>Use only for blocks with no {@link BlockState#hasBlockEntity() block
+     * entity}</b> — a section write does not instantiate the BE, so a container
+     * would come out empty. Route BE cells through
+     * {@link #setBlockSilent(ServerLevel, BlockPos, BlockState, CompoundTag)}.
+     * Because it skips the shape cascade it also skips lighting/heightmap
+     * upkeep; that is acceptable where the written blocks are ephemeral (a
+     * carriage placed in the world only to be lifted into a Sable sub-level the
+     * same tick, which re-airs the source cells) or where stale light on
+     * removed blocks is tolerated (corridor cleanup).</p>
+     *
+     * @return {@code true} if written section-local; {@code false} if the chunk
+     *     was not loaded, in which case it falls back to
+     *     {@link #setBlockSilent(ServerLevel, BlockPos, BlockState)} (which
+     *     relights) so the write is never silently dropped.
+     */
+    public static boolean setBlockSectionLocal(ServerLevel level, BlockPos pos, BlockState state) {
+        LevelChunk chunk = level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
+        if (chunk == null) {
+            // Not loaded — cannot section-write; fall back to the (relighting)
+            // silent path rather than drop the block. Rare for carriage spawns:
+            // TrainCarriageAppender defers a spawn until its footprint chunks are
+            // loaded to FULL (see ensureSpawnFootprintReady), so this is a
+            // belt-and-braces guard, not the normal path.
+            setBlockSilent(level, pos, state);
+            return false;
+        }
+        setBlockSectionLocal(level, chunk, pos, state);
+        return true;
+    }
+
+    /**
+     * {@link #setBlockSectionLocal(ServerLevel, BlockPos, BlockState)} with a
+     * caller-resolved {@code chunk} — use when writing many cells in the same
+     * chunk column so the chunk lookup isn't repeated per cell. {@code chunk}
+     * must be the {@link LevelChunk} containing {@code pos}.
+     */
+    public static void setBlockSectionLocal(ServerLevel level, LevelChunk chunk, BlockPos pos, BlockState state) {
+        int sIdx = chunk.getSectionIndex(pos.getY());
+        LevelChunkSection section = chunk.getSection(sIdx);
+        int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
+        int lx = pos.getX() & 15;
+        int lz = pos.getZ() & 15;
+        int ly = pos.getY() - baseY;
+        // Drop any pre-existing BE so a stale container from a prior life of the
+        // cell doesn't linger under the new (BE-less) state.
+        if (section.getBlockState(lx, ly, lz).hasBlockEntity()) chunk.removeBlockEntity(pos);
+        section.setBlockState(lx, ly, lz, state, false);
+        chunk.setUnsaved(true);
+        level.getChunkSource().blockChanged(pos);
     }
 
     /**

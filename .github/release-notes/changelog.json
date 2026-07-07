@@ -3189,6 +3189,21 @@
       "released": true,
       "released_in": "v0.390.0",
       "released_at": "2026-07-07T08:01:21Z"
+    },
+    {
+      "id": "smoother-carriage-spawns",
+      "version": "0.391.0",
+      "type": "perf",
+      "title": "Smoother train growth",
+      "summary": "New carriages no longer cause a server hitch as the train extends. The terrain a spawning carriage needs is now prepared in the background ahead of time instead of stalling the tick on the spot \u2014 so riding fast or flying in creative no longer stutters (or trips \"Can't keep up!\" warnings) each time the train grows.",
+      "highlights": [
+        "Carriage block placement is also much cheaper on the server tick now."
+      ],
+      "pr": 645,
+      "date": "2026-07-07",
+      "released": true,
+      "released_in": "v0.391.0",
+      "released_at": "2026-07-07T13:26:11Z"
     }
   ]
 }

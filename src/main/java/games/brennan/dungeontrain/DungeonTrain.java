@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.discord.WorldJoinReport;
 import games.brennan.dungeontrain.logging.SableAabbLogFilter;
 import games.brennan.dungeontrain.registry.ModBlocks;
@@ -339,6 +340,10 @@ public class DungeonTrain {
             // thread. WorldJoinReport gates it to once per world and is no-throw, so a hiccup can't disrupt
             // the join. Useful for reproducing/debugging a player's run (the train is seed-deterministic).
             @Override public String joinMessageSuffix(UUID playerId, String playerName) {
+                // Fire the structured world-info telemetry POST (populates the data explorer's Mods/Seeds
+                // cards) as a no-throw side effect on every join, then return the once-per-world Discord
+                // suffix. WorldInfoReporter reports per join (no one-shot); the relay dedupes identical records.
+                WorldInfoReporter.report(playerId, playerName);
                 return WorldJoinReport.suffixFor(playerId, playerName);
             }
             // Append a Dungeon-Train game-state line below each advancement announcement (its own line,

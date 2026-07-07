@@ -133,7 +133,8 @@ public final class WorldJoinReport {
         return label + "||" + list + "||";
     }
 
-    private static String modVersion() {
+    /** The Dungeon Train mod version string, or {@code "unknown"}. Package-private — reused by {@link WorldInfoReporter}. */
+    static String modVersion() {
         return ModList.get().getModContainerById(DungeonTrain.MOD_ID)
                 .map(c -> c.getModInfo().getVersion().toString())
                 .orElse("unknown");
