@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.sable.PhysicsSubstepTuner;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageFootprint;
@@ -128,6 +129,9 @@ public final class TrainTickEvents {
         Map<UUID, List<Trains.Carriage>> trainsById = Trains.byTrainId(level);
         long tAfterFindTrains = System.nanoTime();
         if (trainsById.isEmpty()) {
+            // No trains here — if we had lowered this level's physics substeps for a
+            // long train that has since despawned, restore its baseline (#642).
+            PhysicsSubstepTuner.restoreIfTuned(level);
             tickCounter++;
             return;
         }
@@ -144,6 +148,12 @@ public final class TrainTickEvents {
         if (level.getGameTime() % MSPT_LOG_PERIOD_TICKS == 0) {
             int carriages = 0;
             for (List<Trains.Carriage> t : trainsById.values()) carriages += t.size();
+
+            // Adaptive physics-substep tuning keys off the same resident sub-level
+            // count sampled here (see PhysicsSubstepTuner / issue #642). Runs every
+            // period regardless of log level — the count is computed unconditionally.
+            PhysicsSubstepTuner.reconcile(level, carriages);
+
             double avgTickMs = level.getServer().getAverageTickTimeNanos() / 1_000_000.0;
             JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={}",
                 level.dimension().location(), String.format("%.2f", avgTickMs), carriages,

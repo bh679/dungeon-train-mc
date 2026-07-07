@@ -3204,6 +3204,22 @@
       "released": true,
       "released_in": "v0.391.0",
       "released_at": "2026-07-07T13:26:11Z"
+    },
+    {
+      "id": "adaptive-physics-substeps",
+      "version": "0.392.0",
+      "type": "perf",
+      "title": "Smoother performance on long trains",
+      "summary": "Very long trains no longer bog down the server tick. Once a train grows large, its physics switches to a lighter step rate that roughly halves the heaviest part of the per-tick cost, so TPS holds up on big trains and busy multiplayer servers. Short and medium trains are unaffected and keep full-fidelity collision.",
+      "highlights": [
+        "Large trains shed ~25-45% of their physics tick cost",
+        "Engages only when a train is big enough to matter \u2014 short trains keep full-fidelity physics"
+      ],
+      "pr": 648,
+      "date": "2026-07-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
