@@ -3123,6 +3123,23 @@
       "released": true,
       "released_in": "v0.388.0",
       "released_at": "2026-07-07T05:01:57Z"
+    },
+    {
+      "id": "new-maze-stages-mushroom-rooms",
+      "version": "0.388.0",
+      "type": "content",
+      "title": "New maze stages (Stone, Desert, Quartz) + mushroom rooms",
+      "summary": "The maze dungeon now has Stone, Desert, and Quartz stages alongside the existing Copper stage, so its theme changes as you go deeper into a run. Two new mushroom-themed rooms can also show up \u2014 a mushroom feature room, and a fuller mushroom grove later on. Bookshelf and pot arrangements in library rooms also look a bit more consistent.",
+      "highlights": [
+        "New Stone, Desert, and Quartz maze stages (joins the existing Copper stage)",
+        "New mushroom feature room and mushroom grove room",
+        "Minor visual polish to bookshelf/pot layouts in library rooms"
+      ],
+      "pr": 637,
+      "date": "2026-07-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
