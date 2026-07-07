@@ -3140,6 +3140,22 @@
       "released": true,
       "released_in": "v0.388.1",
       "released_at": "2026-07-07T05:41:59Z"
+    },
+    {
+      "id": "overworld-only-world-start",
+      "version": "0.389.0",
+      "type": "fix",
+      "title": "New worlds always start in the Overworld",
+      "summary": "New Dungeon Train worlds can now only be created with an Overworld start \u2014 the Nether and End starting-dimension options have been removed from the Create World screen. Worlds that already started in the Nether or End are unaffected and keep working exactly as before.",
+      "highlights": [
+        "Removed the Nether/End starting-dimension world types from world creation",
+        "Existing Nether/End-start worlds are unaffected and continue to work"
+      ],
+      "pr": 639,
+      "date": "2026-07-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
