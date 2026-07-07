@@ -48,6 +48,11 @@
       "id": "desert",
       "weight": 7,
       "stage": "desert"
+    },
+    {
+      "id": "quartz",
+      "weight": 7,
+      "stage": "quartz"
     }
   ]
 }
