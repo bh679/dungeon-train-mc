@@ -56,15 +56,17 @@ public enum StartingDimension {
     }
 
     /**
-     * Roll the starting dimension for a respawn — either when the player
-     * clicks "New World" / "Same World" on the death screen (consumed by
-     * {@code DeathScreenLayoutHandler.launchWorld}) or when they click the
-     * vanilla "Respawn" button (consumed by {@code RespawnDimensionEvents}).
-     * Caller passes a uniform draw on {@code [0, 1)}: {@code r < 0.01} → End
-     * (1%), {@code r < 0.06} → Nether (5%), else Overworld (94%). The world's
-     * current starting dimension is ignored — every death rolls independently,
-     * so a player already in the Nether still has a 94% chance of waking up in
-     * the Overworld.
+     * Roll the starting dimension for a vanilla in-place "Respawn" (consumed
+     * by {@code RespawnDimensionEvents}). Caller passes a uniform draw on
+     * {@code [0, 1)}: {@code r < 0.01} → End (1%), {@code r < 0.06} → Nether
+     * (5%), else Overworld (94%). The world's current starting dimension is
+     * ignored — every respawn rolls independently, so a player already in the
+     * Nether still has a 94% chance of waking up in the Overworld.
+     *
+     * <p>The death screen's "New World" / "Same World" buttons
+     * ({@code DeathScreenLayoutHandler.launchWorld}) do <b>not</b> use this —
+     * those always start the new save in the Overworld, since they create a
+     * new world rather than relocating within the current one.</p>
      *
      * <p>Pure function over {@code r} so unit tests can pin boundaries
      * exactly without stubbing a {@code RandomSource}. Lives on this enum

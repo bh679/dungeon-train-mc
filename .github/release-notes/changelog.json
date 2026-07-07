@@ -3137,9 +3137,58 @@
       ],
       "pr": 637,
       "date": "2026-07-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.388.1",
+      "released_at": "2026-07-07T05:41:59Z"
+    },
+    {
+      "id": "overworld-only-world-start",
+      "version": "0.389.0",
+      "type": "fix",
+      "title": "New worlds always start in the Overworld",
+      "summary": "New Dungeon Train worlds can now only be created with an Overworld start \u2014 the Nether and End starting-dimension options have been removed from the Create World screen. Worlds that already started in the Nether or End are unaffected and keep working exactly as before.",
+      "highlights": [
+        "Removed the Nether/End starting-dimension world types from world creation",
+        "Existing Nether/End-start worlds are unaffected and continue to work"
+      ],
+      "pr": 639,
+      "date": "2026-07-07",
+      "released": true,
+      "released_in": "v0.390.0",
+      "released_at": "2026-07-07T08:01:21Z"
+    },
+    {
+      "id": "editor-overlay-play-perf",
+      "version": "0.389.0",
+      "type": "perf",
+      "title": "Editor tooling no longer runs during normal play",
+      "summary": "The in-game editor's plot-detection was running on every server tick for every player \u2014 even during normal play with the editor closed, and on dedicated servers where nobody is editing. It now only runs when you're up at the editor build area, so regular gameplay no longer pays for that editor overhead. Most noticeable on longer, content-heavy trains and on dedicated servers.",
+      "highlights": [
+        "Editor overlay skipped during normal play (all game modes)",
+        "Recovers up to ~9ms of server time per tick on a long train",
+        "Applies to singleplayer and dedicated servers"
+      ],
+      "pr": 640,
+      "date": "2026-07-07",
+      "released": true,
+      "released_in": "v0.390.0",
+      "released_at": "2026-07-07T08:01:21Z"
+    },
+    {
+      "id": "death-screen-overworld-only",
+      "version": "0.390.0",
+      "type": "fix",
+      "title": "Death-screen New World/Same World always start in the Overworld",
+      "summary": "The death screen's \"New World\" and \"Same World\" buttons now always start your next run in the Overworld, instead of an occasional random chance of starting fresh in the Nether or the End. The vanilla in-place \"Respawn\" button is unaffected and keeps its existing chance of relocating you to a different dimension.",
+      "highlights": [
+        "Death-screen New World/Same World starts are always Overworld now",
+        "Vanilla Respawn's dimension-shift chance is unchanged"
+      ],
+      "pr": 643,
+      "date": "2026-07-07",
+      "released": true,
+      "released_in": "v0.390.0",
+      "released_at": "2026-07-07T08:01:21Z"
     }
   ]
 }

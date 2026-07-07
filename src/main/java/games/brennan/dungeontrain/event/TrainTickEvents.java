@@ -60,6 +60,23 @@ public final class TrainTickEvents {
     private static final long STUCK_TIMING_THRESHOLD_MS = 5;
 
     /**
+     * Diagnostic radius (blocks) for the {@code near=} field in the
+     * {@code [stuck.timing]} line. A carriage is counted "near" if its
+     * {@link ManagedShip#worldAABB()} is within this distance of any player —
+     * a proxy for the set that genuinely needs a live physics body (the player
+     * rides/collides only with nearby carriages). Contrast with
+     * {@code carriages=} (every resident carriage, all of which are physics-
+     * active in Sable's shared Rapier scene today): {@code carriages − near} is
+     * the over-held, needlessly physics-ticked set this profiling exists to
+     * size. Not a gameplay knob — it does not change what stays resident.
+     */
+    private static final double PHYSICS_NEAR_RADIUS = 48.0;
+    private static final double PHYSICS_NEAR_RADIUS_SQ = PHYSICS_NEAR_RADIUS * PHYSICS_NEAR_RADIUS;
+
+    /** Period (ticks) for the steady-state {@code [mspt]} sample line. 40t = 2s. */
+    private static final int MSPT_LOG_PERIOD_TICKS = 40;
+
+    /**
      * Distance ahead of the lead carriage along velocity that
      * {@link #killEntitiesAhead} sweeps each tick. 8 blocks at 2 m/s ≈ 0.1
      * block/tick gives ~80 ticks (4 s) of advance notice to evict mobs.
@@ -115,6 +132,24 @@ public final class TrainTickEvents {
             return;
         }
 
+        // Steady-state MSPT sample every MSPT_LOG_PERIOD_TICKS. Unlike the
+        // [stuck.timing] line below (which measures only THIS handler's train work
+        // and only fires on >5ms ticks), this pairs the server's mean tick time —
+        // which INCLUDES the Sable sub-level physics that runs in ServerLevel.tick,
+        // the ~70% hotspot invisible to this handler — with the resident (carriages)
+        // vs near counts. Lets MSPT-vs-resident-carriage scaling be read straight
+        // from the log, no /spark or /tick query. getAverageTickTimeNanos() is
+        // server-wide (dominated by the train dimension's physics). See
+        // project_sable_physics_shared_scene_resident_scaling.
+        if (level.getGameTime() % MSPT_LOG_PERIOD_TICKS == 0) {
+            int carriages = 0;
+            for (List<Trains.Carriage> t : trainsById.values()) carriages += t.size();
+            double avgTickMs = level.getServer().getAverageTickTimeNanos() / 1_000_000.0;
+            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={}",
+                level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
+                countNearCarriages(level, trainsById), trainsById.size());
+        }
+
         // Kill-ahead runs once per train, against the lead carriage's
         // runway. Other carriages of the train are inside the train's
         // AABB, which is what the kill-ahead filter spares.
@@ -167,8 +202,9 @@ public final class TrainTickEvents {
         if (totalMs >= STUCK_TIMING_THRESHOLD_MS) {
             int totalCarriages = 0;
             for (List<Trains.Carriage> train : trainsById.values()) totalCarriages += train.size();
+            int nearCarriages = countNearCarriages(level, trainsById);
             JITTER_LOGGER.debug(
-                "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms fluid={}ms tracks={}ms tunnels={}ms trains={} carriages={}",
+                "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms fluid={}ms tracks={}ms tunnels={}ms trains={} carriages={} near={}",
                 level.getGameTime(), totalMs,
                 (tAfterAppender - t0) / 1_000_000,
                 (tAfterOverlay - tAfterAppender) / 1_000_000,
@@ -177,9 +213,41 @@ public final class TrainTickEvents {
                 (tAfterFluid - tAfterKill) / 1_000_000,
                 (tAfterTracks - tAfterFluid) / 1_000_000,
                 (tAfterTunnels - tAfterTracks) / 1_000_000,
-                trainsById.size(), totalCarriages);
+                trainsById.size(), totalCarriages, nearCarriages);
         }
         tickCounter++;
+    }
+
+    /**
+     * Count carriages within {@link #PHYSICS_NEAR_RADIUS} of any player — the
+     * subset that plausibly needs a live physics body. Called only when a
+     * {@code [stuck.timing]} line is about to log (slow ticks), so it adds no
+     * steady-state cost. Distance is point-to-AABB (zero when the player is
+     * inside the box). Skips non-resident (culled) carriages, whose
+     * {@link ManagedShip#worldAABB()} is a stale last-known box (see
+     * {@code project_stale_ghost_aabb_collision}).
+     */
+    private static int countNearCarriages(ServerLevel level, Map<UUID, List<Trains.Carriage>> trainsById) {
+        List<? extends Player> players = level.players();
+        if (players.isEmpty()) return 0;
+        int near = 0;
+        for (List<Trains.Carriage> train : trainsById.values()) {
+            for (Trains.Carriage carriage : train) {
+                ManagedShip ship = carriage.ship();
+                if (!ship.isResident()) continue;
+                AABBdc box = ship.worldAABB();
+                for (Player p : players) {
+                    double dx = p.getX() - Mth.clamp(p.getX(), box.minX(), box.maxX());
+                    double dy = p.getY() - Mth.clamp(p.getY(), box.minY(), box.maxY());
+                    double dz = p.getZ() - Mth.clamp(p.getZ(), box.minZ(), box.maxZ());
+                    if (dx * dx + dy * dy + dz * dz <= PHYSICS_NEAR_RADIUS_SQ) {
+                        near++;
+                        break;
+                    }
+                }
+            }
+        }
+        return near;
     }
 
     /**

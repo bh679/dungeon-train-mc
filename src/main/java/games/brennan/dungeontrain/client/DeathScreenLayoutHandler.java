@@ -30,7 +30,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.levelgen.WorldDimensions;
@@ -59,10 +58,10 @@ import java.util.function.Function;
  *
  * <p>This class also owns the world-transition plumbing the narrative screen
  * calls: {@link #launchWorld} creates a fresh save (carrying forward the current
- * world's vanilla + Dungeon Train settings via {@code PendingWorldChoices}, and
- * rolling a fresh starting dimension), and {@link #goToTitleScreen} exits to the
- * title. Both run the Sable sub-level pre-drain so the integrated server tears
- * down cleanly (see {@link #preDrainTrainSubLevels}).</p>
+ * world's vanilla + Dungeon Train settings via {@code PendingWorldChoices}; the
+ * new save always starts in the Overworld), and {@link #goToTitleScreen} exits
+ * to the title. Both run the Sable sub-level pre-drain so the integrated server
+ * tears down cleanly (see {@link #preDrainTrainSubLevels}).</p>
  *
  * <p>LAN / dedicated-server death screens are left untouched — we can't recreate
  * a world we don't own; the singleplayer guard ({@code getSingleplayerServer()})
@@ -105,9 +104,7 @@ public final class DeathScreenLayoutHandler {
         LevelSettings cur = worldData.getLevelSettings();
         WorldOptions curOpts = worldData.worldGenOptions();
 
-        StartingDimension startingDim = StartingDimension.rollRespawnDimension(
-                RandomSource.create().nextDouble());
-        LOGGER.info("DeathScreenLayout: respawn rolled startingDimension={}", startingDim);
+        StartingDimension startingDim = StartingDimension.OVERWORLD;
         ServerLevel overworld = server.overworld();
         if (overworld != null) {
             try {
