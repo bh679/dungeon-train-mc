@@ -697,7 +697,7 @@ public final class CarriagePlacer {
             } else {
                 stampOrigin = origin;
             }
-            halfTemplate.get().placeInWorld(level, stampOrigin, stampOrigin, settings, level.getRandom(), 3);
+            stampTemplateSectionLocal(level, stampOrigin, halfTemplate.get(), settings);
         } else {
             legacyHalfFlatbedFloor(level, origin, padLen, dims);
         }
@@ -714,7 +714,8 @@ public final class CarriagePlacer {
         BlockState floor = BlockStates.FLOOR;
         for (int dx = 0; dx < padLen; dx++) {
             for (int dz = 0; dz < dims.width(); dz++) {
-                level.setBlock(origin.offset(dx, 0, dz), floor, 3);
+                // Section-local: ephemeral, lifted into a Sable sub-level this tick.
+                SilentBlockOps.setBlockSectionLocal(level, origin.offset(dx, 0, dz), floor);
             }
         }
     }
@@ -1094,7 +1095,33 @@ public final class CarriagePlacer {
                                       StructureProcessor processor) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
         if (processor != null) settings.addProcessor(processor);
-        template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+        stampTemplateSectionLocal(level, origin, template, settings);
+    }
+
+    /**
+     * Lighting-free equivalent of {@link StructureTemplate#placeInWorld}. It still
+     * <em>calls</em> {@code placeInWorld} — so palette selection, rotation, mirror,
+     * block-entity handling, and any {@link StructureProcessor}s already on
+     * {@code settings} (e.g. {@link PartRegionFilterProcessor}) apply byte-for-byte
+     * as before — but appends a {@link SectionLocalStampProcessor} which writes each
+     * final cell with a section-local write and returns {@code null}, so
+     * {@code placeInWorld}'s own per-block flag-3 {@code setBlock} (the light-engine
+     * + neighbour cascade + Sable physics mixin) is skipped entirely.
+     *
+     * <p>Why: a spawning carriage's blocks are placed in the world only to be lifted
+     * into a Sable sub-level the same tick (which re-airs the source cells), so all
+     * of that world-side write cost is discarded — it was ~58 % of a spawn tick (the
+     * {@code place} phase, 49–184 ms/group). The capture processor is added LAST so
+     * it sees each cell's post-{@code PartRegionFilterProcessor} state; block-entity
+     * cells keep the BE-creating {@link SilentBlockOps#setBlockSilent(ServerLevel, BlockPos, BlockState, CompoundTag)}
+     * path so their NBT round-trips for Sable to move.</p>
+     */
+    static void stampTemplateSectionLocal(ServerLevel level, BlockPos stampPos,
+                                          StructureTemplate template, StructurePlaceSettings settings) {
+        settings.addProcessor(new SectionLocalStampProcessor(level));
+        // Flags are moot — the capture processor drops every cell, so placeInWorld
+        // places nothing itself; it only drives the palette/geometry/processor chain.
+        template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), Block.UPDATE_CLIENTS);
     }
 
     public static Set<BlockPos> collectFootprint(ServerLevel level, BlockPos origin, CarriageDims dims) {
@@ -1134,7 +1161,8 @@ public final class CarriagePlacer {
                     BlockState state = stateAt(dx, dy, dz, doorZ, type, dims);
                     if (state == null) continue;
                     BlockPos pos = origin.offset(dx, dy, dz);
-                    level.setBlock(pos, state, 3);
+                    // Section-local: ephemeral, lifted into a Sable sub-level this tick.
+                    SilentBlockOps.setBlockSectionLocal(level, pos, state);
                     placed.add(pos.immutable());
                 }
             }
