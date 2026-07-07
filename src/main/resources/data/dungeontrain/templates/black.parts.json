@@ -3,7 +3,8 @@
   "floor": [
     {
       "name": "obsidian",
-      "weight": 1
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "walls": [
@@ -41,7 +42,7 @@
     },
     {
       "name": "standard",
-      "weight": 2,
+      "weight": 1,
       "stage": "stone"
     },
     {
