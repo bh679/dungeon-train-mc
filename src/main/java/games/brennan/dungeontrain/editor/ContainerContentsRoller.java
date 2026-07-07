@@ -747,9 +747,10 @@ public final class ContainerContentsRoller {
         long statsSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_STATS);
         RandomSource statsRng = RandomSource.create(statsSeed);
         // Scale the stat roll by the carriage's difficulty tier (deterministic
-        // from carriageIndex, so the same chest still rolls identical stats).
-        // Editor preview uses pIdx -1 → tier 0 → no bonus.
-        int diffTier = DifficultyProgression.tierForTravelled(Math.abs(carriageIndex));
+        // from carriageIndex for a given difficulty offset, so the same chest rolls
+        // identical stats; an admin /dungeontrain difficulty shifts the tier so loot
+        // power tracks the carriage stage). Editor preview uses pIdx -1 → tier 0 → no bonus.
+        int diffTier = DifficultyProgression.positionTier(carriageIndex);
         StatsModifier.applyStats(stack, statsRng,
             ItemStatLevelScaling.primaryStatBonus(stack, diffTier));
 

@@ -39,9 +39,9 @@ public final class DiscordAdvancementSuffix {
         }
 
         // Difficulty level: the player's personal tier — identical to the HUD difficulty read-out
-        // (DifficultyProgression.tierForTravelled of their travelled-carriage counter).
-        int tier = DifficultyProgression.tierForTravelled(
-                player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex());
+        // (DifficultyProgression.tierForTravelled of their EFFECTIVE, offset-inclusive counter).
+        int tier = DifficultyProgression.tierForTravelled(DifficultyProgression.effectiveTravelled(
+                player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex()));
         String difficulty = "Difficulty Level " + tier;
 
         // Carriage #: the exact index last shown on this player's HUD ("Carriage: +N"). Null when they

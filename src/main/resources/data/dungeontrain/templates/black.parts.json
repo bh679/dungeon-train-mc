@@ -27,6 +27,11 @@
       "name": "quartz",
       "weight": 1,
       "stage": "quartz"
+    },
+    {
+      "name": "mudbricks",
+      "weight": 1,
+      "stage": "mud"
     }
   ],
   "roof": [
@@ -54,6 +59,11 @@
       "name": "quartz",
       "weight": 1,
       "stage": "quartz"
+    },
+    {
+      "name": "mud",
+      "weight": 1,
+      "stage": "mud"
     }
   ],
   "doors": [
@@ -81,6 +91,11 @@
       "name": "quartz",
       "weight": 1,
       "stage": "quartz"
+    },
+    {
+      "name": "mud",
+      "weight": 1,
+      "stage": "mud"
     }
   ]
 }
