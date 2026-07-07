@@ -18,7 +18,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import org.joml.Vector3d;
@@ -1156,6 +1158,8 @@ public final class TrainCarriageAppender {
         FORCELOADED_BY_TRAIN.clear();
         RESUME_GRACE_UNTIL_TICK.clear();
         RESUME_STARTED_TICK.clear();
+        SPAWN_GEN_WAIT_FORWARD.clear();
+        SPAWN_GEN_WAIT_BACKWARD.clear();
     }
 
     /**
@@ -1497,6 +1501,8 @@ public final class TrainCarriageAppender {
         EDGE_UNRESOLVED_WARNED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         RELOAD_ISSUED_FORWARD.keySet().retainAll(trainsTouchedThisTick);
         RELOAD_ISSUED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
+        SPAWN_GEN_WAIT_FORWARD.keySet().retainAll(trainsTouchedThisTick);
+        SPAWN_GEN_WAIT_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         clearDropouts(level, seenThisTick);
     }
 
@@ -1911,43 +1917,51 @@ public final class TrainCarriageAppender {
 
         if (needsForward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_FORWARD, LAST_SPAWNED_TICK_FORWARD, CULL_CLEARED_FORWARD, trainId, train, now, true)) {
             ManagedShip newShip = spawnNewGroup(level, forwardRef, forwardAnchor, groupSize, dims, velocity, trainId, train);
-            if (newShip.getKinematicDriver() instanceof TrainTransformProvider newProvider) {
-                newProvider.setSpawnedBackward(false);
+            // null ⇒ spawn deferred this tick while its footprint chunks generate
+            // asynchronously (see ensureSpawnFootprintReady). Retry next tick; skip
+            // all post-spawn bookkeeping and leave didForwardSpawn false.
+            if (newShip != null) {
+                if (newShip.getKinematicDriver() instanceof TrainTransformProvider newProvider) {
+                    newProvider.setSpawnedBackward(false);
+                }
+                LAST_SPAWNED_SHIP_FORWARD.put(trainId, newShip);
+                LAST_SPAWNED_TICK_FORWARD.put(trainId, now);
+                recordPostSpawnCollisionCheck(trainId, newShip, forwardAnchor, train);
+                // Hold the new forward group resident until it has serialized at least once —
+                // symmetric with the backward lane (forceLoadSpawnedBackward) and the bootstrap
+                // lane (holdGroupResident). Sable's per-tick simulation-distance cull can otherwise
+                // drop a just-spawned forward group — at low sim distance, the SAME tick it appears,
+                // while it sits ahead of the player and outside the ticking bubble — into a holding
+                // entry with a null serialization pointer that reloadFromHolding can't revive,
+                // permanently losing the carriage (the "train vanishes on autosave" report). The hold
+                // self-drains via reconcileForceLoads once the next save mints a pointer (bounded by
+                // autosave cadence); after that a cull lands in reloadable holding — the "reloads on
+                // approach" the old behaviour intended, now made recoverable.
+                if (shouldHoldSpawnedGroup(true)) holdGroupResident(level, trainId, newShip);
+                announceSpawn(level, forwardAnchor);
+                didForwardSpawn = true;
             }
-            LAST_SPAWNED_SHIP_FORWARD.put(trainId, newShip);
-            LAST_SPAWNED_TICK_FORWARD.put(trainId, now);
-            recordPostSpawnCollisionCheck(trainId, newShip, forwardAnchor, train);
-            // Hold the new forward group resident until it has serialized at least once —
-            // symmetric with the backward lane (forceLoadSpawnedBackward) and the bootstrap
-            // lane (holdGroupResident). Sable's per-tick simulation-distance cull can otherwise
-            // drop a just-spawned forward group — at low sim distance, the SAME tick it appears,
-            // while it sits ahead of the player and outside the ticking bubble — into a holding
-            // entry with a null serialization pointer that reloadFromHolding can't revive,
-            // permanently losing the carriage (the "train vanishes on autosave" report). The hold
-            // self-drains via reconcileForceLoads once the next save mints a pointer (bounded by
-            // autosave cadence); after that a cull lands in reloadable holding — the "reloads on
-            // approach" the old behaviour intended, now made recoverable.
-            if (shouldHoldSpawnedGroup(true)) holdGroupResident(level, trainId, newShip);
-            announceSpawn(level, forwardAnchor);
-            didForwardSpawn = true;
         }
 
         if (needsBackward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_BACKWARD, LAST_SPAWNED_TICK_BACKWARD, CULL_CLEARED_BACKWARD, trainId, train, now, false)) {
             ManagedShip newShip = spawnNewGroup(level, backwardRef, backwardAnchor, groupSize, dims, velocity, trainId, train);
-            if (newShip.getKinematicDriver() instanceof TrainTransformProvider newProvider) {
-                newProvider.setSpawnedBackward(true);
+            // null ⇒ spawn deferred this tick for async footprint generation (see forward lane).
+            if (newShip != null) {
+                if (newShip.getKinematicDriver() instanceof TrainTransformProvider newProvider) {
+                    newProvider.setSpawnedBackward(true);
+                }
+                LAST_SPAWNED_SHIP_BACKWARD.put(trainId, newShip);
+                LAST_SPAWNED_TICK_BACKWARD.put(trainId, now);
+                recordPostSpawnCollisionCheck(trainId, newShip, backwardAnchor, train);
+                // Force-load the new trailing carriage immediately, before any cull
+                // pass can move it to holding (it isn't in the visible train yet,
+                // so the per-tick window above can't cover it this tick). Gated on the
+                // same shouldHoldSpawnedGroup policy as the forward lane, so the two lanes
+                // are provably symmetric at a single tested decision point.
+                if (shouldHoldSpawnedGroup(false)) forceLoadSpawnedBackward(level, trainId, newShip);
+                announceSpawn(level, backwardAnchor);
+                didBackwardSpawn = true;
             }
-            LAST_SPAWNED_SHIP_BACKWARD.put(trainId, newShip);
-            LAST_SPAWNED_TICK_BACKWARD.put(trainId, now);
-            recordPostSpawnCollisionCheck(trainId, newShip, backwardAnchor, train);
-            // Force-load the new trailing carriage immediately, before any cull
-            // pass can move it to holding (it isn't in the visible train yet,
-            // so the per-tick window above can't cover it this tick). Gated on the
-            // same shouldHoldSpawnedGroup policy as the forward lane, so the two lanes
-            // are provably symmetric at a single tested decision point.
-            if (shouldHoldSpawnedGroup(false)) forceLoadSpawnedBackward(level, trainId, newShip);
-            announceSpawn(level, backwardAnchor);
-            didBackwardSpawn = true;
         }
 
         if (STALL_DETECTION_ENABLED) {
@@ -3298,6 +3312,95 @@ public final class TrainCarriageAppender {
      * lowest-X face and the reference's nearest face is always strictly
      * positive (range {@code [MIN_GAP_BLOCKS, 1 + MIN_GAP_BLOCKS]} blocks).</p>
      */
+    /**
+     * DT-private chunk ticket that pulls a spawn footprint's world chunks to
+     * {@code FULL} asynchronously. Self-expiring ({@code 200}-tick lifespan) so
+     * it never needs manual release — by the time it lapses the carriage has
+     * spawned (adding its own hold) or the train has moved on. Distinct type so
+     * it never collides with vanilla or Sable tickets.
+     */
+    private static final TicketType<ChunkPos> SPAWN_PREGEN_TICKET =
+        TicketType.create("dungeontrain_spawn_pregen", Comparator.comparingLong(ChunkPos::toLong), 200);
+
+    /**
+     * Per-train, per-direction game-tick at which we first deferred a spawn
+     * waiting for its footprint chunks to finish generating. Bounds the wait via
+     * {@link #SPAWN_GEN_WAIT_MAX_TICKS} so a train can never permanently stop
+     * extending if generation stalls. Cleared the tick the footprint is ready.
+     */
+    private static final Map<UUID, Long> SPAWN_GEN_WAIT_FORWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> SPAWN_GEN_WAIT_BACKWARD = new ConcurrentHashMap<>();
+
+    /**
+     * Max ticks a spawn may defer waiting for async footprint generation before
+     * it fires anyway (accepting one synchronous-gen spike over a stuck train).
+     * ~5 s at 20 TPS — generation of a ~3-chunk footprint completes in a handful
+     * of ticks in practice, so the timeout is only a stall backstop.
+     */
+    private static final long SPAWN_GEN_WAIT_MAX_TICKS = 100L;
+
+    /**
+     * True once every world chunk under {@code plan}'s footprint is loaded to at
+     * least {@code FULL} (so {@link TrainAssembler#spawnGroup}'s block reads/writes
+     * won't trigger a synchronous world-gen on this tick — the dominant appender
+     * spike). When not ready, kicks off asynchronous generation via a
+     * {@link #SPAWN_PREGEN_TICKET} and returns {@code false} so the caller defers
+     * the spawn to a later tick — <em>unless</em> the per-direction wait has
+     * exceeded {@link #SPAWN_GEN_WAIT_MAX_TICKS}, in which case it returns
+     * {@code true} (spawn anyway) so the train never permanently stalls.
+     */
+    private static boolean ensureSpawnFootprintReady(ServerLevel level, Plan plan, UUID trainId, boolean forward, long now) {
+        int xMin = plan.origin.getX();
+        int xMax = xMin + plan.subLevelStride - 1;
+        int zMin = plan.origin.getZ();
+        int zMax = zMin + plan.sizeZ - 1;
+        int cxMin = xMin >> 4, cxMax = xMax >> 4, czMin = zMin >> 4, czMax = zMax >> 4;
+
+        boolean allFull = true;
+        for (int cx = cxMin; cx <= cxMax && allFull; cx++) {
+            for (int cz = czMin; cz <= czMax; cz++) {
+                if (level.getChunkSource().getChunkNow(cx, cz) == null) { allFull = false; break; }
+            }
+        }
+
+        Map<UUID, Long> waitMap = forward ? SPAWN_GEN_WAIT_FORWARD : SPAWN_GEN_WAIT_BACKWARD;
+        if (allFull) {
+            waitMap.remove(trainId);
+            return true;
+        }
+
+        // Not generated yet — request async generation and defer this tick.
+        requestFootprintGen(level, cxMin, cxMax, czMin, czMax);
+        long waitedSince = waitMap.computeIfAbsent(trainId, k -> now);
+        if (now - waitedSince >= SPAWN_GEN_WAIT_MAX_TICKS) {
+            LOGGER.warn("[DungeonTrain] Spawn footprint gen wait timed out ({} ticks) trainId={} forward={} — spawning anyway (one sync-gen spike)",
+                now - waitedSince, trainId, forward);
+            waitMap.remove(trainId);
+            return true;
+        }
+        return false;
+    }
+
+    /** Add a self-expiring async-generation ticket over every footprint chunk. */
+    private static void requestFootprintGen(ServerLevel level, int cxMin, int cxMax, int czMin, int czMax) {
+        var chunkSource = level.getChunkSource();
+        for (int cx = cxMin; cx <= cxMax; cx++) {
+            for (int cz = czMin; cz <= czMax; cz++) {
+                ChunkPos pos = new ChunkPos(cx, cz);
+                // radius 1 → the footprint chunk is pulled to BLOCK_TICKING (≥ FULL),
+                // dragging the neighbours it needs to reach FULL along with it.
+                chunkSource.addRegionTicket(SPAWN_PREGEN_TICKET, pos, 1, pos);
+            }
+        }
+    }
+
+    /**
+     * @return the spawned group's {@link ManagedShip}, or {@code null} if the
+     *     spawn was <b>deferred</b> this tick because its footprint chunks are
+     *     still generating (see {@link #ensureSpawnFootprintReady}). A {@code null}
+     *     return means "nothing spawned, retry next tick"; callers must skip all
+     *     post-spawn bookkeeping.
+     */
     private static ManagedShip spawnNewGroup(
         ServerLevel level,
         Trains.Carriage reference,
@@ -3309,6 +3412,15 @@ public final class TrainCarriageAppender {
         List<Trains.Carriage> train
     ) {
         Plan plan = planSpawnPlacement(reference, newAnchor, groupSize, dims, train);
+
+        // Chunk-readiness gate — keep synchronous world-generation off the spawn
+        // tick (profiled as the dominant appender spike: a cold forward spawn's
+        // getBlockState scan forces ~170–280 ms of world-gen). If the footprint
+        // isn't generated yet, kick off async gen and defer to a later tick.
+        if (!ensureSpawnFootprintReady(level, plan, trainId, plan.forward, level.getGameTime())) {
+            return null;
+        }
+
         ManagedShip newShip = TrainAssembler.spawnGroup(
             level, plan.origin, velocity, newAnchor, groupSize, dims, trainId);
 

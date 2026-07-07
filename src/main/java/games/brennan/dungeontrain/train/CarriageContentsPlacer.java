@@ -501,7 +501,11 @@ public final class CarriageContentsPlacer {
      */
     private static void stampTemplateBlocks(ServerLevel level, BlockPos origin, StructureTemplate template) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-        template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+        // Section-local stamp (no light engine / neighbour cascade): the contents
+        // blocks are lifted into a Sable sub-level this same tick, so world-side
+        // relight is discarded. Block-entity cells (chests/barrels/…) still create
+        // + load their BE inside stampTemplateSectionLocal so loot round-trips.
+        CarriagePlacer.stampTemplateSectionLocal(level, origin, template, settings);
     }
 
     /**

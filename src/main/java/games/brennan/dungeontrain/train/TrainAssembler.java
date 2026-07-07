@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
@@ -435,7 +436,11 @@ public final class TrainAssembler {
                 for (int dz = 0; dz < dims.width(); dz++) {
                     BlockPos pos = origin.offset(dx, dy, dz);
                     if (!level.getBlockState(pos).isAir()) {
-                        level.setBlock(pos, AIR, 3);
+                        // Section-local air write — no light engine, no neighbour
+                        // cascade. The whole footprint is lifted into a Sable
+                        // sub-level this same tick (which then re-airs the source
+                        // cells), so any world-side relight here is discarded work.
+                        SilentBlockOps.setBlockSectionLocal(level, pos, AIR);
                         cleared++;
                     }
                 }

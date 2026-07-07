@@ -113,7 +113,11 @@ public final class CarriagePartPlacer {
             StructurePlaceSettings settings = new StructurePlaceSettings()
                 .setIgnoreEntities(true)
                 .setMirror(p.mirror());
-            template.placeInWorld(level, stampOrigin, stampOrigin, settings, level.getRandom(), 3);
+            // Section-local stamp (no light engine / neighbour cascade): the parts
+            // overlay is placed on a carriage that is lifted into a Sable sub-level
+            // the same tick, so world-side relight is discarded work. Matches the
+            // base-shell stamp (CarriagePlacer.stampBase) — see stampTemplateSectionLocal.
+            CarriagePlacer.stampTemplateSectionLocal(level, stampOrigin, template, settings);
             applyVariantBlocksForPlacement(level, carriageOrigin, kind, name, dims, seed, carriageIndex, p);
         }
     }
