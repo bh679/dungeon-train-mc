@@ -3137,9 +3137,9 @@
       ],
       "pr": 637,
       "date": "2026-07-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.388.1",
+      "released_at": "2026-07-07T05:41:59Z"
     }
   ]
 }
