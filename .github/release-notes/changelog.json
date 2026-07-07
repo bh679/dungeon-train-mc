@@ -3077,6 +3077,52 @@
       "released": true,
       "released_in": "v0.385.0",
       "released_at": "2026-07-06T10:29:20Z"
+    },
+    {
+      "id": "difficulty-command",
+      "version": "0.386.0",
+      "type": "feat",
+      "title": "New /dungeontrain difficulty command",
+      "summary": "Server operators can now set the run's difficulty on the fly with /dungeontrain difficulty <level>, instead of waiting to earn it by travelling. The whole game shifts to match at once \u2014 the difficulty shown on the HUD, the mobs and their gear, the carriage stages that generate ahead, the loot, and villager trades. It re-anchors each time you run it and drifts with real travel afterward; /dungeontrain difficulty auto clears it and returns to normal progression.",
+      "highlights": [
+        "Set any difficulty level instantly for testing or custom runs",
+        "Shifts the HUD, mobs, carriage stages, loot and trades together",
+        "/dungeontrain difficulty auto restores automatic, travel-based scaling"
+      ],
+      "pr": 634,
+      "date": "2026-07-06",
+      "released": true,
+      "released_in": "v0.386.0",
+      "released_at": "2026-07-06T23:39:47Z"
+    },
+    {
+      "id": "template-blocks-menu",
+      "version": "0.387.0",
+      "type": "feat",
+      "title": "Template Blocks menu \u2014 reskin a build in one pass",
+      "summary": "A new in-editor Template Blocks menu lets builders swap a block everywhere in a build at once (walls, floors, variants and all) with whatever they're holding, while keeping doors, stairs, and slabs facing the right way. Also added a new mud building set \u2014 doors, floors, roofs, and walls \u2014 for browner, earthier builds.",
+      "highlights": [
+        "New Template Blocks menu (press V, or /dungeontrain editor blocks) \u2014 swap a block everywhere in a build in one click",
+        "New mud building set: doors, floors, roofs, and walls"
+      ],
+      "pr": 636,
+      "date": "2026-07-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "relay-echo-usage-reporting",
+      "version": "0.387.0",
+      "type": "chore",
+      "title": "Echo appearances counted in the community data",
+      "summary": "When a fallen player's echo returns in another world, the mod now reports it to the community data dashboard so we can see how often each death is remembered. No change to how echoes look or behave in-game.",
+      "highlights": [],
+      "pr": 635,
+      "date": "2026-07-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
