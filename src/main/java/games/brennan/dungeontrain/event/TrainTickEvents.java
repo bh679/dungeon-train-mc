@@ -73,6 +73,9 @@ public final class TrainTickEvents {
     private static final double PHYSICS_NEAR_RADIUS = 48.0;
     private static final double PHYSICS_NEAR_RADIUS_SQ = PHYSICS_NEAR_RADIUS * PHYSICS_NEAR_RADIUS;
 
+    /** Period (ticks) for the steady-state {@code [mspt]} sample line. 40t = 2s. */
+    private static final int MSPT_LOG_PERIOD_TICKS = 40;
+
     /**
      * Distance ahead of the lead carriage along velocity that
      * {@link #killEntitiesAhead} sweeps each tick. 8 blocks at 2 m/s ≈ 0.1
@@ -127,6 +130,24 @@ public final class TrainTickEvents {
         if (trainsById.isEmpty()) {
             tickCounter++;
             return;
+        }
+
+        // Steady-state MSPT sample every MSPT_LOG_PERIOD_TICKS. Unlike the
+        // [stuck.timing] line below (which measures only THIS handler's train work
+        // and only fires on >5ms ticks), this pairs the server's mean tick time —
+        // which INCLUDES the Sable sub-level physics that runs in ServerLevel.tick,
+        // the ~70% hotspot invisible to this handler — with the resident (carriages)
+        // vs near counts. Lets MSPT-vs-resident-carriage scaling be read straight
+        // from the log, no /spark or /tick query. getAverageTickTimeNanos() is
+        // server-wide (dominated by the train dimension's physics). See
+        // project_sable_physics_shared_scene_resident_scaling.
+        if (level.getGameTime() % MSPT_LOG_PERIOD_TICKS == 0) {
+            int carriages = 0;
+            for (List<Trains.Carriage> t : trainsById.values()) carriages += t.size();
+            double avgTickMs = level.getServer().getAverageTickTimeNanos() / 1_000_000.0;
+            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={}",
+                level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
+                countNearCarriages(level, trainsById), trainsById.size());
         }
 
         // Kill-ahead runs once per train, against the lead carriage's
