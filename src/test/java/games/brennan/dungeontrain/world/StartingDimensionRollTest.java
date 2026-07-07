@@ -9,10 +9,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Locks down {@link StartingDimension#rollRespawnDimension(double)} — the
- * random-dimension draw applied at every respawn, whether the player clicks
- * "New World" / "Same World" (consumed by
- * {@code DeathScreenLayoutHandler.launchWorld}) or the vanilla "Respawn"
- * button (consumed by {@code RespawnDimensionEvents}). The function is a
+ * random-dimension draw applied on every vanilla in-place "Respawn"
+ * (consumed by {@code RespawnDimensionEvents}). The death screen's
+ * "New World" / "Same World" buttons ({@code DeathScreenLayoutHandler.launchWorld})
+ * do not use this — those always start in the Overworld. The function is a
  * pure mapping from a uniform {@code [0, 1)} value to a
  * {@link StartingDimension}, so the tests pin both the boundary conditions
  * and a large-sample distribution sanity check.
