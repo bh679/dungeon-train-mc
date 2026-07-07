@@ -334,6 +334,7 @@ public final class EditorCommand {
                         StringArgumentType.getString(ctx, "new_name")))))
             .then(Commands.literal("exit").executes(ctx -> runExit(ctx.getSource())))
             .then(Commands.literal("list").executes(ctx -> runList(ctx.getSource())))
+            .then(Commands.literal("blocks").executes(ctx -> runBlocks(ctx.getSource())))
             .then(Commands.literal("reset")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(VARIANT_SUGGESTIONS)
@@ -2691,6 +2692,19 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /**
+     * Open the template-blocks world-space menu on the plot the player is
+     * standing in — lists every block used with counts and lets the player
+     * swap a block (keeping orientation) with whatever is in hand. Primary,
+     * discoverable trigger for the menu (a rebindable keybind also exists).
+     */
+    private static int runBlocks(CommandSourceStack source) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        games.brennan.dungeontrain.editor.TemplateBlocksMenuController.toggle(player, true);
+        return 1;
     }
 
     private static int runExit(CommandSourceStack source) {

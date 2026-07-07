@@ -156,7 +156,31 @@
     {
       "name": "quartzwindow",
       "weight": 1,
+      "sideMode": "either",
       "stage": "quartz"
+    },
+    {
+      "name": "quartz_broken",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "quartz"
+    },
+    {
+      "name": "mudopen",
+      "weight": 20,
+      "sideMode": "either",
+      "stage": "mud"
+    },
+    {
+      "name": "mudwindows",
+      "weight": 1,
+      "stage": "mud"
+    },
+    {
+      "name": "mudbricks",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mud"
     }
   ],
   "roof": [
@@ -240,6 +264,16 @@
       "name": "quartswindow",
       "weight": 4,
       "stage": "quartz"
+    },
+    {
+      "name": "mudopen",
+      "weight": 5,
+      "stage": "mud"
+    },
+    {
+      "name": "mud",
+      "weight": 1,
+      "stage": "mud"
     }
   ],
   "doors": [
@@ -276,6 +310,11 @@
       "name": "quartz",
       "weight": 1,
       "stage": "quartz"
+    },
+    {
+      "name": "mud",
+      "weight": 1,
+      "stage": "mud"
     }
   ]
 }
