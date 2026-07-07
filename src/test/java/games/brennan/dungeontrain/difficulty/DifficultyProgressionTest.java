@@ -92,6 +92,113 @@ final class DifficultyProgressionTest {
         assertEquals(0, DifficultyProgression.effectiveTier(80, CPT, 6));
     }
 
+    // --- travelledOffsetForRequestedTier: the command's re-anchor math. Given a requested
+    //     difficulty tier and the leader's current RAW travelled carriages, returns the offset
+    //     (in carriages) that makes the effective tier exactly the requested value. Verified via
+    //     the pure effectiveTier(...) round-trip, mirroring how tierForTravelled reads it live. ---
+
+    /** delay=1 matches DungeonTrainConfig.DEFAULT_PROGRESSION_LEVEL_DELAY. */
+    private static final int DELAY = 1;
+
+    private static int offsetFor(int requestedTier, int rawTravelled) {
+        return DifficultyProgression.travelledOffsetForRequestedTier(requestedTier, rawTravelled, CPT, DELAY);
+    }
+
+    /** effectiveTier of (raw + offset) — what the live tierForTravelled would compute. */
+    private static int effectiveTierAfter(int rawTravelled, int offset) {
+        return DifficultyProgression.effectiveTier(rawTravelled + offset, CPT, DELAY);
+    }
+
+    @Test
+    @DisplayName("travelledOffsetForRequestedTier: from raw 0, targets the low end of the tier's carriage band")
+    void travelledOffset_fromZero() {
+        // target = (tier + delay) * cpt. tier 0 -> (0+1)*20 = 20; tier 10 -> 11*20 = 220.
+        assertEquals(20, offsetFor(0, 0));
+        assertEquals(220, offsetFor(10, 0));
+        assertEquals(520, offsetFor(25, 0));
+    }
+
+    @Test
+    @DisplayName("travelledOffsetForRequestedTier: round-trips — applying the offset yields exactly the requested tier")
+    void travelledOffset_roundTrips() {
+        for (int raw = 0; raw <= 400; raw += 13) {
+            for (int tier = 0; tier <= 30; tier += 3) {
+                int offset = offsetFor(tier, raw);
+                assertEquals(tier, effectiveTierAfter(raw, offset),
+                    "requested tier " + tier + " at raw " + raw + " should round-trip");
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("travelledOffsetForRequestedTier: re-anchoring from nonzero raw subtracts current progress")
+    void travelledOffset_reanchorsFromNonzero() {
+        // raw 80 (tier 3), request tier 5 -> target (5+1)*20=120, offset = 120-80 = 40.
+        assertEquals(40, offsetFor(5, 80));
+        assertEquals(5, effectiveTierAfter(80, 40));
+        // request a LOWER tier than current -> negative offset. raw 80 (tier 3), request 1 -> target 40, offset -40.
+        assertEquals(-40, offsetFor(1, 80));
+        assertEquals(1, effectiveTierAfter(80, -40));
+    }
+
+    @Test
+    @DisplayName("re-anchoring worked example (carriage terms): 0->10, 0->3, travel +40 drifts 3->5, re-anchor to 1")
+    void travelledOffset_reanchoringWorkedExample() {
+        // Start at raw 0. Request 10 -> offset 220, effective tier 10.
+        int offset = offsetFor(10, 0);
+        assertEquals(220, offset);
+        assertEquals(10, effectiveTierAfter(0, offset));
+
+        // Immediately request 3 (no travel yet) -> re-anchor offset to 80, effective tier 3.
+        offset = offsetFor(3, 0);
+        assertEquals(80, offset);
+        assertEquals(3, effectiveTierAfter(0, offset));
+
+        // Player travels forward two difficulty bands (40 carriages). Offset UNCHANGED at 80.
+        // Effective travelled = 40 + 80 = 120 -> tier 5. The effective level drifted 3 -> 5.
+        assertEquals(5, effectiveTierAfter(40, offset));
+
+        // Re-anchor to 1 while raw is now 40 -> target (1+1)*20 = 40, offset = 40 - 40 = 0.
+        offset = offsetFor(1, 40);
+        assertEquals(0, offset);
+        assertEquals(1, effectiveTierAfter(40, offset));
+    }
+
+    @Test
+    @DisplayName("travelledOffsetForRequestedTier: guards a zero/negative carriagesPerTier (no div-by-zero, treats as 1)")
+    void travelledOffset_guardsDivisor() {
+        // With cpt guarded to 1: target = (tier + delay) * 1.
+        assertEquals(3, DifficultyProgression.travelledOffsetForRequestedTier(2, 0, 0, 1));
+        assertEquals(3, DifficultyProgression.travelledOffsetForRequestedTier(2, 0, -5, 1));
+    }
+
+    // --- shiftedPosition: the position-frame offset shift behind positionTier (carriage template /
+    //     contents / loot gating). abs first (position is a magnitude), then offset, floored at 0. ---
+
+    @Test
+    @DisplayName("shiftedPosition: zero offset is abs(position) — the original position-derived level")
+    void shiftedPosition_zeroOffsetIsAbs() {
+        assertEquals(5, DifficultyProgression.shiftedPosition(5, 0));
+        assertEquals(5, DifficultyProgression.shiftedPosition(-5, 0));   // abs — backward carriages ramp the same
+        assertEquals(0, DifficultyProgression.shiftedPosition(0, 0));
+    }
+
+    @Test
+    @DisplayName("shiftedPosition: a positive offset pushes the whole position ramp up")
+    void shiftedPosition_positiveShiftsUp() {
+        assertEquals(105, DifficultyProgression.shiftedPosition(5, 100));
+        assertEquals(105, DifficultyProgression.shiftedPosition(-5, 100));
+        // near-player carriage (abs ≈ raw travelled) lands on the target band: abs 220 + (80-220) = 80.
+        assertEquals(80, DifficultyProgression.shiftedPosition(220, -140));
+    }
+
+    @Test
+    @DisplayName("shiftedPosition: clamps at 0 — a negative offset can't wrap a small distance into a positive tier")
+    void shiftedPosition_clampsAtZero() {
+        assertEquals(0, DifficultyProgression.shiftedPosition(5, -100));
+        assertEquals(0, DifficultyProgression.shiftedPosition(-5, -100));
+    }
+
     @Test
     @DisplayName("downgradeLootId swaps the rich loot prefabs to starter when active")
     void downgradeLootId_swapsRichWhenActive() {
