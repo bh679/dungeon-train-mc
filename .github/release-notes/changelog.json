@@ -3267,6 +3267,24 @@
       "released": true,
       "released_in": "v0.394.0",
       "released_at": "2026-07-08T04:42:12Z"
+    },
+    {
+      "id": "nether-enemies-and-mudbrick-parts",
+      "version": "0.394.0",
+      "type": "content",
+      "title": "New Nether enemies + mud brick oak decor parts",
+      "summary": "Three new enemies join the fight: wither skeletons and blazes now stalk Nether-phase carriages, and a rebalanced bogged variant adds more skeletal archer variety throughout the train. A new mud-brick oak part set (doors, floors, roofs, walls) is now available across all carriage templates for richer room decoration.",
+      "highlights": [
+        "New wither skeleton enemy (Nether-phase carriages)",
+        "New blaze enemy (Nether-phase carriages)",
+        "New bogged variant with rebalanced spawn weights",
+        "New mud brick oak part set (doors/floor/roof/walls) across all templates"
+      ],
+      "pr": 652,
+      "date": "2026-07-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

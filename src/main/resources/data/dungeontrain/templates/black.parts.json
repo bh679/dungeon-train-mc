@@ -32,6 +32,11 @@
       "name": "mudbricks",
       "weight": 1,
       "stage": "mud"
+    },
+    {
+      "name": "mudbricks_wood_oak",
+      "weight": 1,
+      "stage": "wood_oak"
     }
   ],
   "roof": [
@@ -64,6 +69,11 @@
       "name": "mud",
       "weight": 1,
       "stage": "mud"
+    },
+    {
+      "name": "mud_wood_oak",
+      "weight": 1,
+      "stage": "wood_oak"
     }
   ],
   "doors": [
@@ -96,6 +106,11 @@
       "name": "mud",
       "weight": 1,
       "stage": "mud"
+    },
+    {
+      "name": "mud_wood_oak",
+      "weight": 1,
+      "stage": "wood_oak"
     }
   ]
 }

@@ -104,6 +104,18 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "mud"
+    },
+    {
+      "name": "mudwindows_wood_oak",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "wood_oak"
+    },
+    {
+      "name": "mudopen_wood_oak",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "wood_oak"
     }
   ],
   "roof": [
@@ -182,6 +194,16 @@
       "name": "mudopen",
       "weight": 1,
       "stage": "mud"
+    },
+    {
+      "name": "mud_wood_oak",
+      "weight": 1,
+      "stage": "wood_oak"
+    },
+    {
+      "name": "mudopen_wood_oak",
+      "weight": 1,
+      "stage": "wood_oak"
     }
   ],
   "doors": [
@@ -214,6 +236,13 @@
       "sideMode": "either",
       "endMode": "end",
       "stage": "mud"
+    },
+    {
+      "name": "mud_wood_oak",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "wood_oak"
     }
   ]
 }
