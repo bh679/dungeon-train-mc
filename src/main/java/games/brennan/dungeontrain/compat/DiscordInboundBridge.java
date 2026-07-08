@@ -6,6 +6,8 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.event.DevMessageConsent;
 
+import java.util.UUID;
+
 /**
  * Bridges DiscordPresence's inbound-message seams to two consumers when a relayed Discord message is
  * authored by the dev:
@@ -14,7 +16,7 @@ import games.brennan.dungeontrain.event.DevMessageConsent;
  *       chats near an echo within the next five minutes has their words withheld from the public
  *       echo story;</li>
  *   <li>the in-game dev-message consent flow ({@link DevMessageConsent#onDevMessage}) — shows the
- *       message in in-game chat, gated behind a consent prompt.</li>
+ *       message to the one player whose thread it was posted in, gated behind a consent prompt.</li>
  * </ul>
  *
  * <p>The consent flow registers via {@link DiscordCommandHooks}, not the plain observer seam
@@ -43,12 +45,26 @@ public final class DiscordInboundBridge {
                 RemoteEchoEncounters.markDevContact();
             }
         });
-        DiscordCommandHooks.install((authorId, authorName, content, reply) -> {
+        DiscordCommandHooks.install((authorId, authorName, content, targetPlayerUuid, reply) -> {
             if (!DungeonTrain.BRENNAN_DISCORD_ID.equals(authorId)) {
                 return false;
             }
-            DevMessageConsent.onDevMessage(content);
+            // Scope to the one player whose thread this message is in (null when unanchored — the
+            // consent flow then shows it to nobody in-game). Never a global broadcast.
+            DevMessageConsent.onDevMessage(parseUuid(targetPlayerUuid), content);
             return true; // suppress DiscordPresence's own relay — the consent flow now owns delivery
         });
+    }
+
+    /** The Minecraft player UUID the inbound seam carries, or null when it's absent or malformed. */
+    private static UUID parseUuid(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(s);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }
