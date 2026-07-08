@@ -3235,8 +3235,25 @@
       "released_at": "2026-07-08T04:06:37Z"
     },
     {
+      "id": "suspicious-stew-loot-effect-fix",
+      "version": "0.394.0",
+      "type": "fix",
+      "title": "Suspicious stew from loot now has an effect",
+      "summary": "Suspicious stew found in chests, decorated pots, and other loot containers previously did nothing when eaten. It now grants a real effect, just like a suspicious stew you'd craft yourself.",
+      "highlights": [
+        "Container-found suspicious stew now applies a potion effect when eaten",
+        "Effect is randomly chosen from the same set a crafted suspicious stew can have",
+        "Thanks to generalefficiency's Twitch stream for catching this one!"
+      ],
+      "pr": 650,
+      "date": "2026-07-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "pacifist-advancement-chain",
-      "version": "0.393.0",
+      "version": "0.394.0",
       "type": "feat",
       "title": "Pacifist advancement chain (100/250/1000 carriages)",
       "summary": "Three new advancements reward a peaceful ride \u2014 reach 100, then 250, then 1,000 carriages in a single life without dealing any damage to anything. Thanks to generalefficiency's Twitch stream for the idea!",
