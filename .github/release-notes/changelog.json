@@ -3405,9 +3405,9 @@
         "Inter-Reality Passenger is temporarily disabled"
       ],
       "date": "2026-07-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.401.0",
+      "released_at": "2026-07-08T14:17:35Z"
     }
   ]
 }
