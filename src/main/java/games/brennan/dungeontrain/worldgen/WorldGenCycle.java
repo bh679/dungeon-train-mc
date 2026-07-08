@@ -296,6 +296,31 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * End-core ramp at/above which a column is the real-End <b>core</b> (full island fill, not the
+     * void/fade edges). Shared by the biome-source mixin, which tags core columns with a real End
+     * biome sampled via {@link games.brennan.dungeontrain.worldgen.density.EndCoreBiomes}.
+     */
+    public static final double END_CORE_THRESHOLD = 0.999;
+
+    /** True if {@code worldX} is a real-End core column ({@link #endIslandRamp} ≥ {@link #END_CORE_THRESHOLD}). */
+    public boolean isEndCore(int worldX) {
+        return endIslandRamp(worldX) >= END_CORE_THRESHOLD;
+    }
+
+    /**
+     * Which repeat of the world-gen cycle this world-X falls in (0-based), or {@code -1} before the
+     * anchor / when the cycle is empty. Drives {@link games.brennan.dungeontrain.worldgen.density.EndCoreBiomes}'s
+     * sweep from the real End's main island (pass 0) out into its outer noise field (later passes), so
+     * a normal game session's handful of End-band crossings covers all five real End biomes instead of
+     * repeatedly sampling the same spot.
+     */
+    public long endPassIndex(int worldX) {
+        long p = period();
+        if (p <= 0L || worldX < startX) return -1L;
+        return Math.floorDiv((long) worldX - startX + phaseShift, p);
+    }
+
+    /**
      * End sky/fog ramp at a world-X — like {@link #endMiddleRamp} but with both fades pushed
      * {@code skyOffset} blocks toward the void core, so the End sky lags the terrain erosion
      * (delayed fade-in on entry, early fade-out on exit). 0 outside the End segment;

@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.density.EndCoreBiomes;
 import games.brennan.dungeontrain.worldgen.density.NetherBandBiomeSet;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import games.brennan.dungeontrain.worldgen.density.NetherCoreBiomes;
@@ -73,9 +74,15 @@ public final class NetherBandContextEvents {
                     .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.NETHER_WASTES);
             NetherCoreBiomes netherCoreBiomes = NetherCoreBiomes.resolve(event.getServer(), netherFallback);
 
+            // Same idea for the End band's core columns — samples the real End's biome source, swept
+            // from the main island out into the outer noise field across successive End-band passes.
+            Holder<Biome> endFallback = overworld.registryAccess()
+                    .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.THE_END);
+            EndCoreBiomes endCoreBiomes = EndCoreBiomes.resolve(event.getServer(), endFallback);
+
             NetherBandContext.publish(new NetherBandContext(
                     enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
-                    overworldBiomeSource, highlandBiomes, netherCoreBiomes));
+                    overworldBiomeSource, highlandBiomes, netherCoreBiomes, endCoreBiomes));
             LOGGER.info("[DungeonTrain] Nether-band terrain context published: enabled={} seaLevel={} worldCeiling={} netherTop={} baseRelief={}",
                     enabled, seaLevel, worldCeiling, netherTop, baseRelief);
         } catch (Throwable t) {

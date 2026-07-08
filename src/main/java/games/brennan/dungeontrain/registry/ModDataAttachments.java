@@ -37,15 +37,18 @@ public final class ModDataAttachments {
         );
 
     /**
-     * Per-player run biome-exploration progress — the distinct biomes and biome
-     * families ridden through this life. Codec-serialized so progress survives
-     * world reload; deliberately <b>not</b> {@code copyOnDeath}, so the respawn
-     * clone starts empty (the {@code AchievementEvents} respawn hook also clears
-     * it explicitly). Drives the exploration advancements.
+     * Per-player run biome-exploration progress — the distinct biomes ridden
+     * through this life. Codec-serialized so progress survives world reload;
+     * deliberately <b>not</b> {@code copyOnDeath}, so the respawn clone starts
+     * empty (the {@code AchievementEvents} respawn hook also clears it
+     * explicitly). Drives the exploration advancements.
      */
     public static final Supplier<AttachmentType<PlayerBiomeProgress>> PLAYER_BIOME_PROGRESS =
         TYPES.register("player_biome_progress",
-            () -> AttachmentType.builder(PlayerBiomeProgress::new)
+            // Explicit lambda (not a `PlayerBiomeProgress::new` method reference): the class also has a
+            // 1-arg constructor (List<ResourceLocation>), which makes a bare method reference ambiguous
+            // between AttachmentType.builder(Supplier) and builder(Function<IAttachmentHolder, T>).
+            () -> AttachmentType.builder(() -> new PlayerBiomeProgress())
                 .serialize(PlayerBiomeProgress.CODEC)
                 .build()
         );

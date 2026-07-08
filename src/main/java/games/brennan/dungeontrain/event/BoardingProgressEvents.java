@@ -12,7 +12,6 @@ import games.brennan.dungeontrain.player.PlayerBiomeProgress;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.Trains;
-import games.brennan.dungeontrain.world.BiomeFamilies;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -294,7 +293,7 @@ public final class BoardingProgressEvents {
      * Sample the biome under {@code player}'s current (world-space) position and
      * fold it into their per-run {@link PlayerBiomeProgress}. A newly seen biome
      * advances the count tiers ("Far Afield" / "Many Lands" / "World Without
-     * End"); the first biome of a newly reached family fires "All Under Heaven".
+     * End" / "Terra Omnia").
      *
      * <p>Uses {@code player.blockPosition()} — the same world-space position
      * {@link #accumulateBoardedDistance} books distance against (the deck
@@ -309,11 +308,6 @@ public final class BoardingProgressEvents {
         PlayerBiomeProgress progress = player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get());
         if (progress.addBiome(id)) {
             AchievementEvents.notifyBiomesVisited(player, progress.biomeCount());
-        }
-
-        Optional<String> family = BiomeFamilies.classify(biome);
-        if (family.isPresent() && progress.addFamily(family.get())) {
-            AchievementEvents.notifyBiomeFamilies(player, progress.familyCount());
         }
     }
 
