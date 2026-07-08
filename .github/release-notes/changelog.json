@@ -3250,6 +3250,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "pacifist-advancement-chain",
+      "version": "0.394.0",
+      "type": "feat",
+      "title": "Pacifist advancement chain (100/250/1000 carriages)",
+      "summary": "Three new advancements reward a peaceful ride \u2014 reach 100, then 250, then 1,000 carriages in a single life without dealing any damage to anything. Thanks to generalefficiency's Twitch stream for the idea!",
+      "highlights": [
+        "Pacifist \u2014 100 carriages, zero damage dealt",
+        "Turn the Other Cheek \u2014 250 carriages, zero damage dealt",
+        "Peace Train \u2014 1,000 carriages, zero damage dealt"
+      ],
+      "pr": 651,
+      "date": "2026-07-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
