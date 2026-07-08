@@ -3247,9 +3247,9 @@
       ],
       "pr": 650,
       "date": "2026-07-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.394.0",
+      "released_at": "2026-07-08T04:42:12Z"
     },
     {
       "id": "pacifist-advancement-chain",
@@ -3264,9 +3264,9 @@
       ],
       "pr": 651,
       "date": "2026-07-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.394.0",
+      "released_at": "2026-07-08T04:42:12Z"
     }
   ]
 }
