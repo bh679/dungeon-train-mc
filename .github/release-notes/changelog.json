@@ -3230,9 +3230,9 @@
       "highlights": [],
       "pr": 649,
       "date": "2026-07-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.393.0",
+      "released_at": "2026-07-08T04:06:37Z"
     },
     {
       "id": "pacifist-advancement-chain",
@@ -3245,11 +3245,11 @@
         "Turn the Other Cheek \u2014 250 carriages, zero damage dealt",
         "Peace Train \u2014 1,000 carriages, zero damage dealt"
       ],
+      "pr": 651,
       "date": "2026-07-08",
       "released": false,
       "released_in": null,
-      "released_at": null,
-      "pr": 651
+      "released_at": null
     }
   ]
 }
