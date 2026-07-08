@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "selfWeight": 8,
   "variants": [
     {
@@ -8,11 +8,13 @@
     },
     {
       "id": "dining",
-      "weight": 4
+      "weight": 4,
+      "maxLevel": 0
     },
     {
       "id": "seating_thin",
-      "weight": 4
+      "weight": 4,
+      "maxLevel": 0
     },
     {
       "id": "center_dining",
@@ -53,6 +55,11 @@
     {
       "id": "bookdoor",
       "weight": 2
+    },
+    {
+      "id": "sandlib",
+      "weight": 1,
+      "stage": "desert"
     }
   ]
 }
