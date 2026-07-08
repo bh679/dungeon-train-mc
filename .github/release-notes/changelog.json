@@ -3328,6 +3328,22 @@
       "released": true,
       "released_in": "v0.397.0",
       "released_at": "2026-07-08T09:39:04Z"
+    },
+    {
+      "id": "quartz-obsidian-parts-desert-temple",
+      "version": "0.398.0",
+      "type": "feat",
+      "title": "Quartz & obsidian carriage parts + a desert temple",
+      "summary": "New quartz and obsidian building parts now dress the train's carriages in the mid-progression bands, and a desert temple room can appear among the train's contents.",
+      "highlights": [
+        "New quartz & obsidian floors, walls, roofs and a door, wired across several carriage templates",
+        "New desert temple content room"
+      ],
+      "pr": 658,
+      "date": "2026-07-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

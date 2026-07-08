@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.train;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import games.brennan.dungeontrain.template.TemplateGate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -210,5 +211,70 @@ final class CarriageContentsGroupTest {
         CarriageContentsGroup g = new CarriageContentsGroup(new ArrayList<>());
         assertTrue(g.isEmpty());
         assertFalse(g.equals(null));
+    }
+
+    // ---- Multi-Stage member links (schema v3) ----
+
+    @Test
+    @DisplayName("Member normalises stageIds: lower-cased, blanks dropped, order-preserving de-dupe")
+    void member_stageIdsNormalised() {
+        CarriageContentsGroup.Member m = new CarriageContentsGroup.Member(
+            "husk", 1, TemplateGate.DEFAULT, List.of("Desert", "nether", " ", "DESERT"));
+        assertEquals(List.of("desert", "nether"), m.stageIds());
+        assertTrue(m.isStageLinked());
+
+        CarriageContentsGroup.Member bare = new CarriageContentsGroup.Member("husk", 1);
+        assertTrue(bare.stageIds().isEmpty());
+        assertFalse(bare.isStageLinked());
+    }
+
+    @Test
+    @DisplayName("withStageToggled adds when absent, removes when present, and no-ops on blank")
+    void member_withStageToggled() {
+        CarriageContentsGroup.Member m = new CarriageContentsGroup.Member("husk", 1);
+        m = m.withStageToggled("desert");
+        assertEquals(List.of("desert"), m.stageIds());
+        m = m.withStageToggled("Nether");                 // case-insensitive add
+        assertEquals(List.of("desert", "nether"), m.stageIds());
+        m = m.withStageToggled("desert");                 // remove
+        assertEquals(List.of("nether"), m.stageIds());
+        assertEquals(m, m.withStageToggled("  "));         // blank is a no-op
+    }
+
+    @Test
+    @DisplayName("toJson/fromJson round-trips a member with two Stage links via a 'stages' array")
+    void jsonRoundTrip_multiStageMember() {
+        CarriageContentsGroup g = new CarriageContentsGroup(List.of(
+            new CarriageContentsGroup.Member("husk", 3, TemplateGate.DEFAULT, List.of("desert", "nether"))));
+        JsonObject json = g.toJson();
+        JsonObject entry = json.getAsJsonArray("variants").get(0).getAsJsonObject();
+        assertFalse(entry.has("stage"), "two links must not emit the scalar 'stage'");
+        assertEquals(2, entry.getAsJsonArray("stages").size());
+
+        CarriageContentsGroup back = CarriageContentsGroup.fromJson(json);
+        assertEquals(List.of("desert", "nether"), back.members().get(0).stageIds());
+    }
+
+    @Test
+    @DisplayName("a single Stage link still serialises as the scalar 'stage' (v2 byte-compat)")
+    void jsonRoundTrip_singleStageMemberScalar() {
+        CarriageContentsGroup g = new CarriageContentsGroup(List.of(
+            new CarriageContentsGroup.Member("cagedzombie", 2, TemplateGate.DEFAULT, List.of("early"))));
+        JsonObject entry = g.toJson().getAsJsonArray("variants").get(0).getAsJsonObject();
+        assertEquals("early", entry.get("stage").getAsString());
+        assertFalse(entry.has("stages"), "a single link must use the scalar 'stage', not a 'stages' array");
+
+        CarriageContentsGroup back = CarriageContentsGroup.fromJson(g.toJson());
+        assertEquals(List.of("early"), back.members().get(0).stageIds());
+    }
+
+    @Test
+    @DisplayName("fromJson reads a legacy scalar 'stage' member as a one-element link set")
+    void fromJson_legacyScalarStage() {
+        JsonObject root = JsonParser.parseString(
+            "{\"schemaVersion\":2,\"variants\":[{\"id\":\"piglin\",\"weight\":2,\"stage\":\"Nether\"}]}"
+        ).getAsJsonObject();
+        CarriageContentsGroup g = CarriageContentsGroup.fromJson(root);
+        assertEquals(List.of("nether"), g.members().get(0).stageIds());
     }
 }

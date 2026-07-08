@@ -37,6 +37,11 @@
       "name": "mudbricks_wood_oak",
       "weight": 1,
       "stage": "wood_oak"
+    },
+    {
+      "name": "quartz_obsidian",
+      "weight": 1,
+      "stage": "obsidian"
     }
   ],
   "roof": [
@@ -74,6 +79,11 @@
       "name": "mud_wood_oak",
       "weight": 1,
       "stage": "wood_oak"
+    },
+    {
+      "name": "quartz_obsidian",
+      "weight": 1,
+      "stage": "obsidian"
     }
   ],
   "doors": [
@@ -111,6 +121,11 @@
       "name": "mud_wood_oak",
       "weight": 1,
       "stage": "wood_oak"
+    },
+    {
+      "name": "quartz_obsidian",
+      "weight": 1,
+      "stage": "obsidian"
     }
   ]
 }

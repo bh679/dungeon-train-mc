@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "selfWeight": 1,
   "variants": [
     {
@@ -45,6 +45,11 @@
     {
       "id": "mushroom",
       "weight": 1
+    },
+    {
+      "id": "desertemple",
+      "weight": 1,
+      "stage": "desert"
     }
   ]
 }
