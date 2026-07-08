@@ -93,6 +93,13 @@
       "phases": [
         "NETHER"
       ]
+    },
+    {
+      "id": "blaze",
+      "weight": 4,
+      "phases": [
+        "NETHER"
+      ]
     }
   ]
 }
