@@ -4,7 +4,7 @@
   "variants": [
     {
       "id": "cagedzombie",
-      "weight": 10
+      "weight": 8
     },
     {
       "id": "piglin",
@@ -16,7 +16,7 @@
     },
     {
       "id": "zombieroom",
-      "weight": 10
+      "weight": 7
     },
     {
       "id": "skeleton",
@@ -104,6 +104,18 @@
     },
     {
       "id": "bogged2",
+      "weight": 2
+    },
+    {
+      "id": "zombieroom2",
+      "weight": 3
+    },
+    {
+      "id": "antizombiesroom",
+      "weight": 3
+    },
+    {
+      "id": "zombiejail",
       "weight": 2
     }
   ]

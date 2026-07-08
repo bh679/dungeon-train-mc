@@ -3282,9 +3282,52 @@
       ],
       "pr": 652,
       "date": "2026-07-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.395.0",
+      "released_at": "2026-07-08T06:30:38Z"
+    },
+    {
+      "id": "editor-menus-toggle-all-templates",
+      "version": "0.396.0",
+      "type": "fix",
+      "title": "Editor Menus toggle now works in every template",
+      "summary": "The X menu's Editor Menus toggle (hides the in-world editor help board, type list, and plot labels) previously only showed up while editing a carriage. It now appears whenever you're editing any template \u2014 carriages, contents, tracks, architecture, or individual parts.",
+      "highlights": [],
+      "pr": 654,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.397.0",
+      "released_at": "2026-07-08T09:39:04Z"
+    },
+    {
+      "id": "random-book-hover-lock",
+      "version": "0.397.0",
+      "type": "fix",
+      "title": "Random books no longer reshuffle their story on reselect",
+      "summary": "Random books found in chests could quietly swap to a different title and story every time you scrolled past them in your hotbar. They now lock in their story the first time you pick one up.",
+      "highlights": [],
+      "pr": 655,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.397.0",
+      "released_at": "2026-07-08T09:39:04Z"
+    },
+    {
+      "id": "desert-seating-zombie-rooms",
+      "version": "0.397.0",
+      "type": "content",
+      "title": "Desert seating variants + new zombie rooms",
+      "summary": "Desert-stage carriages gained new sand-themed library and seating decor, and the enemies pool grew three new zombie-room encounters.",
+      "highlights": [
+        "New sandlib desert-stage library decor",
+        "New sand_seat_thin desert seating variant",
+        "Three new zombie room encounters: zombieroom2, antizombiesroom, zombiejail"
+      ],
+      "pr": 656,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.397.0",
+      "released_at": "2026-07-08T09:39:04Z"
     }
   ]
 }
