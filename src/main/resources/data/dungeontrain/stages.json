@@ -1,18 +1,17 @@
 {
   "copper": {
     "name": "copper",
-    "minLevel": 21,
-    "maxLevel": 30,
+    "minLevel": 36,
+    "maxLevel": 46,
     "phases": [
       "OVERWORLD",
-      "VOID",
-      "END"
+      "VOID"
     ]
   },
   "desert": {
     "name": "desert",
     "minLevel": 11,
-    "maxLevel": 20,
+    "maxLevel": 35,
     "phases": [
       "OVERWORLD",
       "VOID"
@@ -20,12 +19,11 @@
   },
   "mud": {
     "name": "mud",
-    "minLevel": 61,
-    "maxLevel": 80,
+    "minLevel": 87,
+    "maxLevel": 95,
     "phases": [
       "OVERWORLD",
-      "VOID",
-      "END"
+      "VOID"
     ]
   },
   "nether": {
@@ -35,14 +33,22 @@
       "END"
     ]
   },
-  "quartz": {
-    "name": "quartz",
-    "minLevel": 41,
-    "maxLevel": 60,
+  "obsidian": {
+    "name": "obsidian",
+    "minLevel": 71,
+    "maxLevel": 86,
     "phases": [
       "OVERWORLD",
-      "VOID",
-      "END"
+      "VOID"
+    ]
+  },
+  "quartz": {
+    "name": "quartz",
+    "minLevel": 47,
+    "maxLevel": 70,
+    "phases": [
+      "OVERWORLD",
+      "VOID"
     ]
   },
   "stone": {
@@ -55,12 +61,11 @@
   },
   "wood_oak": {
     "name": "wood_oak",
-    "minLevel": 81,
+    "minLevel": 96,
     "maxLevel": 100,
     "phases": [
       "OVERWORLD",
-      "VOID",
-      "END"
+      "VOID"
     ]
   }
 }

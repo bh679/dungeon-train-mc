@@ -318,7 +318,7 @@ public final class CarriageContentsRegistry {
         if (gateCtx != null) {
             List<CarriageContentsGroup.Member> gated = new ArrayList<>(members.size());
             for (CarriageContentsGroup.Member m : members) {
-                if (gateCtx.allows(games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), m.stageId()))) {
+                if (memberAllows(gateCtx, m)) {
                     gated.add(m);
                 }
             }
@@ -370,6 +370,25 @@ public final class CarriageContentsRegistry {
             warnNestedGroup(picked.id(), chosen.id);
         }
         return childOpt.get();
+    }
+
+    /**
+     * Whether {@code gateCtx} admits {@code member}. When the member links to no Stage its inline
+     * {@code gate} is tested directly. When it links to one or more Stages the member is admitted if
+     * <b>any</b> linked Stage's effective gate allows the context (a union) — so a member linked to
+     * "desert" and "nether" spawns in either band.
+     */
+    private static boolean memberAllows(GateContext gateCtx, CarriageContentsGroup.Member member) {
+        List<String> stageIds = member.stageIds();
+        if (stageIds.isEmpty()) {
+            return gateCtx.allows(member.gate());
+        }
+        for (String stageId : stageIds) {
+            if (gateCtx.allows(games.brennan.dungeontrain.editor.StageStore.effectiveGate(member.gate(), stageId))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Internal pool entry — one of: synthetic self (id={@link #SELF_TOKEN}) or a real group member. */

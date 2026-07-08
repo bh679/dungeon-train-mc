@@ -350,11 +350,11 @@ public final class EditorTypeMenuInputHandler {
         if (isSubVariants(menu)) {
             String parentId = menu.variants().get(0).modelId();
             CommandMenuState.openAt(games.brennan.dungeontrain.client.menu.StagePickerScreen
-                .forGroupMember(parentId, variant.modelId(), variant.stageId()));
+                .forGroupMember(parentId, variant.modelId(), variant.stageIds()));
             return;
         }
         CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.StagePickerScreen(
-            variant.category(), variant.modelId(), variant.modelName(), variant.stageId()));
+            variant.category(), variant.modelId(), variant.modelName(), variant.primaryStageId()));
     }
 
     /** Lowercase phase tokens for the Stages panel's inline dimension cells (TrainPhase ordinal order). */

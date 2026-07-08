@@ -162,7 +162,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
         boolean isUser,
         boolean isImported,
         List<Variant> subVariants,
-        String stageId
+        List<String> stageIds
     ) {
         /**
          * {@code phaseMask == NO_GATE} marks a row with no per-template spawn gate (sub-variants /
@@ -172,32 +172,37 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
         public static final int NO_GATE = 0;
 
         public Variant {
-            if (stageId == null) stageId = "";
+            stageIds = stageIds == null ? List.of() : List.copyOf(stageIds);
         }
 
-        /** True when this row is linked to a named Stage — the renderer draws a Stage chip in place
-         *  of the editable min/max/phase cells. */
+        /** True when this row is linked to at least one named Stage — the renderer draws a Stage chip
+         *  in place of the editable min/max/phase cells. */
         public boolean isStageLinked() {
-            return stageId != null && !stageId.isEmpty();
+            return !stageIds.isEmpty();
+        }
+
+        /** The first (or only) linked Stage id, or {@code ""} when unlinked — for chip labelling. */
+        public String primaryStageId() {
+            return stageIds.isEmpty() ? "" : stageIds.get(0);
         }
 
         /** Convenience: no gate + no children — keeps the original call sites compiling unchanged. */
         public Variant(String name, int weight, String category, String modelId, String modelName,
                        boolean isUser, boolean isImported) {
-            this(name, weight, 0, -1, NO_GATE, category, modelId, modelName, isUser, isImported, List.of(), "");
+            this(name, weight, 0, -1, NO_GATE, category, modelId, modelName, isUser, isImported, List.of(), List.of());
         }
 
         /** Convenience: no gate, with children. */
         public Variant(String name, int weight, String category, String modelId, String modelName,
                        boolean isUser, boolean isImported, List<Variant> subVariants) {
-            this(name, weight, 0, -1, NO_GATE, category, modelId, modelName, isUser, isImported, subVariants, "");
+            this(name, weight, 0, -1, NO_GATE, category, modelId, modelName, isUser, isImported, subVariants, List.of());
         }
 
         /** Convenience: top-level template row carrying a spawn gate, no children, Custom (unlinked). */
         public Variant(String name, int weight, int minLevel, int maxLevel, int phaseMask,
                        String category, String modelId, String modelName, boolean isUser, boolean isImported) {
             this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, List.of(), "");
+                isUser, isImported, List.of(), List.of());
         }
 
         /** Convenience: gated row <b>with children</b>, Custom (unlinked) — disambiguated from the
@@ -206,19 +211,31 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
                        String category, String modelId, String modelName, boolean isUser, boolean isImported,
                        List<Variant> subVariants) {
             this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, "");
+                isUser, isImported, subVariants, List.of());
         }
 
         /**
-         * Convenience: top-level template row carrying a spawn gate <b>and</b> an optional Stage link
-         * ({@code stageId} empty = Custom). The carriage / contents / track menus use this so the
-         * renderer can decide chip-vs-cells per row.
+         * Convenience: single-Stage row (template / part) carrying a spawn gate and one optional Stage
+         * link ({@code stageId} null/empty = Custom), no children. The carriage / contents / track /
+         * parts menus use this so the renderer can decide chip-vs-cells per row.
          */
         public Variant(String name, int weight, int minLevel, int maxLevel, int phaseMask,
                        String category, String modelId, String modelName, boolean isUser, boolean isImported,
                        String stageId) {
             this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, List.of(), stageId);
+                isUser, isImported, List.of(), (stageId == null || stageId.isEmpty()) ? List.of() : List.of(stageId));
+        }
+
+        /**
+         * Convenience: single-Stage row carrying a spawn gate, <b>with children</b> and one optional
+         * Stage link ({@code stageId} null/empty = Custom). The top-level Contents rows use this
+         * (they preview their sub-variants as children while still linking to a single Stage).
+         */
+        public Variant(String name, int weight, int minLevel, int maxLevel, int phaseMask,
+                       String category, String modelId, String modelName, boolean isUser, boolean isImported,
+                       List<Variant> subVariants, String stageId) {
+            this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
+                isUser, isImported, subVariants, (stageId == null || stageId.isEmpty()) ? List.of() : List.of(stageId));
         }
     }
 
@@ -285,7 +302,10 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
         for (Variant sv : v.subVariants()) {
             encodeVariant(buf, sv);
         }
-        buf.writeUtf(v.stageId() == null ? "" : v.stageId(), 64);
+        buf.writeVarInt(v.stageIds().size());
+        for (String s : v.stageIds()) {
+            buf.writeUtf(s == null ? "" : s, 64);
+        }
     }
 
     private static Variant decodeVariant(FriendlyByteBuf buf) {
@@ -304,9 +324,13 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
         for (int k = 0; k < sn; k++) {
             subs.add(decodeVariant(buf));
         }
-        String stageId = buf.readUtf(64);
+        int stageCount = buf.readVarInt();
+        List<String> stageIds = new ArrayList<>(stageCount);
+        for (int k = 0; k < stageCount; k++) {
+            stageIds.add(buf.readUtf(64));
+        }
         return new Variant(name, weight, minLevel, maxLevel, phaseMask,
-            category, modelId, modelName, isUser, isImported, subs, stageId);
+            category, modelId, modelName, isUser, isImported, subs, stageIds);
     }
 
     public static EditorTypeMenusPacket decode(FriendlyByteBuf buf) {

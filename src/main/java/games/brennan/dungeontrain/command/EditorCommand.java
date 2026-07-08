@@ -1815,9 +1815,14 @@ public final class EditorCommand {
         }
         try {
             CarriageContentsGroup.Member m = mOpt.get();
-            TemplateGate current = games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), m.stageId());
+            // Editing the inline gate detaches all Stage links (Custom). Snapshot the first linked
+            // Stage's gate as the base so the band survives (single-link members behave exactly as
+            // before); a multi-link union has no single gate to snapshot, so the first wins.
+            String baseStage = m.stageIds().isEmpty() ? null : m.stageIds().get(0);
+            TemplateGate current = games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), baseStage);
             TemplateGate next = op.apply(current);
-            CarriageContentsGroup.Member updated = new CarriageContentsGroup.Member(m.id(), m.weight(), next, null);
+            CarriageContentsGroup.Member updated = new CarriageContentsGroup.Member(
+                m.id(), m.weight(), next, java.util.List.of());
             CarriageContentsGroupStore.save(parent.id(), existing.get().withMember(updated));
             gateSuccess(source, parent.id() + ":" + member.id(), next,
                 CarriageContentsGroupStore.fileForId(parent.id()).toString());
@@ -1828,9 +1833,13 @@ public final class EditorCommand {
     }
 
     /**
-     * Link a group member to a Stage ({@code stageToken}; {@code custom}/blank detaches). Mirrors
-     * {@link #applyContentsStage}; detach snapshots the live Stage gate inline (so the band the member
-     * had is preserved as a Custom gate), matching {@code CarriageContentsWeights.setStage}.
+     * Edit a group member's Stage links. Unlike top-level templates and parts, a sub-variant member
+     * may link to more than one Stage (the union of their gates applies), so this <b>toggles</b>:
+     * a stage id that is already linked is removed, otherwise it is added. The {@code custom}/blank
+     * token clears <b>all</b> links; when exactly one Stage was linked its gate is snapshotted inline
+     * so the band survives as a Custom gate (matching the pre-multi single-link detach behaviour) —
+     * a two-or-more union has no single gate to snapshot, so it simply drops the links and keeps the
+     * existing inline gate.
      */
     private static int applyGroupMemberStage(CommandSourceStack source, String parentRaw, String memberRaw, String stageToken) {
         CarriageContents parent = parseContents(source, parentRaw);
@@ -1849,20 +1858,37 @@ public final class EditorCommand {
                 + parent.id() + "'.").withStyle(ChatFormatting.YELLOW));
             return 0;
         }
-        String link = resolveStageLink(source, stageToken);
+        String link = resolveStageLink(source, stageToken);  // null = custom/clear, id = toggle, INVALID = reported
         if (link == INVALID_STAGE) return 0;
         try {
             CarriageContentsGroup.Member m = mOpt.get();
-            TemplateGate inline = m.gate();
-            if (link == null && m.stageId() != null) {
-                inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, m.stageId());
+            CarriageContentsGroup.Member updated;
+            if (link == null) {
+                TemplateGate inline = m.gate();
+                if (m.stageIds().size() == 1) {
+                    inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, m.stageIds().get(0));
+                }
+                updated = new CarriageContentsGroup.Member(m.id(), m.weight(), inline, java.util.List.of());
+            } else {
+                updated = m.withStageToggled(link);
             }
-            CarriageContentsGroup.Member updated = new CarriageContentsGroup.Member(m.id(), m.weight(), inline, link);
             CarriageContentsGroupStore.save(parent.id(), existing.get().withMember(updated));
-            stageApplySuccess(source, "contents group", parent.id() + ":" + member.id(), link);
+            groupMemberStageApplySuccess(source, parent.id() + ":" + member.id(), updated.stageIds());
             return 1;
         } catch (Throwable t) {
             return gateFail(source, "contents group stage", parent.id() + ":" + member.id(), t);
+        }
+    }
+
+    /** Report the resulting Stage-link set after a group-member toggle / clear. */
+    private static void groupMemberStageApplySuccess(CommandSourceStack source, String id, java.util.List<String> stageIds) {
+        if (stageIds.isEmpty()) {
+            source.sendSuccess(() -> Component.literal("Editor: detached contents group " + id
+                + " to Custom (no Stage links).").withStyle(ChatFormatting.GREEN), true);
+        } else {
+            source.sendSuccess(() -> Component.literal("Editor: contents group " + id + " → Stage"
+                + (stageIds.size() == 1 ? " '" + stageIds.get(0) + "'"
+                    : "s [" + String.join(", ", stageIds) + "]") + ".").withStyle(ChatFormatting.GREEN), true);
         }
     }
 

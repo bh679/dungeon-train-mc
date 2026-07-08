@@ -3330,8 +3330,24 @@
       "released_at": "2026-07-08T09:39:04Z"
     },
     {
+      "id": "quartz-obsidian-parts-desert-temple",
+      "version": "0.398.0",
+      "type": "feat",
+      "title": "Quartz & obsidian carriage parts + a desert temple",
+      "summary": "New quartz and obsidian building parts now dress the train's carriages in the mid-progression bands, and a desert temple room can appear among the train's contents.",
+      "highlights": [
+        "New quartz & obsidian floors, walls, roofs and a door, wired across several carriage templates",
+        "New desert temple content room"
+      ],
+      "pr": 658,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.398.0",
+      "released_at": "2026-07-08T10:29:23Z"
+    },
+    {
       "id": "stage-difficulty-band-cap-1000",
-      "version": "0.397.1",
+      "version": "0.398.0",
       "type": "feat",
       "title": "Editor difficulty bands go up to level 1000",
       "summary": "In the in-game editor, Stage, template, and mob difficulty-band levels can now be set up to 1000 (previously capped at 100), so content can be gated for very high difficulty tiers.",
