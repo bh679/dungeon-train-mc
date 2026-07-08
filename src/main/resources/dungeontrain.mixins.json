@@ -18,7 +18,8 @@
     "MultiNoiseBiomeSourceMixin",
     "NoiseBasedChunkGeneratorMixin",
     "ChunkGeneratorDecorationMixin",
-    "RandomStateMixin"
+    "RandomStateMixin",
+    "ServerGamePacketListenerImplSignBookMixin"
   ],
   "client": [
     "CreateWorldScreenAccessor",

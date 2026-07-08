@@ -86,6 +86,21 @@ public final class DungeonTrainConfig {
     /** Default for POSTing per-join world-info telemetry (world/train seeds + regen inputs + mods) to the relay. */
     public static final boolean DEFAULT_WORLD_INFO_TO_RELAY = true;
 
+    /** Default master for the community "share books" contribution half (uploading signed books). */
+    public static final boolean DEFAULT_SHARE_BOOKS_ENABLED = true;
+
+    /** Default master for the community "shared books" discovery half (found in chest loot). */
+    public static final boolean DEFAULT_DISCOVER_SHARED_BOOKS_ENABLED = true;
+
+    /**
+     * MAX chance a rolled chest book comes from the shared community pool. The effective chance
+     * scales from 0% (no hardcoded random books read) up to this value (100% of them read), so
+     * community books surface only as a world exhausts the hand-authored pool. Default 0.75.
+     */
+    public static final double DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE = 0.75;
+    public static final double MIN_SHARED_BOOK_LOOT_CHANCE = 0.0;
+    public static final double MAX_SHARED_BOOK_LOOT_CHANCE = 1.0;
+
     public static final boolean DEFAULT_DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = true;
 
     /** Play the fly-up spawn cinematic the first time each player enters a world. */
@@ -119,6 +134,9 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue ECHO_ENCOUNTER_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue WORLD_JOIN_REPORT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue WORLD_INFO_TO_RELAY;
+    public static final ModConfigSpec.BooleanValue SHARE_BOOKS_ENABLED;
+    public static final ModConfigSpec.BooleanValue DISCOVER_SHARED_BOOKS_ENABLED;
+    public static final ModConfigSpec.DoubleValue SHARED_BOOK_LOOT_MAX_CHANCE;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_ENABLED;
     public static final ModConfigSpec.IntValue INTRO_CINEMATIC_DURATION_TICKS;
@@ -151,6 +169,9 @@ public final class DungeonTrainConfig {
         ECHO_ENCOUNTER_TO_DISCORD = pair.getLeft().echoEncounterToDiscord;
         WORLD_JOIN_REPORT_TO_DISCORD = pair.getLeft().worldJoinReportToDiscord;
         WORLD_INFO_TO_RELAY = pair.getLeft().worldInfoToRelay;
+        SHARE_BOOKS_ENABLED = pair.getLeft().shareBooksEnabled;
+        DISCOVER_SHARED_BOOKS_ENABLED = pair.getLeft().discoverSharedBooksEnabled;
+        SHARED_BOOK_LOOT_MAX_CHANCE = pair.getLeft().sharedBookLootMaxChance;
         DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = pair.getLeft().difficultyLevelNoticeToDiscord;
         INTRO_CINEMATIC_ENABLED = pair.getLeft().introCinematicEnabled;
         INTRO_CINEMATIC_DURATION_TICKS = pair.getLeft().introCinematicDurationTicks;
@@ -220,6 +241,28 @@ public final class DungeonTrainConfig {
         ModConfigSpec.IntValue randomBookFromBookshelfOneIn = b
                 .comment("1-in-N chance that each book dropped by breaking a vanilla bookshelf is replaced with a narrative Random Book (from data/dungeontrain/narratives/random_books). Total drop count is unchanged. Default 100 (~1%). Set to 0 to disable.")
                 .defineInRange("randomBookFromBookshelfOneIn", DEFAULT_RANDOM_BOOK_ONE_IN, MIN_RANDOM_BOOK_ONE_IN, MAX_RANDOM_BOOK_ONE_IN);
+        ModConfigSpec.BooleanValue shareBooksEnabled = b
+                .comment("Community shared books — CONTRIBUTION half. When true, signing a book & quill uploads its text to",
+                        "the Dungeon Train relay (fire-and-forget) and burns the book away in your hand instead of keeping",
+                        "the written copy; approved uploads may later appear in other players' chests. Uploading also",
+                        "requires the player's client to have granted network consent (Discord Presence's 'use the",
+                        "internet?' prompt). False disables uploading entirely — signing behaves like vanilla.")
+                .define("shareBooksEnabled", DEFAULT_SHARE_BOOKS_ENABLED);
+        ModConfigSpec.BooleanValue discoverSharedBooksEnabled = b
+                .comment("Community shared books — DISCOVERY half. When true, some written books rolled into dungeon chests",
+                        "are approved community submissions fetched from the relay, credited to their author, instead of the",
+                        "local narrative random-book pool. Server-wide opt-in (not per-player). False keeps chest books",
+                        "entirely local. See sharedBookLootMaxChance for the mix.")
+                .define("discoverSharedBooksEnabled", DEFAULT_DISCOVER_SHARED_BOOKS_ENABLED);
+        ModConfigSpec.DoubleValue sharedBookLootMaxChance = b
+                .comment("The MAXIMUM per-roll chance that a chest book comes from the shared community pool instead of the",
+                        "local narrative pool. The effective chance SCALES with progress: 0% when none of the hardcoded",
+                        "random books have been read, rising linearly to this value once 100% of them have been read — so",
+                        "community books surface only as a world exhausts the hand-authored pool. Default 0.75 (max 75%).",
+                        "Set 0.0 to disable shared books in loot. If the shared pool is empty or the relay is unreachable,",
+                        "the roll silently falls back to the local pool regardless.")
+                .defineInRange("sharedBookLootMaxChance", DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE,
+                        MIN_SHARED_BOOK_LOOT_CHANCE, MAX_SHARED_BOOK_LOOT_CHANCE);
         b.pop();
         b.push("discord");
         ModConfigSpec.BooleanValue deathReportToDiscord = b
@@ -288,7 +331,8 @@ public final class DungeonTrainConfig {
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
-                worldInfoToRelay, difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks);
+                worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, sharedBookLootMaxChance,
+                difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks);
     }
 
     /**
@@ -417,6 +461,22 @@ public final class DungeonTrainConfig {
         return isLoaded() ? WORLD_INFO_TO_RELAY.get() : DEFAULT_WORLD_INFO_TO_RELAY;
     }
 
+    /** Master for the community shared-books CONTRIBUTION half (upload + burn on sign). */
+    public static boolean isShareBooksEnabled() {
+        return isLoaded() ? SHARE_BOOKS_ENABLED.get() : DEFAULT_SHARE_BOOKS_ENABLED;
+    }
+
+    /** Master for the community shared-books DISCOVERY half (approved books in chest loot). */
+    public static boolean isDiscoverSharedBooksEnabled() {
+        return isLoaded() ? DISCOVER_SHARED_BOOKS_ENABLED.get() : DEFAULT_DISCOVER_SHARED_BOOKS_ENABLED;
+    }
+
+    /** MAX shared-pool chance (reached at 100% hardcoded random books read); scaled by read fraction. Clamped [0,1]. */
+    public static double getSharedBookLootMaxChance() {
+        double v = isLoaded() ? SHARED_BOOK_LOOT_MAX_CHANCE.get() : DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE;
+        return Math.max(MIN_SHARED_BOOK_LOOT_CHANCE, Math.min(MAX_SHARED_BOOK_LOOT_CHANCE, v));
+    }
+
     /** Whether to post a notice to Discord each time a player's difficulty tier increases. */
     public static boolean isDifficultyLevelNoticeToDiscord() {
         return isLoaded() ? DIFFICULTY_LEVEL_NOTICE_TO_DISCORD.get() : DEFAULT_DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
@@ -531,6 +591,9 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue echoEncounterToDiscord,
             ModConfigSpec.BooleanValue worldJoinReportToDiscord,
             ModConfigSpec.BooleanValue worldInfoToRelay,
+            ModConfigSpec.BooleanValue shareBooksEnabled,
+            ModConfigSpec.BooleanValue discoverSharedBooksEnabled,
+            ModConfigSpec.DoubleValue sharedBookLootMaxChance,
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,
             ModConfigSpec.BooleanValue introCinematicEnabled,
             ModConfigSpec.IntValue introCinematicDurationTicks

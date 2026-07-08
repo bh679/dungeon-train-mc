@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.narrative;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -63,6 +64,13 @@ public final class NarrativeProgressData extends SavedData {
     private static final String TAG_STARTING_BOOK_RECEIVED = "starting_book_received";
     /** Key for a per-entry UUID inside the starting-book-received list. */
     private static final String TAG_UUID = "uuid";
+    /**
+     * Root-level list of random-book basenames the world has EVER read (monotonic — unlike
+     * {@link #randomBooksSeen}, which the picker resets on the silent full-cycle). Drives the
+     * shared-community-book loot chance, which scales with how much of the hardcoded random-book
+     * pool has been read, so the fraction must never fall back to zero once earned.
+     */
+    private static final String TAG_RANDOM_BOOKS_EVER_READ = "random_books_ever_read";
 
     private final Map<String, NarrativeProgress> byStory;
     /** World-wide seen-variant tracking for the random-book pool. */
@@ -89,21 +97,29 @@ public final class NarrativeProgressData extends SavedData {
      * already spawned in this world.
      */
     private final Set<UUID> startingBookReceived;
+    /**
+     * Basenames of hardcoded random books this world has EVER read (monotonic; only grows).
+     * Distinct from {@link #randomBooksSeen}, which the unseen-picker clears on the silent
+     * full-cycle. Feeds the shared-book loot chance so it never regresses once earned.
+     */
+    private final Set<String> randomBooksEverRead;
 
     private NarrativeProgressData() {
-        this(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>());
+        this(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>(), new HashSet<>());
     }
 
     private NarrativeProgressData(Map<String, NarrativeProgress> byStory,
                                   Map<String, NarrativeProgress> randomBooksSeen,
                                   Map<String, NarrativeProgress> startingBooksSeen,
                                   Map<String, NarrativeProgress> storyVariantsSeen,
-                                  Set<UUID> startingBookReceived) {
+                                  Set<UUID> startingBookReceived,
+                                  Set<String> randomBooksEverRead) {
         this.byStory = byStory;
         this.randomBooksSeen = randomBooksSeen;
         this.startingBooksSeen = startingBooksSeen;
         this.storyVariantsSeen = storyVariantsSeen;
         this.startingBookReceived = startingBookReceived;
+        this.randomBooksEverRead = randomBooksEverRead;
     }
 
     public static NarrativeProgressData get(ServerLevel overworld) {
@@ -184,6 +200,25 @@ public final class NarrativeProgressData extends SavedData {
             randomBooksSeen.clear();
             setDirty();
         }
+    }
+
+    /**
+     * Record that the world has read random book {@code bookBasename} at least once. Monotonic —
+     * never cleared by {@link #resetRandomBookProgress()} — so the shared-book loot fraction it
+     * feeds can't fall back after the player has read a book. Returns {@code true} on first read.
+     */
+    public boolean markRandomBookEverRead(String bookBasename) {
+        boolean changed = randomBooksEverRead.add(bookBasename);
+        if (changed) setDirty();
+        return changed;
+    }
+
+    /**
+     * How many DISTINCT hardcoded random books the world has ever read — the numerator for the
+     * shared-community-book loot chance (denominator is {@link RandomBookRegistry#count()}).
+     */
+    public int distinctRandomBooksEverRead() {
+        return randomBooksEverRead.size();
     }
 
     // ---------------- Story-letter variant tracking ----------------
@@ -426,6 +461,11 @@ public final class NarrativeProgressData extends SavedData {
             startedList.add(entry);
         }
         tag.put(TAG_STARTING_BOOK_RECEIVED, startedList);
+
+        // Monotonic ever-read random-book basenames — a flat string list.
+        ListTag everRead = new ListTag();
+        for (String basename : randomBooksEverRead) everRead.add(StringTag.valueOf(basename));
+        tag.put(TAG_RANDOM_BOOKS_EVER_READ, everRead);
         return tag;
     }
 
@@ -481,7 +521,15 @@ public final class NarrativeProgressData extends SavedData {
                 startingBookReceived.add(entry.getUUID(TAG_UUID));
             }
         }
-        return new NarrativeProgressData(stories, randomBooks, startingBooksSeen, storyVariants, startingBookReceived);
+        // Missing tag → empty set (worlds saved before shared-book loot scaling landed simply
+        // start the fraction at whatever they've since re-read).
+        Set<String> randomBooksEverRead = new HashSet<>();
+        if (tag.contains(TAG_RANDOM_BOOKS_EVER_READ, Tag.TAG_LIST)) {
+            ListTag everRead = tag.getList(TAG_RANDOM_BOOKS_EVER_READ, Tag.TAG_STRING);
+            for (int i = 0; i < everRead.size(); i++) randomBooksEverRead.add(everRead.getString(i));
+        }
+        return new NarrativeProgressData(stories, randomBooks, startingBooksSeen, storyVariants,
+                startingBookReceived, randomBooksEverRead);
     }
 
     /** Inverse of {@link #encodeStoryProgress}; tolerates missing tag (returns empty). */

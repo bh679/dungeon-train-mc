@@ -228,6 +228,68 @@ public final class BookFactory {
     }
 
     /**
+     * Build a plain, un-stamped {@code Items.WRITTEN_BOOK} from explicit
+     * {@code title}/{@code author}/{@code pages} — no {@link NarrativeBookTag}
+     * / {@link RandomBookTag} identity component. Used by the community
+     * "shared books" feature: the sign-interception path builds the burn book
+     * (which the caller then stamps with {@link SharedBookTag}), and the
+     * discovery pool builds the found book (which stays unstamped so reading
+     * it counts as an ordinary written book, never as a story read).
+     *
+     * <p>Reuses the same pagination, page-cap, title/author-clamp and
+     * {@link BookText} keybind expansion as the narrative books so layout is
+     * identical. Each source page is first re-flowed through {@link #paginate}
+     * (so an overlong contributed page is split rather than truncated by the
+     * client), then all sections are concatenated in order. A {@code null}
+     * or empty page list yields a single blank page so the book is still
+     * openable.</p>
+     *
+     * @param title  book title (clamped to {@link #MAX_TITLE_CHARS}); blank → "Untitled"
+     * @param author author credited on the book (clamped); blank → "Anonymous"
+     * @param pages  source page strings in order; {@code null}/empty → one blank page
+     */
+    public static ItemStack buildPlainBook(String title, String author, List<String> pages) {
+        String safeTitle = title == null || title.isBlank() ? "Untitled" : title;
+        String safeAuthor = author == null || author.isBlank() ? "Anonymous" : author;
+
+        List<String> pageStrings = new ArrayList<>();
+        if (pages != null) {
+            for (String page : pages) {
+                if (page == null) continue;
+                // Re-flow each contributed page through the shared paginator so an
+                // overlong page is split across multiple book pages rather than
+                // silently clipped by the client's page renderer.
+                pageStrings.addAll(paginate(page));
+            }
+        }
+        if (pageStrings.size() > MAX_PAGES) {
+            LOGGER.warn("[DungeonTrain] SharedBook: '{}' by '{}' produced {} pages — truncating to {} (vanilla cap)",
+                safeTitle, safeAuthor, pageStrings.size(), MAX_PAGES);
+            pageStrings = pageStrings.subList(0, MAX_PAGES);
+        }
+
+        List<Filterable<Component>> bookPages = new ArrayList<>(pageStrings.size());
+        for (String page : pageStrings) {
+            bookPages.add(Filterable.passThrough(BookText.toPage(page)));
+        }
+        if (bookPages.isEmpty()) {
+            bookPages.add(Filterable.passThrough(Component.literal("")));
+        }
+
+        WrittenBookContent content = new WrittenBookContent(
+            Filterable.passThrough(clampTitle(safeTitle)),
+            clampAuthor(safeAuthor),
+            /*generation*/ 0,
+            bookPages,
+            /*resolved*/ true
+        );
+
+        ItemStack stack = new ItemStack(Items.WRITTEN_BOOK);
+        stack.set(DataComponents.WRITTEN_BOOK_CONTENT, content);
+        return stack;
+    }
+
+    /**
      * Story basename = path tail of the registry id. Used for stamping the
      * identity NBT and for the progression data lookup.
      */
