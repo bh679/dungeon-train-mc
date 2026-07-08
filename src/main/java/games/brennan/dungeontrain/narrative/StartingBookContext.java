@@ -113,8 +113,10 @@ public enum StartingBookContext {
      * No change to the achievement engine.</p>
      *
      * <ul>
-     *   <li>{@link #NETHER} &rarr; {@code "nether_starting_books"} (Nether Return Again)</li>
-     *   <li>{@link #END} &rarr; {@code "end_starting_books"} (End of the Line)</li>
+     *   <li>{@link #NETHER} &rarr; {@code "nether_starting_books"} (no advancement currently
+     *       listens for this set-completed id)</li>
+     *   <li>{@link #END} &rarr; {@code "end_starting_books"} (no advancement currently listens
+     *       for this set-completed id)</li>
      *   <li>Lifecycle folders (DEFAULT / NEW_WORLD / JOINED_WORLD / RESPAWN)
      *       &rarr; empty: their books still roll into the grand-slam
      *       {@code all_starting_books} set, but aren't a "collect this folder"

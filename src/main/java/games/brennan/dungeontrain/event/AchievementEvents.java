@@ -471,8 +471,7 @@ public final class AchievementEvents {
      * True when a dimension-routed folder ({@code ctx}) has had every one of
      * its {@code (book, variant)} tuples delivered to this player. Backs the
      * per-folder sets declared by {@link StartingBookContext#achievementSetId()}
-     * — Nether Return Again, End of the Line — and is the per-folder subset of
-     * {@link #allStartingBooksSeen}. Reuses
+     * and is the per-folder subset of {@link #allStartingBooksSeen}. Reuses
      * {@link StartingBookFactory#hasUnseenDimensionTuples} so set membership
      * stays identical to the welcome-cycle's own notion of "exhausted"; auto-
      * expands when books or variants are added to the folder. An empty pool is

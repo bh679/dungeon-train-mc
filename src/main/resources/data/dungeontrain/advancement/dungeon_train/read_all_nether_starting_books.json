@@ -1,19 +1,19 @@
 {
-  "parent": "dungeontrain:dungeon_train/board_in_end",
+  "parent": "dungeontrain:dungeon_train/reached_overworld_again",
   "display": {
-    "icon": { "id": "minecraft:knowledge_book" },
+    "icon": { "id": "minecraft:ender_eye" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.read_all_nether_starting_books.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.read_all_nether_starting_books.description" },
-    "frame": "challenge",
+    "frame": "goal",
     "show_toast": true,
     "announce_to_chat": true,
-    "hidden": false
+    "hidden": true
   },
   "criteria": {
-    "completed": {
-      "trigger": "dungeontrain:story_set_completed",
-      "conditions": { "setId": "nether_starting_books" }
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "nether_return_again" }
     }
   },
-  "requirements": [["completed"]]
+  "requirements": [["reached"]]
 }

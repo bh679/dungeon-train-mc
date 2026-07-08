@@ -22,6 +22,7 @@
     "ServerGamePacketListenerImplSignBookMixin"
   ],
   "client": [
+    "client.BookViewScreenAccessor",
     "CreateWorldScreenAccessor",
     "CreateWorldScreenMixin",
     "CreateWorldScreenWorldTabMixin",
