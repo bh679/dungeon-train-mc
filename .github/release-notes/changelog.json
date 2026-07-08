@@ -3222,8 +3222,21 @@
       "released_at": "2026-07-07T14:54:34Z"
     },
     {
-      "id": "suspicious-stew-loot-effect-fix",
+      "id": "dev-messages-per-thread",
       "version": "0.393.0",
+      "type": "fix",
+      "title": "Developer messages now stay in your thread",
+      "summary": "A reply from the developer now reaches only the player whose Discord thread it was posted in \u2014 previously every player who had accepted developer messages saw it. Messages the developer posts outside a player's thread no longer appear in-game.",
+      "highlights": [],
+      "pr": 649,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.393.0",
+      "released_at": "2026-07-08T04:06:37Z"
+    },
+    {
+      "id": "suspicious-stew-loot-effect-fix",
+      "version": "0.394.0",
       "type": "fix",
       "title": "Suspicious stew from loot now has an effect",
       "summary": "Suspicious stew found in chests, decorated pots, and other loot containers previously did nothing when eaten. It now grants a real effect, just like a suspicious stew you'd craft yourself.",
