@@ -34,6 +34,11 @@
       "name": "mudbricks",
       "weight": 1,
       "stage": "mud"
+    },
+    {
+      "name": "mudbricks_wood_oak",
+      "weight": 1,
+      "stage": "wood_oak"
     }
   ],
   "walls": [
@@ -127,6 +132,18 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "mud"
+    },
+    {
+      "name": "mudopen_wood_oak",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "wood_oak"
+    },
+    {
+      "name": "mudbricks_wood_oak",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "wood_oak"
     }
   ],
   "roof": [
@@ -197,6 +214,16 @@
       "name": "mudopen",
       "weight": 1,
       "stage": "mud"
+    },
+    {
+      "name": "mud_wood_oak",
+      "weight": 1,
+      "stage": "wood_oak"
+    },
+    {
+      "name": "mudopen_wood_oak",
+      "weight": 1,
+      "stage": "wood_oak"
     }
   ],
   "doors": [
@@ -249,6 +276,11 @@
       "name": "mud",
       "weight": 1,
       "stage": "mud"
+    },
+    {
+      "name": "mud_wood_oak",
+      "weight": 1,
+      "stage": "wood_oak"
     }
   ]
 }

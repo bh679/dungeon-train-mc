@@ -1,7 +1,7 @@
 {
   "copper": {
     "name": "copper",
-    "minLevel": 20,
+    "minLevel": 21,
     "maxLevel": 30,
     "phases": [
       "OVERWORLD",
@@ -11,7 +11,7 @@
   },
   "desert": {
     "name": "desert",
-    "minLevel": 10,
+    "minLevel": 11,
     "maxLevel": 20,
     "phases": [
       "OVERWORLD",
@@ -20,7 +20,7 @@
   },
   "mud": {
     "name": "mud",
-    "minLevel": 60,
+    "minLevel": 61,
     "maxLevel": 80,
     "phases": [
       "OVERWORLD",
@@ -37,7 +37,7 @@
   },
   "quartz": {
     "name": "quartz",
-    "minLevel": 40,
+    "minLevel": 41,
     "maxLevel": 60,
     "phases": [
       "OVERWORLD",
@@ -51,6 +51,16 @@
     "phases": [
       "OVERWORLD",
       "VOID"
+    ]
+  },
+  "wood_oak": {
+    "name": "wood_oak",
+    "minLevel": 81,
+    "maxLevel": 100,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END"
     ]
   }
 }
