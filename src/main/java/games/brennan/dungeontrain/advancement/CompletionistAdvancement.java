@@ -22,9 +22,12 @@ import org.slf4j.Logger;
  * the cross-world replay in {@code AchievementEvents} re-grants advancements
  * from {@link GlobalAchievementStore}. Direct award (rather than a custom
  * trigger) keeps the login backfill working regardless of game mode and adds no
- * registry surface — at the cost of bypassing the survival/adventure
- * {@link games.brennan.dungeontrain.mixin.SimpleCriterionTriggerGameModeMixin}
- * gate, which is harmless here because every prerequisite was itself gated.</p>
+ * registry surface. The direct award still passes through the same
+ * cross-world persistence gate as every other advancement —
+ * {@link games.brennan.dungeontrain.cheat.RunIntegrity#persistsAdvancement} in
+ * {@code AchievementEvents} — so a Free-Play ("cheated") run cannot bank the
+ * capstone even though it was granted directly rather than via a criterion
+ * trigger.</p>
  *
  * <p><b>Dynamic by construction.</b> The required set is computed at call time
  * from {@link ServerAdvancementManager#getAllAdvancements()}, filtered to the
@@ -33,8 +36,9 @@ import org.slf4j.Logger;
  * {@code dungeon_train/*} advancement added in a future update is therefore
  * required automatically, with no change to this class. The {@code editor/}
  * partition is the same one
- * {@link games.brennan.dungeontrain.mixin.SimpleCriterionTriggerGameModeMixin}
- * uses to tell DT gameplay advancements from editor ones.</p>
+ * {@link games.brennan.dungeontrain.cheat.RunIntegrity#isEditorAdvancement}
+ * uses to tell DT gameplay advancements (gated by run integrity) from editor
+ * ones (which always persist).</p>
  */
 public final class CompletionistAdvancement {
 
