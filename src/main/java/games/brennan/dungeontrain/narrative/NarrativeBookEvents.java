@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
+import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.player.PlayerRunState;
@@ -135,6 +136,27 @@ public final class NarrativeBookEvents {
         AchievementEvents.notifyStartingBooksRead(player, newTotal);
     }
 
+    /**
+     * Fires the "read a stranger's book" advancement the first time a player holds-right-clicks a
+     * book discovered from the community shared-book pool (chest loot credited to a real player —
+     * see {@link SharedBookFoundTag}). One-shot marker via the generic
+     * {@link ModAdvancementTriggers#GAMEPLAY_ACTION} trigger; vanilla advancement award is
+     * idempotent, so repeat re-reads are harmless.
+     *
+     * <p>Held-right-click only, mirroring {@link #onRightClickRandomBookItem} /
+     * {@link #onRightClickStartingBookItem} — a found book placed on a lectern is not covered, the
+     * same scope cut already made for those two tags.</p>
+     */
+    @SubscribeEvent
+    public static void onRightClickFoundSharedBookItem(PlayerInteractEvent.RightClickItem event) {
+        if (event.getLevel().isClientSide) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        ItemStack stack = event.getItemStack();
+        if (stack.isEmpty()) return;
+        if (!SharedBookFoundTag.isFound(stack)) return;
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "read_shared_book");
+    }
+
     private static void recordRead(ServerPlayer player, NarrativeBookTag.NarrativeIdentity id) {
         ServerLevel overworld = overworldOf(player);
         if (overworld == null) return;
@@ -238,7 +260,7 @@ public final class NarrativeBookEvents {
             // First time the world has seen this exact tuple — mark and let
             // the read flow proceed unchanged.
             data.markRandomBookSeen(id.basename(), id.variantIndex());
-            data.markRandomBookEverRead(id.basename()); // monotonic — feeds shared-book loot chance
+            data.markRandomBookVariantEverRead(id.basename(), id.variantIndex()); // monotonic — feeds shared-book loot chance
             LOGGER.info("[DungeonTrain] RandomBook: world marked {} variant {} seen (by {})",
                 id.basename(), id.variantIndex(), player.getName().getString());
             games.brennan.dungeontrain.event.AchievementEvents.notifyStoryProgress(player);
@@ -255,7 +277,7 @@ public final class NarrativeBookEvents {
         if (alt.isPresent()) {
             RandomBookFactory.replaceStackContent(stack, alt.get());
             data.markRandomBookSeen(alt.get().book().basename(), alt.get().variantIndex());
-            data.markRandomBookEverRead(alt.get().book().basename()); // monotonic — feeds loot chance
+            data.markRandomBookVariantEverRead(alt.get().book().basename(), alt.get().variantIndex()); // monotonic — feeds loot chance
             LOGGER.info("[DungeonTrain] RandomBook: swapped seen {} v{} -> {} v{} (held by {})",
                 id.basename(), id.variantIndex(),
                 alt.get().book().basename(), alt.get().variantIndex(),

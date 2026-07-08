@@ -117,6 +117,17 @@ public final class RandomBookRegistry {
     }
 
     /**
+     * Sum of every loaded book's variant count — the denominator for the shared-community-book loot
+     * chance (numerator is {@link NarrativeProgressData#distinctRandomBookVariantsEverRead()}), so the
+     * chance scales with individual variants read rather than whole books.
+     */
+    public static synchronized int totalVariantCount() {
+        int total = 0;
+        for (RandomBookFile b : BOOKS.values()) total += b.variants().size();
+        return total;
+    }
+
+    /**
      * Sum of every loaded book's {@code weight}. Returns 0 when the pool is
      * empty or every book has weight 0 — callers should treat 0 as
      * "skip the random-book substitution and emit nothing".

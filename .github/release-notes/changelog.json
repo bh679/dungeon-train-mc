@@ -3374,6 +3374,23 @@
       "released": true,
       "released_in": "v0.399.0",
       "released_at": "2026-07-08T12:20:41Z"
+    },
+    {
+      "id": "shared-book-advancements",
+      "version": "0.400.0",
+      "type": "feat",
+      "title": "Advancements for signing and reading shared books",
+      "summary": "Signing a book & quill to send into the community pool now earns the 'Ghostwriter' advancement, and finding a real player's book in a dungeon chest earns 'A Stranger's Story'. Also fixes a bug where community books could stop appearing in chests entirely after a server had been running for a little while.",
+      "highlights": [
+        "New advancement: Ghostwriter (sign a book to share with the community)",
+        "New advancement: A Stranger's Story (find and read another player's shared book)",
+        "Fixed: community books could stop dropping in chests after the first ~30 seconds"
+      ],
+      "pr": 662,
+      "date": "2026-07-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
