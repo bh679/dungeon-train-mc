@@ -3298,6 +3298,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "random-book-hover-lock",
+      "version": "0.397.0",
+      "type": "fix",
+      "title": "Random books no longer reshuffle their story on reselect",
+      "summary": "Random books found in chests could quietly swap to a different title and story every time you scrolled past them in your hotbar. They now lock in their story the first time you pick one up.",
+      "highlights": [],
+      "pr": 655,
+      "date": "2026-07-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
