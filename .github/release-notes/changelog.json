@@ -3295,9 +3295,9 @@
       "highlights": [],
       "pr": 654,
       "date": "2026-07-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.397.0",
+      "released_at": "2026-07-08T09:39:04Z"
     },
     {
       "id": "random-book-hover-lock",
@@ -3308,9 +3308,9 @@
       "highlights": [],
       "pr": 655,
       "date": "2026-07-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.397.0",
+      "released_at": "2026-07-08T09:39:04Z"
     },
     {
       "id": "desert-seating-zombie-rooms",
@@ -3325,9 +3325,9 @@
       ],
       "pr": 656,
       "date": "2026-07-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.397.0",
+      "released_at": "2026-07-08T09:39:04Z"
     },
     {
       "id": "stage-difficulty-band-cap-1000",
