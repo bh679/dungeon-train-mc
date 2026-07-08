@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.discord.SharedBookReporter;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
@@ -80,6 +81,10 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
 
             // A gray "sent into the void" chat line as it burns — same style as the offline @dev reply.
             serverPlayer.sendSystemMessage(SharedBookMessage.random(serverPlayer.getRandom()));
+
+            // One-shot "signed a book" advancement — fires regardless of whether the fire-and-forget
+            // upload above eventually succeeds; signing is the local action being rewarded here.
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(serverPlayer, "signed_shared_book");
 
             ci.cancel();
             DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] SharedBook: {} signed a book — uploaded + dropped to burn",
