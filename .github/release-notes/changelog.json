@@ -3347,19 +3347,19 @@
     },
     {
       "id": "stage-difficulty-band-cap-1000",
-      "version": "0.398.0",
+      "version": "0.399.0",
       "type": "feat",
       "title": "Editor difficulty bands go up to level 1000",
       "summary": "In the in-game editor, Stage, template, and mob difficulty-band levels can now be set up to 1000 (previously capped at 100), so content can be gated for very high difficulty tiers.",
       "highlights": [],
       "date": "2026-07-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.399.0",
+      "released_at": "2026-07-08T12:20:41Z"
     },
     {
       "id": "community-shared-books",
-      "version": "0.398.0",
+      "version": "0.399.0",
       "type": "feat",
       "title": "Community shared books: write, burn, and discover",
       "summary": "Sign a book & quill and it burns away, carried off to become part of a shared, world-spanning library \u2014 its text (screened for inappropriate content) can later be found by other players. As you read the train's own hand-written books, community books start turning up in dungeon chests, each credited to its author.",
@@ -3371,9 +3371,26 @@
       ],
       "pr": 659,
       "date": "2026-07-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.399.0",
+      "released_at": "2026-07-08T12:20:41Z"
+    },
+    {
+      "id": "shared-book-advancements",
+      "version": "0.400.0",
+      "type": "feat",
+      "title": "Advancements for signing and reading shared books",
+      "summary": "Signing a book & quill to send into the community pool now earns the 'Ghostwriter' advancement, and finding a real player's book in a dungeon chest earns 'A Stranger's Story'. Also fixes a bug where community books could stop appearing in chests entirely after a server had been running for a little while.",
+      "highlights": [
+        "New advancement: Ghostwriter (sign a book to share with the community)",
+        "New advancement: A Stranger's Story (find and read another player's shared book)",
+        "Fixed: community books could stop dropping in chests after the first ~30 seconds"
+      ],
+      "pr": 662,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.400.0",
+      "released_at": "2026-07-08T13:05:28Z"
     }
   ]
 }

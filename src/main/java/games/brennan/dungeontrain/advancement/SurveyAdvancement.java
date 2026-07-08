@@ -24,10 +24,11 @@ import java.util.UUID;
  * carries a single {@code minecraft:impossible} criterion, so it never fires on
  * its own — we award it directly here, exactly like {@link CompletionistAdvancement}.
  * Direct award (rather than a custom trigger) is deliberate: completing a feedback
- * survey is a meta action, so it should count in any game mode, and a direct award
- * bypasses the survival/adventure
- * {@link games.brennan.dungeontrain.mixin.SimpleCriterionTriggerGameModeMixin}
- * gate.</p>
+ * survey is a meta action, so it should count in any game mode. Like every
+ * other advancement, whether it survives to the cross-world profile is still
+ * decided by
+ * {@link games.brennan.dungeontrain.cheat.RunIntegrity#persistsAdvancement} in
+ * {@code AchievementEvents}.</p>
  */
 public final class SurveyAdvancement {
 

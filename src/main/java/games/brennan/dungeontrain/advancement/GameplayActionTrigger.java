@@ -19,10 +19,13 @@ import java.util.Optional;
  * these are pure one-shot markers — the detection events may fire the same
  * id every scan without harm.
  *
- * <p>Because these advancements live under the {@code dungeon_train/} path,
- * {@code SimpleCriterionTriggerGameModeMixin} already gates them to
- * survival/adventure (blocked in creative/spectator) — no per-trigger
- * handling needed here.</p>
+ * <p>These advancements can be earned in any game mode; no per-trigger
+ * game-mode handling is needed here. Cross-world persistence for the
+ * {@code dungeon_train/} tree is centrally gated in {@code AchievementEvents}
+ * via {@link games.brennan.dungeontrain.cheat.RunIntegrity#persistsAdvancement},
+ * which blocks writing to the global profile only when the run has been
+ * marked "Free Play" (cheated) — it does not block the advancement firing or
+ * displaying live.</p>
  *
  * <p>Action ids in current use (Dungeon Train tab):
  * <ul>
