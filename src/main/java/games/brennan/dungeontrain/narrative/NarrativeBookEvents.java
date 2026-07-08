@@ -227,6 +227,7 @@ public final class NarrativeBookEvents {
         if (stack.isEmpty()) return;
         Optional<RandomBookTag.RandomBookIdentity> idOpt = RandomBookTag.read(stack);
         if (idOpt.isEmpty()) return;
+        if (RandomBookTag.isHeld(stack)) return; // content already locked on a prior hold
 
         ServerLevel overworld = overworldOf(player);
         if (overworld == null) return;

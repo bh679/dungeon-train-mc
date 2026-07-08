@@ -1,0 +1,18 @@
+{
+  "parent": "dungeontrain:dungeon_train/pacifist_100",
+  "display": {
+    "icon": { "id": "minecraft:oxeye_daisy" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.pacifist_250.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.pacifist_250.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "pacifist": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [["pacifist"]]
+}

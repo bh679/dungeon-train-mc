@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.advancement.FarStartAdvancement;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
+import games.brennan.dungeontrain.advancement.PacifistAdvancement;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
@@ -178,6 +179,11 @@ public final class AchievementEvents {
      * {@link PlayerRunState#cartsBackwardSinceDeath} — backward travel
      * contributes positively there, while it subtracts from the signed
      * {@code travelledCarriageIndex} used above.</p>
+     *
+     * <p>{@link PacifistAdvancement} (100 / 250 / 1000 tiers) uses the same
+     * travelled-carriage counter as {@code carts_100}, gated on
+     * {@link PlayerRunState#damageDealt()} being exactly zero — both reset
+     * together on death, so a fresh life always has a clean shot at the chain.</p>
      */
     public static void notifyCartAdvance(ServerPlayer player, int delta) {
         if (delta == 0) return;
@@ -197,6 +203,9 @@ public final class AchievementEvents {
         // longer haul, reached while still carrying the (unread, unburned)
         // starting book. Gated cheaply, so the inventory scan only runs past the threshold.
         FarStartAdvancement.checkAndGrant(player, effectiveTravelled);
+        // "Pacifist" chain — same travelled-carriage counter as carts_100 but
+        // requires zero damage dealt this life at each threshold.
+        PacifistAdvancement.checkAndGrant(player, effectiveTravelled, run.damageDealt());
     }
 
     // ---------------- Biome-diversity milestones ----------------

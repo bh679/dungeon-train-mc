@@ -1,12 +1,16 @@
 package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
+import games.brennan.dungeontrain.template.GateContext;
+import games.brennan.dungeontrain.template.TemplateGate;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -231,6 +235,42 @@ final class CarriageContentsRegistryGroupResolveTest {
         // Pool = [self(w=1), wooden(w=5)]. Both should appear across 500 seeds.
         assertTrue(sawWooden, "wooden child should appear in the resolved distribution");
         assertTrue(sawSelf, "parent self (synthetic) should also appear");
+    }
+
+    @Test
+    @DisplayName("resolveGroup gate-filters a member by inline gate; out-of-phase member drops, self + ungated stay")
+    void gateFilter_dropsOutOfPhaseMember() {
+        registerCustom("mobs");
+        registerCustom("piglin");   // nether-only via inline gate
+        registerCustom("zombie");   // ungated member
+        TemplateGate netherOnly = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER));
+        CarriageContentsGroupStore.injectForTesting("mobs", new CarriageContentsGroup(List.of(
+            new CarriageContentsGroup.Member("piglin", 5, netherOnly, List.of()),
+            new CarriageContentsGroup.Member("zombie", 5, TemplateGate.DEFAULT, List.of()))));
+
+        // OVERWORLD context: the nether-only member must be filtered out; self + ungated stay.
+        GateContext overworld = new GateContext(0, TrainPhase.OVERWORLD);
+        boolean sawPiglin = false, sawZombie = false, sawSelf = false;
+        for (int idx = 0; idx < 500; idx++) {
+            String id = CarriageContentsRegistry.pick(0L, idx, CarriageContentsAllowList.EMPTY, overworld).id();
+            if ("piglin".equals(id)) sawPiglin = true;
+            if ("zombie".equals(id)) sawZombie = true;
+            if ("mobs".equals(id)) sawSelf = true;
+        }
+        assertFalse(sawPiglin, "nether-only member must be filtered out under an OVERWORLD context");
+        assertTrue(sawZombie, "ungated member stays eligible");
+        assertTrue(sawSelf, "synthetic self is always kept even when a member is filtered");
+
+        // NETHER context: the same member is now eligible.
+        GateContext nether = new GateContext(0, TrainPhase.NETHER);
+        boolean sawPiglinNether = false;
+        for (int idx = 0; idx < 500; idx++) {
+            if ("piglin".equals(CarriageContentsRegistry.pick(0L, idx, CarriageContentsAllowList.EMPTY, nether).id())) {
+                sawPiglinNether = true;
+                break;
+            }
+        }
+        assertTrue(sawPiglinNether, "nether-only member appears once the context is NETHER");
     }
 
     @Test

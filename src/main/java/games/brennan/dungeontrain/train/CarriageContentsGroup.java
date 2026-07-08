@@ -22,16 +22,18 @@ import java.util.Random;
  * sidecar alongside the parent's optional {@code .nbt} (group-only parents
  * have no {@code .nbt} — the group resolution short-circuits placement).</p>
  *
- * <p>JSON schema (v2 — each member may carry an optional spawn gate / Stage link, omitted when
- * ungated so v1 sidecars round-trip unchanged):</p>
+ * <p>JSON schema (v3 — each member may carry an optional spawn gate and/or one-or-more Stage links,
+ * omitted when ungated so v1/v2 sidecars round-trip unchanged. A single link serialises as the
+ * scalar {@code "stage"}; two or more as a {@code "stages"} array):</p>
  * <pre>
  * {
- *   "schemaVersion": 2,
+ *   "schemaVersion": 3,
  *   "selfWeight": 1,
  *   "variants": [
  *     {"id": "container_wooden", "weight": 5},
  *     {"id": "piglin", "weight": 2, "minLevel": 4, "phases": ["NETHER"]},
- *     {"id": "cagedzombie", "weight": 2, "stage": "early"}
+ *     {"id": "cagedzombie", "weight": 2, "stage": "early"},
+ *     {"id": "husk", "weight": 2, "stages": ["desert", "nether"]}
  *   ]
  * }
  * </pre>
@@ -49,8 +51,10 @@ import java.util.Random;
 public record CarriageContentsGroup(int selfWeight, List<Member> members) {
 
     public static final String SCHEMA_KEY = "schemaVersion";
-    /** v2 added per-member spawn gate + Stage link. v1 sidecars (id+weight only) read as ungated. */
-    public static final int SCHEMA_VERSION = 2;
+    /** v2 added per-member spawn gate + single Stage link; v3 allows multiple Stage links (a
+     * {@code "stages"} array). v1 sidecars (id+weight only) read as ungated; v2's scalar {@code
+     * "stage"} reads as a one-element link set. */
+    public static final int SCHEMA_VERSION = 3;
 
     /** Minimum allowed member weight. 0 excludes the member from the draw. */
     public static final int MIN_WEIGHT = 0;
@@ -66,12 +70,17 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
 
     /**
      * Single weighted entry in the group, with an optional per-member spawn {@link TemplateGate gate}
-     * and {@link #stageId() Stage link}. Mirrors {@code TemplateMeta} at the member level: when
-     * {@code stageId != null} the linked Stage's gate is the effective gate; otherwise {@code gate}
-     * (the inline Custom gate) applies. A bare {@code (id, weight)} member is eligible everywhere —
-     * identical to the pre-gate behaviour.
+     * and a set of {@link #stageIds() Stage links}. Mirrors {@code TemplateMeta} at the member level,
+     * but — unlike top-level templates and carriage parts — a sub-variant member may link to
+     * <b>more than one</b> Stage: when {@code stageIds} is non-empty the member is eligible wherever
+     * <b>any</b> linked Stage's gate allows the context (a union); otherwise {@code gate} (the inline
+     * Custom gate) applies. A bare {@code (id, weight)} member is eligible everywhere — identical to
+     * the pre-gate behaviour.
+     *
+     * <p>{@code stageIds} is always a normalised (lowercased/trimmed, blanks dropped, de-duplicated),
+     * order-preserving, immutable list — never {@code null}. Empty means Custom (no link).</p>
      */
-    public record Member(String id, int weight, TemplateGate gate, String stageId) {
+    public record Member(String id, int weight, TemplateGate gate, List<String> stageIds) {
         public Member {
             if (id == null) throw new IllegalArgumentException("Member id must not be null");
             String norm = id.toLowerCase(Locale.ROOT);
@@ -82,20 +91,44 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
             id = norm;
             weight = clampWeight(weight);
             if (gate == null) gate = TemplateGate.DEFAULT;
-            if (stageId != null) {
-                String s = stageId.trim().toLowerCase(Locale.ROOT);
-                stageId = s.isEmpty() ? null : s;
-            }
+            stageIds = normalizeStages(stageIds);
         }
 
         /** Back-compat: a member with the default (eligible-everywhere) gate and no Stage link. */
         public Member(String id, int weight) {
-            this(id, weight, TemplateGate.DEFAULT, null);
+            this(id, weight, TemplateGate.DEFAULT, Collections.emptyList());
         }
 
-        public Member withWeight(int newWeight) { return new Member(id, newWeight, gate, stageId); }
-        public Member withGate(TemplateGate newGate) { return new Member(id, weight, newGate, stageId); }
-        public Member withStage(String newStageId) { return new Member(id, weight, gate, newStageId); }
+        /** True when this member is linked to at least one Stage (the union gate applies). */
+        public boolean isStageLinked() { return !stageIds.isEmpty(); }
+
+        public Member withWeight(int newWeight) { return new Member(id, newWeight, gate, stageIds); }
+        public Member withGate(TemplateGate newGate) { return new Member(id, weight, newGate, stageIds); }
+        public Member withStages(List<String> newStageIds) { return new Member(id, weight, gate, newStageIds); }
+
+        /**
+         * New member with {@code stageId} toggled — added (appended) when absent, removed when
+         * present. Blank / null id is a no-op. Order of the remaining links is preserved.
+         */
+        public Member withStageToggled(String stageId) {
+            if (stageId == null) return this;
+            String s = stageId.trim().toLowerCase(Locale.ROOT);
+            if (s.isEmpty()) return this;
+            List<String> next = new ArrayList<>(stageIds);
+            if (!next.remove(s)) next.add(s);
+            return new Member(id, weight, gate, next);
+        }
+
+        private static List<String> normalizeStages(List<String> in) {
+            if (in == null || in.isEmpty()) return Collections.emptyList();
+            java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>();
+            for (String s : in) {
+                if (s == null) continue;
+                String n = s.trim().toLowerCase(Locale.ROOT);
+                if (!n.isEmpty()) out.add(n);
+            }
+            return List.copyOf(out);
+        }
     }
 
     public CarriageContentsGroup {
@@ -210,10 +243,11 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
             JsonObject entry = new JsonObject();
             entry.addProperty("id", m.id());
             entry.addProperty("weight", m.weight());
-            // Non-default gate fields (minLevel/maxLevel/phases) + optional Stage link — omitted when
-            // the member is ungated, so v1-shaped members round-trip byte-identically.
+            // Non-default gate fields (minLevel/maxLevel/phases) + optional Stage link(s) — omitted
+            // when the member is ungated, so v1-shaped members round-trip byte-identically. A single
+            // link still serialises as the scalar "stage"; two or more become a "stages" array.
             TemplateWeightCodec.writeGateFields(entry, m.gate());
-            if (m.stageId() != null) entry.addProperty(TemplateWeightCodec.K_STAGE, m.stageId());
+            TemplateWeightCodec.writeStages(entry, m.stageIds());
             arr.add(entry);
         }
         o.add("variants", arr);
@@ -261,7 +295,7 @@ public record CarriageContentsGroup(int selfWeight, List<Member> members) {
                 }
             }
             out.add(new Member(norm, weight,
-                TemplateWeightCodec.parseGate(entry), TemplateWeightCodec.parseStage(entry)));
+                TemplateWeightCodec.parseGate(entry), TemplateWeightCodec.parseStages(entry)));
         }
         return new CarriageContentsGroup(selfWeight, out);
     }

@@ -13,11 +13,13 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.tags.EnchantmentTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.component.SuspiciousStewEffects;
 import net.minecraft.world.item.crafting.AbstractCookingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -111,6 +113,9 @@ public final class ContainerContentsRoller {
     /** Salt for the per-50-carriage potion-form roll (drinkable / splash / lingering). */
     private static final long SALT_POTION_EPOCH_FORM = 0xF0E1F0E1CAFED00DL;
 
+    /** Salt for the per-50-carriage suspicious-stew effect roll (decorrelated from potions/arrows). */
+    private static final long SALT_STEW_EPOCH_EFFECT = 0x57EDEFEC70FFEE55L;
+
     /**
      * BE NBT key on {@code decorated_pot} that holds the single contained
      * {@link ItemStack}. Matches the vanilla 1.21.1
@@ -130,6 +135,9 @@ public final class ContainerContentsRoller {
     // a decorrelating salt:
     //   • tipped arrows                       → ARROW_EFFECT_TIERS  (offensive)
     //   • drinkable / splash / lingering pots → POTION_EFFECT_TIERS (broad)
+    // Suspicious stews (below, STEW_EFFECTS) are the one exception: vanilla
+    // stew effects don't escalate with anything, so they skip the
+    // level/tier machinery and roll uniformly from a single flat pool.
     // ------------------------------------------------------------------
 
     /**
@@ -205,6 +213,33 @@ public final class ContainerContentsRoller {
     static List<List<ResourceLocation>> potionEffectTiersView() {
         return POTION_EFFECT_TIERS;
     }
+
+    /**
+     * The complete, flat set of vanilla {@link MobEffect}s a suspicious stew
+     * can normally carry — exactly the 9 distinct effects vanilla's own
+     * flowers assign via {@code Blocks} (dandelion/blue_orchid → saturation,
+     * poppy/torchflower → night_vision, allium → fire_resistance,
+     * azure_bluet → blindness, the four tulips → weakness,
+     * oxeye_daisy → regeneration, cornflower → jump_boost,
+     * lily_of_the_valley → poison, wither_rose → wither). Unlike
+     * {@link #POTION_EFFECT_TIERS} there is no escalation by distance
+     * travelled — vanilla suspicious stew effects don't scale with anything,
+     * they're just "whichever flower it was mixed with" — so every
+     * container-rolled stew, anywhere on the train, picks uniformly from this
+     * whole set.
+     */
+    private static final List<ResourceLocation> STEW_EFFECTS = tierIds(
+        "saturation", "night_vision", "fire_resistance", "blindness",
+        "weakness", "regeneration", "jump_boost", "poison", "wither"
+    );
+
+    /** Test seam: read-only view of the configured stew-effect pool. */
+    static List<ResourceLocation> stewEffectsView() {
+        return STEW_EFFECTS;
+    }
+
+    /** Flat duration applied to every rolled stew effect, in ticks (400 = 20s). */
+    private static final int STEW_EFFECT_DURATION_TICKS = 400;
 
     private static List<ResourceLocation> tierIds(String... potionPaths) {
         List<ResourceLocation> ids = new ArrayList<>(potionPaths.length);
@@ -765,6 +800,11 @@ public final class ContainerContentsRoller {
         // form differs from the found item, so reassign.
         stack = applyEpochPotionEffect(stack, item, localPos, worldSeed, carriageIndex, slot, registries);
 
+        // Otherwise-effectless suspicious stews found in loot get a real
+        // potion effect. Unlike potions there's no alternate "form" to swap
+        // to, so this mutates stack in place rather than reassigning.
+        applyEpochStewEffect(stack, item, localPos, worldSeed, carriageIndex, slot, registries);
+
         long nameSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_NAME);
         RandomSource nameRng = RandomSource.create(nameSeed);
         NameComposer.applyName(stack, nameRng);
@@ -882,6 +922,51 @@ public final class ContainerContentsRoller {
         return result;
     }
 
+    /**
+     * Give an otherwise-effectless {@code minecraft:suspicious_stew} found in
+     * loot a real {@link net.minecraft.world.item.component.SuspiciousStewEffects}
+     * component. No-op for any other item, and never overwrites a stew that
+     * already carries an effect. Unlike {@link #applyEpochPotionEffect} there's
+     * no alternate item "form" to swap to, so this mutates {@code stack} in
+     * place rather than returning a new one.
+     *
+     * <p>Unlike the arrow/potion epoch effects, this does <b>not</b> escalate
+     * with travelled distance — vanilla suspicious stews don't scale with
+     * anything, so every stew picks uniformly from the full {@link #STEW_EFFECTS}
+     * pool, per-instance random (keyed on the full position) so a fixed
+     * chest/slot stays deterministic across reloads.</p>
+     */
+    static void applyEpochStewEffect(ItemStack stack, Item item, BlockPos localPos,
+                                     long worldSeed, int carriageIndex, int slot,
+                                     HolderLookup.Provider registries) {
+        if (item != Items.SUSPICIOUS_STEW) return;
+        if (!isEffectlessStew(stack)) return; // leave real-effect stews alone
+
+        List<Holder<MobEffect>> pool = resolveMobEffects(STEW_EFFECTS, registries);
+        if (pool.isEmpty()) return;
+
+        int idx = stewEffectIndex(localPos, worldSeed, carriageIndex, slot, pool.size());
+        Holder<MobEffect> effect = pool.get(idx);
+        stack.set(DataComponents.SUSPICIOUS_STEW_EFFECTS,
+            new SuspiciousStewEffects(List.of(new SuspiciousStewEffects.Entry(effect, STEW_EFFECT_DURATION_TICKS))));
+
+        if (DebugFlags.logLootRolls()) {
+            LOGGER.info("[DT-stew] effect={} carriageIdx={}",
+                effect.unwrapKey().map(k -> k.location().toString()).orElse("?"),
+                carriageIndex);
+        }
+    }
+
+    /**
+     * True when {@code stack} carries no suspicious-stew effect — absent
+     * component, or a component with an empty effect list. A stew with any
+     * real effect returns false so it is never overwritten.
+     */
+    private static boolean isEffectlessStew(ItemStack stack) {
+        SuspiciousStewEffects existing = stack.get(DataComponents.SUSPICIOUS_STEW_EFFECTS);
+        return existing == null || existing.effects().isEmpty();
+    }
+
     /** True for the three drinkable / splash / lingering potion item types. */
     private static boolean isPotionFormItem(Item item) {
         return item == Items.POTION
@@ -997,6 +1082,38 @@ public final class ContainerContentsRoller {
         List<Holder<Potion>> out = new ArrayList<>(ids.size());
         for (ResourceLocation id : ids) {
             lookup.get().get(ResourceKey.create(Registries.POTION, id)).ifPresent(out::add);
+        }
+        return out;
+    }
+
+    // ---- Stew seams (StewEpochEffectTest) ---------------------------------
+
+    /**
+     * Per-instance random index into the full {@link #STEW_EFFECTS} pool —
+     * keyed on the full {@code (localPos, worldSeed, carriageIndex, slot)} so
+     * stews anywhere on the train vary, while a fixed chest/slot stays
+     * deterministic across reloads.
+     */
+    static int stewEffectIndex(BlockPos localPos, long worldSeed, int carriageIndex,
+                               int slot, int poolSize) {
+        if (poolSize <= 1) return 0;
+        long state = mix(localPos, worldSeed, carriageIndex, slot, SALT_STEW_EPOCH_EFFECT);
+        return (int) ((state & 0x7FFFFFFFFFFFFFFFL) % poolSize);
+    }
+
+    /**
+     * Resolve mob-effect ids to holders via the {@code registries} provider
+     * (mirroring {@link #resolvePotions}), dropping any that don't resolve so a
+     * stripped/modded registry degrades to a shorter pool rather than crashing.
+     */
+    private static List<Holder<MobEffect>> resolveMobEffects(List<ResourceLocation> ids,
+                                                              HolderLookup.Provider registries) {
+        Optional<HolderLookup.RegistryLookup<MobEffect>> lookup =
+            registries.lookup(Registries.MOB_EFFECT);
+        if (lookup.isEmpty()) return List.of();
+        List<Holder<MobEffect>> out = new ArrayList<>(ids.size());
+        for (ResourceLocation id : ids) {
+            lookup.get().get(ResourceKey.create(Registries.MOB_EFFECT, id)).ifPresent(out::add);
         }
         return out;
     }

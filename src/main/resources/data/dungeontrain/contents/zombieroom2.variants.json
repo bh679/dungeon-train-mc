@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 8,
+  "variants": {
+    "4,0,2": [{"entity": "minecraft:zombie", "difficulty": {"min": 1, "max": "all"}}, {"entity": "minecraft:zombie_villager", "difficulty": {"min": 1, "max": "all"}}, {"entity": "minecraft:husk", "difficulty": {"min": 2, "max": "all"}}],
+    "2,0,2": [{"entity": "minecraft:zombie", "difficulty": {"min": 4, "max": "all"}}, {"entity": "minecraft:zombie_villager", "difficulty": {"min": 4, "max": "all"}}, {"entity": "minecraft:husk", "difficulty": {"min": 5, "max": "all"}}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 5, "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,0,0": ["minecraft:stone_pressure_plate[powered=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 3, "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,0,4": ["minecraft:stone_pressure_plate[powered=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 3, "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,0,2": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:zombie_villager"}, {"entity": "minecraft:husk"}]
+  }
+}

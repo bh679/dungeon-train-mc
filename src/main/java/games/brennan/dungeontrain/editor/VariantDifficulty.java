@@ -29,12 +29,11 @@ public record VariantDifficulty(int min, int max) {
     public static final int ALL = -1;
 
     /**
-     * Editor cap for a finite {@code min}/{@code max}. Matches
-     * {@code DungeonTrainConfig.MAX_PROGRESSION_LEVEL_DELAY} so the authoring
-     * range lines up with the rest of the difficulty UI; beyond it, authors
-     * use {@link #ALL}.
+     * Editor cap for a finite {@code min}/{@code max}, aligned with
+     * {@code TemplateGate.MAX_LEVEL} so the mob-band authoring range lines up
+     * with the stage / template gate UI; beyond it, authors use {@link #ALL}.
      */
-    public static final int MAX_TIER = 100;
+    public static final int MAX_TIER = 1000;
 
     /** Default band: {@code min} 0, {@code max} {@link #ALL} — eligible at every tier. */
     public static final VariantDifficulty NONE = new VariantDifficulty(0, ALL);

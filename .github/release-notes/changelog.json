@@ -3220,6 +3220,142 @@
       "released": true,
       "released_in": "v0.392.0",
       "released_at": "2026-07-07T14:54:34Z"
+    },
+    {
+      "id": "dev-messages-per-thread",
+      "version": "0.393.0",
+      "type": "fix",
+      "title": "Developer messages now stay in your thread",
+      "summary": "A reply from the developer now reaches only the player whose Discord thread it was posted in \u2014 previously every player who had accepted developer messages saw it. Messages the developer posts outside a player's thread no longer appear in-game.",
+      "highlights": [],
+      "pr": 649,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.393.0",
+      "released_at": "2026-07-08T04:06:37Z"
+    },
+    {
+      "id": "suspicious-stew-loot-effect-fix",
+      "version": "0.394.0",
+      "type": "fix",
+      "title": "Suspicious stew from loot now has an effect",
+      "summary": "Suspicious stew found in chests, decorated pots, and other loot containers previously did nothing when eaten. It now grants a real effect, just like a suspicious stew you'd craft yourself.",
+      "highlights": [
+        "Container-found suspicious stew now applies a potion effect when eaten",
+        "Effect is randomly chosen from the same set a crafted suspicious stew can have",
+        "Thanks to generalefficiency's Twitch stream for catching this one!"
+      ],
+      "pr": 650,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.394.0",
+      "released_at": "2026-07-08T04:42:12Z"
+    },
+    {
+      "id": "pacifist-advancement-chain",
+      "version": "0.394.0",
+      "type": "feat",
+      "title": "Pacifist advancement chain (100/250/1000 carriages)",
+      "summary": "Three new advancements reward a peaceful ride \u2014 reach 100, then 250, then 1,000 carriages in a single life without dealing any damage to anything. Thanks to generalefficiency's Twitch stream for the idea!",
+      "highlights": [
+        "Pacifist \u2014 100 carriages, zero damage dealt",
+        "Turn the Other Cheek \u2014 250 carriages, zero damage dealt",
+        "Peace Train \u2014 1,000 carriages, zero damage dealt"
+      ],
+      "pr": 651,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.394.0",
+      "released_at": "2026-07-08T04:42:12Z"
+    },
+    {
+      "id": "nether-enemies-and-mudbrick-parts",
+      "version": "0.395.0",
+      "type": "content",
+      "title": "New Nether enemies + mud brick oak decor parts",
+      "summary": "Three new enemies join the fight: wither skeletons and blazes now stalk Nether-phase carriages, and a rebalanced bogged variant adds more skeletal archer variety throughout the train. A new mud-brick oak part set (doors, floors, roofs, walls) is now available across all carriage templates for richer room decoration.",
+      "highlights": [
+        "New wither skeleton enemy (Nether-phase carriages)",
+        "New blaze enemy (Nether-phase carriages)",
+        "New bogged variant with rebalanced spawn weights",
+        "New mud brick oak part set (doors/floor/roof/walls) across all templates"
+      ],
+      "pr": 652,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.395.0",
+      "released_at": "2026-07-08T06:30:38Z"
+    },
+    {
+      "id": "editor-menus-toggle-all-templates",
+      "version": "0.396.0",
+      "type": "fix",
+      "title": "Editor Menus toggle now works in every template",
+      "summary": "The X menu's Editor Menus toggle (hides the in-world editor help board, type list, and plot labels) previously only showed up while editing a carriage. It now appears whenever you're editing any template \u2014 carriages, contents, tracks, architecture, or individual parts.",
+      "highlights": [],
+      "pr": 654,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.397.0",
+      "released_at": "2026-07-08T09:39:04Z"
+    },
+    {
+      "id": "random-book-hover-lock",
+      "version": "0.397.0",
+      "type": "fix",
+      "title": "Random books no longer reshuffle their story on reselect",
+      "summary": "Random books found in chests could quietly swap to a different title and story every time you scrolled past them in your hotbar. They now lock in their story the first time you pick one up.",
+      "highlights": [],
+      "pr": 655,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.397.0",
+      "released_at": "2026-07-08T09:39:04Z"
+    },
+    {
+      "id": "desert-seating-zombie-rooms",
+      "version": "0.397.0",
+      "type": "content",
+      "title": "Desert seating variants + new zombie rooms",
+      "summary": "Desert-stage carriages gained new sand-themed library and seating decor, and the enemies pool grew three new zombie-room encounters.",
+      "highlights": [
+        "New sandlib desert-stage library decor",
+        "New sand_seat_thin desert seating variant",
+        "Three new zombie room encounters: zombieroom2, antizombiesroom, zombiejail"
+      ],
+      "pr": 656,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.397.0",
+      "released_at": "2026-07-08T09:39:04Z"
+    },
+    {
+      "id": "quartz-obsidian-parts-desert-temple",
+      "version": "0.398.0",
+      "type": "feat",
+      "title": "Quartz & obsidian carriage parts + a desert temple",
+      "summary": "New quartz and obsidian building parts now dress the train's carriages in the mid-progression bands, and a desert temple room can appear among the train's contents.",
+      "highlights": [
+        "New quartz & obsidian floors, walls, roofs and a door, wired across several carriage templates",
+        "New desert temple content room"
+      ],
+      "pr": 658,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.398.0",
+      "released_at": "2026-07-08T10:29:23Z"
+    },
+    {
+      "id": "stage-difficulty-band-cap-1000",
+      "version": "0.398.0",
+      "type": "feat",
+      "title": "Editor difficulty bands go up to level 1000",
+      "summary": "In the in-game editor, Stage, template, and mob difficulty-band levels can now be set up to 1000 (previously capped at 100), so content can be gated for very high difficulty tiers.",
+      "highlights": [],
+      "date": "2026-07-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

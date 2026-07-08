@@ -66,6 +66,21 @@
       "name": "mudbricks",
       "weight": 1,
       "stage": "mud"
+    },
+    {
+      "name": "mudbricks_wood_oak",
+      "weight": 1,
+      "stage": "wood_oak"
+    },
+    {
+      "name": "quartz_obsidian",
+      "weight": 10,
+      "stage": "obsidian"
+    },
+    {
+      "name": "obsidian_obsidian",
+      "weight": 1,
+      "stage": "obsidian"
     }
   ],
   "walls": [
@@ -183,6 +198,35 @@
       "weight": 1,
       "sideMode": "one",
       "stage": "mud"
+    },
+    {
+      "name": "mudwindows_wood_oak",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "wood_oak"
+    },
+    {
+      "name": "mudbricks_wood_oak",
+      "weight": 1,
+      "sideMode": "one",
+      "stage": "wood_oak"
+    },
+    {
+      "name": "quartz_obsidian",
+      "weight": 1,
+      "sideMode": "one",
+      "stage": "obsidian"
+    },
+    {
+      "name": "quartzwindow_obsidian",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "obsidian"
+    },
+    {
+      "name": "quartzwindow2_obsidian",
+      "weight": 1,
+      "stage": "obsidian"
     }
   ],
   "roof": [
@@ -291,6 +335,31 @@
       "name": "mudopen",
       "weight": 4,
       "stage": "mud"
+    },
+    {
+      "name": "mud_wood_oak",
+      "weight": 1,
+      "stage": "wood_oak"
+    },
+    {
+      "name": "mudopen_wood_oak",
+      "weight": 4,
+      "stage": "wood_oak"
+    },
+    {
+      "name": "quartz_obsidian",
+      "weight": 10,
+      "stage": "obsidian"
+    },
+    {
+      "name": "quartswindow_obsidian",
+      "weight": 30,
+      "stage": "obsidian"
+    },
+    {
+      "name": "quartsopen_obsidian",
+      "weight": 1,
+      "stage": "obsidian"
     }
   ],
   "doors": [
@@ -364,6 +433,16 @@
       "name": "mud",
       "weight": 1,
       "stage": "mud"
+    },
+    {
+      "name": "mud_wood_oak",
+      "weight": 1,
+      "stage": "wood_oak"
+    },
+    {
+      "name": "quartz_obsidian",
+      "weight": 1,
+      "stage": "obsidian"
     }
   ]
 }

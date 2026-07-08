@@ -1,10 +1,10 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "selfWeight": 10,
   "variants": [
     {
       "id": "cagedzombie",
-      "weight": 10
+      "weight": 8
     },
     {
       "id": "piglin",
@@ -16,7 +16,7 @@
     },
     {
       "id": "zombieroom",
-      "weight": 10
+      "weight": 7
     },
     {
       "id": "skeleton",
@@ -44,7 +44,7 @@
     },
     {
       "id": "bogged",
-      "weight": 5
+      "weight": 3
     },
     {
       "id": "zombiesrooms",
@@ -86,6 +86,37 @@
       "id": "evoker2",
       "weight": 3,
       "minLevel": 30
+    },
+    {
+      "id": "witherskel",
+      "weight": 10,
+      "stages": [
+        "nether",
+        "quartz"
+      ]
+    },
+    {
+      "id": "blaze",
+      "weight": 4,
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "id": "bogged2",
+      "weight": 2
+    },
+    {
+      "id": "zombieroom2",
+      "weight": 3
+    },
+    {
+      "id": "antizombiesroom",
+      "weight": 3
+    },
+    {
+      "id": "zombiejail",
+      "weight": 2
     }
   ]
 }
