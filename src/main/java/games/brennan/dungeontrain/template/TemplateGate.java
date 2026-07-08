@@ -37,7 +37,7 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
      * {@code VariantDifficulty.MAX_TIER} so the authoring range lines up with the rest of the
      * difficulty UI. Beyond it, authors use {@link #ALL}.
      */
-    public static final int MAX_LEVEL = 100;
+    public static final int MAX_LEVEL = 1000;
 
     /** Every phase — the default phase set. Unmodifiable. */
     public static final Set<TrainPhase> ALL_PHASES =

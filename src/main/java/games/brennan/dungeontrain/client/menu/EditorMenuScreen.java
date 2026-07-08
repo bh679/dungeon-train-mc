@@ -166,10 +166,10 @@ public final class EditorMenuScreen implements MenuScreen {
                 int minLv = EditorStatusHudOverlay.minLevel();
                 int maxLv = EditorStatusHudOverlay.maxLevel();
                 CommandMenuEntry minRow = levelTripleFor(category, modelId, modelName, "minlevel",
-                    "Min Lv (" + minLv + ")", "0-100");
+                    "Min Lv (" + minLv + ")", "0-1000");
                 if (minRow != null) out.add(minRow);
                 CommandMenuEntry maxRow = levelTripleFor(category, modelId, modelName, "maxlevel",
-                    "Max Lv (" + (maxLv < 0 ? "all" : Integer.toString(maxLv)) + ")", "-1..100");
+                    "Max Lv (" + (maxLv < 0 ? "all" : Integer.toString(maxLv)) + ")", "-1..1000");
                 if (maxRow != null) out.add(maxRow);
                 out.add(new CommandMenuEntry.DrillIn(
                     "Phases", new PhaseSelectScreen(category, modelId, modelName)));
