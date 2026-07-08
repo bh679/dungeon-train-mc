@@ -237,6 +237,7 @@ public final class NarrativeBookEvents {
             // First time the world has seen this exact tuple — mark and let
             // the read flow proceed unchanged.
             data.markRandomBookSeen(id.basename(), id.variantIndex());
+            data.markRandomBookEverRead(id.basename()); // monotonic — feeds shared-book loot chance
             LOGGER.info("[DungeonTrain] RandomBook: world marked {} variant {} seen (by {})",
                 id.basename(), id.variantIndex(), player.getName().getString());
             games.brennan.dungeontrain.event.AchievementEvents.notifyStoryProgress(player);
@@ -253,6 +254,7 @@ public final class NarrativeBookEvents {
         if (alt.isPresent()) {
             RandomBookFactory.replaceStackContent(stack, alt.get());
             data.markRandomBookSeen(alt.get().book().basename(), alt.get().variantIndex());
+            data.markRandomBookEverRead(alt.get().book().basename()); // monotonic — feeds loot chance
             LOGGER.info("[DungeonTrain] RandomBook: swapped seen {} v{} -> {} v{} (held by {})",
                 id.basename(), id.variantIndex(),
                 alt.get().book().basename(), alt.get().variantIndex(),

@@ -45,8 +45,12 @@ import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.adventureitemstats.api.StatsModifier;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.event.SharedBookGate;
+import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.RandomBookFactory;
+import games.brennan.dungeontrain.narrative.RandomBookRegistry;
 import games.brennan.dungeontrain.narrative.SharedBookPool;
+import net.minecraft.server.MinecraftServer;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import games.brennan.dungeontrain.registry.ModItems;
 import org.slf4j.Logger;
 
@@ -704,12 +708,13 @@ public final class ContainerContentsRoller {
         // slot (fails isCookable + isFuel). Cosmetically odd but harmless.
         if (item == ModItems.RANDOM_BOOK.get()) {
             // Community shared-books DISCOVERY: when the server has opted in and the per-roll coin-flip
-            // hits sharedBookLootChance, try substituting an approved community book from the relay pool
-            // (crediting its author). Falls back to the local narrative pool when discovery is off, the
-            // chance misses, or the shared pool is empty/offline — so the local behaviour is unchanged
-            // whenever the feature can't produce a book.
+            // hits the read-scaled chance (0% until hardcoded random books get read, up to the config
+            // max at 100% read), substitute an approved community book from the relay pool (crediting
+            // its author). Falls back to the local narrative pool when discovery is off, the chance
+            // misses, or the shared pool is empty/offline — local behaviour unchanged whenever the
+            // feature can't produce a book.
             if (SharedBookGate.canDiscover()) {
-                double chance = DungeonTrainConfig.getSharedBookLootChance();
+                double chance = sharedBookLootChanceForWorld();
                 if (chance > 0.0 && rollSharedBookChance(chance, localPos, worldSeed, carriageIndex, slot)) {
                     long sharedSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_SHARED_BOOK_PICK);
                     ItemStack shared = SharedBookPool.rollShared(sharedSeed);
@@ -1024,6 +1029,26 @@ public final class ContainerContentsRoller {
         // Map the 63-bit magnitude to [0,1): divide by 2^63.
         double roll = (state & 0x7FFFFFFFFFFFFFFFL) / (double) (1L << 63);
         return roll < chance;
+    }
+
+    /**
+     * The effective shared-community-book loot chance for the current world: the configured MAX
+     * ({@link DungeonTrainConfig#getSharedBookLootMaxChance()}) scaled by the fraction of hardcoded
+     * random books the world has ever read — 0% at none read, rising to the max once all are read, so
+     * community books surface only as the hand-authored pool is exhausted. Reads the world's monotonic
+     * ever-read count via the running server's overworld (loot rolls have no {@code Level} in scope).
+     * Returns 0 (→ purely local pool) when there is no server/world yet or the registry is empty.
+     */
+    private static double sharedBookLootChanceForWorld() {
+        double max = DungeonTrainConfig.getSharedBookLootMaxChance();
+        if (max <= 0.0) return 0.0;
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return 0.0;
+        int total = RandomBookRegistry.count();
+        if (total <= 0) return 0.0;
+        int read = NarrativeProgressData.get(server.overworld()).distinctRandomBooksEverRead();
+        double fraction = Math.min(1.0, (double) read / (double) total);
+        return max * fraction;
     }
 
     /** Uniform integer in {@code [0, max]} (inclusive), deterministically seeded. */
