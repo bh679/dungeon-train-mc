@@ -48,6 +48,18 @@ public final class EditorMenuScreen implements MenuScreen {
         }
         out.add(new CommandMenuEntry.DrillIn("Enter", new EnterCategoryMenuScreen()));
 
+        // Editor Menus — master toggle for the world-space editor menus:
+        // drives the auto-opening part-position menu's persistent flag and,
+        // when turned off, also closes any open tap-to-open block-variant /
+        // container-contents menus. Available in every template category —
+        // the flag it reads is a per-player state, not scoped to carriages.
+        boolean pmEnabled = EditorStatusHudOverlay.isEditorMenusVisible();
+        out.add(new CommandMenuEntry.Toggle(
+            "Editor Menus", pmEnabled,
+            "dungeontrain editor editormenus on",
+            "dungeontrain editor editormenus off"
+        ));
+
         // Parts have their own Save / Reset commands — `dungeontrain save`
         // dispatches via EditorCategory.locate which doesn't see part plots,
         // so route through the part-aware /editor part subcommands instead.
@@ -120,26 +132,14 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry renameEntry = renameEntryFor(category, model);
         if (renameEntry != null) out.add(renameEntry);
 
-        // Editor Menus — carriage variants only. Master toggle for the
-        // world-space editor menus: drives the auto-opening part-position
-        // menu's persistent flag and, when turned off, also closes any open
-        // tap-to-open block-variant / container-contents menus.
-        if ("carriages".equals(category)) {
-            boolean pmEnabled = EditorStatusHudOverlay.isEditorMenusVisible();
-            out.add(new CommandMenuEntry.Toggle(
-                "Editor Menus", pmEnabled,
-                "dungeontrain editor editormenus on",
-                "dungeontrain editor editormenus off"
-            ));
-            // Contents — drilldown listing every registered content with a
-            // per-row red/green toggle so the author can exclude specific
-            // contents from this carriage's spawn pool. Only shown when a
-            // concrete variant id is in scope (modelId non-empty).
-            if (modelId != null && !modelId.isEmpty()) {
-                out.add(new CommandMenuEntry.DrillIn(
-                    "Contents",
-                    new CarriageContentsAllowScreen(modelId)));
-            }
+        // Contents — drilldown listing every registered content with a
+        // per-row red/green toggle so the author can exclude specific
+        // contents from this carriage's spawn pool. Only shown when a
+        // concrete variant id is in scope (modelId non-empty).
+        if ("carriages".equals(category) && modelId != null && !modelId.isEmpty()) {
+            out.add(new CommandMenuEntry.DrillIn(
+                "Contents",
+                new CarriageContentsAllowScreen(modelId)));
         }
 
         // Weight — Triple row: [-] / Weight (N) / [+] for every category that
