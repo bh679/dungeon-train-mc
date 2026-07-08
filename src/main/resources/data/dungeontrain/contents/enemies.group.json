@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "selfWeight": 10,
   "variants": [
     {
@@ -89,9 +89,10 @@
     },
     {
       "id": "witherskel",
-      "weight": 4,
-      "phases": [
-        "NETHER"
+      "weight": 10,
+      "stages": [
+        "nether",
+        "quartz"
       ]
     },
     {
