@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.discord.SharedBookReporter;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
+import games.brennan.dungeontrain.narrative.SharedBookMessage;
 import games.brennan.dungeontrain.narrative.SharedBookTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.FilteredText;
@@ -76,6 +77,9 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             ItemStack bookStack = BookFactory.buildPlainBook(titleStr, author, pageStrs);
             SharedBookTag.stamp(bookStack);
             serverPlayer.drop(bookStack, /*dropAround*/ false, /*includeThrowerName*/ false);
+
+            // A gray "sent into the void" chat line as it burns — same style as the offline @dev reply.
+            serverPlayer.sendSystemMessage(SharedBookMessage.random(serverPlayer.getRandom()));
 
             ci.cancel();
             DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] SharedBook: {} signed a book — uploaded + dropped to burn",
