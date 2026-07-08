@@ -86,6 +86,13 @@
       "id": "evoker2",
       "weight": 3,
       "minLevel": 30
+    },
+    {
+      "id": "witherskel",
+      "weight": 4,
+      "phases": [
+        "NETHER"
+      ]
     }
   ]
 }
