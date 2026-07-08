@@ -25,7 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * player's in-game chat. The message is always independently available in the title-screen menu
  * chat (the relay poll — see {@code client/chat}); this only governs the <em>in-game</em> surface.
  *
- * <p>Flow, per online player, when a Developer message arrives (via
+ * <p>The message is scoped to the single player whose Discord thread it was posted in — never
+ * broadcast to everyone. Flow, for that player, when a Developer message arrives (via
  * {@link games.brennan.dungeontrain.compat.DiscordInboundBridge} → {@link #onDevMessage}):</p>
  * <ul>
  *   <li><b>Consent valid</b> → deliver the message straight to in-game chat.</li>
@@ -131,21 +132,27 @@ public final class DevMessageConsent {
     }
 
     /**
-     * A relayed Developer message arrived. Called from the inbound Discord seam on a network
-     * thread; hops to the server thread and, per online player, delivers it or gates it behind the
-     * consent prompt.
+     * A relayed Developer message arrived for the player whose Discord thread it was posted in.
+     * Called from the inbound Discord seam on a network thread; hops to the server thread and
+     * delivers the message to that one player — or gates it behind the consent prompt. It is never
+     * shown to any other player.
+     *
+     * @param owner   the Minecraft UUID of the player whose thread the message is in. {@code null}
+     *                when the message isn't anchored to a player's thread (e.g. a top-level channel
+     *                post) — such a message is shown to nobody in-game.
+     * @param content the message text.
      */
-    public static void onDevMessage(String content) {
-        if (content == null || content.isBlank()) return;
+    public static void onDevMessage(UUID owner, String content) {
+        if (owner == null || content == null || content.isBlank()) return;
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return; // at the main menu there is no in-game surface; menu chat has it
         server.execute(() -> {
-            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                if (isValid(player.getUUID())) {
-                    player.sendSystemMessage(deliveredLine(content));
-                } else {
-                    holdAndPrompt(player, content);
-                }
+            ServerPlayer player = server.getPlayerList().getPlayer(owner);
+            if (player == null) return; // the thread's owner isn't online here; the menu chat still carries it
+            if (isValid(player.getUUID())) {
+                player.sendSystemMessage(deliveredLine(content));
+            } else {
+                holdAndPrompt(player, content);
             }
         });
     }

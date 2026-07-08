@@ -3222,6 +3222,19 @@
       "released_at": "2026-07-07T14:54:34Z"
     },
     {
+      "id": "dev-messages-per-thread",
+      "version": "0.393.0",
+      "type": "fix",
+      "title": "Developer messages now stay in your thread",
+      "summary": "A reply from the developer now reaches only the player whose Discord thread it was posted in \u2014 previously every player who had accepted developer messages saw it. Messages the developer posts outside a player's thread no longer appear in-game.",
+      "highlights": [],
+      "pr": 649,
+      "date": "2026-07-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "pacifist-advancement-chain",
       "version": "0.393.0",
       "type": "feat",
