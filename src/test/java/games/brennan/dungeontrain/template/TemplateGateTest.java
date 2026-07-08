@@ -43,7 +43,7 @@ final class TemplateGateTest {
     @DisplayName("constructor clamps and enforces min<=max")
     void clamps() {
         assertEquals(0, new TemplateGate(-5, 10, null).minLevel());
-        assertEquals(TemplateGate.MAX_LEVEL, new TemplateGate(200, TemplateGate.ALL, null).minLevel());
+        assertEquals(TemplateGate.MAX_LEVEL, new TemplateGate(TemplateGate.MAX_LEVEL + 100, TemplateGate.ALL, null).minLevel());
         // min > finite max collapses min down to max (mirrors VariantDifficulty)
         TemplateGate g = new TemplateGate(20, 10, null);
         assertEquals(10, g.minLevel());

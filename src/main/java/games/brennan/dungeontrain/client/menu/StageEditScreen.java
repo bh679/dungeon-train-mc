@@ -37,8 +37,8 @@ public final class StageEditScreen implements MenuScreen {
         int phaseMask = s == null ? 0b1111 : s.phaseMask();
 
         // Min / Max Diff-Level steppers — [-] / value (typeable) / [+].
-        out.add(levelTriple("minlevel", "Min Lv (" + minLevel + ")", "0-100"));
-        out.add(levelTriple("maxlevel", "Max Lv (" + (maxLevel < 0 ? "all" : Integer.toString(maxLevel)) + ")", "-1..100"));
+        out.add(levelTriple("minlevel", "Min Lv (" + minLevel + ")", "0-1000"));
+        out.add(levelTriple("maxlevel", "Max Lv (" + (maxLevel < 0 ? "all" : Integer.toString(maxLevel)) + ")", "-1..1000"));
 
         // Dimension toggles — plain click flips one, shift-click "toggle all but that one".
         for (int i = 0; i < PHASE_TOKENS.length; i++) {
