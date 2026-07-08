@@ -7,6 +7,8 @@ import com.google.gson.JsonPrimitive;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
@@ -36,6 +38,9 @@ public final class TemplateWeightCodec {
     public static final String K_PHASES = "phases";
     /** Optional link to a named Stage (its gate becomes the entry's effective gate). Absent = Custom. */
     public static final String K_STAGE = "stage";
+    /** Optional array of Stage links (sub-variant members only) — the union of gates applies. See
+     * {@link #parseStages}/{@link #writeStages}. A single link still serialises as {@link #K_STAGE}. */
+    public static final String K_STAGES = "stages";
     /** String accepted (and never emitted — absence means the same) for {@link TemplateGate#ALL}. */
     public static final String MAX_ALL = "all";
 
@@ -69,6 +74,45 @@ public final class TemplateWeightCodec {
             return s.isEmpty() ? null : s;
         }
         return null;
+    }
+
+    /**
+     * All Stage links on an entry — merges the legacy single {@link #K_STAGE} string and the multi
+     * {@link #K_STAGES} array into one order-preserving, de-duplicated list (each id lowercased /
+     * trimmed, blanks dropped). An empty list means Custom (no link). Used by the sub-variant
+     * (contents-group member) path, which allows a member to be linked to more than one Stage; the
+     * template/parts paths keep {@link #parseStage} (single link).
+     */
+    public static List<String> parseStages(JsonObject o) {
+        LinkedHashSet<String> out = new LinkedHashSet<>();
+        String single = parseStage(o);
+        if (single != null) out.add(single);
+        JsonElement el = o.get(K_STAGES);
+        if (el != null && el.isJsonArray()) {
+            for (JsonElement e : el.getAsJsonArray()) {
+                if (e != null && e.isJsonPrimitive() && e.getAsJsonPrimitive().isString()) {
+                    String s = e.getAsString().trim().toLowerCase(Locale.ROOT);
+                    if (!s.isEmpty()) out.add(s);
+                }
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    /**
+     * Emit Stage links into {@code o}: nothing for an empty list, the legacy {@code "stage"} string
+     * for exactly one (so single-linked entries round-trip byte-identically with pre-multi files),
+     * and a {@code "stages"} array only for two or more. Inverse of {@link #parseStages}.
+     */
+    public static void writeStages(JsonObject o, List<String> stageIds) {
+        if (stageIds == null || stageIds.isEmpty()) return;
+        if (stageIds.size() == 1) {
+            o.addProperty(K_STAGE, stageIds.get(0));
+            return;
+        }
+        JsonArray arr = new JsonArray();
+        for (String s : stageIds) arr.add(s);
+        o.add(K_STAGES, arr);
     }
 
     private static Integer finiteRound(JsonElement el) {

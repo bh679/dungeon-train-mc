@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.function.IntUnaryOperator;
 
@@ -128,5 +129,66 @@ final class TemplateWeightCodecTest {
         assertEquals(5, back.gate().minLevel());
         assertEquals(30, back.gate().maxLevel());
         assertEquals(EnumSet.of(TrainPhase.NETHER), back.gate().phases());
+    }
+
+    // ---- Multi Stage links (v3 — optional "stages" array, sub-variant members) ----
+
+    @Test
+    @DisplayName("parseStages: legacy scalar 'stage' reads as a one-element list")
+    void parseStagesFromLegacyScalar() {
+        JsonObject o = JsonParser.parseString("{\"weight\":5,\"stage\":\"Desert\"}").getAsJsonObject();
+        assertEquals(List.of("desert"), TemplateWeightCodec.parseStages(o));
+    }
+
+    @Test
+    @DisplayName("parseStages: 'stages' array parses, normalised (lower-cased), order-preserving, de-duped")
+    void parseStagesFromArray() {
+        JsonObject o = JsonParser.parseString(
+            "{\"weight\":5,\"stages\":[\"Desert\",\"nether\",\"DESERT\"]}").getAsJsonObject();
+        assertEquals(List.of("desert", "nether"), TemplateWeightCodec.parseStages(o));
+    }
+
+    @Test
+    @DisplayName("parseStages: merges scalar 'stage' and array 'stages' (scalar first), de-duped")
+    void parseStagesMergesBothKeys() {
+        JsonObject o = JsonParser.parseString(
+            "{\"weight\":5,\"stage\":\"desert\",\"stages\":[\"nether\",\"desert\"]}").getAsJsonObject();
+        assertEquals(List.of("desert", "nether"), TemplateWeightCodec.parseStages(o));
+    }
+
+    @Test
+    @DisplayName("parseStages: absent stage keys ⇒ empty list (Custom)")
+    void parseStagesAbsent() {
+        JsonObject o = JsonParser.parseString("{\"weight\":5}").getAsJsonObject();
+        assertTrue(TemplateWeightCodec.parseStages(o).isEmpty());
+    }
+
+    @Test
+    @DisplayName("writeStages: empty ⇒ no field; single ⇒ scalar 'stage'; two-plus ⇒ 'stages' array")
+    void writeStagesShape() {
+        JsonObject none = new JsonObject();
+        TemplateWeightCodec.writeStages(none, List.of());
+        assertFalse(none.has("stage"));
+        assertFalse(none.has("stages"));
+
+        JsonObject single = new JsonObject();
+        TemplateWeightCodec.writeStages(single, List.of("desert"));
+        assertEquals("desert", single.get("stage").getAsString());
+        assertFalse(single.has("stages"));
+
+        JsonObject multi = new JsonObject();
+        TemplateWeightCodec.writeStages(multi, List.of("desert", "nether"));
+        assertFalse(multi.has("stage"));
+        assertEquals(2, multi.getAsJsonArray("stages").size());
+        assertEquals("desert", multi.getAsJsonArray("stages").get(0).getAsString());
+        assertEquals("nether", multi.getAsJsonArray("stages").get(1).getAsString());
+    }
+
+    @Test
+    @DisplayName("writeStages → parseStages round-trips a multi-Stage set")
+    void writeStagesRoundTrip() {
+        JsonObject o = new JsonObject();
+        TemplateWeightCodec.writeStages(o, List.of("desert", "nether", "end"));
+        assertEquals(List.of("desert", "nether", "end"), TemplateWeightCodec.parseStages(o));
     }
 }

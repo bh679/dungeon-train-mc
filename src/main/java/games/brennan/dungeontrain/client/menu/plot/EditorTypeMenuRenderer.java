@@ -1459,7 +1459,9 @@ public final class EditorTypeMenuRenderer {
         if (rc.showStage()) {
             if (rc.linked()) {
                 double chipCX = (rc.weightR() + rowRight) / 2.0;
-                drawCenteredText(ps, buffer, font, "◆ " + variant.stageId(), chipCX, rowCY, STAGE_COLOR);
+                int extra = variant.stageIds().size() - 1;
+                String chip = "◆ " + variant.primaryStageId() + (extra > 0 ? " +" + extra : "");
+                drawCenteredText(ps, buffer, font, chip, chipCX, rowCY, STAGE_COLOR);
                 return; // no min/max/phase while linked
             }
             double stageCX = (rc.weightR() + rc.stageR()) / 2.0;

@@ -746,9 +746,10 @@ public final class VariantOverlayRenderer {
                 keyBuf.append(v.name()).append('=').append(v.weight())
                     .append('@').append(v.minLevel()).append('-').append(v.maxLevel())
                     .append('p').append(v.phaseMask())
-                    // Include the Stage link so linking / detaching re-pushes the snapshot (the chip
-                    // replaces the cells) and the stage rows refresh as stages are added/edited.
-                    .append('s').append(v.stageId()).append(',');
+                    // Include the Stage link(s) so linking / detaching / toggling re-pushes the
+                    // snapshot (the chip replaces the cells) and the stage rows refresh as stages are
+                    // added/edited. Joined so a multi-Stage member's edits change the key.
+                    .append('s').append(String.join("|", v.stageIds())).append(',');
             }
             keyBuf.append("];");
         }
@@ -1031,18 +1032,21 @@ public final class VariantOverlayRenderer {
             for (var m : groupOpt.get().members()) {
                 EditorPlotLabels.Provenance memberProv = EditorPlotLabels.provenanceOf(
                     games.brennan.dungeontrain.editor.CarriageContentsStore.fileForId(m.id()));
-                // Members carry a per-member spawn gate + optional Stage link — surface the same
-                // gate/Stage cells the top-level Contents rows use. The leading "(default)" self-row
-                // above stays weight-only (it inherits the parent's top-level gate).
+                // Members carry a per-member spawn gate + zero-or-more Stage links — surface the same
+                // gate/Stage cells the top-level Contents rows use. When linked the renderer draws a
+                // Stage chip in place of the min/max/phase cells, so the gate below is only visible
+                // for Custom (unlinked) members; for a linked member the first Stage's gate is shown
+                // behind the chip (harmless). The leading "(default)" self-row above stays weight-only.
+                String primaryStage = m.stageIds().isEmpty() ? null : m.stageIds().get(0);
                 games.brennan.dungeontrain.template.TemplateGate g =
-                    StageStore.effectiveGate(m.gate(), m.stageId());
+                    StageStore.effectiveGate(m.gate(), primaryStage);
                 rows.add(new EditorTypeMenusPacket.Variant(
                     m.id(), m.weight(),
                     g.minLevel(), g.maxLevel(),
                     games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
                     cat, m.id(), m.id(),
                     memberProv.isUser(), memberProv.isImported(),
-                    m.stageId() == null ? "" : m.stageId()));
+                    java.util.List.of(), m.stageIds()));
             }
         }
 
