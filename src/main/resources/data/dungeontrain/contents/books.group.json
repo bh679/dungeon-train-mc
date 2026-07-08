@@ -60,6 +60,12 @@
       "id": "sandlib",
       "weight": 1,
       "stage": "desert"
+    },
+    {
+      "id": "sand_seat_thin",
+      "weight": 4,
+      "maxLevel": 0,
+      "stage": "desert"
     }
   ]
 }
