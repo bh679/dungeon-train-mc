@@ -3353,9 +3353,9 @@
       "summary": "In the in-game editor, Stage, template, and mob difficulty-band levels can now be set up to 1000 (previously capped at 100), so content can be gated for very high difficulty tiers.",
       "highlights": [],
       "date": "2026-07-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.399.0",
+      "released_at": "2026-07-08T12:20:41Z"
     },
     {
       "id": "community-shared-books",
@@ -3371,9 +3371,9 @@
       ],
       "pr": 659,
       "date": "2026-07-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.399.0",
+      "released_at": "2026-07-08T12:20:41Z"
     }
   ]
 }
