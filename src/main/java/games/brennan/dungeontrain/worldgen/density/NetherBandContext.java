@@ -30,11 +30,13 @@ import net.minecraft.world.level.biome.BiomeSource;
  * @param netherCoreBiomes samples the real Nether biome (all five) for core columns the way the Nether
  *                       does — drives Nether fog/ambient/music, per-biome decoration + surface skin, and
  *                       makes the vanilla Nether decoration's biome filter pass
+ * @param endCoreBiomes  samples the real End biome (all five, swept across End-band passes) for End-core
+ *                       columns the way the End itself does — see {@link EndCoreBiomes}
  */
 public record NetherBandContext(boolean enabled, long generationSeed, int seaLevel, int worldCeiling,
                                 int netherTop, int baseRelief, WorldGenCycle cycle,
                                 BiomeSource overworldBiomeSource, NetherBandBiomeSet highlandBiomes,
-                                NetherCoreBiomes netherCoreBiomes) {
+                                NetherCoreBiomes netherCoreBiomes, EndCoreBiomes endCoreBiomes) {
 
     private static volatile NetherBandContext current;
 
