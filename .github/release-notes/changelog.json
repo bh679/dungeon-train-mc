@@ -3391,6 +3391,22 @@
       "released": true,
       "released_in": "v0.400.0",
       "released_at": "2026-07-08T13:05:28Z"
+    },
+    {
+      "id": "book-read-telemetry",
+      "version": "0.400.0",
+      "type": "feat",
+      "title": "Anonymous book-reading stats",
+      "summary": "With network features enabled, finishing a book now records how it was read \u2014 which book, how long you spent, and whether you finished \u2014 so the lore and story books can be tuned. It never includes the book's text, and nothing is sent unless you've opted into network features.",
+      "highlights": [
+        "Records opens, time spent (per book and per page), and completion \u2014 never the text.",
+        "Off unless you've enabled network features (the same consent as community shared books)."
+      ],
+      "pr": 664,
+      "date": "2026-07-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
