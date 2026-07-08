@@ -78,14 +78,18 @@ public final class SharedBookPool {
      * per {@code rollSeed} so the same chest at the same world seed always yields the same book.
      *
      * <p>The built stack carries NO {@link SharedBookTag} — a found book should read like any ordinary
-     * written book (it is not burned, and reading it never counts as a story read).</p>
+     * written book (it is not burned, and reading it never counts as a story read). It DOES carry a
+     * {@link SharedBookReadTag} pool id so a read of it can be attributed to the specific submission on
+     * the data-explorer's Books page; that tag is inert to loot / burning / progression.</p>
      */
     public static ItemStack rollShared(long rollSeed) {
         List<PoolBook> pool = snapshot; // single volatile read → consistent snapshot
         if (pool.isEmpty()) return ItemStack.EMPTY;
         int index = (int) (Long.remainderUnsigned(mix(rollSeed), pool.size()));
         PoolBook book = pool.get(index);
-        return BookFactory.buildPlainBook(book.title(), book.author(), book.pages());
+        ItemStack stack = BookFactory.buildPlainBook(book.title(), book.author(), book.pages());
+        SharedBookReadTag.stampId(stack, book.id()); // read-telemetry identity only
+        return stack;
     }
 
     /** Whether the pool currently holds any books (cheap volatile read). */
