@@ -3285,6 +3285,19 @@
       "released": true,
       "released_in": "v0.395.0",
       "released_at": "2026-07-08T06:30:38Z"
+    },
+    {
+      "id": "editor-menus-toggle-all-templates",
+      "version": "0.396.0",
+      "type": "fix",
+      "title": "Editor Menus toggle now works in every template",
+      "summary": "The X menu's Editor Menus toggle (hides the in-world editor help board, type list, and plot labels) previously only showed up while editing a carriage. It now appears whenever you're editing any template \u2014 carriages, contents, tracks, architecture, or individual parts.",
+      "highlights": [],
+      "pr": 654,
+      "date": "2026-07-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
