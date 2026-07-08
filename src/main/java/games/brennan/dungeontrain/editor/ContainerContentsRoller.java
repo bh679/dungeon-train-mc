@@ -43,7 +43,10 @@ import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.difficulty.ItemStatLevelScaling;
 import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.adventureitemstats.api.StatsModifier;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.RandomBookFactory;
+import games.brennan.dungeontrain.narrative.SharedBookPool;
 import games.brennan.dungeontrain.registry.ModItems;
 import org.slf4j.Logger;
 
@@ -79,6 +82,10 @@ public final class ContainerContentsRoller {
     private static final long SALT_ENCH_VALUE  = 0xBADDCAFE0FF1CE00L;
     /** Salt for the random-book placeholder substitution. */
     private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
+    /** Salt for the "shared vs local pool" coin-flip on a placeholder book roll. */
+    private static final long SALT_SHARED_BOOK_CHANCE = 0x5A1EDB00C0FFEE12L;
+    /** Salt for picking which shared-pool book to substitute (decorrelated from the coin-flip). */
+    private static final long SALT_SHARED_BOOK_PICK   = 0x5A1EDB00DEC0DE34L;
     /** Salt for the procedural name composer (naturally-spawned items). */
     private static final long SALT_NAME        = 0x4E414D4544585742L;
     /** Salt for the AIS Gaussian stat roller (naturally-spawned items). */
@@ -696,6 +703,19 @@ public final class ContainerContentsRoller {
         // Furnace path note: a substituted written book lands in the output
         // slot (fails isCookable + isFuel). Cosmetically odd but harmless.
         if (item == ModItems.RANDOM_BOOK.get()) {
+            // Community shared-books DISCOVERY: when the server has opted in and the per-roll coin-flip
+            // hits sharedBookLootChance, try substituting an approved community book from the relay pool
+            // (crediting its author). Falls back to the local narrative pool when discovery is off, the
+            // chance misses, or the shared pool is empty/offline — so the local behaviour is unchanged
+            // whenever the feature can't produce a book.
+            if (SharedBookGate.canDiscover()) {
+                double chance = DungeonTrainConfig.getSharedBookLootChance();
+                if (chance > 0.0 && rollSharedBookChance(chance, localPos, worldSeed, carriageIndex, slot)) {
+                    long sharedSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_SHARED_BOOK_PICK);
+                    ItemStack shared = SharedBookPool.rollShared(sharedSeed);
+                    if (!shared.isEmpty()) return shared;
+                }
+            }
             long bookSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
             return RandomBookFactory.rollFromPool(bookSeed).orElse(ItemStack.EMPTY);
         }
@@ -988,6 +1008,22 @@ public final class ContainerContentsRoller {
         long state = mix(localPos, worldSeed, carriageIndex, slot, salt);
         long unsigned = state & 0x7FFFFFFFFFFFFFFFL;
         return (int) (unsigned % 100L) < pct;
+    }
+
+    /**
+     * Deterministic coin-flip against a {@code [0,1]} double probability (unlike {@link #rollChance},
+     * which takes an int percentage) — used for the shared-book substitution chance so the config's
+     * fractional {@code sharedBookLootChance} isn't quantised to whole percents. Same seed inputs →
+     * same outcome, so a chest at a given world seed always makes the same shared-vs-local choice.
+     */
+    private static boolean rollSharedBookChance(double chance, BlockPos localPos, long worldSeed,
+                                                int carriageIndex, int slot) {
+        if (chance <= 0.0) return false;
+        if (chance >= 1.0) return true;
+        long state = mix(localPos, worldSeed, carriageIndex, slot, SALT_SHARED_BOOK_CHANCE);
+        // Map the 63-bit magnitude to [0,1): divide by 2^63.
+        double roll = (state & 0x7FFFFFFFFFFFFFFFL) / (double) (1L << 63);
+        return roll < chance;
     }
 
     /** Uniform integer in {@code [0, max]} (inclusive), deterministically seeded. */

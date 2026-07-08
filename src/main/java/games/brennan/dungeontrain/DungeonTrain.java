@@ -328,6 +328,7 @@ public class DungeonTrain {
                 return List.of(
                         "Leaderboard scoring (coming soon)",
                         "Dev support chat",
+                        "Share books you write for others to find",
                         "Reincarnate as a mob in other players' worlds");
             }
             // A "won't do" line (DP renders these with a red ✗ marker below the bullets above) — a

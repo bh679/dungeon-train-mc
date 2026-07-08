@@ -16,6 +16,11 @@ import net.minecraft.world.item.ItemStack;
  *       login / respawn). Burn on close + any drop. Unconditional — the
  *       lightning strike that delivers them implies player intent to
  *       receive.</li>
+ *   <li>{@link SharedBookTag} — the written book dropped when a player SIGNS a
+ *       book &amp; quill for the community-books feature. The mod cancels vanilla
+ *       signing and drops this marked stack so it burns away (its text having
+ *       been uploaded to the relay). Unconditional — signing is explicit
+ *       intent.</li>
  *   <li>{@link RandomBookTag} — books that spawn in train chests via
  *       {@link RandomBookFactory}. Burn on close + any drop, but ONLY
  *       after a player has held the stack at least once (the
@@ -56,6 +61,7 @@ public final class BurnableBookTag {
     public static boolean isBurnable(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return false;
         if (StartingBookTag.isStartingBook(stack)) return true;
+        if (SharedBookTag.isSharedBook(stack)) return true;
         if (RandomBookTag.read(stack).isPresent() && RandomBookTag.isHeld(stack)) return true;
         return false;
     }

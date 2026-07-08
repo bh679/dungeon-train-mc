@@ -203,6 +203,7 @@ public final class PlayerJoinEvents {
             CinematicIntroService.forget(player.getUUID());
             EditorWelcome.forget(player.getUUID());
             DevMessageConsent.forget(player.getUUID());
+            NetworkConsentMirror.forget(player.getUUID());
         }
     }
 
