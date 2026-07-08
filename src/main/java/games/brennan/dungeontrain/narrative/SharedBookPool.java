@@ -79,8 +79,10 @@ public final class SharedBookPool {
      *
      * <p>The built stack carries NO {@link SharedBookTag} — a found book should read like any ordinary
      * written book (it is not burned, and reading it never counts as a story read). It IS stamped with
-     * {@link SharedBookFoundTag}, a separate marker the read-event handler uses to grant the "read a
-     * stranger's book" advancement.</p>
+     * two inert markers on distinct CUSTOM_DATA keys: {@link SharedBookFoundTag} (the read-event handler
+     * uses it to grant the "read a stranger's book" advancement) and a {@link SharedBookReadTag} pool id
+     * (so a read can be attributed to the specific submission on the data-explorer's Books page). Both
+     * are inert to loot / burning / progression.</p>
      */
     public static ItemStack rollShared(long rollSeed) {
         List<PoolBook> pool = snapshot; // single volatile read → consistent snapshot
@@ -88,7 +90,8 @@ public final class SharedBookPool {
         int index = (int) (Long.remainderUnsigned(mix(rollSeed), pool.size()));
         PoolBook book = pool.get(index);
         ItemStack stack = BookFactory.buildPlainBook(book.title(), book.author(), book.pages());
-        SharedBookFoundTag.stamp(stack);
+        SharedBookFoundTag.stamp(stack);               // "read a stranger's book" advancement marker
+        SharedBookReadTag.stampId(stack, book.id());   // read-telemetry identity only
         return stack;
     }
 
