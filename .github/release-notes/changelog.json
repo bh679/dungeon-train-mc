@@ -3347,7 +3347,7 @@
     },
     {
       "id": "stage-difficulty-band-cap-1000",
-      "version": "0.398.0",
+      "version": "0.399.0",
       "type": "feat",
       "title": "Editor difficulty bands go up to level 1000",
       "summary": "In the in-game editor, Stage, template, and mob difficulty-band levels can now be set up to 1000 (previously capped at 100), so content can be gated for very high difficulty tiers.",
@@ -3359,7 +3359,7 @@
     },
     {
       "id": "community-shared-books",
-      "version": "0.398.0",
+      "version": "0.399.0",
       "type": "feat",
       "title": "Community shared books: write, burn, and discover",
       "summary": "Sign a book & quill and it burns away, carried off to become part of a shared, world-spanning library \u2014 its text (screened for inappropriate content) can later be found by other players. As you read the train's own hand-written books, community books start turning up in dungeon chests, each credited to its author.",
