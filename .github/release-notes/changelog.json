@@ -3356,6 +3356,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "community-shared-books",
+      "version": "0.398.0",
+      "type": "feat",
+      "title": "Community shared books: write, burn, and discover",
+      "summary": "Sign a book & quill and it burns away, carried off to become part of a shared, world-spanning library \u2014 its text (screened for inappropriate content) can later be found by other players. As you read the train's own hand-written books, community books start turning up in dungeon chests, each credited to its author.",
+      "highlights": [
+        "Signing a book & quill sends it out into the world instead of keeping it \u2014 it burns away",
+        "Discover books written by other players in dungeon chest loot, credited to their author",
+        "Community books appear more often the more of the game's own random books you've read (up to ~75%)",
+        "All shared writing is moderated before anyone can find it"
+      ],
+      "pr": 659,
+      "date": "2026-07-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
