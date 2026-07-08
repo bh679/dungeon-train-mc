@@ -3311,6 +3311,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "desert-seating-zombie-rooms",
+      "version": "0.397.0",
+      "type": "content",
+      "title": "Desert seating variants + new zombie rooms",
+      "summary": "Desert-stage carriages gained new sand-themed library and seating decor, and the enemies pool grew three new zombie-room encounters.",
+      "highlights": [
+        "New sandlib desert-stage library decor",
+        "New sand_seat_thin desert seating variant",
+        "Three new zombie room encounters: zombieroom2, antizombiesroom, zombiejail"
+      ],
+      "pr": 656,
+      "date": "2026-07-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
