@@ -3534,6 +3534,25 @@
       "released": true,
       "released_in": "v0.410.0",
       "released_at": "2026-07-09T13:27:11Z"
+    },
+    {
+      "id": "advancement-tree-reveal",
+      "version": "0.410.0",
+      "type": "content",
+      "title": "Advancements reveal as you play, plus three new ones",
+      "summary": "The Dungeon Train advancement tab is no longer a wall of spoilers \u2014 advancements now stay hidden until you reach the one before them, revealing the next steps as you progress. Three new advancements join the tree, and a few older ones were tidied up.",
+      "highlights": [
+        "Progressive 'fog-of-war' reveal: each advancement unhides once its parent is earned",
+        "New: 'Others?' \u2014 come within 4 blocks of another passenger",
+        "New: 'The Enchiridion' \u2014 read (and close) your first book of any kind",
+        "New: 'Summon The Creator' \u2014 tag @dev or @brennanhatton in chat",
+        "'Everything Burrito' now branches straight off the Dungeon Train root",
+        "Renamed 'Hell on Rails' to 'Inter-Dimensional Passenger'; removed two redundant boarding advancements"
+      ],
+      "date": "2026-07-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
