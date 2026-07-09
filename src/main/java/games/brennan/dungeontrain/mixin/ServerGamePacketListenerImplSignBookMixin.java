@@ -87,8 +87,8 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             // upload above eventually succeeds; signing is the local action being rewarded here.
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(serverPlayer, "signed_shared_book");
 
-            // Count it for the death-screen "books signed to the train" cargo icon (per-run tally).
-            serverPlayer.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksSigned();
+            // Count it for the death-screen "books written" cargo icon (per-run tally).
+            serverPlayer.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksWritten();
 
             ci.cancel();
             DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] SharedBook: {} signed a book — uploaded + dropped to burn",

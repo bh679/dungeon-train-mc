@@ -246,7 +246,7 @@ public final class NarrativeDeathScreen extends Screen {
     private int gearAdvMaxScroll = 0;       // scroll clamp bound, set during drawGear
     private int cargoRowY = -1;             // top y of row 1 (equipment + cargo icons), for tooltips
     private int cargoSx = -1;               // start x of the equipment slots, for tooltips
-    private Rect containersRect, booksRect, signedRect; // chest / book / signed-book cargo-icon hover regions (tooltips)
+    private Rect containersRect, booksRect, writtenRect; // chest / book / written-book cargo-icon hover regions (tooltips)
     private Rect seeAllRect;                // "see all advancements" button
     private Rect advViewport;               // advancements scroll viewport (hover / scroll hit-test)
     private final List<AdvIcon> gearAdvIcons = new ArrayList<>();  // resolved this frame, for hover
@@ -726,13 +726,13 @@ public final class NarrativeDeathScreen extends Screen {
         if (s == null) return y;
         boolean showItems = settled();
 
-        // ---- Row 1: worn gear (weapon + 4 armor) + gathered cargo (chest + book + signed book), one row.
+        // ---- Row 1: worn gear (weapon + 4 armor) + gathered cargo (chest + book + written book), one row.
         // The three cargo cells replace the old loot/books stat cells; their counts draw in the
         // native item-stack style via the renderItemDecorations text override.
         ItemStack[] gear = { s.mostUsedWeapon(), s.armorHead(), s.armorChest(), s.armorLegs(), s.armorFeet() };
         int gap = 6, cargoGap = 12;
         int equipW = gear.length * SLOT + (gear.length - 1) * gap;   // 5 worn slots
-        int cargoW = 3 * SLOT + 2 * gap;                             // chest + book + signed book
+        int cargoW = 3 * SLOT + 2 * gap;                             // chest + book + written book
         int rowW = equipW + cargoGap + cargoW;
         int sx = left + (w - rowW) / 2;
         this.cargoRowY = y;
@@ -748,24 +748,24 @@ public final class NarrativeDeathScreen extends Screen {
         }
         int chestX = sx + equipW + cargoGap;
         int bookX = chestX + SLOT + gap;
-        int signedX = bookX + SLOT + gap;
+        int writtenX = bookX + SLOT + gap;
         drawSlot(g, chestX, y);
         drawSlot(g, bookX, y);
-        drawSlot(g, signedX, y);
+        drawSlot(g, writtenX, y);
         if (showItems) {
             ItemStack chest = new ItemStack(Items.CHEST);
             ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
-            ItemStack signed = new ItemStack(Items.WRITABLE_BOOK); // book & quill — the signing item
+            ItemStack written = new ItemStack(Items.WRITABLE_BOOK); // book & quill — the writing item
             g.renderItem(chest, chestX + 1, y + 1);
             g.renderItemDecorations(this.font, chest, chestX + 1, y + 1, Integer.toString(s.containersOpened()));
             g.renderItem(book, bookX + 1, y + 1);
             g.renderItemDecorations(this.font, book, bookX + 1, y + 1, Integer.toString(s.booksRead()));
-            g.renderItem(signed, signedX + 1, y + 1);
-            g.renderItemDecorations(this.font, signed, signedX + 1, y + 1, Integer.toString(s.booksSigned()));
+            g.renderItem(written, writtenX + 1, y + 1);
+            g.renderItemDecorations(this.font, written, writtenX + 1, y + 1, Integer.toString(s.booksWritten()));
         }
         this.containersRect = new Rect(chestX, y, SLOT, SLOT);
         this.booksRect = new Rect(bookX, y, SLOT, SLOT);
-        this.signedRect = new Rect(signedX, y, SLOT, SLOT);
+        this.writtenRect = new Rect(writtenX, y, SLOT, SLOT);
         y += SLOT + 12;
 
         // ---- Row 2: Dungeon Train advancements earned this life (scrollable) + see-all button.
@@ -1495,8 +1495,8 @@ public final class NarrativeDeathScreen extends Screen {
             g.renderTooltip(this.font, Component.translatable("gui.dungeontrain.death.narr.tip_books"), mouseX, mouseY);
             return;
         }
-        if (signedRect != null && signedRect.has(mouseX, mouseY)) {
-            g.renderTooltip(this.font, Component.translatable("gui.dungeontrain.death.narr.tip_signed"), mouseX, mouseY);
+        if (writtenRect != null && writtenRect.has(mouseX, mouseY)) {
+            g.renderTooltip(this.font, Component.translatable("gui.dungeontrain.death.narr.tip_written"), mouseX, mouseY);
             return;
         }
         if (advViewport != null && advViewport.has(mouseX, mouseY)) {

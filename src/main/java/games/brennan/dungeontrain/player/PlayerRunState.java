@@ -125,15 +125,15 @@ public final class PlayerRunState {
      */
     private final Set<String> narrativeLetters;
     /**
-     * Books this player signed & contributed to the community shared-book pool this run —
-     * the death-screen "books signed to the train" tally (twin of {@link #booksReadCount}).
+     * Books this player wrote & contributed to the community shared-book pool this run —
+     * the death-screen "books written" tally (twin of {@link #booksReadCount}).
      * Incremented from the sign-book mixin each time a book is uploaded + burned.
      *
      * <p><b>In-memory only — deliberately NOT in {@link #CODEC}</b> (the 16-field cap, see
-     * {@link #narrativeLetters}). Signing is a rare discrete action; the only cost of not
-     * persisting is that signing then relogging mid-run resets the tally to 0.</p>
+     * {@link #narrativeLetters}). Writing a book is a rare discrete action; the only cost of not
+     * persisting is that writing one then relogging mid-run resets the tally to 0.</p>
      */
-    private int booksSignedCount;
+    private int booksWrittenCount;
     /**
      * Visual identity of the PlayerMob that likes this player most this run — the
      * death-screen "friend" portrait — captured while it is loaded near the player
@@ -270,8 +270,8 @@ public final class PlayerRunState {
         return booksReadCount;
     }
 
-    public int booksSignedCount() {
-        return booksSignedCount;
+    public int booksWrittenCount() {
+        return booksWrittenCount;
     }
 
     /**
@@ -408,8 +408,8 @@ public final class PlayerRunState {
         return ++booksReadCount;
     }
 
-    public int incrementBooksSigned() {
-        return ++booksSignedCount;
+    public int incrementBooksWritten() {
+        return ++booksWrittenCount;
     }
 
     /**
@@ -554,7 +554,7 @@ public final class PlayerRunState {
         trainTimeTicks = 0L;
         containersOpened = 0;
         booksReadCount = 0;
-        booksSignedCount = 0;
+        booksWrittenCount = 0;
         narrativeLetters.clear();
         earnedAdvancements.clear();
         weaponKills.clear();
