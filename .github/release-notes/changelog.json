@@ -3457,6 +3457,21 @@
       "released": true,
       "released_in": "v0.404.0",
       "released_at": "2026-07-09T03:43:05Z"
+    },
+    {
+      "id": "shared-book-loot-fair-share",
+      "version": "0.405.0",
+      "type": "feat",
+      "title": "Community books ease into a fair share of chest loot",
+      "summary": "Player-written community books found in dungeon chests now taper off as your world reads more of them. Instead of staying loot-heavy once you've discovered them, they settle toward an even share alongside the built-in book pool, so late-run chest loot feels more varied.",
+      "highlights": [
+        "Community (player-written) books taper toward an even share of chest loot the more of them a world reads"
+      ],
+      "pr": 671,
+      "date": "2026-07-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
