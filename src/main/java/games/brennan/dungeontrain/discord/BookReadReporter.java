@@ -76,6 +76,9 @@ public final class BookReadReporter {
         if (playerName != null && !playerName.isEmpty()) body.addProperty("player", playerName);
         body.addProperty("bookType", p.bookType());
         body.addProperty("bookId", p.bookId());
+        if ("random".equals(p.bookType()) && p.variantIndex() >= 0) {
+            body.addProperty("variantIndex", p.variantIndex());
+        }
         if (p.title() != null && !p.title().isEmpty()) body.addProperty("title", p.title());
         if (p.author() != null && !p.author().isEmpty()) body.addProperty("author", p.author());
         body.addProperty("pageCount", p.pageCount());

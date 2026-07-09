@@ -30,12 +30,15 @@ import java.util.Optional;
  * {@link BookReadReporter}. Metadata + timings only; page text is never sent.</p>
  *
  * <p>Identity ({@code bookType}/{@code bookId}) is decided client-side from the stack's tags:
- * {@code random} (basename), {@code shared} (relay pool id), or {@code narrative} ({@code story#letter}).</p>
+ * {@code random} (basename), {@code shared} (relay pool id), or {@code narrative} ({@code story#letter}).
+ * {@code variantIndex} is which of a random book's known text variants this read showed (from
+ * {@link games.brennan.dungeontrain.narrative.RandomBookTag}); {@code -1} when not applicable.</p>
  */
 public record BookReadClosedPacket(
         String bookType, String bookId, String title, String author,
         int pageCount, int pagesViewed, int maxPage, boolean completed, long durationMs,
-        List<Integer> pageDwellMs, String story, int letter) implements CustomPacketPayload {
+        List<Integer> pageDwellMs, String story, int letter,
+        int variantIndex) implements CustomPacketPayload {
 
     /** Defensive cap on the per-page dwell array decoded off the wire (vanilla books max ~100 pages). */
     private static final int MAX_PAGES = 256;
@@ -62,6 +65,7 @@ public record BookReadClosedPacket(
         for (int i = 0; i < n; i++) buf.writeVarInt(Math.max(0, dwell.get(i)));
         buf.writeUtf(p.story == null ? "" : p.story);
         buf.writeVarInt(p.letter);
+        buf.writeVarInt(p.variantIndex);
     }
 
     private static BookReadClosedPacket decode(FriendlyByteBuf buf) {
@@ -79,8 +83,9 @@ public record BookReadClosedPacket(
         for (int i = 0; i < n; i++) dwell.add(buf.readVarInt());
         String story = buf.readUtf();
         int letter = buf.readVarInt();
+        int variantIndex = buf.readVarInt();
         return new BookReadClosedPacket(bookType, bookId, title, author, pageCount, pagesViewed,
-            maxPage, completed, durationMs, dwell, story, letter);
+            maxPage, completed, durationMs, dwell, story, letter, variantIndex);
     }
 
     @Override
