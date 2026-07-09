@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.train.CarriageContents;
@@ -11,6 +12,7 @@ import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Drilldown reached from {@link EnterCategoryMenuScreen} when the player
@@ -28,8 +30,11 @@ import java.util.Locale;
  * <ul>
  *   <li>{@code carriages} — {@link CarriageVariantRegistry#allVariants()},
  *       dispatched via {@code /dt editor enter &lt;variant&gt;}.</li>
- *   <li>{@code contents} — {@link CarriageContentsRegistry#allContents()},
- *       dispatched via {@code /dt editor contents enter &lt;contents&gt;}.</li>
+ *   <li>{@code contents} — {@link CarriageContentsRegistry#allContents()}
+ *       minus group members (sub-variants), dispatched via
+ *       {@code /dt editor contents enter &lt;contents&gt;}. A group parent
+ *       drills into {@link ContentsSubVariantScreen} listing its members
+ *       instead of dispatching directly.</li>
  *   <li>{@code tracks} — {@link EditorCategory#models()} for TRACKS, with
  *       per-{@link Template} subtype routing because each track-side
  *       enter command takes a different shape (track / pillar / tunnel).</li>
@@ -62,11 +67,26 @@ public final class CategoryTemplatesScreen implements MenuScreen {
                 }
             }
             case "contents" -> {
+                // Only top-level parents/leaves appear here — group members
+                // (sub-variants) are reached by drilling into their parent, so
+                // they're filtered out (mirrors CarriageContentsAllowScreen and
+                // the spawn-time pick in CarriageContentsRegistry.buildPickContext).
+                Set<String> children = CarriageContentsGroupStore.allChildIds();
                 for (CarriageContents c : CarriageContentsRegistry.allContents()) {
-                    out.add(new CommandMenuEntry.Run(
-                        c.id(),
-                        "dungeontrain editor contents enter " + c.id(),
-                        c.id().equals(activeId)));
+                    String id = c.id();
+                    if (children.contains(id)) continue;
+                    if (CarriageContentsGroupStore.exists(id)) {
+                        // Group parent (e.g. maze) — drill into its sub-variants.
+                        out.add(new CommandMenuEntry.DrillIn(
+                            id,
+                            new ContentsSubVariantScreen(id),
+                            id.equals(activeId)));
+                    } else {
+                        out.add(new CommandMenuEntry.Run(
+                            id,
+                            "dungeontrain editor contents enter " + id,
+                            id.equals(activeId)));
+                    }
                 }
             }
             case "tracks" -> {
