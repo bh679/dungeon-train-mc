@@ -148,13 +148,16 @@ public final class CarriagePlacer {
     public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
         // Editor preview: no group context, so end-mode tags fall back to BOTH-behaviour and the
         // dimension gate uses the pIdx-formula fallback (no real placed world-X here).
-        String base = stampBase(level, origin, variant, dims, 0L, 0, false, false, GateContext.WORLDX_FROM_PIDX);
+        // relight=true: editor previews are permanent overworld blocks that are NEVER lifted into a
+        // Sable sub-level, so nothing relights them afterward — stamp through the light engine (flag 3)
+        // exactly as before #645. The spawn path keeps the section-local fast path (Sable relights it).
+        String base = stampBase(level, origin, variant, dims, 0L, 0, false, false, GateContext.WORLDX_FROM_PIDX, /*relight*/ true);
         // Preview each carriage for the focused Stage: keep the base shell, stamp only stage-linked
         // parts (or gate-overlapping ones), air out the rest. Defaults to the first stage when none is
         // explicitly selected; null (no stages exist at all) = today's unfiltered preview.
         String stageFilter = games.brennan.dungeontrain.editor.EditorStageSelection.effective();
         String overlay = stampPartsOverlay(level, origin, variant, dims, 0L, 0, false, false,
-            GateContext.WORLDX_FROM_PIDX, stageFilter);
+            GateContext.WORLDX_FROM_PIDX, stageFilter, /*relight*/ true);
         return finishPlace(level, origin, variant, dims, base, overlay);
     }
 
@@ -237,10 +240,13 @@ public final class CarriagePlacer {
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
         boolean applyContents, boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX
     ) {
+        // relight=false: the spawn shell/parts are placed in the SOURCE world and lifted into a Sable
+        // sub-level this same tick; Sable's moveBlocks re-places each block via LevelChunk.setBlockState
+        // and relights it in the plot, so the world-side light engine work here would be discarded (#645).
         String base = stampBase(level, origin, variant, dims,
-            config.seed(), carriageIndex, flatbedAtBack, flatbedAtFront, groupAnchorWorldX);
+            config.seed(), carriageIndex, flatbedAtBack, flatbedAtFront, groupAnchorWorldX, /*relight*/ false);
         String overlay = stampPartsOverlay(level, origin, variant, dims,
-            config.seed(), carriageIndex, flatbedAtBack, flatbedAtFront, groupAnchorWorldX, /*stageFilter*/ null);
+            config.seed(), carriageIndex, flatbedAtBack, flatbedAtFront, groupAnchorWorldX, /*stageFilter*/ null, /*relight*/ false);
 
         // Variant-block overlays are position-based and assume a stable NBT-
         // backed basis. legacyPlaceAt's hardcoded geometry doesn't qualify,
@@ -500,7 +506,8 @@ public final class CarriagePlacer {
      */
     private static String stampBase(ServerLevel level, BlockPos origin, CarriageVariant variant,
                                     CarriageDims dims, long seed, int carriageIndex,
-                                    boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX) {
+                                    boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX,
+                                    boolean relight) {
         Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
         if (stored.isPresent()) {
             // Filter cells the parts overlay will claim — keeps the base from
@@ -514,11 +521,11 @@ public final class CarriagePlacer {
             // Without this pre-clear, the base filter alone leaves whatever
             // was previously in those cells untouched.
             filter.ifPresent(p -> p.clearClaimedCellsSilently(level));
-            stampTemplate(level, origin, stored.get(), filter.orElse(null));
+            stampTemplate(level, origin, stored.get(), filter.orElse(null), relight);
             return "stored";
         }
         if (variant instanceof CarriageVariant.Builtin b) {
-            legacyPlaceAt(level, origin, b.type(), dims);
+            legacyPlaceAt(level, origin, b.type(), dims, relight);
             return "legacy";
         }
         return null;
@@ -747,7 +754,7 @@ public final class CarriagePlacer {
     private static String stampPartsOverlay(ServerLevel level, BlockPos origin, CarriageVariant variant,
                                              CarriageDims dims, long seed, int carriageIndex,
                                              boolean flatbedAtBack, boolean flatbedAtFront,
-                                             int groupAnchorWorldX, String stageFilter) {
+                                             int groupAnchorWorldX, String stageFilter, boolean relight) {
         Optional<CarriagePartAssignment> assignment = CarriageVariantPartsStore.get(variant);
         if (assignment.isEmpty()) return null;
         CarriagePartAssignment a = assignment.get();
@@ -757,7 +764,7 @@ public final class CarriagePlacer {
 
         if (stageFilter != null) {
             return stampPartsOverlayForStage(level, origin, a, dims, seed, carriageIndex,
-                flatbedAtBack, flatbedAtFront, stageFilter);
+                flatbedAtBack, flatbedAtFront, stageFilter, relight);
         }
 
         GateContext gateCtx = partGateContext(level, carriageIndex, dims, groupAnchorWorldX);
@@ -781,7 +788,7 @@ public final class CarriagePlacer {
                 }
             }
             if (!stamped) continue;
-            CarriagePartPlacer.placeAtPerPlacement(level, origin, kind, picks, dims, seed, carriageIndex);
+            CarriagePartPlacer.placeAtPerPlacement(level, origin, kind, picks, dims, seed, carriageIndex, relight);
             if (desc.length() > 0) desc.append(",");
             desc.append(kind.id()).append("=");
             if (picks.size() == 1 || picks.get(0).equals(picks.get(picks.size() - 1))) {
@@ -806,7 +813,8 @@ public final class CarriagePlacer {
      */
     private static String stampPartsOverlayForStage(ServerLevel level, BlockPos origin, CarriagePartAssignment a,
                                                     CarriageDims dims, long seed, int carriageIndex,
-                                                    boolean flatbedAtBack, boolean flatbedAtFront, String stageFilter) {
+                                                    boolean flatbedAtBack, boolean flatbedAtFront, String stageFilter,
+                                                    boolean relight) {
         // The selected stage's own gate — the tier-2 fallback target: when a slot has nothing explicitly
         // linked to the stage, any part whose effective gate overlaps this gate shows instead of air.
         games.brennan.dungeontrain.template.TemplateGate stageGate =
@@ -827,7 +835,7 @@ public final class CarriagePlacer {
                 }
             }
             if (!stamped) continue;
-            CarriagePartPlacer.placeAtPerPlacement(level, origin, kind, picks, dims, seed, carriageIndex);
+            CarriagePartPlacer.placeAtPerPlacement(level, origin, kind, picks, dims, seed, carriageIndex, relight);
             if (desc.length() > 0) desc.append(",");
             desc.append(kind.id()).append("=");
             if (picks.size() == 1 || picks.get(0).equals(picks.get(picks.size() - 1))) {
@@ -1087,15 +1095,15 @@ public final class CarriagePlacer {
         }
     }
 
-    private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template) {
-        stampTemplate(level, origin, template, null);
-    }
-
     private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,
-                                      StructureProcessor processor) {
+                                      StructureProcessor processor, boolean relight) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
         if (processor != null) settings.addProcessor(processor);
-        stampTemplateSectionLocal(level, origin, template, settings);
+        if (relight) {
+            stampTemplateRelit(level, origin, template, settings);
+        } else {
+            stampTemplateSectionLocal(level, origin, template, settings);
+        }
     }
 
     /**
@@ -1122,6 +1130,24 @@ public final class CarriagePlacer {
         // Flags are moot — the capture processor drops every cell, so placeInWorld
         // places nothing itself; it only drives the palette/geometry/processor chain.
         template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+    }
+
+    /**
+     * Relighting counterpart of {@link #stampTemplateSectionLocal} — the pre-#645 write path.
+     * Uses vanilla {@code placeInWorld} with {@link Block#UPDATE_ALL} (flag 3) so every cell goes
+     * through {@code LevelChunk.setBlockState}: the light engine {@code checkBlock}, the neighbour
+     * shape-update cascade, client sync, and block-entity creation all run as before the perf change.
+     *
+     * <p>Use this wherever the stamped blocks are <b>not</b> subsequently relit by a Sable
+     * {@code assemble}: the in-game editor plots (permanent overworld blocks) and the post-assemble
+     * carriage contents pass (written directly into the Sable plot's chunk at shipyard coords, which
+     * the section-local raw write bypasses — see {@code CarriageContentsPlacer.stampTemplateBlocks}).
+     * In the editor this hits the vanilla level light engine; at shipyard coords Sable's
+     * {@code LevelChunkMixin} redirects {@code getLightEngine()} to the plot's own engine.</p>
+     */
+    static void stampTemplateRelit(ServerLevel level, BlockPos stampPos,
+                                   StructureTemplate template, StructurePlaceSettings settings) {
+        template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), Block.UPDATE_ALL);
     }
 
     public static Set<BlockPos> collectFootprint(ServerLevel level, BlockPos origin, CarriageDims dims) {
@@ -1151,7 +1177,8 @@ public final class CarriagePlacer {
                 && templateSize.getZ() == dims.width();
     }
 
-    private static Set<BlockPos> legacyPlaceAt(ServerLevel level, BlockPos origin, CarriageType type, CarriageDims dims) {
+    private static Set<BlockPos> legacyPlaceAt(ServerLevel level, BlockPos origin, CarriageType type, CarriageDims dims,
+                                               boolean relight) {
         Set<BlockPos> placed = new HashSet<>();
         int doorZ = dims.width() / 2;
 
@@ -1161,8 +1188,13 @@ public final class CarriagePlacer {
                     BlockState state = stateAt(dx, dy, dz, doorZ, type, dims);
                     if (state == null) continue;
                     BlockPos pos = origin.offset(dx, dy, dz);
-                    // Section-local: ephemeral, lifted into a Sable sub-level this tick.
-                    SilentBlockOps.setBlockSectionLocal(level, pos, state);
+                    if (relight) {
+                        // Editor plot (no Sable lift): relight through the light engine (flag 3).
+                        level.setBlock(pos, state, Block.UPDATE_ALL);
+                    } else {
+                        // Section-local: ephemeral, lifted into a Sable sub-level this tick.
+                        SilentBlockOps.setBlockSectionLocal(level, pos, state);
+                    }
                     placed.add(pos.immutable());
                 }
             }

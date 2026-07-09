@@ -501,11 +501,13 @@ public final class CarriageContentsPlacer {
      */
     private static void stampTemplateBlocks(ServerLevel level, BlockPos origin, StructureTemplate template) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-        // Section-local stamp (no light engine / neighbour cascade): the contents
-        // blocks are lifted into a Sable sub-level this same tick, so world-side
-        // relight is discarded. Block-entity cells (chests/barrels/…) still create
-        // + load their BE inside stampTemplateSectionLocal so loot round-trips.
-        CarriagePlacer.stampTemplateSectionLocal(level, origin, template, settings);
+        // Relighting stamp (flag 3): unlike the shell/pads, the contents pass is NOT placed in the source
+        // world before a Sable assemble — it runs post-assemble at shipyard coords (train) or on a permanent
+        // editor plot. A raw section-local write there bypasses LevelChunk.setBlockState and therefore Sable's
+        // plot light-engine redirect, leaving plain interior geometry + non-block-entity light sources
+        // (torch/glowstone/…) dark. Stamp through the light engine so interiors light up. Block-entity cells
+        // (chests/barrels/…) still create + load their BE via placeInWorld so loot round-trips.
+        CarriagePlacer.stampTemplateRelit(level, origin, template, settings);
     }
 
     /**
