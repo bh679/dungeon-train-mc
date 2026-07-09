@@ -54,6 +54,10 @@
     {
       "id": "mossmaze",
       "weight": 1
+    },
+    {
+      "id": "sponge",
+      "weight": 1
     }
   ]
 }
