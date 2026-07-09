@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+  },
+  "links": {
+    "4,0,1": "loot_irongold",
+    "3,0,1": "loot"
+  }
+}
