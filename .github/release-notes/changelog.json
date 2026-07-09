@@ -3503,9 +3503,9 @@
       ],
       "pr": 676,
       "date": "2026-07-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.409.0",
+      "released_at": "2026-07-09T13:02:35Z"
     },
     {
       "id": "desert2-vault-frequency-retune",
@@ -3516,9 +3516,9 @@
       "highlights": [],
       "pr": 675,
       "date": "2026-07-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.409.0",
+      "released_at": "2026-07-09T13:02:35Z"
     }
   ]
 }
