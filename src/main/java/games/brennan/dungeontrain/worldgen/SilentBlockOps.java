@@ -115,6 +115,24 @@ public final class SilentBlockOps {
      * same tick, which re-airs the source cells) or where stale light on
      * removed blocks is tolerated (corridor cleanup).</p>
      *
+     * <p><b>Concurrency (CRITICAL).</b> The underlying
+     * {@code section.setBlockState(x,y,z,state,false)} is the lock-<i>skipping</i>
+     * {@code getAndSetUnchecked} write: it grows the section's {@code LinearPalette}
+     * <i>in place</i>. The block-light engine reads sections lock-free
+     * ({@code PalettedContainer.get}) from chunk-gen <b>worker</b> threads, so if
+     * this write runs while such a worker is reading the same section, the reader
+     * can observe the new storage index before the palette's {@code size} grows and
+     * throw {@link net.minecraft.world.level.chunk.MissingPaletteEntryException},
+     * failing the chunk future and stalling world-gen (a server-tick soft-hang).
+     * Passing {@code useLocks=true} does <b>not</b> fix this — the reader never
+     * locks, so vanilla's {@code ThreadingDetector} never engages against it.
+     * <b>Callers must therefore guarantee the target column AND its 1-chunk
+     * neighbours are {@code FULL}</b> (no async light task can then reach this
+     * column) before calling — e.g. {@code TrainCarriageAppender.
+     * ensureSpawnFootprintReady} / {@code prewarmEagerFillChunks}, which gate on a
+     * footprint±1 quiescence region. The {@code getChunkNow == null} fallback below
+     * is a belt-and-braces guard, not that guarantee.</p>
+     *
      * @return {@code true} if written section-local; {@code false} if the chunk
      *     was not loaded, in which case it falls back to
      *     {@link #setBlockSilent(ServerLevel, BlockPos, BlockState)} (which
