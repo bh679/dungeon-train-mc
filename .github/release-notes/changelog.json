@@ -3534,6 +3534,21 @@
       "released": true,
       "released_in": "v0.410.0",
       "released_at": "2026-07-09T13:27:11Z"
+    },
+    {
+      "id": "books-written-death-screen",
+      "version": "0.411.0",
+      "type": "feat",
+      "title": "Books-written tally on the death screen",
+      "summary": "The death screen now counts how many books you wrote and sent off to the train this life. A book & quill icon sits beside your books-read count on the gear page \u2014 hover it to see \"Books written\".",
+      "highlights": [
+        "New \"Books written\" stat on the death screen's gear page",
+        "Counts books you signed and contributed to the shared-book pool this run"
+      ],
+      "date": "2026-07-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
