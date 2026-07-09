@@ -30,9 +30,11 @@ import java.util.Optional;
  * {@link BookReadReporter}. Metadata + timings only; page text is never sent.</p>
  *
  * <p>Identity ({@code bookType}/{@code bookId}) is decided client-side from the stack's tags:
- * {@code random} (basename), {@code shared} (relay pool id), or {@code narrative} ({@code story#letter}).
- * {@code variantIndex} is which of a random book's known text variants this read showed (from
- * {@link games.brennan.dungeontrain.narrative.RandomBookTag}); {@code -1} when not applicable.</p>
+ * {@code random} (basename), {@code shared} (relay pool id), {@code narrative} ({@code story#letter}),
+ * or {@code starting} (basename). {@code variantIndex} is which known text variant this read showed,
+ * for {@code random} books (from {@link games.brennan.dungeontrain.narrative.RandomBookTag}) and
+ * {@code starting} books (from {@link games.brennan.dungeontrain.narrative.StartingBookTag}); {@code -1}
+ * when not applicable.</p>
  */
 public record BookReadClosedPacket(
         String bookType, String bookId, String title, String author,

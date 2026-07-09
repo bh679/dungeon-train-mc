@@ -17,7 +17,7 @@ import java.util.UUID;
 /**
  * Fire-and-forget uploader for book-READ telemetry — the "how are the books actually read" half of the
  * data-explorer's Books page. When a player finishes reading a Dungeon Train book (a random loot book,
- * a discovered community book, or a narrative letter) the client measures the read
+ * a discovered community book, a narrative letter, or a welcome/starting book) the client measures the read
  * ({@link games.brennan.dungeontrain.client.BookReadClientEvents}) and sends a
  * {@link BookReadClosedPacket}; the server gates it on the player's network consent, enriches the
  * narrative fields, and POSTs a compact record to the relay's {@code /telemetry/book-read} endpoint.
@@ -76,7 +76,7 @@ public final class BookReadReporter {
         if (playerName != null && !playerName.isEmpty()) body.addProperty("player", playerName);
         body.addProperty("bookType", p.bookType());
         body.addProperty("bookId", p.bookId());
-        if ("random".equals(p.bookType()) && p.variantIndex() >= 0) {
+        if (("random".equals(p.bookType()) || "starting".equals(p.bookType())) && p.variantIndex() >= 0) {
             body.addProperty("variantIndex", p.variantIndex());
         }
         if (p.title() != null && !p.title().isEmpty()) body.addProperty("title", p.title());
