@@ -46,5 +46,8 @@
         { "id": "minecraft:cooked_rabbit", "count": 2, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
       ]
     }
+  },
+  "links": {
+    "2,0,1": "writing"
   }
 }
