@@ -5,7 +5,6 @@
     "3,0,4": [{"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "weight": 7, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "weight": 40, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "starter"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot_irongold"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "6,3,2": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:zombie_villager"}],
     "6,4,2": [{"entity": "minecraft:zombie", "difficulty": {"min": 3, "max": "all"}}, {"entity": "minecraft:zombie_villager"}, {"entity": "minecraft:wither_skeleton", "weight": 6, "difficulty": {"min": 10, "max": "all"}}],
-    "3,0,2": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:zombie_villager"}],
     "0,3,2": [{"entity": "minecraft:zombie", "difficulty": {"min": 3, "max": "all"}}, {"entity": "minecraft:zombie_villager"}, {"entity": "minecraft:wither_skeleton", "weight": 6, "difficulty": {"min": 10, "max": "all"}}],
     "0,4,2": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:zombie_villager"}]
   }

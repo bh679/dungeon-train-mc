@@ -12,7 +12,8 @@
     },
     {
       "id": "brute",
-      "weight": 5
+      "weight": 5,
+      "minLevel": 3
     },
     {
       "id": "zombieroom",
@@ -24,15 +25,18 @@
     },
     {
       "id": "pillager",
-      "weight": 5
+      "weight": 5,
+      "minLevel": 2
     },
     {
       "id": "vindicator",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 2
     },
     {
       "id": "winterskeleton",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 2
     },
     {
       "id": "skeletons",
@@ -44,7 +48,8 @@
     },
     {
       "id": "bogged",
-      "weight": 3
+      "weight": 3,
+      "minLevel": 2
     },
     {
       "id": "zombiesrooms",
@@ -60,7 +65,8 @@
     },
     {
       "id": "witch",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 2
     },
     {
       "id": "evoker",
