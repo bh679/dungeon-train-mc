@@ -3220,10 +3220,16 @@ public final class TrainCarriageAppender {
     private static void prewarmEagerFillChunks(
         ServerLevel level, int xMin, int xMax, int zMin, int zMax
     ) {
-        int cxMin = xMin >> 4;
-        int cxMax = xMax >> 4;
-        int czMin = zMin >> 4;
-        int czMax = zMax >> 4;
+        // ±1-chunk margin — the same quiescence rule as the per-tick spawn gate
+        // (ensureSpawnFootprintReady). Forcing the footprint's neighbours to FULL
+        // too guarantees no worker light task reads a footprint column while the
+        // eager-fill loop stamps it section-local. (The Z bounds arrive with no
+        // margin — prewarmZMin/Max are exactly the write width — so this is load-
+        // bearing on Z, not merely defensive.)
+        int cxMin = (xMin >> 4) - 1;
+        int cxMax = (xMax >> 4) + 1;
+        int czMin = (zMin >> 4) - 1;
+        int czMax = (zMax >> 4) + 1;
         long t0 = System.nanoTime();
         int loaded = 0;
         for (int cx = cxMin; cx <= cxMax; cx++) {
@@ -3346,15 +3352,34 @@ public final class TrainCarriageAppender {
      * spike). When not ready, kicks off asynchronous generation via a
      * {@link #SPAWN_PREGEN_TICKET} and returns {@code false} so the caller defers
      * the spawn to a later tick — <em>unless</em> the per-direction wait has
-     * exceeded {@link #SPAWN_GEN_WAIT_MAX_TICKS}, in which case it returns
-     * {@code true} (spawn anyway) so the train never permanently stalls.
+     * exceeded {@link #SPAWN_GEN_WAIT_MAX_TICKS}, in which case it forces the
+     * region to {@link ChunkStatus#FULL} synchronously (see
+     * {@link #forceRegionFullChunks}) and returns {@code true} so the train never
+     * permanently stalls — without the unsafe concurrent section write.
+     *
+     * <p>The checked region is the footprint columns plus a 1-chunk margin so no
+     * async light task for a footprint chunk's neighbour can read a footprint
+     * section while it is being stamped section-local.</p>
      */
     private static boolean ensureSpawnFootprintReady(ServerLevel level, Plan plan, UUID trainId, boolean forward, long now) {
         int xMin = plan.origin.getX();
         int xMax = xMin + plan.subLevelStride - 1;
         int zMin = plan.origin.getZ();
         int zMax = zMin + plan.sizeZ - 1;
-        int cxMin = xMin >> 4, cxMax = xMax >> 4, czMin = zMin >> 4, czMax = zMax >> 4;
+        // Quiescence region = the footprint columns PLUS a 1-chunk margin. A
+        // section-local write into a footprint column (SilentBlockOps.
+        // setBlockSectionLocal, the lock-skipping section.setBlockState(...,false))
+        // is only safe once that column AND its immediate neighbours are FULL:
+        // block light propagates ≤15 blocks (<1 chunk), so an async light task for
+        // a footprint chunk's NEIGHBOUR still reads the footprint chunk's sections.
+        // Writing while such a worker runs grows the LinearPalette in place against
+        // its lock-free read → MissingPaletteEntryException on the worker → the
+        // failed chunk future stalls downstream gen → server-tick soft-hang. Gating
+        // on footprint±1 FULL guarantees no worker light task reads a footprint
+        // column while we stamp it. (useLocks=true does NOT help — the reader never
+        // locks; see SilentBlockOps.setBlockSectionLocal.)
+        int cxMin = (xMin >> 4) - 1, cxMax = (xMax >> 4) + 1;
+        int czMin = (zMin >> 4) - 1, czMax = (zMax >> 4) + 1;
 
         boolean allFull = true;
         for (int cx = cxMin; cx <= cxMax && allFull; cx++) {
@@ -3373,25 +3398,63 @@ public final class TrainCarriageAppender {
         requestFootprintGen(level, cxMin, cxMax, czMin, czMax);
         long waitedSince = waitMap.computeIfAbsent(trainId, k -> now);
         if (now - waitedSince >= SPAWN_GEN_WAIT_MAX_TICKS) {
-            LOGGER.warn("[DungeonTrain] Spawn footprint gen wait timed out ({} ticks) trainId={} forward={} — spawning anyway (one sync-gen spike)",
-                now - waitedSince, trainId, forward);
+            // Backstop: async gen has stalled for the whole timeout. We must NOT
+            // "spawn anyway" with section-local writes — that races the still-running
+            // light workers and tears the palette (the soft-hang this gate exists to
+            // prevent). Instead force the whole quiescence region to FULL synchronously
+            // on the server thread: blocking getChunk(FULL) drives gen AND drains each
+            // chunk's light here (not on a worker), so afterwards nothing reads those
+            // sections and the spawn's section-local writes have no concurrent reader.
+            // Accepts one bounded sync-gen spike (the pre-#645 behaviour) over a
+            // corrupted chunk — only on this pathological stall path.
+            LOGGER.warn("[DungeonTrain] Spawn footprint gen wait timed out ({} ticks) trainId={} forward={} — forcing footprint+margin chunks X[{},{}] Z[{},{}] to FULL synchronously (one sync-gen spike)",
+                now - waitedSince, trainId, forward, cxMin, cxMax, czMin, czMax);
+            forceRegionFullChunks(level, cxMin, cxMax, czMin, czMax);
             waitMap.remove(trainId);
             return true;
         }
         return false;
     }
 
-    /** Add a self-expiring async-generation ticket over every footprint chunk. */
+    /**
+     * Add a self-expiring async-generation ticket over the quiescence region
+     * (footprint + 1-chunk margin) so the {@link #ensureSpawnFootprintReady} gate
+     * can be satisfied asynchronously — including the margin — without a sync-gen
+     * spike.
+     */
     private static void requestFootprintGen(ServerLevel level, int cxMin, int cxMax, int czMin, int czMax) {
         var chunkSource = level.getChunkSource();
         for (int cx = cxMin; cx <= cxMax; cx++) {
             for (int cz = czMin; cz <= czMax; cz++) {
                 ChunkPos pos = new ChunkPos(cx, cz);
-                // radius 1 → the footprint chunk is pulled to BLOCK_TICKING (≥ FULL),
+                // radius 1 → the chunk is pulled to BLOCK_TICKING (≥ FULL),
                 // dragging the neighbours it needs to reach FULL along with it.
                 chunkSource.addRegionTicket(SPAWN_PREGEN_TICKET, pos, 1, pos);
             }
         }
+    }
+
+    /**
+     * Force every chunk in {@code [cxMin..cxMax] × [czMin..czMax]} to
+     * {@link ChunkStatus#FULL} synchronously on the server thread. Blocking
+     * {@code getChunk(FULL)} both drives generation and drains that chunk's light
+     * here rather than on a worker, so after this returns no async gen/light task
+     * is reading those sections — a subsequent section-local write cannot race a
+     * lock-free worker read. Used only by the {@link #ensureSpawnFootprintReady}
+     * timeout backstop, so the bounded sync-gen spike is paid only when async gen
+     * has stalled. Mirrors {@link #prewarmEagerFillChunks} but takes chunk coords.
+     */
+    private static void forceRegionFullChunks(ServerLevel level, int cxMin, int cxMax, int czMin, int czMax) {
+        long t0 = System.nanoTime();
+        int loaded = 0;
+        for (int cx = cxMin; cx <= cxMax; cx++) {
+            for (int cz = czMin; cz <= czMax; cz++) {
+                level.getChunk(cx, cz, ChunkStatus.FULL, true);
+                loaded++;
+            }
+        }
+        LOGGER.info("[DungeonTrain] Spawn backstop forced {} chunks (X[{},{}] Z[{},{}]) to FULL in {}ms",
+            loaded, cxMin, cxMax, czMin, czMax, (System.nanoTime() - t0) / 1_000_000);
     }
 
     /**
