@@ -10,18 +10,10 @@
     "hidden": true
   },
   "criteria": {
-    "read_random": {
-      "trigger": "dungeontrain:random_books_read",
-      "conditions": { "thresholdReads": 1 }
-    },
-    "read_starting": {
-      "trigger": "dungeontrain:starting_books_read",
-      "conditions": { "thresholdReads": 1 }
-    },
-    "read_shared": {
+    "read_any_book": {
       "trigger": "dungeontrain:gameplay_action",
-      "conditions": { "actionId": "read_shared_book" }
+      "conditions": { "actionId": "read_any_book" }
     }
   },
-  "requirements": [["read_random", "read_starting", "read_shared"]]
+  "requirements": [["read_any_book"]]
 }

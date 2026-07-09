@@ -226,6 +226,9 @@ public final class NarrativeBookEvents {
         if (run.recordNarrativeRead(key)) {
             run.incrementBooksRead();
         }
+        // Reading a narrative book at a lectern counts toward "The Enchiridion"
+        // — read a book (the held-book path is covered by RunStatsEvents.onBookRead).
+        AchievementEvents.notifyBookRead(player);
     }
 
     /**

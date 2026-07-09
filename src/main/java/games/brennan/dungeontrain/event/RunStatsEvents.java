@@ -476,6 +476,9 @@ public final class RunStatsEvents {
         if (stack.isEmpty()) return;
         if (!(stack.getItem() instanceof WrittenBookItem)) return;
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksRead();
+        // Any held written book (random / starting / shared / player-written /
+        // narrative-in-hand) counts toward "The Enchiridion" — read a book.
+        AchievementEvents.notifyBookRead(player);
     }
 
     /**
