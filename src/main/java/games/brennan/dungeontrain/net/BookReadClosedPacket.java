@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.discord.BookReadReporter;
+import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.StoryFile;
@@ -98,6 +99,11 @@ public record BookReadClosedPacket(
     public static void handle(BookReadClosedPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
+            // "The Enchiridion" — read (open then close) any book. This is a gameplay
+            // advancement, not telemetry, so it fires regardless of network consent,
+            // before the consent gate below. Idempotent (vanilla award), so re-reads
+            // are harmless.
+            AchievementEvents.notifyBookRead(player);
             // Per-player, fail-closed: reading behaviour only leaves the machine with the same network
             // consent that gates shared-book uploads. No consent → drop silently.
             if (!NetworkConsentMirror.isGranted(player)) return;
