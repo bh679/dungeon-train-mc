@@ -1,30 +1,30 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "selfWeight": 1,
   "variants": [
     {
       "id": "2ndlevel",
-      "weight": 4
+      "weight": 6
     },
     {
       "id": "hall",
-      "weight": 4
+      "weight": 6
     },
     {
       "id": "twoway",
-      "weight": 4
+      "weight": 6
     },
     {
       "id": "sides",
-      "weight": 4
+      "weight": 6
     },
     {
       "id": "up",
-      "weight": 4
+      "weight": 6
     },
     {
       "id": "maze5",
-      "weight": 2
+      "weight": 3
     },
     {
       "id": "doors",
@@ -36,23 +36,36 @@
     },
     {
       "id": "copper",
-      "weight": 7,
+      "weight": 10,
       "stage": "copper"
     },
     {
       "id": "stone",
-      "weight": 7,
-      "stage": "stone"
+      "weight": 10,
+      "stages": [
+        "stone",
+        "wood_oak",
+        "mud",
+        "desert"
+      ]
     },
     {
       "id": "desert",
-      "weight": 7,
+      "weight": 10,
       "stage": "desert"
     },
     {
       "id": "quartz",
-      "weight": 7,
-      "stage": "quartz"
+      "weight": 10,
+      "stages": [
+        "obsidian",
+        "quartz"
+      ]
+    },
+    {
+      "id": "desert2",
+      "weight": 6,
+      "stage": "desert"
     }
   ]
 }

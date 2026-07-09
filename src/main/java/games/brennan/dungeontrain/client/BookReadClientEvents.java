@@ -61,6 +61,7 @@ public final class BookReadClientEvents {
     private static int pageCount = 0;
     private static String story = "";
     private static int letter = 0;
+    private static int variantIndex = -1; // random books only; -1 = not applicable / unresolved
 
     private BookReadClientEvents() {}
 
@@ -110,7 +111,7 @@ public final class BookReadClientEvents {
 
         DungeonTrainNet.sendToServer(new BookReadClosedPacket(
             bookType, bookId, title, author, pageCount, pagesViewed, maxPage, completed,
-            Math.max(0, durationMs), dwell, story, letter));
+            Math.max(0, durationMs), dwell, story, letter, variantIndex));
         reset();
     }
 
@@ -135,6 +136,7 @@ public final class BookReadClientEvents {
         if (rnd.isPresent()) {
             bookType = "random";
             bookId = rnd.get().basename();
+            variantIndex = rnd.get().variantIndex();
             return stack;
         }
         Optional<NarrativeBookTag.NarrativeIdentity> nar = NarrativeBookTag.read(stack);
@@ -179,5 +181,6 @@ public final class BookReadClientEvents {
         pageCount = 0;
         story = "";
         letter = 0;
+        variantIndex = -1;
     }
 }

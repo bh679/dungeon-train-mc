@@ -1149,25 +1149,64 @@ public final class ContainerContentsRoller {
     }
 
     /**
-     * The effective shared-community-book loot chance for the current world: the configured MAX
-     * ({@link DungeonTrainConfig#getSharedBookLootMaxChance()}) scaled by the fraction of hardcoded
-     * random-book VARIANTS the world has ever read — 0% at none read, rising to the max once every
-     * variant of every book is read, so community books surface only as the hand-authored pool is
-     * truly exhausted (a book with many variants contributes proportionally more to the denominator
-     * than a single-variant book). Reads the world's monotonic ever-read count via the running
-     * server's overworld (loot rolls have no {@code Level} in scope). Returns 0 (→ purely local pool)
-     * when there is no server/world yet or the registry is empty.
+     * The effective shared-community-book loot chance for the current world. Two independent factors
+     * combine:
+     * <ol>
+     *   <li><b>Variant-read scaling</b> — the chance is scaled by the fraction of hardcoded random-book
+     *       VARIANTS the world has ever read: 0% at none read, rising to the (tapered) max once every
+     *       variant is read, so community books surface only as the hand-authored pool is exhausted (a
+     *       book with many variants contributes proportionally more to the denominator).</li>
+     *   <li><b>Max taper</b> — the MAX itself ({@link DungeonTrainConfig#getSharedBookLootMaxChance()})
+     *       tapers down from its configured value toward the community pool's <em>fair share</em>
+     *       {@code P/(P+V)} as the world reads more community books, so late-game loot settles at an
+     *       even distribution across all books instead of staying community-heavy. See
+     *       {@link #taperedMaxChance}.</li>
+     * </ol>
+     * Reads the world's monotonic ever-read counts via the running server's overworld (loot rolls have
+     * no {@code Level} in scope). Returns 0 (→ purely local pool) when there is no server/world yet or
+     * the random-book registry is empty.
      */
     private static double sharedBookLootChanceForWorld() {
         double max = DungeonTrainConfig.getSharedBookLootMaxChance();
         if (max <= 0.0) return 0.0;
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return 0.0;
-        int total = RandomBookRegistry.totalVariantCount();
-        if (total <= 0) return 0.0;
-        int read = NarrativeProgressData.get(server.overworld()).distinctRandomBookVariantsEverRead();
-        double fraction = Math.min(1.0, (double) read / (double) total);
-        return max * fraction;
+        int variantTotal = RandomBookRegistry.totalVariantCount();
+        if (variantTotal <= 0) return 0.0;
+        NarrativeProgressData data = NarrativeProgressData.get(server.overworld());
+        int variantsRead = data.distinctRandomBookVariantsEverRead();
+        // Community pool figures (P, Pr) come from the relay-backed SharedBookPool; approvedTotal()==0
+        // means "unknown" (relay offline / too old / empty) and taperedMaxChance keeps the flat max.
+        double effectiveMax = taperedMaxChance(max, SharedBookPool.approvedTotal(),
+                variantTotal, data.distinctSharedBooksEverRead());
+        double variantFraction = Math.min(1.0, (double) variantsRead / (double) variantTotal);
+        return effectiveMax * variantFraction;
+    }
+
+    /**
+     * The shared-book loot MAX chance after tapering from the configured {@code max} down toward the
+     * community pool's fair share as the world reads more community books. With {@code P} approved
+     * community books, {@code V} hand-authored variants and {@code communityRead} community books read:
+     *
+     * <pre>
+     *   E    = P / (P + V)                        // even-distribution floor (fair share)
+     *   f    = min(1, communityRead / P)           // fraction of the community pool read
+     *   Meff = clamp(max - (max - E) * f, 0, max)  // taper max -&gt; E, never above max
+     * </pre>
+     *
+     * Returns {@code max} unchanged when {@code communityTotal <= 0} — the "unknown / empty pool" case
+     * (relay offline, too old to report a total, or genuinely no approved books) — preserving today's
+     * flat-max behaviour. A pool large enough that {@code E >= max} simply holds at {@code max} (the
+     * clamp prevents tapering upward). Package-private and server-free so it is unit-testable.
+     */
+    static double taperedMaxChance(double max, int communityTotal, int variantTotal, int communityRead) {
+        if (max <= 0.0) return 0.0;
+        if (communityTotal <= 0) return max; // unknown / empty community pool → no taper
+        long denom = (long) communityTotal + (long) Math.max(0, variantTotal);
+        double even = denom <= 0L ? 0.0 : (double) communityTotal / (double) denom;
+        double readFraction = Math.min(1.0, Math.max(0.0, (double) communityRead / (double) communityTotal));
+        double tapered = max - (max - even) * readFraction;
+        return Math.max(0.0, Math.min(max, tapered));
     }
 
     /** Uniform integer in {@code [0, max]} (inclusive), deterministically seeded. */

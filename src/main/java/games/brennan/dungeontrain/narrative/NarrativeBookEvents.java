@@ -155,6 +155,19 @@ public final class NarrativeBookEvents {
         if (stack.isEmpty()) return;
         if (!SharedBookFoundTag.isFound(stack)) return;
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "read_shared_book");
+
+        // Record the community-book read world-scoped + monotonic (by relay pool id) so the shared-book
+        // loot taper knows how much of the community pool this world has seen. Same held-right-click
+        // scope as the advancement above — lectern reads of a found book stay uncounted, mirroring the
+        // random/starting-book cut. No-op when the stack lacks a pool id (older discovered book).
+        SharedBookReadTag.readId(stack).ifPresent(id -> {
+            ServerLevel overworld = overworldOf(player);
+            if (overworld == null) return;
+            if (NarrativeProgressData.get(overworld).markSharedBookEverRead(id)) {
+                LOGGER.info("[DungeonTrain] SharedBook: world marked community book id {} read (by {})",
+                    id, player.getName().getString());
+            }
+        });
     }
 
     private static void recordRead(ServerPlayer player, NarrativeBookTag.NarrativeIdentity id) {

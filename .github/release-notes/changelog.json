@@ -3457,6 +3457,39 @@
       "released": true,
       "released_in": "v0.404.0",
       "released_at": "2026-07-09T03:43:05Z"
+    },
+    {
+      "id": "rainbowflag-features-subvariant",
+      "version": "0.404.0",
+      "type": "content",
+      "title": "Rainbow flag, desert maze room, and campfire writing loot",
+      "summary": "Rainbow banner displays can now appear as a decorative feature. Added a new desert maze room, a books-and-writing-supplies loot barrel to campfire spots, and rebalanced a batch of enemy spawn difficulty and maze weights.",
+      "highlights": [
+        "Rainbow flag banner display can now spawn as a decorative feature",
+        "New desert maze room segment",
+        "Campfire spots can now hold a writing-supplies loot barrel (books, ink, paper)",
+        "Rebalanced enemy minLevel gating and slime spawn difficulty"
+      ],
+      "pr": 670,
+      "date": "2026-07-09",
+      "released": true,
+      "released_in": "v0.405.0",
+      "released_at": "2026-07-09T07:29:27Z"
+    },
+    {
+      "id": "shared-book-loot-fair-share",
+      "version": "0.405.0",
+      "type": "feat",
+      "title": "Community books ease into a fair share of chest loot",
+      "summary": "Player-written community books found in dungeon chests now taper off as your world reads more of them. Instead of staying loot-heavy once you've discovered them, they settle toward an even share alongside the built-in book pool, so late-run chest loot feels more varied.",
+      "highlights": [
+        "Community (player-written) books taper toward an even share of chest loot the more of them a world reads"
+      ],
+      "pr": 671,
+      "date": "2026-07-09",
+      "released": true,
+      "released_in": "v0.405.0",
+      "released_at": "2026-07-09T07:29:27Z"
     }
   ]
 }
