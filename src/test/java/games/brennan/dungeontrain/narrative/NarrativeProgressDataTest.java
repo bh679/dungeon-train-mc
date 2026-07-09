@@ -4,6 +4,7 @@ import net.minecraft.nbt.CompoundTag;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,6 +70,47 @@ final class NarrativeProgressDataTest {
         assertTrue(reloaded.hasSeenStoryVariant(STORY, LETTER, VARIANT));
         assertTrue(reloaded.hasSeenStoryVariant("pip_aaro_the_waiting_child", 1, 0));
         assertFalse(reloaded.hasSeenStoryVariant(STORY, LETTER, VARIANT + 1));
+    }
+
+    @Test
+    @DisplayName("markSharedBookEverRead: first call true, repeat false; count is distinct ids")
+    void sharedBookEverReadIsMonotonic() {
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        assertEquals(0, data.distinctSharedBooksEverRead());
+        assertTrue(data.markSharedBookEverRead(101), "first read of an id reports a state change");
+        assertFalse(data.markSharedBookEverRead(101), "re-reading the same community book id is a no-op");
+        assertTrue(data.markSharedBookEverRead(202));
+        assertEquals(2, data.distinctSharedBooksEverRead(), "two distinct ids read");
+    }
+
+    @Test
+    @DisplayName("save → load round-trip preserves the community-book ever-read id set")
+    void roundTripPreservesSharedBooks() {
+        NarrativeProgressData original = NarrativeProgressData.load(new CompoundTag());
+        original.markSharedBookEverRead(7);
+        original.markSharedBookEverRead(42);
+        original.markSharedBookEverRead(7); // duplicate — still 2 distinct
+
+        CompoundTag serialized = original.save(new CompoundTag(), null);
+        NarrativeProgressData reloaded = NarrativeProgressData.load(serialized);
+
+        assertEquals(2, reloaded.distinctSharedBooksEverRead());
+        assertFalse(reloaded.markSharedBookEverRead(7), "id 7 survived the round-trip");
+        assertFalse(reloaded.markSharedBookEverRead(42), "id 42 survived the round-trip");
+        assertTrue(reloaded.markSharedBookEverRead(99), "a fresh id is still newly recorded");
+    }
+
+    @Test
+    @DisplayName("Back-compat: loading a tag with no shared_books_ever_read key decodes as empty")
+    void backCompatMissingSharedBooksTag() {
+        NarrativeProgressData oldStyle = NarrativeProgressData.load(new CompoundTag());
+        oldStyle.markRead(STORY, LETTER);
+        CompoundTag legacy = oldStyle.save(new CompoundTag(), null);
+        legacy.remove("shared_books_ever_read");
+
+        NarrativeProgressData reloaded = NarrativeProgressData.load(legacy);
+        assertEquals(0, reloaded.distinctSharedBooksEverRead(),
+            "missing shared_books_ever_read tag must decode as empty, not NPE");
     }
 
     @Test
