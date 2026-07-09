@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.mixin.client.BookViewScreenAccessor;
 import games.brennan.dungeontrain.narrative.NarrativeBookTag;
 import games.brennan.dungeontrain.narrative.RandomBookTag;
 import games.brennan.dungeontrain.narrative.SharedBookReadTag;
+import games.brennan.dungeontrain.narrative.StartingBookTag;
 import games.brennan.dungeontrain.net.BookReadClosedPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
@@ -31,10 +32,11 @@ import java.util.OptionalInt;
  *
  * <p>Vanilla {@code BookViewScreen} is a pure-client screen (opening / paging / closing never reach the
  * server), so timing can only be captured here. When the player opens a DT book held in hand — a random
- * loot book ({@link RandomBookTag}), a discovered community book ({@link SharedBookReadTag}), or a
- * narrative letter ({@link NarrativeBookTag}) — this starts a timer, samples the current page each
- * client tick to build a per-page dwell breakdown, and on close sends a {@link BookReadClosedPacket} so
- * the server can consent-gate + report it. Metadata + timings only — page text is never sent.</p>
+ * loot book ({@link RandomBookTag}), a discovered community book ({@link SharedBookReadTag}), a
+ * narrative letter ({@link NarrativeBookTag}), or a welcome/starting book ({@link StartingBookTag}) —
+ * this starts a timer, samples the current page each client tick to build a per-page dwell breakdown,
+ * and on close sends a {@link BookReadClosedPacket} so the server can consent-gate + report it.
+ * Metadata + timings only — page text is never sent.</p>
  *
  * <p><b>Held books only.</b> Lectern reads open a {@code LecternScreen} (a {@code BookViewScreen}
  * subclass) whose book isn't in hand, so they're deliberately excluded — a held DT book resolves its
@@ -128,7 +130,7 @@ public final class BookReadClientEvents {
     /**
      * If {@code stack} is a DT book, set the identity fields ({@code bookType}/{@code bookId} and, for a
      * narrative, {@code story}/{@code letter}) and return the stack; otherwise return {@code null}.
-     * Precedence random → narrative → shared is arbitrary but the three tag sets never co-occur.
+     * Precedence random → narrative → shared → starting is arbitrary but the four tag sets never co-occur.
      */
     private static ItemStack resolveIdentity(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return null;
@@ -151,6 +153,13 @@ public final class BookReadClientEvents {
         if (shared.isPresent()) {
             bookType = "shared";
             bookId = Integer.toString(shared.getAsInt());
+            return stack;
+        }
+        Optional<StartingBookTag.StartingBookIdentity> starting = StartingBookTag.read(stack);
+        if (starting.isPresent()) {
+            bookType = "starting";
+            bookId = starting.get().basename();
+            variantIndex = starting.get().variantIndex();
             return stack;
         }
         return null;

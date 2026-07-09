@@ -3492,6 +3492,22 @@
       "released_at": "2026-07-09T07:29:27Z"
     },
     {
+      "id": "editor-contents-subvariant-nesting",
+      "version": "0.408.0",
+      "type": "refactor",
+      "title": "Contents editor nests sub-variants under their group",
+      "summary": "In the in-game Contents template picker, carriage-content sub-variants (e.g. the Desert/Copper/Quartz/Stone members of Maze) no longer appear as top-level rows beside their parent. Selecting a group parent now opens a sub-list of its members plus an entry for the parent's own contents, matching the underlying data hierarchy.",
+      "highlights": [
+        "Group members no longer clutter the top-level Contents list",
+        "Group parents drill into a sub-variant sub-menu"
+      ],
+      "pr": 676,
+      "date": "2026-07-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "desert2-vault-frequency-retune",
       "version": "0.408.0",
       "type": "content",
