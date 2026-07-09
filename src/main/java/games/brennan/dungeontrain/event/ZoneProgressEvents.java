@@ -25,10 +25,13 @@ import java.util.List;
  *
  * <ul>
  *   <li>{@code VOID} → {@code reached_void} ("Voided Warranty")</li>
- *   <li>{@code END_ISLANDS} → {@code reached_end_islands} ("Tastes like Cheese?")</li>
+ *   <li>{@code END_ISLANDS} → {@code reached_end_islands} ("End of the Line")</li>
  *   <li>{@code OVERWORLD} → {@code reached_overworld_again} ("Re-Over-World") — only once the
  *       player has already reached the void or the End islands, so it never fires from the spawn
  *       overworld.</li>
+ *   <li>{@code END_ISLANDS} again, once {@code reached_overworld_again} is already earned →
+ *       {@code nether_return_again} ("Nether Return Again") — a full loop out and back, then a
+ *       second trip into the End.</li>
  * </ul>
  *
  * <p>Independently of the void/End {@code zoneAt} classification, the same scan also grants
@@ -36,7 +39,7 @@ import java.util.List;
  * of the cycle's Nether band (via {@link NetherBand#isInNetherBiome}). The Nether band is a
  * separate phase of the same repeating {@link WorldGenCycle}, so it is checked separately.</p>
  *
- * <p>All four are one-shot {@code gameplay_action} markers (same trigger as
+ * <p>All five are one-shot {@code gameplay_action} markers (same trigger as
  * {@code landed_on_tracks} etc.); vanilla advancement dedupe makes re-firing the same id every
  * scan a no-op. When disintegration is disabled {@link DisintegrationBand#zoneAt} always returns
  * {@code OVERWORLD} and the overworld-again gate is never satisfied, so nothing fires.</p>
@@ -59,6 +62,8 @@ public final class ZoneProgressEvents {
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_void");
     private static final ResourceLocation REACHED_END_ISLANDS =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_end_islands");
+    private static final ResourceLocation REACHED_OVERWORLD_AGAIN =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_overworld_again");
 
     private ZoneProgressEvents() {}
 
@@ -88,8 +93,15 @@ public final class ZoneProgressEvents {
             switch (DisintegrationBand.zoneAt(level, player.getBlockX())) {
                 case VOID ->
                     ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_void");
-                case END_ISLANDS ->
+                case END_ISLANDS -> {
                     ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_end_islands");
+                    // "Nether Return Again" — re-entering the End after already having looped
+                    // all the way out and back to solid overworld ground once.
+                    if (earned(player, REACHED_OVERWORLD_AGAIN)) {
+                        ModAdvancementTriggers.GAMEPLAY_ACTION.get()
+                            .trigger(player, "nether_return_again");
+                    }
+                }
                 case OVERWORLD -> {
                     // "Reach the OW again" — guard against the spawn overworld by requiring the
                     // player to have already been to the void or the End islands at least once.

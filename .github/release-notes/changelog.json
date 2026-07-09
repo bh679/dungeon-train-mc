@@ -3374,6 +3374,56 @@
       "released": true,
       "released_in": "v0.399.0",
       "released_at": "2026-07-08T12:20:41Z"
+    },
+    {
+      "id": "shared-book-advancements",
+      "version": "0.400.0",
+      "type": "feat",
+      "title": "Advancements for signing and reading shared books",
+      "summary": "Signing a book & quill to send into the community pool now earns the 'Ghostwriter' advancement, and finding a real player's book in a dungeon chest earns 'A Stranger's Story'. Also fixes a bug where community books could stop appearing in chests entirely after a server had been running for a little while.",
+      "highlights": [
+        "New advancement: Ghostwriter (sign a book to share with the community)",
+        "New advancement: A Stranger's Story (find and read another player's shared book)",
+        "Fixed: community books could stop dropping in chests after the first ~30 seconds"
+      ],
+      "pr": 662,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.400.0",
+      "released_at": "2026-07-08T13:05:28Z"
+    },
+    {
+      "id": "advancement-nether-end-rework",
+      "version": "0.401.0",
+      "type": "content",
+      "title": "Advancement rework: Nether Return Again, End of the Line, Inter-Reality Passenger",
+      "summary": "Nether Return Again now rewards looping all the way around the disintegration band and back into the End, instead of reading every Nether starting book. The End-islands advancement (formerly 'Tastes like Cheese?') is renamed to End of the Line, replacing the old book-reading advancement of that name. Inter-Reality Passenger is temporarily disabled pending new Overworld-reality content.",
+      "highlights": [
+        "Nether Return Again: earn it by completing a full loop (void, End islands, back to solid overworld ground) and then riding back into the End a second time",
+        "'Tastes like Cheese?' renamed to 'End of the Line'; the old book-reading advancement with that title has been removed",
+        "Re-Over-World and Nether Return Again are now hidden in the advancement tree until earned",
+        "Inter-Reality Passenger is temporarily disabled"
+      ],
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.401.0",
+      "released_at": "2026-07-08T14:17:35Z"
+    },
+    {
+      "id": "end-band-biomes-hidden-milestones",
+      "version": "0.402.0",
+      "type": "content",
+      "title": "Richer End-band biomes + hidden endgame milestones",
+      "summary": "The train's End band now generates the full variety of End biomes as you cross it, instead of a single repeated one. The deepest exploration achievements have also been reworked and tucked away as hidden surprises to discover on your travels.",
+      "highlights": [
+        "All of the End's biomes now appear across the End band",
+        "Late-game dimension milestones are now hidden until you reach them"
+      ],
+      "pr": 666,
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.402.0",
+      "released_at": "2026-07-08T21:23:51Z"
     }
   ]
 }

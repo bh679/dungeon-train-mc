@@ -13,7 +13,9 @@ import org.spongepowered.asm.mixin.injection.At;
 /**
  * Forces vegetated <b>highland biomes</b> onto nether-band mountain columns so vanilla decoration
  * (trees, flowers, snow caps) and structures populate the noise-raised terrain — which otherwise
- * inherits the original low terrain's (often tree-less) biome and reads as bare mountains.
+ * inherits the original low terrain's (often tree-less) biome and reads as bare mountains. Also tags
+ * Nether-band and End-band <b>core</b> columns with a real Nether/End biome (see
+ * {@link NetherBandContext#netherCoreBiomes()} / {@link NetherBandContext#endCoreBiomes()}).
  *
  * <p>Wraps {@code getNoiseBiome(x,y,z,sampler)} — the per-quart biome assignment, also consulted
  * during structure placement, so structures follow the forced biome. Gated to be a pure pass-through
@@ -49,6 +51,13 @@ public abstract class MultiNoiseBiomeSourceMixin {
             // surface skin and the decoration (which sample the same way) always agree.
             if (ctx.netherCoreBiomes() != null && ctx.cycle() != null && ctx.cycle().isNetherCore(wx)) {
                 return ctx.netherCoreBiomes().biomeAt(blockX, blockZ);
+            }
+            // End-core columns: sample the real End's biome source (all five End biomes, swept across
+            // successive End-band passes — see EndCoreBiomes) so the world label, surface skin, and
+            // decoration agree the same way the Nether core does. Un-waved block X (no mountain edge to
+            // match here — the End band isn't a NetherMountainTerrain feature).
+            if (ctx.endCoreBiomes() != null && ctx.cycle() != null && ctx.cycle().isEndCore(blockX)) {
+                return ctx.endCoreBiomes().biomeAt(blockX, blockZ, ctx.cycle().endPassIndex(blockX));
             }
             if (!NetherMountainTerrain.raises(ctx.cycle(), wx)) return original; // not a band mountain column
             return ctx.highlandBiomes().biomeFor(blockX, blockY, blockZ);

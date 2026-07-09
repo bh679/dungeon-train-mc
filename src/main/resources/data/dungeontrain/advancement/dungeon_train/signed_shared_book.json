@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/read_shared_book",
+  "display": {
+    "icon": { "id": "minecraft:writable_book" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.signed_shared_book.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.signed_shared_book.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "signed_shared_book" }
+    }
+  },
+  "requirements": [["action"]]
+}

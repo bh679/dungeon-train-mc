@@ -1151,19 +1151,21 @@ public final class ContainerContentsRoller {
     /**
      * The effective shared-community-book loot chance for the current world: the configured MAX
      * ({@link DungeonTrainConfig#getSharedBookLootMaxChance()}) scaled by the fraction of hardcoded
-     * random books the world has ever read — 0% at none read, rising to the max once all are read, so
-     * community books surface only as the hand-authored pool is exhausted. Reads the world's monotonic
-     * ever-read count via the running server's overworld (loot rolls have no {@code Level} in scope).
-     * Returns 0 (→ purely local pool) when there is no server/world yet or the registry is empty.
+     * random-book VARIANTS the world has ever read — 0% at none read, rising to the max once every
+     * variant of every book is read, so community books surface only as the hand-authored pool is
+     * truly exhausted (a book with many variants contributes proportionally more to the denominator
+     * than a single-variant book). Reads the world's monotonic ever-read count via the running
+     * server's overworld (loot rolls have no {@code Level} in scope). Returns 0 (→ purely local pool)
+     * when there is no server/world yet or the registry is empty.
      */
     private static double sharedBookLootChanceForWorld() {
         double max = DungeonTrainConfig.getSharedBookLootMaxChance();
         if (max <= 0.0) return 0.0;
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return 0.0;
-        int total = RandomBookRegistry.count();
+        int total = RandomBookRegistry.totalVariantCount();
         if (total <= 0) return 0.0;
-        int read = NarrativeProgressData.get(server.overworld()).distinctRandomBooksEverRead();
+        int read = NarrativeProgressData.get(server.overworld()).distinctRandomBookVariantsEverRead();
         double fraction = Math.min(1.0, (double) read / (double) total);
         return max * fraction;
     }
