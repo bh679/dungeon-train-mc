@@ -50,6 +50,26 @@
       "id": "desertemple",
       "weight": 1,
       "stage": "desert"
+    },
+    {
+      "id": "dimondblock",
+      "weight": 1
+    },
+    {
+      "id": "grave2",
+      "weight": 1
+    },
+    {
+      "id": "quartzfeat",
+      "weight": 3,
+      "stages": [
+        "obsidian",
+        "quartz"
+      ]
+    },
+    {
+      "id": "rainbowflag",
+      "weight": 1
     }
   ]
 }

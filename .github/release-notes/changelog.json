@@ -3459,6 +3459,24 @@
       "released_at": "2026-07-09T03:43:05Z"
     },
     {
+      "id": "rainbowflag-features-subvariant",
+      "version": "0.404.0",
+      "type": "content",
+      "title": "Rainbow flag, desert maze room, and campfire writing loot",
+      "summary": "Rainbow banner displays can now appear as a decorative feature. Added a new desert maze room, a books-and-writing-supplies loot barrel to campfire spots, and rebalanced a batch of enemy spawn difficulty and maze weights.",
+      "highlights": [
+        "Rainbow flag banner display can now spawn as a decorative feature",
+        "New desert maze room segment",
+        "Campfire spots can now hold a writing-supplies loot barrel (books, ink, paper)",
+        "Rebalanced enemy minLevel gating and slime spawn difficulty"
+      ],
+      "pr": 670,
+      "date": "2026-07-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "shared-book-loot-fair-share",
       "version": "0.405.0",
       "type": "feat",
