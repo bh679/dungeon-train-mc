@@ -72,6 +72,14 @@ public final class NarrativeProgressData extends SavedData {
      * {@link #decodeStoryProgress} serialize it unchanged.
      */
     private static final String TAG_RANDOM_BOOK_VARIANTS_EVER_READ = "random_book_variants_ever_read";
+    /**
+     * Root-level int-array of relay pool ids for community (player-written) books this world has EVER
+     * read. Monotonic, like {@link #TAG_RANDOM_BOOK_VARIANTS_EVER_READ}: it feeds the "community books
+     * read / total" fraction that tapers the shared-book loot max, so it must never regress. Stored as
+     * a flat int-array rather than the {@code basename → Set<Integer>} shape because the identity is a
+     * single numeric relay id, not a (book, variant) pair.
+     */
+    private static final String TAG_SHARED_BOOKS_EVER_READ = "shared_books_ever_read";
 
     private final Map<String, NarrativeProgress> byStory;
     /** World-wide seen-variant tracking for the random-book pool. */
@@ -104,9 +112,16 @@ public final class NarrativeProgressData extends SavedData {
      * on the silent full-cycle. Feeds the shared-book loot chance so it never regresses once earned.
      */
     private final Map<String, NarrativeProgress> randomBookVariantsEverRead;
+    /**
+     * Relay pool ids of community (player-written) books this world has EVER read (monotonic; only
+     * grows). Numerator of the "community books read / total" fraction that tapers the shared-book loot
+     * max toward the fair share once a world has seen most community content.
+     */
+    private final Set<Integer> sharedBooksEverRead;
 
     private NarrativeProgressData() {
-        this(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>(), new HashMap<>());
+        this(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>(),
+                new HashMap<>(), new HashSet<>());
     }
 
     private NarrativeProgressData(Map<String, NarrativeProgress> byStory,
@@ -114,13 +129,15 @@ public final class NarrativeProgressData extends SavedData {
                                   Map<String, NarrativeProgress> startingBooksSeen,
                                   Map<String, NarrativeProgress> storyVariantsSeen,
                                   Set<UUID> startingBookReceived,
-                                  Map<String, NarrativeProgress> randomBookVariantsEverRead) {
+                                  Map<String, NarrativeProgress> randomBookVariantsEverRead,
+                                  Set<Integer> sharedBooksEverRead) {
         this.byStory = byStory;
         this.randomBooksSeen = randomBooksSeen;
         this.startingBooksSeen = startingBooksSeen;
         this.storyVariantsSeen = storyVariantsSeen;
         this.startingBookReceived = startingBookReceived;
         this.randomBookVariantsEverRead = randomBookVariantsEverRead;
+        this.sharedBooksEverRead = sharedBooksEverRead;
     }
 
     public static NarrativeProgressData get(ServerLevel overworld) {
@@ -223,6 +240,25 @@ public final class NarrativeProgressData extends SavedData {
         int total = 0;
         for (NarrativeProgress p : randomBookVariantsEverRead.values()) total += p.readCount();
         return total;
+    }
+
+    /**
+     * Record that the world has read the community (player-written) book with relay pool {@code id} at
+     * least once. Monotonic — never cleared — so the shared-book loot taper's "community books read"
+     * numerator can't fall back. Returns {@code true} on first read of this id.
+     */
+    public boolean markSharedBookEverRead(int id) {
+        boolean added = sharedBooksEverRead.add(id);
+        if (added) setDirty();
+        return added;
+    }
+
+    /**
+     * How many DISTINCT community books (by relay pool id) the world has ever read — the numerator for
+     * the shared-book loot taper (denominator is {@link SharedBookPool#approvedTotal()}).
+     */
+    public int distinctSharedBooksEverRead() {
+        return sharedBooksEverRead.size();
     }
 
     // ---------------- Story-letter variant tracking ----------------
@@ -469,6 +505,12 @@ public final class NarrativeProgressData extends SavedData {
         // Monotonic ever-read random-book variants — same (basename -> Set<Integer>) shape as
         // randomBooksSeen, so the shared encoder applies unchanged.
         tag.put(TAG_RANDOM_BOOK_VARIANTS_EVER_READ, encodeStoryProgress(randomBookVariantsEverRead));
+
+        // Monotonic ever-read community-book relay ids — a flat int-array (identity is one numeric id).
+        int[] sharedArr = new int[sharedBooksEverRead.size()];
+        int si = 0;
+        for (Integer id : sharedBooksEverRead) sharedArr[si++] = id;
+        tag.putIntArray(TAG_SHARED_BOOKS_EVER_READ, sharedArr);
         return tag;
     }
 
@@ -527,8 +569,12 @@ public final class NarrativeProgressData extends SavedData {
         // Missing tag → empty map (worlds saved before shared-book loot scaling landed simply
         // start the fraction at whatever they've since re-read).
         Map<String, NarrativeProgress> randomBookVariantsEverRead = decodeStoryProgress(tag, TAG_RANDOM_BOOK_VARIANTS_EVER_READ);
+        // Missing tag → empty set. getIntArray returns an empty array for an absent/mistyped key, so
+        // worlds saved before the community-book taper landed simply start with nothing read.
+        Set<Integer> sharedBooksEverRead = new HashSet<>();
+        for (int id : tag.getIntArray(TAG_SHARED_BOOKS_EVER_READ)) sharedBooksEverRead.add(id);
         return new NarrativeProgressData(stories, randomBooks, startingBooksSeen, storyVariants,
-                startingBookReceived, randomBookVariantsEverRead);
+                startingBookReceived, randomBookVariantsEverRead, sharedBooksEverRead);
     }
 
     /** Inverse of {@link #encodeStoryProgress}; tolerates missing tag (returns empty). */

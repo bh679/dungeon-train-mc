@@ -93,9 +93,12 @@ public final class DungeonTrainConfig {
     public static final boolean DEFAULT_DISCOVER_SHARED_BOOKS_ENABLED = true;
 
     /**
-     * MAX chance a rolled chest book comes from the shared community pool. The effective chance
-     * scales from 0% (no hardcoded random books read) up to this value (100% of them read), so
-     * community books surface only as a world exhausts the hand-authored pool. Default 0.75.
+     * STARTING max chance a rolled chest book comes from the shared community pool. The effective
+     * chance scales from 0% (no hardcoded random books read) up to this max (100% of them read), so
+     * community books surface only as a world exhausts the hand-authored pool. This max is not fixed:
+     * it tapers down from the configured value toward the community pool's fair share {@code P/(P+V)}
+     * as the world reads more community books, so late-game loot settles at an even distribution across
+     * all books instead of staying community-heavy. Default 0.75.
      */
     public static final double DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE = 0.75;
     public static final double MIN_SHARED_BOOK_LOOT_CHANCE = 0.0;
@@ -255,12 +258,14 @@ public final class DungeonTrainConfig {
                         "entirely local. See sharedBookLootMaxChance for the mix.")
                 .define("discoverSharedBooksEnabled", DEFAULT_DISCOVER_SHARED_BOOKS_ENABLED);
         ModConfigSpec.DoubleValue sharedBookLootMaxChance = b
-                .comment("The MAXIMUM per-roll chance that a chest book comes from the shared community pool instead of the",
-                        "local narrative pool. The effective chance SCALES with progress: 0% when none of the hardcoded",
-                        "random books have been read, rising linearly to this value once 100% of them have been read — so",
-                        "community books surface only as a world exhausts the hand-authored pool. Default 0.75 (max 75%).",
-                        "Set 0.0 to disable shared books in loot. If the shared pool is empty or the relay is unreachable,",
-                        "the roll silently falls back to the local pool regardless.")
+                .comment("The STARTING maximum per-roll chance that a chest book comes from the shared community pool instead",
+                        "of the local narrative pool. The effective chance SCALES with progress: 0% when none of the hardcoded",
+                        "random books have been read, rising toward this max once 100% of them have been read — so community",
+                        "books surface only as a world exhausts the hand-authored pool. This max also TAPERS over time: as the",
+                        "world reads more community books it eases from the configured value toward the pool's fair share",
+                        "(community books / all books), so late-game loot settles at an even distribution rather than staying",
+                        "community-heavy. Default 0.75 (max 75%). Set 0.0 to disable shared books in loot. If the shared pool",
+                        "is empty or the relay is unreachable, the roll silently falls back to the local pool regardless.")
                 .defineInRange("sharedBookLootMaxChance", DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE,
                         MIN_SHARED_BOOK_LOOT_CHANCE, MAX_SHARED_BOOK_LOOT_CHANCE);
         b.pop();

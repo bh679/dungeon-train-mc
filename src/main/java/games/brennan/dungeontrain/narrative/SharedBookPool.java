@@ -61,6 +61,15 @@ public final class SharedBookPool {
     private static volatile List<PoolBook> snapshot = List.of();
 
     /**
+     * Total count of APPROVED community books in the relay pool (the whole loot-eligible universe, NOT
+     * the ≤{@link #POOL_LIMIT} window in {@link #snapshot}). Reported by the relay's {@code /books/pool}
+     * response {@code total} field and refreshed on every fetch. Feeds the shared-book loot taper (the
+     * denominator of "community books read / total"). Stays 0 against an older relay that omits the
+     * field, which the taper reads as "unknown" → no taper (today's flat-max behaviour).
+     */
+    private static volatile int approvedTotal = 0;
+
+    /**
      * Ids the world has served / seen, used as the {@code exclude} filter so repeat fetches favour
      * fresh books. Insertion-ordered so the oldest ids evict first at {@link #SEEN_CAP}. Guarded by its
      * own monitor (only touched from the async fetch continuation + its exclude read).
@@ -98,6 +107,16 @@ public final class SharedBookPool {
     /** Whether the pool currently holds any books (cheap volatile read). */
     public static boolean isEmpty() {
         return snapshot.isEmpty();
+    }
+
+    /**
+     * Total approved community books in the relay pool as of the last successful fetch, or 0 when the
+     * relay is unreachable / has never replied / is too old to report it. The shared-book loot taper
+     * treats 0 as "unknown" and skips the taper (flat config max), so this is safe to read from the
+     * loot roll without a null/loading guard.
+     */
+    public static int approvedTotal() {
+        return approvedTotal;
     }
 
     /**
@@ -165,6 +184,16 @@ public final class SharedBookPool {
         if (!obj.has("ok") || !obj.get("ok").getAsBoolean()) {
             LOGGER.debug("[DungeonTrain] shared-book pool response not ok");
             return;
+        }
+        // Capture the relay-reported total of APPROVED books before the books-array checks, so it is
+        // refreshed even on the exclude-starvation / empty-books branches (the relay counts the whole
+        // pool, not the excluded window). A relay too old to send `total` leaves the last value intact.
+        if (obj.has("total") && obj.get("total").isJsonPrimitive()) {
+            try {
+                approvedTotal = Math.max(0, obj.get("total").getAsInt());
+            } catch (RuntimeException ignored) {
+                // non-numeric total — keep the last known value
+            }
         }
         if (!obj.has("books") || !obj.get("books").isJsonArray()) {
             // Malformed reply — keep the last good snapshot rather than wiping loot over a transient blip.
@@ -252,5 +281,6 @@ public final class SharedBookPool {
         snapshot = List.of();
         SEEN_IDS.clear();
         fetchInFlight = false;
+        approvedTotal = 0;
     }
 }
