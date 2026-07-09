@@ -3472,9 +3472,9 @@
       ],
       "pr": 670,
       "date": "2026-07-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.405.0",
+      "released_at": "2026-07-09T07:29:27Z"
     },
     {
       "id": "shared-book-loot-fair-share",
@@ -3487,9 +3487,9 @@
       ],
       "pr": 671,
       "date": "2026-07-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.405.0",
+      "released_at": "2026-07-09T07:29:27Z"
     }
   ]
 }
