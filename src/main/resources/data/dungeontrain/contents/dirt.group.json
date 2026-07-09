@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "selfWeight": 1,
   "variants": [
     {
@@ -20,28 +20,44 @@
     },
     {
       "id": "mud2",
-      "weight": 5
+      "weight": 9
     },
     {
       "id": "clay",
-      "weight": 3
+      "weight": 6
     },
     {
       "id": "dirt4",
-      "weight": 3
-    },
-    {
-      "id": "packedice",
-      "weight": 3
-    },
-    {
-      "id": "moss",
       "weight": 5
     },
     {
+      "id": "packedice",
+      "weight": 7
+    },
+    {
+      "id": "moss",
+      "weight": 11
+    },
+    {
       "id": "fullmush",
+      "weight": 1
+    },
+    {
+      "id": "pots",
+      "weight": 1
+    },
+    {
+      "id": "sculk",
       "weight": 1,
       "minLevel": 5
+    },
+    {
+      "id": "mossmaze",
+      "weight": 1
+    },
+    {
+      "id": "sponge",
+      "weight": 1
     }
   ]
 }

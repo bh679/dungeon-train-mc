@@ -3426,6 +3426,26 @@
       "released_at": "2026-07-08T21:23:51Z"
     },
     {
+      "id": "new-content-variants-batch",
+      "version": "0.403.0",
+      "type": "content",
+      "title": "New dungeon content: pots, sculk, mossmaze, sponge, ravanger, worf, quartz seating",
+      "summary": "A batch of new decor and encounter variety: pots and sculk-themed dirt rooms, a sponge-covered moss variant, a mossy maze room, a ravanger enemy for deep runs, a worf cow variant, and quartz seating for the obsidian/quartz stages.",
+      "highlights": [
+        "New pots and sculk dirt-room variants",
+        "Sponge reskin of the moss room",
+        "New mossmaze room",
+        "Ravanger enemy (deep-level encounters)",
+        "Worf cow variant",
+        "Quartz seating decor for obsidian/quartz stages"
+      ],
+      "pr": 668,
+      "date": "2026-07-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "carriage-interior-lighting",
       "version": "0.404.0",
       "type": "fix",
