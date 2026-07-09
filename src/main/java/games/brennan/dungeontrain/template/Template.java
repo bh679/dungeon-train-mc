@@ -443,7 +443,8 @@ public sealed interface Template
             return partKind.dims(dims);
         }
         @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
-            CarriagePartPlacer.placeAt(level, origin, partKind, name, dims, ctx.seed(), ctx.carriageIndex());
+            // Editor plot stamp (permanent world blocks, no Sable lift): relight through the light engine.
+            CarriagePartPlacer.placeAt(level, origin, partKind, name, dims, ctx.seed(), ctx.carriageIndex(), /*relight*/ true);
         }
     }
 

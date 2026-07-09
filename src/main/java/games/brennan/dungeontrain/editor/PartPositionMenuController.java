@@ -433,7 +433,8 @@ public final class PartPositionMenuController {
         for (int i = 0; i < placements.size(); i++) {
             names.add(i == targetIndex ? name : CarriagePartKind.NONE);
         }
-        CarriagePartPlacer.placeAtPerPlacement(level, plotOrigin, kind, names, dims, 0L, 0);
+        // Editor plot part swap (permanent world blocks, no Sable lift): relight through the light engine.
+        CarriagePartPlacer.placeAtPerPlacement(level, plotOrigin, kind, names, dims, 0L, 0, /*relight*/ true);
     }
 
     /**

@@ -56,13 +56,13 @@ public final class CarriagePartPlacer {
      */
     public static void placeAt(ServerLevel level, BlockPos carriageOrigin,
                                CarriagePartKind kind, String name, CarriageDims dims,
-                               long seed, int carriageIndex) {
+                               long seed, int carriageIndex, boolean relight) {
         // Single-name overload: stamp the same template at every placement.
         // Equivalent to passing the name N times to the per-placement variant.
         List<CarriagePartKind.Placement> placements = kind.placements(dims);
         String[] names = new String[placements.size()];
         for (int i = 0; i < placements.size(); i++) names[i] = name;
-        placeAtPerPlacement(level, carriageOrigin, kind, List.of(names), dims, seed, carriageIndex);
+        placeAtPerPlacement(level, carriageOrigin, kind, List.of(names), dims, seed, carriageIndex, relight);
     }
 
     /**
@@ -79,7 +79,7 @@ public final class CarriagePartPlacer {
      */
     public static void placeAtPerPlacement(ServerLevel level, BlockPos carriageOrigin,
                                            CarriagePartKind kind, List<String> names, CarriageDims dims,
-                                           long seed, int carriageIndex) {
+                                           long seed, int carriageIndex, boolean relight) {
         List<CarriagePartKind.Placement> placements = kind.placements(dims);
         Vec3i placementSize = kind.dims(dims);
         for (int i = 0; i < placements.size(); i++) {
@@ -113,11 +113,15 @@ public final class CarriagePartPlacer {
             StructurePlaceSettings settings = new StructurePlaceSettings()
                 .setIgnoreEntities(true)
                 .setMirror(p.mirror());
-            // Section-local stamp (no light engine / neighbour cascade): the parts
-            // overlay is placed on a carriage that is lifted into a Sable sub-level
-            // the same tick, so world-side relight is discarded work. Matches the
-            // base-shell stamp (CarriagePlacer.stampBase) — see stampTemplateSectionLocal.
-            CarriagePlacer.stampTemplateSectionLocal(level, stampOrigin, template, settings);
+            // Spawn (relight=false): section-local stamp (no light engine / neighbour cascade) —
+            // the parts overlay is placed on a carriage lifted into a Sable sub-level the same tick,
+            // which relights it, so world-side relight is discarded work. Editor previews and in-carriage
+            // part swaps (relight=true) are permanent blocks with no Sable lift, so they relight (flag 3).
+            if (relight) {
+                CarriagePlacer.stampTemplateRelit(level, stampOrigin, template, settings);
+            } else {
+                CarriagePlacer.stampTemplateSectionLocal(level, stampOrigin, template, settings);
+            }
             applyVariantBlocksForPlacement(level, carriageOrigin, kind, name, dims, seed, carriageIndex, p);
         }
     }

@@ -3444,6 +3444,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "carriage-interior-lighting",
+      "version": "0.404.0",
+      "type": "fix",
+      "title": "Carriage interiors are properly lit again",
+      "summary": "Fixed train carriage interiors rendering too dark \u2014 floors, walls, and light sources like torches and lanterns inside carriages now light up correctly as you ride through the train.",
+      "highlights": [],
+      "pr": 669,
+      "date": "2026-07-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
