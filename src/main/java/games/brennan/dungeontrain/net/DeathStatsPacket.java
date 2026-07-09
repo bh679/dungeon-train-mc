@@ -46,6 +46,7 @@ public record DeathStatsPacket(
         long runTicks,
         int containersOpened,
         int booksRead,
+        int booksSigned,
         ItemStack mostUsedWeapon,
         ItemStack armorHead,
         ItemStack armorChest,
@@ -85,6 +86,7 @@ public record DeathStatsPacket(
         buf.writeVarLong(runTicks);
         buf.writeVarInt(containersOpened);
         buf.writeVarInt(booksRead);
+        buf.writeVarInt(booksSigned);
         ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, mostUsedWeapon);
         ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, armorHead);
         ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, armorChest);
@@ -124,6 +126,7 @@ public record DeathStatsPacket(
         long runTicks = buf.readVarLong();
         int containersOpened = buf.readVarInt();
         int booksRead = buf.readVarInt();
+        int booksSigned = buf.readVarInt();
         ItemStack weapon = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
         ItemStack head = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
         ItemStack chest = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
@@ -153,7 +156,7 @@ public record DeathStatsPacket(
             earnedAdvancements.add(buf.readResourceLocation());
         }
         return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, runTicks,
-                containersOpened, booksRead, weapon, head, chest, legs, feet,
+                containersOpened, booksRead, booksSigned, weapon, head, chest, legs, feet,
                 playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken,
                 lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
                 narrative, deathCause, side, portrait, earnedAdvancements);
