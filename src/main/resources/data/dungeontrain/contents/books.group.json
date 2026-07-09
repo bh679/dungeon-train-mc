@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "selfWeight": 8,
   "variants": [
     {
@@ -66,6 +66,14 @@
       "weight": 4,
       "maxLevel": 0,
       "stage": "desert"
+    },
+    {
+      "id": "quartz_seat",
+      "weight": 4,
+      "stages": [
+        "obsidian",
+        "quartz"
+      ]
     }
   ]
 }

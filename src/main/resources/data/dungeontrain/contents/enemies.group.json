@@ -117,6 +117,11 @@
     {
       "id": "zombiejail",
       "weight": 2
+    },
+    {
+      "id": "ravanger",
+      "weight": 3,
+      "minLevel": 40
     }
   ]
 }

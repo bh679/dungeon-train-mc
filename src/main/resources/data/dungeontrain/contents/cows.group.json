@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 3,
   "selfWeight": 6,
   "variants": [
     {
@@ -56,6 +56,10 @@
     },
     {
       "id": "snowman",
+      "weight": 1
+    },
+    {
+      "id": "worf",
       "weight": 1
     }
   ]
