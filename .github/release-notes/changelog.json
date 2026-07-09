@@ -3441,9 +3441,9 @@
       ],
       "pr": 668,
       "date": "2026-07-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.404.0",
+      "released_at": "2026-07-09T03:43:05Z"
     },
     {
       "id": "carriage-interior-lighting",
@@ -3454,9 +3454,9 @@
       "highlights": [],
       "pr": 669,
       "date": "2026-07-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.404.0",
+      "released_at": "2026-07-09T03:43:05Z"
     }
   ]
 }
