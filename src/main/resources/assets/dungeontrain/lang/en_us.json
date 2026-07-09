@@ -418,6 +418,9 @@
   "advancements.dungeontrain.dungeon_train.the_enchiridion.title": "The Enchiridion",
   "advancements.dungeontrain.dungeon_train.the_enchiridion.hint": "Can you read?",
   "advancements.dungeontrain.dungeon_train.the_enchiridion.description": "So you have read a book. There are more…",
+  "advancements.dungeontrain.dungeon_train.summon_the_creator.title": "Summon The Creator",
+  "advancements.dungeontrain.dungeon_train.summon_the_creator.hint": "He is in chat if you call",
+  "advancements.dungeontrain.dungeon_train.summon_the_creator.description": "Tag @dev or @brennanhatton in chat",
   "advancements.dungeontrain.dungeon_train.the_great_beyond.title": "The Great Beyond",
   "advancements.dungeontrain.dungeon_train.the_great_beyond.description": "Complete the feedback survey after death.",
 

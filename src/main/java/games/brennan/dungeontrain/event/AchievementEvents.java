@@ -319,6 +319,16 @@ public final class AchievementEvents {
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "read_any_book");
     }
 
+    /**
+     * Fired when a player tags {@code @dev} / {@code @brennanhatton} in chat.
+     * Drives "Summon The Creator". Routed through the generic
+     * {@link ModAdvancementTriggers#GAMEPLAY_ACTION} marker with action id
+     * {@code tagged_creator}; earns regardless of whether Brennan is online.
+     */
+    public static void notifyTaggedCreator(ServerPlayer player) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "tagged_creator");
+    }
+
     // ---------------- Narrative progress ----------------
 
     /**
