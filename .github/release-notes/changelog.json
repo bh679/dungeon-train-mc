@@ -3584,6 +3584,19 @@
       "released": true,
       "released_in": "v0.412.0",
       "released_at": "2026-07-09T15:41:31Z"
+    },
+    {
+      "id": "train-time-alive-gate",
+      "version": "0.413.0",
+      "type": "fix",
+      "title": "Time on the train now only counts while you're alive",
+      "summary": "The train-time advancements (Enjoying the Ride and Marathon Passenger) previously kept ticking up while you sat at the death screen inside a carriage. Now they only accrue while you're actually alive and aboard.",
+      "highlights": [],
+      "pr": 681,
+      "date": "2026-07-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
