@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/the_enchiridion",
   "display": {
     "icon": { "id": "minecraft:book" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.collecting_stories.title" },
@@ -7,7 +7,7 @@
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true,
-    "hidden": false
+    "hidden": true
   },
   "criteria": {
     "completed": {

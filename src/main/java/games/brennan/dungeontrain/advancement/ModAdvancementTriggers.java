@@ -89,6 +89,9 @@ public final class ModAdvancementTriggers {
     public static final Supplier<EncounteredPlayersTrigger> ENCOUNTERED_PLAYERS =
         TRIGGERS.register("encountered_players", EncounteredPlayersTrigger::new);
 
+    public static final Supplier<ProximityOnTrainTrigger> PROXIMITY_ON_TRAIN =
+        TRIGGERS.register("proximity_on_train", ProximityOnTrainTrigger::new);
+
     // --- Echo (reincarnation PlayerMob) advancements ---
 
     public static final Supplier<EncounteredEchoTrigger> ENCOUNTERED_ECHO =

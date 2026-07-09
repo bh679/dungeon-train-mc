@@ -297,6 +297,16 @@ public final class AchievementEvents {
         ModAdvancementTriggers.ENCOUNTERED_PLAYERS.get().trigger(player, total);
     }
 
+    /**
+     * Called from {@link games.brennan.dungeontrain.event.RunStatsEvents}'s
+     * proximity scan when a player comes within ~4 blocks of another passenger
+     * (a PlayerMob or another real player) while both are on the train. Drives
+     * the "I'm Not Alone" advancement; vanilla dedupe keeps it to one grant.
+     */
+    public static void notifyProximityOnTrain(ServerPlayer player) {
+        ModAdvancementTriggers.PROXIMITY_ON_TRAIN.get().trigger(player);
+    }
+
     // ---------------- Narrative progress ----------------
 
     /**

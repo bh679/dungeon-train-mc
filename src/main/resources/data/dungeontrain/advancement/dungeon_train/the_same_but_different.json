@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/the_enchiridion",
   "display": {
     "icon": { "id": "minecraft:chorus_fruit" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.the_same_but_different.title" },
@@ -7,7 +7,7 @@
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true,
-    "hidden": false
+    "hidden": true
   },
   "criteria": {
     "milestone": {

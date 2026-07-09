@@ -412,6 +412,12 @@
   "advancements.dungeontrain.dungeon_train.read_all_nether_starting_books.description": "Loop all the way around — void, End islands, back to solid ground — then ride back into the End a second time.",
   "advancements.dungeontrain.dungeon_train.multiplayer.title": "Come Along With Me",
   "advancements.dungeontrain.dungeon_train.multiplayer.description": "Join a multiplayer world, or have someone join yours.",
+  "advancements.dungeontrain.dungeon_train.im_not_alone.title": "I'm Not Alone",
+  "advancements.dungeontrain.dungeon_train.im_not_alone.hint": "Is that a good thing?",
+  "advancements.dungeontrain.dungeon_train.im_not_alone.description": "Come within 4 blocks of another on the train.",
+  "advancements.dungeontrain.dungeon_train.the_enchiridion.title": "The Enchiridion",
+  "advancements.dungeontrain.dungeon_train.the_enchiridion.hint": "Can you read?",
+  "advancements.dungeontrain.dungeon_train.the_enchiridion.description": "So you have read a book. There are more…",
   "advancements.dungeontrain.dungeon_train.the_great_beyond.title": "The Great Beyond",
   "advancements.dungeontrain.dungeon_train.the_great_beyond.description": "Complete the feedback survey after death.",
 

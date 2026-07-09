@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/the_enchiridion",
   "display": {
     "icon": { "id": "minecraft:writable_book" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.taking_notes.title" },
@@ -7,7 +7,7 @@
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true,
-    "hidden": false
+    "hidden": true
   },
   "criteria": {
     "milestone": {
