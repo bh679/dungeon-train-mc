@@ -1,0 +1,18 @@
+{
+  "parent": "dungeontrain:dungeon_train/root",
+  "display": {
+    "icon": { "id": "minecraft:player_head" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.im_not_alone.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.im_not_alone.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "nearby": {
+      "trigger": "dungeontrain:proximity_on_train"
+    }
+  },
+  "requirements": [["nearby"]]
+}

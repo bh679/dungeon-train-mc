@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/the_great_beyond",
+  "display": {
+    "icon": { "id": "minecraft:bell" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.summon_the_creator.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.summon_the_creator.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "tagged_creator": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "tagged_creator" }
+    }
+  },
+  "requirements": [["tagged_creator"]]
+}

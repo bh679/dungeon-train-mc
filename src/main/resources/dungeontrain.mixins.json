@@ -35,6 +35,7 @@
     "client.LevelLoadingScreenProgressMixin",
     "client.AdvancementsScreenAccessor",
     "client.AdvancementWidgetHideDescMixin",
+    "client.AdvancementsCompactLayoutMixin",
     "client.DeathScreenMoveTextMixin",
     "client.CameraCinematicMixin",
     "client.GameRendererSnapshotMixin",
