@@ -50,6 +50,10 @@
       "id": "sculk",
       "weight": 1,
       "minLevel": 5
+    },
+    {
+      "id": "mossmaze",
+      "weight": 1
     }
   ]
 }
