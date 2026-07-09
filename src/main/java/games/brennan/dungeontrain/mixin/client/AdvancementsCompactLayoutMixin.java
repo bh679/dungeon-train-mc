@@ -51,7 +51,7 @@ public abstract class AdvancementsCompactLayoutMixin {
      * tight) vertical spacing.
      */
     @Unique
-    private static final float DUNGEONTRAIN_COLUMN_SPREAD = 1.5F;
+    private static final float DUNGEONTRAIN_COLUMN_SPREAD = 1.25F;
 
     @Inject(method = "update", at = @At("TAIL"))
     private void dungeontrain$compactVisibleLayout(CallbackInfo ci) {
