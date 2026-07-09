@@ -66,6 +66,29 @@ public abstract class AdvancementWidgetHideDescMixin {
         return dungeontrain$getHiddenDesc();
     }
 
+    /**
+     * Draw the icon/box for a {@code hidden:true} {@code dungeontrain:*}
+     * advancement once it is on screen at all. Vanilla's tree-tile render
+     * ({@code draw}) suppresses a hidden advancement's icon until it is earned
+     * — but DT hides most of its tree only to reveal a node's children when
+     * that node is earned (server-side frontier gate). A widget therefore only
+     * exists client-side once the server has decided it should be seen, so we
+     * force the render guard's {@code isHidden()} to report {@code false} for
+     * mod advancements, letting the frontier draw with its real icon (its
+     * description stays masked to a hint via the swap above). Non-mod
+     * advancements are untouched.
+     */
+    @ModifyExpressionValue(
+        method = "draw",
+        at = @At(value = "INVOKE",
+                 target = "Lnet/minecraft/advancements/DisplayInfo;isHidden()Z")
+    )
+    private boolean dungeontrain$revealRevealedIcon(boolean original) {
+        if (!original) return false;
+        if (advancementNode == null) return original;
+        return DungeonTrain.MOD_ID.equals(advancementNode.holder().id().getNamespace()) ? false : original;
+    }
+
     @Unique
     private boolean dungeontrain$shouldHideDescription() {
         if (advancementNode == null) return false;
