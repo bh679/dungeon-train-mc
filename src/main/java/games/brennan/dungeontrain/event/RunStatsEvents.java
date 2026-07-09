@@ -6,6 +6,7 @@ import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.compat.EchoIdentity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.DeathEquipmentReporter;
 import games.brennan.dungeontrain.discord.RunSummaryReporter;
@@ -178,6 +179,14 @@ public final class RunStatsEvents {
             GlobalPlayerStats.addDistance(id, run.distanceBlocks());
             GlobalPlayerStats.addBooks(id, run.booksReadCount());
             GlobalPlayerStats.addFriends(id, run.befriendedCount());
+            // All-lives icon-row lifetime totals. (playersEncountered + echos already accrue live in
+            // the encounter scan; advancements are counted point-in-time in buildPacket — neither here.)
+            GlobalPlayerStats.addBooksWritten(id, run.booksWrittenCount());
+            GlobalPlayerStats.addContainers(id, run.containersOpened());
+            GlobalPlayerStats.addMobKills(id, run.mobKills());
+            GlobalPlayerStats.addPlayerKills(id, run.playerKills());
+            GlobalPlayerStats.addDamageDealt(id, run.damageDealt());
+            GlobalPlayerStats.addDamageTaken(id, run.damageTaken());
             lifeDeaths = GlobalPlayerStats.addDeaths(id, 1L);
         }
 
@@ -343,6 +352,23 @@ public final class RunStatsEvents {
     }
 
     /**
+     * Point-in-time count of Dungeon Train advancements this player has completed — the all-lives
+     * "advancements earned" icon. Counted live from the player's advancement progress (not a running
+     * counter) so the login-replay re-fire of {@code AdvancementEarnEvent} can't inflate it. Vanilla
+     * advancement completion is permanent per-player, so this is a true across-all-lives total.
+     */
+    private static long countDungeonTrainAdvancements(ServerPlayer player) {
+        var manager = player.server.getAdvancements();
+        var progress = player.getAdvancements();
+        long count = 0;
+        for (AdvancementHolder h : manager.getAllAdvancements()) {
+            if (!DungeonTrain.MOD_ID.equals(h.id().getNamespace())) continue;
+            if (progress.getOrStartProgress(h).isDone()) count++;
+        }
+        return count;
+    }
+
+    /**
      * Mirror the run summary to Discord when a player leaves the game ALIVE (e.g. quits to the main
      * menu): the SAME stats + gear image as the death report, but via Discord Presence's grey "left
      * the game" report instead of the red death one. A player who leaves DEAD is skipped — their
@@ -384,6 +410,18 @@ public final class RunStatsEvents {
             long lifeFriends, long lifeBooks, long lifeTrainTicks,
             DeathNarrative narrative, String deathCause) {
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        UUID id = player.getUUID();
+        // All-lives icon-row lifetime totals — the current cross-world totals (accrued just above at
+        // death, or live for encountered/echos), plus a point-in-time count of earned DT advancements.
+        long lifeBooksWritten = GlobalPlayerStats.totalBooksWritten(id);
+        long lifeContainers = GlobalPlayerStats.totalContainers(id);
+        long lifeMobKills = GlobalPlayerStats.totalMobKills(id);
+        long lifePlayersKilled = GlobalPlayerStats.totalPlayerKills(id);
+        long lifePlayersEncountered = GlobalPlayerStats.playersEncountered(id);
+        long lifeEchos = GlobalPlayerStats.totalEchos(id);
+        long lifeAdvancements = countDungeonTrainAdvancements(player);
+        double lifeDamageDealt = GlobalPlayerStats.totalDamageDealt(id);
+        double lifeDamageTaken = GlobalPlayerStats.totalDamageTaken(id);
         // Death-screen portrait subject: prefer a befriended mob (drawn left),
         // else the most-recent killed mob (drawn right), else none.
         byte side;
@@ -417,6 +455,8 @@ public final class RunStatsEvents {
                 run.damageDealt(),
                 run.damageTaken(),
                 lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
+                lifeBooksWritten, lifeContainers, lifeMobKills, lifePlayersKilled,
+                lifePlayersEncountered, lifeEchos, lifeAdvancements, lifeDamageDealt, lifeDamageTaken,
                 narrative,
                 deathCause,
                 side,
@@ -524,6 +564,11 @@ public final class RunStatsEvents {
                 if (run.recordEncounter(mob.getUUID()) && !cheated) {
                     long total = GlobalPlayerStats.addPlayersEncountered(player.getUUID(), 1L);
                     AchievementEvents.notifyEncounter(player, total);
+                    // Echoes (reincarnations of a fallen player) are a distinct subset of encountered
+                    // PlayerMobs — tally them separately for the all-lives "Echos come across" icon.
+                    if (EchoIdentity.sourcePlayer(mob).isPresent()) {
+                        GlobalPlayerStats.addEchos(player.getUUID(), 1L);
+                    }
                 }
                 // "Others?" — within 4 blocks of any PlayerMob. Earns regardless of
                 // game mode / cheat state (advancements earn live in Free Play too) and
