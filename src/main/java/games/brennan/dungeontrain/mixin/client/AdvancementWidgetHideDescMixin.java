@@ -67,19 +67,20 @@ public abstract class AdvancementWidgetHideDescMixin {
     }
 
     /**
-     * Draw the icon/box for a {@code hidden:true} {@code dungeontrain:*}
-     * advancement once it is on screen at all. Vanilla's tree-tile render
-     * ({@code draw}) suppresses a hidden advancement's icon until it is earned
-     * — but DT hides most of its tree only to reveal a node's children when
-     * that node is earned (server-side frontier gate). A widget therefore only
-     * exists client-side once the server has decided it should be seen, so we
-     * force the render guard's {@code isHidden()} to report {@code false} for
-     * mod advancements, letting the frontier draw with its real icon (its
-     * description stays masked to a hint via the swap above). Non-mod
+     * Treat a {@code hidden:true} {@code dungeontrain:*} advancement as visible
+     * for tile rendering ({@code draw}) and hover hit-testing
+     * ({@code isMouseOver}) once it is on screen at all. Vanilla gates both on
+     * {@code isHidden()}: a hidden advancement draws no icon and can't be
+     * hovered until earned. But DT hides most of its tree only to reveal a
+     * node's children when that node is earned (server-side frontier gate), so
+     * any DT widget that exists client-side has already been cleared for
+     * display. Forcing the guard's {@code isHidden()} to {@code false} for mod
+     * advancements lets the frontier draw with its real icon and show its hover
+     * (its description stays masked to a hint via the swap above). Non-mod
      * advancements are untouched.
      */
     @ModifyExpressionValue(
-        method = "draw",
+        method = {"draw", "isMouseOver"},
         at = @At(value = "INVOKE",
                  target = "Lnet/minecraft/advancements/DisplayInfo;isHidden()Z")
     )

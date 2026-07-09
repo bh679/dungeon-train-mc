@@ -5,6 +5,7 @@ import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.TreeNodePosition;
 import net.minecraft.client.multiplayer.ClientAdvancements;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -42,6 +43,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ClientAdvancements.class)
 public abstract class AdvancementsCompactLayoutMixin {
 
+    /**
+     * Extra horizontal breathing room between depth columns. Vanilla lays
+     * columns 1 unit (28px) apart; with the frontier reveal a lone parent sits
+     * right against a dense child column, which reads as cramped. Scaling each
+     * node's column coordinate widens the gap without touching the (already
+     * tight) vertical spacing.
+     */
+    @Unique
+    private static final float DUNGEONTRAIN_COLUMN_SPREAD = 1.5F;
+
     @Inject(method = "update", at = @At("TAIL"))
     private void dungeontrain$compactVisibleLayout(CallbackInfo ci) {
         ClientAdvancements self = (ClientAdvancements) (Object) this;
@@ -51,6 +62,20 @@ public abstract class AdvancementsCompactLayoutMixin {
             // have display, but guard anyway for safety.
             if (root.advancement().display().isEmpty()) continue;
             TreeNodePosition.run(root);
+            dungeontrain$spreadColumns(root);
+        }
+    }
+
+    /**
+     * Widen the layout horizontally by scaling every node's column coordinate,
+     * leaving the row (Y) untouched. Runs after {@link TreeNodePosition#run}
+     * on the client's visible-only tree, so it only affects DT tabs.
+     */
+    @Unique
+    private static void dungeontrain$spreadColumns(AdvancementNode node) {
+        node.advancement().display().ifPresent(d -> d.setLocation(d.getX() * DUNGEONTRAIN_COLUMN_SPREAD, d.getY()));
+        for (AdvancementNode child : node.children()) {
+            dungeontrain$spreadColumns(child);
         }
     }
 }
