@@ -405,6 +405,7 @@ public final class RunStatsEvents {
                 run.runTicks(),
                 run.containersOpened(),
                 run.booksReadCount(),
+                run.booksWrittenCount(),
                 run.mostUsedWeapon(),
                 player.getItemBySlot(EquipmentSlot.HEAD).copy(),
                 player.getItemBySlot(EquipmentSlot.CHEST).copy(),

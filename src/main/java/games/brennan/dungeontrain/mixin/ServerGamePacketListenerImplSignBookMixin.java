@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.SharedBookMessage;
 import games.brennan.dungeontrain.narrative.SharedBookTag;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.FilteredText;
 import net.minecraft.world.item.ItemStack;
@@ -85,6 +86,9 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             // One-shot "signed a book" advancement — fires regardless of whether the fire-and-forget
             // upload above eventually succeeds; signing is the local action being rewarded here.
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(serverPlayer, "signed_shared_book");
+
+            // Count it for the death-screen "books written" cargo icon (per-run tally).
+            serverPlayer.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksWritten();
 
             ci.cancel();
             DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] SharedBook: {} signed a book — uploaded + dropped to burn",
