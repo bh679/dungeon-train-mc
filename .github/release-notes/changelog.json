@@ -3490,6 +3490,19 @@
       "released": true,
       "released_in": "v0.405.0",
       "released_at": "2026-07-09T07:29:27Z"
+    },
+    {
+      "id": "desert2-vault-frequency-retune",
+      "version": "0.408.0",
+      "type": "content",
+      "title": "Desert vault: reduced hidden-feature frequency",
+      "summary": "The desert vault's hidden decorative feature now appears less often in a few of its spawn slots.",
+      "highlights": [],
+      "pr": 675,
+      "date": "2026-07-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
