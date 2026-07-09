@@ -66,6 +66,30 @@ public abstract class AdvancementWidgetHideDescMixin {
         return dungeontrain$getHiddenDesc();
     }
 
+    /**
+     * Treat a {@code hidden:true} {@code dungeontrain:*} advancement as visible
+     * for tile rendering ({@code draw}) and hover hit-testing
+     * ({@code isMouseOver}) once it is on screen at all. Vanilla gates both on
+     * {@code isHidden()}: a hidden advancement draws no icon and can't be
+     * hovered until earned. But DT hides most of its tree only to reveal a
+     * node's children when that node is earned (server-side frontier gate), so
+     * any DT widget that exists client-side has already been cleared for
+     * display. Forcing the guard's {@code isHidden()} to {@code false} for mod
+     * advancements lets the frontier draw with its real icon and show its hover
+     * (its description stays masked to a hint via the swap above). Non-mod
+     * advancements are untouched.
+     */
+    @ModifyExpressionValue(
+        method = {"draw", "isMouseOver"},
+        at = @At(value = "INVOKE",
+                 target = "Lnet/minecraft/advancements/DisplayInfo;isHidden()Z")
+    )
+    private boolean dungeontrain$revealRevealedIcon(boolean original) {
+        if (!original) return false;
+        if (advancementNode == null) return original;
+        return DungeonTrain.MOD_ID.equals(advancementNode.holder().id().getNamespace()) ? false : original;
+    }
+
     @Unique
     private boolean dungeontrain$shouldHideDescription() {
         if (advancementNode == null) return false;

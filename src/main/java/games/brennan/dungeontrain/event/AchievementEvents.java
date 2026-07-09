@@ -297,6 +297,38 @@ public final class AchievementEvents {
         ModAdvancementTriggers.ENCOUNTERED_PLAYERS.get().trigger(player, total);
     }
 
+    /**
+     * Called from {@link games.brennan.dungeontrain.event.RunStatsEvents}'s
+     * proximity scan when a player comes within ~4 blocks of another passenger
+     * (a PlayerMob or another real player) while both are on the train. Drives
+     * the "I'm Not Alone" advancement; vanilla dedupe keeps it to one grant.
+     */
+    public static void notifyProximityOnTrain(ServerPlayer player) {
+        ModAdvancementTriggers.PROXIMITY_ON_TRAIN.get().trigger(player);
+    }
+
+    /**
+     * Fired whenever a player reads a book of any kind — narrative (lectern or
+     * held), random, starting, shared/community, or a plain player-written
+     * written book. Drives "The Enchiridion" (read your first book). Routed
+     * through the generic {@link ModAdvancementTriggers#GAMEPLAY_ACTION} marker
+     * with action id {@code read_any_book}; vanilla award is idempotent so
+     * re-reads are harmless.
+     */
+    public static void notifyBookRead(ServerPlayer player) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "read_any_book");
+    }
+
+    /**
+     * Fired when a player tags {@code @dev} / {@code @brennanhatton} in chat.
+     * Drives "Summon The Creator". Routed through the generic
+     * {@link ModAdvancementTriggers#GAMEPLAY_ACTION} marker with action id
+     * {@code tagged_creator}; earns regardless of whether Brennan is online.
+     */
+    public static void notifyTaggedCreator(ServerPlayer player) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "tagged_creator");
+    }
+
     // ---------------- Narrative progress ----------------
 
     /**

@@ -85,6 +85,10 @@ public final class MentionPresenceEvents {
         if (!mentionsDev) {
             return;
         }
+        // "Summon The Creator": tagging @dev / @brennanhatton earns the advancement,
+        // whether or not Brennan is online (the presence reply below is separate and
+        // may stay silent). Idempotent, so repeat tags are harmless.
+        AchievementEvents.notifyTaggedCreator(chatter);
         ServerPlayer sender = event.getPlayer();
         MinecraftServer server = sender.getServer();
         if (server == null) {

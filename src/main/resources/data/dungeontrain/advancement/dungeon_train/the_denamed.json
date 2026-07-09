@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/multiplayer",
+  "parent": "dungeontrain:dungeon_train/im_not_alone",
   "display": {
     "icon": { "id": "minecraft:name_tag" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.the_denamed.title" },
@@ -7,7 +7,7 @@
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true,
-    "hidden": false
+    "hidden": true
   },
   "criteria": {
     "named": {

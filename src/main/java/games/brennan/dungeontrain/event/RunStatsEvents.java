@@ -85,6 +85,8 @@ public final class RunStatsEvents {
     private static final int ENCOUNTER_SCAN_PERIOD_TICKS = 10;
     /** Radius (blocks) within which a PlayerMob counts as "encountered". */
     private static final double ENCOUNTER_RADIUS = 16.0;
+    /** Radius (blocks) within which another passenger counts toward "Others?". */
+    private static final double PROXIMITY_RADIUS = 4.0;
     /** A PlayerMob whose feeling (0–10 scale, default 5) toward the player exceeds this is the death-screen "friend" (portrait). */
     private static final float FRIEND_FEELING_MIN = 6.0f;
     /**
@@ -522,6 +524,14 @@ public final class RunStatsEvents {
                     long total = GlobalPlayerStats.addPlayersEncountered(player.getUUID(), 1L);
                     AchievementEvents.notifyEncounter(player, total);
                 }
+                // "Others?" — within 4 blocks of any PlayerMob. Earns regardless of
+                // game mode / cheat state (advancements earn live in Free Play too) and
+                // without an on-train gate: PlayerMobs live on the train anyway, and the
+                // AABB gate was unreliable on Sable ships. Idempotent, so firing each
+                // scan is harmless.
+                if (player.distanceTo(mob) <= PROXIMITY_RADIUS) {
+                    AchievementEvents.notifyProximityOnTrain(player);
+                }
                 // Death-screen "friends": any PlayerMob that likes this player above
                 // the threshold counts toward the friends tally (distinct), and the
                 // warmest of them is the friend portrait. Evaluated here while the mob
@@ -534,6 +544,15 @@ public final class RunStatsEvents {
                             run.captureFriendAppearance(PlayerMobAppearance.capture(pm), feeling);
                         }
                     }
+                }
+            }
+            // "Others?" also counts another real player within 4 blocks (the
+            // PlayerMob query above excludes players).
+            for (ServerPlayer other : players) {
+                if (other == player) continue;
+                if (player.distanceTo(other) <= PROXIMITY_RADIUS) {
+                    AchievementEvents.notifyProximityOnTrain(player);
+                    break;
                 }
             }
         }

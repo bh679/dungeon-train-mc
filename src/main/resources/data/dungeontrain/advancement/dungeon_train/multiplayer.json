@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/im_not_alone",
   "display": {
     "icon": { "id": "minecraft:player_head" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.multiplayer.title" },
@@ -7,7 +7,7 @@
     "frame": "goal",
     "show_toast": true,
     "announce_to_chat": true,
-    "hidden": false
+    "hidden": true
   },
   "criteria": {
     "played_multiplayer": {
