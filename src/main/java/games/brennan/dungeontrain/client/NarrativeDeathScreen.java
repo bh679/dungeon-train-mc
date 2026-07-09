@@ -918,17 +918,27 @@ public final class NarrativeDeathScreen extends Screen {
         y = drawNarration(g, n.livesNarration(), cx, w, y);
         y += 10;
         if (s != null) {
-            int third = w / 3;
-            drawCell(g, left + third / 2, y, fmtAboard(s.lifeTrainTicks()), "gui.dungeontrain.death.narr.lbl_total_aboard");
-            drawCell(g, left + third + third / 2, y, Long.toString(s.lifeCarriages()), "gui.dungeontrain.death.narr.lbl_carriages");
-            drawCell(g, left + 2 * third + third / 2, y, fmtDist(s.lifeDistance()), "gui.dungeontrain.death.narr.lbl_distance");
+            // Left: the six lifetime text tiles (narrowed, 3 cols × 2 rows). Right: a 3×3 hover-icon
+            // grid, top-aligned with the tiles, so the icons sit beside — not below — the text.
+            int igap = 4;
+            int gridW = 3 * SLOT + 2 * igap;      // 3-column icon grid width
+            int gridGap = 14;                     // gap between the text tiles and the icon grid
+            int leftW = w - gridW - gridGap;      // region the six text tiles share
+            int colW = leftW / 3;
+            int cellW = colW - 8;                 // narrower than the old full-width 96
+            int c0 = left + colW / 2;
+            int c1 = left + colW + colW / 2;
+            int c2 = left + 2 * colW + colW / 2;
+            drawCell(g, c0, y, fmtAboard(s.lifeTrainTicks()), "gui.dungeontrain.death.narr.lbl_total_aboard", cellW);
+            drawCell(g, c1, y, Long.toString(s.lifeCarriages()), "gui.dungeontrain.death.narr.lbl_carriages", cellW);
+            drawCell(g, c2, y, fmtDist(s.lifeDistance()), "gui.dungeontrain.death.narr.lbl_distance", cellW);
             int y2 = y + 30;
-            drawCell(g, left + third / 2, y2, Long.toString(s.lifeDeaths()), "gui.dungeontrain.death.narr.lbl_deaths");
-            drawCell(g, left + third + third / 2, y2, Long.toString(s.lifeFriends()), "gui.dungeontrain.death.narr.lbl_friends");
-            drawCell(g, left + 2 * third + third / 2, y2, Long.toString(s.lifeBooks()), "gui.dungeontrain.death.narr.lbl_books");
+            drawCell(g, c0, y2, Long.toString(s.lifeDeaths()), "gui.dungeontrain.death.narr.lbl_deaths", cellW);
+            drawCell(g, c1, y2, Long.toString(s.lifeFriends()), "gui.dungeontrain.death.narr.lbl_friends", cellW);
+            drawCell(g, c2, y2, Long.toString(s.lifeBooks()), "gui.dungeontrain.death.narr.lbl_books", cellW);
+            // 3×3 icon grid, right-aligned to the content and top-aligned with the tiles.
+            drawLifeIcons(g, s, left + w - gridW, y, igap);
             y = y2 + 30;
-            // A row of hover-labelled lifetime icons beneath the text tiles (mirrors the GEAR cargo row).
-            y = drawLifeIcons(g, s, left, w, y + 4);
         }
         return y;
     }
@@ -937,12 +947,13 @@ public final class NarrativeDeathScreen extends Screen {
     private record LifeIcon(ItemStack icon, String count, String tipKey) {}
 
     /**
-     * The all-lives icon row: compact hover-labelled item icons for lifetime totals, laid out in
-     * centred rows of up to 5. Each cell reuses the GEAR cargo-icon style (slot + item + count
-     * decoration); "hearts lost" draws the vanilla heart sprite with a manual count. Captures a
-     * {@link Rect} per cell into {@link #lifeStats} for {@link #drawLivesTooltips}.
+     * The all-lives icon block: nine compact hover-labelled item icons for lifetime totals, laid out
+     * as a fixed 3×3 grid whose top-left is {@code (gridLeft, gridTop)}. Each cell reuses the GEAR
+     * cargo-icon style (slot + item + count decoration); "hearts lost" draws the vanilla heart sprite
+     * with a manual count. Captures a {@link Rect} per cell into {@link #lifeStats} for
+     * {@link #drawLivesTooltips}. Fill order is row-major: cargo/health, then combat, then social/meta.
      */
-    private int drawLifeIcons(GuiGraphics g, DeathStatsPacket s, int left, int w, int y) {
+    private void drawLifeIcons(GuiGraphics g, DeathStatsPacket s, int gridLeft, int gridTop, int gap) {
         boolean show = settled();
         long hearts = Math.round(s.lifeDamageTaken() / 2.0);   // damage-taken health points → hearts
         List<LifeIcon> icons = List.of(
@@ -956,30 +967,24 @@ public final class NarrativeDeathScreen extends Screen {
             new LifeIcon(new ItemStack(Items.ECHO_SHARD),    compact(s.lifeEchos()),               "tip_life_echos"),
             new LifeIcon(new ItemStack(Items.KNOWLEDGE_BOOK),compact(s.lifeAdvancements()),        "tip_life_adv")
         );
-        int gap = 6, perRow = 5;
-        for (int rowStart = 0; rowStart < icons.size(); rowStart += perRow) {
-            int count = Math.min(perRow, icons.size() - rowStart);
-            int rowW = count * SLOT + (count - 1) * gap;
-            int sx = left + (w - rowW) / 2;
-            for (int i = 0; i < count; i++) {
-                LifeIcon e = icons.get(rowStart + i);
-                int x = sx + i * (SLOT + gap);
-                drawSlot(g, x, y);
-                if (show) {
-                    if (e.icon() != null) {
-                        g.renderItem(e.icon(), x + 1, y + 1);
-                        g.renderItemDecorations(this.font, e.icon(), x + 1, y + 1, e.count());
-                    } else {
-                        g.blitSprite(HEART_SPRITE, x + 1, y + 1, 16, 16);
-                        int tw = this.font.width(e.count());
-                        g.drawString(this.font, e.count(), x + SLOT - 1 - tw, y + SLOT - 8, 0xFFFFFF);
-                    }
+        int cols = 3;
+        for (int i = 0; i < icons.size(); i++) {
+            LifeIcon e = icons.get(i);
+            int x = gridLeft + (i % cols) * (SLOT + gap);
+            int y = gridTop + (i / cols) * (SLOT + gap);
+            drawSlot(g, x, y);
+            if (show) {
+                if (e.icon() != null) {
+                    g.renderItem(e.icon(), x + 1, y + 1);
+                    g.renderItemDecorations(this.font, e.icon(), x + 1, y + 1, e.count());
+                } else {
+                    g.blitSprite(HEART_SPRITE, x + 1, y + 1, 16, 16);
+                    int tw = this.font.width(e.count());
+                    g.drawString(this.font, e.count(), x + SLOT - 1 - tw, y + SLOT - 8, 0xFFFFFF);
                 }
-                lifeStats.add(new LifeStat(new Rect(x, y, SLOT, SLOT), "gui.dungeontrain.death.narr." + e.tipKey()));
             }
-            y += SLOT + gap;
+            lifeStats.add(new LifeStat(new Rect(x, y, SLOT, SLOT), "gui.dungeontrain.death.narr." + e.tipKey()));
         }
-        return y;
     }
 
     /** Compact a lifetime total to ≤4 chars so it fits the icon-count corner (9999 / 12k / 3m / 1b). */
