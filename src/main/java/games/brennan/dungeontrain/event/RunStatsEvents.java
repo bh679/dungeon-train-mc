@@ -19,7 +19,6 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.player.PlayerMobAppearance;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
-import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.util.SecondPersonDeathMessage;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.advancements.AdvancementHolder;
@@ -86,10 +85,8 @@ public final class RunStatsEvents {
     private static final int ENCOUNTER_SCAN_PERIOD_TICKS = 10;
     /** Radius (blocks) within which a PlayerMob counts as "encountered". */
     private static final double ENCOUNTER_RADIUS = 16.0;
-    /** Radius (blocks) within which another passenger counts as "not alone" (drives "I'm Not Alone"). */
+    /** Radius (blocks) within which another passenger counts toward "Others?". */
     private static final double PROXIMITY_RADIUS = 4.0;
-    /** Horizontal pad on a carriage AABB for the on-train containment test (mirrors BoardingProgressEvents). */
-    private static final double TRAIN_HORIZONTAL_PADDING = 1.0;
     /** A PlayerMob whose feeling (0–10 scale, default 5) toward the player exceeds this is the death-screen "friend" (portrait). */
     private static final float FRIEND_FEELING_MIN = 6.0f;
     /**
@@ -516,15 +513,9 @@ public final class RunStatsEvents {
         if (level.getGameTime() % ENCOUNTER_SCAN_PERIOD_TICKS != 0L) return;
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;
-        // Carriage list computed once per scan; drives the "on the train" gate
-        // for the "I'm Not Alone" proximity check. Empty when no train exists.
-        List<Trains.Carriage> carriages = Trains.allCarriages(level);
         for (ServerPlayer player : players) {
             PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
             boolean cheated = RunIntegrity.isCheated(player);
-            // "I'm Not Alone" is earnable only while the player is on the train,
-            // and frozen for cheated runs (mirrors the encounter/train-time gates).
-            boolean proximityEligible = !cheated && isOnTrain(carriages, player);
             AABB box = player.getBoundingBox().inflate(ENCOUNTER_RADIUS);
             for (Entity mob : level.getEntitiesOfClass(Entity.class, box, RunStatsEvents::isPlayerMob)) {
                 // Per-run encounter set still records (death-screen stat); the
@@ -533,12 +524,12 @@ public final class RunStatsEvents {
                     long total = GlobalPlayerStats.addPlayersEncountered(player.getUUID(), 1L);
                     AchievementEvents.notifyEncounter(player, total);
                 }
-                // "I'm Not Alone": within 4 blocks of a PlayerMob that is also on
-                // the train. Reuses the 16-block encounter query — just a tighter
-                // distance filter. The trigger is idempotent (self-removes once
-                // earned), so no per-run dedupe is needed.
-                if (proximityEligible && player.distanceTo(mob) <= PROXIMITY_RADIUS
-                    && isOnTrain(carriages, mob)) {
+                // "Others?" — within 4 blocks of any PlayerMob. Earns regardless of
+                // game mode / cheat state (advancements earn live in Free Play too) and
+                // without an on-train gate: PlayerMobs live on the train anyway, and the
+                // AABB gate was unreliable on Sable ships. Idempotent, so firing each
+                // scan is harmless.
+                if (player.distanceTo(mob) <= PROXIMITY_RADIUS) {
                     AchievementEvents.notifyProximityOnTrain(player);
                 }
                 // Death-screen "friends": any PlayerMob that likes this player above
@@ -555,15 +546,13 @@ public final class RunStatsEvents {
                     }
                 }
             }
-            // "I'm Not Alone" also counts another *real* player within 4 blocks,
-            // both on the train (the PlayerMob query above excludes players).
-            if (proximityEligible) {
-                for (ServerPlayer other : players) {
-                    if (other == player) continue;
-                    if (player.distanceTo(other) <= PROXIMITY_RADIUS && isOnTrain(carriages, other)) {
-                        AchievementEvents.notifyProximityOnTrain(player);
-                        break;
-                    }
+            // "Others?" also counts another real player within 4 blocks (the
+            // PlayerMob query above excludes players).
+            for (ServerPlayer other : players) {
+                if (other == player) continue;
+                if (player.distanceTo(other) <= PROXIMITY_RADIUS) {
+                    AchievementEvents.notifyProximityOnTrain(player);
+                    break;
                 }
             }
         }
@@ -572,25 +561,5 @@ public final class RunStatsEvents {
     private static boolean isPlayerMob(Entity entity) {
         return entity != null
             && PLAYERMOB_NAMESPACE.equals(EntityType.getKey(entity.getType()).getNamespace());
-    }
-
-    /**
-     * Whether {@code entity} sits within any carriage's world AABB (padded like
-     * {@link games.brennan.dungeontrain.event.BoardingProgressEvents}: horizontal
-     * pad to bridge group joints, +3 above to count roof-riders). Used to gate
-     * the "I'm Not Alone" proximity advancement to genuine on-train co-location.
-     */
-    private static boolean isOnTrain(List<Trains.Carriage> carriages, Entity entity) {
-        double ex = entity.getX();
-        double ey = entity.getY();
-        double ez = entity.getZ();
-        for (Trains.Carriage c : carriages) {
-            org.joml.primitives.AABBdc bb = c.ship().worldAABB();
-            if (ex < bb.minX() - TRAIN_HORIZONTAL_PADDING || ex > bb.maxX() + TRAIN_HORIZONTAL_PADDING) continue;
-            if (ey < bb.minY() || ey > bb.maxY() + 3.0) continue;
-            if (ez < bb.minZ() - TRAIN_HORIZONTAL_PADDING || ez > bb.maxZ() + TRAIN_HORIZONTAL_PADDING) continue;
-            return true;
-        }
-        return false;
     }
 }
