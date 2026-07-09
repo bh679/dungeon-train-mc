@@ -3569,6 +3569,21 @@
       "released": true,
       "released_in": "v0.411.0",
       "released_at": "2026-07-09T14:52:15Z"
+    },
+    {
+      "id": "lifetime-stats-lives-page",
+      "version": "0.412.0",
+      "type": "feat",
+      "title": "More lifetime stats on the all-lives death screen",
+      "summary": "The 'all your lives' death page now shows a grid of lifetime stat icons alongside your existing totals \u2014 hover any icon to see what it is. Tracks books written, chests opened, hearts lost, damage dealt, mobs killed, PlayerMobs killed, others come across, echos come across, and advancements earned, all summed across every life.",
+      "highlights": [
+        "New 3x3 grid of hover-labelled lifetime stat icons on the all-lives page",
+        "Tracks books written, chests, hearts lost, damage dealt, mob & PlayerMob kills, passengers & echos met, and advancements earned"
+      ],
+      "date": "2026-07-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
