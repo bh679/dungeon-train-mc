@@ -247,6 +247,11 @@ public final class NarrativeDeathScreen extends Screen {
     private int cargoRowY = -1;             // top y of row 1 (equipment + cargo icons), for tooltips
     private int cargoSx = -1;               // start x of the equipment slots, for tooltips
     private Rect containersRect, booksRect, writtenRect; // chest / book / written-book cargo-icon hover regions (tooltips)
+    /** All-lives (LIVES) page icon-row hover regions + their tooltip keys, rebuilt each frame in {@link #drawLives}. */
+    private record LifeStat(Rect rect, String tipKey) {}
+    private final List<LifeStat> lifeStats = new ArrayList<>();
+    /** Vanilla full-heart HUD sprite — the "hearts lost" icon (no heart item exists). */
+    private static final ResourceLocation HEART_SPRITE = ResourceLocation.withDefaultNamespace("hud/heart/full");
     private Rect seeAllRect;                // "see all advancements" button
     private Rect advViewport;               // advancements scroll viewport (hover / scroll hit-test)
     private final List<AdvIcon> gearAdvIcons = new ArrayList<>();  // resolved this frame, for hover
@@ -409,6 +414,8 @@ public final class NarrativeDeathScreen extends Screen {
         bugReportRect = null;
         containersRect = null;
         booksRect = null;
+        writtenRect = null;
+        lifeStats.clear();
         seeAllRect = null;
         advViewport = null;
         gearAdvIcons.clear();
@@ -446,6 +453,10 @@ public final class NarrativeDeathScreen extends Screen {
             // Cargo-page hover tooltips last, above everything — only when settled.
             if (page.kind() == Kind.GEAR && stats != null && settled()) {
                 drawCargoTooltips(g, stats, mouseX, mouseY);
+            }
+            // All-lives icon-row hover tooltips (same "settled" gate as the cargo row).
+            if (page.kind() == Kind.LIVES && stats != null && settled()) {
+                drawLivesTooltips(g, mouseX, mouseY);
             }
         }
     }
@@ -907,17 +918,91 @@ public final class NarrativeDeathScreen extends Screen {
         y = drawNarration(g, n.livesNarration(), cx, w, y);
         y += 10;
         if (s != null) {
-            int third = w / 3;
-            drawCell(g, left + third / 2, y, fmtAboard(s.lifeTrainTicks()), "gui.dungeontrain.death.narr.lbl_total_aboard");
-            drawCell(g, left + third + third / 2, y, Long.toString(s.lifeCarriages()), "gui.dungeontrain.death.narr.lbl_carriages");
-            drawCell(g, left + 2 * third + third / 2, y, fmtDist(s.lifeDistance()), "gui.dungeontrain.death.narr.lbl_distance");
+            // Left: the six lifetime text tiles (narrowed, 3 cols × 2 rows). Right: a 3×3 hover-icon
+            // grid, top-aligned with the tiles, so the icons sit beside — not below — the text.
+            int igap = 4;
+            int gridW = 3 * SLOT + 2 * igap;      // 3-column icon grid width
+            int gridGap = 14;                     // gap between the text tiles and the icon grid
+            int leftW = w - gridW - gridGap;      // region the six text tiles share
+            int colW = leftW / 3;
+            int cellW = colW - 8;                 // narrower than the old full-width 96
+            int c0 = left + colW / 2;
+            int c1 = left + colW + colW / 2;
+            int c2 = left + 2 * colW + colW / 2;
+            drawCell(g, c0, y, fmtAboard(s.lifeTrainTicks()), "gui.dungeontrain.death.narr.lbl_total_aboard", cellW);
+            drawCell(g, c1, y, Long.toString(s.lifeCarriages()), "gui.dungeontrain.death.narr.lbl_carriages", cellW);
+            drawCell(g, c2, y, fmtDist(s.lifeDistance()), "gui.dungeontrain.death.narr.lbl_distance", cellW);
             int y2 = y + 30;
-            drawCell(g, left + third / 2, y2, Long.toString(s.lifeDeaths()), "gui.dungeontrain.death.narr.lbl_deaths");
-            drawCell(g, left + third + third / 2, y2, Long.toString(s.lifeFriends()), "gui.dungeontrain.death.narr.lbl_friends");
-            drawCell(g, left + 2 * third + third / 2, y2, Long.toString(s.lifeBooks()), "gui.dungeontrain.death.narr.lbl_books");
+            drawCell(g, c0, y2, Long.toString(s.lifeDeaths()), "gui.dungeontrain.death.narr.lbl_deaths", cellW);
+            drawCell(g, c1, y2, Long.toString(s.lifeFriends()), "gui.dungeontrain.death.narr.lbl_friends", cellW);
+            drawCell(g, c2, y2, Long.toString(s.lifeBooks()), "gui.dungeontrain.death.narr.lbl_books", cellW);
+            // 3×3 icon grid, right-aligned to the content and top-aligned with the tiles.
+            drawLifeIcons(g, s, left + w - gridW, y, igap);
             y = y2 + 30;
         }
         return y;
+    }
+
+    /** One lifetime icon-row cell: its icon (null ⇒ the heart sprite), its count string, its tooltip key. */
+    private record LifeIcon(ItemStack icon, String count, String tipKey) {}
+
+    /**
+     * The all-lives icon block: nine compact hover-labelled item icons for lifetime totals, laid out
+     * as a fixed 3×3 grid whose top-left is {@code (gridLeft, gridTop)}. Each cell reuses the GEAR
+     * cargo-icon style (slot + item + count decoration); "hearts lost" draws the vanilla heart sprite
+     * with a manual count. Captures a {@link Rect} per cell into {@link #lifeStats} for
+     * {@link #drawLivesTooltips}. Fill order is row-major: cargo/health, then combat, then social/meta.
+     */
+    private void drawLifeIcons(GuiGraphics g, DeathStatsPacket s, int gridLeft, int gridTop, int gap) {
+        boolean show = settled();
+        long hearts = Math.round(s.lifeDamageTaken() / 2.0);   // damage-taken health points → hearts
+        List<LifeIcon> icons = List.of(
+            new LifeIcon(new ItemStack(Items.WRITABLE_BOOK), compact(s.lifeBooksWritten()),        "tip_life_written"),
+            new LifeIcon(new ItemStack(Items.CHEST),         compact(s.lifeContainers()),          "tip_life_chests"),
+            new LifeIcon(null,                               compact(hearts),                      "tip_life_hearts"),
+            new LifeIcon(new ItemStack(Items.IRON_SWORD),    compact(Math.round(s.lifeDamageDealt())), "tip_life_damage"),
+            new LifeIcon(new ItemStack(Items.ROTTEN_FLESH),  compact(s.lifeMobKills()),            "tip_life_mobs"),
+            new LifeIcon(new ItemStack(Items.SKELETON_SKULL), compact(s.lifePlayersKilled()),       "tip_life_pmkills"),
+            new LifeIcon(new ItemStack(Items.PLAYER_HEAD),   compact(s.lifePlayersEncountered()),  "tip_life_others"),
+            new LifeIcon(new ItemStack(Items.ECHO_SHARD),    compact(s.lifeEchos()),               "tip_life_echos"),
+            new LifeIcon(new ItemStack(Items.KNOWLEDGE_BOOK),compact(s.lifeAdvancements()),        "tip_life_adv")
+        );
+        int cols = 3;
+        for (int i = 0; i < icons.size(); i++) {
+            LifeIcon e = icons.get(i);
+            int x = gridLeft + (i % cols) * (SLOT + gap);
+            int y = gridTop + (i / cols) * (SLOT + gap);
+            drawSlot(g, x, y);
+            if (show) {
+                if (e.icon() != null) {
+                    g.renderItem(e.icon(), x + 1, y + 1);
+                    g.renderItemDecorations(this.font, e.icon(), x + 1, y + 1, e.count());
+                } else {
+                    g.blitSprite(HEART_SPRITE, x + 1, y + 1, 16, 16);
+                    int tw = this.font.width(e.count());
+                    g.drawString(this.font, e.count(), x + SLOT - 1 - tw, y + SLOT - 8, 0xFFFFFF);
+                }
+            }
+            lifeStats.add(new LifeStat(new Rect(x, y, SLOT, SLOT), "gui.dungeontrain.death.narr." + e.tipKey()));
+        }
+    }
+
+    /** Compact a lifetime total to ≤4 chars so it fits the icon-count corner (9999 / 12k / 3m / 1b). */
+    private static String compact(long v) {
+        if (v < 10_000) return Long.toString(v);
+        if (v < 1_000_000) return (v / 1000) + "k";
+        if (v < 1_000_000_000) return (v / 1_000_000) + "m";
+        return (v / 1_000_000_000) + "b";
+    }
+
+    /** All-lives icon-row hover tooltips — one label at a time, from the {@link #lifeStats} regions. */
+    private void drawLivesTooltips(GuiGraphics g, int mouseX, int mouseY) {
+        for (LifeStat st : lifeStats) {
+            if (st.rect().has(mouseX, mouseY)) {
+                g.renderTooltip(this.font, Component.translatable(st.tipKey()), mouseX, mouseY);
+                return;
+            }
+        }
     }
 
     private int drawSurvey(GuiGraphics g, SurveyQuestionPayload.Entry e, int left, int w, int cx, int y) {

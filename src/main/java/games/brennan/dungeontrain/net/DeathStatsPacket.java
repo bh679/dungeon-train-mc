@@ -63,6 +63,16 @@ public record DeathStatsPacket(
         long lifeFriends,
         long lifeBooks,
         long lifeTrainTicks,
+        // All-lives icon-row lifetime totals (see NarrativeDeathScreen.drawLives).
+        long lifeBooksWritten,
+        long lifeContainers,
+        long lifeMobKills,
+        long lifePlayersKilled,
+        long lifePlayersEncountered,
+        long lifeEchos,
+        long lifeAdvancements,
+        double lifeDamageDealt,
+        double lifeDamageTaken,
         DeathNarrative narrative,
         String deathCause,
         byte side,
@@ -103,6 +113,15 @@ public record DeathStatsPacket(
         buf.writeVarLong(lifeFriends);
         buf.writeVarLong(lifeBooks);
         buf.writeVarLong(lifeTrainTicks);
+        buf.writeVarLong(lifeBooksWritten);
+        buf.writeVarLong(lifeContainers);
+        buf.writeVarLong(lifeMobKills);
+        buf.writeVarLong(lifePlayersKilled);
+        buf.writeVarLong(lifePlayersEncountered);
+        buf.writeVarLong(lifeEchos);
+        buf.writeVarLong(lifeAdvancements);
+        buf.writeDouble(lifeDamageDealt);
+        buf.writeDouble(lifeDamageTaken);
         narrative.encode(buf);
         buf.writeUtf(deathCause);
         // Death-screen portrait subject (0 = none, 1 = befriended/left, 2 = killed/right).
@@ -143,6 +162,15 @@ public record DeathStatsPacket(
         long lifeFriends = buf.readVarLong();
         long lifeBooks = buf.readVarLong();
         long lifeTrainTicks = buf.readVarLong();
+        long lifeBooksWritten = buf.readVarLong();
+        long lifeContainers = buf.readVarLong();
+        long lifeMobKills = buf.readVarLong();
+        long lifePlayersKilled = buf.readVarLong();
+        long lifePlayersEncountered = buf.readVarLong();
+        long lifeEchos = buf.readVarLong();
+        long lifeAdvancements = buf.readVarLong();
+        double lifeDamageDealt = buf.readDouble();
+        double lifeDamageTaken = buf.readDouble();
         DeathNarrative narrative = DeathNarrative.decode(buf);
         String deathCause = buf.readUtf();
         byte side = buf.readByte();
@@ -159,6 +187,8 @@ public record DeathStatsPacket(
                 containersOpened, booksRead, booksWritten, weapon, head, chest, legs, feet,
                 playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken,
                 lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
+                lifeBooksWritten, lifeContainers, lifeMobKills, lifePlayersKilled,
+                lifePlayersEncountered, lifeEchos, lifeAdvancements, lifeDamageDealt, lifeDamageTaken,
                 narrative, deathCause, side, portrait, earnedAdvancements);
     }
 
