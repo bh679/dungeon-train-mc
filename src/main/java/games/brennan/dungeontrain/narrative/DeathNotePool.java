@@ -146,8 +146,9 @@ public final class DeathNotePool {
             if (n != null) parsed.add(n);
         }
         NOTES.put(playerUuid, List.copyOf(parsed));
-        LOGGER.info("[DN-DEBUG] death-note pool for {}: pulled {} unspawned note(s) from relay.",
-                playerUuid, parsed.size());
+        if (!parsed.isEmpty()) {
+            LOGGER.debug("[DungeonTrain] death-note pool for {}: {} unspawned note(s)", playerUuid, parsed.size());
+        }
     }
 
     /** Materialise one note; {@code null} if it lacks the fields needed to spawn an echo. */

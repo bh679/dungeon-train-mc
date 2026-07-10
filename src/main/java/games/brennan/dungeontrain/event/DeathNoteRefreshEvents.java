@@ -99,8 +99,6 @@ public final class DeathNoteRefreshEvents {
         if (!DeathNotePool.hasAny(targetUuid)) return;
         ServerLevel level = player.serverLevel();
         for (DeathNotePool.Note note : DeathNotePool.notesReached(targetUuid, cur, ARRIVAL_LEAD)) {
-            LOGGER.info("[DN-DEBUG] arrival: {} reached carriage {} — spawning echo of {} (note id={}, deathCarriage={}).",
-                    player.getGameProfile().getName(), cur, note.authorName(), note.id(), note.deathCarriage());
             boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
                     note.authorUuid(), note.authorName(), note.deathCarriage());
             if (!ok) continue;                                       // not on a carriage yet — retry next scan

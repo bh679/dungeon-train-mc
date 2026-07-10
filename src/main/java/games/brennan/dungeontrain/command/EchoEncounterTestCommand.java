@@ -288,7 +288,7 @@ public final class EchoEncounterTestCommand {
         DeathNoteRefreshEvents.refresh(player);
         source.sendSuccess(() -> Component.literal(
                 "[echotest] forced a Death Note relay pull for " + player.getGameProfile().getName()
-                    + " — watch the log for \"[DN-DEBUG] death-note pool … pulled N note(s)\".")
+                    + " — any curse targeting you will spawn its echo when you reach that carriage.")
             .withStyle(ChatFormatting.AQUA), false);
         return 1;
     }

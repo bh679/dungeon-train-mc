@@ -55,17 +55,14 @@ public final class DeathNoteEvents {
         Integer deathCarriage = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
         String worldKey = String.valueOf(DungeonTrainWorldData.get(level).getGenerationSeed());
 
-        LOGGER.info("[DN-DEBUG] onPlayerDeath: author={} pendingNotes={} deathCarriage={} canSync={}",
-                player.getGameProfile().getName(), pending.size(), deathCarriage, canSync);
-
         for (PendingDeathNotes.PendingDeathNote note : pending) {
             if (deathCarriage == null) {
-                LOGGER.info("[DN-DEBUG] onPlayerDeath: {} died off-train — curse on {} DROPPED (no carriage).",
+                LOGGER.debug("[DungeonTrain] DeathNote: {} died off-train — curse on {} dropped (no carriage).",
                         note.authorName(), note.targetName());
                 continue;
             }
             if (!canSync) {
-                LOGGER.info("[DN-DEBUG] onPlayerDeath: curse on {} NOT synced (feature off or no consent).",
+                LOGGER.debug("[DungeonTrain] DeathNote: curse on {} not synced (feature off or no consent).",
                         note.targetName());
                 continue;
             }
@@ -75,8 +72,6 @@ public final class DeathNoteEvents {
             // worldKey is still sent (the relay requires it) but is no longer used to scope the pull.
             DeathNoteReporter.submit(player.getUUID(), note.authorName(), note.targetName(),
                     note.targetUuid(), deathCarriage, worldKey, "");
-            LOGGER.info("[DN-DEBUG] onPlayerDeath: SUBMITTED curse on target='{}' (uuid='{}') at carriage {} to relay.",
-                    note.targetName(), note.targetUuid(), deathCarriage);
         }
     }
 
