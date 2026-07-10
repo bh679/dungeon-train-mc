@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/the_enchiridion",
+  "display": {
+    "icon": { "id": "minecraft:campfire" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.burned_unread.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.burned_unread.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:books_burned_unread",
+      "conditions": { "thresholdReads": 10 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

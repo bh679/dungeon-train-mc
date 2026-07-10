@@ -109,6 +109,7 @@ public final class NarrativeBookEvents {
         ItemStack stack = event.getItemStack();
         if (stack.isEmpty()) return;
         if (RandomBookTag.read(stack).isEmpty()) return;
+        BookReadMarkerTag.markOpened(stack);
         if (RunIntegrity.isCheated(player)) return; // global book-read stat frozen for cheated runs
         long newTotal = GlobalPlayerStats.addRandomBooksRead(player.getUUID(), 1L);
         AchievementEvents.notifyRandomBooksRead(player, newTotal);
@@ -131,6 +132,7 @@ public final class NarrativeBookEvents {
         ItemStack stack = event.getItemStack();
         if (stack.isEmpty()) return;
         if (!StartingBookTag.isStartingBook(stack)) return;
+        BookReadMarkerTag.markOpened(stack);
         if (RunIntegrity.isCheated(player)) return; // global book-read stat frozen for cheated runs
         long newTotal = GlobalPlayerStats.addStartingBooksRead(player.getUUID(), 1L);
         AchievementEvents.notifyStartingBooksRead(player, newTotal);
