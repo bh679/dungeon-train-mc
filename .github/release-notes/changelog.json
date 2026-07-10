@@ -3819,7 +3819,7 @@
     },
     {
       "id": "familiar-book-author-stats",
-      "version": "0.424.0",
+      "version": "0.425.0",
       "type": "feat",
       "title": "Find your own shared book out in the world and it tells you how it's doing",
       "summary": "Stumble on a chest copy of a book you wrote and shared to the community, and it now whispers how it's been received out on the rails \u2014 how many travelers have held it, plus one telling detail: how many read it to the end, the longest anyone lingered on a single page, how many times it's been opened, how many pages have been turned, or how often someone came back to read it again. A quiet gray line, ten different ways it can read.",
@@ -3830,13 +3830,30 @@
       ],
       "pr": 701,
       "date": "2026-07-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.425.0",
+      "released_at": "2026-07-10T14:57:57Z"
+    },
+    {
+      "id": "deathnote-advancements",
+      "version": "0.425.0",
+      "type": "feat",
+      "title": "Death Note advancements: Self-Fulfilling Prophecy & Assassination Attempt",
+      "summary": "Two new advancements for the Death Note curse. Naming your own name in a Death Note now works in every build (previously dev-only) and earns Self-Fulfilling Prophecy; killing a Death Note echo hunting you earns Assassination Attempt.",
+      "highlights": [
+        "New advancement: Self-Fulfilling Prophecy \u2014 write your own name in a Death Note",
+        "New advancement: Assassination Attempt \u2014 kill a Death Note echo before it kills you",
+        "You can now curse your own next life (self-targeting a Death Note works in all builds)"
+      ],
+      "pr": 702,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.425.0",
+      "released_at": "2026-07-10T14:57:57Z"
     },
     {
       "id": "death-detail-relay-reporting",
-      "version": "0.425.0",
+      "version": "0.426.0",
       "type": "chore",
       "title": "Death-screen detail now feeds the community data dashboard",
       "summary": "The mod now reports your full end-of-run recap \u2014 the story pages, your stats, and everything you were carrying \u2014 to the community data dashboard when you die, so it can be browsed there. No change to the death screen itself or anything else in-game.",
