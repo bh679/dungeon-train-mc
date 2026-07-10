@@ -3610,9 +3610,9 @@
       ],
       "pr": 682,
       "date": "2026-07-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.414.0",
+      "released_at": "2026-07-10T08:02:14Z"
     },
     {
       "id": "antizombiesroom-min-level",
@@ -3623,9 +3623,9 @@
       "highlights": [],
       "pr": 682,
       "date": "2026-07-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.414.0",
+      "released_at": "2026-07-10T08:02:14Z"
     },
     {
       "id": "book-carriage-signature",
@@ -3638,9 +3638,9 @@
       ],
       "pr": 683,
       "date": "2026-07-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.414.0",
+      "released_at": "2026-07-10T08:02:14Z"
     },
     {
       "id": "burn-without-reading-advancement",
