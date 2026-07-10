@@ -3672,6 +3672,20 @@
       "released": true,
       "released_in": "v0.415.0",
       "released_at": "2026-07-10T08:27:52Z"
+    },
+    {
+      "id": "creator-answers-advancement",
+      "version": "0.416.0",
+      "type": "feat",
+      "title": "The Creator Answers advancement",
+      "summary": "A new advancement, \"The Creator Answers\", follows Summon The Creator \u2014 earned when you actually get a reply from the developer in chat.",
+      "highlights": [
+        "New advancement: The Creator Answers (earned on receiving a Developer message)"
+      ],
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
