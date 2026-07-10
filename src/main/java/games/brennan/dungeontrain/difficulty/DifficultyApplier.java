@@ -56,6 +56,25 @@ public final class DifficultyApplier {
     /** Drop chance for difficulty-applied gear — matches vanilla zombie/skeleton ~0.085. */
     private static final float DIFFICULTY_DROP_CHANCE = 0.05f;
 
+    /**
+     * How the per-tier AIS primary-stat bonus ({@link ItemStatLevelScaling}) scales an
+     * applied equipment piece — attack damage on weapons, armor on armor.
+     */
+    public enum StatScaling {
+        /** No per-tier stat bonus — plain AIS roll. The baseline for ungeared vanilla parity. */
+        NONE,
+        /** Scale off the full difficulty tier (strong from tier 1). PlayerMobs use this. */
+        FULL,
+        /**
+         * Scale off the post-material-cap tier
+         * ({@code max(0, tier - }{@link ProceduralTiers#MATERIAL_CAP_LEVEL}{@code )}) — the
+         * bonus is 0 until gear material ceilings at netherite (level 50), then climbs so
+         * hostile gear keeps getting stronger past the plateau. Regular carriage hostiles
+         * use this; tiers ≤ 50 stay identical to a plain AIS roll.
+         */
+        PAST_MATERIAL_CAP
+    }
+
     private DifficultyApplier() {}
 
     /**
@@ -88,29 +107,32 @@ public final class DifficultyApplier {
     /**
      * As {@link #apply(Mob, int, RandomSource)}, but {@code applyEffects} gates
      * the potion-effect pass — pass {@code false} to roll only equipment
-     * (armor + weapon + enchants). PlayerMobs use this so they get
-     * difficulty-scaled gear without buffs (see {@code PlayerMobGroupSpawner}).
+     * (armor + weapon + enchants). Applies no per-tier stat bonus
+     * ({@link StatScaling#NONE}); callers that want scaled item stats use the
+     * {@link #apply(Mob, int, RandomSource, boolean, StatScaling)} overload.
      *
      * @return true if any modification was made, false if no-op (registry empty,
      *         tier returned null, etc.)
      */
     public static boolean apply(Mob mob, int carriageIndex, RandomSource rng, boolean applyEffects) {
-        return apply(mob, carriageIndex, rng, applyEffects, false);
+        return apply(mob, carriageIndex, rng, applyEffects, StatScaling.NONE);
     }
 
     /**
-     * As {@link #apply(Mob, int, RandomSource, boolean)}, but {@code scaleStatsByLevel}
-     * opts into difficulty-scaled item stats: when {@code true}, each rolled equipment
-     * piece additionally gets a flat
-     * {@link ItemStatLevelScaling#primaryStatBonus primary-stat bonus} for the current
-     * tier. PlayerMobs pass {@code true}; regular carriage mobs pass {@code false} so
-     * their gear keeps the plain AIS roll.
+     * As {@link #apply(Mob, int, RandomSource, boolean)}, but {@code statScaling}
+     * opts into difficulty-scaled item stats: each rolled equipment piece additionally
+     * gets a flat {@link ItemStatLevelScaling#primaryStatBonus primary-stat bonus}
+     * sized per {@link StatScaling}. {@link StatScaling#FULL} scales off the current
+     * tier (PlayerMobs); {@link StatScaling#PAST_MATERIAL_CAP} scales off the
+     * post-netherite-cap tier so regular carriage hostiles keep gaining gear strength
+     * past level 50 while tiers ≤ 50 stay a plain AIS roll; {@link StatScaling#NONE}
+     * adds no bonus.
      *
      * @return true if any modification was made, false if no-op (registry empty,
      *         tier returned null, etc.)
      */
     public static boolean apply(Mob mob, int carriageIndex, RandomSource rng,
-                                boolean applyEffects, boolean scaleStatsByLevel) {
+                                boolean applyEffects, StatScaling statScaling) {
         // carriageIndex here is always live player progress (maxTravelledCarriageIndex),
         // which already folds in the difficulty travelled-offset at its source — so a
         // plain tierForTravelled here picks up an admin offset without double-applying.
@@ -121,8 +143,15 @@ public final class DifficultyApplier {
         DifficultyTier tier = ProceduralTiers.tierFor(tierIndex);
         if (tier == null) return false;
 
-        // 0 disables the per-tier stat bonus (regular mobs); PlayerMobs scale by tier.
-        int statScalingTier = scaleStatsByLevel ? tierIndex : 0;
+        // The tier feeding the per-tier AIS stat bonus: 0 = none (baseline), full tier
+        // (PlayerMobs), or the post-material-cap tier (regular hostiles keep scaling
+        // past the netherite plateau — 0 at/below level 50, then climbing).
+        int statScalingTier = switch (statScaling) {
+            case NONE -> 0;
+            case FULL -> tierIndex;
+            case PAST_MATERIAL_CAP ->
+                    ItemStatLevelScaling.pastCapTier(tierIndex, ProceduralTiers.MATERIAL_CAP_LEVEL);
+        };
 
         boolean armorOk = supportsArmor(mob);
         ServerLevel serverLevel = mob.level() instanceof ServerLevel sl ? sl : null;
