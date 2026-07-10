@@ -60,17 +60,20 @@ public final class DeathNoteEchoSpawner {
                                          String authorUuid, String authorName, int deathCarriage) {
         Trains.Carriage group = groupContaining(level, target);
         if (group == null) {
-            LOGGER.debug("[DungeonTrain] DeathNote echo: {} not on a resolvable carriage group yet — deferring.",
-                    target.getGameProfile().getName());
+            LOGGER.info("[DN-DEBUG] spawnForTarget: {} at world ({},{},{}) is inside NO carriage AABB — deferring (group=null).",
+                    target.getGameProfile().getName(), fmt(target.getX()), fmt(target.getY()), fmt(target.getZ()));
             return false;
         }
         TrainTransformProvider provider = group.provider();
         int anchor = provider.getPIdx();
         int groupSize = provider.getGroupSize();
         // Spawn in the player's own carriage; clamp into this group's range so the slot is valid.
-        int pidx = TrainConfinement.carriageIndex(target);
+        int rawPidx = TrainConfinement.carriageIndex(target);
+        int pidx = rawPidx;
         if (pidx < anchor || pidx >= anchor + groupSize) pidx = anchor;
         BlockPos floorPos = interiorFloorPos(provider, pidx);
+        LOGGER.info("[DN-DEBUG] spawnForTarget: group OK anchor={} groupSize={} rawCarriageIndex={} clampedPidx={} shipyardOrigin={} floorPos={} deathCarriage={}",
+                anchor, groupSize, rawPidx, pidx, provider.getShipyardOrigin(), floorPos, deathCarriage);
         return spawn(level, floorPos, deathCarriage, authorUuid, authorName, target.getUUID());
     }
 
@@ -154,13 +157,18 @@ public final class DeathNoteEchoSpawner {
             persistent.putString(KEY_AUTHOR, authorName);
             mob.setPersistenceRequired();
 
+            LOGGER.info("[DN-DEBUG] spawn: pre-addFreshEntity at ({},{},{}) alive={} removed={}",
+                fmt(mob.getX()), fmt(mob.getY()), fmt(mob.getZ()), mob.isAlive(), mob.isRemoved());
             if (!level.addFreshEntity(mob)) {
-                LOGGER.warn("[DungeonTrain] DeathNote echo: addFreshEntity rejected at {} pIdx={}",
-                    floorPos, carriagePIdx);
+                LOGGER.warn("[DN-DEBUG] spawn: addFreshEntity REJECTED at {} pIdx={}", floorPos, carriagePIdx);
                 return false;
             }
             // Track it so DeathNoteEchoController can steer it onto the target (frame-consistent).
             DeathNoteEchoController.register(mob.getUUID(), targetUuid);
+            boolean found = level.getEntity(mob.getUUID()) != null;
+            LOGGER.info("[DN-DEBUG] spawn: addFreshEntity OK uuid={} post-pos=({},{},{}) block={} alive={} removed={} foundInLevel={} carriageIndex={}",
+                mob.getUUID(), fmt(mob.getX()), fmt(mob.getY()), fmt(mob.getZ()), mob.blockPosition(),
+                mob.isAlive(), mob.isRemoved(), found, safeCarriageIndex(mob));
             LOGGER.info("[DungeonTrain] DeathNote echo of {} spawned at carriage {} hunting {}",
                 authorName, carriagePIdx, targetUuid);
             return true;
@@ -182,6 +190,20 @@ public final class DeathNoteEchoSpawner {
             mob.readAdditionalSaveData(nbt);         // apply — skin/gear preserved, target now hated
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] DeathNote echo: feeling seed failed: {}", t.toString());
+        }
+    }
+
+    /** [DN-DEBUG] one-decimal coordinate formatter for log lines. */
+    private static String fmt(double v) {
+        return String.format("%.1f", v);
+    }
+
+    /** [DN-DEBUG] carriage index of the freshly-spawned echo, no-throw (MIN_VALUE on error). */
+    private static int safeCarriageIndex(PlayerMobEntity mob) {
+        try {
+            return TrainConfinement.carriageIndex(mob);
+        } catch (Throwable t) {
+            return Integer.MIN_VALUE;
         }
     }
 

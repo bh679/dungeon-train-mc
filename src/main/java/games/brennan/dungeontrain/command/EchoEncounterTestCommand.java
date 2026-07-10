@@ -6,6 +6,8 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
+import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
+import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.playermob.compat.ReincarnationRecord;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.ChatFormatting;
@@ -85,6 +87,8 @@ public final class EchoEncounterTestCommand {
                             IntegerArgumentType.getInteger(ctx, "relayId"))))))
             .then(Commands.literal("upgrade")
                 .executes(EchoEncounterTestCommand::upgrade))
+            .then(Commands.literal("deathnote")
+                .executes(EchoEncounterTestCommand::deathnote))
             .then(Commands.literal("finish")
                 .executes(EchoEncounterTestCommand::finish)));
     }
@@ -235,6 +239,35 @@ public final class EchoEncounterTestCommand {
                 "[echotest] gave the nearest echo a Netherite Axe (Sharpness V) — the next scan tick "
                     + "should log it as a claimed upgrade.").withStyle(ChatFormatting.AQUA), false);
         return 1;
+    }
+
+    /**
+     * Dev-only diagnostic: spawn a Death Note echo of YOURSELF at your current carriage RIGHT NOW,
+     * via the exact production recipe ({@link DeathNoteEchoSpawner#spawnForTarget}) — isolating the
+     * spawn recipe from the sign→die→respawn→arrival flow. Compare with {@code summon} (a plain
+     * visible echo near you): if {@code summon} appears but {@code deathnote} does not, the bug is in
+     * the {@code DeathNoteEchoSpawner} recipe; if {@code deathnote} appears here, the bug is upstream
+     * in the arming / arrival scan. The chat line reports the {@code spawnForTarget} boolean so success
+     * is visible even if the mob itself is not.
+     */
+    private static int deathnote(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("Run this as a player."));
+            return 0;
+        }
+        ServerLevel level = source.getLevel();
+        Integer carriage = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
+        int deathCarriage = carriage == null ? 0 : carriage;
+        boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
+            player.getUUID().toString(), player.getGameProfile().getName(), deathCarriage);
+        source.sendSuccess(() -> Component.literal(
+                "[echotest] deathnote spawnForTarget -> " + (ok ? "TRUE" : "FALSE (deferred/failed)")
+                    + " at carriage " + deathCarriage + " (lastCarriageIndex=" + carriage
+                    + "). Watch for an 'Echo of " + player.getGameProfile().getName() + "' beside you.")
+            .withStyle(ok ? ChatFormatting.AQUA : ChatFormatting.RED), false);
+        return ok ? 1 : 0;
     }
 
     private static int finish(CommandContext<CommandSourceStack> ctx) {

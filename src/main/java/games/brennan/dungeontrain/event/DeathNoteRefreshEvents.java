@@ -18,6 +18,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.slf4j.Logger;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -99,12 +100,20 @@ public final class DeathNoteRefreshEvents {
         ServerLevel level = player.serverLevel();
         if (dev) {
             // Dev reads the PERSISTED armed store (survives quit-to-title / world reload); no relay.
-            for (PendingDeathNotes.ArmedNote a : PendingDeathNotes.get(level)
-                    .armedReachedFor(player.getUUID(), player.getGameProfile().getName(), cur, ARRIVAL_LEAD)) {
+            PendingDeathNotes store = PendingDeathNotes.get(level);
+            List<PendingDeathNotes.ArmedNote> matched = store.armedReachedFor(
+                    player.getUUID(), player.getGameProfile().getName(), cur, ARRIVAL_LEAD);
+            if (!matched.isEmpty()) {
+                LOGGER.info("[DN-DEBUG] arrival scan: player={} cur={} matchedArmed={} (lead={})",
+                        player.getGameProfile().getName(), cur, matched.size(), ARRIVAL_LEAD);
+            }
+            for (PendingDeathNotes.ArmedNote a : matched) {
+                LOGGER.info("[DN-DEBUG] arrival: attempting echo id={} author={} deathCarriage={} target={}",
+                        a.id(), a.authorName(), a.deathCarriage(), a.targetName());
                 boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
                         a.authorUuid().toString(), a.authorName(), a.deathCarriage());
                 if (!ok) continue;                                   // not on a carriage yet — retry next scan
-                PendingDeathNotes.get(level).removeArmed(a.id());
+                store.removeArmed(a.id());
                 announce(level, player, a.authorName(), cur);
             }
             return;

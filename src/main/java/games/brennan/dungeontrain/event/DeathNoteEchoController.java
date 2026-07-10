@@ -1,13 +1,16 @@
 package games.brennan.dungeontrain.event;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.playermob.compat.TrainConfinement;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import org.slf4j.Logger;
 
 import java.util.Map;
 import java.util.UUID;
@@ -28,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DeathNoteEchoController {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final int SCAN_PERIOD_TICKS = 10;
 
     /** echo entity UUID → the target player UUID it hunts. Registered at spawn, cleared on echo death. */
@@ -51,10 +55,26 @@ public final class DeathNoteEchoController {
         if (ACTIVE.isEmpty()) return;
         if (level.getGameTime() % SCAN_PERIOD_TICKS != 0) return;
         for (Map.Entry<UUID, UUID> e : ACTIVE.entrySet()) {
-            if (!(level.getEntity(e.getKey()) instanceof PlayerMobEntity echo)) continue; // other level / unloaded
-            if (!echo.isAlive()) { ACTIVE.remove(e.getKey()); continue; }
+            Entity ent = level.getEntity(e.getKey());
+            if (!(ent instanceof PlayerMobEntity echo)) {                    // other level / unloaded / culled
+                LOGGER.info("[DN-DEBUG] controller: echo {} NOT resolvable in level (got {}).",
+                        e.getKey(), ent == null ? "null" : ent.getClass().getSimpleName());
+                continue;
+            }
+            if (!echo.isAlive()) {
+                LOGGER.info("[DN-DEBUG] controller: echo {} is DEAD — dropping.", e.getKey());
+                ACTIVE.remove(e.getKey());
+                continue;
+            }
             ServerPlayer target = level.getServer().getPlayerList().getPlayer(e.getValue());
             if (target == null) continue;                                    // target offline
+            LOGGER.info("[DN-DEBUG] controller: echo {} at ({},{},{}) carriageIdx={} | target {} at ({},{},{}) carriageIdx={}",
+                    e.getKey(),
+                    String.format("%.1f", echo.getX()), String.format("%.1f", echo.getY()), String.format("%.1f", echo.getZ()),
+                    TrainConfinement.carriageIndex(echo),
+                    target.getGameProfile().getName(),
+                    String.format("%.1f", target.getX()), String.format("%.1f", target.getY()), String.format("%.1f", target.getZ()),
+                    TrainConfinement.carriageIndex(target));
             steer(echo, target);
         }
     }
