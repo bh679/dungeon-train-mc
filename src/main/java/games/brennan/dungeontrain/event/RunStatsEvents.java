@@ -8,7 +8,9 @@ import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EchoIdentity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.discord.DeathDetailReporter;
 import games.brennan.dungeontrain.discord.DeathEquipmentReporter;
+import games.brennan.dungeontrain.discord.DeathInventoryReporter;
 import games.brennan.dungeontrain.discord.DeathReporter;
 import games.brennan.dungeontrain.discord.RunSummaryReporter;
 import games.brennan.dungeontrain.discord.DeathManifestFormat;
@@ -229,6 +231,12 @@ public final class RunStatsEvents {
         // that post a Discord death report below. Fires independent of isDeathReportToDiscord() (Free
         // Play / short-abandon / report-disabled deaths still count) — gated only on worldInfoToRelay.
         DeathReporter.report(player, packet);
+
+        // Relay the full paginated narrative + death-screen stats, and the full hotbar/main-inventory
+        // + offhand, so the data explorer's per-death detail view can show everything the death screen
+        // did. Same gate/pattern as the reporters above.
+        DeathDetailReporter.report(player, packet);
+        DeathInventoryReporter.report(player);
 
         // Mirror the death-screen run summary to Discord via the bundled Discord Presence API.
         // Posts even on a Free Play run (the death screen renders for cheated runs too); only the
