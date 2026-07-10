@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.narrative.DeathNoteSpawnMessage;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.world.PendingDeathNotes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -79,8 +80,8 @@ public final class DeathNoteRefreshEvents {
             Integer cur = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
             if (cur == null) continue;                               // not near a train
 
-            // (1) Arrival spawn — dev + release; reads whatever is in the pool.
-            spawnArrivedEchoes(player, cur);
+            // (1) Arrival spawn — dev (persisted armed store) or release (relay pool).
+            spawnArrivedEchoes(player, cur, dev);
 
             // (2) Relay download — RELEASE only (dev arms locally; a fetch would wipe it).
             if (!dev && DeathNoteGate.canSync(player)) {
@@ -94,21 +95,39 @@ public final class DeathNoteRefreshEvents {
     }
 
     /** Spawn (once) every echo whose death carriage {@code player} has reached, just ahead of them. */
-    private static void spawnArrivedEchoes(ServerPlayer player, int cur) {
+    private static void spawnArrivedEchoes(ServerPlayer player, int cur, boolean dev) {
+        ServerLevel level = player.serverLevel();
+        if (dev) {
+            // Dev reads the PERSISTED armed store (survives quit-to-title / world reload); no relay.
+            for (PendingDeathNotes.ArmedNote a : PendingDeathNotes.get(level)
+                    .armedReachedFor(player.getUUID(), player.getGameProfile().getName(), cur, ARRIVAL_LEAD)) {
+                boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
+                        a.authorUuid().toString(), a.authorName(), a.deathCarriage());
+                if (!ok) continue;                                   // not on a carriage yet — retry next scan
+                PendingDeathNotes.get(level).removeArmed(a.id());
+                announce(level, player, a.authorName(), cur);
+            }
+            return;
+        }
+        // Release reads the relay-downloaded pool.
         UUID targetUuid = player.getUUID();
         if (!DeathNotePool.hasAny(targetUuid)) return;
-        ServerLevel level = player.serverLevel();
         for (DeathNotePool.Note note : DeathNotePool.notesReached(targetUuid, cur, ARRIVAL_LEAD)) {
-            // Spawn onto the carriage the player is riding (shipyard coords, so Sable binds it there).
-            boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player, note);
-            if (!ok) continue;                                       // not on a carriage yet — retry next scan
+            boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
+                    note.authorUuid(), note.authorName(), note.deathCarriage());
+            if (!ok) continue;
             DeathNotePool.remove(targetUuid, note.id());
-            if (note.id() > 0) DeathNoteReporter.markUsed(note.id()); // relay notes only (local ids ≤ 0)
-            level.getServer().getPlayerList().broadcastSystemMessage(
-                    DeathNoteSpawnMessage.random(level.getRandom(), note.authorName()), false);
-            LOGGER.info("[DungeonTrain] DeathNote: echo of {} spawned near {} at carriage {} (note {}).",
-                    note.authorName(), player.getGameProfile().getName(), cur, note.id());
+            DeathNoteReporter.markUsed(note.id());
+            announce(level, player, note.authorName(), cur);
         }
+    }
+
+    /** Broadcast the vengeance line naming the author + log the spawn. */
+    private static void announce(ServerLevel level, ServerPlayer player, String authorName, int cur) {
+        level.getServer().getPlayerList().broadcastSystemMessage(
+                DeathNoteSpawnMessage.random(level.getRandom(), authorName), false);
+        LOGGER.info("[DungeonTrain] DeathNote: echo of {} spawned near {} at carriage {}.",
+                authorName, player.getGameProfile().getName(), cur);
     }
 
     private static void refresh(ServerPlayer player) {

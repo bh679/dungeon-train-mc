@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyApplier;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.event.DeathNoteEchoController;
-import games.brennan.dungeontrain.narrative.DeathNotePool;
 import games.brennan.playermob.compat.TrainConfinement;
 import games.brennan.playermob.entity.FeelingLedger;
 import games.brennan.playermob.entity.PlayerMobEntity;
@@ -57,7 +56,8 @@ public final class DeathNoteEchoSpawner {
      * Returns false (leaving the note to retry next scan) if the target isn't on a resolvable
      * carriage group yet.
      */
-    public static boolean spawnForTarget(ServerLevel level, ServerPlayer target, DeathNotePool.Note note) {
+    public static boolean spawnForTarget(ServerLevel level, ServerPlayer target,
+                                         String authorUuid, String authorName, int deathCarriage) {
         Trains.Carriage group = groupContaining(level, target);
         if (group == null) {
             LOGGER.debug("[DungeonTrain] DeathNote echo: {} not on a resolvable carriage group yet — deferring.",
@@ -71,7 +71,7 @@ public final class DeathNoteEchoSpawner {
         int pidx = TrainConfinement.carriageIndex(target);
         if (pidx < anchor || pidx >= anchor + groupSize) pidx = anchor;
         BlockPos floorPos = interiorFloorPos(provider, pidx);
-        return spawn(level, floorPos, note.deathCarriage(), note, target.getUUID());
+        return spawn(level, floorPos, deathCarriage, authorUuid, authorName, target.getUUID());
     }
 
     /** The train group whose world AABB contains {@code player} (player position is world-space), or null. */
@@ -104,8 +104,8 @@ public final class DeathNoteEchoSpawner {
      * {@code targetUuid}. Returns true if the mob was added. No-throw — a failure logs + returns false
      * so the caller doesn't consume the note on a bad spawn.
      */
-    public static boolean spawn(ServerLevel level, BlockPos floorPos, int carriagePIdx,
-                                DeathNotePool.Note note, UUID targetUuid) {
+    private static boolean spawn(ServerLevel level, BlockPos floorPos, int carriagePIdx,
+                                 String authorUuidStr, String authorNameStr, UUID targetUuid) {
         try {
             Optional<EntityType<?>> typeOpt = EntityType.byString(PLAYER_MOB_ID.toString());
             if (typeOpt.isEmpty()) return false;
@@ -128,9 +128,8 @@ public final class DeathNoteEchoSpawner {
             }
 
             // Bake the author's identity so this reads + registers as their echo (EchoIdentity).
-            UUID authorUuid = parseUuid(note.authorUuid());
-            String authorName = note.authorName() == null || note.authorName().isBlank()
-                ? "Unknown" : note.authorName();
+            UUID authorUuid = parseUuid(authorUuidStr);
+            String authorName = (authorNameStr == null || authorNameStr.isBlank()) ? "Unknown" : authorNameStr;
             if (authorUuid != null) {
                 mob.setSkinTextureUrl(SourceProfileSkin.encode(authorUuid, authorName));
             }
@@ -152,7 +151,6 @@ public final class DeathNoteEchoSpawner {
             mob.addTag(CarriageContentsPlacer.contentsTagFor(carriagePIdx));
             CompoundTag persistent = mob.getPersistentData();
             persistent.putString(KEY_TARGET, targetUuid.toString());
-            persistent.putInt(KEY_NOTE_ID, note.id());
             persistent.putString(KEY_AUTHOR, authorName);
             mob.setPersistenceRequired();
 
