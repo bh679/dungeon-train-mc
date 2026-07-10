@@ -281,6 +281,8 @@ public final class NarrativeBookEvents {
                 LOGGER.info("[DungeonTrain] SharedBookFound: marked discovered book held (by {}) — will burn after reading",
                     player.getName().getString());
             }
+            // If the holder authored this community book, greet them with how it's doing in the wild.
+            FamiliarBookGreeter.maybeGreet(player, stack);
             return;
         }
 
