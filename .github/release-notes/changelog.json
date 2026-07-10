@@ -3597,6 +3597,35 @@
       "released": true,
       "released_in": "v0.413.0",
       "released_at": "2026-07-09T15:59:41Z"
+    },
+    {
+      "id": "bookshelf-default-loot",
+      "version": "0.414.0",
+      "type": "feat",
+      "title": "Chiseled bookshelves sometimes come stocked with books",
+      "summary": "Chiseled bookshelves you find around the train that don't already have a curated stash now have a chance of holding a few books of their own \u2014 and they'll visibly show the right number of books at a glance, instead of always looking empty.",
+      "highlights": [
+        "Unclaimed chiseled bookshelves can now roll in with books/writable books",
+        "Bookshelf book-slot textures now correctly reflect their contents"
+      ],
+      "pr": 682,
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "antizombiesroom-min-level",
+      "version": "0.414.0",
+      "type": "content",
+      "title": "Anti-zombies room now needs a bit more progress to appear",
+      "summary": "The anti-zombies encounter room now only starts showing up once you've made a little headway into the run, instead of potentially appearing right at the start.",
+      "highlights": [],
+      "pr": 682,
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
