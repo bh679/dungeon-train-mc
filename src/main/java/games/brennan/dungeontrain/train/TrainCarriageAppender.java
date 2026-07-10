@@ -863,6 +863,11 @@ public final class TrainCarriageAppender {
         // already been atomically taken, so this can't double-spawn). Gated by
         // a 1-in-N config roll inside the spawner.
         PlayerMobGroupSpawner.maybeSpawnForGroup(level, provider, pending);
+
+        // Death Note echoes: if any settling carriage in this group is the death carriage of a
+        // downloaded curse targeting an online player, spawn that author's hostile echo there now
+        // (so it lies in wait ahead of the target). Cheap no-op when nobody nearby is cursed.
+        DeathNoteGroupSpawner.maybeSpawnForGroup(level, pending);
     }
 
     /**

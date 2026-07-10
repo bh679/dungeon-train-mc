@@ -50,6 +50,21 @@ public final class DeathNoteReporter {
     }
 
     /**
+     * Report that note {@code noteId}'s echo has spawned — flips the relay's one-way {@code used}
+     * latch so the note is never served or spawned again. Durable + idempotent. No-throw.
+     */
+    public static void markUsed(int noteId) {
+        try {
+            JsonObject body = new JsonObject();
+            body.addProperty("id", noteId);
+            RelayOutbox.get().enqueue("/deathnotes/used", body.toString());
+            LOGGER.debug("[DungeonTrain] DeathNote mark-used {} queued to the relay outbox.", noteId);
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] DeathNote mark-used failed to build: {}", t.toString());
+        }
+    }
+
+    /**
      * Pure assembly of the {@code /deathnotes/submit} JSON body — package-private so the shape can be
      * unit-tested without a running server. Matches the relay contract exactly. Null strings emit as "".
      */
