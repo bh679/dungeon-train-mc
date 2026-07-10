@@ -3799,6 +3799,40 @@
       "released": true,
       "released_in": "v0.423.0",
       "released_at": "2026-07-10T13:48:44Z"
+    },
+    {
+      "id": "death-note-curse",
+      "version": "0.424.0",
+      "type": "feat",
+      "title": "Death Notes \u2014 curse a player's next life",
+      "summary": "Title a book & quill \"Death Note\", write another player's name on the first page, and sign it \u2014 the book burns away in blue soul-fire. The curse seals the moment you next die: in that player's next run, your vengeful echo lies in wait at the very carriage you fell at and hunts them down.",
+      "highlights": [
+        "Sign a Death Note naming your target; it soul-burns away, and the curse arms the moment you die.",
+        "Your echo wears your skin, ignores everyone but the target, and ambushes them when they reach the carriage you died at \u2014 in any of their future runs, whatever the world.",
+        "Cut the echo down for a keepable black Death Note trophy; signing a note earns the \"A Death Note\" advancement."
+      ],
+      "pr": 700,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.424.0",
+      "released_at": "2026-07-10T14:07:11Z"
+    },
+    {
+      "id": "familiar-book-author-stats",
+      "version": "0.424.0",
+      "type": "feat",
+      "title": "Find your own shared book out in the world and it tells you how it's doing",
+      "summary": "Stumble on a chest copy of a book you wrote and shared to the community, and it now whispers how it's been received out on the rails \u2014 how many travelers have held it, plus one telling detail: how many read it to the end, the longest anyone lingered on a single page, how many times it's been opened, how many pages have been turned, or how often someone came back to read it again. A quiet gray line, ten different ways it can read.",
+      "highlights": [
+        "Holding your own community book shows how it's doing in the wild",
+        "Ten flavored variations (times read, longest read, most-lingered page, opens, page turns, re-reads)",
+        "Greets you once for each copy you find"
+      ],
+      "pr": 701,
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
