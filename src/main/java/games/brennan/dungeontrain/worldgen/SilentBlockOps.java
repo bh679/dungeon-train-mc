@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen;
 
+import games.brennan.dungeontrain.editor.ChiseledBookshelfSync;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
@@ -86,6 +87,7 @@ public final class SilentBlockOps {
         positioned.putInt("z", pos.getZ());
         be.loadWithComponents(positioned, level.registryAccess());
         be.setChanged();
+        ChiseledBookshelfSync.syncIfNeeded(level, pos);
     }
 
     /** Clear the block at {@code pos} to air silently. */
@@ -206,5 +208,6 @@ public final class SilentBlockOps {
         positioned.putInt("z", pos.getZ());
         be.loadWithComponents(positioned, level.registryAccess());
         be.setChanged();
+        ChiseledBookshelfSync.syncIfNeeded(level, pos);
     }
 }
