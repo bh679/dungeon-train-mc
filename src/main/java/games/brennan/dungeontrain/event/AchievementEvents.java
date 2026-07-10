@@ -340,6 +340,18 @@ public final class AchievementEvents {
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "tagged_creator");
     }
 
+    /**
+     * Fired whenever a relayed Developer message is actually delivered to a player's in-game
+     * chat. Drives "The Creator Answers". Routed through the generic
+     * {@link ModAdvancementTriggers#GAMEPLAY_ACTION} marker with action id
+     * {@code creator_answered}; called from
+     * {@link games.brennan.dungeontrain.event.DevMessageConsent} at both delivery sites
+     * (immediate delivery and held-message flush on consent).
+     */
+    public static void notifyCreatorAnswered(ServerPlayer player) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "creator_answered");
+    }
+
     // ---------------- Narrative progress ----------------
 
     /**
