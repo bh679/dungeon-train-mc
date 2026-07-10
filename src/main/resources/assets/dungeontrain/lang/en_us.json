@@ -430,6 +430,9 @@
   "advancements.dungeontrain.dungeon_train.summon_the_creator.title": "Summon The Creator",
   "advancements.dungeontrain.dungeon_train.summon_the_creator.hint": "He is in chat if you call",
   "advancements.dungeontrain.dungeon_train.summon_the_creator.description": "Tag @dev or @brennanhatton in chat",
+  "advancements.dungeontrain.dungeon_train.the_creator_answers.title": "The Creator Answers",
+  "advancements.dungeontrain.dungeon_train.the_creator_answers.hint": "He doesn't always reply... but sometimes he does",
+  "advancements.dungeontrain.dungeon_train.the_creator_answers.description": "Receive a message from the Developer",
   "advancements.dungeontrain.dungeon_train.the_great_beyond.title": "The Great Beyond",
   "advancements.dungeontrain.dungeon_train.the_great_beyond.description": "Complete the feedback survey after death.",
 
