@@ -449,27 +449,63 @@ public final class CarriageContentsPlacer {
         if (!variants.isEmpty()) {
             for (var entry : variants.entries()) variantPositions.add(entry.localPos());
         }
-        for (BlockPos localPos : store.allPositions()) {
+        java.util.Set<BlockPos> storePositions = store.allPositions();
+        for (BlockPos localPos : storePositions) {
             if (variantPositions.contains(localPos)) continue;
             // Single read-through — store.poolAt resolves a link if present,
             // else returns the local pool, else empty. Empty → skip.
             games.brennan.dungeontrain.editor.ContainerContentsPool pool = store.poolAt(localPos);
             if (pool.isEmpty()) continue;
-            BlockPos worldPos = origin.offset(localPos);
-            net.minecraft.world.level.block.state.BlockState state = level.getBlockState(worldPos);
-            if (!state.hasBlockEntity()) continue;
-            if (!games.brennan.dungeontrain.editor.ContainerContentsRoller.isContainerState(state)
-                && !games.brennan.dungeontrain.editor.ContainerContentsRoller.isDecoratedPot(state)) continue;
-            net.minecraft.world.level.block.entity.BlockEntity be = level.getBlockEntity(worldPos);
-            if (be == null) continue;
-            net.minecraft.nbt.CompoundTag baseNbt = be.saveWithFullMetadata(level.registryAccess());
-            net.minecraft.nbt.CompoundTag rolled = games.brennan.dungeontrain.editor.ContainerContentsRoller.roll(
-                pool, state, localPos, seed, carriageIndex, baseNbt,
-                level.registryAccess(), level);
-            if (rolled == null) continue;
-            be.loadCustomOnly(rolled, level.registryAccess());
-            be.setChanged();
+            rollAndApplyPool(level, origin.offset(localPos), localPos, pool, seed, carriageIndex);
         }
+        // Second pass: cells with NEITHER a variant entry NOR a store pool/link
+        // never reach the loop above at all — e.g. a bookshelf baked directly
+        // into a carriage's .nbt content template with no authored loot. Give
+        // any block type registered in BlockLootDefaults (bookshelves, etc.) a
+        // seeded chance to fill in here, without touching curated cells.
+        for (int x = 0; x < size.getX(); x++) {
+            for (int y = 0; y < size.getY(); y++) {
+                for (int z = 0; z < size.getZ(); z++) {
+                    BlockPos localPos = new BlockPos(x, y, z);
+                    if (variantPositions.contains(localPos) || storePositions.contains(localPos)) continue;
+                    BlockPos worldPos = origin.offset(localPos);
+                    net.minecraft.world.level.block.state.BlockState state = level.getBlockState(worldPos);
+                    if (!state.hasBlockEntity()) continue;
+                    if (!games.brennan.dungeontrain.editor.ContainerContentsRoller.isContainerState(state)
+                        && !games.brennan.dungeontrain.editor.ContainerContentsRoller.isDecoratedPot(state)) continue;
+                    java.util.Optional<games.brennan.dungeontrain.editor.ContainerContentsPool> defaultPool =
+                        games.brennan.dungeontrain.editor.BlockLootDefaults.resolveDefaultPool(
+                            state, localPos, seed, carriageIndex);
+                    if (defaultPool.isEmpty()) continue;
+                    rollAndApplyPool(level, worldPos, localPos, defaultPool.get(), seed, carriageIndex);
+                }
+            }
+        }
+    }
+
+    /**
+     * Shared roll-and-apply body for {@link #applyContentPools}'s two passes:
+     * re-checks the container/pot gate, rolls {@code pool} into the cell's
+     * BE NBT, writes it back, and re-syncs any chiseled-bookshelf blockstate
+     * so the texture matches what was just rolled in.
+     */
+    private static void rollAndApplyPool(ServerLevel level, BlockPos worldPos, BlockPos localPos,
+                                         games.brennan.dungeontrain.editor.ContainerContentsPool pool,
+                                         long seed, int carriageIndex) {
+        net.minecraft.world.level.block.state.BlockState state = level.getBlockState(worldPos);
+        if (!state.hasBlockEntity()) return;
+        if (!games.brennan.dungeontrain.editor.ContainerContentsRoller.isContainerState(state)
+            && !games.brennan.dungeontrain.editor.ContainerContentsRoller.isDecoratedPot(state)) return;
+        net.minecraft.world.level.block.entity.BlockEntity be = level.getBlockEntity(worldPos);
+        if (be == null) return;
+        net.minecraft.nbt.CompoundTag baseNbt = be.saveWithFullMetadata(level.registryAccess());
+        net.minecraft.nbt.CompoundTag rolled = games.brennan.dungeontrain.editor.ContainerContentsRoller.roll(
+            pool, state, localPos, seed, carriageIndex, baseNbt,
+            level.registryAccess(), level);
+        if (rolled == null) return;
+        be.loadCustomOnly(rolled, level.registryAccess());
+        be.setChanged();
+        games.brennan.dungeontrain.editor.ChiseledBookshelfSync.syncIfNeeded(level, worldPos);
     }
 
     /**

@@ -1121,10 +1121,12 @@ public final class ContainerContentsRoller {
     /**
      * Roll {@code true} with probability {@code pct} %, deterministically seeded
      * by {@code (localPos, worldSeed, carriageIndex, slot, salt)}. {@code pct=0}
-     * never fires; {@code pct>=100} always fires.
+     * never fires; {@code pct>=100} always fires. Package-private so other
+     * {@code editor} classes (e.g. {@link BlockLootDefaults}) can reuse the same
+     * seeded-chance idiom instead of re-deriving it.
      */
-    private static boolean rollChance(int pct, BlockPos localPos, long worldSeed,
-                                      int carriageIndex, int slot, long salt) {
+    static boolean rollChance(int pct, BlockPos localPos, long worldSeed,
+                              int carriageIndex, int slot, long salt) {
         if (pct <= 0) return false;
         if (pct >= 100) return true;
         long state = mix(localPos, worldSeed, carriageIndex, slot, salt);

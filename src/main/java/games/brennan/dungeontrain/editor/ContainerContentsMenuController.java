@@ -602,6 +602,7 @@ public final class ContainerContentsMenuController {
         if (rolled == null) return;
         be.loadCustomOnly(rolled, level.registryAccess());
         be.setChanged();
+        ChiseledBookshelfSync.syncIfNeeded(level, worldPos);
     }
 
     private static void resyncSameFace(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
