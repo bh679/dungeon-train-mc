@@ -2,18 +2,12 @@ package games.brennan.dungeontrain.echo;
 
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import games.brennan.playermob.compat.ReincarnationRecord;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
-
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 
 /**
  * Tells the relay when one of its reincarnation records is actually embodied as a remote echo —
@@ -28,7 +22,8 @@ import java.time.Duration;
  * story: a relay record can only exist client-side because DP's consented reincarnation client
  * fetched it, so reporting its use stays inside the already-granted network feature.</p>
  *
- * <p>Fire-and-forget off-thread: a failed or slow report costs a debug line, never a tick.</p>
+ * <p>Handed to the durable {@link RelayOutbox}: persisted and delivered at-least-once on the next
+ * flush (surviving a relay outage / offline launch), never blocking or costing a tick.</p>
  */
 public final class EchoUsageReporter {
 
@@ -39,12 +34,6 @@ public final class EchoUsageReporter {
 
     /** How far to look for the player the echo spawned for — mirrors the journal's audience radius. */
     private static final double AUDIENCE_RADIUS = 128.0;
-
-    private static final HttpClient HTTP = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(8))
-            .build();
-
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     private EchoUsageReporter() {}
 
@@ -89,19 +78,7 @@ public final class EchoUsageReporter {
     }
 
     private static void post(int id, String json) {
-        HttpRequest req = HttpRequest.newBuilder(
-                        URI.create(DungeonTrain.relayBaseUrl() + "/reincarnations/used"))
-                .timeout(REQUEST_TIMEOUT)
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json))
-                .build();
-        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(resp -> LOGGER.debug(
-                        "[DungeonTrain] Echo-usage report for relay record {} -> HTTP {}.", id, resp.statusCode()))
-                .exceptionally(e -> {
-                    LOGGER.debug("[DungeonTrain] Echo-usage report for relay record {} failed: {}",
-                            id, e.toString());
-                    return null;
-                });
+        RelayOutbox.get().enqueue("/reincarnations/used", json);
+        LOGGER.debug("[DungeonTrain] Echo-usage report for relay record {} queued to the relay outbox.", id);
     }
 }
