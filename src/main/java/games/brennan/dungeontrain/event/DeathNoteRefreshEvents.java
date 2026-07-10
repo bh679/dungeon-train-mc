@@ -7,8 +7,6 @@ import games.brennan.dungeontrain.narrative.DeathNotePool;
 import games.brennan.dungeontrain.narrative.DeathNoteSpawnMessage;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
-import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.world.PendingDeathNotes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -18,23 +16,23 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.slf4j.Logger;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Target-side driver for the Death Note curse:
+ * Target-side driver for the Death Note curse — relay-backed and seed-agnostic; <b>dev and release
+ * behave identically</b>:
  * <ol>
- *   <li><b>Arrival spawn</b> — spawns the author's echo just ahead of a target the moment they reach
- *       the carriage the author died at. The death carriage is <em>always</em> generated before the
- *       note exists (the author generated it by dying there), and culled carriages reload without
- *       re-firing contents spawns, so a generation-time trigger can never fire — arrival is the only
- *       robust signal. Dev + release.</li>
- *   <li><b>Relay download</b> — RELEASE only: pulls a player's unspawned curses at login + every
- *       {@link #REFRESH_EVERY_CARRIAGES} carriages, fail-closed on {@link DeathNoteGate#canSync}. In
- *       DEV the pool is armed locally by {@code DeathNoteEvents} (the bare local relay isn't reachable
- *       by the Java client), so the download is skipped — it would only wipe the local arming.</li>
+ *   <li><b>Relay download</b> — pulls a player's unspawned curses (matched by <em>target</em>, across
+ *       ANY world) at login and every {@link #REFRESH_EVERY_CARRIAGES} carriages, fail-closed on
+ *       {@link DeathNoteGate#canSync}. Login fires on every world load, so each fresh roguelike world
+ *       re-pulls the target's pending curses. The relay is a global store, so a curse armed in the
+ *       world the author died in survives into the target's later (differently-seeded) lives.</li>
+ *   <li><b>Arrival spawn</b> — spawns the author's echo just ahead of the target the moment they reach
+ *       the carriage <em>depth</em> the author died at ({@link DeathNotePool#notesReached}). On success
+ *       the note is dropped from the local snapshot and latched {@code used} on the relay so it never
+ *       respawns.</li>
  * </ol>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
@@ -42,7 +40,7 @@ public final class DeathNoteRefreshEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Re-download a target's curses every this many carriages of their own travel (release). */
+    /** Re-download a target's curses every this many carriages of their own travel. */
     private static final int REFRESH_EVERY_CARRIAGES = 30;
     /** Server-tick throttle for the per-player scan (~1s). */
     private static final int SCAN_PERIOD_TICKS = 20;
@@ -58,7 +56,8 @@ public final class DeathNoteRefreshEvents {
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         LAST_REFRESH_CARRIAGE.remove(player.getUUID());
-        if (!DungeonTrain.isDevBuild() && DeathNoteGate.canSync(player)) refresh(player);
+        // A new world load counts as a login → re-pull this target's unspawned curses from the relay.
+        if (DeathNoteGate.canSync(player)) refresh(player);
     }
 
     @SubscribeEvent
@@ -73,19 +72,18 @@ public final class DeathNoteRefreshEvents {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (level.dimension() != Level.OVERWORLD) return;            // run the scan once per game tick
         if (level.getGameTime() % SCAN_PERIOD_TICKS != 0) return;
-        boolean dev = DungeonTrain.isDevBuild();
         for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
-            // A dead player (incl. the death that just armed a self-curse) must not spawn an echo —
-            // the echo comes in a LATER life, the next time the target reaches the death carriage ALIVE.
+            // A dead player must not spawn an echo — the echo comes in a LATER life, the next time the
+            // target reaches the death carriage ALIVE.
             if (!player.isAlive()) continue;
             Integer cur = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
             if (cur == null) continue;                               // not near a train
 
-            // (1) Arrival spawn — dev (persisted armed store) or release (relay pool).
-            spawnArrivedEchoes(player, cur, dev);
+            // (1) Arrival spawn from the relay-downloaded pool.
+            spawnArrivedEchoes(player, cur);
 
-            // (2) Relay download — RELEASE only (dev arms locally; a fetch would wipe it).
-            if (!dev && DeathNoteGate.canSync(player)) {
+            // (2) Relay re-download every REFRESH_EVERY_CARRIAGES of travel (login covers world entry).
+            if (DeathNoteGate.canSync(player)) {
                 Integer last = LAST_REFRESH_CARRIAGE.get(player.getUUID());
                 if (last == null || Math.abs(cur - last) >= REFRESH_EVERY_CARRIAGES) {
                     LAST_REFRESH_CARRIAGE.put(player.getUUID(), cur);
@@ -96,47 +94,16 @@ public final class DeathNoteRefreshEvents {
     }
 
     /** Spawn (once) every echo whose death carriage {@code player} has reached, just ahead of them. */
-    private static void spawnArrivedEchoes(ServerPlayer player, int cur, boolean dev) {
-        ServerLevel level = player.serverLevel();
-        if (dev) {
-            // Dev reads the PERSISTED armed store (survives quit-to-title / world reload); no relay.
-            PendingDeathNotes store = PendingDeathNotes.get(level);
-            List<PendingDeathNotes.ArmedNote> matched = store.armedReachedFor(
-                    player.getUUID(), player.getGameProfile().getName(), cur, ARRIVAL_LEAD);
-            if (matched.isEmpty()) {
-                // Near-miss trace: armed notes exist but none matched THIS player/carriage — show why.
-                List<PendingDeathNotes.ArmedNote> all = store.allArmed();
-                if (!all.isEmpty()) {
-                    StringBuilder sb = new StringBuilder();
-                    for (PendingDeathNotes.ArmedNote a : all) {
-                        sb.append(String.format(" [id=%d target='%s' targetUuid='%s' deathCarriage=%d]",
-                                a.id(), a.targetName(), a.targetUuid(), a.deathCarriage()));
-                    }
-                    LOGGER.info("[DN-DEBUG] arrival scan: player={} (uuid={}) cur={} armedTotal={} but NONE matched (lead={}). armed:{}",
-                            player.getGameProfile().getName(), player.getUUID(), cur, all.size(), ARRIVAL_LEAD, sb);
-                }
-            } else {
-                LOGGER.info("[DN-DEBUG] arrival scan: player={} cur={} matchedArmed={} (lead={})",
-                        player.getGameProfile().getName(), cur, matched.size(), ARRIVAL_LEAD);
-            }
-            for (PendingDeathNotes.ArmedNote a : matched) {
-                LOGGER.info("[DN-DEBUG] arrival: attempting echo id={} author={} deathCarriage={} target={}",
-                        a.id(), a.authorName(), a.deathCarriage(), a.targetName());
-                boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
-                        a.authorUuid().toString(), a.authorName(), a.deathCarriage());
-                if (!ok) continue;                                   // not on a carriage yet — retry next scan
-                store.removeArmed(a.id());
-                announce(level, player, a.authorName(), cur);
-            }
-            return;
-        }
-        // Release reads the relay-downloaded pool.
+    private static void spawnArrivedEchoes(ServerPlayer player, int cur) {
         UUID targetUuid = player.getUUID();
         if (!DeathNotePool.hasAny(targetUuid)) return;
+        ServerLevel level = player.serverLevel();
         for (DeathNotePool.Note note : DeathNotePool.notesReached(targetUuid, cur, ARRIVAL_LEAD)) {
+            LOGGER.info("[DN-DEBUG] arrival: {} reached carriage {} — spawning echo of {} (note id={}, deathCarriage={}).",
+                    player.getGameProfile().getName(), cur, note.authorName(), note.id(), note.deathCarriage());
             boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
                     note.authorUuid(), note.authorName(), note.deathCarriage());
-            if (!ok) continue;
+            if (!ok) continue;                                       // not on a carriage yet — retry next scan
             DeathNotePool.remove(targetUuid, note.id());
             DeathNoteReporter.markUsed(note.id());
             announce(level, player, note.authorName(), cur);
@@ -151,8 +118,11 @@ public final class DeathNoteRefreshEvents {
                 authorName, player.getGameProfile().getName(), cur);
     }
 
-    private static void refresh(ServerPlayer player) {
-        String worldKey = String.valueOf(DungeonTrainWorldData.get(player.serverLevel()).getGenerationSeed());
-        DeathNotePool.refreshForPlayer(player.getUUID(), player.getGameProfile().getName(), worldKey);
+    /**
+     * Pull this target's unspawned curses from the relay (matched by target, ANY world — no seed
+     * scoping). Public so the dev {@code /dtechotest dnpull} command can force a pull on demand.
+     */
+    public static void refresh(ServerPlayer player) {
+        DeathNotePool.refreshForPlayer(player.getUUID(), player.getGameProfile().getName());
     }
 }

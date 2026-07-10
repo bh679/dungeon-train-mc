@@ -51,13 +51,12 @@ public final class DeathNoteEvents {
                 PendingDeathNotes.get(level).takeForAuthor(player.getUUID());
         if (pending.isEmpty()) return;
 
-        boolean dev = DungeonTrain.isDevBuild();
         boolean canSync = DeathNoteGate.canSync(player);
         Integer deathCarriage = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
         String worldKey = String.valueOf(DungeonTrainWorldData.get(level).getGenerationSeed());
 
-        LOGGER.info("[DN-DEBUG] onPlayerDeath: author={} pendingNotes={} deathCarriage={} dev={} canSync={}",
-                player.getGameProfile().getName(), pending.size(), deathCarriage, dev, canSync);
+        LOGGER.info("[DN-DEBUG] onPlayerDeath: author={} pendingNotes={} deathCarriage={} canSync={}",
+                player.getGameProfile().getName(), pending.size(), deathCarriage, canSync);
 
         for (PendingDeathNotes.PendingDeathNote note : pending) {
             if (deathCarriage == null) {
@@ -65,23 +64,19 @@ public final class DeathNoteEvents {
                         note.authorName(), note.targetName());
                 continue;
             }
-            if (dev) {
-                // Dev: arm the curse on the PERSISTED world store (survives quit-to-title / world
-                // reload) — no relay round-trip (the bare local relay isn't reachable by the Java
-                // client). The target reads it on the arrival scan.
-                int id = PendingDeathNotes.get(level).addArmed(note.authorUuid(), note.authorName(),
-                        note.targetName(), note.targetUuid(), deathCarriage);
-                LOGGER.info("[DN-DEBUG] onPlayerDeath(dev): ARMED id={} echo of {} awaits target='{}' (uuid='{}') at carriage {}.",
-                        id, note.authorName(), note.targetName(), note.targetUuid(), deathCarriage);
-                continue;
-            }
             if (!canSync) {
-                LOGGER.debug("[DungeonTrain] DeathNote: curse on {} not synced (feature off or no consent).",
+                LOGGER.info("[DN-DEBUG] onPlayerDeath: curse on {} NOT synced (feature off or no consent).",
                         note.targetName());
                 continue;
             }
+            // Both dev + release upload to the relay (a global store). A curse must outlive the author's
+            // death — which in this roguelike starts a brand-new world — so a per-world local store is
+            // orphaned; the relay is pulled by the target in their next world (login + arrival scan).
+            // worldKey is still sent (the relay requires it) but is no longer used to scope the pull.
             DeathNoteReporter.submit(player.getUUID(), note.authorName(), note.targetName(),
                     note.targetUuid(), deathCarriage, worldKey, "");
+            LOGGER.info("[DN-DEBUG] onPlayerDeath: SUBMITTED curse on target='{}' (uuid='{}') at carriage {} to relay.",
+                    note.targetName(), note.targetUuid(), deathCarriage);
         }
     }
 

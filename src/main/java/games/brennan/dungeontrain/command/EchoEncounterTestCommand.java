@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
+import games.brennan.dungeontrain.event.DeathNoteRefreshEvents;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.playermob.compat.ReincarnationRecord;
@@ -89,6 +90,8 @@ public final class EchoEncounterTestCommand {
                 .executes(EchoEncounterTestCommand::upgrade))
             .then(Commands.literal("deathnote")
                 .executes(EchoEncounterTestCommand::deathnote))
+            .then(Commands.literal("dnpull")
+                .executes(EchoEncounterTestCommand::dnpull))
             .then(Commands.literal("finish")
                 .executes(EchoEncounterTestCommand::finish)));
     }
@@ -268,6 +271,26 @@ public final class EchoEncounterTestCommand {
                     + "). Watch for an 'Echo of " + player.getGameProfile().getName() + "' beside you.")
             .withStyle(ok ? ChatFormatting.AQUA : ChatFormatting.RED), false);
         return ok ? 1 : 0;
+    }
+
+    /**
+     * Dev-only: force an immediate relay pull of this player's unspawned Death Note curses (normally
+     * done at world-load login + every 30 carriages). Use after dying + boarding a new world so the
+     * curse is available without waiting on the login-consent race or the 30-carriage backstop.
+     */
+    private static int dnpull(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("Run this as a player."));
+            return 0;
+        }
+        DeathNoteRefreshEvents.refresh(player);
+        source.sendSuccess(() -> Component.literal(
+                "[echotest] forced a Death Note relay pull for " + player.getGameProfile().getName()
+                    + " — watch the log for \"[DN-DEBUG] death-note pool … pulled N note(s)\".")
+            .withStyle(ChatFormatting.AQUA), false);
+        return 1;
     }
 
     private static int finish(CommandContext<CommandSourceStack> ctx) {

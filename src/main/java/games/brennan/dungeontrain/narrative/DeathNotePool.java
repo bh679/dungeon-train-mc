@@ -22,14 +22,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Server-side, per-player cache of the UNSPAWNED Death Note curses targeting each online player,
- * fetched from the relay's {@code /deathnotes} endpoint. The carriage-generation spawn check
- * ({@code DeathNoteGroupSpawner}) reads a player's snapshot on the server thread; the fetch is
- * fire-and-forget off-thread (its own {@link HttpClient}) and swaps in a fresh immutable list per
- * player when the relay replies.
+ * fetched from the relay's {@code /deathnotes} endpoint. The arrival scan ({@code DeathNoteRefreshEvents})
+ * reads a player's snapshot on the server thread; the fetch is fire-and-forget off-thread (its own
+ * {@link HttpClient}) and swaps in a fresh immutable list per player when the relay replies.
  *
- * <p>Refreshed at login + every ~30 carriages by {@code DeathNoteRefreshEvents}, scoped by worldKey
- * on the relay so a curse only ever surfaces in the world the author died in. Reads never block or
- * touch the network; each swap replaces the per-player reference wholesale.</p>
+ * <p>Refreshed at login (every world load) + every ~30 carriages by {@code DeathNoteRefreshEvents},
+ * matched on the relay by <em>target only</em> (seed-agnostic — a curse surfaces in the target's next
+ * life at the carriage depth the author died at, in any world). Reads never block or touch the network;
+ * each swap replaces the per-player reference wholesale.</p>
  */
 public final class DeathNotePool {
 
@@ -53,15 +53,6 @@ public final class DeathNotePool {
     private static final Map<UUID, Boolean> IN_FLIGHT = new ConcurrentHashMap<>();
 
     private DeathNotePool() {}
-
-    /** Notes targeting {@code playerUuid} whose author died at {@code carriageIndex} (this world). */
-    public static List<Note> matchesAt(UUID playerUuid, int carriageIndex) {
-        List<Note> notes = NOTES.get(playerUuid);
-        if (notes == null || notes.isEmpty()) return List.of();
-        List<Note> out = new ArrayList<>();
-        for (Note n : notes) if (n.deathCarriage() == carriageIndex) out.add(n);
-        return out;
-    }
 
     /**
      * Notes for {@code playerUuid} whose death carriage the player has reached — {@code cur >=
@@ -98,18 +89,19 @@ public final class DeathNotePool {
     }
 
     /**
-     * Fetch {@code playerUuid}'s unspawned curses for {@code worldKey} off-thread and swap in the new
-     * snapshot. No-throw; a failed/slow fetch leaves the existing snapshot in place. Skips if a fetch
-     * for this player is already in flight.
+     * Fetch {@code playerUuid}'s unspawned curses (matched by target, ANY world) off-thread and swap in
+     * the new snapshot. No-throw; a failed/slow fetch leaves the existing snapshot in place. Skips if a
+     * fetch for this player is already in flight.
      */
-    public static void refreshForPlayer(UUID playerUuid, String playerName, String worldKey) {
+    public static void refreshForPlayer(UUID playerUuid, String playerName) {
         if (playerUuid == null) return;
         if (IN_FLIGHT.putIfAbsent(playerUuid, Boolean.TRUE) != null) return;
         try {
+            // No &world= — the pull is seed-agnostic (matched by target only), so a curse armed in the
+            // author's world surfaces in the target's next, differently-seeded life.
             String url = DungeonTrain.relayBaseUrl()
                     + "/deathnotes?target=" + enc(playerName)
                     + "&uuid=" + playerUuid.toString().replace("-", "")
-                    + "&world=" + enc(worldKey)
                     + "&limit=" + POOL_LIMIT;
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
@@ -154,9 +146,8 @@ public final class DeathNotePool {
             if (n != null) parsed.add(n);
         }
         NOTES.put(playerUuid, List.copyOf(parsed));
-        if (!parsed.isEmpty()) {
-            LOGGER.debug("[DungeonTrain] death-note pool for {}: {} unspawned note(s)", playerUuid, parsed.size());
-        }
+        LOGGER.info("[DN-DEBUG] death-note pool for {}: pulled {} unspawned note(s) from relay.",
+                playerUuid, parsed.size());
     }
 
     /** Materialise one note; {@code null} if it lacks the fields needed to spawn an echo. */
