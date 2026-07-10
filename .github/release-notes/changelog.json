@@ -3783,6 +3783,22 @@
       "released": true,
       "released_in": "v0.422.0",
       "released_at": "2026-07-10T12:23:59Z"
+    },
+    {
+      "id": "playermob-0-73-0-bump",
+      "version": "0.422.0",
+      "type": "feat",
+      "title": "PlayerMob companion mod updated",
+      "summary": "The bundled PlayerMob (Interactive Player Mobs) companion mod is updated from 0.71.0 to 0.73.0, bringing new combat and death behavior.",
+      "highlights": [
+        "PlayerMobs now fight with end-crystal bombing \u2014 bunkering behind a quick obsidian wall before setting one off, then retreating to do it again (toggle with /playermob endcrystalcombat)",
+        "Killing a PlayerMob now drops its full backpack, including any TNT, igniters, end crystals, and obsidian it was carrying"
+      ],
+      "pr": 698,
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
