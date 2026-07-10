@@ -3850,6 +3850,19 @@
       "released": true,
       "released_in": "v0.425.0",
       "released_at": "2026-07-10T14:57:57Z"
+    },
+    {
+      "id": "death-detail-relay-reporting",
+      "version": "0.426.0",
+      "type": "chore",
+      "title": "Death-screen detail now feeds the community data dashboard",
+      "summary": "The mod now reports your full end-of-run recap \u2014 the story pages, your stats, and everything you were carrying \u2014 to the community data dashboard when you die, so it can be browsed there. No change to the death screen itself or anything else in-game.",
+      "highlights": [],
+      "pr": 703,
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
