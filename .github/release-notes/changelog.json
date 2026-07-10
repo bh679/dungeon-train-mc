@@ -3754,6 +3754,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "enchanted-book-loot-fix",
+      "version": "0.421.0",
+      "type": "fix",
+      "title": "Enchanted books actually enchant now",
+      "summary": "Books rolled as loot with a chance to be enchanted were quietly coming out as plain, unenchanted books \u2014 the enchantment was being rolled but never actually applied. Chests, barrels, and shulker boxes that carry a book entry now hand you a real Enchanted Book with a genuine random enchantment.",
+      "highlights": [
+        "Book loot entries with an enchant chance now actually enchant",
+        "Fixed a couple of loot pools that were stuck using the wrong item id and could never enchant at all"
+      ],
+      "pr": 696,
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
