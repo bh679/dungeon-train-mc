@@ -140,7 +140,7 @@ public final class DeathNoteEchoSpawner {
             if (DungeonTrainConfig.getDifficultyEnabled()
                     && DifficultyApplier.isEligible(mob, DungeonTrainConfig.getDifficultyAffectsBabyMobs())) {
                 int progression = DifficultyProgression.maxTravelledCarriageIndex(level);
-                DifficultyApplier.apply(mob, progression, rng, false, true);
+                DifficultyApplier.apply(mob, progression, rng, false, DifficultyApplier.StatScaling.FULL);
             }
 
             // Seed 0 feelings toward the target → reactionToward == FIGHT. Full NBT round-trip so the
