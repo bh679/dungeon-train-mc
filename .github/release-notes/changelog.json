@@ -3626,6 +3626,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "burn-without-reading-advancement",
+      "version": "0.415.0",
+      "type": "feat",
+      "title": "\"Burn without reading\" book advancement",
+      "summary": "New milestone advancement: burn 10 starting or random books without ever opening them first. Rewards the reckless \u2014 the mirror image of the existing read-count milestones.",
+      "highlights": [
+        "New hidden advancement, \"Don't know, Don't wana know\" \u2014 burn 10 unread books"
+      ],
+      "pr": 685,
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
