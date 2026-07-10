@@ -3704,6 +3704,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nothing-but-books-advancement",
+      "version": "0.418.0",
+      "type": "feat",
+      "title": "\"Nothing But Books\" advancement",
+      "summary": "New advancement: fill your entire main inventory (27 slots, not the hotbar) with story books to earn \"Nothing But Books\". Empty books don't count \u2014 only books with real content do.",
+      "highlights": [
+        "New \"Nothing But Books\" advancement for filling your inventory with story books"
+      ],
+      "pr": 691,
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
