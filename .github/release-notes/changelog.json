@@ -3819,7 +3819,7 @@
     },
     {
       "id": "familiar-book-author-stats",
-      "version": "0.424.0",
+      "version": "0.425.0",
       "type": "feat",
       "title": "Find your own shared book out in the world and it tells you how it's doing",
       "summary": "Stumble on a chest copy of a book you wrote and shared to the community, and it now whispers how it's been received out on the rails \u2014 how many travelers have held it, plus one telling detail: how many read it to the end, the longest anyone lingered on a single page, how many times it's been opened, how many pages have been turned, or how often someone came back to read it again. A quiet gray line, ten different ways it can read.",
