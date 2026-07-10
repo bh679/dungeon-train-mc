@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/submitted_death_note",
+  "display": {
+    "icon": { "id": "minecraft:soul_lantern" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.deathnote_self_target.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.deathnote_self_target.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "deathnote_self_target" }
+    }
+  },
+  "requirements": [["action"]]
+}
