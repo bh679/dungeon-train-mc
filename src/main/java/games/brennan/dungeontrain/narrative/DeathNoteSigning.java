@@ -38,6 +38,11 @@ public final class DeathNoteSigning {
                                      List<String> pages, ItemStack writable) {
         String targetName = DeathNoteTitle.firstLineTarget(pages);
 
+        // "A Death Note" advancement — granted the moment a Death Note is signed, regardless of
+        // whether a valid target name was written (title match is already caps/space-insensitive via
+        // DeathNoteTitle.isDeathNoteTitle). Signing the note is the rewarded action.
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "submitted_death_note");
+
         // Consume the writable book & quill — the player keeps nothing (as when signing a shared book).
         writable.shrink(1);
 
@@ -59,10 +64,6 @@ public final class DeathNoteSigning {
         String targetUuid = resolveTargetUuid(player.getServer(), targetName);
         PendingDeathNotes.get(player.serverLevel())
             .add(new PendingDeathNotes.PendingDeathNote(player.getUUID(), author, targetName, targetUuid));
-
-        // One-shot "submitted a Death Note" advancement — fired only once a curse is actually
-        // recorded against a named target (mirrors how signing a shared book fires signed_shared_book).
-        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "submitted_death_note");
 
         player.sendSystemMessage(
             Component.literal("The Death Note takes ").withStyle(ChatFormatting.DARK_GRAY)
