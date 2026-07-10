@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.narrative.DeathNotePool;
+import games.brennan.dungeontrain.narrative.DeathNoteSpawnMessage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -44,6 +45,9 @@ public final class DeathNoteGroupSpawner {
                     if (!ok) continue;
                     DeathNotePool.remove(targetUuid, note.id());   // never respawn locally
                     DeathNoteReporter.markUsed(note.id());         // fires-once on the relay
+                    // Dramatic server-wide announcement naming the author whose echo just returned.
+                    level.getServer().getPlayerList().broadcastSystemMessage(
+                        DeathNoteSpawnMessage.random(level.getRandom(), note.authorName()), false);
                     LOGGER.info("[DungeonTrain] DeathNote: echo for {} armed at carriage {} (note {})",
                         player.getGameProfile().getName(), carriageIdx, note.id());
                 }
