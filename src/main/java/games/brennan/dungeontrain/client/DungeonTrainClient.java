@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.discordpresence.client.SurveySubmitClientHook;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -26,5 +27,9 @@ public final class DungeonTrainClient {
             container.registerExtensionPoint(
                 IConfigScreenFactory.class,
                 (mc, parent) -> new DungeonTrainSettingsScreen(parent)));
+
+        // Route bug-report answers submitted from DP's on-demand survey (/bug, /feedback) into
+        // the same log-collection path the death screen uses.
+        SurveySubmitClientHook.register(BugLogReporter::maybeReport);
     }
 }
