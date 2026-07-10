@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EchoIdentity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.DeathEquipmentReporter;
+import games.brennan.dungeontrain.discord.DeathReporter;
 import games.brennan.dungeontrain.discord.RunSummaryReporter;
 import games.brennan.dungeontrain.discord.DeathManifestFormat;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
@@ -223,6 +224,11 @@ public final class RunStatsEvents {
         // Relay this life's run summary (duration + carriage + distance) to dp-relay for the data
         // explorer's per-life playtime — same gate/pattern as the equipment reporter above.
         RunSummaryReporter.report(player, packet);
+
+        // Relay a first-class per-death record so the explorer counts EVERY death, not only the ones
+        // that post a Discord death report below. Fires independent of isDeathReportToDiscord() (Free
+        // Play / short-abandon / report-disabled deaths still count) — gated only on worldInfoToRelay.
+        DeathReporter.report(player, packet);
 
         // Mirror the death-screen run summary to Discord via the bundled Discord Presence API.
         // Posts even on a Free Play run (the death screen renders for cheated runs too); only the
