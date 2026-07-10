@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.narrative;
 
 import com.mojang.authlib.GameProfile;
+import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.PendingDeathNotes;
 import net.minecraft.ChatFormatting;
@@ -58,6 +59,10 @@ public final class DeathNoteSigning {
         String targetUuid = resolveTargetUuid(player.getServer(), targetName);
         PendingDeathNotes.get(player.serverLevel())
             .add(new PendingDeathNotes.PendingDeathNote(player.getUUID(), author, targetName, targetUuid));
+
+        // One-shot "submitted a Death Note" advancement — fired only once a curse is actually
+        // recorded against a named target (mirrors how signing a shared book fires signed_shared_book).
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "submitted_death_note");
 
         player.sendSystemMessage(
             Component.literal("The Death Note takes ").withStyle(ChatFormatting.DARK_GRAY)

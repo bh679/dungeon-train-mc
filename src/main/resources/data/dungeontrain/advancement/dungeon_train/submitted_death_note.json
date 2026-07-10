@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/signed_shared_book",
+  "display": {
+    "icon": { "id": "minecraft:writable_book" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.submitted_death_note.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.submitted_death_note.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "submitted_death_note" }
+    }
+  },
+  "requirements": [["action"]]
+}
