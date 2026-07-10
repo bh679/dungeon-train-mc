@@ -73,6 +73,9 @@ public final class DeathNoteRefreshEvents {
         if (level.getGameTime() % SCAN_PERIOD_TICKS != 0) return;
         boolean dev = DungeonTrain.isDevBuild();
         for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
+            // A dead player (incl. the death that just armed a self-curse) must not spawn an echo —
+            // the echo comes in a LATER life, the next time the target reaches the death carriage ALIVE.
+            if (!player.isAlive()) continue;
             Integer cur = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
             if (cur == null) continue;                               // not near a train
 
