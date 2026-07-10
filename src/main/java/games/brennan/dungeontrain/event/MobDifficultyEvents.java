@@ -70,10 +70,17 @@ public final class MobDifficultyEvents {
 
         int travelled = DifficultyProgression.maxTravelledCarriageIndex(serverLevel);
 
-        boolean applied = DifficultyApplier.apply(mob, travelled, mob.getRandom());
+        // Regular carriage hostiles keep gaining gear strength past the netherite/level-50
+        // material cap via the AIS per-tier stat bonus (PAST_MATERIAL_CAP: 0 at/below the
+        // cap, then climbing). When disabled, gear stops improving at the cap as before
+        // (NONE). applyEffects stays true — the potion-effect pass is unchanged.
+        DifficultyApplier.StatScaling scaling = DungeonTrainConfig.getDifficultyScaleHostileGearPastCap()
+                ? DifficultyApplier.StatScaling.PAST_MATERIAL_CAP
+                : DifficultyApplier.StatScaling.NONE;
+        boolean applied = DifficultyApplier.apply(mob, travelled, mob.getRandom(), true, scaling);
         if (applied && DebugFlags.logLootRolls()) {
-            LOGGER.info("[DungeonTrain] Difficulty applied: uuid={} type={} maxTravelledCarriageIndex={}",
-                    mob.getUUID(), mob.getType().getDescriptionId(), travelled);
+            LOGGER.info("[DungeonTrain] Difficulty applied: uuid={} type={} maxTravelledCarriageIndex={} statScaling={}",
+                    mob.getUUID(), mob.getType().getDescriptionId(), travelled, scaling);
         }
     }
 }

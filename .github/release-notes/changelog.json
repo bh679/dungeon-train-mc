@@ -3672,6 +3672,23 @@
       "released": true,
       "released_in": "v0.415.0",
       "released_at": "2026-07-10T08:27:52Z"
+    },
+    {
+      "id": "hostile-gear-scaling-past-cap",
+      "version": "0.416.0",
+      "type": "feat",
+      "title": "Late-game hostile gear keeps scaling past the netherite plateau",
+      "summary": "Past roughly 1,500 carts, hostile mobs used to stop getting tougher once their gear reached full netherite \u2014 difficulty flatlined. Now their weapons and armour keep gaining attack power and protection the deeper you ride, so long runs stay dangerous instead of plateauing. Early- and mid-game difficulty is unchanged; the new difficultyScaleHostileGearPastCap server setting (on by default) can turn it off.",
+      "highlights": [
+        "Hostile gear keeps getting deadlier past ~1,500 carts, instead of capping at netherite",
+        "Early- and mid-game difficulty is untouched \u2014 only deep late-game changes",
+        "New difficultyScaleHostileGearPastCap server toggle (on by default)"
+      ],
+      "pr": 688,
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

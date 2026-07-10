@@ -191,12 +191,13 @@ public final class PlayerMobGroupSpawner {
         // it directly (effects off) rather than via MobDifficultyEvents; combined
         // with never writing NBT_SPAWN_CARRIAGE_PIDX, the event can never add
         // effects to a PlayerMob. Honours the same difficulty toggles as mobs.
-        // scaleStatsByLevel=true: PlayerMob gear additionally gets the per-tier
-        // primary-stat bonus (regular carriage mobs pass false → plain AIS roll).
+        // StatScaling.FULL: PlayerMob gear additionally gets the per-tier primary-stat
+        // bonus scaled off the full tier (strong from tier 1) — regular carriage mobs
+        // use PAST_MATERIAL_CAP, which only kicks in past the netherite plateau.
         if (DungeonTrainConfig.getDifficultyEnabled()
                 && DifficultyApplier.isEligible(mob, DungeonTrainConfig.getDifficultyAffectsBabyMobs())) {
             int progression = DifficultyProgression.maxTravelledCarriageIndex(level);
-            DifficultyApplier.apply(mob, progression, rng, false, true);
+            DifficultyApplier.apply(mob, progression, rng, false, DifficultyApplier.StatScaling.FULL);
         }
 
         // REQUIRED: marks the mob as carriage contents so the train kill-ahead
