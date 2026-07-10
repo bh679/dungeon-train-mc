@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/summon_the_creator",
+  "display": {
+    "icon": { "id": "minecraft:written_book" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.the_creator_answers.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.the_creator_answers.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "creator_answered": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "creator_answered" }
+    }
+  },
+  "requirements": [["creator_answered"]]
+}

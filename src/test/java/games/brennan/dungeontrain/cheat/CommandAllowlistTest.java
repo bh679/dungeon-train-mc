@@ -114,6 +114,13 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("/bug (jump-to-bug-question submission) is allowed")
+    void bugCommandAllowed() {
+        assertFalse(CommandAllowlist.taints("bug"));
+        assertFalse(CommandAllowlist.taints("/bug"));
+    }
+
+    @Test
     @DisplayName("/kill (bare, self-only) and /new-world (end / reset the run) are allowed")
     void runControlAllowed() {
         assertFalse(CommandAllowlist.taints("kill"));
