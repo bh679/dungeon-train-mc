@@ -3738,6 +3738,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "player-written-books-burn",
+      "version": "0.420.0",
+      "type": "feat",
+      "title": "Player-written books burn after being read",
+      "summary": "Books you write and sign yourself, and real books other players wrote that you discover as chest loot, now catch fire and burn away once you've read them \u2014 the same way welcome and found-in-chest story books already do.",
+      "highlights": [
+        "A book you sign and keep now burns after you read it",
+        "A stranger's real book, found as loot, burns after you read it"
+      ],
+      "pr": 694,
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
