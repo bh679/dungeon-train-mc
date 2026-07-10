@@ -147,7 +147,10 @@ public final class NarrativeBookEvents {
      *
      * <p>Held-right-click only, mirroring {@link #onRightClickRandomBookItem} /
      * {@link #onRightClickStartingBookItem} — a found book placed on a lectern is not covered, the
-     * same scope cut already made for those two tags.</p>
+     * same scope cut already made for those two tags. Also stamps {@link BookReadMarkerTag} (same
+     * as those two handlers) so the "burned without reading" milestone in
+     * {@code StartingBookEvents} doesn't wrongly flag a book the player actually read before it
+     * burned — see {@link BurnableBookTag}.</p>
      */
     @SubscribeEvent
     public static void onRightClickFoundSharedBookItem(PlayerInteractEvent.RightClickItem event) {
@@ -156,6 +159,7 @@ public final class NarrativeBookEvents {
         ItemStack stack = event.getItemStack();
         if (stack.isEmpty()) return;
         if (!SharedBookFoundTag.isFound(stack)) return;
+        BookReadMarkerTag.markOpened(stack);
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "read_shared_book");
 
         // Record the community-book read world-scoped + monotonic (by relay pool id) so the shared-book
@@ -238,7 +242,12 @@ public final class NarrativeBookEvents {
      * {@code BookViewScreen} locally from its stale stack before the server's
      * mutation reaches it.
      *
-     * <p>Logic (world-scoped):
+     * <p>Also stamps the "held" marker on discovered community books
+     * ({@link SharedBookFoundTag}) — no content-swap needed for those, just the
+     * held gate that unlocks the burn-after-reading flow (see
+     * {@link BurnableBookTag}).</p>
+     *
+     * <p>Logic (world-scoped, random-book branch):
      * <ul>
      *   <li>Stack must be a {@link RandomBookTag}-stamped vanilla written book.</li>
      *   <li>If the world has not yet seen this {@code (basename, variantIndex)},
@@ -262,6 +271,19 @@ public final class NarrativeBookEvents {
         if (slot != EquipmentSlot.MAINHAND && slot != EquipmentSlot.OFFHAND) return;
         ItemStack stack = event.getTo();
         if (stack.isEmpty()) return;
+
+        // Discovered community books: no content-swap needed (unlike random books below) — just
+        // stamp the "held" marker so the burn-after-reading flow (BurnableBookTag) can fire on a
+        // later close/drop, without igniting a book still sitting in an unopened chest.
+        if (SharedBookFoundTag.isFound(stack)) {
+            if (!SharedBookFoundTag.isHeld(stack)) {
+                SharedBookFoundTag.markHeld(stack);
+                LOGGER.info("[DungeonTrain] SharedBookFound: marked discovered book held (by {}) — will burn after reading",
+                    player.getName().getString());
+            }
+            return;
+        }
+
         Optional<RandomBookTag.RandomBookIdentity> idOpt = RandomBookTag.read(stack);
         if (idOpt.isEmpty()) return;
         if (RandomBookTag.isHeld(stack)) return; // content already locked on a prior hold
