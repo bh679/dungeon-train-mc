@@ -122,6 +122,11 @@ public final class PendingDeathNotes extends SavedData {
         if (armed.removeIf(a -> a.id() == id)) setDirty();
     }
 
+    /** [DN-DEBUG] snapshot of all armed curses (diagnostic; safe copy). */
+    public List<ArmedNote> allArmed() {
+        return new ArrayList<>(armed);
+    }
+
     // ---- persistence ------------------------------------------------------------
 
     private static PendingDeathNotes load(CompoundTag tag) {

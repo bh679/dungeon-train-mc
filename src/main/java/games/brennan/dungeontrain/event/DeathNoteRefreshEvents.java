@@ -103,7 +103,19 @@ public final class DeathNoteRefreshEvents {
             PendingDeathNotes store = PendingDeathNotes.get(level);
             List<PendingDeathNotes.ArmedNote> matched = store.armedReachedFor(
                     player.getUUID(), player.getGameProfile().getName(), cur, ARRIVAL_LEAD);
-            if (!matched.isEmpty()) {
+            if (matched.isEmpty()) {
+                // Near-miss trace: armed notes exist but none matched THIS player/carriage — show why.
+                List<PendingDeathNotes.ArmedNote> all = store.allArmed();
+                if (!all.isEmpty()) {
+                    StringBuilder sb = new StringBuilder();
+                    for (PendingDeathNotes.ArmedNote a : all) {
+                        sb.append(String.format(" [id=%d target='%s' targetUuid='%s' deathCarriage=%d]",
+                                a.id(), a.targetName(), a.targetUuid(), a.deathCarriage()));
+                    }
+                    LOGGER.info("[DN-DEBUG] arrival scan: player={} (uuid={}) cur={} armedTotal={} but NONE matched (lead={}). armed:{}",
+                            player.getGameProfile().getName(), player.getUUID(), cur, all.size(), ARRIVAL_LEAD, sb);
+                }
+            } else {
                 LOGGER.info("[DN-DEBUG] arrival scan: player={} cur={} matchedArmed={} (lead={})",
                         player.getGameProfile().getName(), cur, matched.size(), ARRIVAL_LEAD);
             }

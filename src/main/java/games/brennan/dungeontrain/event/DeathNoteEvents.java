@@ -56,9 +56,12 @@ public final class DeathNoteEvents {
         Integer deathCarriage = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
         String worldKey = String.valueOf(DungeonTrainWorldData.get(level).getGenerationSeed());
 
+        LOGGER.info("[DN-DEBUG] onPlayerDeath: author={} pendingNotes={} deathCarriage={} dev={} canSync={}",
+                player.getGameProfile().getName(), pending.size(), deathCarriage, dev, canSync);
+
         for (PendingDeathNotes.PendingDeathNote note : pending) {
             if (deathCarriage == null) {
-                LOGGER.debug("[DungeonTrain] DeathNote: {} died off-train — curse on {} dropped (no carriage).",
+                LOGGER.info("[DN-DEBUG] onPlayerDeath: {} died off-train — curse on {} DROPPED (no carriage).",
                         note.authorName(), note.targetName());
                 continue;
             }
@@ -66,10 +69,10 @@ public final class DeathNoteEvents {
                 // Dev: arm the curse on the PERSISTED world store (survives quit-to-title / world
                 // reload) — no relay round-trip (the bare local relay isn't reachable by the Java
                 // client). The target reads it on the arrival scan.
-                PendingDeathNotes.get(level).addArmed(note.authorUuid(), note.authorName(),
+                int id = PendingDeathNotes.get(level).addArmed(note.authorUuid(), note.authorName(),
                         note.targetName(), note.targetUuid(), deathCarriage);
-                LOGGER.debug("[DungeonTrain] DeathNote(dev): armed on save — echo of {} awaits {} at carriage {}.",
-                        note.authorName(), note.targetName(), deathCarriage);
+                LOGGER.info("[DN-DEBUG] onPlayerDeath(dev): ARMED id={} echo of {} awaits target='{}' (uuid='{}') at carriage {}.",
+                        id, note.authorName(), note.targetName(), note.targetUuid(), deathCarriage);
                 continue;
             }
             if (!canSync) {

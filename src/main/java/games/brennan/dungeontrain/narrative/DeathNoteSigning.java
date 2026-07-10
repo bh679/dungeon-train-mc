@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.narrative;
 
 import com.mojang.authlib.GameProfile;
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.PendingDeathNotes;
@@ -24,6 +25,8 @@ import java.util.Optional;
  * ({@code DeathNoteEvents}), because "the carriage the author died at" isn't known until then.
  */
 public final class DeathNoteSigning {
+
+    private static final org.slf4j.Logger LOGGER = LogUtils.getLogger();
 
     /** CUSTOM_MODEL_DATA value selecting the black book model (assets/minecraft/models/item/written_book.json). */
     public static final int BLACK_BOOK_MODEL_DATA = 1;
@@ -73,6 +76,8 @@ public final class DeathNoteSigning {
         String targetUuid = resolveTargetUuid(player.getServer(), targetName);
         PendingDeathNotes.get(player.serverLevel())
             .add(new PendingDeathNotes.PendingDeathNote(player.getUUID(), author, targetName, targetUuid));
+        LOGGER.info("[DN-DEBUG] signing: recorded PENDING curse author={} target='{}' targetUuid='{}' dev={}",
+            author, targetName, targetUuid, games.brennan.dungeontrain.DungeonTrain.isDevBuild());
 
         player.sendSystemMessage(
             Component.literal("The Death Note takes ").withStyle(ChatFormatting.DARK_GRAY)
