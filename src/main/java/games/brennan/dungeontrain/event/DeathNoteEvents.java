@@ -116,6 +116,7 @@ public final class DeathNoteEvents {
         if (echo.level().isClientSide()) return;
         CompoundTag data = echo.getPersistentData();
         if (!data.contains(DeathNoteEchoSpawner.KEY_TARGET)) return; // not a death-note echo
+        DeathNoteEchoController.unregister(echo.getUUID());
         String author = data.contains(DeathNoteEchoSpawner.KEY_AUTHOR)
                 ? data.getString(DeathNoteEchoSpawner.KEY_AUTHOR) : "Unknown";
         ItemStack book = DeathNoteSigning.buildTrophyBook(author);

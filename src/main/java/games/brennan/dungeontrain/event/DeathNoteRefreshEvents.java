@@ -8,7 +8,6 @@ import games.brennan.dungeontrain.narrative.DeathNoteSpawnMessage;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -47,8 +46,6 @@ public final class DeathNoteRefreshEvents {
     private static final int SCAN_PERIOD_TICKS = 20;
     /** Spawn the echo once the target is within this many carriages of the death carriage. */
     private static final int ARRIVAL_LEAD = 1;
-    /** Place the echo this many blocks ahead of the target (the train travels +X). */
-    private static final double AHEAD_BLOCKS = 6.0;
 
     /** playerUuid → carriage index at their last download (to fire every REFRESH_EVERY_CARRIAGES). */
     private static final Map<UUID, Integer> LAST_REFRESH_CARRIAGE = new ConcurrentHashMap<>();
@@ -99,9 +96,9 @@ public final class DeathNoteRefreshEvents {
         if (!DeathNotePool.hasAny(targetUuid)) return;
         ServerLevel level = player.serverLevel();
         for (DeathNotePool.Note note : DeathNotePool.notesReached(targetUuid, cur, ARRIVAL_LEAD)) {
-            BlockPos floorPos = BlockPos.containing(player.getX() + AHEAD_BLOCKS, player.getY(), player.getZ());
-            boolean ok = DeathNoteEchoSpawner.spawn(level, floorPos, note.deathCarriage(), note, targetUuid);
-            if (!ok) continue;                                       // leave the note to retry next scan
+            // Spawn onto the carriage the player is riding (shipyard coords, so Sable binds it there).
+            boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player, note);
+            if (!ok) continue;                                       // not on a carriage yet — retry next scan
             DeathNotePool.remove(targetUuid, note.id());
             if (note.id() > 0) DeathNoteReporter.markUsed(note.id()); // relay notes only (local ids ≤ 0)
             level.getServer().getPlayerList().broadcastSystemMessage(

@@ -4,7 +4,9 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyApplier;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.event.DeathNoteEchoController;
 import games.brennan.dungeontrain.narrative.DeathNotePool;
+import games.brennan.playermob.compat.TrainConfinement;
 import games.brennan.playermob.entity.FeelingLedger;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import games.brennan.playermob.player.SourceProfileSkin;
@@ -13,6 +15,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -46,6 +49,55 @@ public final class DeathNoteEchoSpawner {
     public static final String KEY_AUTHOR = "dt_deathnote_author";
 
     private DeathNoteEchoSpawner() {}
+
+    /**
+     * Spawn the echo of {@code note}'s author onto the carriage {@code target} is currently riding —
+     * at the carriage's SHIPYARD interior floor so Sable binds it to the moving carriage. A world-
+     * space position (e.g. the player's live coords) leaves the mob off the moving deck and invisible.
+     * Returns false (leaving the note to retry next scan) if the target isn't on a resolvable
+     * carriage group yet.
+     */
+    public static boolean spawnForTarget(ServerLevel level, ServerPlayer target, DeathNotePool.Note note) {
+        Trains.Carriage group = groupContaining(level, target);
+        if (group == null) {
+            LOGGER.debug("[DungeonTrain] DeathNote echo: {} not on a resolvable carriage group yet — deferring.",
+                    target.getGameProfile().getName());
+            return false;
+        }
+        TrainTransformProvider provider = group.provider();
+        int anchor = provider.getPIdx();
+        int groupSize = provider.getGroupSize();
+        // Spawn in the player's own carriage; clamp into this group's range so the slot is valid.
+        int pidx = TrainConfinement.carriageIndex(target);
+        if (pidx < anchor || pidx >= anchor + groupSize) pidx = anchor;
+        BlockPos floorPos = interiorFloorPos(provider, pidx);
+        return spawn(level, floorPos, note.deathCarriage(), note, target.getUUID());
+    }
+
+    /** The train group whose world AABB contains {@code player} (player position is world-space), or null. */
+    private static Trains.Carriage groupContaining(ServerLevel level, ServerPlayer player) {
+        double x = player.getX(), y = player.getY(), z = player.getZ();
+        for (Trains.Carriage c : Trains.allCarriages(level)) {
+            var bb = c.ship().worldAABB();
+            if (bb == null) continue;
+            if (x >= bb.minX() - 1.5 && x <= bb.maxX() + 1.5
+                    && y >= bb.minY() - 1.5 && y <= bb.maxY() + 1.5
+                    && z >= bb.minZ() - 1.5 && z <= bb.maxZ() + 1.5) {
+                return c;
+            }
+        }
+        return null;
+    }
+
+    /** Shipyard interior floor-centre of carriage {@code targetPIdx} within {@code provider}'s group. */
+    private static BlockPos interiorFloorPos(TrainTransformProvider provider, int targetPIdx) {
+        CarriageDims dims = provider.dims();
+        int slot = targetPIdx - provider.getPIdx();
+        int enclosedStartOffset = provider.getGroupSize() > 1 ? CarriagePlacer.halfPadLen(dims) : 0;
+        BlockPos carriageOrigin = provider.getShipyardOrigin()
+                .offset(enclosedStartOffset + slot * dims.length(), 0, 0);
+        return PlayerMobGroupSpawner.interiorFloorCentre(carriageOrigin, dims);
+    }
 
     /**
      * Spawn the echo of {@code note}'s author at {@code floorPos} (carriage interior), hostile toward
@@ -109,6 +161,8 @@ public final class DeathNoteEchoSpawner {
                     floorPos, carriagePIdx);
                 return false;
             }
+            // Track it so DeathNoteEchoController can steer it onto the target (frame-consistent).
+            DeathNoteEchoController.register(mob.getUUID(), targetUuid);
             LOGGER.info("[DungeonTrain] DeathNote echo of {} spawned at carriage {} hunting {}",
                 authorName, carriagePIdx, targetUuid);
             return true;
