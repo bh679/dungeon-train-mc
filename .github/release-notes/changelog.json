@@ -3628,6 +3628,21 @@
       "released_at": null
     },
     {
+      "id": "book-carriage-signature",
+      "version": "0.414.0",
+      "type": "feat",
+      "title": "Signed books remember which carriage they were written in",
+      "summary": "Every book and quill you sign now quietly records which carriage you were standing in at the moment of signing \u2014 laying the groundwork for future features that make use of where a story was written.",
+      "highlights": [
+        "Signed books now store their carriage of origin"
+      ],
+      "pr": 683,
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "burn-without-reading-advancement",
       "version": "0.415.0",
       "type": "feat",
