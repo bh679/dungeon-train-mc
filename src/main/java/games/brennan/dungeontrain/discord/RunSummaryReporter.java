@@ -2,17 +2,11 @@ package games.brennan.dungeontrain.discord;
 
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
+import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
-
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 
 /**
  * POSTs a per-LIFE run summary (spawn → death) to the Dungeon Train relay, so the private data
@@ -20,21 +14,16 @@ import java.time.Duration;
  * death report prints as {@code H:MM:SS}. A "life" ends at each death ({@code PlayerRunState.runTicks}
  * resets on respawn), so one record is posted per death.
  *
- * <p>Mirrors {@link DeathEquipmentReporter}'s fire-and-forget HTTP pattern exactly: same relay
- * destination, the same {@link DungeonTrainConfig#isWorldInfoToRelay()} gate (reused rather than a
- * new toggle), same off-thread no-throw POST, fired from {@code RunStatsEvents.onPlayerDeath}. The
- * run duration is authoritative; the relay also parses it out of the Discord death embed as a
- * fallback for builds that don't POST this, so shipping it is additive.</p>
+ * <p>Mirrors {@link DeathEquipmentReporter}: same relay destination, the same
+ * {@link DungeonTrainConfig#isWorldInfoToRelay()} gate (reused rather than a new toggle), and the same
+ * no-throw hand-off to the durable {@link RelayOutbox} (persisted, delivered at-least-once on the next
+ * flush), fired from {@code RunStatsEvents.onPlayerDeath}. The run duration is authoritative; the relay
+ * also parses it out of the Discord death embed as a fallback for builds that don't POST this, so
+ * shipping it is additive.</p>
  */
 public final class RunSummaryReporter {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    private static final HttpClient HTTP = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(8))
-            .build();
-
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     private static final int TICKS_PER_SECOND = 20;
 
@@ -79,18 +68,7 @@ public final class RunSummaryReporter {
     }
 
     private static void post(String uuid, String json) {
-        HttpRequest req = HttpRequest.newBuilder(
-                        URI.create(DungeonTrain.relayBaseUrl() + "/telemetry/run-summary"))
-                .timeout(REQUEST_TIMEOUT)
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json))
-                .build();
-        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(resp -> LOGGER.debug(
-                        "[DungeonTrain] run-summary report for {} -> HTTP {}.", uuid, resp.statusCode()))
-                .exceptionally(e -> {
-                    LOGGER.debug("[DungeonTrain] run-summary report for {} failed: {}", uuid, e.toString());
-                    return null;
-                });
+        RelayOutbox.get().enqueue("/telemetry/run-summary", json);
+        LOGGER.debug("[DungeonTrain] run-summary report for {} queued to the relay outbox.", uuid);
     }
 }
