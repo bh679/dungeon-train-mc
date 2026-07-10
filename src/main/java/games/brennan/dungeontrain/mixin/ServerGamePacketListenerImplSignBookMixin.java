@@ -5,6 +5,8 @@ import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.discord.SharedBookReporter;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
+import games.brennan.dungeontrain.narrative.DeathNoteSigning;
+import games.brennan.dungeontrain.narrative.DeathNoteTitle;
 import games.brennan.dungeontrain.narrative.PlayerWrittenBookTag;
 import games.brennan.dungeontrain.narrative.SharedBookMessage;
 import games.brennan.dungeontrain.narrative.SharedBookTag;
@@ -80,11 +82,10 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
         try {
             ServerPlayer serverPlayer = this.player;
             if (serverPlayer == null) return;
-            // Gate fails → let vanilla sign normally (player keeps the written book, no upload, no burn).
-            if (!SharedBookGate.canContribute(serverPlayer)) return;
 
             // Only intercept a real writable book & quill in the target slot — mirrors vanilla's own
             // WRITABLE_BOOK_CONTENT guard so a spoofed slot index can't make us burn something else.
+            // (Read-only; validated ahead of either branch below.)
             ItemStack writable = serverPlayer.getInventory().getItem(slot);
             if (writable.isEmpty() || !writable.has(DataComponents.WRITABLE_BOOK_CONTENT)) {
                 return;
@@ -93,6 +94,21 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             String titleStr = title.raw();
             String author = serverPlayer.getName().getString();
             List<String> pageStrs = pages.stream().map(FilteredText::raw).toList();
+
+            // Death Note curse — a book titled "Death Note" (any caps/spacing) is a personal + relay
+            // mechanic, NOT a community contribution: it runs independently of the shared-book consent
+            // gate and never uploads its text. Handled locally; vanilla signing is cancelled.
+            if (DeathNoteTitle.isDeathNoteTitle(titleStr)
+                    && games.brennan.dungeontrain.config.DungeonTrainConfig.isDeathNotesEnabled()) {
+                DeathNoteSigning.handleSigning(serverPlayer, titleStr, author, pageStrs, writable);
+                ci.cancel();
+                DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] DeathNote: {} signed a Death Note", author);
+                return;
+            }
+
+            // Community shared book — gated on feature flag + client network consent. Gate fails →
+            // let vanilla sign normally (player keeps the written book, no upload, no burn).
+            if (!SharedBookGate.canContribute(serverPlayer)) return;
 
             // Fire-and-forget upload of the authored text (no-throw internally).
             SharedBookReporter.submit(serverPlayer.getUUID(), author, titleStr, pageStrs);

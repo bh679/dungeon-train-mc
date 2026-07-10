@@ -21,6 +21,8 @@ import net.minecraft.world.item.ItemStack;
  *       signing and drops this marked stack so it burns away (its text having
  *       been uploaded to the relay). Unconditional — signing is explicit
  *       intent.</li>
+ *   <li>{@link DeathNoteBookTag} — the written book dropped when a player signs a book titled
+ *       "Death Note" (the curse mechanic). Burns with the SOUL variant. Unconditional.</li>
  *   <li>{@link RandomBookTag} — books that spawn in train chests via
  *       {@link RandomBookFactory}. Burn on close + any drop, but ONLY
  *       after a player has held the stack at least once (the
@@ -74,6 +76,7 @@ public final class BurnableBookTag {
         if (stack == null || stack.isEmpty()) return false;
         if (StartingBookTag.isStartingBook(stack)) return true;
         if (SharedBookTag.isSharedBook(stack)) return true;
+        if (DeathNoteBookTag.isDeathNote(stack)) return true;
         if (RandomBookTag.read(stack).isPresent() && RandomBookTag.isHeld(stack)) return true;
         if (PlayerWrittenBookTag.isPlayerWritten(stack)) return true;
         if (SharedBookFoundTag.isFound(stack) && SharedBookFoundTag.isHeld(stack)) return true;
