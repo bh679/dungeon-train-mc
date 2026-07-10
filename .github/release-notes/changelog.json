@@ -3816,6 +3816,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "deathnote-advancements",
+      "version": "0.425.0",
+      "type": "feat",
+      "title": "Death Note advancements: Self-Fulfilling Prophecy & Assassination Attempt",
+      "summary": "Two new advancements for the Death Note curse. Naming your own name in a Death Note now works in every build (previously dev-only) and earns Self-Fulfilling Prophecy; killing a Death Note echo hunting you earns Assassination Attempt.",
+      "highlights": [
+        "New advancement: Self-Fulfilling Prophecy \u2014 write your own name in a Death Note",
+        "New advancement: Assassination Attempt \u2014 kill a Death Note echo before it kills you",
+        "You can now curse your own next life (self-targeting a Death Note works in all builds)"
+      ],
+      "pr": 702,
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
