@@ -3786,7 +3786,7 @@
     },
     {
       "id": "playermob-0-73-0-bump",
-      "version": "0.422.0",
+      "version": "0.423.0",
       "type": "feat",
       "title": "PlayerMob companion mod updated",
       "summary": "The bundled PlayerMob (Interactive Player Mobs) companion mod is updated from 0.71.0 to 0.73.0, bringing new combat and death behavior.",
