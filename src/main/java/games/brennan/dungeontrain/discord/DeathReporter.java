@@ -35,7 +35,12 @@ public final class DeathReporter {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    // Pin HTTP/1.1: the JDK client defaults to HTTP/2, which over cleartext sends an "Upgrade: h2c"
+    // header. A relay that speaks only HTTP/1.1 (e.g. a bare local dev relay, no nginx in front)
+    // routes that upgrade to its websocket handler and drops the connection ("header parser received
+    // no bytes"). A one-shot fire-and-forget telemetry POST gains nothing from HTTP/2, so force 1.1.
     private static final HttpClient HTTP = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(8))
             .build();
 
