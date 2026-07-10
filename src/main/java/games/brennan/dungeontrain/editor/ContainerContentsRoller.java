@@ -774,6 +774,10 @@ public final class ContainerContentsRoller {
             }
         }
 
+        // level = uniform draw over [1,30], mirroring the power input of a fully-
+        // bookshelved (15-shelf) vanilla enchanting table — same "uniform draw within
+        // a natural vanilla-derived bound" style as the durability roll above, and
+        // shared by every enchantable entry in this pool (not book-specific).
         if (picked.randomEnchantment() && stack.isEnchantable()
             && rollChance(picked.enchantmentChance(), localPos, worldSeed,
                           carriageIndex, slot, SALT_ENCH_CHANCE)) {
@@ -784,7 +788,17 @@ public final class ContainerContentsRoller {
                 .lookup(Registries.ENCHANTMENT)
                 .flatMap(reg -> reg.get(EnchantmentTags.IN_ENCHANTING_TABLE));
             if (nonTreasure.isPresent()) {
-                EnchantmentHelper.enchantItem(rs, stack, level, nonTreasure.get().stream());
+                // Must capture the return value: vanilla's enchantItem special-cases
+                // Items.BOOK by internally reassigning to a NEW ItemStack(ENCHANTED_BOOK)
+                // and enchanting THAT before returning it, rather than mutating the
+                // passed-in stack in place (every other enchantable item IS mutated in
+                // place, so this reassignment is a no-op for them but load-bearing here).
+                stack = EnchantmentHelper.enchantItem(rs, stack, level, nonTreasure.get().stream());
+                if (DebugFlags.logLootRolls()) {
+                    LOGGER.info("[DT-ench] item={} level={} result={} enchantments={} carriageIdx={} localPos={}",
+                        item, level, stack.getItem(),
+                        EnchantmentHelper.getEnchantmentsForCrafting(stack), carriageIndex, localPos);
+                }
             }
         }
 
@@ -1121,10 +1135,12 @@ public final class ContainerContentsRoller {
     /**
      * Roll {@code true} with probability {@code pct} %, deterministically seeded
      * by {@code (localPos, worldSeed, carriageIndex, slot, salt)}. {@code pct=0}
-     * never fires; {@code pct>=100} always fires.
+     * never fires; {@code pct>=100} always fires. Package-private so other
+     * {@code editor} classes (e.g. {@link BlockLootDefaults}) can reuse the same
+     * seeded-chance idiom instead of re-deriving it.
      */
-    private static boolean rollChance(int pct, BlockPos localPos, long worldSeed,
-                                      int carriageIndex, int slot, long salt) {
+    static boolean rollChance(int pct, BlockPos localPos, long worldSeed,
+                              int carriageIndex, int slot, long salt) {
         if (pct <= 0) return false;
         if (pct >= 100) return true;
         long state = mix(localPos, worldSeed, carriageIndex, slot, salt);

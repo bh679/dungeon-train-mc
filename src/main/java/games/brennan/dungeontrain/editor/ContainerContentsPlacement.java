@@ -52,6 +52,10 @@ public final class ContainerContentsPlacement {
      *   <li>Otherwise fall back to
      *       {@link ContainerContentsStore#poolAt(BlockPos)} which reads
      *       through the cell-level link if one exists.</li>
+     *   <li>If neither yields a pool, fall back to
+     *       {@link BlockLootDefaults#resolveDefaultPool} — a block-type-wide
+     *       default (e.g. bookshelves), applied only to cells with no curated
+     *       loot of their own.</li>
      * </ol>
      */
     public static void place(ServerLevel level, BlockPos worldPos, BlockState state,
@@ -67,6 +71,10 @@ public final class ContainerContentsPlacement {
                     .orElse(ContainerContentsPool.empty());
             } else {
                 pool = ContainerContentsStore.loadFor(plotKey).poolAt(localPos);
+            }
+            if (pool.isEmpty()) {
+                pool = BlockLootDefaults.resolveDefaultPool(state, localPos, worldSeed, carriageIndex)
+                    .orElse(ContainerContentsPool.empty());
             }
             if (!pool.isEmpty()) {
                 finalNbt = ContainerContentsRoller.roll(pool, state, localPos, worldSeed, carriageIndex, baseBeNbt, level.registryAccess(), level);

@@ -57,7 +57,24 @@ repositories {
             artifact '[organization]/[module]-mc/releases/download/v[revision]/[module]-neoforge-[revision].[ext]'
         }
         metadataSources { artifact() }
-        content { includeGroup 'bh679' }
+        content {
+            includeGroup 'bh679'
+            excludeModule('bh679', 'playermob')
+        }
+    }
+
+    // playermob-mc 0.48.0+ ships builds for multiple MC versions per release, so its
+    // NeoForge asset name gained a `+<mcversion>` suffix (e.g. playermob-neoforge-0.71.0+1.21.1.jar)
+    // instead of the flat playermob-neoforge-<v>.jar the other bh679 sibling mods still use.
+    // Separate ivy repo, scoped to just the playermob module, pinned to DT's MC version.
+    ivy {
+        name = 'GitHubReleasesPlayerMob'
+        url = 'https://github.com/'
+        patternLayout {
+            artifact "[organization]/[module]-mc/releases/download/v[revision]/[module]-neoforge-[revision]+${minecraft_version}.[ext]"
+        }
+        metadataSources { artifact() }
+        content { includeModule('bh679', 'playermob') }
     }
 }
 

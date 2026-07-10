@@ -3,15 +3,10 @@ package games.brennan.dungeontrain.discord;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.BookReadClosedPacket;
+import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import org.slf4j.Logger;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.UUID;
 
 /**
@@ -22,10 +17,10 @@ import java.util.UUID;
  * {@link BookReadClosedPacket}; the server gates it on the player's network consent, enriches the
  * narrative fields, and POSTs a compact record to the relay's {@code /telemetry/book-read} endpoint.
  *
- * <p>Mirrors {@link SharedBookReporter} / {@link WorldInfoReporter}: a shared static {@link HttpClient},
- * a Gson-built JSON body, and an off-thread {@link HttpClient#sendAsync} whose result is only logged at
- * debug. The whole call is no-throw — a failed or slow report can never disrupt the packet handler or
- * cost a tick.</p>
+ * <p>Mirrors {@link SharedBookReporter} / {@link WorldInfoReporter}: a Gson-built JSON body handed to
+ * the durable {@link RelayOutbox}, which persists it and delivers at-least-once on the next flush
+ * (surviving a relay outage / offline launch rather than being dropped). The whole call is no-throw —
+ * a failed or slow report can never disrupt the packet handler or cost a tick.</p>
  *
  * <p><b>Metadata + timings only.</b> The body carries ids, a display title/author (already public game
  * text) and timings — <em>never page text</em>. This matches the relay's rule (see {@code analytics.js}):
@@ -34,12 +29,6 @@ import java.util.UUID;
 public final class BookReadReporter {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    private static final HttpClient HTTP = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(8))
-            .build();
-
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     private BookReadReporter() {}
 
@@ -99,18 +88,7 @@ public final class BookReadReporter {
     }
 
     private static void post(String uuid, String json) {
-        HttpRequest req = HttpRequest.newBuilder(
-                        URI.create(DungeonTrain.relayBaseUrl() + "/telemetry/book-read"))
-                .timeout(REQUEST_TIMEOUT)
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json))
-                .build();
-        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(resp -> LOGGER.debug(
-                        "[DungeonTrain] book-read report for {} -> HTTP {}.", uuid, resp.statusCode()))
-                .exceptionally(e -> {
-                    LOGGER.debug("[DungeonTrain] book-read report for {} failed: {}", uuid, e.toString());
-                    return null;
-                });
+        RelayOutbox.get().enqueue("/telemetry/book-read", json);
+        LOGGER.debug("[DungeonTrain] book-read report for {} queued to the relay outbox.", uuid);
     }
 }

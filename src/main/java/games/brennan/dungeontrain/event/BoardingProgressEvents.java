@@ -139,20 +139,24 @@ public final class BoardingProgressEvents {
             for (UUID uuid : boarded.keySet()) {
                 ServerPlayer p = level.getServer().getPlayerList().getPlayer(uuid);
                 if (p == null) continue;
-                // Lifetime train-time is a global stat — frozen for cheated runs.
-                // The per-run counter, the "boarded" advancement trigger, distance
-                // and biome sampling below still run (advancements earn live).
-                if (!RunIntegrity.isCheated(p)) {
+                // Lifetime train-time is a global stat — frozen for cheated runs and
+                // while the player is dead (death-screen time shouldn't count as
+                // "alive on the train"). The "boarded" advancement trigger, distance
+                // and biome sampling below still run regardless of alive state.
+                if (p.isAlive() && !RunIntegrity.isCheated(p)) {
                     long newTotal = GlobalPlayerStats.addTrainTicks(uuid, SCAN_PERIOD_TICKS);
                     AchievementEvents.notifyTrainTime(p, newTotal);
                 }
                 games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
                     .trigger(p, "boarded");
                 // Single-life time aboard: per-run boarded-tick counter that
-                // resets on death. Twin of the cross-world train-time above.
-                long runTrainTicks = p.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
-                    .addTrainTimeTicks(SCAN_PERIOD_TICKS);
-                AchievementEvents.notifyRunTrainTime(p, runTrainTicks);
+                // resets on death. Twin of the cross-world train-time above —
+                // also frozen while dead so the death screen doesn't rack up run time.
+                if (p.isAlive()) {
+                    long runTrainTicks = p.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
+                        .addTrainTimeTicks(SCAN_PERIOD_TICKS);
+                    AchievementEvents.notifyRunTrainTime(p, runTrainTicks);
+                }
                 accumulateBoardedDistance(p);
                 sampleBoardedBiome(level, p);
             }

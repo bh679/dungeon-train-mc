@@ -3,18 +3,13 @@ package games.brennan.dungeontrain.discord;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -38,19 +33,13 @@ import java.util.UUID;
  *
  * <p>Invoked from the same {@code joinMessageSuffix} seam as {@link WorldJoinReport} in
  * {@code DungeonTrain}: server thread, already gated by Discord Presence's Discord-enabled +
- * network-consent path. The whole thing is wrapped no-throw and the HTTP POST is fire-and-forget
- * off-thread (mirroring {@code EchoUsageReporter}), so a failed or slow report can never disrupt the
- * join or cost a tick.</p>
+ * network-consent path. The whole thing is wrapped no-throw and the record is handed to the durable
+ * {@link RelayOutbox} (persisted, delivered at-least-once on the next flush — mirroring
+ * {@code EchoUsageReporter}), so a failed or slow report can never disrupt the join or cost a tick.</p>
  */
 public final class WorldInfoReporter {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    private static final HttpClient HTTP = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(8))
-            .build();
-
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     /** A single installed mod as reported to the relay: its id and version string. */
     record ModEntry(String modId, String version) {}
@@ -157,18 +146,7 @@ public final class WorldInfoReporter {
     }
 
     private static void post(String uuid, String json) {
-        HttpRequest req = HttpRequest.newBuilder(
-                        URI.create(DungeonTrain.relayBaseUrl() + "/telemetry/world-info"))
-                .timeout(REQUEST_TIMEOUT)
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json))
-                .build();
-        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(resp -> LOGGER.debug(
-                        "[DungeonTrain] world-info report for {} -> HTTP {}.", uuid, resp.statusCode()))
-                .exceptionally(e -> {
-                    LOGGER.debug("[DungeonTrain] world-info report for {} failed: {}", uuid, e.toString());
-                    return null;
-                });
+        RelayOutbox.get().enqueue("/telemetry/world-info", json);
+        LOGGER.debug("[DungeonTrain] world-info report for {} queued to the relay outbox.", uuid);
     }
 }
