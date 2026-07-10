@@ -118,7 +118,8 @@
     },
     {
       "id": "antizombiesroom",
-      "weight": 3
+      "weight": 3,
+      "minLevel": 2
     },
     {
       "id": "zombiejail",

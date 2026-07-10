@@ -4,8 +4,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -15,21 +15,15 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.DyedItemColor;
 import org.slf4j.Logger;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-
 /**
  * POSTs the armor + main-hand item a player was wearing/holding at the moment of death to the
  * Dungeon Train relay, so the private data explorer's player-card view (dp-relay) can render each
  * player's last-death loadout on their 3D model.
  *
- * <p>Mirrors {@link WorldInfoReporter}'s fire-and-forget HTTP pattern: same destination (the
- * relay) and the same {@link DungeonTrainConfig#isWorldInfoToRelay()} gate reused rather than a
- * new toggle, same off-thread no-throw POST. Fires from {@code RunStatsEvents.onPlayerDeath}
- * instead of on join.</p>
+ * <p>Mirrors {@link WorldInfoReporter}: same destination (the relay) and the same
+ * {@link DungeonTrainConfig#isWorldInfoToRelay()} gate reused rather than a new toggle, same no-throw
+ * hand-off to the durable {@link RelayOutbox} (persisted, delivered at-least-once on the next flush).
+ * Fires from {@code RunStatsEvents.onPlayerDeath} instead of on join.</p>
  *
  * <p>Armor comes straight from the same {@code DeathStatsPacket} slots the death screen uses
  * (captured there before respawn/keep-inventory clear them — see
@@ -40,12 +34,6 @@ import java.time.Duration;
 public final class DeathEquipmentReporter {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    private static final HttpClient HTTP = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(8))
-            .build();
-
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     /** One resolved equipment slot: item id + optional leather dye color. Null means empty. */
     record EquippedItem(String id, Integer color) {}
@@ -114,18 +102,7 @@ public final class DeathEquipmentReporter {
     }
 
     private static void post(String uuid, String json) {
-        HttpRequest req = HttpRequest.newBuilder(
-                        URI.create(DungeonTrain.relayBaseUrl() + "/telemetry/death-equipment"))
-                .timeout(REQUEST_TIMEOUT)
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json))
-                .build();
-        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(resp -> LOGGER.debug(
-                        "[DungeonTrain] death-equipment report for {} -> HTTP {}.", uuid, resp.statusCode()))
-                .exceptionally(e -> {
-                    LOGGER.debug("[DungeonTrain] death-equipment report for {} failed: {}", uuid, e.toString());
-                    return null;
-                });
+        RelayOutbox.get().enqueue("/telemetry/death-equipment", json);
+        LOGGER.debug("[DungeonTrain] death-equipment report for {} queued to the relay outbox.", uuid);
     }
 }
