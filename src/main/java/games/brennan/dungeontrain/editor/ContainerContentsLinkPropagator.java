@@ -86,6 +86,7 @@ public final class ContainerContentsLinkPropagator {
                 if (rolled == null) continue;
                 be.loadCustomOnly(rolled, level.registryAccess());
                 be.setChanged();
+                ChiseledBookshelfSync.syncIfNeeded(level, worldPos);
                 touched++;
             }
         }

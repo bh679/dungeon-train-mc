@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.BlockVariantPrefabStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.ChiseledBookshelfSync;
 import games.brennan.dungeontrain.editor.ContainerContentsMenuController;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
@@ -168,6 +169,7 @@ public final class PrefabUseHandler {
                 merged.putInt("z", placePos.getZ());
                 be.loadCustomOnly(merged, level.registryAccess());
                 be.setChanged();
+                ChiseledBookshelfSync.syncIfNeeded(level, placePos);
             }
         }
 
@@ -243,6 +245,7 @@ public final class PrefabUseHandler {
         if (rolled == null) return;
         be.loadCustomOnly(rolled, serverLevel.registryAccess());
         be.setChanged();
+        ChiseledBookshelfSync.syncIfNeeded(serverLevel, pos);
 
         // Editor-plot integration: if the player is standing in an editor plot,
         // record the link to the prefab. The pool itself is fetched from

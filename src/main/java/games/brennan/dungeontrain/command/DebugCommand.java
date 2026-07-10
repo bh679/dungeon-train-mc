@@ -9,6 +9,7 @@ import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import games.brennan.dungeontrain.debug.CarriageDebug;
 import games.brennan.dungeontrain.debug.DebugFlags;
+import games.brennan.dungeontrain.editor.ChiseledBookshelfSync;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsRoller;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
@@ -387,6 +388,7 @@ public final class DebugCommand {
                         if (rolled == null) continue;
                         be.loadCustomOnly(rolled, level.registryAccess());
                         be.setChanged();
+                        ChiseledBookshelfSync.syncIfNeeded(level, pos);
                         touched++;
                     }
                 }
