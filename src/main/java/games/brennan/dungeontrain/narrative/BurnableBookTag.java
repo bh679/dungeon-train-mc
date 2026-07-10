@@ -30,6 +30,18 @@ import net.minecraft.world.item.ItemStack;
  *       {@code NarrativeBookEvents.onEquipmentChange}). A random book
  *       falling out of a broken pot / chest / hopper does not burn until
  *       someone has actually picked it up.</li>
+ *   <li>{@link PlayerWrittenBookTag} — a book a player wrote &amp; signed
+ *       themselves that vanilla actually kept (the community-sharing
+ *       contribution gate failed or is disabled — see
+ *       {@code ServerGamePacketListenerImplSignBookMixin}). Unconditional,
+ *       like {@link StartingBookTag} — writing the book is itself explicit
+ *       intent, no "held" gate needed.</li>
+ *   <li>{@link SharedBookFoundTag} — a community book discovered as chest
+ *       loot, written by a real (other) player and credited to them. Burns
+ *       ONLY after a player has held the stack at least once (the
+ *       {@link SharedBookFoundTag#NBT_HELD} marker, set the same way as
+ *       {@link RandomBookTag#NBT_HELD}), so a chest/pot spilling one
+ *       doesn't ignite it before anyone picks it up.</li>
  * </ul>
  *
  * <p>Explicitly NOT burnable:</p>
@@ -37,9 +49,9 @@ import net.minecraft.world.item.ItemStack;
  *   <li>{@link NarrativeBookTag} — multi-letter "story" books. Must remain
  *       re-readable from lecterns and the player's inventory; burning them
  *       would destroy the narrative arc.</li>
- *   <li>Random-book stacks that have never been held by a player (no
- *       {@link RandomBookTag#NBT_HELD} marker).</li>
- *   <li>Vanilla written books, books from foreign mods, and any
+ *   <li>Random-book / discovered-shared-book stacks that have never been
+ *       held by a player (no {@code NBT_HELD} marker).</li>
+ *   <li>Vanilla written books from foreign mods, and any
  *       {@link ItemStack#EMPTY} / null stack.</li>
  * </ul>
  *
@@ -66,6 +78,8 @@ public final class BurnableBookTag {
         if (SharedBookTag.isSharedBook(stack)) return true;
         if (DeathNoteBookTag.isDeathNote(stack)) return true;
         if (RandomBookTag.read(stack).isPresent() && RandomBookTag.isHeld(stack)) return true;
+        if (PlayerWrittenBookTag.isPlayerWritten(stack)) return true;
+        if (SharedBookFoundTag.isFound(stack) && SharedBookFoundTag.isHeld(stack)) return true;
         return false;
     }
 }

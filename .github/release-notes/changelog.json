@@ -3610,9 +3610,9 @@
       ],
       "pr": 682,
       "date": "2026-07-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.415.0",
+      "released_at": "2026-07-10T08:27:52Z"
     },
     {
       "id": "antizombiesroom-min-level",
@@ -3622,6 +3622,179 @@
       "summary": "The anti-zombies encounter room now only starts showing up once you've made a little headway into the run, instead of potentially appearing right at the start.",
       "highlights": [],
       "pr": 682,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.415.0",
+      "released_at": "2026-07-10T08:27:52Z"
+    },
+    {
+      "id": "book-carriage-signature",
+      "version": "0.414.0",
+      "type": "feat",
+      "title": "Signed books remember which carriage they were written in",
+      "summary": "Every book and quill you sign now quietly records which carriage you were standing in at the moment of signing \u2014 laying the groundwork for future features that make use of where a story was written.",
+      "highlights": [
+        "Signed books now store their carriage of origin"
+      ],
+      "pr": 683,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.415.0",
+      "released_at": "2026-07-10T08:27:52Z"
+    },
+    {
+      "id": "burn-without-reading-advancement",
+      "version": "0.415.0",
+      "type": "feat",
+      "title": "\"Burn without reading\" book advancement",
+      "summary": "New milestone advancement: burn 10 starting or random books without ever opening them first. Rewards the reckless \u2014 the mirror image of the existing read-count milestones.",
+      "highlights": [
+        "New hidden advancement, \"Don't know, Don't wana know\" \u2014 burn 10 unread books"
+      ],
+      "pr": 685,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.415.0",
+      "released_at": "2026-07-10T08:27:52Z"
+    },
+    {
+      "id": "bug-command-and-logs",
+      "version": "0.415.0",
+      "type": "feat",
+      "title": "/bug command + logs sent with bug reports",
+      "summary": "Type /bug to jump straight to the bug-report question and send a report without waiting for the death screen. Reporting a bug from /bug or /feedback now attaches your recent logs so issues are far easier to diagnose.",
+      "highlights": [
+        "New /bug command opens the bug report directly",
+        "Bug reports from /bug and /feedback now include your logs"
+      ],
+      "pr": 687,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.415.0",
+      "released_at": "2026-07-10T08:27:52Z"
+    },
+    {
+      "id": "hostile-gear-scaling-past-cap",
+      "version": "0.416.0",
+      "type": "feat",
+      "title": "Late-game hostile gear keeps scaling past the netherite plateau",
+      "summary": "Past roughly 1,500 carts, hostile mobs used to stop getting tougher once their gear reached full netherite \u2014 difficulty flatlined. Now their weapons and armour keep gaining attack power and protection the deeper you ride, so long runs stay dangerous instead of plateauing. Early- and mid-game difficulty is unchanged; the new difficultyScaleHostileGearPastCap server setting (on by default) can turn it off.",
+      "highlights": [
+        "Hostile gear keeps getting deadlier past ~1,500 carts, instead of capping at netherite",
+        "Early- and mid-game difficulty is untouched \u2014 only deep late-game changes",
+        "New difficultyScaleHostileGearPastCap server toggle (on by default)"
+      ],
+      "pr": 688,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.416.0",
+      "released_at": "2026-07-10T08:55:09Z"
+    },
+    {
+      "id": "creator-answers-advancement",
+      "version": "0.417.0",
+      "type": "feat",
+      "title": "The Creator Answers advancement",
+      "summary": "A new advancement, \"The Creator Answers\", follows Summon The Creator \u2014 earned when you actually get a reply from the developer in chat.",
+      "highlights": [
+        "New advancement: The Creator Answers (earned on receiving a Developer message)"
+      ],
+      "pr": 690,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.418.0",
+      "released_at": "2026-07-10T10:28:34Z"
+    },
+    {
+      "id": "nothing-but-books-advancement",
+      "version": "0.418.0",
+      "type": "feat",
+      "title": "\"Nothing But Books\" advancement",
+      "summary": "New advancement: fill your entire main inventory (27 slots, not the hotbar) with story books to earn \"Nothing But Books\". Empty books don't count \u2014 only books with real content do.",
+      "highlights": [
+        "New \"Nothing But Books\" advancement for filling your inventory with story books"
+      ],
+      "pr": 691,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.418.0",
+      "released_at": "2026-07-10T10:28:34Z"
+    },
+    {
+      "id": "playermob-0-71-0-bump",
+      "version": "0.419.0",
+      "type": "feat",
+      "title": "PlayerMob companion mod updated",
+      "summary": "The bundled PlayerMob (Interactive Player Mobs) companion mod is updated from 0.47.0 to 0.71.0, bringing a wave of new PlayerMob behavior and content.",
+      "highlights": [
+        "PlayerMobs can now fight with TNT \u2014 rushing in, dropping a stick, and sprinting clear",
+        "Archers draw real ammo from their inventory for bows and crossbows, with fire-rate tied to their bravery",
+        "New /playermob order command to direct a PlayerMob to walk, attack, gift, steal, use items, or place blocks",
+        "Drop your own PNG skins into config/playermob/skins for PlayerMobs to wear",
+        "Optional Better Combat integration for animated melee combos"
+      ],
+      "pr": 692,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.419.0",
+      "released_at": "2026-07-10T11:33:42Z"
+    },
+    {
+      "id": "player-written-books-burn",
+      "version": "0.420.0",
+      "type": "feat",
+      "title": "Player-written books burn after being read",
+      "summary": "Books you write and sign yourself, and real books other players wrote that you discover as chest loot, now catch fire and burn away once you've read them \u2014 the same way welcome and found-in-chest story books already do.",
+      "highlights": [
+        "A book you sign and keep now burns after you read it",
+        "A stranger's real book, found as loot, burns after you read it"
+      ],
+      "pr": 694,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.422.0",
+      "released_at": "2026-07-10T12:23:59Z"
+    },
+    {
+      "id": "pure-of-heart-rename",
+      "version": "0.421.0",
+      "type": "content",
+      "title": "Pure of Heart",
+      "summary": "The 1,000-carriage no-damage advancement has been renamed from \"Peace Train\" to \"Pure of Heart.\" A matching term has been added to the Train Glossary Entry random book for players who find one.",
+      "highlights": [],
+      "pr": 695,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.422.0",
+      "released_at": "2026-07-10T12:23:59Z"
+    },
+    {
+      "id": "enchanted-book-loot-fix",
+      "version": "0.422.0",
+      "type": "fix",
+      "title": "Enchanted books actually enchant now",
+      "summary": "Books rolled as loot with a chance to be enchanted were quietly coming out as plain, unenchanted books \u2014 the enchantment was being rolled but never actually applied. Chests, barrels, and shulker boxes that carry a book entry now hand you a real Enchanted Book with a genuine random enchantment.",
+      "highlights": [
+        "Book loot entries with an enchant chance now actually enchant",
+        "Fixed a couple of loot pools that were stuck using the wrong item id and could never enchant at all"
+      ],
+      "pr": 696,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.422.0",
+      "released_at": "2026-07-10T12:23:59Z"
+    },
+    {
+      "id": "playermob-0-73-0-bump",
+      "version": "0.423.0",
+      "type": "feat",
+      "title": "PlayerMob companion mod updated",
+      "summary": "The bundled PlayerMob (Interactive Player Mobs) companion mod is updated from 0.71.0 to 0.73.0, bringing new combat and death behavior.",
+      "highlights": [
+        "PlayerMobs now fight with end-crystal bombing \u2014 bunkering behind a quick obsidian wall before setting one off, then retreating to do it again (toggle with /playermob endcrystalcombat)",
+        "Killing a PlayerMob now drops its full backpack, including any TNT, igniters, end crystals, and obsidian it was carrying"
+      ],
+      "pr": 698,
       "date": "2026-07-10",
       "released": false,
       "released_in": null,

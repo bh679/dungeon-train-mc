@@ -7,9 +7,13 @@ import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
 import games.brennan.dungeontrain.narrative.DeathNoteTitle;
+import games.brennan.dungeontrain.narrative.PlayerWrittenBookTag;
 import games.brennan.dungeontrain.narrative.SharedBookMessage;
 import games.brennan.dungeontrain.narrative.SharedBookTag;
+import games.brennan.dungeontrain.narrative.SignedCarriageTag;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.train.TrainCarriageAppender;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.FilteredText;
 import net.minecraft.world.item.ItemStack;
@@ -42,6 +46,16 @@ import java.util.List;
  * without cancelling — vanilla signs the book normally and the player keeps it. The whole body is
  * wrapped no-throw: any failure before {@code ci.cancel()} logs and returns without cancelling, so a
  * bug here degrades to vanilla signing rather than dropping the player's packet handler.</p>
+ *
+ * <p>Independent of the above: every signed book — either branch — is stamped with the carriage index
+ * the signer was standing in ({@link SignedCarriageTag}), via a carriage index captured at HEAD and
+ * consumed either inline (community branch) or by a second {@code @At("RETURN")} injector once vanilla
+ * finishes signing (the branch where the player actually keeps the book).</p>
+ *
+ * <p>That second, vanilla-signing branch is also where {@link PlayerWrittenBookTag} gets stamped —
+ * unconditionally, regardless of carriage — so a book you write and keep (rather than contribute) still
+ * burns once it's been read, the same as starting/random books. See
+ * {@link games.brennan.dungeontrain.narrative.BurnableBookTag}.</p>
  */
 @Mixin(net.minecraft.server.network.ServerGamePacketListenerImpl.class)
 public abstract class ServerGamePacketListenerImplSignBookMixin {
@@ -50,9 +64,21 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
 
     private static final Logger DUNGEONTRAIN$LOGGER = LogUtils.getLogger();
 
+    /**
+     * Carriage index ({@link TrainCarriageAppender#lastCarriageIndex}) captured at the top of
+     * {@link #dungeontrain$interceptSignBook}, consumed by {@link #dungeontrain$stampVanillaSignedBook}
+     * once vanilla finishes signing. One {@code ServerGamePacketListenerImpl} per connection, packets
+     * processed sequentially on the server thread, so a plain field is safe here.
+     */
+    private Integer dungeontrain$pendingSignCarriage;
+
     @Inject(method = "signBook", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$interceptSignBook(FilteredText title, List<FilteredText> pages, int slot,
                                                 CallbackInfo ci) {
+        ServerPlayer earlyPlayer = this.player;
+        this.dungeontrain$pendingSignCarriage = earlyPlayer != null
+                ? TrainCarriageAppender.lastCarriageIndex(earlyPlayer.getUUID())
+                : null;
         try {
             ServerPlayer serverPlayer = this.player;
             if (serverPlayer == null) return;
@@ -61,8 +87,7 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             // WRITABLE_BOOK_CONTENT guard so a spoofed slot index can't make us burn something else.
             // (Read-only; validated ahead of either branch below.)
             ItemStack writable = serverPlayer.getInventory().getItem(slot);
-            if (writable.isEmpty()
-                || !writable.has(net.minecraft.core.component.DataComponents.WRITABLE_BOOK_CONTENT)) {
+            if (writable.isEmpty() || !writable.has(DataComponents.WRITABLE_BOOK_CONTENT)) {
                 return;
             }
 
@@ -94,6 +119,10 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             // Build the burn book and drop it; the EntityJoinLevelEvent burn handler registers it.
             ItemStack bookStack = BookFactory.buildPlainBook(titleStr, author, pageStrs);
             SharedBookTag.stamp(bookStack);
+            if (this.dungeontrain$pendingSignCarriage != null) {
+                SignedCarriageTag.stamp(bookStack, this.dungeontrain$pendingSignCarriage);
+            }
+            this.dungeontrain$pendingSignCarriage = null;
             serverPlayer.drop(bookStack, /*dropAround*/ false, /*includeThrowerName*/ false);
 
             // A gray "sent into the void" chat line as it burns — same style as the offline @dev reply.
@@ -114,6 +143,35 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             // so the player at least keeps a normal book rather than losing it to a half-run intercept.
             DUNGEONTRAIN$LOGGER.warn("[DungeonTrain] SharedBook: sign interception failed, falling back to vanilla: {}",
                     t.toString());
+        }
+    }
+
+    /**
+     * Fires after vanilla's own {@code signBook} body runs — only reached when the HEAD injector above
+     * did NOT cancel (i.e. the vanilla-signing branch: the community-contribution gate failed, or the
+     * HEAD injector's own try block threw before reaching {@code ci.cancel()}). Stamps whatever ended up
+     * in {@code slot} — if vanilla actually put a written book there — with {@link PlayerWrittenBookTag}
+     * (so it burns after being read, see {@link games.brennan.dungeontrain.narrative.BurnableBookTag})
+     * and, when a carriage index was captured at HEAD, with {@link SignedCarriageTag}. The two stamps
+     * are independent: the carriage stamp is a no-op when the player wasn't near a train at sign time,
+     * but the burn-after-read stamp always applies to a real signed book regardless.
+     */
+    @Inject(method = "signBook", at = @At("RETURN"))
+    private void dungeontrain$stampVanillaSignedBook(FilteredText title, List<FilteredText> pages, int slot,
+                                                      CallbackInfo ci) {
+        Integer carriage = this.dungeontrain$pendingSignCarriage;
+        this.dungeontrain$pendingSignCarriage = null;
+
+        ServerPlayer serverPlayer = this.player;
+        if (serverPlayer == null) return;
+
+        ItemStack signed = serverPlayer.getInventory().getItem(slot);
+        if (signed.isEmpty() || !signed.has(DataComponents.WRITTEN_BOOK_CONTENT)) return;
+
+        PlayerWrittenBookTag.stamp(signed);
+
+        if (carriage != null) {
+            SignedCarriageTag.stamp(signed, carriage);
         }
     }
 }

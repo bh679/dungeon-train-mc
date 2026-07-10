@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.command.BugCommand;
 import games.brennan.dungeontrain.command.EchoEncounterTestCommand;
 import games.brennan.dungeontrain.command.TrainCommand;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -21,6 +22,9 @@ public final class CommandEvents {
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         TrainCommand.register(event.getDispatcher(), event.getBuildContext());
+        // /bug — opens the feedback survey jumped to the bug-report question (logs ship on a
+        // real-bug answer, same as the death screen). Bundled DP is always present.
+        BugCommand.register(event.getDispatcher());
         // Dev-only: a relay-free way to drive the remote-echo encounter journal end-to-end.
         // Never registered in production, and only when PlayerMob (whose types the command
         // references) is present.

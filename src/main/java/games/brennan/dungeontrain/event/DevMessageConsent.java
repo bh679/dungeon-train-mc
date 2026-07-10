@@ -151,6 +151,7 @@ public final class DevMessageConsent {
             if (player == null) return; // the thread's owner isn't online here; the menu chat still carries it
             if (isValid(player.getUUID())) {
                 player.sendSystemMessage(deliveredLine(content));
+                AchievementEvents.notifyCreatorAnswered(player);
             } else {
                 holdAndPrompt(player, content);
             }
@@ -190,6 +191,7 @@ public final class DevMessageConsent {
 
         for (String content : queue) {
             player.sendSystemMessage(deliveredLine(content));
+            AchievementEvents.notifyCreatorAnswered(player);
         }
         DevMessageReport.postConsentAccepted(player);
         DungeonTrainNet.sendTo(player, new ConsentUpdatePacket(true, sessionId, (double) now));

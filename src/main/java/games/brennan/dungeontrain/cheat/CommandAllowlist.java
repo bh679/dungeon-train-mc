@@ -46,11 +46,11 @@ public final class CommandAllowlist {
      * social/info commands everyone may run, plus benign "end / reset the run"
      * actions — {@code /new-world} (the dev world-roll command) and bare
      * {@code /kill} (self-kill only — see {@link #isAllowed}). {@code /feedback}
-     * (player bug-report submission) is also exempt.
+     * and {@code /bug} (player feedback / bug-report submission) are also exempt.
      */
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
-        "feedback", "new-world");
+        "feedback", "bug", "new-world");
 
     private CommandAllowlist() {}
 

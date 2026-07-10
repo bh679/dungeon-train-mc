@@ -59,6 +59,7 @@ public final class DungeonTrainConfig {
     public static final int MIN_PROGRESSION_LEVEL_DELAY = 0;
     public static final int MAX_PROGRESSION_LEVEL_DELAY = 100;
     public static final int DEFAULT_PROGRESSION_LEVEL_DELAY = 1;
+    public static final boolean DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP = true;
     public static final boolean DEFAULT_FIRST_LEVEL_NO_HOSTILES = true;
     public static final boolean DEFAULT_FIRST_LEVEL_EASY_MOBS = true;
     public static final boolean DEFAULT_FIRST_LEVEL_STARTER_LOOT = true;
@@ -128,6 +129,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.IntValue DIFFICULTY_TRAVELLED_OFFSET;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_AFFECTS_BABY_MOBS;
     public static final ModConfigSpec.IntValue PROGRESSION_LEVEL_DELAY;
+    public static final ModConfigSpec.BooleanValue DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP;
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_NO_HOSTILES;
     public static final ModConfigSpec.IntValue FIRST_LEVEL_NO_HOSTILES_CARRIAGES;
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_EASY_MOBS;
@@ -164,6 +166,7 @@ public final class DungeonTrainConfig {
         DIFFICULTY_TRAVELLED_OFFSET = pair.getLeft().difficultyTravelledOffset;
         DIFFICULTY_AFFECTS_BABY_MOBS = pair.getLeft().difficultyAffectsBabyMobs;
         PROGRESSION_LEVEL_DELAY = pair.getLeft().progressionLevelDelay;
+        DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP = pair.getLeft().difficultyScaleHostileGearPastCap;
         FIRST_LEVEL_NO_HOSTILES = pair.getLeft().firstLevelNoHostiles;
         FIRST_LEVEL_NO_HOSTILES_CARRIAGES = pair.getLeft().firstLevelNoHostilesCarriages;
         FIRST_LEVEL_EASY_MOBS = pair.getLeft().firstLevelEasyMobs;
@@ -229,6 +232,9 @@ public final class DungeonTrainConfig {
         ModConfigSpec.IntValue progressionLevelDelay = b
                 .comment("Delay difficulty progression by this many levels (tiers). The effective Diff-Level driving mob gear, potion effects, villager trade caps, and the boarding HUD becomes max(0, rawTier - this), where rawTier = floor(abs(travelled) / carriagesPerTier). Default 1 = the whole difficulty curve arrives one level later. 0 = no delay (original curve).")
                 .defineInRange("progressionLevelDelay", DEFAULT_PROGRESSION_LEVEL_DELAY, MIN_PROGRESSION_LEVEL_DELAY, MAX_PROGRESSION_LEVEL_DELAY);
+        ModConfigSpec.BooleanValue difficultyScaleHostileGearPastCap = b
+                .comment("When true, hostile carriage mobs keep gaining gear strength after their armor/weapon material caps at netherite (difficulty level 50): each rolled equipment piece gets a flat per-tier primary-stat bonus (attack damage on weapons, armor on armor) scaled by how far the tier is past the cap, so difficulty keeps climbing beyond ~level 50 instead of plateauing. Tiers 50 and below are unchanged. Reuses the same AIS stat-scaling PlayerMobs already receive. Default true; set false to restore the original behavior where hostile gear stops improving at netherite.")
+                .define("difficultyScaleHostileGearPastCap", DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP);
         ModConfigSpec.BooleanValue firstLevelNoHostiles = b
                 .comment("First onboarding stage. When true, hostile (Enemy) mobs authored into carriage interiors do not spawn at all while the lead player is within the first firstLevelNoHostilesCarriages carriages of progress, for a combat-free opening stretch. Passive/neutral carriage mobs (villagers, traders, animals, PlayerMobs) are unaffected. Keys off raw travelled carriages (independent of progressionLevelDelay).")
                 .define("firstLevelNoHostiles", DEFAULT_FIRST_LEVEL_NO_HOSTILES);
@@ -346,6 +352,7 @@ public final class DungeonTrainConfig {
         b.pop();
         return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
                 difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
+                difficultyScaleHostileGearPastCap,
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
@@ -417,6 +424,11 @@ public final class DungeonTrainConfig {
     /** Difficulty levels (tiers) by which the whole progression curve is delayed; 0 = no delay. */
     public static int getProgressionLevelDelay() {
         return isLoaded() ? PROGRESSION_LEVEL_DELAY.get() : DEFAULT_PROGRESSION_LEVEL_DELAY;
+    }
+
+    /** When true, hostile carriage mob gear keeps gaining per-tier stat bonuses past the netherite material cap (difficulty level 50). */
+    public static boolean getDifficultyScaleHostileGearPastCap() {
+        return isLoaded() ? DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP.get() : DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP;
     }
 
     /** When true, authored hostile carriage mobs do not spawn during the no-hostiles opening stage. */
@@ -602,6 +614,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue difficultyTravelledOffset,
             ModConfigSpec.BooleanValue difficultyAffectsBabyMobs,
             ModConfigSpec.IntValue progressionLevelDelay,
+            ModConfigSpec.BooleanValue difficultyScaleHostileGearPastCap,
             ModConfigSpec.BooleanValue firstLevelNoHostiles,
             ModConfigSpec.IntValue firstLevelNoHostilesCarriages,
             ModConfigSpec.BooleanValue firstLevelEasyMobs,

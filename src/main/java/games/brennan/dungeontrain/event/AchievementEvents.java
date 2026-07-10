@@ -6,8 +6,10 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.FarStartAdvancement;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
+import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
+import games.brennan.dungeontrain.advancement.NothingButBooksAdvancement;
 import games.brennan.dungeontrain.advancement.PacifistAdvancement;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
@@ -44,6 +46,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
@@ -284,6 +287,16 @@ public final class AchievementEvents {
         ModAdvancementTriggers.STARTING_BOOKS_READ.get().trigger(player, totalReads);
     }
 
+    /**
+     * Called from {@link games.brennan.dungeontrain.event.StartingBookEvents#onEntityJoinLevel}
+     * when a starting/random book burns without ever having been opened.
+     * {@code totalBurned} is the player's cumulative
+     * {@link GlobalBookBurnStats#booksBurnedUnread} across all worlds and sessions.
+     */
+    public static void notifyBooksBurnedUnread(ServerPlayer player, long totalBurned) {
+        ModAdvancementTriggers.BOOKS_BURNED_UNREAD.get().trigger(player, totalBurned);
+    }
+
     // ---------------- Player encounters ----------------
 
     /**
@@ -327,6 +340,18 @@ public final class AchievementEvents {
      */
     public static void notifyTaggedCreator(ServerPlayer player) {
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "tagged_creator");
+    }
+
+    /**
+     * Fired whenever a relayed Developer message is actually delivered to a player's in-game
+     * chat. Drives "The Creator Answers". Routed through the generic
+     * {@link ModAdvancementTriggers#GAMEPLAY_ACTION} marker with action id
+     * {@code creator_answered}; called from
+     * {@link games.brennan.dungeontrain.event.DevMessageConsent} at both delivery sites
+     * (immediate delivery and held-message flush on consent).
+     */
+    public static void notifyCreatorAnswered(ServerPlayer player) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "creator_answered");
     }
 
     // ---------------- Narrative progress ----------------
@@ -826,6 +851,8 @@ public final class AchievementEvents {
         UUID uuid = player.getUUID();
         GlobalPlayerStats.flush(uuid);
         GlobalPlayerStats.evict(uuid);
+        GlobalBookBurnStats.flush(uuid);
+        GlobalBookBurnStats.evict(uuid);
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerAdvancementManager mgr = server.getAdvancements();
@@ -851,6 +878,22 @@ public final class AchievementEvents {
     @SubscribeEvent
     public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
         GlobalPlayerStats.flushAll();
+        GlobalBookBurnStats.flushAll();
+    }
+
+    /**
+     * Throttled per-player check for "Nothing But Books" — the condition
+     * (every main-storage slot holds a story book) isn't tied to any single
+     * gameplay signal (item pickup, inventory-screen close, etc. could all
+     * complete or break it), so a cheap periodic scan is the simplest correct
+     * trigger. Once-per-second per player; {@link NothingButBooksAdvancement
+     * #checkAndGrant} itself early-returns once already earned.
+     */
+    @SubscribeEvent
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (player.tickCount % 20 != 0) return;
+        NothingButBooksAdvancement.checkAndGrant(player);
     }
 
     @SubscribeEvent

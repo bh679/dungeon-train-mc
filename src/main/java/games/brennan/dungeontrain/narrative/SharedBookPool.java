@@ -86,12 +86,13 @@ public final class SharedBookPool {
      * crediting its author. Returns {@link ItemStack#EMPTY} when the snapshot is empty. Deterministic
      * per {@code rollSeed} so the same chest at the same world seed always yields the same book.
      *
-     * <p>The built stack carries NO {@link SharedBookTag} — a found book should read like any ordinary
-     * written book (it is not burned, and reading it never counts as a story read). It IS stamped with
-     * two inert markers on distinct CUSTOM_DATA keys: {@link SharedBookFoundTag} (the read-event handler
-     * uses it to grant the "read a stranger's book" advancement) and a {@link SharedBookReadTag} pool id
-     * (so a read can be attributed to the specific submission on the data-explorer's Books page). Both
-     * are inert to loot / burning / progression.</p>
+     * <p>The built stack carries NO {@link SharedBookTag} — a found book is not part of the CONTRIBUTION
+     * half's immediate-burn flow, and reading it never counts as a story read. It IS stamped with two
+     * markers on distinct CUSTOM_DATA keys: {@link SharedBookFoundTag} (the read-event handler uses it to
+     * grant the "read a stranger's book" advancement, and — together with its held-marker — the burn
+     * lifecycle burns it after being read/dropped, same as a random loot book, since it was written by a
+     * real player) and a {@link SharedBookReadTag} pool id (so a read can be attributed to the specific
+     * submission on the data-explorer's Books page, inert to loot/burning/progression).</p>
      */
     public static ItemStack rollShared(long rollSeed) {
         List<PoolBook> pool = snapshot; // single volatile read → consistent snapshot

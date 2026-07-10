@@ -37,6 +37,19 @@ public final class ItemStatLevelScaling {
     }
 
     /**
+     * The post-material-cap difficulty tier used to keep gear scaling once its material
+     * pool has ceilinged: {@code max(0, difficultyTier - materialCapLevel)}. Zero at or
+     * below the cap (no bonus while the material is still improving toward netherite),
+     * then climbs one-for-one above it. Feed the result to {@link #bonusFor} /
+     * {@link #primaryStatBonus} so regular hostile gear keeps getting stronger past the
+     * netherite plateau (see {@link ProceduralTiers#MATERIAL_CAP_LEVEL}). Pure (params
+     * in) so it is unit-testable without a Minecraft bootstrap.
+     */
+    static int pastCapTier(int difficultyTier, int materialCapLevel) {
+        return Math.max(0, difficultyTier - materialCapLevel);
+    }
+
+    /**
      * Flat amount to add to {@code stack}'s primary AIS stat at the given carriage
      * difficulty tier — pass straight to
      * {@code StatsModifier.applyStats(stack, rng, primaryStatBonus)}. Axes scale faster

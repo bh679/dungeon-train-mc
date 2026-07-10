@@ -1,0 +1,18 @@
+{
+  "parent": "dungeontrain:dungeon_train/the_enchiridion",
+  "display": {
+    "icon": { "id": "minecraft:bookshelf" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.nothing_but_books.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.nothing_but_books.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "filled": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [["filled"]]
+}
