@@ -3701,9 +3701,9 @@
       ],
       "pr": 690,
       "date": "2026-07-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.418.0",
+      "released_at": "2026-07-10T10:28:34Z"
     },
     {
       "id": "nothing-but-books-advancement",
@@ -3716,9 +3716,9 @@
       ],
       "pr": 691,
       "date": "2026-07-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.418.0",
+      "released_at": "2026-07-10T10:28:34Z"
     }
   ]
 }
