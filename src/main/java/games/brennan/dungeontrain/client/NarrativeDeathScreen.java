@@ -4,7 +4,6 @@ import games.brennan.discordpresence.client.SurveyClientState;
 import games.brennan.discordpresence.network.DPNetwork;
 import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
-import games.brennan.dungeontrain.net.BugReportLogsPacket;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathPhotoPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -173,7 +172,9 @@ public final class NarrativeDeathScreen extends Screen {
 
     // The bug-report survey question (data-driven dp_surveys/bug_report.json): a multiple-choice
     // question whose non-"No" answers trigger client-side log collection + a BugReportLogsPacket.
-    private static final String BUG_REPORT_ID = "dungeontrain:bug_report";
+    // The id and the collect-and-ship logic live in the shared {@link BugLogReporter} (also used
+    // by the on-demand /bug + /feedback survey).
+    private static final String BUG_REPORT_ID = BugLogReporter.BUG_REPORT_ID;
 
     private final Map<String, Integer> scores = new HashMap<>();
     private final Map<String, String> comments = new HashMap<>();
@@ -1338,37 +1339,8 @@ public final class NarrativeDeathScreen extends Screen {
         }
         DPNetwork.sendToServer(new SurveySubmitPayload(e.id(), score, comment));
         submitted.add(e.id());
-        maybeSendBugLogs(e, score);
-    }
-
-    /**
-     * For the bug-report question: when the player chose a real-bug option (anything but "No"),
-     * collect their recent logs off-thread and ship them to the server (which archives + posts them
-     * to Discord). For a "Lag" answer specifically, a short system-spec summary (allocated game
-     * memory, CPU/GPU, OS, launcher) is gathered on the render thread and sent alongside the logs so
-     * lag reports carry the hardware context needed to diagnose them. Best-effort — a missed/empty
-     * collection simply sends nothing.
-     */
-    private void maybeSendBugLogs(SurveyQuestionPayload.Entry e, int score) {
-        if (e == null || !e.id().equals(BUG_REPORT_ID)) return;
-        if (score < 0 || score >= e.options().size()) return;
-        String label = e.options().get(score);
-        if (label.equalsIgnoreCase("No")) return; // not a bug → collect nothing
-        // Build the system spec on the render thread (it reads GL/FPS state) — Lag answers only.
-        final String spec = label.equalsIgnoreCase("Lag") ? SystemSpecCollector.collect() : "";
-        LogCollector.collectAsync().thenAccept(files -> {
-            List<BugReportLogsPacket.LogBlob> blobs = files == null ? List.of() : files;
-            // Nothing useful to report (no logs and, for non-lag answers, no spec) → send nothing.
-            if (blobs.isEmpty() && spec.isEmpty()) return;
-            // Hop back to the client thread to send the packet (collection ran on a worker thread).
-            Minecraft.getInstance().execute(() -> {
-                try {
-                    DungeonTrainNet.sendToServer(new BugReportLogsPacket(label, spec, blobs));
-                } catch (Exception ex) {
-                    LOGGER.warn("[DungeonTrain] Failed to send bug-report logs: {}", ex.toString());
-                }
-            });
-        });
+        // For a real-bug answer, collect + ship logs (shared with the /bug + /feedback path).
+        BugLogReporter.maybeReport(e, score);
     }
 
     private void boardAnew() {
