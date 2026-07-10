@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.FarStartAdvancement;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
+import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.PacifistAdvancement;
@@ -282,6 +283,16 @@ public final class AchievementEvents {
      */
     public static void notifyStartingBooksRead(ServerPlayer player, long totalReads) {
         ModAdvancementTriggers.STARTING_BOOKS_READ.get().trigger(player, totalReads);
+    }
+
+    /**
+     * Called from {@link games.brennan.dungeontrain.event.StartingBookEvents#onEntityJoinLevel}
+     * when a starting/random book burns without ever having been opened.
+     * {@code totalBurned} is the player's cumulative
+     * {@link GlobalBookBurnStats#booksBurnedUnread} across all worlds and sessions.
+     */
+    public static void notifyBooksBurnedUnread(ServerPlayer player, long totalBurned) {
+        ModAdvancementTriggers.BOOKS_BURNED_UNREAD.get().trigger(player, totalBurned);
     }
 
     // ---------------- Player encounters ----------------
@@ -826,6 +837,8 @@ public final class AchievementEvents {
         UUID uuid = player.getUUID();
         GlobalPlayerStats.flush(uuid);
         GlobalPlayerStats.evict(uuid);
+        GlobalBookBurnStats.flush(uuid);
+        GlobalBookBurnStats.evict(uuid);
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerAdvancementManager mgr = server.getAdvancements();
@@ -851,6 +864,7 @@ public final class AchievementEvents {
     @SubscribeEvent
     public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
         GlobalPlayerStats.flushAll();
+        GlobalBookBurnStats.flushAll();
     }
 
     @SubscribeEvent
