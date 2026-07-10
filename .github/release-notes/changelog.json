@@ -3754,6 +3754,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "pure-of-heart-rename",
+      "version": "0.421.0",
+      "type": "content",
+      "title": "Pure of Heart",
+      "summary": "The 1,000-carriage no-damage advancement has been renamed from \"Peace Train\" to \"Pure of Heart.\" A matching term has been added to the Train Glossary Entry random book for players who find one.",
+      "highlights": [],
+      "pr": 695,
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
