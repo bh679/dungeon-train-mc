@@ -67,6 +67,19 @@ public final class DeathNoteSigning {
     }
 
     /**
+     * Build the keepable "Death Note" trophy an echo drops when it dies: a black-textured written
+     * book (CUSTOM_MODEL_DATA) crediting the author. Deliberately NOT stamped {@link DeathNoteBookTag}
+     * so it does <em>not</em> soul-burn — the player keeps it.
+     */
+    public static ItemStack buildTrophyBook(String author) {
+        String safeAuthor = author == null || author.isBlank() ? "Unknown" : author;
+        ItemStack book = BookFactory.buildPlainBook("Death Note", safeAuthor,
+            List.of("Torn from the echo of " + safeAuthor + "."));
+        book.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(BLACK_BOOK_MODEL_DATA));
+        return book;
+    }
+
+    /**
      * Best-effort resolve of {@code name} to a dash-stripped UUID via online players then the server
      * profile cache; "" when unknown (the relay still matches the note by target name, case-
      * insensitively, so an unresolved UUID is not fatal — it just hardens matching across renames).

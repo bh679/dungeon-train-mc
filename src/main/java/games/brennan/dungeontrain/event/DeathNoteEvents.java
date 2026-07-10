@@ -5,8 +5,14 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.narrative.DeathNoteSigning;
+import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.dungeontrain.world.PendingDeathNotes;
+import games.brennan.playermob.entity.PlayerMobEntity;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -62,5 +68,25 @@ public final class DeathNoteEvents {
             DeathNoteReporter.submit(player.getUUID(), note.authorName(), note.targetName(),
                     note.targetUuid(), deathCarriage, worldKey, "");
         }
+    }
+
+    /**
+     * A death-note echo drops the Death Note itself when it dies — a keepable black "Death Note"
+     * trophy book (does not soul-burn). Identified by the {@code KEY_TARGET} persistent-data marker
+     * so ordinary PlayerMobs are unaffected.
+     */
+    @SubscribeEvent
+    public static void onEchoDeath(LivingDeathEvent event) {
+        if (!(event.getEntity() instanceof PlayerMobEntity echo)) return;
+        if (echo.level().isClientSide()) return;
+        CompoundTag data = echo.getPersistentData();
+        if (!data.contains(DeathNoteEchoSpawner.KEY_TARGET)) return; // not a death-note echo
+        String author = data.contains(DeathNoteEchoSpawner.KEY_AUTHOR)
+                ? data.getString(DeathNoteEchoSpawner.KEY_AUTHOR) : "Unknown";
+        ItemStack book = DeathNoteSigning.buildTrophyBook(author);
+        ItemEntity drop = new ItemEntity(echo.level(), echo.getX(), echo.getY() + 0.5, echo.getZ(), book);
+        drop.setDefaultPickUpDelay();
+        echo.level().addFreshEntity(drop);
+        LOGGER.debug("[DungeonTrain] DeathNote: echo of {} dropped a Death Note on death", author);
     }
 }

@@ -26,6 +26,8 @@ public final class DeathNoteEchoController {
     private static final int SCAN_PERIOD_TICKS = 10;
     /** Steer echoes within this range of their target; beyond it, leave them be. */
     private static final double STEER_RANGE = 96.0;
+    /** Within this range, force the target so the echo engages even an invulnerable (Creative) player. */
+    private static final double ENGAGE_RANGE = 12.0;
 
     private DeathNoteEchoController() {}
 
@@ -48,14 +50,24 @@ public final class DeathNoteEchoController {
         }
     }
 
-    /** Point the echo's train march at the target along X so it closes in, overriding the forward march. */
+    /**
+     * Nudge the echo toward its target: march its train direction at the target along X (approach
+     * across carriages), and within melee-ish range force the target so the echo engages even an
+     * invulnerable Creative player (vanilla target-selection skips invulnerable players). Flee-by-
+     * trait is preserved — {@code FleeFromCategoryGoal} (higher priority) is reaction-driven, not
+     * {@code getTarget}-driven, so a fleeing echo still flees despite the forced target.
+     */
     private static void steerToward(PlayerMobEntity echo, ServerPlayer target) {
         int dir = (int) Math.signum(target.getX() - echo.getX());
-        if (dir == 0) return; // alongside already — the FIGHT/FLEE goals take over at this range
-        try {
-            TrainConfinement.setMarchDirection(echo, dir);
-        } catch (Throwable ignored) {
-            // best-effort steering; target acquisition + attack goals still function without it
+        if (dir != 0) {
+            try {
+                TrainConfinement.setMarchDirection(echo, dir);
+            } catch (Throwable ignored) {
+                // best-effort steering; the target/attack goals still function without it
+            }
+        }
+        if (echo.distanceToSqr(target) <= ENGAGE_RANGE * ENGAGE_RANGE) {
+            echo.setTarget(target);
         }
     }
 }

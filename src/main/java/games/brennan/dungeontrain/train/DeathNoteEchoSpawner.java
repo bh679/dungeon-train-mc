@@ -42,6 +42,8 @@ public final class DeathNoteEchoSpawner {
     public static final String KEY_TARGET = "dt_deathnote_target";
     /** Persistent-data marker: the relay note id this echo came from. */
     public static final String KEY_NOTE_ID = "dt_deathnote_id";
+    /** Persistent-data marker: the author's name, for the Death Note the echo drops when it dies. */
+    public static final String KEY_AUTHOR = "dt_deathnote_author";
 
     private DeathNoteEchoSpawner() {}
 
@@ -99,6 +101,7 @@ public final class DeathNoteEchoSpawner {
             CompoundTag persistent = mob.getPersistentData();
             persistent.putString(KEY_TARGET, targetUuid.toString());
             persistent.putInt(KEY_NOTE_ID, note.id());
+            persistent.putString(KEY_AUTHOR, authorName);
             mob.setPersistenceRequired();
 
             if (!level.addFreshEntity(mob)) {
