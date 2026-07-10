@@ -3783,6 +3783,39 @@
       "released": true,
       "released_in": "v0.422.0",
       "released_at": "2026-07-10T12:23:59Z"
+    },
+    {
+      "id": "playermob-0-73-0-bump",
+      "version": "0.423.0",
+      "type": "feat",
+      "title": "PlayerMob companion mod updated",
+      "summary": "The bundled PlayerMob (Interactive Player Mobs) companion mod is updated from 0.71.0 to 0.73.0, bringing new combat and death behavior.",
+      "highlights": [
+        "PlayerMobs now fight with end-crystal bombing \u2014 bunkering behind a quick obsidian wall before setting one off, then retreating to do it again (toggle with /playermob endcrystalcombat)",
+        "Killing a PlayerMob now drops its full backpack, including any TNT, igniters, end crystals, and obsidian it was carrying"
+      ],
+      "pr": 698,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.423.0",
+      "released_at": "2026-07-10T13:48:44Z"
+    },
+    {
+      "id": "death-note-curse",
+      "version": "0.424.0",
+      "type": "feat",
+      "title": "Death Notes \u2014 curse a player's next life",
+      "summary": "Title a book & quill \"Death Note\", write another player's name on the first page, and sign it \u2014 the book burns away in blue soul-fire. The curse seals the moment you next die: in that player's next run, your vengeful echo lies in wait at the very carriage you fell at and hunts them down.",
+      "highlights": [
+        "Sign a Death Note naming your target; it soul-burns away, and the curse arms the moment you die.",
+        "Your echo wears your skin, ignores everyone but the target, and ambushes them when they reach the carriage you died at \u2014 in any of their future runs, whatever the world.",
+        "Cut the echo down for a keepable black Death Note trophy; signing a note earns the \"A Death Note\" advancement."
+      ],
+      "pr": 700,
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.424.0",
+      "released_at": "2026-07-10T14:07:11Z"
     }
   ]
 }

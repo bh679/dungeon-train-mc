@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.narrative.BookReadMarkerTag;
 import games.brennan.dungeontrain.narrative.BurnableBookTag;
+import games.brennan.dungeontrain.narrative.DeathNoteBookTag;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
 import games.brennan.dungeontrain.narrative.PlayerWrittenBookTag;
@@ -143,13 +144,16 @@ public final class StartingBookEvents {
     /** Tracking entry for one in-progress book burn. */
     private static final class BurnState {
         int ticksRemaining;
+        /** Death Note curse → soul-fire particles + a soul sound instead of the normal fire. */
+        final boolean soul;
         /** Render anchor for the client-only fire block, or {@code null} until the item settles. */
         BlockPos flameRenderPos;
         /** Dimension containing {@link #flameRenderPos} — needed to clear the visual after the entity is gone. */
         ResourceKey<Level> flameRenderLevelKey;
 
-        BurnState(int ticks) {
+        BurnState(int ticks, boolean soul) {
             this.ticksRemaining = ticks;
+            this.soul = soul;
             this.flameRenderPos = null;
             this.flameRenderLevelKey = null;
         }
@@ -287,10 +291,10 @@ public final class StartingBookEvents {
             // other tick so we don't flood the particle queue at long
             // distances when several books are burning simultaneously.
             if (itemEntity.tickCount % 2 == 0) {
-                itemLevel.sendParticles(ParticleTypes.FLAME,
+                itemLevel.sendParticles(state.soul ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.FLAME,
                     itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
                     3, 0.12, 0.08, 0.12, 0.02);
-                itemLevel.sendParticles(ParticleTypes.SMOKE,
+                itemLevel.sendParticles(state.soul ? ParticleTypes.SOUL : ParticleTypes.SMOKE,
                     itemEntity.getX(), itemEntity.getY() + 0.3, itemEntity.getZ(),
                     1, 0.08, 0.05, 0.08, 0.01);
             }
@@ -315,16 +319,21 @@ public final class StartingBookEvents {
             if (state.flameRenderPos != null
                 && itemLevel.getBlockState(state.flameRenderPos).isAir()) {
                 sendClientFireUpdate(itemLevel, state.flameRenderPos,
-                    Blocks.FIRE.defaultBlockState());
+                    (state.soul ? Blocks.SOUL_FIRE : Blocks.FIRE).defaultBlockState());
             }
 
             // Tick down. When zero: book is "consumed", clean up.
             state.ticksRemaining--;
             if (state.ticksRemaining <= 0) {
                 clearClientFireVisual(server, state);
-                itemLevel.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
-                    SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.6f, 1.2f);
-                itemLevel.sendParticles(ParticleTypes.LARGE_SMOKE,
+                if (state.soul) {
+                    itemLevel.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
+                        SoundEvents.SOUL_ESCAPE, SoundSource.BLOCKS, 0.6f, 1.2f);
+                } else {
+                    itemLevel.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
+                        SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.6f, 1.2f);
+                }
+                itemLevel.sendParticles(state.soul ? ParticleTypes.SOUL : ParticleTypes.LARGE_SMOKE,
                     itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
                     8, 0.2, 0.1, 0.2, 0.02);
                 itemEntity.discard();
@@ -493,13 +502,23 @@ public final class StartingBookEvents {
         // Lock pickup for the burn window so the player can't snatch the
         // burning book mid-burn and stash it. Matches the close-handler
         // behaviour from the earlier inline-registration code path.
+        // A signed "Death Note" curse book burns with the SOUL variant (ghostly soul-fire + a soul
+        // sound) instead of the normal fire — see DeathNoteBookTag.
+        boolean soul = DeathNoteBookTag.isDeathNote(stack);
         item.setPickUpDelay(BURN_DURATION_TICKS);
-        BURN_ENTITIES.put(item.getUUID(), new BurnState(BURN_DURATION_TICKS));
+        BURN_ENTITIES.put(item.getUUID(), new BurnState(BURN_DURATION_TICKS, soul));
 
-        // Ignition atmosphere — quiet "whoosh" at the drop point.
+        // Ignition atmosphere — a quiet "whoosh" (a soul escape for a Death Note) at the drop point.
+        // SOUL_ESCAPE is a Holder<SoundEvent> and FIRE_AMBIENT a plain SoundEvent, so branch rather
+        // than mix them in one conditional (no single playSound-compatible type).
         ServerLevel level = (ServerLevel) item.level();
-        level.playSound(null, item.getX(), item.getY(), item.getZ(),
-            SoundEvents.FIRE_AMBIENT, SoundSource.PLAYERS, 0.6f, 1.5f);
+        if (soul) {
+            level.playSound(null, item.getX(), item.getY(), item.getZ(),
+                SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 0.6f, 1.5f);
+        } else {
+            level.playSound(null, item.getX(), item.getY(), item.getZ(),
+                SoundEvents.FIRE_AMBIENT, SoundSource.PLAYERS, 0.6f, 1.5f);
+        }
 
         LOGGER.info("[DungeonTrain] BurnableBook: detected dropped burnable book — burning entity {} ({} ticks)",
             item.getUUID(), BURN_DURATION_TICKS);
