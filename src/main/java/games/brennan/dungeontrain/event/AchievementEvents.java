@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
+import games.brennan.dungeontrain.advancement.NothingButBooksAdvancement;
 import games.brennan.dungeontrain.advancement.PacifistAdvancement;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
@@ -45,6 +46,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
@@ -877,6 +879,21 @@ public final class AchievementEvents {
     public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
         GlobalPlayerStats.flushAll();
         GlobalBookBurnStats.flushAll();
+    }
+
+    /**
+     * Throttled per-player check for "Nothing But Books" — the condition
+     * (every main-storage slot holds a story book) isn't tied to any single
+     * gameplay signal (item pickup, inventory-screen close, etc. could all
+     * complete or break it), so a cheap periodic scan is the simplest correct
+     * trigger. Once-per-second per player; {@link NothingButBooksAdvancement
+     * #checkAndGrant} itself early-returns once already earned.
+     */
+    @SubscribeEvent
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (player.tickCount % 20 != 0) return;
+        NothingButBooksAdvancement.checkAndGrant(player);
     }
 
     @SubscribeEvent
