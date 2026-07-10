@@ -28,6 +28,17 @@ public final class ProceduralTiers {
     private static final int TOP = Integer.MAX_VALUE;
 
     /**
+     * Difficulty level at which the armor/weapon <em>material</em> pool reaches its
+     * ceiling — netherite full weight, i.e. {@code NETHERITE.fullStart}. Gear material
+     * does not improve beyond this level (the pool stays a diamond+netherite mix
+     * forever). Downstream scaling anchors here: {@link ItemStatLevelScaling#pastCapTier}
+     * uses it so per-tier stat bonuses only take over once material has capped, letting
+     * hostile gear keep getting stronger past the plateau. Keep in sync with
+     * {@code NETHERITE.fullStart} below.
+     */
+    public static final int MATERIAL_CAP_LEVEL = 50;
+
+    /**
      * Trapezoidal weight curve for one armor or weapon material.
      *
      * <p>The weight ramps from 5 at {@code rampStart} up to 100 at
