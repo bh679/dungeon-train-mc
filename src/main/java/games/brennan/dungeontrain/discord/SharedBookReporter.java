@@ -3,38 +3,26 @@ package games.brennan.dungeontrain.discord;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import org.slf4j.Logger;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Fire-and-forget uploader for the community "shared books" CONTRIBUTION half. When a player signs a
- * book &amp; quill (intercepted by {@code ServerGamePacketListenerImplSignBookMixin}), the signed text is
- * POSTed to the Dungeon Train relay's {@code /books/submit} endpoint so it can enter the moderation
- * queue and — once approved — appear in other players' chest loot via {@link SharedBookPool}.
+ * Uploader for the community "shared books" CONTRIBUTION half. When a player signs a book &amp; quill
+ * (intercepted by {@code ServerGamePacketListenerImplSignBookMixin}), the signed text is submitted to
+ * the Dungeon Train relay's {@code /books/submit} endpoint so it can enter the moderation queue and —
+ * once approved — appear in other players' chest loot via {@link SharedBookPool}.
  *
- * <p>Mirrors {@link WorldInfoReporter}: a shared static {@link HttpClient}, a Gson-built JSON body, and
- * an off-thread {@link HttpClient#sendAsync} whose result is only logged at debug. The whole call is
- * no-throw — a failed or slow submit can never disrupt the signing packet handler or cost a tick. The
- * relay already carries the capability in {@link DungeonTrain#relayBaseUrl()}; the response is ignored
- * per the relay contract.</p>
+ * <p>Mirrors {@link WorldInfoReporter}: a Gson-built JSON body handed to the durable
+ * {@link RelayOutbox}, which persists it and delivers at-least-once on the next flush (surviving a
+ * relay outage / offline launch rather than being dropped). The whole call is no-throw — a failed or
+ * slow submit can never disrupt the signing packet handler or cost a tick.</p>
  */
 public final class SharedBookReporter {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    private static final HttpClient HTTP = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(8))
-            .build();
-
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     private SharedBookReporter() {}
 
@@ -81,18 +69,7 @@ public final class SharedBookReporter {
     }
 
     private static void post(String uuid, String json) {
-        HttpRequest req = HttpRequest.newBuilder(
-                        URI.create(DungeonTrain.relayBaseUrl() + "/books/submit"))
-                .timeout(REQUEST_TIMEOUT)
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json))
-                .build();
-        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(resp -> LOGGER.debug(
-                        "[DungeonTrain] shared-book submit for {} -> HTTP {}.", uuid, resp.statusCode()))
-                .exceptionally(e -> {
-                    LOGGER.debug("[DungeonTrain] shared-book submit for {} failed: {}", uuid, e.toString());
-                    return null;
-                });
+        RelayOutbox.get().enqueue("/books/submit", json);
+        LOGGER.debug("[DungeonTrain] shared-book submit for {} queued to the relay outbox.", uuid);
     }
 }
