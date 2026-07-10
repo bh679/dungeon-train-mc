@@ -61,6 +61,15 @@ public final class DeathNoteSigning {
             return;
         }
 
+        // Self-curse: dev-only (for solo testing). A release build refuses to curse your own name —
+        // the book still burns, but no curse is recorded.
+        if (targetName.equalsIgnoreCase(author)
+                && !games.brennan.dungeontrain.DungeonTrain.isDevBuild()) {
+            player.sendSystemMessage(Component.literal("The Death Note rejects your own name.")
+                .withStyle(ChatFormatting.DARK_GRAY));
+            return;
+        }
+
         String targetUuid = resolveTargetUuid(player.getServer(), targetName);
         PendingDeathNotes.get(player.serverLevel())
             .add(new PendingDeathNotes.PendingDeathNote(player.getUUID(), author, targetName, targetUuid));

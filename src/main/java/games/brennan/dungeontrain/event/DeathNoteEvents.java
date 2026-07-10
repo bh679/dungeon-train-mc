@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.narrative.DeathNotePool;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.dungeontrain.world.PendingDeathNotes;
@@ -20,6 +21,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import org.slf4j.Logger;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Server-side lifecycle for the Death Note curse: when a player who has signed one or more Death
@@ -50,6 +52,7 @@ public final class DeathNoteEvents {
                 PendingDeathNotes.get(level).takeForAuthor(player.getUUID());
         if (pending.isEmpty()) return;
 
+        boolean dev = DungeonTrain.isDevBuild();
         boolean canSync = DeathNoteGate.canSync(player);
         Integer deathCarriage = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
         String worldKey = String.valueOf(DungeonTrainWorldData.get(level).getGenerationSeed());
@@ -60,6 +63,21 @@ public final class DeathNoteEvents {
                         note.authorName(), note.targetName());
                 continue;
             }
+            if (dev) {
+                // Dev: arm the curse directly in the target's local pool — no relay round-trip (the
+                // bare local relay isn't reachable by the mod's Java client). Makes solo testing work.
+                UUID targetId = resolveTargetUuid(level, note);
+                if (targetId != null) {
+                    DeathNotePool.addLocal(targetId, note.authorUuid().toString(),
+                            note.authorName(), deathCarriage);
+                    LOGGER.debug("[DungeonTrain] DeathNote(dev): armed locally — echo of {} awaits {} at carriage {}.",
+                            note.authorName(), note.targetName(), deathCarriage);
+                } else {
+                    LOGGER.debug("[DungeonTrain] DeathNote(dev): target {} not resolvable — curse dropped.",
+                            note.targetName());
+                }
+                continue;
+            }
             if (!canSync) {
                 LOGGER.debug("[DungeonTrain] DeathNote: curse on {} not synced (feature off or no consent).",
                         note.targetName());
@@ -68,6 +86,23 @@ public final class DeathNoteEvents {
             DeathNoteReporter.submit(player.getUUID(), note.authorName(), note.targetName(),
                     note.targetUuid(), deathCarriage, worldKey, "");
         }
+    }
+
+    /** Resolve a pending note's target to a UUID: prefer the sign-time UUID, else an online-name lookup. */
+    private static UUID resolveTargetUuid(ServerLevel level, PendingDeathNotes.PendingDeathNote note) {
+        String stored = note.targetUuid();
+        if (stored != null && !stored.isBlank()) {
+            try {
+                String s = stored.contains("-") ? stored : stored.replaceFirst(
+                        "(\\p{XDigit}{8})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{12})",
+                        "$1-$2-$3-$4-$5");
+                return java.util.UUID.fromString(s);
+            } catch (IllegalArgumentException ignored) {
+                // fall through to name lookup
+            }
+        }
+        ServerPlayer online = level.getServer().getPlayerList().getPlayerByName(note.targetName());
+        return online == null ? null : online.getUUID();
     }
 
     /**

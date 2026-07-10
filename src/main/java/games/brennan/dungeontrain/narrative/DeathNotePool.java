@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Server-side, per-player cache of the UNSPAWNED Death Note curses targeting each online player,
@@ -51,6 +52,8 @@ public final class DeathNotePool {
     private static final Map<UUID, List<Note>> NOTES = new ConcurrentHashMap<>();
     /** Per-player in-flight guard so overlapping refreshes don't stack. */
     private static final Map<UUID, Boolean> IN_FLIGHT = new ConcurrentHashMap<>();
+    /** Counter for synthetic non-positive ids on dev-local notes (see {@link #addLocal}). */
+    private static final AtomicInteger LOCAL_ID = new AtomicInteger(0);
 
     private DeathNotePool() {}
 
@@ -61,6 +64,41 @@ public final class DeathNotePool {
         List<Note> out = new ArrayList<>();
         for (Note n : notes) if (n.deathCarriage() == carriageIndex) out.add(n);
         return out;
+    }
+
+    /**
+     * Notes for {@code playerUuid} whose death carriage the player has reached — {@code cur >=
+     * deathCarriage - lead} (a small lead so the echo can be placed just ahead as they approach).
+     * Forward-only travel means this fires once the target arrives at (or passes) the death carriage.
+     */
+    public static List<Note> notesReached(UUID playerUuid, int cur, int lead) {
+        List<Note> notes = NOTES.get(playerUuid);
+        if (notes == null || notes.isEmpty()) return List.of();
+        List<Note> out = new ArrayList<>();
+        for (Note n : notes) if (cur >= n.deathCarriage() - lead) out.add(n);
+        return out;
+    }
+
+    /**
+     * Dev-only: arm a curse directly in {@code targetUuid}'s pool without a relay round-trip (the
+     * bare local relay isn't reachable by the Java client). Merge-insert (never wipes existing
+     * notes); a synthetic non-positive id marks it local so it is never reported to the relay's
+     * used-latch. See {@code DeathNoteEvents.onPlayerDeath}.
+     */
+    public static void addLocal(UUID targetUuid, String authorUuid, String authorName, int deathCarriage) {
+        if (targetUuid == null) return;
+        Note note = new Note(nextLocalId(), authorUuid == null ? "" : authorUuid,
+                authorName == null ? "" : authorName, "", deathCarriage, "");
+        NOTES.compute(targetUuid, (k, list) -> {
+            List<Note> next = list == null ? new ArrayList<>() : new ArrayList<>(list);
+            next.add(note);
+            return List.copyOf(next);
+        });
+    }
+
+    /** Next synthetic id for a locally-armed note: 0, -1, -2, … (never collides with relay ids > 0). */
+    private static int nextLocalId() {
+        return -LOCAL_ID.getAndIncrement();
     }
 
     /** True when {@code playerUuid} has any unspawned notes cached (cheap gate for the spawn scan). */
