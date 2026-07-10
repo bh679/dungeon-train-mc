@@ -3722,7 +3722,7 @@
     },
     {
       "id": "playermob-0-71-0-bump",
-      "version": "0.418.0",
+      "version": "0.419.0",
       "type": "feat",
       "title": "PlayerMob companion mod updated",
       "summary": "The bundled PlayerMob (Interactive Player Mobs) companion mod is updated from 0.47.0 to 0.71.0, bringing a wave of new PlayerMob behavior and content.",
