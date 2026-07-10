@@ -3751,9 +3751,9 @@
       ],
       "pr": 694,
       "date": "2026-07-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.422.0",
+      "released_at": "2026-07-10T12:23:59Z"
     },
     {
       "id": "pure-of-heart-rename",
@@ -3764,9 +3764,9 @@
       "highlights": [],
       "pr": 695,
       "date": "2026-07-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.422.0",
+      "released_at": "2026-07-10T12:23:59Z"
     },
     {
       "id": "enchanted-book-loot-fix",
@@ -3780,9 +3780,9 @@
       ],
       "pr": 696,
       "date": "2026-07-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.422.0",
+      "released_at": "2026-07-10T12:23:59Z"
     }
   ]
 }
