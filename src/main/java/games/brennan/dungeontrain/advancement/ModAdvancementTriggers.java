@@ -69,6 +69,9 @@ public final class ModAdvancementTriggers {
     public static final Supplier<StartingBooksReadTrigger> STARTING_BOOKS_READ =
         TRIGGERS.register("starting_books_read", StartingBooksReadTrigger::new);
 
+    public static final Supplier<BooksBurnedUnreadTrigger> BOOKS_BURNED_UNREAD =
+        TRIGGERS.register("books_burned_unread", BooksBurnedUnreadTrigger::new);
+
     // --- PlayerMob & PvP advancements ---
 
     public static final Supplier<GavePlayerMobUnrequitedTrigger> GAVE_PLAYERMOB_UNREQUITED =
