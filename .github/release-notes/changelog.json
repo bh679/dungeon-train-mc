@@ -3658,6 +3658,22 @@
       "released_at": null
     },
     {
+      "id": "bug-command-and-logs",
+      "version": "0.415.0",
+      "type": "feat",
+      "title": "/bug command + logs sent with bug reports",
+      "summary": "Type /bug to jump straight to the bug-report question and send a report without waiting for the death screen. Reporting a bug from /bug or /feedback now attaches your recent logs so issues are far easier to diagnose.",
+      "highlights": [
+        "New /bug command opens the bug report directly",
+        "Bug reports from /bug and /feedback now include your logs"
+      ],
+      "pr": 687,
+      "date": "2026-07-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "hostile-gear-scaling-past-cap",
       "version": "0.415.0",
       "type": "feat",
