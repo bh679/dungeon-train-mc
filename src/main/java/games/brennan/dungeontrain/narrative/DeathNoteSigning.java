@@ -61,13 +61,10 @@ public final class DeathNoteSigning {
             return;
         }
 
-        // Self-curse: dev-only (for solo testing). A release build refuses to curse your own name —
-        // the book still burns, but no curse is recorded.
-        if (targetName.equalsIgnoreCase(author)
-                && !games.brennan.dungeontrain.DungeonTrain.isDevBuild()) {
-            player.sendSystemMessage(Component.literal("The Death Note rejects your own name.")
-                .withStyle(ChatFormatting.DARK_GRAY));
-            return;
+        // Self-curse: allowed in every build. Your own next life becomes the target — grant the
+        // "Self-Fulfilling Prophecy" advancement for the discovery, then let the curse record normally.
+        if (targetName.equalsIgnoreCase(author)) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "deathnote_self_target");
         }
 
         String targetUuid = resolveTargetUuid(player.getServer(), targetName);

@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/remote_echo_kill",
+  "display": {
+    "icon": { "id": "minecraft:crossbow" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.assassination_attempt.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.assassination_attempt.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "killed_death_note_echo" }
+    }
+  },
+  "requirements": [["action"]]
+}

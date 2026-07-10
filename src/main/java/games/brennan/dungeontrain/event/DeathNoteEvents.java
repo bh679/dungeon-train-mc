@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -93,6 +94,9 @@ public final class DeathNoteEvents {
         ItemEntity drop = new ItemEntity(echo.level(), echo.getX(), echo.getY() + 0.5, echo.getZ(), book);
         drop.setDefaultPickUpDelay();
         echo.level().addFreshEntity(drop);
+        if (event.getSource().getEntity() instanceof ServerPlayer killer) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(killer, "killed_death_note_echo");
+        }
         LOGGER.debug("[DungeonTrain] DeathNote: echo of {} dropped a Death Note on death", author);
     }
 }
