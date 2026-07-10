@@ -22,7 +22,7 @@
         {
           "type": "minecraft:item",
           "name": "minecraft:bread",
-          "weight": 11
+          "weight": 10
         },
         {
           "type": "minecraft:item",
