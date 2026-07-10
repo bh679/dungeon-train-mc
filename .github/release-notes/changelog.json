@@ -3701,9 +3701,9 @@
       ],
       "pr": 690,
       "date": "2026-07-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.418.0",
+      "released_at": "2026-07-10T10:28:34Z"
     },
     {
       "id": "nothing-but-books-advancement",
@@ -3716,28 +3716,9 @@
       ],
       "pr": 691,
       "date": "2026-07-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "playermob-0-71-0-bump",
-      "version": "0.418.0",
-      "type": "feat",
-      "title": "PlayerMob companion mod updated",
-      "summary": "The bundled PlayerMob (Interactive Player Mobs) companion mod is updated from 0.47.0 to 0.71.0, bringing a wave of new PlayerMob behavior and content.",
-      "highlights": [
-        "PlayerMobs can now fight with TNT \u2014 rushing in, dropping a stick, and sprinting clear",
-        "Archers draw real ammo from their inventory for bows and crossbows, with fire-rate tied to their bravery",
-        "New /playermob order command to direct a PlayerMob to walk, attack, gift, steal, use items, or place blocks",
-        "Drop your own PNG skins into config/playermob/skins for PlayerMobs to wear",
-        "Optional Better Combat integration for animated melee combos"
-      ],
-      "pr": 692,
-      "date": "2026-07-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.418.0",
+      "released_at": "2026-07-10T10:28:34Z"
     }
   ]
 }
