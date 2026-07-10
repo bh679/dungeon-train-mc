@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.discord.SharedBookReporter;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
+import games.brennan.dungeontrain.narrative.PlayerWrittenBookTag;
 import games.brennan.dungeontrain.narrative.SharedBookMessage;
 import games.brennan.dungeontrain.narrative.SharedBookTag;
 import games.brennan.dungeontrain.narrative.SignedCarriageTag;
@@ -48,6 +49,11 @@ import java.util.List;
  * the signer was standing in ({@link SignedCarriageTag}), via a carriage index captured at HEAD and
  * consumed either inline (community branch) or by a second {@code @At("RETURN")} injector once vanilla
  * finishes signing (the branch where the player actually keeps the book).</p>
+ *
+ * <p>That second, vanilla-signing branch is also where {@link PlayerWrittenBookTag} gets stamped —
+ * unconditionally, regardless of carriage — so a book you write and keep (rather than contribute) still
+ * burns once it's been read, the same as starting/random books. See
+ * {@link games.brennan.dungeontrain.narrative.BurnableBookTag}.</p>
  */
 @Mixin(net.minecraft.server.network.ServerGamePacketListenerImpl.class)
 public abstract class ServerGamePacketListenerImplSignBookMixin {
@@ -126,17 +132,19 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
 
     /**
      * Fires after vanilla's own {@code signBook} body runs — only reached when the HEAD injector above
-     * did NOT cancel (i.e. the vanilla-signing branch). Stamps the carriage index captured at HEAD onto
-     * whatever ended up in {@code slot}, if vanilla actually put a written book there. A no-op when the
-     * player wasn't near a train at sign time, or when the community branch already handled + cleared
-     * the pending value.
+     * did NOT cancel (i.e. the vanilla-signing branch: the community-contribution gate failed, or the
+     * HEAD injector's own try block threw before reaching {@code ci.cancel()}). Stamps whatever ended up
+     * in {@code slot} — if vanilla actually put a written book there — with {@link PlayerWrittenBookTag}
+     * (so it burns after being read, see {@link games.brennan.dungeontrain.narrative.BurnableBookTag})
+     * and, when a carriage index was captured at HEAD, with {@link SignedCarriageTag}. The two stamps
+     * are independent: the carriage stamp is a no-op when the player wasn't near a train at sign time,
+     * but the burn-after-read stamp always applies to a real signed book regardless.
      */
     @Inject(method = "signBook", at = @At("RETURN"))
     private void dungeontrain$stampVanillaSignedBook(FilteredText title, List<FilteredText> pages, int slot,
                                                       CallbackInfo ci) {
         Integer carriage = this.dungeontrain$pendingSignCarriage;
         this.dungeontrain$pendingSignCarriage = null;
-        if (carriage == null) return;
 
         ServerPlayer serverPlayer = this.player;
         if (serverPlayer == null) return;
@@ -144,6 +152,10 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
         ItemStack signed = serverPlayer.getInventory().getItem(slot);
         if (signed.isEmpty() || !signed.has(DataComponents.WRITTEN_BOOK_CONTENT)) return;
 
-        SignedCarriageTag.stamp(signed, carriage);
+        PlayerWrittenBookTag.stamp(signed);
+
+        if (carriage != null) {
+            SignedCarriageTag.stamp(signed, carriage);
+        }
     }
 }

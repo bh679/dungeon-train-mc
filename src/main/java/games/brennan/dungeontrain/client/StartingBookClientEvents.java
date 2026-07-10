@@ -13,8 +13,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
 /**
- * Client-side close detection for burnable books (starting books AND random
- * books from train chests). Stories — {@link games.brennan.dungeontrain.narrative.NarrativeBookTag}
+ * Client-side close detection for burnable books (starting books, random
+ * books from train chests, player-written books the signer kept, and
+ * discovered community books). Stories — {@link games.brennan.dungeontrain.narrative.NarrativeBookTag}
  * — are deliberately excluded.
  *
  * <p>Vanilla {@code BookViewScreen} is a pure-client screen — opening or
@@ -26,9 +27,10 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  * {@link BookViewScreen} AND the local player has a burnable book in
  * <em>hand</em>.</p>
  *
- * <p>"Burnable" is decided by {@link BurnableBookTag#isBurnable} — currently
- * starting OR random books. The packet name is historical; it now signals
- * "any burnable book closed", and the server scans both tag types.</p>
+ * <p>"Burnable" is decided by {@link BurnableBookTag#isBurnable} — see that
+ * class for the full, current set of burnable tag types. The packet name is
+ * historical; it now signals "any burnable book closed", and the server scans
+ * all of them.</p>
  *
  * <p>Detection scope: <b>mainhand + offhand only</b> — not the full
  * inventory. Vanilla written books can only be opened via right-click on

@@ -8,7 +8,9 @@ import games.brennan.dungeontrain.narrative.BookReadMarkerTag;
 import games.brennan.dungeontrain.narrative.BurnableBookTag;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
+import games.brennan.dungeontrain.narrative.PlayerWrittenBookTag;
 import games.brennan.dungeontrain.narrative.RandomBookTag;
+import games.brennan.dungeontrain.narrative.SharedBookFoundTag;
 import games.brennan.dungeontrain.narrative.SharedBookTag;
 import games.brennan.dungeontrain.narrative.StartingBookContext;
 import games.brennan.dungeontrain.narrative.StartingBookFactory;
@@ -405,9 +407,9 @@ public final class StartingBookEvents {
 
     /**
      * Server-side entry point for {@link games.brennan.dungeontrain.net.StartingBookClosedPacket}.
-     * The client just closed a {@code BookViewScreen} that was showing a
-     * burnable book (starting book OR random book — see
-     * {@link BurnableBookTag}). Find one such book in the player's
+     * The client just closed a {@code BookViewScreen} that was showing any
+     * burnable book (starting / random / player-written / discovered-shared —
+     * see {@link BurnableBookTag}). Find one such book in the player's
      * inventory, remove it, and drop it forward as if thrown.
      *
      * <p>The drop itself is sufficient — {@link #onEntityJoinLevel} sees the
@@ -461,9 +463,9 @@ public final class StartingBookEvents {
      * level (Q-throw, death-drop, hopper-eject, our own close-handler drop,
      * chest break, anything that calls {@code Level.addFreshEntity}). When
      * the entity is an {@link ItemEntity} carrying a burnable book
-     * ({@link BurnableBookTag} — starting OR random; stories excluded),
-     * register it in {@link #BURN_ENTITIES} so the burn lifecycle picks it
-     * up on the next tick.
+     * ({@link BurnableBookTag} — starting / random / player-written /
+     * discovered-shared; narrative story books excluded), register it in
+     * {@link #BURN_ENTITIES} so the burn lifecycle picks it up on the next tick.
      *
      * <p>Filters that block registration:</p>
      * <ul>
@@ -507,7 +509,8 @@ public final class StartingBookEvents {
 
     /**
      * Credits the "burned without reading" milestone when {@code stack} is a
-     * starting/random book (shared/signed books excluded — burning those is the
+     * starting/random/player-written/discovered-shared book (the immediate-burn
+     * {@link SharedBookTag} contribution copy is excluded — burning that is the
      * intended outcome of signing, not an avoided read) that was never opened via
      * {@link BookReadMarkerTag}, and the drop was player-initiated (Q-throw, the
      * close-without-reading auto-drop, or a death-drop — anything with a
@@ -516,8 +519,11 @@ public final class StartingBookEvents {
      */
     private static void notifyIfBurnedUnread(ItemEntity item, ItemStack stack) {
         if (SharedBookTag.isSharedBook(stack)) return;
-        boolean isStartingOrRandom = StartingBookTag.isStartingBook(stack) || RandomBookTag.read(stack).isPresent();
-        if (!isStartingOrRandom) return;
+        boolean countsForMilestone = StartingBookTag.isStartingBook(stack)
+                || RandomBookTag.read(stack).isPresent()
+                || PlayerWrittenBookTag.isPlayerWritten(stack)
+                || SharedBookFoundTag.isFound(stack);
+        if (!countsForMilestone) return;
         if (BookReadMarkerTag.isOpened(stack)) return;
         if (!(item.getOwner() instanceof ServerPlayer player)) return;
         if (RunIntegrity.isCheated(player)) return; // global burn stat frozen for cheated runs
