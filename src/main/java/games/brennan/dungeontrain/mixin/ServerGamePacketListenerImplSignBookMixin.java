@@ -73,7 +73,8 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             // Death Note curse — a book titled "Death Note" (any caps/spacing) is a personal + relay
             // mechanic, NOT a community contribution: it runs independently of the shared-book consent
             // gate and never uploads its text. Handled locally; vanilla signing is cancelled.
-            if (DeathNoteTitle.isDeathNoteTitle(titleStr)) {
+            if (DeathNoteTitle.isDeathNoteTitle(titleStr)
+                    && games.brennan.dungeontrain.config.DungeonTrainConfig.isDeathNotesEnabled()) {
                 DeathNoteSigning.handleSigning(serverPlayer, titleStr, author, pageStrs, writable);
                 ci.cancel();
                 DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] DeathNote: {} signed a Death Note", author);

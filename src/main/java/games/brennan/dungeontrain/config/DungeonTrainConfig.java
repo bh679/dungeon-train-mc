@@ -92,6 +92,9 @@ public final class DungeonTrainConfig {
     /** Default master for the community "shared books" discovery half (found in chest loot). */
     public static final boolean DEFAULT_DISCOVER_SHARED_BOOKS_ENABLED = true;
 
+    /** Default master for the "Death Note" curse book mechanic (local sign/burn + relay sync). */
+    public static final boolean DEFAULT_DEATH_NOTES_ENABLED = true;
+
     /**
      * STARTING max chance a rolled chest book comes from the shared community pool. The effective
      * chance scales from 0% (no hardcoded random books read) up to this max (100% of them read), so
@@ -139,6 +142,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue WORLD_INFO_TO_RELAY;
     public static final ModConfigSpec.BooleanValue SHARE_BOOKS_ENABLED;
     public static final ModConfigSpec.BooleanValue DISCOVER_SHARED_BOOKS_ENABLED;
+    public static final ModConfigSpec.BooleanValue DEATH_NOTES_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_BOOK_LOOT_MAX_CHANCE;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_ENABLED;
@@ -174,6 +178,7 @@ public final class DungeonTrainConfig {
         WORLD_INFO_TO_RELAY = pair.getLeft().worldInfoToRelay;
         SHARE_BOOKS_ENABLED = pair.getLeft().shareBooksEnabled;
         DISCOVER_SHARED_BOOKS_ENABLED = pair.getLeft().discoverSharedBooksEnabled;
+        DEATH_NOTES_ENABLED = pair.getLeft().deathNotesEnabled;
         SHARED_BOOK_LOOT_MAX_CHANCE = pair.getLeft().sharedBookLootMaxChance;
         DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = pair.getLeft().difficultyLevelNoticeToDiscord;
         INTRO_CINEMATIC_ENABLED = pair.getLeft().introCinematicEnabled;
@@ -257,6 +262,14 @@ public final class DungeonTrainConfig {
                         "local narrative random-book pool. Server-wide opt-in (not per-player). False keeps chest books",
                         "entirely local. See sharedBookLootMaxChance for the mix.")
                 .define("discoverSharedBooksEnabled", DEFAULT_DISCOVER_SHARED_BOOKS_ENABLED);
+        ModConfigSpec.BooleanValue deathNotesEnabled = b
+                .comment("The \"Death Note\" curse book. When true, signing a book titled \"Death Note\" (any caps/spacing)",
+                        "consumes it (burning it away with soul-fire) and marks the player named on its first page: after the",
+                        "author later dies, the next time that target reaches the carriage the author died at, a hostile echo of",
+                        "the author spawns to hunt them. Syncing the curse across players uses the relay and additionally",
+                        "requires network consent (Discord Presence's 'use the internet?' prompt). False disables the mechanic",
+                        "entirely — a \"Death Note\" signs like any other book.")
+                .define("deathNotesEnabled", DEFAULT_DEATH_NOTES_ENABLED);
         ModConfigSpec.DoubleValue sharedBookLootMaxChance = b
                 .comment("The STARTING maximum per-roll chance that a chest book comes from the shared community pool instead",
                         "of the local narrative pool. The effective chance SCALES with progress: 0% when none of the hardcoded",
@@ -336,7 +349,7 @@ public final class DungeonTrainConfig {
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
-                worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, sharedBookLootMaxChance,
+                worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled, sharedBookLootMaxChance,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks);
     }
 
@@ -476,6 +489,11 @@ public final class DungeonTrainConfig {
         return isLoaded() ? DISCOVER_SHARED_BOOKS_ENABLED.get() : DEFAULT_DISCOVER_SHARED_BOOKS_ENABLED;
     }
 
+    /** Master for the "Death Note" curse book mechanic (local sign/burn + relay sync). */
+    public static boolean isDeathNotesEnabled() {
+        return isLoaded() ? DEATH_NOTES_ENABLED.get() : DEFAULT_DEATH_NOTES_ENABLED;
+    }
+
     /** MAX shared-pool chance (reached at 100% hardcoded random books read); scaled by read fraction. Clamped [0,1]. */
     public static double getSharedBookLootMaxChance() {
         double v = isLoaded() ? SHARED_BOOK_LOOT_MAX_CHANCE.get() : DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE;
@@ -598,6 +616,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue worldInfoToRelay,
             ModConfigSpec.BooleanValue shareBooksEnabled,
             ModConfigSpec.BooleanValue discoverSharedBooksEnabled,
+            ModConfigSpec.BooleanValue deathNotesEnabled,
             ModConfigSpec.DoubleValue sharedBookLootMaxChance,
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,
             ModConfigSpec.BooleanValue introCinematicEnabled,
