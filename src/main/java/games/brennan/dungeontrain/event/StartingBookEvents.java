@@ -2,9 +2,14 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.narrative.BookReadMarkerTag;
 import games.brennan.dungeontrain.narrative.BurnableBookTag;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
+import games.brennan.dungeontrain.narrative.RandomBookTag;
+import games.brennan.dungeontrain.narrative.SharedBookTag;
 import games.brennan.dungeontrain.narrative.StartingBookContext;
 import games.brennan.dungeontrain.narrative.StartingBookFactory;
 import games.brennan.dungeontrain.narrative.StartingBookRegistry;
@@ -496,6 +501,29 @@ public final class StartingBookEvents {
 
         LOGGER.info("[DungeonTrain] BurnableBook: detected dropped burnable book — burning entity {} ({} ticks)",
             item.getUUID(), BURN_DURATION_TICKS);
+
+        notifyIfBurnedUnread(item, stack);
+    }
+
+    /**
+     * Credits the "burned without reading" milestone when {@code stack} is a
+     * starting/random book (shared/signed books excluded — burning those is the
+     * intended outcome of signing, not an avoided read) that was never opened via
+     * {@link BookReadMarkerTag}, and the drop was player-initiated (Q-throw, the
+     * close-without-reading auto-drop, or a death-drop — anything with a
+     * {@link ItemEntity#getOwner} resolving to a {@link ServerPlayer}). Incidental
+     * spills with no thrower (hopper eject, chest break) don't count.
+     */
+    private static void notifyIfBurnedUnread(ItemEntity item, ItemStack stack) {
+        if (SharedBookTag.isSharedBook(stack)) return;
+        boolean isStartingOrRandom = StartingBookTag.isStartingBook(stack) || RandomBookTag.read(stack).isPresent();
+        if (!isStartingOrRandom) return;
+        if (BookReadMarkerTag.isOpened(stack)) return;
+        if (!(item.getOwner() instanceof ServerPlayer player)) return;
+        if (RunIntegrity.isCheated(player)) return; // global burn stat frozen for cheated runs
+
+        long newTotal = GlobalBookBurnStats.addBooksBurnedUnread(player.getUUID(), 1L);
+        AchievementEvents.notifyBooksBurnedUnread(player, newTotal);
     }
 
     /**
