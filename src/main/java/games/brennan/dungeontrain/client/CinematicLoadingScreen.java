@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -43,8 +44,46 @@ public final class CinematicLoadingScreen extends Screen {
     private static final int MAX_RAIL_W = 300;
     private static final int INF_RESERVE = 18; // room at the right end for the ∞ glyph
 
+    // Space ×3 skips straight to the cinematic. A row of dots at the bottom fills
+    // one per press (revealed on the first press) — no text.
+    private static final int SKIP_PRESSES = 3;
+    private static final int DOT_SIZE = 4;
+    private static final int DOT_GAP = 6;
+    private static final int DOT_BOTTOM_MARGIN = 18;
+    private static final int DOT_FILLED = 0xFFFFFFFF;
+    private static final int DOT_EMPTY = 0x40FFFFFF;
+
+    /** Distinct Space presses so far (0..{@link #SKIP_PRESSES}). */
+    private int spacePresses = 0;
+    /** Guards against key-repeat: only the first frame of a held Space counts. */
+    private boolean spaceHeld = false;
+
     public CinematicLoadingScreen() {
         super(Component.translatable("gui.dungeontrain.cinematic.loading"));
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == InputConstants.KEY_SPACE) {
+            if (!spaceHeld) {
+                spaceHeld = true;
+                spacePresses++;
+                if (spacePresses >= SKIP_PRESSES) {
+                    CinematicPreloadGate.skip();
+                }
+            }
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == InputConstants.KEY_SPACE) {
+            spaceHeld = false;
+            return true;
+        }
+        return super.keyReleased(keyCode, scanCode, modifiers);
     }
 
     @Override
@@ -79,6 +118,23 @@ public final class CinematicLoadingScreen extends Screen {
         drawFillingTrain(g, railLeft, railW, railY, progress);
         String pct = (int) Math.round(progress * 100.0) + "%";
         g.drawCenteredString(this.font, pct, cx, cy + 34, PCT);
+
+        drawSkipDots(g, cx);
+    }
+
+    /**
+     * Space-to-skip indicator: a centred row of dots at the bottom, revealed on
+     * the first Space press, one filled per press. No text.
+     */
+    private void drawSkipDots(GuiGraphics g, int cx) {
+        if (spacePresses <= 0) return;
+        int total = SKIP_PRESSES * DOT_SIZE + (SKIP_PRESSES - 1) * DOT_GAP;
+        int x0 = cx - total / 2;
+        int y = this.height - DOT_BOTTOM_MARGIN;
+        for (int i = 0; i < SKIP_PRESSES; i++) {
+            int x = x0 + i * (DOT_SIZE + DOT_GAP);
+            g.fill(x, y, x + DOT_SIZE, y + DOT_SIZE, i < spacePresses ? DOT_FILLED : DOT_EMPTY);
+        }
     }
 
     /**

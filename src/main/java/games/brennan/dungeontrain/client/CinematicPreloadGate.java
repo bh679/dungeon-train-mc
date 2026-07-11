@@ -125,8 +125,18 @@ public final class CinematicPreloadGate {
         boolean settled = elapsedTicks >= MIN_SHOW_TICKS && readyStreak >= SETTLE_TICKS;
         boolean cappedOut = elapsedTicks >= capTicks;
         if (settled || cappedOut) {
-            finish(mc, cappedOut && !settled);
+            finish(mc, settled ? "chunks ready" : "cap reached");
         }
+    }
+
+    /**
+     * Player asked to skip the wait (Space ×3 on the loading screen) — start the
+     * cinematic immediately even though the terrain may not be fully streamed in.
+     * No-op if the gate isn't currently holding.
+     */
+    public static void skip() {
+        if (!active) return;
+        finish(Minecraft.getInstance(), "skipped");
     }
 
     /** Fraction of chunks present within {@link #PRELOAD_CHUNK_RADIUS} of the camera-start column. */
@@ -146,7 +156,7 @@ public final class CinematicPreloadGate {
     }
 
     /** Close the loading screen and hand off to the cinematic. */
-    private static void finish(Minecraft mc, boolean timedOut) {
+    private static void finish(Minecraft mc, String reason) {
         CinematicIntroPacket packet = pending;
         int elapsed = elapsedTicks;
         double fraction = lastFraction;
@@ -155,7 +165,7 @@ public final class CinematicPreloadGate {
             mc.setScreen(null);
         }
         LOGGER.info("[DungeonTrain] Cinematic preload gate done ({}): {}t elapsed, fraction={}",
-            timedOut ? "cap reached" : "chunks ready", elapsed, String.format("%.2f", fraction));
+            reason, elapsed, String.format("%.2f", fraction));
         if (packet != null) {
             CinematicCameraController.start(packet);
         }
