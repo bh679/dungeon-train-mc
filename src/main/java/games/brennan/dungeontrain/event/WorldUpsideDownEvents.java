@@ -93,6 +93,9 @@ public final class WorldUpsideDownEvents {
     /** Decorrelates the overworld-reveal island mask from the mirror-disperse mask in the exit crossfade. */
     private static final long OW_ISLAND_SALT = 0x9E3779B97F4A7C15L;
 
+    /** Enlarges the exit-crossfade island noise (bigger islands, proportionally bigger gaps). */
+    private static final int EXIT_ISLAND_NOISE_SCALE = 4;
+
     private WorldUpsideDownEvents() {}
 
     @SubscribeEvent
@@ -300,7 +303,9 @@ public final class WorldUpsideDownEvents {
                         // (a) Disperse the mirror: keep the reflected block only inside a surviving island.
                         // As disperse falls 1→0 the low-noise survivor set shrinks and separates (the
                         // reverse of the entry dither), so mirror islands get smaller and further apart.
-                        if (ns != AIR && Disintegration.coherentNoise(seed, worldX, y, worldZ) >= exitDisperse[dx]) {
+                        // Sampled at EXIT_ISLAND_NOISE_SCALE for larger, further-apart islands than the
+                        // fine-grained entry dither.
+                        if (ns != AIR && Disintegration.coherentNoise(seed, worldX, y, worldZ, EXIT_ISLAND_NOISE_SCALE) >= exitDisperse[dx]) {
                             ns = AIR;
                         }
                         // (b) Reveal the overworld by running the End void-erosion IN REVERSE (ramp =
@@ -312,9 +317,16 @@ public final class WorldUpsideDownEvents {
                                 ns = ow;                                   // native BE — leave it exactly in place (identity Y)
                             } else {
                                 double pRemove = Disintegration.removalProbabilityFromRamp(1.0 - exitReveal[dx], y, bedY);
-                                if (Disintegration.coherentNoise(seed ^ OW_ISLAND_SALT, worldX, y, worldZ) >= pRemove) {
-                                    BlockState stable = FallingBlockAnchor.stableEquivalent(ow);
-                                    ns = stable != null ? stable : ow;    // survives → returning overworld (fallables anchored)
+                                if (Disintegration.coherentNoise(seed ^ OW_ISLAND_SALT, worldX, y, worldZ, EXIT_ISLAND_NOISE_SCALE) >= pRemove) {
+                                    if (ow.getBlock() instanceof LiquidBlock) {
+                                        // Returning water becomes a static SOURCE (frozen in-zone by
+                                        // FlowingFluidUpsideDownMixin) so it hangs on the island instead of
+                                        // pouring off it into the void; other fluids (lava) drop to air.
+                                        ns = ow.getFluidState().is(FluidTags.WATER) ? Blocks.WATER.defaultBlockState() : AIR;
+                                    } else {
+                                        BlockState stable = FallingBlockAnchor.stableEquivalent(ow);
+                                        ns = stable != null ? stable : ow; // survives → returning overworld (fallables anchored)
+                                    }
                                 }
                             }
                         }
