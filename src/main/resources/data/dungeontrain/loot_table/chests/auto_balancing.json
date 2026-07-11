@@ -22,12 +22,12 @@
         {
           "type": "minecraft:item",
           "name": "minecraft:bread",
-          "weight": 12
+          "weight": 13
         },
         {
           "type": "minecraft:item",
           "name": "minecraft:apple",
-          "weight": 6
+          "weight": 7
         }
       ]
     }
