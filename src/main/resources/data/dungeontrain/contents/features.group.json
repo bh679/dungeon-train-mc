@@ -90,6 +90,10 @@
     {
       "id": "irongolem",
       "weight": 1
+    },
+    {
+      "id": "irongolem2",
+      "weight": 1
     }
   ]
 }
