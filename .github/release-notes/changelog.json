@@ -3894,6 +3894,23 @@
       "released": true,
       "released_in": "v0.428.0",
       "released_at": "2026-07-11T06:52:22Z"
+    },
+    {
+      "id": "lectern-narrative-book-burn",
+      "version": "0.429.0",
+      "type": "feat",
+      "title": "Narrative books burn when taken off the lectern",
+      "summary": "Story letters read in place at a lectern stay safe forever, but a copy you take into your hands now burns to ash if you drop it or read it and close the book \u2014 so lecterns are the one place a story is guaranteed to keep.",
+      "highlights": [
+        "Reading a story book by hand and closing it burns the book away",
+        "Dropping a narrative book burns it",
+        "Reading in place at a lectern never burns the book"
+      ],
+      "pr": 707,
+      "date": "2026-07-11",
+      "released": true,
+      "released_in": "v0.429.0",
+      "released_at": "2026-07-11T08:13:12Z"
     }
   ]
 }

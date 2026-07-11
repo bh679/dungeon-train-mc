@@ -42,13 +42,20 @@ import net.minecraft.world.item.ItemStack;
  *       {@link SharedBookFoundTag#NBT_HELD} marker, set the same way as
  *       {@link RandomBookTag#NBT_HELD}), so a chest/pot spilling one
  *       doesn't ignite it before anyone picks it up.</li>
+ *   <li>{@link NarrativeBookTag} — multi-letter "story" books resolved by a
+ *       lectern. Unconditional, like {@link StartingBookTag} — but only a
+ *       copy that has left the lectern is at risk: the lectern's own locked
+ *       copy lives in the {@code LecternBlockEntity}, never an
+ *       {@link net.minecraft.world.entity.item.ItemEntity}, so reading or
+ *       re-reading it in place never burns it. A copy taken into a hand slot
+ *       burns when dropped, or when closed after being read there (see
+ *       {@link games.brennan.dungeontrain.client.StartingBookClientEvents}'s
+ *       {@code LecternScreen} exclusion, which keeps an in-place lectern read
+ *       from ever being mistaken for a held-book close).</li>
  * </ul>
  *
  * <p>Explicitly NOT burnable:</p>
  * <ul>
- *   <li>{@link NarrativeBookTag} — multi-letter "story" books. Must remain
- *       re-readable from lecterns and the player's inventory; burning them
- *       would destroy the narrative arc.</li>
  *   <li>Random-book / discovered-shared-book stacks that have never been
  *       held by a player (no {@code NBT_HELD} marker).</li>
  *   <li>Vanilla written books from foreign mods, and any
@@ -80,6 +87,7 @@ public final class BurnableBookTag {
         if (RandomBookTag.read(stack).isPresent() && RandomBookTag.isHeld(stack)) return true;
         if (PlayerWrittenBookTag.isPlayerWritten(stack)) return true;
         if (SharedBookFoundTag.isFound(stack) && SharedBookFoundTag.isHeld(stack)) return true;
+        if (NarrativeBookTag.read(stack).isPresent()) return true;
         return false;
     }
 }
