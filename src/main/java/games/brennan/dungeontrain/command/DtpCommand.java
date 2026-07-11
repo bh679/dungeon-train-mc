@@ -108,10 +108,16 @@ public final class DtpCommand {
         Vector3d spawnerWorldPos = new Vector3d(x, trainY, 0);
         double speed = DungeonTrainConfig.getSpeed();
         Vector3d velocity = new Vector3d(speed, 0.0, 0.0);
-        int count = DungeonTrainConfig.getNumCarriages();
 
-        LOGGER.info("[DungeonTrain] /dtp {} by {} — spawning train at origin {} speed {}",
-            x, player.getName().getString(), origin, speed);
+        int configCount = DungeonTrainConfig.getNumCarriages();
+        // Seed-only spawn; the per-tick appender extends from here. When config = 0
+        // (auto), use a benign positive seed so the seed-anchor math in
+        // TrainAssembler.spawnTrain doesn't degenerate — same guard as
+        // TrainBootstrapEvents.ensureTrainSpawned.
+        int count = configCount > 0 ? configCount : DungeonTrainConfig.DEFAULT_CARRIAGES_AUTO_SEED;
+
+        LOGGER.info("[DungeonTrain] /dtp {} by {} — spawning train at origin {} speed {} (configCount={})",
+            x, player.getName().getString(), origin, speed, configCount);
 
         try {
             TrainAssembler.spawnTrain(trainLevel, origin, velocity, count, spawnerWorldPos, dims);
