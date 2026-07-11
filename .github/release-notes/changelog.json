@@ -3928,6 +3928,21 @@
       "released": true,
       "released_in": "v0.430.0",
       "released_at": "2026-07-11T08:44:22Z"
+    },
+    {
+      "id": "vase-group-live-tuning",
+      "version": "0.432.0",
+      "type": "content",
+      "title": "New vase-room chest and barrel variants",
+      "summary": "Vase rooms on the train can now roll a few new looks \u2014 vertical barrel racks, and two new chest-room layouts alongside the classic vase stack.",
+      "highlights": [
+        "New barrels_vert, chest_room, chest_room_1, and vase_room vase-room variants"
+      ],
+      "pr": 712,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
