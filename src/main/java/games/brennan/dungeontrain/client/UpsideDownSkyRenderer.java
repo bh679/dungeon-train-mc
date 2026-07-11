@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -41,8 +42,8 @@ public final class UpsideDownSkyRenderer {
 
     private static final float SUN_SIZE = 30.0F;
     private static final float MOON_SIZE = 20.0F;
-    /** Height of the celestial bodies' orbit above the true horizon (kept low — "from the sides"). */
-    private static final float HORIZON_ALT = 18.0F;
+    /** Vertical centre of the bodies' orbit — on the true horizon line, so each disc straddles it. */
+    private static final float HORIZON_ALT = 0.0F;
     /** Billboard distance — just inside the dome faces (±100) so the bodies draw in front of the fill. */
     private static final float BODY_DIST = 96.0F;
 
@@ -123,7 +124,12 @@ public final class UpsideDownSkyRenderer {
         Matrix4f m = pose.last().pose();
 
         RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
+        // Additive blend — vanilla's own sun/moon path. sun.png and moon_phases.png carry opaque black
+        // borders that only vanish when *added* to the sky rather than alpha-composited over it; the
+        // previous defaultBlendFunc() (alpha blend) drew that black border as a square around each body.
+        RenderSystem.blendFuncSeparate(
+                GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE,
+                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
         RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
@@ -142,6 +148,7 @@ public final class UpsideDownSkyRenderer {
 
         RenderSystem.enableCull();
         RenderSystem.depthMask(true);
+        RenderSystem.defaultBlendFunc(); // restore standard alpha blend so additive state doesn't leak
         RenderSystem.disableBlend();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }

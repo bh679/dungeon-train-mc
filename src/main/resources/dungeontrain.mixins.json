@@ -19,7 +19,8 @@
     "NoiseBasedChunkGeneratorMixin",
     "ChunkGeneratorDecorationMixin",
     "RandomStateMixin",
-    "ServerGamePacketListenerImplSignBookMixin"
+    "ServerGamePacketListenerImplSignBookMixin",
+    "SpreadingSnowyDirtBlockUpsideDownMixin"
   ],
   "client": [
     "client.BookViewScreenAccessor",
