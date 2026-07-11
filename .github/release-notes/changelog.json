@@ -3994,6 +3994,22 @@
       "released": true,
       "released_in": "v0.433.0",
       "released_at": "2026-07-11T15:18:39Z"
+    },
+    {
+      "id": "loading-screen-redesign",
+      "version": "0.434.0",
+      "type": "feat",
+      "title": "One continuous loading screen, with a story to read",
+      "summary": "The two loading screens you see when joining now feel like a single sequence \u2014 same look, a train that keeps filling in without resetting, and a short passenger's-eye story to read while you wait, instead of dry status text.",
+      "highlights": [
+        "The world-load screen is now themed to match the pre-cinematic loading screen, instead of the plain vanilla loading grid.",
+        "A short story (one of four) plays across both screens, and the game will hold briefly on \"Press Space to Start\" if the world finishes loading before the story does."
+      ],
+      "pr": 715,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
