@@ -81,6 +81,26 @@
       "name": "obsidian_obsidian",
       "weight": 1,
       "stage": "obsidian"
+    },
+    {
+      "name": "cracked_deepdark",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 40,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
     }
   ],
   "walls": [
@@ -227,6 +247,50 @@
       "name": "quartzwindow2_obsidian",
       "weight": 1,
       "stage": "obsidian"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 1,
+      "sideMode": "one",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "slotwindow_deepdark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "smallwindows_deepdark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "window2_deepdark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
     }
   ],
   "roof": [
@@ -360,6 +424,46 @@
       "name": "quartsopen_obsidian",
       "weight": 1,
       "stage": "obsidian"
+    },
+    {
+      "name": "sunroof_deepdark",
+      "weight": 2,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "windowed_deepdark",
+      "weight": 30,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "open_deepdark",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 10,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
     }
   ],
   "doors": [
@@ -443,6 +547,49 @@
       "name": "quartz_obsidian",
       "weight": 1,
       "stage": "obsidian"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 10,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "wooddoor_deepdark",
+      "weight": 2,
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "irondoor_deepdark",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "open_wall_deepdark",
+      "weight": 8,
+      "sideMode": "either",
+      "endMode": "mid",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
     }
   ]
 }

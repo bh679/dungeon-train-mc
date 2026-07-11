@@ -227,6 +227,60 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "obsidian"
+    },
+    {
+      "name": "open_deepdark",
+      "weight": 20,
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "cracked_deepdark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "wooden_deepdark",
+      "weight": 2,
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "slotwindow_deepdark",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
     }
   ],
   "roof": [
@@ -340,6 +394,36 @@
       "name": "quartswindow_obsidian",
       "weight": 4,
       "stage": "obsidian"
+    },
+    {
+      "name": "open_deepdark",
+      "weight": 5,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "windowed_deepdark",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
     }
   ],
   "doors": [
@@ -391,6 +475,17 @@
       "name": "quartz_obsidian",
       "weight": 1,
       "stage": "obsidian"
+    },
+    {
+      "name": "wooddoor_deepdark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
     }
   ]
 }

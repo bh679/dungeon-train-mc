@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 8,
+  "variants": {
+    "3,2,0": { "lockId": 1, "states": ["minecraft:deepslate_bricks", "minecraft:glass_pane[east=false,north=false,south=false,waterlogged=false,west=false]"] },
+    "3,3,0": { "lockId": 1, "states": ["minecraft:deepslate_bricks", "minecraft:glass_pane[east=false,north=false,south=false,waterlogged=false,west=false]"] }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 8,
+  "variants": {
+    "0,2,3": [{"state": "minecraft:polished_blackstone_button[face=wall,facing=north,powered=false]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:oak_button[face=wall,facing=north,powered=false]", "weight": 5, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 200, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:lever[face=wall,facing=north,powered=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "0,1,3": ["minecraft:oak_pressure_plate[powered=false]", {"state": "minecraft:polished_blackstone_pressure_plate[powered=false]", "weight": 71}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}]
+  }
+}
