@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -521,6 +522,54 @@ public final class PlayerJoinEvents {
         Vector3d center = resolveTrainCenter(provider);
         if (center == null) return null;
         return computeFlatbedTarget(provider, data, center);
+    }
+
+    /**
+     * Resolve the flatbed pad nearest an arbitrary world X, scanning every
+     * settled group in {@code trainLevel} rather than just the frontmost one.
+     * Each group offers two pads (front and back — see {@link #computeFlatbedTarget}),
+     * so this checks both and keeps whichever single pad across the whole train
+     * minimises {@code |padX - targetX|}. Used by {@code /dtp} so a teleport to
+     * an arbitrary X lands on the closest open deck instead of requiring the
+     * destination to already be the train's front.
+     *
+     * <p>Returns {@code null} if no group has settled yet (caller should retry
+     * next tick, same as {@link #findFlatbedTarget}).</p>
+     */
+    public static FlatbedTarget findNearestFlatbedTarget(
+        ServerLevel trainLevel, DungeonTrainWorldData data, double targetX
+    ) {
+        CarriageDims dims = data.dims();
+        int trainY = data.getTrainY();
+        int halfPad = CarriagePlacer.halfPadLen(dims);
+        TrackGeometry g = TrackGeometry.from(dims, trainY);
+
+        double bestPadX = Double.NaN;
+        double bestDist = Double.POSITIVE_INFINITY;
+        for (Trains.Carriage carriage : Trains.allCarriages(trainLevel)) {
+            Vector3d center = resolveTrainCenter(carriage.provider());
+            if (center == null) continue; // unsettled group — skip, matches findTrain's guard
+
+            int stride = carriage.provider().getGroupSize() * dims.length() + 2 * halfPad;
+            double frontPadX = center.x + stride / 2.0 - halfPad / 2.0;
+            double backPadX = center.x - stride / 2.0 + halfPad / 2.0;
+            double frontDist = Math.abs(frontPadX - targetX);
+            double backDist = Math.abs(backPadX - targetX);
+            if (frontDist < bestDist) {
+                bestDist = frontDist;
+                bestPadX = frontPadX;
+            }
+            if (backDist < bestDist) {
+                bestDist = backDist;
+                bestPadX = backPadX;
+            }
+        }
+        if (Double.isNaN(bestPadX)) return null; // no settled group yet
+
+        return new FlatbedTarget(
+            bestPadX,
+            trainY + 1 + FLATBED_FEET_EPSILON,
+            g.trackCenterZ() + 0.5);
     }
 
     /**
