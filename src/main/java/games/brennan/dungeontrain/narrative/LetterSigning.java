@@ -8,11 +8,16 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LecternBlock;
+import net.minecraft.world.level.block.entity.LecternBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.List;
 
@@ -66,6 +71,25 @@ public final class LetterSigning {
         BlockPos p = lectern.pos();
         ItemEntity entity = new ItemEntity(lecternLevel, p.getX() + 0.5, p.getY() + 1.0, p.getZ() + 0.5, book);
         lecternLevel.addFreshEntity(entity);
+
+        // Leave the lectern visibly EMPTY. In the normal flow the book was never placed server-side
+        // (vanilla placement is suppressed so the book can be signed from the hand), but the signing
+        // client PREDICTED a placement onto the empty lectern — re-assert the true server state to the
+        // signer so that phantom book clears. Also clear a real book & quill draft if one is resting on
+        // a plain lectern. A narrative lectern keeps its own (mod story) state: re-asserting its current
+        // state is a no-op, and the plain-lectern guard skips clearing its book.
+        BlockState lstate = lecternLevel.getBlockState(p);
+        if (lstate.getBlock() instanceof LecternBlock) {
+            if (lstate.is(Blocks.LECTERN)
+                    && lecternLevel.getBlockEntity(p) instanceof LecternBlockEntity le && le.hasBook()) {
+                le.setBook(ItemStack.EMPTY);
+                le.setChanged();
+                lecternLevel.setBlock(p, lstate
+                        .setValue(LecternBlock.HAS_BOOK, Boolean.FALSE)
+                        .setValue(LecternBlock.POWERED, Boolean.FALSE), 3);
+            }
+            player.connection.send(new ClientboundBlockUpdatePacket(p, lecternLevel.getBlockState(p)));
+        }
 
         // Count it for the death-screen "books written" cargo tally (a book was authored + signed).
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksWritten();
