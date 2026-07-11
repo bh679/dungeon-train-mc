@@ -4087,6 +4087,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "upsidedown-no-animal-spawns",
+      "version": "0.438.0",
+      "type": "fix",
+      "title": "No wild animals falling in the upside-down world",
+      "summary": "In the upside-down band the world is flipped, so wild animals used to spawn with nothing to stand on and immediately plummet past the train. Animals (and, as before, hostile mobs) no longer spawn naturally inside the band.",
+      "highlights": [
+        "Wild animals no longer spawn and fall to their death in the upside-down band"
+      ],
+      "pr": 724,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
