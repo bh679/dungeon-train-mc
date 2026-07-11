@@ -4089,6 +4089,52 @@
       "released_at": null
     },
     {
+      "id": "dtp-difficulty-scaling",
+      "version": "0.438.0",
+      "type": "feat",
+      "title": "/dtp now scales difficulty to match the destination",
+      "summary": "Teleporting with /dtp <x> now also shifts the game's difficulty to match how far along the track you land \u2014 same effect as running /dungeontrain difficulty, just automatic.",
+      "highlights": [
+        "/dtp shifts difficulty (mob gear, loot, onboarding, and the carriage content generating ahead) to match the destination"
+      ],
+      "pr": 722,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "upside-down-advancements",
+      "version": "0.438.0",
+      "type": "feat",
+      "title": "New advancements for the Upside Down",
+      "summary": "Two new advancements track your trip through the upside-down band: 'The Upside Down' for stepping into the mirrored world, and 'Reassembly Required' for riding out through the drifting islands as it disperses back into overworld.",
+      "highlights": [
+        "The Upside Down and Reassembly Required advancements, fired as you ride through the upside-down band and its exit crossfade",
+        "Fixed the 'Re-Over-World' advancement firing the instant you entered the upside-down band instead of once you're actually back on solid ground"
+      ],
+      "pr": 721,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "train-upright-upside-down-band",
+      "version": "0.438.0",
+      "type": "fix",
+      "title": "Train stays right-side up in the Upside Down",
+      "summary": "In the Upside Down band the world flips around you, but the train itself now stays right-side up \u2014 your carriages read normally as stable footing amid the inverted terrain, instead of being rendered upside-down along with everything else.",
+      "highlights": [
+        "Fixed train/carriage blocks rendering upside-down inside the Upside Down band"
+      ],
+      "pr": 723,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "upsidedown-no-animal-spawns",
       "version": "0.438.0",
       "type": "fix",
