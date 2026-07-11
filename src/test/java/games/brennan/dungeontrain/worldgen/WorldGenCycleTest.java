@@ -70,6 +70,46 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("exit crossfade: adds its length to the period, sits right after the band, OW-reveal 0→1 / mirror-disperse 1→0, and stretches the trailing sky fade across it")
+    void upsideDownExitFade() {
+        // C (no band): no exit crossfade either.
+        assertEquals(0L, C.udExitFadeLen());
+        org.junit.jupiter.api.Assertions.assertFalse(C.isInUpsideDownExitFade(3240));
+
+        // Same base as upsideDownBand() (band udLen 300, exit gap 150) plus an 800-block exit crossfade
+        // inserted between the band and the trailing exit gap (16-arg form; udExitFade = 800).
+        WorldGenCycle e = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 50, 200, 150, 800, 0);
+        assertEquals(300L, e.upsideDownLen());
+        assertEquals(800L, e.udExitFadeLen());
+        // period = 1940 + udLen 300 + exitFade 800 + exit gap 150 = 3190.
+        assertEquals(3190L, e.period());
+
+        // Band [2940,3240); exit crossfade immediately after it [3240,4040); exit gap [4040,4190).
+        org.junit.jupiter.api.Assertions.assertFalse(e.isInUpsideDownExitFade(3239)); // still the band
+        org.junit.jupiter.api.Assertions.assertTrue(e.isInUpsideDownExitFade(3240));  // starts at band end
+        org.junit.jupiter.api.Assertions.assertTrue(e.isInUpsideDownExitFade(4039));
+        org.junit.jupiter.api.Assertions.assertFalse(e.isInUpsideDownExitFade(4040)); // exit gap begins
+        org.junit.jupiter.api.Assertions.assertFalse(e.isInUpsideDownBand(3240));      // disjoint from the band
+
+        // Overworld-reveal ramps 0→1 across the zone; mirror-disperse is its complement 1→0.
+        assertEquals(0.0, e.upsideDownExitOwRevealRamp(3240), EPS);
+        assertEquals(0.5, e.upsideDownExitOwRevealRamp(3640), EPS);            // 400/800
+        assertEquals(799.0 / 800.0, e.upsideDownExitOwRevealRamp(4039), EPS);
+        assertEquals(1.0, e.upsideDownExitMirrorDisperseRamp(3240), EPS);      // full mirror, continuous with the band
+        assertEquals(0.5, e.upsideDownExitMirrorDisperseRamp(3640), EPS);
+        assertEquals(1.0 / 800.0, e.upsideDownExitMirrorDisperseRamp(4039), EPS);
+        assertEquals(0.0, e.upsideDownExitOwRevealRamp(3239), EPS);            // 0 outside the zone
+        assertEquals(0.0, e.upsideDownExitMirrorDisperseRamp(4040), EPS);
+
+        // Atmosphere: with an exit crossfade present the band's trailing edge HOLDS at 1 (no in-band
+        // fade-out); the sky instead fades 1→0 across the whole exit crossfade.
+        assertEquals(1.0, e.upsideDownRamp(3215), EPS);   // was 0.5 without the exit fade — now held at 1
+        assertEquals(1.0, e.upsideDownRamp(3240), EPS);   // exit start — continuous with the held band
+        assertEquals(0.5, e.upsideDownRamp(3640), EPS);   // half-way down the exit sky fade
+        assertEquals(0.0, e.upsideDownRamp(4040), EPS);   // exit gap — sky back to normal
+    }
+
+    @Test
     @DisplayName("entry lead-in: disabled/zero-void is zero-length; clamped by eVoid; reveal ramps 0→1 up to udStart, disjoint from the true band")
     void upsideDownEntryLead() {
         // Disabled (C: udFade=udHold=0): zero-length lead-in, never true anywhere.
