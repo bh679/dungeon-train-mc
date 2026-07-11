@@ -70,6 +70,18 @@
     {
       "id": "rainbowflag",
       "weight": 1
+    },
+    {
+      "id": "acientcity",
+      "weight": 1
+    },
+    {
+      "id": "savana",
+      "weight": 1
+    },
+    {
+      "id": "woodstatue",
+      "weight": 1
     }
   ]
 }
