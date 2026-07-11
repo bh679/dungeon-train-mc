@@ -4148,6 +4148,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "deepdark-vase-content-update",
+      "version": "0.439.0",
+      "type": "content",
+      "title": "Deepdark storage & vase room content",
+      "summary": "New storage and vase-filled room variants join the vase loot pool, alongside a matching set of deepdark-themed roof, wall, and floor decor for dungeon rooms.",
+      "highlights": [
+        "New storage and vases room content in the vase loot group",
+        "New deepdark-themed roof, wall, and floor part variants"
+      ],
+      "pr": 725,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
