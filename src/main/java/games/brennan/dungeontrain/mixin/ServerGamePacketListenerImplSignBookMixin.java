@@ -7,12 +7,15 @@ import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
 import games.brennan.dungeontrain.narrative.DeathNoteTitle;
+import games.brennan.dungeontrain.narrative.LetterLecternEvents;
+import games.brennan.dungeontrain.narrative.LetterSigning;
 import games.brennan.dungeontrain.narrative.PlayerWrittenBookTag;
 import games.brennan.dungeontrain.narrative.SharedBookMessage;
 import games.brennan.dungeontrain.narrative.SharedBookTag;
 import games.brennan.dungeontrain.narrative.SignedCarriageTag;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.FilteredText;
@@ -94,6 +97,17 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             String titleStr = title.raw();
             String author = serverPlayer.getName().getString();
             List<String> pageStrs = pages.stream().map(FilteredText::raw).toList();
+
+            // Lectern letter — the sign was opened from a lectern (LetterLecternEvents recorded it on the
+            // right-click). A lectern sign is always a letter, taking priority over the Death Note /
+            // shared-book branches: route to the per-life narrative-series upload + burn at the lectern.
+            GlobalPos pendingLectern = LetterLecternEvents.consumePending(serverPlayer.getUUID());
+            if (pendingLectern != null) {
+                LetterSigning.handleSigning(serverPlayer, pendingLectern, titleStr, author, pageStrs, writable);
+                ci.cancel();
+                DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] Letter: {} signed a lectern letter", author);
+                return;
+            }
 
             // Death Note curse — a book titled "Death Note" (any caps/spacing) is a personal + relay
             // mechanic, NOT a community contribution: it runs independently of the shared-book consent

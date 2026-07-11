@@ -3894,6 +3894,137 @@
       "released": true,
       "released_in": "v0.428.0",
       "released_at": "2026-07-11T06:52:22Z"
+    },
+    {
+      "id": "lectern-narrative-book-burn",
+      "version": "0.429.0",
+      "type": "feat",
+      "title": "Narrative books burn when taken off the lectern",
+      "summary": "Story letters read in place at a lectern stay safe forever, but a copy you take into your hands now burns to ash if you drop it or read it and close the book \u2014 so lecterns are the one place a story is guaranteed to keep.",
+      "highlights": [
+        "Reading a story book by hand and closing it burns the book away",
+        "Dropping a narrative book burns it",
+        "Reading in place at a lectern never burns the book"
+      ],
+      "pr": 707,
+      "date": "2026-07-11",
+      "released": true,
+      "released_in": "v0.429.0",
+      "released_at": "2026-07-11T08:13:12Z"
+    },
+    {
+      "id": "dirt-soul-soil-variant",
+      "version": "0.430.0",
+      "type": "content",
+      "title": "Soul soil dirt look + new garden decorations",
+      "summary": "Dirt carriage segments can now occasionally take on a soul soil look (gated to the Nether) instead of always moss, mud, clay, and the other existing looks. Carriages can also spawn a couple of new decorative garden-style features, including an iron golem statue scene.",
+      "highlights": [
+        "Dirt carriages can generate with a soul soil look in the Nether",
+        "New iron golem garden decoration feature",
+        "New herobrine decoration feature"
+      ],
+      "pr": 708,
+      "date": "2026-07-11",
+      "released": true,
+      "released_in": "v0.430.0",
+      "released_at": "2026-07-11T08:44:22Z"
+    },
+    {
+      "id": "vase-group-live-tuning",
+      "version": "0.432.0",
+      "type": "content",
+      "title": "New vase-room chest and barrel variants",
+      "summary": "Vase rooms on the train can now roll a few new looks \u2014 vertical barrel racks, and two new chest-room layouts alongside the classic vase stack.",
+      "highlights": [
+        "New barrels_vert, chest_room, chest_room_1, and vase_room vase-room variants"
+      ],
+      "pr": 712,
+      "date": "2026-07-11",
+      "released": true,
+      "released_in": "v0.432.0",
+      "released_at": "2026-07-11T14:04:18Z"
+    },
+    {
+      "id": "cinematic-preload-loading-screen",
+      "version": "0.433.0",
+      "type": "feat",
+      "title": "Smoother spawn: loading screen before the intro",
+      "summary": "When you first enter a world, a themed loading screen now holds while the terrain around the train finishes loading, so the opening fly-around plays over a fully-rendered world instead of chunks popping in. You're held safely in place during spawn \u2014 no more falling through unloaded ground \u2014 and you can skip the wait by tapping Space three times.",
+      "highlights": [
+        "Loading screen holds the intro until nearby terrain is ready",
+        "No more falling through unloaded ground at spawn",
+        "Tap Space x3 to skip the wait"
+      ],
+      "pr": 713,
+      "date": "2026-07-11",
+      "released": true,
+      "released_in": "v0.433.0",
+      "released_at": "2026-07-11T15:18:39Z"
+    },
+    {
+      "id": "lectern-letters",
+      "version": "0.433.0",
+      "type": "feat",
+      "title": "Player-written lectern letters",
+      "summary": "Write in a book & quill, place it on a lectern and sign it to add it as the next Letter in this life's narrative series \u2014 a new life begins a new series. Signing burns the letter away at the lectern and shares it with the community; close without signing and the book rests on the lectern as a \"Letter X\" draft to finish later.",
+      "highlights": [
+        "Sign a book & quill on a lectern to write the next Letter in your life's series",
+        "A new life starts a fresh series (Letter 1, 2, 3\u2026)",
+        "Close without signing to leave a \"Letter X\" draft on the lectern"
+      ],
+      "pr": 711,
+      "date": "2026-07-11",
+      "released": true,
+      "released_in": "v0.433.0",
+      "released_at": "2026-07-11T15:18:39Z"
+    },
+    {
+      "id": "narrative-lectern-discovery",
+      "version": "0.433.0",
+      "type": "feat",
+      "title": "Travelers' letters turn up on lecterns",
+      "summary": "The narratives other players write and sign on their own runs now surface on narrative lecterns, woven in among the built-in stories. They stay hidden until a world has read its way through half the hand-authored tales, then mix in more and more and settle into a fair share \u2014 and once a series begins, later lecterns carry it on, letter by letter. The built-in stories never disappear.",
+      "highlights": [
+        "Player-written narratives are discovered on lecterns, weighted and tapered like community book loot",
+        "A traveler's letter series continues across lecterns as you read it",
+        "Server toggle discoverNarrativesEnabled; pacing via narrativeDiscoveryRampThreshold (default 50%)"
+      ],
+      "pr": 714,
+      "date": "2026-07-11",
+      "released": true,
+      "released_in": "v0.433.0",
+      "released_at": "2026-07-11T15:18:39Z"
+    },
+    {
+      "id": "loading-screen-redesign",
+      "version": "0.434.0",
+      "type": "feat",
+      "title": "One continuous loading screen, with a story to read",
+      "summary": "The two loading screens you see when joining now feel like a single sequence \u2014 same look, a train that keeps filling in without resetting, and a short passenger's-eye story to read while you wait, instead of dry status text.",
+      "highlights": [
+        "The world-load screen is now themed to match the pre-cinematic loading screen, instead of the plain vanilla loading grid.",
+        "A short story (one of four) plays across both screens, and the game will hold briefly on \"Press Space to Start\" if the world finishes loading before the story does."
+      ],
+      "pr": 715,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "loading-screen-stories",
+      "version": "0.435.0",
+      "type": "content",
+      "title": "Four more loading-screen stories",
+      "summary": "The loading screen's rotating story now has eight verses to draw from instead of four \u2014 more of a fellow passenger's uncertain take on the train to read while you wait.",
+      "highlights": [
+        "New stories: \"Who made the train?\", \"Where did the train come from?\", \"What does the train dream about?\", and \"Does the train choose who boards?\""
+      ],
+      "pr": 716,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

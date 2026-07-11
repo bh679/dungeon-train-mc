@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.NarrativeBookEvents;
 import games.brennan.dungeontrain.narrative.NarrativeBookTag;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
+import games.brennan.dungeontrain.narrative.PlayerNarrativeBookTag;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -143,6 +144,15 @@ public class NarrativeLecternBlock extends LecternBlock {
             // death-screen books tally (deduped per run; page-turns / re-opens
             // route through NarrativeBookEvents.onRightClickBlock and no-op).
             NarrativeBookEvents.countLecternBookForRun(sp, id);
+        });
+
+        // Parallel branch for a served PLAYER narrative letter (exactly one of the two tags is present).
+        // World-local only: advance the player-series read-set and count it toward the death-screen tally,
+        // but intentionally NOT GlobalNarrativeProgress / story advancements — player series are non-canon.
+        PlayerNarrativeBookTag.read(book).ifPresent(pid -> {
+            NarrativeProgressData data = NarrativeProgressData.get(overworld);
+            data.markPlayerLetterRead(pid.seriesId(), pid.letterIndex());
+            NarrativeBookEvents.countPlayerSeriesLetterForRun(sp, pid);
         });
 
         // Now let vanilla open the lectern menu — it reads the BE's book

@@ -4,8 +4,11 @@ import net.minecraft.nbt.CompoundTag;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -113,6 +116,61 @@ final class NarrativeProgressDataTest {
             "missing shared_books_ever_read tag must decode as empty, not NPE");
     }
 
+    // ---------------- Letter-series (player-written lectern letters) ----------------
+
+    private static final UUID PLAYER = UUID.fromString("00000000-0000-0000-0000-0000000000aa");
+
+    @Test
+    @DisplayName("nextLetter: within one life the series id is stable and the index climbs 1,2,3")
+    void nextLetterClimbsWithinLife() {
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        LetterSeries l1 = data.nextLetter(PLAYER, 5L);
+        LetterSeries l2 = data.nextLetter(PLAYER, 5L);
+        LetterSeries l3 = data.nextLetter(PLAYER, 5L);
+        assertEquals(1, l1.letterIndex());
+        assertEquals(2, l2.letterIndex());
+        assertEquals(3, l3.letterIndex());
+        assertEquals(l1.seriesId(), l2.seriesId(), "same life keeps one series id");
+        assertEquals(l1.seriesId(), l3.seriesId());
+        assertFalse(l1.seriesId().isBlank(), "a series id is minted");
+    }
+
+    @Test
+    @DisplayName("nextLetter: a new life (death count changed) restarts at 1 with a fresh series id")
+    void nextLetterResetsOnNewLife() {
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        LetterSeries life0 = data.nextLetter(PLAYER, 0L);
+        data.nextLetter(PLAYER, 0L); // index 2 in life 0
+        LetterSeries life1 = data.nextLetter(PLAYER, 1L); // died once — new life
+        assertEquals(1, life1.letterIndex(), "new life restarts numbering");
+        assertNotEquals(life0.seriesId(), life1.seriesId(), "new life is a new series");
+    }
+
+    @Test
+    @DisplayName("peekNextIndex: reports the next index without advancing the cursor")
+    void peekDoesNotAdvance() {
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        assertEquals(1, data.peekNextIndex(PLAYER, 3L), "first letter would be index 1");
+        data.nextLetter(PLAYER, 3L); // index 1 signed
+        assertEquals(2, data.peekNextIndex(PLAYER, 3L), "next would be 2");
+        assertEquals(2, data.peekNextIndex(PLAYER, 3L), "peek is idempotent (no advance)");
+    }
+
+    @Test
+    @DisplayName("save → load round-trip continues the same letter series after reload")
+    void roundTripPreservesLetterSeries() {
+        NarrativeProgressData original = NarrativeProgressData.load(new CompoundTag());
+        LetterSeries l1 = original.nextLetter(PLAYER, 9L);
+        original.nextLetter(PLAYER, 9L); // index 2
+
+        CompoundTag serialized = original.save(new CompoundTag(), null);
+        NarrativeProgressData reloaded = NarrativeProgressData.load(serialized);
+
+        LetterSeries l3 = reloaded.nextLetter(PLAYER, 9L);
+        assertEquals(3, l3.letterIndex(), "series index survives the round-trip");
+        assertEquals(l1.seriesId(), l3.seriesId(), "series id survives the round-trip");
+    }
+
     @Test
     @DisplayName("Back-compat: loading a tag with no story_variants key behaves like empty (no NPE, returns false)")
     void backCompatMissingTag() {
@@ -128,5 +186,71 @@ final class NarrativeProgressDataTest {
             "missing story_variants tag must decode as empty, not NPE");
         assertTrue(reloaded.progressFor(STORY).readLetters().contains(LETTER),
             "letter-level progress survives the round-trip independently of variant tracking");
+    }
+
+    // ---------------- Player-narrative discovery read-set ----------------
+
+    @Test
+    @DisplayName("markPlayerLetterRead: first read true, repeat false; hasReadPlayerLetter reflects it")
+    void playerLetterReadIsMonotonic() {
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        assertFalse(data.hasReadPlayerLetter("life-a", 1));
+        assertTrue(data.markPlayerLetterRead("life-a", 1), "first read reports a state change");
+        assertFalse(data.markPlayerLetterRead("life-a", 1), "re-reading the same letter is a no-op");
+        assertTrue(data.hasReadPlayerLetter("life-a", 1));
+        assertFalse(data.hasReadPlayerLetter("life-a", 2), "a different letter of the same series is unread");
+    }
+
+    @Test
+    @DisplayName("startedPlayerSeriesIds: distinct seriesIds in first-read order (most recent last)")
+    void startedSeriesInOrder() {
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        data.markPlayerLetterRead("life-a", 1);
+        data.markPlayerLetterRead("life-b", 1);
+        data.markPlayerLetterRead("life-a", 2); // a already started — order unchanged, no dupe
+        assertEquals(java.util.List.of("life-a", "life-b"), data.startedPlayerSeriesIds());
+    }
+
+    @Test
+    @DisplayName("distinctModStoryLettersRead: counts mod-story letters, unaffected by player letters")
+    void modLettersReadCount() {
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        assertEquals(0, data.distinctModStoryLettersRead());
+        data.markRead("augustus_park", 1);
+        data.markRead("augustus_park", 2);
+        data.markRead("pip_aaro_the_waiting_child", 1);
+        data.markPlayerLetterRead("life-a", 1); // player letters must NOT count toward the mod ramp numerator
+        assertEquals(3, data.distinctModStoryLettersRead());
+    }
+
+    @Test
+    @DisplayName("save → load round-trip preserves the player-letter read-set + its order")
+    void roundTripPreservesPlayerLetters() {
+        NarrativeProgressData original = NarrativeProgressData.load(new CompoundTag());
+        original.markPlayerLetterRead("life-a", 1);
+        original.markPlayerLetterRead("life-b", 1);
+        original.markPlayerLetterRead("life-a", 2);
+
+        CompoundTag serialized = original.save(new CompoundTag(), null);
+        NarrativeProgressData reloaded = NarrativeProgressData.load(serialized);
+
+        assertTrue(reloaded.hasReadPlayerLetter("life-a", 1));
+        assertTrue(reloaded.hasReadPlayerLetter("life-a", 2));
+        assertTrue(reloaded.hasReadPlayerLetter("life-b", 1));
+        assertFalse(reloaded.markPlayerLetterRead("life-a", 1), "id survived the round-trip");
+        assertEquals(java.util.List.of("life-a", "life-b"), reloaded.startedPlayerSeriesIds(), "order survives");
+    }
+
+    @Test
+    @DisplayName("Back-compat: loading a tag with no player_letters_ever_read key decodes as empty")
+    void backCompatMissingPlayerLettersTag() {
+        NarrativeProgressData oldStyle = NarrativeProgressData.load(new CompoundTag());
+        oldStyle.markRead(STORY, LETTER);
+        CompoundTag legacy = oldStyle.save(new CompoundTag(), null);
+        legacy.remove("player_letters_ever_read");
+
+        NarrativeProgressData reloaded = NarrativeProgressData.load(legacy);
+        assertFalse(reloaded.hasReadPlayerLetter("life-a", 1), "missing key decodes as empty, not NPE");
+        assertTrue(reloaded.startedPlayerSeriesIds().isEmpty());
     }
 }

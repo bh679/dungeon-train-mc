@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.CinematicCameraController;
+import games.brennan.dungeontrain.client.CinematicPreloadGate;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -23,12 +24,19 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * <p>No look target is sent: the client tracks its own local player each
  * frame (see {@link CinematicCameraController}). Space skips; any other input
  * reveals a "Press Space to skip" prompt.</p>
+ *
+ * <p>{@code preloadMaxWaitTicks} is the client-side chunk-preload budget: when
+ * {@code > 0} the client shows a short loading screen and holds the cinematic
+ * until the terrain around the shot has streamed in (or this many ticks elapse),
+ * via {@link CinematicPreloadGate}. {@code 0} starts the cinematic immediately —
+ * today's behaviour, used for the on-demand replay where chunks are already
+ * loaded. The server sizes its spawn-invulnerability window to cover this wait.</p>
  */
 public record CinematicIntroPacket(
         double camX, double camY, double camZ,
         float startYaw, float startPitch,
         double riseHeight, double pullBack, double lookYOffset,
-        int durationTicks
+        int durationTicks, int preloadMaxWaitTicks
 ) implements CustomPacketPayload {
 
     public static final Type<CinematicIntroPacket> TYPE =
@@ -50,6 +58,7 @@ public record CinematicIntroPacket(
         buf.writeDouble(pullBack);
         buf.writeDouble(lookYOffset);
         buf.writeVarInt(durationTicks);
+        buf.writeVarInt(preloadMaxWaitTicks);
     }
 
     public static CinematicIntroPacket decode(FriendlyByteBuf buf) {
@@ -62,7 +71,8 @@ public record CinematicIntroPacket(
         double pull = buf.readDouble();
         double lookY = buf.readDouble();
         int dur = buf.readVarInt();
-        return new CinematicIntroPacket(cx, cy, cz, yaw, pitch, rise, pull, lookY, dur);
+        int preloadWait = buf.readVarInt();
+        return new CinematicIntroPacket(cx, cy, cz, yaw, pitch, rise, pull, lookY, dur, preloadWait);
     }
 
     @Override
@@ -72,10 +82,19 @@ public record CinematicIntroPacket(
 
     /**
      * Client-bound handler — only ever runs on the physical client, so the
-     * direct reference to {@link CinematicCameraController} (a client-package
-     * class) is safe (mirrors {@code CarriageNextSpawnPacket.handle}).
+     * direct references to {@link CinematicCameraController} /
+     * {@link CinematicPreloadGate} (client-package classes) are safe (mirrors
+     * {@code CarriageNextSpawnPacket.handle}). When a preload budget is set the
+     * gate shows a loading screen and defers the cinematic until chunks arrive;
+     * otherwise the cinematic starts immediately (replay / preload disabled).
      */
     public static void handle(CinematicIntroPacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> CinematicCameraController.start(packet));
+        ctx.enqueueWork(() -> {
+            if (packet.preloadMaxWaitTicks() > 0) {
+                CinematicPreloadGate.begin(packet);
+            } else {
+                CinematicCameraController.start(packet);
+            }
+        });
     }
 }

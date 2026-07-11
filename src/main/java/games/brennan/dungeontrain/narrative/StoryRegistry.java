@@ -120,6 +120,17 @@ public final class StoryRegistry {
         return STORIES.size();
     }
 
+    /**
+     * Total number of hand-authored letters across all mod stories — {@code Σ story.letters().size()}.
+     * The fair-share / warm-up-ramp denominator {@code V} for the narrative-lectern discovery taper
+     * (see {@code BookFactory.narrativeLecternChanceForWorld}).
+     */
+    public static synchronized int totalLetterCount() {
+        int total = 0;
+        for (StoryFile s : STORIES.values()) total += s.letters().size();
+        return total;
+    }
+
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
         reload();

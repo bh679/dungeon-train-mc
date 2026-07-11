@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "44";
+    public static final String PROTOCOL_VERSION = "45";
 
     private DungeonTrainNet() {}
 
@@ -81,6 +81,12 @@ public final class DungeonTrainNet {
         // close; server consent-gates + enriches narrative fields + reports to the relay's Books explorer.
         registrar.playToServer(BookReadClosedPacket.TYPE, BookReadClosedPacket.STREAM_CODEC, BookReadClosedPacket::handle);
 
+        // Lectern letters: server → client to open the book sign screen when a book & quill is
+        // right-clicked onto a lectern and the feature is active; client → server when that screen is
+        // closed WITHOUT signing, so the server leaves the unsigned book on the lectern as a draft.
+        registrar.playToClient(OpenLetterEditorPacket.TYPE, OpenLetterEditorPacket.STREAM_CODEC, OpenLetterEditorPacket::handle);
+        registrar.playToServer(LetterDraftToLecternPacket.TYPE, LetterDraftToLecternPacket.STREAM_CODEC, LetterDraftToLecternPacket::handle);
+
         // Death-screen run-stats snapshot, server → dying player on LivingDeathEvent.
         registrar.playToClient(DeathStatsPacket.TYPE, DeathStatsPacket.STREAM_CODEC, DeathStatsPacket::handle);
         // Scenic ride photo for the top-level death report, client → server when the death screen opens.
@@ -91,6 +97,7 @@ public final class DungeonTrainNet {
 
         // Spawn intro cinematic: server → joining player to start it; client → server when it ends.
         registrar.playToClient(CinematicIntroPacket.TYPE, CinematicIntroPacket.STREAM_CODEC, CinematicIntroPacket::handle);
+        registrar.playToClient(CinematicPreloadBeginPacket.TYPE, CinematicPreloadBeginPacket.STREAM_CODEC, CinematicPreloadBeginPacket::handle);
         registrar.playToServer(CinematicDonePacket.TYPE, CinematicDonePacket.STREAM_CODEC, CinematicDonePacket::handle);
 
         // On-train spawn deck-hold: server → joining/respawning player to keep
