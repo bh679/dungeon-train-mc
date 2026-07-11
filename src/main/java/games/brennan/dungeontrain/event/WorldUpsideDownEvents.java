@@ -2,8 +2,8 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
-import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -50,9 +51,12 @@ import java.util.Arrays;
  * applied at render time by {@code BlockRenderDispatcherUpsideDownMixin} (baked into the section mesh),
  * so the state must not also be flipped here or slabs/stairs would double-flip.</p>
  *
- * <p><b>Preserved / dropped.</b> The track corridor is left byte-for-byte intact by skipping its own
- * Z-columns ({@code [wallMinZ, wallMaxZ]}) — vertical reflection keeps X/Z, so only those columns
- * could damage the tube. The reflection itself never reads {@code minY}; that row is only written under
+ * <p><b>Corridor.</b> The train corridor is flipped with the rest of the column (no longer preserved):
+ * {@code TrackBedFeature} skips in-band chunks, so there are no during-gen rails to reflect, and after the
+ * mirror this handler calls {@link TrackGenerator#layFlippedCorridor} to carve the carriage tube and stamp
+ * the authored bed/rails onto the mirrored terrain — the train rides through the upside-down world itself.
+ *
+ * <p><b>Preserved / dropped.</b> The reflection itself never reads {@code minY}; that row is only written under
  * the bedrock-cap inversion ({@code upsideDownBedrockRoof}, default on) — which clears the surface-rule
  * floor at {@code minY} so the flipped world hangs over open void and stamps a continuous bedrock lid at
  * {@code roofY = 2·M + ceilingGap − minY} (where the old floor mirrors to, flush above the reflected
@@ -115,18 +119,18 @@ public final class WorldUpsideDownEvents {
         int floorSectionIdx = chunk.getSectionIndex(minY);
         int floorLocalY = minY - SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(floorSectionIdx));
 
-        // Preserve the track corridor: vertical reflection keeps X/Z, so only the corridor's own
-        // Z-columns can damage the generated tube. Skipping them needs no re-stamping.
-        TunnelGeometry tg = TunnelGeometry.from(TrackGeometry.from(data.dims(), trainY));
-        int preserveZMin = tg.wallMinZ();
-        int preserveZMax = tg.wallMaxZ();
+        // Corridor geometry for the in-band track re-lay below. The corridor is NO LONGER preserved from
+        // the mirror — it is flipped like the scenery, then TrackGenerator.layFlippedCorridor carves the
+        // tube + stamps the rails onto the mirrored terrain (TrackBedFeature skips in-band chunks, so there
+        // are no during-gen rails here to flip). This is what makes the train ride through the upside-down
+        // world instead of a preserved plain tube.
+        TrackGeometry g = TrackGeometry.from(data.dims(), trainY);
 
         BlockState[] col = new BlockState[maxY - minY];
         boolean changed = false;
 
         for (int dz = 0; dz < 16; dz++) {
             int worldZ = chunkMinZ + dz;
-            if (worldZ >= preserveZMin && worldZ <= preserveZMax) continue; // corridor tube preserved
             for (int dx = 0; dx < 16; dx++) {
                 if (!inBand[dx]) continue;
 
@@ -236,6 +240,15 @@ public final class WorldUpsideDownEvents {
                     changed = true;
                 }
             }
+        }
+
+        // Lay the corridor into the now-mirrored terrain — the in-band counterpart to TrackBedFeature
+        // (which skips in-band chunks): carve the carriage tube through the flipped column and stamp the
+        // authored bed/rails, so the train runs through the upside-down world instead of a preserved tube.
+        // Runs after the mirror/roof passes (same handler → strictly ordered, no cross-handler priority).
+        if (chunk instanceof LevelChunk levelChunk) {
+            TrackGenerator.layFlippedCorridor(level, levelChunk, data.dims(), pos.x, pos.z, g);
+            changed = true;
         }
         if (changed) chunk.setUnsaved(true);
     }

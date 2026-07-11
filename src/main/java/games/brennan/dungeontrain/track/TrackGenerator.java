@@ -2150,6 +2150,107 @@ public final class TrackGenerator {
 
 
     /**
+     * Lay the train corridor into an already-loaded, <b>upside-down-mirrored</b> chunk — the in-band
+     * counterpart to {@link #placeTracksForChunk}. Called from {@code WorldUpsideDownEvents} <em>after</em>
+     * it has flipped the column, so we write onto the mirrored terrain (the ground is now a ceiling and the
+     * hills hang below the bed). {@code TrackBedFeature} skips in-band chunks, so this is the primary track
+     * lay there, not a re-stamp.
+     *
+     * <p>Two effects per corridor column {@code [trackZMin..trackZMax]}: (1) stamp the authored bed + rails
+     * (same {@link #buildTilePaint} template resolution {@link #ensureTracksForChunk} uses), and (2) carve
+     * the carriage envelope {@code trainY..trainY+height} to air so the mirrored ceiling terrain never wedges
+     * the train — the same bounds {@link #placeTracksForChunk} clears. No pillars / tunnel shell / stairs: the
+     * mirrored terrain itself encloses the tube (walls in Z beyond the corridor, hang terrain below the bed,
+     * ceiling + bedrock lid above). All writes go through the Sable-safe section-local path
+     * ({@link SilentBlockOps#setBlockSectionLocal}) — the same primitive the corridor cleanup uses at load
+     * time — so there are no light/neighbour updates and no {@code LevelChunk.setBlockState} Sable livelock.
+     * The mirror already anchored fallable ceiling blocks to stable equivalents, so no extra anchoring is needed.
+     */
+    public static void layFlippedCorridor(
+        ServerLevel level,
+        LevelChunk chunk,
+        CarriageDims dims,
+        int chunkX,
+        int chunkZ,
+        TrackGeometry g
+    ) {
+        if (isShipyardChunk(chunkX, chunkZ)) return;
+
+        int chunkMinX = chunkX << 4;
+        int chunkMaxX = chunkMinX + 15;
+        int chunkMinZ = chunkZ << 4;
+        int chunkMaxZ = chunkMinZ + 15;
+        if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) return; // chunk misses the corridor
+
+        int minBuildHeight = level.getMinBuildHeight();
+        int maxBuildHeight = level.getMaxBuildHeight();
+        if (g.bedY() < minBuildHeight || g.bedY() >= maxBuildHeight) return;
+        boolean canPlaceRail = g.railY() >= minBuildHeight && g.railY() < maxBuildHeight;
+
+        int zLo = Math.max(g.trackZMin(), chunkMinZ);
+        int zHi = Math.min(g.trackZMax(), chunkMaxZ);
+        int railZA = g.trackZMin() + 1;
+        int railZB = g.trackZMax() - 1;
+
+        long worldSeed = level.getSeed();
+        Vec3i tileFootprint = TrackKind.TILE.dims(dims);
+        Map<Long, TilePaint> tilePaints = new HashMap<>();
+
+        BlockState air = Blocks.AIR.defaultBlockState();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        // Carriage envelope: clear trainY..trainY+height above the rails (mirror of placeTracksForChunk).
+        int trainY = g.bedY() + 2;
+        int clearMinY = Math.max(minBuildHeight, trainY);
+        int clearMaxY = Math.min(maxBuildHeight - 1, trainY + dims.height());
+
+        for (int x = chunkMinX; x <= chunkMaxX; x++) {
+            long tileIndex = Math.floorDiv((long) x, (long) TrackPlacer.TILE_LENGTH);
+            int xMod = Math.floorMod(x, TrackPlacer.TILE_LENGTH);
+            TilePaint paint = tilePaints.computeIfAbsent(
+                tileIndex,
+                idx -> buildTilePaint(level, dims, worldSeed, idx, tileFootprint)
+            );
+
+            for (int z = zLo; z <= zHi; z++) {
+                int zOff = z - g.trackZMin();
+
+                // Bed row (template y=0). null cells = authored air → write air so mirrored terrain
+                // doesn't show through the gap.
+                BlockState bedState = paint.cells().isPresent()
+                    ? paint.cells().get()[xMod][0][zOff]
+                    : TrackPalette.BED;
+                bedState = paint.resolveComposite(bedState, xMod, 0, zOff, x, g.bedY(), z);
+                pos.set(x, g.bedY(), z);
+                SilentBlockOps.setBlockSectionLocal(level, chunk, pos, bedState != null ? bedState : air);
+
+                // Rail row (template y=1). Fallback: rails only on the two outer Z columns; interior rail
+                // cells clear to air.
+                if (canPlaceRail) {
+                    BlockState railState;
+                    if (paint.cells().isPresent()) {
+                        railState = paint.cells().get()[xMod][1][zOff];
+                    } else if (z == railZA || z == railZB) {
+                        railState = TrackPalette.RAIL;
+                    } else {
+                        railState = null;
+                    }
+                    railState = paint.resolveComposite(railState, xMod, 1, zOff, x, g.railY(), z);
+                    pos.set(x, g.railY(), z);
+                    SilentBlockOps.setBlockSectionLocal(level, chunk, pos, railState != null ? railState : air);
+                }
+
+                // Carve the tube through the flipped ceiling terrain so the carriage rides clear.
+                for (int y = clearMinY; y <= clearMaxY; y++) {
+                    pos.set(x, y, z);
+                    if (chunk.getBlockState(pos).isAir()) continue;
+                    SilentBlockOps.setBlockSectionLocal(level, chunk, pos, air);
+                }
+            }
+        }
+    }
+
+    /**
      * One-time bootstrap called from {@code TrainAssembler.spawnTrain} after
      * {@link TrackGeometry} is attached. Walks every currently-loaded chunk
      * in the train's Z corridor within view-distance of the spawn point and
