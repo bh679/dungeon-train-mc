@@ -24,7 +24,10 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Realises the <b>upside-down band</b> ({@link UpsideDownBand}) by mirroring each in-band column of
@@ -96,6 +99,52 @@ public final class WorldUpsideDownEvents {
     /** Enlarges the exit-crossfade island noise (bigger islands, proportionally bigger gaps). */
     private static final int EXIT_ISLAND_NOISE_SCALE = 4;
 
+    // ---- PERF INSTRUMENTATION (temporary; do NOT merge) -----------------------------------------
+    // Times the server-main-thread cost of this post-process, bucketed by zone, split into phases so
+    // we can see how much is MOVABLE off-thread (snapshot + compute) vs PINNED to the main thread
+    // (section writes + corridor). Run with -Ddungeontrain.udperf.dryWrites=true to skip every actual
+    // write + the corridor (compute-only); an A/B pair then isolates write cost:
+    //   compute+write = total − snapshot − corridor ;  write ≈ total_A − total_B − corridor_A.
+    // GAP = past the first band but plain overworld (classification-only baseline).
+    private static final Logger PERF_LOG = LogUtils.getLogger();
+    private static final boolean DRY_WRITES = Boolean.getBoolean("dungeontrain.udperf.dryWrites");
+    private static final String[] PERF_ZONE = {"BAND", "LEAD", "EXIT", "GAP "};
+    private static final AtomicLong[] perfChunks = {new AtomicLong(), new AtomicLong(), new AtomicLong(), new AtomicLong()};
+    private static final AtomicLong[] perfNanos  = {new AtomicLong(), new AtomicLong(), new AtomicLong(), new AtomicLong()}; // total
+    private static final AtomicLong[] perfSnap   = {new AtomicLong(), new AtomicLong(), new AtomicLong(), new AtomicLong()}; // snapshot (movable)
+    private static final AtomicLong[] perfCorr   = {new AtomicLong(), new AtomicLong(), new AtomicLong(), new AtomicLong()}; // corridor (pinned)
+    private static final AtomicLong[] perfNoise  = {new AtomicLong(), new AtomicLong(), new AtomicLong(), new AtomicLong()};
+    private static final AtomicLong[] perfWrites = {new AtomicLong(), new AtomicLong(), new AtomicLong(), new AtomicLong()};
+    private static final boolean[] perfFirstSeen = new boolean[4];
+    private static final AtomicLong perfSince = new AtomicLong();
+
+    private static void perfRecord(int z, long dt, long snapNs, long corrNs, long noiseCalls, long writeCount, int worldX, int cx, int cz) {
+        perfChunks[z].incrementAndGet();
+        perfNanos[z].addAndGet(dt);
+        perfSnap[z].addAndGet(snapNs);
+        perfCorr[z].addAndGet(corrNs);
+        perfNoise[z].addAndGet(noiseCalls);
+        perfWrites[z].addAndGet(writeCount);
+        if (!perfFirstSeen[z]) {
+            perfFirstSeen[z] = true;
+            PERF_LOG.warn("[UD-PERF] first {} chunk at worldX={} (chunk {},{}) dryWrites={}", PERF_ZONE[z].trim(), worldX, cx, cz, DRY_WRITES);
+        }
+        if (perfSince.incrementAndGet() % 50 == 0) {
+            for (int i = 0; i < 4; i++) {
+                long c = perfChunks[i].get();
+                if (c == 0) continue;
+                double tot = perfNanos[i].get() / 1e6, snap = perfSnap[i].get() / 1e6, corr = perfCorr[i].get() / 1e6;
+                double compWrite = tot - snap - corr;   // compute + write (+ setup); in DRY mode ≈ compute only
+                PERF_LOG.warn("[UD-PERF]{} {} : {} chunks | avg {} ms | snapshot {} | compute+write {} | corridor {} | {} writes | {} noise",
+                        DRY_WRITES ? "(DRY)" : "", PERF_ZONE[i], c,
+                        String.format("%6.3f", tot / c), String.format("%.3f", snap / c),
+                        String.format("%.3f", compWrite / c), String.format("%.3f", corr / c),
+                        perfWrites[i].get() / c, perfNoise[i].get() / c);
+            }
+        }
+    }
+    // ---- END PERF INSTRUMENTATION ---------------------------------------------------------------
+
     private WorldUpsideDownEvents() {}
 
     @SubscribeEvent
@@ -113,6 +162,7 @@ public final class WorldUpsideDownEvents {
         int chunkMinZ = pos.getMinBlockZ();
         if (chunkMinX + 15 < startX) return; // before the first band
 
+        long perfT0 = System.nanoTime();     // PERF: time everything past the first band
         boolean[] inBand = new boolean[16];
         boolean[] inLead = new boolean[16];
         boolean[] inExit = new boolean[16];
@@ -147,7 +197,10 @@ public final class WorldUpsideDownEvents {
             if (inExit[dx]) anyExit = true;
             if (inBand[dx] || inLead[dx] || inExit[dx]) any = true;
         }
-        if (!any) return;
+        if (!any) {
+            perfRecord(3, System.nanoTime() - perfT0, 0, 0, 0, 0, chunkMinX, pos.x, pos.z); // GAP baseline
+            return;
+        }
 
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         long seed = data.getGenerationSeed();          // drives the lead-in fade dither (matches the void erosion noise)
@@ -202,6 +255,10 @@ public final class WorldUpsideDownEvents {
 
         BlockState[] col = new BlockState[maxY - minY];
         boolean changed = false;
+        long perfNoiseCalls = 0;   // PERF: coherentNoise evaluations this chunk
+        long perfWriteCount = 0;   // PERF: block writes this chunk
+        long perfSnapNs = 0;       // PERF: ns spent snapshotting columns (movable off-thread)
+        long perfCorrNs = 0;       // PERF: ns spent laying the flipped corridor (pinned)
 
         for (int dz = 0; dz < 16; dz++) {
             int worldZ = chunkMinZ + dz;
@@ -217,6 +274,7 @@ public final class WorldUpsideDownEvents {
                 boolean clearFloor = inBand[dx] || inLead[dx] || (inExit[dx] && exitFloorClear[dx]);
 
                 // 1) Snapshot the column into an immutable buffer (skip all-air sections).
+                long perfSnap0 = System.nanoTime();
                 Arrays.fill(col, AIR);
                 int srcMin = Integer.MAX_VALUE;
                 int srcMax = Integer.MIN_VALUE;
@@ -235,6 +293,7 @@ public final class WorldUpsideDownEvents {
                         }
                     }
                 }
+                perfSnapNs += System.nanoTime() - perfSnap0;
                 if (srcMax < srcMin) continue; // empty column — nothing to mirror
 
                 // 2) Write span = original terrain span ∪ reflected span (clipped, bedrock row excluded).
@@ -290,6 +349,7 @@ public final class WorldUpsideDownEvents {
                             ns = AIR;                                                     // beyond the window
                         } else if (extent > 0) {
                             double p = 1.0 - (double) d / extent;                         // 1 at track level → 0 at the edge
+                            perfNoiseCalls++;
                             if (Disintegration.coherentNoise(seed, worldX, y, worldZ) >= p) ns = AIR;
                         }
                         // extent == 0: only the d == 0 innermost row survives (thin track-level slab).
@@ -305,8 +365,11 @@ public final class WorldUpsideDownEvents {
                         // reverse of the entry dither), so mirror islands get smaller and further apart.
                         // Sampled at EXIT_ISLAND_NOISE_SCALE for larger, further-apart islands than the
                         // fine-grained entry dither.
-                        if (ns != AIR && Disintegration.coherentNoise(seed, worldX, y, worldZ, EXIT_ISLAND_NOISE_SCALE) >= exitDisperse[dx]) {
-                            ns = AIR;
+                        if (ns != AIR) {
+                            perfNoiseCalls++;
+                            if (Disintegration.coherentNoise(seed, worldX, y, worldZ, EXIT_ISLAND_NOISE_SCALE) >= exitDisperse[dx]) {
+                                ns = AIR;
+                            }
                         }
                         // (b) Reveal the overworld by running the End void-erosion IN REVERSE (ramp =
                         // 1 − reveal): at reveal 0 all void, at reveal 1 the solid world returns; the depth
@@ -317,6 +380,7 @@ public final class WorldUpsideDownEvents {
                                 ns = ow;                                   // native BE — leave it exactly in place (identity Y)
                             } else {
                                 double pRemove = Disintegration.removalProbabilityFromRamp(1.0 - exitReveal[dx], y, bedY);
+                                perfNoiseCalls++;
                                 if (Disintegration.coherentNoise(seed ^ OW_ISLAND_SALT, worldX, y, worldZ, EXIT_ISLAND_NOISE_SCALE) >= pRemove) {
                                     if (ow.getBlock() instanceof LiquidBlock) {
                                         // Returning water becomes a static SOURCE (frozen in-zone by
@@ -337,18 +401,21 @@ public final class WorldUpsideDownEvents {
                     int ly = y - SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
                     BlockState cur = sec.getBlockState(dx, ly, dz);
                     if (cur == ns) continue;                 // no-op (block states are interned singletons)
-                    if (cur.hasBlockEntity()) {
-                        chunk.removeBlockEntity(new BlockPos(chunkMinX + dx, y, worldZ));
+                    perfWriteCount++;                        // PERF: a real change (counted in both A and DRY)
+                    if (!DRY_WRITES) {                        // PERF: skip the actual mutation in the compute-only run
+                        if (cur.hasBlockEntity()) {
+                            chunk.removeBlockEntity(new BlockPos(chunkMinX + dx, y, worldZ));
+                        }
+                        sec.setBlockState(dx, ly, dz, ns, false);
+                        changed = true;
                     }
-                    sec.setBlockState(dx, ly, dz, ns, false);
-                    changed = true;
                 }
 
                 // Open the underside across every participating column that should hang over void (band +
                 // lead-in, and exit columns until their overworld coalesces): remove the surface-rule
                 // bedrock left at minY (the mirror never touches that row). Once an exit column's overworld
                 // has returned (clearFloor false) the ordinary floor is left in place.
-                if (roofInvert && clearFloor) {
+                if (roofInvert && clearFloor && !DRY_WRITES) {
                     LevelChunkSection fSec = chunk.getSection(floorSectionIdx);
                     if (!fSec.getBlockState(dx, floorLocalY, dz).isAir()) {
                         fSec.setBlockState(dx, floorLocalY, dz, AIR, false);
@@ -363,7 +430,7 @@ public final class WorldUpsideDownEvents {
         // a lead-in column only once its growing Y-window has climbed up to roofY ("no bedrock until the
         // Y level reaches it"). Independent of the corridor Z-skip; only when the lid lands above the
         // train and inside the build range.
-        if (roofInvert && roofY > mirror && roofY < maxY) {
+        if (roofInvert && roofY > mirror && roofY < maxY && !DRY_WRITES) {
             BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
             int roofSectionIdx = chunk.getSectionIndex(roofY);
             LevelChunkSection roofSec = chunk.getSection(roofSectionIdx);
@@ -391,10 +458,16 @@ public final class WorldUpsideDownEvents {
         // length — over void on the mirror-dominant side (the mirror encloses the tube) and through the
         // returning overworld on the far side (a carved cutting) — with the stamped bed giving the train a
         // continuous floor either way (bed/rails stay at bedY/railY, so the track is continuous).
-        if ((anyInBand || anyLead || anyExit) && chunk instanceof LevelChunk levelChunk) {
+        if ((anyInBand || anyLead || anyExit) && chunk instanceof LevelChunk levelChunk && !DRY_WRITES) {
+            long perfCorr0 = System.nanoTime();
             TrackGenerator.layFlippedCorridor(level, levelChunk, data.dims(), pos.x, pos.z, g);
+            perfCorrNs += System.nanoTime() - perfCorr0;
             changed = true;
         }
         if (changed) chunk.setUnsaved(true);
+
+        // PERF: attribute this chunk to its dominant zone (exit > lead > band) and record.
+        int perfZone = anyExit ? 2 : (anyLead ? 1 : 0);
+        perfRecord(perfZone, System.nanoTime() - perfT0, perfSnapNs, perfCorrNs, perfNoiseCalls, perfWriteCount, chunkMinX, pos.x, pos.z);
     }
 }
