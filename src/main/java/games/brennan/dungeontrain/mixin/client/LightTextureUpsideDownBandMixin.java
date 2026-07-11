@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin.client;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import games.brennan.dungeontrain.client.ClientUpsideDownBand;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.util.Mth;
@@ -33,10 +34,6 @@ public abstract class LightTextureUpsideDownBandMixin {
     @Unique
     private static final Vector3f DUNGEONTRAIN_UD_TINT = new Vector3f(1.0F, 1.0F, 1.0F);
 
-    /** Max floor-lift toward the tint at full band intensity (matches the End band's 0.25). */
-    @Unique
-    private static final float DUNGEONTRAIN_UD_LIFT = 0.25F;
-
     /** Band intensity for the in-progress lightmap rebuild, captured once before the 16×16 cell loop. */
     @Unique
     private float dungeontrain$udBandT;
@@ -55,7 +52,7 @@ public abstract class LightTextureUpsideDownBandMixin {
         return t <= 0.0F ? skyDarken : Mth.lerp(t, skyDarken, 1.0F);
     }
 
-    /** Flat floor: after vanilla combines each cell, lift it toward the daylight tint by {@code 0.25 * t}. */
+    /** Flat floor: after vanilla combines each cell, lift it toward the daylight tint by {@code lift * t}. */
     @Inject(
             method = "updateLightTexture(F)V",
             at = @At(
@@ -68,7 +65,8 @@ public abstract class LightTextureUpsideDownBandMixin {
     private void dungeontrain$udLiftFloor(float partialTicks, CallbackInfo ci, @Local(ordinal = 1) Vector3f cellColor) {
         float t = this.dungeontrain$udBandT;
         if (t > 0.0F) {
-            cellColor.lerp(DUNGEONTRAIN_UD_TINT, DUNGEONTRAIN_UD_LIFT * t);
+            float lift = (float) DungeonTrainCommonConfig.getUpsideDownLightLift();
+            cellColor.lerp(DUNGEONTRAIN_UD_TINT, lift * t);
         }
     }
 

@@ -181,6 +181,16 @@ public final class DungeonTrainCommonConfig {
     public static final int MAX_UPSIDE_DOWN_CLOUD_Y = 256;
     public static final int DEFAULT_UPSIDE_DOWN_CLOUD_Y = 0;
     /**
+     * In-band client lightmap fill: how far each lightmap cell is lifted toward full daylight (0..1) at
+     * peak band intensity. The mirror never re-lights the flipped terrain, so shadowed cells — notably
+     * water that mirrored down from below sea level — would render near-black; this ambient fill brightens
+     * them. Already-bright (lit) cells barely change, so raising it targets the murky shadows, not the
+     * whole scene. Default 0.55 (vanilla End band uses 0.25). 0 = vanilla lighting, 1 = flat full daylight.
+     */
+    public static final double MIN_UPSIDE_DOWN_LIGHT_LIFT = 0.0;
+    public static final double MAX_UPSIDE_DOWN_LIGHT_LIFT = 1.0;
+    public static final double DEFAULT_UPSIDE_DOWN_LIGHT_LIFT = 0.55;
+    /**
      * Dev-test preset for the upside-down core span — a short 1000-block core (vs the 5000-block
      * release default) so the mirrored band is fast to reach and traverse in-game. Used automatically
      * on any non-{@code main}/non-release build (see {@link #isUpsideDownDevTestMode()}).
@@ -215,6 +225,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_FLOOR_GAP;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_BEDROCK_ROOF;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_CLOUD_Y;
+    public static final ModConfigSpec.DoubleValue UPSIDE_DOWN_LIGHT_LIFT;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -247,6 +258,7 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_FLOOR_GAP = pair.getLeft().upsideDownFloorGap;
         UPSIDE_DOWN_BEDROCK_ROOF = pair.getLeft().upsideDownBedrockRoof;
         UPSIDE_DOWN_CLOUD_Y = pair.getLeft().upsideDownCloudY;
+        UPSIDE_DOWN_LIGHT_LIFT = pair.getLeft().upsideDownLightLift;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -423,6 +435,13 @@ public final class DungeonTrainCommonConfig {
                         "base world floor at minY=32).")
                 .defineInRange("upsideDownCloudY", DEFAULT_UPSIDE_DOWN_CLOUD_Y,
                         MIN_UPSIDE_DOWN_CLOUD_Y, MAX_UPSIDE_DOWN_CLOUD_Y);
+        ModConfigSpec.DoubleValue upsideDownLightLift = b
+                .comment("In-band client lightmap fill (0..1): how far each cell is lifted toward full daylight at peak",
+                        "band intensity. The mirror doesn't re-light the flipped terrain, so shadowed cells (esp. water",
+                        "that mirrored down from below sea level) render near-black; this brightens them without flattening",
+                        "already-lit terrain. Default 0.55; 0 = vanilla lighting, 1 = flat full daylight.")
+                .defineInRange("upsideDownLightLift", DEFAULT_UPSIDE_DOWN_LIGHT_LIFT,
+                        MIN_UPSIDE_DOWN_LIGHT_LIFT, MAX_UPSIDE_DOWN_LIGHT_LIFT);
         b.pop();
 
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
@@ -433,7 +452,7 @@ public final class DungeonTrainCommonConfig {
                 disintegrationFirstOverworldBlocks, disintegrationSkyFadeOffsetBlocks,
                 upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks,
                 upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
-                upsideDownBedrockRoof, upsideDownCloudY);
+                upsideDownBedrockRoof, upsideDownCloudY, upsideDownLightLift);
     }
 
     /**
@@ -667,6 +686,11 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? UPSIDE_DOWN_CLOUD_Y.get() : DEFAULT_UPSIDE_DOWN_CLOUD_Y;
     }
 
+    /** In-band client lightmap fill (0..1) toward daylight; falls back to the hardcoded default pre-load. */
+    public static double getUpsideDownLightLift() {
+        return isLoaded() ? UPSIDE_DOWN_LIGHT_LIFT.get() : DEFAULT_UPSIDE_DOWN_LIGHT_LIFT;
+    }
+
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain,
@@ -693,5 +717,6 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue upsideDownCeilingGap,
                           ModConfigSpec.IntValue upsideDownFloorGap,
                           ModConfigSpec.BooleanValue upsideDownBedrockRoof,
-                          ModConfigSpec.IntValue upsideDownCloudY) {}
+                          ModConfigSpec.IntValue upsideDownCloudY,
+                          ModConfigSpec.DoubleValue upsideDownLightLift) {}
 }
