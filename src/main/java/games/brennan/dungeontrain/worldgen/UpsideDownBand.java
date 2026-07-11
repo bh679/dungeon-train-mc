@@ -56,6 +56,26 @@ public final class UpsideDownBand {
     }
 
     /**
+     * True iff the column at {@code worldX} lies in the entry lead-in zone immediately before the
+     * band (inside the End band's trailing void hold) — where {@code WorldUpsideDownEvents} runs a
+     * noise-gated partial mirror instead of the full in-band reflection. False when the band is off.
+     */
+    public static boolean isInEntryLead(ServerLevel overworld, int worldX) {
+        if (startX(overworld) == OFF) return false;
+        return WorldGenCycle.fromConfig().isInUpsideDownEntryLead(worldX);
+    }
+
+    /**
+     * Entry lead-in reveal ramp {@code 0..1} at a world-X (0 outside the lead-in zone / when disabled)
+     * — the fraction of the noise roll that should reveal mirrored terrain in
+     * {@code WorldUpsideDownEvents}'s partial-mirror pass.
+     */
+    public static double entryRevealRamp(ServerLevel overworld, int worldX) {
+        if (startX(overworld) == OFF) return 0.0;
+        return WorldGenCycle.fromConfig().upsideDownEntryRevealRamp(worldX);
+    }
+
+    /**
      * World-Y of the in-band bedrock roof lid (the {@code upsideDownBedrockRoof} inversion): the point
      * the old {@code minY} floor mirrors to, clamped into the build range. {@code mirror} is the
      * reflection plane ({@code trainY + mirrorPlaneOffset}); the reflected ceiling's highest block comes

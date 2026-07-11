@@ -62,15 +62,20 @@ public final class DisintegrationBand {
 
     /**
      * True iff every column of the 16-wide chunk at {@code chunkMinX} is fully eroded (the End
-     * void/core, {@code middleRamp == 1}) — the empty-chunk fast path for the worldgen mixins.
-     * Routed through {@link WorldGenCycle} so it matches the combined nether+End layout: nether and
-     * overworld columns read 0, so those chunks are never skipped. False when disintegration is off.
+     * void/core, {@code middleRamp == 1}) AND none of them fall in the upside-down band's entry
+     * lead-in zone (where {@code WorldDisintegrationEvents} stops eroding so real terrain survives as
+     * mirror source material — real generation must run there instead of this empty-chunk fast path).
+     * Routed through {@link WorldGenCycle} so it matches the combined nether+End+upside-down layout:
+     * nether and overworld columns read 0, so those chunks are never skipped. False when
+     * disintegration is off.
      */
     public static boolean isChunkFullyEroded(ServerLevel overworld, int chunkMinX) {
         if (startX(overworld) == OFF) return false;
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         for (int dx = 0; dx < 16; dx++) {
-            if (cycle.endMiddleRamp(chunkMinX + dx) < 1.0) return false;
+            int worldX = chunkMinX + dx;
+            if (cycle.endMiddleRamp(worldX) < 1.0) return false;
+            if (cycle.isInUpsideDownEntryLead(worldX)) return false;
         }
         return true;
     }

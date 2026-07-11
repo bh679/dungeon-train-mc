@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
@@ -80,7 +81,13 @@ public final class WorldDisintegrationEvents {
         double[] middle = new double[16];
         boolean anyMiddle = false;
         for (int dx = 0; dx < 16; dx++) {
-            middle[dx] = DisintegrationBand.middleRampAt(level, chunkMinX + dx);
+            int worldX = chunkMinX + dx;
+            // Entry lead-in zone (immediately before the upside-down band): stop eroding so real
+            // terrain survives as WorldUpsideDownEvents' partial-mirror source material. Only affects
+            // this erosion pass — DisintegrationBand.middleRampAt itself is untouched, so every other
+            // consumer (End-band-wins precedence, mob spawning, BedrockFloorEvents) still treats this
+            // stretch as the void/End band.
+            middle[dx] = UpsideDownBand.isInEntryLead(level, worldX) ? 0.0 : DisintegrationBand.middleRampAt(level, worldX);
             if (middle[dx] > 0.0) anyMiddle = true;
         }
         if (!anyMiddle) return;

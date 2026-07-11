@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.core.BlockPos;
@@ -67,6 +68,17 @@ import java.util.Arrays;
  * ocean/lake hangs from the ceiling without pouring off it); other free-standing fluids (lava) drop to
  * air, and waterlogged solids reflect normally. Block entities are dropped (a BE can't be safely moved
  * at this stage) — rare in fresh overworld terrain.</p>
+ *
+ * <p><b>Entry lead-in.</b> Immediately before the band ({@link UpsideDownBand#isInEntryLead}, inside
+ * the End band's trailing void hold), {@code WorldDisintegrationEvents} stops eroding terrain so real
+ * overworld survives as mirror source material, and this handler runs the same reflection there but
+ * noise-dithers each candidate block against {@link UpsideDownBand#entryRevealRamp} (0 at the lead-in's
+ * start, 1 at the true band boundary) — the same {@code coherentNoise}-vs-ramp primitive the erosion
+ * pass uses, so the mirrored ceiling materialises out of the void with a matching noisy texture instead
+ * of snapping on at one exact X. Floor removal and the bedrock roof run unconditionally across the
+ * lead-in span (not dithered); only the ceiling reveal is gradual. The flipped corridor is NOT laid in
+ * lead-in-only chunks — {@code TrackBedFeature}'s ordinary corridor is still there until the band
+ * truly begins.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class WorldUpsideDownEvents {
@@ -91,16 +103,24 @@ public final class WorldUpsideDownEvents {
         if (chunkMinX + 15 < startX) return; // before the first band
 
         boolean[] inBand = new boolean[16];
+        double[] leadReveal = new double[16];
         boolean any = false;
+        boolean anyInBand = false;
         for (int dx = 0; dx < 16; dx++) {
             // Binary membership: the mirror is all-or-nothing per column. The three special bands are
             // disjoint by construction, so no End/Nether guard is needed here (unlike the nether foliage strip).
-            inBand[dx] = UpsideDownBand.isInBand(level, chunkMinX + dx);
-            if (inBand[dx]) any = true;
+            int worldX = chunkMinX + dx;
+            inBand[dx] = UpsideDownBand.isInBand(level, worldX);
+            // Entry lead-in zone (immediately before the band, disjoint from it): a noise-gated partial
+            // mirror runs there instead of the full reflection — see the write loop below.
+            if (!inBand[dx]) leadReveal[dx] = UpsideDownBand.entryRevealRamp(level, worldX);
+            if (inBand[dx]) anyInBand = true;
+            if (inBand[dx] || leadReveal[dx] > 0.0) any = true;
         }
         if (!any) return;
 
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        long seed = data.getGenerationSeed();
         int trainY = data.getTrainY();
         int mirror = trainY + DungeonTrainCommonConfig.getUpsideDownMirrorPlaneOffset();
         int ceilingGap = Math.max(0, DungeonTrainCommonConfig.getUpsideDownCeilingGap());
@@ -132,7 +152,11 @@ public final class WorldUpsideDownEvents {
         for (int dz = 0; dz < 16; dz++) {
             int worldZ = chunkMinZ + dz;
             for (int dx = 0; dx < 16; dx++) {
-                if (!inBand[dx]) continue;
+                if (!inBand[dx] && leadReveal[dx] <= 0.0) continue;
+                // Lead-in columns (not yet fully in-band) get a noise-gated PARTIAL mirror instead of
+                // the full reflection — see the reveal roll below.
+                boolean lead = !inBand[dx];
+                int worldX = chunkMinX + dx;
 
                 // 1) Snapshot the column into an immutable buffer (skip all-air sections).
                 Arrays.fill(col, AIR);
@@ -195,6 +219,16 @@ public final class WorldUpsideDownEvents {
                         }
                     }
 
+                    // Entry lead-in: noise-dither the reveal instead of committing the block outright —
+                    // the same coherent-noise-vs-ramp primitive WorldDisintegrationEvents uses for
+                    // erosion, so the materialising ceiling matches the void fade's visual style. Blocks
+                    // that fail the roll stay air (the column was never eroded here, so leaving them air
+                    // is a deliberate override, not "nothing to mirror").
+                    if (lead && ns != AIR
+                            && Disintegration.coherentNoise(seed, worldX, y, worldZ) >= leadReveal[dx]) {
+                        ns = AIR;
+                    }
+
                     int sIdx = chunk.getSectionIndex(y);
                     LevelChunkSection sec = chunk.getSection(sIdx);
                     int ly = y - SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
@@ -219,9 +253,11 @@ public final class WorldUpsideDownEvents {
             }
         }
 
-        // Bedrock roof: a continuous lid over every in-band column (corridor included, so the tube is
-        // roofed too), stamped at roofY directly above the reflected ceiling — independent of the corridor
-        // Z-skip above. Only when it lands above the train and inside the build range.
+        // Bedrock roof: a continuous lid over every in-band AND entry-lead-in column (corridor included,
+        // so the tube is roofed too), stamped at roofY directly above the reflected ceiling — independent
+        // of the corridor Z-skip above. Only when it lands above the train and inside the build range.
+        // Unconditional across the lead-in span too (a thin fixed-Y lid over a still-materialising ceiling
+        // reads fine — the noise-dithered ceiling below is what makes the reveal feel gradual).
         if (roofInvert && roofY > mirror && roofY < maxY) {
             BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
             int roofSectionIdx = chunk.getSectionIndex(roofY);
@@ -230,7 +266,7 @@ public final class WorldUpsideDownEvents {
             for (int dz = 0; dz < 16; dz++) {
                 int worldZ = chunkMinZ + dz;
                 for (int dx = 0; dx < 16; dx++) {
-                    if (!inBand[dx]) continue;
+                    if (!inBand[dx] && leadReveal[dx] <= 0.0) continue;
                     BlockState cur = roofSec.getBlockState(dx, roofLocalY, dz);
                     if (cur == bedrock) continue;
                     if (cur.hasBlockEntity()) {
@@ -246,7 +282,10 @@ public final class WorldUpsideDownEvents {
         // (which skips in-band chunks): carve the carriage tube through the flipped column and stamp the
         // authored bed/rails, so the train runs through the upside-down world instead of a preserved tube.
         // Runs after the mirror/roof passes (same handler → strictly ordered, no cross-handler priority).
-        if (chunk instanceof LevelChunk levelChunk) {
+        // Gated on a TRUE in-band column (not just lead-in reveal) — TrackBedFeature already lays the
+        // ordinary corridor across the lead-in zone (it only skips truly in-band chunks), so flipping it
+        // there too would fight that normal corridor before the band has actually started.
+        if (anyInBand && chunk instanceof LevelChunk levelChunk) {
             TrackGenerator.layFlippedCorridor(level, levelChunk, data.dims(), pos.x, pos.z, g);
             changed = true;
         }

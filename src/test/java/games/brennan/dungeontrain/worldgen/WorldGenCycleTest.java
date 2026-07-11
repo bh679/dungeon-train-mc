@@ -62,9 +62,43 @@ final class WorldGenCycleTest {
         org.junit.jupiter.api.Assertions.assertFalse(u.isInUpsideDownBand(3389));
         assertEquals(0.0, u.upsideDownRamp(3389), EPS);
 
+        // (upsideDownEntryLead() below covers the new entry lead-in zone in detail.)
+
         // Disjoint from the nether/End segments (no UD ramp inside them).
         assertEquals(0.0, u.upsideDownRamp(1530), EPS);   // nether core
         assertEquals(0.0, u.upsideDownRamp(2500), EPS);   // End segment
+    }
+
+    @Test
+    @DisplayName("entry lead-in: disabled/zero-void is zero-length; clamped by eVoid; reveal ramps 0→1 up to udStart, disjoint from the true band")
+    void upsideDownEntryLead() {
+        // Disabled (C: udFade=udHold=0): zero-length lead-in, never true anywhere.
+        assertEquals(0L, C.udEntryLeadLen());
+        org.junit.jupiter.api.Assertions.assertFalse(C.isInUpsideDownEntryLead(2920));
+        assertEquals(0.0, C.upsideDownEntryRevealRamp(2920), EPS);
+
+        // u: eVoid 40, udFade 50 → lead clamped to eVoid (40), NOT the full udFade (50). udStart
+        // offset 1940 (world-X 2940, per upsideDownBand() above), so leadStart offset 1900 (world-X 2900).
+        WorldGenCycle u = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 50, 200, 150, 0);
+        assertEquals(40L, u.udEntryLeadLen());                                     // clamped by eVoid, not udFade
+
+        org.junit.jupiter.api.Assertions.assertFalse(u.isInUpsideDownEntryLead(2899)); // still End band proper
+        assertEquals(0.0, u.upsideDownEntryRevealRamp(2899), EPS);
+
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownEntryLead(2900));  // lead-in starts
+        assertEquals(0.0, u.upsideDownEntryRevealRamp(2900), EPS);
+        assertEquals(0.5, u.upsideDownEntryRevealRamp(2920), EPS);                 // halfway (20/40)
+        assertEquals(39.0 / 40.0, u.upsideDownEntryRevealRamp(2939), EPS);         // one block before udStart
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownEntryLead(2939));
+
+        // At udStart the true band takes over — lead-in and band are disjoint, not overlapping.
+        org.junit.jupiter.api.Assertions.assertFalse(u.isInUpsideDownEntryLead(2940));
+        assertEquals(0.0, u.upsideDownEntryRevealRamp(2940), EPS);
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownBand(2940));
+
+        // Unclamped case: eVoid (200) comfortably exceeds udFade (50) → lead-in is the full udFade.
+        WorldGenCycle w = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 200, 200, 50, 200, 150, 0);
+        assertEquals(50L, w.udEntryLeadLen());
     }
 
     @Test

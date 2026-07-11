@@ -400,4 +400,46 @@ public record WorldGenCycle(long startX, int owGap,
     public boolean isInUpsideDownBand(int worldX) {
         return udOffset(worldX) >= 0L;
     }
+
+    /**
+     * Length of the entry lead-in zone immediately before {@code udStart} — {@code udFade} clamped to
+     * {@code eVoid} so it never reaches past the trailing void hold into the End core. 0 when the band
+     * is disabled or the void hold has no length.
+     */
+    public long udEntryLeadLen() {
+        return Math.min(Math.max(0, udFade), Math.max(0, eVoid));
+    }
+
+    /** Offset (into the cycle) where the entry lead-in zone begins — {@code udEntryLeadLen} before {@code udStart}. */
+    private long udEntryLeadStart() {
+        return udStart() - udEntryLeadLen();
+    }
+
+    /**
+     * True if {@code worldX} lies in the entry lead-in zone {@code [udEntryLeadStart, udStart)} —
+     * immediately before the upside-down band, inside the End band's trailing void hold. Disjoint from
+     * {@link #isInUpsideDownBand}: a column is in at most one of the two.
+     */
+    public boolean isInUpsideDownEntryLead(int worldX) {
+        long o = offset(worldX);
+        if (o < 0L) return false;
+        long lead = udEntryLeadLen();
+        if (lead <= 0L) return false;
+        long l = o - udEntryLeadStart();
+        return l >= 0L && l < lead;
+    }
+
+    /**
+     * Reveal ramp {@code 0..1} across the entry lead-in zone: 0 at {@code udEntryLeadStart} (start of
+     * the void-hold approach), linear up to 1 at {@code udStart} (where the true band's full mirror
+     * takes over). 0 outside the zone. Drives the noise-gated partial terrain mirror in
+     * {@code WorldUpsideDownEvents} — the terrain analogue of {@link #upsideDownRamp}'s atmosphere fade.
+     */
+    public double upsideDownEntryRevealRamp(int worldX) {
+        if (!isInUpsideDownEntryLead(worldX)) return 0.0;
+        long lead = udEntryLeadLen();
+        if (lead <= 0L) return 0.0;
+        long l = offset(worldX) - udEntryLeadStart();
+        return (double) l / lead;
+    }
 }
