@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.core.BlockPos;
@@ -72,10 +73,12 @@ import java.util.Arrays;
  * the End band's trailing void hold), {@code WorldDisintegrationEvents} stops eroding terrain so real
  * overworld survives as mirror source material, and this handler runs the same reflection there but
  * clips it to a growing <b>Y-window</b> centred on the train gap ({@link UpsideDownBand#revealYExtent},
- * driven by {@link UpsideDownBand#entryRevealRamp} 0→1 from the lead-in's start to the band boundary):
- * at reveal 0 only the rows flanking the gap are shown, and the slab thickens upward (ceiling) and
- * downward (hang) as the reveal climbs, so the upside-down world materialises outward from track level
- * instead of snapping on at one exact X. Floor removal runs across the whole lead-in (open void from the
+ * driven by {@link UpsideDownBand#entryRevealRamp} 0→1 from the lead-in's start to the band boundary)
+ * and <b>noise-dithers</b> the reveal across that window (probability 1 at track level falling to 0 at
+ * the growing edge, via {@code Disintegration.coherentNoise} — the void-erosion primitive): at reveal 0
+ * only the rows flanking the gap are shown, and the slab thickens upward (ceiling) and downward (hang)
+ * as the reveal climbs, dissolving out of the void from track level so the upside-down world
+ * materialises gradually instead of snapping on at one exact X. Floor removal runs across the whole lead-in (open void from the
  * start); the bedrock roof is stamped per column only once its window reaches roofY ("no bedrock until
  * the Y level reaches it"). The lead-in is part of the render-flipped zone
  * ({@link games.brennan.dungeontrain.client.ClientUpsideDownBand#isInBand}) and gets the flipped
@@ -129,6 +132,7 @@ public final class WorldUpsideDownEvents {
         if (!any) return;
 
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        long seed = data.getGenerationSeed();          // drives the lead-in fade dither (matches the void erosion noise)
         int trainY = data.getTrainY();
         int mirror = trainY + DungeonTrainCommonConfig.getUpsideDownMirrorPlaneOffset();
         int ceilingGap = Math.max(0, DungeonTrainCommonConfig.getUpsideDownCeilingGap());
@@ -178,11 +182,12 @@ public final class WorldUpsideDownEvents {
             int worldZ = chunkMinZ + dz;
             for (int dx = 0; dx < 16; dx++) {
                 if (!inBand[dx] && !inLead[dx]) continue;
-                // Lead-in columns (not yet fully in-band) get a Y-WINDOWED partial mirror: only target
-                // Ys within extentCol[dx] of the train gap are revealed, the rest forced to air — the
-                // window grows outward as the reveal ramp climbs (see the window clip below).
+                // Lead-in columns (not yet fully in-band) get a Y-WINDOWED, noise-dithered partial
+                // mirror: within the window the reveal probability falls from 1 at track level to 0 at
+                // the growing edge, so the whole fade is a clumpy dissolve to void (see the clip below).
                 boolean windowed = inLead[dx];
                 int extent = extentCol[dx];
+                int worldX = chunkMinX + dx;
 
                 // 1) Snapshot the column into an immutable buffer (skip all-air sections).
                 Arrays.fill(col, AIR);
@@ -245,13 +250,22 @@ public final class WorldUpsideDownEvents {
                         }
                     }
 
-                    // Entry lead-in: clip the reveal to a growing Y-window centred on the train gap,
-                    // instead of committing the whole mirrored column. Target Ys beyond the window (above
-                    // the revealed ceiling slab or below the revealed hang slab) are forced to air, so the
-                    // upside-down terrain materialises outward from track level as the window widens. The
-                    // gap interior is already air (sy == MIN_VALUE), so one pair of bounds covers both sides.
-                    if (windowed && (y > mirror + ceilingGap + extent || y < mirror - floorGap - extent)) {
-                        ns = AIR;
+                    // Entry lead-in: noise-dither the reveal across a growing Y-window centred on the
+                    // train gap. Distance d outward from the gap edge (ceiling above, hang below); beyond
+                    // the window → void, otherwise reveal with probability falling 1→0 across the full
+                    // window height (coherentNoise, the void-erosion primitive, for a matching clumpy
+                    // texture). So the upside-down terrain dissolves out of the void from track level up,
+                    // over the full length of the fade — not a hard horizontal cut.
+                    if (windowed && ns != AIR) {
+                        int d = (y >= mirror + ceilingGap) ? y - (mirror + ceilingGap)   // ceiling side
+                                                           : (mirror - floorGap) - y;    // hang side (gap interior already air)
+                        if (d > extent) {
+                            ns = AIR;                                                     // beyond the window
+                        } else if (extent > 0) {
+                            double p = 1.0 - (double) d / extent;                         // 1 at track level → 0 at the edge
+                            if (Disintegration.coherentNoise(seed, worldX, y, worldZ) >= p) ns = AIR;
+                        }
+                        // extent == 0: only the d == 0 innermost row survives (thin track-level slab).
                     }
 
                     int sIdx = chunk.getSectionIndex(y);
