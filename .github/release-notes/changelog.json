@@ -3881,6 +3881,19 @@
       "released": true,
       "released_in": "v0.427.0",
       "released_at": "2026-07-11T01:08:04Z"
+    },
+    {
+      "id": "uneasy-alliance-nether-band-fix",
+      "version": "0.428.0",
+      "type": "fix",
+      "title": "Uneasy Alliance no longer earnable from Nether-band Ghasts",
+      "summary": "Fixed the Uneasy Alliance advancement unlocking from Ghasts encountered in the Overworld's Nether-transition zones \u2014 it now only counts a Ghast brought home to the true Overworld, matching the original intent. Thanks to ProPlayer77 for reporting this!",
+      "highlights": [],
+      "pr": 706,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
