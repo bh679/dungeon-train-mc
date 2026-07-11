@@ -137,6 +137,65 @@ public final class DungeonTrainCommonConfig {
      */
     public static final int DEVTEST_NETHER_CORE_HOLD_BLOCKS = 1000;
 
+    /**
+     * Upside-down band — a third looping phase (parallel to the disintegration/End and nether bands),
+     * appended after the End phase in the cycle. The overworld terrain is mirrored vertically around
+     * the carriage height, so the ground becomes a ceiling overhead and the train rides through open
+     * air below it; the sun/sky/fog rotate horizontally around the vertical axis (light from the side).
+     * The three special bands occupy disjoint cycle sub-ranges, so they never overlap.
+     */
+    public static final boolean DEFAULT_UPSIDE_DOWN_ENABLED = true;
+    /** Blocks over which the upside-down atmosphere (sky/light) fades in/out at each band edge. */
+    public static final int MIN_UPSIDE_DOWN_FADE_BLOCKS = 0;
+    public static final int MAX_UPSIDE_DOWN_FADE_BLOCKS = 10_000;
+    public static final int DEFAULT_UPSIDE_DOWN_FADE_BLOCKS = 600;
+    /** Blocks of mirrored upside-down world-gen at the centre of the band. */
+    public static final int MIN_UPSIDE_DOWN_HOLD_BLOCKS = 0;
+    public static final int MAX_UPSIDE_DOWN_HOLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_UPSIDE_DOWN_HOLD_BLOCKS = 5000;
+    /**
+     * Blocks of plain overworld inserted after the upside-down band, before the cycle's leading
+     * {@code owGap} (to the next Nether band) resumes. The band no longer has a leading gap of its
+     * own — it flows directly out of the End band — so this is the only breathing room between the
+     * mirrored world and the next cycle.
+     */
+    public static final int MIN_UPSIDE_DOWN_EXIT_GAP_BLOCKS = 0;
+    public static final int MAX_UPSIDE_DOWN_EXIT_GAP_BLOCKS = 10_000;
+    public static final int DEFAULT_UPSIDE_DOWN_EXIT_GAP_BLOCKS = 600;
+    /** Mirror plane offset (blocks) from the train Y: reflection plane M = trainY + offset. Signed. */
+    public static final int MIN_UPSIDE_DOWN_MIRROR_PLANE_OFFSET = -256;
+    public static final int MAX_UPSIDE_DOWN_MIRROR_PLANE_OFFSET = 256;
+    public static final int DEFAULT_UPSIDE_DOWN_MIRROR_PLANE_OFFSET = 0;
+    /** Clearance (blocks) inserted above the mirror plane before the reflected ceiling begins. */
+    public static final int MIN_UPSIDE_DOWN_CEILING_GAP = 0;
+    public static final int MAX_UPSIDE_DOWN_CEILING_GAP = 256;
+    public static final int DEFAULT_UPSIDE_DOWN_CEILING_GAP = 0;
+    /** Clearance (blocks) inserted below the mirror plane before the reflected hanging terrain begins. */
+    public static final int MIN_UPSIDE_DOWN_FLOOR_GAP = 0;
+    public static final int MAX_UPSIDE_DOWN_FLOOR_GAP = 256;
+    public static final int DEFAULT_UPSIDE_DOWN_FLOOR_GAP = 0;
+    /**
+     * When true the upside-down band inverts the world's bedrock caps: the normal bedrock floor at
+     * {@code minY} is removed in-band (the underside opens to the void) and a bedrock lid is stamped
+     * directly above the reflected terrain ceiling — the old floor, now the highest layer. When false
+     * the band keeps the ordinary bedrock floor and no roof.
+     */
+    public static final boolean DEFAULT_UPSIDE_DOWN_BEDROCK_ROOF = true;
+    /**
+     * In-band cloud plane world-Y — clouds render at this height (below the train, in the open void)
+     * instead of the vanilla 192, so the flipped world's sky sits beneath you. Default 0 (just under
+     * the base world floor at {@code minY=32}).
+     */
+    public static final int MIN_UPSIDE_DOWN_CLOUD_Y = -256;
+    public static final int MAX_UPSIDE_DOWN_CLOUD_Y = 256;
+    public static final int DEFAULT_UPSIDE_DOWN_CLOUD_Y = 0;
+    /**
+     * Dev-test preset for the upside-down core span — a short 1000-block core (vs the 5000-block
+     * release default) so the mirrored band is fast to reach and traverse in-game. Used automatically
+     * on any non-{@code main}/non-release build (see {@link #isUpsideDownDevTestMode()}).
+     */
+    public static final int DEVTEST_UPSIDE_DOWN_HOLD_BLOCKS = 1000;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_BEHIND_SPAWN;
@@ -157,6 +216,15 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue NETHER_CORE_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_FIRST_OVERWORLD_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS;
+    public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_ENABLED;
+    public static final ModConfigSpec.IntValue UPSIDE_DOWN_FADE_BLOCKS;
+    public static final ModConfigSpec.IntValue UPSIDE_DOWN_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue UPSIDE_DOWN_EXIT_GAP_BLOCKS;
+    public static final ModConfigSpec.IntValue UPSIDE_DOWN_MIRROR_PLANE_OFFSET;
+    public static final ModConfigSpec.IntValue UPSIDE_DOWN_CEILING_GAP;
+    public static final ModConfigSpec.IntValue UPSIDE_DOWN_FLOOR_GAP;
+    public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_BEDROCK_ROOF;
+    public static final ModConfigSpec.IntValue UPSIDE_DOWN_CLOUD_Y;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -181,6 +249,15 @@ public final class DungeonTrainCommonConfig {
         NETHER_CORE_HOLD_BLOCKS = pair.getLeft().netherCoreHoldBlocks;
         DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = pair.getLeft().disintegrationFirstOverworldBlocks;
         DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS = pair.getLeft().disintegrationSkyFadeOffsetBlocks;
+        UPSIDE_DOWN_ENABLED = pair.getLeft().upsideDownEnabled;
+        UPSIDE_DOWN_FADE_BLOCKS = pair.getLeft().upsideDownFadeBlocks;
+        UPSIDE_DOWN_HOLD_BLOCKS = pair.getLeft().upsideDownHoldBlocks;
+        UPSIDE_DOWN_EXIT_GAP_BLOCKS = pair.getLeft().upsideDownExitGapBlocks;
+        UPSIDE_DOWN_MIRROR_PLANE_OFFSET = pair.getLeft().upsideDownMirrorPlaneOffset;
+        UPSIDE_DOWN_CEILING_GAP = pair.getLeft().upsideDownCeilingGap;
+        UPSIDE_DOWN_FLOOR_GAP = pair.getLeft().upsideDownFloorGap;
+        UPSIDE_DOWN_BEDROCK_ROOF = pair.getLeft().upsideDownBedrockRoof;
+        UPSIDE_DOWN_CLOUD_Y = pair.getLeft().upsideDownCloudY;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -311,6 +388,58 @@ public final class DungeonTrainCommonConfig {
                         "band. Default 5000.")
                 .defineInRange("netherCoreHoldBlocks", DEFAULT_NETHER_CORE_HOLD_BLOCKS,
                         MIN_NETHER_CORE_HOLD_BLOCKS, MAX_NETHER_CORE_HOLD_BLOCKS);
+
+        ModConfigSpec.BooleanValue upsideDownEnabled = b
+                .comment("Upside-down phase — part of the single repeating world-gen cycle, appended after the End",
+                        "phase. Along +X the overworld terrain is mirrored vertically around the carriage height: the",
+                        "ground becomes a ceiling overhead and the train rides through open air below it. The sun, sky",
+                        "and fog rotate horizontally around the vertical axis, so the light source is always at the side.",
+                        "The full cycle is: OW → Nether → OW → Void → End → Void → Upside-down → Void → OW → (repeat).",
+                        "Set false to drop the upside-down phase from the cycle.")
+                .define("upsideDownEnabled", DEFAULT_UPSIDE_DOWN_ENABLED);
+        ModConfigSpec.IntValue upsideDownFadeBlocks = b
+                .comment("Blocks over which the upside-down sky/light atmosphere fades in/out at each band edge",
+                        "(the terrain flip itself is per-column and abrupt; the train tunnels through). Default 600.")
+                .defineInRange("upsideDownFadeBlocks", DEFAULT_UPSIDE_DOWN_FADE_BLOCKS,
+                        MIN_UPSIDE_DOWN_FADE_BLOCKS, MAX_UPSIDE_DOWN_FADE_BLOCKS);
+        ModConfigSpec.IntValue upsideDownHoldBlocks = b
+                .comment("Blocks of mirrored upside-down world-gen at the centre of the band. Default 5000.")
+                .defineInRange("upsideDownHoldBlocks", DEFAULT_UPSIDE_DOWN_HOLD_BLOCKS,
+                        MIN_UPSIDE_DOWN_HOLD_BLOCKS, MAX_UPSIDE_DOWN_HOLD_BLOCKS);
+        ModConfigSpec.IntValue upsideDownExitGapBlocks = b
+                .comment("Blocks of plain overworld inserted AFTER the upside-down band, before the cycle's leading",
+                        "owGap (to the next Nether band) resumes. The band flows directly out of the End band with no",
+                        "leading gap of its own, so this is the only breathing room before the cycle repeats. Default 600.")
+                .defineInRange("upsideDownExitGapBlocks", DEFAULT_UPSIDE_DOWN_EXIT_GAP_BLOCKS,
+                        MIN_UPSIDE_DOWN_EXIT_GAP_BLOCKS, MAX_UPSIDE_DOWN_EXIT_GAP_BLOCKS);
+        ModConfigSpec.IntValue upsideDownMirrorPlaneOffset = b
+                .comment("Mirror plane offset (blocks) from the train Y: the world is reflected around",
+                        "M = trainY + this. Positive raises the flip plane above the train, negative lowers it.",
+                        "Default 0 (mirror exactly at the carriage height).")
+                .defineInRange("upsideDownMirrorPlaneOffset", DEFAULT_UPSIDE_DOWN_MIRROR_PLANE_OFFSET,
+                        MIN_UPSIDE_DOWN_MIRROR_PLANE_OFFSET, MAX_UPSIDE_DOWN_MIRROR_PLANE_OFFSET);
+        ModConfigSpec.IntValue upsideDownCeilingGap = b
+                .comment("Clearance (blocks) inserted ABOVE the mirror plane before the reflected ceiling begins —",
+                        "raises the ceiling away from the train. Default 0.")
+                .defineInRange("upsideDownCeilingGap", DEFAULT_UPSIDE_DOWN_CEILING_GAP,
+                        MIN_UPSIDE_DOWN_CEILING_GAP, MAX_UPSIDE_DOWN_CEILING_GAP);
+        ModConfigSpec.IntValue upsideDownFloorGap = b
+                .comment("Clearance (blocks) inserted BELOW the mirror plane before the reflected hanging terrain",
+                        "begins — drops the hanging terrain away from the train. Default 0.")
+                .defineInRange("upsideDownFloorGap", DEFAULT_UPSIDE_DOWN_FLOOR_GAP,
+                        MIN_UPSIDE_DOWN_FLOOR_GAP, MAX_UPSIDE_DOWN_FLOOR_GAP);
+        ModConfigSpec.BooleanValue upsideDownBedrockRoof = b
+                .comment("Invert the world's bedrock caps inside the upside-down band: remove the bedrock floor at",
+                        "minY (the underside opens to the void) and stamp a bedrock lid directly above the reflected",
+                        "terrain ceiling — the old floor, now the highest layer. Set false to keep the ordinary",
+                        "bedrock floor and no roof. Default true.")
+                .define("upsideDownBedrockRoof", DEFAULT_UPSIDE_DOWN_BEDROCK_ROOF);
+        ModConfigSpec.IntValue upsideDownCloudY = b
+                .comment("In-band cloud plane world-Y — clouds render here (below the train, in the open void) instead",
+                        "of the vanilla 192, so the flipped world's sky sits beneath you. Default 0 (just under the",
+                        "base world floor at minY=32).")
+                .defineInRange("upsideDownCloudY", DEFAULT_UPSIDE_DOWN_CLOUD_Y,
+                        MIN_UPSIDE_DOWN_CLOUD_Y, MAX_UPSIDE_DOWN_CLOUD_Y);
         b.pop();
 
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
@@ -318,7 +447,10 @@ public final class DungeonTrainCommonConfig {
                 disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationOverworldHoldBlocks,
                 netherTransitionEnabled, netherStageBlocks, netherStageMultipliers, netherBaseReliefBlocks,
                 netherBeachBlocks, netherMountainHoldBlocks, netherCoreFadeBlocks, netherCoreHoldBlocks,
-                disintegrationFirstOverworldBlocks, disintegrationSkyFadeOffsetBlocks);
+                disintegrationFirstOverworldBlocks, disintegrationSkyFadeOffsetBlocks,
+                upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks, upsideDownExitGapBlocks,
+                upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
+                upsideDownBedrockRoof, upsideDownCloudY);
     }
 
     /**
@@ -501,6 +633,62 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS.get() : DEFAULT_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS;
     }
 
+    /** Whether the upside-down band is active; falls back to the hardcoded default pre-load. */
+    public static boolean isUpsideDownEnabled() {
+        return isLoaded() ? UPSIDE_DOWN_ENABLED.get() : DEFAULT_UPSIDE_DOWN_ENABLED;
+    }
+
+    /**
+     * Whether the upside-down band runs in <b>dev-test mode</b> — the core span shrunk to
+     * {@link #DEVTEST_UPSIDE_DOWN_HOLD_BLOCKS} so the mirrored band is fast to reach and cross — on
+     * automatically for any non-{@code main}/non-release build. Same single source of truth as the
+     * other bands: {@link DungeonTrain#isDevBuild()} (the baked git branch).
+     */
+    public static boolean isUpsideDownDevTestMode() {
+        return DungeonTrain.isDevBuild();
+    }
+
+    /** Fade-in/out span (blocks) of the upside-down atmosphere at each band edge; falls back pre-load. */
+    public static int getUpsideDownFadeBlocks() {
+        return isLoaded() ? UPSIDE_DOWN_FADE_BLOCKS.get() : DEFAULT_UPSIDE_DOWN_FADE_BLOCKS;
+    }
+
+    /** Mirrored upside-down core span (blocks); dev-test preset (1000) on branch builds, else config. */
+    public static int getUpsideDownHoldBlocks() {
+        if (isUpsideDownDevTestMode()) return DEVTEST_UPSIDE_DOWN_HOLD_BLOCKS;
+        return isLoaded() ? UPSIDE_DOWN_HOLD_BLOCKS.get() : DEFAULT_UPSIDE_DOWN_HOLD_BLOCKS;
+    }
+
+    /** Trailing plain-overworld gap (blocks) after the band; falls back to the hardcoded default pre-load. */
+    public static int getUpsideDownExitGapBlocks() {
+        return isLoaded() ? UPSIDE_DOWN_EXIT_GAP_BLOCKS.get() : DEFAULT_UPSIDE_DOWN_EXIT_GAP_BLOCKS;
+    }
+
+    /** Mirror plane offset (blocks) from the train Y (signed); falls back to the hardcoded default pre-load. */
+    public static int getUpsideDownMirrorPlaneOffset() {
+        return isLoaded() ? UPSIDE_DOWN_MIRROR_PLANE_OFFSET.get() : DEFAULT_UPSIDE_DOWN_MIRROR_PLANE_OFFSET;
+    }
+
+    /** Ceiling clearance (blocks) above the mirror plane; falls back to the hardcoded default pre-load. */
+    public static int getUpsideDownCeilingGap() {
+        return isLoaded() ? UPSIDE_DOWN_CEILING_GAP.get() : DEFAULT_UPSIDE_DOWN_CEILING_GAP;
+    }
+
+    /** Floor clearance (blocks) below the mirror plane; falls back to the hardcoded default pre-load. */
+    public static int getUpsideDownFloorGap() {
+        return isLoaded() ? UPSIDE_DOWN_FLOOR_GAP.get() : DEFAULT_UPSIDE_DOWN_FLOOR_GAP;
+    }
+
+    /** Whether the band removes the bedrock floor and caps the reflected ceiling with bedrock; falls back pre-load. */
+    public static boolean isUpsideDownBedrockRoof() {
+        return isLoaded() ? UPSIDE_DOWN_BEDROCK_ROOF.get() : DEFAULT_UPSIDE_DOWN_BEDROCK_ROOF;
+    }
+
+    /** In-band cloud plane world-Y (clouds render below the train); falls back to the hardcoded default pre-load. */
+    public static int getUpsideDownCloudY() {
+        return isLoaded() ? UPSIDE_DOWN_CLOUD_Y.get() : DEFAULT_UPSIDE_DOWN_CLOUD_Y;
+    }
+
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain,
@@ -519,5 +707,14 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue netherCoreFadeBlocks,
                           ModConfigSpec.IntValue netherCoreHoldBlocks,
                           ModConfigSpec.IntValue disintegrationFirstOverworldBlocks,
-                          ModConfigSpec.IntValue disintegrationSkyFadeOffsetBlocks) {}
+                          ModConfigSpec.IntValue disintegrationSkyFadeOffsetBlocks,
+                          ModConfigSpec.BooleanValue upsideDownEnabled,
+                          ModConfigSpec.IntValue upsideDownFadeBlocks,
+                          ModConfigSpec.IntValue upsideDownHoldBlocks,
+                          ModConfigSpec.IntValue upsideDownExitGapBlocks,
+                          ModConfigSpec.IntValue upsideDownMirrorPlaneOffset,
+                          ModConfigSpec.IntValue upsideDownCeilingGap,
+                          ModConfigSpec.IntValue upsideDownFloorGap,
+                          ModConfigSpec.BooleanValue upsideDownBedrockRoof,
+                          ModConfigSpec.IntValue upsideDownCloudY) {}
 }

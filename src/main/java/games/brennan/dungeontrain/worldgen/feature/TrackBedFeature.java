@@ -6,8 +6,10 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
@@ -91,6 +93,18 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
             // may spawn a train in any of them on a death roll, and the
             // corridor has to exist there for the player to walk onto.
             if (!data.startsWithTrain()) return false;
+
+            // Inside the upside-down band AND its entry lead-in the corridor is laid AFTER the mirror
+            // flips the column (WorldUpsideDownEvents → TrackGenerator.layFlippedCorridor), so skip
+            // during-gen track laying for those chunks — the mirror needs pristine terrain, would
+            // otherwise flip the rails into the ceiling, and an upright during-gen corridor would render
+            // flipped in the (now band-covered) lead-in. Overworld-only (the band is overworld-only); a
+            // band/lead-edge chunk defers its whole corridor to the post-mirror lay, which covers all its columns.
+            if (serverLevel.dimension().equals(Level.OVERWORLD)
+                    && (UpsideDownBand.isInBandOrEntryLead(overworld, chunkPos.getMinBlockX())
+                        || UpsideDownBand.isInBandOrEntryLead(overworld, chunkPos.getMaxBlockX()))) {
+                return false;
+            }
 
             CarriageDims dims = data.dims();
             TrackGeometry g = TrackGeometry.from(dims, data.getTrainY());

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -67,8 +68,8 @@ public record EditorStatusPacket(String category, String model, String modelId, 
     /** {@code maxLevel} sentinel mirroring {@code TemplateGate.ALL} — "no upper level bound". */
     public static final int MAX_LEVEL_ALL = -1;
 
-    /** {@code phaseMask} value with all four phases set, mirroring {@code TrainPhase.ALL_MASK}. */
-    public static final int ALL_PHASES_MASK = 0b1111;
+    /** {@code phaseMask} value with all phases set; tracks {@link TrainPhase#ALL_MASK} so it grows with the enum. */
+    public static final int ALL_PHASES_MASK = TrainPhase.ALL_MASK;
 
     public EditorStatusPacket {
         excludedContents = (excludedContents == null || excludedContents.isEmpty())

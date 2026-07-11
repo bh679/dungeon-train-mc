@@ -4025,6 +4025,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "upside-down-band",
+      "version": "0.435.0",
+      "type": "feat",
+      "title": "The train rides into an upside-down world",
+      "summary": "Past the End islands, the train now crosses a stretch where the whole world is turned upside down. The ground hangs overhead as a ceiling, the train glides through open air with hills and still water suspended above it, clouds drift by below, and the sun swings around to light everything from the side. As you ride in from the void, the upside-down terrain dissolves into being around you rather than appearing all at once.",
+      "highlights": [
+        "A new upside-down region in the endless cycle, right after the void and End islands.",
+        "The overworld is mirrored around the train: hills become a hanging ceiling, oceans freeze into the roof, and a bedrock lid caps the very top.",
+        "The terrain fades in out of the void as you approach, growing outward from track level."
+      ],
+      "pr": 717,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

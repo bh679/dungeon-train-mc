@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 final class WorldGenCycleTest {
 
-    private static final WorldGenCycle C = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0);
+    private static final WorldGenCycle C = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);
     private static final int PERIOD = 1940;
     private static final double EPS = 1e-9;
 
@@ -28,6 +28,88 @@ final class WorldGenCycleTest {
         assertEquals(660L, C.netherLen());
         assertEquals(680L, C.endLen());
         assertEquals(PERIOD, C.period());
+    }
+
+    @Test
+    @DisplayName("upside-down band: disabled is byte-identical; enabled flows directly out of End, ramps 0→1→0, then a trailing exit gap")
+    void upsideDownBand() {
+        // Disabled (C has udFade=udHold=udExit=0): zero length, period unchanged.
+        assertEquals(0L, C.upsideDownLen());
+        assertEquals(PERIOD, C.period());
+        org.junit.jupiter.api.Assertions.assertFalse(C.isInUpsideDownBand(3240));
+
+        // Same base as C but with the band enabled (udFade 50, udHold 200 → udLen 300) and a
+        // 150-block trailing exit gap before the cycle repeats.
+        WorldGenCycle u = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 50, 200, 150, 0);
+        assertEquals(300L, u.upsideDownLen());
+        // period grows by udLen (300) + the trailing exit gap (150): 1940 + 300 + 150 = 2390.
+        assertEquals(2390L, u.period());
+
+        // No gap between End and Upside-down: band world-X = anchor + udStart = [1000+1940, 1000+2240) = [2940, 3240).
+        org.junit.jupiter.api.Assertions.assertFalse(u.isInUpsideDownBand(2939)); // still the End band
+        assertEquals(0.0, u.upsideDownRamp(2939), EPS);
+        assertEquals(0.0, u.upsideDownRamp(2940), EPS);   // band entry (fade start), immediately after End
+        assertEquals(0.5, u.upsideDownRamp(2965), EPS);   // half-way up the 50-block fade
+        assertEquals(1.0, u.upsideDownRamp(3090), EPS);   // core, held at 1
+        assertEquals(0.5, u.upsideDownRamp(3215), EPS);   // half-way down the fade-out
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownBand(2940));
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownBand(3239));
+        org.junit.jupiter.api.Assertions.assertFalse(u.isInUpsideDownBand(3240)); // one past the band — exit gap begins
+        assertEquals(0.0, u.upsideDownRamp(3240), EPS);
+
+        // Trailing exit gap [3240, 3390) is plain overworld — not in the band, ramp 0 — before the
+        // cycle wraps at 3390 back into the next period's leading owGap.
+        org.junit.jupiter.api.Assertions.assertFalse(u.isInUpsideDownBand(3389));
+        assertEquals(0.0, u.upsideDownRamp(3389), EPS);
+
+        // (upsideDownEntryLead() below covers the new entry lead-in zone in detail.)
+
+        // Disjoint from the nether/End segments (no UD ramp inside them).
+        assertEquals(0.0, u.upsideDownRamp(1530), EPS);   // nether core
+        assertEquals(0.0, u.upsideDownRamp(2500), EPS);   // End segment
+    }
+
+    @Test
+    @DisplayName("entry lead-in: disabled/zero-void is zero-length; clamped by eVoid; reveal ramps 0→1 up to udStart, disjoint from the true band")
+    void upsideDownEntryLead() {
+        // Disabled (C: udFade=udHold=0): zero-length lead-in, never true anywhere.
+        assertEquals(0L, C.udEntryLeadLen());
+        org.junit.jupiter.api.Assertions.assertFalse(C.isInUpsideDownEntryLead(2920));
+        assertEquals(0.0, C.upsideDownEntryRevealRamp(2920), EPS);
+
+        // u: eVoid 40, udFade 50 → lead clamped to eVoid (40), NOT the full udFade (50). udStart
+        // offset 1940 (world-X 2940, per upsideDownBand() above), so leadStart offset 1900 (world-X 2900).
+        WorldGenCycle u = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 50, 200, 150, 0);
+        assertEquals(40L, u.udEntryLeadLen());                                     // clamped by eVoid, not udFade
+
+        org.junit.jupiter.api.Assertions.assertFalse(u.isInUpsideDownEntryLead(2899)); // still End band proper
+        assertEquals(0.0, u.upsideDownEntryRevealRamp(2899), EPS);
+
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownEntryLead(2900));  // lead-in starts
+        assertEquals(0.0, u.upsideDownEntryRevealRamp(2900), EPS);
+        assertEquals(0.5, u.upsideDownEntryRevealRamp(2920), EPS);                 // halfway (20/40)
+        assertEquals(39.0 / 40.0, u.upsideDownEntryRevealRamp(2939), EPS);         // one block before udStart
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownEntryLead(2939));
+
+        // At udStart the true band takes over — lead-in and band are disjoint, not overlapping.
+        org.junit.jupiter.api.Assertions.assertFalse(u.isInUpsideDownEntryLead(2940));
+        assertEquals(0.0, u.upsideDownEntryRevealRamp(2940), EPS);
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownBand(2940));
+
+        // Unclamped case: eVoid (200) comfortably exceeds udFade (50) → lead-in is the full udFade.
+        WorldGenCycle w = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 200, 200, 50, 200, 150, 0);
+        assertEquals(50L, w.udEntryLeadLen());
+
+        // Combined predicate (used by render-flip / water-freeze / corridor): true across BOTH the
+        // lead-in [2900,2940) and the band [2940,3240), false in the void before leadStart, the trailing
+        // exit gap, and plain overworld.
+        org.junit.jupiter.api.Assertions.assertFalse(u.isInUpsideDownBandOrEntryLead(2899)); // End void before lead-in
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownBandOrEntryLead(2900));  // lead-in start
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownBandOrEntryLead(2939));  // lead-in end
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownBandOrEntryLead(2940));  // band start
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownBandOrEntryLead(3239));  // band end
+        org.junit.jupiter.api.Assertions.assertFalse(u.isInUpsideDownBandOrEntryLead(3240)); // trailing exit gap
+        org.junit.jupiter.api.Assertions.assertFalse(u.isInUpsideDownBandOrEntryLead(1530)); // nether core
     }
 
     @Test
@@ -78,7 +160,7 @@ final class WorldGenCycleTest {
     @DisplayName("an arbitrary N-stage multiplier list ramps smoothly through each stage (1,2,4,8,15)")
     void fiveStageMultipliers() {
         // anchor 0, owGap 0 → nether starts at offset 0; stageBlocks 40, 5 stages → riseLen 200.
-        WorldGenCycle d = new WorldGenCycle(0L, 0, 40, new int[] {1, 2, 4, 8, 15}, 0, 60, 50, 200, 0, 0, 0, 0);
+        WorldGenCycle d = new WorldGenCycle(0L, 0, 40, new int[] {1, 2, 4, 8, 15}, 0, 60, 50, 200, 0, 0, 0, 0, 0, 0, 0);
         assertEquals(200, d.riseLen());
         assertEquals(1.0, d.netherMountainMultiplier(0), EPS);    // stage 1 start
         assertEquals(1.0, d.netherMountainMultiplier(40), EPS);   // → stage 2 start (held ×1 through stage 1)
@@ -113,7 +195,7 @@ final class WorldGenCycleTest {
     @Test
     @DisplayName("a leading beach span lengthens the rise, reads as base ×1, and reports the band entrance")
     void beachStage() {
-        WorldGenCycle b = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0);
+        WorldGenCycle b = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);
         assertEquals(160, b.riseLen());                                       // 40 beach + 3×40 stages
         org.junit.jupiter.api.Assertions.assertTrue(b.isNetherBeachStage(1320));  // ln 20 — inside the beach span
         assertEquals(1.0, b.netherMountainMultiplier(1320), EPS);            // beach base multiplier (feature boosts over ocean)
@@ -125,7 +207,7 @@ final class WorldGenCycleTest {
     @Test
     @DisplayName("beach progress ramps 0 (seaward waterline) → 1 (inland, meeting the mountains)")
     void beachProgress() {
-        WorldGenCycle b = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0);
+        WorldGenCycle b = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);
         assertEquals(0.0, b.netherBeachProgress(1300), EPS);   // ln 0  — seaward entrance edge (the waterline)
         assertEquals(0.5, b.netherBeachProgress(1320), EPS);   // ln 20 — halfway up the shore
         org.junit.jupiter.api.Assertions.assertTrue(b.netherBeachProgress(1339) > 0.9); // ln 39 — almost at the mountains
@@ -135,7 +217,7 @@ final class WorldGenCycleTest {
     @DisplayName("edge feather: 0 at the leading + trailing gates, smoothstep to 1 over one stage, 1 across the interior")
     void mountainEdgeFeather() {
         // beach 40, stageBlocks 40 → fade 40; riseLen 160, netherLen 740; ln == worldX − 1300; leading gate ln=40.
-        WorldGenCycle b = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0);
+        WorldGenCycle b = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);
         assertEquals(740L, b.netherLen());
         assertEquals(0.0, b.netherMountainFeather(1340), EPS);   // ln 40  — leading gate (added height starts at 0)
         assertEquals(0.5, b.netherMountainFeather(1360), EPS);   // ln 60  — fade midpoint (smoothstep 0.5)
@@ -158,7 +240,7 @@ final class WorldGenCycleTest {
     void featherNoStages() {
         // beach 0, stageBlocks 0 (fade 0) but a real-Nether core 200 → netherLen 200, so the column is
         // inside the band yet the fade==0 guard makes the feather a pure no-op (no div-by-zero).
-        WorldGenCycle coreOnly = new WorldGenCycle(0L, 0, 0, new int[] {1}, 0, 0, 0, 200, 0, 0, 0, 0);
+        WorldGenCycle coreOnly = new WorldGenCycle(0L, 0, 0, new int[] {1}, 0, 0, 0, 200, 0, 0, 0, 0, 0, 0, 0);
         assertEquals(200L, coreOnly.netherLen());
         assertEquals(1.0, coreOnly.netherMountainFeather(100), EPS); // ln 100, fade 0 → 1.0
     }
@@ -167,7 +249,7 @@ final class WorldGenCycleTest {
     @DisplayName("phaseShift slides the whole cycle so the first nether band arrives earlier")
     void phaseShift() {
         // Same geometry as C but shifted 100 blocks into the cycle.
-        WorldGenCycle p = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 100);
+        WorldGenCycle p = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0, 0, 0, 100);
         assertEquals(0.0, C.netherHeightRamp(1260), EPS);  // unshifted (C): still overworld at cycle offset 260
         org.junit.jupiter.api.Assertions.assertTrue(p.netherHeightRamp(1260) > 0.0); // shifted: the nether band has begun
         assertEquals(p.netherHeightRamp(1260), p.netherHeightRamp(1260 + PERIOD), EPS); // shift is constant across cycles
@@ -176,7 +258,7 @@ final class WorldGenCycleTest {
     @Test
     @DisplayName("a disabled phase collapses to zero length")
     void disabledCollapse() {
-        WorldGenCycle endOnly = new WorldGenCycle(0L, 300, 0, new int[] {1, 5, 20}, 0, 0, 0, 0, 100, 40, 200, 0);
+        WorldGenCycle endOnly = new WorldGenCycle(0L, 300, 0, new int[] {1, 5, 20}, 0, 0, 0, 0, 100, 40, 200, 0, 0, 0, 0);
         assertEquals(0L, endOnly.netherLen());
         assertEquals(680L, endOnly.endLen());
         assertEquals(2L * 300 + 680, endOnly.period());
