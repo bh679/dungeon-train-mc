@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.narrative.BookReadMarkerTag;
 import games.brennan.dungeontrain.narrative.BurnableBookTag;
 import games.brennan.dungeontrain.narrative.DeathNoteBookTag;
+import games.brennan.dungeontrain.narrative.LetterBookTag;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
 import games.brennan.dungeontrain.narrative.PlayerWrittenBookTag;
@@ -538,6 +539,9 @@ public final class StartingBookEvents {
      */
     private static void notifyIfBurnedUnread(ItemEntity item, ItemStack stack) {
         if (SharedBookTag.isSharedBook(stack)) return;
+        // Lectern letters burn as the intended outcome of signing (like a shared-book contribution),
+        // and are spawned owner-less at the lectern anyway — never a "burned unread" avoided read.
+        if (LetterBookTag.isLetter(stack)) return;
         boolean countsForMilestone = StartingBookTag.isStartingBook(stack)
                 || RandomBookTag.read(stack).isPresent()
                 || PlayerWrittenBookTag.isPlayerWritten(stack)

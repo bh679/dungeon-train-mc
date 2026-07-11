@@ -96,6 +96,9 @@ public final class DungeonTrainConfig {
     /** Default master for the "Death Note" curse book mechanic (local sign/burn + relay sync). */
     public static final boolean DEFAULT_DEATH_NOTES_ENABLED = true;
 
+    /** Default master for player-written "lectern letters" (sign a book & quill on a lectern → per-life relay series). */
+    public static final boolean DEFAULT_LETTERS_ENABLED = true;
+
     /**
      * STARTING max chance a rolled chest book comes from the shared community pool. The effective
      * chance scales from 0% (no hardcoded random books read) up to this max (100% of them read), so
@@ -145,6 +148,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue SHARE_BOOKS_ENABLED;
     public static final ModConfigSpec.BooleanValue DISCOVER_SHARED_BOOKS_ENABLED;
     public static final ModConfigSpec.BooleanValue DEATH_NOTES_ENABLED;
+    public static final ModConfigSpec.BooleanValue LETTERS_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_BOOK_LOOT_MAX_CHANCE;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_ENABLED;
@@ -182,6 +186,7 @@ public final class DungeonTrainConfig {
         SHARE_BOOKS_ENABLED = pair.getLeft().shareBooksEnabled;
         DISCOVER_SHARED_BOOKS_ENABLED = pair.getLeft().discoverSharedBooksEnabled;
         DEATH_NOTES_ENABLED = pair.getLeft().deathNotesEnabled;
+        LETTERS_ENABLED = pair.getLeft().lettersEnabled;
         SHARED_BOOK_LOOT_MAX_CHANCE = pair.getLeft().sharedBookLootMaxChance;
         DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = pair.getLeft().difficultyLevelNoticeToDiscord;
         INTRO_CINEMATIC_ENABLED = pair.getLeft().introCinematicEnabled;
@@ -276,6 +281,15 @@ public final class DungeonTrainConfig {
                         "requires network consent (Discord Presence's 'use the internet?' prompt). False disables the mechanic",
                         "entirely — a \"Death Note\" signs like any other book.")
                 .define("deathNotesEnabled", DEFAULT_DEATH_NOTES_ENABLED);
+        ModConfigSpec.BooleanValue lettersEnabled = b
+                .comment("Player-written lectern letters. When true, right-clicking a lectern with a book & quill opens",
+                        "the sign screen; signing it uploads the letter to the Dungeon Train relay as the next entry in your",
+                        "current life's narrative series (a new life starts a new series) and burns the book away at the",
+                        "lectern. Closing without signing leaves the book & quill on the lectern as an unsigned \"Letter X\"",
+                        "draft to finish later. Uploading also requires the player's client to have granted network consent",
+                        "(Discord Presence's 'use the internet?' prompt). False disables the feature — a book & quill placed",
+                        "on a lectern behaves like vanilla.")
+                .define("lettersEnabled", DEFAULT_LETTERS_ENABLED);
         ModConfigSpec.DoubleValue sharedBookLootMaxChance = b
                 .comment("The STARTING maximum per-roll chance that a chest book comes from the shared community pool instead",
                         "of the local narrative pool. The effective chance SCALES with progress: 0% when none of the hardcoded",
@@ -356,7 +370,8 @@ public final class DungeonTrainConfig {
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
-                worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled, sharedBookLootMaxChance,
+                worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled, lettersEnabled,
+                sharedBookLootMaxChance,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks);
     }
 
@@ -506,6 +521,11 @@ public final class DungeonTrainConfig {
         return isLoaded() ? DEATH_NOTES_ENABLED.get() : DEFAULT_DEATH_NOTES_ENABLED;
     }
 
+    /** Master for player-written lectern letters (sign a book & quill on a lectern → per-life relay series). */
+    public static boolean isLettersEnabled() {
+        return isLoaded() ? LETTERS_ENABLED.get() : DEFAULT_LETTERS_ENABLED;
+    }
+
     /** MAX shared-pool chance (reached at 100% hardcoded random books read); scaled by read fraction. Clamped [0,1]. */
     public static double getSharedBookLootMaxChance() {
         double v = isLoaded() ? SHARED_BOOK_LOOT_MAX_CHANCE.get() : DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE;
@@ -630,6 +650,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue shareBooksEnabled,
             ModConfigSpec.BooleanValue discoverSharedBooksEnabled,
             ModConfigSpec.BooleanValue deathNotesEnabled,
+            ModConfigSpec.BooleanValue lettersEnabled,
             ModConfigSpec.DoubleValue sharedBookLootMaxChance,
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,
             ModConfigSpec.BooleanValue introCinematicEnabled,

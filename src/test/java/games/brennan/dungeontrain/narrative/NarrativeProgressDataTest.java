@@ -4,8 +4,11 @@ import net.minecraft.nbt.CompoundTag;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -111,6 +114,61 @@ final class NarrativeProgressDataTest {
         NarrativeProgressData reloaded = NarrativeProgressData.load(legacy);
         assertEquals(0, reloaded.distinctSharedBooksEverRead(),
             "missing shared_books_ever_read tag must decode as empty, not NPE");
+    }
+
+    // ---------------- Letter-series (player-written lectern letters) ----------------
+
+    private static final UUID PLAYER = UUID.fromString("00000000-0000-0000-0000-0000000000aa");
+
+    @Test
+    @DisplayName("nextLetter: within one life the series id is stable and the index climbs 1,2,3")
+    void nextLetterClimbsWithinLife() {
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        LetterSeries l1 = data.nextLetter(PLAYER, 5L);
+        LetterSeries l2 = data.nextLetter(PLAYER, 5L);
+        LetterSeries l3 = data.nextLetter(PLAYER, 5L);
+        assertEquals(1, l1.letterIndex());
+        assertEquals(2, l2.letterIndex());
+        assertEquals(3, l3.letterIndex());
+        assertEquals(l1.seriesId(), l2.seriesId(), "same life keeps one series id");
+        assertEquals(l1.seriesId(), l3.seriesId());
+        assertFalse(l1.seriesId().isBlank(), "a series id is minted");
+    }
+
+    @Test
+    @DisplayName("nextLetter: a new life (death count changed) restarts at 1 with a fresh series id")
+    void nextLetterResetsOnNewLife() {
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        LetterSeries life0 = data.nextLetter(PLAYER, 0L);
+        data.nextLetter(PLAYER, 0L); // index 2 in life 0
+        LetterSeries life1 = data.nextLetter(PLAYER, 1L); // died once — new life
+        assertEquals(1, life1.letterIndex(), "new life restarts numbering");
+        assertNotEquals(life0.seriesId(), life1.seriesId(), "new life is a new series");
+    }
+
+    @Test
+    @DisplayName("peekNextIndex: reports the next index without advancing the cursor")
+    void peekDoesNotAdvance() {
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        assertEquals(1, data.peekNextIndex(PLAYER, 3L), "first letter would be index 1");
+        data.nextLetter(PLAYER, 3L); // index 1 signed
+        assertEquals(2, data.peekNextIndex(PLAYER, 3L), "next would be 2");
+        assertEquals(2, data.peekNextIndex(PLAYER, 3L), "peek is idempotent (no advance)");
+    }
+
+    @Test
+    @DisplayName("save → load round-trip continues the same letter series after reload")
+    void roundTripPreservesLetterSeries() {
+        NarrativeProgressData original = NarrativeProgressData.load(new CompoundTag());
+        LetterSeries l1 = original.nextLetter(PLAYER, 9L);
+        original.nextLetter(PLAYER, 9L); // index 2
+
+        CompoundTag serialized = original.save(new CompoundTag(), null);
+        NarrativeProgressData reloaded = NarrativeProgressData.load(serialized);
+
+        LetterSeries l3 = reloaded.nextLetter(PLAYER, 9L);
+        assertEquals(3, l3.letterIndex(), "series index survives the round-trip");
+        assertEquals(l1.seriesId(), l3.seriesId(), "series id survives the round-trip");
     }
 
     @Test
