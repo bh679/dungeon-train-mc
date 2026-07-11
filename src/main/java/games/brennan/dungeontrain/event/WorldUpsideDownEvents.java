@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -52,9 +53,11 @@ import java.util.Arrays;
  * <p><b>Preserved / dropped.</b> The track corridor is left byte-for-byte intact by skipping its own
  * Z-columns ({@code [wallMinZ, wallMaxZ]}) — vertical reflection keeps X/Z, so only those columns
  * could damage the tube. The bedrock row at {@code minY} is never read or written (so the handler is
- * independent of {@code BedrockFloorEvents}' ordering). Free-standing fluids are dropped to air (no
- * ceiling waterfalls; waterlogged solids reflect normally), and block entities are dropped (a BE
- * can't be safely moved at this stage) — both rare in fresh overworld terrain.</p>
+ * independent of {@code BedrockFloorEvents}' ordering). Free-standing <b>water</b> reflects in as a
+ * static source block (its flow frozen in-band by {@code FlowingFluidUpsideDownMixin}, so the mirrored
+ * ocean/lake hangs from the ceiling without pouring off it); other free-standing fluids (lava) drop to
+ * air, and waterlogged solids reflect normally. Block entities are dropped (a BE can't be safely moved
+ * at this stage) — rare in fresh overworld terrain.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class WorldUpsideDownEvents {
@@ -152,15 +155,25 @@ public final class WorldUpsideDownEvents {
                     BlockState ns = AIR;
                     if (sy > floorGuard && sy < maxY) {
                         BlockState s = col[sy - minY];
-                        if (!s.isAir() && !s.hasBlockEntity() && !(s.getBlock() instanceof LiquidBlock)) {
-                            // Gravity-affected (Fallable) blocks become their stable equivalent so
-                            // nothing falls out of the mirrored ceiling — the same anchoring the mod
-                            // applies over corridors. Everything else keeps its source state: the
-                            // upside-down VISUAL flip is baked in at render time by
-                            // BlockRenderDispatcherUpsideDownMixin, so flipping the state here too
-                            // would double-flip slabs/stairs.
-                            BlockState stable = FallingBlockAnchor.stableEquivalent(s);
-                            ns = stable != null ? stable : s;
+                        if (!s.isAir() && !s.hasBlockEntity()) {
+                            if (s.getBlock() instanceof LiquidBlock) {
+                                // Water reflects as a static SOURCE block (its flow is frozen in-band by
+                                // FlowingFluidUpsideDownMixin) so the mirrored ocean/lake hangs from the
+                                // ceiling instead of pouring off it; other free-standing fluids (lava)
+                                // still drop to air.
+                                if (s.getFluidState().is(FluidTags.WATER)) {
+                                    ns = Blocks.WATER.defaultBlockState();
+                                }
+                            } else {
+                                // Gravity-affected (Fallable) blocks become their stable equivalent so
+                                // nothing falls out of the mirrored ceiling — the same anchoring the mod
+                                // applies over corridors. Everything else keeps its source state: the
+                                // upside-down VISUAL flip is baked in at render time by
+                                // ModelBlockRendererUpsideDownMixin, so flipping the state here too
+                                // would double-flip slabs/stairs.
+                                BlockState stable = FallingBlockAnchor.stableEquivalent(s);
+                                ns = stable != null ? stable : s;
+                            }
                         }
                     }
 
