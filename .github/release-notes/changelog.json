@@ -4055,6 +4055,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "upside-down-exit-island-crossfade",
+      "version": "0.437.0",
+      "type": "feat",
+      "title": "The upside-down world dissolves back to the overworld through floating islands",
+      "summary": "Leaving the upside-down stretch of the world is no longer an abrupt wall. The inverted ceiling-world now breaks apart into shrinking, drifting floating islands while the normal overworld fades back in from below as growing islands over the void \u2014 a long, dreamlike descent until solid ground returns beneath you.",
+      "highlights": [
+        "The upside-down band now exits through a long floating-island crossfade instead of a hard edge",
+        "Mirror islands disperse and spread apart while the overworld reforms as islands below, then merges into solid ground"
+      ],
+      "pr": 720,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
