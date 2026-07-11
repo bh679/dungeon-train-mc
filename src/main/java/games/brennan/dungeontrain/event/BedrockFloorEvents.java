@@ -85,11 +85,18 @@ public final class BedrockFloorEvents {
         int localY = minY - sectionBaseY;
         BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
         for (int dx = 0; dx < 16; dx++) {
+            int worldX = chunkMinX + dx;
             boolean voidColumn = maybeBand
-                    && DisintegrationBand.middleRampAt(level, chunkMinX + dx) > 0.0;
+                    && DisintegrationBand.middleRampAt(level, worldX) > 0.0;
             boolean upsideColumn = maybeUpside
-                    && UpsideDownBand.isInBand(level, chunkMinX + dx);
-            if (voidColumn || upsideColumn) continue;
+                    && UpsideDownBand.isInBand(level, worldX);
+            // In the exit crossfade the underside stays open void until the overworld coalesces —
+            // WorldUpsideDownEvents clears the floor there while !exitFloorPresent, so match it here so
+            // the two handlers agree per column. Once the floor has returned, bedrock is stamped normally.
+            boolean exitVoidColumn = maybeUpside
+                    && UpsideDownBand.isInExitFade(level, worldX)
+                    && !UpsideDownBand.exitFloorPresent(level, worldX);
+            if (voidColumn || upsideColumn || exitVoidColumn) continue;
             for (int dz = 0; dz < 16; dz++) {
                 section.setBlockState(dx, localY, dz, bedrock, false);
             }

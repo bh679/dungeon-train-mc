@@ -90,6 +90,12 @@ public final class WorldUpsideDownEvents {
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
+    /** Decorrelates the overworld-reveal island mask from the mirror-disperse mask in the exit crossfade. */
+    private static final long OW_ISLAND_SALT = 0x9E3779B97F4A7C15L;
+
+    /** Enlarges the exit-crossfade island noise (bigger islands, proportionally bigger gaps). */
+    private static final int EXIT_ISLAND_NOISE_SCALE = 4;
+
     private WorldUpsideDownEvents() {}
 
     @SubscribeEvent
@@ -109,25 +115,37 @@ public final class WorldUpsideDownEvents {
 
         boolean[] inBand = new boolean[16];
         boolean[] inLead = new boolean[16];
+        boolean[] inExit = new boolean[16];
         double[] leadReveal = new double[16];
+        double[] exitReveal = new double[16];        // overworld-reveal ramp 0→1 across the exit crossfade
+        double[] exitDisperse = new double[16];      // mirror-disperse ramp 1→0 across the exit crossfade
         boolean any = false;
         boolean anyInBand = false;
         boolean anyLead = false;
+        boolean anyExit = false;
         for (int dx = 0; dx < 16; dx++) {
-            // The three special bands are disjoint by construction, so no End/Nether guard is needed
-            // here (unlike the nether foliage strip). In-band columns get the full mirror; entry lead-in
-            // columns (immediately before the band, disjoint from it) get a Y-windowed partial mirror —
-            // gated on the isInEntryLead BOOLEAN, not reveal>0, so the leadStart column (reveal 0) is
-            // still processed and its real terrain cleared to void (no uninverted strip there).
+            // The special bands/zones are disjoint by construction. In-band columns get the full mirror;
+            // entry lead-in columns (before the band) get a Y-windowed partial mirror; exit-fade columns
+            // (right after the band) get the dual island crossfade — the mirror disperses into shrinking,
+            // spreading islands while the original overworld fades back in over the void.
             int worldX = chunkMinX + dx;
             inBand[dx] = UpsideDownBand.isInBand(level, worldX);
             if (!inBand[dx]) {
                 inLead[dx] = UpsideDownBand.isInEntryLead(level, worldX);
-                if (inLead[dx]) leadReveal[dx] = UpsideDownBand.entryRevealRamp(level, worldX);
+                if (inLead[dx]) {
+                    leadReveal[dx] = UpsideDownBand.entryRevealRamp(level, worldX);
+                } else {
+                    inExit[dx] = UpsideDownBand.isInExitFade(level, worldX);
+                    if (inExit[dx]) {
+                        exitReveal[dx] = UpsideDownBand.exitOwReveal(level, worldX);
+                        exitDisperse[dx] = UpsideDownBand.exitMirrorDisperse(level, worldX);
+                    }
+                }
             }
             if (inBand[dx]) anyInBand = true;
             if (inLead[dx]) anyLead = true;
-            if (inBand[dx] || inLead[dx]) any = true;
+            if (inExit[dx]) anyExit = true;
+            if (inBand[dx] || inLead[dx] || inExit[dx]) any = true;
         }
         if (!any) return;
 
@@ -157,6 +175,7 @@ public final class WorldUpsideDownEvents {
         // and only take the roof once that window has reached roofY — "no bedrock until the Y reaches it".
         int[] extentCol = new int[16];
         boolean[] roofCol = new boolean[16];
+        boolean[] exitFloorClear = new boolean[16];   // exit columns whose overworld hasn't coalesced → keep open void
         for (int dx = 0; dx < 16; dx++) {
             if (inBand[dx]) {
                 extentCol[dx] = maxY;                                  // unbounded — never clips
@@ -165,6 +184,11 @@ public final class WorldUpsideDownEvents {
                 int extent = UpsideDownBand.revealYExtent(leadReveal[dx], mirror, ceilingGap, floorGap, roofY, minY);
                 extentCol[dx] = extent;
                 roofCol[dx] = mirror + ceilingGap + extent >= roofY;   // ceiling grown up to the lid
+            } else if (inExit[dx]) {
+                extentCol[dx] = maxY;                                  // no Y clip; the noise island gate thins the ceiling
+                // Bedrock lid recedes as the mirror disperses; floor returns once the overworld coalesces.
+                roofCol[dx] = roofInvert && exitDisperse[dx] >= DungeonTrainCommonConfig.UPSIDE_DOWN_EXIT_ROOF_RECEDE;
+                exitFloorClear[dx] = exitReveal[dx] < DungeonTrainCommonConfig.UPSIDE_DOWN_EXIT_FLOOR_RETURN;
             }
         }
 
@@ -174,6 +198,7 @@ public final class WorldUpsideDownEvents {
         // are no during-gen rails here to flip). This is what makes the train ride through the upside-down
         // world instead of a preserved plain tube.
         TrackGeometry g = TrackGeometry.from(data.dims(), trainY);
+        int bedY = g.bedY();                            // drives the exit overworld-reveal depth weighting
 
         BlockState[] col = new BlockState[maxY - minY];
         boolean changed = false;
@@ -181,13 +206,15 @@ public final class WorldUpsideDownEvents {
         for (int dz = 0; dz < 16; dz++) {
             int worldZ = chunkMinZ + dz;
             for (int dx = 0; dx < 16; dx++) {
-                if (!inBand[dx] && !inLead[dx]) continue;
+                if (!inBand[dx] && !inLead[dx] && !inExit[dx]) continue;
                 // Lead-in columns (not yet fully in-band) get a Y-WINDOWED, noise-dithered partial
                 // mirror: within the window the reveal probability falls from 1 at track level to 0 at
                 // the growing edge, so the whole fade is a clumpy dissolve to void (see the clip below).
                 boolean windowed = inLead[dx];
                 int extent = extentCol[dx];
                 int worldX = chunkMinX + dx;
+                // Exit-fade columns keep the open-void underside only until the overworld has coalesced.
+                boolean clearFloor = inBand[dx] || inLead[dx] || (inExit[dx] && exitFloorClear[dx]);
 
                 // 1) Snapshot the column into an immutable buffer (skip all-air sections).
                 Arrays.fill(col, AIR);
@@ -268,6 +295,43 @@ public final class WorldUpsideDownEvents {
                         // extent == 0: only the d == 0 innermost row survives (thin track-level slab).
                     }
 
+                    // Exit crossfade: the reflected mirror candidate (ns) disperses into shrinking,
+                    // spreading islands while the ORIGINAL overworld column fades back in as islands over
+                    // the void. Both are pulled from the pristine snapshot; the overworld wins on Y-overlap
+                    // so the returning ground always reads on top of a dispersing remnant.
+                    if (inExit[dx]) {
+                        // (a) Disperse the mirror: keep the reflected block only inside a surviving island.
+                        // As disperse falls 1→0 the low-noise survivor set shrinks and separates (the
+                        // reverse of the entry dither), so mirror islands get smaller and further apart.
+                        // Sampled at EXIT_ISLAND_NOISE_SCALE for larger, further-apart islands than the
+                        // fine-grained entry dither.
+                        if (ns != AIR && Disintegration.coherentNoise(seed, worldX, y, worldZ, EXIT_ISLAND_NOISE_SCALE) >= exitDisperse[dx]) {
+                            ns = AIR;
+                        }
+                        // (b) Reveal the overworld by running the End void-erosion IN REVERSE (ramp =
+                        // 1 − reveal): at reveal 0 all void, at reveal 1 the solid world returns; the depth
+                        // boost makes surface islands appear first and fill downward — "small, then bigger".
+                        BlockState ow = col[y - minY];
+                        if (ow != AIR) {
+                            if (ow.hasBlockEntity()) {
+                                ns = ow;                                   // native BE — leave it exactly in place (identity Y)
+                            } else {
+                                double pRemove = Disintegration.removalProbabilityFromRamp(1.0 - exitReveal[dx], y, bedY);
+                                if (Disintegration.coherentNoise(seed ^ OW_ISLAND_SALT, worldX, y, worldZ, EXIT_ISLAND_NOISE_SCALE) >= pRemove) {
+                                    if (ow.getBlock() instanceof LiquidBlock) {
+                                        // Returning water becomes a static SOURCE (frozen in-zone by
+                                        // FlowingFluidUpsideDownMixin) so it hangs on the island instead of
+                                        // pouring off it into the void; other fluids (lava) drop to air.
+                                        ns = ow.getFluidState().is(FluidTags.WATER) ? Blocks.WATER.defaultBlockState() : AIR;
+                                    } else {
+                                        BlockState stable = FallingBlockAnchor.stableEquivalent(ow);
+                                        ns = stable != null ? stable : ow; // survives → returning overworld (fallables anchored)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     int sIdx = chunk.getSectionIndex(y);
                     LevelChunkSection sec = chunk.getSection(sIdx);
                     int ly = y - SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
@@ -280,10 +344,11 @@ public final class WorldUpsideDownEvents {
                     changed = true;
                 }
 
-                // Open the underside across every participating column (band + lead-in): remove the
-                // surface-rule bedrock left at minY (the mirror never touches that row), so the flipped
-                // column hangs over void from the very start of the reveal, not over a floor.
-                if (roofInvert) {
+                // Open the underside across every participating column that should hang over void (band +
+                // lead-in, and exit columns until their overworld coalesces): remove the surface-rule
+                // bedrock left at minY (the mirror never touches that row). Once an exit column's overworld
+                // has returned (clearFloor false) the ordinary floor is left in place.
+                if (roofInvert && clearFloor) {
                     LevelChunkSection fSec = chunk.getSection(floorSectionIdx);
                     if (!fSec.getBlockState(dx, floorLocalY, dz).isAir()) {
                         fSec.setBlockState(dx, floorLocalY, dz, AIR, false);
@@ -318,13 +383,15 @@ public final class WorldUpsideDownEvents {
             }
         }
 
-        // Lay the corridor into the now-mirrored terrain — the counterpart to TrackBedFeature (which
-        // skips band AND lead-in chunks): carve the carriage tube through the flipped column and stamp
-        // the authored bed/rails, so the train runs through the upside-down world instead of a preserved
-        // tube. Runs after the mirror/roof passes (same handler → strictly ordered). Gated on band OR
-        // lead-in: the lead-in now renders flipped (ClientUpsideDownBand includes it), so its corridor
-        // must be the flipped one too — bed/rails stay at bedY/railY, so the track is continuous.
-        if ((anyInBand || anyLead) && chunk instanceof LevelChunk levelChunk) {
+        // Lay the corridor into the now-composited terrain — the counterpart to TrackBedFeature (which
+        // skips band, lead-in AND exit-fade chunks): carve the carriage tube and stamp the authored
+        // bed/rails, so the train runs through the upside-down world instead of a preserved tube. Runs
+        // after the mirror/roof/exit passes (same handler → strictly ordered, so it wins the corridor
+        // Z-strip). Gated on band OR lead-in OR exit: the exit fade is laid flipped across its whole
+        // length — over void on the mirror-dominant side (the mirror encloses the tube) and through the
+        // returning overworld on the far side (a carved cutting) — with the stamped bed giving the train a
+        // continuous floor either way (bed/rails stay at bedY/railY, so the track is continuous).
+        if ((anyInBand || anyLead || anyExit) && chunk instanceof LevelChunk levelChunk) {
             TrackGenerator.layFlippedCorridor(level, levelChunk, data.dims(), pos.x, pos.z, g);
             changed = true;
         }
