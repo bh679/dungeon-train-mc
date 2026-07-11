@@ -3928,6 +3928,23 @@
       "released": true,
       "released_in": "v0.430.0",
       "released_at": "2026-07-11T08:44:22Z"
+    },
+    {
+      "id": "lectern-letters",
+      "version": "0.432.0",
+      "type": "feat",
+      "title": "Player-written lectern letters",
+      "summary": "Write in a book & quill, place it on a lectern and sign it to add it as the next Letter in this life's narrative series \u2014 a new life begins a new series. Signing burns the letter away at the lectern and shares it with the community; close without signing and the book rests on the lectern as a \"Letter X\" draft to finish later.",
+      "highlights": [
+        "Sign a book & quill on a lectern to write the next Letter in your life's series",
+        "A new life starts a fresh series (Letter 1, 2, 3\u2026)",
+        "Close without signing to leave a \"Letter X\" draft on the lectern"
+      ],
+      "pr": 711,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -80,6 +80,18 @@ public final class NarrativeProgressData extends SavedData {
      * single numeric relay id, not a (book, variant) pair.
      */
     private static final String TAG_SHARED_BOOKS_EVER_READ = "shared_books_ever_read";
+    /**
+     * Root-level list of per-player letter-series state for the player-written lectern-letters
+     * feature. Each entry: {@code {uuid, deaths, series, index}} — the lifetime death count that
+     * anchors the current series ({@code deaths}, from {@code GlobalPlayerStats.totalDeaths}), the
+     * opaque per-life series id ({@code series}, regenerated when {@code deaths} changes) and the
+     * highest letter index signed in that series ({@code index}). Per-player, monotonic within a
+     * life; a new life (deaths changed) re-bases to a fresh series at index 1.
+     */
+    private static final String TAG_LETTER_SERIES = "letter_series";
+    private static final String TAG_LETTER_SERIES_DEATHS = "deaths";
+    private static final String TAG_LETTER_SERIES_ID = "series";
+    private static final String TAG_LETTER_SERIES_INDEX = "index";
 
     private final Map<String, NarrativeProgress> byStory;
     /** World-wide seen-variant tracking for the random-book pool. */
@@ -118,10 +130,19 @@ public final class NarrativeProgressData extends SavedData {
      * max toward the fair share once a world has seen most community content.
      */
     private final Set<Integer> sharedBooksEverRead;
+    /**
+     * Per-player current-life letter-series cursor for the lectern-letters feature. Keyed by
+     * player UUID; value is the death-count-anchored series id + highest signed letter index. See
+     * {@link #nextLetter(UUID, long)}.
+     */
+    private final Map<UUID, LetterSeriesState> letterSeries;
+
+    /** Stored letter-series cursor for one player: which life ({@code seriesDeaths}), the series id, and the highest index signed. */
+    private record LetterSeriesState(long seriesDeaths, String seriesId, int letterIndex) {}
 
     private NarrativeProgressData() {
         this(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>(),
-                new HashMap<>(), new HashSet<>());
+                new HashMap<>(), new HashSet<>(), new HashMap<>());
     }
 
     private NarrativeProgressData(Map<String, NarrativeProgress> byStory,
@@ -130,7 +151,8 @@ public final class NarrativeProgressData extends SavedData {
                                   Map<String, NarrativeProgress> storyVariantsSeen,
                                   Set<UUID> startingBookReceived,
                                   Map<String, NarrativeProgress> randomBookVariantsEverRead,
-                                  Set<Integer> sharedBooksEverRead) {
+                                  Set<Integer> sharedBooksEverRead,
+                                  Map<UUID, LetterSeriesState> letterSeries) {
         this.byStory = byStory;
         this.randomBooksSeen = randomBooksSeen;
         this.startingBooksSeen = startingBooksSeen;
@@ -138,6 +160,7 @@ public final class NarrativeProgressData extends SavedData {
         this.startingBookReceived = startingBookReceived;
         this.randomBookVariantsEverRead = randomBookVariantsEverRead;
         this.sharedBooksEverRead = sharedBooksEverRead;
+        this.letterSeries = letterSeries;
     }
 
     public static NarrativeProgressData get(ServerLevel overworld) {
@@ -486,6 +509,47 @@ public final class NarrativeProgressData extends SavedData {
         return Optional.of(uncompleted.get(idx));
     }
 
+    // ---------------- Letter-series tracking (player-written lectern letters) ----------------
+
+    /**
+     * Assign the next letter in {@code playerUuid}'s current-life series and advance the cursor.
+     * The life is identified by {@code currentDeaths} (a monotonic lifetime death count, e.g.
+     * {@code GlobalPlayerStats.totalDeaths}): while it is unchanged the same {@code seriesId} is
+     * reused and {@code letterIndex} climbs; when it changes (the player died and started a new
+     * life) a fresh {@code seriesId} is minted and numbering restarts at 1. The series is tied to
+     * the life, not to any lectern.
+     *
+     * <p>Calls {@link #setDirty()} so the cursor survives a mid-life relog. Returns the freshly
+     * assigned {@link LetterSeries} ({@code seriesId} + 1-based {@code letterIndex}).</p>
+     */
+    public LetterSeries nextLetter(UUID playerUuid, long currentDeaths) {
+        LetterSeriesState state = letterSeries.get(playerUuid);
+        String seriesId;
+        int nextIndex;
+        if (state == null || state.seriesDeaths() != currentDeaths) {
+            // New life (or first ever letter) — mint a fresh series and start at 1.
+            seriesId = UUID.randomUUID().toString().replace("-", "");
+            nextIndex = 1;
+        } else {
+            seriesId = state.seriesId();
+            nextIndex = state.letterIndex() + 1;
+        }
+        letterSeries.put(playerUuid, new LetterSeriesState(currentDeaths, seriesId, nextIndex));
+        setDirty();
+        return new LetterSeries(seriesId, nextIndex);
+    }
+
+    /**
+     * The index the NEXT signed letter would receive for {@code playerUuid} at {@code currentDeaths},
+     * WITHOUT advancing the cursor — used to label the unsigned "Letter X" draft left on a lectern.
+     * 1 when the player has no series yet this life.
+     */
+    public int peekNextIndex(UUID playerUuid, long currentDeaths) {
+        LetterSeriesState state = letterSeries.get(playerUuid);
+        if (state == null || state.seriesDeaths() != currentDeaths) return 1;
+        return state.letterIndex() + 1;
+    }
+
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.put(TAG_STORIES, encodeStoryProgress(byStory));
@@ -511,6 +575,19 @@ public final class NarrativeProgressData extends SavedData {
         int si = 0;
         for (Integer id : sharedBooksEverRead) sharedArr[si++] = id;
         tag.putIntArray(TAG_SHARED_BOOKS_EVER_READ, sharedArr);
+
+        // Per-player letter-series cursors — flat list of {uuid, deaths, series, index}.
+        ListTag letterList = new ListTag();
+        for (var entry : letterSeries.entrySet()) {
+            LetterSeriesState state = entry.getValue();
+            CompoundTag e = new CompoundTag();
+            e.putUUID(TAG_UUID, entry.getKey());
+            e.putLong(TAG_LETTER_SERIES_DEATHS, state.seriesDeaths());
+            e.putString(TAG_LETTER_SERIES_ID, state.seriesId());
+            e.putInt(TAG_LETTER_SERIES_INDEX, state.letterIndex());
+            letterList.add(e);
+        }
+        tag.put(TAG_LETTER_SERIES, letterList);
         return tag;
     }
 
@@ -573,8 +650,21 @@ public final class NarrativeProgressData extends SavedData {
         // worlds saved before the community-book taper landed simply start with nothing read.
         Set<Integer> sharedBooksEverRead = new HashSet<>();
         for (int id : tag.getIntArray(TAG_SHARED_BOOKS_EVER_READ)) sharedBooksEverRead.add(id);
+        // Missing tag → empty map (worlds saved before lectern letters landed start with no series).
+        Map<UUID, LetterSeriesState> letterSeries = new HashMap<>();
+        if (tag.contains(TAG_LETTER_SERIES, Tag.TAG_LIST)) {
+            ListTag letterList = tag.getList(TAG_LETTER_SERIES, Tag.TAG_COMPOUND);
+            for (int i = 0; i < letterList.size(); i++) {
+                CompoundTag e = letterList.getCompound(i);
+                if (!e.hasUUID(TAG_UUID) || !e.contains(TAG_LETTER_SERIES_ID, Tag.TAG_STRING)) continue;
+                letterSeries.put(e.getUUID(TAG_UUID), new LetterSeriesState(
+                        e.getLong(TAG_LETTER_SERIES_DEATHS),
+                        e.getString(TAG_LETTER_SERIES_ID),
+                        e.getInt(TAG_LETTER_SERIES_INDEX)));
+            }
+        }
         return new NarrativeProgressData(stories, randomBooks, startingBooksSeen, storyVariants,
-                startingBookReceived, randomBookVariantsEverRead, sharedBooksEverRead);
+                startingBookReceived, randomBookVariantsEverRead, sharedBooksEverRead, letterSeries);
     }
 
     /** Inverse of {@link #encodeStoryProgress}; tolerates missing tag (returns empty). */
