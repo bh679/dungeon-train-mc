@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 8,
+  "mirror": { "x": true, "y": true, "z": true, "v": true },
+  "variants": {
+    "6,2,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "6,3,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "6,4,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "6,6,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "6,0,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "0,6,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "0,0,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "4,6,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "4,0,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "2,6,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "2,0,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "3,6,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "3,0,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "0,4,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "0,2,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] },
+    "0,3,0": { "lockId": 2, "states": ["minecraft:deepslate_bricks", "minecraft:reinforced_deepslate", "minecraft:polished_deepslate"] }
+  }
+}

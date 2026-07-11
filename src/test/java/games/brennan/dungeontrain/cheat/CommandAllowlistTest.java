@@ -29,6 +29,14 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("/dtp (teleport-onto-train) taints, same as vanilla /tp")
+    void dtpTaints() {
+        assertTrue(CommandAllowlist.taints("dtp 3000"));
+        assertTrue(CommandAllowlist.taints("/dtp 3000"));
+        assertTrue(CommandAllowlist.taints("dtp -1500.5"));
+    }
+
+    @Test
     @DisplayName("Leading slash and explicit minecraft: namespace still taint")
     void slashAndNamespace() {
         assertTrue(CommandAllowlist.taints("/give @s diamond"));

@@ -4055,6 +4055,132 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dtp-teleport-command",
+      "version": "0.437.0",
+      "type": "feat",
+      "title": "/dtp command \u2014 teleport anywhere on the track and always land on a train",
+      "summary": "Added an admin command, /dtp <x>, that teleports you to any point along the track and makes sure a train is waiting there for you \u2014 no more jumping ahead with nothing around. It always sets you down on the nearest open flatbed car.",
+      "highlights": [
+        "/dtp <x> teleports to world-X and spawns a train there if one isn't already",
+        "Always lands you on an open flatbed car, never mid-air or on a carriage roof"
+      ],
+      "pr": 719,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "upside-down-exit-island-crossfade",
+      "version": "0.437.0",
+      "type": "feat",
+      "title": "The upside-down world dissolves back to the overworld through floating islands",
+      "summary": "Leaving the upside-down stretch of the world is no longer an abrupt wall. The inverted ceiling-world now breaks apart into shrinking, drifting floating islands while the normal overworld fades back in from below as growing islands over the void \u2014 a long, dreamlike descent until solid ground returns beneath you.",
+      "highlights": [
+        "The upside-down band now exits through a long floating-island crossfade instead of a hard edge",
+        "Mirror islands disperse and spread apart while the overworld reforms as islands below, then merges into solid ground"
+      ],
+      "pr": 720,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dtp-difficulty-scaling",
+      "version": "0.438.0",
+      "type": "feat",
+      "title": "/dtp now scales difficulty to match the destination",
+      "summary": "Teleporting with /dtp <x> now also shifts the game's difficulty to match how far along the track you land \u2014 same effect as running /dungeontrain difficulty, just automatic.",
+      "highlights": [
+        "/dtp shifts difficulty (mob gear, loot, onboarding, and the carriage content generating ahead) to match the destination"
+      ],
+      "pr": 722,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "upside-down-advancements",
+      "version": "0.438.0",
+      "type": "feat",
+      "title": "New advancements for the Upside Down",
+      "summary": "Two new advancements track your trip through the upside-down band: 'The Upside Down' for stepping into the mirrored world, and 'Reassembly Required' for riding out through the drifting islands as it disperses back into overworld.",
+      "highlights": [
+        "The Upside Down and Reassembly Required advancements, fired as you ride through the upside-down band and its exit crossfade",
+        "Fixed the 'Re-Over-World' advancement firing the instant you entered the upside-down band instead of once you're actually back on solid ground"
+      ],
+      "pr": 721,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "train-upright-upside-down-band",
+      "version": "0.438.0",
+      "type": "fix",
+      "title": "Train stays right-side up in the Upside Down",
+      "summary": "In the Upside Down band the world flips around you, but the train itself now stays right-side up \u2014 your carriages read normally as stable footing amid the inverted terrain, instead of being rendered upside-down along with everything else.",
+      "highlights": [
+        "Fixed train/carriage blocks rendering upside-down inside the Upside Down band"
+      ],
+      "pr": 723,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "upsidedown-no-animal-spawns",
+      "version": "0.438.0",
+      "type": "fix",
+      "title": "No wild animals falling in the upside-down world",
+      "summary": "In the upside-down band the world is flipped, so wild animals used to spawn with nothing to stand on and immediately plummet past the train. Animals (and, as before, hostile mobs) no longer spawn naturally inside the band.",
+      "highlights": [
+        "Wild animals no longer spawn and fall to their death in the upside-down band"
+      ],
+      "pr": 724,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "deepdark-vase-content-update",
+      "version": "0.439.0",
+      "type": "content",
+      "title": "Deepdark storage & vase room content",
+      "summary": "New storage and vase-filled room variants join the vase loot pool, alongside a matching set of deepdark-themed roof, wall, and floor decor for dungeon rooms.",
+      "highlights": [
+        "New storage and vases room content in the vase loot group",
+        "New deepdark-themed roof, wall, and floor part variants"
+      ],
+      "pr": 725,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "upside-down-ceiling-cap-perf",
+      "version": "0.439.0",
+      "type": "perf",
+      "title": "Smoother upside-down world generation",
+      "summary": "The upside-down band is lighter to generate, so the train streams through the flipped world with fewer hitches as new terrain loads around you. Its mirrored ceiling now hangs at a consistent capped thickness instead of reflecting the full depth of the terrain below.",
+      "highlights": [
+        "Less stutter as the upside-down world loads",
+        "The flipped ceiling now hangs at a consistent thickness (same view from directly below; flatter only at cliff cross-sections)",
+        "New config to tune the ceiling thickness and generation cost (upsideDownMaxCeilingHeight, upsideDownExitNoiseSkipEpsilon)"
+      ],
+      "pr": 726,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

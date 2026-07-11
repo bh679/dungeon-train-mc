@@ -169,4 +169,62 @@ public final class UpsideDownBand {
     public static int bedrockRoofY(int mirror, int ceilingGap, int minY, int maxY) {
         return Math.min(maxY - 1, 2 * mirror + ceilingGap - minY);
     }
+
+    /**
+     * The inverted bedrock lid Y after applying the ceiling-height cap ({@code upsideDownMaxCeilingHeight}):
+     * with {@code maxCeilingHeight > 0} the lid drops to one block above the capped ceiling
+     * ({@code mirror + ceilingGap + maxCeilingHeight}), so it sits flush on the fixed-thickness slab;
+     * {@code 0} leaves the uncapped {@code roofY} unchanged. Never raises the roof. Pure — shared by
+     * {@code WorldUpsideDownEvents} and tests.
+     */
+    public static int cappedRoofY(int roofY, int mirror, int ceilingGap, int maxCeilingHeight) {
+        if (maxCeilingHeight <= 0) return roofY;
+        return Math.min(roofY, mirror + ceilingGap + maxCeilingHeight + 1);
+    }
+
+    // ---- exit-crossfade noise-skip predicates -------------------------------
+    // The exit fade samples Disintegration.coherentNoise (∈ [0,1)) up to twice per block, gated on the
+    // per-COLUMN ramps exitDisperse/exitReveal. Near the saturated ends of those ramps the gate outcome
+    // is fixed for the whole column, so the sample can be skipped. These pure predicates decide that once
+    // per column (WorldUpsideDownEvents). eps == 0 → provably output-identical; eps > 0 → a near-identical
+    // fidelity/perf tradeoff that also skips columns within eps of saturation.
+
+    /**
+     * True iff the exit mirror-disperse gate is guaranteed to KEEP every reflected block in a column with
+     * this {@code disperse} ramp — so the per-block {@code coherentNoise} sample can be skipped. The gate
+     * drops when {@code coherentNoise(...) >= disperse}; since {@code coherentNoise ∈ [0,1)} it can never
+     * reach {@code 1.0}, so at {@code disperse >= 1.0} nothing is ever dropped. {@code eps} widens this to
+     * {@code disperse >= 1.0 - eps} (at most an {@code eps} fraction of blocks a sample would have dropped
+     * are kept instead — imperceptible at the band edge). {@code eps == 0} is output-identical. Pure.
+     */
+    public static boolean exitMirrorKeepsAll(double disperse, double eps) {
+        return disperse >= 1.0 - eps;
+    }
+
+    /**
+     * True iff the exit mirror-disperse gate is guaranteed to DROP every reflected block in a column with
+     * this {@code disperse} ramp — so the sample can be skipped (the block goes straight to air). The gate
+     * drops when {@code coherentNoise(...) >= disperse}; since {@code coherentNoise >= 0}, at
+     * {@code disperse <= 0.0} every block drops. {@code eps} widens this to {@code disperse <= eps}.
+     * {@code eps == 0} is output-identical. Evaluated only after {@link #exitMirrorKeepsAll}, so the two
+     * bands never conflict (guaranteed while {@code eps < 0.5}). Pure.
+     */
+    public static boolean exitMirrorDropsAll(double disperse, double eps) {
+        return disperse <= eps;
+    }
+
+    /**
+     * True iff the exit overworld-reveal gate is guaranteed to KEEP (place) every original overworld block
+     * in a column with this {@code reveal} ramp — so the sample can be skipped. The gate places when
+     * {@code coherentNoise(...) >= pRemove}, where {@code pRemove =
+     * Disintegration.removalProbabilityFromRamp(1 - reveal, y, bedY)} is {@code 0} only when
+     * {@code 1 - reveal <= 0} (i.e. {@code reveal >= 1.0}). Because the depth boost can scale that ramp up
+     * to {@code ×(1 + }{@link Disintegration#DEPTH_WEIGHT}{@code )}, the epsilon bound must account for it:
+     * skipping keeps {@code pRemove <= eps} at every depth only when
+     * {@code (1 - reveal)·(1 + DEPTH_WEIGHT) <= eps} — which is why the LOW-reveal end is never skipped.
+     * {@code eps == 0} reduces to the provable {@code reveal >= 1.0}. Pure.
+     */
+    public static boolean exitOverworldKeepsAll(double reveal, double eps) {
+        return (1.0 - reveal) * (1.0 + Disintegration.DEPTH_WEIGHT) <= eps;
+    }
 }
