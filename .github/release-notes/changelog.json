@@ -4087,6 +4087,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dtp-difficulty-scaling",
+      "version": "0.438.0",
+      "type": "feat",
+      "title": "/dtp now scales difficulty to match the destination",
+      "summary": "Teleporting with /dtp <x> now also shifts the game's difficulty to match how far along the track you land \u2014 same effect as running /dungeontrain difficulty, just automatic.",
+      "highlights": [
+        "/dtp shifts difficulty (mob gear, loot, onboarding, and the carriage content generating ahead) to match the destination"
+      ],
+      "pr": 722,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
