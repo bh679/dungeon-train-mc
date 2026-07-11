@@ -16,7 +16,7 @@ final class NetherMountainTerrainTest {
 
     // owGap 0 → band starts at X=0. beach 20, 5 stages × 40, megaHold 0, coreFade 50, coreHold 100, End off.
     private static final WorldGenCycle C =
-            new WorldGenCycle(0L, 0, 40, new int[] {1, 2, 4, 8, 15}, 20, 0, 50, 100, 0, 0, 0, 0);
+            new WorldGenCycle(0L, 0, 40, new int[] {1, 2, 4, 8, 15}, 20, 0, 50, 100, 0, 0, 0, 0, 0, 0, 0);
 
     private static final long SEED = 0x123456789ABCDEFL;
     private static final int SEA = 63;
@@ -44,7 +44,7 @@ final class NetherMountainTerrainTest {
     @DisplayName("the End band wins: no raise where endMiddleRamp > 0")
     void endPrecedence() {
         // A cycle whose End segment overlaps the X we probe: give it an End band and check a column it owns.
-        WorldGenCycle withEnd = new WorldGenCycle(0L, 0, 40, new int[] {1, 2}, 0, 0, 0, 0, 60, 40, 200, 0);
+        WorldGenCycle withEnd = new WorldGenCycle(0L, 0, 40, new int[] {1, 2}, 0, 0, 0, 0, 60, 40, 200, 0, 0, 0, 0);
         // Find any X the End middle ramp owns and assert the mountain yields there.
         boolean foundEndColumn = false;
         for (int x = 0; x < (int) withEnd.period(); x++) {

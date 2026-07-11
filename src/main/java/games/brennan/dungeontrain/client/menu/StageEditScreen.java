@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,7 @@ public final class StageEditScreen implements MenuScreen {
         ClientStages.Info s = ClientStages.byId(stageId);
         int minLevel = s == null ? 0 : s.minLevel();
         int maxLevel = s == null ? -1 : s.maxLevel();
-        int phaseMask = s == null ? 0b1111 : s.phaseMask();
+        int phaseMask = s == null ? TrainPhase.ALL_MASK : s.phaseMask();
 
         // Min / Max Diff-Level steppers — [-] / value (typeable) / [+].
         out.add(levelTriple("minlevel", "Min Lv (" + minLevel + ")", "0-1000"));

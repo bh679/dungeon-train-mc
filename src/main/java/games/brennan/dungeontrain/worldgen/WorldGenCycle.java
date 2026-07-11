@@ -3,17 +3,22 @@ package games.brennan.dungeontrain.worldgen;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 
 /**
- * The single repeating world-gen cycle the train crosses, laying out BOTH special
+ * The single repeating world-gen cycle the train crosses, laying out ALL special
  * phases in one fixed order along +X from a shared anchor:
  *
  * <pre>
- *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → (repeat)
+ *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → Upside-down → Void → OW (repeat)
  * </pre>
  *
- * i.e. per period: {@code [owGap] [nether band] [owGap] [end band]}. The two sub-bands
- * reuse the existing ramp math ({@link NetherTransition} and {@link Disintegration})
- * evaluated at a <em>local</em> offset with {@code owHold = 0}, so this class only owns
- * the layout/positioning.
+ * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [upside-down band] [udExitGap]}. The
+ * nether/End sub-bands reuse the existing ramp math ({@link NetherTransition} and
+ * {@link Disintegration}) evaluated at a <em>local</em> offset with {@code owHold = 0}; the
+ * upside-down band uses a simple trapezoid ({@link #upsideDownRamp}) and is realised as a
+ * post-process vertical mirror (see {@code WorldUpsideDownEvents}). This class only owns the
+ * layout/positioning. The upside-down band flows directly out of the End band (no overworld gap
+ * between them) and is followed by its own trailing {@code udExitGap} of plain overworld before the
+ * cycle's leading {@code owGap} resumes; both are present only when the band has length, so
+ * {@link #period()} is byte-identical to the pre-existing two-band cycle when it is off.
  *
  * <p>The nether mountain runs in three stages that progressively amplify the <em>natural
  * overworld heightmap</em>: stage 1 ×1 (a real-looking vanilla mountain biome), stage 2
@@ -36,6 +41,10 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * @param eFade      End fade span
  * @param eVoid      End void-hold span (each side)
  * @param eEnd       End-island core span
+ * @param udFade     upside-down atmosphere fade span (each side); 0 disables the band
+ * @param udHold     upside-down mirrored-world core span
+ * @param udExit     plain-overworld gap inserted after the upside-down band, before the cycle's
+ *                   leading {@code owGap} resumes; 0 when the band is disabled
  * @param phaseShift blocks the whole cycle is shifted at {@code startX} so the FIRST overworld gap
  *                   (to the nether band) is shorter than the recurring {@code owGap}; {@code
  *                   max(0, owGap − firstOverworld)}, 0 = no shift. Shared with the End band's
@@ -44,7 +53,8 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 public record WorldGenCycle(long startX, int owGap,
                             int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
                             int coreFade, int coreHold,
-                            int eFade, int eVoid, int eEnd, int phaseShift) {
+                            int eFade, int eVoid, int eEnd,
+                            int udFade, int udHold, int udExit, int phaseShift) {
 
     /**
      * Memoised {@link #build} result. {@code fromConfig} is a pure read of the GLOBAL COMMON
@@ -88,6 +98,7 @@ public record WorldGenCycle(long startX, int owGap,
     private static WorldGenCycle build() {
         boolean nether = DungeonTrainCommonConfig.isNetherTransitionEnabled();
         boolean end = DungeonTrainCommonConfig.isDisintegrationEnabled();
+        boolean ud = DungeonTrainCommonConfig.isUpsideDownEnabled();
         return new WorldGenCycle(
                 DungeonTrainCommonConfig.getDisintegrationStartBlocks(),
                 DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks(),
@@ -100,6 +111,9 @@ public record WorldGenCycle(long startX, int owGap,
                 end ? DungeonTrainCommonConfig.getDisintegrationFadeBlocks() : 0,
                 end ? DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks() : 0,
                 end ? DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks() : 0,
+                ud ? DungeonTrainCommonConfig.getUpsideDownFadeBlocks() : 0,
+                ud ? DungeonTrainCommonConfig.getUpsideDownHoldBlocks() : 0,
+                ud ? DungeonTrainCommonConfig.getUpsideDownExitGapBlocks() : 0,
                 DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks());
     }
 
@@ -126,9 +140,23 @@ public record WorldGenCycle(long startX, int owGap,
         return Disintegration.bandLength(eFade, eVoid, eEnd);
     }
 
-    /** {@code 2·owGap + netherLen + endLen}; 0 if everything collapses (nothing to generate). */
+    /** Combined length of the upside-down band ({@code 2·udFade + udHold}); 0 when the band is disabled. */
+    public long upsideDownLen() {
+        return 2L * Math.max(0, udFade) + Math.max(0, udHold);
+    }
+
+    /**
+     * The upside-down band's own trailing overworld gap — present only when the band has length. Gating
+     * it on {@code upsideDownLen > 0} keeps {@link #period()} byte-identical to the two-band cycle when
+     * the band is disabled, protecting existing world layouts and the cycle unit tests.
+     */
+    private long udExitGap() {
+        return upsideDownLen() > 0L ? Math.max(0, udExit) : 0L;
+    }
+
+    /** {@code 2·owGap + netherLen + endLen + udLen + udExitGap}; 0 if everything collapses. */
     public long period() {
-        return 2L * Math.max(0, owGap) + netherLen() + endLen();
+        return 2L * Math.max(0, owGap) + netherLen() + endLen() + upsideDownLen() + udExitGap();
     }
 
     /**
@@ -148,6 +176,11 @@ public record WorldGenCycle(long startX, int owGap,
 
     private long endStart() {
         return 2L * Math.max(0, owGap) + netherLen();
+    }
+
+    /** Offset (into the cycle) where the upside-down band begins — immediately after the End band, no gap. */
+    private long udStart() {
+        return 2L * Math.max(0, owGap) + netherLen() + endLen();
     }
 
     private long netherOffset(int worldX) {
@@ -332,5 +365,91 @@ public record WorldGenCycle(long startX, int owGap,
         long le = o - endStart();
         if (le < 0L || le >= endLen()) return 0.0;
         return Disintegration.skyRamp((int) le, 0L, eFade, eVoid, eEnd, 0, skyOffset);
+    }
+
+    /** Offset into the upside-down band at a world-X, or {@code -1} outside it. */
+    private long udOffset(int worldX) {
+        long o = offset(worldX);
+        if (o < 0L) return -1L;
+        long lu = o - udStart();
+        return (lu < 0L || lu >= upsideDownLen()) ? -1L : lu;
+    }
+
+    /**
+     * Upside-down atmosphere ramp {@code 0..1} at a world-X: 0 outside the band, ramping 0→1 over
+     * {@code udFade}, held at 1 across the core, then 1→0 over {@code udFade}. Drives the client
+     * sky/light crossfade and the mob-spawn gate. Pure (seed-independent), like the other ramps.
+     */
+    public double upsideDownRamp(int worldX) {
+        long lu = udOffset(worldX);
+        if (lu < 0L) return 0.0;
+        int fade = Math.max(0, udFade);
+        if (fade == 0) return 1.0;
+        long band = upsideDownLen();
+        if (lu < fade) return (double) lu / fade;
+        long holdEnd = band - fade;
+        if (lu < holdEnd) return 1.0;
+        return Math.max(0.0, (double) (band - lu) / fade);
+    }
+
+    /**
+     * True if {@code worldX} lies anywhere in the upside-down band (fade edges included). The terrain
+     * mirror is all-or-nothing per column, so this binary membership — not {@link #upsideDownRamp} —
+     * gates the reflection; the ramp only crossfades the client atmosphere.
+     */
+    public boolean isInUpsideDownBand(int worldX) {
+        return udOffset(worldX) >= 0L;
+    }
+
+    /**
+     * Length of the entry lead-in zone immediately before {@code udStart} — {@code udFade} clamped to
+     * {@code eVoid} so it never reaches past the trailing void hold into the End core. 0 when the band
+     * is disabled or the void hold has no length.
+     */
+    public long udEntryLeadLen() {
+        return Math.min(Math.max(0, udFade), Math.max(0, eVoid));
+    }
+
+    /** Offset (into the cycle) where the entry lead-in zone begins — {@code udEntryLeadLen} before {@code udStart}. */
+    private long udEntryLeadStart() {
+        return udStart() - udEntryLeadLen();
+    }
+
+    /**
+     * True if {@code worldX} lies in the entry lead-in zone {@code [udEntryLeadStart, udStart)} —
+     * immediately before the upside-down band, inside the End band's trailing void hold. Disjoint from
+     * {@link #isInUpsideDownBand}: a column is in at most one of the two.
+     */
+    public boolean isInUpsideDownEntryLead(int worldX) {
+        long o = offset(worldX);
+        if (o < 0L) return false;
+        long lead = udEntryLeadLen();
+        if (lead <= 0L) return false;
+        long l = o - udEntryLeadStart();
+        return l >= 0L && l < lead;
+    }
+
+    /**
+     * Reveal ramp {@code 0..1} across the entry lead-in zone: 0 at {@code udEntryLeadStart} (start of
+     * the void-hold approach), linear up to 1 at {@code udStart} (where the true band's full mirror
+     * takes over). 0 outside the zone. Drives the noise-gated partial terrain mirror in
+     * {@code WorldUpsideDownEvents} — the terrain analogue of {@link #upsideDownRamp}'s atmosphere fade.
+     */
+    public double upsideDownEntryRevealRamp(int worldX) {
+        if (!isInUpsideDownEntryLead(worldX)) return 0.0;
+        long lead = udEntryLeadLen();
+        if (lead <= 0L) return 0.0;
+        long l = offset(worldX) - udEntryLeadStart();
+        return (double) l / lead;
+    }
+
+    /**
+     * True if {@code worldX} lies in the upside-down band OR its entry lead-in zone — the full stretch
+     * where {@code WorldUpsideDownEvents} produces mirrored (visually inverted) terrain and the client
+     * render-flip / water-freeze / flipped-corridor apply. The band is the solid core; the lead-in is
+     * the Y-windowed reveal running up to it. Combined so those consumers treat both alike.
+     */
+    public boolean isInUpsideDownBandOrEntryLead(int worldX) {
+        return isInUpsideDownBand(worldX) || isInUpsideDownEntryLead(worldX);
     }
 }

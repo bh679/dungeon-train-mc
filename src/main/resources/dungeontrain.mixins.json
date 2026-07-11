@@ -19,7 +19,9 @@
     "NoiseBasedChunkGeneratorMixin",
     "ChunkGeneratorDecorationMixin",
     "RandomStateMixin",
-    "ServerGamePacketListenerImplSignBookMixin"
+    "ServerGamePacketListenerImplSignBookMixin",
+    "SpreadingSnowyDirtBlockUpsideDownMixin",
+    "FlowingFluidUpsideDownMixin"
   ],
   "client": [
     "client.BookViewScreenAccessor",
@@ -43,6 +45,9 @@
     "client.LevelRendererVoidSkyMixin",
     "client.LightTextureEndBandMixin",
     "client.LightTextureNetherBandMixin",
+    "client.LightTextureUpsideDownBandMixin",
+    "client.LevelGetShadeMixin",
+    "client.ModelBlockRendererUpsideDownMixin",
     "client.SoundEngineMusicFadeMixin"
   ],
   "server": [],

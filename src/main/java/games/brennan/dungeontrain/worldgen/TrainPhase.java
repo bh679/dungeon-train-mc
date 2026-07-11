@@ -6,18 +6,18 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * The four worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
- * single 4-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
+ * The five worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
+ * single 5-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
  * Used by the per-template spawn gate
  * ({@link games.brennan.dungeontrain.template.TemplateGate}): a weighted template may restrict
  * itself to a subset of phases, and the generator filters the candidate pool by the phase of the
  * column it is being placed in.
  *
- * <p>The cycle runs OW → Nether → OW → Void → End → Void → … along +X.
- * {@link #phaseAt(ServerLevel, int)} classifies a world-X by combining the two existing
- * server-side classifiers with the same precedence
- * {@link games.brennan.dungeontrain.event.ZoneProgressEvents} uses: the Nether core is tested
- * first (it reads {@code middleRamp == 0}, so {@link DisintegrationBand#zoneAt} would otherwise
+ * <p>The cycle runs OW → Nether → OW → Void → End → Void → Upside-down → Void → OW → … along +X.
+ * {@link #phaseAt(ServerLevel, int)} classifies a world-X by combining the three server-side band
+ * classifiers; the bands occupy disjoint cycle sub-ranges so a column is in at most one. The
+ * upside-down band is tested first (the nether/End classifiers don't know it), then the Nether core
+ * (it reads {@code middleRamp == 0}, so {@link DisintegrationBand#zoneAt} would otherwise
  * mis-classify it as {@link #OVERWORLD}), then the void/End classification. When the bands are
  * disabled (or the world has no train) the column degrades to {@link #OVERWORLD}, the safe
  * default.</p>
@@ -26,7 +26,8 @@ public enum TrainPhase {
     OVERWORLD,
     NETHER,
     VOID,
-    END;
+    END,
+    UPSIDE_DOWN;
 
     /** Bitmask with every phase set ({@code 1<<ordinal} per value) — the "all phases" wire value. */
     public static final int ALL_MASK = (1 << values().length) - 1;
@@ -57,11 +58,12 @@ public enum TrainPhase {
         return name().toLowerCase(java.util.Locale.ROOT);
     }
 
-    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}); null if unknown. */
+    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}); null if unknown. */
     public static TrainPhase byToken(String token) {
         if (token == null) return null;
         String t = token.trim().toLowerCase(java.util.Locale.ROOT);
         if (t.equals("ow")) return OVERWORLD;
+        if (t.equals("ud") || t.equals("upsidedown")) return UPSIDE_DOWN;
         for (TrainPhase p : values()) {
             if (p.token().equals(t)) return p;
         }
@@ -75,6 +77,11 @@ public enum TrainPhase {
      * carriage-selection time. Returns {@link #OVERWORLD} when the bands are off.
      */
     public static TrainPhase phaseAt(ServerLevel overworld, int worldX) {
+        // The three special bands occupy disjoint cycle sub-ranges, so a column is in at most one.
+        // Test upside-down first (it is the only band the nether/End classifiers don't know about).
+        if (UpsideDownBand.isInBand(overworld, worldX)) {
+            return UPSIDE_DOWN;
+        }
         // Use the wider "netherrack present" band (not the strict ≥0.5 biome core) so a NETHER-gated
         // template / Stage spawns across the visible Nether stretch — otherwise NETHER only triggers
         // ~coreFade/2 + the mountain-rise blocks deep into the band ("deep into the Nether").
