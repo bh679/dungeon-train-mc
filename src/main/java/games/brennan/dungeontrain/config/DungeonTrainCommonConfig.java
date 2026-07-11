@@ -176,6 +176,18 @@ public final class DungeonTrainCommonConfig {
     public static final double UPSIDE_DOWN_EXIT_FLOOR_RETURN = 0.9;
     /** Mirror-disperse fraction at/above which the inverted bedrock roof is still stamped across the exit. */
     public static final double UPSIDE_DOWN_EXIT_ROOF_RECEDE = 0.5;
+    /**
+     * Fidelity/perf tradeoff for the exit crossfade's per-column noise skip. Near the saturated ends of
+     * the disperse/reveal ramps the {@link games.brennan.dungeontrain.worldgen.Disintegration#coherentNoise}
+     * gate outcome is effectively constant, so the sample can be skipped. {@code 0.0} skips only where the
+     * outcome is <em>provably</em> constant (output-identical); a small epsilon (e.g. {@code 0.05}) also
+     * skips columns within epsilon of saturation — imperceptible near the fade ends but cutting more noise.
+     * Capped below 0.5 so the keep/drop skip bands cannot overlap. See
+     * {@link games.brennan.dungeontrain.worldgen.UpsideDownBand#exitMirrorKeepsAll}.
+     */
+    public static final double MIN_UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON = 0.0;
+    public static final double MAX_UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON = 0.49;
+    public static final double DEFAULT_UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON = 0.1;
     /** Mirror plane offset (blocks) from the train Y: reflection plane M = trainY + offset. Signed. */
     public static final int MIN_UPSIDE_DOWN_MIRROR_PLANE_OFFSET = -256;
     public static final int MAX_UPSIDE_DOWN_MIRROR_PLANE_OFFSET = 256;
@@ -184,6 +196,17 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_UPSIDE_DOWN_CEILING_GAP = 0;
     public static final int MAX_UPSIDE_DOWN_CEILING_GAP = 256;
     public static final int DEFAULT_UPSIDE_DOWN_CEILING_GAP = 0;
+    /**
+     * Caps the reflected ceiling to at most this many blocks above the ceiling start
+     * ({@code mirror + ceilingGap}); the inverted bedrock lid drops to sit flush on the cap. {@code 0} =
+     * no cap (full mirror — the pre-existing behaviour, byte-identical). A finite cap turns tall terrain's
+     * near-full-height ceiling into a fixed-thickness slab, cutting the dominant per-chunk block-write
+     * cost — but it flattens the flipped world's ceiling, so it changes the band's look. Applies to the
+     * mirror ceiling only (the exit crossfade's returning overworld is never capped).
+     */
+    public static final int MIN_UPSIDE_DOWN_MAX_CEILING_HEIGHT = 0;
+    public static final int MAX_UPSIDE_DOWN_MAX_CEILING_HEIGHT = 384;
+    public static final int DEFAULT_UPSIDE_DOWN_MAX_CEILING_HEIGHT = 32;
     /** Clearance (blocks) inserted below the mirror plane before the reflected hanging terrain begins. */
     public static final int MIN_UPSIDE_DOWN_FLOOR_GAP = 0;
     public static final int MAX_UPSIDE_DOWN_FLOOR_GAP = 256;
@@ -246,6 +269,8 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_FLOOR_GAP;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_BEDROCK_ROOF;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_CLOUD_Y;
+    public static final ModConfigSpec.DoubleValue UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON;
+    public static final ModConfigSpec.IntValue UPSIDE_DOWN_MAX_CEILING_HEIGHT;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -280,6 +305,8 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_FLOOR_GAP = pair.getLeft().upsideDownFloorGap;
         UPSIDE_DOWN_BEDROCK_ROOF = pair.getLeft().upsideDownBedrockRoof;
         UPSIDE_DOWN_CLOUD_Y = pair.getLeft().upsideDownCloudY;
+        UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON = pair.getLeft().upsideDownExitNoiseSkipEpsilon;
+        UPSIDE_DOWN_MAX_CEILING_HEIGHT = pair.getLeft().upsideDownMaxCeilingHeight;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -469,6 +496,22 @@ public final class DungeonTrainCommonConfig {
                         "base world floor at minY=32).")
                 .defineInRange("upsideDownCloudY", DEFAULT_UPSIDE_DOWN_CLOUD_Y,
                         MIN_UPSIDE_DOWN_CLOUD_Y, MAX_UPSIDE_DOWN_CLOUD_Y);
+        ModConfigSpec.DoubleValue upsideDownExitNoiseSkipEpsilon = b
+                .comment("Fidelity/perf tradeoff for the exit-crossfade per-column noise skip. Near the saturated ends",
+                        "of the disperse/reveal ramps the coherentNoise gate outcome is effectively constant, so the",
+                        "sample is skipped. 0.0 = skip only where the outcome is provably constant (output-identical);",
+                        "a small value (e.g. 0.05) also skips columns within epsilon of saturation — imperceptible near",
+                        "the fade ends but cutting more noise. Default 0.0.")
+                .defineInRange("upsideDownExitNoiseSkipEpsilon", DEFAULT_UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON,
+                        MIN_UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON, MAX_UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON);
+        ModConfigSpec.IntValue upsideDownMaxCeilingHeight = b
+                .comment("Caps the reflected ceiling to at most this many blocks above the ceiling start",
+                        "(mirror + ceilingGap); the inverted bedrock lid drops to sit flush on the cap. 0 = no cap",
+                        "(full mirror, byte-identical to before). A finite cap turns tall terrain's near-full-height",
+                        "ceiling into a fixed-thickness slab, cutting the dominant per-chunk block-write cost, but it",
+                        "flattens the flipped world's ceiling (changes the band's look). Default 0.")
+                .defineInRange("upsideDownMaxCeilingHeight", DEFAULT_UPSIDE_DOWN_MAX_CEILING_HEIGHT,
+                        MIN_UPSIDE_DOWN_MAX_CEILING_HEIGHT, MAX_UPSIDE_DOWN_MAX_CEILING_HEIGHT);
         b.pop();
 
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
@@ -479,7 +522,8 @@ public final class DungeonTrainCommonConfig {
                 disintegrationFirstOverworldBlocks, disintegrationSkyFadeOffsetBlocks,
                 upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks, upsideDownExitGapBlocks,
                 upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
-                upsideDownBedrockRoof, upsideDownCloudY);
+                upsideDownBedrockRoof, upsideDownCloudY, upsideDownExitNoiseSkipEpsilon,
+                upsideDownMaxCeilingHeight);
     }
 
     /**
@@ -724,6 +768,19 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? UPSIDE_DOWN_CLOUD_Y.get() : DEFAULT_UPSIDE_DOWN_CLOUD_Y;
     }
 
+    /**
+     * Epsilon for the exit-crossfade per-column noise skip (fidelity/perf tradeoff); falls back to the
+     * hardcoded default pre-load. {@code 0.0} = output-identical (skip only provably-constant columns).
+     */
+    public static double getUpsideDownExitNoiseSkipEpsilon() {
+        return isLoaded() ? UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON.get() : DEFAULT_UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON;
+    }
+
+    /** Max reflected-ceiling height (blocks above mirror+ceilingGap); 0 = uncapped. Falls back pre-load. */
+    public static int getUpsideDownMaxCeilingHeight() {
+        return isLoaded() ? UPSIDE_DOWN_MAX_CEILING_HEIGHT.get() : DEFAULT_UPSIDE_DOWN_MAX_CEILING_HEIGHT;
+    }
+
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain,
@@ -752,5 +809,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue upsideDownCeilingGap,
                           ModConfigSpec.IntValue upsideDownFloorGap,
                           ModConfigSpec.BooleanValue upsideDownBedrockRoof,
-                          ModConfigSpec.IntValue upsideDownCloudY) {}
+                          ModConfigSpec.IntValue upsideDownCloudY,
+                          ModConfigSpec.DoubleValue upsideDownExitNoiseSkipEpsilon,
+                          ModConfigSpec.IntValue upsideDownMaxCeilingHeight) {}
 }
