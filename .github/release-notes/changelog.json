@@ -3940,9 +3940,9 @@
       ],
       "pr": 712,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.432.0",
+      "released_at": "2026-07-11T14:04:18Z"
     }
   ]
 }
