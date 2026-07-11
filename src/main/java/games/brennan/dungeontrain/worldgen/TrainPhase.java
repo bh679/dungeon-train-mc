@@ -13,7 +13,7 @@ import java.util.Set;
  * itself to a subset of phases, and the generator filters the candidate pool by the phase of the
  * column it is being placed in.
  *
- * <p>The cycle runs OW → Nether → OW → Void → End → Void → OW → Upside-down → … along +X.
+ * <p>The cycle runs OW → Nether → OW → Void → End → Void → Upside-down → Void → OW → … along +X.
  * {@link #phaseAt(ServerLevel, int)} classifies a world-X by combining the three server-side band
  * classifiers; the bands occupy disjoint cycle sub-ranges so a column is in at most one. The
  * upside-down band is tested first (the nether/End classifiers don't know it), then the Nether core

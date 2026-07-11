@@ -7,16 +7,18 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * phases in one fixed order along +X from a shared anchor:
  *
  * <pre>
- *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → OW → Upside-down → (repeat)
+ *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → Upside-down → Void → OW (repeat)
  * </pre>
  *
- * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [owGap] [upside-down band]}. The
+ * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [upside-down band] [udExitGap]}. The
  * nether/End sub-bands reuse the existing ramp math ({@link NetherTransition} and
  * {@link Disintegration}) evaluated at a <em>local</em> offset with {@code owHold = 0}; the
  * upside-down band uses a simple trapezoid ({@link #upsideDownRamp}) and is realised as a
  * post-process vertical mirror (see {@code WorldUpsideDownEvents}). This class only owns the
- * layout/positioning. The upside-down band's leading {@code owGap} is present only when the band has
- * length, so {@link #period()} is byte-identical to the pre-existing two-band cycle when it is off.
+ * layout/positioning. The upside-down band flows directly out of the End band (no overworld gap
+ * between them) and is followed by its own trailing {@code udExitGap} of plain overworld before the
+ * cycle's leading {@code owGap} resumes; both are present only when the band has length, so
+ * {@link #period()} is byte-identical to the pre-existing two-band cycle when it is off.
  *
  * <p>The nether mountain runs in three stages that progressively amplify the <em>natural
  * overworld heightmap</em>: stage 1 ×1 (a real-looking vanilla mountain biome), stage 2
@@ -41,6 +43,8 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * @param eEnd       End-island core span
  * @param udFade     upside-down atmosphere fade span (each side); 0 disables the band
  * @param udHold     upside-down mirrored-world core span
+ * @param udExit     plain-overworld gap inserted after the upside-down band, before the cycle's
+ *                   leading {@code owGap} resumes; 0 when the band is disabled
  * @param phaseShift blocks the whole cycle is shifted at {@code startX} so the FIRST overworld gap
  *                   (to the nether band) is shorter than the recurring {@code owGap}; {@code
  *                   max(0, owGap − firstOverworld)}, 0 = no shift. Shared with the End band's
@@ -50,7 +54,7 @@ public record WorldGenCycle(long startX, int owGap,
                             int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
                             int coreFade, int coreHold,
                             int eFade, int eVoid, int eEnd,
-                            int udFade, int udHold, int phaseShift) {
+                            int udFade, int udHold, int udExit, int phaseShift) {
 
     /**
      * Memoised {@link #build} result. {@code fromConfig} is a pure read of the GLOBAL COMMON
@@ -109,6 +113,7 @@ public record WorldGenCycle(long startX, int owGap,
                 end ? DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks() : 0,
                 ud ? DungeonTrainCommonConfig.getUpsideDownFadeBlocks() : 0,
                 ud ? DungeonTrainCommonConfig.getUpsideDownHoldBlocks() : 0,
+                ud ? DungeonTrainCommonConfig.getUpsideDownExitGapBlocks() : 0,
                 DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks());
     }
 
@@ -141,17 +146,17 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
-     * The upside-down band's own leading overworld gap — present only when the band has length. Gating
+     * The upside-down band's own trailing overworld gap — present only when the band has length. Gating
      * it on {@code upsideDownLen > 0} keeps {@link #period()} byte-identical to the two-band cycle when
      * the band is disabled, protecting existing world layouts and the cycle unit tests.
      */
-    private long udGap() {
-        return upsideDownLen() > 0L ? Math.max(0, owGap) : 0L;
+    private long udExitGap() {
+        return upsideDownLen() > 0L ? Math.max(0, udExit) : 0L;
     }
 
-    /** {@code 2·owGap + netherLen + endLen (+ owGap + udLen when the upside-down band is enabled)}; 0 if everything collapses. */
+    /** {@code 2·owGap + netherLen + endLen + udLen + udExitGap}; 0 if everything collapses. */
     public long period() {
-        return 2L * Math.max(0, owGap) + netherLen() + endLen() + udGap() + upsideDownLen();
+        return 2L * Math.max(0, owGap) + netherLen() + endLen() + upsideDownLen() + udExitGap();
     }
 
     /**
@@ -173,9 +178,9 @@ public record WorldGenCycle(long startX, int owGap,
         return 2L * Math.max(0, owGap) + netherLen();
     }
 
-    /** Offset (into the cycle) where the upside-down band begins — after the End band + its own owGap. */
+    /** Offset (into the cycle) where the upside-down band begins — immediately after the End band, no gap. */
     private long udStart() {
-        return 2L * Math.max(0, owGap) + netherLen() + endLen() + udGap();
+        return 2L * Math.max(0, owGap) + netherLen() + endLen();
     }
 
     private long netherOffset(int worldX) {
