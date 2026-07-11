@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_end_islands",
+  "parent": "dungeontrain:dungeon_train/reassembly_required",
   "display": {
     "icon": { "id": "minecraft:grass_block" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_overworld_again.title" },
