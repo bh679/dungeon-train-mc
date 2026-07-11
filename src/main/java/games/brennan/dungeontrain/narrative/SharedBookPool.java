@@ -42,7 +42,11 @@ public final class SharedBookPool {
     /** Max books requested per fetch. */
     static final int POOL_LIMIT = 20;
 
+    // Pin HTTP/1.1: the relay is a cleartext-capable Node server; Java's default HTTP/2 client can't
+    // h2c-upgrade over plaintext http:// (breaks local 127.0.0.1 testing). Harmless in prod — Apache
+    // proxies HTTP/1.1 to the origin regardless. Mirrors BookStatsClient.
     private static final HttpClient HTTP = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(8))
             .build();
 
@@ -95,6 +99,8 @@ public final class SharedBookPool {
         ItemStack stack = BookFactory.buildPlainBook(book.title(), book.author(), book.pages());
         SharedBookFoundTag.stamp(stack);               // "read a stranger's book" advancement marker
         SharedBookReadTag.stampId(stack, book.id());   // read-telemetry identity only
+        LOGGER.debug("[DungeonTrain] shared-book weighted pick -> id {} \"{}\" (weight {})",
+                book.id(), book.title(), book.weight());
         return stack;
     }
 
@@ -198,7 +204,11 @@ public final class SharedBookPool {
         }
         // Publish an immutable snapshot (copy so no external ref can mutate it).
         snapshot = List.copyOf(parsed);
-        LOGGER.debug("[DungeonTrain] shared-book pool refreshed: {} book(s)", parsed.size());
+        if (LOGGER.isDebugEnabled()) {
+            StringBuilder sb = new StringBuilder();
+            for (PoolBook pb : parsed) sb.append(" [id ").append(pb.id()).append(" w=").append(pb.weight()).append(']');
+            LOGGER.debug("[DungeonTrain] shared-book pool refreshed: {} book(s):{}", parsed.size(), sb);
+        }
     }
 
     /** Materialise one pool entry; returns {@code null} if it lacks the required fields. */
