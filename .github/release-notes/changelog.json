@@ -4148,6 +4148,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "upside-down-ceiling-cap-perf",
+      "version": "0.439.0",
+      "type": "perf",
+      "title": "Smoother upside-down world generation",
+      "summary": "The upside-down band is lighter to generate, so the train streams through the flipped world with fewer hitches as new terrain loads around you. Its mirrored ceiling now hangs at a consistent capped thickness instead of reflecting the full depth of the terrain below.",
+      "highlights": [
+        "Less stutter as the upside-down world loads",
+        "The flipped ceiling now hangs at a consistent thickness (same view from directly below; flatter only at cliff cross-sections)",
+        "New config to tune the ceiling thickness and generation cost (upsideDownMaxCeilingHeight, upsideDownExitNoiseSkipEpsilon)"
+      ],
+      "pr": 726,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
