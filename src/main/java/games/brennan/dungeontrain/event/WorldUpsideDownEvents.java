@@ -155,6 +155,13 @@ public final class WorldUpsideDownEvents {
         int mirror = trainY + DungeonTrainCommonConfig.getUpsideDownMirrorPlaneOffset();
         int ceilingGap = Math.max(0, DungeonTrainCommonConfig.getUpsideDownCeilingGap());
         int floorGap = Math.max(0, DungeonTrainCommonConfig.getUpsideDownFloorGap());
+        // Exit-crossfade noise-skip epsilon (fidelity/perf tradeoff; 0.0 = output-identical).
+        double exitNoiseSkipEps = DungeonTrainCommonConfig.getUpsideDownExitNoiseSkipEpsilon();
+        // Ceiling-height cap (STRETCH): 0 = uncapped (byte-identical). When set, the reflected ceiling is
+        // truncated to a fixed-thickness slab (mirror ceiling only) and the bedrock lid drops onto it,
+        // cutting the dominant per-chunk block-write cost at the price of a flatter ceiling.
+        int maxCeilingHeight = DungeonTrainCommonConfig.getUpsideDownMaxCeilingHeight();
+        int ceilCapY = maxCeilingHeight > 0 ? mirror + ceilingGap + maxCeilingHeight : Integer.MAX_VALUE;
 
         int minY = level.getMinBuildHeight();
         int maxY = level.getMaxBuildHeight();          // exclusive
@@ -166,6 +173,7 @@ public final class WorldUpsideDownEvents {
         // minY+1), so the lid sits flush on the ceiling. Fixed per world; clamped into the build range.
         boolean roofInvert = DungeonTrainCommonConfig.isUpsideDownBedrockRoof();
         int roofY = UpsideDownBand.bedrockRoofY(mirror, ceilingGap, minY, maxY);
+        roofY = UpsideDownBand.cappedRoofY(roofY, mirror, ceilingGap, maxCeilingHeight); // STRETCH: lid drops onto the capped ceiling
         int floorSectionIdx = chunk.getSectionIndex(minY);
         int floorLocalY = minY - SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(floorSectionIdx));
 
@@ -176,6 +184,12 @@ public final class WorldUpsideDownEvents {
         int[] extentCol = new int[16];
         boolean[] roofCol = new boolean[16];
         boolean[] exitFloorClear = new boolean[16];   // exit columns whose overworld hasn't coalesced → keep open void
+        // Per-column noise-skip decisions for the exit crossfade: near the saturated ends of the
+        // disperse/reveal ramps the coherentNoise gate outcome is fixed for the whole column, so the
+        // per-block sample is skipped (computed once here, applied in the exit block below).
+        boolean[] exitMirrorKeepAll = new boolean[16]; // disperse gate provably keeps → skip its sample
+        boolean[] exitMirrorDropAll = new boolean[16]; // disperse gate provably drops → skip its sample (→ AIR)
+        boolean[] exitOwKeepAll = new boolean[16];     // reveal gate provably keeps overworld → skip its sample
         for (int dx = 0; dx < 16; dx++) {
             if (inBand[dx]) {
                 extentCol[dx] = maxY;                                  // unbounded — never clips
@@ -189,6 +203,11 @@ public final class WorldUpsideDownEvents {
                 // Bedrock lid recedes as the mirror disperses; floor returns once the overworld coalesces.
                 roofCol[dx] = roofInvert && exitDisperse[dx] >= DungeonTrainCommonConfig.UPSIDE_DOWN_EXIT_ROOF_RECEDE;
                 exitFloorClear[dx] = exitReveal[dx] < DungeonTrainCommonConfig.UPSIDE_DOWN_EXIT_FLOOR_RETURN;
+                // Skip the per-block coherentNoise where this column's ramp saturates the gate outcome.
+                exitMirrorKeepAll[dx] = UpsideDownBand.exitMirrorKeepsAll(exitDisperse[dx], exitNoiseSkipEps);
+                exitMirrorDropAll[dx] = !exitMirrorKeepAll[dx]
+                        && UpsideDownBand.exitMirrorDropsAll(exitDisperse[dx], exitNoiseSkipEps);
+                exitOwKeepAll[dx] = UpsideDownBand.exitOverworldKeepsAll(exitReveal[dx], exitNoiseSkipEps);
             }
         }
 
@@ -295,6 +314,11 @@ public final class WorldUpsideDownEvents {
                         // extent == 0: only the d == 0 innermost row survives (thin track-level slab).
                     }
 
+                    // Ceiling cap (STRETCH): truncate the reflected ceiling above the cap to a fixed-thickness
+                    // slab (mirror ceiling only) to cut the dominant block-write cost. The exit's returning
+                    // overworld below is placed at identity Y and is never capped.
+                    if (ns != AIR && y > ceilCapY) ns = AIR;
+
                     // Exit crossfade: the reflected mirror candidate (ns) disperses into shrinking,
                     // spreading islands while the ORIGINAL overworld column fades back in as islands over
                     // the void. Both are pulled from the pristine snapshot; the overworld wins on Y-overlap
@@ -305,8 +329,14 @@ public final class WorldUpsideDownEvents {
                         // reverse of the entry dither), so mirror islands get smaller and further apart.
                         // Sampled at EXIT_ISLAND_NOISE_SCALE for larger, further-apart islands than the
                         // fine-grained entry dither.
-                        if (ns != AIR && Disintegration.coherentNoise(seed, worldX, y, worldZ, EXIT_ISLAND_NOISE_SCALE) >= exitDisperse[dx]) {
-                            ns = AIR;
+                        if (ns != AIR) {
+                            if (exitMirrorDropAll[dx]) {
+                                ns = AIR;                                 // ramp saturated → always dispersed; skip the sample
+                            } else if (!exitMirrorKeepAll[dx]) {          // ramp saturated the other way → always kept; skip the sample
+                                if (Disintegration.coherentNoise(seed, worldX, y, worldZ, EXIT_ISLAND_NOISE_SCALE) >= exitDisperse[dx]) {
+                                    ns = AIR;
+                                }
+                            }
                         }
                         // (b) Reveal the overworld by running the End void-erosion IN REVERSE (ramp =
                         // 1 − reveal): at reveal 0 all void, at reveal 1 the solid world returns; the depth
@@ -316,8 +346,15 @@ public final class WorldUpsideDownEvents {
                             if (ow.hasBlockEntity()) {
                                 ns = ow;                                   // native BE — leave it exactly in place (identity Y)
                             } else {
-                                double pRemove = Disintegration.removalProbabilityFromRamp(1.0 - exitReveal[dx], y, bedY);
-                                if (Disintegration.coherentNoise(seed ^ OW_ISLAND_SALT, worldX, y, worldZ, EXIT_ISLAND_NOISE_SCALE) >= pRemove) {
+                                // Skip the sample where reveal saturates the gate (overworld provably placed).
+                                // Otherwise sample: place it where the reversed erosion keeps it. pRemove carries a
+                                // depth boost, so only the HIGH-reveal end is skippable (see exitOverworldKeepsAll).
+                                boolean place = exitOwKeepAll[dx];
+                                if (!place) {
+                                    double pRemove = Disintegration.removalProbabilityFromRamp(1.0 - exitReveal[dx], y, bedY);
+                                    place = Disintegration.coherentNoise(seed ^ OW_ISLAND_SALT, worldX, y, worldZ, EXIT_ISLAND_NOISE_SCALE) >= pRemove;
+                                }
+                                if (place) {
                                     if (ow.getBlock() instanceof LiquidBlock) {
                                         // Returning water becomes a static SOURCE (frozen in-zone by
                                         // FlowingFluidUpsideDownMixin) so it hangs on the island instead of
@@ -395,6 +432,7 @@ public final class WorldUpsideDownEvents {
             TrackGenerator.layFlippedCorridor(level, levelChunk, data.dims(), pos.x, pos.z, g);
             changed = true;
         }
+
         if (changed) chunk.setUnsaved(true);
     }
 }
