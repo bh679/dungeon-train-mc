@@ -44,7 +44,7 @@
     "client.LightTextureNetherBandMixin",
     "client.LightTextureUpsideDownBandMixin",
     "client.LevelGetShadeMixin",
-    "client.BlockRenderDispatcherUpsideDownMixin",
+    "client.ModelBlockRendererUpsideDownMixin",
     "client.SoundEngineMusicFadeMixin"
   ],
   "server": [],
