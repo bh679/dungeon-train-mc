@@ -97,6 +97,7 @@ public final class DungeonTrainNet {
 
         // Spawn intro cinematic: server → joining player to start it; client → server when it ends.
         registrar.playToClient(CinematicIntroPacket.TYPE, CinematicIntroPacket.STREAM_CODEC, CinematicIntroPacket::handle);
+        registrar.playToClient(CinematicPreloadBeginPacket.TYPE, CinematicPreloadBeginPacket.STREAM_CODEC, CinematicPreloadBeginPacket::handle);
         registrar.playToServer(CinematicDonePacket.TYPE, CinematicDonePacket.STREAM_CODEC, CinematicDonePacket::handle);
 
         // On-train spawn deck-hold: server → joining/respawning player to keep

@@ -1,17 +1,33 @@
 {
-  "schemaVersion": 1,
-  "selfWeight": 10,
+  "schemaVersion": 3,
+  "selfWeight": 9,
   "variants": [
     {
       "id": "barrels",
-      "weight": 10
+      "weight": 8
     },
     {
       "id": "chest",
-      "weight": 10
+      "weight": 5
     },
     {
       "id": "vasestack",
+      "weight": 1
+    },
+    {
+      "id": "barrels_vert",
+      "weight": 2
+    },
+    {
+      "id": "chest_room",
+      "weight": 3
+    },
+    {
+      "id": "chest_room_1",
+      "weight": 3
+    },
+    {
+      "id": "vase_room",
       "weight": 1
     }
   ]

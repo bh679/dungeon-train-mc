@@ -3930,8 +3930,40 @@
       "released_at": "2026-07-11T08:44:22Z"
     },
     {
-      "id": "lectern-letters",
+      "id": "vase-group-live-tuning",
       "version": "0.432.0",
+      "type": "content",
+      "title": "New vase-room chest and barrel variants",
+      "summary": "Vase rooms on the train can now roll a few new looks \u2014 vertical barrel racks, and two new chest-room layouts alongside the classic vase stack.",
+      "highlights": [
+        "New barrels_vert, chest_room, chest_room_1, and vase_room vase-room variants"
+      ],
+      "pr": 712,
+      "date": "2026-07-11",
+      "released": true,
+      "released_in": "v0.432.0",
+      "released_at": "2026-07-11T14:04:18Z"
+    },
+    {
+      "id": "cinematic-preload-loading-screen",
+      "version": "0.433.0",
+      "type": "feat",
+      "title": "Smoother spawn: loading screen before the intro",
+      "summary": "When you first enter a world, a themed loading screen now holds while the terrain around the train finishes loading, so the opening fly-around plays over a fully-rendered world instead of chunks popping in. You're held safely in place during spawn \u2014 no more falling through unloaded ground \u2014 and you can skip the wait by tapping Space three times.",
+      "highlights": [
+        "Loading screen holds the intro until nearby terrain is ready",
+        "No more falling through unloaded ground at spawn",
+        "Tap Space x3 to skip the wait"
+      ],
+      "pr": 713,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "lectern-letters",
+      "version": "0.433.0",
       "type": "feat",
       "title": "Player-written lectern letters",
       "summary": "Write in a book & quill, place it on a lectern and sign it to add it as the next Letter in this life's narrative series \u2014 a new life begins a new series. Signing burns the letter away at the lectern and shares it with the community; close without signing and the book rests on the lectern as a \"Letter X\" draft to finish later.",
@@ -3948,7 +3980,7 @@
     },
     {
       "id": "narrative-lectern-discovery",
-      "version": "0.432.0",
+      "version": "0.433.0",
       "type": "feat",
       "title": "Travelers' letters turn up on lecterns",
       "summary": "The narratives other players write and sign on their own runs now surface on narrative lecterns, woven in among the built-in stories. They stay hidden until a world has read its way through half the hand-authored tales, then mix in more and more and settle into a fair share \u2014 and once a series begins, later lecterns carry it on, letter by letter. The built-in stories never disappear.",

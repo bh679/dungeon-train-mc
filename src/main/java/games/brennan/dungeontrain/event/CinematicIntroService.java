@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CinematicIntroPacket;
+import games.brennan.dungeontrain.net.CinematicPreloadBeginPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.MinecraftServer;
@@ -41,6 +42,28 @@ public final class CinematicIntroService {
     /** Extra ticks of invulnerability beyond the cinematic length — safety net for a dropped done-packet. */
     private static final int INVULN_GRACE_TICKS = 40;
 
+    /**
+     * Client-side chunk-preload budget (ticks) for the join intro. When the
+     * cinematic is triggered on spawn the client may hold it behind a loading
+     * screen for up to this long while the terrain around the shot streams in
+     * (see {@code CinematicPreloadGate}). Sent to the client in the packet and
+     * folded into the invulnerability deadline so the player stays protected
+     * across the wait as well as the cinematic itself. The on-demand replay
+     * passes {@code preloadChunks=false} and skips the wait entirely.
+     */
+    public static final int PRELOAD_MAX_WAIT_TICKS = 200;
+
+    /**
+     * Client-side freeze budget (ticks) for the pre-placement phase. From login
+     * the client holds the loading screen up and locks the player's position
+     * (see {@code CinematicPreloadGate}) until the train settles and the body is
+     * teleported onto it (the {@link CinematicIntroPacket}). This is the safety
+     * cap: if the train never appears the client releases and drops the player
+     * into the world. Comfortably outlasts {@code PlayerJoinEvents.MAX_RETRY_TICKS}
+     * (the server-side placement retry window).
+     */
+    public static final int PLACE_HOLD_TIMEOUT_TICKS = 160;
+
     /** Player UUID → server-tick deadline at which spawn-invulnerability is force-cleared. */
     private static final Map<UUID, Long> INVULN_UNTIL = new ConcurrentHashMap<>();
 
@@ -69,26 +92,59 @@ public final class CinematicIntroService {
     }
 
     /**
+     * Called at login. If the intro cinematic is going to play (and chunk
+     * preload is enabled), tell the client to open the loading screen and freeze
+     * the player the moment they enter the world — covering the gap before the
+     * server has placed them on the train, where they would otherwise fall
+     * through not-yet-collided terrain. Also opens the invulnerability window and
+     * marks the player {@link #ACTIVE} (deferring the starting-book lightning)
+     * across the hold. The follow-up {@link #play} re-extends both when the body
+     * is actually placed on the train. No-op when the intro won't play.
+     */
+    public static void armPreloadIfNeeded(ServerPlayer player) {
+        if (!DungeonTrainConfig.isIntroCinematicChunkPreloadEnabled()) return;
+        if (!shouldPlay(player)) return;
+        DungeonTrainNet.sendTo(player, new CinematicPreloadBeginPacket(PLACE_HOLD_TIMEOUT_TICKS));
+        ACTIVE.add(player.getUUID());
+        beginInvuln(player, PLACE_HOLD_TIMEOUT_TICKS);
+        LOGGER.info("[DungeonTrain] Preload hold armed for {} (placeTimeout={}t)",
+            player.getName().getString(), PLACE_HOLD_TIMEOUT_TICKS);
+    }
+
+    /**
      * Send the start packet (ground pose → camera start), mark the player as
      * having seen the intro, and open the invulnerability window. Call only
      * after the player's body has been teleported onto the train.
+     *
+     * @param preloadChunks when {@code true} (the join intro), the client may
+     *     hold the cinematic behind a loading screen for up to
+     *     {@link #PRELOAD_MAX_WAIT_TICKS} while the terrain around the shot
+     *     streams in, and the invulnerability window is widened to match. The
+     *     on-demand replay passes {@code false} — chunks are already loaded, so
+     *     the cinematic starts immediately.
      */
-    public static void play(ServerPlayer player, PlayerJoinEvents.SpawnPlacement groundPose) {
+    public static void play(ServerPlayer player, PlayerJoinEvents.SpawnPlacement groundPose, boolean preloadChunks) {
         int duration = DungeonTrainConfig.getIntroCinematicDurationTicks();
+        int preloadMaxWaitTicks =
+            (preloadChunks && DungeonTrainConfig.isIntroCinematicChunkPreloadEnabled())
+                ? PRELOAD_MAX_WAIT_TICKS : 0;
         CinematicIntroPacket pkt = new CinematicIntroPacket(
             groundPose.x(), groundPose.y() + EYE_HEIGHT, groundPose.z(),
             groundPose.yaw(), groundPose.pitch(),
             RISE_HEIGHT, PULL_BACK, LOOK_Y_OFFSET,
-            duration);
+            duration, preloadMaxWaitTicks);
         DungeonTrainNet.sendTo(player, pkt);
         player.setData(ModDataAttachments.SEEN_INTRO_CINEMATIC.get(), Boolean.TRUE);
         ACTIVE.add(player.getUUID());
-        beginInvuln(player, duration);
-        LOGGER.info("[DungeonTrain] Intro cinematic for {}: camStart=({}, {}, {}) yaw={} pitch={} duration={}t",
+        // Cover the client-side preload wait as well as the cinematic itself —
+        // the player is on a loading screen and can't react during the wait.
+        beginInvuln(player, duration + preloadMaxWaitTicks);
+        LOGGER.info("[DungeonTrain] Intro cinematic for {}: camStart=({}, {}, {}) yaw={} pitch={} duration={}t preloadWait={}t",
             player.getName().getString(),
             String.format("%.1f", groundPose.x()), String.format("%.1f", groundPose.y() + EYE_HEIGHT),
             String.format("%.1f", groundPose.z()),
-            String.format("%.1f", groundPose.yaw()), String.format("%.1f", groundPose.pitch()), duration);
+            String.format("%.1f", groundPose.yaw()), String.format("%.1f", groundPose.pitch()), duration,
+            preloadMaxWaitTicks);
     }
 
     /** Camera-start source for an on-demand cinematic replay. */
@@ -123,7 +179,8 @@ public final class CinematicIntroService {
                 player.getYRot(), player.getXRot(),
                 player.blockPosition());
         }
-        play(player, pose);
+        // Replay is triggered in-world with chunks already loaded — no preload wait.
+        play(player, pose, false);
         return used;
     }
 
