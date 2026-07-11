@@ -1,10 +1,10 @@
 {
   "schemaVersion": 8,
   "variants": {
-    "5,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:deepslate_bricks"] },
-    "4,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:deepslate_bricks"] },
-    "3,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:deepslate_bricks"] },
-    "2,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:deepslate_bricks"] },
-    "1,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:deepslate_bricks"] }
+    "5,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:deepslate_bricks", "minecraft:reinforced_deepslate"] },
+    "4,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:deepslate_bricks", "minecraft:reinforced_deepslate"] },
+    "3,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:deepslate_bricks", "minecraft:reinforced_deepslate"] },
+    "2,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:deepslate_bricks", "minecraft:reinforced_deepslate"] },
+    "1,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:deepslate_bricks", "minecraft:reinforced_deepslate"] }
   }
 }
