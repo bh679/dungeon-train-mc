@@ -1,0 +1,112 @@
+package games.brennan.dungeontrain.narrative;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * Exercises {@link NarrativePool#applyResponse} (the relay {@code /narratives/pool} JSON parser) and the
+ * snapshot readers ({@link NarrativePool#resolve}, {@link NarrativePool#pickUnstarted},
+ * {@link NarrativePool#approvedTotal}) directly — no server / network needed. Static pool state is reset
+ * before each test.
+ */
+final class NarrativePoolTest {
+
+    @BeforeEach
+    void reset() {
+        NarrativePool.clear();
+    }
+
+    @Test
+    @DisplayName("applyResponse: parses series + letters and captures the approved-letter total")
+    void parsesSeries() {
+        String body = "{\"ok\":true,\"total\":5,\"series\":["
+                + "{\"seriesId\":\"s1\",\"author\":\"Alice\",\"letters\":["
+                + "{\"letterIndex\":1,\"title\":\"One\",\"pages\":[\"p1\"]},"
+                + "{\"letterIndex\":2,\"title\":\"Two\",\"pages\":[\"p2a\",\"p2b\"]}]}]}";
+        NarrativePool.applyResponse(body, false);
+
+        assertEquals(5, NarrativePool.approvedTotal(), "total is the approved-LETTER count, not series");
+        assertFalse(NarrativePool.isEmpty());
+        Optional<NarrativePool.Series> s = NarrativePool.resolve("s1");
+        assertTrue(s.isPresent());
+        assertEquals("Alice", s.get().author());
+        assertEquals(2, s.get().letters().size());
+        assertEquals(1, s.get().letters().get(0).letterIndex());
+        assertEquals(List.of("p2a", "p2b"), s.get().letters().get(1).pages());
+        assertTrue(NarrativePool.resolve("nope").isEmpty());
+    }
+
+    @Test
+    @DisplayName("applyResponse: total is captured even when the series window is empty")
+    void totalWithoutWindow() {
+        NarrativePool.applyResponse("{\"ok\":true,\"total\":7,\"series\":[]}", false);
+        assertEquals(7, NarrativePool.approvedTotal());
+        assertTrue(NarrativePool.isEmpty());
+    }
+
+    @Test
+    @DisplayName("applyResponse: a series with no letters is dropped (not servable)")
+    void dropsEmptySeries() {
+        String body = "{\"ok\":true,\"total\":1,\"series\":["
+                + "{\"seriesId\":\"empty\",\"author\":\"X\",\"letters\":[]},"
+                + "{\"seriesId\":\"ok\",\"author\":\"Y\",\"letters\":[{\"letterIndex\":1,\"pages\":[\"p\"]}]}]}";
+        NarrativePool.applyResponse(body, false);
+        assertTrue(NarrativePool.resolve("empty").isEmpty(), "a series with no approved letters is not servable");
+        assertTrue(NarrativePool.resolve("ok").isPresent());
+    }
+
+    @Test
+    @DisplayName("applyResponse: a not-ok / missing-series reply keeps the last good snapshot")
+    void notOkKeepsSnapshot() {
+        NarrativePool.applyResponse("{\"ok\":true,\"total\":2,\"series\":["
+                + "{\"seriesId\":\"keep\",\"letters\":[{\"letterIndex\":1,\"pages\":[\"p\"]}]}]}", false);
+        assertTrue(NarrativePool.resolve("keep").isPresent());
+        NarrativePool.applyResponse("{\"ok\":false}", false);
+        assertTrue(NarrativePool.resolve("keep").isPresent(), "snapshot survives a not-ok reply");
+        NarrativePool.applyResponse("{\"ok\":true}", false);
+        assertTrue(NarrativePool.resolve("keep").isPresent(), "snapshot survives a missing-series reply");
+    }
+
+    @Test
+    @DisplayName("exclude-starvation (hadExclude + empty) keeps the snapshot; genuine-empty clears it")
+    void excludeStarvationVsEmpty() {
+        String good = "{\"ok\":true,\"total\":1,\"series\":["
+                + "{\"seriesId\":\"s\",\"letters\":[{\"letterIndex\":1,\"pages\":[\"p\"]}]}]}";
+        NarrativePool.applyResponse(good, false);
+        assertTrue(NarrativePool.resolve("s").isPresent());
+        NarrativePool.applyResponse("{\"ok\":true,\"total\":1,\"series\":[]}", true);  // starvation
+        assertTrue(NarrativePool.resolve("s").isPresent(), "starvation keeps the current snapshot");
+        NarrativePool.applyResponse("{\"ok\":true,\"total\":0,\"series\":[]}", false); // genuinely empty
+        assertTrue(NarrativePool.isEmpty(), "a genuine-empty reply clears the snapshot");
+    }
+
+    @Test
+    @DisplayName("pickUnstarted: deterministic, skips excluded/started series, empty when all excluded")
+    void pickUnstartedFilters() {
+        String body = "{\"ok\":true,\"total\":2,\"series\":["
+                + "{\"seriesId\":\"a\",\"letters\":[{\"letterIndex\":1,\"pages\":[\"p\"]}]},"
+                + "{\"seriesId\":\"b\",\"letters\":[{\"letterIndex\":1,\"pages\":[\"p\"]}]}]}";
+        NarrativePool.applyResponse(body, false);
+
+        Optional<NarrativePool.Series> pick1 = NarrativePool.pickUnstarted(42L, Set.of());
+        Optional<NarrativePool.Series> pick2 = NarrativePool.pickUnstarted(42L, Set.of());
+        assertTrue(pick1.isPresent());
+        assertEquals(pick1.get().seriesId(), pick2.get().seriesId(), "same seed → same pick (deterministic)");
+
+        Optional<NarrativePool.Series> other = NarrativePool.pickUnstarted(42L, Set.of(pick1.get().seriesId()));
+        assertTrue(other.isPresent());
+        assertNotEquals(pick1.get().seriesId(), other.get().seriesId(), "excluded series is skipped");
+
+        assertTrue(NarrativePool.pickUnstarted(42L, Set.of("a", "b")).isEmpty(), "all started → nothing to start");
+    }
+}

@@ -3,12 +3,15 @@ package games.brennan.dungeontrain.narrative;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -80,6 +83,26 @@ public final class NarrativeProgressData extends SavedData {
      * single numeric relay id, not a (book, variant) pair.
      */
     private static final String TAG_SHARED_BOOKS_EVER_READ = "shared_books_ever_read";
+    /**
+     * Root-level list of per-player letter-series state for the player-written lectern-letters
+     * feature. Each entry: {@code {uuid, deaths, series, index}} — the lifetime death count that
+     * anchors the current series ({@code deaths}, from {@code GlobalPlayerStats.totalDeaths}), the
+     * opaque per-life series id ({@code series}, regenerated when {@code deaths} changes) and the
+     * highest letter index signed in that series ({@code index}). Per-player, monotonic within a
+     * life; a new life (deaths changed) re-bases to a fresh series at index 1.
+     */
+    private static final String TAG_LETTER_SERIES = "letter_series";
+    private static final String TAG_LETTER_SERIES_DEATHS = "deaths";
+    private static final String TAG_LETTER_SERIES_ID = "series";
+    private static final String TAG_LETTER_SERIES_INDEX = "index";
+    /**
+     * Root-level string-list of {@code "seriesId#letterIndex"} keys for approved player-written narrative
+     * letters this world has EVER read from a narrative lectern (the DISCOVERY half). Monotonic, insertion
+     * -ordered: it doubles as the world's player-series read-set (continuation via
+     * {@link #hasReadPlayerLetter}) and the in-progress pin source ({@link #startedPlayerSeriesIds}, most
+     * recently started last). World-local and never fed into {@code GlobalNarrativeProgress}/advancements.
+     */
+    private static final String TAG_PLAYER_LETTERS_EVER_READ = "player_letters_ever_read";
 
     private final Map<String, NarrativeProgress> byStory;
     /** World-wide seen-variant tracking for the random-book pool. */
@@ -118,10 +141,26 @@ public final class NarrativeProgressData extends SavedData {
      * max toward the fair share once a world has seen most community content.
      */
     private final Set<Integer> sharedBooksEverRead;
+    /**
+     * Per-player current-life letter-series cursor for the lectern-letters feature. Keyed by
+     * player UUID; value is the death-count-anchored series id + highest signed letter index. See
+     * {@link #nextLetter(UUID, long)}.
+     */
+    private final Map<UUID, LetterSeriesState> letterSeries;
+    /**
+     * {@code "seriesId#letterIndex"} keys for approved player narrative letters this world has ever read on
+     * a lectern (monotonic, insertion-ordered). Backs continuation ({@link #hasReadPlayerLetter}), the
+     * in-progress pin set ({@link #startedPlayerSeriesIds}), and is world-local — never touches canon
+     * progress or advancements. See {@link #TAG_PLAYER_LETTERS_EVER_READ}.
+     */
+    private final Set<String> playerLettersEverRead;
+
+    /** Stored letter-series cursor for one player: which life ({@code seriesDeaths}), the series id, and the highest index signed. */
+    private record LetterSeriesState(long seriesDeaths, String seriesId, int letterIndex) {}
 
     private NarrativeProgressData() {
         this(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>(),
-                new HashMap<>(), new HashSet<>());
+                new HashMap<>(), new HashSet<>(), new HashMap<>(), new LinkedHashSet<>());
     }
 
     private NarrativeProgressData(Map<String, NarrativeProgress> byStory,
@@ -130,7 +169,9 @@ public final class NarrativeProgressData extends SavedData {
                                   Map<String, NarrativeProgress> storyVariantsSeen,
                                   Set<UUID> startingBookReceived,
                                   Map<String, NarrativeProgress> randomBookVariantsEverRead,
-                                  Set<Integer> sharedBooksEverRead) {
+                                  Set<Integer> sharedBooksEverRead,
+                                  Map<UUID, LetterSeriesState> letterSeries,
+                                  Set<String> playerLettersEverRead) {
         this.byStory = byStory;
         this.randomBooksSeen = randomBooksSeen;
         this.startingBooksSeen = startingBooksSeen;
@@ -138,6 +179,8 @@ public final class NarrativeProgressData extends SavedData {
         this.startingBookReceived = startingBookReceived;
         this.randomBookVariantsEverRead = randomBookVariantsEverRead;
         this.sharedBooksEverRead = sharedBooksEverRead;
+        this.letterSeries = letterSeries;
+        this.playerLettersEverRead = playerLettersEverRead;
     }
 
     public static NarrativeProgressData get(ServerLevel overworld) {
@@ -259,6 +302,55 @@ public final class NarrativeProgressData extends SavedData {
      */
     public int distinctSharedBooksEverRead() {
         return sharedBooksEverRead.size();
+    }
+
+    // ---------------- Player-narrative discovery tracking ----------------
+
+    /**
+     * Record that the world has read letter {@code letterIndex} of player narrative series {@code seriesId}
+     * on a lectern. Monotonic — the world's player-series read-set only grows. Returns {@code true} on the
+     * first read of this letter. World-local; never touches canon progress / advancements.
+     */
+    public boolean markPlayerLetterRead(String seriesId, int letterIndex) {
+        if (seriesId == null || seriesId.isEmpty()) return false;
+        boolean added = playerLettersEverRead.add(playerLetterKey(seriesId, letterIndex));
+        if (added) setDirty();
+        return added;
+    }
+
+    /** Whether the world has already read letter {@code letterIndex} of {@code seriesId} — drives next-unread. */
+    public boolean hasReadPlayerLetter(String seriesId, int letterIndex) {
+        if (seriesId == null || seriesId.isEmpty()) return false;
+        return playerLettersEverRead.contains(playerLetterKey(seriesId, letterIndex));
+    }
+
+    /**
+     * The distinct player narrative seriesIds the world has started (read ≥1 letter of), in the order they
+     * were first read (oldest first, so the tail is the most recently started). Used both to continue an
+     * in-progress series and to pin in-progress series into the relay pool fetch so they stay resolvable.
+     */
+    public List<String> startedPlayerSeriesIds() {
+        Set<String> seen = new LinkedHashSet<>();
+        for (String key : playerLettersEverRead) {
+            int hash = key.lastIndexOf('#');
+            seen.add(hash >= 0 ? key.substring(0, hash) : key);
+        }
+        return new ArrayList<>(seen);
+    }
+
+    /**
+     * How many mod-story letters the world has read — the warm-up-ramp numerator {@code Lr} for the
+     * narrative-lectern discovery chance (denominator {@link StoryRegistry#totalLetterCount()}). Reads the
+     * canon story-progress map, so it rises as the world reads the hand-authored lectern content.
+     */
+    public int distinctModStoryLettersRead() {
+        int total = 0;
+        for (NarrativeProgress p : byStory.values()) total += p.readCount();
+        return total;
+    }
+
+    private static String playerLetterKey(String seriesId, int letterIndex) {
+        return seriesId + "#" + letterIndex;
     }
 
     // ---------------- Story-letter variant tracking ----------------
@@ -486,6 +578,47 @@ public final class NarrativeProgressData extends SavedData {
         return Optional.of(uncompleted.get(idx));
     }
 
+    // ---------------- Letter-series tracking (player-written lectern letters) ----------------
+
+    /**
+     * Assign the next letter in {@code playerUuid}'s current-life series and advance the cursor.
+     * The life is identified by {@code currentDeaths} (a monotonic lifetime death count, e.g.
+     * {@code GlobalPlayerStats.totalDeaths}): while it is unchanged the same {@code seriesId} is
+     * reused and {@code letterIndex} climbs; when it changes (the player died and started a new
+     * life) a fresh {@code seriesId} is minted and numbering restarts at 1. The series is tied to
+     * the life, not to any lectern.
+     *
+     * <p>Calls {@link #setDirty()} so the cursor survives a mid-life relog. Returns the freshly
+     * assigned {@link LetterSeries} ({@code seriesId} + 1-based {@code letterIndex}).</p>
+     */
+    public LetterSeries nextLetter(UUID playerUuid, long currentDeaths) {
+        LetterSeriesState state = letterSeries.get(playerUuid);
+        String seriesId;
+        int nextIndex;
+        if (state == null || state.seriesDeaths() != currentDeaths) {
+            // New life (or first ever letter) — mint a fresh series and start at 1.
+            seriesId = UUID.randomUUID().toString().replace("-", "");
+            nextIndex = 1;
+        } else {
+            seriesId = state.seriesId();
+            nextIndex = state.letterIndex() + 1;
+        }
+        letterSeries.put(playerUuid, new LetterSeriesState(currentDeaths, seriesId, nextIndex));
+        setDirty();
+        return new LetterSeries(seriesId, nextIndex);
+    }
+
+    /**
+     * The index the NEXT signed letter would receive for {@code playerUuid} at {@code currentDeaths},
+     * WITHOUT advancing the cursor — used to label the unsigned "Letter X" draft left on a lectern.
+     * 1 when the player has no series yet this life.
+     */
+    public int peekNextIndex(UUID playerUuid, long currentDeaths) {
+        LetterSeriesState state = letterSeries.get(playerUuid);
+        if (state == null || state.seriesDeaths() != currentDeaths) return 1;
+        return state.letterIndex() + 1;
+    }
+
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.put(TAG_STORIES, encodeStoryProgress(byStory));
@@ -511,6 +644,24 @@ public final class NarrativeProgressData extends SavedData {
         int si = 0;
         for (Integer id : sharedBooksEverRead) sharedArr[si++] = id;
         tag.putIntArray(TAG_SHARED_BOOKS_EVER_READ, sharedArr);
+
+        // Per-player letter-series cursors — flat list of {uuid, deaths, series, index}.
+        ListTag letterList = new ListTag();
+        for (var entry : letterSeries.entrySet()) {
+            LetterSeriesState state = entry.getValue();
+            CompoundTag e = new CompoundTag();
+            e.putUUID(TAG_UUID, entry.getKey());
+            e.putLong(TAG_LETTER_SERIES_DEATHS, state.seriesDeaths());
+            e.putString(TAG_LETTER_SERIES_ID, state.seriesId());
+            e.putInt(TAG_LETTER_SERIES_INDEX, state.letterIndex());
+            letterList.add(e);
+        }
+        tag.put(TAG_LETTER_SERIES, letterList);
+
+        // Monotonic ever-read player-narrative letters — a flat string-list of "seriesId#letterIndex".
+        ListTag playerLetters = new ListTag();
+        for (String key : playerLettersEverRead) playerLetters.add(StringTag.valueOf(key));
+        tag.put(TAG_PLAYER_LETTERS_EVER_READ, playerLetters);
         return tag;
     }
 
@@ -573,8 +724,32 @@ public final class NarrativeProgressData extends SavedData {
         // worlds saved before the community-book taper landed simply start with nothing read.
         Set<Integer> sharedBooksEverRead = new HashSet<>();
         for (int id : tag.getIntArray(TAG_SHARED_BOOKS_EVER_READ)) sharedBooksEverRead.add(id);
+        // Missing tag → empty map (worlds saved before lectern letters landed start with no series).
+        Map<UUID, LetterSeriesState> letterSeries = new HashMap<>();
+        if (tag.contains(TAG_LETTER_SERIES, Tag.TAG_LIST)) {
+            ListTag letterList = tag.getList(TAG_LETTER_SERIES, Tag.TAG_COMPOUND);
+            for (int i = 0; i < letterList.size(); i++) {
+                CompoundTag e = letterList.getCompound(i);
+                if (!e.hasUUID(TAG_UUID) || !e.contains(TAG_LETTER_SERIES_ID, Tag.TAG_STRING)) continue;
+                letterSeries.put(e.getUUID(TAG_UUID), new LetterSeriesState(
+                        e.getLong(TAG_LETTER_SERIES_DEATHS),
+                        e.getString(TAG_LETTER_SERIES_ID),
+                        e.getInt(TAG_LETTER_SERIES_INDEX)));
+            }
+        }
+        // Missing tag → empty set (worlds saved before narrative discovery landed start with nothing read).
+        // Insertion order is preserved so startedPlayerSeriesIds() keeps its oldest-first ordering.
+        Set<String> playerLettersEverRead = new LinkedHashSet<>();
+        if (tag.contains(TAG_PLAYER_LETTERS_EVER_READ, Tag.TAG_LIST)) {
+            ListTag list = tag.getList(TAG_PLAYER_LETTERS_EVER_READ, Tag.TAG_STRING);
+            for (int i = 0; i < list.size(); i++) {
+                String s = list.getString(i);
+                if (!s.isEmpty()) playerLettersEverRead.add(s);
+            }
+        }
         return new NarrativeProgressData(stories, randomBooks, startingBooksSeen, storyVariants,
-                startingBookReceived, randomBookVariantsEverRead, sharedBooksEverRead);
+                startingBookReceived, randomBookVariantsEverRead, sharedBooksEverRead, letterSeries,
+                playerLettersEverRead);
     }
 
     /** Inverse of {@link #encodeStoryProgress}; tolerates missing tag (returns empty). */
