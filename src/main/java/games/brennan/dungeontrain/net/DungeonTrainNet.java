@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "44";
+    public static final String PROTOCOL_VERSION = "45";
 
     private DungeonTrainNet() {}
 
@@ -80,6 +80,12 @@ public final class DungeonTrainNet {
         // Book-read telemetry: client measures a book read (open→close, per-page timing) and sends it on
         // close; server consent-gates + enriches narrative fields + reports to the relay's Books explorer.
         registrar.playToServer(BookReadClosedPacket.TYPE, BookReadClosedPacket.STREAM_CODEC, BookReadClosedPacket::handle);
+
+        // Lectern letters: server → client to open the book sign screen when a book & quill is
+        // right-clicked onto a lectern and the feature is active; client → server when that screen is
+        // closed WITHOUT signing, so the server leaves the unsigned book on the lectern as a draft.
+        registrar.playToClient(OpenLetterEditorPacket.TYPE, OpenLetterEditorPacket.STREAM_CODEC, OpenLetterEditorPacket::handle);
+        registrar.playToServer(LetterDraftToLecternPacket.TYPE, LetterDraftToLecternPacket.STREAM_CODEC, LetterDraftToLecternPacket::handle);
 
         // Death-screen run-stats snapshot, server → dying player on LivingDeathEvent.
         registrar.playToClient(DeathStatsPacket.TYPE, DeathStatsPacket.STREAM_CODEC, DeathStatsPacket::handle);

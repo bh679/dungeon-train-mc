@@ -96,6 +96,9 @@ public final class DungeonTrainConfig {
     /** Default master for the "Death Note" curse book mechanic (local sign/burn + relay sync). */
     public static final boolean DEFAULT_DEATH_NOTES_ENABLED = true;
 
+    /** Default master for player-written "lectern letters" (sign a book & quill on a lectern → per-life relay series). */
+    public static final boolean DEFAULT_LETTERS_ENABLED = true;
+
     /**
      * STARTING max chance a rolled chest book comes from the shared community pool. The effective
      * chance scales from 0% (no hardcoded random books read) up to this max (100% of them read), so
@@ -107,6 +110,19 @@ public final class DungeonTrainConfig {
     public static final double DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE = 0.75;
     public static final double MIN_SHARED_BOOK_LOOT_CHANCE = 0.0;
     public static final double MAX_SHARED_BOOK_LOOT_CHANCE = 1.0;
+
+    /** Default master for serving approved player-written narrative series back on narrative lecterns. */
+    public static final boolean DEFAULT_DISCOVER_NARRATIVES_ENABLED = true;
+
+    /**
+     * Fraction of the hand-authored (mod) lectern letters a world must read before player-written
+     * narratives start appearing on lecterns at all. Below this the chance is exactly 0; above it the
+     * chance ramps up and settles at the pool-size fair share {@code P/(P+V)} (player letters vs mod
+     * letters). Default 0.5 — player stories stay hidden until half the built-in content is read.
+     */
+    public static final double DEFAULT_NARRATIVE_DISCOVERY_RAMP_THRESHOLD = 0.5;
+    public static final double MIN_NARRATIVE_DISCOVERY_RAMP_THRESHOLD = 0.0;
+    public static final double MAX_NARRATIVE_DISCOVERY_RAMP_THRESHOLD = 1.0;
 
     public static final boolean DEFAULT_DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = true;
 
@@ -148,7 +164,10 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue SHARE_BOOKS_ENABLED;
     public static final ModConfigSpec.BooleanValue DISCOVER_SHARED_BOOKS_ENABLED;
     public static final ModConfigSpec.BooleanValue DEATH_NOTES_ENABLED;
+    public static final ModConfigSpec.BooleanValue LETTERS_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_BOOK_LOOT_MAX_CHANCE;
+    public static final ModConfigSpec.BooleanValue DISCOVER_NARRATIVES_ENABLED;
+    public static final ModConfigSpec.DoubleValue NARRATIVE_DISCOVERY_RAMP_THRESHOLD;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_ENABLED;
     public static final ModConfigSpec.IntValue INTRO_CINEMATIC_DURATION_TICKS;
@@ -186,7 +205,10 @@ public final class DungeonTrainConfig {
         SHARE_BOOKS_ENABLED = pair.getLeft().shareBooksEnabled;
         DISCOVER_SHARED_BOOKS_ENABLED = pair.getLeft().discoverSharedBooksEnabled;
         DEATH_NOTES_ENABLED = pair.getLeft().deathNotesEnabled;
+        LETTERS_ENABLED = pair.getLeft().lettersEnabled;
         SHARED_BOOK_LOOT_MAX_CHANCE = pair.getLeft().sharedBookLootMaxChance;
+        DISCOVER_NARRATIVES_ENABLED = pair.getLeft().discoverNarrativesEnabled;
+        NARRATIVE_DISCOVERY_RAMP_THRESHOLD = pair.getLeft().narrativeDiscoveryRampThreshold;
         DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = pair.getLeft().difficultyLevelNoticeToDiscord;
         INTRO_CINEMATIC_ENABLED = pair.getLeft().introCinematicEnabled;
         INTRO_CINEMATIC_DURATION_TICKS = pair.getLeft().introCinematicDurationTicks;
@@ -281,6 +303,15 @@ public final class DungeonTrainConfig {
                         "requires network consent (Discord Presence's 'use the internet?' prompt). False disables the mechanic",
                         "entirely — a \"Death Note\" signs like any other book.")
                 .define("deathNotesEnabled", DEFAULT_DEATH_NOTES_ENABLED);
+        ModConfigSpec.BooleanValue lettersEnabled = b
+                .comment("Player-written lectern letters. When true, right-clicking a lectern with a book & quill opens",
+                        "the sign screen; signing it uploads the letter to the Dungeon Train relay as the next entry in your",
+                        "current life's narrative series (a new life starts a new series) and burns the book away at the",
+                        "lectern. Closing without signing leaves the book & quill on the lectern as an unsigned \"Letter X\"",
+                        "draft to finish later. Uploading also requires the player's client to have granted network consent",
+                        "(Discord Presence's 'use the internet?' prompt). False disables the feature — a book & quill placed",
+                        "on a lectern behaves like vanilla.")
+                .define("lettersEnabled", DEFAULT_LETTERS_ENABLED);
         ModConfigSpec.DoubleValue sharedBookLootMaxChance = b
                 .comment("The STARTING maximum per-roll chance that a chest book comes from the shared community pool instead",
                         "of the local narrative pool. The effective chance SCALES with progress: 0% when none of the hardcoded",
@@ -292,6 +323,21 @@ public final class DungeonTrainConfig {
                         "is empty or the relay is unreachable, the roll silently falls back to the local pool regardless.")
                 .defineInRange("sharedBookLootMaxChance", DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE,
                         MIN_SHARED_BOOK_LOOT_CHANCE, MAX_SHARED_BOOK_LOOT_CHANCE);
+        ModConfigSpec.BooleanValue discoverNarrativesEnabled = b
+                .comment("Serve approved player-written narrative series back on narrative lecterns. When true, a lectern",
+                        "may (weighted + tapered like shared-book loot, at LETTER granularity) lock to a player's narrative",
+                        "instead of a hand-authored mod story, advancing through its letters world-wide as they are read.",
+                        "Discovery is server-wide with no per-player consent — served narratives are already approved/public.",
+                        "False disables it — lecterns serve only the hand-authored mod stories, exactly as before.")
+                .define("discoverNarrativesEnabled", DEFAULT_DISCOVER_NARRATIVES_ENABLED);
+        ModConfigSpec.DoubleValue narrativeDiscoveryRampThreshold = b
+                .comment("How much of the hand-authored (mod) lectern content a world must read before player-written",
+                        "narratives start appearing on lecterns at all. Measured as mod-story LETTERS read / total mod letters.",
+                        "Below this fraction the chance is exactly 0; above it the chance ramps up and settles at the pool-size",
+                        "fair share P/(P+V) (approved player letters vs mod letters). Default 0.5 — player stories stay hidden",
+                        "until half the built-in content is read. 0.0 = ramp from the very first lectern.")
+                .defineInRange("narrativeDiscoveryRampThreshold", DEFAULT_NARRATIVE_DISCOVERY_RAMP_THRESHOLD,
+                        MIN_NARRATIVE_DISCOVERY_RAMP_THRESHOLD, MAX_NARRATIVE_DISCOVERY_RAMP_THRESHOLD);
         b.pop();
         b.push("discord");
         ModConfigSpec.BooleanValue deathReportToDiscord = b
@@ -367,7 +413,8 @@ public final class DungeonTrainConfig {
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
-                worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled, sharedBookLootMaxChance,
+                worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled, lettersEnabled,
+                sharedBookLootMaxChance, discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled);
     }
@@ -518,10 +565,26 @@ public final class DungeonTrainConfig {
         return isLoaded() ? DEATH_NOTES_ENABLED.get() : DEFAULT_DEATH_NOTES_ENABLED;
     }
 
+    /** Master for player-written lectern letters (sign a book & quill on a lectern → per-life relay series). */
+    public static boolean isLettersEnabled() {
+        return isLoaded() ? LETTERS_ENABLED.get() : DEFAULT_LETTERS_ENABLED;
+    }
+
     /** MAX shared-pool chance (reached at 100% hardcoded random books read); scaled by read fraction. Clamped [0,1]. */
     public static double getSharedBookLootMaxChance() {
         double v = isLoaded() ? SHARED_BOOK_LOOT_MAX_CHANCE.get() : DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE;
         return Math.max(MIN_SHARED_BOOK_LOOT_CHANCE, Math.min(MAX_SHARED_BOOK_LOOT_CHANCE, v));
+    }
+
+    /** Master for serving approved player-written narrative series back on narrative lecterns. */
+    public static boolean isDiscoverNarrativesEnabled() {
+        return isLoaded() ? DISCOVER_NARRATIVES_ENABLED.get() : DEFAULT_DISCOVER_NARRATIVES_ENABLED;
+    }
+
+    /** Fraction of mod lectern letters read before player narratives start appearing on lecterns. Clamped [0,1]. */
+    public static double getNarrativeDiscoveryRampThreshold() {
+        double v = isLoaded() ? NARRATIVE_DISCOVERY_RAMP_THRESHOLD.get() : DEFAULT_NARRATIVE_DISCOVERY_RAMP_THRESHOLD;
+        return Math.max(MIN_NARRATIVE_DISCOVERY_RAMP_THRESHOLD, Math.min(MAX_NARRATIVE_DISCOVERY_RAMP_THRESHOLD, v));
     }
 
     /** Whether to post a notice to Discord each time a player's difficulty tier increases. */
@@ -647,7 +710,10 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue shareBooksEnabled,
             ModConfigSpec.BooleanValue discoverSharedBooksEnabled,
             ModConfigSpec.BooleanValue deathNotesEnabled,
+            ModConfigSpec.BooleanValue lettersEnabled,
             ModConfigSpec.DoubleValue sharedBookLootMaxChance,
+            ModConfigSpec.BooleanValue discoverNarrativesEnabled,
+            ModConfigSpec.DoubleValue narrativeDiscoveryRampThreshold,
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,
             ModConfigSpec.BooleanValue introCinematicEnabled,
             ModConfigSpec.IntValue introCinematicDurationTicks,

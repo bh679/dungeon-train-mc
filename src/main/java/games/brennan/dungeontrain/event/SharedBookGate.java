@@ -37,4 +37,26 @@ public final class SharedBookGate {
     public static boolean canDiscover() {
         return DungeonTrainConfig.isDiscoverSharedBooksEnabled();
     }
+
+    /**
+     * True when the server has opted this world into serving approved player-written narrative series
+     * on narrative lecterns. Governed only by the server-operator master
+     * ({@link DungeonTrainConfig#isDiscoverNarrativesEnabled()}) — like {@link #canDiscover()}, served
+     * narratives are already approved/public so there is no per-player consent.
+     */
+    public static boolean canDiscoverNarratives() {
+        return DungeonTrainConfig.isDiscoverNarrativesEnabled();
+    }
+
+    /**
+     * True when {@code player} may sign a lectern letter that is uploaded to the relay's per-life
+     * narrative series: the letters feature is enabled server-side
+     * ({@link DungeonTrainConfig#isLettersEnabled()}) AND this player's client has granted network
+     * consent ({@link NetworkConsentMirror#isGranted}). A letter sends the player's authored text
+     * off-machine, so it is per-player, fail-closed — same contract as {@link #canContribute}.
+     */
+    public static boolean canWriteLetter(ServerPlayer player) {
+        if (player == null) return false;
+        return DungeonTrainConfig.isLettersEnabled() && NetworkConsentMirror.isGranted(player);
+    }
 }
