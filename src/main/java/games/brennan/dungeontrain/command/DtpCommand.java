@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.event.DtpPlacementService;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -57,6 +58,16 @@ public final class DtpCommand {
     /** Safety margin below the train level's build-height ceiling for the holding spot. */
     private static final int CEILING_MARGIN = 5;
 
+    /**
+     * Calibrated blocks-per-carriage estimate for converting a destination world-X into an
+     * implied travelled-carriage count for difficulty purposes. Diff-Car
+     * ({@link DifficultyProgression#rawMaxTravelledCarriageIndex}) is a path-dependent counter of
+     * actual carriage-boundary crossings during play — there's no exact formula linking it to
+     * world-X — so this is a best-effort approximation calibrated from a live observation
+     * (world-X 35676 &harr; Diff-Car 1041), not a physical law.
+     */
+    private static final double BLOCKS_PER_CARRIAGE = 35676.0 / 1041.0;
+
     private DtpCommand() {}
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -104,6 +115,19 @@ public final class DtpCommand {
         player.setInvulnerable(true);
         player.teleportTo(trainLevel, x, holdY, holdZ, player.getYRot(), player.getXRot());
 
+        // Shift difficulty to match the destination — "as if you'd travelled this far,
+        // everywhere" (same mechanism /dungeontrain difficulty <tier> uses). Set BEFORE
+        // spawnTrain: positionTier reads this same offset to gate carriage template/content
+        // variants as they generate, so the freshly-spawned train's content — not just mob
+        // gear/loot/onboarding — already matches the destination's difficulty.
+        int impliedTravelled = (int) Math.round(Math.abs(x) / BLOCKS_PER_CARRIAGE);
+        int requestedTier = Math.min(DungeonTrainConfig.MAX_REQUESTED_DIFFICULTY_TIER,
+            DifficultyProgression.tierForTravelled(impliedTravelled));
+        int rawTravelled = DifficultyProgression.rawMaxTravelledCarriageIndex(trainLevel);
+        int difficultyOffset = DifficultyProgression.travelledOffsetForRequestedTier(
+            requestedTier, rawTravelled, DungeonTrainConfig.getCarriagesPerTier(), DungeonTrainConfig.getProgressionLevelDelay());
+        DungeonTrainConfig.setDifficultyTravelledOffset(difficultyOffset);
+
         BlockPos origin = new BlockPos((int) Math.floor(x), trainY, 0);
         Vector3d spawnerWorldPos = new Vector3d(x, trainY, 0);
         double speed = DungeonTrainConfig.getSpeed();
@@ -116,8 +140,8 @@ public final class DtpCommand {
         // TrainBootstrapEvents.ensureTrainSpawned.
         int count = configCount > 0 ? configCount : DungeonTrainConfig.DEFAULT_CARRIAGES_AUTO_SEED;
 
-        LOGGER.info("[DungeonTrain] /dtp {} by {} — spawning train at origin {} speed {} (configCount={})",
-            x, player.getName().getString(), origin, speed, configCount);
+        LOGGER.info("[DungeonTrain] /dtp {} by {} — spawning train at origin {} speed {} (configCount={}), difficulty tier {} (offset {})",
+            x, player.getName().getString(), origin, speed, configCount, requestedTier, difficultyOffset);
 
         try {
             TrainAssembler.spawnTrain(trainLevel, origin, velocity, count, spawnerWorldPos, dims);
@@ -133,6 +157,7 @@ public final class DtpCommand {
         DtpPlacementService.enqueue(player, trainLevel, x);
         source.sendSuccess(() -> Component.literal(
             "Teleporting to X=" + x + " — spawning a train there now; you'll land on the flatbed once it settles."
+                + " Difficulty set to tier " + requestedTier + " to match."
         ), true);
         return 1;
     }
