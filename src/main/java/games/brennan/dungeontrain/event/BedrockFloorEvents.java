@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -68,6 +70,14 @@ public final class BedrockFloorEvents {
         long bandStartX = DisintegrationBand.startX(level);
         boolean maybeBand = chunkMinX + 15 >= bandStartX;
 
+        // The upside-down band flips the world's bedrock caps to the roof (WorldUpsideDownEvents),
+        // so it has no floor either — skip bedrock in its columns when that inversion is enabled.
+        // Gated so a false upsideDownBedrockRoof keeps the ordinary floor even in-band. Per-column,
+        // like the void skip, so the two ChunkEvent.Load handlers stay order-independent.
+        boolean roofInvert = DungeonTrainCommonConfig.isUpsideDownBedrockRoof();
+        long upsideStartX = roofInvert ? UpsideDownBand.startX(level) : UpsideDownBand.OFF;
+        boolean maybeUpside = upsideStartX != UpsideDownBand.OFF && chunkMinX + 15 >= upsideStartX;
+
         int minY = level.getMinBuildHeight();
         int sectionIdx = chunk.getSectionIndex(minY);
         LevelChunkSection section = chunk.getSection(sectionIdx);
@@ -77,7 +87,9 @@ public final class BedrockFloorEvents {
         for (int dx = 0; dx < 16; dx++) {
             boolean voidColumn = maybeBand
                     && DisintegrationBand.middleRampAt(level, chunkMinX + dx) > 0.0;
-            if (voidColumn) continue;
+            boolean upsideColumn = maybeUpside
+                    && UpsideDownBand.isInBand(level, chunkMinX + dx);
+            if (voidColumn || upsideColumn) continue;
             for (int dz = 0; dz < 16; dz++) {
                 section.setBlockState(dx, localY, dz, bedrock, false);
             }

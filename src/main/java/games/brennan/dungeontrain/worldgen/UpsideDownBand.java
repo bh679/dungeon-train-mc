@@ -54,4 +54,15 @@ public final class UpsideDownBand {
         if (startX(overworld) == OFF) return 0.0;
         return WorldGenCycle.fromConfig().upsideDownRamp(worldX);
     }
+
+    /**
+     * World-Y of the in-band bedrock roof lid (the {@code upsideDownBedrockRoof} inversion): the point
+     * the old {@code minY} floor mirrors to, clamped into the build range. {@code mirror} is the
+     * reflection plane ({@code trainY + mirrorPlaneOffset}); the reflected ceiling's highest block comes
+     * from source {@code minY+1}, so this lid at {@code 2·mirror + ceilingGap − minY} sits one block
+     * above it, flush on the ceiling. Pure geometry — shared by {@code WorldUpsideDownEvents} and tests.
+     */
+    public static int bedrockRoofY(int mirror, int ceilingGap, int minY, int maxY) {
+        return Math.min(maxY - 1, 2 * mirror + ceilingGap - minY);
+    }
 }

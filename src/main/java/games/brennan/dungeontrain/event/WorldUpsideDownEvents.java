@@ -52,8 +52,13 @@ import java.util.Arrays;
  *
  * <p><b>Preserved / dropped.</b> The track corridor is left byte-for-byte intact by skipping its own
  * Z-columns ({@code [wallMinZ, wallMaxZ]}) — vertical reflection keeps X/Z, so only those columns
- * could damage the tube. The bedrock row at {@code minY} is never read or written (so the handler is
- * independent of {@code BedrockFloorEvents}' ordering). Free-standing <b>water</b> reflects in as a
+ * could damage the tube. The reflection itself never reads {@code minY}; that row is only written under
+ * the bedrock-cap inversion ({@code upsideDownBedrockRoof}, default on) — which clears the surface-rule
+ * floor at {@code minY} so the flipped world hangs over open void and stamps a continuous bedrock lid at
+ * {@code roofY = 2·M + ceilingGap − minY} (where the old floor mirrors to, flush above the reflected
+ * ceiling) across every in-band column, the corridor included. That inversion also makes
+ * {@code BedrockFloorEvents} skip the band, so the floor is gone regardless of handler ordering; with it
+ * off, this handler leaves {@code minY} untouched and the ordinary floor stays. Free-standing <b>water</b> reflects in as a
  * static source block (its flow frozen in-band by {@code FlowingFluidUpsideDownMixin}, so the mirrored
  * ocean/lake hangs from the ceiling without pouring off it); other free-standing fluids (lava) drop to
  * air, and waterlogged solids reflect normally. Block entities are dropped (a BE can't be safely moved
@@ -100,6 +105,15 @@ public final class WorldUpsideDownEvents {
         int minY = level.getMinBuildHeight();
         int maxY = level.getMaxBuildHeight();          // exclusive
         int floorGuard = minY;                          // never read or write the bedrock row
+
+        // Bedrock-cap inversion (upsideDownBedrockRoof): drop the surface-rule bedrock at minY so the
+        // flipped world hangs over open void, and cap the reflected ceiling with a bedrock lid at roofY —
+        // where the old minY floor mirrors to (one above the highest reflected-ceiling block, from source
+        // minY+1), so the lid sits flush on the ceiling. Fixed per world; clamped into the build range.
+        boolean roofInvert = DungeonTrainCommonConfig.isUpsideDownBedrockRoof();
+        int roofY = UpsideDownBand.bedrockRoofY(mirror, ceilingGap, minY, maxY);
+        int floorSectionIdx = chunk.getSectionIndex(minY);
+        int floorLocalY = minY - SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(floorSectionIdx));
 
         // Preserve the track corridor: vertical reflection keeps X/Z, so only the corridor's own
         // Z-columns can damage the generated tube. Skipping them needs no re-stamping.
@@ -186,6 +200,39 @@ public final class WorldUpsideDownEvents {
                         chunk.removeBlockEntity(new BlockPos(chunkMinX + dx, y, worldZ));
                     }
                     sec.setBlockState(dx, ly, dz, ns, false);
+                    changed = true;
+                }
+
+                // Open the underside in-band: remove the surface-rule bedrock left at minY (the mirror
+                // never touches that row), so the flipped column hangs over void instead of a floor.
+                if (roofInvert) {
+                    LevelChunkSection fSec = chunk.getSection(floorSectionIdx);
+                    if (!fSec.getBlockState(dx, floorLocalY, dz).isAir()) {
+                        fSec.setBlockState(dx, floorLocalY, dz, AIR, false);
+                        changed = true;
+                    }
+                }
+            }
+        }
+
+        // Bedrock roof: a continuous lid over every in-band column (corridor included, so the tube is
+        // roofed too), stamped at roofY directly above the reflected ceiling — independent of the corridor
+        // Z-skip above. Only when it lands above the train and inside the build range.
+        if (roofInvert && roofY > mirror && roofY < maxY) {
+            BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
+            int roofSectionIdx = chunk.getSectionIndex(roofY);
+            LevelChunkSection roofSec = chunk.getSection(roofSectionIdx);
+            int roofLocalY = roofY - SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(roofSectionIdx));
+            for (int dz = 0; dz < 16; dz++) {
+                int worldZ = chunkMinZ + dz;
+                for (int dx = 0; dx < 16; dx++) {
+                    if (!inBand[dx]) continue;
+                    BlockState cur = roofSec.getBlockState(dx, roofLocalY, dz);
+                    if (cur == bedrock) continue;
+                    if (cur.hasBlockEntity()) {
+                        chunk.removeBlockEntity(new BlockPos(chunkMinX + dx, roofY, worldZ));
+                    }
+                    roofSec.setBlockState(dx, roofLocalY, dz, bedrock, false);
                     changed = true;
                 }
             }

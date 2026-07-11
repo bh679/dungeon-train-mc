@@ -166,6 +166,21 @@ public final class DungeonTrainCommonConfig {
     public static final int MAX_UPSIDE_DOWN_FLOOR_GAP = 256;
     public static final int DEFAULT_UPSIDE_DOWN_FLOOR_GAP = 0;
     /**
+     * When true the upside-down band inverts the world's bedrock caps: the normal bedrock floor at
+     * {@code minY} is removed in-band (the underside opens to the void) and a bedrock lid is stamped
+     * directly above the reflected terrain ceiling — the old floor, now the highest layer. When false
+     * the band keeps the ordinary bedrock floor and no roof.
+     */
+    public static final boolean DEFAULT_UPSIDE_DOWN_BEDROCK_ROOF = true;
+    /**
+     * In-band cloud plane world-Y — clouds render at this height (below the train, in the open void)
+     * instead of the vanilla 192, so the flipped world's sky sits beneath you. Default 0 (just under
+     * the base world floor at {@code minY=32}).
+     */
+    public static final int MIN_UPSIDE_DOWN_CLOUD_Y = -256;
+    public static final int MAX_UPSIDE_DOWN_CLOUD_Y = 256;
+    public static final int DEFAULT_UPSIDE_DOWN_CLOUD_Y = 0;
+    /**
      * Dev-test preset for the upside-down core span — a short 1000-block core (vs the 5000-block
      * release default) so the mirrored band is fast to reach and traverse in-game. Used automatically
      * on any non-{@code main}/non-release build (see {@link #isUpsideDownDevTestMode()}).
@@ -198,6 +213,8 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_MIRROR_PLANE_OFFSET;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_CEILING_GAP;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_FLOOR_GAP;
+    public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_BEDROCK_ROOF;
+    public static final ModConfigSpec.IntValue UPSIDE_DOWN_CLOUD_Y;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -228,6 +245,8 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_MIRROR_PLANE_OFFSET = pair.getLeft().upsideDownMirrorPlaneOffset;
         UPSIDE_DOWN_CEILING_GAP = pair.getLeft().upsideDownCeilingGap;
         UPSIDE_DOWN_FLOOR_GAP = pair.getLeft().upsideDownFloorGap;
+        UPSIDE_DOWN_BEDROCK_ROOF = pair.getLeft().upsideDownBedrockRoof;
+        UPSIDE_DOWN_CLOUD_Y = pair.getLeft().upsideDownCloudY;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -392,6 +411,18 @@ public final class DungeonTrainCommonConfig {
                         "begins — drops the hanging terrain away from the train. Default 0.")
                 .defineInRange("upsideDownFloorGap", DEFAULT_UPSIDE_DOWN_FLOOR_GAP,
                         MIN_UPSIDE_DOWN_FLOOR_GAP, MAX_UPSIDE_DOWN_FLOOR_GAP);
+        ModConfigSpec.BooleanValue upsideDownBedrockRoof = b
+                .comment("Invert the world's bedrock caps inside the upside-down band: remove the bedrock floor at",
+                        "minY (the underside opens to the void) and stamp a bedrock lid directly above the reflected",
+                        "terrain ceiling — the old floor, now the highest layer. Set false to keep the ordinary",
+                        "bedrock floor and no roof. Default true.")
+                .define("upsideDownBedrockRoof", DEFAULT_UPSIDE_DOWN_BEDROCK_ROOF);
+        ModConfigSpec.IntValue upsideDownCloudY = b
+                .comment("In-band cloud plane world-Y — clouds render here (below the train, in the open void) instead",
+                        "of the vanilla 192, so the flipped world's sky sits beneath you. Default 0 (just under the",
+                        "base world floor at minY=32).")
+                .defineInRange("upsideDownCloudY", DEFAULT_UPSIDE_DOWN_CLOUD_Y,
+                        MIN_UPSIDE_DOWN_CLOUD_Y, MAX_UPSIDE_DOWN_CLOUD_Y);
         b.pop();
 
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
@@ -401,7 +432,8 @@ public final class DungeonTrainCommonConfig {
                 netherBeachBlocks, netherMountainHoldBlocks, netherCoreFadeBlocks, netherCoreHoldBlocks,
                 disintegrationFirstOverworldBlocks, disintegrationSkyFadeOffsetBlocks,
                 upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks,
-                upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap);
+                upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
+                upsideDownBedrockRoof, upsideDownCloudY);
     }
 
     /**
@@ -625,6 +657,16 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? UPSIDE_DOWN_FLOOR_GAP.get() : DEFAULT_UPSIDE_DOWN_FLOOR_GAP;
     }
 
+    /** Whether the band removes the bedrock floor and caps the reflected ceiling with bedrock; falls back pre-load. */
+    public static boolean isUpsideDownBedrockRoof() {
+        return isLoaded() ? UPSIDE_DOWN_BEDROCK_ROOF.get() : DEFAULT_UPSIDE_DOWN_BEDROCK_ROOF;
+    }
+
+    /** In-band cloud plane world-Y (clouds render below the train); falls back to the hardcoded default pre-load. */
+    public static int getUpsideDownCloudY() {
+        return isLoaded() ? UPSIDE_DOWN_CLOUD_Y.get() : DEFAULT_UPSIDE_DOWN_CLOUD_Y;
+    }
+
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain,
@@ -649,5 +691,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue upsideDownHoldBlocks,
                           ModConfigSpec.IntValue upsideDownMirrorPlaneOffset,
                           ModConfigSpec.IntValue upsideDownCeilingGap,
-                          ModConfigSpec.IntValue upsideDownFloorGap) {}
+                          ModConfigSpec.IntValue upsideDownFloorGap,
+                          ModConfigSpec.BooleanValue upsideDownBedrockRoof,
+                          ModConfigSpec.IntValue upsideDownCloudY) {}
 }
