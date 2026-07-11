@@ -4042,6 +4042,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "loading-screen-story-9",
+      "version": "0.436.0",
+      "type": "content",
+      "title": "A ninth loading-screen story",
+      "summary": "One more verse joins the loading screen's rotating story \u2014 a companion piece to \"Who made the train?\" that turns the question back on the rider.",
+      "highlights": [],
+      "pr": 718,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
