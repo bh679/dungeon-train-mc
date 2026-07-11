@@ -3928,6 +3928,22 @@
       "released": true,
       "released_in": "v0.430.0",
       "released_at": "2026-07-11T08:44:22Z"
+    },
+    {
+      "id": "weighted-community-book-spawn",
+      "version": "0.432.0",
+      "type": "feat",
+      "title": "Weighted community-book loot",
+      "summary": "Server admins can now tune how often each community-written book turns up as dungeon chest loot. A book's weight scales its spawn rate \u2014 a higher weight makes it appear proportionally more often, weight 0 keeps its normal rate, and it can be switched off entirely. Lets standout player-written books surface more without drowning out the rest.",
+      "highlights": [
+        "Admin-set weight controls how often each community book appears in loot",
+        "Higher weight = proportionally more frequent; a book can also be turned off"
+      ],
+      "pr": 710,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
