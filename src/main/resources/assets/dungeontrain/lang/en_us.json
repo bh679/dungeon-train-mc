@@ -13,6 +13,7 @@
   "gui.dungeontrain.free_play.confirm.continue": "Continue",
   "gui.dungeontrain.free_play.confirm.cancel": "Cancel, keep my run",
   "gui.dungeontrain.free_play.confirm.dont_show": "Don't show this again",
+  "gui.dungeontrain.cinematic.loading": "Preparing your journey…",
   "gui.dungeontrain.death.narr.platform_fallback": "The platform waits, quiet. The line will carry you on whenever you are ready.",
   "chat.dungeontrain.bed.no_respawn.1": "Respawn point set — aboard the train. You'll wake here wherever the line has carried it.",
   "chat.dungeontrain.bed.no_respawn.2": "The rails carry your anchor now. Sleep, and the train decides where you wake.",

@@ -193,6 +193,9 @@ public final class PlayerJoinEvents {
         // flag) so the client can fade the sky/fog toward the End across the band.
         DungeonTrainWorldData bandData = DungeonTrainWorldData.get(player.serverLevel().getServer().overworld());
         DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(), bandData.startsWithTrain()));
+        // If the intro cinematic will play, open the loading screen + freeze the
+        // player from world-entry so they don't fall while the train settles.
+        CinematicIntroService.armPreloadIfNeeded(player);
         PENDING.put(player.getUUID(), 0);
     }
 
@@ -340,7 +343,9 @@ public final class PlayerJoinEvents {
             anchorX, lookX, haveBuffered);
 
         if (cinematic) {
-            CinematicIntroService.play(player, groundPose);
+            // Join intro: let the client hold the cinematic behind a loading
+            // screen until the terrain around the shot has streamed in.
+            CinematicIntroService.play(player, groundPose, true);
         }
         return true;
     }

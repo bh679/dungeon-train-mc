@@ -3943,6 +3943,23 @@
       "released": true,
       "released_in": "v0.432.0",
       "released_at": "2026-07-11T14:04:18Z"
+    },
+    {
+      "id": "cinematic-preload-loading-screen",
+      "version": "0.433.0",
+      "type": "feat",
+      "title": "Smoother spawn: loading screen before the intro",
+      "summary": "When you first enter a world, a themed loading screen now holds while the terrain around the train finishes loading, so the opening fly-around plays over a fully-rendered world instead of chunks popping in. You're held safely in place during spawn \u2014 no more falling through unloaded ground \u2014 and you can skip the wait by tapping Space three times.",
+      "highlights": [
+        "Loading screen holds the intro until nearby terrain is ready",
+        "No more falling through unloaded ground at spawn",
+        "Tap Space x3 to skip the wait"
+      ],
+      "pr": 713,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
