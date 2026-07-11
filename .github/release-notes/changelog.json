@@ -3911,6 +3911,23 @@
       "released": true,
       "released_in": "v0.429.0",
       "released_at": "2026-07-11T08:13:12Z"
+    },
+    {
+      "id": "dirt-soul-soil-variant",
+      "version": "0.430.0",
+      "type": "content",
+      "title": "Soul soil dirt look + new garden decorations",
+      "summary": "Dirt carriage segments can now occasionally take on a soul soil look (gated to the Nether) instead of always moss, mud, clay, and the other existing looks. Carriages can also spawn a couple of new decorative garden-style features, including an iron golem statue scene.",
+      "highlights": [
+        "Dirt carriages can generate with a soul soil look in the Nether",
+        "New iron golem garden decoration feature",
+        "New herobrine decoration feature"
+      ],
+      "pr": 708,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
