@@ -54,6 +54,19 @@ public final class CinematicIntroService {
     public static final int PRELOAD_MAX_WAIT_TICKS = 200;
 
     /**
+     * Extra invulnerability/lightning-defer budget covering the client's
+     * post-terrain-ready hold for {@code LoadingStories} to finish its verse
+     * before revealing the cinematic (see {@code CinematicPreloadGate#isWaitingForStory}).
+     * That hold isn't bounded by {@link #PRELOAD_MAX_WAIT_TICKS} — it runs until
+     * the story ends or the player presses Space — so without this margin the
+     * fallback in {@link #tick} clears {@link #ACTIVE} (and invulnerability)
+     * before the client actually reaches the cinematic on a longer story,
+     * letting the deferred starting-book lightning strike early. Sized well
+     * above the longest shipped story (~70s at current pacing).
+     */
+    private static final int STORY_WAIT_SAFETY_TICKS = 2000;
+
+    /**
      * Client-side freeze budget (ticks) for the pre-placement phase. From login
      * the client holds the loading screen up and locks the player's position
      * (see {@code CinematicPreloadGate}) until the train settles and the body is
@@ -136,9 +149,10 @@ public final class CinematicIntroService {
         DungeonTrainNet.sendTo(player, pkt);
         player.setData(ModDataAttachments.SEEN_INTRO_CINEMATIC.get(), Boolean.TRUE);
         ACTIVE.add(player.getUUID());
-        // Cover the client-side preload wait as well as the cinematic itself —
-        // the player is on a loading screen and can't react during the wait.
-        beginInvuln(player, duration + preloadMaxWaitTicks);
+        // Cover the client-side preload wait, the story hold that can follow it,
+        // and the cinematic itself — the player is on a loading screen and can't
+        // react at any point during this window.
+        beginInvuln(player, duration + preloadMaxWaitTicks + STORY_WAIT_SAFETY_TICKS);
         LOGGER.info("[DungeonTrain] Intro cinematic for {}: camStart=({}, {}, {}) yaw={} pitch={} duration={}t preloadWait={}t",
             player.getName().getString(),
             String.format("%.1f", groundPose.x()), String.format("%.1f", groundPose.y() + EYE_HEIGHT),

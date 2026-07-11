@@ -32,7 +32,7 @@
     "client.CreativeModeInventoryScreenAccessor",
     "client.AbstractContainerScreenPrefabTintMixin",
     "client.MainMenuLogoMixin",
-    "client.LevelLoadingScreenProgressMixin",
+    "client.LevelLoadingScreenThemeMixin",
     "client.AdvancementsScreenAccessor",
     "client.AdvancementWidgetHideDescMixin",
     "client.AdvancementsCompactLayoutMixin",
