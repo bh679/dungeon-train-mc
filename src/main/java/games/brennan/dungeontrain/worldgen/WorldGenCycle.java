@@ -7,10 +7,10 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * phases in one fixed order along +X from a shared anchor:
  *
  * <pre>
- *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → Upside-down → Void → OW (repeat)
+ *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → Upside-down → exit-fade → Void → OW (repeat)
  * </pre>
  *
- * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [upside-down band] [udExitGap]}. The
+ * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [upside-down band] [udExitFade] [udExitGap]}. The
  * nether/End sub-bands reuse the existing ramp math ({@link NetherTransition} and
  * {@link Disintegration}) evaluated at a <em>local</em> offset with {@code owHold = 0}; the
  * upside-down band uses a simple trapezoid ({@link #upsideDownRamp}) and is realised as a
@@ -45,6 +45,9 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * @param udHold     upside-down mirrored-world core span
  * @param udExit     plain-overworld gap inserted after the upside-down band, before the cycle's
  *                   leading {@code owGap} resumes; 0 when the band is disabled
+ * @param udExitFade upside-down → overworld exit crossfade span, inserted between the band and the
+ *                   trailing {@code udExit} gap: the mirror disperses into shrinking floating islands
+ *                   while overworld islands fade in over the void. 0 = hard edge (period unchanged)
  * @param phaseShift blocks the whole cycle is shifted at {@code startX} so the FIRST overworld gap
  *                   (to the nether band) is shorter than the recurring {@code owGap}; {@code
  *                   max(0, owGap − firstOverworld)}, 0 = no shift. Shared with the End band's
@@ -54,7 +57,21 @@ public record WorldGenCycle(long startX, int owGap,
                             int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
                             int coreFade, int coreHold,
                             int eFade, int eVoid, int eEnd,
-                            int udFade, int udHold, int udExit, int phaseShift) {
+                            int udFade, int udHold, int udExit, int udExitFade, int phaseShift) {
+
+    /**
+     * Back-compat constructor defaulting {@code udExitFade} (the upside-down → overworld exit crossfade)
+     * to 0 — the pre-exit-fade 15-arg shape. A zero exit fade is byte-identical to the previous cycle, so
+     * existing callers and unit tests keep the old layout unchanged.
+     */
+    public WorldGenCycle(long startX, int owGap,
+                         int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
+                         int coreFade, int coreHold,
+                         int eFade, int eVoid, int eEnd,
+                         int udFade, int udHold, int udExit, int phaseShift) {
+        this(startX, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold, coreFade, coreHold,
+                eFade, eVoid, eEnd, udFade, udHold, udExit, 0, phaseShift);
+    }
 
     /**
      * Memoised {@link #build} result. {@code fromConfig} is a pure read of the GLOBAL COMMON
@@ -114,6 +131,7 @@ public record WorldGenCycle(long startX, int owGap,
                 ud ? DungeonTrainCommonConfig.getUpsideDownFadeBlocks() : 0,
                 ud ? DungeonTrainCommonConfig.getUpsideDownHoldBlocks() : 0,
                 ud ? DungeonTrainCommonConfig.getUpsideDownExitGapBlocks() : 0,
+                ud ? DungeonTrainCommonConfig.getUpsideDownExitFadeBlocks() : 0,
                 DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks());
     }
 
@@ -146,6 +164,16 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * Length of the upside-down → overworld exit crossfade, inserted between the band and the trailing
+     * {@code udExit} gap. Gated on {@code upsideDownLen > 0} (like {@link #udExitGap()}) so a disabled
+     * band — or a zero {@code udExitFade} — keeps {@link #period()} byte-identical to the pre-existing
+     * cycle, protecting existing world layouts and the cycle unit tests.
+     */
+    public long udExitFadeLen() {
+        return upsideDownLen() > 0L ? Math.max(0, udExitFade) : 0L;
+    }
+
+    /**
      * The upside-down band's own trailing overworld gap — present only when the band has length. Gating
      * it on {@code upsideDownLen > 0} keeps {@link #period()} byte-identical to the two-band cycle when
      * the band is disabled, protecting existing world layouts and the cycle unit tests.
@@ -154,9 +182,10 @@ public record WorldGenCycle(long startX, int owGap,
         return upsideDownLen() > 0L ? Math.max(0, udExit) : 0L;
     }
 
-    /** {@code 2·owGap + netherLen + endLen + udLen + udExitGap}; 0 if everything collapses. */
+    /** {@code 2·owGap + netherLen + endLen + udLen + udExitFade + udExitGap}; 0 if everything collapses. */
     public long period() {
-        return 2L * Math.max(0, owGap) + netherLen() + endLen() + upsideDownLen() + udExitGap();
+        return 2L * Math.max(0, owGap) + netherLen() + endLen()
+                + upsideDownLen() + udExitFadeLen() + udExitGap();
     }
 
     /**
@@ -382,14 +411,22 @@ public record WorldGenCycle(long startX, int owGap,
      */
     public double upsideDownRamp(int worldX) {
         long lu = udOffset(worldX);
-        if (lu < 0L) return 0.0;
-        int fade = Math.max(0, udFade);
-        if (fade == 0) return 1.0;
-        long band = upsideDownLen();
-        if (lu < fade) return (double) lu / fade;
-        long holdEnd = band - fade;
-        if (lu < holdEnd) return 1.0;
-        return Math.max(0.0, (double) (band - lu) / fade);
+        if (lu >= 0L) {                                        // inside the band core + edge fades
+            int fade = Math.max(0, udFade);
+            if (fade == 0) return 1.0;
+            long band = upsideDownLen();
+            if (lu < fade) return (double) lu / fade;          // leading fade-in
+            long holdEnd = band - fade;
+            if (lu < holdEnd) return 1.0;                      // core hold
+            if (udExitFadeLen() > 0L) return 1.0;              // exit crossfade present → hold at 1, it carries the fade-out
+            return Math.max(0.0, (double) (band - lu) / fade); // trailing fade-out (byte-identical when no exit fade)
+        }
+        long ex = udExitFadeOffset(worldX);                    // exit crossfade: sky/light fades 1→0 across the whole zone
+        if (ex >= 0L) {
+            long len = udExitFadeLen();
+            return len > 0L ? Math.max(0.0, (double) (len - ex) / len) : 0.0;
+        }
+        return 0.0;
     }
 
     /**
@@ -451,5 +488,54 @@ public record WorldGenCycle(long startX, int owGap,
      */
     public boolean isInUpsideDownBandOrEntryLead(int worldX) {
         return isInUpsideDownBand(worldX) || isInUpsideDownEntryLead(worldX);
+    }
+
+    /** Offset (into the cycle) where the exit crossfade begins — immediately after the upside-down band. */
+    private long udExitFadeStart() {
+        return udStart() + upsideDownLen();
+    }
+
+    /** Offset into the exit crossfade at a world-X, or {@code -1} outside it. */
+    private long udExitFadeOffset(int worldX) {
+        long o = offset(worldX);
+        if (o < 0L) return -1L;
+        long l = o - udExitFadeStart();
+        return (l < 0L || l >= udExitFadeLen()) ? -1L : l;
+    }
+
+    /**
+     * True if {@code worldX} lies in the upside-down → overworld exit crossfade — the zone immediately
+     * after the band where the mirror disperses and overworld islands fade in. Disjoint from
+     * {@link #isInUpsideDownBand} and {@link #isInUpsideDownEntryLead}: a column is in at most one.
+     */
+    public boolean isInUpsideDownExitFade(int worldX) {
+        return udExitFadeOffset(worldX) >= 0L;
+    }
+
+    /**
+     * Overworld-reveal ramp {@code 0..1} across the exit crossfade: {@code 0} at the band's trailing
+     * edge (full mirror, no overworld yet) climbing to {@code 1} at the zone end (solid overworld). 0
+     * outside the zone. Drives how much of the normal terrain is un-eroded back in
+     * ({@code WorldUpsideDownEvents}). Pure (seed-independent).
+     */
+    public double upsideDownExitOwRevealRamp(int worldX) {
+        long l = udExitFadeOffset(worldX);
+        if (l < 0L) return 0.0;
+        long len = udExitFadeLen();
+        return len > 0L ? (double) l / len : 0.0;
+    }
+
+    /**
+     * Mirror-disperse ramp {@code 1..0} across the exit crossfade: {@code 1} at the band's trailing edge
+     * (full mirror, continuous with the band) falling to {@code 0} at the zone end (mirror gone). 0
+     * outside the zone. As it falls the surviving mirror islands shrink and spread apart. Pure
+     * (seed-independent); the linear complement of {@link #upsideDownExitOwRevealRamp} today, kept
+     * separate so the two can be staggered later.
+     */
+    public double upsideDownExitMirrorDisperseRamp(int worldX) {
+        long l = udExitFadeOffset(worldX);
+        if (l < 0L) return 0.0;
+        long len = udExitFadeLen();
+        return len > 0L ? (double) (len - l) / len : 0.0;
     }
 }

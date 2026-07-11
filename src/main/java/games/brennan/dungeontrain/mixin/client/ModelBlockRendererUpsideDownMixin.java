@@ -44,7 +44,13 @@ public abstract class ModelBlockRendererUpsideDownMixin {
                                                  boolean checkSides, RandomSource random, long seed,
                                                  int packedOverlay, ModelData modelData, RenderType renderType,
                                                  Operation<Void> original) {
-        if (pos == null || !ClientUpsideDownBand.isInBand(pos.getX())) {
+        // Full band + entry lead-in flips every block; the exit crossfade flips with a Y-split (only the
+        // reflected ceiling at/above the mirror plane) so the dispersing mirror islands stay upside-down
+        // while the returning overworld below renders upright.
+        boolean flip = pos != null
+                && (ClientUpsideDownBand.isInBand(pos.getX())
+                    || (ClientUpsideDownBand.isInExitFlip(pos.getX()) && pos.getY() >= ClientUpsideDownBand.plane()));
+        if (!flip) {
             original.call(level, model, state, pos, poseStack, consumer, checkSides, random, seed, packedOverlay, modelData, renderType);
             return;
         }

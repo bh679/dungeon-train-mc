@@ -15,9 +15,11 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * disintegration band in world-X — the carriage length (band start = startCarriages
  * × length) and whether this world runs the train system at all. The client
  * combines these with the COMMON config (enabled / fade / core) to fade the sky
- * and fog toward the End look across the band. Sent once on login.
+ * and fog toward the End look across the band. {@code trainY} is the carriage height,
+ * needed client-side to place the upside-down mirror plane for the exit-crossfade
+ * render Y-split. Sent once on login.
  */
-public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain) implements CustomPacketPayload {
+public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain, int trainY) implements CustomPacketPayload {
 
     public static final Type<VoidBandSyncPacket> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "void_band_sync"));
@@ -27,8 +29,9 @@ public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain) im
                     (buf, packet) -> {
                         buf.writeVarInt(packet.carriageLength);
                         buf.writeBoolean(packet.startsWithTrain);
+                        buf.writeVarInt(packet.trainY);
                     },
-                    buf -> new VoidBandSyncPacket(buf.readVarInt(), buf.readBoolean())
+                    buf -> new VoidBandSyncPacket(buf.readVarInt(), buf.readBoolean(), buf.readVarInt())
             );
 
     @Override
@@ -40,7 +43,7 @@ public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain) im
         ctx.enqueueWork(() -> {
             ClientVoidBand.update(packet.carriageLength, packet.startsWithTrain);
             ClientNetherBand.update(packet.startsWithTrain);
-            ClientUpsideDownBand.update(packet.startsWithTrain);
+            ClientUpsideDownBand.update(packet.startsWithTrain, packet.trainY);
         });
     }
 }

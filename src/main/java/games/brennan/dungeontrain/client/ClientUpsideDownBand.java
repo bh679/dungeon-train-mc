@@ -17,17 +17,20 @@ import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 public final class ClientUpsideDownBand {
 
     private static volatile boolean startsWithTrain = false;
+    private static volatile int trainY = 0;
 
     private ClientUpsideDownBand() {}
 
-    /** Apply a server sync (whether this world has the train system). */
-    public static void update(boolean starts) {
+    /** Apply a server sync (whether this world has the train system, and the carriage height). */
+    public static void update(boolean starts, int trainYIn) {
         startsWithTrain = starts;
+        trainY = trainYIn;
     }
 
     /** Reset on disconnect so a band never leaks into the next world. */
     public static void reset() {
         startsWithTrain = false;
+        trainY = 0;
     }
 
     /**
@@ -53,5 +56,26 @@ public final class ClientUpsideDownBand {
         if (!startsWithTrain) return false;
         if (!DungeonTrainCommonConfig.isUpsideDownEnabled()) return false;
         return WorldGenCycle.fromConfig().isInUpsideDownBandOrEntryLead(worldX);
+    }
+
+    /**
+     * World-Y of the upside-down mirror plane ({@code trainY + mirrorPlaneOffset}) — the split line for
+     * the exit-crossfade render flip. Blocks at/above it are the reflected ceiling (flip); below it is the
+     * returning overworld / open gap (leave upright). The offset is COMMON config, readable on the client.
+     */
+    public static int plane() {
+        return trainY + DungeonTrainCommonConfig.getUpsideDownMirrorPlaneOffset();
+    }
+
+    /**
+     * True if {@code worldX} lies in the upside-down → overworld exit crossfade, where the block render
+     * flip is applied with a Y-split (only at/above {@link #plane()}) — so the dispersing mirror islands
+     * stay visually upside-down while the returning overworld renders upright. Distinct from
+     * {@link #isInBand} (the full flip zone). 0-cost when off / no train.
+     */
+    public static boolean isInExitFlip(int worldX) {
+        if (!startsWithTrain) return false;
+        if (!DungeonTrainCommonConfig.isUpsideDownEnabled()) return false;
+        return WorldGenCycle.fromConfig().isInUpsideDownExitFade(worldX);
     }
 }

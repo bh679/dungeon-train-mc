@@ -94,15 +94,16 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
             // corridor has to exist there for the player to walk onto.
             if (!data.startsWithTrain()) return false;
 
-            // Inside the upside-down band AND its entry lead-in the corridor is laid AFTER the mirror
-            // flips the column (WorldUpsideDownEvents → TrackGenerator.layFlippedCorridor), so skip
-            // during-gen track laying for those chunks — the mirror needs pristine terrain, would
-            // otherwise flip the rails into the ceiling, and an upright during-gen corridor would render
-            // flipped in the (now band-covered) lead-in. Overworld-only (the band is overworld-only); a
-            // band/lead-edge chunk defers its whole corridor to the post-mirror lay, which covers all its columns.
+            // Inside the upside-down band, its entry lead-in AND its exit crossfade the corridor is laid
+            // AFTER the mirror/exit composition flips the column (WorldUpsideDownEvents →
+            // TrackGenerator.layFlippedCorridor), so skip during-gen track laying for those chunks — the
+            // mirror needs pristine terrain, would otherwise flip the rails into the ceiling, and an
+            // upright during-gen corridor would render flipped / be clobbered by the post-pass composition.
+            // Overworld-only (the band is overworld-only); a band/lead/exit-edge chunk defers its whole
+            // corridor to the post-mirror lay, which covers all its columns.
             if (serverLevel.dimension().equals(Level.OVERWORLD)
-                    && (UpsideDownBand.isInBandOrEntryLead(overworld, chunkPos.getMinBlockX())
-                        || UpsideDownBand.isInBandOrEntryLead(overworld, chunkPos.getMaxBlockX()))) {
+                    && (UpsideDownBand.isInBandEntryLeadOrExit(overworld, chunkPos.getMinBlockX())
+                        || UpsideDownBand.isInBandEntryLeadOrExit(overworld, chunkPos.getMaxBlockX()))) {
                 return false;
             }
 
