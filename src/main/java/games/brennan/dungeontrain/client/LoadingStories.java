@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * The rotating story line shown on both loading screens — one of four short
+ * The rotating story line shown on both loading screens — one of eight short
  * verses (a fellow passenger's uncertain, musing take on the train, in the
  * voice established by {@code Faulthurst} — see
  * {@code narratives/random_books/musings_of_faulthurst.json}), picked once
@@ -20,7 +20,7 @@ import java.util.stream.IntStream;
  */
 public final class LoadingStories {
 
-    private static final int[] STORY_LINE_COUNTS = { 11, 12, 16, 35 };
+    private static final int[] STORY_LINE_COUNTS = { 11, 12, 16, 35, 30, 25, 29, 26 };
 
     private static final long MIN_LINE_MS = 1200;
     private static final long MAX_LINE_MS = 6000;

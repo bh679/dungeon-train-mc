@@ -4010,6 +4010,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "loading-screen-stories",
+      "version": "0.435.0",
+      "type": "content",
+      "title": "Four more loading-screen stories",
+      "summary": "The loading screen's rotating story now has eight verses to draw from instead of four \u2014 more of a fellow passenger's uncertain take on the train to read while you wait.",
+      "highlights": [
+        "New stories: \"Who made the train?\", \"Where did the train come from?\", \"What does the train dream about?\", and \"Does the train choose who boards?\""
+      ],
+      "pr": 716,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
