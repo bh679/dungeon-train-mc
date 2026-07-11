@@ -4102,6 +4102,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "upside-down-advancements",
+      "version": "0.438.0",
+      "type": "feat",
+      "title": "New advancements for the Upside Down",
+      "summary": "Two new advancements track your trip through the upside-down band: 'The Upside Down' for stepping into the mirrored world, and 'Reassembly Required' for riding out through the drifting islands as it disperses back into overworld.",
+      "highlights": [
+        "The Upside Down and Reassembly Required advancements, fired as you ride through the upside-down band and its exit crossfade",
+        "Fixed the 'Re-Over-World' advancement firing the instant you entered the upside-down band instead of once you're actually back on solid ground"
+      ],
+      "pr": 721,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
