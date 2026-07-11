@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.CinematicIntroPacket;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.level.chunk.ChunkSource;
 import net.minecraft.world.phys.Vec3;
@@ -12,6 +13,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.slf4j.Logger;
 
 /**
@@ -31,7 +33,10 @@ import org.slf4j.Logger;
  *   <li><b>CHUNKS</b> — entered by {@link #begin}. The player is now riding the deck
  *       (held by {@code SpawnDeckHold}); the gate stops locking and instead waits for
  *       the chunks around the camera-start position to be present, then a short settle,
- *       then starts the cinematic. Skippable with Space ×3.</li>
+ *       then starts the cinematic. Skippable early with Space ×3 ({@link #skip}). Once
+ *       that wait is satisfied, the gate additionally holds for {@link LoadingStories}
+ *       to finish its story ({@link #isWaitingForStory}) — a single Space press
+ *       ({@link #confirmStart}) skips just that remainder.</li>
  * </ul>
  *
  * <p>Keying chunk readiness off the packet's camera-start world XZ ({@code camX/camZ})
@@ -58,7 +63,7 @@ public final class CinematicPreloadGate {
     private enum Phase { IDLE, PLACING, CHUNKS }
 
     private static Phase phase = Phase.IDLE;
-    private static double displayFraction = 0.0;
+    private static double localFraction = 0.0;
 
     // PLACING state.
     private static int placeElapsed;
@@ -70,6 +75,9 @@ public final class CinematicPreloadGate {
     private static int elapsedTicks;
     private static int readyStreak;
     private static int capTicks;
+    /** Sticky — once the chunk wait itself is satisfied, stays true even if it later regresses. */
+    private static boolean loadingReady;
+    private static String loadingReadyReason;
 
     private CinematicPreloadGate() {}
 
@@ -85,7 +93,7 @@ public final class CinematicPreloadGate {
         placeTimeout = Math.max(1, placeTimeoutTicks);
         placeElapsed = 0;
         freezePos = null;
-        displayFraction = 0.0;
+        localFraction = 0.0;
         LOGGER.info("[DungeonTrain] Cinematic preload gate armed (placing): timeout={}t", placeTimeout);
     }
 
@@ -115,9 +123,14 @@ public final class CinematicPreloadGate {
             String.format("%.1f", packet.camX()), String.format("%.1f", packet.camZ()), capTicks);
     }
 
-    /** Live 0..1 progress for {@link CinematicLoadingScreen} to render. */
+    /**
+     * Overall (cross-screen) progress for {@link CinematicLoadingScreen} to render —
+     * this phase's own local 0..1 model, folded into the shared
+     * {@link LoadingSequenceProgress} timeline so the bar never resets at the
+     * handoff from the themed world-load screen.
+     */
     public static double progress() {
-        return displayFraction;
+        return LoadingSequenceProgress.reportGate(localFraction);
     }
 
     /** True while the gate is holding the cinematic behind the loading screen. */
@@ -131,13 +144,50 @@ public final class CinematicPreloadGate {
     }
 
     /**
+     * True once the chunk wait itself is satisfied but the loading sequence is
+     * holding for {@link LoadingStories} to finish its current story before
+     * revealing the cinematic — {@link CinematicLoadingScreen} shows a
+     * "press Space to start" prompt in this state, and a single press (via
+     * {@link #confirmStart}) skips the rest of the wait.
+     */
+    public static boolean isWaitingForStory() {
+        return phase == Phase.CHUNKS && loadingReady && !LoadingStories.isFinished();
+    }
+
+    /**
+     * Player pressed Space while {@link #isWaitingForStory()} — the world itself
+     * is already ready, so a single press (not the ×3 early-skip below) is enough.
+     */
+    public static void confirmStart() {
+        if (!isWaitingForStory()) return;
+        finish(Minecraft.getInstance(), loadingReadyReason + ", confirmed by player");
+    }
+
+    /**
      * Player asked to skip the chunk wait (Space ×3 on the loading screen) — start
-     * the cinematic immediately. Only valid once placed on the train; a no-op
-     * during placing (skipping then would drop the player mid-fall).
+     * the cinematic immediately even if it isn't otherwise ready. Only valid once
+     * placed on the train; a no-op during placing (skipping then would drop the
+     * player mid-fall).
      */
     public static void skip() {
         if (phase != Phase.CHUNKS) return;
         finish(Minecraft.getInstance(), "skipped");
+    }
+
+    /**
+     * Catches the vanilla {@link LevelLoadingScreen} closing to no screen
+     * (world considered "ready" from vanilla's perspective) and substitutes
+     * {@link CinematicLoadingScreen} in the same synchronous call — same
+     * substitution trick as {@code DeathScreenLayoutHandler}. Without this,
+     * the swap only happened on the next {@link #onClientTick}, up to a
+     * client-tick's worth of raw, unrendered world showing through first.
+     */
+    @SubscribeEvent
+    public static void onScreenOpening(ScreenEvent.Opening event) {
+        if (phase == Phase.IDLE) return;
+        if (!(event.getCurrentScreen() instanceof LevelLoadingScreen)) return;
+        if (event.getNewScreen() instanceof CinematicLoadingScreen) return;
+        event.setNewScreen(new CinematicLoadingScreen());
     }
 
     @SubscribeEvent
@@ -148,7 +198,9 @@ public final class CinematicPreloadGate {
 
         // Keep our loading screen up across the whole hold. Because it is non-pausing
         // and non-Esc, this also blocks the focus-loss auto-pause, so the integrated
-        // server keeps streaming chunks behind it.
+        // server keeps streaming chunks behind it. onScreenOpening above already
+        // catches the common case (vanilla closing LevelLoadingScreen) synchronously;
+        // this is the fallback for any other path that clears mc.screen.
         if (!(mc.screen instanceof CinematicLoadingScreen)) {
             mc.setScreen(new CinematicLoadingScreen());
         }
@@ -177,28 +229,43 @@ public final class CinematicPreloadGate {
         p.fallDistance = 0.0f;
 
         placeElapsed++;
-        displayFraction = PLACING_FRACTION * Math.min(1.0, placeElapsed / (double) placeTimeout);
+        localFraction = PLACING_FRACTION * Math.min(1.0, placeElapsed / (double) placeTimeout);
         if (placeElapsed >= placeTimeout) {
             LOGGER.warn("[DungeonTrain] Cinematic preload gate: placing timed out after {}t — releasing player", placeElapsed);
             release(mc);
         }
     }
 
-    /** Wait for the terrain around the shot, then start the cinematic. */
+    /**
+     * Wait for the terrain around the shot, then start the cinematic — but not
+     * before {@link LoadingStories} finishes its current story. Once the chunk
+     * wait itself is satisfied, {@link #loadingReady} latches and every further
+     * tick just re-checks whether the story is done yet ({@link #isWaitingForStory()}
+     * drives the "press Space to start" prompt on {@link CinematicLoadingScreen}
+     * in the meantime).
+     */
     private static void tickChunks(Minecraft mc) {
-        double chunkFraction = computeChunkFraction(mc);
-        displayFraction = Math.max(displayFraction, PLACING_FRACTION + (1.0 - PLACING_FRACTION) * chunkFraction);
-        if (chunkFraction >= 1.0) {
-            readyStreak++;
-        } else {
-            readyStreak = 0;
-        }
-        elapsedTicks++;
+        if (!loadingReady) {
+            double chunkFraction = computeChunkFraction(mc);
+            localFraction = Math.max(localFraction, PLACING_FRACTION + (1.0 - PLACING_FRACTION) * chunkFraction);
+            if (chunkFraction >= 1.0) {
+                readyStreak++;
+            } else {
+                readyStreak = 0;
+            }
+            elapsedTicks++;
 
-        boolean settled = elapsedTicks >= MIN_SHOW_TICKS && readyStreak >= SETTLE_TICKS;
-        boolean cappedOut = elapsedTicks >= capTicks;
-        if (settled || cappedOut) {
-            finish(mc, settled ? "chunks ready" : "cap reached");
+            boolean settled = elapsedTicks >= MIN_SHOW_TICKS && readyStreak >= SETTLE_TICKS;
+            boolean cappedOut = elapsedTicks >= capTicks;
+            if (settled || cappedOut) {
+                loadingReady = true;
+                loadingReadyReason = settled ? "chunks ready" : "cap reached";
+                localFraction = 1.0; // reads as "done" while we hold for the story
+            }
+        }
+
+        if (loadingReady && LoadingStories.isFinished()) {
+            finish(mc, loadingReadyReason);
         }
     }
 
@@ -222,7 +289,7 @@ public final class CinematicPreloadGate {
     private static void finish(Minecraft mc, String reason) {
         CinematicIntroPacket packet = pending;
         int elapsed = elapsedTicks;
-        double fraction = displayFraction;
+        double fraction = localFraction;
         reset();
         if (mc.screen instanceof CinematicLoadingScreen) {
             mc.setScreen(null);
@@ -247,11 +314,15 @@ public final class CinematicPreloadGate {
         pending = null;
         freezePos = null;
         readyStreak = 0;
-        displayFraction = 0.0;
+        localFraction = 0.0;
+        loadingReady = false;
+        loadingReadyReason = null;
     }
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         reset();
+        LoadingStories.reset();
+        LoadingSequenceProgress.reset();
     }
 }
