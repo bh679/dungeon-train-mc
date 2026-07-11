@@ -273,8 +273,18 @@ public final class Disintegration {
 
     /** Deterministic, clumpy erosion noise in {@code [0,1)} (two octaves), seeded from the world seed. */
     public static double coherentNoise(long seed, int x, int y, int z) {
-        double coarse = valueNoise(seed, x, y, z, NOISE_CELL_COARSE);
-        double fine = valueNoise(seed ^ 0x5DEECE66DL, x, y, z, NOISE_CELL_FINE);
+        return coherentNoise(seed, x, y, z, 1);
+    }
+
+    /**
+     * {@link #coherentNoise(long, int, int, int)} sampled at {@code cellScale}× the base feature size —
+     * larger scale ⇒ bigger, further-apart clumps (islands + gaps grow together). {@code cellScale} is
+     * clamped to ≥ 1, so {@code 1} reproduces the base noise exactly.
+     */
+    public static double coherentNoise(long seed, int x, int y, int z, int cellScale) {
+        int s = Math.max(1, cellScale);
+        double coarse = valueNoise(seed, x, y, z, NOISE_CELL_COARSE * s);
+        double fine = valueNoise(seed ^ 0x5DEECE66DL, x, y, z, NOISE_CELL_FINE * s);
         return 0.6 * coarse + 0.4 * fine;
     }
 
