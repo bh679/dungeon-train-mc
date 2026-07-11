@@ -58,6 +58,10 @@
     {
       "id": "sponge",
       "weight": 1
+    },
+    {
+      "id": "soul_soil",
+      "weight": 4
     }
   ]
 }
