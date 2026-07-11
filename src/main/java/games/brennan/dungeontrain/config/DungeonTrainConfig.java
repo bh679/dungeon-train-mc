@@ -118,9 +118,9 @@ public final class DungeonTrainConfig {
      * Fraction of the hand-authored (mod) lectern letters a world must read before player-written
      * narratives start appearing on lecterns at all. Below this the chance is exactly 0; above it the
      * chance ramps up and settles at the pool-size fair share {@code P/(P+V)} (player letters vs mod
-     * letters). Default 0.3 — player stories stay hidden until a third of the built-in content is read.
+     * letters). Default 0.5 — player stories stay hidden until half the built-in content is read.
      */
-    public static final double DEFAULT_NARRATIVE_DISCOVERY_RAMP_THRESHOLD = 0.3;
+    public static final double DEFAULT_NARRATIVE_DISCOVERY_RAMP_THRESHOLD = 0.5;
     public static final double MIN_NARRATIVE_DISCOVERY_RAMP_THRESHOLD = 0.0;
     public static final double MAX_NARRATIVE_DISCOVERY_RAMP_THRESHOLD = 1.0;
 
@@ -329,8 +329,8 @@ public final class DungeonTrainConfig {
                 .comment("How much of the hand-authored (mod) lectern content a world must read before player-written",
                         "narratives start appearing on lecterns at all. Measured as mod-story LETTERS read / total mod letters.",
                         "Below this fraction the chance is exactly 0; above it the chance ramps up and settles at the pool-size",
-                        "fair share P/(P+V) (approved player letters vs mod letters). Default 0.3 — player stories stay hidden",
-                        "until a third of the built-in content is read. 0.0 = ramp from the very first lectern.")
+                        "fair share P/(P+V) (approved player letters vs mod letters). Default 0.5 — player stories stay hidden",
+                        "until half the built-in content is read. 0.0 = ramp from the very first lectern.")
                 .defineInRange("narrativeDiscoveryRampThreshold", DEFAULT_NARRATIVE_DISCOVERY_RAMP_THRESHOLD,
                         MIN_NARRATIVE_DISCOVERY_RAMP_THRESHOLD, MAX_NARRATIVE_DISCOVERY_RAMP_THRESHOLD);
         b.pop();
