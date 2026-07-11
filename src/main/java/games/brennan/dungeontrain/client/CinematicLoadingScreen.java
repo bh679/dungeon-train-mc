@@ -65,13 +65,15 @@ public final class CinematicLoadingScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == InputConstants.KEY_SPACE) {
-            if (!spaceHeld) {
-                spaceHeld = true;
+            // Only count presses once skipping is allowed (player is on the train,
+            // chunk-wait phase) — you can't skip out of the pre-placement hold.
+            if (!spaceHeld && CinematicPreloadGate.canSkip()) {
                 spacePresses++;
                 if (spacePresses >= SKIP_PRESSES) {
                     CinematicPreloadGate.skip();
                 }
             }
+            spaceHeld = true;
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);

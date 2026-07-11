@@ -4,7 +4,9 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.CinematicIntroPacket;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.level.chunk.ChunkSource;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -13,30 +15,30 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 
 /**
- * Client-side gate that holds the spawn intro cinematic behind a short loading
- * screen ({@link CinematicLoadingScreen}) until the terrain around the shot has
- * streamed in — so the fly-up reveals a fully-rendered world instead of chunks
- * popping in.
+ * Client-side gate that keeps a themed loading screen ({@link CinematicLoadingScreen})
+ * up across the whole spawn sequence — from world-entry, through the server placing
+ * the player on the train, until the terrain around the intro shot has streamed in —
+ * so the fly-up reveals a fully-rendered world and the player never sees the raw
+ * spawn (or falls through not-yet-collided terrain).
  *
- * <p><b>Why.</b> The server triggers the cinematic the instant the train settles
- * ({@code PlayerJoinEvents.tryPlace} → {@code CinematicIntroService.play}), which
- * is right after the client is teleported onto the moving train and is still
- * downloading the surrounding chunks. Starting the camera then shows a half-built
- * world. This gate defers {@link CinematicCameraController#start} until the
- * chunks near the camera-start position are present client-side (or a cap
- * elapses), covering the gap the vanilla world-load screen can't reach.</p>
+ * <p>Two phases:</p>
+ * <ul>
+ *   <li><b>PLACING</b> — armed at login by {@link CinematicPreloadBeginPacket} (via
+ *       {@link #arm}). From the first frame the player is in-world, the screen is
+ *       shown and the player's position is <em>locked</em> each tick so they don't
+ *       fall while the train settles server-side. Ends when the
+ *       {@link CinematicIntroPacket} arrives (body placed on the train).</li>
+ *   <li><b>CHUNKS</b> — entered by {@link #begin}. The player is now riding the deck
+ *       (held by {@code SpawnDeckHold}); the gate stops locking and instead waits for
+ *       the chunks around the camera-start position to be present, then a short settle,
+ *       then starts the cinematic. Skippable with Space ×3.</li>
+ * </ul>
  *
- * <p><b>Readiness.</b> The gate keys off the packet's camera-start world XZ
- * ({@code camX/camZ}) — a real world-space position in the starting dimension
- * (not the player's on-ship, shipyard-space coords) whose surrounding terrain is
- * exactly what the shot reveals. It waits until every chunk within
- * {@link #PRELOAD_CHUNK_RADIUS} of that column is present
- * ({@link ChunkSource#hasChunk}), then a short {@link #SETTLE_TICKS} cushion for
- * mesh builds to finish, enforcing a {@link #MIN_SHOW_TICKS} floor and the
- * packet-supplied max-wait ceiling.</p>
+ * <p>Keying chunk readiness off the packet's camera-start world XZ ({@code camX/camZ})
+ * avoids the player's on-ship (shipyard-space) coords — see memory
+ * {@code project_sable_tick_vs_render_coords}.</p>
  *
- * <p>All methods run on the client main thread (packet {@code enqueueWork},
- * client tick). Single-instance static state — only one local player.</p>
+ * <p>All methods run on the client main thread (packet {@code enqueueWork}, client tick).</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class CinematicPreloadGate {
@@ -45,77 +47,148 @@ public final class CinematicPreloadGate {
 
     /** Chunks each side of the camera-start column that must be present before the reveal. */
     private static final int PRELOAD_CHUNK_RADIUS = 4;
-
     /** Ticks of full-presence cushion before starting — lets section mesh builds finish. */
     private static final int SETTLE_TICKS = 15;
-
     /** Never flash the loading screen for less than this — avoids a one-frame blink. */
     private static final int MIN_SHOW_TICKS = 10;
 
-    private static boolean active = false;
+    /** Display progress reserved for the placing phase; chunk load fills the rest. */
+    private static final double PLACING_FRACTION = 0.15;
+
+    private enum Phase { IDLE, PLACING, CHUNKS }
+
+    private static Phase phase = Phase.IDLE;
+    private static double displayFraction = 0.0;
+
+    // PLACING state.
+    private static int placeElapsed;
+    private static int placeTimeout;
+    private static Vec3 freezePos;
+
+    // CHUNKS state.
     private static CinematicIntroPacket pending;
     private static int elapsedTicks;
     private static int readyStreak;
     private static int capTicks;
-    private static double lastFraction;
 
     private CinematicPreloadGate() {}
 
     /**
-     * Begin the preload wait for {@code packet} (called from
-     * {@link CinematicIntroPacket#handle} when a preload budget is set). Opens
-     * the loading screen and arms the per-tick readiness check. If the world
-     * isn't available (defensive — the packet arrives post-join), the cinematic
-     * starts immediately.
+     * Arm the placing phase (called from {@link CinematicPreloadBeginPacket} at
+     * login). Holds the loading screen up and freezes the player from world-entry
+     * until {@link #begin} switches to the chunk wait, or {@code placeTimeoutTicks}
+     * elapse (train never appeared → release the player into the world).
+     */
+    public static void arm(int placeTimeoutTicks) {
+        if (phase != Phase.IDLE) return; // already running
+        phase = Phase.PLACING;
+        placeTimeout = Math.max(1, placeTimeoutTicks);
+        placeElapsed = 0;
+        freezePos = null;
+        displayFraction = 0.0;
+        LOGGER.info("[DungeonTrain] Cinematic preload gate armed (placing): timeout={}t", placeTimeout);
+    }
+
+    /**
+     * Enter the chunk-wait phase for {@code packet} (called from
+     * {@link CinematicIntroPacket#handle} when a preload budget is set). Stops the
+     * placing freeze and waits for the terrain around the shot before starting the
+     * cinematic. Works standalone if {@link #arm} was never received.
      */
     public static void begin(CinematicIntroPacket packet) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) {
             CinematicCameraController.start(packet);
+            reset();
             return;
         }
         pending = packet;
+        phase = Phase.CHUNKS;
         elapsedTicks = 0;
         readyStreak = 0;
-        lastFraction = 0.0;
+        freezePos = null; // stop the placing freeze — the player now rides the deck
         capTicks = Math.max(1, packet.preloadMaxWaitTicks());
-        active = true;
-        mc.setScreen(new CinematicLoadingScreen());
+        if (!(mc.screen instanceof CinematicLoadingScreen)) {
+            mc.setScreen(new CinematicLoadingScreen());
+        }
         LOGGER.info("[DungeonTrain] Cinematic preload gate: waiting for chunks around ({}, {}) cap={}t",
             String.format("%.1f", packet.camX()), String.format("%.1f", packet.camZ()), capTicks);
     }
 
-    /** Live 0..1 chunk-load fraction for {@link CinematicLoadingScreen} to render. */
+    /** Live 0..1 progress for {@link CinematicLoadingScreen} to render. */
     public static double progress() {
-        return lastFraction;
+        return displayFraction;
     }
 
     /** True while the gate is holding the cinematic behind the loading screen. */
     public static boolean isActive() {
-        return active;
+        return phase != Phase.IDLE;
+    }
+
+    /** True only once the player is on the train and the wait may be skipped (chunk phase). */
+    public static boolean canSkip() {
+        return phase == Phase.CHUNKS;
+    }
+
+    /**
+     * Player asked to skip the chunk wait (Space ×3 on the loading screen) — start
+     * the cinematic immediately. Only valid once placed on the train; a no-op
+     * during placing (skipping then would drop the player mid-fall).
+     */
+    public static void skip() {
+        if (phase != Phase.CHUNKS) return;
+        finish(Minecraft.getInstance(), "skipped");
     }
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        if (!active) return;
+        if (phase == Phase.IDLE) return;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null) {
-            reset();
-            return;
-        }
-        // Single-player pause (focus-loss / Escape from an overlay): the
-        // integrated server is stopped, so no chunks stream — hold without
-        // advancing the clock, and don't fight the pause menu for the screen.
-        if (mc.isPaused()) return;
+        if (mc.player == null || mc.level == null) return; // wait for world-entry (logout resets)
 
-        // Keep our loading screen up (belt-and-suspenders: our screen blocks
-        // Escape and focus-loss auto-pause, but re-assert if anything cleared it).
+        // Keep our loading screen up across the whole hold. Because it is non-pausing
+        // and non-Esc, this also blocks the focus-loss auto-pause, so the integrated
+        // server keeps streaming chunks behind it.
         if (!(mc.screen instanceof CinematicLoadingScreen)) {
             mc.setScreen(new CinematicLoadingScreen());
         }
 
-        lastFraction = computeFraction(mc);
-        if (lastFraction >= 1.0) {
+        if (phase == Phase.PLACING) {
+            tickPlacing(mc);
+        } else {
+            tickChunks(mc);
+        }
+    }
+
+    /** Lock the player's position until the train placement arrives (or time out). */
+    private static void tickPlacing(Minecraft mc) {
+        LocalPlayer p = mc.player;
+        if (freezePos == null) {
+            freezePos = p.position();
+        }
+        // Pin position + kill velocity every tick so client-authoritative gravity
+        // can't free-fall the player through not-yet-collided terrain.
+        p.setDeltaMovement(Vec3.ZERO);
+        p.setPos(freezePos.x, freezePos.y, freezePos.z);
+        p.xo = freezePos.x;
+        p.yo = freezePos.y;
+        p.zo = freezePos.z;
+        p.setOnGround(true);
+        p.fallDistance = 0.0f;
+
+        placeElapsed++;
+        displayFraction = PLACING_FRACTION * Math.min(1.0, placeElapsed / (double) placeTimeout);
+        if (placeElapsed >= placeTimeout) {
+            LOGGER.warn("[DungeonTrain] Cinematic preload gate: placing timed out after {}t — releasing player", placeElapsed);
+            release(mc);
+        }
+    }
+
+    /** Wait for the terrain around the shot, then start the cinematic. */
+    private static void tickChunks(Minecraft mc) {
+        double chunkFraction = computeChunkFraction(mc);
+        displayFraction = Math.max(displayFraction, PLACING_FRACTION + (1.0 - PLACING_FRACTION) * chunkFraction);
+        if (chunkFraction >= 1.0) {
             readyStreak++;
         } else {
             readyStreak = 0;
@@ -129,18 +202,8 @@ public final class CinematicPreloadGate {
         }
     }
 
-    /**
-     * Player asked to skip the wait (Space ×3 on the loading screen) — start the
-     * cinematic immediately even though the terrain may not be fully streamed in.
-     * No-op if the gate isn't currently holding.
-     */
-    public static void skip() {
-        if (!active) return;
-        finish(Minecraft.getInstance(), "skipped");
-    }
-
     /** Fraction of chunks present within {@link #PRELOAD_CHUNK_RADIUS} of the camera-start column. */
-    private static double computeFraction(Minecraft mc) {
+    private static double computeChunkFraction(Minecraft mc) {
         ChunkSource source = mc.level.getChunkSource();
         int centerCx = (int) Math.floor(pending.camX()) >> 4;
         int centerCz = (int) Math.floor(pending.camZ()) >> 4;
@@ -159,23 +222,32 @@ public final class CinematicPreloadGate {
     private static void finish(Minecraft mc, String reason) {
         CinematicIntroPacket packet = pending;
         int elapsed = elapsedTicks;
-        double fraction = lastFraction;
+        double fraction = displayFraction;
         reset();
         if (mc.screen instanceof CinematicLoadingScreen) {
             mc.setScreen(null);
         }
-        LOGGER.info("[DungeonTrain] Cinematic preload gate done ({}): {}t elapsed, fraction={}",
+        LOGGER.info("[DungeonTrain] Cinematic preload gate done ({}): {}t chunk-wait, display={}",
             reason, elapsed, String.format("%.2f", fraction));
         if (packet != null) {
             CinematicCameraController.start(packet);
         }
     }
 
+    /** Placing timed out with no cinematic — just close the screen and let the player in. */
+    private static void release(Minecraft mc) {
+        reset();
+        if (mc.screen instanceof CinematicLoadingScreen) {
+            mc.setScreen(null);
+        }
+    }
+
     private static void reset() {
-        active = false;
+        phase = Phase.IDLE;
         pending = null;
+        freezePos = null;
         readyStreak = 0;
-        lastFraction = 0.0;
+        displayFraction = 0.0;
     }
 
     @SubscribeEvent

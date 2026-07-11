@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CinematicIntroPacket;
+import games.brennan.dungeontrain.net.CinematicPreloadBeginPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.MinecraftServer;
@@ -52,6 +53,17 @@ public final class CinematicIntroService {
      */
     public static final int PRELOAD_MAX_WAIT_TICKS = 200;
 
+    /**
+     * Client-side freeze budget (ticks) for the pre-placement phase. From login
+     * the client holds the loading screen up and locks the player's position
+     * (see {@code CinematicPreloadGate}) until the train settles and the body is
+     * teleported onto it (the {@link CinematicIntroPacket}). This is the safety
+     * cap: if the train never appears the client releases and drops the player
+     * into the world. Comfortably outlasts {@code PlayerJoinEvents.MAX_RETRY_TICKS}
+     * (the server-side placement retry window).
+     */
+    public static final int PLACE_HOLD_TIMEOUT_TICKS = 160;
+
     /** Player UUID → server-tick deadline at which spawn-invulnerability is force-cleared. */
     private static final Map<UUID, Long> INVULN_UNTIL = new ConcurrentHashMap<>();
 
@@ -77,6 +89,26 @@ public final class CinematicIntroService {
     public static boolean shouldPlay(ServerPlayer player) {
         if (!DungeonTrainConfig.isIntroCinematicEnabled()) return false;
         return !player.getData(ModDataAttachments.SEEN_INTRO_CINEMATIC.get());
+    }
+
+    /**
+     * Called at login. If the intro cinematic is going to play (and chunk
+     * preload is enabled), tell the client to open the loading screen and freeze
+     * the player the moment they enter the world — covering the gap before the
+     * server has placed them on the train, where they would otherwise fall
+     * through not-yet-collided terrain. Also opens the invulnerability window and
+     * marks the player {@link #ACTIVE} (deferring the starting-book lightning)
+     * across the hold. The follow-up {@link #play} re-extends both when the body
+     * is actually placed on the train. No-op when the intro won't play.
+     */
+    public static void armPreloadIfNeeded(ServerPlayer player) {
+        if (!DungeonTrainConfig.isIntroCinematicChunkPreloadEnabled()) return;
+        if (!shouldPlay(player)) return;
+        DungeonTrainNet.sendTo(player, new CinematicPreloadBeginPacket(PLACE_HOLD_TIMEOUT_TICKS));
+        ACTIVE.add(player.getUUID());
+        beginInvuln(player, PLACE_HOLD_TIMEOUT_TICKS);
+        LOGGER.info("[DungeonTrain] Preload hold armed for {} (placeTimeout={}t)",
+            player.getName().getString(), PLACE_HOLD_TIMEOUT_TICKS);
     }
 
     /**
