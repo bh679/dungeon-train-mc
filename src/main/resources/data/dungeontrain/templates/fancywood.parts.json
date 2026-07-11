@@ -24,6 +24,16 @@
       "name": "quartz_obsidian",
       "weight": 1,
       "stage": "obsidian"
+    },
+    {
+      "name": "wool",
+      "weight": 1,
+      "stage": "deepdark"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 1,
+      "stage": "deepdark"
     }
   ],
   "walls": [
