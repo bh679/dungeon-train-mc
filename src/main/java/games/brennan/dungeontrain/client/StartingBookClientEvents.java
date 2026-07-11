@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.net.StartingBookClosedPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.gui.screens.inventory.BookViewScreen;
+import net.minecraft.client.gui.screens.inventory.LecternScreen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -14,9 +15,9 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 
 /**
  * Client-side close detection for burnable books (starting books, random
- * books from train chests, player-written books the signer kept, and
- * discovered community books). Stories — {@link games.brennan.dungeontrain.narrative.NarrativeBookTag}
- * — are deliberately excluded.
+ * books from train chests, player-written books the signer kept, discovered
+ * community books, and narrative "story" books read by hand — see
+ * {@link games.brennan.dungeontrain.narrative.NarrativeBookTag}).
  *
  * <p>Vanilla {@code BookViewScreen} is a pure-client screen — opening or
  * closing a written book never reaches the server (the screen consumes the
@@ -32,6 +33,14 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  * historical; it now signals "any burnable book closed", and the server scans
  * all of them.</p>
  *
+ * <p><b>{@link LecternScreen} is excluded</b> — it's a {@code BookViewScreen}
+ * subclass (see {@code LecternScreen} hierarchy; also excluded the same way
+ * in {@link games.brennan.dungeontrain.client.BookReadClientEvents}), but the
+ * book it shows lives in the lectern's block entity, not a hand slot. Without
+ * this exclusion, closing a lectern read would incorrectly check — and
+ * potentially burn — an unrelated burnable book sitting in the player's
+ * hotbar. Reading a narrative book in place at a lectern must never burn it.</p>
+ *
  * <p>Detection scope: <b>mainhand + offhand only</b> — not the full
  * inventory. Vanilla written books can only be opened via right-click on
  * an in-hand stack, so the book the player just closed must still be in
@@ -46,7 +55,7 @@ public final class StartingBookClientEvents {
 
     @SubscribeEvent
     public static void onScreenClosing(ScreenEvent.Closing event) {
-        if (!(event.getScreen() instanceof BookViewScreen)) return;
+        if (!(event.getScreen() instanceof BookViewScreen) || event.getScreen() instanceof LecternScreen) return;
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) return;
         if (!BurnableBookTag.isBurnable(player.getMainHandItem())
