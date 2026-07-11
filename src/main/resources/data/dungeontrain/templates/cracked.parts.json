@@ -49,6 +49,11 @@
       "name": "obsidian_obsidian",
       "weight": 4,
       "stage": "obsidian"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 1,
+      "stage": "deepdark"
     }
   ],
   "walls": [

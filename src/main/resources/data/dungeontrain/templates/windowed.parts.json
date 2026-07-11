@@ -101,6 +101,11 @@
         "END"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "wool",
+      "weight": 1,
+      "stage": "deepdark"
     }
   ],
   "walls": [
