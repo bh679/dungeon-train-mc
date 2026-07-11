@@ -9,6 +9,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import org.jetbrains.annotations.Nullable;
@@ -50,6 +51,19 @@ public final class SilentBlockOps {
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
     private SilentBlockOps() {}
+
+    /**
+     * Fully evict any block entity at {@code pos} — including a still-<b>pending</b> (NBT-form) one —
+     * before the block there is overwritten. {@link LevelChunk#removeBlockEntity} drops only LIVE
+     * entities, so a structure BE that is still pending at chunk-load time (suspicious sand/gravel,
+     * chests) would be orphaned and fail validation at save ({@code Invalid block entity … got air}).
+     * Promoting it via {@link ChunkAccess#getBlockEntity} first makes the remove drop it cleanly. Call
+     * while the block still matches the BE (i.e. before writing the new, BE-less state).
+     */
+    public static void evictBlockEntity(ChunkAccess chunk, BlockPos pos) {
+        chunk.getBlockEntity(pos);   // promote a pending BE to live so the remove below actually drops it
+        chunk.removeBlockEntity(pos);
+    }
 
     /**
      * Replace the block at {@code pos} with {@code newState} silently — no
@@ -169,8 +183,9 @@ public final class SilentBlockOps {
         int lz = pos.getZ() & 15;
         int ly = pos.getY() - baseY;
         // Drop any pre-existing BE so a stale container from a prior life of the
-        // cell doesn't linger under the new (BE-less) state.
-        if (section.getBlockState(lx, ly, lz).hasBlockEntity()) chunk.removeBlockEntity(pos);
+        // cell doesn't linger under the new (BE-less) state — including a still-pending
+        // (NBT-form) structure BE, which a bare removeBlockEntity would leave orphaned.
+        if (section.getBlockState(lx, ly, lz).hasBlockEntity()) evictBlockEntity(chunk, pos);
         section.setBlockState(lx, ly, lz, state, false);
         chunk.setUnsaved(true);
         level.getChunkSource().blockChanged(pos);

@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -201,7 +202,9 @@ public final class WorldUpsideDownEvents {
                     BlockState cur = sec.getBlockState(dx, ly, dz);
                     if (cur == ns) continue;                 // no-op (block states are interned singletons)
                     if (cur.hasBlockEntity()) {
-                        chunk.removeBlockEntity(new BlockPos(chunkMinX + dx, y, worldZ));
+                        // Evict live AND pending (NBT-form) BEs — a bare removeBlockEntity leaves a
+                        // still-pending structure BE (suspicious sand/gravel, chest) orphaned under the air.
+                        SilentBlockOps.evictBlockEntity(chunk, new BlockPos(chunkMinX + dx, y, worldZ));
                     }
                     sec.setBlockState(dx, ly, dz, ns, false);
                     changed = true;
@@ -234,7 +237,7 @@ public final class WorldUpsideDownEvents {
                     BlockState cur = roofSec.getBlockState(dx, roofLocalY, dz);
                     if (cur == bedrock) continue;
                     if (cur.hasBlockEntity()) {
-                        chunk.removeBlockEntity(new BlockPos(chunkMinX + dx, roofY, worldZ));
+                        SilentBlockOps.evictBlockEntity(chunk, new BlockPos(chunkMinX + dx, roofY, worldZ));
                     }
                     roofSec.setBlockState(dx, roofLocalY, dz, bedrock, false);
                     changed = true;
