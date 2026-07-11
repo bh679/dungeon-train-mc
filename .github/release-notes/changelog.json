@@ -4087,6 +4087,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "train-upright-upside-down-band",
+      "version": "0.438.0",
+      "type": "fix",
+      "title": "Train stays right-side up in the Upside Down",
+      "summary": "In the Upside Down band the world flips around you, but the train itself now stays right-side up \u2014 your carriages read normally as stable footing amid the inverted terrain, instead of being rendered upside-down along with everything else.",
+      "highlights": [
+        "Fixed train/carriage blocks rendering upside-down inside the Upside Down band"
+      ],
+      "pr": 723,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
