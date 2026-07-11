@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.narrative;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.event.SharedBookGate;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -11,8 +13,10 @@ import net.minecraft.world.item.component.WrittenBookContent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Produces a Minecraft {@code Items.WRITTEN_BOOK} {@link ItemStack} from a
@@ -115,60 +119,220 @@ public final class BookFactory {
     }
 
     /**
-     * Lazy lectern resolver — picks "what book should this lectern show
-     * right now" for the world:
+     * Lazy lectern resolver — picks "what book should this lectern show right now" for the world. The
+     * world reads one narrative thread at a time (mirroring the mod-story cursor); continuity is resolved
+     * first, and a weighted coin only decides the TYPE of a NEW thread:
      * <ol>
-     *   <li>If the world has any in-progress story (started, not complete) —
-     *       the next-unread letter of that story.</li>
-     *   <li>Otherwise — a random pick from the world's uncompleted stories,
-     *       seeded by {@code lecternSeed} mixed with the world seed (so the
-     *       pick differs per world rather than being fixed by the lectern's
-     *       deterministic coordinate), stable across re-clicks until something
-     *       actually advances.</li>
-     *   <li>If every story is complete → {@link Optional#empty()}.</li>
+     *   <li><b>(a)</b> Continue an in-progress MOD story (next-unread letter).</li>
+     *   <li><b>(b)</b> Continue an in-progress PLAYER narrative series (most-recently-started first) —
+     *       its next-unread letter, resolved from {@link NarrativePool}.</li>
+     *   <li><b>(c)</b> Coin flip ({@link #narrativeLecternChanceForWorld}, tapered): with that chance
+     *       START a new approved player series instead of a new mod story.</li>
+     *   <li><b>(d)</b> Otherwise serve a MOD story — a random uncompleted one, or (once all are read) a
+     *       seeded RE-READ of an already-read one, so built-in stories keep their fair share and never
+     *       vanish.</li>
+     *   <li><b>(e)</b> Only when there is no content at all (no mod stories AND empty player pool) →
+     *       {@link Optional#empty()} (the lectern then shows "All narratives complete").</li>
      * </ol>
      *
-     * <p>The returned ItemStack is stamped with the identity NBT just like
-     * {@link #buildSignedBook} — so the read-event handler advances world
-     * progress automatically when the book is opened.</p>
+     * <p>A mod-story book is stamped with {@link NarrativeBookTag} (advances canon progress on read); a
+     * player-series book is stamped with {@link PlayerNarrativeBookTag} (advances only the world-local
+     * player-series read-set). The pick is deterministic per {@code lecternSeed}+world-seed, so a lectern
+     * is stable across re-clicks until world state advances — exactly what lock-on-first-read demands.</p>
      *
      * @param overworld   The overworld ServerLevel (where progress is stored).
-     * @param lecternSeed A long stable per-lectern (e.g. {@code pos.asLong()})
-     *                    used in the random-pick fallback and as the variant
-     *                    seed. Same lectern → same variant forever, which
-     *                    is exactly what lock-on-first-read demands.
+     * @param lecternSeed A long stable per-lectern (e.g. {@code pos.asLong()}) used for the coin flip,
+     *                    the random/re-read pick, and the variant seed.
      */
     public static Optional<ItemStack> buildOrRandomForLectern(
         ServerLevel overworld, long lecternSeed
     ) {
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
 
-        // Mix the world seed into the lectern-position seed. The train spawns
-        // at a deterministic origin, so the first lectern a player reaches sits
-        // at a near-constant coordinate — without this, floorMod(pos, n) lands
-        // on the same story every world (the "always pip" bug). The world seed
-        // is the per-world random constant chosen at world creation: stable
-        // across reloads, different per world. Drives both the random-pick
-        // fallback and the variant pick.
+        // Mix the world seed into the lectern-position seed. The train spawns at a deterministic origin,
+        // so the first lectern a player reaches sits at a near-constant coordinate — without this,
+        // floorMod(pos, n) lands on the same story every world (the "always pip" bug). Stable across
+        // reloads, different per world. Drives the coin flip, the random/re-read pick, and the variant pick.
         long seed = lecternSeed + overworld.getSeed();
 
-        Optional<String> chosen = data.currentInProgressStory();
-        if (chosen.isEmpty()) {
-            chosen = data.randomUncompletedStory(seed);
+        // (a) Continue an in-progress MOD story.
+        Optional<String> inProgress = data.currentInProgressStory();
+        if (inProgress.isPresent()) {
+            Optional<ItemStack> book = buildModStoryLetter(data, inProgress.get(), seed);
+            if (book.isPresent()) return book;
         }
-        if (chosen.isEmpty()) return Optional.empty();
 
-        Optional<StoryFile> storyOpt = StoryRegistry.getByBasename(chosen.get());
+        // (b) Continue an in-progress PLAYER series (most recently started first).
+        Optional<ItemStack> continued = continueInProgressPlayerSeries(data, seed);
+        if (continued.isPresent()) return continued;
+
+        // (c) Coin flip: with the tapered chance, START a new player series instead of a new mod story.
+        if (SharedBookGate.canDiscoverNarratives() && !NarrativePool.isEmpty()
+                && rollNarrativeChance(narrativeLecternChanceForWorld(overworld, data), seed)) {
+            Optional<ItemStack> started = startNewPlayerSeries(data, seed);
+            if (started.isPresent()) return started;
+            // no unstarted series available right now → fall through to a mod story
+        }
+
+        // (d) Serve a MOD story: a random uncompleted one, else a seeded RE-READ of an already-read one.
+        Optional<String> fresh = data.randomUncompletedStory(seed);
+        if (fresh.isPresent()) {
+            Optional<ItemStack> book = buildModStoryLetter(data, fresh.get(), seed);
+            if (book.isPresent()) return book;
+        }
+        Optional<ItemStack> reread = buildModStoryReread(seed);
+        if (reread.isPresent()) return reread;
+
+        // (e) No content at all → let the lectern show "All narratives complete".
+        return Optional.empty();
+    }
+
+    /** Build the next-unread letter of mod story {@code basename}, or empty if the story is unknown/complete. */
+    private static Optional<ItemStack> buildModStoryLetter(NarrativeProgressData data, String basename, long seed) {
+        Optional<StoryFile> storyOpt = StoryRegistry.getByBasename(basename);
         if (storyOpt.isEmpty()) return Optional.empty();
         StoryFile story = storyOpt.get();
-
-        int next = data.progressFor(chosen.get())
-            .nextUnreadLetter(story.letters().size());
+        int next = data.progressFor(basename).nextUnreadLetter(story.letters().size());
         if (next < 1) return Optional.empty();
         Letter letter = story.letterByIndex(next).orElse(null);
         if (letter == null) return Optional.empty();
-
         return Optional.of(buildSignedBook(story, letter, seed));
+    }
+
+    /**
+     * A seeded RE-READ of an already-read mod story — served once every story is complete so built-in
+     * content keeps its fair share rather than vanishing. Picks a story + letter deterministically from
+     * {@code seed}; the book is a normal mod-story book ({@link NarrativeBookTag}), and its idempotent
+     * read-credit re-marks already-read progress harmlessly.
+     */
+    private static Optional<ItemStack> buildModStoryReread(long seed) {
+        List<String> names = StoryRegistry.basenames();
+        if (names.isEmpty()) return Optional.empty();
+        String basename = names.get((int) Math.floorMod(mixNarrative(seed, SALT_REREAD_STORY), names.size()));
+        Optional<StoryFile> storyOpt = StoryRegistry.getByBasename(basename);
+        if (storyOpt.isEmpty()) return Optional.empty();
+        StoryFile story = storyOpt.get();
+        int letterCount = story.letters().size();
+        if (letterCount < 1) return Optional.empty();
+        int index = (int) Math.floorMod(mixNarrative(seed, SALT_REREAD_LETTER), letterCount) + 1; // 1-based
+        Letter letter = story.letterByIndex(index).orElse(null);
+        if (letter == null) return Optional.empty();
+        return Optional.of(buildSignedBook(story, letter, seed));
+    }
+
+    /**
+     * Continue the world's most-recently-started, not-yet-complete player narrative series (resolving it
+     * from {@link NarrativePool}). A series that has rotated out of the pool window while the relay is cold
+     * simply resolves empty and is skipped; a series with all present letters read is complete and skipped.
+     */
+    private static Optional<ItemStack> continueInProgressPlayerSeries(NarrativeProgressData data, long seed) {
+        List<String> started = data.startedPlayerSeriesIds();
+        for (int i = started.size() - 1; i >= 0; i--) { // tail = most recently started
+            Optional<NarrativePool.Series> resolved = NarrativePool.resolve(started.get(i));
+            if (resolved.isEmpty()) continue;
+            NarrativePool.Series series = resolved.get();
+            Optional<NarrativePool.SeriesLetter> next = nextUnreadPlayerLetter(data, series);
+            if (next.isPresent()) return Optional.of(buildPlayerSeriesLetter(series, next.get()));
+        }
+        return Optional.empty();
+    }
+
+    /** Start a fresh (unstarted) player series from the pool, serving its lowest letter. Empty if none available. */
+    private static Optional<ItemStack> startNewPlayerSeries(NarrativeProgressData data, long seed) {
+        Set<String> started = new HashSet<>(data.startedPlayerSeriesIds());
+        Optional<NarrativePool.Series> pick = NarrativePool.pickUnstarted(seed, started);
+        if (pick.isEmpty()) return Optional.empty();
+        NarrativePool.Series series = pick.get();
+        Optional<NarrativePool.SeriesLetter> first = nextUnreadPlayerLetter(data, series);
+        if (first.isEmpty()) return Optional.empty();
+        return Optional.of(buildPlayerSeriesLetter(series, first.get()));
+    }
+
+    /**
+     * The lowest present {@code letterIndex} of {@code series} the world has not read yet (edge-case-aware:
+     * iterates the series' CURRENTLY present letters, so a post-approval-rejected letter never leaves a
+     * lectern hunting a deleted index). Empty when every present letter is read → the series is complete.
+     */
+    private static Optional<NarrativePool.SeriesLetter> nextUnreadPlayerLetter(NarrativeProgressData data,
+                                                                              NarrativePool.Series series) {
+        NarrativePool.SeriesLetter best = null;
+        for (NarrativePool.SeriesLetter l : series.letters()) {
+            if (data.hasReadPlayerLetter(series.seriesId(), l.letterIndex())) continue;
+            if (best == null || l.letterIndex() < best.letterIndex()) best = l;
+        }
+        return Optional.ofNullable(best);
+    }
+
+    /**
+     * Build one served player-narrative letter as a plain written book (same pagination as shared books)
+     * stamped with {@link PlayerNarrativeBookTag} so the lectern read-credit advances the world's
+     * player-series read-set. Blank titles fall back to {@code "Letter N"}.
+     */
+    public static ItemStack buildPlayerSeriesLetter(NarrativePool.Series series, NarrativePool.SeriesLetter letter) {
+        String title = (letter.title() == null || letter.title().isBlank())
+                ? "Letter " + letter.letterIndex() : letter.title();
+        ItemStack stack = buildPlainBook(title, series.author(), letter.pages());
+        PlayerNarrativeBookTag.stamp(stack, series.seriesId(), letter.letterIndex());
+        return stack;
+    }
+
+    /**
+     * The chance a lectern serves a NEW player narrative instead of a new mod story, LETTER-granular:
+     * {@code fairShare × ramp} where {@code fairShare = P/(P+V)} (approved player letters P vs total mod
+     * letters V) and {@code ramp} holds the chance at 0 until a configured fraction {@code T} of the mod
+     * letters is read, then rises to 1. Settles permanently at the pool-size fair share; never capped,
+     * never 100%. Returns 0 when discovery is off or the pool is empty/unknown. Package-private for tests.
+     */
+    static double narrativeLecternChanceForWorld(ServerLevel overworld, NarrativeProgressData data) {
+        if (!SharedBookGate.canDiscoverNarratives()) return 0.0;
+        return discoveryChance(
+                NarrativePool.approvedTotal(),
+                StoryRegistry.totalLetterCount(),
+                data.distinctModStoryLettersRead(),
+                DungeonTrainConfig.getNarrativeDiscoveryRampThreshold());
+    }
+
+    /**
+     * Pure math for the discovery chance — {@code fairShare × ramp}, LETTER-granular. {@code p} = approved
+     * player letters, {@code v} = total mod letters, {@code lettersRead} = mod letters this world has read,
+     * {@code threshold} = the warm-up ramp threshold {@code T}. Returns 0 when there is nothing to discover
+     * ({@code p <= 0}); below {@code T} of the mod letters read the chance is 0; at full read it settles at
+     * the fair share {@code p/(p+v)}. Package-private + server-free so it can be unit-tested directly.
+     */
+    static double discoveryChance(int p, int v, int lettersRead, double threshold) {
+        if (p <= 0) return 0.0;
+        double fairShare = (double) p / (double) (p + v);
+        double readFraction = (v <= 0) ? 1.0 : Math.min(1.0, (double) lettersRead / (double) v);
+        double ramp;
+        if (threshold >= 1.0) {
+            ramp = readFraction >= 1.0 ? 1.0 : 0.0;
+        } else {
+            double t = Math.max(0.0, threshold);
+            ramp = Math.max(0.0, Math.min(1.0, (readFraction - t) / (1.0 - t)));
+        }
+        return fairShare * ramp;
+    }
+
+    /** Deterministic {@code [0,1)} coin flip against {@code chance}, stable per {@code seed}. */
+    private static boolean rollNarrativeChance(double chance, long seed) {
+        if (chance <= 0.0) return false;
+        if (chance >= 1.0) return true;
+        long state = mixNarrative(seed, SALT_CHANCE) & 0x7FFFFFFFFFFFFFFFL;
+        double roll = state / (double) (1L << 63);
+        return roll < chance;
+    }
+
+    private static final long SALT_CHANCE = 0x4E4C43_43L;         // narrative-lectern chance flip
+    private static final long SALT_REREAD_STORY = 0x4E4C52_53L;   // re-read story pick
+    private static final long SALT_REREAD_LETTER = 0x4E4C52_4CL;  // re-read letter pick
+
+    /** Splittable-mix so a raw lectern seed spreads uniformly for a given decision salt. */
+    private static long mixNarrative(long seed, long salt) {
+        long state = seed ^ salt;
+        state = (state ^ (state >>> 30)) * 0xBF58476D1CE4E5B9L;
+        state = (state ^ (state >>> 27)) * 0x94D049BB133111EBL;
+        state = state ^ (state >>> 31);
+        return state;
     }
 
     /**

@@ -3945,6 +3945,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "narrative-lectern-discovery",
+      "version": "0.432.0",
+      "type": "feat",
+      "title": "Travelers' letters turn up on lecterns",
+      "summary": "The narratives other players write and sign on their own runs now surface on narrative lecterns, woven in among the built-in stories. They stay hidden until a world has read its way through half the hand-authored tales, then mix in more and more and settle into a fair share \u2014 and once a series begins, later lecterns carry it on, letter by letter. The built-in stories never disappear.",
+      "highlights": [
+        "Player-written narratives are discovered on lecterns, weighted and tapered like community book loot",
+        "A traveler's letter series continues across lecterns as you read it",
+        "Server toggle discoverNarrativesEnabled; pacing via narrativeDiscoveryRampThreshold (default 50%)"
+      ],
+      "pr": 714,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

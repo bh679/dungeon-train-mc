@@ -235,6 +235,22 @@ public final class NarrativeBookEvents {
     }
 
     /**
+     * Count a served PLAYER narrative letter read at a lectern toward the per-run "books read" tally — the
+     * discovery-half sibling of {@link #countLecternBookForRun}. Uses a {@code pnarr:seriesId#letterIndex}
+     * dedup key, disjoint from mod-story keys, so a player letter and a mod letter that happen to share an
+     * index never collide. Called only from the lectern lock path
+     * ({@link games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock#useWithoutItem}).
+     */
+    public static void countPlayerSeriesLetterForRun(ServerPlayer player,
+                                                     PlayerNarrativeBookTag.PlayerNarrativeIdentity pid) {
+        String key = "pnarr:" + pid.seriesId() + "#" + pid.letterIndex();
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        if (run.recordNarrativeRead(key)) {
+            run.incrementBooksRead();
+        }
+    }
+
+    /**
      * Pre-mutate random-book stacks the moment they reach a held hand slot,
      * so by the time the player right-clicks to open, the client already has
      * the corrected stack synced. Mutating later (inside
