@@ -3957,9 +3957,9 @@
       ],
       "pr": 713,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.433.0",
+      "released_at": "2026-07-11T15:18:39Z"
     },
     {
       "id": "lectern-letters",
@@ -3974,9 +3974,9 @@
       ],
       "pr": 711,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.433.0",
+      "released_at": "2026-07-11T15:18:39Z"
     },
     {
       "id": "narrative-lectern-discovery",
@@ -3991,9 +3991,9 @@
       ],
       "pr": 714,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.433.0",
+      "released_at": "2026-07-11T15:18:39Z"
     }
   ]
 }
