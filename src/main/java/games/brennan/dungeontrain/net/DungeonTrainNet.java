@@ -132,6 +132,10 @@ public final class DungeonTrainNet {
         // Discord Presence "use the internet?" consent, so the server can gate book uploads.
         registrar.playToServer(NetworkConsentSyncPacket.TYPE, NetworkConsentSyncPacket.STREAM_CODEC, NetworkConsentSyncPacket::handle);
 
+        // Player language (localized player-written content): client → server login sync of the client's
+        // selected game language, so the server can stamp uploaded books/letters with the author's locale.
+        registrar.playToServer(PlayerLocaleSyncPacket.TYPE, PlayerLocaleSyncPacket.STREAM_CODEC, PlayerLocaleSyncPacket::handle);
+
         // World disintegration band: server → joining player with the per-world
         // carriage length + train flag, so the client can fade the sky/fog toward
         // the End look across the band.
