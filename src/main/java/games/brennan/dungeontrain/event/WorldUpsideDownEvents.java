@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
-import games.brennan.dungeontrain.editor.EditorMirror;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -44,8 +43,11 @@ import java.util.Arrays;
  * {@code 2·M − sy − floorGap} on the hills side (hang); the {@code (M − floorGap, M + ceilingGap)}
  * gap around the plane is left as open air for the train to ride through. Because reflection can't be
  * done in place (source and target share the column), each column is snapshotted into an immutable
- * buffer first, then every target cell <em>pulls</em> {@link EditorMirror#verticalFlip} of its
- * mirrored source — correct even where the source and reflected spans overlap near the plane.</p>
+ * buffer first, then every target cell <em>pulls</em> its mirrored source block — correct even where
+ * the source and reflected spans overlap near the plane. Block <em>states</em> are written unchanged
+ * (only their positions are mirrored); the upside-down <em>visual</em> flip of each block model is
+ * applied at render time by {@code BlockRenderDispatcherUpsideDownMixin} (baked into the section mesh),
+ * so the state must not also be flipped here or slabs/stairs would double-flip.</p>
  *
  * <p><b>Preserved / dropped.</b> The track corridor is left byte-for-byte intact by skipping its own
  * Z-columns ({@code [wallMinZ, wallMaxZ]}) — vertical reflection keeps X/Z, so only those columns
@@ -153,9 +155,12 @@ public final class WorldUpsideDownEvents {
                         if (!s.isAir() && !s.hasBlockEntity() && !(s.getBlock() instanceof LiquidBlock)) {
                             // Gravity-affected (Fallable) blocks become their stable equivalent so
                             // nothing falls out of the mirrored ceiling — the same anchoring the mod
-                            // applies over corridors. Everything else is mirrored in place.
+                            // applies over corridors. Everything else keeps its source state: the
+                            // upside-down VISUAL flip is baked in at render time by
+                            // BlockRenderDispatcherUpsideDownMixin, so flipping the state here too
+                            // would double-flip slabs/stairs.
                             BlockState stable = FallingBlockAnchor.stableEquivalent(s);
-                            ns = stable != null ? stable : EditorMirror.verticalFlip(s);
+                            ns = stable != null ? stable : s;
                         }
                     }
 

@@ -41,4 +41,16 @@ public final class ClientUpsideDownBand {
         if (!DungeonTrainCommonConfig.isUpsideDownEnabled()) return 0.0;
         return WorldGenCycle.fromConfig().upsideDownRamp((int) Math.floor(worldX));
     }
+
+    /**
+     * Binary band membership at a world-X (fade edges included) — the client mirror of the server
+     * {@link games.brennan.dungeontrain.worldgen.UpsideDownBand#isInBand}. Gates the block-render flip
+     * ({@code BlockRenderDispatcherUpsideDownMixin}): every block whose world-X is in the band renders
+     * upside down. 0-cost when the band is off / this world has no train.
+     */
+    public static boolean isInBand(int worldX) {
+        if (!startsWithTrain) return false;
+        if (!DungeonTrainCommonConfig.isUpsideDownEnabled()) return false;
+        return WorldGenCycle.fromConfig().isInUpsideDownBand(worldX);
+    }
 }
