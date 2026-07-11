@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 
 import java.util.ArrayList;
@@ -72,7 +73,7 @@ public final class ClientStages {
 
     /** Compact dimension letters for a 4-bit mask (OVERWORLD/NETHER/VOID/END); "all" when every bit set. */
     public static String dims(int mask) {
-        if ((mask & 0b1111) == 0b1111) return "all";
+        if ((mask & TrainPhase.ALL_MASK) == TrainPhase.ALL_MASK) return "all";
         String[] letters = {"O", "N", "V", "E"};
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < letters.length; i++) {

@@ -17,11 +17,11 @@ final class NetherBandCoreGateTest {
 
     /** Nether band on, End band off: startX 0, owGap 100, 3 mountain stages of 40, coreFade 50, coreHold 200. */
     private static final WorldGenCycle NETHER_ONLY =
-        new WorldGenCycle(0L, 100, 40, new int[] {1, 2, 4}, 0, 0, 50, 200, 0, 0, 0, 0);
+        new WorldGenCycle(0L, 100, 40, new int[] {1, 2, 4}, 0, 0, 50, 200, 0, 0, 0, 0, 0, 0);
 
     /** Both bands present, so the sweep below also exercises the End-wins exclusion branch. */
     private static final WorldGenCycle NETHER_AND_END =
-        new WorldGenCycle(0L, 100, 40, new int[] {1, 2, 4}, 0, 0, 50, 200, 100, 40, 200, 0);
+        new WorldGenCycle(0L, 100, 40, new int[] {1, 2, 4}, 0, 0, 50, 200, 100, 40, 200, 0, 0, 0);
 
     @Test
     @DisplayName("overload == spec predicate (End-wins ∧ netherRamp ≥ core) across a full cycle, both bands")

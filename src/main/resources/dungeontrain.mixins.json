@@ -42,6 +42,8 @@
     "client.LevelRendererVoidSkyMixin",
     "client.LightTextureEndBandMixin",
     "client.LightTextureNetherBandMixin",
+    "client.LightTextureUpsideDownBandMixin",
+    "client.LevelGetShadeMixin",
     "client.SoundEngineMusicFadeMixin"
   ],
   "server": [],

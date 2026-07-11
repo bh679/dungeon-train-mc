@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.client.ClientNetherBand;
+import games.brennan.dungeontrain.client.ClientUpsideDownBand;
 import games.brennan.dungeontrain.client.ClientVoidBand;
 import games.brennan.dungeontrain.client.NetherSkyRenderer;
+import games.brennan.dungeontrain.client.UpsideDownSkyRenderer;
 import games.brennan.dungeontrain.client.VoidSkyRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -42,6 +44,7 @@ public abstract class LevelRendererVoidSkyMixin {
                                              Camera camera, boolean isFoggy, Runnable skyFogSetup, CallbackInfo ci) {
         VoidSkyRenderer.renderOverlay(frustumMatrix, camera, isFoggy);
         NetherSkyRenderer.renderOverlay(frustumMatrix, camera, isFoggy);
+        UpsideDownSkyRenderer.renderOverlay(frustumMatrix, camera, partialTick, isFoggy);
     }
 
     @Inject(
@@ -55,7 +58,8 @@ public abstract class LevelRendererVoidSkyMixin {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
         if (ClientVoidBand.endSkyIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD
-                || ClientNetherBand.netherIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD) {
+                || ClientNetherBand.netherIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD
+                || ClientUpsideDownBand.upsideDownIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD) {
             ci.cancel();
         }
     }

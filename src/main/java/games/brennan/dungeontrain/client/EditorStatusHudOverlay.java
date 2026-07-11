@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -60,7 +61,7 @@ public final class EditorStatusHudOverlay {
     /** Active model's spawn gate: min Diff-Level (default 0), max Diff-Level ({@code -1} = no upper bound), and a 4-bit phase mask (default all four set). */
     private static int minLevel = 0;
     private static int maxLevel = -1;
-    private static int phaseMask = 0b1111;
+    private static int phaseMask = TrainPhase.ALL_MASK;
     /** Stage id the active model is linked to ({@code ""} = Custom / unlinked). Drives the chip-vs-cells choice in the keyboard gate controls. */
     private static String stageId = "";
     /** Server-reported per-player part-position auto-open menu flag. Defaults true for fresh sessions. */
@@ -139,7 +140,7 @@ public final class EditorStatusHudOverlay {
         weight = NO_WEIGHT;
         minLevel = 0;
         maxLevel = -1;
-        phaseMask = 0b1111;
+        phaseMask = TrainPhase.ALL_MASK;
         stageId = "";
         partMenuEnabled = true;
         mirrorX = false;

@@ -14,7 +14,7 @@ final class TrainPhaseTest {
     @Test
     @DisplayName("ALL_MASK has every phase bit set")
     void allMask() {
-        assertEquals(0b1111, TrainPhase.ALL_MASK);
+        assertEquals(0b11111, TrainPhase.ALL_MASK);
         assertEquals(EnumSet.allOf(TrainPhase.class), TrainPhase.fromMask(TrainPhase.ALL_MASK));
     }
 
@@ -35,6 +35,9 @@ final class TrainPhaseTest {
         assertEquals(TrainPhase.NETHER, TrainPhase.byToken("NETHER"));
         assertEquals(TrainPhase.VOID, TrainPhase.byToken("void"));
         assertEquals(TrainPhase.END, TrainPhase.byToken("end"));
+        assertEquals(TrainPhase.UPSIDE_DOWN, TrainPhase.byToken("upside_down"));
+        assertEquals(TrainPhase.UPSIDE_DOWN, TrainPhase.byToken("ud"));
+        assertEquals(TrainPhase.UPSIDE_DOWN, TrainPhase.byToken("upsidedown"));
         assertNull(TrainPhase.byToken("nonsense"));
         assertNull(TrainPhase.byToken(null));
     }
