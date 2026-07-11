@@ -86,6 +86,10 @@
     {
       "id": "herobrine",
       "weight": 1
+    },
+    {
+      "id": "irongolem",
+      "weight": 1
     }
   ]
 }
