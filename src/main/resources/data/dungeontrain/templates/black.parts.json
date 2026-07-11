@@ -42,6 +42,11 @@
       "name": "quartz_obsidian",
       "weight": 1,
       "stage": "obsidian"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 1,
+      "stage": "deepdark"
     }
   ],
   "roof": [
@@ -84,6 +89,11 @@
       "name": "quartz_obsidian",
       "weight": 1,
       "stage": "obsidian"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 1,
+      "stage": "deepdark"
     }
   ],
   "doors": [
@@ -126,6 +136,11 @@
       "name": "quartz_obsidian",
       "weight": 1,
       "stage": "obsidian"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 1,
+      "stage": "deepdark"
     }
   ]
 }

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 8,
+  "variants": {
+    "4,0,2": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:wither_skeleton", "weight": 20}],
+    "6,0,4": ["minecraft:soul_sand", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "6,0,0": ["minecraft:soul_sand", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "0,0,0": ["minecraft:soul_sand", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "1,0,0": ["minecraft:soul_sand", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "0,0,1": ["minecraft:soul_sand", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "0,0,4": ["minecraft:soul_sand", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "2,0,4": ["minecraft:soul_sand", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,0,4": ["minecraft:soul_sand", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "4,0,1": ["minecraft:soul_sand", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "2,0,2": ["minecraft:soul_sand", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}]
+  }
+}

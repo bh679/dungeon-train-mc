@@ -44,7 +44,8 @@
     },
     {
       "id": "slimes",
-      "weight": 10
+      "weight": 10,
+      "maxLevel": 20
     },
     {
       "id": "bogged",
@@ -129,6 +130,16 @@
       "id": "ravanger",
       "weight": 3,
       "minLevel": 40
+    },
+    {
+      "id": "warden",
+      "weight": 1,
+      "minLevel": 60
+    },
+    {
+      "id": "witherreal",
+      "weight": 1,
+      "minLevel": 81
     }
   ]
 }

@@ -2,7 +2,16 @@
   "copper": {
     "name": "copper",
     "minLevel": 36,
-    "maxLevel": 46,
+    "maxLevel": 50,
+    "phases": [
+      "OVERWORLD",
+      "VOID"
+    ]
+  },
+  "deepdark": {
+    "name": "deepdark",
+    "minLevel": 87,
+    "maxLevel": 120,
     "phases": [
       "OVERWORLD",
       "VOID"
@@ -19,8 +28,8 @@
   },
   "mud": {
     "name": "mud",
-    "minLevel": 87,
-    "maxLevel": 95,
+    "minLevel": 121,
+    "maxLevel": 130,
     "phases": [
       "OVERWORLD",
       "VOID"
@@ -61,8 +70,8 @@
   },
   "wood_oak": {
     "name": "wood_oak",
-    "minLevel": 96,
-    "maxLevel": 100,
+    "minLevel": 132,
+    "maxLevel": 200,
     "phases": [
       "OVERWORLD",
       "VOID"

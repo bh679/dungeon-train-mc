@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 8,
+  "variants": {
+    "0,1,3": [{"state": "minecraft:mangrove_door[facing=west,half=lower,hinge=left,open=false,powered=false]", "weight": 200, "rotation": {"mode": "lock", "dirs": ["west"]}}, {"state": "minecraft:crimson_door[facing=west,half=lower,hinge=left,open=false,powered=false]", "weight": 3, "rotation": {"mode": "lock", "dirs": ["west"]}}, {"state": "minecraft:jungle_door[facing=west,half=lower,hinge=left,open=false,powered=false]", "rotation": {"mode": "lock", "dirs": ["west"]}}, {"state": "minecraft:acacia_door[facing=west,half=lower,hinge=left,open=false,powered=false]", "rotation": {"mode": "lock", "dirs": ["west"]}}, {"state": "minecraft:dark_oak_door[facing=west,half=lower,hinge=left,open=false,powered=false]", "weight": 3, "rotation": {"mode": "lock", "dirs": ["west"]}}, {"state": "minecraft:crimson_door[facing=west,half=lower,hinge=left,open=false,powered=false]", "rotation": {"mode": "lock", "dirs": ["west"]}}]
+  }
+}

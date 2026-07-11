@@ -145,6 +145,17 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "obsidian"
+    },
+    {
+      "name": "open_deepdark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
     }
   ],
   "roof": [
@@ -243,6 +254,26 @@
       "name": "quartswindow_obsidian",
       "weight": 1,
       "stage": "obsidian"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 5,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
+    },
+    {
+      "name": "windowed_deepdark",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ],
+      "stage": "deepdark"
     }
   ],
   "doors": [

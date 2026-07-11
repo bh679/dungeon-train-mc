@@ -3863,6 +3863,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "deepdark-stage-content",
+      "version": "0.427.0",
+      "type": "content",
+      "title": "Deepdark stage: Warden, Wither Reality, and a new Ancient City",
+      "summary": "A new Deepdark stage joins the train around carriage level 87, bringing the fearsome Warden and a Wither Reality encounter, plus creepier Ancient City, Savana, and Woodstatue scenery \u2014 all built on a new set of deepdark-themed doors, floors, roofs, and walls.",
+      "highlights": [
+        "New Deepdark stage (levels ~87-120)",
+        "Warden and Wither Reality enemies",
+        "Ancient City, Savana, and Woodstatue features",
+        "New deepdark carriage part set (doors/floor/roof/walls)"
+      ],
+      "pr": 705,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
