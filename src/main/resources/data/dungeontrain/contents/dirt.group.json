@@ -32,7 +32,12 @@
     },
     {
       "id": "packedice",
-      "weight": 7
+      "weight": 7,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "id": "moss",
@@ -58,6 +63,13 @@
     {
       "id": "sponge",
       "weight": 1
+    },
+    {
+      "id": "soul_soil",
+      "weight": 7,
+      "phases": [
+        "NETHER"
+      ]
     }
   ]
 }

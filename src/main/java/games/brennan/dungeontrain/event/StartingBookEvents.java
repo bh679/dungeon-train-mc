@@ -417,9 +417,10 @@ public final class StartingBookEvents {
 
     /**
      * Server-side entry point for {@link games.brennan.dungeontrain.net.StartingBookClosedPacket}.
-     * The client just closed a {@code BookViewScreen} that was showing any
-     * burnable book (starting / random / player-written / discovered-shared —
-     * see {@link BurnableBookTag}). Find one such book in the player's
+     * The client just closed a held-book {@code BookViewScreen} (not a
+     * lectern's) that was showing any burnable book (starting / random /
+     * player-written / discovered-shared / narrative — see
+     * {@link BurnableBookTag}). Find one such book in the player's
      * inventory, remove it, and drop it forward as if thrown.
      *
      * <p>The drop itself is sufficient — {@link #onEntityJoinLevel} sees the
@@ -471,19 +472,19 @@ public final class StartingBookEvents {
     /**
      * Burn-on-drop hook. Fires every time an {@link Entity} is added to a
      * level (Q-throw, death-drop, hopper-eject, our own close-handler drop,
-     * chest break, anything that calls {@code Level.addFreshEntity}). When
-     * the entity is an {@link ItemEntity} carrying a burnable book
-     * ({@link BurnableBookTag} — starting / random / player-written /
-     * discovered-shared; narrative story books excluded), register it in
-     * {@link #BURN_ENTITIES} so the burn lifecycle picks it up on the next tick.
+     * chest break, a broken lectern popping its locked book, anything that
+     * calls {@code Level.addFreshEntity}). When the entity is an
+     * {@link ItemEntity} carrying a burnable book ({@link BurnableBookTag} —
+     * starting / random / player-written / discovered-shared / narrative),
+     * register it in {@link #BURN_ENTITIES} so the burn lifecycle picks it
+     * up on the next tick.
      *
      * <p>Filters that block registration:</p>
      * <ul>
      *   <li>Client side — server-only state.</li>
      *   <li>Non-{@code ItemEntity} entities.</li>
      *   <li>Stacks that aren't burnable per {@link BurnableBookTag#isBurnable}
-     *       — narrative ("story") books, vanilla written books, foreign
-     *       items, etc.</li>
+     *       — vanilla written books, foreign items, etc.</li>
      *   <li>Entities flagged {@link #ENTITY_TAG_SPAWN_BOOK} — the lightning
      *       strike's welcome book. Without this skip, the welcome book would
      *       catch fire the moment the strike lands.</li>
