@@ -78,14 +78,17 @@ public final class FallingBlockAnchor {
     private FallingBlockAnchor() {}
 
     /**
-     * Resolve the stable equivalent for a falling block. Returns {@code null}
-     * when {@code falling}'s block is not a {@link FallingBlock} subclass —
-     * callers should treat that as a no-op.
+     * Resolve the stable equivalent for a gravity-affected block. Returns {@code null}
+     * when {@code falling}'s block is not a {@link Fallable} — callers should treat that
+     * as a no-op.
      *
-     * <p>Visible for unit tests.</p>
+     * <p>Used both by the anchor overloads below and by the upside-down mirror
+     * ({@code WorldUpsideDownEvents}), which swaps every {@link Fallable} block in the
+     * reflected terrain for its stable equivalent so nothing falls out of the ceiling.
+     * Also visible for unit tests.</p>
      */
     @Nullable
-    static BlockState stableEquivalent(BlockState falling) {
+    public static BlockState stableEquivalent(BlockState falling) {
         Block block = falling.getBlock();
         // Fallable covers both FallingBlock subclasses (sand, gravel, anvils,
         // concrete powders, scaffolding) AND BrushableBlock (suspicious

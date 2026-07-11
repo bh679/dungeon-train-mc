@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.editor.EditorMirror;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -150,7 +151,11 @@ public final class WorldUpsideDownEvents {
                     if (sy > floorGuard && sy < maxY) {
                         BlockState s = col[sy - minY];
                         if (!s.isAir() && !s.hasBlockEntity() && !(s.getBlock() instanceof LiquidBlock)) {
-                            ns = EditorMirror.verticalFlip(s);
+                            // Gravity-affected (Fallable) blocks become their stable equivalent so
+                            // nothing falls out of the mirrored ceiling — the same anchoring the mod
+                            // applies over corridors. Everything else is mirrored in place.
+                            BlockState stable = FallingBlockAnchor.stableEquivalent(s);
+                            ns = stable != null ? stable : EditorMirror.verticalFlip(s);
                         }
                     }
 
