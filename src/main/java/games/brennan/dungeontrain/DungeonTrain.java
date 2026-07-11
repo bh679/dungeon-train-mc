@@ -359,12 +359,11 @@ public class DungeonTrain {
             @Override public void onSurveyCompleted(UUID playerId, String playerName) {
                 SurveyAdvancement.onSurveyCompleted(playerId);
             }
-            // Ping Brennan in the community feed on EVERY submitted feedback-survey answer, so incoming
-            // feedback never goes unseen. DP adds the id to the survey post's content + trusted
-            // allowed_mentions.users (same notify path as the @dev chat triggers), so it actually
-            // notifies. Same BRENNAN_DISCORD_ID used by gameRelayMentions / presenceTrackUserIds.
+            // No ping on submitted feedback-survey answers — the dedicated survey-results channel
+            // copy (surveyResultsCopyEnabled below) already surfaces every answer for browsing,
+            // so an @-mention per answer is redundant noise. Matches DP's un-overridden default.
             @Override public List<String> surveyPingUserIds() {
-                return List.of(BRENNAN_DISCORD_ID);
+                return List.of();
             }
             // Also drop a COPY of every survey answer into a dedicated, flat survey-results channel
             // (on top of the per-player thread), so feedback is browsable in one place. The copy is the
