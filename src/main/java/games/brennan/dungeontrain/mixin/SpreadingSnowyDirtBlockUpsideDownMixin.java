@@ -36,8 +36,8 @@ public abstract class SpreadingSnowyDirtBlockUpsideDownMixin {
     private void dungeontrain$freezeGrassInUpsideDownBand(
             BlockState state, ServerLevel level, BlockPos pos, RandomSource random, CallbackInfo ci) {
         if (!level.dimension().equals(Level.OVERWORLD)) return;
-        if (UpsideDownBand.isInBand(level, pos.getX())) {
-            ci.cancel(); // in-band: keep grass/mycelium as-is (no decay to dirt, no spread)
+        if (UpsideDownBand.isInBandOrEntryLead(level, pos.getX())) {
+            ci.cancel(); // in-band or lead-in: keep grass/mycelium as-is (no decay to dirt, no spread)
         }
     }
 }

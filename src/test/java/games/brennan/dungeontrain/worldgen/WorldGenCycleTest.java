@@ -99,6 +99,17 @@ final class WorldGenCycleTest {
         // Unclamped case: eVoid (200) comfortably exceeds udFade (50) → lead-in is the full udFade.
         WorldGenCycle w = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 200, 200, 50, 200, 150, 0);
         assertEquals(50L, w.udEntryLeadLen());
+
+        // Combined predicate (used by render-flip / water-freeze / corridor): true across BOTH the
+        // lead-in [2900,2940) and the band [2940,3240), false in the void before leadStart, the trailing
+        // exit gap, and plain overworld.
+        org.junit.jupiter.api.Assertions.assertFalse(u.isInUpsideDownBandOrEntryLead(2899)); // End void before lead-in
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownBandOrEntryLead(2900));  // lead-in start
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownBandOrEntryLead(2939));  // lead-in end
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownBandOrEntryLead(2940));  // band start
+        org.junit.jupiter.api.Assertions.assertTrue(u.isInUpsideDownBandOrEntryLead(3239));  // band end
+        org.junit.jupiter.api.Assertions.assertFalse(u.isInUpsideDownBandOrEntryLead(3240)); // trailing exit gap
+        org.junit.jupiter.api.Assertions.assertFalse(u.isInUpsideDownBandOrEntryLead(1530)); // nether core
     }
 
     @Test

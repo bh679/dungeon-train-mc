@@ -67,12 +67,43 @@ public final class UpsideDownBand {
 
     /**
      * Entry lead-in reveal ramp {@code 0..1} at a world-X (0 outside the lead-in zone / when disabled)
-     * — the fraction of the noise roll that should reveal mirrored terrain in
-     * {@code WorldUpsideDownEvents}'s partial-mirror pass.
+     * — the fraction of the mirrored column's Y-window that should be revealed in
+     * {@code WorldUpsideDownEvents}'s partial-mirror pass (see {@link #revealYExtent}).
      */
     public static double entryRevealRamp(ServerLevel overworld, int worldX) {
         if (startX(overworld) == OFF) return 0.0;
         return WorldGenCycle.fromConfig().upsideDownEntryRevealRamp(worldX);
+    }
+
+    /**
+     * True iff the column at {@code worldX} lies in the upside-down band OR its entry lead-in zone —
+     * the combined gate for the render-flip, water-freeze, grass-freeze, and flipped-corridor lay, so
+     * the lead-in's revealed terrain looks and behaves like the band. False when the band is off.
+     */
+    public static boolean isInBandOrEntryLead(ServerLevel overworld, int worldX) {
+        if (startX(overworld) == OFF) return false;
+        return WorldGenCycle.fromConfig().isInUpsideDownBandOrEntryLead(worldX);
+    }
+
+    /**
+     * Half-height (blocks) of the entry lead-in reveal window at a given {@code reveal} fraction — the
+     * terrain materialises outward from the train gap as {@code reveal} climbs 0→1. At 0 only the two
+     * rows flanking the gap (the reflected ceiling floor at {@code mirror + ceilingGap} and hang top at
+     * {@code mirror − floorGap}) are shown; at 1 it reaches the full mirror. Grows by equal block count
+     * above and below, scaled to the larger of the two sides so both are fully covered at
+     * {@code reveal == 1}:
+     * <ul>
+     *   <li>up:   {@code roofY − (mirror + ceilingGap)} (inner ceiling edge → the roof lid)</li>
+     *   <li>down: {@code (mirror − floorGap) − (minY + 1)} (inner hang edge → just above the floor row)</li>
+     * </ul>
+     * Pure geometry — shared by {@code WorldUpsideDownEvents} and tests, like {@link #bedrockRoofY}.
+     */
+    public static int revealYExtent(double reveal, int mirror, int ceilingGap, int floorGap, int roofY, int minY) {
+        int upMax = Math.max(0, roofY - (mirror + ceilingGap));
+        int downMax = Math.max(0, (mirror - floorGap) - (minY + 1));
+        int maxExtent = Math.max(upMax, downMax);
+        double r = reveal < 0.0 ? 0.0 : (reveal > 1.0 ? 1.0 : reveal);
+        return (int) Math.round(r * maxExtent);
     }
 
     /**

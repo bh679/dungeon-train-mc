@@ -442,4 +442,14 @@ public record WorldGenCycle(long startX, int owGap,
         long l = offset(worldX) - udEntryLeadStart();
         return (double) l / lead;
     }
+
+    /**
+     * True if {@code worldX} lies in the upside-down band OR its entry lead-in zone — the full stretch
+     * where {@code WorldUpsideDownEvents} produces mirrored (visually inverted) terrain and the client
+     * render-flip / water-freeze / flipped-corridor apply. The band is the solid core; the lead-in is
+     * the Y-windowed reveal running up to it. Combined so those consumers treat both alike.
+     */
+    public boolean isInUpsideDownBandOrEntryLead(int worldX) {
+        return isInUpsideDownBand(worldX) || isInUpsideDownEntryLead(worldX);
+    }
 }

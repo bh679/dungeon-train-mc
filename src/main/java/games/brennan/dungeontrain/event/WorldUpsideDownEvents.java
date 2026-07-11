@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.core.BlockPos;
@@ -72,13 +71,16 @@ import java.util.Arrays;
  * <p><b>Entry lead-in.</b> Immediately before the band ({@link UpsideDownBand#isInEntryLead}, inside
  * the End band's trailing void hold), {@code WorldDisintegrationEvents} stops eroding terrain so real
  * overworld survives as mirror source material, and this handler runs the same reflection there but
- * noise-dithers each candidate block against {@link UpsideDownBand#entryRevealRamp} (0 at the lead-in's
- * start, 1 at the true band boundary) — the same {@code coherentNoise}-vs-ramp primitive the erosion
- * pass uses, so the mirrored ceiling materialises out of the void with a matching noisy texture instead
- * of snapping on at one exact X. Floor removal and the bedrock roof run unconditionally across the
- * lead-in span (not dithered); only the ceiling reveal is gradual. The flipped corridor is NOT laid in
- * lead-in-only chunks — {@code TrackBedFeature}'s ordinary corridor is still there until the band
- * truly begins.</p>
+ * clips it to a growing <b>Y-window</b> centred on the train gap ({@link UpsideDownBand#revealYExtent},
+ * driven by {@link UpsideDownBand#entryRevealRamp} 0→1 from the lead-in's start to the band boundary):
+ * at reveal 0 only the rows flanking the gap are shown, and the slab thickens upward (ceiling) and
+ * downward (hang) as the reveal climbs, so the upside-down world materialises outward from track level
+ * instead of snapping on at one exact X. Floor removal runs across the whole lead-in (open void from the
+ * start); the bedrock roof is stamped per column only once its window reaches roofY ("no bedrock until
+ * the Y level reaches it"). The lead-in is part of the render-flipped zone
+ * ({@link games.brennan.dungeontrain.client.ClientUpsideDownBand#isInBand}) and gets the flipped
+ * corridor ({@code TrackBedFeature} skips it during gen), so its revealed terrain reads as inverted and
+ * the track is continuous into the band.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class WorldUpsideDownEvents {
@@ -103,24 +105,30 @@ public final class WorldUpsideDownEvents {
         if (chunkMinX + 15 < startX) return; // before the first band
 
         boolean[] inBand = new boolean[16];
+        boolean[] inLead = new boolean[16];
         double[] leadReveal = new double[16];
         boolean any = false;
         boolean anyInBand = false;
+        boolean anyLead = false;
         for (int dx = 0; dx < 16; dx++) {
-            // Binary membership: the mirror is all-or-nothing per column. The three special bands are
-            // disjoint by construction, so no End/Nether guard is needed here (unlike the nether foliage strip).
+            // The three special bands are disjoint by construction, so no End/Nether guard is needed
+            // here (unlike the nether foliage strip). In-band columns get the full mirror; entry lead-in
+            // columns (immediately before the band, disjoint from it) get a Y-windowed partial mirror —
+            // gated on the isInEntryLead BOOLEAN, not reveal>0, so the leadStart column (reveal 0) is
+            // still processed and its real terrain cleared to void (no uninverted strip there).
             int worldX = chunkMinX + dx;
             inBand[dx] = UpsideDownBand.isInBand(level, worldX);
-            // Entry lead-in zone (immediately before the band, disjoint from it): a noise-gated partial
-            // mirror runs there instead of the full reflection — see the write loop below.
-            if (!inBand[dx]) leadReveal[dx] = UpsideDownBand.entryRevealRamp(level, worldX);
+            if (!inBand[dx]) {
+                inLead[dx] = UpsideDownBand.isInEntryLead(level, worldX);
+                if (inLead[dx]) leadReveal[dx] = UpsideDownBand.entryRevealRamp(level, worldX);
+            }
             if (inBand[dx]) anyInBand = true;
-            if (inBand[dx] || leadReveal[dx] > 0.0) any = true;
+            if (inLead[dx]) anyLead = true;
+            if (inBand[dx] || inLead[dx]) any = true;
         }
         if (!any) return;
 
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        long seed = data.getGenerationSeed();
         int trainY = data.getTrainY();
         int mirror = trainY + DungeonTrainCommonConfig.getUpsideDownMirrorPlaneOffset();
         int ceilingGap = Math.max(0, DungeonTrainCommonConfig.getUpsideDownCeilingGap());
@@ -139,6 +147,23 @@ public final class WorldUpsideDownEvents {
         int floorSectionIdx = chunk.getSectionIndex(minY);
         int floorLocalY = minY - SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(floorSectionIdx));
 
+        // Per-column reveal window. In-band columns get the full mirror (extent = whole build range, so
+        // no target Y is ever clipped) and always take the bedrock roof. Lead-in columns get a Y-window
+        // that grows outward from the train gap as the reveal ramp climbs (UpsideDownBand.revealYExtent),
+        // and only take the roof once that window has reached roofY — "no bedrock until the Y reaches it".
+        int[] extentCol = new int[16];
+        boolean[] roofCol = new boolean[16];
+        for (int dx = 0; dx < 16; dx++) {
+            if (inBand[dx]) {
+                extentCol[dx] = maxY;                                  // unbounded — never clips
+                roofCol[dx] = true;
+            } else if (inLead[dx]) {
+                int extent = UpsideDownBand.revealYExtent(leadReveal[dx], mirror, ceilingGap, floorGap, roofY, minY);
+                extentCol[dx] = extent;
+                roofCol[dx] = mirror + ceilingGap + extent >= roofY;   // ceiling grown up to the lid
+            }
+        }
+
         // Corridor geometry for the in-band track re-lay below. The corridor is NO LONGER preserved from
         // the mirror — it is flipped like the scenery, then TrackGenerator.layFlippedCorridor carves the
         // tube + stamps the rails onto the mirrored terrain (TrackBedFeature skips in-band chunks, so there
@@ -152,11 +177,12 @@ public final class WorldUpsideDownEvents {
         for (int dz = 0; dz < 16; dz++) {
             int worldZ = chunkMinZ + dz;
             for (int dx = 0; dx < 16; dx++) {
-                if (!inBand[dx] && leadReveal[dx] <= 0.0) continue;
-                // Lead-in columns (not yet fully in-band) get a noise-gated PARTIAL mirror instead of
-                // the full reflection — see the reveal roll below.
-                boolean lead = !inBand[dx];
-                int worldX = chunkMinX + dx;
+                if (!inBand[dx] && !inLead[dx]) continue;
+                // Lead-in columns (not yet fully in-band) get a Y-WINDOWED partial mirror: only target
+                // Ys within extentCol[dx] of the train gap are revealed, the rest forced to air — the
+                // window grows outward as the reveal ramp climbs (see the window clip below).
+                boolean windowed = inLead[dx];
+                int extent = extentCol[dx];
 
                 // 1) Snapshot the column into an immutable buffer (skip all-air sections).
                 Arrays.fill(col, AIR);
@@ -219,13 +245,12 @@ public final class WorldUpsideDownEvents {
                         }
                     }
 
-                    // Entry lead-in: noise-dither the reveal instead of committing the block outright —
-                    // the same coherent-noise-vs-ramp primitive WorldDisintegrationEvents uses for
-                    // erosion, so the materialising ceiling matches the void fade's visual style. Blocks
-                    // that fail the roll stay air (the column was never eroded here, so leaving them air
-                    // is a deliberate override, not "nothing to mirror").
-                    if (lead && ns != AIR
-                            && Disintegration.coherentNoise(seed, worldX, y, worldZ) >= leadReveal[dx]) {
+                    // Entry lead-in: clip the reveal to a growing Y-window centred on the train gap,
+                    // instead of committing the whole mirrored column. Target Ys beyond the window (above
+                    // the revealed ceiling slab or below the revealed hang slab) are forced to air, so the
+                    // upside-down terrain materialises outward from track level as the window widens. The
+                    // gap interior is already air (sy == MIN_VALUE), so one pair of bounds covers both sides.
+                    if (windowed && (y > mirror + ceilingGap + extent || y < mirror - floorGap - extent)) {
                         ns = AIR;
                     }
 
@@ -241,8 +266,9 @@ public final class WorldUpsideDownEvents {
                     changed = true;
                 }
 
-                // Open the underside in-band: remove the surface-rule bedrock left at minY (the mirror
-                // never touches that row), so the flipped column hangs over void instead of a floor.
+                // Open the underside across every participating column (band + lead-in): remove the
+                // surface-rule bedrock left at minY (the mirror never touches that row), so the flipped
+                // column hangs over void from the very start of the reveal, not over a floor.
                 if (roofInvert) {
                     LevelChunkSection fSec = chunk.getSection(floorSectionIdx);
                     if (!fSec.getBlockState(dx, floorLocalY, dz).isAir()) {
@@ -253,11 +279,11 @@ public final class WorldUpsideDownEvents {
             }
         }
 
-        // Bedrock roof: a continuous lid over every in-band AND entry-lead-in column (corridor included,
-        // so the tube is roofed too), stamped at roofY directly above the reflected ceiling — independent
-        // of the corridor Z-skip above. Only when it lands above the train and inside the build range.
-        // Unconditional across the lead-in span too (a thin fixed-Y lid over a still-materialising ceiling
-        // reads fine — the noise-dithered ceiling below is what makes the reveal feel gradual).
+        // Bedrock roof: a continuous lid stamped at roofY directly above the reflected ceiling, over
+        // every column whose ceiling has reached it (roofCol[dx]) — always for in-band columns, and for
+        // a lead-in column only once its growing Y-window has climbed up to roofY ("no bedrock until the
+        // Y level reaches it"). Independent of the corridor Z-skip; only when the lid lands above the
+        // train and inside the build range.
         if (roofInvert && roofY > mirror && roofY < maxY) {
             BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
             int roofSectionIdx = chunk.getSectionIndex(roofY);
@@ -266,7 +292,7 @@ public final class WorldUpsideDownEvents {
             for (int dz = 0; dz < 16; dz++) {
                 int worldZ = chunkMinZ + dz;
                 for (int dx = 0; dx < 16; dx++) {
-                    if (!inBand[dx] && leadReveal[dx] <= 0.0) continue;
+                    if (!roofCol[dx]) continue;
                     BlockState cur = roofSec.getBlockState(dx, roofLocalY, dz);
                     if (cur == bedrock) continue;
                     if (cur.hasBlockEntity()) {
@@ -278,14 +304,13 @@ public final class WorldUpsideDownEvents {
             }
         }
 
-        // Lay the corridor into the now-mirrored terrain — the in-band counterpart to TrackBedFeature
-        // (which skips in-band chunks): carve the carriage tube through the flipped column and stamp the
-        // authored bed/rails, so the train runs through the upside-down world instead of a preserved tube.
-        // Runs after the mirror/roof passes (same handler → strictly ordered, no cross-handler priority).
-        // Gated on a TRUE in-band column (not just lead-in reveal) — TrackBedFeature already lays the
-        // ordinary corridor across the lead-in zone (it only skips truly in-band chunks), so flipping it
-        // there too would fight that normal corridor before the band has actually started.
-        if (anyInBand && chunk instanceof LevelChunk levelChunk) {
+        // Lay the corridor into the now-mirrored terrain — the counterpart to TrackBedFeature (which
+        // skips band AND lead-in chunks): carve the carriage tube through the flipped column and stamp
+        // the authored bed/rails, so the train runs through the upside-down world instead of a preserved
+        // tube. Runs after the mirror/roof passes (same handler → strictly ordered). Gated on band OR
+        // lead-in: the lead-in now renders flipped (ClientUpsideDownBand includes it), so its corridor
+        // must be the flipped one too — bed/rails stay at bedY/railY, so the track is continuous.
+        if ((anyInBand || anyLead) && chunk instanceof LevelChunk levelChunk) {
             TrackGenerator.layFlippedCorridor(level, levelChunk, data.dims(), pos.x, pos.z, g);
             changed = true;
         }

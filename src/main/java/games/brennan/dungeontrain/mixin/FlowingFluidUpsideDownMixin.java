@@ -55,8 +55,10 @@ public class FlowingFluidUpsideDownMixin {
         if (!(level instanceof ServerLevel server)) return;
         if (!server.dimension().equals(Level.OVERWORLD)) return;
         if (fluid != Fluids.WATER && fluid != Fluids.FLOWING_WATER) return; // water only
-        if (UpsideDownBand.isInBand(server, toPos.getX())) {
-            cir.setReturnValue(false); // no water flow into in-band cells — mirrored water stays static
+        // Freeze across the band AND its entry lead-in — water the Y-window mirror reveals in the
+        // lead-in must stay static too, not pour off the growing ceiling.
+        if (UpsideDownBand.isInBandOrEntryLead(server, toPos.getX())) {
+            cir.setReturnValue(false); // no water flow into these cells — mirrored water stays static
         }
     }
 }
