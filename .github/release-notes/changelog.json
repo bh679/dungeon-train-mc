@@ -4057,6 +4057,22 @@
       "released_at": null
     },
     {
+      "id": "dtp-teleport-command",
+      "version": "0.437.0",
+      "type": "feat",
+      "title": "/dtp command \u2014 teleport anywhere on the track and always land on a train",
+      "summary": "Added an admin command, /dtp <x>, that teleports you to any point along the track and makes sure a train is waiting there for you \u2014 no more jumping ahead with nothing around. It always sets you down on the nearest open flatbed car.",
+      "highlights": [
+        "/dtp <x> teleports to world-X and spawns a train there if one isn't already",
+        "Always lands you on an open flatbed car, never mid-air or on a carriage roof"
+      ],
+      "pr": 719,
+      "date": "2026-07-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "upside-down-exit-island-crossfade",
       "version": "0.437.0",
       "type": "feat",
