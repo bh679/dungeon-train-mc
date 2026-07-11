@@ -82,6 +82,10 @@
     {
       "id": "woodstatue",
       "weight": 1
+    },
+    {
+      "id": "herobrine",
+      "weight": 1
     }
   ]
 }
