@@ -86,6 +86,59 @@ public final class UpsideDownBand {
     }
 
     /**
+     * True iff the column at {@code worldX} lies in the upside-down → overworld exit crossfade — the
+     * zone right after the band where {@code WorldUpsideDownEvents} disperses the mirror into shrinking
+     * islands while fading the normal overworld back in over the void. False when the band is off.
+     */
+    public static boolean isInExitFade(ServerLevel overworld, int worldX) {
+        if (startX(overworld) == OFF) return false;
+        return WorldGenCycle.fromConfig().isInUpsideDownExitFade(worldX);
+    }
+
+    /** Overworld-reveal ramp {@code 0..1} across the exit crossfade (0 outside / when disabled). */
+    public static double exitOwReveal(ServerLevel overworld, int worldX) {
+        if (startX(overworld) == OFF) return 0.0;
+        return WorldGenCycle.fromConfig().upsideDownExitOwRevealRamp(worldX);
+    }
+
+    /** Mirror-disperse ramp {@code 1..0} across the exit crossfade (0 outside / when disabled). */
+    public static double exitMirrorDisperse(ServerLevel overworld, int worldX) {
+        if (startX(overworld) == OFF) return 0.0;
+        return WorldGenCycle.fromConfig().upsideDownExitMirrorDisperseRamp(worldX);
+    }
+
+    /**
+     * True once the overworld has coalesced enough that the solid {@code minY} floor should return —
+     * {@code exitOwReveal ≥ } {@link DungeonTrainCommonConfig#UPSIDE_DOWN_EXIT_FLOOR_RETURN}. Shared by
+     * {@code WorldUpsideDownEvents} (which clears the floor) and {@code BedrockFloorEvents} (which stamps
+     * it) so the two ChunkEvent.Load handlers agree per column regardless of ordering.
+     */
+    public static boolean exitFloorPresent(ServerLevel overworld, int worldX) {
+        return exitOwReveal(overworld, worldX) >= DungeonTrainCommonConfig.UPSIDE_DOWN_EXIT_FLOOR_RETURN;
+    }
+
+    /**
+     * True while the mirror is still dense enough to keep the inverted bedrock roof — {@code
+     * exitMirrorDisperse ≥ } {@link DungeonTrainCommonConfig#UPSIDE_DOWN_EXIT_ROOF_RECEDE}. Below it the
+     * lid recedes so the exit doesn't end in a bedrock wall.
+     */
+    public static boolean exitRoofPresent(ServerLevel overworld, int worldX) {
+        return exitMirrorDisperse(overworld, worldX) >= DungeonTrainCommonConfig.UPSIDE_DOWN_EXIT_ROOF_RECEDE;
+    }
+
+    /**
+     * True iff {@code worldX} lies in the upside-down band, its entry lead-in, OR its exit crossfade —
+     * the full stretch where {@code TrackBedFeature} must skip the during-gen corridor so
+     * {@code WorldUpsideDownEvents} can lay the flipped corridor onto the composited terrain instead.
+     * False when the band is off.
+     */
+    public static boolean isInBandEntryLeadOrExit(ServerLevel overworld, int worldX) {
+        if (startX(overworld) == OFF) return false;
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        return cycle.isInUpsideDownBandOrEntryLead(worldX) || cycle.isInUpsideDownExitFade(worldX);
+    }
+
+    /**
      * Half-height (blocks) of the entry lead-in reveal window at a given {@code reveal} fraction — the
      * terrain materialises outward from the train gap as {@code reveal} climbs 0→1. At 0 only the two
      * rows flanking the gap (the reflected ceiling floor at {@code mirror + ceilingGap} and hang top at

@@ -162,6 +162,20 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_UPSIDE_DOWN_EXIT_GAP_BLOCKS = 0;
     public static final int MAX_UPSIDE_DOWN_EXIT_GAP_BLOCKS = 10_000;
     public static final int DEFAULT_UPSIDE_DOWN_EXIT_GAP_BLOCKS = 600;
+    /**
+     * Blocks over which the upside-down band's EXIT crossfades back to overworld: the mirrored world
+     * disperses into shrinking, spreading floating islands while the normal overworld fades in as
+     * islands over the void, until solid overworld resumes. Inserted between the band's trailing
+     * atmosphere fade and the plain-overworld exit gap. 0 disables the crossfade (hard edge, the
+     * pre-existing behaviour), keeping the cycle period byte-identical.
+     */
+    public static final int MIN_UPSIDE_DOWN_EXIT_FADE_BLOCKS = 0;
+    public static final int MAX_UPSIDE_DOWN_EXIT_FADE_BLOCKS = 40_000;
+    public static final int DEFAULT_UPSIDE_DOWN_EXIT_FADE_BLOCKS = 10_000;
+    /** OW-reveal fraction at/above which the solid minY floor returns across the exit crossfade. */
+    public static final double UPSIDE_DOWN_EXIT_FLOOR_RETURN = 0.9;
+    /** Mirror-disperse fraction at/above which the inverted bedrock roof is still stamped across the exit. */
+    public static final double UPSIDE_DOWN_EXIT_ROOF_RECEDE = 0.5;
     /** Mirror plane offset (blocks) from the train Y: reflection plane M = trainY + offset. Signed. */
     public static final int MIN_UPSIDE_DOWN_MIRROR_PLANE_OFFSET = -256;
     public static final int MAX_UPSIDE_DOWN_MIRROR_PLANE_OFFSET = 256;
@@ -195,6 +209,12 @@ public final class DungeonTrainCommonConfig {
      * on any non-{@code main}/non-release build (see {@link #isUpsideDownDevTestMode()}).
      */
     public static final int DEVTEST_UPSIDE_DOWN_HOLD_BLOCKS = 1000;
+    /**
+     * Dev-test preset for the upside-down exit crossfade — a shortened 2000-block fade (vs the
+     * 10000-block release default) so it is quick to reach and cross in-game on branch builds. Used
+     * automatically on any non-{@code main}/non-release build (see {@link #isUpsideDownDevTestMode()}).
+     */
+    public static final int DEVTEST_UPSIDE_DOWN_EXIT_FADE_BLOCKS = 2000;
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
@@ -220,6 +240,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_FADE_BLOCKS;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_EXIT_GAP_BLOCKS;
+    public static final ModConfigSpec.IntValue UPSIDE_DOWN_EXIT_FADE_BLOCKS;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_MIRROR_PLANE_OFFSET;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_CEILING_GAP;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_FLOOR_GAP;
@@ -253,6 +274,7 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_FADE_BLOCKS = pair.getLeft().upsideDownFadeBlocks;
         UPSIDE_DOWN_HOLD_BLOCKS = pair.getLeft().upsideDownHoldBlocks;
         UPSIDE_DOWN_EXIT_GAP_BLOCKS = pair.getLeft().upsideDownExitGapBlocks;
+        UPSIDE_DOWN_EXIT_FADE_BLOCKS = pair.getLeft().upsideDownExitFadeBlocks;
         UPSIDE_DOWN_MIRROR_PLANE_OFFSET = pair.getLeft().upsideDownMirrorPlaneOffset;
         UPSIDE_DOWN_CEILING_GAP = pair.getLeft().upsideDownCeilingGap;
         UPSIDE_DOWN_FLOOR_GAP = pair.getLeft().upsideDownFloorGap;
@@ -412,6 +434,13 @@ public final class DungeonTrainCommonConfig {
                         "leading gap of its own, so this is the only breathing room before the cycle repeats. Default 600.")
                 .defineInRange("upsideDownExitGapBlocks", DEFAULT_UPSIDE_DOWN_EXIT_GAP_BLOCKS,
                         MIN_UPSIDE_DOWN_EXIT_GAP_BLOCKS, MAX_UPSIDE_DOWN_EXIT_GAP_BLOCKS);
+        ModConfigSpec.IntValue upsideDownExitFadeBlocks = b
+                .comment("Blocks over which the upside-down band's EXIT crossfades back to overworld: the mirrored",
+                        "world disperses into shrinking, spreading floating islands while the normal overworld fades",
+                        "in as islands over the void, until solid overworld resumes. Sits between the band's trailing",
+                        "atmosphere fade and the exitGap. 0 disables the crossfade (hard edge). Default 10000.")
+                .defineInRange("upsideDownExitFadeBlocks", DEFAULT_UPSIDE_DOWN_EXIT_FADE_BLOCKS,
+                        MIN_UPSIDE_DOWN_EXIT_FADE_BLOCKS, MAX_UPSIDE_DOWN_EXIT_FADE_BLOCKS);
         ModConfigSpec.IntValue upsideDownMirrorPlaneOffset = b
                 .comment("Mirror plane offset (blocks) from the train Y: the world is reflected around",
                         "M = trainY + this. Positive raises the flip plane above the train, negative lowers it.",
@@ -449,7 +478,7 @@ public final class DungeonTrainCommonConfig {
                 netherBeachBlocks, netherMountainHoldBlocks, netherCoreFadeBlocks, netherCoreHoldBlocks,
                 disintegrationFirstOverworldBlocks, disintegrationSkyFadeOffsetBlocks,
                 upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks, upsideDownExitGapBlocks,
-                upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
+                upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
                 upsideDownBedrockRoof, upsideDownCloudY);
     }
 
@@ -664,6 +693,12 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? UPSIDE_DOWN_EXIT_GAP_BLOCKS.get() : DEFAULT_UPSIDE_DOWN_EXIT_GAP_BLOCKS;
     }
 
+    /** Exit crossfade span (blocks) where the mirror disperses and overworld fades in; dev-test preset (400) on branch builds. */
+    public static int getUpsideDownExitFadeBlocks() {
+        if (isUpsideDownDevTestMode()) return DEVTEST_UPSIDE_DOWN_EXIT_FADE_BLOCKS;
+        return isLoaded() ? UPSIDE_DOWN_EXIT_FADE_BLOCKS.get() : DEFAULT_UPSIDE_DOWN_EXIT_FADE_BLOCKS;
+    }
+
     /** Mirror plane offset (blocks) from the train Y (signed); falls back to the hardcoded default pre-load. */
     public static int getUpsideDownMirrorPlaneOffset() {
         return isLoaded() ? UPSIDE_DOWN_MIRROR_PLANE_OFFSET.get() : DEFAULT_UPSIDE_DOWN_MIRROR_PLANE_OFFSET;
@@ -712,6 +747,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue upsideDownFadeBlocks,
                           ModConfigSpec.IntValue upsideDownHoldBlocks,
                           ModConfigSpec.IntValue upsideDownExitGapBlocks,
+                          ModConfigSpec.IntValue upsideDownExitFadeBlocks,
                           ModConfigSpec.IntValue upsideDownMirrorPlaneOffset,
                           ModConfigSpec.IntValue upsideDownCeilingGap,
                           ModConfigSpec.IntValue upsideDownFloorGap,

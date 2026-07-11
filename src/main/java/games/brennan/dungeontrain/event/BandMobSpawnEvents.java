@@ -6,7 +6,6 @@ import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.monster.EnderMan;
-import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -21,10 +20,10 @@ import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
  * <ul>
  *   <li><b>Disintegration/End band:</b> the world is the End, so only endermen belong — every other
  *       ambient mob whose position falls in the band's world-X range is cancelled.</li>
- *   <li><b>Upside-down band:</b> plays as a lit, safe "flipped daytime overworld" (the mirrored
- *       ceiling's underside is genuinely dark to the engine, since real skylight stays top-down), so
- *       ambient <em>hostile</em> spawns ({@link Monster}) in the band are cancelled while passive
- *       animals are left alone.</li>
+ *   <li><b>Upside-down band:</b> the terrain is a vertical mirror — the "ground" is a ceiling with
+ *       an open gap at the train — so any naturally-spawned mob has nothing to stand on and simply
+ *       falls to its death. Every ambient spawn (hostile <em>and</em> passive) in the band is
+ *       cancelled.</li>
  * </ul>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
@@ -49,8 +48,9 @@ public final class BandMobSpawnEvents {
             return;
         }
 
-        // Upside-down band: keep it lit and safe by cancelling ambient hostile spawns; passives stay.
-        if (event.getEntity() instanceof Monster && UpsideDownBand.isInBand(level, x)) {
+        // Upside-down band: the mirrored terrain gives ambient mobs nothing to stand on, so they just
+        // fall to their death — cancel every natural spawn (hostile and passive) in the band.
+        if (UpsideDownBand.isInBand(level, x)) {
             event.setSpawnCancelled(true);
         }
     }
