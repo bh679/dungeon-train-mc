@@ -340,7 +340,9 @@ public final class PlayerJoinEvents {
             anchorX, lookX, haveBuffered);
 
         if (cinematic) {
-            CinematicIntroService.play(player, groundPose);
+            // Join intro: let the client hold the cinematic behind a loading
+            // screen until the terrain around the shot has streamed in.
+            CinematicIntroService.play(player, groundPose, true);
         }
         return true;
     }

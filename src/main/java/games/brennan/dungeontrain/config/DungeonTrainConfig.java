@@ -116,6 +116,9 @@ public final class DungeonTrainConfig {
     public static final int MAX_INTRO_DURATION_TICKS = 600;
     public static final int DEFAULT_INTRO_DURATION_TICKS = 120;
 
+    /** Hold the join intro cinematic behind a loading screen until nearby chunks stream in. */
+    public static final boolean DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED = true;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue NUM_CARRIAGES;
     public static final ModConfigSpec.DoubleValue SPEED;
@@ -149,6 +152,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_ENABLED;
     public static final ModConfigSpec.IntValue INTRO_CINEMATIC_DURATION_TICKS;
+    public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -186,6 +190,7 @@ public final class DungeonTrainConfig {
         DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = pair.getLeft().difficultyLevelNoticeToDiscord;
         INTRO_CINEMATIC_ENABLED = pair.getLeft().introCinematicEnabled;
         INTRO_CINEMATIC_DURATION_TICKS = pair.getLeft().introCinematicDurationTicks;
+        INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED = pair.getLeft().introCinematicChunkPreloadEnabled;
     }
 
     private DungeonTrainConfig() {}
@@ -349,6 +354,12 @@ public final class DungeonTrainConfig {
                 .comment("Intro cinematic duration in ticks (20 ticks = 1 second).")
                 .defineInRange("introCinematicDurationTicks", DEFAULT_INTRO_DURATION_TICKS,
                         MIN_INTRO_DURATION_TICKS, MAX_INTRO_DURATION_TICKS);
+        ModConfigSpec.BooleanValue introCinematicChunkPreloadEnabled = b
+                .comment("Before the intro cinematic starts, show a short loading screen and wait for the terrain around",
+                        "the shot to finish streaming in, so the fly-up reveals a fully-rendered world instead of chunks",
+                        "popping in. Only affects the join intro (not the /dungeontrain cinematic replay). Disable to",
+                        "start the cinematic immediately on spawn as before.")
+                .define("introCinematicChunkPreloadEnabled", DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED);
         b.pop();
         return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
                 difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
@@ -357,7 +368,8 @@ public final class DungeonTrainConfig {
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
                 worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled, sharedBookLootMaxChance,
-                difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks);
+                difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
+                introCinematicChunkPreloadEnabled);
     }
 
     /**
@@ -527,6 +539,11 @@ public final class DungeonTrainConfig {
         return isLoaded() ? INTRO_CINEMATIC_DURATION_TICKS.get() : DEFAULT_INTRO_DURATION_TICKS;
     }
 
+    /** Whether the join intro cinematic waits behind a loading screen for nearby chunks to stream in. */
+    public static boolean isIntroCinematicChunkPreloadEnabled() {
+        return isLoaded() ? INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED.get() : DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED;
+    }
+
     public static void setNumCarriages(int value) {
         if (!isLoaded()) return;
         int clamped = Math.max(MIN_CARRIAGES, Math.min(MAX_CARRIAGES, value));
@@ -633,6 +650,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.DoubleValue sharedBookLootMaxChance,
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,
             ModConfigSpec.BooleanValue introCinematicEnabled,
-            ModConfigSpec.IntValue introCinematicDurationTicks
+            ModConfigSpec.IntValue introCinematicDurationTicks,
+            ModConfigSpec.BooleanValue introCinematicChunkPreloadEnabled
     ) {}
 }
