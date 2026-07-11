@@ -3860,9 +3860,9 @@
       "highlights": [],
       "pr": 703,
       "date": "2026-07-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.427.0",
+      "released_at": "2026-07-11T01:08:04Z"
     },
     {
       "id": "deepdark-stage-content",
@@ -3878,9 +3878,9 @@
       ],
       "pr": 705,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.427.0",
+      "released_at": "2026-07-11T01:08:04Z"
     }
   ]
 }
