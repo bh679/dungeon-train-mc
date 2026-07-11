@@ -15,10 +15,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Server-side, read-mostly cache of approved community books fetched from the Dungeon Train relay's
@@ -45,17 +42,19 @@ public final class SharedBookPool {
     /** Max books requested per fetch. */
     static final int POOL_LIMIT = 20;
 
-    /** Upper bound on the accumulated served/seen id set passed as {@code exclude}. */
-    static final int SEEN_CAP = 200;
-
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(8))
             .build();
 
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
-    /** One approved community book, materialised from the relay's pool response. */
-    public record PoolBook(int id, String title, String author, List<String> pages) {}
+    /**
+     * One approved community book, materialised from the relay's pool response. {@code weight} is the
+     * relay-supplied SELECTION weight (admin weight + 1, floored at 0), driving the weighted pick in
+     * {@link #rollShared} — a book with weight {@code w} is {@code w}× as likely to be chosen as a
+     * weight-1 book. Defaults to 1 (uniform) when an older relay omits the field.
+     */
+    public record PoolBook(int id, String title, String author, List<String> pages, int weight) {}
 
     /** Current immutable snapshot. Replaced wholesale by {@link #refreshAsync}; read by {@link #rollShared}. */
     private static volatile List<PoolBook> snapshot = List.of();
@@ -69,22 +68,17 @@ public final class SharedBookPool {
      */
     private static volatile int approvedTotal = 0;
 
-    /**
-     * Ids the world has served / seen, used as the {@code exclude} filter so repeat fetches favour
-     * fresh books. Insertion-ordered so the oldest ids evict first at {@link #SEEN_CAP}. Guarded by its
-     * own monitor (only touched from the async fetch continuation + its exclude read).
-     */
-    private static final Set<Integer> SEEN_IDS = new LinkedHashSet<>();
-
     /** Prevents overlapping in-flight fetches (a slow relay shouldn't stack requests every tick). */
     private static volatile boolean fetchInFlight = false;
 
     private SharedBookPool() {}
 
     /**
-     * Pick a community book at random from the current snapshot and build a plain written book
-     * crediting its author. Returns {@link ItemStack#EMPTY} when the snapshot is empty. Deterministic
-     * per {@code rollSeed} so the same chest at the same world seed always yields the same book.
+     * Pick a community book from the current snapshot — a deterministic <b>weighted</b> lottery by each
+     * book's {@link PoolBook#weight()} (admin weight + 1) — and build a plain written book crediting its
+     * author. Returns {@link ItemStack#EMPTY} when the snapshot is empty or every book has weight 0.
+     * Deterministic per {@code rollSeed} so the same chest at the same world seed always yields the same
+     * book.
      *
      * <p>The built stack carries NO {@link SharedBookTag} — a found book is not part of the CONTRIBUTION
      * half's immediate-burn flow, and reading it never counts as a story read. It IS stamped with two
@@ -96,9 +90,8 @@ public final class SharedBookPool {
      */
     public static ItemStack rollShared(long rollSeed) {
         List<PoolBook> pool = snapshot; // single volatile read → consistent snapshot
-        if (pool.isEmpty()) return ItemStack.EMPTY;
-        int index = (int) (Long.remainderUnsigned(mix(rollSeed), pool.size()));
-        PoolBook book = pool.get(index);
+        PoolBook book = weightedPick(pool, mix(rollSeed));
+        if (book == null) return ItemStack.EMPTY;
         ItemStack stack = BookFactory.buildPlainBook(book.title(), book.author(), book.pages());
         SharedBookFoundTag.stamp(stack);               // "read a stranger's book" advancement marker
         SharedBookReadTag.stampId(stack, book.id());   // read-telemetry identity only
@@ -128,10 +121,11 @@ public final class SharedBookPool {
         if (fetchInFlight) return;
         fetchInFlight = true;
         try {
-            String exclude = excludeCsv();
-            boolean hadExclude = !exclude.isEmpty();
+            // No exclude filter: selection is now a per-roll WEIGHTED lottery (see rollShared), so books
+            // must be free to repeat across fetches — excluding served ids would flatten the weighting to
+            // roughly one-appearance-per-cycle. Each refresh pulls a fresh window of up to POOL_LIMIT.
             String url = DungeonTrain.relayBaseUrl()
-                    + "/books/pool?exclude=" + exclude + "&limit=" + POOL_LIMIT;
+                    + "/books/pool?limit=" + POOL_LIMIT;
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Accept", "application/json")
@@ -148,7 +142,7 @@ public final class SharedBookPool {
                                 LOGGER.debug("[DungeonTrain] shared-book pool fetch -> HTTP {}", resp.statusCode());
                                 return;
                             }
-                            applyResponse(resp.body(), hadExclude);
+                            applyResponse(resp.body());
                         } catch (Throwable t) {
                             LOGGER.debug("[DungeonTrain] shared-book pool parse failed: {}", t.toString());
                         } finally {
@@ -163,22 +157,12 @@ public final class SharedBookPool {
     }
 
     /**
-     * Parse the relay JSON body, build the new snapshot, and accumulate served ids into the seen-set.
-     *
-     * <p>{@code hadExclude} is whether this fetch sent a non-empty {@code exclude} filter — it
-     * disambiguates the two ways a fetch can come back with zero books:</p>
-     * <ul>
-     *   <li><b>Exclude-starvation</b> ({@code hadExclude} true, 0 books): the seen-set has grown to
-     *       cover every book the relay holds, so the filter excluded them all. This is NOT an empty
-     *       pool — reset the seen-set so the next refresh re-pulls the whole pool (a "silent full
-     *       cycle", mirroring the random-book picker), and KEEP the current snapshot so loot keeps
-     *       serving books meanwhile. Without this the pool empties permanently the moment every book
-     *       has been served once.</li>
-     *   <li><b>Genuinely empty pool</b> ({@code hadExclude} false, 0 books): nothing was excluded and
-     *       still nothing came back — the relay really has no approved books. Clear the snapshot.</li>
-     * </ul>
+     * Parse the relay JSON body and swap in the new snapshot. Because fetches no longer send an
+     * {@code exclude} filter, a zero-book reply means the relay genuinely has no approved books (or none
+     * with a positive selection weight) → clear the snapshot. A malformed reply keeps the last good
+     * snapshot so a transient relay blip doesn't wipe loot.
      */
-    static void applyResponse(String body, boolean hadExclude) {
+    static void applyResponse(String body) {
         JsonElement root = JsonParser.parseString(body);
         if (!root.isJsonObject()) return;
         JsonObject obj = root.getAsJsonObject();
@@ -208,26 +192,17 @@ public final class SharedBookPool {
             if (book != null) parsed.add(book);
         }
         if (parsed.isEmpty()) {
-            if (hadExclude) {
-                // Exclude-starvation, not an empty pool — reset the seen-set and keep serving the
-                // current snapshot; the next refresh (empty exclude) re-pulls the full pool.
-                resetSeen();
-                LOGGER.debug("[DungeonTrain] shared-book pool exhausted by exclude filter — reset seen-set, keeping {} book(s)",
-                        snapshot.size());
-            } else {
-                snapshot = List.of();
-                LOGGER.debug("[DungeonTrain] shared-book pool is empty");
-            }
+            snapshot = List.of();
+            LOGGER.debug("[DungeonTrain] shared-book pool is empty");
             return;
         }
         // Publish an immutable snapshot (copy so no external ref can mutate it).
         snapshot = List.copyOf(parsed);
-        rememberSeen(parsed);
         LOGGER.debug("[DungeonTrain] shared-book pool refreshed: {} book(s)", parsed.size());
     }
 
     /** Materialise one pool entry; returns {@code null} if it lacks the required fields. */
-    private static PoolBook parseBook(JsonObject o) {
+    static PoolBook parseBook(JsonObject o) {
         if (!o.has("id")) return null;
         int id = o.get("id").getAsInt();
         String title = o.has("title") && !o.get("title").isJsonNull() ? o.get("title").getAsString() : "";
@@ -239,33 +214,33 @@ public final class SharedBookPool {
                 pages.add(p.isJsonNull() ? "" : p.getAsString());
             }
         }
-        return new PoolBook(id, title, author, pages);
-    }
-
-    private static synchronized void rememberSeen(List<PoolBook> books) {
-        for (PoolBook b : books) {
-            SEEN_IDS.add(b.id());
-        }
-        // Evict oldest ids beyond the cap (LinkedHashSet iterates in insertion order).
-        while (SEEN_IDS.size() > SEEN_CAP) {
-            var it = SEEN_IDS.iterator();
-            it.next();
-            it.remove();
-        }
-    }
-
-    private static synchronized String excludeCsv() {
-        if (SEEN_IDS.isEmpty()) return "";
-        return SEEN_IDS.stream().map(String::valueOf).collect(Collectors.joining(","));
+        // Relay-supplied selection weight (admin weight + 1). Absent → 1 (uniform), so an older relay
+        // that doesn't send the field degrades gracefully to today's flat behaviour.
+        int weight = o.has("weight") && o.get("weight").isJsonPrimitive()
+                ? Math.max(0, o.get("weight").getAsInt())
+                : 1;
+        return new PoolBook(id, title, author, pages, weight);
     }
 
     /**
-     * Clear the served/seen id set so the next refresh sends an empty {@code exclude} and re-pulls the
-     * whole relay pool. Called when the exclude filter has starved the pool (see {@link #applyResponse}),
-     * mirroring the random-book picker's silent full-cycle reset.
+     * Deterministic weighted pick over {@code pool} using an already-mixed seed: a book of weight
+     * {@code w} occupies {@code w} of the {@code Σweight} slots, so it is {@code w}× as likely as a
+     * weight-1 book. Returns {@code null} when the pool is empty or every weight is 0 (nothing to
+     * spawn → caller falls back to a local book). Weights are floored at 0 defensively; the relay
+     * already drops selection-weight-0 books. Package-private so unit tests can assert the distribution
+     * without building an {@link ItemStack}.
      */
-    private static synchronized void resetSeen() {
-        SEEN_IDS.clear();
+    static PoolBook weightedPick(List<PoolBook> pool, long mixedSeed) {
+        if (pool.isEmpty()) return null;
+        long total = 0;
+        for (PoolBook b : pool) total += Math.max(0, b.weight());
+        if (total <= 0) return null;
+        long target = Long.remainderUnsigned(mixedSeed, total);
+        for (PoolBook b : pool) {
+            target -= Math.max(0, b.weight());
+            if (target < 0) return b;
+        }
+        return pool.get(pool.size() - 1); // unreachable when total > 0, but keep the pick total
     }
 
     /** Splittable-mix so a raw roll seed spreads uniformly across the pool index. */
@@ -277,10 +252,9 @@ public final class SharedBookPool {
         return state;
     }
 
-    /** Test/reset hook: drop the snapshot and seen-set (used by unit tests and on server stop). */
+    /** Test/reset hook: drop the snapshot (used by unit tests and on server stop). */
     static synchronized void clear() {
         snapshot = List.of();
-        SEEN_IDS.clear();
         fetchInFlight = false;
         approvedTotal = 0;
     }
