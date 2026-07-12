@@ -511,6 +511,28 @@ public final class DtEvents {
         new DtEvent<>();
 
     /**
+     * Keyboard key (raw) — NeoForge {@code InputEvent.Key} (client game bus). Fires
+     * on a raw key transition before screen routing; handlers self-guard on
+     * {@code Minecraft.getInstance().screen}. NOT cancellable — {@code void}
+     * passthrough. Two handlers ({@code CinematicInputHandler} — Space skips the
+     * intro / any key reveals the hint; {@code CommandMenuInputHandler} — feeds the
+     * typing buffer while the worldspace menu is in typing mode). Both NORMAL,
+     * independent (mutually-exclusive active conditions), order irrelevant.
+     */
+    public static final DtEvent<DtKeyInputCallback> KEY_INPUT =
+        new DtEvent<>();
+
+    /**
+     * Mouse scroll — NeoForge {@code InputEvent.MouseScrollingEvent} (client game
+     * bus). Fires before screen routing; the sole handler
+     * ({@code CinematicInputHandler}) self-guards on {@code screen}. CANCELLABLE: the
+     * callback returns {@code true} to swallow the scroll (suppress zoom / hotbar
+     * cycle during the cinematic); the bridge stops on the first {@code true}. NORMAL.
+     */
+    public static final DtEvent<DtMouseScrollCallback> MOUSE_SCROLL =
+        new DtEvent<>();
+
+    /**
      * Left-click block — NeoForge {@code PlayerInteractEvent.LeftClickBlock}
      * (client-side uses). CANCELLABLE. Two tiers: HIGHEST (nine menu handlers that
      * cancel) and NORMAL (one observer, {@code RideSnapshotDirector}). The bridge

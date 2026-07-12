@@ -4,8 +4,10 @@ import games.brennan.dungeontrain.DtCore;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import games.brennan.dungeontrain.platform.event.DtInteractionInput;
 import games.brennan.dungeontrain.platform.event.DtInteractionInputCallback;
+import games.brennan.dungeontrain.platform.event.DtKeyInputCallback;
 import games.brennan.dungeontrain.platform.event.DtLeftClickBlockCallback;
 import games.brennan.dungeontrain.platform.event.DtMouseButtonCallback;
+import games.brennan.dungeontrain.platform.event.DtMouseScrollCallback;
 import games.brennan.dungeontrain.platform.event.DtPriority;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
@@ -29,6 +31,23 @@ public final class NeoForgeClientInputBridge {
     public static void onMouseButton(InputEvent.MouseButton.Pre event) {
         for (DtMouseButtonCallback cb : DtEvents.MOUSE_BUTTON_PRE.listeners()) {
             if (cb.onMouseButton(event.getButton(), event.getAction(), event.getModifiers())) {
+                event.setCanceled(true);
+                return; // first cancel wins — matches NeoForge cancellable-event short-circuit
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onKey(InputEvent.Key event) {
+        for (DtKeyInputCallback cb : DtEvents.KEY_INPUT.listeners()) {
+            cb.onKey(event.getKey(), event.getScanCode(), event.getAction(), event.getModifiers());
+        }
+    }
+
+    @SubscribeEvent
+    public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
+        for (DtMouseScrollCallback cb : DtEvents.MOUSE_SCROLL.listeners()) {
+            if (cb.onMouseScroll(event.getScrollDeltaX(), event.getScrollDeltaY())) {
                 event.setCanceled(true);
                 return; // first cancel wins — matches NeoForge cancellable-event short-circuit
             }

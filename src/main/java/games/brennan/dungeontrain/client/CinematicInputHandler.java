@@ -5,14 +5,6 @@ import com.mojang.blaze3d.platform.InputConstants;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.PauseScreen;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.client.event.RenderHandEvent;
-import net.neoforged.neoforge.client.event.ScreenEvent;
 
 /**
  * Locks player input while the spawn intro cinematic is active and routes the
@@ -38,7 +30,6 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  *   <li>{@link ClientPlayerNetworkEvent.LoggingOut} → hard reset.</li>
  * </ul>
  */
-@EventBusSubscriber(modid = DtCore.MOD_ID, value = Dist.CLIENT)
 public final class CinematicInputHandler {
 
     private CinematicInputHandler() {}
@@ -47,12 +38,11 @@ public final class CinematicInputHandler {
         CinematicCameraController.clientTick();
     }
 
-    @SubscribeEvent
-    public static void onKey(InputEvent.Key event) {
+    public static void onKey(int key, int scanCode, int action, int modifiers) {
         if (!CinematicCameraController.isActive()) return;
         if (Minecraft.getInstance().screen != null) return;
-        if (event.getAction() != InputConstants.PRESS) return;
-        if (event.getKey() == InputConstants.KEY_SPACE) {
+        if (action != InputConstants.PRESS) return;
+        if (key == InputConstants.KEY_SPACE) {
             CinematicCameraController.skip();
         } else {
             CinematicSkipHudOverlay.show();
@@ -68,12 +58,11 @@ public final class CinematicInputHandler {
         return true; // former event.setCanceled(true)
     }
 
-    @SubscribeEvent
-    public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
-        if (!CinematicCameraController.isActive()) return;
-        if (Minecraft.getInstance().screen != null) return;
-        event.setCanceled(true);
+    public static boolean onMouseScroll(double deltaX, double deltaY) {
+        if (!CinematicCameraController.isActive()) return false;
+        if (Minecraft.getInstance().screen != null) return false;
         CinematicSkipHudOverlay.show();
+        return true; // former event.setCanceled(true)
     }
 
     public static void onInteraction(games.brennan.dungeontrain.platform.event.DtInteractionInput input) {

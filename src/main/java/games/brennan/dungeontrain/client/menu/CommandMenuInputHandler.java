@@ -1,13 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 import games.brennan.dungeontrain.DtCore;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.bus.api.EventPriority;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
+import games.brennan.dungeontrain.platform.event.DtRightClickBlock;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -19,15 +13,19 @@ import org.lwjgl.glfw.GLFW;
  *       activate when its release lands on a hovered entry, and so the
  *       user can mouse-down, slide off, and release to cancel.</li>
  *   <li>PlayerInteractEvent variants are also cancelled as a belt-and-braces
- *       guard against right-click placement reaching block logic before
- *       {@link InputEvent.InteractionKeyMappingTriggered} can stop it.</li>
- *   <li>When in typing mode, {@link InputEvent.Key} presses feed the buffer.</li>
+ *       guard against right-click placement reaching block logic before the
+ *       interaction key-mapping can stop it (the still-loader-specific
+ *       {@code RightClickItem} / empty-click guards live in
+ *       {@code platform.neoforge.CommandMenuInteractGuard}).</li>
+ *   <li>When in typing mode, key presses feed the buffer.</li>
  * </ul>
+ *
+ * <p>Converted to the loader-neutral {@code DtEvents} seams (registered from
+ * {@code NeoForgeClientEvents}); the three interactions still bound to a
+ * loader-specific NeoForge event ({@code RightClickItem} cancel + the two
+ * empty-click no-ops) are split into {@code CommandMenuInteractGuard} in the
+ * root module.</p>
  */
-@EventBusSubscriber(
-    modid = DtCore.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class CommandMenuInputHandler {
 
     /**
@@ -77,38 +75,18 @@ public final class CommandMenuInputHandler {
         return false;
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+    public static void onRightClickBlock(DtRightClickBlock event) {
         if (CommandMenuState.isOpen()) event.setCanceled(true);
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onLeftClickEmpty(PlayerInteractEvent.LeftClickEmpty event) {
-        // Not cancellable in 1.20.1, but we still want to note the menu ate the input.
-    }
-
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onRightClickEmpty(PlayerInteractEvent.RightClickEmpty event) {
-        // Not cancellable; equivalent to empty hand right-click.
-    }
-
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        if (CommandMenuState.isOpen()) event.setCanceled(true);
-    }
-
-    @SubscribeEvent
-    public static void onKey(InputEvent.Key event) {
+    public static void onKey(int key, int scanCode, int action, int modifiers) {
         if (!CommandMenuState.isOpen() || !CommandMenuState.typingMode()) return;
         // While a Screen is up (typically MenuTypingScreen, which we open in
         // beginTyping), keystrokes go through Screen.keyPressed / charTyped
         // and should not be double-processed here.
         if (net.minecraft.client.Minecraft.getInstance().screen != null) return;
-        int action = event.getAction();
         if (action != GLFW.GLFW_PRESS && action != GLFW.GLFW_REPEAT) return;
 
-        int key = event.getKey();
-        int modifiers = event.getModifiers();
         boolean shift = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
 
         switch (key) {

@@ -204,6 +204,24 @@ public final class NeoForgeClientEvents {
             .register(HIGHEST, games.brennan.dungeontrain.client.menu.CommandMenuInputHandler::onLeftClickBlock);
         DtEvents.LEFT_CLICK_BLOCK
             .register(games.brennan.dungeontrain.client.snapshot.RideSnapshotDirector::onLeftClickBlock);
+
+        // InputEvent.Key (not cancellable) — two independent handlers, order irrelevant.
+        DtEvents.KEY_INPUT
+            .register(games.brennan.dungeontrain.client.CinematicInputHandler::onKey);
+        DtEvents.KEY_INPUT
+            .register(games.brennan.dungeontrain.client.menu.CommandMenuInputHandler::onKey);
+
+        // InputEvent.MouseScrollingEvent (cancellable) — sole handler.
+        DtEvents.MOUSE_SCROLL
+            .register(games.brennan.dungeontrain.client.CinematicInputHandler::onMouseScroll);
+
+        // RightClickBlock HIGHEST tier — client-only menu canceller (registered here, not in
+        // NeoForgeServerEvents, so the client class never loads on a dedicated server). The shared
+        // NeoForgeRightClickBlockBridge fires the HIGHEST tier on both sides; the bucket is empty
+        // server-side because this is the only HIGHEST handler and it registers client-only.
+        DtEvents.RIGHT_CLICK_BLOCK
+            .register(games.brennan.dungeontrain.platform.event.DtPriority.HIGHEST,
+                games.brennan.dungeontrain.client.menu.CommandMenuInputHandler::onRightClickBlock);
     }
 
     /**
