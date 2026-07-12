@@ -13,7 +13,7 @@ human oversight at each stage.
 - **Project:** Dungeon Train (Minecraft mod port of the original itch.io game)
 - **Original Game:** https://brennanhatton.itch.io/dungeontrain
 - **Mod Loader:** NeoForge 1.21.1 (neoforge `21.1.228`)
-- **Key Dependency:** Sable (`2.0.2+mc1.21.1`) — provides moving ship/train physics. NeoForge-only (PolyForm Shield 1.0.0 licence). Replaced Valkyrien Skies 2 in Phase 2 of the 1.21.1 migration; see `build.gradle` for the jarJar extraction setup.
+- **Key Dependency:** Sable (`2.0.2+mc1.21.1`) — provides moving ship/train physics (PolyForm Shield 1.0.0 licence). Multiloader upstream: publishes NeoForge **and Fabric** artifacts (plus `sable-common`) at identical versions on maven.ryanhcode.dev — verified 2026-07 in the Fabric-port Phase 0 spike (`docs/fabric-port/phase0-findings.md`). Replaced Valkyrien Skies 2 in Phase 2 of the 1.21.1 migration; see `build.gradle` for the jarJar extraction setup.
 - **Repos:** dungeon-train-mc
 - **GitHub Project:** https://github.com/users/bh679/projects/16 (Project #16)
 - **Wiki:** github.com/bh679/dungeon-train-mc/wiki
