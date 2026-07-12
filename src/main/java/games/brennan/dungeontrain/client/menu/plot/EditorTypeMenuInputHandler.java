@@ -108,8 +108,7 @@ public final class EditorTypeMenuInputHandler {
         event.setCanceled(true);
     }
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         if (!shouldHandle()) return;
         if (Minecraft.getInstance().screen == null) {
             EditorTypeMenuRaycast.updateHovered();

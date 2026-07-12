@@ -94,8 +94,7 @@ public final class ContainerContentsMenuInputHandler {
         event.setCanceled(true);
     }
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof ContainerContentsSearchScreen
             && (!ContainerContentsMenu.isActive()

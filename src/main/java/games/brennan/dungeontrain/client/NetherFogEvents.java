@@ -141,8 +141,7 @@ public final class NetherFogEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         Minecraft mc = Minecraft.getInstance();
         boolean inOverworld = mc.player != null && mc.level != null
                 && mc.level.dimension().equals(Level.OVERWORLD);

@@ -34,7 +34,6 @@ import java.util.List;
  * flips the {@link ClientDisplayConfig} flag and any pending/future hints become
  * no-ops.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class AdvancementsHintClient {
 
     /**
@@ -83,8 +82,7 @@ public final class AdvancementsHintClient {
         PENDING.add(DELAY_TICKS);
     }
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         if (PENDING.isEmpty()) return;
         for (int i = PENDING.size() - 1; i >= 0; i--) {
             int remaining = PENDING.get(i) - 1;

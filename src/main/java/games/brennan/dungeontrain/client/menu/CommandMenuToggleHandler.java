@@ -22,16 +22,11 @@ import net.neoforged.fml.common.Mod;
  * {@link net.minecraft.client.KeyMapping#consumeClick()} fires for both
  * open and close presses — no need for a Screen-level keyPressed handler.</p>
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class CommandMenuToggleHandler {
 
     private CommandMenuToggleHandler() {}
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
 
         Minecraft mc = Minecraft.getInstance();
 

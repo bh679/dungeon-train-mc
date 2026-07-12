@@ -90,8 +90,7 @@ public final class BookReadClientEvents {
         tracking = true;
     }
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         if (!tracking) return;
         if (Minecraft.getInstance().screen != tracked) return; // safety: only while our screen is up
         accumulate();

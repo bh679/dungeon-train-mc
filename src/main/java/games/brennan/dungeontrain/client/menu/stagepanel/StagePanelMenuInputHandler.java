@@ -81,8 +81,7 @@ public final class StagePanelMenuInputHandler {
         event.setCanceled(true);
     }
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         Minecraft mc = Minecraft.getInstance();
         if (!StagePanelMenu.isActive()) return;
         if (mc.screen == null) {

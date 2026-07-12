@@ -107,8 +107,7 @@ public final class EditorPlotPanelInputHandler {
     }
 
     /** Refresh hover even outside the per-frame render so press arming is current. */
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         if (!shouldHandle()) return;
         if (Minecraft.getInstance().screen == null) {
             EditorPlotPanelRaycast.updateHovered();

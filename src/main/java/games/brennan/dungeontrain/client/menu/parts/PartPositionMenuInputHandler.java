@@ -111,8 +111,7 @@ public final class PartPositionMenuInputHandler {
         event.setCanceled(true);
     }
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         Minecraft mc = Minecraft.getInstance();
         // Auto-dismiss the search typing screen if the underlying menu
         // is no longer on the ADD_SEARCH sub-screen — happens when the

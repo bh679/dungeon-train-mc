@@ -205,6 +205,13 @@ public class DungeonTrain {
         // that still live in the root module this Stage (see NeoForgeServerEvents Javadoc).
         DungeonTrainCommon.init();
         games.brennan.dungeontrain.platform.neoforge.NeoForgeServerEvents.register();
+        // Client-side converted handlers — gated to the physical client so
+        // NeoForgeClientEvents (and every client handler class it method-references)
+        // never classloads on a dedicated server. The matching NeoForge*Bridge classes
+        // are @EventBusSubscriber(value = Dist.CLIENT) for the same reason.
+        if (games.brennan.dungeontrain.platform.DtPlatform.get().isClient()) {
+            games.brennan.dungeontrain.platform.neoforge.NeoForgeClientEvents.register();
+        }
 
         modBus.addListener(this::commonSetup);
 

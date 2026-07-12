@@ -42,12 +42,10 @@ public final class TemplateBlocksHotkeyClient {
     }
 
     /** Forge-bus listener — ticks during the client game loop to catch the key press edge. */
-    @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
     public static final class TickWatcher {
         private static boolean lastDown;
 
-        @SubscribeEvent
-        public static void onClientTick(ClientTickEvent.Post event) {
+        public static void onClientTick() {
             if (Minecraft.getInstance().getConnection() == null) {
                 lastDown = false;
                 return;

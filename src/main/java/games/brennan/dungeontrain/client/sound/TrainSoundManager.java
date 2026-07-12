@@ -18,15 +18,13 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * used by {@link games.brennan.dungeontrain.client.ContainerHotkeyClient}
  * and {@link games.brennan.dungeontrain.client.VariantHotkeyClient}.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class TrainSoundManager {
 
     private static TrainEngineSound active;
 
     private TrainSoundManager() {}
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) {
             // Sound auto-stops itself when level becomes null; clear our

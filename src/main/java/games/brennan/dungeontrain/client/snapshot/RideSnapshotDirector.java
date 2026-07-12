@@ -123,8 +123,7 @@ public final class RideSnapshotDirector {
 
     private record Choice(SnapshotTag tag, String reason) {}
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         if (!ClientDisplayConfig.isRideSnapshotsEnabled()) return;
 
         Minecraft mc = Minecraft.getInstance();

@@ -62,12 +62,10 @@ public final class ContainerHotkeyClient {
      * named {@code TickWatcher} (even in different outer classes) cause one
      * of them to never receive events. Keep this class named distinctly.
      */
-    @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
     public static final class ContainerTickWatcher {
         private static long tick;
 
-        @SubscribeEvent
-        public static void onClientTick(ClientTickEvent.Post event) {
+        public static void onClientTick() {
             tick++;
             if (Minecraft.getInstance().getConnection() == null
                     || !EditorStatusHudOverlay.isActive()) {

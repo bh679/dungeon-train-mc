@@ -35,13 +35,11 @@ public final class CinematographerHotkeyClient {
         event.register(CINEMATIC_KEY);
     }
 
-    @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
     public static final class CinematographerTickWatcher {
 
         private CinematographerTickWatcher() {}
 
-        @SubscribeEvent
-        public static void onClientTick(ClientTickEvent.Post event) {
+        public static void onClientTick() {
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null || mc.getConnection() == null || mc.screen != null) return;
             if (!mc.player.isSpectator()) return;

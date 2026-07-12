@@ -49,10 +49,8 @@ public final class ManualSpawnHotkeyClient {
      * (which auto-decrements the queued-click counter so a long press is
      * still one logical press).
      */
-    @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
     public static final class ManualSpawnTickWatcher {
-        @SubscribeEvent
-        public static void onClientTick(ClientTickEvent.Post event) {
+        public static void onClientTick() {
             if (Minecraft.getInstance().getConnection() == null) return;
             while (KEY.consumeClick()) {
                 DungeonTrainNet.sendToServer(new ManualSpawnRequestPacket());

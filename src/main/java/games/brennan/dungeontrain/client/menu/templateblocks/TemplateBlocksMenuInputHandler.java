@@ -83,8 +83,7 @@ public final class TemplateBlocksMenuInputHandler {
         event.setCanceled(true);
     }
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         Minecraft mc = Minecraft.getInstance();
         if (!TemplateBlocksMenu.isActive()) return;
         if (mc.screen == null) {

@@ -26,7 +26,6 @@ import org.slf4j.Logger;
  * screen into a fresh world and would wipe the flag before the tick handler
  * ever saw it.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class EditorAutoOpenHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -54,8 +53,7 @@ public final class EditorAutoOpenHandler {
         delayTicksRemaining = -1;
     }
 
-    @SubscribeEvent
-    public static void onClientTickPost(ClientTickEvent.Post event) {
+    public static void onClientTickPost() {
         if (!pending) {
             return;
         }

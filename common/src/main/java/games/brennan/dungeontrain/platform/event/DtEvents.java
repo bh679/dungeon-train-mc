@@ -317,4 +317,33 @@ public final class DtEvents {
     public static final DtEvent<DtEntityInteractCallback> ENTITY_INTERACT =
         new DtEvent<>();
 
+    // =======================================================================
+    //  CLIENT-side categories (Stage 2c) — registered ONLY on the physical
+    //  client (see NeoForgeClientEvents, gated by DtPlatform.isClient()). Their
+    //  bridges are @EventBusSubscriber(value = Dist.CLIENT) so the classes never
+    //  load on a dedicated server. Register-style (mod-bus) events are converted
+    //  to declarative tables, mirroring COMMAND_REGISTRATION.
+    // =======================================================================
+
+    // ---- Client tick (Stage 2c) -------------------------------------------
+
+    /**
+     * Client tick (post) — NeoForge {@code ClientTickEvent.Post}. Fires after each
+     * client tick on the render/client thread. Not cancellable; DT's 26 handlers
+     * ignore the event object (all read {@code Minecraft.getInstance()}). All
+     * NORMAL priority — {@code NeoForgeClientTickBridge} fires them in registration
+     * order under a single subscription.
+     */
+    public static final DtEvent<DtClientTickCallback> CLIENT_TICK_POST =
+        new DtEvent<>();
+
+    /**
+     * Client tick (pre) — NeoForge {@code ClientTickEvent.Pre}. Fires before each
+     * client tick on the render/client thread. NeoForge's {@code Pre} is
+     * cancellable, but DT's sole handler ({@code CinematicInputHandler}) never
+     * cancels, so this is a {@code void} passthrough. NORMAL.
+     */
+    public static final DtEvent<DtClientTickCallback> CLIENT_TICK_PRE =
+        new DtEvent<>();
+
 }

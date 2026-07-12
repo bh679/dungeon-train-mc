@@ -38,7 +38,6 @@ import java.util.UUID;
  *
  * <p>Remove (or gate off) once the mechanism is confirmed and the fix lands.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class ResumeRenderDiagnostics {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -55,8 +54,7 @@ public final class ResumeRenderDiagnostics {
 
     private ResumeRenderDiagnostics() {}
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         if (level == null) {

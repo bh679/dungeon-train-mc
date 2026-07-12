@@ -83,8 +83,7 @@ public final class SpawnDeckHold {
      * run, so we undo any fall it produced rather than racing it. After the hold
      * ends, run the post-release verification sample.
      */
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) {
             active = false;

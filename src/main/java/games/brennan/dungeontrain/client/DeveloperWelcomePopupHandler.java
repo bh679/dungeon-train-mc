@@ -68,8 +68,7 @@ public final class DeveloperWelcomePopupHandler {
 
     private DeveloperWelcomePopupHandler() {}
 
-    @SubscribeEvent
-    public static void onClientTickPost(ClientTickEvent.Post event) {
+    public static void onClientTickPost() {
         Minecraft mc = Minecraft.getInstance();
 
         // 1) Detect "player has been in a world this session" — latches once and stays true.

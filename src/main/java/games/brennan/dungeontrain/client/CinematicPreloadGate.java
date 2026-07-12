@@ -190,8 +190,7 @@ public final class CinematicPreloadGate {
         event.setNewScreen(new CinematicLoadingScreen());
     }
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         if (phase == Phase.IDLE) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return; // wait for world-entry (logout resets)

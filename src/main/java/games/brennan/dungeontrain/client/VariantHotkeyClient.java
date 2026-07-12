@@ -73,12 +73,10 @@ public final class VariantHotkeyClient {
      * Forge bus listener — subscribed via the FORGE bus separately so it ticks
      * during the client game loop (not just during mod init).
      */
-    @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
     public static final class TickWatcher {
         private static long tick;
 
-        @SubscribeEvent
-        public static void onClientTick(ClientTickEvent.Post event) {
+        public static void onClientTick() {
             tick++;
             if (Minecraft.getInstance().getConnection() == null
                     || !EditorStatusHudOverlay.isActive()) {

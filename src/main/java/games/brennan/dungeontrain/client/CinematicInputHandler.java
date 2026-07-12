@@ -42,8 +42,7 @@ public final class CinematicInputHandler {
 
     private CinematicInputHandler() {}
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Pre event) {
+    public static void onClientTick() {
         CinematicCameraController.clientTick();
     }
 

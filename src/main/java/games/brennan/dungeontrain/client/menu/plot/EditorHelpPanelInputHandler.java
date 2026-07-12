@@ -87,8 +87,7 @@ public final class EditorHelpPanelInputHandler {
         event.setCanceled(true);
     }
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         if (!shouldHandle()) return;
         if (Minecraft.getInstance().screen == null) {
             EditorHelpPanelRaycast.updateHovered();

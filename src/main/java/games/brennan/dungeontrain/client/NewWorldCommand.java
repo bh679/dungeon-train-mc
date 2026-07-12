@@ -143,8 +143,7 @@ public final class NewWorldCommand {
      * (title screen, world load, dedicated server) so the next fire only happens
      * after the player is back in a real singleplayer world.
      */
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick() {
         if (loopRemaining <= 0) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.getSingleplayerServer() == null) return;
