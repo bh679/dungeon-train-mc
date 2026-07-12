@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "dungeontrain_spike",
+  "version": "${version}",
+  "name": "Dungeon Train — Sable-Fabric Spike",
+  "description": "Phase 0 go/no-go spike: proves Sable sub-level assembly, physics, and riding work on Fabric 1.21.1 before the Dungeon Train multiloader port.",
+  "authors": ["Brennan Hatton"],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["games.brennan.dungeontrain.spikefabric.SableSpike"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*",
+    "minecraft": "1.21.1",
+    "sable": "*"
+  }
+}

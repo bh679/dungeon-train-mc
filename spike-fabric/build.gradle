@@ -1,0 +1,78 @@
+plugins {
+    // Needs Loom >= 1.16.3 (sable-fabric 2.0.2 was built with it), which in
+    // turn needs Gradle >= 9.4 — hence the spike-local wrapper at 9.5.1
+    // instead of the root repo's 9.2.1.
+    id 'fabric-loom' version '1.17.9'
+}
+
+group = 'games.brennan.dungeontrain'
+version = project.spike_version
+
+repositories {
+    mavenCentral()
+    exclusiveContent { // Sable — per https://github.com/ryanhcode/sable/wiki (Fabric section)
+        forRepository {
+            maven {
+                name = 'RyanHCode Maven'
+                url = 'https://maven.ryanhcode.dev/releases'
+            }
+        }
+        filter {
+            includeGroup 'dev.ryanhcode.sable'
+            includeGroup 'dev.ryanhcode.sable-companion'
+        }
+    }
+    maven {
+        name = 'ParchmentMC'
+        url = 'https://maven.parchmentmc.org'
+    }
+    // Transitive deps declared by sable-fabric's POM:
+    maven { // Veil (foundry.veil)
+        name = 'BlameJared'
+        url = 'https://maven.blamejared.com'
+    }
+    maven { // Forge Config API Port (fuzs.forgeconfigapiport)
+        name = 'Fuzs Mod Resources'
+        url = 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/'
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    // Mojmap + parchment layering mirrors what the real :fabric module will use,
+    // so common sources compile unmodified across loaders (Phase 4 dry run).
+    mappings loom.layered {
+        officialMojangMappings()
+        parchment "org.parchmentmc.data:parchment-${project.minecraft_version}:${project.parchment_mappings_version}@zip"
+    }
+
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+    modApi "dev.ryanhcode.sable:sable-fabric-${project.minecraft_version}:${project.sable_mod_version}"
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
+
+loom {
+    runs {
+        client {
+            client()
+            ideConfigGenerated = false
+        }
+        server {
+            server()
+            ideConfigGenerated = false
+        }
+    }
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand version: project.version
+    }
+}
