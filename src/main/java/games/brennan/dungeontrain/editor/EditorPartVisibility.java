@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicLong;
  *       (exempt from a prior hide-unused snapshot).</li>
  * </ul></p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EditorPartVisibility {
 
     private static final Set<StageBlockIndex.PartRef> hidden = ConcurrentHashMap.newKeySet();
@@ -101,8 +100,7 @@ public final class EditorPartVisibility {
         }
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         hidden.clear();
         GENERATION.incrementAndGet();
     }

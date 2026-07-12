@@ -44,7 +44,6 @@ import java.util.Map;
  * {@code /data/dungeontrain/<kind.subdir>/weights.json} on the classpath.
  * Both files optional; missing or empty = uniform pick.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TrackVariantWeights {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -310,13 +309,11 @@ public final class TrackVariantWeights {
         }
     }
 
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
+        public static void onServerStarting(net.minecraft.server.MinecraftServer server) {
         reload();
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         clear();
     }
 }

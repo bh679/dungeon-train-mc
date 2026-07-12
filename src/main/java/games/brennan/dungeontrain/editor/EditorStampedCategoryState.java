@@ -31,7 +31,6 @@ import java.util.Optional;
  * so a fresh world that the player has not entered the editor in renders
  * nothing editor-shaped.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EditorStampedCategoryState {
 
     private static volatile EditorCategory current = null;
@@ -53,8 +52,7 @@ public final class EditorStampedCategoryState {
         return Optional.ofNullable(current);
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         clear();
     }
 }

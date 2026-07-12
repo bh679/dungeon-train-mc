@@ -49,7 +49,6 @@ import java.util.Map;
  * resolve to {@link #DEFAULT} (= 1) which matches the pre-feature uniform
  * pick when every contents is at default weight.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -328,13 +327,11 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
         return projectRoot.resolve("src/main/resources");
     }
 
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
+        public static void onServerStarting(net.minecraft.server.MinecraftServer server) {
         reload();
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         clear();
     }
 }

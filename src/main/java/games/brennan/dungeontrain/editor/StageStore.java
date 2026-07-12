@@ -61,7 +61,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link #effectiveGate(TemplateGate, String)} falls back to the template's inline snapshot gate and
  * warns once per missing id.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class StageStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -360,13 +359,11 @@ public final class StageStore {
         return gameDir == null ? null : gameDir.getParent();
     }
 
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
+        public static void onServerStarting(net.minecraft.server.MinecraftServer server) {
         reload();
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         clearCache();
     }
 }

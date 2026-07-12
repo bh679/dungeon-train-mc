@@ -93,8 +93,7 @@ public final class ResumeWatchdog {
         }
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         lastTickNanos = 0L; // next world's first tick mustn't read a stale (huge) gap
     }
 }

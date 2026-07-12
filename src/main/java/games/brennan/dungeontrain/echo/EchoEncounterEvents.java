@@ -64,8 +64,7 @@ public final class EchoEncounterEvents {
         RemoteEchoEncounters.scan(level, now);
     }
 
-    @SubscribeEvent
-    public static void onServerStopping(ServerStoppingEvent event) {
+        public static void onServerStopping(net.minecraft.server.MinecraftServer server) {
         RemoteEchoEncounters.clearAll();
     }
 }

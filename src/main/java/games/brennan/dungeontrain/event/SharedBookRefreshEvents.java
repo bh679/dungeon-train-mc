@@ -43,8 +43,7 @@ public final class SharedBookRefreshEvents {
 
     private SharedBookRefreshEvents() {}
 
-    @SubscribeEvent
-    public static void onServerStarted(ServerStartedEvent event) {
+        public static void onServerStarted(net.minecraft.server.MinecraftServer server) {
         // Start fresh each world; a first refresh is scheduled a short delay out.
         tickCounter = 0;
         firstRefreshCountdown = FIRST_REFRESH_DELAY_TICKS;

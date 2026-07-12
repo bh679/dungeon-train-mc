@@ -36,7 +36,6 @@ import java.util.List;
  * non-empty — that means the user has saved fresh content in the new layout
  * and a half-finished migration shouldn't overwrite it.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class UserContentMigration {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -60,8 +59,7 @@ public final class UserContentMigration {
 
     private UserContentMigration() {}
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onServerStarting(ServerStartingEvent event) {
+        public static void onServerStarting(net.minecraft.server.MinecraftServer server) {
         runOnce();
     }
 

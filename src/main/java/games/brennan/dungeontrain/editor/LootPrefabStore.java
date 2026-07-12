@@ -66,7 +66,6 @@ import java.util.regex.Pattern;
  * Schema v1 (without {@code block}) is still readable — it falls back to
  * {@code minecraft:chest} so old files don't break.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class LootPrefabStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -295,13 +294,11 @@ public final class LootPrefabStore {
         IDS.clear();
     }
 
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
+        public static void onServerStarting(net.minecraft.server.MinecraftServer server) {
         reload();
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         clear();
     }
 

@@ -27,7 +27,6 @@ import java.util.Locale;
  * the slot when nothing is linked. Newly-added parts also default their {@code stageId} to this
  * selection. The empty selection ({@link #selected()} == {@code null}) restores today's preview.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EditorStageSelection {
 
     /** Currently focused stage id (lower-cased), or {@code null} when nothing is selected. */
@@ -75,8 +74,7 @@ public final class EditorStageSelection {
         selectedStageId = null;
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         clear();
     }
 }

@@ -52,7 +52,6 @@ import java.util.Map;
  * variant) are kept in the map — they cost nothing and let admins pre-register
  * weights for customs that haven't been installed yet.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public record CarriageWeights(Map<String, TemplateMeta> byId) {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -355,13 +354,11 @@ public record CarriageWeights(Map<String, TemplateMeta> byId) {
         return projectRoot.resolve("src/main/resources");
     }
 
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
+        public static void onServerStarting(net.minecraft.server.MinecraftServer server) {
         reload();
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         clear();
     }
 }

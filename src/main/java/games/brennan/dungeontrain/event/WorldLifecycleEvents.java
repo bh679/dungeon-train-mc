@@ -46,16 +46,14 @@ import org.slf4j.Logger;
  * server. Dedicated servers fall through to the SavedData defaults sourced
  * from {@code DungeonTrainConfig}.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class WorldLifecycleEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private WorldLifecycleEvents() {}
 
-    @SubscribeEvent(priority = EventPriority.NORMAL)
-    public static void onServerStarted(ServerStartedEvent event) {
-        ServerLevel overworld = event.getServer().overworld();
+        public static void onServerStarted(net.minecraft.server.MinecraftServer server) {
+        ServerLevel overworld = server.overworld();
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
 
         // Starting dimension is published unconditionally by the World-Type
@@ -98,8 +96,7 @@ public final class WorldLifecycleEvents {
         overworld.getDataStorage().save();
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         CarriageTemplateStore.clearCache();
         games.brennan.dungeontrain.train.CarriagePlacer.clearHalfFlatbedCache();
         games.brennan.dungeontrain.train.Trains.clearRegistry();

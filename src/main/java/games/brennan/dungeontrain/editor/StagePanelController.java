@@ -289,8 +289,7 @@ public final class StagePanelController {
         player.displayClientMessage(Component.literal(message).withStyle(color), true);
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         OPEN.clear();
         lastSyncedGeneration = -1;
     }

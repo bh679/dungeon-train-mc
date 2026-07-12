@@ -37,7 +37,6 @@ import org.slf4j.Logger;
  * generates. Cleared on stop so a singleplayer world-switch in the same JVM never reuses a stale
  * seed/layout.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NetherBandContextEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -48,10 +47,9 @@ public final class NetherBandContextEvents {
 
     private NetherBandContextEvents() {}
 
-    @SubscribeEvent(priority = EventPriority.LOW)
-    public static void onServerStarted(ServerStartedEvent event) {
+        public static void onServerStarted(net.minecraft.server.MinecraftServer server) {
         try {
-            ServerLevel overworld = event.getServer().overworld();
+            ServerLevel overworld = server.overworld();
             DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
 
             boolean enabled = NetherBand.startX(overworld) != NetherBand.OFF;
@@ -72,13 +70,13 @@ public final class NetherBandContextEvents {
             // nether_wastes if this world has no Nether.
             Holder<Biome> netherFallback = overworld.registryAccess()
                     .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.NETHER_WASTES);
-            NetherCoreBiomes netherCoreBiomes = NetherCoreBiomes.resolve(event.getServer(), netherFallback);
+            NetherCoreBiomes netherCoreBiomes = NetherCoreBiomes.resolve(server, netherFallback);
 
             // Same idea for the End band's core columns — samples the real End's biome source, swept
             // from the main island out into the outer noise field across successive End-band passes.
             Holder<Biome> endFallback = overworld.registryAccess()
                     .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.THE_END);
-            EndCoreBiomes endCoreBiomes = EndCoreBiomes.resolve(event.getServer(), endFallback);
+            EndCoreBiomes endCoreBiomes = EndCoreBiomes.resolve(server, endFallback);
 
             NetherBandContext.publish(new NetherBandContext(
                     enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
@@ -92,8 +90,7 @@ public final class NetherBandContextEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onServerStopping(ServerStoppingEvent event) {
+        public static void onServerStopping(net.minecraft.server.MinecraftServer server) {
         NetherBandContext.clear();
     }
 }

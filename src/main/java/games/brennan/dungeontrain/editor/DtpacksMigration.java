@@ -50,15 +50,13 @@ import java.util.Map;
  * {@code imports/installed/}) are resolved by suffixing the second with
  * {@code -2}, {@code -3}, … so both end up reachable.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DtpacksMigration {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private DtpacksMigration() {}
 
-    @SubscribeEvent(priority = EventPriority.HIGH)
-    public static void onServerStarting(ServerStartingEvent event) {
+        public static void onServerStarting(net.minecraft.server.MinecraftServer server) {
         runOnce();
     }
 

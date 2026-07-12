@@ -141,8 +141,7 @@ public final class MentionPresenceEvents {
     }
 
     /** Drop pending replies and cooldowns on shutdown so nothing leaks into the next world (gameTime resets). */
-    @SubscribeEvent
-    public static void onServerStopping(ServerStoppingEvent event) {
+        public static void onServerStopping(net.minecraft.server.MinecraftServer server) {
         PENDING.clear();
         LAST_REPLY_TICK.clear();
     }

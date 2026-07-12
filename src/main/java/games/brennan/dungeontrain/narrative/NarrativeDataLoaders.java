@@ -38,8 +38,7 @@ public final class NarrativeDataLoaders {
         event.addListener(listener("dungeontrain:narrative/death_lore", DeathLoreStore::load));
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         StoryRegistry.clear();
         RandomBookRegistry.clear();
         StartingBookRegistry.clear();

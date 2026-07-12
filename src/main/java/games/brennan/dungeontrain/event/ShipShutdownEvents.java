@@ -97,7 +97,6 @@ import java.util.Map;
  * <p>See: <a href="https://github.com/ryanhcode/sable/issues/679">Sable issue
  * #679</a> for the upstream bug.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class ShipShutdownEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -107,14 +106,13 @@ public final class ShipShutdownEvents {
 
     private ShipShutdownEvents() {}
 
-    @SubscribeEvent
-    public static void onServerStopping(ServerStoppingEvent event) {
+        public static void onServerStopping(net.minecraft.server.MinecraftServer server) {
         long t0 = System.nanoTime();
         int totalDeleted = 0;
         int totalPlotSwept = 0;
         int totalVanillaSwept = 0;
 
-        for (ServerLevel level : event.getServer().getAllLevels()) {
+        for (ServerLevel level : server.getAllLevels()) {
             Shipyard shipyard = Shipyards.of(level);
             List<ManagedShip> ships = shipyard.findAll();
             int deletedHere = 0;

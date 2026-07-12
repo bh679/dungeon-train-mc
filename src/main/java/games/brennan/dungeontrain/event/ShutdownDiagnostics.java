@@ -58,7 +58,6 @@ import java.util.Map;
  * <p>See {@link ShipShutdownEvents} for the upstream Sable bug context and
  * the existing drain that this diagnostic observes from the outside.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class ShutdownDiagnostics {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -105,12 +104,10 @@ public final class ShutdownDiagnostics {
         }
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onServerStopping(ServerStoppingEvent event) {
+        public static void onServerStopping(net.minecraft.server.MinecraftServer server) {
         initReflection();
         shutdownComplete = false;
         shutdownStartNanos = System.nanoTime();
-        MinecraftServer server = event.getServer();
 
         LOGGER.info("{} ServerStopping fired (after ShipShutdownEvents drain) — snapshotting post-drain state", TAG);
         List<LevelHandle> handles = new ArrayList<>();
@@ -125,8 +122,7 @@ public final class ShutdownDiagnostics {
         watchdog.start();
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         shutdownComplete = true;
         long elapsedMs = (System.nanoTime() - shutdownStartNanos) / 1_000_000L;
         LOGGER.info("{} ServerStopped — total elapsed since ServerStopping: {} ms", TAG, elapsedMs);

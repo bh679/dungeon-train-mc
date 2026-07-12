@@ -28,8 +28,7 @@ public final class RelayOutboxFlushEvents {
 
     private RelayOutboxFlushEvents() {}
 
-    @SubscribeEvent
-    public static void onServerStarted(ServerStartedEvent event) {
+        public static void onServerStarted(net.minecraft.server.MinecraftServer server) {
         RelayOutbox.get().flush();
     }
 

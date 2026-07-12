@@ -52,7 +52,6 @@ import java.util.regex.Pattern;
  * <p>Names follow the same {@code [a-z0-9_]{{1,32}}} pattern as carriage
  * variants — keeps shell command tokens unambiguous and filesystem-safe.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TrackVariantRegistry {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -275,13 +274,11 @@ public final class TrackVariantRegistry {
             kind.id());
     }
 
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
+        public static void onServerStarting(net.minecraft.server.MinecraftServer server) {
         reload();
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         clear();
     }
 

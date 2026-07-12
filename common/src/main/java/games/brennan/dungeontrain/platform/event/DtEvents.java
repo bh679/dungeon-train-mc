@@ -66,4 +66,48 @@ public final class DtEvents {
     public static final DtEvent<DtAdvancementEarnCallback> ADVANCEMENT_EARN =
         new DtEvent<>();
 
+    // ---- Server lifecycle (Stage 2b) --------------------------------------
+
+    /**
+     * Server starting — NeoForge {@code ServerStartingEvent}. Fires once per
+     * server start (integrated and dedicated) on the server thread, before the
+     * server ticks. Not cancellable; read-only ({@code MinecraftServer}). DT
+     * uses three tiers: HIGHEST ({@code UserContentMigration}), HIGH
+     * ({@code UserContentImporter}, {@code DtpacksMigration}), NORMAL (rest) —
+     * {@code NeoForgeLifecycleBridge} fires each tier under a matching
+     * {@code @SubscribeEvent} priority.
+     */
+    public static final DtEvent<DtServerStartingCallback> SERVER_STARTING =
+        new DtEvent<>();
+
+    /**
+     * Server started — NeoForge {@code ServerStartedEvent}. Fires once, on the
+     * server thread, after the server is fully up. Not cancellable; read-only.
+     * DT uses NORMAL and LOW tiers ({@code NetherBandContextEvents},
+     * {@code TrainBootstrapEvents} are LOW). One handler
+     * ({@code WorldLifecycleEvents}) is {@code Dist.CLIENT} — its registration is
+     * gated to the physical client (see {@code NeoForgeServerEvents}).
+     */
+    public static final DtEvent<DtServerStartedCallback> SERVER_STARTED =
+        new DtEvent<>();
+
+    /**
+     * Server stopping — NeoForge {@code ServerStoppingEvent}. Fires on the
+     * server thread as shutdown begins, before worlds save/unload. Not
+     * cancellable; read-only. DT uses NORMAL and LOWEST
+     * ({@code ShutdownDiagnostics}) tiers.
+     */
+    public static final DtEvent<DtServerStoppingCallback> SERVER_STOPPING =
+        new DtEvent<>();
+
+    /**
+     * Server stopped — NeoForge {@code ServerStoppedEvent}. Fires on the server
+     * thread after full shutdown. Not cancellable; read-only. DT uses HIGHEST
+     * ({@code ShutdownDiagnostics}) and NORMAL tiers. One handler
+     * ({@code WorldLifecycleEvents}) is {@code Dist.CLIENT} — gated to the
+     * physical client.
+     */
+    public static final DtEvent<DtServerStoppedCallback> SERVER_STOPPED =
+        new DtEvent<>();
+
 }

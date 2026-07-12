@@ -53,7 +53,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link #onDevMessage} hops to the server thread via {@link MinecraftServer#execute}; every other
  * entry point already runs on the server thread. Maps are concurrent as cheap insurance.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DevMessageConsent {
 
     /** Sliding window: consent stays valid this long after the player's last message to the dev. */
@@ -84,13 +83,11 @@ public final class DevMessageConsent {
 
     private DevMessageConsent() {}
 
-    @SubscribeEvent
-    public static void onServerStarted(ServerStartedEvent event) {
+        public static void onServerStarted(net.minecraft.server.MinecraftServer server) {
         sessionId = (double) System.currentTimeMillis();
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         // Nothing leaks into the next world: the client re-seeds its state on the next login.
         MIRRORS.clear();
         PENDING.clear();

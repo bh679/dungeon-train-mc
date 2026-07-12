@@ -47,5 +47,144 @@ public final class NeoForgeServerEvents {
         // Single handler; order irrelevant.
         games.brennan.dungeontrain.platform.event.DtEvents.ADVANCEMENT_EARN
             .register(games.brennan.dungeontrain.event.AchievementEvents::onAdvancementEarn);
+
+        registerServerLifecycle();
+    }
+
+    /**
+     * Server-lifecycle handlers (ServerStarting/Started/Stopping/Stopped),
+     * fired by {@code NeoForgeLifecycleBridge}. Each is registered at the
+     * {@code DtPriority} tier matching its former {@code @SubscribeEvent(priority)}
+     * so the bridge's per-tier subscriptions reproduce the old cross-mod order.
+     * Within a tier, order is irrelevant (all DT lifecycle handlers are
+     * independent). {@code WorldLifecycleEvents} was {@code @EventBusSubscriber(
+     * value = Dist.CLIENT)} — its registration is gated to the physical client so
+     * the class never loads (nor runs) on a dedicated server, exactly as before.
+     */
+    private static void registerServerLifecycle() {
+        var HIGHEST = games.brennan.dungeontrain.platform.event.DtPriority.HIGHEST;
+        var HIGH = games.brennan.dungeontrain.platform.event.DtPriority.HIGH;
+        var LOW = games.brennan.dungeontrain.platform.event.DtPriority.LOW;
+        var LOWEST = games.brennan.dungeontrain.platform.event.DtPriority.LOWEST;
+
+        // ServerStarting — HIGHEST, HIGH, NORMAL
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(HIGHEST, games.brennan.dungeontrain.editor.UserContentMigration::onServerStarting);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(HIGH, games.brennan.dungeontrain.editor.UserContentImporter::onServerStarting);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(HIGH, games.brennan.dungeontrain.editor.DtpacksMigration::onServerStarting);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.track.variant.TrackVariantRegistry::onServerStarting);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.track.variant.TrackVariantWeights::onServerStarting);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.train.CarriageContentsRegistry::onServerStarting);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.train.CarriageContentsWeights::onServerStarting);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.train.CarriageVariantRegistry::onServerStarting);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.train.CarriageWeights::onServerStarting);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.editor.EditorDevMode::onServerStarting);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.editor.BlockVariantPrefabStore::onServerStarting);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.editor.BlockLootDefaults::onServerStarting);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.editor.StageStore::onServerStarting);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.editor.LootPrefabStore::onServerStarting);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.editor.CarriagePartRegistry::onServerStarting);
+
+        // ServerStarted — NORMAL, LOW (WorldLifecycleEvents = client-only)
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+            .register(games.brennan.dungeontrain.event.RelayOutboxFlushEvents::onServerStarted);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+            .register(games.brennan.dungeontrain.event.NarrativePoolRefreshEvents::onServerStarted);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+            .register(games.brennan.dungeontrain.event.DevMessageConsent::onServerStarted);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+            .register(games.brennan.dungeontrain.event.SharedBookRefreshEvents::onServerStarted);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+            .register(games.brennan.dungeontrain.editor.EditorDevMode::onServerStarted);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+            .register(LOW, games.brennan.dungeontrain.event.NetherBandContextEvents::onServerStarted);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+            .register(LOW, games.brennan.dungeontrain.event.TrainBootstrapEvents::onServerStarted);
+        if (games.brennan.dungeontrain.platform.DtPlatform.get().isClient()) {
+            games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+                .register(games.brennan.dungeontrain.event.WorldLifecycleEvents::onServerStarted);
+        }
+
+        // ServerStopping — NORMAL, LOWEST
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
+            .register(games.brennan.dungeontrain.event.NetherBandContextEvents::onServerStopping);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
+            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onServerStopping);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
+            .register(games.brennan.dungeontrain.event.ShipShutdownEvents::onServerStopping);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
+            .register(games.brennan.dungeontrain.event.AchievementEvents::onServerStopping);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
+            .register(games.brennan.dungeontrain.event.MentionPresenceEvents::onServerStopping);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
+            .register(LOWEST, games.brennan.dungeontrain.event.ShutdownDiagnostics::onServerStopping);
+
+        // ServerStopped — HIGHEST, NORMAL (WorldLifecycleEvents = client-only)
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(HIGHEST, games.brennan.dungeontrain.event.ShutdownDiagnostics::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.track.variant.TrackVariantWeights::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.track.variant.TrackVariantRegistry::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.narrative.NarrativeDataLoaders::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.train.CarriageContentsRegistry::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.train.CarriageContentsWeights::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.train.CarriageVariantRegistry::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.train.CarriageWeights::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.advancement.GlobalNarrativeProgress::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.event.ResumeWatchdog::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.event.NetworkConsentMirror::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.event.NarrativePoolRefreshEvents::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.event.DevMessageConsent::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.BlockVariantPrefabStore::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.StagePanelController::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.LootPrefabStore::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.EditorPartsStageFilter::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.EditorStampedCategoryState::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.EditorPartVisibility::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.StageStore::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.EditorStageSelection::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.VariantOverlayRenderer::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.BlockLootDefaults::onServerStopped);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.CarriagePartRegistry::onServerStopped);
+        if (games.brennan.dungeontrain.platform.DtPlatform.get().isClient()) {
+            games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+                .register(games.brennan.dungeontrain.event.WorldLifecycleEvents::onServerStopped);
+        }
     }
 }

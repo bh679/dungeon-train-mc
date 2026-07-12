@@ -875,8 +875,7 @@ public final class AchievementEvents {
      * complements the per-player logout flush for the case where the server
      * shuts down while players are still online.
      */
-    @SubscribeEvent
-    public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
+        public static void onServerStopping(net.minecraft.server.MinecraftServer server) {
         GlobalPlayerStats.flushAll();
         GlobalBookBurnStats.flushAll();
     }

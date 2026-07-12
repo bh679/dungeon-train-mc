@@ -69,7 +69,6 @@ import java.util.regex.Pattern;
  * cell-level sidecar, parsed via {@link CarriageVariantBlocks#parseVariantElement}
  * and serialised via {@link CarriageVariantBlocks#appendVariantJson}.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class BlockVariantPrefabStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -289,13 +288,11 @@ public final class BlockVariantPrefabStore {
         IDS.clear();
     }
 
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
+        public static void onServerStarting(net.minecraft.server.MinecraftServer server) {
         reload();
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         clear();
     }
 

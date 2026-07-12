@@ -52,14 +52,12 @@ public final class NarrativePoolRefreshEvents {
 
     private NarrativePoolRefreshEvents() {}
 
-    @SubscribeEvent
-    public static void onServerStarted(ServerStartedEvent event) {
+        public static void onServerStarted(net.minecraft.server.MinecraftServer server) {
         tickCounter = 0;
         firstRefreshCountdown = FIRST_REFRESH_DELAY_TICKS;
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         NarrativePool.clear();
     }
 

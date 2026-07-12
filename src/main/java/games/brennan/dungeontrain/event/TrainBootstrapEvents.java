@@ -51,7 +51,6 @@ import org.slf4j.Logger;
  * manager retargets on its first tick — one-shot adjustment is negligible
  * compared to the visual improvement of removing the spawn-time flash.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TrainBootstrapEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -63,12 +62,11 @@ public final class TrainBootstrapEvents {
 
     private TrainBootstrapEvents() {}
 
-    @SubscribeEvent(priority = EventPriority.LOW)
-    public static void onServerStarted(ServerStartedEvent event) {
+        public static void onServerStarted(net.minecraft.server.MinecraftServer server) {
         // SavedData lives on the overworld's data store regardless of which
         // dimension the train spawns in — a single source of truth for all
         // per-world DT choices.
-        ServerLevel overworld = event.getServer().overworld();
+        ServerLevel overworld = server.overworld();
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
 
         if (!data.startsWithTrain()) {
@@ -83,18 +81,18 @@ public final class TrainBootstrapEvents {
         // in the finally block below regardless of which step threw.
         BootstrapProgress.setPhase("Spawning Dungeon Train...");
         try {
-            doBootstrap(event, overworld, data);
+            doBootstrap(server, overworld, data);
         } finally {
             BootstrapProgress.clear();
         }
     }
 
     private static void doBootstrap(
-        ServerStartedEvent event, ServerLevel overworld, DungeonTrainWorldData data
+        net.minecraft.server.MinecraftServer server, ServerLevel overworld, DungeonTrainWorldData data
     ) {
 
         StartingDimension startingDim = data.startingDimension();
-        ServerLevel target = event.getServer().getLevel(startingDim.levelKey());
+        ServerLevel target = server.getLevel(startingDim.levelKey());
         if (target == null) {
             // Defensive: e.g. a datapack disabled the chosen dimension. Fall
             // back to overworld so the player still gets a train somewhere.

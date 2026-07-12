@@ -34,7 +34,6 @@ import net.neoforged.neoforge.event.server.ServerStartingEvent;
  * {@code config/dungeontrain/user/...} only. The override is session-scoped:
  * the next world load re-derives the default.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EditorDevMode {
 
     private static volatile boolean enabled = false;
@@ -63,16 +62,14 @@ public final class EditorDevMode {
         forceOnNextStart = true;
     }
 
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
+        public static void onServerStarting(net.minecraft.server.MinecraftServer server) {
         // Auto-on in dev checkouts (source tree writable), auto-off in packaged
         // jars (no source tree). Manual `/editor devmode on|off` still overrides
         // mid-session — the next server start re-derives this default.
         set(CarriageTemplateStore.sourceTreeAvailable());
     }
 
-    @SubscribeEvent
-    public static void onServerStarted(ServerStartedEvent event) {
+        public static void onServerStarted(net.minecraft.server.MinecraftServer server) {
         if (forceOnNextStart) {
             forceOnNextStart = false;
             set(CarriageTemplateStore.sourceTreeAvailable());

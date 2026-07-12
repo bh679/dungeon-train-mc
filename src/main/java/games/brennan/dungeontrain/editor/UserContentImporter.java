@@ -60,7 +60,6 @@ import java.util.zip.ZipFile;
  * zip, they delete the working folder first; the next launch (or a
  * Reload) re-extracts.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class UserContentImporter {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -90,8 +89,7 @@ public final class UserContentImporter {
     public record ZipResult(Path zipFile, int imported, int skipped, int rejected,
                             List<String> warnings) {}
 
-    @SubscribeEvent(priority = EventPriority.HIGH)
-    public static void onServerStarting(ServerStartingEvent event) {
+        public static void onServerStarting(net.minecraft.server.MinecraftServer server) {
         try {
             importAll();
         } catch (Exception e) {

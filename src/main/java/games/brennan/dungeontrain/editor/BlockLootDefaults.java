@@ -36,7 +36,6 @@ import java.util.Optional;
  * guaranteed: it's meant for "some fraction of unlabelled X look like they
  * have Y in them," not "every X always has Y."</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class BlockLootDefaults {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -82,13 +81,11 @@ public final class BlockLootDefaults {
         DEFAULTS.clear();
     }
 
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
+        public static void onServerStarting(net.minecraft.server.MinecraftServer server) {
         reload();
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         clear();
     }
 

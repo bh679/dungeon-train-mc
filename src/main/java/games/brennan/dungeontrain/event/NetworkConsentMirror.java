@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * logout ({@link #forget}, called from {@link PlayerJoinEvents}) and wholesale on server stop (so a
  * new world starts clean and each client re-seeds on its next login).</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NetworkConsentMirror {
 
     /** Per-player granted flag, seeded from the client login sync. Absent = not-yet-known = denied. */
@@ -56,8 +55,7 @@ public final class NetworkConsentMirror {
         }
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         // Nothing leaks into the next world: every client re-seeds its state on the next login.
         GRANTED.clear();
     }

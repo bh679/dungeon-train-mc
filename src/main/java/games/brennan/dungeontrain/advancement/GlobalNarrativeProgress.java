@@ -53,7 +53,6 @@ import java.util.TreeSet;
  * in-memory cache is loaded lazily on first access and written atomically on
  * every mutation (crash-safe temp-then-rename).</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class GlobalNarrativeProgress {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -238,8 +237,7 @@ public final class GlobalNarrativeProgress {
      * {@code global.json} (e.g. an operator resetting progress between a
      * stop/start within the same JVM) take effect on the next world load.
      */
-    @SubscribeEvent
-    public static synchronized void onServerStopped(ServerStoppedEvent event) {
+        public static synchronized void onServerStopped(net.minecraft.server.MinecraftServer server) {
         readLetters = null;
         variantsSeen = null;
     }

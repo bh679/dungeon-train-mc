@@ -21,7 +21,6 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
  * a plot. Entering or saving a hidden part via {@link CarriagePartEditor#stampPlot} still paints it
  * — the filter only shapes the whole-grid pass.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EditorPartsStageFilter {
 
     private static volatile boolean active = false;
@@ -44,8 +43,7 @@ public final class EditorPartsStageFilter {
         active = false;
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         clear();
     }
 }

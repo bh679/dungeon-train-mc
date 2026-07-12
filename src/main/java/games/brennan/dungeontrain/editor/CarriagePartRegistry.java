@@ -54,7 +54,6 @@ import java.util.regex.Pattern;
  * different {@link games.brennan.dungeontrain.train.CarriageDims} cannot see
  * stale entries.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CarriagePartRegistry {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -179,13 +178,11 @@ public final class CarriagePartRegistry {
         return added;
     }
 
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
+        public static void onServerStarting(net.minecraft.server.MinecraftServer server) {
         reload();
     }
 
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         clear();
         CarriagePartTemplateStore.clearCache();
         CarriageVariantPartsStore.clearCache();

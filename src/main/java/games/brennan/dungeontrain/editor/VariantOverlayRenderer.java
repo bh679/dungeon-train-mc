@@ -64,7 +64,6 @@ import java.util.UUID;
  * "never sent anything yet" — the first-tick dedup compare returns "no
  * change vs empty" only when there's genuinely nothing to send.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class VariantOverlayRenderer {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -148,8 +147,7 @@ public final class VariantOverlayRenderer {
      * world A under the same UUID) and any non-empty snapshot would diff
      * against world A's state rather than a fresh slate.
      */
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
+        public static void onServerStopped(net.minecraft.server.MinecraftServer server) {
         DISABLED.clear();
         LAST_HOVER_POS.clear();
         LAST_STATUS.clear();
