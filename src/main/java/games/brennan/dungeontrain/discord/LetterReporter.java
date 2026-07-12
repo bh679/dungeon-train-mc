@@ -40,13 +40,15 @@ public final class LetterReporter {
      * @param title       the signed book title (player-typed; "Letter X" fallback resolved by caller)
      * @param author      the author name to credit (the signing player's name)
      * @param pages       the book pages in order (raw signed page text)
+     * @param lang        the author's client language code (e.g. {@code "en_us"}); {@code null}/blank
+     *                    when the client hasn't synced one — emitted as an empty string
      */
     public static void submit(UUID playerId, String seriesId, int letterIndex,
-                              String author, String title, List<String> pages) {
+                              String author, String title, List<String> pages, String lang) {
         try {
             if (playerId == null) return;
             String uuid = playerId.toString().replace("-", "");
-            JsonObject payload = buildPayload(uuid, seriesId, letterIndex, author, title, pages);
+            JsonObject payload = buildPayload(uuid, seriesId, letterIndex, author, title, pages, lang);
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] letter submit failed to build: {}", t.toString());
@@ -56,11 +58,12 @@ public final class LetterReporter {
     /**
      * Pure assembly of the {@code /narratives/submit} JSON body — package-private so the shape can be
      * unit-tested without a running server. Matches the relay contract exactly:
-     * {@code {"uuid","seriesId","letterIndex","author","title","pages":[...]}}. A {@code null}
-     * author/title/seriesId is emitted as an empty string; a {@code null} pages list as an empty array.
+     * {@code {"uuid","seriesId","letterIndex","author","title","pages":[...],"lang"}}. A {@code null}
+     * author/title/seriesId/lang is emitted as an empty string; a {@code null} pages list as an empty
+     * array.
      */
     static JsonObject buildPayload(String uuid, String seriesId, int letterIndex,
-                                   String author, String title, List<String> pages) {
+                                   String author, String title, List<String> pages, String lang) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         body.addProperty("seriesId", seriesId == null ? "" : seriesId);
@@ -74,6 +77,7 @@ public final class LetterReporter {
             }
         }
         body.add("pages", pagesArr);
+        body.addProperty("lang", lang == null ? "" : lang);
         return body;
     }
 

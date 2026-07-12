@@ -35,12 +35,14 @@ public final class SharedBookReporter {
      * @param author   the author name to credit on the book
      * @param title    the book title (raw signed title)
      * @param pages    the book pages in order (raw signed page text)
+     * @param lang     the author's client language code (e.g. {@code "en_us"}); {@code null}/blank when
+     *                 the client hasn't synced one — emitted as an empty string
      */
-    public static void submit(UUID playerId, String author, String title, List<String> pages) {
+    public static void submit(UUID playerId, String author, String title, List<String> pages, String lang) {
         try {
             if (playerId == null) return;
             String uuid = playerId.toString().replace("-", "");
-            JsonObject payload = buildPayload(uuid, author, title, pages);
+            JsonObject payload = buildPayload(uuid, author, title, pages, lang);
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] shared-book submit failed to build: {}", t.toString());
@@ -50,10 +52,10 @@ public final class SharedBookReporter {
     /**
      * Pure assembly of the {@code /books/submit} JSON body — package-private so the shape can be
      * unit-tested without a running server. Matches the relay contract exactly:
-     * {@code {"uuid","author","title","pages":[...]}}. A {@code null} author/title is emitted as an
-     * empty string; a {@code null} pages list as an empty array.
+     * {@code {"uuid","author","title","pages":[...],"lang"}}. A {@code null} author/title/lang is
+     * emitted as an empty string; a {@code null} pages list as an empty array.
      */
-    static JsonObject buildPayload(String uuid, String author, String title, List<String> pages) {
+    static JsonObject buildPayload(String uuid, String author, String title, List<String> pages, String lang) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         body.addProperty("author", author == null ? "" : author);
@@ -65,6 +67,7 @@ public final class SharedBookReporter {
             }
         }
         body.add("pages", pagesArr);
+        body.addProperty("lang", lang == null ? "" : lang);
         return body;
     }
 
