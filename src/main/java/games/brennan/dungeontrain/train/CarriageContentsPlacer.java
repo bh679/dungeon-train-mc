@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.train;
+import games.brennan.dungeontrain.platform.DtEntityData;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
@@ -682,7 +683,7 @@ public final class CarriageContentsPlacer {
                 // per-entity state — survives save/load via NeoForge's
                 // entity-save mixin). Written AFTER EntityType.create so it
                 // doesn't conflict with vanilla NBT field handling.
-                CompoundTag persistent = entity.getPersistentData();
+                CompoundTag persistent = DtEntityData.get().getPersistentData(entity);
                 persistent.putDouble(NBT_SPAWN_SHIPYARD_X, worldX);
                 persistent.putDouble(NBT_SPAWN_SHIPYARD_Y, worldY);
                 persistent.putDouble(NBT_SPAWN_SHIPYARD_Z, worldZ);
@@ -831,7 +832,7 @@ public final class CarriageContentsPlacer {
             Vec3 spawnPos = Vec3.atBottomCenterOf(worldPos);
             ArmorStand stand = new ArmorStand(level, spawnPos.x, spawnPos.y, spawnPos.z);
             stand.addTag(tag);
-            CompoundTag persistent = stand.getPersistentData();
+            CompoundTag persistent = DtEntityData.get().getPersistentData(stand);
             persistent.putDouble(NBT_SPAWN_SHIPYARD_X, spawnPos.x);
             persistent.putDouble(NBT_SPAWN_SHIPYARD_Y, spawnPos.y);
             persistent.putDouble(NBT_SPAWN_SHIPYARD_Z, spawnPos.z);
@@ -934,7 +935,7 @@ public final class CarriageContentsPlacer {
         sub.setUUID(UUID.randomUUID());
         sub.moveTo(pos.x, pos.y, pos.z, level.getRandom().nextFloat() * 360.0f, 0.0f);
         sub.addTag(contentsTagFor(carriagePIdx));
-        CompoundTag persistent = sub.getPersistentData();
+        CompoundTag persistent = DtEntityData.get().getPersistentData(sub);
         persistent.putDouble(NBT_SPAWN_SHIPYARD_X, pos.x);
         persistent.putDouble(NBT_SPAWN_SHIPYARD_Y, pos.y);
         persistent.putDouble(NBT_SPAWN_SHIPYARD_Z, pos.z);
@@ -1076,7 +1077,7 @@ public final class CarriageContentsPlacer {
 
         String tag = contentsTagFor(carriagePIdx);
         entity.addTag(tag);
-        CompoundTag persistent = entity.getPersistentData();
+        CompoundTag persistent = DtEntityData.get().getPersistentData(entity);
         persistent.putDouble(NBT_SPAWN_SHIPYARD_X, pos.x);
         persistent.putDouble(NBT_SPAWN_SHIPYARD_Y, pos.y);
         persistent.putDouble(NBT_SPAWN_SHIPYARD_Z, pos.z);

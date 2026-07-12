@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.platform.DtEntityData;
 
 import com.mojang.logging.LogUtils;
 
@@ -60,7 +61,7 @@ public final class MobDifficultyEvents {
         if (!TrainMembership.isOnTrain(mob)) return;
         if (!DifficultyApplier.isEligible(mob, DungeonTrainConfig.getDifficultyAffectsBabyMobs())) return;
 
-        CompoundTag persistent = mob.getPersistentData();
+        CompoundTag persistent = DtEntityData.get().getPersistentData(mob);
         if (!persistent.contains(CarriageContentsPlacer.NBT_SPAWN_CARRIAGE_PIDX)) return;
 
         int travelled = DifficultyProgression.maxTravelledCarriageIndex(serverLevel);

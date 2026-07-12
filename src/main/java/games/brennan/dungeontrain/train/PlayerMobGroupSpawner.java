@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.train;
+import games.brennan.dungeontrain.platform.DtEntityData;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -208,7 +209,7 @@ public final class PlayerMobGroupSpawner {
 
         // Diagnostic parity with editor-placed contents entities
         // (read by ContentsEntityDiagnostics).
-        CompoundTag persistent = mob.getPersistentData();
+        CompoundTag persistent = DtEntityData.get().getPersistentData(mob);
         persistent.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_X, pos.x);
         persistent.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Y, pos.y);
         persistent.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Z, pos.z);

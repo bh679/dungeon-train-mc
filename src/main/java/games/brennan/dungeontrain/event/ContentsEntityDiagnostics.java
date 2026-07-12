@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.platform.DtEntityData;
 
 import com.mojang.logging.LogUtils;
 
@@ -56,11 +57,11 @@ public final class ContentsEntityDiagnostics {
         Entity entity = joiningEntity;
         String tag = contentsTag(entity);
         if (tag == null) return;
-        long spawnTick = entity.getPersistentData().getLong(CarriageContentsPlacer.NBT_SPAWN_GAME_TICK);
+        long spawnTick = DtEntityData.get().getPersistentData(entity).getLong(CarriageContentsPlacer.NBT_SPAWN_GAME_TICK);
         long age = (spawnTick > 0) ? (level.getGameTime() - spawnTick) : -1L;
-        double spawnX = entity.getPersistentData().getDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_X);
-        double spawnY = entity.getPersistentData().getDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Y);
-        double spawnZ = entity.getPersistentData().getDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Z);
+        double spawnX = DtEntityData.get().getPersistentData(entity).getDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_X);
+        double spawnY = DtEntityData.get().getPersistentData(entity).getDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Y);
+        double spawnZ = DtEntityData.get().getPersistentData(entity).getDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Z);
         LOGGER.info("[DungeonTrain] Entity JOIN: type={} uuid={} tag={} pos=({},{},{}) spawn=({},{},{}) ageTicks={}",
             entity.getType().getDescriptionId(), entity.getUUID(), tag,
             String.format("%.2f", entity.getX()),
@@ -79,7 +80,7 @@ public final class ContentsEntityDiagnostics {
         Entity entity = leftEntity;
         String tag = contentsTag(entity);
         if (tag == null) return;
-        long spawnTick = entity.getPersistentData().getLong(CarriageContentsPlacer.NBT_SPAWN_GAME_TICK);
+        long spawnTick = DtEntityData.get().getPersistentData(entity).getLong(CarriageContentsPlacer.NBT_SPAWN_GAME_TICK);
         long age = (spawnTick > 0) ? (level.getGameTime() - spawnTick) : -1L;
         Entity.RemovalReason reason = entity.getRemovalReason();
         // Capture stack trace so we can see WHO triggered the removal. The

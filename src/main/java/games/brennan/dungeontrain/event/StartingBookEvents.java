@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.platform.DtEntityData;
 
 import com.mojang.logging.LogUtils;
 
@@ -488,7 +489,7 @@ public final class StartingBookEvents {
         if (!(joiningEntity instanceof ItemEntity item)) return;
         ItemStack stack = item.getItem();
         if (!BurnableBookTag.isBurnable(stack)) return;
-        if (item.getPersistentData().getBoolean(ENTITY_TAG_SPAWN_BOOK)) return;
+        if (DtEntityData.get().getPersistentData(item).getBoolean(ENTITY_TAG_SPAWN_BOOK)) return;
         if (BURN_ENTITIES.containsKey(item.getUUID())) return;
 
         // Lock pickup for the burn window so the player can't snatch the
@@ -873,7 +874,7 @@ public final class StartingBookEvents {
         entity.setPickUpDelay(BOOK_PICKUP_DELAY_TICKS);
         // Mark before addFreshEntity — EntityJoinLevelEvent fires synchronously
         // inside addFreshEntity, and the handler reads this flag.
-        entity.getPersistentData().putBoolean(ENTITY_TAG_SPAWN_BOOK, true);
+        DtEntityData.get().getPersistentData(entity).putBoolean(ENTITY_TAG_SPAWN_BOOK, true);
         level.addFreshEntity(entity);
     }
 

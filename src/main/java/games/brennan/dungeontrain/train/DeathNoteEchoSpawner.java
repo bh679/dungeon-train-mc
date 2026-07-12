@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.train;
+import games.brennan.dungeontrain.platform.DtEntityData;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -149,7 +150,7 @@ public final class DeathNoteEchoSpawner {
 
             // Carriage-contents tag so the train kill-ahead sweep spares it; + our echo markers.
             mob.addTag(CarriageContentsPlacer.contentsTagFor(carriagePIdx));
-            CompoundTag persistent = mob.getPersistentData();
+            CompoundTag persistent = DtEntityData.get().getPersistentData(mob);
             persistent.putString(KEY_TARGET, targetUuid.toString());
             persistent.putString(KEY_AUTHOR, authorName);
             mob.setPersistenceRequired();

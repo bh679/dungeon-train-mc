@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.platform.DtEntityData;
 
 import com.mojang.logging.LogUtils;
 
@@ -79,7 +80,7 @@ public final class DeathNoteEvents {
         public static void onEchoDeath(net.minecraft.world.entity.LivingEntity deadEntity, net.minecraft.world.damagesource.DamageSource deathSource, boolean deathCanceled) {
         if (!(deadEntity instanceof PlayerMobEntity echo)) return;
         if (echo.level().isClientSide()) return;
-        CompoundTag data = echo.getPersistentData();
+        CompoundTag data = DtEntityData.get().getPersistentData(echo);
         if (!data.contains(DeathNoteEchoSpawner.KEY_TARGET)) return; // not a death-note echo
         DeathNoteEchoController.unregister(echo.getUUID());
         String author = data.contains(DeathNoteEchoSpawner.KEY_AUTHOR)
