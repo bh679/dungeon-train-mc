@@ -23,11 +23,10 @@ jobs:
           java-version: 21
 
       - uses: gradle/actions/setup-gradle@v3
-        # Note: NOT setting gradle-home-cache-cleanup: true. The action's
-        # cleanup step uses Gradle 9.x APIs (removeUnusedEntriesOlderThan)
-        # which crash against our Gradle 8.4 wrapper. Without this flag the
-        # cleanup is skipped; the cache grows slightly over time but the
-        # build never fails on a transient cache-save outage.
+        # Note: NOT setting gradle-home-cache-cleanup: true. Leaving the cache
+        # cleanup off keeps CI from failing on a transient cache-save outage;
+        # the cache grows slightly over time in exchange. (The wrapper is
+        # Gradle 9.5.1 — see gradle/wrapper/gradle-wrapper.properties.)
 
       - run: ./gradlew build --no-daemon
 
