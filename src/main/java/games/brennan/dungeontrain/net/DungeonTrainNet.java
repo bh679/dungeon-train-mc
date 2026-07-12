@@ -38,12 +38,22 @@ public final class DungeonTrainNet {
      * Register all payload types. Triggered by NeoForge's mod-bus
      * {@link RegisterPayloadHandlersEvent}. IDs are stable across versions —
      * don't rename payload types, only append new ones (see {@link DtPayloads}).
+     *
+     * <p>Two tables are registered back-to-back: the {@code :common}-resident
+     * {@link DtPayloads#ALL} first, then the root-resident remainder
+     * {@link NeoForgeExtraPayloads#ALL}. Order between (and within) the tables
+     * carries no protocol meaning — each payload is keyed on the wire by its own
+     * {@code CustomPacketPayload.Type} id — so the split is transparent to clients
+     * and {@link #PROTOCOL_VERSION} is unchanged.</p>
      */
     @SubscribeEvent
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(DtCore.MOD_ID).versioned(PROTOCOL_VERSION);
 
         for (DtPayloads.Spec<?> spec : DtPayloads.ALL) {
+            registerOne(registrar, spec);
+        }
+        for (DtPayloads.Spec<?> spec : NeoForgeExtraPayloads.ALL) {
             registerOne(registrar, spec);
         }
     }
