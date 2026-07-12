@@ -21,7 +21,9 @@
     "RandomStateMixin",
     "ServerGamePacketListenerImplSignBookMixin",
     "SpreadingSnowyDirtBlockUpsideDownMixin",
-    "FlowingFluidUpsideDownMixin"
+    "FlowingFluidUpsideDownMixin",
+    "ServerSubLevelFreezeMixin",
+    "SubLevelPhysicsSystemFreezeMixin"
   ],
   "client": [
     "client.BookViewScreenAccessor",

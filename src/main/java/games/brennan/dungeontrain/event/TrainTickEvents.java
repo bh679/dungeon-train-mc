@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
 import games.brennan.dungeontrain.ship.sable.PhysicsSubstepTuner;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
@@ -156,6 +157,12 @@ public final class TrainTickEvents {
             tickCounter++;
             return;
         }
+
+        // Physics-freeze reconcile (#646): remove the Rapier body of every carriage no client is
+        // tracking (keeping the sub-level loaded), so physics cost scales with watched carriages,
+        // not train length. Runs every tick so it reacts promptly to players/mobs crossing the
+        // freeze boundary. Stacks with the substep tuner above. See PhysicsFreezeController.
+        PhysicsFreezeController.reconcile(level, trainsById);
 
         // Steady-state MSPT sample every MSPT_LOG_PERIOD_TICKS. Unlike the
         // [stuck.timing] line below (which measures only THIS handler's train work
