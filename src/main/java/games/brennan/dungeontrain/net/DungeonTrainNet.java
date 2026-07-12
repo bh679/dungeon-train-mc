@@ -38,21 +38,20 @@ public final class DungeonTrainNet {
      * {@link RegisterPayloadHandlersEvent}. IDs are stable across versions —
      * don't rename payload types, only append new ones (see {@link DtPayloads}).
      *
-     * <p>Two tables are registered back-to-back: the {@code :common}-resident
-     * {@link DtPayloads#ALL} first, then the root-resident remainder
-     * {@link NeoForgeExtraPayloads#ALL}. Order between (and within) the tables
-     * carries no protocol meaning — each payload is keyed on the wire by its own
-     * {@code CustomPacketPayload.Type} id — so the split is transparent to clients
-     * and {@link #PROTOCOL_VERSION} is unchanged.</p>
+     * <p>All payloads live in the single {@code :common}-resident
+     * {@link DtPayloads#ALL} table (Stage 4e consolidated the former root-resident
+     * {@code NeoForgeExtraPayloads} remainder into it once every packet class
+     * migrated to {@code :common}). Order within the table carries no protocol
+     * meaning — each payload is keyed on the wire by its own
+     * {@code CustomPacketPayload.Type} id — and {@link #PROTOCOL_VERSION} is
+     * unchanged; the consolidated order matches the old common-then-remainder order
+     * exactly, so registration is byte-for-byte identical.</p>
      */
     @SubscribeEvent
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(DtCore.MOD_ID).versioned(PROTOCOL_VERSION);
 
         for (DtPayloads.Spec<?> spec : DtPayloads.ALL) {
-            registerOne(registrar, spec);
-        }
-        for (DtPayloads.Spec<?> spec : NeoForgeExtraPayloads.ALL) {
             registerOne(registrar, spec);
         }
     }
