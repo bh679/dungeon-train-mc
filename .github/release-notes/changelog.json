@@ -4007,9 +4007,9 @@
       ],
       "pr": 715,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "loading-screen-stories",
@@ -4022,9 +4022,9 @@
       ],
       "pr": 716,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "upside-down-band",
@@ -4039,9 +4039,9 @@
       ],
       "pr": 717,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "loading-screen-story-9",
@@ -4052,9 +4052,9 @@
       "highlights": [],
       "pr": 718,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "dtp-teleport-command",
@@ -4068,9 +4068,9 @@
       ],
       "pr": 719,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "upside-down-exit-island-crossfade",
@@ -4084,9 +4084,9 @@
       ],
       "pr": 720,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "dtp-difficulty-scaling",
@@ -4099,9 +4099,9 @@
       ],
       "pr": 722,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "upside-down-advancements",
@@ -4115,9 +4115,9 @@
       ],
       "pr": 721,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "train-upright-upside-down-band",
@@ -4130,9 +4130,9 @@
       ],
       "pr": 723,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "upsidedown-no-animal-spawns",
@@ -4145,9 +4145,9 @@
       ],
       "pr": 724,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "deepdark-vase-content-update",
@@ -4161,9 +4161,9 @@
       ],
       "pr": 725,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "upside-down-ceiling-cap-perf",
@@ -4178,9 +4178,9 @@
       ],
       "pr": 726,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "upside-down-band-smooth-stream",
@@ -4192,9 +4192,9 @@
         "No more frame stutter when the train enters the upside-down band"
       ],
       "date": "2026-07-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "session-language-telemetry",
@@ -4207,9 +4207,9 @@
         "Data explorer Games list gains a sortable Language column"
       ],
       "date": "2026-07-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "player-content-language-tag",
@@ -4222,9 +4222,9 @@
       ],
       "pr": 727,
       "date": "2026-07-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "exclude-narrative-source-from-jar",
@@ -4235,9 +4235,9 @@
       "highlights": [],
       "pr": 731,
       "date": "2026-07-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "player-content-language-filter",
@@ -4252,9 +4252,9 @@
       ],
       "pr": 732,
       "date": "2026-07-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     }
   ]
 }
