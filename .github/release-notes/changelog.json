@@ -4181,6 +4181,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "player-content-language-tag",
+      "version": "0.440.0",
+      "type": "feat",
+      "title": "Books you write remember your language",
+      "summary": "When you sign a community book or lectern letter, the game now records the language your client is set to and saves it with your writing. This is groundwork so player-written content can be matched to each reader's language in a future update.",
+      "highlights": [
+        "Community books and letters are tagged with the author's game language when uploaded"
+      ],
+      "pr": 727,
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
