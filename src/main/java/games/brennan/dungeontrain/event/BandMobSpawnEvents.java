@@ -26,24 +26,25 @@ import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
  *       cancelled.</li>
  * </ul>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class BandMobSpawnEvents {
 
     private BandMobSpawnEvents() {}
 
-    @SubscribeEvent
-    public static void onFinalizeSpawn(FinalizeSpawnEvent event) {
-        MobSpawnType type = event.getSpawnType();
+        public static void onFinalizeSpawn(net.minecraft.world.entity.Mob spawnEntity,
+                                       net.minecraft.world.level.ServerLevelAccessor levelAccessor,
+                                       net.minecraft.world.entity.MobSpawnType spawnType,
+                                       double spawnX, Runnable cancelSpawn) {
+        MobSpawnType type = spawnType;
         if (type != MobSpawnType.NATURAL && type != MobSpawnType.CHUNK_GENERATION) return;
 
-        ServerLevel level = event.getLevel().getLevel();
+        ServerLevel level = levelAccessor.getLevel();
         if (!level.dimension().equals(Level.OVERWORLD)) return;
-        int x = (int) Math.floor(event.getX());
+        int x = (int) Math.floor(spawnX);
 
         // End band: only endermen (the End's natives) survive; cancel every other ambient spawn.
         if (DisintegrationBand.middleRampAt(level, x) > 0.0) {
-            if (!(event.getEntity() instanceof EnderMan)) {
-                event.setSpawnCancelled(true);
+            if (!(spawnEntity instanceof EnderMan)) {
+                cancelSpawn.run();
             }
             return;
         }
@@ -51,7 +52,7 @@ public final class BandMobSpawnEvents {
         // Upside-down band: the mirrored terrain gives ambient mobs nothing to stand on, so they just
         // fall to their death — cancel every natural spawn (hostile and passive) in the band.
         if (UpsideDownBand.isInBand(level, x)) {
-            event.setSpawnCancelled(true);
+            cancelSpawn.run();
         }
     }
 }

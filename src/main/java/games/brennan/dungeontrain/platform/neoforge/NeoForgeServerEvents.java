@@ -93,6 +93,12 @@ public final class NeoForgeServerEvents {
         // LivingEquipmentChangeEvent — NORMAL
         games.brennan.dungeontrain.platform.event.DtEvents.LIVING_EQUIPMENT_CHANGE
             .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onEquipmentChange);
+
+        // FinalizeSpawnEvent — NORMAL (both always run; cancelSpawn sink)
+        games.brennan.dungeontrain.platform.event.DtEvents.FINALIZE_SPAWN
+            .register(games.brennan.dungeontrain.event.BandMobSpawnEvents::onFinalizeSpawn);
+        games.brennan.dungeontrain.platform.event.DtEvents.FINALIZE_SPAWN
+            .register(games.brennan.dungeontrain.event.NetherMobSpawner::onFinalizeSpawn);
     }
 
     /**

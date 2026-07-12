@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.platform.neoforge;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtEvents;
+import games.brennan.dungeontrain.platform.event.DtFinalizeSpawnCallback;
 import games.brennan.dungeontrain.platform.event.DtLivingDamageCallback;
 import games.brennan.dungeontrain.platform.event.DtLivingDeathCallback;
 import games.brennan.dungeontrain.platform.event.DtLivingEquipmentChangeCallback;
@@ -9,6 +10,7 @@ import games.brennan.dungeontrain.platform.event.DtPriority;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
@@ -63,6 +65,19 @@ public final class NeoForgeLivingBridge {
     public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
         for (DtLivingEquipmentChangeCallback cb : DtEvents.LIVING_EQUIPMENT_CHANGE.listeners()) {
             cb.onEquipmentChange(event.getEntity(), event.getSlot(), event.getTo());
+        }
+    }
+
+    // ---- FinalizeSpawnEvent (NORMAL) --------------------------------------
+    // setSpawnCancelled is a result flag, not a propagation-stopping cancel: every
+    // listener runs, so the bridge invokes all callbacks and passes each a sink
+    // that maps a cancel request to event.setSpawnCancelled(true).
+
+    @SubscribeEvent
+    public static void onFinalizeSpawn(FinalizeSpawnEvent event) {
+        for (DtFinalizeSpawnCallback cb : DtEvents.FINALIZE_SPAWN.listeners()) {
+            cb.onFinalizeSpawn(event.getEntity(), event.getLevel(), event.getSpawnType(),
+                event.getX(), () -> event.setSpawnCancelled(true));
         }
     }
 }

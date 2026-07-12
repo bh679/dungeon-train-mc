@@ -235,4 +235,14 @@ public final class DtEvents {
     public static final DtEvent<DtLivingEquipmentChangeCallback> LIVING_EQUIPMENT_CHANGE =
         new DtEvent<>();
 
+    /**
+     * Finalize spawn — NeoForge {@code FinalizeSpawnEvent}. Server thread. Not a
+     * propagation-stopping cancel: its {@code setSpawnCancelled} is a result flag,
+     * so every listener runs. The callback gets a {@code cancelSpawn} sink to
+     * request cancellation (the bridge maps it to {@code setSpawnCancelled(true)}).
+     * Both DT handlers NORMAL.
+     */
+    public static final DtEvent<DtFinalizeSpawnCallback> FINALIZE_SPAWN =
+        new DtEvent<>();
+
 }

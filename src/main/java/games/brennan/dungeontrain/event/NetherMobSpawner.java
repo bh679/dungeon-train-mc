@@ -45,7 +45,6 @@ import java.util.List;
  * they survive intact. Every other roster mob (zombified piglins, magma cubes, skeletons, endermen,
  * ghasts) already behaves correctly outside the Nether.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NetherMobSpawner {
 
     /** How often (ticks) the spawner runs. */
@@ -132,15 +131,17 @@ public final class NetherMobSpawner {
     }
 
     /** Suppress overworld ambient spawns anywhere in the nether band (not owned by the End band). */
-    @SubscribeEvent
-    public static void onFinalizeSpawn(FinalizeSpawnEvent event) {
-        MobSpawnType type = event.getSpawnType();
+        public static void onFinalizeSpawn(net.minecraft.world.entity.Mob spawnEntity,
+                                       net.minecraft.world.level.ServerLevelAccessor levelAccessor,
+                                       net.minecraft.world.entity.MobSpawnType spawnType,
+                                       double spawnX, Runnable cancelSpawn) {
+        MobSpawnType type = spawnType;
         if (type != MobSpawnType.NATURAL && type != MobSpawnType.CHUNK_GENERATION) return;
-        ServerLevel level = event.getLevel().getLevel();
+        ServerLevel level = levelAccessor.getLevel();
         if (!level.dimension().equals(Level.OVERWORLD)) return;
-        int x = (int) Math.floor(event.getX());
+        int x = (int) Math.floor(spawnX);
         if (NetherBand.heightRampAt(level, x) > 0.0 && DisintegrationBand.middleRampAt(level, x) <= 0.0) {
-            event.setSpawnCancelled(true);
+            cancelSpawn.run();
         }
     }
 
