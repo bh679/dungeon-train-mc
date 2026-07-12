@@ -45,10 +45,6 @@ import java.util.List;
  *       via {@link EditorPlotTeleport#weightCommandFor(String, String, String, String)}.</li>
  * </ul></p>
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class EditorTypeMenuInputHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -60,13 +56,12 @@ public final class EditorTypeMenuInputHandler {
 
     private EditorTypeMenuInputHandler() {}
 
-    @SubscribeEvent
-    public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
+    public static void onInteraction(games.brennan.dungeontrain.platform.event.DtInteractionInput input) {
         if (!shouldHandle()) return;
         Hovered hit = EditorTypeMenuRenderer.hovered();
         if (hit.cell() == CellKind.NONE) return;
-        event.setCanceled(true);
-        event.setSwingHand(false);
+        input.setCanceled(true);
+        input.setSwingHand(false);
         pressArmed = true;
         Minecraft mc = Minecraft.getInstance();
         long win = mc.getWindow().getWindow();
@@ -83,29 +78,28 @@ public final class EditorTypeMenuInputHandler {
         if (mc.gameMode != null) mc.gameMode.stopDestroyBlock();
     }
 
-    @SubscribeEvent
-    public static void onMouseButton(InputEvent.MouseButton.Pre event) {
+    public static boolean onMouseButton(int button, int action, int modifiers) {
         if (!shouldHandle()) {
             pressArmed = false;
-            return;
+            return false;
         }
-        if (Minecraft.getInstance().screen != null) return;
-        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
-        if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed) return;
+        if (Minecraft.getInstance().screen != null) return false;
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) return false;
+        if (action != GLFW.GLFW_RELEASE) return false;
+        if (!pressArmed) return false;
         pressArmed = false;
-        boolean shift = pressShift || (event.getModifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
+        boolean shift = pressShift || (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
 
         Hovered hit = EditorTypeMenuRenderer.hovered();
-        if (hit.cell() == CellKind.NONE) return;
+        if (hit.cell() == CellKind.NONE) return false;
         dispatch(hit, shift);
+        return false;
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (!shouldHandle()) return;
-        if (EditorTypeMenuRenderer.hovered().cell() == CellKind.NONE) return;
-        event.setCanceled(true);
+    public static boolean onLeftClickBlock(net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos) {
+        if (!shouldHandle()) return false;
+        if (EditorTypeMenuRenderer.hovered().cell() == CellKind.NONE) return false;
+        return true;
     }
 
     public static void onClientTick() {

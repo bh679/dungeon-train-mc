@@ -33,6 +33,88 @@ public final class NeoForgeClientEvents {
         registerClientConnection();
         registerRegisterStyle();
         registerTooltipAndRender();
+        registerInput();
+    }
+
+    /**
+     * Cancellable client input handlers, fired by {@code NeoForgeClientInputBridge}:
+     * {@code MouseButton.Pre} (10), {@code InteractionKeyMappingTriggered} (12),
+     * {@code LeftClickBlock} (10). See each {@code DtEvents} field for the exact
+     * cancellation contract. Registration order is load-bearing here (see below).
+     */
+    private static void registerInput() {
+        // MouseButton.Pre — 9 non-cancelling menu observers first, the sole canceller
+        // (CinematicInputHandler) last, so observers always run before any cancel.
+        DtEvents.MOUSE_BUTTON_PRE
+            .register(games.brennan.dungeontrain.client.menu.templateblocks.TemplateBlocksMenuInputHandler::onMouseButton);
+        DtEvents.MOUSE_BUTTON_PRE
+            .register(games.brennan.dungeontrain.client.menu.plot.EditorPlotPanelInputHandler::onMouseButton);
+        DtEvents.MOUSE_BUTTON_PRE
+            .register(games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuInputHandler::onMouseButton);
+        DtEvents.MOUSE_BUTTON_PRE
+            .register(games.brennan.dungeontrain.client.menu.plot.EditorHelpPanelInputHandler::onMouseButton);
+        DtEvents.MOUSE_BUTTON_PRE
+            .register(games.brennan.dungeontrain.client.menu.stagepanel.StagePanelMenuInputHandler::onMouseButton);
+        DtEvents.MOUSE_BUTTON_PRE
+            .register(games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenuInputHandler::onMouseButton);
+        DtEvents.MOUSE_BUTTON_PRE
+            .register(games.brennan.dungeontrain.client.menu.containercontents.ContainerContentsMenuInputHandler::onMouseButton);
+        DtEvents.MOUSE_BUTTON_PRE
+            .register(games.brennan.dungeontrain.client.menu.parts.PartPositionMenuInputHandler::onMouseButton);
+        DtEvents.MOUSE_BUTTON_PRE
+            .register(games.brennan.dungeontrain.client.menu.CommandMenuInputHandler::onMouseButton);
+        DtEvents.MOUSE_BUTTON_PRE
+            .register(games.brennan.dungeontrain.client.CinematicInputHandler::onMouseButton);
+
+        // InteractionKeyMappingTriggered — two observers first (they always record their
+        // hotkey state), then the nine menu cancellers and the cinematic canceller.
+        DtEvents.INTERACTION_KEY
+            .register(games.brennan.dungeontrain.client.ContainerHotkeyClient.ContainerTickWatcher::onInteraction);
+        DtEvents.INTERACTION_KEY
+            .register(games.brennan.dungeontrain.client.VariantHotkeyClient.TickWatcher::onInteraction);
+        DtEvents.INTERACTION_KEY
+            .register(games.brennan.dungeontrain.client.menu.templateblocks.TemplateBlocksMenuInputHandler::onInteraction);
+        DtEvents.INTERACTION_KEY
+            .register(games.brennan.dungeontrain.client.menu.plot.EditorPlotPanelInputHandler::onInteraction);
+        DtEvents.INTERACTION_KEY
+            .register(games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuInputHandler::onInteraction);
+        DtEvents.INTERACTION_KEY
+            .register(games.brennan.dungeontrain.client.menu.plot.EditorHelpPanelInputHandler::onInteraction);
+        DtEvents.INTERACTION_KEY
+            .register(games.brennan.dungeontrain.client.menu.stagepanel.StagePanelMenuInputHandler::onInteraction);
+        DtEvents.INTERACTION_KEY
+            .register(games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenuInputHandler::onInteraction);
+        DtEvents.INTERACTION_KEY
+            .register(games.brennan.dungeontrain.client.menu.containercontents.ContainerContentsMenuInputHandler::onInteraction);
+        DtEvents.INTERACTION_KEY
+            .register(games.brennan.dungeontrain.client.menu.parts.PartPositionMenuInputHandler::onInteraction);
+        DtEvents.INTERACTION_KEY
+            .register(games.brennan.dungeontrain.client.menu.CommandMenuInputHandler::onInteraction);
+        DtEvents.INTERACTION_KEY
+            .register(games.brennan.dungeontrain.client.CinematicInputHandler::onInteraction);
+
+        // LeftClickBlock — HIGHEST tier: nine menu cancellers; NORMAL tier: one observer.
+        var HIGHEST = games.brennan.dungeontrain.platform.event.DtPriority.HIGHEST;
+        DtEvents.LEFT_CLICK_BLOCK
+            .register(HIGHEST, games.brennan.dungeontrain.client.menu.templateblocks.TemplateBlocksMenuInputHandler::onLeftClickBlock);
+        DtEvents.LEFT_CLICK_BLOCK
+            .register(HIGHEST, games.brennan.dungeontrain.client.menu.plot.EditorPlotPanelInputHandler::onLeftClickBlock);
+        DtEvents.LEFT_CLICK_BLOCK
+            .register(HIGHEST, games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuInputHandler::onLeftClickBlock);
+        DtEvents.LEFT_CLICK_BLOCK
+            .register(HIGHEST, games.brennan.dungeontrain.client.menu.plot.EditorHelpPanelInputHandler::onLeftClickBlock);
+        DtEvents.LEFT_CLICK_BLOCK
+            .register(HIGHEST, games.brennan.dungeontrain.client.menu.stagepanel.StagePanelMenuInputHandler::onLeftClickBlock);
+        DtEvents.LEFT_CLICK_BLOCK
+            .register(HIGHEST, games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenuInputHandler::onLeftClickBlock);
+        DtEvents.LEFT_CLICK_BLOCK
+            .register(HIGHEST, games.brennan.dungeontrain.client.menu.containercontents.ContainerContentsMenuInputHandler::onLeftClickBlock);
+        DtEvents.LEFT_CLICK_BLOCK
+            .register(HIGHEST, games.brennan.dungeontrain.client.menu.parts.PartPositionMenuInputHandler::onLeftClickBlock);
+        DtEvents.LEFT_CLICK_BLOCK
+            .register(HIGHEST, games.brennan.dungeontrain.client.menu.CommandMenuInputHandler::onLeftClickBlock);
+        DtEvents.LEFT_CLICK_BLOCK
+            .register(games.brennan.dungeontrain.client.snapshot.RideSnapshotDirector::onLeftClickBlock);
     }
 
     /**

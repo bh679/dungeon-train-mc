@@ -27,7 +27,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * with the Z key — currently unused but keeps the door open for future
  * "hold C and click" flows.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ContainerHotkeyClient {
 
     public static final String CATEGORY = VariantHotkeyClient.CATEGORY;
@@ -97,8 +96,7 @@ public final class ContainerHotkeyClient {
             }
         }
 
-        @SubscribeEvent
-        public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
+        public static void onInteraction(games.brennan.dungeontrain.platform.event.DtInteractionInput input) {
             if (KEY.isDown() && pressStartTick >= 0) {
                 useDuringPress = true;
             }

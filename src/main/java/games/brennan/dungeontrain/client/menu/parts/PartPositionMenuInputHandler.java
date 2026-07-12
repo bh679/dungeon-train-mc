@@ -37,10 +37,6 @@ import java.util.List;
  *       to it (it has its own handler), so this handler defers.</li>
  * </ul>
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class PartPositionMenuInputHandler {
 
     /** True only when a press fired while the menu was active and we're awaiting its release. */
@@ -51,16 +47,15 @@ public final class PartPositionMenuInputHandler {
     private PartPositionMenuInputHandler() {}
 
     /** Cancel the world-targeted attack/use when a press lands on the panel. Mirrors CommandMenuInputHandler. */
-    @SubscribeEvent
-    public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
+    public static void onInteraction(games.brennan.dungeontrain.platform.event.DtInteractionInput input) {
         if (!shouldHandle()) return;
         // Only cancel when the press is actually on a panel cell — otherwise
         // a player editing a carriage with the menu open should still be able
         // to break / place blocks they're not aiming at the panel for.
         PartPositionMenu.Hit hit = PartPositionMenu.hovered();
         if (hit.kind() == PartPositionMenu.CellKind.NONE) return;
-        event.setCanceled(true);
-        event.setSwingHand(false);
+        input.setCanceled(true);
+        input.setSwingHand(false);
         pressArmed = true;
         pressShift = Minecraft.getInstance().screen == null
             && (GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
@@ -78,24 +73,24 @@ public final class PartPositionMenuInputHandler {
         if (mc.gameMode != null) mc.gameMode.stopDestroyBlock();
     }
 
-    @SubscribeEvent
-    public static void onMouseButton(InputEvent.MouseButton.Pre event) {
+    public static boolean onMouseButton(int button, int action, int modifiers) {
         if (!shouldHandle()) {
             pressArmed = false;
-            return;
+            return false;
         }
-        if (Minecraft.getInstance().screen != null) return;
-        int btn = event.getButton();
-        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
-        if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed) return;
+        if (Minecraft.getInstance().screen != null) return false;
+        int btn = button;
+        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT) return false;
+        if (action != GLFW.GLFW_RELEASE) return false;
+        if (!pressArmed) return false;
         pressArmed = false;
         boolean shift = pressShift
-            || (event.getModifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
+            || (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
 
         PartPositionMenu.Hit hit = PartPositionMenu.hovered();
-        if (hit.kind() == PartPositionMenu.CellKind.NONE) return;
+        if (hit.kind() == PartPositionMenu.CellKind.NONE) return false;
         dispatch(hit, shift);
+        return false;
     }
 
     /**
@@ -103,12 +98,11 @@ public final class PartPositionMenuInputHandler {
      * {@link InputEvent.InteractionKeyMappingTriggered}, cancel the
      * left-click-block event so block damage doesn't begin.
      */
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (!shouldHandle()) return;
+    public static boolean onLeftClickBlock(net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos) {
+        if (!shouldHandle()) return false;
         PartPositionMenu.Hit hit = PartPositionMenu.hovered();
-        if (hit.kind() == PartPositionMenu.CellKind.NONE) return;
-        event.setCanceled(true);
+        if (hit.kind() == PartPositionMenu.CellKind.NONE) return false;
+        return true;
     }
 
     public static void onClientTick() {

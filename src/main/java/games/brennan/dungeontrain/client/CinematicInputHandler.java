@@ -58,14 +58,13 @@ public final class CinematicInputHandler {
         }
     }
 
-    @SubscribeEvent
-    public static void onMouseButton(InputEvent.MouseButton.Pre event) {
-        if (!CinematicCameraController.isActive()) return;
-        if (Minecraft.getInstance().screen != null) return;
-        event.setCanceled(true);
-        if (event.getAction() == InputConstants.PRESS) {
+    public static boolean onMouseButton(int button, int action, int modifiers) {
+        if (!CinematicCameraController.isActive()) return false;
+        if (Minecraft.getInstance().screen != null) return false;
+        if (action == InputConstants.PRESS) {
             CinematicSkipHudOverlay.show();
         }
+        return true; // former event.setCanceled(true)
     }
 
     @SubscribeEvent
@@ -76,11 +75,10 @@ public final class CinematicInputHandler {
         CinematicSkipHudOverlay.show();
     }
 
-    @SubscribeEvent
-    public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
+    public static void onInteraction(games.brennan.dungeontrain.platform.event.DtInteractionInput input) {
         if (!CinematicCameraController.isActive()) return;
         if (Minecraft.getInstance().screen != null) return;
-        event.setCanceled(true);
+        input.setCanceled(true);
         CinematicSkipHudOverlay.show();
     }
 

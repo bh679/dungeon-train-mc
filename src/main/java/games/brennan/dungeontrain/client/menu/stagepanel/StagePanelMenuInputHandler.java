@@ -30,20 +30,18 @@ import java.util.List;
  * raycast reports a hover — the {@link EditorTypeMenuRenderer#hovered()} guard below is the
  * belt-and-braces against a future overlapping layout double-dispatching one click.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class StagePanelMenuInputHandler {
 
     private static boolean pressArmed;
 
     private StagePanelMenuInputHandler() {}
 
-    @SubscribeEvent
-    public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
+    public static void onInteraction(games.brennan.dungeontrain.platform.event.DtInteractionInput input) {
         if (!shouldHandle()) return;
         StagePanelMenu.Hit hit = StagePanelMenu.hovered();
         if (hit.kind() == StagePanelMenu.CellKind.NONE) return;
-        event.setCanceled(true);
-        event.setSwingHand(false);
+        input.setCanceled(true);
+        input.setSwingHand(false);
         pressArmed = true;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
@@ -56,29 +54,28 @@ public final class StagePanelMenuInputHandler {
         if (mc.gameMode != null) mc.gameMode.stopDestroyBlock();
     }
 
-    @SubscribeEvent
-    public static void onMouseButton(InputEvent.MouseButton.Pre event) {
+    public static boolean onMouseButton(int button, int action, int modifiers) {
         if (!shouldHandle()) {
             pressArmed = false;
-            return;
+            return false;
         }
-        if (Minecraft.getInstance().screen != null) return;
-        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
-        if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed) return;
+        if (Minecraft.getInstance().screen != null) return false;
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) return false;
+        if (action != GLFW.GLFW_RELEASE) return false;
+        if (!pressArmed) return false;
         pressArmed = false;
 
         StagePanelMenu.Hit hit = StagePanelMenu.hovered();
-        if (hit.kind() == StagePanelMenu.CellKind.NONE) return;
+        if (hit.kind() == StagePanelMenu.CellKind.NONE) return false;
         dispatch(hit);
+        return false;
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (!shouldHandle()) return;
+    public static boolean onLeftClickBlock(net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos) {
+        if (!shouldHandle()) return false;
         StagePanelMenu.Hit hit = StagePanelMenu.hovered();
-        if (hit.kind() == StagePanelMenu.CellKind.NONE) return;
-        event.setCanceled(true);
+        if (hit.kind() == StagePanelMenu.CellKind.NONE) return false;
+        return true;
     }
 
     public static void onClientTick() {

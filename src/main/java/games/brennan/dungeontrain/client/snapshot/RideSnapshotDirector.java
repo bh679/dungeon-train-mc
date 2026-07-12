@@ -330,10 +330,10 @@ public final class RideSnapshotDirector {
         if (event.getTarget() instanceof Mob) combatPending = true; // first strike
     }
 
-    @SubscribeEvent
-    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (!event.getLevel().isClientSide() || !ClientDisplayConfig.isRideSnapshotsEnabled()) return;
-        if (event.getLevel().getBlockState(event.getPos()).getBlock() instanceof DecoratedPotBlock) potPending = true;
+    public static boolean onLeftClickBlock(net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos) {
+        if (!level.isClientSide() || !ClientDisplayConfig.isRideSnapshotsEnabled()) return false;
+        if (level.getBlockState(pos).getBlock() instanceof DecoratedPotBlock) potPending = true;
+        return false;
     }
 
     public static void onLoggingIn() {

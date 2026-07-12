@@ -39,43 +39,42 @@ public final class CommandMenuInputHandler {
 
     private CommandMenuInputHandler() {}
 
-    @SubscribeEvent
-    public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
+    public static void onInteraction(games.brennan.dungeontrain.platform.event.DtInteractionInput input) {
         if (!CommandMenuState.isOpen()) return;
-        event.setCanceled(true);
-        event.setSwingHand(false);
+        input.setCanceled(true);
+        input.setSwingHand(false);
         pressArmed = true;
     }
 
-    @SubscribeEvent
-    public static void onMouseButton(InputEvent.MouseButton.Pre event) {
+    public static boolean onMouseButton(int button, int action, int modifiers) {
         if (!CommandMenuState.isOpen()) {
             pressArmed = false;
-            return;
+            return false;
         }
-        if (net.minecraft.client.Minecraft.getInstance().screen != null) return;
-        int btn = event.getButton();
-        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT && btn != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
-        if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed) return;
+        if (net.minecraft.client.Minecraft.getInstance().screen != null) return false;
+        int btn = button;
+        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT && btn != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return false;
+        if (action != GLFW.GLFW_RELEASE) return false;
+        if (!pressArmed) return false;
         pressArmed = false;
 
         int hovered = CommandMenuState.hoveredIdx();
         int hoveredSub = CommandMenuState.hoveredSubIdx();
         if (hovered >= 0) {
             CommandMenuState.activate(hovered, hoveredSub);
-            return;
+            return false;
         }
         int sideHovered = CommandMenuState.sideHoveredIdx();
         int sideHoveredSub = CommandMenuState.sideHoveredSubIdx();
         if (sideHovered >= 0) {
             CommandMenuState.activateSide(sideHovered, sideHoveredSub);
         }
+        return false;
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (CommandMenuState.isOpen()) event.setCanceled(true);
+    public static boolean onLeftClickBlock(net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos) {
+        if (CommandMenuState.isOpen()) return true;
+        return false;
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

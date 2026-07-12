@@ -471,4 +471,39 @@ public final class DtEvents {
     public static final DtEvent<DtClientChatCallback> CLIENT_CHAT =
         new DtEvent<>();
 
+    // ---- Client input (cancellable) (Stage 2c) ----------------------------
+
+    /**
+     * Mouse button (pre) — NeoForge {@code InputEvent.MouseButton.Pre} (client game
+     * bus). Fires before screen routing; handlers self-guard on
+     * {@code Minecraft.getInstance().screen}. CANCELLABLE: callback returns
+     * {@code true} to swallow the button; the bridge stops on the first {@code true}.
+     * DT registers the nine menu observers first and the one canceller
+     * ({@code CinematicInputHandler}) last, so observers always run — semantically a
+     * safe superset of the old (scan-order-independent) behaviour. All NORMAL.
+     */
+    public static final DtEvent<DtMouseButtonCallback> MOUSE_BUTTON_PRE =
+        new DtEvent<>();
+
+    /**
+     * Interaction key-mapping — NeoForge {@code InputEvent.InteractionKeyMappingTriggered}
+     * (client game bus). CANCELLABLE + mutable ({@code setSwingHand}). DT's nine menu
+     * handlers cancel + suppress swing via {@link DtInteractionInput}; two hotkey
+     * handlers only observe. Observers are registered first so they always run; the
+     * bridge then skips any handler once the event is canceled (matching NeoForge's
+     * non-{@code receiveCanceled} dispatch). All NORMAL.
+     */
+    public static final DtEvent<DtInteractionInputCallback> INTERACTION_KEY =
+        new DtEvent<>();
+
+    /**
+     * Left-click block — NeoForge {@code PlayerInteractEvent.LeftClickBlock}
+     * (client-side uses). CANCELLABLE. Two tiers: HIGHEST (nine menu handlers that
+     * cancel) and NORMAL (one observer, {@code RideSnapshotDirector}). The bridge
+     * fires each tier under a matching {@code @SubscribeEvent} priority so a HIGHEST
+     * cancel skips the NORMAL observer exactly as on the bus.
+     */
+    public static final DtEvent<DtLeftClickBlockCallback> LEFT_CLICK_BLOCK =
+        new DtEvent<>();
+
 }

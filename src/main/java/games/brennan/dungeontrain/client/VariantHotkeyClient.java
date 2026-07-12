@@ -35,7 +35,6 @@ import net.neoforged.fml.common.Mod;
  * the press. Disambiguates "I tapped Z to open the menu" from "I held Z
  * and right-clicked to add a block."</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class VariantHotkeyClient {
 
     public static final String CATEGORY = "key.categories." + DungeonTrain.MOD_ID;
@@ -120,8 +119,7 @@ public final class VariantHotkeyClient {
          * tap. Mirrors the disambiguation pattern in the part-menu input
          * handler.
          */
-        @SubscribeEvent
-        public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
+        public static void onInteraction(games.brennan.dungeontrain.platform.event.DtInteractionInput input) {
             if (KEY.isDown() && pressStartTick >= 0) {
                 useDuringPress = true;
             }
