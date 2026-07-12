@@ -4305,6 +4305,22 @@
       "released": true,
       "released_in": "v0.445.0",
       "released_at": "2026-07-12T09:18:15Z"
+    },
+    {
+      "id": "localization-credits-menu",
+      "version": "0.446.0",
+      "type": "feat",
+      "title": "Localization credit on the title screen",
+      "summary": "If you're playing in a language someone translated the game into, and they shipped a credit with their translation pack, the main menu now thanks them for you \u2014 their name appears right next to the language button, with a clickable link if they included one.",
+      "highlights": [
+        "Translators can be credited by name (with an optional link) next to the title screen's language button",
+        "Only shows for languages that actually have a credited translator \u2014 silent otherwise"
+      ],
+      "pr": 736,
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
