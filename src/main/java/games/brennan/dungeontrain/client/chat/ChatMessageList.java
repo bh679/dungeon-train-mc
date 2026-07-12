@@ -221,8 +221,10 @@ public final class ChatMessageList extends AbstractWidget {
         }
         if (m.hasAttachments()) {
             for (ChatHistory.Attachment a : m.attachments()) {
-                String name = a.filename() == null ? "attachment" : a.filename();
-                for (FormattedCharSequence l : font.split(Component.literal("[file] " + name), wrap)) {
+                String name = a.filename() == null
+                        ? Component.translatable("gui.dungeontrain.menu_chat.attachment_fallback").getString()
+                        : a.filename();
+                for (FormattedCharSequence l : font.split(Component.translatable("gui.dungeontrain.menu_chat.attachment", name), wrap)) {
                     e.lines.add(new Line(l, ATTACH, 0));
                 }
             }
@@ -502,7 +504,9 @@ public final class ChatMessageList extends AbstractWidget {
             return;
         }
         this.status = null;
-        String name = authorName == null || authorName.isBlank() ? "Me" : authorName;
+        String name = authorName == null || authorName.isBlank()
+                ? Component.translatable("gui.dungeontrain.menu_chat.author_me").getString()
+                : authorName;
         ChatHistory.Message m = new ChatHistory.Message(
                 "local-" + (localSeq++), null, name, false, true, content,
                 List.of(), List.of(), null, true, true); // isWebhook=true → styled as self, never marked

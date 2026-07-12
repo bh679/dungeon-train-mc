@@ -4255,6 +4255,23 @@
       "released": true,
       "released_in": "v0.443.0",
       "released_at": "2026-07-12T08:55:21Z"
+    },
+    {
+      "id": "localize-remaining-gui-strings",
+      "version": "0.444.0",
+      "type": "chore",
+      "title": "Remaining menu text is now translatable",
+      "summary": "The last hard-coded strings in Dungeon Train's config, world-options, cinematic-skip, and dev-message screens now use translation keys, so the whole mod UI can be localized through a resource/language pack. No change to the English text.",
+      "highlights": [
+        "Settings and world-options screens fully translatable",
+        "Cinematic 'Press Space to skip' prompt translatable",
+        "Dev-message attachment and author labels translatable"
+      ],
+      "pr": 733,
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

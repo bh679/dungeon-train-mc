@@ -13,6 +13,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.LockIconButton;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
 import java.util.Locale;
@@ -158,11 +159,11 @@ public final class DungeonTrainOptionsScreen extends Screen {
         // stale values from the previous round-trip.
         clearPendingSnapshots();
 
-        addRenderableWidget(Button.builder(Component.literal("Done"), b -> saveAndClose())
+        addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> saveAndClose())
             .bounds(centerX - 105, topY + ROW_GAP * 6 + 10, 100, 20)
             .build());
 
-        addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> onClose())
+        addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose())
             .bounds(centerX + 5, topY + ROW_GAP * 6 + 10, 100, 20)
             .build());
     }
@@ -270,17 +271,17 @@ public final class DungeonTrainOptionsScreen extends Screen {
         // feedback when the user types an out-of-range value and sees it
         // clamp to the legal floor/ceiling.
         CarriageDims preview = previewDims();
-        String previewText = "Preview: " + preview.length() + " × " + preview.width() + " × " + preview.height()
-            + "  (L × W × H)";
+        Component previewText = Component.translatable("gui.dungeontrain.options.preview",
+            preview.length(), preview.width(), preview.height());
         graphics.drawCenteredString(this.font, previewText,
             centerX, topY + ROW_GAP * 5 + 4, 0xFFAAFFAA);
 
-        String rangeHint = "Train Y "
-            + DungeonTrainConfig.MIN_TRAIN_Y + "–" + DungeonTrainConfig.MAX_TRAIN_Y
-            + "  ·  L " + CarriageDims.MIN_LENGTH + "–" + CarriageDims.MAX_LENGTH
-            + "  ·  W " + CarriageDims.MIN_WIDTH + "–" + CarriageDims.MAX_WIDTH
-            + "  ·  H " + CarriageDims.MIN_HEIGHT + "–" + CarriageDims.MAX_HEIGHT
-            + "  ·  Group " + CarriageGenerationConfig.MIN_GROUP_SIZE + "–" + CarriageGenerationConfig.MAX_GROUP_SIZE;
+        Component rangeHint = Component.translatable("gui.dungeontrain.options.range_hint",
+            DungeonTrainConfig.MIN_TRAIN_Y, DungeonTrainConfig.MAX_TRAIN_Y,
+            CarriageDims.MIN_LENGTH, CarriageDims.MAX_LENGTH,
+            CarriageDims.MIN_WIDTH, CarriageDims.MAX_WIDTH,
+            CarriageDims.MIN_HEIGHT, CarriageDims.MAX_HEIGHT,
+            CarriageGenerationConfig.MIN_GROUP_SIZE, CarriageGenerationConfig.MAX_GROUP_SIZE);
         graphics.drawCenteredString(this.font, rangeHint,
             centerX, topY + ROW_GAP * 5 + 18, 0xFFAAAAAA);
     }
