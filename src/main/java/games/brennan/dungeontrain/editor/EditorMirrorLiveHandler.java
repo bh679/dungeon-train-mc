@@ -8,11 +8,8 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.common.util.BlockSnapshot;
-import net.neoforged.neoforge.event.level.BlockEvent;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -30,7 +27,6 @@ import java.util.Set;
  * which uses raw {@code setBlock} — so this handler never re-triggers its own
  * place / break subscribers.</p>
  */
-@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class EditorMirrorLiveHandler {
 
     private EditorMirrorLiveHandler() {}
@@ -42,15 +38,16 @@ public final class EditorMirrorLiveHandler {
         applyAt(player, level, placePos, placedBlock);
     }
 
-    @SubscribeEvent
-    public static void onMultiBlockPlace(BlockEvent.EntityMultiPlaceEvent event) {
-        if (event.isCanceled()) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
-        // Each placed cell is already in the world by the time this fires; read
-        // back its state and mirror it individually.
-        for (BlockSnapshot snapshot : event.getReplacedBlockSnapshots()) {
-            BlockPos pos = snapshot.getPos();
+    /**
+     * Multi-block-place mirroring, driven by the loader-specific split
+     * {@code platform.neoforge.EditorMirrorMultiPlaceHandler} (NeoForge's
+     * {@code EntityMultiPlaceEvent.getReplacedBlockSnapshots()} is a loader-specific
+     * type, so the snapshot list is unpacked to plain {@link BlockPos}es root-side
+     * and handed here). Each placed cell is already in the world by the time this
+     * runs; its current state is read back and mirrored individually.
+     */
+    public static void onMultiBlockPlace(ServerPlayer player, ServerLevel level, List<BlockPos> positions) {
+        for (BlockPos pos : positions) {
             applyAt(player, level, pos, level.getBlockState(pos));
         }
     }
