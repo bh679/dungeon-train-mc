@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.narrative;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.discord.LetterReporter;
+import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -53,7 +54,9 @@ public final class LetterSigning {
         String finalTitle = title == null || title.isBlank() ? "Letter " + series.letterIndex() : title;
 
         // Fire-and-forget upload of the authored letter as the next entry in the life-series (no-throw).
-        LetterReporter.submit(player.getUUID(), series.seriesId(), series.letterIndex(), author, finalTitle, pages);
+        // The author's client language (vanilla-synced ClientInformation, "" when unknown) is stamped.
+        String lang = WorldInfoReporter.clientLanguage(player);
+        LetterReporter.submit(player.getUUID(), series.seriesId(), series.letterIndex(), author, finalTitle, pages, lang);
 
         // One-shot "wrote a letter" advancement — signing the letter is the rewarded action.
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "wrote_letter");

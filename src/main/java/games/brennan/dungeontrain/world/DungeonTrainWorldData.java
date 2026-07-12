@@ -58,6 +58,16 @@ public final class DungeonTrainWorldData extends SavedData {
     /** Per-world one-shot: true once the join-info report (DT version + train seed + mods) has been posted to Discord. */
     private boolean joinReportPosted;
 
+    /**
+     * Transient scheduling set of chunk keys ({@link net.minecraft.world.level.ChunkPos#toLong}) whose
+     * upside-down mirror is deferred and still pending. NOT serialized — the durable truth is the
+     * {@code NEEDS_UPSIDE_DOWN_MIRROR} chunk attachment; this set is only a fast-path work list, rebuilt
+     * from {@code ChunkEvent.Load} enqueues (+ the reconciling scan) after a reload. A {@link LinkedHashSet}
+     * so it dedups (a chunk enqueued at gen, on reload, and by the scan is only processed once) while
+     * keeping insertion order as a stable tiebreak. Main-thread only (Load + level tick both run there).
+     */
+    private final java.util.Set<Long> pendingMirrorChunks = new java.util.LinkedHashSet<>();
+
     private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed, StartingDimension startingDimension) {
         this.trainY = trainY;
         this.startsWithTrain = startsWithTrain;
@@ -83,6 +93,20 @@ public final class DungeonTrainWorldData extends SavedData {
             data.setDirty();
         }
         return data;
+    }
+
+    /** Enqueue a chunk key for the deferred upside-down mirror drain (dedup; main-thread only). */
+    public void enqueueMirrorChunk(long chunkKey) {
+        pendingMirrorChunks.add(chunkKey);
+    }
+
+    /**
+     * The live pending-mirror work set (chunk keys). The drain in {@code TrainTickEvents} reads it,
+     * orders nearest-first by train position, applies under a per-tick budget, and removes the keys it
+     * processes. Mutable + main-thread only; not persisted (the chunk attachment is the durable marker).
+     */
+    public java.util.Set<Long> pendingMirrorChunks() {
+        return pendingMirrorChunks;
     }
 
     private static DungeonTrainWorldData createDefault() {

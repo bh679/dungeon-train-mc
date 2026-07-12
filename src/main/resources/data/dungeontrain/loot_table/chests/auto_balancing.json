@@ -7,27 +7,27 @@
         {
           "type": "minecraft:item",
           "name": "minecraft:wheat",
-          "weight": 18
-        },
-        {
-          "type": "minecraft:item",
-          "name": "minecraft:potato",
-          "weight": 19
-        },
-        {
-          "type": "minecraft:item",
-          "name": "minecraft:carrot",
           "weight": 17
         },
         {
           "type": "minecraft:item",
+          "name": "minecraft:potato",
+          "weight": 20
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:carrot",
+          "weight": 18
+        },
+        {
+          "type": "minecraft:item",
           "name": "minecraft:bread",
-          "weight": 12
+          "weight": 13
         },
         {
           "type": "minecraft:item",
           "name": "minecraft:apple",
-          "weight": 6
+          "weight": 7
         }
       ]
     }

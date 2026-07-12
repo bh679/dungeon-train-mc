@@ -61,7 +61,8 @@ public final class WorldInfoReporter {
                 return;
             }
             // Confirm the join is a live server player (mirrors WorldJoinReport).
-            if (server.getPlayerList().getPlayer(playerId) == null) {
+            var player = server.getPlayerList().getPlayer(playerId);
+            if (player == null) {
                 return;
             }
 
@@ -83,7 +84,8 @@ public final class WorldInfoReporter {
                     data.startingDimension().name(),
                     WorldJoinReport.modVersion(),
                     LauncherInfo.describe(server.isDedicatedServer()),
-                    installedMods());
+                    installedMods(),
+                    clientLanguage(player));
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] world-info relay report failed: {}", t.toString());
@@ -100,7 +102,7 @@ public final class WorldInfoReporter {
     static JsonObject buildPayload(String uuid, String player, long worldSeed, long trainSeed,
                                    String mode, int groupSize, int length, int width, int height,
                                    int trainY, String startingDimension, String dtVersion,
-                                   String launcher, List<ModEntry> mods) {
+                                   String launcher, List<ModEntry> mods, String language) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         body.addProperty("player", player);
@@ -126,7 +128,27 @@ public final class WorldInfoReporter {
             modsArr.add(mo);
         }
         body.add("mods", modsArr);
+        // Emitted only when known — the relay coerces a missing value to "" anyway.
+        if (language != null && !language.isEmpty()) {
+            body.addProperty("language", language);
+        }
         return body;
+    }
+
+    /**
+     * The player's Minecraft client locale (e.g. {@code en_us}), read from the vanilla-synced
+     * {@code ClientInformation}. Returns {@code ""} when unavailable — never throws. Public so other
+     * server-side upload paths (e.g. {@code SharedBookReporter}, {@code LetterReporter}) can stamp the
+     * same client-locale value without re-deriving it.
+     */
+    public static String clientLanguage(net.minecraft.server.level.ServerPlayer player) {
+        try {
+            var info = player.clientInformation();
+            String lang = info == null ? null : info.language();
+            return lang == null ? "" : lang;
+        } catch (Throwable t) {
+            return "";
+        }
     }
 
     /**
