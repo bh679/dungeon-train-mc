@@ -21,7 +21,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class CinematicSkipHudOverlay {
 
-    private static final Component LABEL = Component.literal("Press Space to skip");
+    private static final Component LABEL = Component.translatable("gui.dungeontrain.cinematic.press_space_to_skip");
     private static final int TEXT_COLOR = 0xFFFFFFFF;
     private static final int BACKDROP_COLOR = 0x80000000;
     private static final int PAD = 4;

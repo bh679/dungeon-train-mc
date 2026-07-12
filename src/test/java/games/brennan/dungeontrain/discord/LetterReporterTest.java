@@ -17,11 +17,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class LetterReporterTest {
 
     @Test
-    @DisplayName("buildPayload carries uuid, seriesId, numeric letterIndex, author, title, ordered pages")
+    @DisplayName("buildPayload carries uuid, seriesId, numeric letterIndex, author, title, ordered pages, lang")
     void payloadShape() {
         JsonObject out = LetterReporter.buildPayload(
                 "069a79f444e94726a5befca90e38aaf5", "abc123series", 2,
-                "Notch", "My Journey", List.of("page one", "page two"));
+                "Notch", "My Journey", List.of("page one", "page two"), "de_de");
 
         assertEquals("069a79f444e94726a5befca90e38aaf5", out.get("uuid").getAsString());
         assertEquals("abc123series", out.get("seriesId").getAsString());
@@ -32,17 +32,19 @@ class LetterReporterTest {
         assertEquals(2, out.getAsJsonArray("pages").size());
         assertEquals("page one", out.getAsJsonArray("pages").get(0).getAsString());
         assertEquals("page two", out.getAsJsonArray("pages").get(1).getAsString());
+        assertEquals("de_de", out.get("lang").getAsString());
     }
 
     @Test
-    @DisplayName("null author/title/seriesId become empty strings; null pages an empty array")
+    @DisplayName("null author/title/seriesId/lang become empty strings; null pages an empty array")
     void nullsBecomeEmpty() {
-        JsonObject out = LetterReporter.buildPayload("uuid", null, 1, null, null, null);
+        JsonObject out = LetterReporter.buildPayload("uuid", null, 1, null, null, null, null);
 
         assertEquals("", out.get("seriesId").getAsString());
         assertEquals("", out.get("author").getAsString());
         assertEquals("", out.get("title").getAsString());
         assertTrue(out.has("pages"));
         assertEquals(0, out.getAsJsonArray("pages").size());
+        assertEquals("", out.get("lang").getAsString());
     }
 }

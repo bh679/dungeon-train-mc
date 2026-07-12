@@ -10,9 +10,11 @@ import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -49,6 +51,7 @@ public final class SharedBookPool {
     static final int SEEN_CAP = 200;
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1) // relay is HTTP/1.1; avoids h2c against a bare-Node relay (matches NarrativePool/DeathReporter/BookStatsClient)
             .connectTimeout(Duration.ofSeconds(8))
             .build();
 
@@ -123,15 +126,19 @@ public final class SharedBookPool {
     /**
      * Fetch a fresh pool from the relay off-thread and swap in the new snapshot. No-throw; a failed or
      * slow fetch leaves the existing snapshot in place. Skips if a fetch is already in flight.
+     *
+     * @param hostLang the host player's raw client locale (e.g. {@code "en_us"}) for language-matched
+     *                 delivery, or {@code ""}/{@code null} to leave the pool unfiltered. See
+     *                 {@link WorldLanguage#hostLocale}.
      */
-    public static void refreshAsync() {
+    public static void refreshAsync(String hostLang) {
         if (fetchInFlight) return;
         fetchInFlight = true;
         try {
             String exclude = excludeCsv();
             boolean hadExclude = !exclude.isEmpty();
             String url = DungeonTrain.relayBaseUrl()
-                    + "/books/pool?exclude=" + exclude + "&limit=" + POOL_LIMIT;
+                    + "/books/pool?exclude=" + exclude + "&limit=" + POOL_LIMIT + langParam(hostLang);
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Accept", "application/json")
@@ -257,6 +264,12 @@ public final class SharedBookPool {
     private static synchronized String excludeCsv() {
         if (SEEN_IDS.isEmpty()) return "";
         return SEEN_IDS.stream().map(String::valueOf).collect(Collectors.joining(","));
+    }
+
+    /** The {@code &lang=<locale>} query fragment for language-matched delivery, or {@code ""} when blank. */
+    static String langParam(String hostLang) {
+        if (hostLang == null || hostLang.isBlank()) return "";
+        return "&lang=" + URLEncoder.encode(hostLang, StandardCharsets.UTF_8);
     }
 
     /**

@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.narrative.NarrativePool;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
+import games.brennan.dungeontrain.narrative.WorldLanguage;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -94,7 +95,7 @@ public final class NarrativePoolRefreshEvents {
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] narrative pool pin gathering failed: {}", t.toString());
         }
-        NarrativePool.refreshAsync(pinned);
+        NarrativePool.refreshAsync(pinned, WorldLanguage.hostLocale(server));
     }
 
     /** The last (most recently started) {@code max} ids from {@code ids}, order preserved. */
