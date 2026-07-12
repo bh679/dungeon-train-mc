@@ -94,7 +94,7 @@ public final class CarriagePlacer {
      * In-memory cache of half-sized flatbed templates derived once per
      * {@link CarriageDims} from the full {@link CarriageType#FLATBED}'s
      * stored NBT. Keyed on {@code CarriageDims} (record-based equality).
-     * Cleared on {@link net.neoforged.neoforge.event.server.ServerStoppedEvent}
+     * Cleared on {@link ServerStoppedEvent}
      * via {@link #clearHalfFlatbedCache()} so a hot-reload between worlds
      * with different dims doesn't reuse a stale half-template.
      *

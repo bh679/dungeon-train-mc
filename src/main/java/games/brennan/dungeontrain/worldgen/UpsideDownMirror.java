@@ -28,7 +28,7 @@ import java.util.Arrays;
  * read is read/read-safe against the light engine). {@link #apply(ChunkAccess, MirrorPlan)} replays
  * the plan through the raw {@link LevelChunkSection#setBlockState} primitive — the same Sable-safe,
  * light-skipping write path {@code WorldUpsideDownEvents} used inline — and stays on the main thread at
- * {@link net.neoforged.neoforge.event.level.ChunkEvent.Load}, where the palette write is proven safe.
+ * {@link Load}, where the palette write is proven safe.
  *
  * <p>The split is behaviour-preserving. The band's input terrain is invariant between {@code SPAWN}
  * and Load — erosion is scoped to the End band and nothing else mutates in-band columns — so the

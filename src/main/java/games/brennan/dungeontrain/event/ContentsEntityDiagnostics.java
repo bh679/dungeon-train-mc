@@ -6,10 +6,6 @@ import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
-import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import org.slf4j.Logger;
 
 /**

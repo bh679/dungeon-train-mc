@@ -57,7 +57,7 @@ import java.util.Optional;
  * </ul>
  *
  * <p>Reuses {@link LecternBlockEntity} via NeoForge's
- * {@link net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent} (handled
+ * {@link BlockEntityTypeAddBlocksEvent} (handled
  * in {@link NarrativeLecternHooks}). No custom BE / renderer required.</p>
  */
 public class NarrativeLecternBlock extends LecternBlock {

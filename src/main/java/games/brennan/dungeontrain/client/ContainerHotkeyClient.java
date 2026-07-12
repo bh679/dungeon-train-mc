@@ -8,12 +8,6 @@ import games.brennan.dungeontrain.net.ContainerHotkeyPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Client-side keymap for the "container contents" key (default {@code C};

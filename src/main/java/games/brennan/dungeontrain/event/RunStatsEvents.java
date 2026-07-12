@@ -42,16 +42,6 @@ import net.minecraft.world.item.WrittenBookItem;
 import net.minecraft.world.level.block.DecoratedPotBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.bus.api.EventPriority;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
-import net.neoforged.neoforge.event.tick.LevelTickEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -62,7 +52,7 @@ import java.util.UUID;
  * Per-run stat tracking for the death-screen summary. All increments live
  * server-side on {@link PlayerRunState} and survive logout via the
  * attachment codec; they are cleared on respawn by
- * {@link AchievementEvents#onPlayerRespawn(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerRespawnEvent)}.
+ * {@link AchievementEvents#onPlayerRespawn(PlayerRespawnEvent)}.
  *
  * <p>Hooks:</p>
  * <ul>

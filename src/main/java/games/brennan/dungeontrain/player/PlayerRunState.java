@@ -59,7 +59,7 @@ import java.util.UUID;
  *
  * <p>Persisted via {@link #CODEC} so the streak survives logout / world
  * reload. Manually cleared by {@code AchievementEvents} on
- * {@link net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerRespawnEvent}
+ * {@link PlayerRespawnEvent}
  * — NeoForge does NOT auto-copy player attachments across the respawn
  * clone, so "do nothing" already gives us the reset; we explicitly null
  * out anyway to be defensive.</p>

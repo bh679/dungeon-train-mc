@@ -17,7 +17,7 @@ import java.util.Optional;
  * {@link #trigger(ServerPlayer)} unconditionally satisfies any instance.
  *
  * <p>Fired from {@link games.brennan.dungeontrain.event.AchievementEvents}
- * on {@link net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent};
+ * on {@link PlayerLoggedInEvent};
  * vanilla advancement dedupe keeps it to a single grant per player.</p>
  *
  * <p>JSON shape:

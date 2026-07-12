@@ -5,10 +5,6 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.LetterDraftToLecternPacket;
 import net.minecraft.client.gui.screens.inventory.BookEditScreen;
 import net.minecraft.core.BlockPos;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ScreenEvent;
 
 /**
  * Client-side close detection for the lectern-letter sign screen. When a {@link BookEditScreen} that

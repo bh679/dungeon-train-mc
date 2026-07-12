@@ -90,7 +90,7 @@ public final class PendingInventory {
      * Re-apply the captured inventory + experience onto {@code player}, then
      * clear the holder (one-shot). Slots that fail to parse are skipped so a
      * single bad stack can't drop the whole carry. Intended for the new world's
-     * first {@link net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent}.
+     * first {@link PlayerLoggedInEvent}.
      */
     public static void restore(ServerPlayer player) {
         try {

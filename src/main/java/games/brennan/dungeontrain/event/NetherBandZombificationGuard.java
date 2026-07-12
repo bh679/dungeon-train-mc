@@ -7,9 +7,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.monster.hoglin.Hoglin;
 import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.level.Level;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.tick.EntityTickEvent;
 
 /**
  * Makes piglins, piglin brutes and hoglins behave like they're in the real Nether while they

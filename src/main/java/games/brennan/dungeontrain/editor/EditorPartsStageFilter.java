@@ -1,9 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.DungeonTrain;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
 /**
  * The single, <b>global</b> "hide part plots not used by the focused stage" toggle for the in-game
