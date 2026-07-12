@@ -4336,6 +4336,19 @@
       "released": true,
       "released_in": "v0.447.0",
       "released_at": "2026-07-12T11:30:47Z"
+    },
+    {
+      "id": "welcome-back-nether-end-fix",
+      "version": "0.448.0",
+      "type": "fix",
+      "title": "Welcome Back no longer needs a Nether/End start",
+      "summary": "The Welcome Back advancement could get stuck requiring a starting book that only ever showed up if your world began in the Nether or the End \u2014 dimensions you can no longer pick when creating a new world. Welcome Back now only asks for books you can actually still encounter.",
+      "highlights": [],
+      "pr": 738,
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
