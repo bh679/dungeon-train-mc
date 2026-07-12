@@ -287,11 +287,10 @@ public final class PrefabUseHandler {
      * holding a matching prefab stack is the placer. Falls through silently
      * for entities spawned by other means (mob spawn, chunk load, etc.).</p>
      */
-    @SubscribeEvent
-    public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
-        if (event.getLevel().isClientSide) return;
-        if (!(event.getLevel() instanceof ServerLevel serverLevel)) return;
-        Entity entity = event.getEntity();
+        public static void onEntityJoinLevel(net.minecraft.world.entity.Entity joiningEntity, net.minecraft.world.level.Level joinLevel, boolean loadedFromDisk) {
+        if (joinLevel.isClientSide) return;
+        if (!(joinLevel instanceof ServerLevel serverLevel)) return;
+        Entity entity = joiningEntity;
         net.minecraft.world.item.Item placerItem = placerItemFor(entity);
         if (placerItem == null) return;
 

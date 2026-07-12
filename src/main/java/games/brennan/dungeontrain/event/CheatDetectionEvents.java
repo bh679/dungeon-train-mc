@@ -52,7 +52,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see RunIntegrity
  * @see CommandAllowlist
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CheatDetectionEvents {
 
     /** A tainting command held per-player while its Free Play confirmation is open. */
@@ -136,12 +135,10 @@ public final class CheatDetectionEvents {
      * clear}, milk, or any cure while the run is still Free Play. (Once a new
      * world clears the flag the effect isn't present to remove.)
      */
-    @SubscribeEvent
-    public static void onEffectRemove(MobEffectEvent.Remove event) {
-        if (!event.getEffect().is(ModMobEffects.FREE_PLAY.getId())) return;
-        if (event.getEntity() instanceof ServerPlayer player && RunIntegrity.isCheated(player)) {
-            event.setCanceled(true);
-        }
+    public static boolean onEffectRemove(net.minecraft.world.entity.LivingEntity effectEntity,
+                                         net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> effect) {
+        if (!effect.is(ModMobEffects.FREE_PLAY.getId())) return false;
+        return effectEntity instanceof ServerPlayer player && RunIntegrity.isCheated(player);
     }
 
     private static void markGameModeFreePlay(ServerPlayer player, GameType mode) {

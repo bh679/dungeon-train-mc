@@ -183,4 +183,28 @@ public final class DtEvents {
     public static final DtEvent<DtPlayerChangeGameModeCallback> PLAYER_CHANGE_GAMEMODE =
         new DtEvent<>();
 
+    // ---- Cancellable entity/effect events (Stage 2b) ----------------------
+
+    /**
+     * Entity join level — NeoForge {@code EntityJoinLevelEvent} (CANCELLABLE).
+     * Fires as an entity is added to a level (client and server; handlers
+     * self-filter). All seven DT handlers were NORMAL priority and none used
+     * {@code receiveCanceled}. The callback returns {@code true} to cancel;
+     * {@code NeoForgeEntityJoinBridge} stops at the first {@code true} and maps it
+     * to {@code event.setCanceled(true)} — reproducing the old stop-on-cancel.
+     * Only {@code NetherBandBehaviourEvents} (lightning, falling blocks) cancels.
+     */
+    public static final DtEvent<DtEntityJoinCallback> ENTITY_JOIN =
+        new DtEvent<>();
+
+    /**
+     * Mob-effect remove — NeoForge {@code MobEffectEvent.Remove} (CANCELLABLE).
+     * Server thread. DT's only handler ({@code CheatDetectionEvents}, NORMAL, no
+     * {@code receiveCanceled}) cancels removal of the permanent Free Play effect.
+     * Callback returns {@code true} to cancel; the bridge maps that to
+     * {@code event.setCanceled(true)}.
+     */
+    public static final DtEvent<DtMobEffectRemoveCallback> MOB_EFFECT_REMOVE =
+        new DtEvent<>();
+
 }

@@ -91,7 +91,6 @@ import java.util.function.Consumer;
  * doesn't expose lightning recoloring, so we composite the tint on top of the
  * white bolt.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class StartingBookEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -489,10 +488,9 @@ public final class StartingBookEvents {
      *       guard against double-registration if an event somehow fires twice.</li>
      * </ul>
      */
-    @SubscribeEvent
-    public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
-        if (event.getLevel().isClientSide()) return;
-        if (!(event.getEntity() instanceof ItemEntity item)) return;
+        public static void onEntityJoinLevel(net.minecraft.world.entity.Entity joiningEntity, net.minecraft.world.level.Level joinLevel, boolean loadedFromDisk) {
+        if (joinLevel.isClientSide()) return;
+        if (!(joiningEntity instanceof ItemEntity item)) return;
         ItemStack stack = item.getItem();
         if (!BurnableBookTag.isBurnable(stack)) return;
         if (item.getPersistentData().getBoolean(ENTITY_TAG_SPAWN_BOOK)) return;

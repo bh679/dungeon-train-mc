@@ -51,6 +51,41 @@ public final class NeoForgeServerEvents {
         registerServerLifecycle();
         registerTicks();
         registerPlayerConnection();
+        registerCancellable();
+    }
+
+    /**
+     * Cancellable events: {@code EntityJoinLevelEvent} and
+     * {@code MobEffectEvent.Remove}, fired by {@code NeoForgeEntityJoinBridge}.
+     * All handlers were NORMAL priority and none used {@code receiveCanceled}, so
+     * the bridge stops at the first callback that returns {@code true}. The five
+     * non-cancelling entity-join handlers keep {@code void} bodies and are wrapped
+     * in a {@code return false} adapter here (only {@code NetherBandBehaviourEvents}
+     * actually returns a cancel decision). Cancellers are registered last so the
+     * observers always run — semantically identical since a cancelled join discards
+     * the entity the observers would ignore anyway.
+     */
+    private static void registerCancellable() {
+        // EntityJoinLevelEvent — non-cancelling observers (void → return false adapters)
+        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
+            .register((e, l, d) -> { games.brennan.dungeontrain.event.ContentsEntityDiagnostics.onEntityJoin(e, l, d); return false; });
+        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
+            .register((e, l, d) -> { games.brennan.dungeontrain.event.MobDifficultyEvents.onEntityJoin(e, l, d); return false; });
+        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
+            .register((e, l, d) -> { games.brennan.dungeontrain.event.PrefabUseHandler.onEntityJoinLevel(e, l, d); return false; });
+        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
+            .register((e, l, d) -> { games.brennan.dungeontrain.event.StartingBookEvents.onEntityJoinLevel(e, l, d); return false; });
+        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
+            .register((e, l, d) -> { games.brennan.dungeontrain.event.VillagerTrainSpawnEvents.onEntityJoin(e, l, d); return false; });
+        // EntityJoinLevelEvent — cancelling handlers (return true = cancel)
+        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
+            .register(games.brennan.dungeontrain.event.NetherBandBehaviourEvents::onEntityJoin);
+        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
+            .register(games.brennan.dungeontrain.event.NetherBandBehaviourEvents::onFallingBlock);
+
+        // MobEffectEvent.Remove — single cancelling handler
+        games.brennan.dungeontrain.platform.event.DtEvents.MOB_EFFECT_REMOVE
+            .register(games.brennan.dungeontrain.event.CheatDetectionEvents::onEffectRemove);
     }
 
     /**

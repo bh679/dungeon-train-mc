@@ -45,21 +45,19 @@ import org.slf4j.Logger;
  * the applier only fills empty equipment slots and only adds effects per the
  * configured tier's chance rolls.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class MobDifficultyEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private MobDifficultyEvents() {}
 
-    @SubscribeEvent
-    public static void onEntityJoin(EntityJoinLevelEvent event) {
-        Level level = event.getLevel();
+        public static void onEntityJoin(net.minecraft.world.entity.Entity joiningEntity, net.minecraft.world.level.Level joinLevel, boolean loadedFromDisk) {
+        Level level = joinLevel;
         if (!(level instanceof ServerLevel serverLevel)) return;
-        if (event.loadedFromDisk()) return;
+        if (loadedFromDisk) return;
         if (!DungeonTrainConfig.getDifficultyEnabled()) return;
 
-        Entity entity = event.getEntity();
+        Entity entity = joiningEntity;
         if (!(entity instanceof Mob mob)) return;
         if (!(mob instanceof Enemy)) return;
         if (!TrainMembership.isOnTrain(mob)) return;

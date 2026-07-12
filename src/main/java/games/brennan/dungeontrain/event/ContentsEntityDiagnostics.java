@@ -54,12 +54,11 @@ public final class ContentsEntityDiagnostics {
         return null;
     }
 
-    @SubscribeEvent
-    public static void onEntityJoin(EntityJoinLevelEvent event) {
+        public static void onEntityJoin(net.minecraft.world.entity.Entity joiningEntity, net.minecraft.world.level.Level joinLevel, boolean loadedFromDisk) {
         if (!DebugFlags.logContentsEntities()) return;
-        Level level = event.getLevel();
+        Level level = joinLevel;
         if (level.isClientSide) return;
-        Entity entity = event.getEntity();
+        Entity entity = joiningEntity;
         String tag = contentsTag(entity);
         if (tag == null) return;
         long spawnTick = entity.getPersistentData().getLong(CarriageContentsPlacer.NBT_SPAWN_GAME_TICK);

@@ -46,15 +46,16 @@ public final class NetherBandBehaviourEvents {
 
     private NetherBandBehaviourEvents() {}
 
-    /** Cancel lightning strikes inside the Nether core — no weather in the Nether. */
-    @SubscribeEvent
-    public static void onEntityJoin(EntityJoinLevelEvent event) {
-        if (!(event.getEntity() instanceof LightningBolt bolt)) return;
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
-        if (!level.dimension().equals(Level.OVERWORLD)) return;
-        if (NetherBand.isInNetherBiome(level, (int) Math.floor(bolt.getX()))) {
-            event.setCanceled(true);
-        }
+    /**
+     * Cancel lightning strikes inside the Nether core — no weather in the Nether.
+     * Returns {@code true} to cancel the entity's join (mirrors the former
+     * {@code event.setCanceled(true)}); the bridge maps that to the real event.
+     */
+    public static boolean onEntityJoin(net.minecraft.world.entity.Entity joiningEntity, net.minecraft.world.level.Level joinLevel, boolean loadedFromDisk) {
+        if (!(joiningEntity instanceof LightningBolt bolt)) return false;
+        if (!(joinLevel instanceof ServerLevel level)) return false;
+        if (!level.dimension().equals(Level.OVERWORLD)) return false;
+        return NetherBand.isInNetherBiome(level, (int) Math.floor(bolt.getX()));
     }
 
     /**
@@ -66,12 +67,11 @@ public final class NetherBandBehaviourEvents {
      * air), so it never reaches the rails. Confined to the train corridor's Z-span, so gravel
      * falling elsewhere in the Nether core behaves normally.
      */
-    @SubscribeEvent
-    public static void onFallingBlock(EntityJoinLevelEvent event) {
-        if (!(event.getEntity() instanceof FallingBlockEntity falling)) return;
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
-        if (!level.dimension().equals(Level.OVERWORLD)) return;
-        if (!NetherBand.isInNetherBiome(level, Mth.floor(falling.getX()))) return;
+    public static boolean onFallingBlock(net.minecraft.world.entity.Entity joiningEntity, net.minecraft.world.level.Level joinLevel, boolean loadedFromDisk) {
+        if (!(joiningEntity instanceof FallingBlockEntity falling)) return false;
+        if (!(joinLevel instanceof ServerLevel level)) return false;
+        if (!level.dimension().equals(Level.OVERWORLD)) return false;
+        if (!NetherBand.isInNetherBiome(level, Mth.floor(falling.getX()))) return false;
 
         // Only inside the train corridor's airspace — a falling block in this Z-span drops onto the
         // track (or past it into lava); elsewhere in the core gravel is harmless and left alone.
@@ -79,10 +79,10 @@ public final class NetherBandBehaviourEvents {
         TrackGeometry g = TrackGeometry.from(data.dims(), data.getTrainY());
         TunnelGeometry tg = TunnelGeometry.from(g);
         int z = Mth.floor(falling.getZ());
-        if (z < tg.airMinZ() || z > tg.airMaxZ()) return;
-        if (Mth.floor(falling.getY()) < g.bedY()) return;   // below the track — not a rail threat
+        if (z < tg.airMinZ() || z > tg.airMaxZ()) return false;
+        if (Mth.floor(falling.getY()) < g.bedY()) return false;   // below the track — not a rail threat
 
-        event.setCanceled(true); // gravel never lands on the rails in the Nether core
+        return true; // gravel never lands on the rails in the Nether core
     }
 
     /** Dry a wet sponge placed in the Nether core, exactly as ultraWarm dimensions do. */

@@ -61,7 +61,6 @@ import java.util.Random;
  * levels {@code 1..N} and sample up to 2 listings per level, mirroring vanilla
  * {@code Villager#addOffersFromItemListings} behaviour at each level-up.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class VillagerTrainSpawnEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -94,12 +93,11 @@ public final class VillagerTrainSpawnEvents {
 
     private VillagerTrainSpawnEvents() {}
 
-    @SubscribeEvent
-    public static void onEntityJoin(EntityJoinLevelEvent event) {
-        Level level = event.getLevel();
+        public static void onEntityJoin(net.minecraft.world.entity.Entity joiningEntity, net.minecraft.world.level.Level joinLevel, boolean loadedFromDisk) {
+        Level level = joinLevel;
         if (!(level instanceof ServerLevel serverLevel)) return;
 
-        Entity entity = event.getEntity();
+        Entity entity = joiningEntity;
         if (!(entity instanceof Villager villager)) return;
         if (!TrainMembership.isOnTrain(villager)) return;
 
