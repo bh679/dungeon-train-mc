@@ -215,6 +215,15 @@ public final class NeoForgeClientEvents {
         DtEvents.MOUSE_SCROLL
             .register(games.brennan.dungeontrain.client.CinematicInputHandler::onMouseScroll);
 
+        // EntityInteract / AttackEntity — client-only snapshot observers (registered here, not in
+        // NeoForgeServerEvents, so the client class never loads on a dedicated server; they self-guard
+        // on isClientSide anyway). The shared interact/attack bridges fire these on both sides; the
+        // buckets are client-populated only.
+        DtEvents.ENTITY_INTERACT
+            .register(games.brennan.dungeontrain.client.snapshot.RideSnapshotDirector::onEntityInteract);
+        DtEvents.ATTACK_ENTITY
+            .register(games.brennan.dungeontrain.client.snapshot.RideSnapshotDirector::onAttackEntity);
+
         // RightClickBlock HIGHEST tier — client-only menu canceller (registered here, not in
         // NeoForgeServerEvents, so the client class never loads on a dedicated server). The shared
         // NeoForgeRightClickBlockBridge fires the HIGHEST tier on both sides; the bucket is empty

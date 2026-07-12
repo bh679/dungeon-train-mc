@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.client.version;
 import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.mojang.logging.LogUtils;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.nio.file.Files;

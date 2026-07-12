@@ -7,7 +7,6 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -160,8 +159,8 @@ public final class WorldInfoReporter {
      */
     static List<ModEntry> installedMods() {
         List<ModEntry> out = new ArrayList<>();
-        for (var info : ModList.get().getMods()) {
-            out.add(new ModEntry(info.getModId(), info.getVersion().toString()));
+        for (var info : DtPlatform.get().getLoadedMods()) {
+            out.add(new ModEntry(info.id(), info.version()));
         }
         out.sort(Comparator.comparing(ModEntry::modId));
         return out;

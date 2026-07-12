@@ -25,13 +25,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.DecoratedPotBlock;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
  * Decides <em>when</em> a ride snapshot is taken (it does not build the pose —
@@ -73,7 +66,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  * <p>Lighting + framing are enforced at render time; a request that can't find a
  * lit, clip-free, player-in-view angle is silently skipped and retried.</p>
  */
-@EventBusSubscriber(modid = DtCore.MOD_ID, value = Dist.CLIENT)
 public final class RideSnapshotDirector {
 
     private static final double RIDE_RANGE = 24.0;
@@ -318,16 +310,17 @@ public final class RideSnapshotDirector {
 
     // ── Event-driven triggers (robust to the Sable tick/render coordinate split) ──
 
-    @SubscribeEvent
-    public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-        if (!event.getLevel().isClientSide() || !ClientDisplayConfig.isRideSnapshotsEnabled()) return;
-        if (event.getTarget() instanceof PlayerMobEntity) socialPending = true; // gift / interaction
+    public static void onEntityInteract(net.minecraft.world.entity.player.Player player,
+            net.minecraft.world.level.Level level, net.minecraft.world.item.ItemStack item,
+            net.minecraft.world.entity.Entity target) {
+        if (!level.isClientSide() || !ClientDisplayConfig.isRideSnapshotsEnabled()) return;
+        if (target instanceof PlayerMobEntity) socialPending = true; // gift / interaction
     }
 
-    @SubscribeEvent
-    public static void onAttackEntity(AttackEntityEvent event) {
-        if (!event.getEntity().level().isClientSide() || !ClientDisplayConfig.isRideSnapshotsEnabled()) return;
-        if (event.getTarget() instanceof Mob) combatPending = true; // first strike
+    public static void onAttackEntity(net.minecraft.world.entity.player.Player player,
+            net.minecraft.world.entity.Entity target, boolean canceled) {
+        if (!player.level().isClientSide() || !ClientDisplayConfig.isRideSnapshotsEnabled()) return;
+        if (target instanceof Mob) combatPending = true; // first strike
     }
 
     public static boolean onLeftClickBlock(net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos) {

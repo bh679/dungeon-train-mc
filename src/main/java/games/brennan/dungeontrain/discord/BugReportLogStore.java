@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.DtCore;
 import com.mojang.logging.LogUtils;
 
 import games.brennan.dungeontrain.net.BugReportLogsPacket.LogBlob;
-import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -91,9 +90,7 @@ public final class BugReportLogStore {
     }
 
     private static String modVersion() {
-        return ModList.get().getModContainerById(DtCore.MOD_ID)
-                .map(c -> c.getModInfo().getVersion().toString())
-                .orElse("unknown");
+        return DtPlatform.get().getModVersion(DtCore.MOD_ID).orElse("unknown");
     }
 
     private static String shortId(UUID uuid) {
