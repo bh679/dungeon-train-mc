@@ -88,10 +88,11 @@ public class DungeonTrain {
 
         ModCreativeTabs.init();
         ModFeatures.init();
-        // ModMobEffects stays on DeferredRegister directly: its callers
-        // (WarmthOfTheFireTooltip, FreePlayTooltip, CheatDetectionEvents) need
-        // DeferredHolder#getId(), which a plain Supplier does not expose.
-        ModMobEffects.register(modBus);
+        // ModMobEffects now registers via DtRegistrar.registerForHolder (its
+        // callers consume Holder<MobEffect>, which the seam hands back), so it is
+        // attached below via NeoForgeRegistrar.attachAll like the other converted
+        // registries — same timing as the old per-class register(modBus).
+        ModMobEffects.init();
         ModSounds.init();
 
         // Global achievements (advancements) — custom criterion triggers

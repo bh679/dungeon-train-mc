@@ -131,7 +131,7 @@ public final class CheatDetectionEvents {
      */
     public static boolean onEffectRemove(net.minecraft.world.entity.LivingEntity effectEntity,
                                          net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> effect) {
-        if (!effect.is(ModMobEffects.FREE_PLAY.getId())) return false;
+        if (!effect.is(ModMobEffects.FREE_PLAY)) return false;
         return effectEntity instanceof ServerPlayer player && RunIntegrity.isCheated(player);
     }
 

@@ -55,6 +55,29 @@ public interface DtRegistrar {
      */
     <T, I extends T> Supplier<I> register(ResourceKey<? extends Registry<T>> registryKey, String name, Supplier<I> factory);
 
+    /**
+     * Register {@code factory} under {@code name} and hand back a vanilla
+     * {@link Holder}{@code <T>} (rather than the bare {@link Supplier} of
+     * {@link #register}). For entries in a <em>vanilla</em> {@code Registry<T>}
+     * whose callers consume the entry as a {@code Holder<T>} — e.g.
+     * {@code new MobEffectInstance(holder, …)} and {@code Holder.is(holder)} —
+     * which a {@code Supplier} cannot supply.
+     *
+     * <p>The NeoForge impl returns the {@code DeferredHolder<T, I>} directly: it
+     * IS a {@code Holder<T>} (and also a {@code Supplier<I>}), so registration
+     * timing and the deferred-resolution contract are identical to
+     * {@link #register}. A future Fabric impl returns the {@code Holder<T>} from
+     * {@code Registry.registerForHolder(registry, id, value)} — the vanilla
+     * register-and-hand-back-a-Holder primitive.</p>
+     *
+     * <p>Only valid for vanilla registry keys (a real {@code Registry<T>} the
+     * loader can hand a {@code Holder} for) — not for NeoForge-only registries
+     * like {@code AttachmentType}.</p>
+     */
+    // NB fully-qualified: the nested ServiceLoader Holder class below shadows the
+    // simple name net.minecraft.core.Holder inside this interface body.
+    <T, I extends T> net.minecraft.core.Holder<T> registerForHolder(ResourceKey<? extends Registry<T>> registryKey, String name, Supplier<I> factory);
+
     /** The loader-provided singleton, resolved lazily on first use. */
     static DtRegistrar get() {
         return Holder.INSTANCE;

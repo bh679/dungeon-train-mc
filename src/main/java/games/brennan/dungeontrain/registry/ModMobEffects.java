@@ -1,50 +1,39 @@
 package games.brennan.dungeontrain.registry;
-import games.brennan.dungeontrain.DtCore;
 
+import games.brennan.dungeontrain.platform.DtRegistrar;
 import games.brennan.dungeontrain.registry.effect.FreePlayEffect;
 import games.brennan.dungeontrain.registry.effect.WarmthOfTheFireEffect;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.effect.MobEffect;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
- * Mod-side {@link MobEffect} registry. Mirrors {@link ModSounds}'s
- * {@link DeferredRegister} pattern.
+ * Mod-side {@link MobEffect} registry. Registered via {@link DtRegistrar}
+ * (loader-neutral) — see {@link ModSounds} /
+ * {@link games.brennan.dungeontrain.advancement.ModAdvancementTriggers} for the
+ * pattern and the root attach timing.
  *
- * <p><b>Stays on {@code DeferredRegister} (root), NOT converted to
- * {@link games.brennan.dungeontrain.platform.DtRegistrar}.</b> Although
- * {@code Registries.MOB_EFFECT} is a vanilla registry key (so registration
- * itself could route through {@code DtRegistrar}), every caller consumes the
- * entry as a {@code Holder<MobEffect>} — {@code new MobEffectInstance(HOLDER,…)}
- * and {@code Holder.is(…)} — which the {@code DeferredHolder} fields below
- * satisfy for free (a {@code DeferredHolder} IS a {@code Holder}), whereas
- * {@code DtRegistrar.register} returns only a bare {@code Supplier<T>}. Three
- * call sites additionally use NeoForge-specific {@code DeferredHolder.getId()}
- * (replaceable with vanilla {@code Holder.is(Holder)}, but incidental). None of
- * the five callers are on the Stage 4c core-loop critical path, so per the
- * Fabric-port annex this registry is left root and chipped around; a future
- * conversion would either widen {@code DtRegistrar} to hand back a
- * {@code Holder} for vanilla registries, or expose {@code ResourceKey<MobEffect>}
- * constants in {@code :common} resolved via {@code BuiltInRegistries} at use-site.</p>
+ * <p>{@code Registries.MOB_EFFECT} is a vanilla registry key, and every caller
+ * consumes each entry as a {@code Holder<MobEffect>} — {@code new
+ * MobEffectInstance(HOLDER, …)} and {@code Holder.is(HOLDER)} — so registration
+ * routes through {@link DtRegistrar#registerForHolder}, which hands back a
+ * vanilla {@link Holder} (the NeoForge impl returns the underlying
+ * {@code DeferredHolder}, which IS a {@code Holder}; a Fabric impl returns the
+ * {@code Holder} from {@code Registry.registerForHolder}). The former
+ * {@code DeferredHolder.getId()} call sites now use vanilla
+ * {@code Holder.is(Holder)} instead.</p>
  */
 public final class ModMobEffects {
 
-    public static final DeferredRegister<MobEffect> MOB_EFFECTS =
-        DeferredRegister.create(Registries.MOB_EFFECT, DtCore.MOD_ID);
-
-    public static final DeferredHolder<MobEffect, WarmthOfTheFireEffect> WARMTH_OF_THE_FIRE =
-        MOB_EFFECTS.register("warmth_of_the_fire", WarmthOfTheFireEffect::new);
+    public static final Holder<MobEffect> WARMTH_OF_THE_FIRE = DtRegistrar.get().registerForHolder(
+        Registries.MOB_EFFECT, "warmth_of_the_fire", WarmthOfTheFireEffect::new);
 
     /** "Free Play" — run-scoped marker shown while the run is unranked. */
-    public static final DeferredHolder<MobEffect, FreePlayEffect> FREE_PLAY =
-        MOB_EFFECTS.register("free_play", FreePlayEffect::new);
+    public static final Holder<MobEffect> FREE_PLAY = DtRegistrar.get().registerForHolder(
+        Registries.MOB_EFFECT, "free_play", FreePlayEffect::new);
 
     private ModMobEffects() {}
 
-    /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */
-    public static void register(IEventBus modBus) {
-        MOB_EFFECTS.register(modBus);
-    }
+    /** Call from the mod constructor to force this class's static fields (and their registrations) to run. */
+    public static void init() {}
 }

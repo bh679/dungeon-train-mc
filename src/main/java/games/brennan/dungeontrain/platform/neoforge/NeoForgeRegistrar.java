@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.platform.DtRegistrar;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.LinkedHashMap;
@@ -38,6 +39,20 @@ public final class NeoForgeRegistrar implements DtRegistrar {
     @Override
     public <T, I extends T> Supplier<I> register(ResourceKey<? extends Registry<T>> registryKey, String name, Supplier<I> factory) {
         return registerStatic(registryKey, name, factory);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    // FQN net.minecraft.core.Holder: DtRegistrar's inherited nested ServiceLoader
+    // Holder class shadows the simple name here.
+    public <T, I extends T> net.minecraft.core.Holder<T> registerForHolder(ResourceKey<? extends Registry<T>> registryKey, String name, Supplier<I> factory) {
+        // DeferredRegister.register returns a DeferredHolder<T, I> — which IS a
+        // Holder<T> (and a Supplier<I>). Same DeferredRegister timing as register();
+        // we just hand back the Holder view instead of the Supplier view.
+        DeferredRegister<T> register = (DeferredRegister<T>) REGISTERS.computeIfAbsent(
+            registryKey, key -> DeferredRegister.create((ResourceKey<? extends Registry<T>>) key, DtCore.MOD_ID));
+        DeferredHolder<T, I> holder = register.register(name, factory);
+        return holder;
     }
 
     @SuppressWarnings("unchecked")

@@ -15,7 +15,7 @@ public final class WarmthOfTheFireTooltip {
     private WarmthOfTheFireTooltip() {}
 
     public static void onGatherEffectTooltips(net.minecraft.world.effect.MobEffectInstance effect, java.util.List<net.minecraft.network.chat.Component> tooltip) {
-        if (!effect.getEffect().is(ModMobEffects.WARMTH_OF_THE_FIRE.getId())) return;
+        if (!effect.getEffect().is(ModMobEffects.WARMTH_OF_THE_FIRE)) return;
         tooltip.add(
             Component.translatable("effect.dungeontrain.warmth_of_the_fire.description")
                 .withStyle(ChatFormatting.GRAY));

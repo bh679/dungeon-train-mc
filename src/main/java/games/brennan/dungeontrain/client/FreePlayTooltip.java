@@ -17,7 +17,7 @@ public final class FreePlayTooltip {
     private FreePlayTooltip() {}
 
     public static void onGatherEffectTooltips(net.minecraft.world.effect.MobEffectInstance effect, java.util.List<net.minecraft.network.chat.Component> tooltip) {
-        if (!effect.getEffect().is(ModMobEffects.FREE_PLAY.getId())) return;
+        if (!effect.getEffect().is(ModMobEffects.FREE_PLAY)) return;
         tooltip.add(
             Component.translatable("effect.dungeontrain.free_play.desc.1").withStyle(ChatFormatting.GRAY));
         tooltip.add(
