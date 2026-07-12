@@ -2,12 +2,12 @@ package games.brennan.dungeontrain.difficulty;
 
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.player.PlayerRunState;
-import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Locale;
 import java.util.Set;
+import games.brennan.dungeontrain.platform.DtAttachments;
 
 /**
  * Shared difficulty-progression math: how far the current run has progressed,
@@ -41,7 +41,7 @@ public final class DifficultyProgression {
         int max = 0;
         boolean any = false;
         for (ServerPlayer player : serverLevel.getServer().getPlayerList().getPlayers()) {
-            int t = ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).travelledCarriageIndex();
+            int t = DtAttachments.PLAYER_RUN_STATE.get(player).travelledCarriageIndex();
             if (!any || Math.abs(t) > Math.abs(max)) {
                 max = t;
                 any = true;

@@ -10,7 +10,6 @@ import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.player.PlayerRunState;
-import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -26,6 +25,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 
 import java.util.Optional;
+import games.brennan.dungeontrain.platform.DtAttachments;
 
 /**
  * Detects when a player opens a narrative-tagged book and advances the
@@ -219,7 +219,7 @@ public final class NarrativeBookEvents {
      */
     public static void countLecternBookForRun(ServerPlayer player, NarrativeBookTag.NarrativeIdentity id) {
         String key = id.storyBasename() + "#" + id.letterIndex();
-        PlayerRunState run = ModDataAttachments.DT_PLAYER_RUN_STATE.get(player);
+        PlayerRunState run = DtAttachments.PLAYER_RUN_STATE.get(player);
         if (run.recordNarrativeRead(key)) {
             run.incrementBooksRead();
         }
@@ -235,7 +235,7 @@ public final class NarrativeBookEvents {
     public static void countPlayerSeriesLetterForRun(ServerPlayer player,
                                                      PlayerNarrativeBookTag.PlayerNarrativeIdentity pid) {
         String key = "pnarr:" + pid.seriesId() + "#" + pid.letterIndex();
-        PlayerRunState run = ModDataAttachments.DT_PLAYER_RUN_STATE.get(player);
+        PlayerRunState run = DtAttachments.PLAYER_RUN_STATE.get(player);
         if (run.recordNarrativeRead(key)) {
             run.incrementBooksRead();
         }

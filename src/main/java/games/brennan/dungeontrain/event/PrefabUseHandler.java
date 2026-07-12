@@ -16,7 +16,6 @@ import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.EntityVariantApplicator;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.editor.VariantState;
-import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
@@ -45,6 +44,7 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import games.brennan.dungeontrain.platform.DtAttachments;
 
 /**
  * Forge event handlers that interpret prefab discriminator NBT on vanilla
@@ -229,7 +229,7 @@ public final class PrefabUseHandler {
         // Effective (offset-inclusive) progress so a placed container rolls at the
         // player's admin-set difficulty too, matching the naturally-generated carriages.
         int placedCarriageIndex = DifficultyProgression.effectiveTravelled(
-            ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).travelledCarriageIndex());
+            DtAttachments.PLAYER_RUN_STATE.get(player).travelledCarriageIndex());
         CompoundTag baseNbt = be.saveWithFullMetadata(serverLevel.registryAccess());
         CompoundTag rolled = ContainerContentsRoller.roll(
             loaded.get().pool(), placedState, pos, worldSeed, placedCarriageIndex, baseNbt,

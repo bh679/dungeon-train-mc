@@ -4,7 +4,6 @@ import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.discord.LetterReporter;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
-import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -21,6 +20,7 @@ import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.List;
+import games.brennan.dungeontrain.platform.DtAttachments;
 
 /**
  * Sign-time handling for a player-written lectern letter (invoked from the sign mixin when the sign
@@ -95,7 +95,7 @@ public final class LetterSigning {
         }
 
         // Count it for the death-screen "books written" cargo tally (a book was authored + signed).
-        ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).incrementBooksWritten();
+        DtAttachments.PLAYER_RUN_STATE.get(player).incrementBooksWritten();
 
         player.sendSystemMessage(Component.literal("\"" + finalTitle + "\" is sealed and sent — Letter "
                 + series.letterIndex() + " of this life.").withStyle(ChatFormatting.GRAY));

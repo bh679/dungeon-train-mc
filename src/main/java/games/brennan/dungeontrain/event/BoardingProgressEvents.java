@@ -9,7 +9,6 @@ import games.brennan.dungeontrain.net.BoardingProgressPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.player.PlayerBiomeProgress;
 import games.brennan.dungeontrain.player.PlayerRunState;
-import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.Trains;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceKey;
@@ -27,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import games.brennan.dungeontrain.platform.DtAttachments;
 
 /**
  * Advances {@link BoardingProgressData}'s travelled-carriage counter based
@@ -146,7 +146,7 @@ public final class BoardingProgressEvents {
                 // resets on death. Twin of the cross-world train-time above —
                 // also frozen while dead so the death screen doesn't rack up run time.
                 if (p.isAlive()) {
-                    long runTrainTicks = ModDataAttachments.DT_PLAYER_RUN_STATE.get(p)
+                    long runTrainTicks = DtAttachments.PLAYER_RUN_STATE.get(p)
                         .addTrainTimeTicks(SCAN_PERIOD_TICKS);
                     AchievementEvents.notifyRunTrainTime(p, runTrainTicks);
                 }
@@ -178,7 +178,7 @@ public final class BoardingProgressEvents {
                 // (max across players, resets on respawn). Signed delta —
                 // backward movement reduces tier just like the global
                 // counter did before.
-                PlayerRunState leaderRun = ModDataAttachments.DT_PLAYER_RUN_STATE.get(leaderPlayer);
+                PlayerRunState leaderRun = DtAttachments.PLAYER_RUN_STATE.get(leaderPlayer);
                 leaderRun.advanceTravelled(delta);
             }
             leaderOffTrainScans = 0;
@@ -273,7 +273,7 @@ public final class BoardingProgressEvents {
         if (delta <= 0.0 || delta >= MAX_DELTA_PER_SCAN || !Double.isFinite(delta)) return;
         // Per-run (single-life) distance — death-screen stat + single-life
         // distance advancements.
-        double runMeters = ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).addDistance(delta);
+        double runMeters = DtAttachments.PLAYER_RUN_STATE.get(player).addDistance(delta);
         AchievementEvents.notifyRunDistance(player, runMeters);
         // Lifetime distance — the same delta, accrued across all worlds/sessions.
         // Global stat: frozen for cheated runs (per-run distance above still ticks).
@@ -299,7 +299,7 @@ public final class BoardingProgressEvents {
         if (key.isEmpty()) return;
         ResourceLocation id = key.get().location();
 
-        PlayerBiomeProgress progress = ModDataAttachments.DT_PLAYER_BIOME_PROGRESS.get(player);
+        PlayerBiomeProgress progress = DtAttachments.PLAYER_BIOME_PROGRESS.get(player);
         if (progress.addBiome(id)) {
             AchievementEvents.notifyBiomesVisited(player, progress.biomeCount());
         }
@@ -315,7 +315,7 @@ public final class BoardingProgressEvents {
             // Effective (offset-inclusive) progress so the HUD Diff-Car/Diff-Level and
             // the Discord level-up post reflect an admin difficulty offset.
             int travelled = DifficultyProgression.effectiveTravelled(
-                ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).travelledCarriageIndex());
+                DtAttachments.PLAYER_RUN_STATE.get(player).travelledCarriageIndex());
             Integer last = LAST_BROADCAST.get(player.getUUID());
             if (last != null && last == travelled) continue;
             LAST_BROADCAST.put(player.getUUID(), travelled);
@@ -332,7 +332,7 @@ public final class BoardingProgressEvents {
     /** Send a player a snapshot packet for their current (offset-inclusive) travelled value. */
     public static void sendPlayerHudPacket(ServerPlayer player) {
         int travelled = DifficultyProgression.effectiveTravelled(
-            ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).travelledCarriageIndex());
+            DtAttachments.PLAYER_RUN_STATE.get(player).travelledCarriageIndex());
         LAST_BROADCAST.put(player.getUUID(), travelled);
         LAST_NOTIFIED_TIER.put(player.getUUID(), DifficultyProgression.tierForTravelled(travelled));
         DungeonTrainNet.sendTo(player, packetFor(travelled));

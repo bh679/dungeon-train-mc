@@ -2,11 +2,11 @@ package games.brennan.dungeontrain.compat;
 import games.brennan.dungeontrain.platform.DtPlatform;
 
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
-import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import java.util.UUID;
+import games.brennan.dungeontrain.platform.DtAttachments;
 
 /**
  * Builds the plain-text game-state line Dungeon Train appends below each Discord advancement
@@ -40,7 +40,7 @@ public final class DiscordAdvancementSuffix {
         // Difficulty level: the player's personal tier — identical to the HUD difficulty read-out
         // (DifficultyProgression.tierForTravelled of their EFFECTIVE, offset-inclusive counter).
         int tier = DifficultyProgression.tierForTravelled(DifficultyProgression.effectiveTravelled(
-                ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).travelledCarriageIndex()));
+                DtAttachments.PLAYER_RUN_STATE.get(player).travelledCarriageIndex()));
         String difficulty = "Difficulty Level " + tier;
 
         // Carriage #: the exact index last shown on this player's HUD ("Carriage: +N"). Null when they

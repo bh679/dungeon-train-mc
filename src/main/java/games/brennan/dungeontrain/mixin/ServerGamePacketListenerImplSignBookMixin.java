@@ -14,7 +14,6 @@ import games.brennan.dungeontrain.narrative.PlayerWrittenBookTag;
 import games.brennan.dungeontrain.narrative.SharedBookMessage;
 import games.brennan.dungeontrain.narrative.SharedBookTag;
 import games.brennan.dungeontrain.narrative.SignedCarriageTag;
-import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.component.DataComponents;
@@ -29,6 +28,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
+import games.brennan.dungeontrain.platform.DtAttachments;
 
 /**
  * Community shared books — CONTRIBUTION half. Intercepts vanilla book signing so a signed book &amp;
@@ -151,7 +151,7 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(serverPlayer, "signed_shared_book");
 
             // Count it for the death-screen "books written" cargo icon (per-run tally).
-            ModDataAttachments.DT_PLAYER_RUN_STATE.get(serverPlayer).incrementBooksWritten();
+            DtAttachments.PLAYER_RUN_STATE.get(serverPlayer).incrementBooksWritten();
 
             ci.cancel();
             DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] SharedBook: {} signed a book — uploaded + dropped to burn",

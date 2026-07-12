@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CinematicIntroPacket;
 import games.brennan.dungeontrain.net.CinematicPreloadBeginPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
-import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
@@ -14,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import games.brennan.dungeontrain.platform.DtAttachments;
 
 /**
  * Server-side glue for the spawn intro cinematic. Keeps the cinematic
@@ -101,7 +101,7 @@ public final class CinematicIntroService {
      */
     public static boolean shouldPlay(ServerPlayer player) {
         if (!DungeonTrainConfig.isIntroCinematicEnabled()) return false;
-        return !ModDataAttachments.DT_SEEN_INTRO_CINEMATIC.get(player);
+        return !DtAttachments.SEEN_INTRO_CINEMATIC.get(player);
     }
 
     /**
@@ -147,7 +147,7 @@ public final class CinematicIntroService {
             RISE_HEIGHT, PULL_BACK, LOOK_Y_OFFSET,
             duration, preloadMaxWaitTicks);
         DungeonTrainNet.sendTo(player, pkt);
-        ModDataAttachments.DT_SEEN_INTRO_CINEMATIC.set(player, Boolean.TRUE);
+        DtAttachments.SEEN_INTRO_CINEMATIC.set(player, Boolean.TRUE);
         ACTIVE.add(player.getUUID());
         // Cover the client-side preload wait, the story hold that can follow it,
         // and the cinematic itself — the player is on a loading screen and can't

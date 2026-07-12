@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.narrative;
 
 import com.mojang.authlib.GameProfile;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
-import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.PendingDeathNotes;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
@@ -15,6 +14,7 @@ import net.minecraft.world.item.component.CustomModelData;
 
 import java.util.List;
 import java.util.Optional;
+import games.brennan.dungeontrain.platform.DtAttachments;
 
 /**
  * Sign-time handling for a "Death Note" curse book (invoked from the sign mixin). Runs entirely
@@ -53,7 +53,7 @@ public final class DeathNoteSigning {
         player.drop(book, /*dropAround*/ false, /*includeThrowerName*/ false);
 
         // Count it as a written book for the death-screen cargo tally (a book was authored + signed).
-        ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).incrementBooksWritten();
+        DtAttachments.PLAYER_RUN_STATE.get(player).incrementBooksWritten();
 
         if (targetName == null || targetName.isBlank()) {
             player.sendSystemMessage(Component.literal("The Death Note finds no name; it burns to nothing.")

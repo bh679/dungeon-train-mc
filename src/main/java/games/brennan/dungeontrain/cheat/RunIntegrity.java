@@ -15,6 +15,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import org.slf4j.Logger;
+import games.brennan.dungeontrain.platform.DtAttachments;
 
 /**
  * "Run integrity" — the cheat-taint state of a player's current world/run.
@@ -41,7 +42,7 @@ public final class RunIntegrity {
 
     /** Has this player's current world/run been cheated? */
     public static boolean isCheated(ServerPlayer player) {
-        return Boolean.TRUE.equals(ModDataAttachments.DT_RUN_CHEATED.get(player));
+        return Boolean.TRUE.equals(DtAttachments.RUN_CHEATED.get(player));
     }
 
     /**
@@ -56,7 +57,7 @@ public final class RunIntegrity {
      */
     public static void markCheated(ServerPlayer player, Component cause) {
         if (isCheated(player)) return;
-        ModDataAttachments.DT_RUN_CHEATED.set(player, Boolean.TRUE);
+        DtAttachments.RUN_CHEATED.set(player, Boolean.TRUE);
         applyFreePlayEffect(player);
         LOGGER.info("[DungeonTrain] Run is now Free Play for {} — {}",
             player.getName().getString(), cause.getString());
