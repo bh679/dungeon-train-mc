@@ -90,6 +90,29 @@ public final class ModDataAttachments {
                 .build()
         );
 
+    /**
+     * Per-chunk flag: this in-band overworld chunk still needs the upside-down mirror post-process
+     * applied. The mirror is no longer run synchronously at {@code ChunkEvent.Load}; it is deferred and
+     * re-applied over later ticks under a per-tick budget (see {@code WorldUpsideDownEvents} +
+     * {@code TrainTickEvents}) so a streaming train doesn't spike the server tick. This marker is set the
+     * moment a band chunk generates and cleared once the mirror has been applied.
+     *
+     * <p>Lives <b>on the chunk</b> (not a side saved-data set) so the marker and the mirrored blocks
+     * persist atomically in the same {@code .mca} unit: on disk it is always "marker present ⟺ blocks not
+     * yet mirrored". This makes the deferral crash-safe — a chunk saved un-mirrored keeps its marker and
+     * re-enqueues on reload; one saved after applying has no marker and is never touched again. The marker
+     * check-and-clear (on the single server thread) is the <b>sole</b> idempotency guarantee: {@code
+     * applyMirror} re-snapshots the column each call, so a double-apply would mirror the mirror. Default
+     * {@code FALSE} + {@code Codec.BOOL}; presence (via {@code hasData}) means "needs mirror". No
+     * {@code copyOnDeath} (chunks don't respawn).</p>
+     */
+    public static final Supplier<AttachmentType<Boolean>> NEEDS_UPSIDE_DOWN_MIRROR =
+        TYPES.register("needs_upside_down_mirror",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
     private ModDataAttachments() {}
 
     public static void register(IEventBus modBus) {
