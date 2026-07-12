@@ -2,7 +2,10 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    # dev/fabric-port-phase0-spike: the Fabric-port program trunk builds all three
+    # modules (root NeoForge + :common + :fabric) on every push while the program
+    # runs without an open PR. Remove this entry at program merge (Stage 5).
+    branches: [main, 'dev/fabric-port-phase0-spike']
   pull_request:
 
 concurrency:
