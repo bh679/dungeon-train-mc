@@ -4181,6 +4181,35 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "upside-down-band-smooth-stream",
+      "version": "0.440.0",
+      "type": "perf",
+      "title": "Smoother ride into the upside-down band",
+      "summary": "The upside-down band no longer hitches the game as you ride into it. The world-flip that builds the inverted terrain is now spread across ticks instead of stalling the server when new band chunks stream in.",
+      "highlights": [
+        "No more frame stutter when the train enters the upside-down band"
+      ],
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "session-language-telemetry",
+      "version": "0.441.0",
+      "type": "chore",
+      "title": "Record player language in session telemetry",
+      "summary": "Internal/admin-only: the per-join world-info telemetry now records the player's Minecraft client language, so the private data explorer can show and sort game sessions by locale. No in-game or player-facing change.",
+      "highlights": [
+        "World-info telemetry carries the client locale (e.g. en_us)",
+        "Data explorer Games list gains a sortable Language column"
+      ],
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
