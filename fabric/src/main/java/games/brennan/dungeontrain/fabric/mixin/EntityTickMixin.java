@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.fabric.mixin;
 
-import games.brennan.dungeontrain.platform.event.DtEntityTickCallback;
+import games.brennan.dungeontrain.fabric.DtFire;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,8 +22,6 @@ public abstract class EntityTickMixin {
             return;
         }
         Entity self = (Entity) (Object) this;
-        for (DtEntityTickCallback cb : DtEvents.ENTITY_TICK.listeners()) {
-            cb.onEntityTick(self);
-        }
+        DtFire.fire(DtEvents.ENTITY_TICK.listeners(), cb -> cb.onEntityTick(self));
     }
 }

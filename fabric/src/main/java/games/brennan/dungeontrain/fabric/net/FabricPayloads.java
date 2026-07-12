@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.fabric.net;
 
 import games.brennan.dungeontrain.net.DtPayloads;
 import java.util.function.BiConsumer;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -28,22 +27,31 @@ public final class FabricPayloads {
 
     private FabricPayloads() {}
 
-    /** Common side: register every payload codec + the C2S server receivers. */
-    public static void registerTypesAndServerReceivers() {
-        for (DtPayloads.Spec<?> spec : DtPayloads.ALL) {
-            registerType(spec);
-            if (spec.direction() == DtPayloads.Direction.C2S) {
-                registerServerReceiver(spec);
-            }
-        }
-    }
+    private static final org.slf4j.Logger LOG = com.mojang.logging.LogUtils.getLogger();
 
-    /** Client side: register the S2C client receivers (codecs already registered above). */
-    public static void registerClientReceivers() {
-        for (DtPayloads.Spec<?> spec : DtPayloads.ALL) {
-            if (spec.direction() == DtPayloads.Direction.S2C) {
-                registerClientReceiver(spec);
+    /**
+     * Common side: register every payload codec + the C2S server receivers.
+     *
+     * <p><b>Fabric-v1 dedicated-server divergence:</b> building {@code DtPayloads.ALL} materialises
+     * every payload handler method reference, and several S2C handlers reference client-only vanilla
+     * types (e.g. {@code LocalPlayer}) directly in the (common) packet class. NeoForge loads client
+     * classes on a dedicated server; Fabric's Knot classloader refuses, so the table can't build on a
+     * dedicated server. We swallow that {@code LinkageError}/{@code RuntimeException} so the dedicated
+     * server still boots — S2C/C2S networking is then inert on a dedicated Fabric server (a known v1 gap;
+     * the integrated server / physical client loads the table fine and networks normally). Refactoring
+     * the client handlers out of the common packet classes is the Stage-5 fix.</p>
+     */
+    public static void registerTypesAndServerReceivers() {
+        try {
+            for (DtPayloads.Spec<?> spec : DtPayloads.ALL) {
+                registerType(spec);
+                if (spec.direction() == DtPayloads.Direction.C2S) {
+                    registerServerReceiver(spec);
+                }
             }
+        } catch (Throwable t) {
+            LOG.warn("DT network payload table unavailable on this loader/env ({}); "
+                + "networking inert (Fabric-v1 dedicated-server gap).", t.toString());
         }
     }
 
@@ -59,12 +67,6 @@ public final class FabricPayloads {
     private static <T extends CustomPacketPayload> void registerServerReceiver(DtPayloads.Spec<T> spec) {
         BiConsumer<T, DtPayloadContext> handler = spec.handler();
         ServerPlayNetworking.registerGlobalReceiver(spec.type(),
-            (payload, context) -> handler.accept(payload, new FabricPayloadContext(context.player())));
-    }
-
-    private static <T extends CustomPacketPayload> void registerClientReceiver(DtPayloads.Spec<T> spec) {
-        BiConsumer<T, DtPayloadContext> handler = spec.handler();
-        ClientPlayNetworking.registerGlobalReceiver(spec.type(),
             (payload, context) -> handler.accept(payload, new FabricPayloadContext(context.player())));
     }
 }

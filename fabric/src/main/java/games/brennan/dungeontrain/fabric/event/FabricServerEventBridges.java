@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.platform.event.DtChunkLoadCallback;
 import games.brennan.dungeontrain.platform.event.DtCommandRegistrationCallback;
 import games.brennan.dungeontrain.platform.event.DtEntityInteractCallback;
 import games.brennan.dungeontrain.platform.event.DtEntityLeaveCallback;
+import games.brennan.dungeontrain.fabric.DtFire;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import games.brennan.dungeontrain.platform.event.DtLevelTickCallback;
 import games.brennan.dungeontrain.platform.event.DtLevelUnloadCallback;
@@ -91,14 +92,14 @@ public final class FabricServerEventBridges {
     private static void registerLifecycleAndTicks() {
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
             FabricPlatform.setCurrentServer(server);
-            DtEvents.SERVER_STARTING.listeners().forEach(cb -> cb.onServerStarting(server));
+            DtFire.fire(DtEvents.SERVER_STARTING.listeners(), cb -> cb.onServerStarting(server));
         });
         ServerLifecycleEvents.SERVER_STARTED.register(server ->
-            DtEvents.SERVER_STARTED.listeners().forEach(cb -> cb.onServerStarted(server)));
+            DtFire.fire(DtEvents.SERVER_STARTED.listeners(), cb -> cb.onServerStarted(server)));
         ServerLifecycleEvents.SERVER_STOPPING.register(server ->
-            DtEvents.SERVER_STOPPING.listeners().forEach(cb -> cb.onServerStopping(server)));
+            DtFire.fire(DtEvents.SERVER_STOPPING.listeners(), cb -> cb.onServerStopping(server)));
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
-            DtEvents.SERVER_STOPPED.listeners().forEach(cb -> cb.onServerStopped(server));
+            DtFire.fire(DtEvents.SERVER_STOPPED.listeners(), cb -> cb.onServerStopped(server));
             FabricPlatform.setCurrentServer(null);
         });
 
@@ -106,17 +107,13 @@ public final class FabricServerEventBridges {
             if (DtEvents.SERVER_TICK.isEmpty()) {
                 return;
             }
-            for (DtServerTickCallback cb : DtEvents.SERVER_TICK.listeners()) {
-                cb.onServerTick(server);
-            }
+            DtFire.fire(DtEvents.SERVER_TICK.listeners(), cb -> cb.onServerTick(server));
         });
         ServerTickEvents.END_WORLD_TICK.register(world -> {
             if (DtEvents.LEVEL_TICK.isEmpty()) {
                 return;
             }
-            for (DtLevelTickCallback cb : DtEvents.LEVEL_TICK.listeners()) {
-                cb.onLevelTick(world);
-            }
+            DtFire.fire(DtEvents.LEVEL_TICK.listeners(), cb -> cb.onLevelTick(world));
         });
     }
 
@@ -124,20 +121,14 @@ public final class FabricServerEventBridges {
 
     private static void registerConnection() {
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            for (DtPlayerLoginCallback cb : DtEvents.PLAYER_LOGIN.listeners()) {
-                cb.onPlayerLoggedIn(handler.player);
-            }
+            DtFire.fire(DtEvents.PLAYER_LOGIN.listeners(), cb -> cb.onPlayerLoggedIn(handler.player));
         });
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            for (DtPlayerLogoutCallback cb : DtEvents.PLAYER_LOGOUT.listeners()) {
-                cb.onPlayerLoggedOut(handler.player);
-            }
+            DtFire.fire(DtEvents.PLAYER_LOGOUT.listeners(), cb -> cb.onPlayerLoggedOut(handler.player));
         });
         // Fabric's `alive` == "returned from the End" == NeoForge's isEndConquered.
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
-            for (DtPlayerRespawnCallback cb : DtEvents.PLAYER_RESPAWN.listeners()) {
-                cb.onPlayerRespawn(newPlayer, alive);
-            }
+            DtFire.fire(DtEvents.PLAYER_RESPAWN.listeners(), cb -> cb.onPlayerRespawn(newPlayer, alive));
         });
     }
 
@@ -147,14 +138,10 @@ public final class FabricServerEventBridges {
         // NeoForge LivingDeathEvent fires just before death; Fabric AFTER_DEATH just after —
         // DT death handlers observe (no cancel), so the isCanceled flag is always false.
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
-            for (DtLivingDeathCallback cb : DtEvents.LIVING_DEATH.listeners()) {
-                cb.onDeath(entity, source, false);
-            }
+            DtFire.fire(DtEvents.LIVING_DEATH.listeners(), cb -> cb.onDeath(entity, source, false));
         });
         ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamage, takenDamage, blocked) -> {
-            for (DtLivingDamageCallback cb : DtEvents.LIVING_DAMAGE.listeners()) {
-                cb.onLivingDamage(entity, source, takenDamage);
-            }
+            DtFire.fire(DtEvents.LIVING_DAMAGE.listeners(), cb -> cb.onLivingDamage(entity, source, takenDamage));
         });
     }
 
@@ -170,19 +157,13 @@ public final class FabricServerEventBridges {
                 return;
             }
             boolean newChunk = chunk.isUnsaved();
-            for (DtChunkLoadCallback cb : DtEvents.CHUNK_LOAD.listeners()) {
-                cb.onChunkLoad(world, chunk, newChunk);
-            }
+            DtFire.fire(DtEvents.CHUNK_LOAD.listeners(), cb -> cb.onChunkLoad(world, chunk, newChunk));
         });
         ServerWorldEvents.UNLOAD.register((server, world) -> {
-            for (DtLevelUnloadCallback cb : DtEvents.LEVEL_UNLOAD.listeners()) {
-                cb.onLevelUnload(world);
-            }
+            DtFire.fire(DtEvents.LEVEL_UNLOAD.listeners(), cb -> cb.onLevelUnload(world));
         });
         ServerEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
-            for (DtEntityLeaveCallback cb : DtEvents.ENTITY_LEAVE.listeners()) {
-                cb.onEntityLeave(entity, world);
-            }
+            DtFire.fire(DtEvents.ENTITY_LEAVE.listeners(), cb -> cb.onEntityLeave(entity, world));
         });
     }
 
@@ -192,30 +173,22 @@ public final class FabricServerEventBridges {
         // RightClickItem — observers only (never cancel). Fire then PASS.
         UseItemCallback.EVENT.register((player, world, hand) -> {
             ItemStack stack = player.getItemInHand(hand);
-            for (DtRightClickItemCallback cb : DtEvents.RIGHT_CLICK_ITEM.listeners()) {
-                cb.onRightClickItem(player, world, stack);
-            }
+            DtFire.fire(DtEvents.RIGHT_CLICK_ITEM.listeners(), cb -> cb.onRightClickItem(player, world, stack));
             return InteractionResultHolder.pass(stack);
         });
         // EntityInteract — observers only. Fire then PASS.
         UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-            for (DtEntityInteractCallback cb : DtEvents.ENTITY_INTERACT.listeners()) {
-                cb.onEntityInteract(player, world, player.getItemInHand(hand), entity);
-            }
+            DtFire.fire(DtEvents.ENTITY_INTERACT.listeners(), cb -> cb.onEntityInteract(player, world, player.getItemInHand(hand), entity));
             return InteractionResult.PASS;
         });
         // AttackEntity — observers only. Fire then PASS.
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-            for (DtAttackEntityCallback cb : DtEvents.ATTACK_ENTITY.listeners()) {
-                cb.onAttackEntity(player, entity, false);
-            }
+            DtFire.fire(DtEvents.ATTACK_ENTITY.listeners(), cb -> cb.onAttackEntity(player, entity, false));
             return InteractionResult.PASS;
         });
         // BlockBreak — observers only (no DT cancel). Fabric AFTER (post-break).
         PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
-            for (DtBlockBreakCallback cb : DtEvents.BLOCK_BREAK.listeners()) {
-                cb.onBlockBreak(world, player, pos, state, false);
-            }
+            DtFire.fire(DtEvents.BLOCK_BREAK.listeners(), cb -> cb.onBlockBreak(world, player, pos, state, false));
         });
         // RightClickBlock — cancellable with a result across three tiers (HIGHEST/HIGH/NORMAL).
         UseBlockCallback.EVENT.register(FabricServerEventBridges::onUseBlock);
@@ -236,12 +209,13 @@ public final class FabricServerEventBridges {
     }
 
     private static void dispatchRightClickTier(RightClickBlockCarrier carrier, DtPriority tier) {
-        for (DtRightClickBlockCallback cb : DtEvents.RIGHT_CLICK_BLOCK.listeners(tier)) {
+        DtFire.fireCancellable(DtEvents.RIGHT_CLICK_BLOCK.listeners(tier), cb -> {
             if (carrier.canceled) {
-                return;
+                return true; // stop dispatching once canceled (non-receiveCanceled)
             }
             cb.onRightClickBlock(carrier);
-        }
+            return carrier.canceled;
+        });
     }
 
     /** Mutable {@link DtRightClickBlock} carrier backed by local fields (Fabric has no live event object). */
@@ -279,9 +253,7 @@ public final class FabricServerEventBridges {
 
     private static void registerCommandsAndChat() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            for (DtCommandRegistrationCallback cb : DtEvents.COMMAND_REGISTRATION.listeners()) {
-                cb.register(dispatcher, registryAccess, environment);
-            }
+            DtFire.fire(DtEvents.COMMAND_REGISTRATION.listeners(), cb -> cb.register(dispatcher, registryAccess, environment));
         });
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
             if (DtEvents.SERVER_CHAT.isEmpty()) {
@@ -289,9 +261,7 @@ public final class FabricServerEventBridges {
             }
             String raw = message.signedContent();
             Component decorated = message.decoratedContent();
-            for (DtServerChatCallback cb : DtEvents.SERVER_CHAT.listeners()) {
-                cb.onChat(sender, raw, decorated);
-            }
+            DtFire.fire(DtEvents.SERVER_CHAT.listeners(), cb -> cb.onChat(sender, raw, decorated));
         });
     }
 

@@ -4,7 +4,6 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrainCommon;
 import games.brennan.dungeontrain.fabric.event.FabricClientEventBridges;
 import games.brennan.dungeontrain.fabric.event.FabricClientEvents;
-import games.brennan.dungeontrain.fabric.net.FabricPayloads;
 import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
 
@@ -32,7 +31,7 @@ public final class DungeonTrainFabricClient implements ClientModInitializer {
         DungeonTrainCommon.initClient();
         FabricClientEvents.register();
         FabricClientEventBridges.register();
-        FabricPayloads.registerClientReceivers();
+        FabricClientPayloads.registerClientReceivers();
         LOGGER.info("Dungeon Train (Fabric) client initialised");
     }
 }

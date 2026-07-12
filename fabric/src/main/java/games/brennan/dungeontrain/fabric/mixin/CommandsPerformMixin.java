@@ -8,7 +8,7 @@ import net.minecraft.commands.Commands;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Gap-filler for {@code DtEvents.COMMAND_EXEC} (NeoForge {@code CommandEvent}, cancellable).
@@ -21,10 +21,10 @@ public abstract class CommandsPerformMixin {
 
     @Inject(method = "performCommand", at = @At("HEAD"), cancellable = true)
     private void dungeonTrain$performCommand(ParseResults<CommandSourceStack> parseResults, String command,
-                                             CallbackInfoReturnable<Integer> cir) {
+                                             CallbackInfo ci) {
         for (DtCommandCallback cb : DtEvents.COMMAND_EXEC.listeners()) {
             if (cb.onCommand(parseResults)) {
-                cir.setReturnValue(0);
+                ci.cancel();
                 return;
             }
         }

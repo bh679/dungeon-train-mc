@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.fabric.mixin;
 
-import games.brennan.dungeontrain.platform.event.DtEntityJoinCallback;
+import games.brennan.dungeontrain.fabric.DtFire;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.entity.EntityAccess;
@@ -33,11 +33,9 @@ public abstract class PersistentEntitySectionManagerMixin {
         if (DtEvents.ENTITY_JOIN.isEmpty()) {
             return;
         }
-        for (DtEntityJoinCallback cb : DtEvents.ENTITY_JOIN.listeners()) {
-            if (cb.onEntityJoin(entity, entity.level(), existing)) {
-                cir.setReturnValue(false); // first cancel wins — discards the entity
-                return;
-            }
+        if (DtFire.fireCancellable(DtEvents.ENTITY_JOIN.listeners(),
+                cb -> cb.onEntityJoin(entity, entity.level(), existing))) {
+            cir.setReturnValue(false); // first cancel wins — discards the entity
         }
     }
 }

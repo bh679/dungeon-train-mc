@@ -24,29 +24,46 @@ public final class FabricServerEvents {
 
     private FabricServerEvents() {}
 
+    private static final org.slf4j.Logger DT_LOG = com.mojang.logging.LogUtils.getLogger();
+
+    /**
+     * Register a handler, skipping it if its class can't load. On Fabric-without-siblings a
+     * sibling-coupled handler class (playermob / discordpresence / AIN / AIS / ECP) throws a
+     * LinkageError when its method reference is materialised; that feature is then inert (Fabric-v1
+     * gap) while the rest of the core loop registers normally. On NeoForge every class loads, so
+     * nothing is ever skipped.
+     */
+    private static void safe(Runnable registration) {
+        try {
+            registration.run();
+        } catch (Throwable e) {
+            DT_LOG.debug("Skipped a sibling-coupled DT handler on this loader: {}", e.toString());
+        }
+    }
+
     /** Register every converted server-side handler with its {@code DtEvents} field. */
     public static void register() {
         // Category registrations are added here, one block per converted category.
 
         // --- Command registration (RegisterCommandsEvent) --------------------
         // Single handler; order irrelevant.
-        games.brennan.dungeontrain.platform.event.DtEvents.COMMAND_REGISTRATION
-            .register(games.brennan.dungeontrain.event.CommandEvents::onRegisterCommands);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.COMMAND_REGISTRATION
+            .register(games.brennan.dungeontrain.event.CommandEvents::onRegisterCommands));
 
         // --- Server chat (ServerChatEvent) -----------------------------------
         // Single (observe-only) handler; order irrelevant.
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_CHAT
-            .register(games.brennan.dungeontrain.event.MentionPresenceEvents::onServerChat);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_CHAT
+            .register(games.brennan.dungeontrain.event.MentionPresenceEvents::onServerChat));
 
         // --- Command execution (CommandEvent, cancellable) -------------------
         // Single handler; the Free Play gate cancels a tainting command.
-        games.brennan.dungeontrain.platform.event.DtEvents.COMMAND_EXEC
-            .register(games.brennan.dungeontrain.event.CheatDetectionEvents::onCommand);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.COMMAND_EXEC
+            .register(games.brennan.dungeontrain.event.CheatDetectionEvents::onCommand));
 
         // --- Advancement earn (AdvancementEarnEvent) -------------------------
         // Single handler; order irrelevant.
-        games.brennan.dungeontrain.platform.event.DtEvents.ADVANCEMENT_EARN
-            .register(games.brennan.dungeontrain.event.AchievementEvents::onAdvancementEarn);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.ADVANCEMENT_EARN
+            .register(games.brennan.dungeontrain.event.AchievementEvents::onAdvancementEarn));
 
         registerServerLifecycle();
         registerTicks();
@@ -67,8 +84,8 @@ public final class FabricServerEvents {
      * registers the four narrative-prose registries onto the datapack pipeline.
      */
     private static void registerReloadListeners() {
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_RELOAD_LISTENER_REGISTRATION
-            .register(games.brennan.dungeontrain.narrative.NarrativeDataLoaders::registerReloadListeners);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_RELOAD_LISTENER_REGISTRATION
+            .register(games.brennan.dungeontrain.narrative.NarrativeDataLoaders::registerReloadListeners));
     }
 
     /**
@@ -77,8 +94,8 @@ public final class FabricServerEvents {
      * ({@code NarrativeLecternHooks}) binds the narrative lectern to the vanilla lectern BE.
      */
     private static void registerBlockEntityTypes() {
-        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_ENTITY_TYPE_ADD_BLOCKS
-            .register(games.brennan.dungeontrain.narrative.block.NarrativeLecternHooks::onAddBlocks);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_ENTITY_TYPE_ADD_BLOCKS
+            .register(games.brennan.dungeontrain.narrative.block.NarrativeLecternHooks::onAddBlocks));
     }
 
     /**
@@ -88,10 +105,10 @@ public final class FabricServerEvents {
      * irrelevant.
      */
     private static void registerCreativeTabContents() {
-        games.brennan.dungeontrain.platform.event.DtEvents.BUILD_CREATIVE_TAB_CONTENTS
-            .register(games.brennan.dungeontrain.registry.ModItems::onBuildCreativeTabs);
-        games.brennan.dungeontrain.platform.event.DtEvents.BUILD_CREATIVE_TAB_CONTENTS
-            .register(games.brennan.dungeontrain.registry.ModBlocks::onBuildCreativeTabs);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.BUILD_CREATIVE_TAB_CONTENTS
+            .register(games.brennan.dungeontrain.registry.ModItems::onBuildCreativeTabs));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.BUILD_CREATIVE_TAB_CONTENTS
+            .register(games.brennan.dungeontrain.registry.ModBlocks::onBuildCreativeTabs));
     }
 
     /**
@@ -113,20 +130,20 @@ public final class FabricServerEvents {
      */
     private static void registerInteract() {
         // PlayerInteractEvent.RightClickItem
-        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
-            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickItem);
-        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
-            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickRandomBookItem);
-        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
-            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickStartingBookItem);
-        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
-            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickFoundSharedBookItem);
-        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
-            .register(games.brennan.dungeontrain.event.RunStatsEvents::onBookRead);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
+            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickItem));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
+            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickRandomBookItem));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
+            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickStartingBookItem));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
+            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickFoundSharedBookItem));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
+            .register(games.brennan.dungeontrain.event.RunStatsEvents::onBookRead));
 
         // PlayerInteractEvent.EntityInteract
-        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_INTERACT
-            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onEntityInteract);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_INTERACT
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onEntityInteract));
 
         // PlayerInteractEvent.RightClickBlock (CANCELLABLE, fired by NeoForgeRightClickBlockBridge).
         // Tiers preserve the former @SubscribeEvent priorities: PrefabUseHandler was HIGH; the
@@ -134,17 +151,17 @@ public final class FabricServerEvents {
         // mutually-exclusive block conditions — same-tier order is irrelevant). The HIGHEST tier
         // (CommandMenuInputHandler, client-only) is registered from NeoForgeClientEvents so the
         // client class never loads on a dedicated server.
-        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
             .register(games.brennan.dungeontrain.platform.event.DtPriority.HIGH,
-                games.brennan.dungeontrain.event.PrefabUseHandler::onRightClickBlock);
-        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
-            .register(games.brennan.dungeontrain.narrative.LetterLecternEvents::onRightClickBlock);
-        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
-            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickBlock);
-        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
-            .register(games.brennan.dungeontrain.event.AchievementEvents::onRightClickBlock);
-        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
-            .register(games.brennan.dungeontrain.editor.VariantBlockInteractions::onRightClickBlock);
+                games.brennan.dungeontrain.event.PrefabUseHandler::onRightClickBlock));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
+            .register(games.brennan.dungeontrain.narrative.LetterLecternEvents::onRightClickBlock));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
+            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickBlock));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
+            .register(games.brennan.dungeontrain.event.AchievementEvents::onRightClickBlock));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
+            .register(games.brennan.dungeontrain.editor.VariantBlockInteractions::onRightClickBlock));
     }
 
     /**
@@ -156,36 +173,36 @@ public final class FabricServerEvents {
      */
     private static void registerBlockAndAttack() {
         // BlockEvent.BreakEvent
-        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_BREAK
-            .register(games.brennan.dungeontrain.event.RunStatsEvents::onPotBreak);
-        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_BREAK
-            .register(games.brennan.dungeontrain.editor.VariantBlockBreakHandler::onBlockBreak);
-        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_BREAK
-            .register(games.brennan.dungeontrain.editor.EditorMirrorLiveHandler::onBlockBreak);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_BREAK
+            .register(games.brennan.dungeontrain.event.RunStatsEvents::onPotBreak));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_BREAK
+            .register(games.brennan.dungeontrain.editor.VariantBlockBreakHandler::onBlockBreak));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_BREAK
+            .register(games.brennan.dungeontrain.editor.EditorMirrorLiveHandler::onBlockBreak));
 
         // BlockEvent.EntityPlaceEvent (single-block place)
-        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_PLACE
-            .register(games.brennan.dungeontrain.event.PrefabUseHandler::onEntityPlace);
-        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_PLACE
-            .register(games.brennan.dungeontrain.event.NetherBandBehaviourEvents::onBlockPlace);
-        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_PLACE
-            .register(games.brennan.dungeontrain.editor.EditorMirrorLiveHandler::onBlockPlace);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_PLACE
+            .register(games.brennan.dungeontrain.event.PrefabUseHandler::onEntityPlace));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_PLACE
+            .register(games.brennan.dungeontrain.event.NetherBandBehaviourEvents::onBlockPlace));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_PLACE
+            .register(games.brennan.dungeontrain.editor.EditorMirrorLiveHandler::onBlockPlace));
 
         // BlockDropsEvent
-        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_DROPS
-            .register(games.brennan.dungeontrain.narrative.RandomBookDropEvents::onBlockDrops);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_DROPS
+            .register(games.brennan.dungeontrain.narrative.RandomBookDropEvents::onBlockDrops));
 
         // EntityLeaveLevelEvent
-        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_LEAVE
-            .register(games.brennan.dungeontrain.event.ContentsEntityDiagnostics::onEntityLeave);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_LEAVE
+            .register(games.brennan.dungeontrain.event.ContentsEntityDiagnostics::onEntityLeave));
 
         // AttackEntityEvent
-        games.brennan.dungeontrain.platform.event.DtEvents.ATTACK_ENTITY
-            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onAttackEntity);
-        games.brennan.dungeontrain.platform.event.DtEvents.ATTACK_ENTITY
-            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onAttackEntity);
-        games.brennan.dungeontrain.platform.event.DtEvents.ATTACK_ENTITY
-            .register(games.brennan.dungeontrain.editor.VariantEntityBreakHandler::onAttackEntity);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.ATTACK_ENTITY
+            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onAttackEntity));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.ATTACK_ENTITY
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onAttackEntity));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.ATTACK_ENTITY
+            .register(games.brennan.dungeontrain.editor.VariantEntityBreakHandler::onAttackEntity));
     }
 
     /**
@@ -194,22 +211,22 @@ public final class FabricServerEvents {
      * irrelevant.
      */
     private static void registerChunk() {
-        games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
-            .register(games.brennan.dungeontrain.event.NetherTransitionEvents::onChunkLoad);
-        games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
-            .register(games.brennan.dungeontrain.event.TrackChunkEvents::onChunkLoad);
-        games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
-            .register(games.brennan.dungeontrain.event.WorldDisintegrationEvents::onChunkLoad);
-        games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
-            .register(games.brennan.dungeontrain.event.BedrockFloorEvents::onChunkLoad);
-        games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
-            .register(games.brennan.dungeontrain.event.CorridorCleanupEvents::onChunkLoad);
-        games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
-            .register(games.brennan.dungeontrain.event.WorldUpsideDownEvents::onChunkLoad);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
+            .register(games.brennan.dungeontrain.event.NetherTransitionEvents::onChunkLoad));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
+            .register(games.brennan.dungeontrain.event.TrackChunkEvents::onChunkLoad));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
+            .register(games.brennan.dungeontrain.event.WorldDisintegrationEvents::onChunkLoad));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
+            .register(games.brennan.dungeontrain.event.BedrockFloorEvents::onChunkLoad));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
+            .register(games.brennan.dungeontrain.event.CorridorCleanupEvents::onChunkLoad));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
+            .register(games.brennan.dungeontrain.event.WorldUpsideDownEvents::onChunkLoad));
 
         // LevelEvent.Unload — one handler (drops the overworld mirror-plan cache).
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_UNLOAD
-            .register(games.brennan.dungeontrain.event.WorldUpsideDownEvents::onLevelUnload);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_UNLOAD
+            .register(games.brennan.dungeontrain.event.WorldUpsideDownEvents::onLevelUnload));
     }
 
     /**
@@ -224,38 +241,38 @@ public final class FabricServerEvents {
         var LOW = games.brennan.dungeontrain.platform.event.DtPriority.LOW;
 
         // LivingDeathEvent — NORMAL (7) + LOW (RunStats.onPlayerDeath)
-        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
-            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onDeath);
-        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
-            .register(games.brennan.dungeontrain.event.RunStatsEvents::onMobKilled);
-        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
-            .register(games.brennan.dungeontrain.event.DeathNoteEvents::onPlayerDeath);
-        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
-            .register(games.brennan.dungeontrain.event.DeathNoteEvents::onEchoDeath);
-        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
-            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onMobKilled);
-        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
-            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onEchoKilled);
-        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
-            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onEchoFellToVoid);
-        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
-            .register(LOW, games.brennan.dungeontrain.event.RunStatsEvents::onPlayerDeath);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onDeath));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(games.brennan.dungeontrain.event.RunStatsEvents::onMobKilled));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(games.brennan.dungeontrain.event.DeathNoteEvents::onPlayerDeath));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(games.brennan.dungeontrain.event.DeathNoteEvents::onEchoDeath));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onMobKilled));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onEchoKilled));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onEchoFellToVoid));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(LOW, games.brennan.dungeontrain.event.RunStatsEvents::onPlayerDeath));
 
         // LivingDamageEvent.Post — NORMAL
-        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DAMAGE
-            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onLivingDamage);
-        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DAMAGE
-            .register(games.brennan.dungeontrain.event.RunStatsEvents::onLivingDamage);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DAMAGE
+            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onLivingDamage));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DAMAGE
+            .register(games.brennan.dungeontrain.event.RunStatsEvents::onLivingDamage));
 
         // LivingEquipmentChangeEvent — NORMAL
-        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_EQUIPMENT_CHANGE
-            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onEquipmentChange);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LIVING_EQUIPMENT_CHANGE
+            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onEquipmentChange));
 
         // FinalizeSpawnEvent — NORMAL (both always run; cancelSpawn sink)
-        games.brennan.dungeontrain.platform.event.DtEvents.FINALIZE_SPAWN
-            .register(games.brennan.dungeontrain.event.BandMobSpawnEvents::onFinalizeSpawn);
-        games.brennan.dungeontrain.platform.event.DtEvents.FINALIZE_SPAWN
-            .register(games.brennan.dungeontrain.event.NetherMobSpawner::onFinalizeSpawn);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.FINALIZE_SPAWN
+            .register(games.brennan.dungeontrain.event.BandMobSpawnEvents::onFinalizeSpawn));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.FINALIZE_SPAWN
+            .register(games.brennan.dungeontrain.event.NetherMobSpawner::onFinalizeSpawn));
     }
 
     /**
@@ -271,25 +288,25 @@ public final class FabricServerEvents {
      */
     private static void registerCancellable() {
         // EntityJoinLevelEvent — non-cancelling observers (void → return false adapters)
-        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
-            .register((e, l, d) -> { games.brennan.dungeontrain.event.ContentsEntityDiagnostics.onEntityJoin(e, l, d); return false; });
-        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
-            .register((e, l, d) -> { games.brennan.dungeontrain.event.MobDifficultyEvents.onEntityJoin(e, l, d); return false; });
-        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
-            .register((e, l, d) -> { games.brennan.dungeontrain.event.PrefabUseHandler.onEntityJoinLevel(e, l, d); return false; });
-        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
-            .register((e, l, d) -> { games.brennan.dungeontrain.event.StartingBookEvents.onEntityJoinLevel(e, l, d); return false; });
-        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
-            .register((e, l, d) -> { games.brennan.dungeontrain.event.VillagerTrainSpawnEvents.onEntityJoin(e, l, d); return false; });
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
+            .register((e, l, d) -> { games.brennan.dungeontrain.event.ContentsEntityDiagnostics.onEntityJoin(e, l, d); return false; }));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
+            .register((e, l, d) -> { games.brennan.dungeontrain.event.MobDifficultyEvents.onEntityJoin(e, l, d); return false; }));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
+            .register((e, l, d) -> { games.brennan.dungeontrain.event.PrefabUseHandler.onEntityJoinLevel(e, l, d); return false; }));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
+            .register((e, l, d) -> { games.brennan.dungeontrain.event.StartingBookEvents.onEntityJoinLevel(e, l, d); return false; }));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
+            .register((e, l, d) -> { games.brennan.dungeontrain.event.VillagerTrainSpawnEvents.onEntityJoin(e, l, d); return false; }));
         // EntityJoinLevelEvent — cancelling handlers (return true = cancel)
-        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
-            .register(games.brennan.dungeontrain.event.NetherBandBehaviourEvents::onEntityJoin);
-        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
-            .register(games.brennan.dungeontrain.event.NetherBandBehaviourEvents::onFallingBlock);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
+            .register(games.brennan.dungeontrain.event.NetherBandBehaviourEvents::onEntityJoin));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_JOIN
+            .register(games.brennan.dungeontrain.event.NetherBandBehaviourEvents::onFallingBlock));
 
         // MobEffectEvent.Remove — single cancelling handler
-        games.brennan.dungeontrain.platform.event.DtEvents.MOB_EFFECT_REMOVE
-            .register(games.brennan.dungeontrain.event.CheatDetectionEvents::onEffectRemove);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.MOB_EFFECT_REMOVE
+            .register(games.brennan.dungeontrain.event.CheatDetectionEvents::onEffectRemove));
     }
 
     /**
@@ -305,64 +322,64 @@ public final class FabricServerEvents {
         var HIGHEST = games.brennan.dungeontrain.platform.event.DtPriority.HIGHEST;
 
         // PlayerLoggedInEvent — HIGHEST (CheatDetection) then NORMAL (rest)
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
-            .register(HIGHEST, games.brennan.dungeontrain.event.CheatDetectionEvents::onLogin);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
-            .register(games.brennan.dungeontrain.event.StartingBookEvents::onPlayerLogin);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
-            .register(games.brennan.dungeontrain.event.PlayerJoinEvents::onPlayerLogin);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
-            .register(games.brennan.dungeontrain.event.BoardingProgressEvents::onPlayerLoggedIn);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
-            .register(games.brennan.dungeontrain.event.KeepInventoryCarryEvents::onPlayerLogin);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
-            .register(games.brennan.dungeontrain.event.AchievementEvents::onPlayerLoggedIn);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
-            .register(games.brennan.dungeontrain.event.DeathNoteRefreshEvents::onLogin);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
+            .register(HIGHEST, games.brennan.dungeontrain.event.CheatDetectionEvents::onLogin));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
+            .register(games.brennan.dungeontrain.event.StartingBookEvents::onPlayerLogin));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
+            .register(games.brennan.dungeontrain.event.PlayerJoinEvents::onPlayerLogin));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
+            .register(games.brennan.dungeontrain.event.BoardingProgressEvents::onPlayerLoggedIn));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
+            .register(games.brennan.dungeontrain.event.KeepInventoryCarryEvents::onPlayerLogin));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
+            .register(games.brennan.dungeontrain.event.AchievementEvents::onPlayerLoggedIn));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
+            .register(games.brennan.dungeontrain.event.DeathNoteRefreshEvents::onLogin));
 
         // PlayerLoggedOutEvent — NORMAL
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
-            .register(games.brennan.dungeontrain.narrative.LetterLecternEvents::onLogout);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
-            .register(games.brennan.dungeontrain.event.TrainTickEvents::onPlayerLoggedOut);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
-            .register(games.brennan.dungeontrain.event.DtpPlacementService::onPlayerLogout);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
-            .register(games.brennan.dungeontrain.event.TrainCinematographerEvents::onPlayerLoggedOut);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
-            .register(games.brennan.dungeontrain.event.RunStatsEvents::onPlayerLogout);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
-            .register(games.brennan.dungeontrain.event.PlayerJoinEvents::onPlayerLogout);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
-            .register(games.brennan.dungeontrain.event.BoardingProgressEvents::onPlayerLoggedOut);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
-            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onPlayerLoggedOut);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
-            .register(games.brennan.dungeontrain.event.AchievementEvents::onPlayerLoggedOut);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
-            .register(games.brennan.dungeontrain.event.DeathNoteRefreshEvents::onLogout);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
-            .register(games.brennan.dungeontrain.editor.VariantHotkeyState::onLogout);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
-            .register(games.brennan.dungeontrain.editor.ContainerHotkeyState::onLogout);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
-            .register(games.brennan.dungeontrain.editor.StagePanelController::onPlayerLoggedOut);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.narrative.LetterLecternEvents::onLogout));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.TrainTickEvents::onPlayerLoggedOut));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.DtpPlacementService::onPlayerLogout));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.TrainCinematographerEvents::onPlayerLoggedOut));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.RunStatsEvents::onPlayerLogout));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.PlayerJoinEvents::onPlayerLogout));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.BoardingProgressEvents::onPlayerLoggedOut));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onPlayerLoggedOut));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.AchievementEvents::onPlayerLoggedOut));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.DeathNoteRefreshEvents::onLogout));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.editor.VariantHotkeyState::onLogout));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.editor.ContainerHotkeyState::onLogout));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.editor.StagePanelController::onPlayerLoggedOut));
 
         // PlayerRespawnEvent — NORMAL
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
-            .register(games.brennan.dungeontrain.event.StartingBookEvents::onPlayerRespawn);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
-            .register(games.brennan.dungeontrain.event.RespawnDimensionEvents::onPlayerRespawn);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
-            .register(games.brennan.dungeontrain.event.BoardingProgressEvents::onPlayerRespawn);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
-            .register(games.brennan.dungeontrain.event.AchievementEvents::onPlayerRespawn);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
-            .register(games.brennan.dungeontrain.event.CheatDetectionEvents::onRespawn);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
+            .register(games.brennan.dungeontrain.event.StartingBookEvents::onPlayerRespawn));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
+            .register(games.brennan.dungeontrain.event.RespawnDimensionEvents::onPlayerRespawn));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
+            .register(games.brennan.dungeontrain.event.BoardingProgressEvents::onPlayerRespawn));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
+            .register(games.brennan.dungeontrain.event.AchievementEvents::onPlayerRespawn));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
+            .register(games.brennan.dungeontrain.event.CheatDetectionEvents::onRespawn));
 
         // PlayerChangeGameModeEvent — NORMAL (single handler)
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_CHANGE_GAMEMODE
-            .register(games.brennan.dungeontrain.event.CheatDetectionEvents::onChangeGameMode);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_CHANGE_GAMEMODE
+            .register(games.brennan.dungeontrain.event.CheatDetectionEvents::onChangeGameMode));
     }
 
     /**
@@ -374,74 +391,74 @@ public final class FabricServerEvents {
      */
     private static void registerTicks() {
         // LevelTickEvent.Post (25 handlers)
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.ship.sable.SableKinematicTicker::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.StairsUsageEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.StartingBookEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.ResumeWatchdog::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.TrainTickEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.RelayOutboxFlushEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.DtpPlacementService::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.TrackPresenceEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.NetherMobSpawner::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.TrainCinematographerEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.SoulCampfireHealEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.ZoneProgressEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.RunStatsEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.PlayerJoinEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.CorridorCleanupEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.BoardingProgressEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onEchoProximityScan);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.DeathNoteRefreshEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.DeathNoteEchoController::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.CarriageGroupGapTicker::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.RoofRunEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.event.MentionPresenceEvents::onLevelTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
-            .register(games.brennan.dungeontrain.editor.VariantEditorPreviewTicker::onLevelTick);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.ship.sable.SableKinematicTicker::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.StairsUsageEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.StartingBookEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.ResumeWatchdog::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.TrainTickEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.RelayOutboxFlushEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.DtpPlacementService::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.TrackPresenceEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.NetherMobSpawner::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.TrainCinematographerEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.SoulCampfireHealEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.ZoneProgressEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.RunStatsEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.PlayerJoinEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.CorridorCleanupEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.BoardingProgressEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onEchoProximityScan));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.DeathNoteRefreshEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.DeathNoteEchoController::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.CarriageGroupGapTicker::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.RoofRunEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.MentionPresenceEvents::onLevelTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.editor.VariantEditorPreviewTicker::onLevelTick));
 
         // ServerTickEvent.Post (3 handlers)
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_TICK
-            .register(games.brennan.dungeontrain.event.NarrativePoolRefreshEvents::onServerTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_TICK
-            .register(games.brennan.dungeontrain.event.DeathReportBuffer::onServerTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_TICK
-            .register(games.brennan.dungeontrain.event.SharedBookRefreshEvents::onServerTick);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_TICK
+            .register(games.brennan.dungeontrain.event.NarrativePoolRefreshEvents::onServerTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_TICK
+            .register(games.brennan.dungeontrain.event.DeathReportBuffer::onServerTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_TICK
+            .register(games.brennan.dungeontrain.event.SharedBookRefreshEvents::onServerTick));
 
         // PlayerTickEvent.Post (2 handlers)
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_TICK
-            .register(games.brennan.dungeontrain.event.RunStatsEvents::onPlayerTick);
-        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_TICK
-            .register(games.brennan.dungeontrain.event.AchievementEvents::onPlayerTick);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_TICK
+            .register(games.brennan.dungeontrain.event.RunStatsEvents::onPlayerTick));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_TICK
+            .register(games.brennan.dungeontrain.event.AchievementEvents::onPlayerTick));
 
         // EntityTickEvent.Pre (1 handler; never cancels)
-        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_TICK
-            .register(games.brennan.dungeontrain.event.NetherBandZombificationGuard::onEntityTick);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_TICK
+            .register(games.brennan.dungeontrain.event.NetherBandZombificationGuard::onEntityTick));
     }
 
     /**
@@ -461,123 +478,123 @@ public final class FabricServerEvents {
         var LOWEST = games.brennan.dungeontrain.platform.event.DtPriority.LOWEST;
 
         // ServerStarting — HIGHEST, HIGH, NORMAL
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(HIGHEST, games.brennan.dungeontrain.editor.UserContentMigration::onServerStarting);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(HIGH, games.brennan.dungeontrain.editor.UserContentImporter::onServerStarting);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(HIGH, games.brennan.dungeontrain.editor.DtpacksMigration::onServerStarting);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(games.brennan.dungeontrain.track.variant.TrackVariantRegistry::onServerStarting);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(games.brennan.dungeontrain.track.variant.TrackVariantWeights::onServerStarting);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(games.brennan.dungeontrain.train.CarriageContentsRegistry::onServerStarting);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(games.brennan.dungeontrain.train.CarriageContentsWeights::onServerStarting);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(games.brennan.dungeontrain.train.CarriageVariantRegistry::onServerStarting);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(games.brennan.dungeontrain.train.CarriageWeights::onServerStarting);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(games.brennan.dungeontrain.editor.EditorDevMode::onServerStarting);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(games.brennan.dungeontrain.editor.BlockVariantPrefabStore::onServerStarting);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(games.brennan.dungeontrain.editor.BlockLootDefaults::onServerStarting);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(games.brennan.dungeontrain.editor.StageStore::onServerStarting);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(games.brennan.dungeontrain.editor.LootPrefabStore::onServerStarting);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
-            .register(games.brennan.dungeontrain.editor.CarriagePartRegistry::onServerStarting);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(HIGHEST, games.brennan.dungeontrain.editor.UserContentMigration::onServerStarting));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(HIGH, games.brennan.dungeontrain.editor.UserContentImporter::onServerStarting));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(HIGH, games.brennan.dungeontrain.editor.DtpacksMigration::onServerStarting));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.track.variant.TrackVariantRegistry::onServerStarting));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.track.variant.TrackVariantWeights::onServerStarting));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.train.CarriageContentsRegistry::onServerStarting));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.train.CarriageContentsWeights::onServerStarting));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.train.CarriageVariantRegistry::onServerStarting));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.train.CarriageWeights::onServerStarting));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.editor.EditorDevMode::onServerStarting));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.editor.BlockVariantPrefabStore::onServerStarting));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.editor.BlockLootDefaults::onServerStarting));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.editor.StageStore::onServerStarting));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.editor.LootPrefabStore::onServerStarting));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTING
+            .register(games.brennan.dungeontrain.editor.CarriagePartRegistry::onServerStarting));
 
         // ServerStarted — NORMAL, LOW (WorldLifecycleEvents = client-only)
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
-            .register(games.brennan.dungeontrain.event.RelayOutboxFlushEvents::onServerStarted);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
-            .register(games.brennan.dungeontrain.event.NarrativePoolRefreshEvents::onServerStarted);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
-            .register(games.brennan.dungeontrain.event.DevMessageConsent::onServerStarted);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
-            .register(games.brennan.dungeontrain.event.SharedBookRefreshEvents::onServerStarted);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
-            .register(games.brennan.dungeontrain.editor.EditorDevMode::onServerStarted);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
-            .register(LOW, games.brennan.dungeontrain.event.NetherBandContextEvents::onServerStarted);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
-            .register(LOW, games.brennan.dungeontrain.event.TrainBootstrapEvents::onServerStarted);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+            .register(games.brennan.dungeontrain.event.RelayOutboxFlushEvents::onServerStarted));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+            .register(games.brennan.dungeontrain.event.NarrativePoolRefreshEvents::onServerStarted));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+            .register(games.brennan.dungeontrain.event.DevMessageConsent::onServerStarted));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+            .register(games.brennan.dungeontrain.event.SharedBookRefreshEvents::onServerStarted));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+            .register(games.brennan.dungeontrain.editor.EditorDevMode::onServerStarted));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+            .register(LOW, games.brennan.dungeontrain.event.NetherBandContextEvents::onServerStarted));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+            .register(LOW, games.brennan.dungeontrain.event.TrainBootstrapEvents::onServerStarted));
         if (games.brennan.dungeontrain.platform.DtPlatform.get().isClient()) {
-            games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
-                .register(games.brennan.dungeontrain.event.WorldLifecycleEvents::onServerStarted);
+            safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STARTED
+                .register(games.brennan.dungeontrain.event.WorldLifecycleEvents::onServerStarted));
         }
 
         // ServerStopping — NORMAL, LOWEST
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
-            .register(games.brennan.dungeontrain.event.NetherBandContextEvents::onServerStopping);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
-            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onServerStopping);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
-            .register(games.brennan.dungeontrain.event.ShipShutdownEvents::onServerStopping);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
-            .register(games.brennan.dungeontrain.event.AchievementEvents::onServerStopping);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
-            .register(games.brennan.dungeontrain.event.MentionPresenceEvents::onServerStopping);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
-            .register(LOWEST, games.brennan.dungeontrain.event.ShutdownDiagnostics::onServerStopping);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
+            .register(games.brennan.dungeontrain.event.NetherBandContextEvents::onServerStopping));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
+            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onServerStopping));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
+            .register(games.brennan.dungeontrain.event.ShipShutdownEvents::onServerStopping));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
+            .register(games.brennan.dungeontrain.event.AchievementEvents::onServerStopping));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
+            .register(games.brennan.dungeontrain.event.MentionPresenceEvents::onServerStopping));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPING
+            .register(LOWEST, games.brennan.dungeontrain.event.ShutdownDiagnostics::onServerStopping));
 
         // ServerStopped — HIGHEST, NORMAL (WorldLifecycleEvents = client-only)
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(HIGHEST, games.brennan.dungeontrain.event.ShutdownDiagnostics::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.track.variant.TrackVariantWeights::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.track.variant.TrackVariantRegistry::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.narrative.NarrativeDataLoaders::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.train.CarriageContentsRegistry::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.train.CarriageContentsWeights::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.train.CarriageVariantRegistry::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.train.CarriageWeights::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.advancement.GlobalNarrativeProgress::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.event.ResumeWatchdog::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.event.NetworkConsentMirror::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.event.NarrativePoolRefreshEvents::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.event.DevMessageConsent::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.editor.BlockVariantPrefabStore::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.editor.StagePanelController::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.editor.LootPrefabStore::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.editor.EditorPartsStageFilter::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.editor.EditorStampedCategoryState::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.editor.EditorPartVisibility::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.editor.StageStore::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.editor.EditorStageSelection::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.editor.VariantOverlayRenderer::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.editor.BlockLootDefaults::onServerStopped);
-        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-            .register(games.brennan.dungeontrain.editor.CarriagePartRegistry::onServerStopped);
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(HIGHEST, games.brennan.dungeontrain.event.ShutdownDiagnostics::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.track.variant.TrackVariantWeights::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.track.variant.TrackVariantRegistry::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.narrative.NarrativeDataLoaders::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.train.CarriageContentsRegistry::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.train.CarriageContentsWeights::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.train.CarriageVariantRegistry::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.train.CarriageWeights::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.advancement.GlobalNarrativeProgress::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.event.ResumeWatchdog::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.event.NetworkConsentMirror::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.event.NarrativePoolRefreshEvents::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.event.DevMessageConsent::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.BlockVariantPrefabStore::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.StagePanelController::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.LootPrefabStore::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.EditorPartsStageFilter::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.EditorStampedCategoryState::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.EditorPartVisibility::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.StageStore::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.EditorStageSelection::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.VariantOverlayRenderer::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.BlockLootDefaults::onServerStopped));
+        safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+            .register(games.brennan.dungeontrain.editor.CarriagePartRegistry::onServerStopped));
         if (games.brennan.dungeontrain.platform.DtPlatform.get().isClient()) {
-            games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
-                .register(games.brennan.dungeontrain.event.WorldLifecycleEvents::onServerStopped);
+            safe(() -> games.brennan.dungeontrain.platform.event.DtEvents.SERVER_STOPPED
+                .register(games.brennan.dungeontrain.event.WorldLifecycleEvents::onServerStopped));
         }
     }
 }

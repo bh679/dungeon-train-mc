@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.fabric.mixin;
 
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import games.brennan.dungeontrain.platform.event.DtFinalizeSpawnCallback;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
@@ -28,7 +27,7 @@ public abstract class MobFinalizeSpawnMixin {
     @Inject(method = "finalizeSpawn", at = @At("HEAD"))
     private void dungeonTrain$finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty,
                                             MobSpawnType spawnType, SpawnGroupData spawnData,
-                                            CompoundTag dataTag, CallbackInfoReturnable<SpawnGroupData> cir) {
+                                            CallbackInfoReturnable<SpawnGroupData> cir) {
         if (DtEvents.FINALIZE_SPAWN.isEmpty()) {
             return;
         }

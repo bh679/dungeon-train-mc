@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.fabric.mixin;
 
-import games.brennan.dungeontrain.platform.event.DtAdvancementEarnCallback;
+import games.brennan.dungeontrain.fabric.DtFire;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
@@ -34,8 +34,6 @@ public abstract class PlayerAdvancementsMixin {
         if (!getOrStartProgress(advancement).isDone()) {
             return; // not fully earned yet
         }
-        for (DtAdvancementEarnCallback cb : DtEvents.ADVANCEMENT_EARN.listeners()) {
-            cb.onAdvancementEarn(player, advancement);
-        }
+        DtFire.fire(DtEvents.ADVANCEMENT_EARN.listeners(), cb -> cb.onAdvancementEarn(player, advancement));
     }
 }

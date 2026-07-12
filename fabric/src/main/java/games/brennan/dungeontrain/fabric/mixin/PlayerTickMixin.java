@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.fabric.mixin;
 
+import games.brennan.dungeontrain.fabric.DtFire;
 import games.brennan.dungeontrain.platform.event.DtEvents;
-import games.brennan.dungeontrain.platform.event.DtPlayerTickCallback;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -22,8 +22,6 @@ public abstract class PlayerTickMixin {
             return;
         }
         Player self = (Player) (Object) this;
-        for (DtPlayerTickCallback cb : DtEvents.PLAYER_TICK.listeners()) {
-            cb.onPlayerTick(self);
-        }
+        DtFire.fire(DtEvents.PLAYER_TICK.listeners(), cb -> cb.onPlayerTick(self));
     }
 }

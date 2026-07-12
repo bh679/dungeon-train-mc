@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.fabric.mixin;
 
+import games.brennan.dungeontrain.fabric.DtFire;
 import games.brennan.dungeontrain.platform.event.DtEvents;
-import games.brennan.dungeontrain.platform.event.DtLivingEquipmentChangeCallback;
 import java.util.Map;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -27,9 +27,8 @@ public abstract class LivingEntityEquipmentMixin {
         }
         LivingEntity self = (LivingEntity) (Object) this;
         for (Map.Entry<EquipmentSlot, ItemStack> entry : equipments.entrySet()) {
-            for (DtLivingEquipmentChangeCallback cb : DtEvents.LIVING_EQUIPMENT_CHANGE.listeners()) {
-                cb.onEquipmentChange(self, entry.getKey(), entry.getValue());
-            }
+            DtFire.fire(DtEvents.LIVING_EQUIPMENT_CHANGE.listeners(),
+                cb -> cb.onEquipmentChange(self, entry.getKey(), entry.getValue()));
         }
     }
 }
