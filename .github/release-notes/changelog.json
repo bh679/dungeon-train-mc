@@ -4257,8 +4257,41 @@
       "released_at": "2026-07-12T08:55:21Z"
     },
     {
-      "id": "datapack-overridable-prose",
+      "id": "localize-remaining-gui-strings",
       "version": "0.444.0",
+      "type": "chore",
+      "title": "Remaining menu text is now translatable",
+      "summary": "The last hard-coded strings in Dungeon Train's config, world-options, cinematic-skip, and dev-message screens now use translation keys, so the whole mod UI can be localized through a resource/language pack. No change to the English text.",
+      "highlights": [
+        "Settings and world-options screens fully translatable",
+        "Cinematic 'Press Space to skip' prompt translatable",
+        "Dev-message attachment and author labels translatable"
+      ],
+      "pr": 733,
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "upside-down-mirror-precompute",
+      "version": "0.443.0",
+      "type": "perf",
+      "title": "Upside-down band re-flip keeps pace with the train",
+      "summary": "The upside-down band's terrain flip is now precomputed off the main server thread as chunks generate, so the deferred re-flip drains its backlog roughly twice as fast \u2014 far less briefly-un-flipped terrain trails behind you when you ride into a band. Terrain is unchanged.",
+      "highlights": [
+        "Flip precomputed off-thread during world generation",
+        "Deferred re-flip backlog clears ~2x faster"
+      ],
+      "pr": 734,
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "datapack-overridable-prose",
+      "version": "0.445.0",
       "type": "feat",
       "title": "Translate the train's books & death messages with a datapack",
       "summary": "Dungeon Train's narrative books, welcome letters, random chest books, and death-screen messages can now be translated or replaced by a datapack \u2014 no more editing files inside the mod jar. Overrides apply on /reload, and only the server needs the datapack (translated books reach everyone on the server automatically).",
