@@ -25,15 +25,13 @@ import org.slf4j.Logger;
  * failure to sync simply leaves the server fail-closed (contribution disabled) rather than crashing
  * the login.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class NetworkConsentSyncClient {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private NetworkConsentSyncClient() {}
 
-    @SubscribeEvent
-    public static void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
+    public static void onLoggingIn() {
         sendConsentIfConnected();
     }
 

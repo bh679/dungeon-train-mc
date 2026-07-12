@@ -318,8 +318,7 @@ public final class CinematicPreloadGate {
         loadingReadyReason = null;
     }
 
-    @SubscribeEvent
-    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+    public static void onLoggingOut() {
         reset();
         LoadingStories.reset();
         LoadingSequenceProgress.reset();

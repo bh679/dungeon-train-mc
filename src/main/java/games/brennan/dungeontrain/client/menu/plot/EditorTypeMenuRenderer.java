@@ -297,8 +297,7 @@ public final class EditorTypeMenuRenderer {
      * the floating type menus would keep rendering after the player quits to
      * title. Symmetric with {@link EditorPlotLabelsRenderer#onLoggingOut}.
      */
-    @SubscribeEvent
-    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+    public static void onLoggingOut() {
         applySnapshot(EditorTypeMenusPacket.empty());
     }
 

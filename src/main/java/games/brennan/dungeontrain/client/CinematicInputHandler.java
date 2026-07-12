@@ -108,8 +108,7 @@ public final class CinematicInputHandler {
         }
     }
 
-    @SubscribeEvent
-    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+    public static void onLoggingOut() {
         CinematicCameraController.forceStop();
     }
 }

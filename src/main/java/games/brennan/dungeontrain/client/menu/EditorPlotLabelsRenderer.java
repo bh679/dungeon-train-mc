@@ -150,8 +150,7 @@ public final class EditorPlotLabelsRenderer {
      * (which it won't, if the new world has no editor state). Symmetric with
      * {@link games.brennan.dungeontrain.client.EditorStatusHudOverlay#onLoggingOut}.
      */
-    @SubscribeEvent
-    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+    public static void onLoggingOut() {
         applySnapshot(EditorPlotLabelsPacket.empty());
     }
 

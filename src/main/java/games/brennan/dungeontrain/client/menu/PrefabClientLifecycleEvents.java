@@ -12,13 +12,11 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * persist into the next session and the creative tab shows stale entries
  * until a new sync packet arrives.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PrefabClientLifecycleEvents {
 
     private PrefabClientLifecycleEvents() {}
 
-    @SubscribeEvent
-    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+    public static void onLoggingOut() {
         PrefabTabState.clear();
     }
 }

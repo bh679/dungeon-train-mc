@@ -33,7 +33,6 @@ import org.slf4j.Logger;
  * the player actually stayed on the deck (carry/server held them) or dropped —
  * the one fact the in-hold logs can't reveal.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class SpawnDeckHold {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -135,8 +134,7 @@ public final class SpawnDeckHold {
         }
     }
 
-    @SubscribeEvent
-    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+    public static void onLoggingOut() {
         active = false;
         verifyRemaining = 0;
     }

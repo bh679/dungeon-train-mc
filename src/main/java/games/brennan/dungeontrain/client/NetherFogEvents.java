@@ -156,8 +156,7 @@ public final class NetherFogEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+    public static void onLoggingOut() {
         ClientNetherBand.reset();
         musicFadeActive = false;
     }

@@ -67,8 +67,7 @@ public final class BlockVariantWireframeRenderer {
      * survive across worlds. Symmetric with
      * {@link games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer#onLoggingOut}.
      */
-    @SubscribeEvent
-    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+    public static void onLoggingOut() {
         applySnapshot(BlockVariantOutlinePacket.empty());
     }
 

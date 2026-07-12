@@ -17,7 +17,6 @@ import java.util.Map;
  * {@link games.brennan.dungeontrain.client.PackageListClient}): the server pushes only when the
  * stage-blocks index changes, and an empty packet (editor exit) clears the cache.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class ClientStageBlocks {
 
     private static final StageBlockStripsPacket.Strip EMPTY_STRIP =
@@ -51,8 +50,7 @@ public final class ClientStageBlocks {
         BY_STAGE = Map.of();
     }
 
-    @SubscribeEvent
-    static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+    public static void onLoggingOut() {
         clear();
     }
 }

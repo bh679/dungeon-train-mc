@@ -30,6 +30,54 @@ public final class NeoForgeClientEvents {
     /** Register every converted client-side handler with its {@code DtEvents} field. */
     public static void register() {
         registerClientTick();
+        registerClientConnection();
+    }
+
+    /**
+     * Client player-network handlers ({@code LoggingIn} ×3, {@code LoggingOut} ×15),
+     * fired by {@code NeoForgeClientConnectionBridge}. All were NORMAL priority, not
+     * cancellable, and ignore the event object; order within a tier is irrelevant.
+     */
+    private static void registerClientConnection() {
+        // ClientPlayerNetworkEvent.LoggingIn
+        DtEvents.CLIENT_LOGGING_IN
+            .register(games.brennan.dungeontrain.client.snapshot.RideSnapshotDirector::onLoggingIn);
+        DtEvents.CLIENT_LOGGING_IN
+            .register(games.brennan.dungeontrain.client.NetworkConsentSyncClient::onLoggingIn);
+        DtEvents.CLIENT_LOGGING_IN
+            .register(games.brennan.dungeontrain.client.DevMessageConsentClient::onLoggingIn);
+
+        // ClientPlayerNetworkEvent.LoggingOut
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.snapshot.RideSnapshotDirector::onLoggingOut);
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.VoidSkyEvents::onLoggingOut);
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.CinematicInputHandler::onLoggingOut);
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.CinematicPreloadGate::onLoggingOut);
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.NetherFogEvents::onLoggingOut);
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.menu.ClientStageBlocks::onLoggingOut);
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer::onLoggingOut);
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantWireframeRenderer::onLoggingOut);
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantLockIdRenderer::onLoggingOut);
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.menu.ClientPartVisibility::onLoggingOut);
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.menu.PrefabClientLifecycleEvents::onLoggingOut);
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer::onLoggingOut);
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.UpsideDownFogEvents::onLoggingOut);
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.EditorStatusHudOverlay::onLoggingOut);
+        DtEvents.CLIENT_LOGGING_OUT
+            .register(games.brennan.dungeontrain.client.SpawnDeckHold::onLoggingOut);
     }
 
     /**

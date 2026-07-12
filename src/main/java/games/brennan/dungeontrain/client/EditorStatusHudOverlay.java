@@ -312,8 +312,7 @@ public final class EditorStatusHudOverlay {
      * {@code [DEV]} badge until a fresh {@link games.brennan.dungeontrain.net.EditorStatusPacket}
      * arrives — which only happens once the player steps onto an editor plot.
      */
-    @SubscribeEvent
-    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+    public static void onLoggingOut() {
         clear();
         // The part-position menu has no event-bus subscriber of its own; reset
         // it from here so every client-side editor renderer wipes in unison.

@@ -44,8 +44,7 @@ public final class UpsideDownFogEvents {
         event.setBlue(event.getBlue() + (SKY_B - event.getBlue()) * blend);
     }
 
-    @SubscribeEvent
-    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+    public static void onLoggingOut() {
         ClientUpsideDownBand.reset();
     }
 }

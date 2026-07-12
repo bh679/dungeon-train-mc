@@ -87,8 +87,7 @@ public final class DevMessageConsentClient {
         }
     }
 
-    @SubscribeEvent
-    public static void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
+    public static void onLoggingIn() {
         ensureLoaded();
         sendSyncIfConnected();
     }

@@ -346,4 +346,25 @@ public final class DtEvents {
     public static final DtEvent<DtClientTickCallback> CLIENT_TICK_PRE =
         new DtEvent<>();
 
+    // ---- Client connection (Stage 2c) -------------------------------------
+
+    /**
+     * Client logging in — NeoForge {@code ClientPlayerNetworkEvent.LoggingIn}.
+     * Fires on the client thread when the local player joins a server (integrated
+     * or dedicated). Not cancellable; read-only, and DT's 3 handlers ignore the
+     * event object. All NORMAL — {@code NeoForgeClientConnectionBridge} fires them
+     * in registration order.
+     */
+    public static final DtEvent<DtClientLoggingCallback> CLIENT_LOGGING_IN =
+        new DtEvent<>();
+
+    /**
+     * Client logging out — NeoForge {@code ClientPlayerNetworkEvent.LoggingOut}.
+     * Fires on the client thread when the local player disconnects. Not cancellable;
+     * DT's 15 handlers ignore the event object (they reset client-side caches). All
+     * NORMAL.
+     */
+    public static final DtEvent<DtClientLoggingCallback> CLIENT_LOGGING_OUT =
+        new DtEvent<>();
+
 }

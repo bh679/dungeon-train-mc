@@ -103,8 +103,7 @@ public final class VoidSkyEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+    public static void onLoggingOut() {
         ClientVoidBand.reset();
         musicFadeActive = false;
     }

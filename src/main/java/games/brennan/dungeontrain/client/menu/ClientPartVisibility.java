@@ -18,7 +18,6 @@ import java.util.Set;
  * {@link #isDisplayed} to draw the {@code ☑}/{@code ☐} state glyph on each row. A part not in the
  * hidden set is displayed (the default), so an empty/absent sync means "everything shown".
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class ClientPartVisibility {
 
     private static volatile Set<String> hidden = Set.of();
@@ -49,8 +48,7 @@ public final class ClientPartVisibility {
         hidden = Set.of();
     }
 
-    @SubscribeEvent
-    static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+    public static void onLoggingOut() {
         clear();
     }
 }

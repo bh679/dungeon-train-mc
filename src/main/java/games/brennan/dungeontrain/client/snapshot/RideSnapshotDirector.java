@@ -336,8 +336,7 @@ public final class RideSnapshotDirector {
         if (event.getLevel().getBlockState(event.getPos()).getBlock() instanceof DecoratedPotBlock) potPending = true;
     }
 
-    @SubscribeEvent
-    public static void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
+    public static void onLoggingIn() {
         // Fresh run: clear any stale in-memory shots and wipe an orphan disk dir left behind by a
         // prior run that didn't log out cleanly (a hard crash). clear() also deletes the run dir.
         RideSnapshotGallery.clear();
@@ -345,8 +344,7 @@ public final class RideSnapshotDirector {
         reset();
     }
 
-    @SubscribeEvent
-    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+    public static void onLoggingOut() {
         RideSnapshotGallery.clear();
         RideSnapshotCapture.disposeTarget();
         reset();
