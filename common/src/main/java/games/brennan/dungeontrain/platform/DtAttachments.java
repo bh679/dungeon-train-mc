@@ -34,6 +34,13 @@ public final class DtAttachments {
     /** Per-player "this run has been cheated" flag. Codec-persisted; copyOnDeath; sticky. */
     public static final DtAttachment<Boolean> RUN_CHEATED = provider().runCheated();
 
+    /**
+     * Per-CHUNK "still needs the upside-down mirror post-process" marker. Codec-persisted;
+     * presence (via {@link DtChunkAttachment#has}) means "needs mirror". Chunk-scoped
+     * (drives the deferred upside-down worldgen drain), so it is a {@link DtChunkAttachment}.
+     */
+    public static final DtChunkAttachment<Boolean> NEEDS_UPSIDE_DOWN_MIRROR = provider().needsUpsideDownMirror();
+
     private DtAttachments() {}
 
     private static DtAttachmentsProvider provider() {

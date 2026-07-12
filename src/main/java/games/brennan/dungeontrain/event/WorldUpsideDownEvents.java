@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.platform.DtAttachments;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -66,9 +66,9 @@ public final class WorldUpsideDownEvents {
 
         if (newChunk) {
             if (!isInAnyUpsideDownZone(level, chunk)) return;
-            chunk.setData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get(), Boolean.TRUE);
+            DtAttachments.NEEDS_UPSIDE_DOWN_MIRROR.set(chunk, Boolean.TRUE);
             DungeonTrainWorldData.get(level).enqueueMirrorChunk(chunk.getPos().toLong());
-        } else if (chunk.hasData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get())) {
+        } else if (DtAttachments.NEEDS_UPSIDE_DOWN_MIRROR.has(chunk)) {
             DungeonTrainWorldData.get(level).enqueueMirrorChunk(chunk.getPos().toLong());
         }
     }
@@ -139,7 +139,7 @@ public final class WorldUpsideDownEvents {
     /** Apply the mirror to a marked, neighbour-FULL chunk, clear its marker, and resend it to trackers. */
     public static void applyMirrorAndResend(ServerLevel level, LevelChunk chunk) {
         boolean changed = applyMirror(level, chunk);
-        chunk.removeData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get());  // exactly-once: clear even on a no-op self-heal
+        DtAttachments.NEEDS_UPSIDE_DOWN_MIRROR.remove(chunk);  // exactly-once: clear even on a no-op self-heal
         chunk.setUnsaved(true);                                               // persist the cleared marker (applyMirror only sets it when changed)
         if (changed) resendChunk(level, chunk);
     }

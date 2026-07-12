@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.platform.neoforge;
 
 import games.brennan.dungeontrain.platform.DtAttachment;
 import games.brennan.dungeontrain.platform.DtAttachmentsProvider;
+import games.brennan.dungeontrain.platform.DtChunkAttachment;
 import games.brennan.dungeontrain.player.PlayerBiomeProgress;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -42,5 +43,10 @@ public final class NeoForgeAttachments implements DtAttachmentsProvider {
     @Override
     public DtAttachment<Boolean> runCheated() {
         return new NeoForgeAttachment<>(ModDataAttachments.RUN_CHEATED);
+    }
+
+    @Override
+    public DtChunkAttachment<Boolean> needsUpsideDownMirror() {
+        return new NeoForgeChunkAttachment<>(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR);
     }
 }

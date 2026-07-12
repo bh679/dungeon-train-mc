@@ -32,4 +32,11 @@ public interface DtAttachmentsProvider {
 
     /** Handle for the per-player "run cheated" flag (codec-persisted, copyOnDeath, sticky). */
     DtAttachment<Boolean> runCheated();
+
+    /**
+     * Handle for the per-CHUNK "needs upside-down mirror" marker (codec-persisted,
+     * presence-semantics, no copyOnDeath). Chunk-scoped, so it returns a
+     * {@link DtChunkAttachment} rather than a per-player {@link DtAttachment}.
+     */
+    DtChunkAttachment<Boolean> needsUpsideDownMirror();
 }

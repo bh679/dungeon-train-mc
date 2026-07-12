@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
-import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.platform.DtAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.PhysicsSubstepTuner;
@@ -310,7 +310,7 @@ public final class TrainTickEvents {
             int cz = ChunkPos.getZ(key);
             LevelChunk chunk = cache.getChunkNow(cx, cz);
             if (chunk == null) { pending.remove(key); continue; }                 // unloaded → reload re-enqueues
-            if (!chunk.hasData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get())) { pending.remove(key); continue; } // already applied
+            if (!DtAttachments.NEEDS_UPSIDE_DOWN_MIRROR.has(chunk)) { pending.remove(key); continue; } // already applied
             if (!WorldUpsideDownEvents.neighboursFull(level, cx, cz)) continue;   // palette-race guard → retry next tick
             WorldUpsideDownEvents.applyMirrorAndResend(level, chunk);
             pending.remove(key);
@@ -352,7 +352,7 @@ public final class TrainTickEvents {
         for (int cz = minCZ; cz <= maxCZ; cz++) {
             for (int cx = minCX; cx <= maxCX; cx++) {
                 LevelChunk chunk = cache.getChunkNow(cx, cz);
-                if (chunk == null || !chunk.hasData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get())) continue;
+                if (chunk == null || !DtAttachments.NEEDS_UPSIDE_DOWN_MIRROR.has(chunk)) continue;
                 if (!WorldUpsideDownEvents.neighboursFull(level, cx, cz)) continue;
                 WorldUpsideDownEvents.applyMirrorAndResend(level, chunk);
                 pending.remove(ChunkPos.asLong(cx, cz));
