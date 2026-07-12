@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 8,
   "variants": {
     "4,0,1": { "lockId": 1, "states": [{"state": "minecraft:decorated_pot[cracked=false,facing=east,waterlogged=false]", "nbt": "{components:{\"minecraft:custom_data\":{dt_loot_prefab_id:\"pot\"}},item:{count:2,id:\"minecraft:melon_slice\"}}", "rotation": {"mode": "lock", "dirs": ["east"]}}, {"state": "minecraft:command_block[conditional=false,facing=east]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["east"]}}] },
     "4,1,1": { "lockId": 1, "states": [{"state": "minecraft:decorated_pot[cracked=false,facing=east,waterlogged=false]", "nbt": "{components:{\"minecraft:custom_data\":{dt_loot_prefab_id:\"pot\"}},item:{count:2,id:\"minecraft:melon_slice\"}}", "rotation": {"mode": "lock", "dirs": ["east"]}}, {"state": "minecraft:command_block[conditional=false,facing=east]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["east"]}}] },
