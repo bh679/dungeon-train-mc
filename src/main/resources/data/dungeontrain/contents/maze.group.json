@@ -24,11 +24,22 @@
     },
     {
       "id": "maze5",
-      "weight": 3
+      "weight": 3,
+      "stages": [
+        "copper",
+        "deepdark",
+        "mud",
+        "obsidian",
+        "quartz"
+      ]
     },
     {
       "id": "doors",
-      "weight": 1
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "UPSIDE_DOWN"
+      ]
     },
     {
       "id": "maze6",

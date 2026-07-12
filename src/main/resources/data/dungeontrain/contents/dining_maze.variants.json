@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "variants": {
     "3,0,2": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:command_block[conditional=false,facing=up]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:dark_oak_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:stripped_spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:spruce_planks", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
     "3,1,2": { "lockId": 1, "states": [{"state": "minecraft:spruce_log[axis=y]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:command_block[conditional=false,facing=up]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:dark_oak_fence[east=false,north=false,south=false,waterlogged=false,west=false]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:stripped_spruce_log[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:spruce_planks", "rotation": {"mode": "lock", "dirs": ["up"]}}] },

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "variants": {
     "1,0,3": [{"state": "minecraft:mud", "weight": 10}, {"state": "minecraft:muddy_mangrove_roots[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:command_block[conditional=false,facing=up]", "rotation": {"mode": "lock", "dirs": ["up"]}}],
     "0,0,3": [{"state": "minecraft:mud", "weight": 10}, {"state": "minecraft:muddy_mangrove_roots[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 3, "rotation": {"mode": "lock", "dirs": ["up"]}}],

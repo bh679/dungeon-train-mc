@@ -4321,6 +4321,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "room-lighting-pass",
+      "version": "0.447.0",
+      "type": "content",
+      "title": "Room lighting improvements across most rooms",
+      "summary": "Nearly all room content parts received a lighting pass in the in-game editor, adding light sources to reduce dark corners and mob-spawnable gaps throughout the train.",
+      "highlights": [
+        "Added lighting to nearly all room content parts (dining, kitchen, storage, bedrooms, maze rooms, and more)",
+        "Reduces unlit dark spots that could allow unwanted mob spawns"
+      ],
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
