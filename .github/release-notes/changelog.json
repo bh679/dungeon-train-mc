@@ -4195,6 +4195,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "session-language-telemetry",
+      "version": "0.441.0",
+      "type": "chore",
+      "title": "Record player language in session telemetry",
+      "summary": "Internal/admin-only: the per-join world-info telemetry now records the player's Minecraft client language, so the private data explorer can show and sort game sessions by locale. No in-game or player-facing change.",
+      "highlights": [
+        "World-info telemetry carries the client locale (e.g. en_us)",
+        "Data explorer Games list gains a sortable Language column"
+      ],
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
