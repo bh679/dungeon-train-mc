@@ -5,9 +5,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 import java.util.List;
 
 /**
@@ -21,7 +18,6 @@ import java.util.List;
  * vanilla item-icon padding renders cleanly. If the source prefab has more
  * entries than fit, "+N more" text renders below the grid.</p>
  */
-@OnlyIn(Dist.CLIENT)
 public final class PrefabIconsClientTooltipComponent implements ClientTooltipComponent {
 
     public static final int ICONS_PER_ROW = 9;

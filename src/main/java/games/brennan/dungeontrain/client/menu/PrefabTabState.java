@@ -7,8 +7,6 @@ import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.item.CreativeModeTabs;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import org.slf4j.Logger;
 
 import java.util.Collections;
@@ -24,7 +22,6 @@ import java.util.Optional;
  * <p>Updates trigger {@link CreativeModeTabs#tryRebuildTabContents} so the
  * tab reflects the latest data immediately.</p>
  */
-@OnlyIn(Dist.CLIENT)
 public final class PrefabTabState {
 
     private static final Logger LOGGER = LogUtils.getLogger();

@@ -9,9 +9,6 @@ import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 /**
  * Vertical tab button on the LEFT edge of the creative inventory.
  *
@@ -25,7 +22,6 @@ import net.neoforged.api.distmarker.OnlyIn;
  * currently-selected vanilla tab, so the user can tell at a glance which
  * mode they're in.</p>
  */
-@OnlyIn(Dist.CLIENT)
 public final class PrefabSideTabButton extends AbstractButton {
 
     public static final int WIDTH = 28;

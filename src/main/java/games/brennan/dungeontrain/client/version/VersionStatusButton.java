@@ -10,9 +10,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.Util;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 import java.net.URI;
 
 /**
@@ -32,7 +29,6 @@ import java.net.URI;
  * the async fetch result appears in place without needing to rebuild the
  * title screen.</p>
  */
-@OnlyIn(Dist.CLIENT)
 public final class VersionStatusButton extends Button {
 
     private static final int HEIGHT = 10;

@@ -10,8 +10,6 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.regex.Pattern;
@@ -26,7 +24,6 @@ import java.util.regex.Pattern;
  * this closes the player returns to the world with the V/C menu still
  * visible (it's a HUD overlay, not a real screen).</p>
  */
-@OnlyIn(Dist.CLIENT)
 public final class PrefabNameScreen extends Screen {
 
     public enum Kind {

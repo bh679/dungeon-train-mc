@@ -8,9 +8,6 @@ import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 /**
  * Vanilla {@link Button} rendered with a darker tint so it reads as a
  * non-vanilla, mod-specific action rather than blending in with the
@@ -21,7 +18,6 @@ import net.neoforged.api.distmarker.OnlyIn;
  * sprite blit, then restored to white before the label is drawn — so only the
  * background is darkened, label text stays crisp.</p>
  */
-@OnlyIn(Dist.CLIENT)
 public final class DarkTintedButton extends Button {
 
     private static final WidgetSprites SPRITES = new WidgetSprites(

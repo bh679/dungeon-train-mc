@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.platform.DtPlatform;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.platform.GlUtil;
@@ -6,7 +7,6 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.discord.LauncherInfo;
 import net.minecraft.client.Minecraft;
-import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 
 import java.lang.management.ManagementFactory;
@@ -178,9 +178,7 @@ public final class SystemSpecCollector {
     }
 
     private static String modVer(String id) {
-        return ModList.get().getModContainerById(id)
-                .map(c -> c.getModInfo().getVersion().toString())
-                .orElse("?");
+        return DtPlatform.get().getModVersion(id).orElse("?");
     }
 
     private static String mib(long bytes) {

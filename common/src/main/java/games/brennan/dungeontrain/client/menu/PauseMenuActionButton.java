@@ -8,9 +8,6 @@ import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 /**
  * Pause-menu action button used by {@link games.brennan.dungeontrain.client.PauseMenuLayoutHandler}
  * to build the "Abandon This Run" / "Exit to Title" / "Quit Game" cluster.
@@ -33,7 +30,6 @@ import net.neoforged.api.distmarker.OnlyIn;
  *       {@code active && visible} in {@code mouseClicked}).</li>
  * </ul>
  */
-@OnlyIn(Dist.CLIENT)
 public final class PauseMenuActionButton extends Button {
 
     private static final WidgetSprites SPRITES = new WidgetSprites(

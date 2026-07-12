@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.mojang.brigadier.CommandDispatcher;
 import games.brennan.dungeontrain.command.BugCommand;
@@ -8,9 +9,6 @@ import games.brennan.dungeontrain.command.TrainCommand;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.fml.ModList;
-
 /**
  * Command registration handler. Converted off NeoForge's event bus (Stage 2a);
  * now a plain {@link games.brennan.dungeontrain.platform.event.DtCommandRegistrationCallback}
@@ -34,7 +32,7 @@ public final class CommandEvents {
         // Dev-only: a relay-free way to drive the remote-echo encounter journal end-to-end.
         // Never registered in production, and only when PlayerMob (whose types the command
         // references) is present.
-        if (!FMLEnvironment.production && ModList.get().isLoaded("playermob")) {
+        if (DtPlatform.get().isDevelopmentEnvironment() && DtPlatform.get().isModLoaded("playermob")) {
             EchoEncounterTestCommand.register(dispatcher);
         }
     }

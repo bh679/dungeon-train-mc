@@ -5,9 +5,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 /**
  * Vanilla {@link Button} with a sine-pulsing blue border drawn over the
  * standard sprite. Used as a drop-in replacement for the title-screen
@@ -20,7 +17,6 @@ import net.neoforged.api.distmarker.OnlyIn;
  * hit-testing, hover state, accessibility narration, and label rendering
  * all behave exactly like a vanilla button. The pulse is an overlay only.</p>
  */
-@OnlyIn(Dist.CLIENT)
 public final class PulsingDiscordButton extends Button {
 
     /** One full pulse (alpha 0 → peak → 0) over this many ms. Wall-clock paced so it ticks even when the game pauses. */
