@@ -11,7 +11,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.ServerChatEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
@@ -66,17 +65,22 @@ public final class MentionPresenceEvents {
     /** Last gameTime tick a reply was enqueued, per player — anchors the per-player 5-min cooldown. */
     private static final Map<UUID, Long> LAST_REPLY_TICK = new ConcurrentHashMap<>();
 
-    @SubscribeEvent
-    public static void onServerChat(ServerChatEvent event) {
-        String rawText = event.getRawText();
+    /**
+     * Converted off the NeoForge bus (Stage 2a) — now a plain
+     * {@link games.brennan.dungeontrain.platform.event.DtServerChatCallback}
+     * registered via {@code DtEvents.SERVER_CHAT} (see {@code NeoForgeServerEvents}),
+     * fired by {@code NeoForgeChatBridge}. Logic unchanged. {@code message} is the
+     * decorated broadcast component (unused here — this listener is observe-only).
+     */
+    public static void onServerChat(ServerPlayer player, String rawText, Component message) {
         boolean mentionsDev = mentionsBrennan(rawText);
         // Feed every chat line to the echo journal (it logs a beat only when an echo is around);
         // a @dev mention here also counts as dev contact for the chat-contents privacy guard.
-        RemoteEchoEncounters.onPrimaryPlayerChat(event.getPlayer(), rawText, mentionsDev);
+        RemoteEchoEncounters.onPrimaryPlayerChat(player, rawText, mentionsDev);
 
         // Dev-message consent: any chat line slides the 20-minute window once consent is granted; a
         // @Dev typed while a Developer message is held accepts consent, flushing it into in-game chat.
-        ServerPlayer chatter = event.getPlayer();
+        ServerPlayer chatter = player;
         DevMessageConsent.onPlayerChatted(chatter);
         if (mentionsDev && DevMessageConsent.hasPending(chatter.getUUID())) {
             DevMessageConsent.onConsentAccepted(chatter);
@@ -89,7 +93,7 @@ public final class MentionPresenceEvents {
         // whether or not Brennan is online (the presence reply below is separate and
         // may stay silent). Idempotent, so repeat tags are harmless.
         AchievementEvents.notifyTaggedCreator(chatter);
-        ServerPlayer sender = event.getPlayer();
+        ServerPlayer sender = player;
         MinecraftServer server = sender.getServer();
         if (server == null) {
             return;

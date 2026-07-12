@@ -34,4 +34,15 @@ public final class DtEvents {
     public static final DtEvent<DtCommandRegistrationCallback> COMMAND_REGISTRATION =
         new DtEvent<>();
 
+    /**
+     * Server chat — NeoForge {@code ServerChatEvent}. Fires on the server thread
+     * when a player sends a chat line, before broadcast. The NeoForge event is
+     * cancellable with a mutable message, but DT's only listener is observe-only,
+     * so this is a {@code void} exact-passthrough callback (see
+     * {@link DtServerChatCallback}). Bridge invokes every listener in
+     * registration order; it does not cancel or edit the message.
+     */
+    public static final DtEvent<DtServerChatCallback> SERVER_CHAT =
+        new DtEvent<>();
+
 }

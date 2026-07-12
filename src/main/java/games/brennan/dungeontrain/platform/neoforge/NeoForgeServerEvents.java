@@ -32,5 +32,10 @@ public final class NeoForgeServerEvents {
         // Single handler; order irrelevant.
         games.brennan.dungeontrain.platform.event.DtEvents.COMMAND_REGISTRATION
             .register(games.brennan.dungeontrain.event.CommandEvents::onRegisterCommands);
+
+        // --- Server chat (ServerChatEvent) -----------------------------------
+        // Single (observe-only) handler; order irrelevant.
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_CHAT
+            .register(games.brennan.dungeontrain.event.MentionPresenceEvents::onServerChat);
     }
 }
