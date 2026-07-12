@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "variants": {
     "4,0,0": ["minecraft:bamboo_sapling", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:tall_grass[half=lower]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:short_grass", "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "2,0,2": ["minecraft:bamboo_sapling", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4, "rotation": {"mode": "lock", "dirs": ["north"]}}],

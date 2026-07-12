@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "variants": {
     "6,0,0": ["minecraft:snow_block", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "5,0,2": [{"state": "minecraft:snow_block", "weight": 2}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:snow[layers=1]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
