@@ -19,6 +19,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class WorldInfoReporterTest {
 
     private static JsonObject sample(long worldSeed, long trainSeed, List<WorldInfoReporter.ModEntry> mods) {
+        return sample(worldSeed, trainSeed, mods, "en_us");
+    }
+
+    private static JsonObject sample(long worldSeed, long trainSeed,
+                                     List<WorldInfoReporter.ModEntry> mods, String language) {
         return WorldInfoReporter.buildPayload(
                 "069a79f444e94726a5befca90e38aaf5", "Notch",
                 worldSeed, trainSeed,
@@ -28,7 +33,8 @@ class WorldInfoReporterTest {
                 "OVERWORLD",
                 "0.391.1",
                 "CurseForge · brand minecraft v2.4.28",
-                mods);
+                mods,
+                language);
     }
 
     @Test
@@ -97,5 +103,19 @@ class WorldInfoReporterTest {
         JsonObject out = sample(1L, 2L, List.of());
         assertTrue(out.has("mods"));
         assertEquals(0, out.getAsJsonArray("mods").size());
+    }
+
+    @Test
+    @DisplayName("language is emitted when known and omitted when empty/null")
+    void languageConditional() {
+        JsonObject withLang = sample(1L, 2L, List.of(), "de_de");
+        assertTrue(withLang.has("language"), "language present when known");
+        assertEquals("de_de", withLang.get("language").getAsString());
+
+        JsonObject emptyLang = sample(1L, 2L, List.of(), "");
+        assertTrue(!emptyLang.has("language"), "language omitted when empty");
+
+        JsonObject nullLang = sample(1L, 2L, List.of(), null);
+        assertTrue(!nullLang.has("language"), "language omitted when null");
     }
 }
