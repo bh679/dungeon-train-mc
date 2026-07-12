@@ -48,7 +48,7 @@ public final class PendingDeathNotes extends SavedData {
         ServerLevel overworld = anyLevel.getServer().overworld();
         return overworld.getDataStorage().computeIfAbsent(
             new SavedData.Factory<>(() -> new PendingDeathNotes(List.of()),
-                    (tag, registries) -> load(tag)),
+                    (tag, registries) -> load(tag), null),
             NAME);
     }
 

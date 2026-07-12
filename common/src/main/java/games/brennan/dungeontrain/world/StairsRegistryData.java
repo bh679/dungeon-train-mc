@@ -60,7 +60,8 @@ public final class StairsRegistryData extends SavedData {
         return overworld.getDataStorage().computeIfAbsent(
             new SavedData.Factory<>(
                 StairsRegistryData::new,
-                (tag, registries) -> load(tag)
+                (tag, registries) -> load(tag),
+                null
             ),
             NAME
         );

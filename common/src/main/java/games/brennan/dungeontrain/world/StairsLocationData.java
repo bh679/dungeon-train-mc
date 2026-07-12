@@ -84,7 +84,8 @@ public final class StairsLocationData extends SavedData {
         return level.getDataStorage().computeIfAbsent(
             new SavedData.Factory<>(
                 StairsLocationData::new,
-                (tag, registries) -> load(tag)
+                (tag, registries) -> load(tag),
+                null
             ),
             NAME
         );

@@ -42,7 +42,8 @@ public final class BoardingProgressData extends SavedData {
         return overworld.getDataStorage().computeIfAbsent(
             new SavedData.Factory<>(
                 BoardingProgressData::createDefault,
-                (tag, registries) -> load(tag)
+                (tag, registries) -> load(tag),
+                null
             ),
             NAME
         );

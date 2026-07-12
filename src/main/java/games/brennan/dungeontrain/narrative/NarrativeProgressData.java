@@ -187,7 +187,8 @@ public final class NarrativeProgressData extends SavedData {
         return overworld.getDataStorage().computeIfAbsent(
             new SavedData.Factory<>(
                 NarrativeProgressData::new,
-                (tag, registries) -> load(tag)
+                (tag, registries) -> load(tag),
+                null
             ),
             NAME
         );
