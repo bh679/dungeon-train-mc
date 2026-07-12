@@ -47,10 +47,6 @@ import java.util.List;
  * from "minecraft:stone_bricks") to keep the row narrow; full id is shown
  * in the search screen.</p>
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class BlockVariantMenuRenderer {
 
     static final RenderType PANEL_QUAD = RenderType.create(
@@ -95,9 +91,7 @@ public final class BlockVariantMenuRenderer {
 
     private BlockVariantMenuRenderer() {}
 
-    @SubscribeEvent
-    public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+    public static void onRenderLevelStage(com.mojang.blaze3d.vertex.PoseStack poseStack, net.minecraft.client.Camera camera, net.minecraft.client.DeltaTracker deltaTracker) {
         if (!BlockVariantMenu.isActive()) return;
         if (BlockVariantMenu.localPos() == null) return;
 
@@ -105,8 +99,8 @@ public final class BlockVariantMenuRenderer {
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
-        PoseStack ps = event.getPoseStack();
-        Vec3 cam = event.getCamera().getPosition();
+        PoseStack ps = poseStack;
+        Vec3 cam = camera.getPosition();
         Vec3 anchor = BlockVariantMenu.anchorPos();
         Vec3 right = BlockVariantMenu.anchorRight();
         Vec3 up = BlockVariantMenu.anchorUp();

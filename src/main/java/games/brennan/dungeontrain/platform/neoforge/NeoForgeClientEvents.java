@@ -35,6 +35,40 @@ public final class NeoForgeClientEvents {
         registerTooltipAndRender();
         registerInput();
         registerScreen();
+        registerRenderLevel();
+    }
+
+    /**
+     * World-render handlers, fired by {@code NeoForgeClientRenderLevelBridge}: all 12
+     * former {@code RenderLevelStageEvent} handlers, which gated exclusively on
+     * {@code AFTER_TRANSLUCENT_BLOCKS}. The bridge owns that stage check now, so these
+     * fire only at that stage (order irrelevant; all NORMAL).
+     */
+    private static void registerRenderLevel() {
+        DtEvents.RENDER_LEVEL_AFTER_TRANSLUCENT
+            .register(games.brennan.dungeontrain.client.CarriageGroupGapDebugRenderer::onRenderLevelStage);
+        DtEvents.RENDER_LEVEL_AFTER_TRANSLUCENT
+            .register(games.brennan.dungeontrain.client.menu.templateblocks.TemplateBlocksMenuRenderer::onRenderLevelStage);
+        DtEvents.RENDER_LEVEL_AFTER_TRANSLUCENT
+            .register(games.brennan.dungeontrain.client.menu.plot.EditorHelpPanelRenderer::onRenderLevelStage);
+        DtEvents.RENDER_LEVEL_AFTER_TRANSLUCENT
+            .register(games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer::onRenderLevelStage);
+        DtEvents.RENDER_LEVEL_AFTER_TRANSLUCENT
+            .register(games.brennan.dungeontrain.client.menu.stagepanel.StagePanelMenuRenderer::onRenderLevelStage);
+        DtEvents.RENDER_LEVEL_AFTER_TRANSLUCENT
+            .register(games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenuRenderer::onRenderLevelStage);
+        DtEvents.RENDER_LEVEL_AFTER_TRANSLUCENT
+            .register(games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantWireframeRenderer::onRenderLevelStage);
+        DtEvents.RENDER_LEVEL_AFTER_TRANSLUCENT
+            .register(games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantLockIdRenderer::onRenderLevelStage);
+        DtEvents.RENDER_LEVEL_AFTER_TRANSLUCENT
+            .register(games.brennan.dungeontrain.client.menu.containercontents.ContainerContentsMenuRenderer::onRenderLevelStage);
+        DtEvents.RENDER_LEVEL_AFTER_TRANSLUCENT
+            .register(games.brennan.dungeontrain.client.menu.parts.PartPositionMenuRenderer::onRenderLevelStage);
+        DtEvents.RENDER_LEVEL_AFTER_TRANSLUCENT
+            .register(games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer::onRenderLevelStage);
+        DtEvents.RENDER_LEVEL_AFTER_TRANSLUCENT
+            .register(games.brennan.dungeontrain.client.menu.CommandMenuRenderer::onRenderLevelStage);
     }
 
     /**

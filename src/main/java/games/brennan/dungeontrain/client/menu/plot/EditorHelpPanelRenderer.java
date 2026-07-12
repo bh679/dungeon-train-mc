@@ -41,10 +41,6 @@ import org.joml.Quaternionf;
  * <p>Layout constants are package-private so {@link EditorHelpPanelRaycast}
  * shares the same numbers for the wiki-button hit test.</p>
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class EditorHelpPanelRenderer {
 
     /** Cell kinds the raycast / input handler need to identify. */
@@ -157,9 +153,7 @@ public final class EditorHelpPanelRenderer {
         return new Vec3(cx, cy, cz + WORLD_OFFSET_BLOCKS);
     }
 
-    @SubscribeEvent
-    public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+    public static void onRenderLevelStage(com.mojang.blaze3d.vertex.PoseStack poseStack, net.minecraft.client.Camera camera, net.minecraft.client.DeltaTracker deltaTracker) {
         // Master "Editor Menus" toggle — hide all world-space editor panels when off.
         if (!games.brennan.dungeontrain.client.EditorStatusHudOverlay.isEditorMenusVisible()) {
             HOVERED = Hovered.NONE;
@@ -175,8 +169,8 @@ public final class EditorHelpPanelRenderer {
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
-        PoseStack ps = event.getPoseStack();
-        Vec3 cam = event.getCamera().getPosition();
+        PoseStack ps = poseStack;
+        Vec3 cam = camera.getPosition();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
         Vec3 anchor = helpAnchor(navMenu);

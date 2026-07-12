@@ -46,10 +46,6 @@ import java.util.List;
  *       the hovered sub-button.</li>
  * </ul>
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class CommandMenuRenderer {
 
     /** Alpha-blended POSITION_COLOR quads with depth test but no depth write. */
@@ -71,15 +67,13 @@ public final class CommandMenuRenderer {
 
     private CommandMenuRenderer() {}
 
-    @SubscribeEvent
-    public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+    public static void onRenderLevelStage(com.mojang.blaze3d.vertex.PoseStack poseStack, net.minecraft.client.Camera camera, net.minecraft.client.DeltaTracker deltaTracker) {
         if (!CommandMenuState.isOpen()) return;
 
         // Re-anchor every frame against the partial-tick interpolated eye so
         // the panel tracks player translation smoothly. Must run before the
         // raycast below so hover detection sees the same anchor as the draw.
-        float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        float partialTick = deltaTracker.getGameTimeDeltaPartialTick(false);
         CommandMenuState.refreshAnchorForFrame(partialTick);
 
         // Refresh hover using the current frame's camera — between ticks
@@ -107,8 +101,7 @@ public final class CommandMenuRenderer {
 
         Font font = mc.font;
 
-        PoseStack poseStack = event.getPoseStack();
-        Vec3 cam = event.getCamera().getPosition();
+        Vec3 cam = camera.getPosition();
         Vec3 anchor = CommandMenuState.anchorPos();
         Vec3 right = CommandMenuState.anchorRight();
         Vec3 up = CommandMenuState.anchorUp();

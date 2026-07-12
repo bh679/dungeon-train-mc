@@ -36,10 +36,6 @@ import java.util.Set;
  * {@link RenderLevelStageEvent.Stage#AFTER_TRANSLUCENT_BLOCKS}. An empty
  * snapshot clears the cache.</p>
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class BlockVariantWireframeRenderer {
 
     /** Outset on every axis to keep the wireframe clear of block face z-fighting. */
@@ -71,14 +67,12 @@ public final class BlockVariantWireframeRenderer {
         applySnapshot(BlockVariantOutlinePacket.empty());
     }
 
-    @SubscribeEvent
-    public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+    public static void onRenderLevelStage(com.mojang.blaze3d.vertex.PoseStack poseStack, net.minecraft.client.Camera camera, net.minecraft.client.DeltaTracker deltaTracker) {
         if (CACHE.isEmpty()) return;
 
         Minecraft mc = Minecraft.getInstance();
-        PoseStack ps = event.getPoseStack();
-        Vec3 cam = event.getCamera().getPosition();
+        PoseStack ps = poseStack;
+        Vec3 cam = camera.getPosition();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
         VertexConsumer vc = buffer.getBuffer(RenderType.lines());
 

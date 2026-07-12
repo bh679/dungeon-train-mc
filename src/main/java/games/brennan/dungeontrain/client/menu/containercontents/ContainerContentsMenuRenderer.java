@@ -34,10 +34,6 @@ import java.util.List;
  * with a 3-cell toolbar (Add / Clear / X) and a per-row layout of
  * name + count + weight + remove.
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class ContainerContentsMenuRenderer {
 
     static final RenderType PANEL_QUAD = RenderType.create(
@@ -87,9 +83,7 @@ public final class ContainerContentsMenuRenderer {
 
     private ContainerContentsMenuRenderer() {}
 
-    @SubscribeEvent
-    public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+    public static void onRenderLevelStage(com.mojang.blaze3d.vertex.PoseStack poseStack, net.minecraft.client.Camera camera, net.minecraft.client.DeltaTracker deltaTracker) {
         if (!ContainerContentsMenu.isActive()) return;
         if (ContainerContentsMenu.localPos() == null) return;
 
@@ -97,8 +91,8 @@ public final class ContainerContentsMenuRenderer {
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
-        PoseStack ps = event.getPoseStack();
-        Vec3 cam = event.getCamera().getPosition();
+        PoseStack ps = poseStack;
+        Vec3 cam = camera.getPosition();
         Vec3 anchor = ContainerContentsMenu.anchorPos();
         Vec3 right = ContainerContentsMenu.anchorRight();
         Vec3 up = ContainerContentsMenu.anchorUp();

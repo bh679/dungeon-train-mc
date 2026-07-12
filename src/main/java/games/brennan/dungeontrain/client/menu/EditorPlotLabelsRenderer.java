@@ -53,10 +53,6 @@ import java.util.List;
  * shares the same numbers — the raycast hit math and the visible cells must
  * match exactly or the wrong cell highlights / dispatches.</p>
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class EditorPlotLabelsRenderer {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -184,9 +180,7 @@ public final class EditorPlotLabelsRenderer {
         HOVERED = h == null ? Hovered.NONE : h;
     }
 
-    @SubscribeEvent
-    public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+    public static void onRenderLevelStage(com.mojang.blaze3d.vertex.PoseStack poseStack, net.minecraft.client.Camera camera, net.minecraft.client.DeltaTracker deltaTracker) {
         // Master "Editor Menus" toggle — hide all world-space editor panels when off.
         if (!games.brennan.dungeontrain.client.EditorStatusHudOverlay.isEditorMenusVisible()) return;
         List<EditorPlotLabelsPacket.Entry> snapshot = CACHE;
@@ -198,8 +192,8 @@ public final class EditorPlotLabelsRenderer {
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
-        PoseStack ps = event.getPoseStack();
-        Vec3 cam = event.getCamera().getPosition();
+        PoseStack ps = poseStack;
+        Vec3 cam = camera.getPosition();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
         Hovered hovered = HOVERED;

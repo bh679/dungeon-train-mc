@@ -550,4 +550,18 @@ public final class DtEvents {
     public static final DtEvent<DtScreenClosingCallback> SCREEN_CLOSING =
         new DtEvent<>();
 
+    // ---- World render (Stage 2c) ------------------------------------------
+
+    /**
+     * Level render at {@code AFTER_TRANSLUCENT_BLOCKS} — NeoForge
+     * {@code RenderLevelStageEvent} filtered to that one stage (client render
+     * thread). All 12 DT handlers gated on exactly this stage, so
+     * {@code NeoForgeClientRenderLevelBridge} performs the stage check and fires this
+     * field only then (the field name encodes the stage, matching Fabric's per-stage
+     * {@code WorldRenderEvents.AFTER_TRANSLUCENT} callback). Not cancellable; handlers
+     * draw world-space overlays. All NORMAL; order irrelevant.
+     */
+    public static final DtEvent<DtRenderLevelAfterTranslucentCallback> RENDER_LEVEL_AFTER_TRANSLUCENT =
+        new DtEvent<>();
+
 }

@@ -68,10 +68,6 @@ import java.util.UUID;
  * world-aligned after transform — no need to draw oriented bounding
  * boxes manually.</p>
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class CarriageGroupGapDebugRenderer {
 
     private static final float CUBE_R = 0.85f;
@@ -122,9 +118,7 @@ public final class CarriageGroupGapDebugRenderer {
 
     private CarriageGroupGapDebugRenderer() {}
 
-    @SubscribeEvent
-    public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+    public static void onRenderLevelStage(com.mojang.blaze3d.vertex.PoseStack poseStack, net.minecraft.client.Camera camera, net.minecraft.client.DeltaTracker deltaTracker) {
 
         // Each wireframe is gated on its own client-mirror flag — flips
         // take effect on the next frame regardless of broadcast timing.
@@ -155,11 +149,10 @@ public final class CarriageGroupGapDebugRenderer {
             byUuid.put(sl.getUniqueId(), sl);
         }
 
-        float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
-        Camera camera = event.getCamera();
+        float partialTick = deltaTracker.getGameTimeDeltaPartialTick(false);
         Vec3 cam = camera.getPosition();
         Font font = mc.font;
-        PoseStack ps = event.getPoseStack();
+        PoseStack ps = poseStack;
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
         // Cubes pass — single PoseStack push for the whole batch.

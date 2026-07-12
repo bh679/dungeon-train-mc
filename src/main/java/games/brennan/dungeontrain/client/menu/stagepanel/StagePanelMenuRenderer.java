@@ -40,7 +40,6 @@ import java.util.List;
  * swaps that block across the whole stage with the player's held block. {@link #hitFor} mirrors
  * this layout exactly for {@link StagePanelMenuRaycast}.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class StagePanelMenuRenderer {
 
     /** Same composite recipe as the type-menu panel, own buffer identity. */
@@ -97,9 +96,7 @@ public final class StagePanelMenuRenderer {
 
     private StagePanelMenuRenderer() {}
 
-    @SubscribeEvent
-    public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+    public static void onRenderLevelStage(com.mojang.blaze3d.vertex.PoseStack poseStack, net.minecraft.client.Camera camera, net.minecraft.client.DeltaTracker deltaTracker) {
         if (!StagePanelMenu.isActive()) return;
         if (!games.brennan.dungeontrain.client.EditorStatusHudOverlay.isEditorMenusVisible()) return;
         // Editor exited (type menus cleared) — don't render an orphan panel.
@@ -107,8 +104,8 @@ public final class StagePanelMenuRenderer {
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
-        PoseStack ps = event.getPoseStack();
-        Vec3 cam = event.getCamera().getPosition();
+        PoseStack ps = poseStack;
+        Vec3 cam = camera.getPosition();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
         BlockPos pos = StagePanelMenu.anchor();

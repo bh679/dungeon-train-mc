@@ -45,10 +45,6 @@ import java.util.Map;
  * — vertical faces use world up, horizontal faces use world up — so the
  * digit reads upright from any of the 6 sides.</p>
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class BlockVariantLockIdRenderer {
 
     private static final RenderType PANEL_QUAD = RenderType.create(
@@ -102,15 +98,13 @@ public final class BlockVariantLockIdRenderer {
         applySnapshot(BlockVariantLockIdsPacket.empty());
     }
 
-    @SubscribeEvent
-    public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+    public static void onRenderLevelStage(com.mojang.blaze3d.vertex.PoseStack poseStack, net.minecraft.client.Camera camera, net.minecraft.client.DeltaTracker deltaTracker) {
         if (CACHE.isEmpty()) return;
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
-        PoseStack ps = event.getPoseStack();
-        Vec3 cam = event.getCamera().getPosition();
+        PoseStack ps = poseStack;
+        Vec3 cam = camera.getPosition();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
         Map<BlockPos, Integer> snapshot;

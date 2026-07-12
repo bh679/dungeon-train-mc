@@ -46,10 +46,6 @@ import java.util.Locale;
  *       {@link PartPositionMenu#ROWS_PER_COLUMN} entries.</li>
  * </ul></p>
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class PartPositionMenuRenderer {
 
     /** Same composite as CommandMenuRenderer's PANEL_QUAD — alpha-blended position+colour, depth test, no depth write. */
@@ -114,9 +110,7 @@ public final class PartPositionMenuRenderer {
 
     private PartPositionMenuRenderer() {}
 
-    @SubscribeEvent
-    public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+    public static void onRenderLevelStage(com.mojang.blaze3d.vertex.PoseStack poseStack, net.minecraft.client.Camera camera, net.minecraft.client.DeltaTracker deltaTracker) {
         if (!PartPositionMenu.isActive()) return;
         if (CommandMenuState.isOpen()) return;
         CarriagePartKind kind = PartPositionMenu.kind();
@@ -128,8 +122,8 @@ public final class PartPositionMenuRenderer {
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
-        PoseStack ps = event.getPoseStack();
-        Vec3 cam = event.getCamera().getPosition();
+        PoseStack ps = poseStack;
+        Vec3 cam = camera.getPosition();
         Vec3 anchor = PartPositionMenu.anchorPos();
         Vec3 right = PartPositionMenu.anchorRight();
         Vec3 up = PartPositionMenu.anchorUp();

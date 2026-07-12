@@ -36,10 +36,6 @@ import java.util.List;
  * geometry / helpers of
  * {@link games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenuRenderer}.
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class TemplateBlocksMenuRenderer {
 
     static final RenderType PANEL_QUAD = RenderType.create(
@@ -73,17 +69,15 @@ public final class TemplateBlocksMenuRenderer {
 
     private TemplateBlocksMenuRenderer() {}
 
-    @SubscribeEvent
-    public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+    public static void onRenderLevelStage(com.mojang.blaze3d.vertex.PoseStack poseStack, net.minecraft.client.Camera camera, net.minecraft.client.DeltaTracker deltaTracker) {
         if (!TemplateBlocksMenu.isActive()) return;
 
         TemplateBlocksMenuRaycast.updateHovered();
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
-        PoseStack ps = event.getPoseStack();
-        Vec3 cam = event.getCamera().getPosition();
+        PoseStack ps = poseStack;
+        Vec3 cam = camera.getPosition();
         Vec3 anchor = TemplateBlocksMenu.anchorPos();
         Vec3 right = TemplateBlocksMenu.anchorRight();
         Vec3 up = TemplateBlocksMenu.anchorUp();
