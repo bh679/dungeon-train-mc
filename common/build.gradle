@@ -115,6 +115,17 @@ neoForge {
     // client/server/data run types exist here — this module ships no loader code.
     neoFormVersion = '1.21.1-20240808.144430'
 
+    // Access transformers — point at the ROOT NeoForge module's AT file (single
+    // source of truth). MDG applies these to :common's vanilla NeoForm jar so
+    // loader-neutral code that touches otherwise-inaccessible vanilla members
+    // (Screen.renderables, RenderType.create, CreativeModeTabs tab keys,
+    // UseOnContext ctor) compiles here — the same members NeoForge widens for the
+    // root jar. ⚠ This changes what the vanilla guardrail permits BY DESIGN (both
+    // loaders widen the same members). Fabric has no ATs: any entry added to that
+    // .cfg MUST get a matching Fabric access-widener line in Stage 4e, else the
+    // widened access is absent at runtime on Fabric.
+    accessTransformers.from(rootProject.file('src/main/resources/META-INF/accesstransformer.cfg'))
+
     parchment {
         mappingsVersion = parchment_mappings_version
         minecraftVersion = parchment_minecraft_version
