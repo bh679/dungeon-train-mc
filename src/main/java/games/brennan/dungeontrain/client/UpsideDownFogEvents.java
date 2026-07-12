@@ -20,7 +20,6 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
  *       into the next world.</li>
  * </ul>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class UpsideDownFogEvents {
 
     /** Max blend toward the sky colour at full band intensity. */
@@ -32,16 +31,15 @@ public final class UpsideDownFogEvents {
 
     private UpsideDownFogEvents() {}
 
-    @SubscribeEvent
-    public static void onComputeFogColor(ViewportEvent.ComputeFogColor event) {
+    public static void onComputeFogColor(net.minecraft.client.Camera camera, games.brennan.dungeontrain.platform.event.DtFogColor color) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
-        double t = ClientUpsideDownBand.upsideDownIntensityAt(event.getCamera().getPosition().x);
+        double t = ClientUpsideDownBand.upsideDownIntensityAt(camera.getPosition().x);
         if (t <= 0.0) return;
         float blend = (float) (MAX_BLEND * Math.min(1.0, t));
-        event.setRed(event.getRed() + (SKY_R - event.getRed()) * blend);
-        event.setGreen(event.getGreen() + (SKY_G - event.getGreen()) * blend);
-        event.setBlue(event.getBlue() + (SKY_B - event.getBlue()) * blend);
+        color.setRed(color.getRed() + (SKY_R - color.getRed()) * blend);
+        color.setGreen(color.getGreen() + (SKY_G - color.getGreen()) * blend);
+        color.setBlue(color.getBlue() + (SKY_B - color.getBlue()) * blend);
     }
 
     public static void onLoggingOut() {

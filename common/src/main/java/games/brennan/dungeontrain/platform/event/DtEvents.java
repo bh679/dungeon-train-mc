@@ -408,4 +408,67 @@ public final class DtEvents {
     public static final DtEvent<DtClientTooltipComponentFactoryRegistrationCallback> CLIENT_TOOLTIP_FACTORY_REGISTRATION =
         new DtEvent<>();
 
+    // ---- Client tooltip / render / observation (Stage 2c) -----------------
+
+    /**
+     * Item tooltip — NeoForge {@code ItemTooltipEvent} (client game bus). Not
+     * treated as cancellable by DT; the handler mutates the live tooltip line list.
+     * One handler ({@code PrefabUseHandler.onTooltip}), NORMAL.
+     */
+    public static final DtEvent<DtItemTooltipCallback> ITEM_TOOLTIP =
+        new DtEvent<>();
+
+    /**
+     * Effect tooltip — NeoForge {@code GatherEffectScreenTooltipsEvent} (client game
+     * bus). Not cancellable; the handler mutates the live tooltip line list. Two
+     * handlers ({@code WarmthOfTheFireTooltip}, {@code FreePlayTooltip}), NORMAL.
+     */
+    public static final DtEvent<DtEffectTooltipCallback> EFFECT_TOOLTIP =
+        new DtEvent<>();
+
+    /**
+     * Tooltip components — NeoForge {@code RenderTooltipEvent.GatherComponents}
+     * (client game bus). Not cancellable; the handler appends a custom tooltip
+     * component to the live element list. One handler
+     * ({@code PrefabTooltipEvents.ForgeBus}), NORMAL.
+     */
+    public static final DtEvent<DtGatherTooltipComponentsCallback> GATHER_TOOLTIP_COMPONENTS =
+        new DtEvent<>();
+
+    /**
+     * Fog colour — NeoForge {@code ViewportEvent.ComputeFogColor} (client game bus,
+     * render thread). Not cancellable; the handler mutates the fog RGB via
+     * {@link DtFogColor}. Three handlers ({@code VoidSkyEvents}, {@code NetherFogEvents},
+     * {@code UpsideDownFogEvents}), NORMAL.
+     */
+    public static final DtEvent<DtFogColorCallback> FOG_COLOR =
+        new DtEvent<>();
+
+    /**
+     * Music selection — NeoForge {@code SelectMusicEvent} (client game bus). Not
+     * cancelled by DT; the handler overrides the track via {@link DtMusicSelection}.
+     * Two handlers ({@code VoidSkyEvents}, {@code NetherFogEvents}), NORMAL.
+     */
+    public static final DtEvent<DtSelectMusicCallback> SELECT_MUSIC =
+        new DtEvent<>();
+
+    /**
+     * Render hand — NeoForge {@code RenderHandEvent} (client game bus, render
+     * thread). CANCELLABLE: the callback returns {@code true} to suppress the
+     * first-person hand render; {@code NeoForgeClientRenderBridge} stops on the first
+     * {@code true} and maps it to {@code event.setCanceled(true)}. One handler
+     * ({@code CinematicInputHandler}), NORMAL.
+     */
+    public static final DtEvent<DtRenderHandCallback> RENDER_HAND =
+        new DtEvent<>();
+
+    /**
+     * Client chat — NeoForge {@code ClientChatEvent} (client game bus). Cancellable /
+     * mutable upstream, but DT's sole handler ({@code DevMessageConsentClient}) only
+     * observes, so this is a {@code void} passthrough that never cancels or edits the
+     * message. NORMAL.
+     */
+    public static final DtEvent<DtClientChatCallback> CLIENT_CHAT =
+        new DtEvent<>();
+
 }

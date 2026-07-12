@@ -34,7 +34,6 @@ import org.slf4j.Logger;
  * <p>On login the persisted state is sent to the server ({@link ConsentSyncPacket}); when the
  * server grants consent it pushes the new state back ({@link #applyUpdate}).</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DevMessageConsentClient {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -76,8 +75,7 @@ public final class DevMessageConsentClient {
         sendSyncIfConnected();
     }
 
-    @SubscribeEvent
-    public static void onClientChat(ClientChatEvent event) {
+    public static void onClientChat() {
         ensureLoaded();
         // Only counts once consent has been approved (per the consent rule). The server slides its
         // own mirror from the same ServerChatEvent, so this is a client-local persist only.

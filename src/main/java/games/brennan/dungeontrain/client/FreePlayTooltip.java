@@ -17,19 +17,17 @@ import net.neoforged.neoforge.client.event.GatherEffectScreenTooltipsEvent;
  * (the inventory). Mirrors {@link WarmthOfTheFireTooltip}; lines load from the
  * {@code .desc.*} lang keys.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class FreePlayTooltip {
 
     private FreePlayTooltip() {}
 
-    @SubscribeEvent
-    public static void onGatherEffectTooltips(GatherEffectScreenTooltipsEvent event) {
-        if (!event.getEffectInstance().getEffect().is(ModMobEffects.FREE_PLAY.getId())) return;
-        event.getTooltip().add(
+    public static void onGatherEffectTooltips(net.minecraft.world.effect.MobEffectInstance effect, java.util.List<net.minecraft.network.chat.Component> tooltip) {
+        if (!effect.getEffect().is(ModMobEffects.FREE_PLAY.getId())) return;
+        tooltip.add(
             Component.translatable("effect.dungeontrain.free_play.desc.1").withStyle(ChatFormatting.GRAY));
-        event.getTooltip().add(
+        tooltip.add(
             Component.translatable("effect.dungeontrain.free_play.desc.2").withStyle(ChatFormatting.GRAY));
-        event.getTooltip().add(
+        tooltip.add(
             Component.translatable("effect.dungeontrain.free_play.desc.3").withStyle(ChatFormatting.GRAY));
     }
 }

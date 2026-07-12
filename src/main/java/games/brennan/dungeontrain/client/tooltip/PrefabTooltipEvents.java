@@ -64,15 +64,17 @@ public final class PrefabTooltipEvents {
         }
     }
 
-    @EventBusSubscriber(modid = DungeonTrain.MOD_ID,
-        value = Dist.CLIENT)
+    /**
+     * Converted off the NeoForge (forge/game) bus (Stage 2c) — now a
+     * {@link games.brennan.dungeontrain.platform.event.DtGatherTooltipComponentsCallback}
+     * registered via {@code DtEvents.GATHER_TOOLTIP_COMPONENTS}, fired by
+     * {@code NeoForgeClientTooltipBridge}. Logic unchanged.
+     */
     public static final class ForgeBus {
 
         private ForgeBus() {}
 
-        @SubscribeEvent
-        public static void onGatherComponents(RenderTooltipEvent.GatherComponents event) {
-            ItemStack stack = event.getItemStack();
+        public static void onGatherComponents(net.minecraft.world.item.ItemStack stack, java.util.List<com.mojang.datafixers.util.Either<net.minecraft.network.chat.FormattedText, net.minecraft.world.inventory.tooltip.TooltipComponent>> elements) {
             if (stack.isEmpty()) return;
             CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
             if (cd == null) return;
@@ -85,7 +87,7 @@ public final class PrefabTooltipEvents {
                 data = buildLootData(tag.getString(PrefabUseHandler.NBT_LOOT_PREFAB_ID));
             }
             if (data == null) return;
-            event.getTooltipElements().add(Either.right(data));
+            elements.add(Either.right(data));
         }
     }
 

@@ -34,7 +34,6 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
  * </ul>
  * The sky overlay itself is drawn by {@link VoidSkyRenderer} from a render mixin.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class VoidSkyEvents {
 
     /**
@@ -52,20 +51,18 @@ public final class VoidSkyEvents {
 
     private VoidSkyEvents() {}
 
-    @SubscribeEvent
-    public static void onComputeFogColor(ViewportEvent.ComputeFogColor event) {
+    public static void onComputeFogColor(net.minecraft.client.Camera camera, games.brennan.dungeontrain.platform.event.DtFogColor color) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
-        double t = ClientVoidBand.endSkyIntensityAt(event.getCamera().getPosition().x);
+        double t = ClientVoidBand.endSkyIntensityAt(camera.getPosition().x);
         if (t <= 0.0) return;
         float f = (float) (1.0 - 0.85 * Math.min(1.0, t)); // → ~0.15× at full void (End fog)
-        event.setRed(event.getRed() * f);
-        event.setGreen(event.getGreen() * f);
-        event.setBlue(event.getBlue() * f);
+        color.setRed(color.getRed() * f);
+        color.setGreen(color.getGreen() * f);
+        color.setBlue(color.getBlue() * f);
     }
 
-    @SubscribeEvent
-    public static void onSelectMusic(SelectMusicEvent event) {
+    public static void onSelectMusic(games.brennan.dungeontrain.platform.event.DtMusicSelection sel) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
         if (!mc.level.dimension().equals(Level.OVERWORLD)) return;
@@ -77,13 +74,13 @@ public final class VoidSkyEvents {
 
         if (t > ClientVoidBand.MUSIC_CROSSOVER) {
             // Past the crossover the End track plays (the volume mixin fades it in/out by position).
-            event.setMusic(END_MUSIC);
+            sel.setMusic(END_MUSIC);
         } else {
             // Overworld side of a fade zone: keep the Overworld track, but give it short delays so it
             // resumes promptly on the way out instead of waiting vanilla's multi-minute idle gap.
-            Music original = event.getOriginalMusic();
+            Music original = sel.getOriginalMusic();
             if (original != null) {
-                event.setMusic(new Music(original.getEvent(), 20, 200, true));
+                sel.setMusic(new Music(original.getEvent(), 20, 200, true));
             }
         }
     }

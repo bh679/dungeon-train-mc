@@ -40,7 +40,6 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
  * </ul>
  * Cloud suppression piggybacks on the shared {@code LevelRendererVoidSkyMixin}.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class NetherFogEvents {
 
     /** Target fog colour at full intensity — vanilla nether_wastes fog (0x330808). */
@@ -64,25 +63,24 @@ public final class NetherFogEvents {
 
     private NetherFogEvents() {}
 
-    @SubscribeEvent
-    public static void onComputeFogColor(ViewportEvent.ComputeFogColor event) {
+    public static void onComputeFogColor(net.minecraft.client.Camera camera, games.brennan.dungeontrain.platform.event.DtFogColor color) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
-        double n = ClientNetherBand.netherIntensityAt(event.getCamera().getPosition().x);
+        double n = ClientNetherBand.netherIntensityAt(camera.getPosition().x);
         if (n <= 0.0) return;
         float t = (float) Math.min(1.0, n);
 
         // Target colour: in the real-Nether core, the biome's own fog colour; elsewhere (the
         // crossfade's highland biome) the fixed nether_wastes red. Shared with NetherSkyRenderer
         // so the sky dome and the fog stay the same colour.
-        int target = netherTargetColor(mc.level, event.getCamera().getBlockPosition());
+        int target = netherTargetColor(mc.level, camera.getBlockPosition());
         float fr = ((target >> 16) & 0xFF) / 255.0f;
         float fg = ((target >> 8) & 0xFF) / 255.0f;
         float fb = (target & 0xFF) / 255.0f;
 
-        event.setRed(lerp(event.getRed(), fr, t));
-        event.setGreen(lerp(event.getGreen(), fg, t));
-        event.setBlue(lerp(event.getBlue(), fb, t));
+        color.setRed(lerp(color.getRed(), fr, t));
+        color.setGreen(lerp(color.getGreen(), fg, t));
+        color.setBlue(lerp(color.getBlue(), fb, t));
     }
 
     /**
@@ -117,8 +115,7 @@ public final class NetherFogEvents {
                 || biome.is(Biomes.BASALT_DELTAS);
     }
 
-    @SubscribeEvent
-    public static void onSelectMusic(SelectMusicEvent event) {
+    public static void onSelectMusic(games.brennan.dungeontrain.platform.event.DtMusicSelection sel) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
         if (!mc.level.dimension().equals(Level.OVERWORLD)) return;
@@ -130,13 +127,13 @@ public final class NetherFogEvents {
 
         if (n > ClientNetherBand.MUSIC_CROSSOVER) {
             // Past the crossover the Nether track plays (the volume mixin fades it in/out by position).
-            event.setMusic(NETHER_MUSIC);
+            sel.setMusic(NETHER_MUSIC);
         } else {
             // Overworld side of a fade zone: keep the Overworld track, but give it short delays so it
             // resumes promptly on the way out instead of waiting vanilla's multi-minute idle gap.
-            Music original = event.getOriginalMusic();
+            Music original = sel.getOriginalMusic();
             if (original != null) {
-                event.setMusic(new Music(original.getEvent(), 20, 200, true));
+                sel.setMusic(new Music(original.getEvent(), 20, 200, true));
             }
         }
     }

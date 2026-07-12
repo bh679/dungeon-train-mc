@@ -32,6 +32,48 @@ public final class NeoForgeClientEvents {
         registerClientTick();
         registerClientConnection();
         registerRegisterStyle();
+        registerTooltipAndRender();
+    }
+
+    /**
+     * Client tooltip / render / audio / chat handlers, fired by
+     * {@code NeoForgeClientTooltipBridge} and {@code NeoForgeClientRenderBridge}:
+     * {@code ItemTooltipEvent} (1), {@code GatherEffectScreenTooltipsEvent} (2),
+     * {@code RenderTooltipEvent.GatherComponents} (1), {@code ViewportEvent.ComputeFogColor}
+     * (3), {@code SelectMusicEvent} (2), {@code RenderHandEvent} (1, cancellable),
+     * {@code ClientChatEvent} (1). All NORMAL; the mutation carriers pass through the
+     * live event so semantics are identical. Order within a tier is irrelevant.
+     */
+    private static void registerTooltipAndRender() {
+        // ItemTooltipEvent
+        DtEvents.ITEM_TOOLTIP
+            .register(games.brennan.dungeontrain.event.PrefabUseHandler::onTooltip);
+        // GatherEffectScreenTooltipsEvent
+        DtEvents.EFFECT_TOOLTIP
+            .register(games.brennan.dungeontrain.client.WarmthOfTheFireTooltip::onGatherEffectTooltips);
+        DtEvents.EFFECT_TOOLTIP
+            .register(games.brennan.dungeontrain.client.FreePlayTooltip::onGatherEffectTooltips);
+        // RenderTooltipEvent.GatherComponents
+        DtEvents.GATHER_TOOLTIP_COMPONENTS
+            .register(games.brennan.dungeontrain.client.tooltip.PrefabTooltipEvents.ForgeBus::onGatherComponents);
+        // ViewportEvent.ComputeFogColor
+        DtEvents.FOG_COLOR
+            .register(games.brennan.dungeontrain.client.VoidSkyEvents::onComputeFogColor);
+        DtEvents.FOG_COLOR
+            .register(games.brennan.dungeontrain.client.NetherFogEvents::onComputeFogColor);
+        DtEvents.FOG_COLOR
+            .register(games.brennan.dungeontrain.client.UpsideDownFogEvents::onComputeFogColor);
+        // SelectMusicEvent
+        DtEvents.SELECT_MUSIC
+            .register(games.brennan.dungeontrain.client.VoidSkyEvents::onSelectMusic);
+        DtEvents.SELECT_MUSIC
+            .register(games.brennan.dungeontrain.client.NetherFogEvents::onSelectMusic);
+        // RenderHandEvent (cancellable)
+        DtEvents.RENDER_HAND
+            .register(games.brennan.dungeontrain.client.CinematicInputHandler::onRenderHand);
+        // ClientChatEvent
+        DtEvents.CLIENT_CHAT
+            .register(games.brennan.dungeontrain.client.DevMessageConsentClient::onClientChat);
     }
 
     /**

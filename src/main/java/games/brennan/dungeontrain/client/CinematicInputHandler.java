@@ -99,13 +99,11 @@ public final class CinematicInputHandler {
         event.setCanceled(true);
     }
 
-    @SubscribeEvent
-    public static void onRenderHand(RenderHandEvent event) {
+    public static boolean onRenderHand() {
         // The camera is detached during the cinematic; suppress the first-person
-        // held item so it doesn't float in the shot.
-        if (CinematicCameraController.isActive()) {
-            event.setCanceled(true);
-        }
+        // held item so it doesn't float in the shot. Returning true cancels the
+        // hand render (former event.setCanceled(true)).
+        return CinematicCameraController.isActive();
     }
 
     public static void onLoggingOut() {

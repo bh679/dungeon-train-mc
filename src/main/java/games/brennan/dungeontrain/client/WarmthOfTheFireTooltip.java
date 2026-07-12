@@ -15,15 +15,13 @@ import net.neoforged.neoforge.client.event.GatherEffectScreenTooltipsEvent;
  * inventory tooltip — the line is loaded from the {@code .description} lang
  * key so it picks up translations.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class WarmthOfTheFireTooltip {
 
     private WarmthOfTheFireTooltip() {}
 
-    @SubscribeEvent
-    public static void onGatherEffectTooltips(GatherEffectScreenTooltipsEvent event) {
-        if (!event.getEffectInstance().getEffect().is(ModMobEffects.WARMTH_OF_THE_FIRE.getId())) return;
-        event.getTooltip().add(
+    public static void onGatherEffectTooltips(net.minecraft.world.effect.MobEffectInstance effect, java.util.List<net.minecraft.network.chat.Component> tooltip) {
+        if (!effect.getEffect().is(ModMobEffects.WARMTH_OF_THE_FIRE.getId())) return;
+        tooltip.add(
             Component.translatable("effect.dungeontrain.warmth_of_the_fire.description")
                 .withStyle(ChatFormatting.GRAY));
     }

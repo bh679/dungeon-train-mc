@@ -464,17 +464,15 @@ public final class PrefabUseHandler {
      * distinguish two stacks that share an icon (e.g. two oak_planks
      * variant prefabs saved under different names).
      */
-    @SubscribeEvent
-    public static void onTooltip(ItemTooltipEvent event) {
-        ItemStack stack = event.getItemStack();
+    public static void onTooltip(net.minecraft.world.item.ItemStack stack, java.util.List<net.minecraft.network.chat.Component> tooltip) {
         CompoundTag tag = customDataTag(stack);
         if (tag == null) return;
         if (tag.contains(NBT_BV_PREFAB_ID, Tag.TAG_STRING)) {
-            event.getToolTip().add(Component.literal(
+            tooltip.add(Component.literal(
                 "Block Variant Prefab: " + tag.getString(NBT_BV_PREFAB_ID))
                 .withStyle(ChatFormatting.AQUA));
         } else if (tag.contains(NBT_LOOT_PREFAB_ID, Tag.TAG_STRING)) {
-            event.getToolTip().add(Component.literal(
+            tooltip.add(Component.literal(
                 "Loot Prefab: " + tag.getString(NBT_LOOT_PREFAB_ID))
                 .withStyle(ChatFormatting.GOLD));
         }
