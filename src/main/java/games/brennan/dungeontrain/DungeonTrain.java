@@ -199,6 +199,13 @@ public class DungeonTrain {
     }
 
     public DungeonTrain(IEventBus modBus, ModContainer modContainer) {
+        // Loader-neutral init FIRST — wires converted game logic to DtEvents before any
+        // NeoForge*Bridge (auto-registered @EventBusSubscriber) could fire an event. init()
+        // is the common seam; NeoForgeServerEvents.register() wires the converted handlers
+        // that still live in the root module this Stage (see NeoForgeServerEvents Javadoc).
+        DungeonTrainCommon.init();
+        games.brennan.dungeontrain.platform.neoforge.NeoForgeServerEvents.register();
+
         modBus.addListener(this::commonSetup);
 
         // First DeferredRegister in the project — wires the variant
