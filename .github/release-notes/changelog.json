@@ -4181,6 +4181,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "upside-down-band-smooth-stream",
+      "version": "0.440.0",
+      "type": "perf",
+      "title": "Smoother ride into the upside-down band",
+      "summary": "The upside-down band no longer hitches the game as you ride into it. The world-flip that builds the inverted terrain is now spread across ticks instead of stalling the server when new band chunks stream in.",
+      "highlights": [
+        "No more frame stutter when the train enters the upside-down band"
+      ],
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
