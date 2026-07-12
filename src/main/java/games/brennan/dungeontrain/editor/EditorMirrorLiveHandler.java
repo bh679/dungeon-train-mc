@@ -35,12 +35,11 @@ public final class EditorMirrorLiveHandler {
 
     private EditorMirrorLiveHandler() {}
 
-    @SubscribeEvent
-    public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
-        if (event.isCanceled()) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
-        applyAt(player, level, event.getPos(), event.getPlacedBlock());
+        public static void onBlockPlace(net.minecraft.world.entity.Entity placeEntity, net.minecraft.world.level.LevelAccessor placeLevel, net.minecraft.world.level.block.state.BlockState placedBlock, net.minecraft.core.BlockPos placePos, boolean placeCanceled) {
+        if (placeCanceled) return;
+        if (!(placeEntity instanceof ServerPlayer player)) return;
+        if (!(placeLevel instanceof ServerLevel level)) return;
+        applyAt(player, level, placePos, placedBlock);
     }
 
     @SubscribeEvent
@@ -56,12 +55,11 @@ public final class EditorMirrorLiveHandler {
         }
     }
 
-    @SubscribeEvent
-    public static void onBlockBreak(BlockEvent.BreakEvent event) {
-        if (event.isCanceled()) return;
-        if (!(event.getPlayer() instanceof ServerPlayer player)) return;
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
-        applyAt(player, level, event.getPos(), null);
+        public static void onBlockBreak(net.minecraft.world.level.LevelAccessor breakLevel, net.minecraft.world.entity.player.Player breakPlayer, net.minecraft.core.BlockPos breakPos, net.minecraft.world.level.block.state.BlockState breakState, boolean breakCanceled) {
+        if (breakCanceled) return;
+        if (!(breakPlayer instanceof ServerPlayer player)) return;
+        if (!(breakLevel instanceof ServerLevel level)) return;
+        applyAt(player, level, breakPos, null);
     }
 
     /**

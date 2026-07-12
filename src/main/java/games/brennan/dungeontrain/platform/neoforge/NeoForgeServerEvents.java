@@ -54,6 +54,48 @@ public final class NeoForgeServerEvents {
         registerCancellable();
         registerLiving();
         registerChunk();
+        registerBlockAndAttack();
+    }
+
+    /**
+     * Block break/place/drops, entity-leave and attack-entity handlers, fired by
+     * {@code NeoForgeBlockBridge}. All were NORMAL priority and none cancel; order
+     * within a tier is irrelevant. NeoForge's {@code EntityMultiPlaceEvent} keeps
+     * its own {@code @SubscribeEvent} on {@code EditorMirrorLiveHandler} (its
+     * snapshot list is a loader-specific type — left on the NeoForge bus).
+     */
+    private static void registerBlockAndAttack() {
+        // BlockEvent.BreakEvent
+        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_BREAK
+            .register(games.brennan.dungeontrain.event.RunStatsEvents::onPotBreak);
+        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_BREAK
+            .register(games.brennan.dungeontrain.editor.VariantBlockBreakHandler::onBlockBreak);
+        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_BREAK
+            .register(games.brennan.dungeontrain.editor.EditorMirrorLiveHandler::onBlockBreak);
+
+        // BlockEvent.EntityPlaceEvent (single-block place)
+        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_PLACE
+            .register(games.brennan.dungeontrain.event.PrefabUseHandler::onEntityPlace);
+        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_PLACE
+            .register(games.brennan.dungeontrain.event.NetherBandBehaviourEvents::onBlockPlace);
+        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_PLACE
+            .register(games.brennan.dungeontrain.editor.EditorMirrorLiveHandler::onBlockPlace);
+
+        // BlockDropsEvent
+        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_DROPS
+            .register(games.brennan.dungeontrain.narrative.RandomBookDropEvents::onBlockDrops);
+
+        // EntityLeaveLevelEvent
+        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_LEAVE
+            .register(games.brennan.dungeontrain.event.ContentsEntityDiagnostics::onEntityLeave);
+
+        // AttackEntityEvent
+        games.brennan.dungeontrain.platform.event.DtEvents.ATTACK_ENTITY
+            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onAttackEntity);
+        games.brennan.dungeontrain.platform.event.DtEvents.ATTACK_ENTITY
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onAttackEntity);
+        games.brennan.dungeontrain.platform.event.DtEvents.ATTACK_ENTITY
+            .register(games.brennan.dungeontrain.editor.VariantEntityBreakHandler::onAttackEntity);
     }
 
     /**

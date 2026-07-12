@@ -41,7 +41,6 @@ import net.neoforged.neoforge.event.level.BlockEvent;
  *       gravel falling elsewhere in the core is untouched.</li>
  * </ul>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NetherBandBehaviourEvents {
 
     private NetherBandBehaviourEvents() {}
@@ -86,12 +85,11 @@ public final class NetherBandBehaviourEvents {
     }
 
     /** Dry a wet sponge placed in the Nether core, exactly as ultraWarm dimensions do. */
-    @SubscribeEvent
-    public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
-        if (!event.getPlacedBlock().is(Blocks.WET_SPONGE)) return;
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onBlockPlace(net.minecraft.world.entity.Entity placeEntity, net.minecraft.world.level.LevelAccessor placeLevel, net.minecraft.world.level.block.state.BlockState placedBlock, net.minecraft.core.BlockPos placePos, boolean placeCanceled) {
+        if (!placedBlock.is(Blocks.WET_SPONGE)) return;
+        if (!(placeLevel instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
-        BlockPos pos = event.getPos();
+        BlockPos pos = placePos;
         if (!NetherBand.isInNetherBiome(level, pos.getX())) return;
 
         level.setBlock(pos, Blocks.SPONGE.defaultBlockState(), 3);

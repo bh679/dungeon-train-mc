@@ -255,4 +255,46 @@ public final class DtEvents {
     public static final DtEvent<DtChunkLoadCallback> CHUNK_LOAD =
         new DtEvent<>();
 
+    // ---- Block / attack / leave events (Stage 2b) -------------------------
+
+    /**
+     * Block break — NeoForge {@code BlockEvent.BreakEvent}. Server thread.
+     * Cancellable upstream; no DT handler cancels (void callback carries
+     * {@code isCanceled()}). All 3 DT handlers NORMAL, none {@code receiveCanceled}.
+     */
+    public static final DtEvent<DtBlockBreakCallback> BLOCK_BREAK =
+        new DtEvent<>();
+
+    /**
+     * Single-block place — NeoForge {@code BlockEvent.EntityPlaceEvent}. Server
+     * thread. Cancellable upstream; no DT handler cancels. All 3 DT handlers
+     * NORMAL. NeoForge's {@code EntityMultiPlaceEvent} stays on the NeoForge bus
+     * (its {@code getReplacedBlockSnapshots()} is a loader-specific type).
+     */
+    public static final DtEvent<DtBlockPlaceCallback> BLOCK_PLACE =
+        new DtEvent<>();
+
+    /**
+     * Block drops — NeoForge {@code BlockDropsEvent}. Server thread. DT's handler
+     * mutates the live drop list in place (reference passed through). NORMAL.
+     */
+    public static final DtEvent<DtBlockDropsCallback> BLOCK_DROPS =
+        new DtEvent<>();
+
+    /**
+     * Entity leave level — NeoForge {@code EntityLeaveLevelEvent}. Fires when an
+     * entity is removed (client and server; handlers self-filter). Not cancellable;
+     * one DT handler, NORMAL.
+     */
+    public static final DtEvent<DtEntityLeaveCallback> ENTITY_LEAVE =
+        new DtEvent<>();
+
+    /**
+     * Attack entity — NeoForge {@code AttackEntityEvent}. Server thread.
+     * Cancellable upstream; no DT handler cancels (void callback carries
+     * {@code isCanceled()}). All 4 DT handlers NORMAL.
+     */
+    public static final DtEvent<DtAttackEntityCallback> ATTACK_ENTITY =
+        new DtEvent<>();
+
 }

@@ -56,24 +56,22 @@ import java.util.Optional;
  * ({@code CommonHooks.handleBlockDrops} calls {@code addFreshEntity} on every
  * entry after the event), so this handler never spawns entities itself.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class RandomBookDropEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private RandomBookDropEvents() {}
 
-    @SubscribeEvent
-    public static void onBlockDrops(BlockDropsEvent event) {
-        if (!event.getState().is(Blocks.BOOKSHELF)) return;
-        if (!(event.getBreaker() instanceof Player)) return;
+        public static void onBlockDrops(net.minecraft.server.level.ServerLevel dropsLevel, net.minecraft.core.BlockPos dropsPos, net.minecraft.world.level.block.state.BlockState dropsState, net.minecraft.world.entity.Entity dropsBreaker, java.util.List<net.minecraft.world.entity.item.ItemEntity> dropsList) {
+        if (!dropsState.is(Blocks.BOOKSHELF)) return;
+        if (!(dropsBreaker instanceof Player)) return;
 
         int oneIn = DungeonTrainConfig.getRandomBookFromBookshelfOneIn();
         if (oneIn <= 0) return; // disabled
 
-        ServerLevel level = event.getLevel();
+        ServerLevel level = dropsLevel;
         RandomSource rng = level.getRandom();
-        List<ItemEntity> drops = event.getDrops();
+        List<ItemEntity> drops = dropsList;
 
         // Collect mutations and apply them after iterating, so we never modify
         // `drops` while looping over it.
@@ -116,6 +114,6 @@ public final class RandomBookDropEvents {
         drops.removeAll(emptied);
         drops.addAll(narrativeBooks);
         LOGGER.info("[DungeonTrain] RandomBook: bookshelf break at {} yielded {} narrative book(s) (1-in-{})",
-            event.getPos(), narrativeBooks.size(), oneIn);
+            dropsPos, narrativeBooks.size(), oneIn);
     }
 }

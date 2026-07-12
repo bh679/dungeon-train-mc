@@ -29,22 +29,20 @@ import java.util.List;
  * same {@link BlockVariantPlot#resolveAt} cascade so all four plot types
  * (carriage / contents / part / track-side) share one handler.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class VariantBlockBreakHandler {
 
     private VariantBlockBreakHandler() {}
 
-    @SubscribeEvent
-    public static void onBlockBreak(BlockEvent.BreakEvent event) {
-        if (event.isCanceled()) return;
-        if (!(event.getPlayer() instanceof ServerPlayer player)) return;
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onBlockBreak(net.minecraft.world.level.LevelAccessor breakLevel, net.minecraft.world.entity.player.Player breakPlayer, net.minecraft.core.BlockPos breakPos, net.minecraft.world.level.block.state.BlockState breakState, boolean breakCanceled) {
+        if (breakCanceled) return;
+        if (!(breakPlayer instanceof ServerPlayer player)) return;
+        if (!(breakLevel instanceof ServerLevel level)) return;
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
         if (plot == null) return;
 
-        BlockPos worldPos = event.getPos();
+        BlockPos worldPos = breakPos;
         BlockPos local = worldPos.subtract(plot.origin());
         if (!plot.inBounds(local)) return;
 

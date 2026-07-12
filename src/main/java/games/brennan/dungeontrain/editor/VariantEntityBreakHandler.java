@@ -35,16 +35,14 @@ import java.util.List;
  * even if the stand survives the hit, which is acceptable since the swing
  * is unambiguous intent.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class VariantEntityBreakHandler {
 
     private VariantEntityBreakHandler() {}
 
-    @SubscribeEvent
-    public static void onAttackEntity(AttackEntityEvent event) {
-        if (event.isCanceled()) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        Entity target = event.getTarget();
+        public static void onAttackEntity(net.minecraft.world.entity.player.Player attacker, net.minecraft.world.entity.Entity attackTarget, boolean attackCanceled) {
+        if (attackCanceled) return;
+        if (!(attacker instanceof ServerPlayer player)) return;
+        Entity target = attackTarget;
         if (!(target instanceof ArmorStand) && !(target instanceof ItemFrame)) return;
         if (!(player.level() instanceof ServerLevel level)) return;
 

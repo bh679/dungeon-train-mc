@@ -26,7 +26,6 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
  *   <li>Kills + player death end the encounter via {@link LivingDeathEvent}.</li>
  * </ul>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EchoEncounterEvents {
 
     /** Scan cadence — matches the Echo Encounter advancement scan. */
@@ -34,10 +33,9 @@ public final class EchoEncounterEvents {
 
     private EchoEncounterEvents() {}
 
-    @SubscribeEvent
-    public static void onAttackEntity(AttackEntityEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        Entity target = event.getTarget();
+        public static void onAttackEntity(net.minecraft.world.entity.player.Player attacker, net.minecraft.world.entity.Entity attackTarget, boolean attackCanceled) {
+        if (!(attacker instanceof ServerPlayer player)) return;
+        Entity target = attackTarget;
         if (target == null) return;
         RemoteEchoEncounters.onPlayerStruckEcho(player, target.getUUID(), player.serverLevel().getGameTime());
     }

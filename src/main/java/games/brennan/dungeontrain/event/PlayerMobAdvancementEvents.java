@@ -139,10 +139,9 @@ public final class PlayerMobAdvancementEvents {
 
     // ---------------- Reboarder ----------------
 
-    @SubscribeEvent
-    public static void onAttackEntity(AttackEntityEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        Entity target = event.getTarget();
+        public static void onAttackEntity(net.minecraft.world.entity.player.Player attacker, net.minecraft.world.entity.Entity attackTarget, boolean attackCanceled) {
+        if (!(attacker instanceof ServerPlayer player)) return;
+        Entity target = attackTarget;
         if (!isPlayerMob(target)) return;
         if (!(target.level() instanceof ServerLevel level)) return;
         // Lenient capture: the mob was on/around the train when struck. The

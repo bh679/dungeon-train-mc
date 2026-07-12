@@ -32,7 +32,6 @@ import org.slf4j.Logger;
  * ten-minute soak test. {@code LOGGER.info} keeps these visible without
  * needing log-level changes.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class ContentsEntityDiagnostics {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -77,12 +76,11 @@ public final class ContentsEntityDiagnostics {
             age);
     }
 
-    @SubscribeEvent
-    public static void onEntityLeave(EntityLeaveLevelEvent event) {
+        public static void onEntityLeave(net.minecraft.world.entity.Entity leftEntity, net.minecraft.world.level.Level leaveLevel) {
         if (!DebugFlags.logContentsEntities()) return;
-        Level level = event.getLevel();
+        Level level = leaveLevel;
         if (level.isClientSide) return;
-        Entity entity = event.getEntity();
+        Entity entity = leftEntity;
         String tag = contentsTag(entity);
         if (tag == null) return;
         long spawnTick = entity.getPersistentData().getLong(CarriageContentsPlacer.NBT_SPAWN_GAME_TICK);

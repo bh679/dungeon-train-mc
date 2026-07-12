@@ -197,10 +197,9 @@ public final class PrefabUseHandler {
      * Loot prefab post-placement: after vanilla places the container block,
      * roll the prefab's pool and write the rolled items into the new BE.
      */
-    @SubscribeEvent
-    public static void onEntityPlace(BlockEvent.EntityPlaceEvent event) {
-        if (!(event.getEntity() instanceof Player player)) return;
-        Level level = (Level) event.getLevel();
+        public static void onEntityPlace(net.minecraft.world.entity.Entity placeEntity, net.minecraft.world.level.LevelAccessor placeLevel, net.minecraft.world.level.block.state.BlockState placedBlock, net.minecraft.core.BlockPos placePos, boolean placeCanceled) {
+        if (!(placeEntity instanceof Player player)) return;
+        Level level = (Level) placeLevel;
         if (level.isClientSide) return;
         if (!(level instanceof ServerLevel serverLevel)) return;
 
@@ -218,7 +217,7 @@ public final class PrefabUseHandler {
             return;
         }
 
-        BlockPos pos = event.getPos();
+        BlockPos pos = placePos;
         BlockState placedState = serverLevel.getBlockState(pos);
         BlockEntity be = serverLevel.getBlockEntity(pos);
         if (be == null) {

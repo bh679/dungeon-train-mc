@@ -506,12 +506,11 @@ public final class RunStatsEvents {
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addRunTicks(1L);
     }
 
-    @SubscribeEvent
-    public static void onPotBreak(BlockEvent.BreakEvent event) {
-        if (event.isCanceled()) return;
-        if (event.getLevel().isClientSide()) return;
-        if (!(event.getPlayer() instanceof ServerPlayer player)) return;
-        BlockState state = event.getState();
+        public static void onPotBreak(net.minecraft.world.level.LevelAccessor breakLevel, net.minecraft.world.entity.player.Player breakPlayer, net.minecraft.core.BlockPos breakPos, net.minecraft.world.level.block.state.BlockState breakState, boolean breakCanceled) {
+        if (breakCanceled) return;
+        if (breakLevel.isClientSide()) return;
+        if (!(breakPlayer instanceof ServerPlayer player)) return;
+        BlockState state = breakState;
         if (!(state.getBlock() instanceof DecoratedPotBlock)) return;
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementContainersOpened();
     }
