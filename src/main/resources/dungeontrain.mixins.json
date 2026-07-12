@@ -18,6 +18,7 @@
     "MultiNoiseBiomeSourceMixin",
     "NoiseBasedChunkGeneratorMixin",
     "ChunkGeneratorDecorationMixin",
+    "ChunkStatusSpawnMixin",
     "RandomStateMixin",
     "ServerGamePacketListenerImplSignBookMixin",
     "SpreadingSnowyDirtBlockUpsideDownMixin",

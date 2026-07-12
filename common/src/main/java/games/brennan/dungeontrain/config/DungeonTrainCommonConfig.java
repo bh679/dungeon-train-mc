@@ -238,6 +238,14 @@ public final class DungeonTrainCommonConfig {
      * automatically on any non-{@code main}/non-release build (see {@link #isUpsideDownDevTestMode()}).
      */
     public static final int DEVTEST_UPSIDE_DOWN_EXIT_FADE_BLOCKS = 2000;
+    /**
+     * Precompute the in-band vertical mirror on the worldgen worker thread at the SPAWN generation
+     * step, then only apply the writes at chunk load — instead of doing the whole snapshot + reflection
+     * + writes on the main thread at load. Moves the expensive snapshot/compute half off the main
+     * thread (halving the mirror's per-chunk main-thread cost) with byte-identical terrain. false =
+     * compute and apply everything at load (the original behaviour). Default true.
+     */
+    public static final boolean DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE = true;
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
@@ -271,6 +279,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_CLOUD_Y;
     public static final ModConfigSpec.DoubleValue UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_MAX_CEILING_HEIGHT;
+    public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_MIRROR_PRECOMPUTE;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -307,6 +316,7 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_CLOUD_Y = pair.getLeft().upsideDownCloudY;
         UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON = pair.getLeft().upsideDownExitNoiseSkipEpsilon;
         UPSIDE_DOWN_MAX_CEILING_HEIGHT = pair.getLeft().upsideDownMaxCeilingHeight;
+        UPSIDE_DOWN_MIRROR_PRECOMPUTE = pair.getLeft().upsideDownMirrorPrecompute;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -512,6 +522,13 @@ public final class DungeonTrainCommonConfig {
                         "flattens the flipped world's ceiling (changes the band's look). Default 0.")
                 .defineInRange("upsideDownMaxCeilingHeight", DEFAULT_UPSIDE_DOWN_MAX_CEILING_HEIGHT,
                         MIN_UPSIDE_DOWN_MAX_CEILING_HEIGHT, MAX_UPSIDE_DOWN_MAX_CEILING_HEIGHT);
+        ModConfigSpec.BooleanValue upsideDownMirrorPrecompute = b
+                .comment("Precompute the in-band vertical mirror on the worldgen worker thread (SPAWN step) and only",
+                        "apply the block writes at chunk load, instead of doing the whole snapshot + reflection + writes",
+                        "on the main thread at load. Moves the expensive snapshot/compute half off the main thread with",
+                        "byte-identical terrain. Set false to compute and apply everything at load (original behaviour).",
+                        "Default true.")
+                .define("upsideDownMirrorPrecompute", DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE);
         b.pop();
 
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
@@ -523,7 +540,7 @@ public final class DungeonTrainCommonConfig {
                 upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks, upsideDownExitGapBlocks,
                 upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
                 upsideDownBedrockRoof, upsideDownCloudY, upsideDownExitNoiseSkipEpsilon,
-                upsideDownMaxCeilingHeight);
+                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute);
     }
 
     /**
@@ -781,6 +798,11 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? UPSIDE_DOWN_MAX_CEILING_HEIGHT.get() : DEFAULT_UPSIDE_DOWN_MAX_CEILING_HEIGHT;
     }
 
+    /** Whether the in-band mirror is precomputed off-thread at SPAWN and applied at load; falls back pre-load. */
+    public static boolean isUpsideDownMirrorPrecompute() {
+        return isLoaded() ? UPSIDE_DOWN_MIRROR_PRECOMPUTE.get() : DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE;
+    }
+
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain,
@@ -811,5 +833,6 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.BooleanValue upsideDownBedrockRoof,
                           ModConfigSpec.IntValue upsideDownCloudY,
                           ModConfigSpec.DoubleValue upsideDownExitNoiseSkipEpsilon,
-                          ModConfigSpec.IntValue upsideDownMaxCeilingHeight) {}
+                          ModConfigSpec.IntValue upsideDownMaxCeilingHeight,
+                          ModConfigSpec.BooleanValue upsideDownMirrorPrecompute) {}
 }

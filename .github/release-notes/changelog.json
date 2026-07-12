@@ -4269,9 +4269,42 @@
       ],
       "pr": 733,
       "date": "2026-07-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.445.0",
+      "released_at": "2026-07-12T09:18:15Z"
+    },
+    {
+      "id": "upside-down-mirror-precompute",
+      "version": "0.443.0",
+      "type": "perf",
+      "title": "Upside-down band re-flip keeps pace with the train",
+      "summary": "The upside-down band's terrain flip is now precomputed off the main server thread as chunks generate, so the deferred re-flip drains its backlog roughly twice as fast \u2014 far less briefly-un-flipped terrain trails behind you when you ride into a band. Terrain is unchanged.",
+      "highlights": [
+        "Flip precomputed off-thread during world generation",
+        "Deferred re-flip backlog clears ~2x faster"
+      ],
+      "pr": 734,
+      "date": "2026-07-12",
+      "released": true,
+      "released_in": "v0.445.0",
+      "released_at": "2026-07-12T09:18:15Z"
+    },
+    {
+      "id": "datapack-overridable-prose",
+      "version": "0.445.0",
+      "type": "feat",
+      "title": "Translate the train's books & death messages with a datapack",
+      "summary": "Dungeon Train's narrative books, welcome letters, random chest books, and death-screen messages can now be translated or replaced by a datapack \u2014 no more editing files inside the mod jar. Overrides apply on /reload, and only the server needs the datapack (translated books reach everyone on the server automatically).",
+      "highlights": [
+        "Narrative stories, random books, welcome/starting books, and death-lore are now datapack-overridable",
+        "Localizers can ship a translation datapack instead of editing the mod jar",
+        "Honored on /reload; server-only (clients need nothing)"
+      ],
+      "pr": 735,
+      "date": "2026-07-12",
+      "released": true,
+      "released_in": "v0.445.0",
+      "released_at": "2026-07-12T09:18:15Z"
     },
     {
       "id": "fabric-port-phase0-spike",
