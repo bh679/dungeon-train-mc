@@ -82,8 +82,7 @@ public final class CinematicInputHandler {
         CinematicSkipHudOverlay.show();
     }
 
-    @SubscribeEvent
-    public static void onScreenOpening(ScreenEvent.Opening event) {
+    public static void onScreenOpening(games.brennan.dungeontrain.platform.event.DtScreenOpening event) {
         if (!CinematicCameraController.isActive()) return;
         // A screen is already open ⇒ the cinematic is suspended and the player is in
         // menu-land; allow every in-menu navigation (Options / Advancements / Stats /

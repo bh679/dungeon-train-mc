@@ -59,7 +59,6 @@ import java.util.function.Function;
  * local {@code main} ref, so worktrees built straight off main also register
  * as release.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DevQuickWorldHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -89,8 +88,7 @@ public final class DevQuickWorldHandler {
 
     private DevQuickWorldHandler() {}
 
-    @SubscribeEvent
-    public static void onScreenInitPost(ScreenEvent.Init.Post event) {
+    public static void onScreenInitPost(games.brennan.dungeontrain.platform.event.DtScreenInit event) {
         if (!(event.getScreen() instanceof TitleScreen titleScreen)) {
             return;
         }
@@ -135,9 +133,8 @@ public final class DevQuickWorldHandler {
         applyVisibility(currentMode());
     }
 
-    @SubscribeEvent
-    public static void onScreenRenderPre(ScreenEvent.Render.Pre event) {
-        if (event.getScreen() != screenRef.get()) {
+    public static void onScreenRenderPre(net.minecraft.client.gui.screens.Screen screen) {
+        if (screen != screenRef.get()) {
             return;
         }
         applyVisibility(currentMode());
@@ -165,7 +162,7 @@ public final class DevQuickWorldHandler {
                 .build();
     }
 
-    private static Button findSingleplayerButton(ScreenEvent.Init.Post event) {
+    private static Button findSingleplayerButton(games.brennan.dungeontrain.platform.event.DtScreenInit event) {
         for (GuiEventListener listener : event.getListenersList()) {
             if (listener instanceof Button button
                     && SINGLEPLAYER_KEY.equals(button.getMessage())) {

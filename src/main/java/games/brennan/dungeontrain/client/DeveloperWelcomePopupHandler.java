@@ -41,7 +41,6 @@ import org.slf4j.Logger;
  * {@link #hasBeenInWorldThisSession} to {@code true} and stop caring until
  * the title screen consumes it.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DeveloperWelcomePopupHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -110,8 +109,7 @@ public final class DeveloperWelcomePopupHandler {
         }
     }
 
-    @SubscribeEvent
-    public static void onScreenInitPost(ScreenEvent.Init.Post event) {
+    public static void onScreenInitPost(games.brennan.dungeontrain.platform.event.DtScreenInit event) {
         if (!(event.getScreen() instanceof TitleScreen titleScreen)) {
             return;
         }

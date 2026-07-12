@@ -506,4 +506,48 @@ public final class DtEvents {
     public static final DtEvent<DtLeftClickBlockCallback> LEFT_CLICK_BLOCK =
         new DtEvent<>();
 
+    // ---- Screen events (Stage 2c) -----------------------------------------
+
+    /**
+     * Screen opening — NeoForge {@code ScreenEvent.Opening} (client game bus).
+     * CANCELLABLE + mutable ({@code setNewScreen}). Four handlers: one observer
+     * ({@code BookReadClientEvents}), one canceller ({@code CinematicInputHandler}),
+     * two screen-replacers ({@code CinematicPreloadGate}, {@code DeathScreenLayoutHandler}).
+     * The bridge skips any handler once the event is canceled (NeoForge's
+     * non-{@code receiveCanceled} dispatch). All NORMAL.
+     */
+    public static final DtEvent<DtScreenOpeningCallback> SCREEN_OPENING =
+        new DtEvent<>();
+
+    /**
+     * Screen init (post) — NeoForge {@code ScreenEvent.Init.Post} (client game bus).
+     * Not cancellable; handlers add widgets to the screen via {@link DtScreenInit}.
+     * Five handlers, NORMAL.
+     */
+    public static final DtEvent<DtScreenInitCallback> SCREEN_INIT_POST =
+        new DtEvent<>();
+
+    /**
+     * Screen render (pre) — NeoForge {@code ScreenEvent.Render.Pre} (client game bus,
+     * render thread). Cancellable upstream but no DT handler cancels — void
+     * passthrough of the screen. Four handlers, NORMAL.
+     */
+    public static final DtEvent<DtScreenRenderPreCallback> SCREEN_RENDER_PRE =
+        new DtEvent<>();
+
+    /**
+     * Screen render (post) — NeoForge {@code ScreenEvent.Render.Post} (client game
+     * bus, render thread). Not cancellable; the handler draws an overlay. One handler
+     * ({@code MenuChatButtonHandler}), NORMAL.
+     */
+    public static final DtEvent<DtScreenRenderPostCallback> SCREEN_RENDER_POST =
+        new DtEvent<>();
+
+    /**
+     * Screen closing — NeoForge {@code ScreenEvent.Closing} (client game bus). Not
+     * cancellable; handlers reset client state. Four handlers, NORMAL.
+     */
+    public static final DtEvent<DtScreenClosingCallback> SCREEN_CLOSING =
+        new DtEvent<>();
+
 }

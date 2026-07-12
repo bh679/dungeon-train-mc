@@ -43,7 +43,6 @@ import java.net.URI;
  * a third-party mod has already rewritten the menu), this handler logs a
  * warning and leaves the menu untouched rather than half-modifying it.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class TitleScreenLayoutHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -60,8 +59,7 @@ public final class TitleScreenLayoutHandler {
 
     private TitleScreenLayoutHandler() {}
 
-    @SubscribeEvent
-    public static void onScreenInitPost(ScreenEvent.Init.Post event) {
+    public static void onScreenInitPost(games.brennan.dungeontrain.platform.event.DtScreenInit event) {
         if (!(event.getScreen() instanceof TitleScreen titleScreen)) {
             return;
         }
@@ -138,7 +136,7 @@ public final class TitleScreenLayoutHandler {
         event.addListener(discord);
     }
 
-    private static Button findButton(ScreenEvent.Init.Post event, Component message) {
+    private static Button findButton(games.brennan.dungeontrain.platform.event.DtScreenInit event, Component message) {
         for (GuiEventListener listener : event.getListenersList()) {
             if (listener instanceof Button button && message.equals(button.getMessage())) {
                 return button;

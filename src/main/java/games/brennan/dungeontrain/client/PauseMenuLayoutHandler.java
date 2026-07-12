@@ -43,7 +43,6 @@ import org.slf4j.Logger;
  * (a third-party mod rewrote the menu) the menu is left untouched, mirroring
  * {@link TitleScreenLayoutHandler}'s defensive stance.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PauseMenuLayoutHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -59,8 +58,7 @@ public final class PauseMenuLayoutHandler {
 
     private PauseMenuLayoutHandler() {}
 
-    @SubscribeEvent
-    public static void onScreenInitPost(ScreenEvent.Init.Post event) {
+    public static void onScreenInitPost(games.brennan.dungeontrain.platform.event.DtScreenInit event) {
         if (!(event.getScreen() instanceof PauseScreen)) {
             return;
         }
@@ -114,9 +112,8 @@ public final class PauseMenuLayoutHandler {
      * both rendering and click handling, so the Abandon button and the
      * Exit/Quit pair swap cleanly as Shift is pressed and released.
      */
-    @SubscribeEvent
-    public static void onScreenRenderPre(ScreenEvent.Render.Pre event) {
-        if (!(event.getScreen() instanceof PauseScreen screen)) {
+    public static void onScreenRenderPre(net.minecraft.client.gui.screens.Screen screen0) {
+        if (!(screen0 instanceof PauseScreen screen)) {
             return;
         }
         for (GuiEventListener listener : screen.children()) {
@@ -142,7 +139,7 @@ public final class PauseMenuLayoutHandler {
         DungeonTrainNet.sendToServer(new AbandonRunPacket());
     }
 
-    private static Button findButton(ScreenEvent.Init.Post event, Component message) {
+    private static Button findButton(games.brennan.dungeontrain.platform.event.DtScreenInit event, Component message) {
         for (GuiEventListener listener : event.getListenersList()) {
             if (listener instanceof Button button && message.equals(button.getMessage())) {
                 return button;

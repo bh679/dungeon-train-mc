@@ -48,14 +48,12 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  * if the player closed a different written book while a burnable book was
  * tucked away in the hotbar.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class StartingBookClientEvents {
 
     private StartingBookClientEvents() {}
 
-    @SubscribeEvent
-    public static void onScreenClosing(ScreenEvent.Closing event) {
-        if (!(event.getScreen() instanceof BookViewScreen) || event.getScreen() instanceof LecternScreen) return;
+    public static void onScreenClosing(net.minecraft.client.gui.screens.Screen screen) {
+        if (!(screen instanceof BookViewScreen) || screen instanceof LecternScreen) return;
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) return;
         if (!BurnableBookTag.isBurnable(player.getMainHandItem())

@@ -34,6 +34,62 @@ public final class NeoForgeClientEvents {
         registerRegisterStyle();
         registerTooltipAndRender();
         registerInput();
+        registerScreen();
+    }
+
+    /**
+     * {@code ScreenEvent} sub-event handlers, fired by
+     * {@code NeoForgeClientScreenBridge}: Opening (4), Init.Post (5), Render.Pre (4),
+     * Render.Post (1), Closing (4). All NORMAL. Opening is cancellable/mutable (see
+     * {@code DtEvents.SCREEN_OPENING}); the rest are observers/mutators. Order within
+     * a subtype is irrelevant (independent handlers).
+     */
+    private static void registerScreen() {
+        // ScreenEvent.Opening
+        DtEvents.SCREEN_OPENING
+            .register(games.brennan.dungeontrain.client.BookReadClientEvents::onScreenOpening);
+        DtEvents.SCREEN_OPENING
+            .register(games.brennan.dungeontrain.client.CinematicInputHandler::onScreenOpening);
+        DtEvents.SCREEN_OPENING
+            .register(games.brennan.dungeontrain.client.CinematicPreloadGate::onScreenOpening);
+        DtEvents.SCREEN_OPENING
+            .register(games.brennan.dungeontrain.client.DeathScreenLayoutHandler::onScreenOpening);
+
+        // ScreenEvent.Init.Post
+        DtEvents.SCREEN_INIT_POST
+            .register(games.brennan.dungeontrain.client.DevQuickWorldHandler::onScreenInitPost);
+        DtEvents.SCREEN_INIT_POST
+            .register(games.brennan.dungeontrain.client.DeveloperWelcomePopupHandler::onScreenInitPost);
+        DtEvents.SCREEN_INIT_POST
+            .register(games.brennan.dungeontrain.client.PauseMenuLayoutHandler::onScreenInitPost);
+        DtEvents.SCREEN_INIT_POST
+            .register(games.brennan.dungeontrain.client.TitleScreenLayoutHandler::onScreenInitPost);
+        DtEvents.SCREEN_INIT_POST
+            .register(games.brennan.dungeontrain.client.chat.MenuChatButtonHandler::onScreenInitPost);
+
+        // ScreenEvent.Render.Pre
+        DtEvents.SCREEN_RENDER_PRE
+            .register(games.brennan.dungeontrain.client.DefaultAdvancementsTab::onScreenRenderPre);
+        DtEvents.SCREEN_RENDER_PRE
+            .register(games.brennan.dungeontrain.client.DevQuickWorldHandler::onScreenRenderPre);
+        DtEvents.SCREEN_RENDER_PRE
+            .register(games.brennan.dungeontrain.client.PauseMenuLayoutHandler::onScreenRenderPre);
+        DtEvents.SCREEN_RENDER_PRE
+            .register(games.brennan.dungeontrain.client.PendingStartingDimensionSyncHandler::onRenderPre);
+
+        // ScreenEvent.Render.Post
+        DtEvents.SCREEN_RENDER_POST
+            .register(games.brennan.dungeontrain.client.chat.MenuChatButtonHandler::onRenderPost);
+
+        // ScreenEvent.Closing
+        DtEvents.SCREEN_CLOSING
+            .register(games.brennan.dungeontrain.client.AdvancementsScreenWatcher::onScreenClosing);
+        DtEvents.SCREEN_CLOSING
+            .register(games.brennan.dungeontrain.client.BookReadClientEvents::onScreenClosing);
+        DtEvents.SCREEN_CLOSING
+            .register(games.brennan.dungeontrain.client.LetterLecternClientEvents::onScreenClosing);
+        DtEvents.SCREEN_CLOSING
+            .register(games.brennan.dungeontrain.client.StartingBookClientEvents::onScreenClosing);
     }
 
     /**

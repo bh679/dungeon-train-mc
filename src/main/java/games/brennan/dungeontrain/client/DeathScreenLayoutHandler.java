@@ -67,7 +67,6 @@ import java.util.function.Function;
  * a world we don't own; the singleplayer guard ({@code getSingleplayerServer()})
  * gates the swap.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DeathScreenLayoutHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -85,8 +84,7 @@ public final class DeathScreenLayoutHandler {
      * {@link DeathScreen}, so the re-fired {@code Opening} event for it is a
      * no-op — no recursion.
      */
-    @SubscribeEvent
-    public static void onScreenOpening(ScreenEvent.Opening event) {
+    public static void onScreenOpening(games.brennan.dungeontrain.platform.event.DtScreenOpening event) {
         if (!(event.getNewScreen() instanceof DeathScreen)) return;
         if (Minecraft.getInstance().getSingleplayerServer() == null) return;
         event.setNewScreen(new NarrativeDeathScreen());

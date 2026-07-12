@@ -42,7 +42,6 @@ import java.util.OptionalInt;
  * subclass) whose book isn't in hand, so they're deliberately excluded — a held DT book resolves its
  * identity from the hand slot with no ambiguity. Lectern-read telemetry is a possible follow-up.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class BookReadClientEvents {
 
     /** Vanilla book & quill / written book page cap; bounds the dwell array. */
@@ -67,8 +66,7 @@ public final class BookReadClientEvents {
 
     private BookReadClientEvents() {}
 
-    @SubscribeEvent
-    public static void onScreenOpening(ScreenEvent.Opening event) {
+    public static void onScreenOpening(games.brennan.dungeontrain.platform.event.DtScreenOpening event) {
         reset(); // any previous read closed via onScreenClosing; clear defensively
         Screen screen = event.getScreen();
         // Held-book reads only: a LecternScreen is a BookViewScreen but its book isn't in hand.
@@ -96,9 +94,8 @@ public final class BookReadClientEvents {
         accumulate();
     }
 
-    @SubscribeEvent
-    public static void onScreenClosing(ScreenEvent.Closing event) {
-        if (!tracking || event.getScreen() != tracked) return;
+    public static void onScreenClosing(net.minecraft.client.gui.screens.Screen screen) {
+        if (!tracking || screen != tracked) return;
         accumulate(); // flush the final visible page
         long durationMs = (System.nanoTime() - openNanos) / 1_000_000L;
 

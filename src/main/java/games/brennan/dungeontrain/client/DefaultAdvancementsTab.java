@@ -30,7 +30,6 @@ import java.util.WeakHashMap;
  * per-screen via a {@link WeakHashMap} so subsequent user tab clicks are
  * respected — we only force the default once per screen instance.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DefaultAdvancementsTab {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -47,9 +46,8 @@ public final class DefaultAdvancementsTab {
 
     private DefaultAdvancementsTab() {}
 
-    @SubscribeEvent
-    public static void onScreenRenderPre(ScreenEvent.Render.Pre event) {
-        if (!(event.getScreen() instanceof AdvancementsScreen screen)) return;
+    public static void onScreenRenderPre(net.minecraft.client.gui.screens.Screen screen0) {
+        if (!(screen0 instanceof AdvancementsScreen screen)) return;
         if (ADJUSTED.containsKey(screen)) return;
         Map<AdvancementHolder, AdvancementTab> tabs =
             ((AdvancementsScreenAccessor) screen).dungeontrain$getTabs();

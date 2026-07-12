@@ -19,14 +19,12 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  * per screen instance, so no per-frame work) and flips the persistent
  * {@link ClientDisplayConfig} flag. Modeled on {@code StartingBookClientEvents}.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class AdvancementsScreenWatcher {
 
     private AdvancementsScreenWatcher() {}
 
-    @SubscribeEvent
-    public static void onScreenClosing(ScreenEvent.Closing event) {
-        if (event.getScreen() instanceof AdvancementsScreen) {
+    public static void onScreenClosing(net.minecraft.client.gui.screens.Screen screen) {
+        if (screen instanceof AdvancementsScreen) {
             ClientDisplayConfig.setOpenedAdvancementsBefore(true);
         }
     }

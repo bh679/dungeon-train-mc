@@ -37,7 +37,6 @@ import java.util.UUID;
  * reveals the button and popup within a few seconds. Everything is gated on the DiscordPresence
  * network-access consent, like the panel before it.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class MenuChatButtonHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -76,8 +75,7 @@ public final class MenuChatButtonHandler {
 
     private MenuChatButtonHandler() {}
 
-    @SubscribeEvent
-    public static void onScreenInitPost(ScreenEvent.Init.Post event) {
+    public static void onScreenInitPost(games.brennan.dungeontrain.platform.event.DtScreenInit event) {
         if (!(event.getScreen() instanceof TitleScreen titleScreen)) {
             return;
         }
@@ -138,9 +136,9 @@ public final class MenuChatButtonHandler {
      * Title-screen heartbeat: keep the popup live (a Discord reply sent while the player sits on the
      * menu reveals button + popup within one poll) and draw the callout when there's something unread.
      */
-    @SubscribeEvent
-    public static void onRenderPost(ScreenEvent.Render.Post event) {
-        if (!(event.getScreen() instanceof TitleScreen) || event.getScreen() != screenRef.get()) {
+    public static void onRenderPost(net.minecraft.client.gui.screens.Screen screen,
+                                    net.minecraft.client.gui.GuiGraphics graphics) {
+        if (!(screen instanceof TitleScreen) || screen != screenRef.get()) {
             return;
         }
         SpriteIconButton button = buttonRef.get();
@@ -152,8 +150,8 @@ public final class MenuChatButtonHandler {
         MenuChatLivePoll.poll(uuid, false, MenuChatButtonHandler::applyInbox); // peek only — never consumes
 
         if (button.visible && unread > 0 && preview != null) {
-            drawPulse(event.getGuiGraphics(), button);
-            drawPopup(event.getGuiGraphics(), button);
+            drawPulse(graphics, button);
+            drawPopup(graphics, button);
         }
     }
 
@@ -246,7 +244,7 @@ public final class MenuChatButtonHandler {
         }
     }
 
-    private static AbstractWidget findWidget(ScreenEvent.Init.Post event, Component message) {
+    private static AbstractWidget findWidget(games.brennan.dungeontrain.platform.event.DtScreenInit event, Component message) {
         for (GuiEventListener listener : event.getListenersList()) {
             if (listener instanceof AbstractWidget widget && message.equals(widget.getMessage())) {
                 return widget;

@@ -22,14 +22,12 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  * {@code saveChanges(true)} time (before this close event fires), so it is race-free against the
  * server's async sign handling.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LetterLecternClientEvents {
 
     private LetterLecternClientEvents() {}
 
-    @SubscribeEvent
-    public static void onScreenClosing(ScreenEvent.Closing event) {
-        if (!(event.getScreen() instanceof BookEditScreen)) return;
+    public static void onScreenClosing(net.minecraft.client.gui.screens.Screen screen) {
+        if (!(screen instanceof BookEditScreen)) return;
         BlockPos pos = LetterEditorClient.onEditScreenClosing();
         if (pos != null) {
             DungeonTrainNet.sendToServer(new LetterDraftToLecternPacket(pos));

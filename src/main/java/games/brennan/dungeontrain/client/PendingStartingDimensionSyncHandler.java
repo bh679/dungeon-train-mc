@@ -36,14 +36,12 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  * and still runs. This handler simply makes sure any later cycling overrides
  * that initial value before the user clicks Create World.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PendingStartingDimensionSyncHandler {
 
     private PendingStartingDimensionSyncHandler() {}
 
-    @SubscribeEvent
-    public static void onRenderPre(ScreenEvent.Render.Pre event) {
-        if (!(event.getScreen() instanceof CreateWorldScreen screen)) return;
+    public static void onRenderPre(net.minecraft.client.gui.screens.Screen screen0) {
+        if (!(screen0 instanceof CreateWorldScreen screen)) return;
         WorldCreationUiState uiState = ((CreateWorldScreenAccessor) screen).dungeontrain$getUiState();
         if (uiState == null) return;
         Holder<WorldPreset> presetHolder = uiState.getWorldType().preset();

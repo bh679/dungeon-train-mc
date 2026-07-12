@@ -45,7 +45,6 @@ import org.slf4j.Logger;
  *
  * <p>All methods run on the client main thread (packet {@code enqueueWork}, client tick).</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class CinematicPreloadGate {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -182,8 +181,7 @@ public final class CinematicPreloadGate {
      * the swap only happened on the next {@link #onClientTick}, up to a
      * client-tick's worth of raw, unrendered world showing through first.
      */
-    @SubscribeEvent
-    public static void onScreenOpening(ScreenEvent.Opening event) {
+    public static void onScreenOpening(games.brennan.dungeontrain.platform.event.DtScreenOpening event) {
         if (phase == Phase.IDLE) return;
         if (!(event.getCurrentScreen() instanceof LevelLoadingScreen)) return;
         if (event.getNewScreen() instanceof CinematicLoadingScreen) return;
