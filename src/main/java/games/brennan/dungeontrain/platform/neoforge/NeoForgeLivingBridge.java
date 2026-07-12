@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import games.brennan.dungeontrain.platform.event.DtFinalizeSpawnCallback;
 import games.brennan.dungeontrain.platform.event.DtLivingDamageCallback;
@@ -29,7 +29,7 @@ import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
  * handler cancels death, so the bridge never sets the event cancelled. Damage
  * (Post) and equipment change were single-tier NORMAL read-only events.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class NeoForgeLivingBridge {
 
     private NeoForgeLivingBridge() {}

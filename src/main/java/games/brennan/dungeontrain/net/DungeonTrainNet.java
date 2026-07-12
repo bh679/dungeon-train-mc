@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -27,7 +27,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
  * handshake uses this to reject mismatched clients — bump
  * {@link #PROTOCOL_VERSION} any time packet layouts change.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class DungeonTrainNet {
 
     public static final String PROTOCOL_VERSION = "45";
@@ -41,7 +41,7 @@ public final class DungeonTrainNet {
      */
     @SubscribeEvent
     public static void register(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar(DungeonTrain.MOD_ID).versioned(PROTOCOL_VERSION);
+        PayloadRegistrar registrar = event.registrar(DtCore.MOD_ID).versioned(PROTOCOL_VERSION);
 
         for (DtPayloads.Spec<?> spec : DtPayloads.ALL) {
             registerOne(registrar, spec);

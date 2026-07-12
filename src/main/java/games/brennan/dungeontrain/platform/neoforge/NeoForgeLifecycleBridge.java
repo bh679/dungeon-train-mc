@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import games.brennan.dungeontrain.platform.event.DtPriority;
 import games.brennan.dungeontrain.platform.event.DtServerStartedCallback;
@@ -34,7 +34,7 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
  *   <li>Stopped: HIGHEST, NORMAL</li>
  * </ul>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class NeoForgeLifecycleBridge {
 
     private NeoForgeLifecycleBridge() {}

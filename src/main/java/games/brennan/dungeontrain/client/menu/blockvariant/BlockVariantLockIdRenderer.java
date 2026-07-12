@@ -1,10 +1,11 @@
 package games.brennan.dungeontrain.client.menu.blockvariant;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
@@ -42,7 +43,7 @@ import java.util.Map;
 public final class BlockVariantLockIdRenderer {
 
     private static final RenderType PANEL_QUAD = RenderType.create(
-        DungeonTrain.MOD_ID + ":block_variant_lockid_quad",
+        DtCore.MOD_ID + ":block_variant_lockid_quad",
         DefaultVertexFormat.POSITION_COLOR,
         VertexFormat.Mode.QUADS,
         256,

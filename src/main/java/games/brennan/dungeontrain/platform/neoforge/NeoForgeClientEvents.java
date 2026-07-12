@@ -90,8 +90,8 @@ public final class NeoForgeClientEvents {
             .register(games.brennan.dungeontrain.client.DeathScreenLayoutHandler::onScreenOpening);
 
         // ScreenEvent.Init.Post
-        DtEvents.SCREEN_INIT_POST
-            .register(games.brennan.dungeontrain.client.DevQuickWorldHandler::onScreenInitPost);
+        // DevQuickWorldHandler::onScreenInitPost migrated to DungeonTrainCommon.initClient()
+        // (handler class now in :common).
         DtEvents.SCREEN_INIT_POST
             .register(games.brennan.dungeontrain.client.DeveloperWelcomePopupHandler::onScreenInitPost);
         DtEvents.SCREEN_INIT_POST
@@ -104,12 +104,11 @@ public final class NeoForgeClientEvents {
         // ScreenEvent.Render.Pre
         DtEvents.SCREEN_RENDER_PRE
             .register(games.brennan.dungeontrain.client.DefaultAdvancementsTab::onScreenRenderPre);
-        DtEvents.SCREEN_RENDER_PRE
-            .register(games.brennan.dungeontrain.client.DevQuickWorldHandler::onScreenRenderPre);
+        // DevQuickWorldHandler::onScreenRenderPre and
+        // PendingStartingDimensionSyncHandler::onRenderPre migrated to
+        // DungeonTrainCommon.initClient() (handler classes now in :common).
         DtEvents.SCREEN_RENDER_PRE
             .register(games.brennan.dungeontrain.client.PauseMenuLayoutHandler::onScreenRenderPre);
-        DtEvents.SCREEN_RENDER_PRE
-            .register(games.brennan.dungeontrain.client.PendingStartingDimensionSyncHandler::onRenderPre);
 
         // ScreenEvent.Render.Post
         DtEvents.SCREEN_RENDER_POST

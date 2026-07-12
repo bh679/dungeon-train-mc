@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.registry;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.registry.effect.FreePlayEffect;
 import games.brennan.dungeontrain.registry.effect.WarmthOfTheFireEffect;
 import net.minecraft.core.registries.Registries;
@@ -16,7 +16,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class ModMobEffects {
 
     public static final DeferredRegister<MobEffect> MOB_EFFECTS =
-        DeferredRegister.create(Registries.MOB_EFFECT, DungeonTrain.MOD_ID);
+        DeferredRegister.create(Registries.MOB_EFFECT, DtCore.MOD_ID);
 
     public static final DeferredHolder<MobEffect, WarmthOfTheFireEffect> WARMTH_OF_THE_FIRE =
         MOB_EFFECTS.register("warmth_of_the_fire", WarmthOfTheFireEffect::new);

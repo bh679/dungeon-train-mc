@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.ManualSpawnRequestPacket;
 import net.minecraft.client.KeyMapping;
@@ -20,8 +21,8 @@ import net.minecraft.client.Minecraft;
  */
 public final class ManualSpawnHotkeyClient {
 
-    public static final String CATEGORY = "key.categories." + DungeonTrain.MOD_ID;
-    public static final String NAME = "key." + DungeonTrain.MOD_ID + ".manual_spawn";
+    public static final String CATEGORY = "key.categories." + DtCore.MOD_ID;
+    public static final String NAME = "key." + DtCore.MOD_ID + ".manual_spawn";
 
     private static final KeyMapping KEY = new KeyMapping(
         NAME,

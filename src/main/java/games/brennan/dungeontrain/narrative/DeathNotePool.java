@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.narrative;
+import games.brennan.dungeontrain.DtCore;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -99,7 +100,7 @@ public final class DeathNotePool {
         try {
             // No &world= — the pull is seed-agnostic (matched by target only), so a curse armed in the
             // author's world surfaces in the target's next, differently-seeded life.
-            String url = DungeonTrain.relayBaseUrl()
+            String url = DtCore.relayBaseUrl()
                     + "/deathnotes?target=" + enc(playerName)
                     + "&uuid=" + playerUuid.toString().replace("-", "")
                     + "&limit=" + POOL_LIMIT;

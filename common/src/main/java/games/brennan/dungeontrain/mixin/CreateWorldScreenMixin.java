@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.mixin;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.client.worldgen.FloorYState;
 import games.brennan.dungeontrain.client.worldgen.PendingStartingDimension;
 import games.brennan.dungeontrain.world.StartingDimension;
@@ -51,7 +52,7 @@ public abstract class CreateWorldScreenMixin {
     private static final Logger DUNGEONTRAIN$LOGGER = LogUtils.getLogger();
 
     @Unique
-    private static final String DUNGEONTRAIN$NAMESPACE = DungeonTrain.MOD_ID;
+    private static final String DUNGEONTRAIN$NAMESPACE = DtCore.MOD_ID;
 
     @Unique
     private static final String DUNGEONTRAIN$DEFAULT_PATH = "dungeon_train";

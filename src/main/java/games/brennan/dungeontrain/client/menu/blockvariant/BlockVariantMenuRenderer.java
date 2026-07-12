@@ -1,10 +1,11 @@
 package games.brennan.dungeontrain.client.menu.blockvariant;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.client.menu.PrefabTabState;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -45,7 +46,7 @@ import java.util.List;
 public final class BlockVariantMenuRenderer {
 
     static final RenderType PANEL_QUAD = RenderType.create(
-        DungeonTrain.MOD_ID + ":block_variant_menu_quad",
+        DtCore.MOD_ID + ":block_variant_menu_quad",
         DefaultVertexFormat.POSITION_COLOR,
         VertexFormat.Mode.QUADS,
         256,

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import games.brennan.dungeontrain.platform.event.DtInteractionInput;
 import games.brennan.dungeontrain.platform.event.DtInteractionInputCallback;
@@ -20,7 +20,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  * client-side {@code LeftClickBlock}). Client-only so it never loads on a dedicated
  * server. Cancellation semantics are replicated exactly — pure passthrough.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DtCore.MOD_ID, value = Dist.CLIENT)
 public final class NeoForgeClientInputBridge {
 
     private NeoForgeClientInputBridge() {}

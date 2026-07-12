@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtEntityTickCallback;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import games.brennan.dungeontrain.platform.event.DtLevelTickCallback;
@@ -21,7 +21,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * a single populated tier is identical to the old behaviour. {@code isEmpty()}
  * guards keep the per-tick cost to a single check when nothing is registered.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class NeoForgeTickBridge {
 
     private NeoForgeTickBridge() {}

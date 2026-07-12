@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.narrative;
+import games.brennan.dungeontrain.DtCore;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -137,7 +138,7 @@ public final class SharedBookPool {
         try {
             String exclude = excludeCsv();
             boolean hadExclude = !exclude.isEmpty();
-            String url = DungeonTrain.relayBaseUrl()
+            String url = DtCore.relayBaseUrl()
                     + "/books/pool?exclude=" + exclude + "&limit=" + POOL_LIMIT + langParam(hostLang);
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)

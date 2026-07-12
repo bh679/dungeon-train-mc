@@ -1,10 +1,11 @@
 package games.brennan.dungeontrain.client.menu;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -45,7 +46,7 @@ public final class CommandMenuRenderer {
 
     /** Alpha-blended POSITION_COLOR quads with depth test but no depth write. */
     private static final RenderType PANEL_QUAD = RenderType.create(
-        DungeonTrain.MOD_ID + ":menu_quad",
+        DtCore.MOD_ID + ":menu_quad",
         DefaultVertexFormat.POSITION_COLOR,
         VertexFormat.Mode.QUADS,
         256,

@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.net.relay;
+import games.brennan.dungeontrain.DtCore;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -77,7 +78,7 @@ public final class RelayOutbox {
     }
 
     private static final RelayOutbox INSTANCE = new RelayOutbox(
-            RelayOutbox::defaultFile, defaultSender(), DungeonTrain::relayBaseUrl, System::currentTimeMillis);
+            RelayOutbox::defaultFile, defaultSender(), DtCore::relayBaseUrl, System::currentTimeMillis);
 
     public static RelayOutbox get() {
         return INSTANCE;

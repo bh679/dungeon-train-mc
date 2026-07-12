@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import games.brennan.dungeontrain.platform.event.DtPlayerChangeGameModeCallback;
 import games.brennan.dungeontrain.platform.event.DtPlayerLoginCallback;
@@ -26,7 +26,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
  * {@code listeners()} (all buckets, which is only NORMAL here) in registration
  * order.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class NeoForgeConnectionBridge {
 
     private NeoForgeConnectionBridge() {}

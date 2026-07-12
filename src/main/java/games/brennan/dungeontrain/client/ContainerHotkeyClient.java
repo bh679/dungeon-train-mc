@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.client.menu.containercontents.ContainerContentsMenu;
 import games.brennan.dungeontrain.net.ContainerContentsMenuTogglePacket;
 import games.brennan.dungeontrain.net.ContainerHotkeyPacket;
@@ -24,7 +25,7 @@ import net.minecraft.client.Minecraft;
 public final class ContainerHotkeyClient {
 
     public static final String CATEGORY = VariantHotkeyClient.CATEGORY;
-    public static final String NAME = "key." + DungeonTrain.MOD_ID + ".container_contents";
+    public static final String NAME = "key." + DtCore.MOD_ID + ".container_contents";
 
     private static final long TAP_THRESHOLD_TICKS = 8;
 

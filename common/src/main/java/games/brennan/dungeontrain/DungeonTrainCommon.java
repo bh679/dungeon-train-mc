@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.platform.event.DtEvents;
 import org.slf4j.Logger;
 
 /**
@@ -26,6 +27,7 @@ public final class DungeonTrainCommon {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static volatile boolean initialised;
+    private static volatile boolean clientInitialised;
 
     private DungeonTrainCommon() {}
 
@@ -40,7 +42,41 @@ public final class DungeonTrainCommon {
         initialised = true;
         LOGGER.info("Dungeon Train common init");
         // Registrations for common-resident converted handlers land here as
-        // game logic migrates into :common. Currently none — root-resident
-        // handlers register loader-side (see class Javadoc).
+        // game logic migrates into :common. Root-resident handlers still register
+        // loader-side (see class Javadoc + NeoForgeServerEvents).
+    }
+
+    /**
+     * Idempotent client-only common init — the loader-neutral home for {@code DtEvents}
+     * registrations of client-side ({@code SCREEN_*}, {@code GUI_LAYER_*}, HUD, input)
+     * handlers that have migrated into {@code :common}. Called only from a client-gated
+     * loader path: on NeoForge, from the {@code DungeonTrain} constructor's
+     * {@code isClient()} block (right where {@code NeoForgeClientEvents.register()} runs);
+     * a future Fabric client entrypoint calls it too. Never runs on a dedicated server,
+     * so client-only Minecraft types referenced by these handlers never classload there.
+     */
+    public static synchronized void initClient() {
+        if (clientInitialised) {
+            return;
+        }
+        clientInitialised = true;
+        LOGGER.info("Dungeon Train common client init");
+
+        // Dev quick-world button on the title screen (screen-init + render-pre).
+        DtEvents.SCREEN_INIT_POST
+            .register(games.brennan.dungeontrain.client.DevQuickWorldHandler::onScreenInitPost);
+        DtEvents.SCREEN_RENDER_PRE
+            .register(games.brennan.dungeontrain.client.DevQuickWorldHandler::onScreenRenderPre);
+
+        // Pending starting-dimension sync gate (render-pre).
+        DtEvents.SCREEN_RENDER_PRE
+            .register(games.brennan.dungeontrain.client.PendingStartingDimensionSyncHandler::onRenderPre);
+
+        // NOTE: VariantHoverHudOverlay's GUI_LAYER_REGISTRATION stays in
+        // NeoForgeClientEvents even though the class now lives in :common — GUI
+        // layer registration order is render order, and migrating it here (which
+        // runs before NeoForgeClientEvents.register()) would reorder it relative
+        // to the other HUD layers. The FQN method-ref resolves to :common fine, so
+        // NeoForge behavior is unchanged; a Fabric client registrar will wire it.
     }
 }

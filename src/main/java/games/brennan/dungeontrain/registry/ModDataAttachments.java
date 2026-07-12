@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.registry;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.serialization.Codec;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -35,7 +36,7 @@ import java.util.function.Supplier;
 public final class ModDataAttachments {
 
     public static final DeferredRegister<AttachmentType<?>> TYPES =
-        DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, DungeonTrain.MOD_ID);
+        DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, DtCore.MOD_ID);
 
     /**
      * Per-player run state. Codec-serialized so the streak persists across

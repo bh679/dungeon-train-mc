@@ -23,56 +23,56 @@ class DungeonTrainRelayRoutingTest {
 
     @Test
     void mainBuildReportsToLiveFeed() {
-        String url = DungeonTrain.relayBaseUrlForBranch("main");
+        String url = DtCore.relayBaseUrlForBranch("main");
         assertTrue(url.endsWith("/" + LIVE_CAP), "main must use the live relay cap, was: " + url);
     }
 
     @Test
     void featureBranchReportsToDevChannel() {
-        assertTrue(DungeonTrain.relayBaseUrlForBranch("dev/discord-dev-channel").endsWith("/" + DEV_CAP));
-        assertTrue(DungeonTrain.relayBaseUrlForBranch("claude/some-worktree-slug").endsWith("/" + DEV_CAP));
+        assertTrue(DtCore.relayBaseUrlForBranch("dev/discord-dev-channel").endsWith("/" + DEV_CAP));
+        assertTrue(DtCore.relayBaseUrlForBranch("claude/some-worktree-slug").endsWith("/" + DEV_CAP));
     }
 
     @Test
     void manifestRoutesToPublicCapOnlyOnMain() {
         // The public "manifest" death report posts to the dedicated public cap ONLY on a main build;
         // every other branch returns null → it falls through to the build's default cap (dev channel).
-        assertTrue(DungeonTrain.manifestWebhookOverrideForBranch("main").endsWith("/" + PUBLIC_CAP + "/hook"),
+        assertTrue(DtCore.manifestWebhookOverrideForBranch("main").endsWith("/" + PUBLIC_CAP + "/hook"),
                 "main must route the manifest to the public cap");
-        assertNull(DungeonTrain.manifestWebhookOverrideForBranch("dev/some-feature"));
-        assertNull(DungeonTrain.manifestWebhookOverrideForBranch("claude/worktree-slug"));
-        assertNull(DungeonTrain.manifestWebhookOverrideForBranch("?"));
+        assertNull(DtCore.manifestWebhookOverrideForBranch("dev/some-feature"));
+        assertNull(DtCore.manifestWebhookOverrideForBranch("claude/worktree-slug"));
+        assertNull(DtCore.manifestWebhookOverrideForBranch("?"));
     }
 
     @Test
     void surveyResultsCopyRoutesToDedicatedCapOnlyOnMain() {
         // The survey-results copy posts to the dedicated survey-results cap ONLY on a main build;
         // every other branch returns null → the copy falls through to the build's default cap (dev).
-        String main = DungeonTrain.surveyResultsWebhookOverrideForBranch("main");
+        String main = DtCore.surveyResultsWebhookOverrideForBranch("main");
         assertNotNull(main, "main must route the survey copy to a dedicated cap");
         assertTrue(main.endsWith("/hook"), "survey-results cap must target the relay /hook, was: " + main);
-        assertNull(DungeonTrain.surveyResultsWebhookOverrideForBranch("dev/some-feature"));
-        assertNull(DungeonTrain.surveyResultsWebhookOverrideForBranch("claude/worktree-slug"));
-        assertNull(DungeonTrain.surveyResultsWebhookOverrideForBranch("?"));
+        assertNull(DtCore.surveyResultsWebhookOverrideForBranch("dev/some-feature"));
+        assertNull(DtCore.surveyResultsWebhookOverrideForBranch("claude/worktree-slug"));
+        assertNull(DtCore.surveyResultsWebhookOverrideForBranch("?"));
     }
 
     @Test
     void surveyLinkGuildIdSplitsMainVsDev() {
         // The jump-link guild id matches the channel the original posted into: live server on main,
         // dev server otherwise (so the link resolves in the right server).
-        assertEquals(DungeonTrain.LIVE_GUILD_ID, DungeonTrain.linkGuildIdForBranch("main"));
-        assertEquals(DungeonTrain.DEV_GUILD_ID, DungeonTrain.linkGuildIdForBranch("dev/some-feature"));
-        assertEquals(DungeonTrain.DEV_GUILD_ID, DungeonTrain.linkGuildIdForBranch("claude/worktree-slug"));
-        assertEquals(DungeonTrain.DEV_GUILD_ID, DungeonTrain.linkGuildIdForBranch("?"));
+        assertEquals(DtCore.LIVE_GUILD_ID, DtCore.linkGuildIdForBranch("main"));
+        assertEquals(DtCore.DEV_GUILD_ID, DtCore.linkGuildIdForBranch("dev/some-feature"));
+        assertEquals(DtCore.DEV_GUILD_ID, DtCore.linkGuildIdForBranch("claude/worktree-slug"));
+        assertEquals(DtCore.DEV_GUILD_ID, DtCore.linkGuildIdForBranch("?"));
     }
 
     @Test
     void misdetectedBranchFailsSafeToDev() {
         // Detached HEAD bakes a short SHA; total git-detection failure bakes "?". Neither is "main",
         // so both must route to the dev channel — never live.
-        assertTrue(DungeonTrain.relayBaseUrlForBranch("a1b2c3d").endsWith("/" + DEV_CAP));
-        assertTrue(DungeonTrain.relayBaseUrlForBranch("?").endsWith("/" + DEV_CAP));
-        assertNotEquals(DungeonTrain.relayBaseUrlForBranch("main"),
-                DungeonTrain.relayBaseUrlForBranch("?"));
+        assertTrue(DtCore.relayBaseUrlForBranch("a1b2c3d").endsWith("/" + DEV_CAP));
+        assertTrue(DtCore.relayBaseUrlForBranch("?").endsWith("/" + DEV_CAP));
+        assertNotEquals(DtCore.relayBaseUrlForBranch("main"),
+                DtCore.relayBaseUrlForBranch("?"));
     }
 }

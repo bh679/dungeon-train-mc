@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtClientLoggingCallback;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import net.neoforged.api.distmarker.Dist;
@@ -14,7 +14,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
  * dedicated server. Subscribes each once and fires the matching {@code DtEvents}
  * field in registration order — pure passthrough, no logic.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DtCore.MOD_ID, value = Dist.CLIENT)
 public final class NeoForgeClientConnectionBridge {
 
     private NeoForgeClientConnectionBridge() {}

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtAttackEntityCallback;
 import games.brennan.dungeontrain.platform.event.DtBlockBreakCallback;
 import games.brennan.dungeontrain.platform.event.DtBlockDropsCallback;
@@ -27,7 +27,7 @@ import net.neoforged.neoforge.event.level.BlockEvent;
  * so {@code EditorMirrorLiveHandler.onMultiBlockPlace} stays a NeoForge
  * {@code @SubscribeEvent} on that class.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class NeoForgeBlockBridge {
 
     private NeoForgeBlockBridge() {}

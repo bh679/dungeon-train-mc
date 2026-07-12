@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.client.chat;
+import games.brennan.dungeontrain.DtCore;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -54,7 +55,7 @@ public final class RelayChatClient {
         if (uuid == null || !canConnect()) {
             return CompletableFuture.completedFuture(null);
         }
-        URI uri = URI.create(DungeonTrain.relayBaseUrl() + "/chat/history?uuid=" + noDashes(uuid));
+        URI uri = URI.create(DtCore.relayBaseUrl() + "/chat/history?uuid=" + noDashes(uuid));
         HttpRequest req = HttpRequest.newBuilder(uri)
                 .timeout(REQUEST_TIMEOUT)
                 .header("Accept", "application/json")
@@ -78,7 +79,7 @@ public final class RelayChatClient {
         if (uuid == null || !canConnect()) {
             return CompletableFuture.completedFuture(null);
         }
-        URI uri = URI.create(DungeonTrain.relayBaseUrl() + "/chat/inbox?uuid=" + noDashes(uuid));
+        URI uri = URI.create(DtCore.relayBaseUrl() + "/chat/inbox?uuid=" + noDashes(uuid));
         HttpRequest req = HttpRequest.newBuilder(uri)
                 .timeout(REQUEST_TIMEOUT)
                 .header("Accept", "application/json")
@@ -102,7 +103,7 @@ public final class RelayChatClient {
         if (uuid == null || !canConnect()) {
             return CompletableFuture.completedFuture(null);
         }
-        URI uri = URI.create(DungeonTrain.relayBaseUrl() + "/chat/inbox?uuid=" + noDashes(uuid) + "&peek=1");
+        URI uri = URI.create(DtCore.relayBaseUrl() + "/chat/inbox?uuid=" + noDashes(uuid) + "&peek=1");
         HttpRequest req = HttpRequest.newBuilder(uri)
                 .timeout(REQUEST_TIMEOUT)
                 .header("Accept", "application/json")
@@ -142,7 +143,7 @@ public final class RelayChatClient {
         body.addProperty("channelId", channelId);
         body.addProperty("messageId", messageId);
         body.addProperty("kind", kind);
-        HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + "/chat/seen"))
+        HttpRequest req = HttpRequest.newBuilder(URI.create(DtCore.relayBaseUrl() + "/chat/seen"))
                 .timeout(REQUEST_TIMEOUT)
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
@@ -177,7 +178,7 @@ public final class RelayChatClient {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", noDashes(uuid));
         body.addProperty("content", content);
-        HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + "/chat/send"))
+        HttpRequest req = HttpRequest.newBuilder(URI.create(DtCore.relayBaseUrl() + "/chat/send"))
                 .timeout(REQUEST_TIMEOUT)
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString()))

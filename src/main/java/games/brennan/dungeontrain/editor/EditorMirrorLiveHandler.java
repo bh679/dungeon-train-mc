@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
@@ -30,7 +30,7 @@ import java.util.Set;
  * which uses raw {@code setBlock} — so this handler never re-triggers its own
  * place / break subscribers.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class EditorMirrorLiveHandler {
 
     private EditorMirrorLiveHandler() {}

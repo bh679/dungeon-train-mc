@@ -1,9 +1,10 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.player.PendingInventory;
@@ -313,6 +314,6 @@ public final class DeathScreenLayoutHandler {
 
     private static ResourceKey<WorldPreset> preset(String path) {
         return ResourceKey.create(Registries.WORLD_PRESET,
-                ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, path));
+                ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, path));
     }
 }

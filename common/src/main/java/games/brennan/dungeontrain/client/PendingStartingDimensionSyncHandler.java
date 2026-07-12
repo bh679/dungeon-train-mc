@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.worldgen.PendingStartingDimension;
 import games.brennan.dungeontrain.mixin.CreateWorldScreenAccessor;
 import games.brennan.dungeontrain.world.StartingDimension;
@@ -42,7 +42,7 @@ public final class PendingStartingDimensionSyncHandler {
         if (uiState == null) return;
         Holder<WorldPreset> presetHolder = uiState.getWorldType().preset();
         ResourceKey<WorldPreset> curr = presetHolder.unwrapKey().orElse(null);
-        boolean isDT = curr != null && DungeonTrain.MOD_ID.equals(curr.location().getNamespace());
+        boolean isDT = curr != null && DtCore.MOD_ID.equals(curr.location().getNamespace());
         StartingDimension dim = isDT
             ? StartingDimension.fromPresetPath(curr.location().getPath())
             : StartingDimension.OVERWORLD;

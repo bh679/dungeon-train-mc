@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -72,7 +72,7 @@ import java.util.List;
  * <p>Duplicates are allowed — appending the same state twice gives that state
  * 2× weight in the random pick.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class VariantBlockInteractions {
 
     /** Soft cap — commands can write more, but the shift-place path stops here to keep feedback readable. */

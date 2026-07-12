@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtClientTooltipComponentFactoryRegistrationCallback;
 import games.brennan.dungeontrain.platform.event.DtClientTooltipFactoryRegistrar;
 import games.brennan.dungeontrain.platform.event.DtEvents;
@@ -28,7 +28,7 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
  * original handlers did (e.g. {@code CinematographerHotkeyClient.onRegister}). Each
  * handler is fed a thin registrar that delegates to the real NeoForge event.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DtCore.MOD_ID, value = Dist.CLIENT)
 public final class NeoForgeClientRegistryBridge {
 
     private NeoForgeClientRegistryBridge() {}

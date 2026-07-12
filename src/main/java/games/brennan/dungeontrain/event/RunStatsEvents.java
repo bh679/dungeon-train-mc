@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DeathField;
@@ -296,7 +297,7 @@ public final class RunStatsEvents {
         // to the dev channel on dev builds (manifestWebhookOverride: null on dev → default cap). On
         // RELEASE builds, Free Play (cheated) runs are EXCLUDED from the public feed — they still get
         // the basic threaded report above. Dev/test builds DO post Free Play runs (to the dev channel)
-        // so the report stays testable in creative — see DungeonTrain.isDevBuild().
+        // so the report stays testable in creative — see DtCore.isDevBuild().
         //
         // Short abandoned runs are ALSO withheld from the public feed: a player who taps "Abandon This
         // Run" before reaching MIN_CARRIAGES_FOR_PUBLIC_ABANDON carriages shouldn't broadcast a trivial
@@ -307,7 +308,7 @@ public final class RunStatsEvents {
             LOGGER.debug("[DungeonTrain] {} abandoned at {} carriages (< {}) — skipping public death feed",
                     player.getGameProfile().getName(), packet.cartsTravelled(), MIN_CARRIAGES_FOR_PUBLIC_ABANDON);
         }
-        if ((!cheated || DungeonTrain.isDevBuild()) && !shortAbandon) {
+        if ((!cheated || DtCore.isDevBuild()) && !shortAbandon) {
             List<String> advTitles = resolveAdvancementTitles(player, packet.earnedAdvancements());
             String manifestTitle = DeathManifestFormat.title(
                     player.getGameProfile().getName(), packet.cartsTravelled());
@@ -322,7 +323,7 @@ public final class RunStatsEvents {
             // Buffer the top-level report until the client sends this run's scenic ride photo
             // (DeathPhotoPacket); a 5s timeout posts it with the gear composite if the photo never comes.
             DeathReportBuffer.await(player, manifestTitle, manifestDesc, manifestFields, icons,
-                    DungeonTrain.manifestWebhookOverride());
+                    DtCore.manifestWebhookOverride());
         }
     }
 
@@ -363,7 +364,7 @@ public final class RunStatsEvents {
         var progress = player.getAdvancements();
         long count = 0;
         for (AdvancementHolder h : manager.getAllAdvancements()) {
-            if (!DungeonTrain.MOD_ID.equals(h.id().getNamespace())) continue;
+            if (!DtCore.MOD_ID.equals(h.id().getNamespace())) continue;
             if (progress.getOrStartProgress(h).isDone()) count++;
         }
         return count;

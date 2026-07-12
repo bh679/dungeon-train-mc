@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
@@ -76,11 +76,11 @@ public final class ZoneProgressEvents {
     private static final int UD_EXIT_FADE_DEPTH_BLOCKS = 800;
 
     private static final ResourceLocation REACHED_VOID =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_void");
+        ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "dungeon_train/reached_void");
     private static final ResourceLocation REACHED_END_ISLANDS =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_end_islands");
+        ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "dungeon_train/reached_end_islands");
     private static final ResourceLocation REACHED_OVERWORLD_AGAIN =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_overworld_again");
+        ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "dungeon_train/reached_overworld_again");
 
     private ZoneProgressEvents() {}
 

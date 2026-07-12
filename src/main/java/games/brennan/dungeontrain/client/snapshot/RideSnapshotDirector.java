@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.client.snapshot;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.CinematicCameraController;
 import games.brennan.dungeontrain.client.NarrativeDeathScreen;
 import games.brennan.dungeontrain.client.VersionHudOverlay;
@@ -73,7 +73,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  * <p>Lighting + framing are enforced at render time; a request that can't find a
  * lit, clip-free, player-in-view angle is silently skipped and retried.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DtCore.MOD_ID, value = Dist.CLIENT)
 public final class RideSnapshotDirector {
 
     private static final double RIDE_RANGE = 24.0;

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.client.localization;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.neoforged.api.distmarker.Dist;
@@ -21,7 +21,7 @@ import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
  * channel {@code NarrativeDataLoaders} uses — the main menu has no
  * world/server running yet, so only resource packs are active there.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DtCore.MOD_ID, value = Dist.CLIENT)
 public final class LocalizationCreditsClientLoaders {
 
     private LocalizationCreditsClientLoaders() {}

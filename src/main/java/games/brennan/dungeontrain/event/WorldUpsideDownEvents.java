@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -49,7 +49,7 @@ import net.neoforged.neoforge.event.level.LevelEvent;
  * primitive (the Sable-safe, light-skipping path), guarded by a FULL 3×3 neighbourhood
  * ({@link #neighboursFull}).
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class WorldUpsideDownEvents {
 
     private WorldUpsideDownEvents() {}

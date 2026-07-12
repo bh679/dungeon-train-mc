@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.discord;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -90,7 +91,7 @@ public final class BugReportLogStore {
     }
 
     private static String modVersion() {
-        return ModList.get().getModContainerById(DungeonTrain.MOD_ID)
+        return ModList.get().getModContainerById(DtCore.MOD_ID)
                 .map(c -> c.getModInfo().getVersion().toString())
                 .orElse("unknown");
     }

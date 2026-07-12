@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.net.platform;
+import games.brennan.dungeontrain.DtCore;
 
 /**
- * Loader-neutral copy of {@code DungeonTrain.MOD_ID}. The root module's main
+ * Loader-neutral copy of {@code DtCore.MOD_ID}. The root module's main
  * class is {@code @Mod}-annotated (a NeoForge type) so it can never live in
  * {@code :common}; payload records only need the id string for their
  * {@code CustomPacketPayload.Type} resource location, so they depend on this

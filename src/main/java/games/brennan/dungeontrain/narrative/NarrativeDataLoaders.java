@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.narrative;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -25,7 +25,7 @@ import java.util.function.Consumer;
  * class is NeoForge-specific (mirrors the AdventureItemNames sibling's
  * loader-neutral-listener + per-loader-entrypoint split).</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class NarrativeDataLoaders {
 
     private NarrativeDataLoaders() {}

@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.net;
+import games.brennan.dungeontrain.DtCore;
 
 import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -24,7 +25,7 @@ import java.util.function.BiConsumer;
  * <p>This table lives alongside the packet classes in the root {@code net}
  * package rather than in {@code :common}, because most handlers still reach
  * into root/editor/client state that hasn't migrated to {@code :common} yet
- * (only the DungeonTrain.MOD_ID coupling was removed, via {@code DtModId}).
+ * (only the DtCore.MOD_ID coupling was removed, via {@code DtModId}).
  * Once enough of those dependencies move, individual packet classes — and
  * eventually this table — can migrate too.</p>
  */

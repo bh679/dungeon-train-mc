@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenu;
 import games.brennan.dungeontrain.net.BlockVariantMenuTogglePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -30,8 +31,8 @@ import net.minecraft.client.Minecraft;
  */
 public final class VariantHotkeyClient {
 
-    public static final String CATEGORY = "key.categories." + DungeonTrain.MOD_ID;
-    public static final String NAME = "key." + DungeonTrain.MOD_ID + ".variant_place";
+    public static final String CATEGORY = "key.categories." + DtCore.MOD_ID;
+    public static final String NAME = "key." + DtCore.MOD_ID + ".variant_place";
 
     /** A press shorter than this in client ticks counts as a tap (8 ticks ≈ 400ms). */
     private static final long TAP_THRESHOLD_TICKS = 8;

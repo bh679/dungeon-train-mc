@@ -1,8 +1,9 @@
 package games.brennan.dungeontrain.compat;
+import games.brennan.dungeontrain.DtCore;
 
 import games.brennan.discordpresence.compat.DiscordCommandHooks;
 import games.brennan.discordpresence.compat.InboundDiscordHooks;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.event.DevMessageConsent;
 
@@ -41,12 +42,12 @@ public final class DiscordInboundBridge {
     /** Subscribe the dev-contact guard and the dev-message consent flow to DP's inbound-message seams. */
     public static void install() {
         InboundDiscordHooks.install((authorId, authorName, content) -> {
-            if (DungeonTrain.BRENNAN_DISCORD_ID.equals(authorId)) {
+            if (DtCore.BRENNAN_DISCORD_ID.equals(authorId)) {
                 RemoteEchoEncounters.markDevContact();
             }
         });
         DiscordCommandHooks.install((authorId, authorName, content, targetPlayerUuid, reply) -> {
-            if (!DungeonTrain.BRENNAN_DISCORD_ID.equals(authorId)) {
+            if (!DtCore.BRENNAN_DISCORD_ID.equals(authorId)) {
                 return false;
             }
             // Scope to the one player whose thread this message is in (null when unanchored — the

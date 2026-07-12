@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.client.menu;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -77,7 +78,7 @@ public final class EditorPlotLabelsRenderer {
 
     /** Same composite as PartPositionMenuRenderer.PANEL_QUAD. */
     private static final RenderType PANEL_QUAD = RenderType.create(
-        DungeonTrain.MOD_ID + ":editor_plot_label_quad",
+        DtCore.MOD_ID + ":editor_plot_label_quad",
         DefaultVertexFormat.POSITION_COLOR,
         VertexFormat.Mode.QUADS,
         256,

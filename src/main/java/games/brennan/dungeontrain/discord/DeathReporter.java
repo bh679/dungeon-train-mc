@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.discord;
+import games.brennan.dungeontrain.DtCore;
 
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
@@ -92,7 +93,7 @@ public final class DeathReporter {
 
     private static void post(String uuid, String json) {
         HttpRequest req = HttpRequest.newBuilder(
-                        URI.create(DungeonTrain.relayBaseUrl() + "/telemetry/death"))
+                        URI.create(DtCore.relayBaseUrl() + "/telemetry/death"))
                 .timeout(REQUEST_TIMEOUT)
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(json))

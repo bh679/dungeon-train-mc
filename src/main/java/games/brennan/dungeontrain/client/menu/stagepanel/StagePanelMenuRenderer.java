@@ -1,10 +1,11 @@
 package games.brennan.dungeontrain.client.menu.stagepanel;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
 import games.brennan.dungeontrain.client.menu.MenuBlockIcons;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
@@ -40,7 +41,7 @@ public final class StagePanelMenuRenderer {
 
     /** Same composite recipe as the type-menu panel, own buffer identity. */
     private static final RenderType PANEL_QUAD = RenderType.create(
-        DungeonTrain.MOD_ID + ":stage_panel_quad",
+        DtCore.MOD_ID + ":stage_panel_quad",
         DefaultVertexFormat.POSITION_COLOR,
         VertexFormat.Mode.QUADS,
         256,

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import games.brennan.dungeontrain.platform.event.DtRenderLevelAfterTranslucentCallback;
 import net.neoforged.api.distmarker.Dist;
@@ -16,7 +16,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
  * carry their own stage guard — a Fabric bridge wires the same field straight to
  * {@code WorldRenderEvents.AFTER_TRANSLUCENT}.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DtCore.MOD_ID, value = Dist.CLIENT)
 public final class NeoForgeClientRenderLevelBridge {
 
     private NeoForgeClientRenderLevelBridge() {}

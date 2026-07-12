@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.advancement;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -29,11 +30,11 @@ public final class PacifistAdvancement {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public static final ResourceLocation ID_100 =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/pacifist_100");
+        ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "dungeon_train/pacifist_100");
     public static final ResourceLocation ID_250 =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/pacifist_250");
+        ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "dungeon_train/pacifist_250");
     public static final ResourceLocation ID_1000 =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/pacifist_1000");
+        ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "dungeon_train/pacifist_1000");
 
     private record Tier(ResourceLocation id, int threshold) {}
 

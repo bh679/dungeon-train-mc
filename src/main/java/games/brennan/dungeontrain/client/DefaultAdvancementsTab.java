@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -31,7 +32,7 @@ public final class DefaultAdvancementsTab {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final ResourceLocation DUNGEON_TRAIN_ROOT_ID =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/root");
+        ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "dungeon_train/root");
 
     /**
      * Tracks which screen instances we've already adjusted. WeakHashMap so

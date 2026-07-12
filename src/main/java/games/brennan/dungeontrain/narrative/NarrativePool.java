@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.narrative;
+import games.brennan.dungeontrain.DtCore;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -152,7 +153,7 @@ public final class NarrativePool {
             String exclude = excludeCsv();
             boolean hadExclude = !exclude.isEmpty();
             String include = idsCsv(pinnedInProgress);
-            String url = DungeonTrain.relayBaseUrl()
+            String url = DtCore.relayBaseUrl()
                     + "/narratives/pool?exclude=" + exclude + "&include=" + include + "&limit=" + POOL_LIMIT
                     + langParam(hostLang);
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))

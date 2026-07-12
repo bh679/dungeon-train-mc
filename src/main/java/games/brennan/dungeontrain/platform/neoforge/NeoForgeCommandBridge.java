@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtCommandCallback;
 import games.brennan.dungeontrain.platform.event.DtCommandRegistrationCallback;
 import games.brennan.dungeontrain.platform.event.DtEvents;
@@ -15,7 +15,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  * once and fires the matching {@code DtEvents} field. No logic — exact semantic
  * passthrough.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class NeoForgeCommandBridge {
 
     private NeoForgeCommandBridge() {}

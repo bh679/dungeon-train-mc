@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -25,7 +25,7 @@ import org.lwjgl.glfw.GLFW;
  * </ul>
  */
 @EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
+    modid = DtCore.MOD_ID,
     value = Dist.CLIENT
 )
 public final class CommandMenuInputHandler {

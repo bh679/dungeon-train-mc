@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.mixin;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.worldgen.FloorYState;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.Tooltip;
@@ -87,7 +87,7 @@ public abstract class CreateWorldScreenWorldTabMixin extends GridLayoutTab {
                 ((CreateWorldScreenAccessor) this.dungeontrain$screen).dungeontrain$getUiState();
         // Only swap when the current preset is a Dungeon Train variant.
         boolean isDT = uiState.getWorldType().preset().unwrapKey()
-                .map(k -> DungeonTrain.MOD_ID.equals(k.location().getNamespace())
+                .map(k -> DtCore.MOD_ID.equals(k.location().getNamespace())
                         && (k.location().getPath().equals("dungeon_train")
                         || k.location().getPath().startsWith("dungeon_train_y")))
                 .orElse(false);

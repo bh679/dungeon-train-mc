@@ -1,8 +1,9 @@
 package games.brennan.dungeontrain.mixin;
+import games.brennan.dungeontrain.DtCore;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import it.unimi.dsi.fastutil.Stack;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.DisplayInfo;
@@ -65,7 +66,7 @@ public abstract class AdvancementVisibilityEvaluatorMixin {
     ) {
         if (original) return true;
         ResourceLocation id = node.holder().id();
-        if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) return false;
+        if (!DtCore.MOD_ID.equals(id.getNamespace())) return false;
 
         // Frontier reveal: unhide an advancement once its DIRECT parent is
         // earned. Applies to hidden and non-hidden nodes alike; the root has

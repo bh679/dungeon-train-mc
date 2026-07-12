@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -68,7 +69,7 @@ import java.util.Optional;
  * <p>Tooltips on prefab stacks are decorated with the prefab id so the user
  * can tell two stacks of the same source block apart.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class PrefabUseHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();

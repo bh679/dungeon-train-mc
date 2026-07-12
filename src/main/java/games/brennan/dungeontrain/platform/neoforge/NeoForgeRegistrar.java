@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.DtRegistrar;
@@ -43,7 +44,7 @@ public final class NeoForgeRegistrar implements DtRegistrar {
     @SuppressWarnings("unchecked")
     private static <T, I extends T> Supplier<I> registerStatic(ResourceKey<? extends Registry<T>> registryKey, String name, Supplier<I> factory) {
         DeferredRegister<T> register = (DeferredRegister<T>) REGISTERS.computeIfAbsent(
-            registryKey, key -> DeferredRegister.create((ResourceKey<? extends Registry<T>>) key, DungeonTrain.MOD_ID));
+            registryKey, key -> DeferredRegister.create((ResourceKey<? extends Registry<T>>) key, DtCore.MOD_ID));
         return register.register(name, factory);
     }
 

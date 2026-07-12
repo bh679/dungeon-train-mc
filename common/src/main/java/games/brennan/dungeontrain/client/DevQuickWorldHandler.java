@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -69,12 +70,12 @@ public final class DevQuickWorldHandler {
 
     private static final ResourceKey<WorldPreset> DT_DEFAULT_PRESET = ResourceKey.create(
             Registries.WORLD_PRESET,
-            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train"));
+            ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "dungeon_train"));
 
     /** Compatible-Terrain variant (vanilla overworld noise) selected when the COMMON toggle is on. */
     private static final ResourceKey<WorldPreset> DT_COMPAT_PRESET = ResourceKey.create(
             Registries.WORLD_PRESET,
-            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train_compat"));
+            ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "dungeon_train_compat"));
 
     private static WeakReference<Button> singleplayerRef = new WeakReference<>(null);
     private static WeakReference<Button> creativeNewWorldRef = new WeakReference<>(null);

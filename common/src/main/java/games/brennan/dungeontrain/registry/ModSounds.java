@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.registry;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.DtRegistrar;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -25,7 +25,7 @@ public final class ModSounds {
         Registries.SOUND_EVENT,
         "train_engine",
         () -> SoundEvent.createVariableRangeEvent(
-            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "train_engine"))
+            ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "train_engine"))
     );
 
     private ModSounds() {}

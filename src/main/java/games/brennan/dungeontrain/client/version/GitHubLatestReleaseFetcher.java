@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.client.version;
+import games.brennan.dungeontrain.DtCore;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -95,7 +96,7 @@ public final class GitHubLatestReleaseFetcher {
     }
 
     static String currentModVersion() {
-        return ModList.get().getModContainerById(DungeonTrain.MOD_ID)
+        return ModList.get().getModContainerById(DtCore.MOD_ID)
             .map(c -> c.getModInfo().getVersion().toString())
             .orElse("unknown");
     }

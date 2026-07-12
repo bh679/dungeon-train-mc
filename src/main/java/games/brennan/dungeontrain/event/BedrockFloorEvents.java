@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
@@ -50,7 +50,7 @@ public final class BedrockFloorEvents {
         Optional<ResourceKey<DimensionType>> dimTypeKey =
                 level.dimensionTypeRegistration().unwrapKey();
         if (dimTypeKey.isEmpty()
-                || !DungeonTrain.MOD_ID.equals(dimTypeKey.get().location().getNamespace())) {
+                || !DtCore.MOD_ID.equals(dimTypeKey.get().location().getNamespace())) {
             return;
         }
 

@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.advancement;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -41,7 +42,7 @@ public final class FarStartAdvancement {
 
     /** Stable id of the far-start advancement. */
     public static final ResourceLocation ID =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/the_far_start");
+        ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "dungeon_train/the_far_start");
 
     /**
      * Carriages-in-this-life the player must traverse while still carrying the

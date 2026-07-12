@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.advancement;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -45,7 +46,7 @@ public final class NothingButBooksAdvancement {
 
     /** Stable id of the advancement. */
     public static final ResourceLocation ID =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/nothing_but_books");
+        ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "dungeon_train/nothing_but_books");
 
     /** First main-storage slot index in {@link Inventory} (0–8 is hotbar). */
     private static final int MAIN_STORAGE_START = 9;

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import games.brennan.dungeontrain.platform.event.DtScreenClosingCallback;
 import games.brennan.dungeontrain.platform.event.DtScreenInit;
@@ -24,7 +24,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  * loads on a dedicated server. Opening carries cancel + screen-replacement through a
  * live carrier with a skip-if-canceled loop; the rest are direct passthroughs.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DtCore.MOD_ID, value = Dist.CLIENT)
 public final class NeoForgeClientScreenBridge {
 
     private NeoForgeClientScreenBridge() {}

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtClientChatCallback;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import games.brennan.dungeontrain.platform.event.DtFogColor;
@@ -23,7 +23,7 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
  * the event; {@code RenderHandEvent} is cancellable (stop-on-first-true) — pure
  * passthrough, no logic.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DtCore.MOD_ID, value = Dist.CLIENT)
 public final class NeoForgeClientRenderBridge {
 
     private NeoForgeClientRenderBridge() {}

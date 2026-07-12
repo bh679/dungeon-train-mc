@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
@@ -89,7 +90,7 @@ import java.util.UUID;
  *       after every story / random-book read.</li>
  * </ul>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class AchievementEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -922,7 +923,7 @@ public final class AchievementEvents {
         // decides whether to actually display it (gated on its local "opened
         // advancements" flag) and renders it with the live keybind.
         if (!replaying
-                && id.getNamespace().equals(DungeonTrain.MOD_ID)
+                && id.getNamespace().equals(DtCore.MOD_ID)
                 && !id.getPath().startsWith("editor/")) {
             // Death-screen "accolades": record this genuine, non-editor Dungeon Train
             // earn into the per-life run state; read into the death packet on death.

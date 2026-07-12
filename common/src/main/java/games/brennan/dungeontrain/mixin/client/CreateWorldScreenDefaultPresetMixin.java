@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.mixin.client;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
@@ -48,7 +48,7 @@ public abstract class CreateWorldScreenDefaultPresetMixin {
             ? "dungeon_train_compat" : "dungeon_train";
         ResourceKey<WorldPreset> presetKey = ResourceKey.create(
             Registries.WORLD_PRESET,
-            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, presetPath));
+            ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, presetPath));
 
         WorldCreationUiState state = this.getUiState();
         state.getSettings().worldgenLoadContext()

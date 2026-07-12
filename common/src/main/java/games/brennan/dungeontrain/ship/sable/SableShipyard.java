@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.ship.sable;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.Sable;
@@ -9,7 +10,7 @@ import dev.ryanhcode.sable.api.sublevel.ticket.SubLevelLoadingTicketType;
 import dev.ryanhcode.sable.companion.math.BoundingBox3i;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import net.minecraft.core.BlockPos;
@@ -60,7 +61,7 @@ public final class SableShipyard implements Shipyard {
      */
     private static final SubLevelLoadingTicketType<Unit> DT_TRAILING_TICKET =
         SubLevelLoadingTicketType.create(
-            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "trailing_segment"),
+            ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "trailing_segment"),
             Unit.CODEC);
 
     private final ServerLevel level;

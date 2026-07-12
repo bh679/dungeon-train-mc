@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.neoforged.api.distmarker.Dist;
@@ -37,7 +38,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  *   <li>{@link ClientPlayerNetworkEvent.LoggingOut} → hard reset.</li>
  * </ul>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DtCore.MOD_ID, value = Dist.CLIENT)
 public final class CinematicInputHandler {
 
     private CinematicInputHandler() {}

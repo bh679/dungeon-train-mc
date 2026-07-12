@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.platform.GlUtil;
 import com.mojang.logging.LogUtils;
@@ -134,7 +135,7 @@ public final class SystemSpecCollector {
         try {
             lines.add("Versions: MC " + modVer("minecraft")
                     + " · NeoForge " + modVer("neoforge")
-                    + " · DungeonTrain " + modVer(DungeonTrain.MOD_ID));
+                    + " · DungeonTrain " + modVer(DtCore.MOD_ID));
         } catch (Throwable ignored) {
             // best-effort
         }

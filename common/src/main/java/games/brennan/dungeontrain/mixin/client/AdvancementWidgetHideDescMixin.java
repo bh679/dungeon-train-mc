@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.mixin.client;
+import games.brennan.dungeontrain.DtCore;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.client.Minecraft;
@@ -87,14 +88,14 @@ public abstract class AdvancementWidgetHideDescMixin {
     private boolean dungeontrain$revealRevealedIcon(boolean original) {
         if (!original) return false;
         if (advancementNode == null) return original;
-        return DungeonTrain.MOD_ID.equals(advancementNode.holder().id().getNamespace()) ? false : original;
+        return DtCore.MOD_ID.equals(advancementNode.holder().id().getNamespace()) ? false : original;
     }
 
     @Unique
     private boolean dungeontrain$shouldHideDescription() {
         if (advancementNode == null) return false;
         ResourceLocation id = advancementNode.holder().id();
-        if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) return false;
+        if (!DtCore.MOD_ID.equals(id.getNamespace())) return false;
         String path = id.getPath();
         if (path.endsWith("/root")) return false;
         // Editor tab: descriptions stay visible — they document the

@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
@@ -322,7 +323,7 @@ public final class EditorStatusHudOverlay {
             if (c.isEmpty() && m.isEmpty()) return;
             drawBar(graphics, mc.font, c, m, d, w, graphics.guiWidth());
         };
-        registrar.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_status"), overlay);
+        registrar.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "editor_status"), overlay);
         LOGGER.info("Editor status HUD overlay registered");
     }
 

@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.train;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -863,7 +864,7 @@ public final class CarriageContentsPlacer {
      */
     private static final TagKey<EntityType<?>> FIRST_BAND_MAGMA_MOBS =
         TagKey.create(Registries.ENTITY_TYPE,
-            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "first_band_magma_mobs"));
+            ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "first_band_magma_mobs"));
 
     /**
      * Entity types that are <b>never</b> substituted during the first band — they always spawn as
@@ -874,7 +875,7 @@ public final class CarriageContentsPlacer {
      */
     private static final TagKey<EntityType<?>> FIRST_BAND_NO_SUBSTITUTE_MOBS =
         TagKey.create(Registries.ENTITY_TYPE,
-            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "first_band_no_substitute_mobs"));
+            ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "first_band_no_substitute_mobs"));
 
     /**
      * Entity types that are only substituted (to a magma cube) while the train is in the
@@ -885,7 +886,7 @@ public final class CarriageContentsPlacer {
      */
     private static final TagKey<EntityType<?>> FIRST_BAND_NETHER_ONLY_MOBS =
         TagKey.create(Registries.ENTITY_TYPE,
-            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "first_band_nether_only_mobs"));
+            ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "first_band_nether_only_mobs"));
 
     /**
      * Gentle-onboarding hostile gate. For an authored hostile ({@link Enemy}) carriage mob, applies

@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.Util;
@@ -50,7 +51,7 @@ public final class DeveloperWelcomePopupScreen extends Screen {
     private static final String DISCORD_URL = "https://discord.gg/jdKAwb6rbW";
 
     private static final ResourceLocation AVATAR_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "textures/gui/developer_avatar.png");
+            ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "textures/gui/developer_avatar.png");
 
     // --- Sizing constants (compact landscape panel anchored bottom-right) ---
     /** Minimum panel width — keeps the message readable on small dev windows where {@code width/6} would be too tight. */

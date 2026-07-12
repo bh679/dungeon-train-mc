@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.narrative;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -47,7 +48,7 @@ public final class PlayerPlayedMarker {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final String MOD_DIR = DungeonTrain.MOD_ID;
+    private static final String MOD_DIR = DtCore.MOD_ID;
     private static final String PLAYERS_DIR = "players_seen";
     private static final String PROPS_EXT = ".properties";
     /** Legacy flag-file extension from earlier dev iterations of this class. */

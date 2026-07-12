@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.net.relay;
+import games.brennan.dungeontrain.DtCore;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -57,7 +58,7 @@ public final class BookStatsClient {
      */
     public static void fetch(int bookId, UUID holder, Consumer<Stats> callback) {
         try {
-            String url = DungeonTrain.relayBaseUrl()
+            String url = DtCore.relayBaseUrl()
                     + "/books/stats?id=" + bookId
                     + "&uuid=" + holder.toString().replace("-", "");
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))

@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.narrative;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -48,7 +49,7 @@ import java.util.Optional;
  * <p>Both pathways funnel through {@link #recordRead} which dedupes against
  * {@link NarrativeProgressData} (the per-overworld store).</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class NarrativeBookEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();

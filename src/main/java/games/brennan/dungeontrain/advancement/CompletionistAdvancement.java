@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.advancement;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -46,7 +47,7 @@ public final class CompletionistAdvancement {
 
     /** Stable id of the capstone; referenced by the wiring in {@code AchievementEvents}. */
     public static final ResourceLocation ID =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/completionist");
+        ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "dungeon_train/completionist");
 
     private CompletionistAdvancement() {}
 
@@ -69,7 +70,7 @@ public final class CompletionistAdvancement {
 
         for (AdvancementHolder holder : mgr.getAllAdvancements()) {
             ResourceLocation rl = holder.id();
-            if (!DungeonTrain.MOD_ID.equals(rl.getNamespace())) continue; // other mods / vanilla
+            if (!DtCore.MOD_ID.equals(rl.getNamespace())) continue; // other mods / vanilla
             if (rl.getPath().startsWith("editor/")) continue;             // editor tree excluded
             if (rl.equals(ID)) continue;                                  // never require itself
             if (holder.value().display().isEmpty()) continue;             // skip recipe/display-less

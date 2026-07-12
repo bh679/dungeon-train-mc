@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.DtCore;
 
 import games.brennan.discordpresence.discord.DiscordService;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.util.PresenceLine;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
@@ -157,11 +158,11 @@ public final class EditorWelcome {
      */
     private static Component buildPresenceLine() {
         DiscordService dp = DiscordService.get();
-        if (dp.isDiscordUserOnline(DungeonTrain.BRENNAN_DISCORD_ID).orElse(false)) {
+        if (dp.isDiscordUserOnline(DtCore.BRENNAN_DISCORD_ID).orElse(false)) {
             return Component.literal("Brennan is online on Discord right now!")
                 .withStyle(ChatFormatting.GREEN);
         }
-        Optional<Instant> seen = dp.lastSeenOnline(DungeonTrain.BRENNAN_DISCORD_ID);
+        Optional<Instant> seen = dp.lastSeenOnline(DtCore.BRENNAN_DISCORD_ID);
         if (seen.isPresent()) {
             String ago = humanizeAgo(Duration.between(seen.get(), Instant.now()));
             return Component.literal("Brennan was last seen online " + ago + " ago.")

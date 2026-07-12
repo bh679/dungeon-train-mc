@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.LayeredDraw;
@@ -81,7 +82,7 @@ public final class VariantHoverHudOverlay {
             if (stacks.isEmpty()) return;
             drawIconRow(graphics, stacks, graphics.guiWidth(), graphics.guiHeight());
         };
-        registrar.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "variant_hover"), overlay);
+        registrar.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "variant_hover"), overlay);
         LOGGER.info("Variant hover HUD overlay registered");
     }
 

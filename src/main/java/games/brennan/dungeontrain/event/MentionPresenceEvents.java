@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.DtCore;
 
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -95,8 +96,8 @@ public final class MentionPresenceEvents {
         }
         DiscordService dp = DiscordService.get();
         Component line = PresenceLine.recentLine(
-                dp.isDiscordUserOnline(DungeonTrain.BRENNAN_DISCORD_ID),
-                dp.lastSeenOnline(DungeonTrain.BRENNAN_DISCORD_ID),
+                dp.isDiscordUserOnline(DtCore.BRENNAN_DISCORD_ID),
+                dp.lastSeenOnline(DtCore.BRENNAN_DISCORD_ID),
                 Instant.now());
         if (line == null) {
             return; // silent (offline > 30 min / unknown) — don't consume the per-player cooldown
@@ -150,7 +151,7 @@ public final class MentionPresenceEvents {
             return false;
         }
         String lower = text.toLowerCase(Locale.ROOT);
-        for (String token : DungeonTrain.MENTION_TOKENS) {
+        for (String token : DtCore.MENTION_TOKENS) {
             if (lower.contains(token.toLowerCase(Locale.ROOT))) {
                 return true;
             }

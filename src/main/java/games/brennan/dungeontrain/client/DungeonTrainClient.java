@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
 import games.brennan.discordpresence.client.SurveySubmitClientHook;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -16,14 +17,14 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
  * <p>Kept separate from {@link DungeonTrain} so the dedicated server never
  * touches client-only types like {@code IConfigScreenFactory}.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DtCore.MOD_ID, value = Dist.CLIENT)
 public final class DungeonTrainClient {
 
     private DungeonTrainClient() {}
 
     @SubscribeEvent
     public static void clientSetup(FMLClientSetupEvent event) {
-        ModList.get().getModContainerById(DungeonTrain.MOD_ID).ifPresent(container ->
+        ModList.get().getModContainerById(DtCore.MOD_ID).ifPresent(container ->
             container.registerExtensionPoint(
                 IConfigScreenFactory.class,
                 (mc, parent) -> new DungeonTrainSettingsScreen(parent)));

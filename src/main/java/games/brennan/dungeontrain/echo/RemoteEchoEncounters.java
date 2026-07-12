@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.echo;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
@@ -429,6 +430,6 @@ public final class RemoteEchoEncounters {
         // Route to the public death-report channel (same cap as the death manifest) on main builds,
         // keeping the encounter story's greyish-blue bar; null on dev → the build's default cap.
         DiscordService.get().postReportTopLevel(player, title, story, List.of(), enc.photo, PHOTO_FILENAME,
-                EMBED_COLOR, DungeonTrain.manifestWebhookOverride());
+                EMBED_COLOR, DtCore.manifestWebhookOverride());
     }
 }

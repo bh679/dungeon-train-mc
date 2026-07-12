@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.client.menu.plot;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -129,7 +130,7 @@ public final class EditorTypeMenuRenderer {
 
     /** Same composite as the per-plot panel — alpha-blend, depth-test, no cull, no depth-write. */
     private static final RenderType PANEL_QUAD = RenderType.create(
-        DungeonTrain.MOD_ID + ":editor_type_menu_quad",
+        DtCore.MOD_ID + ":editor_type_menu_quad",
         DefaultVertexFormat.POSITION_COLOR,
         VertexFormat.Mode.QUADS,
         256,

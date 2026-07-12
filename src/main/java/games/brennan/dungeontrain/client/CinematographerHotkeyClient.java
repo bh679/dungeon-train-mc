@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 
@@ -16,7 +17,7 @@ import net.minecraft.client.Minecraft;
 public final class CinematographerHotkeyClient {
 
     static final KeyMapping CINEMATIC_KEY = new KeyMapping(
-        "key." + DungeonTrain.MOD_ID + ".cinematographer_cinematic",
+        "key." + DtCore.MOD_ID + ".cinematographer_cinematic",
         InputConstants.Type.KEYSYM,
         InputConstants.KEY_C,
         VariantHotkeyClient.CATEGORY

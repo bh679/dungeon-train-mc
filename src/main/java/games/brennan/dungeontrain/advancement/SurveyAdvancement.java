@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.advancement;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -36,7 +37,7 @@ public final class SurveyAdvancement {
 
     /** Stable id of the survey-completion advancement. */
     public static final ResourceLocation ID =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/the_great_beyond");
+        ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "dungeon_train/the_great_beyond");
 
     private SurveyAdvancement() {}
 

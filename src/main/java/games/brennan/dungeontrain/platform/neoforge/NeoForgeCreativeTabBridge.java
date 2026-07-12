@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtBuildCreativeTabContentsCallback;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -13,7 +13,7 @@ import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
  * {@code ModBlocks} {@code @EventBusSubscriber(modid = ...)} handlers, which
  * ran on both logical sides.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
+@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class NeoForgeCreativeTabBridge {
 
     private NeoForgeCreativeTabBridge() {}

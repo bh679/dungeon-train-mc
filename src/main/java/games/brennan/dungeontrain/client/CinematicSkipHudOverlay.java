@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
@@ -37,7 +37,7 @@ public final class CinematicSkipHudOverlay {
 
         public static void onRegisterGuiLayers(games.brennan.dungeontrain.platform.event.DtGuiLayerRegistrar registrar) {
         registrar.registerAboveAll(
-            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "cinematic_skip"),
+            ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "cinematic_skip"),
             (graphics, deltaTracker) -> {
                 if (!CinematicCameraController.isActive() || !showPrompt) return;
                 // No hideGui guard: the cinematic forces hideGui=true to hide the

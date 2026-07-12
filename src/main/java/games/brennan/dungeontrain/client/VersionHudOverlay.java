@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.net.CarriageGroupGapPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.LayeredDraw;
@@ -124,7 +125,7 @@ public final class VersionHudOverlay {
             }
         };
 
-        registrar.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "version_hud"), overlay);
+        registrar.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DtCore.MOD_ID, "version_hud"), overlay);
         LOGGER.info("Version HUD registered: {}", VersionInfo.DISPLAY);
     }
 

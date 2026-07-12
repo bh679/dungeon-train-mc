@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.event.DtEffectTooltipCallback;
 import games.brennan.dungeontrain.platform.event.DtEvents;
 import games.brennan.dungeontrain.platform.event.DtGatherTooltipComponentsCallback;
@@ -17,7 +17,7 @@ import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
  * so it never loads on a dedicated server. Each handler mutates a live list on the
  * event; the bridge hands that live list through unchanged — pure passthrough.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DtCore.MOD_ID, value = Dist.CLIENT)
 public final class NeoForgeClientTooltipBridge {
 
     private NeoForgeClientTooltipBridge() {}

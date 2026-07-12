@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.mixin.client;
+import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.TreeNodePosition;
 import net.minecraft.client.multiplayer.ClientAdvancements;
@@ -57,7 +57,7 @@ public abstract class AdvancementsCompactLayoutMixin {
     private void dungeontrain$compactVisibleLayout(CallbackInfo ci) {
         ClientAdvancements self = (ClientAdvancements) (Object) this;
         for (AdvancementNode root : self.getTree().roots()) {
-            if (!DungeonTrain.MOD_ID.equals(root.holder().id().getNamespace())) continue;
+            if (!DtCore.MOD_ID.equals(root.holder().id().getNamespace())) continue;
             // TreeNodePosition.run throws on a display-less root; DT roots always
             // have display, but guard anyway for safety.
             if (root.advancement().display().isEmpty()) continue;

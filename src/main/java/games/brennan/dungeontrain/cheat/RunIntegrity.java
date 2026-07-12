@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.cheat;
+import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -99,7 +100,7 @@ public final class RunIntegrity {
      * persist even in a cheated run. Package-private for unit tests.
      */
     static boolean isEditorAdvancement(ResourceLocation id) {
-        return DungeonTrain.MOD_ID.equals(id.getNamespace())
+        return DtCore.MOD_ID.equals(id.getNamespace())
             && id.getPath().startsWith("editor/");
     }
 }
