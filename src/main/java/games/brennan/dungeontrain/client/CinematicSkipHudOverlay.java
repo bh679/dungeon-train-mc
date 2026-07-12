@@ -18,7 +18,6 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
  * flipped from {@link CinematicInputHandler}; drawn only while the cinematic is
  * active and the GUI isn't hidden (F1).</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class CinematicSkipHudOverlay {
 
     private static final Component LABEL = Component.translatable("gui.dungeontrain.cinematic.press_space_to_skip");
@@ -40,9 +39,8 @@ public final class CinematicSkipHudOverlay {
         showPrompt = false;
     }
 
-    @SubscribeEvent
-    public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
-        event.registerAboveAll(
+        public static void onRegisterGuiLayers(games.brennan.dungeontrain.platform.event.DtGuiLayerRegistrar registrar) {
+        registrar.registerAboveAll(
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "cinematic_skip"),
             (graphics, deltaTracker) -> {
                 if (!CinematicCameraController.isActive() || !showPrompt) return;

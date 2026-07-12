@@ -48,15 +48,19 @@ public final class PrefabTooltipEvents {
 
     private PrefabTooltipEvents() {}
 
-    @EventBusSubscriber(modid = DungeonTrain.MOD_ID,
-        bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    /**
+     * Converted off the NeoForge mod bus (Stage 2c) — now a
+     * {@link games.brennan.dungeontrain.platform.event.DtClientTooltipComponentFactoryRegistrationCallback}
+     * registered via {@code DtEvents.CLIENT_TOOLTIP_FACTORY_REGISTRATION}, fired by
+     * {@code NeoForgeClientRegistryBridge}. Logic unchanged.
+     */
     public static final class ModBus {
 
         private ModBus() {}
 
-        @SubscribeEvent
-        public static void onRegisterFactories(RegisterClientTooltipComponentFactoriesEvent event) {
-            event.register(PrefabIconsTooltipData.class, PrefabIconsClientTooltipComponent::new);
+        public static void onRegisterFactories(
+                games.brennan.dungeontrain.platform.event.DtClientTooltipFactoryRegistrar registrar) {
+            registrar.register(PrefabIconsTooltipData.class, PrefabIconsClientTooltipComponent::new);
         }
     }
 

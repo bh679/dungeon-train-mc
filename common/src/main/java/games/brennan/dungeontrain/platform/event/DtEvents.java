@@ -367,4 +367,45 @@ public final class DtEvents {
     public static final DtEvent<DtClientLoggingCallback> CLIENT_LOGGING_OUT =
         new DtEvent<>();
 
+    // ---- Register-style client events (Stage 2c) --------------------------
+    // Converted to declarative registration, mirroring COMMAND_REGISTRATION:
+    // the root bridge iterates the listeners into the real NeoForge event, and a
+    // Fabric bridge can iterate the same tables into Fabric's registration APIs.
+
+    /**
+     * Client-command registration — NeoForge {@code RegisterClientCommandsEvent}
+     * (game bus, client only). Fires on the client thread while the client-command
+     * tree is built. Not cancellable; the dispatcher is mutated by registering
+     * nodes. One handler ({@code NewWorldCommand}).
+     */
+    public static final DtEvent<DtClientCommandRegistrationCallback> CLIENT_COMMAND_REGISTRATION =
+        new DtEvent<>();
+
+    /**
+     * Key-mapping registration — NeoForge mod-bus {@code RegisterKeyMappingsEvent}.
+     * Fires once on the client during setup. Not cancellable; each listener passes
+     * its {@code KeyMapping}(s) to the supplied registrar sink. Six handlers, all
+     * independent (order irrelevant).
+     */
+    public static final DtEvent<DtKeyMappingRegistrationCallback> KEY_MAPPING_REGISTRATION =
+        new DtEvent<>();
+
+    /**
+     * GUI-layer registration — NeoForge mod-bus {@code RegisterGuiLayersEvent}.
+     * Fires once on the client during setup. Not cancellable; each listener records
+     * its HUD overlay layer + anchor via the {@link DtGuiLayerRegistrar}. Four
+     * handlers, all {@code registerAboveAll} (order among them irrelevant).
+     */
+    public static final DtEvent<DtGuiLayerRegistrationCallback> GUI_LAYER_REGISTRATION =
+        new DtEvent<>();
+
+    /**
+     * Client tooltip-component factory registration — NeoForge mod-bus
+     * {@code RegisterClientTooltipComponentFactoriesEvent}. Fires once on the client
+     * during setup. Not cancellable; each listener records a data-type → factory
+     * mapping via the {@link DtClientTooltipFactoryRegistrar}. One handler.
+     */
+    public static final DtEvent<DtClientTooltipComponentFactoryRegistrationCallback> CLIENT_TOOLTIP_FACTORY_REGISTRATION =
+        new DtEvent<>();
+
 }

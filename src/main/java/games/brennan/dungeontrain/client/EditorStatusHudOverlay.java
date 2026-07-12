@@ -32,10 +32,6 @@ import java.util.Set;
  * Mutated on the main client thread from packet handling; no synchronisation
  * needed.</p>
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class EditorStatusHudOverlay {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -320,8 +316,7 @@ public final class EditorStatusHudOverlay {
         games.brennan.dungeontrain.client.menu.templateblocks.TemplateBlocksMenu.clearForLogout();
     }
 
-    @SubscribeEvent
-    public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+        public static void onRegisterGuiLayers(games.brennan.dungeontrain.platform.event.DtGuiLayerRegistrar registrar) {
         LayeredDraw.Layer overlay = (graphics, deltaTracker) -> {
             Minecraft mc = Minecraft.getInstance();
             if (mc.options.hideGui) return;
@@ -332,7 +327,7 @@ public final class EditorStatusHudOverlay {
             if (c.isEmpty() && m.isEmpty()) return;
             drawBar(graphics, mc.font, c, m, d, w, graphics.guiWidth());
         };
-        event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_status"), overlay);
+        registrar.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_status"), overlay);
         LOGGER.info("Editor status HUD overlay registered");
     }
 

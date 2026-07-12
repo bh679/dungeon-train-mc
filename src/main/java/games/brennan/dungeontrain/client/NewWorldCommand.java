@@ -44,7 +44,6 @@ import org.slf4j.Logger;
  * server is offline (title screen, world load), so the interval is effectively
  * "X seconds of in-world wall-clock since the last fire was scheduled."
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class NewWorldCommand {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -58,9 +57,9 @@ public final class NewWorldCommand {
 
     private NewWorldCommand() {}
 
-    @SubscribeEvent
-    public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
-        register(event.getDispatcher(), event.getBuildContext());
+    public static void onRegisterClientCommands(CommandDispatcher<CommandSourceStack> dispatcher,
+                                                CommandBuildContext buildContext) {
+        register(dispatcher, buildContext);
     }
 
     private static void register(

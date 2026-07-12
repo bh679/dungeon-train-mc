@@ -18,7 +18,6 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
  * NeoForge silently dedupes inner @EventBusSubscriber classes that share a simple
  * name (see {@link ContainerHotkeyClient} warning).</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class CinematographerHotkeyClient {
 
     static final KeyMapping CINEMATIC_KEY = new KeyMapping(
@@ -30,9 +29,8 @@ public final class CinematographerHotkeyClient {
 
     private CinematographerHotkeyClient() {}
 
-    @SubscribeEvent
-    public static void onRegister(RegisterKeyMappingsEvent event) {
-        event.register(CINEMATIC_KEY);
+        public static void onRegister(java.util.function.Consumer<net.minecraft.client.KeyMapping> registrar) {
+        registrar.accept(CINEMATIC_KEY);
     }
 
     public static final class CinematographerTickWatcher {

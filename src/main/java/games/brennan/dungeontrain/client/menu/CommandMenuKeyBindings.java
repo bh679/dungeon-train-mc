@@ -18,10 +18,6 @@ import org.slf4j.Logger;
  * {@link KeyConflictContext#IN_GAME} context means typing {@code X} inside
  * chat or an inventory screen does NOT fire this — only bare in-game input.
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class CommandMenuKeyBindings {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -36,9 +32,8 @@ public final class CommandMenuKeyBindings {
 
     private CommandMenuKeyBindings() {}
 
-    @SubscribeEvent
-    public static void onRegisterKeys(RegisterKeyMappingsEvent event) {
-        event.register(TOGGLE);
+        public static void onRegisterKeys(java.util.function.Consumer<net.minecraft.client.KeyMapping> registrar) {
+        registrar.accept(TOGGLE);
         LOGGER.info("Command menu keymapping registered (default: X)");
     }
 }

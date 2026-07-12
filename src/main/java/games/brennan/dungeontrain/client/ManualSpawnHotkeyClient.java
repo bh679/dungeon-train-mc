@@ -23,7 +23,6 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
  * the user can debug spawn-by-spawn alongside the wireframe-preview
  * overlay rendered by {@link CarriageGroupGapDebugRenderer}.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ManualSpawnHotkeyClient {
 
     public static final String CATEGORY = "key.categories." + DungeonTrain.MOD_ID;
@@ -38,9 +37,8 @@ public final class ManualSpawnHotkeyClient {
 
     private ManualSpawnHotkeyClient() {}
 
-    @SubscribeEvent
-    public static void onRegister(RegisterKeyMappingsEvent event) {
-        event.register(KEY);
+        public static void onRegister(java.util.function.Consumer<net.minecraft.client.KeyMapping> registrar) {
+        registrar.accept(KEY);
     }
 
     /**

@@ -33,10 +33,6 @@ import java.util.List;
  * on {@code ctx.enqueueWork()} which lands on the client main thread, same
  * thread the overlay runs on — no synchronisation needed.</p>
  */
-@EventBusSubscriber(
-    modid = DungeonTrain.MOD_ID,
-    value = Dist.CLIENT
-)
 public final class VariantHoverHudOverlay {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -81,8 +77,7 @@ public final class VariantHoverHudOverlay {
         hoverStacks = Collections.emptyList();
     }
 
-    @SubscribeEvent
-    public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+        public static void onRegisterGuiLayers(games.brennan.dungeontrain.platform.event.DtGuiLayerRegistrar registrar) {
         LayeredDraw.Layer overlay = (graphics, deltaTracker) -> {
             Minecraft mc = Minecraft.getInstance();
             if (mc.options.hideGui) return;
@@ -90,7 +85,7 @@ public final class VariantHoverHudOverlay {
             if (stacks.isEmpty()) return;
             drawIconRow(graphics, stacks, graphics.guiWidth(), graphics.guiHeight());
         };
-        event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "variant_hover"), overlay);
+        registrar.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "variant_hover"), overlay);
         LOGGER.info("Variant hover HUD overlay registered");
     }
 

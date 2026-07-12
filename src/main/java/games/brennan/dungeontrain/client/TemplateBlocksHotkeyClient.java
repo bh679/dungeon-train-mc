@@ -21,7 +21,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * menu open/closed via {@link TemplateBlocksMenuTogglePacket}; the server
  * validates that the player is OP and standing in an editor plot.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class TemplateBlocksHotkeyClient {
 
     public static final String CATEGORY = "key.categories." + DungeonTrain.MOD_ID;
@@ -36,9 +35,8 @@ public final class TemplateBlocksHotkeyClient {
 
     private TemplateBlocksHotkeyClient() {}
 
-    @SubscribeEvent
-    public static void onRegister(RegisterKeyMappingsEvent event) {
-        event.register(KEY);
+        public static void onRegister(java.util.function.Consumer<net.minecraft.client.KeyMapping> registrar) {
+        registrar.accept(KEY);
     }
 
     /** Forge-bus listener — ticks during the client game loop to catch the key press edge. */

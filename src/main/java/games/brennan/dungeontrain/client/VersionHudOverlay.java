@@ -24,10 +24,6 @@ import java.util.Locale;
  * <p>The companion {@link games.brennan.dungeontrain.client.version.VersionStatusButton}
  * handles the main menu case (and also folds in the GitHub release-check status).</p>
  */
-@EventBusSubscriber(
-        modid = DungeonTrain.MOD_ID,
-        value = Dist.CLIENT
-)
 public final class VersionHudOverlay {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -75,8 +71,7 @@ public final class VersionHudOverlay {
         return travelledCarriageIndex;
     }
 
-    @SubscribeEvent
-    public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+        public static void onRegisterGuiLayers(games.brennan.dungeontrain.platform.event.DtGuiLayerRegistrar registrar) {
         LayeredDraw.Layer overlay = (graphics, deltaTracker) -> {
             Minecraft mc = Minecraft.getInstance();
             if (mc.options.hideGui) {
@@ -133,7 +128,7 @@ public final class VersionHudOverlay {
             }
         };
 
-        event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "version_hud"), overlay);
+        registrar.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "version_hud"), overlay);
         LOGGER.info("Version HUD registered: {}", VersionInfo.DISPLAY);
     }
 

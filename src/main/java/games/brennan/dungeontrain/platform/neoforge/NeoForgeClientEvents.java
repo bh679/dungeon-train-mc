@@ -31,6 +31,49 @@ public final class NeoForgeClientEvents {
     public static void register() {
         registerClientTick();
         registerClientConnection();
+        registerRegisterStyle();
+    }
+
+    /**
+     * Register-style client events converted to declarative tables (mirroring
+     * {@code COMMAND_REGISTRATION} in 2a), fired by {@code NeoForgeClientCommandBridge}
+     * (game bus) and {@code NeoForgeClientRegistryBridge} (mod bus):
+     * {@code RegisterClientCommandsEvent} (1), {@code RegisterKeyMappingsEvent} (6),
+     * {@code RegisterGuiLayersEvent} (4), {@code RegisterClientTooltipComponentFactoriesEvent}
+     * (1). None cancellable; all independent (order irrelevant).
+     */
+    private static void registerRegisterStyle() {
+        // RegisterClientCommandsEvent
+        DtEvents.CLIENT_COMMAND_REGISTRATION
+            .register(games.brennan.dungeontrain.client.NewWorldCommand::onRegisterClientCommands);
+
+        // RegisterKeyMappingsEvent
+        DtEvents.KEY_MAPPING_REGISTRATION
+            .register(games.brennan.dungeontrain.client.CinematographerHotkeyClient::onRegister);
+        DtEvents.KEY_MAPPING_REGISTRATION
+            .register(games.brennan.dungeontrain.client.TemplateBlocksHotkeyClient::onRegister);
+        DtEvents.KEY_MAPPING_REGISTRATION
+            .register(games.brennan.dungeontrain.client.ContainerHotkeyClient::onRegister);
+        DtEvents.KEY_MAPPING_REGISTRATION
+            .register(games.brennan.dungeontrain.client.menu.CommandMenuKeyBindings::onRegisterKeys);
+        DtEvents.KEY_MAPPING_REGISTRATION
+            .register(games.brennan.dungeontrain.client.VariantHotkeyClient::onRegister);
+        DtEvents.KEY_MAPPING_REGISTRATION
+            .register(games.brennan.dungeontrain.client.ManualSpawnHotkeyClient::onRegister);
+
+        // RegisterGuiLayersEvent
+        DtEvents.GUI_LAYER_REGISTRATION
+            .register(games.brennan.dungeontrain.client.CinematicSkipHudOverlay::onRegisterGuiLayers);
+        DtEvents.GUI_LAYER_REGISTRATION
+            .register(games.brennan.dungeontrain.client.VersionHudOverlay::onRegisterGuiLayers);
+        DtEvents.GUI_LAYER_REGISTRATION
+            .register(games.brennan.dungeontrain.client.VariantHoverHudOverlay::onRegisterGuiLayers);
+        DtEvents.GUI_LAYER_REGISTRATION
+            .register(games.brennan.dungeontrain.client.EditorStatusHudOverlay::onRegisterGuiLayers);
+
+        // RegisterClientTooltipComponentFactoriesEvent
+        DtEvents.CLIENT_TOOLTIP_FACTORY_REGISTRATION
+            .register(games.brennan.dungeontrain.client.tooltip.PrefabTooltipEvents.ModBus::onRegisterFactories);
     }
 
     /**

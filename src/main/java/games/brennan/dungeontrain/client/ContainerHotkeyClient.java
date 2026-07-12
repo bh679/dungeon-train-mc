@@ -48,9 +48,8 @@ public final class ContainerHotkeyClient {
 
     private ContainerHotkeyClient() {}
 
-    @SubscribeEvent
-    public static void onRegister(RegisterKeyMappingsEvent event) {
-        event.register(KEY);
+        public static void onRegister(java.util.function.Consumer<net.minecraft.client.KeyMapping> registrar) {
+        registrar.accept(KEY);
     }
 
     public static boolean isKeyDown() { return KEY.isDown(); }
