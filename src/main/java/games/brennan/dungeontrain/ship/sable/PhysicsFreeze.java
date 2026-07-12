@@ -62,25 +62,30 @@ public final class PhysicsFreeze {
     public static void unfreeze(SubLevelPhysicsSystem system, ServerSubLevel sl) {
         if (!isFrozen(sl)) return;
         PhysicsPipeline pipeline = system.getPipeline();
+        DtFreezable flag = (DtFreezable) sl;
+        // Clear the flag BEFORE the re-add so the pipeline machinery (buildMassTracker + add, and any
+        // native stat/wake calls they trigger) runs ungated by the reader mixins. Safe because
+        // unfreeze runs in the post-tick reconcile, never concurrently with the physics readers.
+        flag.dt$setPhysicsFrozen(false);
         try {
             sl.buildMassTracker();
             pipeline.add(sl, sl.logicalPose());
         } catch (Throwable t) {
+            flag.dt$setPhysicsFrozen(true); // re-add failed → stay frozen so readers keep skipping
             LOGGER.warn("[freeze] re-add failed for sub-level {} — staying frozen", sl.getUniqueId(), t);
-            return; // flag stays set → readers keep skipping (safe)
+            return;
         }
         MassData mass = sl.getMassTracker();
         if (mass == null || mass.isInvalid() || mass.getCenterOfMass() == null) {
             LOGGER.warn("[freeze] re-add produced invalid mass for sub-level {} — reverting to frozen",
                 sl.getUniqueId());
+            flag.dt$setPhysicsFrozen(true);
             try {
                 pipeline.remove(sl);
             } catch (Throwable ignored) {
-                // best-effort; flag stays set so readers skip it regardless
+                // best-effort; flag is set so readers skip it regardless
             }
-            return; // stay frozen
         }
-        ((DtFreezable) sl).dt$setPhysicsFrozen(false); // success → readers resume next tick
     }
 
     /** Hysteresis counter accessors (stored on the sub-level via the mixin). */

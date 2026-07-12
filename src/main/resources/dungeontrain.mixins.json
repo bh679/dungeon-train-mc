@@ -23,7 +23,9 @@
     "SpreadingSnowyDirtBlockUpsideDownMixin",
     "FlowingFluidUpsideDownMixin",
     "ServerSubLevelFreezeMixin",
-    "SubLevelPhysicsSystemFreezeMixin"
+    "SubLevelPhysicsSystemFreezeMixin",
+    "RigidBodyHandleFreezeMixin",
+    "RapierPipelineFreezeMixin"
   ],
   "client": [
     "client.BookViewScreenAccessor",
