@@ -9,9 +9,11 @@ import games.brennan.dungeontrain.DungeonTrain;
 import org.slf4j.Logger;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -138,8 +140,12 @@ public final class NarrativePool {
      *
      * @param pinnedInProgress in-progress seriesIds to force back into the response via {@code include=} so
      *                         a mid-read series stays resolvable even after it rotates past the random window.
+     * @param hostLang         the host player's raw client locale (e.g. {@code "en_us"}) for language-matched
+     *                         delivery, or {@code ""}/{@code null} to leave the pool unfiltered. See
+     *                         {@link WorldLanguage#hostLocale}. Pinned in-progress series still resolve
+     *                         regardless of language (relay-side), so continuity never breaks.
      */
-    public static void refreshAsync(Set<String> pinnedInProgress) {
+    public static void refreshAsync(Set<String> pinnedInProgress, String hostLang) {
         if (fetchInFlight) return;
         fetchInFlight = true;
         try {
@@ -147,7 +153,8 @@ public final class NarrativePool {
             boolean hadExclude = !exclude.isEmpty();
             String include = idsCsv(pinnedInProgress);
             String url = DungeonTrain.relayBaseUrl()
-                    + "/narratives/pool?exclude=" + exclude + "&include=" + include + "&limit=" + POOL_LIMIT;
+                    + "/narratives/pool?exclude=" + exclude + "&include=" + include + "&limit=" + POOL_LIMIT
+                    + langParam(hostLang);
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Accept", "application/json")
@@ -289,6 +296,12 @@ public final class NarrativePool {
     private static String idsCsv(Set<String> ids) {
         if (ids == null || ids.isEmpty()) return "";
         return ids.stream().filter(s -> s != null && !s.isEmpty()).collect(Collectors.joining(","));
+    }
+
+    /** The {@code &lang=<locale>} query fragment for language-matched delivery, or {@code ""} when blank. */
+    static String langParam(String hostLang) {
+        if (hostLang == null || hostLang.isBlank()) return "";
+        return "&lang=" + URLEncoder.encode(hostLang, StandardCharsets.UTF_8);
     }
 
     /** Splittable-mix so a raw lectern seed spreads uniformly across the series index. */
