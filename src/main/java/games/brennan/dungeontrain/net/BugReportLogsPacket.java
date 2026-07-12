@@ -1,13 +1,13 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.discord.BugReportSink;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +40,7 @@ public record BugReportLogsPacket(String optionLabel, String systemInfo, List<Lo
     private static final int MAX_SYSINFO = 8 * 1024;
 
     public static final Type<BugReportLogsPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "bug_report_logs"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "bug_report_logs"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, BugReportLogsPacket> STREAM_CODEC =
             StreamCodec.of(BugReportLogsPacket::encode, BugReportLogsPacket::decode);
@@ -75,7 +75,7 @@ public record BugReportLogsPacket(String optionLabel, String systemInfo, List<Lo
         return TYPE;
     }
 
-    public static void handle(BugReportLogsPacket packet, IPayloadContext ctx) {
+    public static void handle(BugReportLogsPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             BugReportSink.accept(player, packet.optionLabel(), packet.systemInfo(), packet.files());

@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.VariantHoverHudOverlay;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,7 +24,7 @@ import java.util.List;
 public record VariantHoverPacket(List<ResourceLocation> blockIds) implements CustomPacketPayload {
 
     public static final Type<VariantHoverPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "variant_hover"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "variant_hover"));
 
     public static final StreamCodec<FriendlyByteBuf, VariantHoverPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -57,7 +57,7 @@ public record VariantHoverPacket(List<ResourceLocation> blockIds) implements Cus
         return TYPE;
     }
 
-    public static void handle(VariantHoverPacket packet, IPayloadContext ctx) {
+    public static void handle(VariantHoverPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> VariantHoverHudOverlay.setHover(packet.blockIds));
     }
 }

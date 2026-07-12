@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.DebugFlagsState;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Server → client snapshot of the debug flags exposed in the in-world
@@ -57,7 +57,7 @@ public record DebugFlagsPacket(
 ) implements CustomPacketPayload {
 
     public static final Type<DebugFlagsPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "debug_flags"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "debug_flags"));
 
     public static final StreamCodec<FriendlyByteBuf, DebugFlagsPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -94,7 +94,7 @@ public record DebugFlagsPacket(
         return TYPE;
     }
 
-    public static void handle(DebugFlagsPacket packet, IPayloadContext ctx) {
+    public static void handle(DebugFlagsPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> DebugFlagsState.applyServerState(packet));
     }
 }

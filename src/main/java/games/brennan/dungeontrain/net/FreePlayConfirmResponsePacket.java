@@ -1,13 +1,13 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.event.CheatDetectionEvents;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Client → server: the player answered the Free Play confirmation.
@@ -20,7 +20,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record FreePlayConfirmResponsePacket(boolean confirmed) implements CustomPacketPayload {
 
     public static final Type<FreePlayConfirmResponsePacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "free_play_confirm_response"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "free_play_confirm_response"));
 
     public static final StreamCodec<FriendlyByteBuf, FreePlayConfirmResponsePacket> STREAM_CODEC =
         StreamCodec.of(
@@ -32,7 +32,7 @@ public record FreePlayConfirmResponsePacket(boolean confirmed) implements Custom
         return TYPE;
     }
 
-    public static void handle(FreePlayConfirmResponsePacket packet, IPayloadContext ctx) {
+    public static void handle(FreePlayConfirmResponsePacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             CheatDetectionEvents.onConfirmResponse(player, packet.confirmed());

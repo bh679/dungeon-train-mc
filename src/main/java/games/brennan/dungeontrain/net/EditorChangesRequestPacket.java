@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.List;
 
@@ -24,7 +24,7 @@ import java.util.List;
 public record EditorChangesRequestPacket(String categoryId, String modelId) implements CustomPacketPayload {
 
     public static final Type<EditorChangesRequestPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_changes_request"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "editor_changes_request"));
 
     public static final StreamCodec<FriendlyByteBuf, EditorChangesRequestPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -37,7 +37,7 @@ public record EditorChangesRequestPacket(String categoryId, String modelId) impl
         return TYPE;
     }
 
-    public static void handle(EditorChangesRequestPacket packet, IPayloadContext ctx) {
+    public static void handle(EditorChangesRequestPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             MinecraftServer server = player.getServer();

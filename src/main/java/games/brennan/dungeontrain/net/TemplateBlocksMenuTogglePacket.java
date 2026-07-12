@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.editor.TemplateBlocksMenuController;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -8,7 +8,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Client → server: open or close the template-blocks world-space menu.
@@ -23,7 +23,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record TemplateBlocksMenuTogglePacket(boolean open) implements CustomPacketPayload {
 
     public static final Type<TemplateBlocksMenuTogglePacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "template_blocks_menu_toggle"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "template_blocks_menu_toggle"));
 
     public static final StreamCodec<FriendlyByteBuf, TemplateBlocksMenuTogglePacket> STREAM_CODEC =
         StreamCodec.of(
@@ -44,7 +44,7 @@ public record TemplateBlocksMenuTogglePacket(boolean open) implements CustomPack
         return TYPE;
     }
 
-    public static void handle(TemplateBlocksMenuTogglePacket packet, IPayloadContext ctx) {
+    public static void handle(TemplateBlocksMenuTogglePacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
             if (p instanceof ServerPlayer sender) {

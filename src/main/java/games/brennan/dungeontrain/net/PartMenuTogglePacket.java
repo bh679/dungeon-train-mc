@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.editor.PartPositionMenuController;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -8,7 +8,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Client → server: toggle the per-player auto-open flag for the
@@ -22,7 +22,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record PartMenuTogglePacket(boolean enabled) implements CustomPacketPayload {
 
     public static final Type<PartMenuTogglePacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "part_menu_toggle"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "part_menu_toggle"));
 
     public static final StreamCodec<FriendlyByteBuf, PartMenuTogglePacket> STREAM_CODEC =
         StreamCodec.of(
@@ -43,7 +43,7 @@ public record PartMenuTogglePacket(boolean enabled) implements CustomPacketPaylo
         return TYPE;
     }
 
-    public static void handle(PartMenuTogglePacket packet, IPayloadContext ctx) {
+    public static void handle(PartMenuTogglePacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
             if (p instanceof ServerPlayer sender) {

@@ -1,13 +1,13 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Client → server: Stage Blocks panel ops. {@code OPEN}/{@code CLOSE} toggle the panel for
@@ -31,7 +31,7 @@ public record StagePanelEditPacket(Op op, String stageId, String blockId) implem
     public enum Op { OPEN, CLOSE, SWAP_BLOCK, TOGGLE_HIDE_UNUSED }
 
     public static final Type<StagePanelEditPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "stage_panel_edit"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "stage_panel_edit"));
 
     public static final StreamCodec<FriendlyByteBuf, StagePanelEditPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -57,7 +57,7 @@ public record StagePanelEditPacket(Op op, String stageId, String blockId) implem
         return TYPE;
     }
 
-    public static void handle(StagePanelEditPacket packet, IPayloadContext ctx) {
+    public static void handle(StagePanelEditPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
             if (p instanceof ServerPlayer sender) {

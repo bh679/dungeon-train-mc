@@ -1,13 +1,13 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.CinematicCameraController;
 import games.brennan.dungeontrain.client.CinematicPreloadGate;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Server → client: start the spawn intro cinematic for the joining player.
@@ -40,7 +40,7 @@ public record CinematicIntroPacket(
 ) implements CustomPacketPayload {
 
     public static final Type<CinematicIntroPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "cinematic_intro"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "cinematic_intro"));
 
     public static final StreamCodec<FriendlyByteBuf, CinematicIntroPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -88,7 +88,7 @@ public record CinematicIntroPacket(
      * gate shows a loading screen and defers the cinematic until chunks arrive;
      * otherwise the cinematic starts immediately (replay / preload disabled).
      */
-    public static void handle(CinematicIntroPacket packet, IPayloadContext ctx) {
+    public static void handle(CinematicIntroPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (packet.preloadMaxWaitTicks() > 0) {
                 CinematicPreloadGate.begin(packet);

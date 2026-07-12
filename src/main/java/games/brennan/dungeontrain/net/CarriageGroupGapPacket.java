@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.CarriageGroupGapState;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -63,7 +63,7 @@ public record CarriageGroupGapPacket(List<Entry> entries) implements CustomPacke
     ) {}
 
     public static final Type<CarriageGroupGapPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "carriage_group_gap"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "carriage_group_gap"));
 
     public static final StreamCodec<FriendlyByteBuf, CarriageGroupGapPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -114,7 +114,7 @@ public record CarriageGroupGapPacket(List<Entry> entries) implements CustomPacke
         return TYPE;
     }
 
-    public static void handle(CarriageGroupGapPacket packet, IPayloadContext ctx) {
+    public static void handle(CarriageGroupGapPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> CarriageGroupGapState.applySnapshot(packet));
     }
 }

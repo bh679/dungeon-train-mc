@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -9,7 +9,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.UUID;
 
@@ -25,7 +25,7 @@ import java.util.UUID;
 public record EchoPhotoPacket(UUID echoId, byte[] png) implements CustomPacketPayload {
 
     public static final Type<EchoPhotoPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "echo_photo"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "echo_photo"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, EchoPhotoPacket> STREAM_CODEC =
         StreamCodec.composite(
@@ -38,7 +38,7 @@ public record EchoPhotoPacket(UUID echoId, byte[] png) implements CustomPacketPa
         return TYPE;
     }
 
-    public static void handle(EchoPhotoPacket packet, IPayloadContext ctx) {
+    public static void handle(EchoPhotoPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             RemoteEchoEncounters.onPhoto(player, packet.echoId(), packet.png());

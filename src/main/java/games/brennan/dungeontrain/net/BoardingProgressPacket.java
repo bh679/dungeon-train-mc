@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.VersionHudOverlay;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Server → client: current global travelled-carriage-index counter and the
@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record BoardingProgressPacket(int travelled, int tier) implements CustomPacketPayload {
 
     public static final Type<BoardingProgressPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "boarding_progress"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "boarding_progress"));
 
     public static final StreamCodec<FriendlyByteBuf, BoardingProgressPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -43,7 +43,7 @@ public record BoardingProgressPacket(int travelled, int tier) implements CustomP
         return TYPE;
     }
 
-    public static void handle(BoardingProgressPacket packet, IPayloadContext ctx) {
+    public static void handle(BoardingProgressPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> VersionHudOverlay.setBoardingProgress(packet.travelled, packet.tier));
     }
 }

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.ClientNetherBand;
 import games.brennan.dungeontrain.client.ClientUpsideDownBand;
 import games.brennan.dungeontrain.client.ClientVoidBand;
@@ -8,7 +8,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * S2C: tells the joining client the per-world facts it needs to locate the
@@ -22,7 +22,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain, int trainY) implements CustomPacketPayload {
 
     public static final Type<VoidBandSyncPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "void_band_sync"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "void_band_sync"));
 
     public static final StreamCodec<FriendlyByteBuf, VoidBandSyncPacket> STREAM_CODEC =
             StreamCodec.of(
@@ -39,7 +39,7 @@ public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain, in
         return TYPE;
     }
 
-    public static void handle(VoidBandSyncPacket packet, IPayloadContext ctx) {
+    public static void handle(VoidBandSyncPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             ClientVoidBand.update(packet.carriageLength, packet.startsWithTrain);
             ClientNetherBand.update(packet.startsWithTrain);

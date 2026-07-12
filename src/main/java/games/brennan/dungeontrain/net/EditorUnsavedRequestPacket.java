@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.List;
 
@@ -23,7 +23,7 @@ import java.util.List;
  * player.
  *
  * <p>Empty payload — the server already knows who asked from the
- * {@link IPayloadContext#player()} reference, and the scan covers every
+ * {@link DtPayloadContext#player()} reference, and the scan covers every
  * category at once (since {@link games.brennan.dungeontrain.editor.EditorCategory#clearAllPlots}
  * wipes everything on a category switch, the player needs visibility
  * across categories before deciding).</p>
@@ -31,7 +31,7 @@ import java.util.List;
 public record EditorUnsavedRequestPacket() implements CustomPacketPayload {
 
     public static final Type<EditorUnsavedRequestPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_unsaved_request"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "editor_unsaved_request"));
 
     public static final StreamCodec<FriendlyByteBuf, EditorUnsavedRequestPacket> STREAM_CODEC =
         StreamCodec.unit(new EditorUnsavedRequestPacket());
@@ -41,7 +41,7 @@ public record EditorUnsavedRequestPacket() implements CustomPacketPayload {
         return TYPE;
     }
 
-    public static void handle(EditorUnsavedRequestPacket packet, IPayloadContext ctx) {
+    public static void handle(EditorUnsavedRequestPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             MinecraftServer server = player.getServer();

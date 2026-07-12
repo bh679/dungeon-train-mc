@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.CarriageSpawnCollisionState;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,7 +42,7 @@ public record CarriageSpawnCollisionPacket(List<Entry> entries) implements Custo
     ) {}
 
     public static final Type<CarriageSpawnCollisionPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "carriage_spawn_collision"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "carriage_spawn_collision"));
 
     public static final StreamCodec<FriendlyByteBuf, CarriageSpawnCollisionPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -97,7 +97,7 @@ public record CarriageSpawnCollisionPacket(List<Entry> entries) implements Custo
         return TYPE;
     }
 
-    public static void handle(CarriageSpawnCollisionPacket packet, IPayloadContext ctx) {
+    public static void handle(CarriageSpawnCollisionPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> CarriageSpawnCollisionState.applySnapshot(packet));
     }
 }

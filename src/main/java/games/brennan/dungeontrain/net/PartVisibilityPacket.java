@@ -1,11 +1,11 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +24,7 @@ public record PartVisibilityPacket(List<Entry> hidden) implements CustomPacketPa
     public record Entry(byte kindOrd, String name) {}
 
     public static final Type<PartVisibilityPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "part_visibility"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "part_visibility"));
 
     public static final StreamCodec<FriendlyByteBuf, PartVisibilityPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -58,7 +58,7 @@ public record PartVisibilityPacket(List<Entry> hidden) implements CustomPacketPa
         return TYPE;
     }
 
-    public static void handle(PartVisibilityPacket packet, IPayloadContext ctx) {
+    public static void handle(PartVisibilityPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() ->
             games.brennan.dungeontrain.client.menu.ClientPartVisibility.apply(packet));
     }

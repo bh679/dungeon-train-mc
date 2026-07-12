@@ -1,16 +1,27 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 /**
  * Central network registrar for Dungeon Train's client/server payloads.
+ *
+ * <p>This is the NeoForge bridge — it doesn't know packet-by-packet details,
+ * it just iterates the loader-neutral {@link DtPayloads#ALL} table and wires
+ * each entry into NeoForge's {@link PayloadRegistrar}, wrapping every handler
+ * so it receives a {@link DtPayloadContext} instead of the real {@code
+ * IPayloadContext} (see {@link NeoForgePayloadContext}). Sends go through
+ * {@link DtNetSender}, whose NeoForge impl ({@link NeoForgeNetSender}) is
+ * registered via {@code META-INF/services} in this module's resources.</p>
  *
  * <p>Versioning: protocol version is a literal string. NeoForge's payload
  * handshake uses this to reject mismatched clients — bump
@@ -26,135 +37,38 @@ public final class DungeonTrainNet {
     /**
      * Register all payload types. Triggered by NeoForge's mod-bus
      * {@link RegisterPayloadHandlersEvent}. IDs are stable across versions —
-     * don't rename payload types, only append new ones.
+     * don't rename payload types, only append new ones (see {@link DtPayloads}).
      */
     @SubscribeEvent
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(DungeonTrain.MOD_ID).versioned(PROTOCOL_VERSION);
 
-        registrar.playToClient(VariantHoverPacket.TYPE, VariantHoverPacket.STREAM_CODEC, VariantHoverPacket::handle);
-        registrar.playToClient(CarriageIndexPacket.TYPE, CarriageIndexPacket.STREAM_CODEC, CarriageIndexPacket::handle);
-        registrar.playToClient(EditorStatusPacket.TYPE, EditorStatusPacket.STREAM_CODEC, EditorStatusPacket::handle);
-        registrar.playToServer(VariantHotkeyPacket.TYPE, VariantHotkeyPacket.STREAM_CODEC, VariantHotkeyPacket::handle);
-        registrar.playToClient(PartAssignmentSyncPacket.TYPE, PartAssignmentSyncPacket.STREAM_CODEC, PartAssignmentSyncPacket::handle);
-        registrar.playToServer(PartAssignmentEditPacket.TYPE, PartAssignmentEditPacket.STREAM_CODEC, PartAssignmentEditPacket::handle);
-        registrar.playToServer(PartMenuTogglePacket.TYPE, PartMenuTogglePacket.STREAM_CODEC, PartMenuTogglePacket::handle);
-        registrar.playToClient(BlockVariantSyncPacket.TYPE, BlockVariantSyncPacket.STREAM_CODEC, BlockVariantSyncPacket::handle);
-        registrar.playToServer(BlockVariantEditPacket.TYPE, BlockVariantEditPacket.STREAM_CODEC, BlockVariantEditPacket::handle);
-        registrar.playToServer(BlockVariantMenuTogglePacket.TYPE, BlockVariantMenuTogglePacket.STREAM_CODEC, BlockVariantMenuTogglePacket::handle);
-        registrar.playToServer(TemplateBlocksMenuTogglePacket.TYPE, TemplateBlocksMenuTogglePacket.STREAM_CODEC, TemplateBlocksMenuTogglePacket::handle);
-        registrar.playToClient(TemplateBlocksSyncPacket.TYPE, TemplateBlocksSyncPacket.STREAM_CODEC, TemplateBlocksSyncPacket::handle);
-        registrar.playToServer(TemplateBlocksEditPacket.TYPE, TemplateBlocksEditPacket.STREAM_CODEC, TemplateBlocksEditPacket::handle);
-        registrar.playToClient(BlockVariantLockIdsPacket.TYPE, BlockVariantLockIdsPacket.STREAM_CODEC, BlockVariantLockIdsPacket::handle);
-        registrar.playToClient(BlockVariantOutlinePacket.TYPE, BlockVariantOutlinePacket.STREAM_CODEC, BlockVariantOutlinePacket::handle);
-        registrar.playToClient(EditorPlotLabelsPacket.TYPE, EditorPlotLabelsPacket.STREAM_CODEC, EditorPlotLabelsPacket::handle);
-        registrar.playToServer(EditorPlotActionPacket.TYPE, EditorPlotActionPacket.STREAM_CODEC, EditorPlotActionPacket::handle);
-        registrar.playToClient(EditorTypeMenusPacket.TYPE, EditorTypeMenusPacket.STREAM_CODEC, EditorTypeMenusPacket::handle);
-        registrar.playToClient(CarriageGroupGapPacket.TYPE, CarriageGroupGapPacket.STREAM_CODEC, CarriageGroupGapPacket::handle);
-        registrar.playToClient(CarriageNextSpawnPacket.TYPE, CarriageNextSpawnPacket.STREAM_CODEC, CarriageNextSpawnPacket::handle);
-        registrar.playToClient(CarriageSpawnCollisionPacket.TYPE, CarriageSpawnCollisionPacket.STREAM_CODEC, CarriageSpawnCollisionPacket::handle);
-        registrar.playToServer(ManualSpawnRequestPacket.TYPE, ManualSpawnRequestPacket.STREAM_CODEC, ManualSpawnRequestPacket::handle);
-        registrar.playToClient(DebugFlagsPacket.TYPE, DebugFlagsPacket.STREAM_CODEC, DebugFlagsPacket::handle);
-        registrar.playToClient(BoardingProgressPacket.TYPE, BoardingProgressPacket.STREAM_CODEC, BoardingProgressPacket::handle);
+        for (DtPayloads.Spec<?> spec : DtPayloads.ALL) {
+            registerOne(registrar, spec);
+        }
+    }
 
-        registrar.playToServer(ContainerHotkeyPacket.TYPE, ContainerHotkeyPacket.STREAM_CODEC, ContainerHotkeyPacket::handle);
-        registrar.playToServer(ContainerContentsMenuTogglePacket.TYPE, ContainerContentsMenuTogglePacket.STREAM_CODEC, ContainerContentsMenuTogglePacket::handle);
-        registrar.playToClient(ContainerContentsSyncPacket.TYPE, ContainerContentsSyncPacket.STREAM_CODEC, ContainerContentsSyncPacket::handle);
-        registrar.playToServer(ContainerContentsEditPacket.TYPE, ContainerContentsEditPacket.STREAM_CODEC, ContainerContentsEditPacket::handle);
-        registrar.playToClient(PrefabRegistrySyncPacket.TYPE, PrefabRegistrySyncPacket.STREAM_CODEC, PrefabRegistrySyncPacket::handle);
-        registrar.playToServer(SaveBlockVariantPrefabPacket.TYPE, SaveBlockVariantPrefabPacket.STREAM_CODEC, SaveBlockVariantPrefabPacket::handle);
-        registrar.playToServer(SaveLootPrefabPacket.TYPE, SaveLootPrefabPacket.STREAM_CODEC, SaveLootPrefabPacket::handle);
-        registrar.playToServer(EditorUnsavedRequestPacket.TYPE, EditorUnsavedRequestPacket.STREAM_CODEC, EditorUnsavedRequestPacket::handle);
-        registrar.playToClient(EditorUnsavedListPacket.TYPE, EditorUnsavedListPacket.STREAM_CODEC, EditorUnsavedListPacket::handle);
-        registrar.playToServer(EditorChangesRequestPacket.TYPE, EditorChangesRequestPacket.STREAM_CODEC, EditorChangesRequestPacket::handle);
-        registrar.playToClient(EditorChangesListPacket.TYPE, EditorChangesListPacket.STREAM_CODEC, EditorChangesListPacket::handle);
+    private static <T extends CustomPacketPayload> void registerOne(
+            PayloadRegistrar registrar, DtPayloads.Spec<T> spec) {
+        CustomPacketPayload.Type<T> type = spec.type();
+        StreamCodec<? super RegistryFriendlyByteBuf, T> codec = spec.codec();
+        var handler = spec.handler();
 
-        // Package menu V2 — client requests a snapshot, server pushes back with
-        // package list + flags + per-package content basenames.
-        registrar.playToServer(PackageListRequestPacket.TYPE, PackageListRequestPacket.STREAM_CODEC, PackageListRequestPacket::handle);
-        registrar.playToClient(PackageListSyncPacket.TYPE, PackageListSyncPacket.STREAM_CODEC, PackageListSyncPacket::handle);
-
-        // Starting-book close-detection: client ScreenEvent.Closing → server burn flow.
-        registrar.playToServer(StartingBookClosedPacket.TYPE, StartingBookClosedPacket.STREAM_CODEC, StartingBookClosedPacket::handle);
-
-        // Book-read telemetry: client measures a book read (open→close, per-page timing) and sends it on
-        // close; server consent-gates + enriches narrative fields + reports to the relay's Books explorer.
-        registrar.playToServer(BookReadClosedPacket.TYPE, BookReadClosedPacket.STREAM_CODEC, BookReadClosedPacket::handle);
-
-        // Lectern letters: server → client to open the book sign screen when a book & quill is
-        // right-clicked onto a lectern and the feature is active; client → server when that screen is
-        // closed WITHOUT signing, so the server leaves the unsigned book on the lectern as a draft.
-        registrar.playToClient(OpenLetterEditorPacket.TYPE, OpenLetterEditorPacket.STREAM_CODEC, OpenLetterEditorPacket::handle);
-        registrar.playToServer(LetterDraftToLecternPacket.TYPE, LetterDraftToLecternPacket.STREAM_CODEC, LetterDraftToLecternPacket::handle);
-
-        // Death-screen run-stats snapshot, server → dying player on LivingDeathEvent.
-        registrar.playToClient(DeathStatsPacket.TYPE, DeathStatsPacket.STREAM_CODEC, DeathStatsPacket::handle);
-        // Scenic ride photo for the top-level death report, client → server when the death screen opens.
-        registrar.playToServer(DeathPhotoPacket.TYPE, DeathPhotoPacket.STREAM_CODEC, DeathPhotoPacket::handle);
-        // Bug-report logs: client → server when the player reports a bug on the death-screen survey;
-        // archived under logs/<version>/<user>/ and posted as Discord attachments to the feedback feed.
-        registrar.playToServer(BugReportLogsPacket.TYPE, BugReportLogsPacket.STREAM_CODEC, BugReportLogsPacket::handle);
-
-        // Spawn intro cinematic: server → joining player to start it; client → server when it ends.
-        registrar.playToClient(CinematicIntroPacket.TYPE, CinematicIntroPacket.STREAM_CODEC, CinematicIntroPacket::handle);
-        registrar.playToClient(CinematicPreloadBeginPacket.TYPE, CinematicPreloadBeginPacket.STREAM_CODEC, CinematicPreloadBeginPacket::handle);
-        registrar.playToServer(CinematicDonePacket.TYPE, CinematicDonePacket.STREAM_CODEC, CinematicDonePacket::handle);
-
-        // On-train spawn deck-hold: server → joining/respawning player to keep
-        // the client from free-falling off the deck during the spawn-storm stall.
-        registrar.playToClient(SpawnDeckHoldPacket.TYPE, SpawnDeckHoldPacket.STREAM_CODEC, SpawnDeckHoldPacket::handle);
-
-        // Advancements keybind hint: server → the earning player on a gameplay
-        // advancement. The client decides whether to show it (gated on its local
-        // "opened advancements" flag) and renders it with the live keybind.
-        registrar.playToClient(AdvancementsHintPacket.TYPE, AdvancementsHintPacket.STREAM_CODEC, AdvancementsHintPacket::handle);
-
-        // Free Play confirmation: server holds a tainting action (creative/spectator
-        // switch or cheat command) and asks before it commits; client replies
-        // confirmed/canceled (the "don't show again" pref lives client-side).
-        registrar.playToClient(ShowFreePlayConfirmPacket.TYPE, ShowFreePlayConfirmPacket.STREAM_CODEC, ShowFreePlayConfirmPacket::handle);
-        registrar.playToServer(FreePlayConfirmResponsePacket.TYPE, FreePlayConfirmResponsePacket.STREAM_CODEC, FreePlayConfirmResponsePacket::handle);
-
-        // Pause-menu "Abandon This Run": client → server kill request, ending the run via the death screen.
-        registrar.playToServer(AbandonRunPacket.TYPE, AbandonRunPacket.STREAM_CODEC, AbandonRunPacket::handle);
-
-        // Remote-echo encounter screenshot: server → player at first eye-contact to frame + capture the
-        // echo; client → server with the resulting PNG, buffered on the encounter journal for its story embed.
-        registrar.playToClient(CaptureEchoPacket.TYPE, CaptureEchoPacket.STREAM_CODEC, CaptureEchoPacket::handle);
-        registrar.playToServer(EchoPhotoPacket.TYPE, EchoPhotoPacket.STREAM_CODEC, EchoPhotoPacket::handle);
-
-        // Developer-message consent: client → server login sync of persisted consent state;
-        // server → client push when consent is granted in-game so the client persists it.
-        registrar.playToServer(ConsentSyncPacket.TYPE, ConsentSyncPacket.STREAM_CODEC, ConsentSyncPacket::handle);
-        registrar.playToClient(ConsentUpdatePacket.TYPE, ConsentUpdatePacket.STREAM_CODEC, ConsentUpdatePacket::handle);
-
-        // Network-access consent (community shared books): client → server login sync of the player's
-        // Discord Presence "use the internet?" consent, so the server can gate book uploads.
-        registrar.playToServer(NetworkConsentSyncPacket.TYPE, NetworkConsentSyncPacket.STREAM_CODEC, NetworkConsentSyncPacket::handle);
-
-        // World disintegration band: server → joining player with the per-world
-        // carriage length + train flag, so the client can fade the sky/fog toward
-        // the End look across the band.
-        registrar.playToClient(VoidBandSyncPacket.TYPE, VoidBandSyncPacket.STREAM_CODEC, VoidBandSyncPacket::handle);
-
-        // Stage Blocks panel: per-stage row icon strips for the Stages panel (S2C, own channel —
-        // pushed only when StageBlockIndex.generation() moves), the panel detail sync (S2C), and
-        // the panel ops (C2S: open/close/replace/hide-unused).
-        registrar.playToClient(StageBlockStripsPacket.TYPE, StageBlockStripsPacket.STREAM_CODEC, StageBlockStripsPacket::handle);
-        registrar.playToClient(StageBlocksSyncPacket.TYPE, StageBlocksSyncPacket.STREAM_CODEC, StageBlocksSyncPacket::handle);
-        registrar.playToServer(StagePanelEditPacket.TYPE, StagePanelEditPacket.STREAM_CODEC, StagePanelEditPacket::handle);
-
-        // Per-part editor-grid visibility (hidden set) — S2C mirror for the part-list ☑/☐ glyphs.
-        registrar.playToClient(PartVisibilityPacket.TYPE, PartVisibilityPacket.STREAM_CODEC, PartVisibilityPacket::handle);
+        switch (spec.direction()) {
+            case S2C -> registrar.playToClient(type, codec,
+                (payload, ctx) -> handler.accept(payload, new NeoForgePayloadContext(ctx)));
+            case C2S -> registrar.playToServer(type, codec,
+                (payload, ctx) -> handler.accept(payload, new NeoForgePayloadContext(ctx)));
+        }
     }
 
     /** Convenience: send a payload to the server (client → server). */
     public static void sendToServer(CustomPacketPayload payload) {
-        PacketDistributor.sendToServer(payload);
+        DtNetSender.get().sendToServer(payload);
     }
 
     /** Convenience: send a payload to a single player. */
     public static void sendTo(ServerPlayer player, CustomPacketPayload payload) {
-        PacketDistributor.sendToPlayer(player, payload);
+        DtNetSender.get().sendToPlayer(player, payload);
     }
 }

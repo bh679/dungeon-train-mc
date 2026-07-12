@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.editor.BlockVariantMenuController;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -9,7 +9,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Client → server: mutate the carriage variant's block-variant cell at
@@ -81,7 +81,7 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      OPEN_LINKED_CONTAINER, SET_HALF_MODE, BUMP_DIFF_MIN, BUMP_DIFF_MAX }
 
     public static final Type<BlockVariantEditPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "block_variant_edit"));
 
     public static final StreamCodec<FriendlyByteBuf, BlockVariantEditPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -116,7 +116,7 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
         return TYPE;
     }
 
-    public static void handle(BlockVariantEditPacket packet, IPayloadContext ctx) {
+    public static void handle(BlockVariantEditPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
             if (p instanceof ServerPlayer sender) {

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.editor.BlockVariantMenuController;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -8,7 +8,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Client → server: open or close the block-variant world-space menu.
@@ -26,7 +26,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record BlockVariantMenuTogglePacket(boolean open) implements CustomPacketPayload {
 
     public static final Type<BlockVariantMenuTogglePacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_menu_toggle"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "block_variant_menu_toggle"));
 
     public static final StreamCodec<FriendlyByteBuf, BlockVariantMenuTogglePacket> STREAM_CODEC =
         StreamCodec.of(
@@ -47,7 +47,7 @@ public record BlockVariantMenuTogglePacket(boolean open) implements CustomPacket
         return TYPE;
     }
 
-    public static void handle(BlockVariantMenuTogglePacket packet, IPayloadContext ctx) {
+    public static void handle(BlockVariantMenuTogglePacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
             if (p instanceof ServerPlayer sender) {

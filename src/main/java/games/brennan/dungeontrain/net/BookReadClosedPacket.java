@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.discord.BookReadReporter;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
@@ -13,7 +13,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +47,7 @@ public record BookReadClosedPacket(
     private static final int MAX_PAGES = 256;
 
     public static final Type<BookReadClosedPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "book_read_closed"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "book_read_closed"));
 
     public static final StreamCodec<FriendlyByteBuf, BookReadClosedPacket> STREAM_CODEC =
         StreamCodec.of(BookReadClosedPacket::encode, BookReadClosedPacket::decode);
@@ -96,7 +96,7 @@ public record BookReadClosedPacket(
         return TYPE;
     }
 
-    public static void handle(BookReadClosedPacket packet, IPayloadContext ctx) {
+    public static void handle(BookReadClosedPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             // "The Enchiridion" — read (open then close) any book. This is a gameplay

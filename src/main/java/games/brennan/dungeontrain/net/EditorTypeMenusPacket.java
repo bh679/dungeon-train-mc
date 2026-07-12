@@ -1,13 +1,13 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -240,7 +240,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
     }
 
     public static final Type<EditorTypeMenusPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_type_menus"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "editor_type_menus"));
 
     public static final StreamCodec<FriendlyByteBuf, EditorTypeMenusPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -377,7 +377,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) im
         return TYPE;
     }
 
-    public static void handle(EditorTypeMenusPacket packet, IPayloadContext ctx) {
+    public static void handle(EditorTypeMenusPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> EditorTypeMenuRenderer.applySnapshot(packet));
     }
 }

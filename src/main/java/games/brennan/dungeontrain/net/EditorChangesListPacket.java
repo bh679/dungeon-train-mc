@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import net.minecraft.core.BlockPos;
@@ -8,7 +8,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +24,7 @@ public record EditorChangesListPacket(String categoryId, String modelId,
                                       List<EditorDirtyCheck.DiffEntry> changes) implements CustomPacketPayload {
 
     public static final Type<EditorChangesListPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_changes_list"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "editor_changes_list"));
 
     public static final StreamCodec<FriendlyByteBuf, EditorChangesListPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -67,7 +67,7 @@ public record EditorChangesListPacket(String categoryId, String modelId,
         return TYPE;
     }
 
-    public static void handle(EditorChangesListPacket packet, IPayloadContext ctx) {
+    public static void handle(EditorChangesListPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> EditorStatusHudOverlay.setChangesList(packet.categoryId, packet.modelId, packet.changes));
     }
 }

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.EndMode;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.SideMode;
@@ -12,7 +12,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -46,7 +46,7 @@ public record PartAssignmentSyncPacket(
 ) implements CustomPacketPayload {
 
     public static final Type<PartAssignmentSyncPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "part_assignment_sync"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "part_assignment_sync"));
 
     public static final StreamCodec<FriendlyByteBuf, PartAssignmentSyncPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -134,7 +134,7 @@ public record PartAssignmentSyncPacket(
         return TYPE;
     }
 
-    public static void handle(PartAssignmentSyncPacket packet, IPayloadContext ctx) {
+    public static void handle(PartAssignmentSyncPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() ->
             games.brennan.dungeontrain.client.menu.parts.PartPositionMenu.applySync(packet));
     }

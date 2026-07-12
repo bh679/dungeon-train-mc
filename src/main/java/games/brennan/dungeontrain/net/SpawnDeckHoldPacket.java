@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.SpawnDeckHold;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Server → client: hold the local player on the train deck for a short window
@@ -31,7 +31,7 @@ public record SpawnDeckHoldPacket(double deckTopY, int durationTicks) implements
     public static final int DEFAULT_HOLD_TICKS = 120;
 
     public static final Type<SpawnDeckHoldPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "spawn_deck_hold"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "spawn_deck_hold"));
 
     public static final StreamCodec<FriendlyByteBuf, SpawnDeckHoldPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -60,7 +60,7 @@ public record SpawnDeckHoldPacket(double deckTopY, int durationTicks) implements
      * direct reference to {@link SpawnDeckHold} (a client-package class) is safe
      * (mirrors {@code CinematicIntroPacket.handle}).
      */
-    public static void handle(SpawnDeckHoldPacket packet, IPayloadContext ctx) {
+    public static void handle(SpawnDeckHoldPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> SpawnDeckHold.begin(packet.deckTopY(), packet.durationTicks()));
     }
 }

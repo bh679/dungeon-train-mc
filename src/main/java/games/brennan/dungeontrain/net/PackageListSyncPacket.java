@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.PackageListClient;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -33,7 +33,7 @@ public record PackageListSyncPacket(List<Entry> entries) implements CustomPacket
                         Map<String, List<String>> contentsBySubdir) {}
 
     public static final Type<PackageListSyncPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "package_list_sync"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "package_list_sync"));
 
     public static final StreamCodec<FriendlyByteBuf, PackageListSyncPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -90,7 +90,7 @@ public record PackageListSyncPacket(List<Entry> entries) implements CustomPacket
     }
 
     /** Stash the latest snapshot on the client. The next menu rebuild reads it. */
-    public static void handle(PackageListSyncPacket packet, IPayloadContext ctx) {
+    public static void handle(PackageListSyncPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> PackageListClient.setSnapshot(packet));
     }
 }

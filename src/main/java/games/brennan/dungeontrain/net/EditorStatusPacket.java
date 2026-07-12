@@ -1,13 +1,13 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -88,7 +88,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
     }
 
     public static final Type<EditorStatusPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_status"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "editor_status"));
 
     public static final StreamCodec<FriendlyByteBuf, EditorStatusPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -153,7 +153,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         return TYPE;
     }
 
-    public static void handle(EditorStatusPacket packet, IPayloadContext ctx) {
+    public static void handle(EditorStatusPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> EditorStatusHudOverlay.setStatus(
             packet.category, packet.model, packet.modelId, packet.modelName,
             packet.devmode, packet.weight, packet.minLevel, packet.maxLevel, packet.phaseMask,

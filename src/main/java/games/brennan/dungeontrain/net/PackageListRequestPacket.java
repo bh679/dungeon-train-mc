@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.editor.PackageInfo;
 import games.brennan.dungeontrain.editor.PackageRegistry;
 import net.minecraft.network.FriendlyByteBuf;
@@ -9,7 +9,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -28,14 +28,14 @@ import java.util.Map;
  * {@link PackageListSyncPacket} addressed to the requesting player.
  *
  * <p>Empty payload — the server already knows who's asking via
- * {@link IPayloadContext#player()}.</p>
+ * {@link DtPayloadContext#player()}.</p>
  */
 public record PackageListRequestPacket() implements CustomPacketPayload {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public static final Type<PackageListRequestPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "package_list_request"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "package_list_request"));
 
     public static final StreamCodec<FriendlyByteBuf, PackageListRequestPacket> STREAM_CODEC =
         StreamCodec.of((buf, packet) -> {}, buf -> new PackageListRequestPacket());
@@ -55,7 +55,7 @@ public record PackageListRequestPacket() implements CustomPacketPayload {
      * menu — non-OP players have no business inspecting or mutating the
      * package set.</p>
      */
-    public static void handle(PackageListRequestPacket packet, IPayloadContext ctx) {
+    public static void handle(PackageListRequestPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) {
                 LOGGER.debug("[DungeonTrain] PackageListRequest: dropping — no ServerPlayer in context");

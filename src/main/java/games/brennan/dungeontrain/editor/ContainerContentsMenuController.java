@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.ContainerContentsEditPacket;
 import games.brennan.dungeontrain.net.ContainerContentsSyncPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
@@ -529,7 +530,7 @@ public final class ContainerContentsMenuController {
                 // via the link-readthrough path don't reclassify the prefab.
                 LootPrefabStore.save(linked, next, templ.get().sourceBlock(), templ.get().category());
                 ContainerContentsLinkPropagator.propagate(level, linked);
-                net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(
+                DtNetSender.get().sendToAllPlayers(
                     games.brennan.dungeontrain.net.PrefabRegistrySyncPacket.fromRegistries());
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] Linked template save failed for {}: {}",

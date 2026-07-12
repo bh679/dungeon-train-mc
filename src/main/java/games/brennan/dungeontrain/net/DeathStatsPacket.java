@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.DeathStatsCache;
 import games.brennan.dungeontrain.player.PlayerMobAppearance;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -8,7 +8,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -81,7 +81,7 @@ public record DeathStatsPacket(
 ) implements CustomPacketPayload {
 
     public static final Type<DeathStatsPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "death_stats"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "death_stats"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, DeathStatsPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -197,7 +197,7 @@ public record DeathStatsPacket(
         return TYPE;
     }
 
-    public static void handle(DeathStatsPacket packet, IPayloadContext ctx) {
+    public static void handle(DeathStatsPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> DeathStatsCache.set(packet));
     }
 }

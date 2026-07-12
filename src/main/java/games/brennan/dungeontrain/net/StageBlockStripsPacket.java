@@ -1,11 +1,11 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +34,7 @@ public record StageBlockStripsPacket(List<Strip> strips) implements CustomPacket
     public static final int STRIP_CAP = 8;
 
     public static final Type<StageBlockStripsPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "stage_block_strips"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "stage_block_strips"));
 
     public static final StreamCodec<FriendlyByteBuf, StageBlockStripsPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -75,7 +75,7 @@ public record StageBlockStripsPacket(List<Strip> strips) implements CustomPacket
         return TYPE;
     }
 
-    public static void handle(StageBlockStripsPacket packet, IPayloadContext ctx) {
+    public static void handle(StageBlockStripsPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() ->
             games.brennan.dungeontrain.client.menu.ClientStageBlocks.apply(packet));
     }

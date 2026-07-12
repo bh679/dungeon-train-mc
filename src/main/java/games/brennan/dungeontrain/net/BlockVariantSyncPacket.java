@@ -1,13 +1,13 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -109,7 +109,7 @@ public record BlockVariantSyncPacket(
     }
 
     public static final Type<BlockVariantSyncPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_sync"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "block_variant_sync"));
 
     public static final StreamCodec<FriendlyByteBuf, BlockVariantSyncPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -198,7 +198,7 @@ public record BlockVariantSyncPacket(
         return TYPE;
     }
 
-    public static void handle(BlockVariantSyncPacket packet, IPayloadContext ctx) {
+    public static void handle(BlockVariantSyncPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() ->
             games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenu.applySync(packet));
     }

@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.VersionHudOverlay;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Server → client: the closest train carriage index for the receiving player.
@@ -18,7 +18,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record CarriageIndexPacket(boolean present, int pIdx) implements CustomPacketPayload {
 
     public static final Type<CarriageIndexPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "carriage_index"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "carriage_index"));
 
     public static final StreamCodec<FriendlyByteBuf, CarriageIndexPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -48,7 +48,7 @@ public record CarriageIndexPacket(boolean present, int pIdx) implements CustomPa
         return TYPE;
     }
 
-    public static void handle(CarriageIndexPacket packet, IPayloadContext ctx) {
+    public static void handle(CarriageIndexPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> VersionHudOverlay.setCarriageIndex(packet.present, packet.pIdx));
     }
 }

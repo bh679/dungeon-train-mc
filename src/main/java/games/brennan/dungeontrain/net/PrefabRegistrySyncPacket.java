@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.menu.PrefabTabState;
 import games.brennan.dungeontrain.editor.BlockVariantPrefabStore;
 import games.brennan.dungeontrain.editor.ContainerContentsEntry;
@@ -12,7 +12,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +67,7 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
     public record LootItem(String itemId, int count) {}
 
     public static final Type<PrefabRegistrySyncPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "prefab_registry_sync"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "prefab_registry_sync"));
 
     public static final StreamCodec<FriendlyByteBuf, PrefabRegistrySyncPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -173,7 +173,7 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
         return TYPE;
     }
 
-    public static void handle(PrefabRegistrySyncPacket packet, IPayloadContext ctx) {
+    public static void handle(PrefabRegistrySyncPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> PrefabTabState.applyRegistry(packet.variants(), packet.loot()));
     }
 }

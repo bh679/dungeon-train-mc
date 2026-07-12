@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.command.ResetCommand;
 import games.brennan.dungeontrain.command.SaveCommand;
 import games.brennan.dungeontrain.editor.CarriageContentsEditor;
@@ -30,7 +30,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 import org.slf4j.Logger;
 
 import java.util.Locale;
@@ -69,7 +69,7 @@ public record EditorPlotActionPacket(
     public enum Action { SAVE, RESET, CLEAR, ENTER_INSIDE }
 
     public static final Type<EditorPlotActionPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_plot_action"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "editor_plot_action"));
 
     public static final StreamCodec<FriendlyByteBuf, EditorPlotActionPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -99,7 +99,7 @@ public record EditorPlotActionPacket(
         return TYPE;
     }
 
-    public static void handle(EditorPlotActionPacket packet, IPayloadContext ctx) {
+    public static void handle(EditorPlotActionPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
             if (!(p instanceof ServerPlayer sender)) return;

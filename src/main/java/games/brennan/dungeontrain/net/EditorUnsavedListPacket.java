@@ -1,13 +1,13 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +27,7 @@ import java.util.List;
 public record EditorUnsavedListPacket(List<EditorDirtyCheck.DirtyEntry> rows) implements CustomPacketPayload {
 
     public static final Type<EditorUnsavedListPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_unsaved_list"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "editor_unsaved_list"));
 
     public static final StreamCodec<FriendlyByteBuf, EditorUnsavedListPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -65,7 +65,7 @@ public record EditorUnsavedListPacket(List<EditorDirtyCheck.DirtyEntry> rows) im
         return TYPE;
     }
 
-    public static void handle(EditorUnsavedListPacket packet, IPayloadContext ctx) {
+    public static void handle(EditorUnsavedListPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> EditorStatusHudOverlay.setUnsavedList(packet.rows));
     }
 }

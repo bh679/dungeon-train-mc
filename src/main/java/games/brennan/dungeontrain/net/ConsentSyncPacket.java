@@ -1,13 +1,13 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.event.DevMessageConsent;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Client → server: seed the server's per-player dev-message-consent mirror from the client's
@@ -34,7 +34,7 @@ public record ConsentSyncPacket(boolean granted, double grantSession, double las
         implements CustomPacketPayload {
 
     public static final Type<ConsentSyncPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "consent_sync"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "consent_sync"));
 
     public static final StreamCodec<FriendlyByteBuf, ConsentSyncPacket> STREAM_CODEC =
         StreamCodec.of(ConsentSyncPacket::encode, ConsentSyncPacket::decode);
@@ -57,7 +57,7 @@ public record ConsentSyncPacket(boolean granted, double grantSession, double las
         return TYPE;
     }
 
-    public static void handle(ConsentSyncPacket packet, IPayloadContext ctx) {
+    public static void handle(ConsentSyncPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             DevMessageConsent.onClientSync(player, packet.granted(), packet.grantSession(), packet.lastMsgToDevMs());

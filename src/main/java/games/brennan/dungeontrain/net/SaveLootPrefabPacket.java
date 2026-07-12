@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.ContainerContentsLinkPropagator;
 import games.brennan.dungeontrain.editor.ContainerContentsMenuController;
@@ -23,8 +23,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -39,7 +39,7 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) implements Cu
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public static final Type<SaveLootPrefabPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "save_loot_prefab"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "save_loot_prefab"));
 
     public static final StreamCodec<FriendlyByteBuf, SaveLootPrefabPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -63,7 +63,7 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) implements Cu
         return TYPE;
     }
 
-    public static void handle(SaveLootPrefabPacket packet, IPayloadContext ctx) {
+    public static void handle(SaveLootPrefabPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
             if (!(p instanceof ServerPlayer player)) return;
@@ -153,6 +153,6 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) implements Cu
     }
 
     private static void broadcastSync() {
-        PacketDistributor.sendToAllPlayers(PrefabRegistrySyncPacket.fromRegistries());
+        DtNetSender.get().sendToAllPlayers(PrefabRegistrySyncPacket.fromRegistries());
     }
 }

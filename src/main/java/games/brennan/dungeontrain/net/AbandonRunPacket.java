@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.FriendlyByteBuf;
@@ -13,7 +13,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 import org.slf4j.Logger;
 
 import java.util.List;
@@ -23,7 +23,7 @@ import java.util.List;
  * wants to end the current run immediately.
  *
  * <p>Empty payload — the server identifies the sender via
- * {@link IPayloadContext#player()} and kills them with a randomly-picked
+ * {@link DtPayloadContext#player()} and kills them with a randomly-picked
  * Dungeon-Train flavored damage source ({@link #ABANDON_CAUSES}) instead of the
  * generic kill source, so the death-screen fall-page title and the Discord death
  * report read e.g. "You stepped off the train" / "Brennan stepped off the train"
@@ -57,7 +57,7 @@ public record AbandonRunPacket() implements CustomPacketPayload {
         causeKey("left_the_line"), causeKey("walked_away"));
 
     public static final Type<AbandonRunPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "abandon_run"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "abandon_run"));
 
     public static final StreamCodec<FriendlyByteBuf, AbandonRunPacket> STREAM_CODEC =
         StreamCodec.unit(new AbandonRunPacket());
@@ -79,7 +79,7 @@ public record AbandonRunPacket() implements CustomPacketPayload {
         return false;
     }
 
-    public static void handle(AbandonRunPacket packet, IPayloadContext ctx) {
+    public static void handle(AbandonRunPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             if (player.isDeadOrDying()) return;
@@ -98,6 +98,6 @@ public record AbandonRunPacket() implements CustomPacketPayload {
 
     private static ResourceKey<DamageType> causeKey(String path) {
         return ResourceKey.create(Registries.DAMAGE_TYPE,
-            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, path));
+            ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, path));
     }
 }

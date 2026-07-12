@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.CarriageNextSpawnState;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,7 +46,7 @@ public record CarriageNextSpawnPacket(List<Entry> entries) implements CustomPack
     ) {}
 
     public static final Type<CarriageNextSpawnPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "carriage_next_spawn"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "carriage_next_spawn"));
 
     public static final StreamCodec<FriendlyByteBuf, CarriageNextSpawnPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -99,7 +99,7 @@ public record CarriageNextSpawnPacket(List<Entry> entries) implements CustomPack
         return TYPE;
     }
 
-    public static void handle(CarriageNextSpawnPacket packet, IPayloadContext ctx) {
+    public static void handle(CarriageNextSpawnPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> CarriageNextSpawnState.applySnapshot(packet));
     }
 }

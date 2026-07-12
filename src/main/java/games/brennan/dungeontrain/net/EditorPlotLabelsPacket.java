@@ -1,13 +1,13 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -78,7 +78,7 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
     ) {}
 
     public static final Type<EditorPlotLabelsPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_plot_labels"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "editor_plot_labels"));
 
     public static final StreamCodec<FriendlyByteBuf, EditorPlotLabelsPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -134,7 +134,7 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
         return TYPE;
     }
 
-    public static void handle(EditorPlotLabelsPacket packet, IPayloadContext ctx) {
+    public static void handle(EditorPlotLabelsPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> EditorPlotLabelsRenderer.applySnapshot(packet));
     }
 }

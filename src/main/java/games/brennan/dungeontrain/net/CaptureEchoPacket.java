@@ -1,13 +1,13 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.snapshot.EchoSnapshotClient;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Server → client: capture a framed third-person screenshot of the remote echo with this entity id,
@@ -21,7 +21,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record CaptureEchoPacket(int echoEntityId) implements CustomPacketPayload {
 
     public static final Type<CaptureEchoPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "capture_echo"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "capture_echo"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, CaptureEchoPacket> STREAM_CODEC =
         StreamCodec.composite(
@@ -37,7 +37,7 @@ public record CaptureEchoPacket(int echoEntityId) implements CustomPacketPayload
      * Client-bound handler — only ever runs on the physical client, so the direct reference to
      * {@link EchoSnapshotClient} (a client-package class) is safe (mirrors {@code SpawnDeckHoldPacket.handle}).
      */
-    public static void handle(CaptureEchoPacket packet, IPayloadContext ctx) {
+    public static void handle(CaptureEchoPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> EchoSnapshotClient.capture(packet.echoEntityId()));
     }
 }

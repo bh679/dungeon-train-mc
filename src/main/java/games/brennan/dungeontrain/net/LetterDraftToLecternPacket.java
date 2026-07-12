@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.narrative.LetterLecternEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -8,7 +8,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Client → server: the player closed the lectern-letter book edit/sign screen WITHOUT signing.
@@ -24,7 +24,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record LetterDraftToLecternPacket(BlockPos pos) implements CustomPacketPayload {
 
     public static final Type<LetterDraftToLecternPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "letter_draft_to_lectern"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "letter_draft_to_lectern"));
 
     public static final StreamCodec<FriendlyByteBuf, LetterDraftToLecternPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -37,7 +37,7 @@ public record LetterDraftToLecternPacket(BlockPos pos) implements CustomPacketPa
         return TYPE;
     }
 
-    public static void handle(LetterDraftToLecternPacket packet, IPayloadContext ctx) {
+    public static void handle(LetterDraftToLecternPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             LetterLecternEvents.handleDraftToLectern(player, packet.pos());

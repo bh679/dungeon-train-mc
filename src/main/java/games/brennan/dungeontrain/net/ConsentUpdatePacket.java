@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.DevMessageConsentClient;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Server → client: push the authoritative dev-message-consent state back so the client persists it
@@ -20,7 +20,7 @@ public record ConsentUpdatePacket(boolean granted, double grantSession, double l
         implements CustomPacketPayload {
 
     public static final Type<ConsentUpdatePacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "consent_update"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "consent_update"));
 
     public static final StreamCodec<FriendlyByteBuf, ConsentUpdatePacket> STREAM_CODEC =
         StreamCodec.of(ConsentUpdatePacket::encode, ConsentUpdatePacket::decode);
@@ -44,7 +44,7 @@ public record ConsentUpdatePacket(boolean granted, double grantSession, double l
     }
 
     /** Client-bound — only runs on the physical client (mirrors {@code ShowFreePlayConfirmPacket}). */
-    public static void handle(ConsentUpdatePacket packet, IPayloadContext ctx) {
+    public static void handle(ConsentUpdatePacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() ->
             DevMessageConsentClient.applyUpdate(packet.granted(), packet.grantSession(), packet.lastMsgToDevMs()));
     }

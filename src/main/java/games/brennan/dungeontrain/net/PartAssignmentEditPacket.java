@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.editor.PartPositionMenuController;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.network.FriendlyByteBuf;
@@ -9,7 +9,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Client → server: mutate the carriage variant's part assignment for one
@@ -47,7 +47,7 @@ public record PartAssignmentEditPacket(Op op, String variantId, CarriagePartKind
     }
 
     public static final Type<PartAssignmentEditPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "part_assignment_edit"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "part_assignment_edit"));
 
     public static final StreamCodec<FriendlyByteBuf, PartAssignmentEditPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -81,7 +81,7 @@ public record PartAssignmentEditPacket(Op op, String variantId, CarriagePartKind
         return TYPE;
     }
 
-    public static void handle(PartAssignmentEditPacket packet, IPayloadContext ctx) {
+    public static void handle(PartAssignmentEditPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             Player p = ctx.player();
             if (p instanceof ServerPlayer sender) {

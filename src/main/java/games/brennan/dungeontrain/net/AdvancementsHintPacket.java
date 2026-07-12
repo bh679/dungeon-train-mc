@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.AdvancementsHintClient;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Server → client: the local player just earned a Dungeon Train <em>gameplay</em>
@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record AdvancementsHintPacket() implements CustomPacketPayload {
 
     public static final Type<AdvancementsHintPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "advancements_hint"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "advancements_hint"));
 
     public static final StreamCodec<FriendlyByteBuf, AdvancementsHintPacket> STREAM_CODEC =
         StreamCodec.unit(new AdvancementsHintPacket());
@@ -43,7 +43,7 @@ public record AdvancementsHintPacket() implements CustomPacketPayload {
      * reference to {@link AdvancementsHintClient} (a client-package class) is
      * safe (mirrors {@code CinematicIntroPacket.handle}).
      */
-    public static void handle(AdvancementsHintPacket packet, IPayloadContext ctx) {
+    public static void handle(AdvancementsHintPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(AdvancementsHintClient::queueHint);
     }
 }

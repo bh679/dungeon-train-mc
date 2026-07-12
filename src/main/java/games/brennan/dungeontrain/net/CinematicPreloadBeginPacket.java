@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.client.CinematicPreloadGate;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 
 /**
  * Server → client, sent at <em>login</em> when the spawn intro cinematic is going
@@ -26,7 +26,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record CinematicPreloadBeginPacket(int placeTimeoutTicks) implements CustomPacketPayload {
 
     public static final Type<CinematicPreloadBeginPacket> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "cinematic_preload_begin"));
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DtModId.MOD_ID, "cinematic_preload_begin"));
 
     public static final StreamCodec<FriendlyByteBuf, CinematicPreloadBeginPacket> STREAM_CODEC =
         StreamCodec.of(
@@ -44,7 +44,7 @@ public record CinematicPreloadBeginPacket(int placeTimeoutTicks) implements Cust
      * reference to {@link CinematicPreloadGate} (a client-package class) is safe
      * (mirrors {@code CinematicIntroPacket.handle}).
      */
-    public static void handle(CinematicPreloadBeginPacket packet, IPayloadContext ctx) {
+    public static void handle(CinematicPreloadBeginPacket packet, DtPayloadContext ctx) {
         ctx.enqueueWork(() -> CinematicPreloadGate.arm(packet.placeTimeoutTicks()));
     }
 }
