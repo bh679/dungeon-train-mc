@@ -53,6 +53,15 @@ dependencies {
     // :common. compileOnly: on NeoForge the real class is used; on Fabric it's provided at
     // runtime by FCAP (already JiJ'd by Sable-Fabric, v21.1.3 — pinned to match).
     compileOnly 'fuzs.forgeconfigapiport:forgeconfigapiport-common-neoforgeapi:21.1.3'
+
+    // Mixin — lets loader-clean mixin classes compile in :common (the mixin CONFIG jsons
+    // stay in the root module's resources; classes still compile into the root jar via
+    // srcDir wiring, so the configs keep resolving them unchanged). compileOnly: both
+    // loaders provide the real Mixin implementation at runtime (NeoForge bundles it;
+    // Fabric Loader bundles it too).
+    compileOnly 'org.spongepowered:mixin:0.8.5'
+    // MixinExtras — @ModifyExpressionValue / @WrapOperation etc. used by several DT mixins.
+    compileOnly 'io.github.llamalad7:mixinextras-common:0.4.1'
 }
 
 neoForge {
