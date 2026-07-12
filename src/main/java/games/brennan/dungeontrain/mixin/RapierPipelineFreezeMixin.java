@@ -73,4 +73,17 @@ public abstract class RapierPipelineFreezeMixin {
     private void dungeonTrain$frozenApplyLinAngImpulse(PhysicsPipelineBody body, Vector3dc linear, Vector3dc angular, boolean wake, CallbackInfo ci) {
         if (dungeonTrain$frozen(body)) ci.cancel();
     }
+
+    // Pushes centre-of-mass / mass / bounds to the native body (setCenterOfMass et al.) on a stat
+    // change — e.g. world-load mass settling. Crashed the integrated (single-player) server on a
+    // frozen carriage. Skipping is correct: the re-add on unfreeze re-establishes stats natively.
+    @Inject(method = "onStatsChanged", at = @At("HEAD"), cancellable = true)
+    private void dungeonTrain$frozenOnStatsChanged(ServerSubLevel subLevel, CallbackInfo ci) {
+        if (dungeonTrain$frozen(subLevel)) ci.cancel();
+    }
+
+    @Inject(method = "wakeUp", at = @At("HEAD"), cancellable = true)
+    private void dungeonTrain$frozenWakeUp(PhysicsPipelineBody body, CallbackInfo ci) {
+        if (dungeonTrain$frozen(body)) ci.cancel();
+    }
 }
