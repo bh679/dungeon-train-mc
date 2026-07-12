@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeType;
 
 /**
  * Loader-neutral stand-in for the handful of NeoForge {@code ModList} /
@@ -51,6 +53,16 @@ public interface DtPlatform {
      * between worlds). Mirrors {@code ServerLifecycleHooks.getCurrentServer()}.
      */
     MinecraftServer getCurrentServer();
+
+    /**
+     * Burn time in ticks of {@code stack} used as fuel for the given cooking
+     * {@code recipeType} (0 = not a fuel). Mirrors NeoForge's
+     * {@code ItemStack.getBurnTime(RecipeType)} extension method, which vanilla
+     * lacks — {@code ContainerContentsRoller} calls it for a fuel check. The
+     * NeoForge impl delegates straight to that method; a future Fabric impl reads
+     * Fabric's {@code FuelRegistry} / vanilla furnace fuel map.
+     */
+    int getBurnTime(ItemStack stack, RecipeType<?> recipeType);
 
     /** The loader-provided singleton, resolved lazily on first use. */
     static DtPlatform get() {

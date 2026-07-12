@@ -682,7 +682,7 @@ public final class ContainerContentsRoller {
     private static boolean isFuel(ContainerContentsEntry e, RecipeType<?> recipeType) {
         Item item = resolveItem(e.itemId());
         if (item == null) return false;
-        return new ItemStack(item).getBurnTime(recipeType) > 0;
+        return games.brennan.dungeontrain.platform.DtPlatform.get().getBurnTime(new ItemStack(item), recipeType) > 0;
     }
 
     /** True if the entry's item has a matching cooking recipe for the given type. */

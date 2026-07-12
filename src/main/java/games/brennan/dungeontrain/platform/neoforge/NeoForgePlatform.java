@@ -6,6 +6,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLPaths;
@@ -68,5 +70,11 @@ public final class NeoForgePlatform implements DtPlatform {
     @Override
     public MinecraftServer getCurrentServer() {
         return ServerLifecycleHooks.getCurrentServer();
+    }
+
+    @Override
+    public int getBurnTime(ItemStack stack, RecipeType<?> recipeType) {
+        // NeoForge extension method on ItemStack (IItemStackExtension); vanilla lacks it.
+        return stack.getBurnTime(recipeType);
     }
 }

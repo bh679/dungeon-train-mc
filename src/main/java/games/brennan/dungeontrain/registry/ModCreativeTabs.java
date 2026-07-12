@@ -38,7 +38,7 @@ public final class ModCreativeTabs {
 
     public static final Supplier<CreativeModeTab> PREFAB_VARIANTS = register(
         "prefab_variants",
-        () -> CreativeModeTab.builder()
+        () -> CreativeModeTab.builder(CreativeModeTab.Row.TOP, 0)
             .title(Component.translatable("gui.dungeontrain.prefab_tab.variants"))
             .icon(() -> new ItemStack(Items.COMMAND_BLOCK))
             .displayItems((parameters, output) -> {
@@ -54,7 +54,7 @@ public final class ModCreativeTabs {
 
     public static final Supplier<CreativeModeTab> PREFAB_LOOT = register(
         "prefab_loot",
-        () -> CreativeModeTab.builder()
+        () -> CreativeModeTab.builder(CreativeModeTab.Row.TOP, 0)
             .title(Component.translatable("gui.dungeontrain.prefab_tab.loot"))
             .icon(() -> new ItemStack(Items.CHEST))
             .displayItems((parameters, output) -> {
@@ -78,7 +78,7 @@ public final class ModCreativeTabs {
      */
     public static final Supplier<CreativeModeTab> PREFAB_LOOT_ENTITY = register(
         "prefab_loot_entity",
-        () -> CreativeModeTab.builder()
+        () -> CreativeModeTab.builder(CreativeModeTab.Row.TOP, 0)
             .title(Component.translatable("gui.dungeontrain.prefab_tab.loot_entity"))
             .icon(() -> new ItemStack(Items.ARMOR_STAND))
             .displayItems((parameters, output) -> {
@@ -111,7 +111,7 @@ public final class ModCreativeTabs {
      */
     public static final Supplier<CreativeModeTab> NARRATIVE = register(
         "narrative",
-        () -> CreativeModeTab.builder()
+        () -> CreativeModeTab.builder(CreativeModeTab.Row.TOP, 0)
             .title(Component.translatable("gui.dungeontrain.creative_tab.narrative"))
             .icon(() -> new ItemStack(Items.WRITTEN_BOOK))
             .displayItems((parameters, output) -> {
