@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.event;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import dev.ryanhcode.sable.sublevel.plot.SubLevelPlayerChunkSender;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;

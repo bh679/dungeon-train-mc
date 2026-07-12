@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.event;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;

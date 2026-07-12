@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.event;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;

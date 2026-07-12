@@ -1,7 +1,5 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.DungeonTrain;
-
 /**
  * Session flag that toggles dev-mode write-through in the editor save paths.
  *

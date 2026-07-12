@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.gui.screens.advancements.AdvancementsScreen;
 

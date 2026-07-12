@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PulsingDiscordButton;
 import games.brennan.dungeontrain.client.localization.LocalizationCredit;

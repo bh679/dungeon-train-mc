@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.event;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.playermob.compat.TrainConfinement;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.server.level.ServerLevel;

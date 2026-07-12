@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client.menu.containercontents;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.net.ContainerContentsEditPacket;
 import games.brennan.dungeontrain.net.ContainerContentsMenuTogglePacket;

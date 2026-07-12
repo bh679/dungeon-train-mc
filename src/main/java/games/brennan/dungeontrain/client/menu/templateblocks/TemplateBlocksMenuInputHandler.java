@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client.menu.templateblocks;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.TemplateBlocksEditPacket;

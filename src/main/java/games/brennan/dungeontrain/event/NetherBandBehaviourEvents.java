@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.event;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;

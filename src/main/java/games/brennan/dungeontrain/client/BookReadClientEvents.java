@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.mixin.client.BookViewScreenAccessor;
 import games.brennan.dungeontrain.narrative.NarrativeBookTag;
 import games.brennan.dungeontrain.narrative.RandomBookTag;

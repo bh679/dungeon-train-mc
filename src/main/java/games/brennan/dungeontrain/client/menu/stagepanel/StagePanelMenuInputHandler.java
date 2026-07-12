@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client.menu.stagepanel;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.StageDuplicateNameScreen;
 import games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenu;

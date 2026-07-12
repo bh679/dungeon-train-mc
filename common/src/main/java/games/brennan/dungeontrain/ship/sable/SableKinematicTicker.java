@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.ship.sable;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.ship.KinematicDriver;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;

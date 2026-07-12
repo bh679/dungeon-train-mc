@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client.menu;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.PartVisibilityPacket;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 

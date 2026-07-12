@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client.menu;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 

@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.event;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.player.PendingInventory;
 import net.minecraft.server.level.ServerPlayer;
 

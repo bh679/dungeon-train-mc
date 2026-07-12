@@ -1,7 +1,5 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.DungeonTrain;
-
 /**
  * The single, <b>global</b> "hide part plots not used by the focused stage" toggle for the in-game
  * editor — the parts-grid counterpart to {@link EditorStageSelection}'s carriage preview. Purely

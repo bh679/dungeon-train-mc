@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client.tooltip;
 
 import com.mojang.datafixers.util.Either;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.client.menu.PrefabTabState;
 import games.brennan.dungeontrain.event.PrefabUseHandler;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;

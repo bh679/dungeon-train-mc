@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client.sound;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
 
 /**

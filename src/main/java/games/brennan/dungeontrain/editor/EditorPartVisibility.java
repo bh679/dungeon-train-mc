@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 
 import java.util.HashSet;

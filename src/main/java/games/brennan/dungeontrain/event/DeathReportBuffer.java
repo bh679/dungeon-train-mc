@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.discordpresence.discord.DeathField;
 import games.brennan.discordpresence.discord.DiscordService;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import net.minecraft.Util;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;

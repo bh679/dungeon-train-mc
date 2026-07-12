@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.LetterDraftToLecternPacket;
 import net.minecraft.client.gui.screens.inventory.BookEditScreen;

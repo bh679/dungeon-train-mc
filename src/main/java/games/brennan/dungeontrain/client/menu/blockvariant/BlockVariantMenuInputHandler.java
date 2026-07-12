@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client.menu.blockvariant;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.editor.RotationApplier;
 import games.brennan.dungeontrain.editor.VariantRotation;

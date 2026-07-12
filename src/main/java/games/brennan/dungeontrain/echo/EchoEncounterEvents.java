@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.echo;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;

@@ -1,7 +1,5 @@
 package games.brennan.dungeontrain.client.menu;
 
-import games.brennan.dungeontrain.DungeonTrain;
-
 /**
  * Clear cached prefab state when the player disconnects so the next
  * connection starts clean. Without this, ids from the previous server

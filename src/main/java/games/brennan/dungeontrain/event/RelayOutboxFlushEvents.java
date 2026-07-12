@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.event;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;

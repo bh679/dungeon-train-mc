@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.event;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.discord.DevMessageReport;
 import games.brennan.dungeontrain.net.ConsentUpdatePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;

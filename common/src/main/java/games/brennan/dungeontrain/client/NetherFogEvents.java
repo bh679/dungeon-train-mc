@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
 import net.minecraft.sounds.Music;

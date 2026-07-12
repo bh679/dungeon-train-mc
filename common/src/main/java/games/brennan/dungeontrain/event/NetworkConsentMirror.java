@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.event;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Map;

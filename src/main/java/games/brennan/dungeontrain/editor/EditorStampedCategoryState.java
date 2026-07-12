@@ -1,7 +1,5 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.DungeonTrain;
-
 import java.util.Optional;
 
 /**

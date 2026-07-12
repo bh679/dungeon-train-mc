@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
