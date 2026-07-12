@@ -195,4 +195,26 @@ processResources {
     filesMatching('fabric.mod.json') {
         expand version: project.version
     }
+
+    // Package DT's assets + datapack data (models, blockstates, lang, textures, sounds,
+    // loot tables, contents, narratives, …) into the Fabric jar. They live in the ROOT
+    // module's resources (not :common, which has none); pulled in here with scoped excludes
+    // for the NeoForge-only files (the AT, the NeoForge ServiceLoader impls, and the root
+    // mixin configs — Fabric has its own access-widener, services and mixin configs).
+    // Loader-neutral by content; unknown data types (e.g. data/**/neoforge) are ignored by
+    // Fabric with a warning. Datagen-only models (src/generated/resources, gitignored) are
+    // NOT included on either loader unless datagen runs — a shared pre-existing behaviour.
+    from(rootProject.file('src/main/resources')) {
+        exclude 'META-INF/accesstransformer.cfg'
+        exclude 'META-INF/services/**'
+        exclude 'dungeontrain.mixins.json'
+        exclude 'dungeontrain.vivecraft.mixins.json'
+        exclude '**/*.bbmodel'
+        exclude '**/narratives/originals/**'
+        exclude '**/narratives/unused/**'
+        exclude '**/CLAUDE.md'
+    }
+    // Fabric's own resources (fabric.mod.json, access-widener, mixin configs) win on any
+    // path clash with the root contribution above.
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

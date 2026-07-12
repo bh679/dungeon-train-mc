@@ -16,14 +16,7 @@
     "PlayerAdvancementsMixin",
     "CommandsPerformMixin"
   ],
-  "client": [
-    "client.ScreenInvoker",
-    "client.MinecraftSetScreenMixin",
-    "client.MusicManagerMixin",
-    "client.ItemInHandRendererMixin",
-    "client.KeyboardHandlerMixin",
-    "client.MouseHandlerMixin"
-  ],
+  "client": [],
   "server": [],
   "injectors": {
     "defaultRequire": 1
