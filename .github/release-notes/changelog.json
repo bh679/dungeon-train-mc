@@ -4225,6 +4225,36 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "exclude-narrative-source-from-jar",
+      "version": "0.443.0",
+      "type": "chore",
+      "title": "Trim unused authoring files from the mod jar",
+      "summary": "Internal packaging cleanup: the mod jar no longer bundles unused story-draft text files and authoring notes that were never used in-game. No gameplay or content changes \u2014 just a slightly smaller download.",
+      "highlights": [],
+      "pr": 731,
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "player-content-language-filter",
+      "version": "0.443.0",
+      "type": "feat",
+      "title": "Player-written books and letters now match your language",
+      "summary": "Community books you find in chests and player-written stories on lecterns are now matched to the language your game is set to. If your language has no player-written content yet, you'll get English instead \u2014 so you always have something to read. Language variants are grouped together (all English styles including Pirate; all Chinese including Classical), so you see every book written in a language you can actually read.",
+      "highlights": [
+        "Chest community books and lectern narratives are filtered to your game's language",
+        "Falls back to English when your language has no player-written content yet",
+        "Language variants are grouped (e.g. all English styles together, all Chinese together)"
+      ],
+      "pr": 732,
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
