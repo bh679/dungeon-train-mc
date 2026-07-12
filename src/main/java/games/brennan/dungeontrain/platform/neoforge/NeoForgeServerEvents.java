@@ -42,5 +42,10 @@ public final class NeoForgeServerEvents {
         // Single handler; the Free Play gate cancels a tainting command.
         games.brennan.dungeontrain.platform.event.DtEvents.COMMAND_EXEC
             .register(games.brennan.dungeontrain.event.CheatDetectionEvents::onCommand);
+
+        // --- Advancement earn (AdvancementEarnEvent) -------------------------
+        // Single handler; order irrelevant.
+        games.brennan.dungeontrain.platform.event.DtEvents.ADVANCEMENT_EARN
+            .register(games.brennan.dungeontrain.event.AchievementEvents::onAdvancementEarn);
     }
 }

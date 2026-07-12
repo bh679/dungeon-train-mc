@@ -896,10 +896,15 @@ public final class AchievementEvents {
         NothingButBooksAdvancement.checkAndGrant(player);
     }
 
-    @SubscribeEvent
-    public static void onAdvancementEarn(AdvancementEvent.AdvancementEarnEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        AdvancementHolder advancement = event.getAdvancement();
+    /**
+     * Converted off the NeoForge bus (Stage 2a) — now a plain
+     * {@link games.brennan.dungeontrain.platform.event.DtAdvancementEarnCallback}
+     * registered via {@code DtEvents.ADVANCEMENT_EARN} (see {@code NeoForgeServerEvents}),
+     * fired by {@code NeoForgeAdvancementBridge}. Logic unchanged.
+     */
+    public static void onAdvancementEarn(net.minecraft.world.entity.Entity entity,
+                                         AdvancementHolder advancement) {
+        if (!(entity instanceof ServerPlayer player)) return;
         ResourceLocation id = advancement.id();
         // Persist across worlds: capture every GUI-visible advancement — vanilla,
         // Dungeon Train, and other mods alike — not just dungeontrain:*. The

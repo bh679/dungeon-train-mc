@@ -55,4 +55,15 @@ public final class DtEvents {
     public static final DtEvent<DtCommandCallback> COMMAND_EXEC =
         new DtEvent<>();
 
+    /**
+     * Advancement earn — NeoForge {@code AdvancementEvent.AdvancementEarnEvent}.
+     * Fires on the server thread when an entity earns an advancement (any
+     * namespace), and re-fires re-entrantly when a listener grants further
+     * advancements — identical to today, since the underlying grant still routes
+     * through the NeoForge event. Not cancellable; read-only params. Bridge
+     * invokes every listener in registration order.
+     */
+    public static final DtEvent<DtAdvancementEarnCallback> ADVANCEMENT_EARN =
+        new DtEvent<>();
+
 }
