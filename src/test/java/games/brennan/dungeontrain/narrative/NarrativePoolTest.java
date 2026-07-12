@@ -109,4 +109,14 @@ final class NarrativePoolTest {
 
         assertTrue(NarrativePool.pickUnstarted(42L, Set.of("a", "b")).isEmpty(), "all started → nothing to start");
     }
+
+    @Test
+    @DisplayName("langParam: emits &lang= for a real locale, nothing for blank/null (back-compat)")
+    void langParam() {
+        assertEquals("&lang=en_us", NarrativePool.langParam("en_us"));
+        assertEquals("&lang=zh_cn", NarrativePool.langParam("zh_cn"));
+        assertEquals("", NarrativePool.langParam(""), "blank → no param (relay stays unfiltered)");
+        assertEquals("", NarrativePool.langParam("   "));
+        assertEquals("", NarrativePool.langParam(null));
+    }
 }

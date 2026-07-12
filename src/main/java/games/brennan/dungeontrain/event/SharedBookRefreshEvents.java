@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.narrative.SharedBookPool;
+import games.brennan.dungeontrain.narrative.WorldLanguage;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
@@ -18,7 +19,7 @@ import org.slf4j.Logger;
  *   <li>{@link ServerStartedEvent} — schedules a first refresh shortly after start (a short tick delay
  *       so the relay-base-url + world are settled), gated on {@link SharedBookGate#canDiscover()}.</li>
  *   <li>{@link ServerTickEvent.Post} — a throttled refresh every {@link #REFRESH_PERIOD_TICKS} ticks
- *       (~30 s), also gated on discovery being enabled. {@link SharedBookPool#refreshAsync()} is
+ *       (~30 s), also gated on discovery being enabled. {@link SharedBookPool#refreshAsync(String)} is
  *       fire-and-forget and skips overlapping fetches, so this can never block a tick.</li>
  * </ul>
  *
@@ -57,7 +58,7 @@ public final class SharedBookRefreshEvents {
             firstRefreshCountdown--;
             if (firstRefreshCountdown == 0) {
                 firstRefreshCountdown = -1;
-                SharedBookPool.refreshAsync();
+                SharedBookPool.refreshAsync(WorldLanguage.hostLocale(event.getServer()));
                 return;
             }
         }
@@ -65,7 +66,7 @@ public final class SharedBookRefreshEvents {
         tickCounter++;
         if (tickCounter >= REFRESH_PERIOD_TICKS) {
             tickCounter = 0;
-            SharedBookPool.refreshAsync();
+            SharedBookPool.refreshAsync(WorldLanguage.hostLocale(event.getServer()));
         }
     }
 }
