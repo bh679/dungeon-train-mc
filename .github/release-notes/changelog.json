@@ -4269,9 +4269,9 @@
       ],
       "pr": 733,
       "date": "2026-07-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.445.0",
+      "released_at": "2026-07-12T09:18:15Z"
     },
     {
       "id": "upside-down-mirror-precompute",
@@ -4285,9 +4285,9 @@
       ],
       "pr": 734,
       "date": "2026-07-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.445.0",
+      "released_at": "2026-07-12T09:18:15Z"
     },
     {
       "id": "datapack-overridable-prose",
@@ -4302,9 +4302,9 @@
       ],
       "pr": 735,
       "date": "2026-07-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.445.0",
+      "released_at": "2026-07-12T09:18:15Z"
     }
   ]
 }
