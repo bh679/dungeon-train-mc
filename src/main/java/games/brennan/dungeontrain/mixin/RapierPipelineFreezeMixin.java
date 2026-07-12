@@ -2,7 +2,9 @@ package games.brennan.dungeontrain.mixin;
 
 import dev.ryanhcode.sable.api.physics.PhysicsPipelineBody;
 import dev.ryanhcode.sable.companion.math.Pose3d;
+import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
+import games.brennan.dungeontrain.ship.sable.DtFreezable;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreeze;
 import org.joml.Quaterniondc;
 import org.joml.Vector3d;
@@ -37,6 +39,20 @@ public abstract class RapierPipelineFreezeMixin {
 
     private static boolean dungeonTrain$frozen(Object body) {
         return body instanceof ServerSubLevel sl && PhysicsFreeze.isFrozen(sl);
+    }
+
+    // Authoritative scene-membership tracking — fires for Sable's own spawn/cull/recover AND for DT's
+    // freeze/unfreeze, so PhysicsFreeze can keep remove/add idempotent (never remove a body already
+    // out, never add one already in). Descriptor-qualified to the ServerSubLevel overloads (not the
+    // KinematicContraption ones). Not cancellable — pure observation.
+    @Inject(method = "add(Ldev/ryanhcode/sable/sublevel/ServerSubLevel;Ldev/ryanhcode/sable/companion/math/Pose3dc;)V", at = @At("HEAD"))
+    private void dungeonTrain$trackAdd(ServerSubLevel subLevel, Pose3dc pose, CallbackInfo ci) {
+        if (subLevel instanceof DtFreezable f) f.dt$setInScene(true);
+    }
+
+    @Inject(method = "remove(Ldev/ryanhcode/sable/sublevel/ServerSubLevel;)V", at = @At("HEAD"))
+    private void dungeonTrain$trackRemove(ServerSubLevel subLevel, CallbackInfo ci) {
+        if (subLevel instanceof DtFreezable f) f.dt$setInScene(false);
     }
 
     @Inject(method = "getLinearVelocity", at = @At("HEAD"), cancellable = true)

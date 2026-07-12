@@ -33,6 +33,7 @@ public abstract class ServerSubLevelFreezeMixin implements DtFreezable {
 
     @Unique private boolean dungeonTrain$physicsFrozen;
     @Unique private int dungeonTrain$inactiveTicks;
+    @Unique private boolean dungeonTrain$inScene;
 
     @Override
     public boolean dt$isPhysicsFrozen() {
@@ -52,6 +53,16 @@ public abstract class ServerSubLevelFreezeMixin implements DtFreezable {
     @Override
     public void dt$setInactiveTicks(int ticks) {
         this.dungeonTrain$inactiveTicks = ticks;
+    }
+
+    @Override
+    public boolean dt$isInScene() {
+        return dungeonTrain$inScene;
+    }
+
+    @Override
+    public void dt$setInScene(boolean inScene) {
+        this.dungeonTrain$inScene = inScene;
     }
 
     @Inject(method = "prePhysicsTick", at = @At("HEAD"), cancellable = true)

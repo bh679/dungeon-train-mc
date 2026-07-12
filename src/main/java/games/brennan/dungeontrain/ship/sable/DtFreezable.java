@@ -33,4 +33,18 @@ public interface DtFreezable {
 
     /** Updated each reconcile tick by {@link PhysicsFreezeController}. */
     void dt$setInactiveTicks(int ticks);
+
+    /**
+     * True iff this sub-level's body is currently in the Rapier scene. Tracked authoritatively by
+     * {@code RapierPipelineFreezeMixin} on every {@code pipeline.add}/{@code remove} — for Sable's
+     * own lifecycle (spawn/cull/recover) as well as DT's freeze/unfreeze. {@link PhysicsFreeze} uses
+     * it to keep the write ops idempotent: never {@code remove} a body that is already out, never
+     * {@code add} one that is already in — the fix for the {@code removeSubLevel} native abort that
+     * fired when DT froze a carriage the appender was mid-spawn. Distinct from
+     * {@link #dt$isPhysicsFrozen()} (DT <em>intent</em>, which gates the readers): a freshly-spawned
+     * carriage Sable hasn't added yet is {@code !inScene} but not DT-frozen. Defaults false.
+     */
+    boolean dt$isInScene();
+
+    void dt$setInScene(boolean inScene);
 }

@@ -37,41 +37,43 @@ public final class PhysicsFreeze {
     }
 
     /**
-     * Drop {@code sl}'s Rapier body from the scene (keeping the sub-level loaded). Flag is set
-     * <b>before</b> {@code remove()} so the reader mixins skip it immediately; on any failure the
-     * flag is rolled back and the body left in the scene.
+     * Drop {@code sl}'s Rapier body from the scene (keeping the sub-level loaded), marking DT-intent
+     * so the reader mixins skip it. <b>Idempotent + lifecycle-safe:</b> only calls {@code remove} when
+     * the body is actually in the scene ({@code dt$isInScene}). A native {@code removeSubLevel} on an
+     * absent body aborts the JVM uncatchably (and a Java {@code try/catch} cannot save it), so a
+     * carriage Sable is mid-spawn ({@code !inScene}) is skipped and retried next tick once Sable's
+     * {@code add} fires.
      */
     public static void freeze(SubLevelPhysicsSystem system, ServerSubLevel sl) {
-        if (isFrozen(sl)) return;
-        DtFreezable flag = (DtFreezable) sl;
-        flag.dt$setPhysicsFrozen(true);
-        try {
-            system.getPipeline().remove(sl);
-        } catch (Throwable t) {
-            flag.dt$setPhysicsFrozen(false); // rollback — readers resume on a still-present body
-            LOGGER.warn("[freeze] remove failed for sub-level {} — left active", sl.getUniqueId(), t);
-        }
+        if (!(sl instanceof DtFreezable flag)) return;
+        if (flag.dt$isPhysicsFrozen()) return;   // already DT-frozen
+        if (!flag.dt$isInScene()) return;        // not in the scene — nothing to remove (see javadoc)
+        flag.dt$setPhysicsFrozen(true);          // readers skip from here
+        system.getPipeline().remove(sl);         // RapierPipelineFreezeMixin flips inScene → false
     }
 
     /**
-     * Re-add {@code sl}'s body at its logical pose (blessed sequence), then clear the flag so the
-     * readers resume. If the re-add throws or produces an invalid mass, the sub-level is left
-     * frozen (flag stays set) so no reader touches a body that is not soundly in the scene —
-     * mirroring {@code recoverSubLevel}'s abort-on-null-COM caution.
+     * Re-add {@code sl}'s body at its logical pose (blessed sequence) and clear DT-intent so the
+     * readers resume. <b>Idempotent:</b> if the body is already back in the scene (Sable re-added it),
+     * just clears the flag — a second {@code add} would abort. On a Java-side re-add failure or invalid
+     * mass it re-freezes so no reader touches a half-added body.
      */
     public static void unfreeze(SubLevelPhysicsSystem system, ServerSubLevel sl) {
-        if (!isFrozen(sl)) return;
+        if (!(sl instanceof DtFreezable flag)) return;
+        if (!flag.dt$isPhysicsFrozen()) return;  // not DT-frozen
+        if (flag.dt$isInScene()) {               // already in the scene → adding again would double-add
+            flag.dt$setPhysicsFrozen(false);
+            return;
+        }
         PhysicsPipeline pipeline = system.getPipeline();
-        DtFreezable flag = (DtFreezable) sl;
-        // Clear the flag BEFORE the re-add so the pipeline machinery (buildMassTracker + add, and any
-        // native stat/wake calls they trigger) runs ungated by the reader mixins. Safe because
-        // unfreeze runs in the post-tick reconcile, never concurrently with the physics readers.
+        // Clear the flag BEFORE the re-add so the pipeline machinery runs ungated by the reader mixins;
+        // safe (post-tick, single-threaded). Re-freeze on failure so no reader touches a half-added body.
         flag.dt$setPhysicsFrozen(false);
         try {
             sl.buildMassTracker();
-            pipeline.add(sl, sl.logicalPose());
+            pipeline.add(sl, sl.logicalPose());  // RapierPipelineFreezeMixin flips inScene → true
         } catch (Throwable t) {
-            flag.dt$setPhysicsFrozen(true); // re-add failed → stay frozen so readers keep skipping
+            flag.dt$setPhysicsFrozen(true);
             LOGGER.warn("[freeze] re-add failed for sub-level {} — staying frozen", sl.getUniqueId(), t);
             return;
         }
@@ -80,11 +82,7 @@ public final class PhysicsFreeze {
             LOGGER.warn("[freeze] re-add produced invalid mass for sub-level {} — reverting to frozen",
                 sl.getUniqueId());
             flag.dt$setPhysicsFrozen(true);
-            try {
-                pipeline.remove(sl);
-            } catch (Throwable ignored) {
-                // best-effort; flag is set so readers skip it regardless
-            }
+            pipeline.remove(sl); // valid: add above succeeded, body is in the scene
         }
     }
 
