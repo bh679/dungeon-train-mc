@@ -29,7 +29,6 @@ import java.util.UUID;
  * uploaded to the relay for the target to download. The download side + echo spawn live in
  * {@code DeathNoteRefreshEvents} / {@code DeathNoteGroupSpawner} / {@code DeathNoteEchoController}.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DeathNoteEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -42,9 +41,8 @@ public final class DeathNoteEvents {
      * network consent. Off-train deaths (no carriage) and non-consenting authors drop the note; the
      * echo is of a <em>dead</em> player, so an author who never dies never curses anyone.
      */
-    @SubscribeEvent
-    public static void onPlayerDeath(LivingDeathEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onPlayerDeath(net.minecraft.world.entity.LivingEntity deadEntity, net.minecraft.world.damagesource.DamageSource deathSource, boolean deathCanceled) {
+        if (!(deadEntity instanceof ServerPlayer player)) return;
         ServerLevel level = player.serverLevel();
 
         // Take (and remove) this author's pending notes — arming happens once, on this death.
@@ -81,9 +79,8 @@ public final class DeathNoteEvents {
      * trophy book (does not soul-burn). Identified by the {@code KEY_TARGET} persistent-data marker
      * so ordinary PlayerMobs are unaffected.
      */
-    @SubscribeEvent
-    public static void onEchoDeath(LivingDeathEvent event) {
-        if (!(event.getEntity() instanceof PlayerMobEntity echo)) return;
+        public static void onEchoDeath(net.minecraft.world.entity.LivingEntity deadEntity, net.minecraft.world.damagesource.DamageSource deathSource, boolean deathCanceled) {
+        if (!(deadEntity instanceof PlayerMobEntity echo)) return;
         if (echo.level().isClientSide()) return;
         CompoundTag data = echo.getPersistentData();
         if (!data.contains(DeathNoteEchoSpawner.KEY_TARGET)) return; // not a death-note echo
@@ -94,7 +91,7 @@ public final class DeathNoteEvents {
         ItemEntity drop = new ItemEntity(echo.level(), echo.getX(), echo.getY() + 0.5, echo.getZ(), book);
         drop.setDefaultPickUpDelay();
         echo.level().addFreshEntity(drop);
-        if (event.getSource().getEntity() instanceof ServerPlayer killer) {
+        if (deathSource.getEntity() instanceof ServerPlayer killer) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(killer, "killed_death_note_echo");
         }
         LOGGER.debug("[DungeonTrain] DeathNote: echo of {} dropped a Death Note on death", author);

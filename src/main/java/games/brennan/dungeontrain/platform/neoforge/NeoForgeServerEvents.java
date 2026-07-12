@@ -52,6 +52,47 @@ public final class NeoForgeServerEvents {
         registerTicks();
         registerPlayerConnection();
         registerCancellable();
+        registerLiving();
+    }
+
+    /**
+     * Living-entity handlers (death, post-damage, equipment change), fired by
+     * {@code NeoForgeLivingBridge}. Death is registered with an explicit LOW tier
+     * for {@code RunStatsEvents.onPlayerDeath} (its former priority) and NORMAL for
+     * the other seven; the bridge fires each tier under a matching priority. No DT
+     * death handler cancels or uses {@code receiveCanceled}. Damage (Post, read-
+     * only) and equipment change were single-tier NORMAL.
+     */
+    private static void registerLiving() {
+        var LOW = games.brennan.dungeontrain.platform.event.DtPriority.LOW;
+
+        // LivingDeathEvent — NORMAL (7) + LOW (RunStats.onPlayerDeath)
+        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onDeath);
+        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(games.brennan.dungeontrain.event.RunStatsEvents::onMobKilled);
+        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(games.brennan.dungeontrain.event.DeathNoteEvents::onPlayerDeath);
+        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(games.brennan.dungeontrain.event.DeathNoteEvents::onEchoDeath);
+        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onMobKilled);
+        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onEchoKilled);
+        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onEchoFellToVoid);
+        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DEATH
+            .register(LOW, games.brennan.dungeontrain.event.RunStatsEvents::onPlayerDeath);
+
+        // LivingDamageEvent.Post — NORMAL
+        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DAMAGE
+            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onLivingDamage);
+        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_DAMAGE
+            .register(games.brennan.dungeontrain.event.RunStatsEvents::onLivingDamage);
+
+        // LivingEquipmentChangeEvent — NORMAL
+        games.brennan.dungeontrain.platform.event.DtEvents.LIVING_EQUIPMENT_CHANGE
+            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onEquipmentChange);
     }
 
     /**

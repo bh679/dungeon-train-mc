@@ -255,11 +255,10 @@ public final class PlayerMobAdvancementEvents {
      * reliably catches the "kill the thing attacking a passenger" case.
      * Mirrors the kill-credit shape of {@code RunStatsEvents.onMobKilled}.
      */
-    @SubscribeEvent
-    public static void onMobKilled(LivingDeathEvent event) {
-        LivingEntity victim = event.getEntity();
+        public static void onMobKilled(net.minecraft.world.entity.LivingEntity deadEntity, net.minecraft.world.damagesource.DamageSource deathSource, boolean deathCanceled) {
+        LivingEntity victim = deadEntity;
         if (victim.level().isClientSide) return;
-        if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
+        if (!(deathSource.getEntity() instanceof ServerPlayer player)) return;
         if (!(victim instanceof Mob mob)) return;
         if (isPlayerMob(mob.getTarget())) {
             ModAdvancementTriggers.DEFENDED_PLAYERMOB.get().trigger(player);
@@ -314,11 +313,10 @@ public final class PlayerMobAdvancementEvents {
      * the victim being a reincarnation of this same player's past life, so it
      * grants alongside the generic kill.
      */
-    @SubscribeEvent
-    public static void onEchoKilled(LivingDeathEvent event) {
-        LivingEntity victim = event.getEntity();
+        public static void onEchoKilled(net.minecraft.world.entity.LivingEntity deadEntity, net.minecraft.world.damagesource.DamageSource deathSource, boolean deathCanceled) {
+        LivingEntity victim = deadEntity;
         if (victim.level().isClientSide) return;
-        if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
+        if (!(deathSource.getEntity() instanceof ServerPlayer player)) return;
         if (EchoIdentity.isOwnEcho(victim, player.getUUID())) {
             ModAdvancementTriggers.KILLED_ECHO.get().trigger(player);
         } else if (EchoIdentity.sourcePlayer(victim).isPresent()) {
@@ -337,11 +335,10 @@ public final class PlayerMobAdvancementEvents {
      * {@link #VOID_PUSH_WINDOW_TICKS} of an on-train strike reads as a deliberate shove and credits
      * {@code own_void_push} or {@code remote_void_push} per the echo's source identity.
      */
-    @SubscribeEvent
-    public static void onEchoFellToVoid(LivingDeathEvent event) {
-        LivingEntity victim = event.getEntity();
+        public static void onEchoFellToVoid(net.minecraft.world.entity.LivingEntity deadEntity, net.minecraft.world.damagesource.DamageSource deathSource, boolean deathCanceled) {
+        LivingEntity victim = deadEntity;
         if (victim.level().isClientSide) return;
-        if (!event.getSource().is(DamageTypes.FELL_OUT_OF_WORLD)) return;
+        if (!deathSource.is(DamageTypes.FELL_OUT_OF_WORLD)) return;
         Optional<UUID> source = EchoIdentity.sourcePlayer(victim);
         if (source.isEmpty()) return;                                  // not an echo
         EchoStrike strike = ECHO_STRIKES.remove(victim.getUUID());

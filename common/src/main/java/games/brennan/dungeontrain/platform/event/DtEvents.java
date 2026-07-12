@@ -207,4 +207,32 @@ public final class DtEvents {
     public static final DtEvent<DtMobEffectRemoveCallback> MOB_EFFECT_REMOVE =
         new DtEvent<>();
 
+    // ---- Living entity events (Stage 2b) ----------------------------------
+
+    /**
+     * Living death — NeoForge {@code LivingDeathEvent}. Server thread. NeoForge's
+     * event is cancellable but no DT handler cancels; the callback is void and
+     * carries {@code isCanceled()} read-only (one LOW handler short-circuits on
+     * it). DT uses NORMAL (7) and LOW ({@code RunStatsEvents.onPlayerDeath}), none
+     * with {@code receiveCanceled} — the bridge subscribes both tiers non-cancel-
+     * receiving, so an other-mod cancel at higher priority skips DT exactly as
+     * before.
+     */
+    public static final DtEvent<DtLivingDeathCallback> LIVING_DEATH =
+        new DtEvent<>();
+
+    /**
+     * Living damage (post) — NeoForge {@code LivingDamageEvent.Post}. Server
+     * thread, read-only (mitigation already applied). Both DT handlers NORMAL.
+     */
+    public static final DtEvent<DtLivingDamageCallback> LIVING_DAMAGE =
+        new DtEvent<>();
+
+    /**
+     * Living equipment change — NeoForge {@code LivingEquipmentChangeEvent}.
+     * Server thread; not cancellable; read-only. One DT handler, NORMAL.
+     */
+    public static final DtEvent<DtLivingEquipmentChangeCallback> LIVING_EQUIPMENT_CHANGE =
+        new DtEvent<>();
+
 }

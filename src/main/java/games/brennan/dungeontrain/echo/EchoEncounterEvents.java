@@ -42,18 +42,16 @@ public final class EchoEncounterEvents {
         RemoteEchoEncounters.onPlayerStruckEcho(player, target.getUUID(), player.serverLevel().getGameTime());
     }
 
-    @SubscribeEvent
-    public static void onLivingDamage(LivingDamageEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return; // victim is a player
-        Entity source = event.getSource().getEntity();
+        public static void onLivingDamage(net.minecraft.world.entity.LivingEntity hurtEntity, net.minecraft.world.damagesource.DamageSource hitSource, float newDamage) {
+        if (!(hurtEntity instanceof ServerPlayer player)) return; // victim is a player
+        Entity source = hitSource.getEntity();
         if (source == null) return;
         RemoteEchoEncounters.onEchoStruckPlayer(player, source.getUUID());
     }
 
-    @SubscribeEvent
-    public static void onDeath(LivingDeathEvent event) {
-        if (!(event.getEntity().level() instanceof ServerLevel level)) return;
-        RemoteEchoEncounters.onEntityDeath(level, event.getEntity(), event.getSource().getEntity());
+        public static void onDeath(net.minecraft.world.entity.LivingEntity deadEntity, net.minecraft.world.damagesource.DamageSource deathSource, boolean deathCanceled) {
+        if (!(deadEntity.level() instanceof ServerLevel level)) return;
+        RemoteEchoEncounters.onEntityDeath(level, deadEntity, deathSource.getEntity());
     }
 
         public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {

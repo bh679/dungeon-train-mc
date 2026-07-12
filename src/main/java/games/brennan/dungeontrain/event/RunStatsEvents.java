@@ -110,11 +110,10 @@ public final class RunStatsEvents {
 
     private RunStatsEvents() {}
 
-    @SubscribeEvent
-    public static void onMobKilled(LivingDeathEvent event) {
-        LivingEntity victim = event.getEntity();
+        public static void onMobKilled(net.minecraft.world.entity.LivingEntity deadEntity, net.minecraft.world.damagesource.DamageSource deathSource, boolean deathCanceled) {
+        LivingEntity victim = deadEntity;
         if (victim.level().isClientSide) return;
-        if (!(event.getSource().getEntity() instanceof ServerPlayer killer)) return;
+        if (!(deathSource.getEntity() instanceof ServerPlayer killer)) return;
         // Don't credit a player for killing themselves (TNT, fall while
         // holding a damaging item, etc.). Stat is "things I killed" not
         // "deaths I caused".
@@ -138,7 +137,7 @@ public final class RunStatsEvents {
         // the killer's current mainhand. Bare-hand kills become
         // {@code minecraft:air} and are filtered out of the final pick by
         // {@link PlayerRunState#mostUsedWeapon()}.
-        Entity direct = event.getSource().getDirectEntity();
+        Entity direct = deathSource.getDirectEntity();
         ItemStack weaponStack = null;
         if (direct instanceof AbstractArrow arrow) {
             ItemStack w = arrow.getWeaponItem();
@@ -160,10 +159,9 @@ public final class RunStatsEvents {
      * player itself; the kill-counter pass above already handled the
      * killer's tally.
      */
-    @SubscribeEvent(priority = EventPriority.LOW)
-    public static void onPlayerDeath(LivingDeathEvent event) {
-        if (event.isCanceled()) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onPlayerDeath(net.minecraft.world.entity.LivingEntity deadEntity, net.minecraft.world.damagesource.DamageSource deathSource, boolean deathCanceled) {
+        if (deathCanceled) return;
+        if (!(deadEntity instanceof ServerPlayer player)) return;
 
         // Accumulate this run's per-life totals into the cross-world lifetime
         // counters BEFORE respawn resets PlayerRunState. trainTicks already
@@ -199,11 +197,11 @@ public final class RunStatsEvents {
         // reflect the death that just happened — otherwise a first creative death
         // rolls with deaths=0 and no platform lore entry matches (blank last page).
         long narrativeDeaths = cheated ? lifeDeaths + 1 : lifeDeaths;
-        DeathNarrative narrative = rollNarrative(player, event.getSource(), run, narrativeDeaths);
+        DeathNarrative narrative = rollNarrative(player, deathSource, run, narrativeDeaths);
 
         // The second-person death cause ("You fell from a high place"), shown as the
         // fall-page title. Built from the same DamageSource the Discord report uses.
-        String deathCause = secondPersonCause(player, event.getSource());
+        String deathCause = secondPersonCause(player, deathSource);
 
         // Snapshot armor at death — the keep-inventory gamerule and respawn both run AFTER
         // LivingDeathEvent, so the equipment slots still reflect what the player died wearing.
@@ -244,7 +242,7 @@ public final class RunStatsEvents {
         // Best-effort: a Discord hiccup must never disrupt the death handling above.
         if (DungeonTrainConfig.isDeathReportToDiscord()) {
             try {
-                postRunSummary(player, event.getSource(), packet, cheated);
+                postRunSummary(player, deathSource, packet, cheated);
             } catch (Throwable t) {
                 LOGGER.warn("[DungeonTrain] death report to Discord failed: {}", t.toString());
             }
@@ -535,20 +533,19 @@ public final class RunStatsEvents {
      * took (when it is a player) and damage a player dealt (when the source
      * entity is a player other than the victim).
      */
-    @SubscribeEvent
-    public static void onLivingDamage(LivingDamageEvent.Post event) {
-        LivingEntity victim = event.getEntity();
+        public static void onLivingDamage(net.minecraft.world.entity.LivingEntity hurtEntity, net.minecraft.world.damagesource.DamageSource hitSource, float newDamage) {
+        LivingEntity victim = hurtEntity;
         if (victim.level().isClientSide) return;
         // Exclude command / environment instakills: /kill deals Float.MAX_VALUE
         // and void death bypasses invulnerability — neither is meaningful combat,
         // and recording them blows the stat out to ~3.4e38 (overflowing the UI).
-        if (event.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return;
-        float amount = event.getNewDamage();
+        if (hitSource.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return;
+        float amount = newDamage;
         if (!Float.isFinite(amount) || amount <= 0.0f || amount > MAX_TRACKED_DAMAGE) return;
         if (victim instanceof ServerPlayer hurt) {
             hurt.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDamageTaken(amount);
         }
-        if (event.getSource().getEntity() instanceof ServerPlayer dealer && dealer != victim) {
+        if (hitSource.getEntity() instanceof ServerPlayer dealer && dealer != victim) {
             dealer.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDamageDealt(amount);
         }
     }

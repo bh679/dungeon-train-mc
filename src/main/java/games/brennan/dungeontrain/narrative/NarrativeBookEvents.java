@@ -280,12 +280,11 @@ public final class NarrativeBookEvents {
      *       drops don't ignite on the floor.</li>
      * </ul>
      */
-    @SubscribeEvent
-    public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        EquipmentSlot slot = event.getSlot();
+        public static void onEquipmentChange(net.minecraft.world.entity.LivingEntity equipEntity, net.minecraft.world.entity.EquipmentSlot equipSlot, net.minecraft.world.item.ItemStack equipTo) {
+        if (!(equipEntity instanceof ServerPlayer player)) return;
+        EquipmentSlot slot = equipSlot;
         if (slot != EquipmentSlot.MAINHAND && slot != EquipmentSlot.OFFHAND) return;
-        ItemStack stack = event.getTo();
+        ItemStack stack = equipTo;
         if (stack.isEmpty()) return;
 
         // Discovered community books: no content-swap needed (unlike random books below) — just
