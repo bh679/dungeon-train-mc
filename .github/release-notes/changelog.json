@@ -4210,6 +4210,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "fabric-port-phase0-spike",
+      "version": "0.441.0",
+      "type": "chore",
+      "title": "Fabric port groundwork (Phase 0 spike)",
+      "summary": "Internal groundwork toward a future Fabric edition of Dungeon Train: verified the train physics engine (Sable) runs on Fabric 1.21.1. No in-game changes in this release \u2014 the NeoForge mod is unaffected.",
+      "highlights": [],
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
