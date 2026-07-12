@@ -79,7 +79,6 @@ import java.util.UUID;
  *       are vanilla {@code written_book} items with extra NBT).</li>
  * </ul>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class RunStatsEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -515,11 +514,10 @@ public final class RunStatsEvents {
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementContainersOpened();
     }
 
-    @SubscribeEvent
-    public static void onBookRead(PlayerInteractEvent.RightClickItem event) {
-        if (event.getLevel().isClientSide) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        ItemStack stack = event.getItemStack();
+        public static void onBookRead(net.minecraft.world.entity.player.Player interactPlayer, net.minecraft.world.level.Level interactLevel, net.minecraft.world.item.ItemStack interactItem) {
+        if (interactLevel.isClientSide) return;
+        if (!(interactPlayer instanceof ServerPlayer player)) return;
+        ItemStack stack = interactItem;
         if (stack.isEmpty()) return;
         if (!(stack.getItem() instanceof WrittenBookItem)) return;
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksRead();

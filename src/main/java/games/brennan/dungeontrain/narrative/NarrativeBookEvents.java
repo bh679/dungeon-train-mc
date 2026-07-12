@@ -80,11 +80,10 @@ public final class NarrativeBookEvents {
         countLecternBookForRun(player, id.get());
     }
 
-    @SubscribeEvent
-    public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        if (event.getLevel().isClientSide) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        ItemStack stack = event.getItemStack();
+        public static void onRightClickItem(net.minecraft.world.entity.player.Player interactPlayer, net.minecraft.world.level.Level interactLevel, net.minecraft.world.item.ItemStack interactItem) {
+        if (interactLevel.isClientSide) return;
+        if (!(interactPlayer instanceof ServerPlayer player)) return;
+        ItemStack stack = interactItem;
         if (stack.isEmpty()) return;
         Optional<NarrativeBookTag.NarrativeIdentity> id = NarrativeBookTag.read(stack);
         if (id.isEmpty()) return;
@@ -102,11 +101,10 @@ public final class NarrativeBookEvents {
      * intentionally excluded because the lectern event fires on every
      * page-turn and would inflate the count.</p>
      */
-    @SubscribeEvent
-    public static void onRightClickRandomBookItem(PlayerInteractEvent.RightClickItem event) {
-        if (event.getLevel().isClientSide) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        ItemStack stack = event.getItemStack();
+        public static void onRightClickRandomBookItem(net.minecraft.world.entity.player.Player interactPlayer, net.minecraft.world.level.Level interactLevel, net.minecraft.world.item.ItemStack interactItem) {
+        if (interactLevel.isClientSide) return;
+        if (!(interactPlayer instanceof ServerPlayer player)) return;
+        ItemStack stack = interactItem;
         if (stack.isEmpty()) return;
         if (RandomBookTag.read(stack).isEmpty()) return;
         BookReadMarkerTag.markOpened(stack);
@@ -125,11 +123,10 @@ public final class NarrativeBookEvents {
      * {@link #onRightClickRandomBookItem} because
      * {@link StartingBookFactory} never stamps {@link RandomBookTag}.</p>
      */
-    @SubscribeEvent
-    public static void onRightClickStartingBookItem(PlayerInteractEvent.RightClickItem event) {
-        if (event.getLevel().isClientSide) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        ItemStack stack = event.getItemStack();
+        public static void onRightClickStartingBookItem(net.minecraft.world.entity.player.Player interactPlayer, net.minecraft.world.level.Level interactLevel, net.minecraft.world.item.ItemStack interactItem) {
+        if (interactLevel.isClientSide) return;
+        if (!(interactPlayer instanceof ServerPlayer player)) return;
+        ItemStack stack = interactItem;
         if (stack.isEmpty()) return;
         if (!StartingBookTag.isStartingBook(stack)) return;
         BookReadMarkerTag.markOpened(stack);
@@ -152,11 +149,10 @@ public final class NarrativeBookEvents {
      * {@code StartingBookEvents} doesn't wrongly flag a book the player actually read before it
      * burned — see {@link BurnableBookTag}.</p>
      */
-    @SubscribeEvent
-    public static void onRightClickFoundSharedBookItem(PlayerInteractEvent.RightClickItem event) {
-        if (event.getLevel().isClientSide) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        ItemStack stack = event.getItemStack();
+        public static void onRightClickFoundSharedBookItem(net.minecraft.world.entity.player.Player interactPlayer, net.minecraft.world.level.Level interactLevel, net.minecraft.world.item.ItemStack interactItem) {
+        if (interactLevel.isClientSide) return;
+        if (!(interactPlayer instanceof ServerPlayer player)) return;
+        ItemStack stack = interactItem;
         if (stack.isEmpty()) return;
         if (!SharedBookFoundTag.isFound(stack)) return;
         BookReadMarkerTag.markOpened(stack);

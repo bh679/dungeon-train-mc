@@ -297,4 +297,24 @@ public final class DtEvents {
     public static final DtEvent<DtAttackEntityCallback> ATTACK_ENTITY =
         new DtEvent<>();
 
+    // ---- Player interaction (Stage 2b, partial) ---------------------------
+    // Only the non-cancelling PlayerInteractEvent sub-events are bridged. The
+    // RightClickBlock sub-event stays on the NeoForge bus (cancelling handlers set
+    // an InteractionResult + a HIGH-priority handler passes the event to a helper).
+
+    /**
+     * Right-click item — NeoForge {@code PlayerInteractEvent.RightClickItem}.
+     * Server thread. Cancellable upstream, but DT's five handlers are pure
+     * observers (never cancel), so this is a void passthrough. NORMAL.
+     */
+    public static final DtEvent<DtRightClickItemCallback> RIGHT_CLICK_ITEM =
+        new DtEvent<>();
+
+    /**
+     * Entity interact — NeoForge {@code PlayerInteractEvent.EntityInteract}.
+     * Server thread. Cancellable upstream; DT's one handler never cancels. NORMAL.
+     */
+    public static final DtEvent<DtEntityInteractCallback> ENTITY_INTERACT =
+        new DtEvent<>();
+
 }

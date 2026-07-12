@@ -57,7 +57,6 @@ import java.util.UUID;
  * PlayerMob's {@code PlayerMobSocialHooks} gift seam, forwarded by
  * {@code compat.PlayerMobSocialBridge}.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PlayerMobAdvancementEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -124,12 +123,11 @@ public final class PlayerMobAdvancementEvents {
 
     // ---------------- The Denamed ----------------
 
-    @SubscribeEvent
-    public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-        if (event.getLevel().isClientSide) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!isPlayerMob(event.getTarget())) return;
-        var stack = event.getItemStack();
+        public static void onEntityInteract(net.minecraft.world.entity.player.Player interactPlayer, net.minecraft.world.level.Level interactLevel, net.minecraft.world.item.ItemStack interactItem, net.minecraft.world.entity.Entity interactTarget) {
+        if (interactLevel.isClientSide) return;
+        if (!(interactPlayer instanceof ServerPlayer player)) return;
+        if (!isPlayerMob(interactTarget)) return;
+        var stack = interactItem;
         if (!stack.is(Items.NAME_TAG)) return;
         // Vanilla only renames when the name tag carries a custom name (set on
         // an anvil); match that so a blank name tag doesn't grant the award.

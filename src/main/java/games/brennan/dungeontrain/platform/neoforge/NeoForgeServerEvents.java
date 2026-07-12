@@ -55,6 +55,42 @@ public final class NeoForgeServerEvents {
         registerLiving();
         registerChunk();
         registerBlockAndAttack();
+        registerInteract();
+    }
+
+    /**
+     * Non-cancelling {@code PlayerInteractEvent} sub-events (RightClickItem,
+     * EntityInteract), fired by {@code NeoForgeInteractBridge}. All NORMAL
+     * observers that never cancel.
+     *
+     * <p><b>RightClickBlock is NOT converted</b> and stays on the NeoForge bus:
+     * {@code PrefabUseHandler.onRightClickBlock} (HIGH) and
+     * {@code LetterLecternEvents.onRightClickBlock} (NORMAL) cancel with a
+     * {@code setCancellationResult(InteractionResult)}, and {@code PrefabUseHandler}
+     * passes the event object into a helper — none of which a thin loader-neutral
+     * callback can carry without abstracting {@code InteractionResult} and the event
+     * itself. Left for a later fixpoint. {@code VariantBlockInteractions},
+     * {@code AchievementEvents.onRightClickBlock} and
+     * {@code NarrativeBookEvents.onRightClickBlock} therefore also remain
+     * bus-subscribed (their stop-on-cancel interleaving with the cancellers must be
+     * preserved together).</p>
+     */
+    private static void registerInteract() {
+        // PlayerInteractEvent.RightClickItem
+        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
+            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickItem);
+        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
+            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickRandomBookItem);
+        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
+            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickStartingBookItem);
+        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
+            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickFoundSharedBookItem);
+        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_ITEM
+            .register(games.brennan.dungeontrain.event.RunStatsEvents::onBookRead);
+
+        // PlayerInteractEvent.EntityInteract
+        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_INTERACT
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onEntityInteract);
     }
 
     /**
