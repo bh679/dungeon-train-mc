@@ -136,11 +136,12 @@ public final class WorldInfoReporter {
     }
 
     /**
-     * The joining player's Minecraft client locale (e.g. {@code en_us}), read from the vanilla-synced
-     * {@code ClientInformation}. Returns {@code ""} when unavailable so the payload simply omits the
-     * field — never throws.
+     * The player's Minecraft client locale (e.g. {@code en_us}), read from the vanilla-synced
+     * {@code ClientInformation}. Returns {@code ""} when unavailable — never throws. Public so other
+     * server-side upload paths (e.g. {@code SharedBookReporter}, {@code LetterReporter}) can stamp the
+     * same client-locale value without re-deriving it.
      */
-    static String clientLanguage(net.minecraft.server.level.ServerPlayer player) {
+    public static String clientLanguage(net.minecraft.server.level.ServerPlayer player) {
         try {
             var info = player.clientInformation();
             String lang = info == null ? null : info.language();

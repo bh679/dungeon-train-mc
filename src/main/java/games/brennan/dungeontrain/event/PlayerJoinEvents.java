@@ -208,7 +208,6 @@ public final class PlayerJoinEvents {
             EditorWelcome.forget(player.getUUID());
             DevMessageConsent.forget(player.getUUID());
             NetworkConsentMirror.forget(player.getUUID());
-            PlayerLocaleMirror.forget(player.getUUID());
         }
     }
 

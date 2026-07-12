@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.mixin;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.discord.SharedBookReporter;
-import games.brennan.dungeontrain.event.PlayerLocaleMirror;
+import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
@@ -126,9 +126,9 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             if (!SharedBookGate.canContribute(serverPlayer)) return;
 
             // Fire-and-forget upload of the authored text (no-throw internally). The author's client
-            // language (synced on login, null when unknown) is stamped so the relay can store it for
-            // language-matched delivery.
-            String lang = PlayerLocaleMirror.get(serverPlayer);
+            // language (vanilla-synced ClientInformation, "" when unknown) is stamped so the relay can
+            // store it for language-matched delivery.
+            String lang = WorldInfoReporter.clientLanguage(serverPlayer);
             SharedBookReporter.submit(serverPlayer.getUUID(), author, titleStr, pageStrs, lang);
 
             // Remove one writable book from the player's slot — they keep nothing.
