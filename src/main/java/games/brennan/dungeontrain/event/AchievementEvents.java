@@ -646,10 +646,9 @@ public final class AchievementEvents {
 
     // ---------------- Respawn reset ----------------
 
-    @SubscribeEvent
-    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (event.isEndConquered()) return; // End → overworld portal, not a death.
+        public static void onPlayerRespawn(net.minecraft.world.entity.player.Player respawnedPlayer, boolean endConquered) {
+        if (!(respawnedPlayer instanceof ServerPlayer player)) return;
+        if (endConquered) return; // End → overworld portal, not a death.
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         run.resetAll();
         // Exploration progress is per-life too — clear distinct biomes so the
@@ -709,9 +708,8 @@ public final class AchievementEvents {
         return holder.value().display().isPresent();
     }
 
-    @SubscribeEvent
-    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onPlayerLoggedIn(net.minecraft.world.entity.player.Player joinedPlayer) {
+        if (!(joinedPlayer instanceof ServerPlayer player)) return;
         // Multiplayer-join grant runs first, independent of the sidecar replay
         // below — a first-time joiner has an empty sidecar and would otherwise
         // be skipped by the early-return inside replaySidecarAdvancements.
@@ -845,9 +843,8 @@ public final class AchievementEvents {
      * keep them in sync). Drop revoked entries from the sidecar so the
      * revoke sticks across worlds.</p>
      */
-    @SubscribeEvent
-    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onPlayerLoggedOut(net.minecraft.world.entity.player.Player leftPlayer) {
+        if (!(leftPlayer instanceof ServerPlayer player)) return;
         UUID uuid = player.getUUID();
         GlobalPlayerStats.flush(uuid);
         GlobalPlayerStats.evict(uuid);

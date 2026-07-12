@@ -41,7 +41,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * outside any plot, and its existing gate edits already run plot-free via
  * {@code /dt editor stage …}. OP≥2 plus an actively-stamped editor category is the gate.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class StagePanelController {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -295,8 +294,7 @@ public final class StagePanelController {
     }
 
     /** Drop the disconnecting player's open-panel entry (the client resets via LoggingOut). */
-    @SubscribeEvent
-    public static void onPlayerLoggedOut(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
-        OPEN.remove(event.getEntity().getUUID());
+        public static void onPlayerLoggedOut(net.minecraft.world.entity.player.Player leftPlayer) {
+        OPEN.remove(leftPlayer.getUUID());
     }
 }

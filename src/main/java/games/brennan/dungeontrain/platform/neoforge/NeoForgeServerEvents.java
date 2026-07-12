@@ -50,6 +50,80 @@ public final class NeoForgeServerEvents {
 
         registerServerLifecycle();
         registerTicks();
+        registerPlayerConnection();
+    }
+
+    /**
+     * Player-connection handlers (login, logout, respawn, game-mode change),
+     * fired by {@code NeoForgeConnectionBridge}. Login is registered with an
+     * explicit HIGHEST tier for {@code CheatDetectionEvents} so it still runs
+     * before the NORMAL-tier {@code AchievementEvents} (which reads the Free Play
+     * flag CheatDetection sets) — the one load-bearing ordering in this category.
+     * Everything else was single-tier NORMAL; order within NORMAL is irrelevant.
+     * None of these events are dist-gated or cancelled by DT.
+     */
+    private static void registerPlayerConnection() {
+        var HIGHEST = games.brennan.dungeontrain.platform.event.DtPriority.HIGHEST;
+
+        // PlayerLoggedInEvent — HIGHEST (CheatDetection) then NORMAL (rest)
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
+            .register(HIGHEST, games.brennan.dungeontrain.event.CheatDetectionEvents::onLogin);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
+            .register(games.brennan.dungeontrain.event.StartingBookEvents::onPlayerLogin);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
+            .register(games.brennan.dungeontrain.event.PlayerJoinEvents::onPlayerLogin);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
+            .register(games.brennan.dungeontrain.event.BoardingProgressEvents::onPlayerLoggedIn);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
+            .register(games.brennan.dungeontrain.event.KeepInventoryCarryEvents::onPlayerLogin);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
+            .register(games.brennan.dungeontrain.event.AchievementEvents::onPlayerLoggedIn);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGIN
+            .register(games.brennan.dungeontrain.event.DeathNoteRefreshEvents::onLogin);
+
+        // PlayerLoggedOutEvent — NORMAL
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.narrative.LetterLecternEvents::onLogout);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.TrainTickEvents::onPlayerLoggedOut);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.DtpPlacementService::onPlayerLogout);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.TrainCinematographerEvents::onPlayerLoggedOut);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.RunStatsEvents::onPlayerLogout);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.PlayerJoinEvents::onPlayerLogout);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.BoardingProgressEvents::onPlayerLoggedOut);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onPlayerLoggedOut);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.AchievementEvents::onPlayerLoggedOut);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.event.DeathNoteRefreshEvents::onLogout);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.editor.VariantHotkeyState::onLogout);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.editor.ContainerHotkeyState::onLogout);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_LOGOUT
+            .register(games.brennan.dungeontrain.editor.StagePanelController::onPlayerLoggedOut);
+
+        // PlayerRespawnEvent — NORMAL
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
+            .register(games.brennan.dungeontrain.event.StartingBookEvents::onPlayerRespawn);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
+            .register(games.brennan.dungeontrain.event.RespawnDimensionEvents::onPlayerRespawn);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
+            .register(games.brennan.dungeontrain.event.BoardingProgressEvents::onPlayerRespawn);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
+            .register(games.brennan.dungeontrain.event.AchievementEvents::onPlayerRespawn);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_RESPAWN
+            .register(games.brennan.dungeontrain.event.CheatDetectionEvents::onRespawn);
+
+        // PlayerChangeGameModeEvent — NORMAL (single handler)
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_CHANGE_GAMEMODE
+            .register(games.brennan.dungeontrain.event.CheatDetectionEvents::onChangeGameMode);
     }
 
     /**

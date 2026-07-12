@@ -51,17 +51,15 @@ import org.slf4j.Logger;
  *
  * <p>Server-side; common-scope so dedicated servers also run it.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class RespawnDimensionEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private RespawnDimensionEvents() {}
 
-    @SubscribeEvent
-    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
-        if (event.isEndConquered()) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onPlayerRespawn(net.minecraft.world.entity.player.Player respawnedPlayer, boolean endConquered) {
+        if (endConquered) return;
+        if (!(respawnedPlayer instanceof ServerPlayer player)) return;
         MinecraftServer server = player.getServer();
         if (server == null || server.isHardcore()) return;
 

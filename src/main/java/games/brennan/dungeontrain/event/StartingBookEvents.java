@@ -179,9 +179,8 @@ public final class StartingBookEvents {
 
     private StartingBookEvents() {}
 
-    @SubscribeEvent
-    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onPlayerLogin(net.minecraft.world.entity.player.Player joinedPlayer) {
+        if (!(joinedPlayer instanceof ServerPlayer player)) return;
         ServerLevel overworld = overworldOf(player);
         if (overworld == null) return;
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
@@ -191,13 +190,12 @@ public final class StartingBookEvents {
         PENDING_STRIKE.put(player.getUUID(), new PendingStrike(STRIKE_DELAY_TICKS, null));
     }
 
-    @SubscribeEvent
-    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        public static void onPlayerRespawn(net.minecraft.world.entity.player.Player respawnedPlayer, boolean endConquered) {
         // Skip End-credits respawn — the player just stepped through the End
         // portal back to the overworld, didn't die. A welcome strike there
         // would be jarring.
-        if (event.isEndConquered()) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (endConquered) return;
+        if (!(respawnedPlayer instanceof ServerPlayer player)) return;
         // Respawn context is unambiguous; pre-resolve at enqueue.
         PENDING_STRIKE.put(player.getUUID(), new PendingStrike(STRIKE_DELAY_TICKS, StartingBookContext.RESPAWN));
     }

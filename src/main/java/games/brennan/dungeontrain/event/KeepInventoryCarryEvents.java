@@ -23,14 +23,12 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
  * first and the book lands in a free slot (or on the ground) without clobbering
  * them.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class KeepInventoryCarryEvents {
 
     private KeepInventoryCarryEvents() {}
 
-    @SubscribeEvent
-    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
+        public static void onPlayerLogin(net.minecraft.world.entity.player.Player joinedPlayer) {
+        if (!(joinedPlayer instanceof ServerPlayer player)) {
             return;
         }
         if (PendingInventory.isPresentFor(player.getUUID())) {

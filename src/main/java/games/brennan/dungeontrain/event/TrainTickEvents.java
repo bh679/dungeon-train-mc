@@ -57,7 +57,6 @@ import java.util.UUID;
  * interiors, like vase loot) are spared — only the runway in front of the
  * lead carriage is wiped.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TrainTickEvents {
 
     private static final Logger JITTER_LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
@@ -121,9 +120,8 @@ public final class TrainTickEvents {
 
     private TrainTickEvents() {}
 
-    @SubscribeEvent
-    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+        public static void onPlayerLoggedOut(net.minecraft.world.entity.player.Player leftPlayer) {
+        if (leftPlayer instanceof net.minecraft.server.level.ServerPlayer sp) {
             VariantOverlayRenderer.forget(sp);
         }
     }

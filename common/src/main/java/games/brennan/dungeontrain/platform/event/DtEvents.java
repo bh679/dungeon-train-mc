@@ -147,4 +147,40 @@ public final class DtEvents {
     public static final DtEvent<DtEntityTickCallback> ENTITY_TICK =
         new DtEvent<>();
 
+    // ---- Player connection (Stage 2b) -------------------------------------
+
+    /**
+     * Player login — NeoForge {@code PlayerEvent.PlayerLoggedInEvent}. Server
+     * thread; not cancellable; read-only ({@code Player}). DT uses HIGHEST
+     * ({@code CheatDetectionEvents} — sets Free Play) and NORMAL (rest, incl.
+     * {@code AchievementEvents} which READS Free Play). The HIGHEST-before-NORMAL
+     * ordering is load-bearing and is reproduced by the bridge's per-tier
+     * subscriptions.
+     */
+    public static final DtEvent<DtPlayerLoginCallback> PLAYER_LOGIN =
+        new DtEvent<>();
+
+    /**
+     * Player logout — NeoForge {@code PlayerEvent.PlayerLoggedOutEvent}. Server
+     * thread; not cancellable; read-only. All DT handlers NORMAL.
+     */
+    public static final DtEvent<DtPlayerLogoutCallback> PLAYER_LOGOUT =
+        new DtEvent<>();
+
+    /**
+     * Player respawn — NeoForge {@code PlayerEvent.PlayerRespawnEvent}. Server
+     * thread; not cancellable; read-only ({@code Player} + end-portal flag). All
+     * DT handlers NORMAL.
+     */
+    public static final DtEvent<DtPlayerRespawnCallback> PLAYER_RESPAWN =
+        new DtEvent<>();
+
+    /**
+     * Player game-mode change — NeoForge {@code PlayerEvent.PlayerChangeGameModeEvent}.
+     * Server thread. NeoForge's event is cancellable/mutable, but DT's sole
+     * handler only observes, so this is a void read-only passthrough. NORMAL.
+     */
+    public static final DtEvent<DtPlayerChangeGameModeCallback> PLAYER_CHANGE_GAMEMODE =
+        new DtEvent<>();
+
 }

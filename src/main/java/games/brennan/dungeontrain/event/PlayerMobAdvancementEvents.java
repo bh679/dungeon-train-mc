@@ -364,9 +364,8 @@ public final class PlayerMobAdvancementEvents {
 
     // ---------------- Logout cleanup ----------------
 
-    @SubscribeEvent
-    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onPlayerLoggedOut(net.minecraft.world.entity.player.Player leftPlayer) {
+        if (!(leftPlayer instanceof ServerPlayer player)) return;
         PlayerMobSocialTracker.forget(player.getUUID());
     }
 

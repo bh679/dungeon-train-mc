@@ -26,8 +26,6 @@ import org.joml.Vector3d;
 import org.joml.primitives.AABBdc;
 
 import java.util.function.Consumer;
-
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TrainCinematographerEvents {
 
     private static int tickCounter = 0;
@@ -51,9 +49,8 @@ public final class TrainCinematographerEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
+        public static void onPlayerLoggedOut(net.minecraft.world.entity.player.Player leftPlayer) {
+        if (leftPlayer instanceof ServerPlayer player) {
             CinematographerClearView.restoreAll(player);
             CinematographerService.cleanup(player.getUUID());
         }

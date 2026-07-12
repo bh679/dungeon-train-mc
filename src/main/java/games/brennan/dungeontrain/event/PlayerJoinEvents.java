@@ -87,7 +87,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * and passed to {@code teleportTo} directly, avoiding the post-teleport
  * rotation race {@code lookAt} introduces.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PlayerJoinEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -183,9 +182,8 @@ public final class PlayerJoinEvents {
 
     private PlayerJoinEvents() {}
 
-    @SubscribeEvent
-    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onPlayerLogin(net.minecraft.world.entity.player.Player joinedPlayer) {
+        if (!(joinedPlayer instanceof ServerPlayer player)) return;
         DungeonTrainNet.sendTo(player, PrefabRegistrySyncPacket.fromRegistries());
         // Seed debug flags so the in-world Debug menu's Toggle states render
         // the correct value the first time it's opened on this client.
@@ -200,9 +198,8 @@ public final class PlayerJoinEvents {
         PENDING.put(player.getUUID(), 0);
     }
 
-    @SubscribeEvent
-    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
+        public static void onPlayerLogout(net.minecraft.world.entity.player.Player leftPlayer) {
+        if (leftPlayer instanceof ServerPlayer player) {
             PENDING.remove(player.getUUID());
             CinematicIntroService.forget(player.getUUID());
             EditorWelcome.forget(player.getUUID());

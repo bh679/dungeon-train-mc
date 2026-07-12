@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
  *       respawns.</li>
  * </ol>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DeathNoteRefreshEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -52,17 +51,15 @@ public final class DeathNoteRefreshEvents {
 
     private DeathNoteRefreshEvents() {}
 
-    @SubscribeEvent
-    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onLogin(net.minecraft.world.entity.player.Player joinedPlayer) {
+        if (!(joinedPlayer instanceof ServerPlayer player)) return;
         LAST_REFRESH_CARRIAGE.remove(player.getUUID());
         // A new world load counts as a login → re-pull this target's unspawned curses from the relay.
         if (DeathNoteGate.canSync(player)) refresh(player);
     }
 
-    @SubscribeEvent
-    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onLogout(net.minecraft.world.entity.player.Player leftPlayer) {
+        if (!(leftPlayer instanceof ServerPlayer player)) return;
         DeathNotePool.forget(player.getUUID());
         LAST_REFRESH_CARRIAGE.remove(player.getUUID());
     }

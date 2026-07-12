@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link PlayerEvent.PlayerLoggedOutEvent} hook below — otherwise a stuck-down
  * key on disconnect would leave the player flagged forever.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class VariantHotkeyState {
 
     private static final Set<UUID> HELD = ConcurrentHashMap.newKeySet();
@@ -39,8 +38,7 @@ public final class VariantHotkeyState {
         return HELD.contains(player.getUUID());
     }
 
-    @SubscribeEvent
-    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        HELD.remove(event.getEntity().getUUID());
+        public static void onLogout(net.minecraft.world.entity.player.Player leftPlayer) {
+        HELD.remove(leftPlayer.getUUID());
     }
 }

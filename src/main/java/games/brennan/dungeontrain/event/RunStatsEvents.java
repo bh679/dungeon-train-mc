@@ -389,9 +389,8 @@ public final class RunStatsEvents {
      * death already posted the summary, and the run stats reset on respawn. Gated by the same
      * {@code deathReportToDiscord} toggle. Best-effort; a Discord hiccup never blocks logout.
      */
-    @SubscribeEvent
-    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onPlayerLogout(net.minecraft.world.entity.player.Player leftPlayer) {
+        if (!(leftPlayer instanceof ServerPlayer player)) return;
         if (player.isDeadOrDying()) return;
         // Free Play runs still post the "left the game" summary — only cross-world stat accrual
         // (elsewhere) is frozen in Free Play, not the Discord report.

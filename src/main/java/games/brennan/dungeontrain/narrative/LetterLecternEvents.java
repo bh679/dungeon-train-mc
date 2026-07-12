@@ -131,9 +131,8 @@ public final class LetterLecternEvents {
     }
 
     /** Drop any stale pending lectern when a player disconnects. */
-    @SubscribeEvent
-    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        PENDING_LECTERN.remove(event.getEntity().getUUID());
+        public static void onLogout(net.minecraft.world.entity.player.Player leftPlayer) {
+        PENDING_LECTERN.remove(leftPlayer.getUUID());
     }
 
     /** Raw page strings of a book &amp; quill, in order. Empty when the stack carries no writable content. */

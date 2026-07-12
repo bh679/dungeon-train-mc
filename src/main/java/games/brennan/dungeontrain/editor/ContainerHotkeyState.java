@@ -17,7 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * but having the held-state available keeps the door open for future
  * "hold C and click to add" flows.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class ContainerHotkeyState {
 
     private static final Set<UUID> HELD = ConcurrentHashMap.newKeySet();
@@ -33,8 +32,7 @@ public final class ContainerHotkeyState {
         return HELD.contains(player.getUUID());
     }
 
-    @SubscribeEvent
-    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        HELD.remove(event.getEntity().getUUID());
+        public static void onLogout(net.minecraft.world.entity.player.Player leftPlayer) {
+        HELD.remove(leftPlayer.getUUID());
     }
 }

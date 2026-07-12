@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link PlayerJoinEvents#findNearestFlatbedTarget} resolves a settled deck,
  * then drops the player onto it and releases the hold.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DtpPlacementService {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -51,9 +50,8 @@ public final class DtpPlacementService {
         PENDING.put(player.getUUID(), new PendingDtp(trainLevel, targetX, 0));
     }
 
-    @SubscribeEvent
-    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        PENDING.remove(event.getEntity().getUUID());
+        public static void onPlayerLogout(net.minecraft.world.entity.player.Player leftPlayer) {
+        PENDING.remove(leftPlayer.getUUID());
     }
 
         public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {

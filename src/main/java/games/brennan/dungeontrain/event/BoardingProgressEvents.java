@@ -59,7 +59,6 @@ import java.util.UUID;
  *
  * <p>Throttled to once every {@link #SCAN_PERIOD_TICKS} ticks per level.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class BoardingProgressEvents {
 
     /** Per-level scan period. Players don't cross carriage groups faster than this. */
@@ -236,9 +235,8 @@ public final class BoardingProgressEvents {
      * {@link PlayerRunState#travelledCarriageIndex} so the HUD reflects
      * their per-life progress, not the world-global value.
      */
-    @SubscribeEvent
-    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onPlayerLoggedIn(net.minecraft.world.entity.player.Player joinedPlayer) {
+        if (!(joinedPlayer instanceof ServerPlayer player)) return;
         sendPlayerHudPacket(player);
     }
 
@@ -247,9 +245,8 @@ public final class BoardingProgressEvents {
      * relogin gets a fresh send. Without this, {@link #LAST_BROADCAST}
      * accumulates stale UUID keys.
      */
-    @SubscribeEvent
-    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onPlayerLoggedOut(net.minecraft.world.entity.player.Player leftPlayer) {
+        if (!(leftPlayer instanceof ServerPlayer player)) return;
         LAST_BROADCAST.remove(player.getUUID());
         LAST_NOTIFIED_TIER.remove(player.getUUID());
     }
@@ -258,9 +255,8 @@ public final class BoardingProgressEvents {
      * Reset the notified-tier baseline on respawn so the player gets fresh
      * Discord tier notifications in their new life (tier resets to 0 on death).
      */
-    @SubscribeEvent
-    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onPlayerRespawn(net.minecraft.world.entity.player.Player respawnedPlayer, boolean endConquered) {
+        if (!(respawnedPlayer instanceof ServerPlayer player)) return;
         LAST_NOTIFIED_TIER.put(player.getUUID(), 0);
     }
 

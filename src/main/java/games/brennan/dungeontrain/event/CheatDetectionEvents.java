@@ -101,20 +101,18 @@ public final class CheatDetectionEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onChangeGameMode(PlayerEvent.PlayerChangeGameModeEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onChangeGameMode(net.minecraft.world.entity.player.Player gmPlayer, net.minecraft.world.level.GameType newGameMode) {
+        if (!(gmPlayer instanceof ServerPlayer player)) return;
         if (RunIntegrity.isCheated(player)) return;
-        markGameModeFreePlay(player, event.getNewGameMode());
+        markGameModeFreePlay(player, newGameMode);
         // If that just tripped Free Play (creative/spectator), lock the Ender Chest.
         // Runs before ECP's LOW-priority game-mode swap, while the old mode is still
         // active, so the legit chest is snapshotted back to its own slot first.
         if (RunIntegrity.isCheated(player)) EnderChestLockBridge.engage(player);
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onLogin(net.minecraft.world.entity.player.Player joinedPlayer) {
+        if (!(joinedPlayer instanceof ServerPlayer player)) return;
         if (RunIntegrity.isCheated(player)) {
             RunIntegrity.applyFreePlayEffect(player); // re-apply across relog
             return;
@@ -125,10 +123,9 @@ public final class CheatDetectionEvents {
         markGameModeFreePlay(player, player.gameMode.getGameModeForPlayer());
     }
 
-    @SubscribeEvent
-    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
-        if (event.isEndConquered()) return; // End → overworld portal, not a death
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onRespawn(net.minecraft.world.entity.player.Player respawnedPlayer, boolean endConquered) {
+        if (endConquered) return; // End → overworld portal, not a death
+        if (!(respawnedPlayer instanceof ServerPlayer player)) return;
         if (RunIntegrity.isCheated(player)) {
             RunIntegrity.applyFreePlayEffect(player); // death cleared the effect; re-apply
         }
