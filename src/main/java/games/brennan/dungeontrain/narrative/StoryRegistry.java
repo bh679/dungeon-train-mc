@@ -1,13 +1,9 @@
 package games.brennan.dungeontrain.narrative;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.server.ServerStartingEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
 import org.slf4j.Logger;
 
 import java.io.InputStream;
@@ -17,64 +13,78 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /**
- * In-memory registry of every narrative {@link StoryFile} bundled in the mod
- * jar at {@code data/dungeontrain/narratives/stories/}.
+ * In-memory registry of every narrative {@link StoryFile} at
+ * {@code data/dungeontrain/narratives/stories/}.
  *
- * <p>Loaded once at {@link ServerStartingEvent} and re-loadable on demand via
- * the {@code /dungeontrain narrative reload} command. Mirrors the
- * {@code TrackVariantRegistry} pattern — server-thread synchronous, no async
- * background tasks, no datapack-reload listener (the legacy text content is
- * shipped-only, never overridden by player data packs).</p>
+ * <p>Loaded through the vanilla {@link ResourceManager} server-data channel:
+ * {@link NarrativeDataLoaders} registers {@link #load} as a reload listener on
+ * {@code AddReloadListenerEvent}, so it fires at world load and on every
+ * {@code /reload}. Because it goes through the datapack pipeline, a datapack (or
+ * resource-translation pack) can override any bundled story by shipping
+ * {@code data/dungeontrain/narratives/stories/<name>.json} — the highest-priority
+ * pack wins per id. The {@code /dungeontrain narrative reload} command reloads it
+ * on demand by handing over the server's live {@link ResourceManager}.</p>
  *
  * <p>The sibling {@code unused/} folder is deliberately not scanned — that
  * content is held for future delivery surfaces (NPC dialogue, paper notes,
  * procedural pools) and should not appear in the lectern/book flow.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class StoryRegistry {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String RESOURCE_PREFIX = "/data/" + DungeonTrain.MOD_ID + "/narratives/stories/";
+    /** ResourceManager directory (namespace-relative, no leading/trailing slash). */
+    private static final String DIR = "narratives/stories";
     private static final String JSON_EXT = ".json";
 
     private static final Map<ResourceLocation, StoryFile> STORIES = new LinkedHashMap<>();
 
     private StoryRegistry() {}
 
-    /** Reload from the bundled resources. Safe to call outside event handlers. */
-    public static synchronized void reload() {
+    /**
+     * Reload from the given {@link ResourceManager} (bundled data + datapack
+     * overrides). Called by the reload listener at world load / {@code /reload}
+     * and by the {@code /dungeontrain narrative reload} command.
+     */
+    public static synchronized void load(ResourceManager resourceManager) {
         STORIES.clear();
-        Set<String> basenames = BundledNbtScanner.scanBasenames(
-            StoryRegistry.class, RESOURCE_PREFIX, LOGGER, JSON_EXT);
         int loaded = 0;
         int failed = 0;
-        for (String basename : basenames) {
-            String resourcePath = RESOURCE_PREFIX + basename + JSON_EXT;
-            ResourceLocation id = ResourceLocation.fromNamespaceAndPath(
-                DungeonTrain.MOD_ID, "narratives/stories/" + basename);
-            try (InputStream in = StoryRegistry.class.getResourceAsStream(resourcePath)) {
-                if (in == null) {
-                    LOGGER.warn("[DungeonTrain] Narrative: scanner found '{}' but resource stream is null — skipping",
-                        basename);
-                    failed++;
-                    continue;
-                }
+        Map<ResourceLocation, Resource> resources =
+            resourceManager.listResources(DIR, rl -> rl.getPath().endsWith(JSON_EXT));
+        for (Map.Entry<ResourceLocation, Resource> entry : resources.entrySet()) {
+            ResourceLocation file = entry.getKey();
+            // Preserve the historical id shape (dungeontrain:narratives/stories/<name>) —
+            // seen-book tracking and story-set achievements persist these ids, so only
+            // the ".json" suffix is stripped from the full resource location.
+            ResourceLocation id = stripJson(file);
+            try (InputStream in = entry.getValue().open()) {
                 StoryFile story = StoryCodec.parse(in, id);
                 STORIES.put(id, story);
                 loaded++;
             } catch (StoryCodec.StoryParseException e) {
-                LOGGER.error("[DungeonTrain] Narrative: failed to parse {} — {}", resourcePath, e.getMessage());
+                LOGGER.error("[DungeonTrain] Narrative: failed to parse {} — {}", file, e.getMessage());
                 failed++;
             } catch (Exception e) {
-                LOGGER.error("[DungeonTrain] Narrative: unexpected error reading {} — {}", resourcePath, e.toString());
+                LOGGER.error("[DungeonTrain] Narrative: unexpected error reading {} — {}", file, e.toString());
                 failed++;
             }
         }
-        LOGGER.info("[DungeonTrain] Narrative registry loaded — {} stories from {} (failed: {})",
-            loaded, RESOURCE_PREFIX, failed);
+        LOGGER.info("[DungeonTrain] Narrative registry loaded — {} stories from '{}' (failed: {})",
+            loaded, DIR, failed);
+    }
+
+    /** Drop every loaded story (called on server stop). */
+    public static synchronized void clear() {
+        STORIES.clear();
+    }
+
+    /** Strip the trailing {@code .json} from a resource location, keeping namespace + path. */
+    private static ResourceLocation stripJson(ResourceLocation file) {
+        String path = file.getPath();
+        return ResourceLocation.fromNamespaceAndPath(
+            file.getNamespace(), path.substring(0, path.length() - JSON_EXT.length()));
     }
 
     /** Snapshot of every registered story id, alphabetical. */
@@ -129,17 +139,5 @@ public final class StoryRegistry {
         int total = 0;
         for (StoryFile s : STORIES.values()) total += s.letters().size();
         return total;
-    }
-
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
-        reload();
-    }
-
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
-        synchronized (StoryRegistry.class) {
-            STORIES.clear();
-        }
     }
 }

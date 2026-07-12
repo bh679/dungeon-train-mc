@@ -5,16 +5,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.UserContentPaths;
 import games.brennan.dungeontrain.net.DeathNarrative;
-import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.RandomSource;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.server.ServerStartingEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
 
 import java.io.InputStream;
@@ -27,6 +23,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Data-driven pool of death-screen narrative lines. Each entry targets one
@@ -36,11 +33,14 @@ import java.util.Locale;
  * per page, substitutes placeholders, and ships the chosen text to the client
  * inside {@code DeathStatsPacket} (see {@link DeathNarrative}).
  *
- * <p>Loading mirrors {@code LootPrefabStore}: bundled classpath files under
- * {@code /data/dungeontrain/death_lore/*.json} plus per-install overrides in
- * {@code config/dungeontrain/user/death_lore/*.json}. Config files <em>add</em>
- * entries to the pool (they don't override by id) — dropping a file in only
- * widens the variety. Reloaded on {@link ServerStartingEvent}.</p>
+ * <p>Two tiers load into one additive pool. <b>Tier 1</b> — the vanilla
+ * {@link ResourceManager} server-data channel: bundled files under
+ * {@code data/dungeontrain/death_lore/*.json}, which a datapack can override or
+ * extend (registered by {@link NarrativeDataLoaders}, so it honours {@code /reload}).
+ * <b>Tier 2</b> — per-install filesystem overrides in
+ * {@code config/dungeontrain/user/death_lore/*.json} (via {@link UserContentPaths}).
+ * Both tiers <em>add</em> entries to the pool (dropping a file in only widens the
+ * variety); a datapack override replaces the bundled file <em>of the same id</em>.</p>
  *
  * <p>File format — a JSON array of entries, or {@code {"entries":[...]}}:</p>
  * <pre>
@@ -63,14 +63,13 @@ import java.util.Locale;
  * max_books, min_mobs, min_slain, min_loot, max_loot, min_deaths, max_deaths} —
  * all optional; absent ones match anything.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DeathLoreStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /** Both the datapack directory (Tier 1) and the config sub-folder slug (Tier 2). */
     static final String SUBDIR = "death_lore";
     private static final String EXT = ".json";
-    static final String BUNDLED_RESOURCE_PREFIX = "/data/dungeontrain/death_lore/";
 
     public static final String PAGE_FALL = "fall";
     public static final String PAGE_DEEDS = "deeds";
@@ -115,19 +114,28 @@ public final class DeathLoreStore {
     public record Context(ResourceLocation cause, int carriage, int friends, int books,
                           int mobs, int met, int slain, int hearts, double distance, long deaths, int loot) {}
 
-    public static synchronized void reload() {
+    /**
+     * Reload the pool from both tiers. <b>Tier 1</b> — the datapack channel via
+     * {@code resourceManager} (bundled data + datapack overrides); <b>Tier 2</b> —
+     * the {@code config/dungeontrain/user/death_lore/} filesystem overrides. Both
+     * are additive. Called by the reload listener at world load / {@code /reload}
+     * and by the {@code /dungeontrain narrative reload} command.
+     */
+    public static synchronized void load(ResourceManager resourceManager) {
         POOL.clear();
-        for (String name : BundledNbtScanner.scanBasenames(DeathLoreStore.class, BUNDLED_RESOURCE_PREFIX, LOGGER, EXT)) {
-            String resource = BUNDLED_RESOURCE_PREFIX + name + EXT;
-            try (InputStream in = DeathLoreStore.class.getResourceAsStream(resource)) {
-                if (in == null) continue;
-                try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-                    parseInto(r, "bundled:" + name);
-                }
+        // Tier 1 — datapack channel: bundled data + datapack overrides (override-resolved per id).
+        Map<ResourceLocation, Resource> resources =
+            resourceManager.listResources(SUBDIR, rl -> rl.getPath().endsWith(EXT));
+        for (Map.Entry<ResourceLocation, Resource> entry : resources.entrySet()) {
+            ResourceLocation file = entry.getKey();
+            try (InputStream in = entry.getValue().open();
+                 Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+                parseInto(r, file.toString());
             } catch (Exception e) {
-                LOGGER.error("[DungeonTrain] death_lore: failed reading bundled '{}': {}", name, e.toString());
+                LOGGER.error("[DungeonTrain] death_lore: failed reading '{}': {}", file, e.toString());
             }
         }
+        // Tier 2 — per-install filesystem overrides (additive; outside the datapack tree).
         for (Path dir : UserContentPaths.searchDirs(SUBDIR)) {
             if (!Files.isDirectory(dir)) continue;
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*" + EXT)) {
@@ -270,16 +278,9 @@ public final class DeathLoreStore {
                 .replace("{distance}", "" + String.format(Locale.ROOT, "%,.0f", ctx.distance()) + "");
     }
 
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
-        reload();
-    }
-
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
-        synchronized (DeathLoreStore.class) {
-            POOL.clear();
-        }
+    /** Drop the entire pool (called on server stop). */
+    public static synchronized void clear() {
+        POOL.clear();
     }
 
     // ---- Number → English words (so narration reads "twenty-eight", not "28") ----

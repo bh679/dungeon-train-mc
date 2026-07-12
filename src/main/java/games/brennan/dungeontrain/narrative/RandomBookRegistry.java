@@ -1,13 +1,9 @@
 package games.brennan.dungeontrain.narrative;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.server.ServerStartingEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
 import org.slf4j.Logger;
 
 import java.io.InputStream;
@@ -17,64 +13,73 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /**
- * In-memory registry of every standalone {@link RandomBookFile} bundled in
- * the mod jar at {@code data/dungeontrain/narratives/random_books/}.
+ * In-memory registry of every standalone {@link RandomBookFile} at
+ * {@code data/dungeontrain/narratives/random_books/}.
  *
- * <p>Loaded once at {@link ServerStartingEvent}, re-loadable via
- * {@code /dungeontrain narrative reload}. Mirrors {@link StoryRegistry} —
- * server-thread synchronous, no datapack-reload listener (the bundled
- * content is shipped-only).</p>
+ * <p>Loaded through the vanilla {@link ResourceManager} server-data channel via
+ * {@link NarrativeDataLoaders} (fires at world load and on {@code /reload}), so a
+ * datapack can override any bundled book by shipping
+ * {@code data/dungeontrain/narratives/random_books/<name>.json}. Re-loadable on
+ * demand via {@code /dungeontrain narrative reload}. Mirrors {@link StoryRegistry}.</p>
  *
  * <p>The registry feeds the {@code dungeontrain:random_book} placeholder
  * intercept inside {@code ContainerContentsRoller.rollItemStack}; entries
  * appear in chests as already-stamped vanilla {@code WRITTEN_BOOK} stacks,
  * not as the placeholder itself.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class RandomBookRegistry {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String RESOURCE_PREFIX = "/data/" + DungeonTrain.MOD_ID + "/narratives/random_books/";
+    /** ResourceManager directory (namespace-relative, no leading/trailing slash). */
+    private static final String DIR = "narratives/random_books";
     private static final String JSON_EXT = ".json";
 
     private static final Map<ResourceLocation, RandomBookFile> BOOKS = new LinkedHashMap<>();
 
     private RandomBookRegistry() {}
 
-    /** Reload from the bundled resources. Safe to call outside event handlers. */
-    public static synchronized void reload() {
+    /**
+     * Reload from the given {@link ResourceManager} (bundled data + datapack
+     * overrides). Called by the reload listener at world load / {@code /reload}
+     * and by the {@code /dungeontrain narrative reload} command.
+     */
+    public static synchronized void load(ResourceManager resourceManager) {
         BOOKS.clear();
-        Set<String> basenames = BundledNbtScanner.scanBasenames(
-            RandomBookRegistry.class, RESOURCE_PREFIX, LOGGER, JSON_EXT);
         int loaded = 0;
         int failed = 0;
-        for (String basename : basenames) {
-            String resourcePath = RESOURCE_PREFIX + basename + JSON_EXT;
-            ResourceLocation id = ResourceLocation.fromNamespaceAndPath(
-                DungeonTrain.MOD_ID, "narratives/random_books/" + basename);
-            try (InputStream in = RandomBookRegistry.class.getResourceAsStream(resourcePath)) {
-                if (in == null) {
-                    LOGGER.warn("[DungeonTrain] RandomBook: scanner found '{}' but resource stream is null — skipping",
-                        basename);
-                    failed++;
-                    continue;
-                }
+        Map<ResourceLocation, Resource> resources =
+            resourceManager.listResources(DIR, rl -> rl.getPath().endsWith(JSON_EXT));
+        for (Map.Entry<ResourceLocation, Resource> entry : resources.entrySet()) {
+            ResourceLocation file = entry.getKey();
+            ResourceLocation id = stripJson(file);
+            try (InputStream in = entry.getValue().open()) {
                 RandomBookFile book = RandomBookCodec.parse(in, id);
                 BOOKS.put(id, book);
                 loaded++;
             } catch (RandomBookCodec.RandomBookParseException e) {
-                LOGGER.error("[DungeonTrain] RandomBook: failed to parse {} — {}", resourcePath, e.getMessage());
+                LOGGER.error("[DungeonTrain] RandomBook: failed to parse {} — {}", file, e.getMessage());
                 failed++;
             } catch (Exception e) {
-                LOGGER.error("[DungeonTrain] RandomBook: unexpected error reading {} — {}", resourcePath, e.toString());
+                LOGGER.error("[DungeonTrain] RandomBook: unexpected error reading {} — {}", file, e.toString());
                 failed++;
             }
         }
-        LOGGER.info("[DungeonTrain] RandomBook registry loaded — {} books from {} (failed: {})",
-            loaded, RESOURCE_PREFIX, failed);
+        LOGGER.info("[DungeonTrain] RandomBook registry loaded — {} books from '{}' (failed: {})",
+            loaded, DIR, failed);
+    }
+
+    /** Drop every loaded book (called on server stop). */
+    public static synchronized void clear() {
+        BOOKS.clear();
+    }
+
+    /** Strip the trailing {@code .json} from a resource location, keeping namespace + path. */
+    private static ResourceLocation stripJson(ResourceLocation file) {
+        String path = file.getPath();
+        return ResourceLocation.fromNamespaceAndPath(
+            file.getNamespace(), path.substring(0, path.length() - JSON_EXT.length()));
     }
 
     /** Snapshot of every registered book id, alphabetical. */
@@ -163,17 +168,5 @@ public final class RandomBookRegistry {
         // Fallback for floating-point-style edge case — return the last book.
         ResourceLocation last = ids().get(ids().size() - 1);
         return Optional.ofNullable(BOOKS.get(last));
-    }
-
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
-        reload();
-    }
-
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
-        synchronized (RandomBookRegistry.class) {
-            BOOKS.clear();
-        }
     }
 }
