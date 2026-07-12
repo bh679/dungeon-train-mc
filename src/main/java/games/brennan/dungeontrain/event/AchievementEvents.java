@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.platform.event.DtRightClickBlock;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
@@ -42,12 +43,6 @@ import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
@@ -90,7 +85,6 @@ import java.util.UUID;
  *       after every story / random-book read.</li>
  * </ul>
  */
-@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class AchievementEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -121,23 +115,21 @@ public final class AchievementEvents {
     private AchievementEvents() {}
 
     // ---------------- Chest opens ----------------
-
-    @SubscribeEvent
-    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (event.getLevel().isClientSide) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        BlockPos pos = event.getPos();
-        BlockState state = event.getLevel().getBlockState(pos);
+    public static void onRightClickBlock(DtRightClickBlock event) {
+        if (event.level().isClientSide) return;
+        if (!(event.player() instanceof ServerPlayer player)) return;
+        BlockPos pos = event.pos();
+        BlockState state = event.level().getBlockState(pos);
         Block block = state.getBlock();
         // ChestBlock covers both regular chests and trapped chests
         // (TrappedChestBlock extends ChestBlock in vanilla 1.21.1).
         if (!(block instanceof ChestBlock || block instanceof BarrelBlock)) return;
         // Skip the "sneaking-with-block-to-place" case so adjacent placements
         // don't get counted as chest opens.
-        if (player.isShiftKeyDown() && event.getItemStack().getItem() instanceof BlockItem) return;
+        if (player.isShiftKeyDown() && event.itemStack().getItem() instanceof BlockItem) return;
         // Debounce duplicate-fire on the same pos within a short window.
         UUID uuid = player.getUUID();
-        long tick = event.getLevel().getGameTime();
+        long tick = event.level().getGameTime();
         BlockPos lastPos = LAST_CHEST_POS.get(uuid);
         Long lastTick = LAST_CHEST_TICK.get(uuid);
         if (pos.equals(lastPos) && lastTick != null && tick - lastTick < CHEST_CLICK_DEBOUNCE_TICKS) return;

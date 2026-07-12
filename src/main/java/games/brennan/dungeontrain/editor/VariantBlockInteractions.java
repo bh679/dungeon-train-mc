@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.platform.event.DtRightClickBlock;
 import games.brennan.dungeontrain.DtCore;
 
 import games.brennan.dungeontrain.train.CarriageContents;
@@ -26,7 +27,6 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -72,27 +72,24 @@ import java.util.List;
  * <p>Duplicates are allowed — appending the same state twice gives that state
  * 2× weight in the random pick.</p>
  */
-@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class VariantBlockInteractions {
 
     /** Soft cap — commands can write more, but the shift-place path stops here to keep feedback readable. */
     private static final int MAX_VARIANTS_PER_POSITION = 16;
 
     private VariantBlockInteractions() {}
-
-    @SubscribeEvent
-    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+    public static void onRightClickBlock(DtRightClickBlock event) {
         // Server-authoritative: only act on the server side to keep the cache
         // single-source-of-truth and avoid double-processing on integrated SP.
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (event.getHand() != InteractionHand.MAIN_HAND) return;
+        if (!(event.player() instanceof ServerPlayer player)) return;
+        if (event.hand() != InteractionHand.MAIN_HAND) return;
         if (!VariantHotkeyState.isHeld(player)) return;
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        if (!(event.level() instanceof ServerLevel level)) return;
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        BlockPos clicked = event.getPos();
+        BlockPos clicked = event.pos();
 
-        ItemStack held = event.getItemStack();
+        ItemStack held = event.itemStack();
         if (held.isEmpty()) return;
 
         VariantState newVariant;
@@ -176,7 +173,7 @@ public final class VariantBlockInteractions {
      * (not the whole carriage), and append the held block to that part's own
      * variants sidecar.
      */
-    private static void handlePartShiftClick(PlayerInteractEvent.RightClickBlock event,
+    private static void handlePartShiftClick(DtRightClickBlock event,
                                              ServerPlayer player, ServerLevel level,
                                              CarriageDims dims, BlockPos clicked,
                                              VariantState newVariant, CarriagePartEditor.PlotLocation loc) {
@@ -231,7 +228,7 @@ public final class VariantBlockInteractions {
      * own variants sidecar. Eager-saves the sidecar — same as the part path —
      * so author can shift-click and walk away without an explicit save.
      */
-    private static void handleContentsShiftClick(PlayerInteractEvent.RightClickBlock event,
+    private static void handleContentsShiftClick(DtRightClickBlock event,
                                                  ServerPlayer player, ServerLevel level,
                                                  CarriageDims dims, BlockPos clicked,
                                                  VariantState newVariant, CarriageContents contents) {
@@ -286,7 +283,7 @@ public final class VariantBlockInteractions {
      * {@link #handlePartShiftClick} — same author flow, different sidecar
      * (per-{@code (TrackKind, name)} JSON next to the kind's NBT).
      */
-    private static void handleTrackShiftClick(PlayerInteractEvent.RightClickBlock event,
+    private static void handleTrackShiftClick(DtRightClickBlock event,
                                               ServerPlayer player, ServerLevel level,
                                               BlockPos clicked, VariantState newVariant,
                                               TrackPlotLocator.PlotInfo loc) {
@@ -342,11 +339,11 @@ public final class VariantBlockInteractions {
      * — useful for the "I edited a chest in-world, now copy it to a variant"
      * authoring loop.
      */
-    private static @Nullable VariantState captureVariant(PlayerInteractEvent.RightClickBlock event,
+    private static @Nullable VariantState captureVariant(DtRightClickBlock event,
                                                           ServerLevel level, ServerPlayer player,
                                                           BlockItem blockItem, ItemStack held, BlockPos clicked) {
         BlockPlaceContext ctx = new BlockPlaceContext(
-            new UseOnContext(level, player, event.getHand(), held, event.getHitVec()));
+            new UseOnContext(level, player, event.hand(), held, event.hitResult()));
         BlockState newState = blockItem.getBlock().getStateForPlacement(ctx);
         if (newState == null) newState = blockItem.getBlock().defaultBlockState();
 
@@ -436,7 +433,7 @@ public final class VariantBlockInteractions {
     private static List<VariantState> buildUpdatedList(List<VariantState> existing, @Nullable VariantState baseVariant,
                                                       VariantState newVariant, BlockState baseState,
                                                       ServerPlayer player,
-                                                      PlayerInteractEvent.RightClickBlock event) {
+                                                      DtRightClickBlock event) {
         List<VariantState> updated = new ArrayList<>();
         if (existing == null) {
             if (baseVariant == null || baseState.isAir()) {
@@ -538,9 +535,9 @@ public final class VariantBlockInteractions {
      * client gets "something happened" feedback. We also cancel on the main
      * event so later Forge subscribers don't try to place either.
      */
-    private static void suppressVanillaPlace(PlayerInteractEvent.RightClickBlock event) {
-        event.setUseBlock(TriState.FALSE);
-        event.setUseItem(TriState.FALSE);
+    private static void suppressVanillaPlace(DtRightClickBlock event) {
+        event.denyUseBlock();
+        event.denyUseItem();
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
     }

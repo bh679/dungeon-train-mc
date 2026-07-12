@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.narrative;
+import games.brennan.dungeontrain.platform.event.DtRightClickBlock;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
@@ -21,10 +22,6 @@ import net.minecraft.world.item.component.WritableBookContent;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.slf4j.Logger;
 
 import java.util.List;
@@ -50,7 +47,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * client sends {@code LetterDraftToLecternPacket}, which calls {@link #handleDraftToLectern} to leave
  * the unsigned book &amp; quill resting on the lectern as a "Letter X" draft.</p>
  */
-@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class LetterLecternEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -63,17 +59,15 @@ public final class LetterLecternEvents {
     private static final Map<UUID, GlobalPos> PENDING_LECTERN = new ConcurrentHashMap<>();
 
     private LetterLecternEvents() {}
-
-    @SubscribeEvent
-    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (event.getLevel().isClientSide) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        Level level = event.getLevel();
-        BlockPos pos = event.getPos();
+    public static void onRightClickBlock(DtRightClickBlock event) {
+        if (event.level().isClientSide) return;
+        if (!(event.player() instanceof ServerPlayer player)) return;
+        Level level = event.level();
+        BlockPos pos = event.pos();
         BlockState state = level.getBlockState(pos);
         if (!(state.getBlock() instanceof LecternBlock)) return;
         // Book & quill only (WRITABLE_BOOK_CONTENT) — a signed written book keeps vanilla behaviour.
-        ItemStack stack = event.getItemStack();
+        ItemStack stack = event.itemStack();
         if (!stack.has(DataComponents.WRITABLE_BOOK_CONTENT)) return;
 
         // Only intercept when the letter can actually be uploaded (feature on + network consent).
@@ -88,7 +82,7 @@ public final class LetterLecternEvents {
 
         PENDING_LECTERN.put(player.getUUID(), GlobalPos.of(level.dimension(), pos.immutable()));
         DungeonTrainNet.sendTo(player,
-                new OpenLetterEditorPacket(event.getHand().ordinal(), pos.immutable(), readPages(stack)));
+                new OpenLetterEditorPacket(event.hand().ordinal(), pos.immutable(), readPages(stack)));
         LOGGER.debug("[DungeonTrain] Letter: {} opened the sign screen from a lectern at {}",
                 player.getName().getString(), pos);
     }

@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.platform.event.DtRightClickBlock;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
@@ -39,13 +40,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
-import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
-import net.neoforged.bus.api.EventPriority;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -69,7 +63,6 @@ import java.util.Optional;
  * <p>Tooltips on prefab stacks are decorated with the prefab id so the user
  * can tell two stacks of the same source block apart.</p>
  */
-@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class PrefabUseHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -92,16 +85,15 @@ public final class PrefabUseHandler {
      * client doesn't predict-and-show a placement that the server won't
      * actually do.
      */
-    @SubscribeEvent(priority = EventPriority.HIGH)
-    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        ItemStack stack = event.getItemStack();
+    public static void onRightClickBlock(DtRightClickBlock event) {
+        ItemStack stack = event.itemStack();
         CompoundTag tag = customDataTag(stack);
         if (tag == null) return;
 
         if (tag.contains(NBT_BV_PREFAB_ID, Tag.TAG_STRING)) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.CONSUME);
-            if (!event.getLevel().isClientSide && event.getEntity() instanceof ServerPlayer player) {
+            if (!event.level().isClientSide && event.player() instanceof ServerPlayer player) {
                 handleBlockVariantPaste(player, event, stack, tag.getString(NBT_BV_PREFAB_ID));
             }
         }
@@ -115,7 +107,7 @@ public final class PrefabUseHandler {
      * sidecar write, representative-block placement, save.
      */
     private static void handleBlockVariantPaste(
-        ServerPlayer player, PlayerInteractEvent.RightClickBlock event,
+        ServerPlayer player, DtRightClickBlock event,
         ItemStack stack, String prefabId
     ) {
         if (!player.hasPermissions(2)) {
@@ -135,7 +127,7 @@ public final class PrefabUseHandler {
             return;
         }
 
-        ServerLevel level = (ServerLevel) event.getLevel();
+        ServerLevel level = (ServerLevel) event.level();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
         if (plot == null) {
@@ -143,9 +135,9 @@ public final class PrefabUseHandler {
             return;
         }
 
-        BlockPos placePos = event.getPos().relative(event.getFace());
+        BlockPos placePos = event.pos().relative(event.face());
         if (!level.getBlockState(placePos).canBeReplaced()) {
-            placePos = event.getPos();
+            placePos = event.pos();
         }
         BlockPos localPos = placePos.subtract(plot.origin());
         if (!plot.inBounds(localPos)) {

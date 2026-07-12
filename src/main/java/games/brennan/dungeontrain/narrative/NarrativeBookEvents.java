@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.narrative;
+import games.brennan.dungeontrain.platform.event.DtRightClickBlock;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
@@ -22,10 +23,6 @@ import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.slf4j.Logger;
 
 import java.util.Optional;
@@ -49,19 +46,16 @@ import java.util.Optional;
  * <p>Both pathways funnel through {@link #recordRead} which dedupes against
  * {@link NarrativeProgressData} (the per-overworld store).</p>
  */
-@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class NarrativeBookEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private NarrativeBookEvents() {}
-
-    @SubscribeEvent
-    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (event.getLevel().isClientSide) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        Level level = event.getLevel();
-        BlockPos pos = event.getPos();
+    public static void onRightClickBlock(DtRightClickBlock event) {
+        if (event.level().isClientSide) return;
+        if (!(event.player() instanceof ServerPlayer player)) return;
+        Level level = event.level();
+        BlockPos pos = event.pos();
         BlockState state = level.getBlockState(pos);
         if (!(state.getBlock() instanceof LecternBlock)) return;
         if (!state.getValue(LecternBlock.HAS_BOOK)) return;

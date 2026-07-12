@@ -14,12 +14,10 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  * Auto-registered via {@link EventBusSubscriber}. Exact semantic passthrough. All
  * DT handlers here are NORMAL-priority observers that never cancel.
  *
- * <p>The {@code RightClickBlock} sub-event is intentionally NOT bridged: it has two
- * cancelling handlers ({@code PrefabUseHandler}, HIGH, and {@code LetterLecternEvents})
- * that call {@code setCanceled(true)} + {@code setCancellationResult(...)}, and
- * {@code PrefabUseHandler} passes the event object into a helper — so it keeps its
- * NeoForge {@code @SubscribeEvent}s. See {@code NeoForgeServerEvents} for the
- * rationale.</p>
+ * <p>The cancellable {@code RightClickBlock} sub-event is bridged separately by
+ * {@code NeoForgeRightClickBlockBridge} (it needs a mutable {@link
+ * games.brennan.dungeontrain.platform.event.DtRightClickBlock} carrier for its
+ * cancel + cancellation-result + deny-use writes across three priority tiers).</p>
  */
 @EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class NeoForgeInteractBridge {

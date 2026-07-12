@@ -520,6 +520,18 @@ public final class DtEvents {
     public static final DtEvent<DtLeftClickBlockCallback> LEFT_CLICK_BLOCK =
         new DtEvent<>();
 
+    /**
+     * Right-click block — NeoForge {@code PlayerInteractEvent.RightClickBlock}.
+     * CANCELLABLE with a result (see {@link DtRightClickBlock}). Three tiers:
+     * HIGHEST ({@code CommandMenuInputHandler}), HIGH ({@code PrefabUseHandler}) and
+     * NORMAL (lectern / narrative / achievement / variant). {@code NeoForgeRightClickBlockBridge}
+     * fires each tier under a matching {@code @SubscribeEvent} priority and skips any
+     * handler once canceled, so a higher-tier consume suppresses the rest exactly as
+     * the former separate {@code @SubscribeEvent}s did.
+     */
+    public static final DtEvent<DtRightClickBlockCallback> RIGHT_CLICK_BLOCK =
+        new DtEvent<>();
+
     // ---- Screen events (Stage 2c) -----------------------------------------
 
     /**

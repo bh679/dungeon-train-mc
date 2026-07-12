@@ -105,6 +105,23 @@ public final class NeoForgeServerEvents {
         // PlayerInteractEvent.EntityInteract
         games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_INTERACT
             .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onEntityInteract);
+
+        // PlayerInteractEvent.RightClickBlock (CANCELLABLE, fired by NeoForgeRightClickBlockBridge).
+        // Tiers preserve the former @SubscribeEvent priorities: PrefabUseHandler was HIGH; the
+        // lectern / narrative / achievement / variant handlers were all NORMAL (independent,
+        // mutually-exclusive block conditions — same-tier order is irrelevant). CommandMenuInputHandler
+        // (HIGHEST, client) is not yet converted and keeps its own @SubscribeEvent.
+        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
+            .register(games.brennan.dungeontrain.platform.event.DtPriority.HIGH,
+                games.brennan.dungeontrain.event.PrefabUseHandler::onRightClickBlock);
+        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
+            .register(games.brennan.dungeontrain.narrative.LetterLecternEvents::onRightClickBlock);
+        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
+            .register(games.brennan.dungeontrain.narrative.NarrativeBookEvents::onRightClickBlock);
+        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
+            .register(games.brennan.dungeontrain.event.AchievementEvents::onRightClickBlock);
+        games.brennan.dungeontrain.platform.event.DtEvents.RIGHT_CLICK_BLOCK
+            .register(games.brennan.dungeontrain.editor.VariantBlockInteractions::onRightClickBlock);
     }
 
     /**

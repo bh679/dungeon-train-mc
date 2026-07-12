@@ -9,10 +9,6 @@ import com.mojang.logging.LogUtils;
 
 import games.brennan.dungeontrain.template.Stage;
 import games.brennan.dungeontrain.template.TemplateGate;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.server.ServerStartingEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
 
 import java.io.IOException;
