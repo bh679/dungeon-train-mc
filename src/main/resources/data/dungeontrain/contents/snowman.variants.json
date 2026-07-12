@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "variants": {
     "6,0,3": ["minecraft:snow[layers=4]", "minecraft:snow_block", "minecraft:snow[layers=1]"],
     "5,0,3": ["minecraft:snow[layers=4]", "minecraft:snow_block", "minecraft:snow[layers=1]"],

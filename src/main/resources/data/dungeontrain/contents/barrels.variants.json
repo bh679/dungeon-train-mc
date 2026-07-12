@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 8,
   "variants": {
     "0,0,0": [{"state": "minecraft:barrel[facing=west,open=false]", "lootPrefab": "meats"}, {"state": "minecraft:barrel[facing=west,open=false]", "lootPrefab": "fruit_veg"}, {"state": "minecraft:barrel[facing=west,open=false]", "lootPrefab": "fish"}, {"state": "minecraft:barrel[facing=west,open=false]", "lootPrefab": "meals"}],
     "1,0,0": [{"state": "minecraft:barrel[facing=west,open=false]", "lootPrefab": "meats"}, {"state": "minecraft:barrel[facing=west,open=false]", "lootPrefab": "fruit_veg"}, {"state": "minecraft:barrel[facing=west,open=false]", "lootPrefab": "fish"}, {"state": "minecraft:barrel[facing=west,open=false]", "lootPrefab": "meals"}],

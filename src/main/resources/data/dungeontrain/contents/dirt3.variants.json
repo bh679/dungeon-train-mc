@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "variants": {
     "0,0,0": [{"state": "minecraft:dirt", "weight": 3}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "0,1,0": [{"state": "minecraft:dirt", "weight": 3}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
