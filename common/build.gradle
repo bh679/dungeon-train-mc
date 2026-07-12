@@ -15,6 +15,14 @@ repositories {
     mavenCentral()
 }
 
+dependencies {
+    // The only external dep the loader-neutral files need beyond vanilla MC:
+    // org.joml.primitives (AABBd etc.). NeoForm supplies net.minecraft, DataFixerUpper,
+    // gson, slf4j, joml core, blaze3d, fastutil and log4j. compileOnly — these classes
+    // are packaged by each loader module, not by :common.
+    compileOnly 'org.joml:joml-primitives:1.10.0'
+}
+
 neoForge {
     // Vanilla mode: a NeoForm version instead of a NeoForge version. Only the
     // client/server/data run types exist here — this module ships no loader code.

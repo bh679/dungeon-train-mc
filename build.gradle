@@ -29,6 +29,14 @@ sourceSets.main.resources {
     exclude 'src/generated/**/.cache'
 }
 
+// Multiloader (Phase 2): loader-neutral DT code lives in :common but must compile
+// INTO the shipping NeoForge jar (same FQNs, same classes — jar stays identical).
+// We add common's source dir to this module's source set rather than depending on
+// common's jar, so the classes are packaged here (self-contained mod) and the
+// Fabric module can do the same with its own mappings. :common also compiles them
+// independently in vanilla mode as a loader-neutrality guardrail.
+sourceSets.main.java.srcDir "${rootDir}/common/src/main/java"
+
 repositories {
     // Maven Central for general libs (joml-primitives, JUnit).
     mavenCentral()
