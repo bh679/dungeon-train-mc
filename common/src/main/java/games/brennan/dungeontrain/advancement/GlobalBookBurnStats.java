@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.advancement;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -6,7 +7,6 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -51,7 +51,7 @@ public final class GlobalBookBurnStats {
     private GlobalBookBurnStats() {}
 
     public static Path file(UUID playerUuid) {
-        return FMLPaths.CONFIGDIR.get().resolve(DIR_NAME).resolve(playerUuid + FILE_SUFFIX);
+        return DtPlatform.get().configDir().resolve(DIR_NAME).resolve(playerUuid + FILE_SUFFIX);
     }
 
     private static Data current(UUID uuid) {

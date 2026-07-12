@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -264,7 +265,7 @@ public final class CarriageVariantBlocks {
 
     /** Variant-keyed source-tree path — works for both built-ins and customs. */
     public static Path sourcePathForVariant(CarriageVariant variant) {
-        Path gameDir = net.neoforged.fml.loading.FMLPaths.GAMEDIR.get();
+        Path gameDir = DtPlatform.get().gameDir();
         Path projectRoot = gameDir.getParent();
         if (projectRoot == null) {
             throw new IllegalStateException("Cannot resolve source directory — FMLPaths.GAMEDIR has no parent.");

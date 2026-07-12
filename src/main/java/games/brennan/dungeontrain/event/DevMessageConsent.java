@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.event;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import games.brennan.dungeontrain.discord.DevMessageReport;
 import games.brennan.dungeontrain.net.ConsentUpdatePacket;
@@ -11,8 +12,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
@@ -140,7 +139,7 @@ public final class DevMessageConsent {
      */
     public static void onDevMessage(UUID owner, String content) {
         if (owner == null || content == null || content.isBlank()) return;
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = DtPlatform.get().getCurrentServer();
         if (server == null) return; // at the main menu there is no in-game surface; menu chat has it
         server.execute(() -> {
             ServerPlayer player = server.getPlayerList().getPlayer(owner);

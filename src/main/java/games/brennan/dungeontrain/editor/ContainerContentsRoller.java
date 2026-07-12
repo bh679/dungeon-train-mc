@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -52,7 +53,6 @@ import games.brennan.dungeontrain.narrative.RandomBookFactory;
 import games.brennan.dungeontrain.narrative.RandomBookRegistry;
 import games.brennan.dungeontrain.narrative.SharedBookPool;
 import net.minecraft.server.MinecraftServer;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import games.brennan.dungeontrain.registry.ModItems;
 import org.slf4j.Logger;
 
@@ -1185,7 +1185,7 @@ public final class ContainerContentsRoller {
     private static double sharedBookLootChanceForWorld() {
         double max = DungeonTrainConfig.getSharedBookLootMaxChance();
         if (max <= 0.0) return 0.0;
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = DtPlatform.get().getCurrentServer();
         if (server == null) return 0.0;
         int variantTotal = RandomBookRegistry.totalVariantCount();
         if (variantTotal <= 0) return 0.0;

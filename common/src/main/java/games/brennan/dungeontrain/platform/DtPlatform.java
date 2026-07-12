@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.platform;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import net.minecraft.server.MinecraftServer;
 
 /**
  * Loader-neutral stand-in for the handful of NeoForge {@code ModList} /
@@ -37,6 +39,18 @@ public interface DtPlatform {
 
     /** True in a development / non-production runtime. Mirrors {@code !FMLEnvironment.production}. */
     boolean isDevelopmentEnvironment();
+
+    /** The Minecraft instance directory (world saves, mods, logs). Mirrors {@code FMLPaths.GAMEDIR.get()}. */
+    Path gameDir();
+
+    /** The mod config directory ({@code <gameDir>/config}). Mirrors {@code FMLPaths.CONFIGDIR.get()}. */
+    Path configDir();
+
+    /**
+     * The running {@link MinecraftServer}, or {@code null} when none is running (title screen,
+     * between worlds). Mirrors {@code ServerLifecycleHooks.getCurrentServer()}.
+     */
+    MinecraftServer getCurrentServer();
 
     /** The loader-provided singleton, resolved lazily on first use. */
     static DtPlatform get() {

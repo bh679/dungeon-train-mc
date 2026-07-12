@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.client.version;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.mojang.logging.LogUtils;
 import net.neoforged.fml.loading.FMLPaths;
@@ -71,7 +72,7 @@ public final class LauncherDetector {
     private static Source detect() {
         Path gameDir;
         try {
-            gameDir = FMLPaths.GAMEDIR.get();
+            gameDir = DtPlatform.get().gameDir();
         } catch (Throwable t) {
             LOGGER.warn("LauncherDetector: FMLPaths.GAMEDIR unavailable ({}); defaulting to Modrinth", t.toString());
             return Source.MODRINTH;

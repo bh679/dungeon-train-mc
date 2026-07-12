@@ -1,11 +1,11 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import org.slf4j.Logger;
 
@@ -84,7 +84,7 @@ public final class DtpacksMigration {
             return;
         }
 
-        Path gameRoot = FMLPaths.GAMEDIR.get();
+        Path gameRoot = DtPlatform.get().gameDir();
         int zipsMoved = 0;
         zipsMoved += migrateZipFolder(gameRoot.resolve("imports"), dtpacks, "imports/");
         zipsMoved += migrateZipFolder(gameRoot.resolve("imports").resolve("installed"),

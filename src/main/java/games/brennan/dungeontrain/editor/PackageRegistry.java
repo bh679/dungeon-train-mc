@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.mojang.logging.LogUtils;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -63,7 +63,7 @@ public final class PackageRegistry {
 
     /** {@code <gameDir>/dtpacks/} — root of the unified packages folder. */
     public static Path dtpacksRoot() {
-        return FMLPaths.GAMEDIR.get().resolve(DTPACKS_SUBDIR);
+        return DtPlatform.get().gameDir().resolve(DTPACKS_SUBDIR);
     }
 
     /** {@code <gameDir>/dtpacks/<name>/} — working folder for a saved package. */
@@ -78,7 +78,7 @@ public final class PackageRegistry {
 
     /** {@code <config>/dungeontrain/dtpacks-state.json} — persisted state. */
     public static Path stateFile() {
-        return FMLPaths.CONFIGDIR.get().resolve("dungeontrain").resolve(STATE_FILENAME);
+        return DtPlatform.get().configDir().resolve("dungeontrain").resolve(STATE_FILENAME);
     }
 
     /** Whether the state file exists (the migration sentinel). */

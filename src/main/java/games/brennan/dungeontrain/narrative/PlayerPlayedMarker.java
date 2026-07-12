@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.narrative;
+import games.brennan.dungeontrain.platform.DtPlatform;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
@@ -149,14 +150,14 @@ public final class PlayerPlayedMarker {
 
     /** Visible for tests. */
     public static Path propsPath(UUID uuid) {
-        return FMLPaths.GAMEDIR.get()
+        return DtPlatform.get().gameDir()
             .resolve(MOD_DIR)
             .resolve(PLAYERS_DIR)
             .resolve(uuid.toString() + PROPS_EXT);
     }
 
     private static Path legacyFlagPath(UUID uuid) {
-        return FMLPaths.GAMEDIR.get()
+        return DtPlatform.get().gameDir()
             .resolve(MOD_DIR)
             .resolve(PLAYERS_DIR)
             .resolve(uuid.toString() + LEGACY_FLAG_EXT);

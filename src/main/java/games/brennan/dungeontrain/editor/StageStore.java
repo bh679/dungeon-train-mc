@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -10,7 +11,6 @@ import games.brennan.dungeontrain.template.Stage;
 import games.brennan.dungeontrain.template.TemplateGate;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
@@ -355,7 +355,7 @@ public final class StageStore {
     }
 
     private static Path projectRootOrNull() {
-        Path gameDir = FMLPaths.GAMEDIR.get();
+        Path gameDir = DtPlatform.get().gameDir();
         return gameDir == null ? null : gameDir.getParent();
     }
 

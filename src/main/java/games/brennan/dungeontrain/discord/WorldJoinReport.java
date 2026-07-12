@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.discord;
+import games.brennan.dungeontrain.platform.DtPlatform;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
@@ -6,7 +7,6 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.neoforged.fml.ModList;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -56,7 +56,7 @@ public final class WorldJoinReport {
             if (!DungeonTrainConfig.isWorldJoinReportToDiscord()) {
                 return "";
             }
-            var server = ServerLifecycleHooks.getCurrentServer();
+            var server = DtPlatform.get().getCurrentServer();
             if (server == null) {
                 return "";
             }

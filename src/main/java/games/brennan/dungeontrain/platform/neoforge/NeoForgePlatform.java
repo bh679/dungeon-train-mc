@@ -2,10 +2,14 @@ package games.brennan.dungeontrain.platform.neoforge;
 
 import games.brennan.dungeontrain.platform.DtModInfo;
 import games.brennan.dungeontrain.platform.DtPlatform;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import net.minecraft.server.MinecraftServer;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
  * NeoForge-backed {@link DtPlatform}, registered for {@link
@@ -49,5 +53,20 @@ public final class NeoForgePlatform implements DtPlatform {
     @Override
     public boolean isDevelopmentEnvironment() {
         return !FMLEnvironment.production;
+    }
+
+    @Override
+    public Path gameDir() {
+        return FMLPaths.GAMEDIR.get();
+    }
+
+    @Override
+    public Path configDir() {
+        return FMLPaths.CONFIGDIR.get();
+    }
+
+    @Override
+    public MinecraftServer getCurrentServer() {
+        return ServerLifecycleHooks.getCurrentServer();
     }
 }

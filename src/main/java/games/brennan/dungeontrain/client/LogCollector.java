@@ -1,8 +1,8 @@
 package games.brennan.dungeontrain.client;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.BugReportLogsPacket.LogBlob;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.ByteArrayOutputStream;
@@ -45,7 +45,7 @@ public final class LogCollector {
 
     static List<LogBlob> collect() {
         List<LogBlob> out = new ArrayList<>();
-        Path gameDir = FMLPaths.GAMEDIR.get();
+        Path gameDir = DtPlatform.get().gameDir();
         Path logs = gameDir.resolve("logs");
         addGzippedTail(out, logs.resolve("latest.log"), "latest.log.gz", TAIL_BYTES);
         addGzippedTail(out, logs.resolve("debug.log"), "debug.log.gz", TAIL_BYTES);

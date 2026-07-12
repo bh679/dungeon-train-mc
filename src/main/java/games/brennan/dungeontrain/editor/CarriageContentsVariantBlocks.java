@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -11,7 +12,6 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -508,7 +508,7 @@ public final class CarriageContentsVariantBlocks {
      * file under an outgoing name.
      */
     public static Path sourcePathForId(String id) {
-        Path projectRoot = FMLPaths.GAMEDIR.get().getParent();
+        Path projectRoot = DtPlatform.get().gameDir().getParent();
         if (projectRoot == null) return null;
         Path resources = projectRoot.resolve("src/main/resources");
         if (!Files.isDirectory(resources) || !Files.isWritable(resources)) return null;

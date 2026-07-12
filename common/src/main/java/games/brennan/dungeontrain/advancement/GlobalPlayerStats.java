@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.advancement;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -6,7 +7,6 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -137,7 +137,7 @@ public final class GlobalPlayerStats {
     private GlobalPlayerStats() {}
 
     public static Path file(UUID playerUuid) {
-        return FMLPaths.CONFIGDIR.get().resolve(DIR_NAME).resolve(playerUuid + ".json");
+        return DtPlatform.get().configDir().resolve(DIR_NAME).resolve(playerUuid + ".json");
     }
 
     /** The player's full cached record, loading from disk on first access. */

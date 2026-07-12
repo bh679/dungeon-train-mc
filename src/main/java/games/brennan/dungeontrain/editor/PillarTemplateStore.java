@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.SaveResult;
@@ -14,7 +15,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -104,9 +104,9 @@ public final class PillarTemplateStore {
      * {@link games.brennan.dungeontrain.track.variant.TrackVariantRegistry#reload()}.</p>
      */
     public static synchronized void migrateFromLegacyDirectory() {
-        Path legacyDir = FMLPaths.CONFIGDIR.get().resolve("dungeontrain/templates");
+        Path legacyDir = DtPlatform.get().configDir().resolve("dungeontrain/templates");
         if (!Files.isDirectory(legacyDir)) return;
-        Path newDir = FMLPaths.CONFIGDIR.get().resolve("dungeontrain/pillars");
+        Path newDir = DtPlatform.get().configDir().resolve("dungeontrain/pillars");
         for (PillarSection section : PillarSection.values()) {
             Path legacy = legacyDir.resolve("pillar_" + section.id() + ".nbt");
             if (!Files.isRegularFile(legacy)) continue;

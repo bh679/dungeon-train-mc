@@ -1,12 +1,11 @@
 package games.brennan.dungeontrain.compat;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
-
 import java.util.UUID;
 
 /**
@@ -29,7 +28,7 @@ public final class DiscordAdvancementSuffix {
      * dropped when the player is off-train (no HUD carriage value); difficulty is always present.
      */
     public static String forPlayer(UUID playerId) {
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = DtPlatform.get().getCurrentServer();
         if (server == null) {
             return "";
         }

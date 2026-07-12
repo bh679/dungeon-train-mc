@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.track.variant;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -11,7 +12,6 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -137,7 +137,7 @@ public final class TrackVariantBlocks {
     }
 
     public static Path configPathFor(TrackKind kind, String name) {
-        return FMLPaths.CONFIGDIR.get().resolve(kind.configSubdir()).resolve(name + TrackKind.VARIANTS_EXT);
+        return DtPlatform.get().configDir().resolve(kind.configSubdir()).resolve(name + TrackKind.VARIANTS_EXT);
     }
 
     public static String bundledResourceFor(TrackKind kind, String name) {
@@ -429,7 +429,7 @@ public final class TrackVariantBlocks {
      * the layout matches {@link TrackVariantStore#sourceFileFor}.
      */
     public static Path sourcePathFor(TrackKind kind, String name) {
-        Path projectRoot = FMLPaths.GAMEDIR.get().getParent();
+        Path projectRoot = DtPlatform.get().gameDir().getParent();
         if (projectRoot == null) return null;
         Path resources = projectRoot.resolve("src/main/resources");
         if (!Files.isDirectory(resources) || !Files.isWritable(resources)) return null;

@@ -1,11 +1,11 @@
 package games.brennan.dungeontrain.discord;
+import games.brennan.dungeontrain.platform.DtPlatform;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.BugReportLogsPacket.LogBlob;
 import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -46,7 +46,7 @@ public final class BugReportLogStore {
     public static Path directory(UUID uuid, String playerName) {
         String version = sanitize(modVersion());
         String user = sanitize(playerName) + "-" + shortId(uuid);
-        return FMLPaths.GAMEDIR.get().resolve(ROOT_DIR).resolve(version).resolve(user);
+        return DtPlatform.get().gameDir().resolve(ROOT_DIR).resolve(version).resolve(user);
     }
 
     /**
@@ -83,7 +83,7 @@ public final class BugReportLogStore {
     /** A short {@code ./logs/<version>/<user>} display path (from the game dir down) for messages. */
     public static String displayPath(Path dir) {
         try {
-            Path rel = FMLPaths.GAMEDIR.get().relativize(dir);
+            Path rel = DtPlatform.get().gameDir().relativize(dir);
             return "./" + rel.toString().replace('\\', '/');
         } catch (IllegalArgumentException e) {
             return dir.toString();

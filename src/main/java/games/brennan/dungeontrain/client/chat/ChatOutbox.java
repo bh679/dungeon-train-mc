@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.client.chat;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -6,7 +7,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.DevMessageConsentClient;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.nio.charset.StandardCharsets;
@@ -185,7 +185,7 @@ public final class ChatOutbox {
         }
         loaded = true;
         try {
-            this.file = FMLPaths.CONFIGDIR.get().resolve(FILE_NAME);
+            this.file = DtPlatform.get().configDir().resolve(FILE_NAME);
         } catch (Exception e) {
             LOGGER.debug("Menu chat: could not resolve config dir for outbox: {}", e.toString());
             return;

@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.SaveResult;
@@ -252,7 +253,7 @@ public final class CarriagePartTemplateStore {
     }
 
     private static Path projectRootOrNull() {
-        Path gameDir = FMLPaths.GAMEDIR.get();
+        Path gameDir = DtPlatform.get().gameDir();
         return gameDir.getParent();
     }
 

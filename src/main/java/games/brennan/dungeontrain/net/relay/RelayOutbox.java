@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.net.relay;
+import games.brennan.dungeontrain.platform.DtPlatform;
 import games.brennan.dungeontrain.DtCore;
 
 import com.google.gson.JsonArray;
@@ -7,7 +8,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -298,7 +298,7 @@ public final class RelayOutbox {
 
     private static Path defaultFile() {
         try {
-            return FMLPaths.CONFIGDIR.get().resolve(FILE_NAME);
+            return DtPlatform.get().configDir().resolve(FILE_NAME);
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] relay outbox: could not resolve config dir: {}", t.toString());
             return null;

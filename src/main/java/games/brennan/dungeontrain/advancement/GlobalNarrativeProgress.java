@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.advancement;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -10,7 +11,6 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
 
@@ -80,7 +80,7 @@ public final class GlobalNarrativeProgress {
     private GlobalNarrativeProgress() {}
 
     public static Path file() {
-        return FMLPaths.CONFIGDIR.get().resolve(DIR_NAME).resolve(FILE_NAME);
+        return DtPlatform.get().configDir().resolve(DIR_NAME).resolve(FILE_NAME);
     }
 
     /**

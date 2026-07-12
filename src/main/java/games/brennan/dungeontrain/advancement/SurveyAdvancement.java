@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.advancement;
+import games.brennan.dungeontrain.platform.DtPlatform;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
@@ -8,7 +9,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
 import java.util.UUID;
@@ -48,7 +48,7 @@ public final class SurveyAdvancement {
      * out (e.g. they quit between the final answer and this callback).
      */
     public static void onSurveyCompleted(UUID playerId) {
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = DtPlatform.get().getCurrentServer();
         if (server == null) return;
         ServerPlayer player = server.getPlayerList().getPlayer(playerId);
         if (player == null) return;

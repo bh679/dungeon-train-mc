@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.train;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -14,7 +15,6 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -321,7 +321,7 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
     }
 
     private static Path resourcesRootOrNull() {
-        Path gameDir = FMLPaths.GAMEDIR.get();
+        Path gameDir = DtPlatform.get().gameDir();
         Path projectRoot = gameDir.getParent();
         if (projectRoot == null) return null;
         return projectRoot.resolve("src/main/resources");

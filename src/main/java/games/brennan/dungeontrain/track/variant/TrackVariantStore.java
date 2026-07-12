@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.track.variant;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -53,7 +54,7 @@ public final class TrackVariantStore {
     private TrackVariantStore() {}
 
     public static Path directory(TrackKind kind) {
-        return FMLPaths.CONFIGDIR.get().resolve(kind.configSubdir());
+        return DtPlatform.get().configDir().resolve(kind.configSubdir());
     }
 
     public static Path fileFor(TrackKind kind, String name) {
@@ -99,7 +100,7 @@ public final class TrackVariantStore {
      * as a custom variant.</p>
      */
     public static synchronized void migrateLegacyPaths() {
-        Path configRoot = FMLPaths.CONFIGDIR.get().resolve("dungeontrain");
+        Path configRoot = DtPlatform.get().configDir().resolve("dungeontrain");
 
         moveLegacy(configRoot.resolve("tracks/track.nbt"),
             fileFor(TrackKind.TILE, TrackKind.DEFAULT_NAME), "track");
@@ -307,7 +308,7 @@ public final class TrackVariantStore {
     }
 
     private static Path projectRootOrNull() {
-        Path gameDir = FMLPaths.GAMEDIR.get();
+        Path gameDir = DtPlatform.get().gameDir();
         return gameDir.getParent();
     }
 }

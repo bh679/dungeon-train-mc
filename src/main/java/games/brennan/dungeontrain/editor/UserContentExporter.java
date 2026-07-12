@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.mojang.logging.LogUtils;
 import net.neoforged.fml.ModList;
@@ -82,7 +83,7 @@ public final class UserContentExporter {
                 + "Save a template via the editor first.");
         }
 
-        Path exportsDir = FMLPaths.GAMEDIR.get().resolve("exports");
+        Path exportsDir = DtPlatform.get().gameDir().resolve("exports");
         Files.createDirectories(exportsDir);
         Path zipFile = uniqueZipPath(exportsDir);
 

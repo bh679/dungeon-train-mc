@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -431,7 +432,7 @@ public final class LootPrefabStore {
     }
 
     private static Path projectRootOrNull() {
-        Path gameDir = FMLPaths.GAMEDIR.get();
+        Path gameDir = DtPlatform.get().gameDir();
         return gameDir.getParent();
     }
 

@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.track.variant;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -14,7 +15,6 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -188,7 +188,7 @@ public final class TrackVariantWeights {
     }
 
     public static Path configPath(TrackKind kind) {
-        return FMLPaths.CONFIGDIR.get().resolve(kind.configSubdir()).resolve(TrackKind.WEIGHTS_FILE);
+        return DtPlatform.get().configDir().resolve(kind.configSubdir()).resolve(TrackKind.WEIGHTS_FILE);
     }
 
     public static String bundledResource(TrackKind kind) {
@@ -242,7 +242,7 @@ public final class TrackVariantWeights {
     }
 
     private static Path resourcesRootOrNull() {
-        Path gameDir = FMLPaths.GAMEDIR.get();
+        Path gameDir = DtPlatform.get().gameDir();
         Path projectRoot = gameDir.getParent();
         if (projectRoot == null) return null;
         return projectRoot.resolve("src/main/resources");

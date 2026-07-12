@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.editor;
+import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.mojang.logging.LogUtils;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -52,7 +52,7 @@ public final class UserContentPaths {
      * the migration writes into.
      */
     public static Path root() {
-        return FMLPaths.CONFIGDIR.get().resolve(DUNGEONTRAIN).resolve(USER);
+        return DtPlatform.get().configDir().resolve(DUNGEONTRAIN).resolve(USER);
     }
 
     /**
@@ -81,7 +81,7 @@ public final class UserContentPaths {
      * moving files; stores should not write here.
      */
     public static Path legacyRoot() {
-        return FMLPaths.CONFIGDIR.get().resolve(DUNGEONTRAIN);
+        return DtPlatform.get().configDir().resolve(DUNGEONTRAIN);
     }
 
     /**
@@ -103,7 +103,7 @@ public final class UserContentPaths {
      * version to the imported version side by side.
      */
     public static Path importedRoot() {
-        return FMLPaths.CONFIGDIR.get().resolve(DUNGEONTRAIN).resolve(IMPORTED);
+        return DtPlatform.get().configDir().resolve(DUNGEONTRAIN).resolve(IMPORTED);
     }
 
     /**
