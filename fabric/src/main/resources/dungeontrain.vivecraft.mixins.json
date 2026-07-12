@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "games.brennan.dungeontrain.mixin",
+  "plugin": "games.brennan.dungeontrain.fabric.FabricVivecraftMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [],
+  "client": [
+    "client.vivecraft.SwingTrackerSubLevelAabbMixin"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "games.brennan.dungeontrain.fabric.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BlockEntityTypeAccessor",
+    "EntityPersistentDataMixin",
+    "PlayerTickMixin",
+    "EntityTickMixin",
+    "ServerPlayerGameModeMixin",
+    "LivingEntityEquipmentMixin",
+    "MobFinalizeSpawnMixin",
+    "PersistentEntitySectionManagerMixin",
+    "LivingEntityEffectRemoveMixin",
+    "PlayerAdvancementsMixin",
+    "CommandsPerformMixin"
+  ],
+  "client": [
+    "client.ScreenInvoker",
+    "client.MinecraftSetScreenMixin",
+    "client.MusicManagerMixin",
+    "client.ItemInHandRendererMixin",
+    "client.KeyboardHandlerMixin",
+    "client.MouseHandlerMixin"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

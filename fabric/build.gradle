@@ -1,6 +1,9 @@
-// :fabric — the Fabric edition of Dungeon Train. Phase 1 skeleton: seeded from the
-// Phase 0 Sable spike (the /sablespike command is the module's smoke test). Real DT
-// code arrives once :common exists (Phase 2) and the loader seams land (Phase 4).
+// :fabric — the Fabric edition of Dungeon Train (Stage 4f: DT's first boot on Fabric).
+//
+// This module compiles the ENTIRE :common core loop under Fabric Loom (via the
+// common srcDir below) plus a thin loader "floor" under
+// fabric/src/main/java/games/brennan/dungeontrain/fabric/ (ServiceLoader impls +
+// event bridges + entrypoints + net + config), mirroring the root NeoForge glue.
 //
 // Loom needs Gradle >= 9.4 (sable-fabric 2.0.2 was built with Loom 1.16.3); the root
 // wrapper is 9.5.1, shared across all subprojects.
@@ -10,6 +13,13 @@ plugins {
 
 group = mod_group_id
 version = mod_version
+
+// The :common core loop compiles INTO the Fabric jar (same FQNs / same classes as
+// the NeoForge build), so both loaders package a self-contained mod. :common also
+// compiles independently in vanilla mode as a loader-neutrality guardrail (see
+// common/build.gradle). No common resources dir exists yet (empty), so only the
+// java srcDir is wired.
+sourceSets.main.java.srcDir "${rootDir}/common/src/main/java"
 
 repositories {
     mavenCentral()
@@ -38,16 +48,42 @@ repositories {
         name = 'Fuzs Mod Resources'
         url = 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/'
     }
+
+    // Sibling-mod API surfaces (games.brennan.*). Same two Ivy GitHub-Releases repos the
+    // root NeoForge + :common builds declare — copied verbatim so :common's compat code
+    // compiles here too. These jars are NeoForge-built, but the games.brennan.* API classes
+    // DT compiles against are pure-Java, loader-agnostic bytecode — safe as compileOnly here.
+    // They are ABSENT at runtime on Fabric (no sibling Fabric ports yet); every :common
+    // touchpoint is classload-isolated behind a DtPlatform.isModLoaded / compat-bridge guard.
+    ivy {
+        name = 'GitHubReleases'
+        url = 'https://github.com/'
+        patternLayout {
+            artifact '[organization]/[module]-mc/releases/download/v[revision]/[module]-neoforge-[revision].[ext]'
+        }
+        metadataSources { artifact() }
+        content {
+            includeGroup 'bh679'
+            excludeModule('bh679', 'playermob')
+        }
+    }
+    ivy {
+        name = 'GitHubReleasesPlayerMob'
+        url = 'https://github.com/'
+        patternLayout {
+            artifact "[organization]/[module]-mc/releases/download/v[revision]/[module]-neoforge-[revision]+${minecraft_version}.[ext]"
+        }
+        metadataSources { artifact() }
+        content { includeModule('bh679', 'playermob') }
+    }
 }
 
 // Loom does not expand JiJ'd nested jars of dependency mods into the dev runtime,
 // and the maven-published sable_rapier artifact is intermediary-mapped with no
 // fabric.mod.json (un-remappable → AbstractMethodError at world init). So we pull
 // the nested copy out of the sable-fabric jar — it carries a Loom-generated
-// fabric.mod.json — and add it as a file mod-dependency below. Same idea as the
-// root build's extractSableCompanion task, done eagerly because Loom needs the
-// file to exist at configuration time. (Discovered in the Phase 0 spike — see
-// docs/fabric-port/phase0-findings.md.)
+// fabric.mod.json — and add it as a file mod-dependency below. (Discovered in the
+// Phase 0 spike — see docs/fabric-port/phase0-findings.md.)
 configurations {
     sableDist { transitive = false }
 }
@@ -74,7 +110,7 @@ if (!rapierJar.exists()) {
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
     // Mojmap + parchment layering — matches the root NeoForge module's mappings so
-    // :common sources will compile unmodified across both loaders (Phase 2+).
+    // :common sources compile unmodified across both loaders.
     mappings loom.layered {
         officialMojangMappings()
         parchment "org.parchmentmc.data:parchment-${minecraft_version}:${parchment_mappings_version}@zip"
@@ -90,6 +126,41 @@ dependencies {
     }
     // Dev-runtime Rapier physics: the nested (mod-ified) copy extracted above.
     modRuntimeOnly files(rapierJar)
+
+    // org.joml.primitives (AABBdc etc.) used by :common's Sable interop. joml core is
+    // provided by Minecraft; joml-primitives is the extra module. Nested into the shipped
+    // jar via `include`; on the dev classpath via compileOnly + runtimeOnly.
+    compileOnly 'org.joml:joml-primitives:1.10.0'
+    runtimeOnly 'org.joml:joml-primitives:1.10.0'
+    include 'org.joml:joml-primitives:1.10.0'
+
+    // Forge Config API Port — the fabric flavor. Provides net.neoforged.neoforge.common.ModConfigSpec
+    // (for :common's config specs), net.neoforged.fml.config.ModConfig + the fuzs
+    // ForgeConfigRegistry / ModConfigEvents API (for FabricConfig registration below).
+    // modCompileOnly, NOT bundled: the real runtime impl is already JiJ'd by Sable-Fabric
+    // (forgeconfigapiport-fabric 21.1.3, pinned to match).
+    modCompileOnly "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:21.1.3"
+
+    // MixinExtras (@WrapMethod / @WrapOperation / @ModifyExpressionValue) used by several
+    // :common mixins. Fabric Loader (0.16+) bundles mixinextras at runtime, so this is
+    // compile + annotation-processor only (never nested).
+    compileOnly "io.github.llamalad7:mixinextras-fabric:0.4.1"
+    annotationProcessor "io.github.llamalad7:mixinextras-fabric:0.4.1"
+
+    // Nullability annotations :common uses (javax.annotation.Nullable + org.jetbrains.*).
+    // NeoForge/MDG supply these transitively; on Loom they must be added explicitly.
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly 'org.jetbrains:annotations:24.1.0'
+
+    // Sibling-mod API surfaces — COMPILE-TIME ONLY (absent at runtime on Fabric; every
+    // :common touchpoint is classload-isolated behind an isModLoaded guard). NeoForge-built
+    // jars, but the games.brennan.* API is loader-agnostic bytecode — compileOnly (not
+    // modCompileOnly) so Loom does not try to remap them.
+    compileOnly "bh679:adventureitemnames:${adventureitemnames_version}"
+    compileOnly "bh679:adventureitemstats:${adventureitemstats_version}"
+    compileOnly "bh679:playermob:${playermob_version}"
+    compileOnly "bh679:discordpresence:${discordpresence_version}"
+    compileOnly "bh679:enderchestpersistence:${enderchestpersistence_version}"
 }
 
 java {
@@ -98,6 +169,11 @@ java {
 }
 
 loom {
+    // Access widener — the Fabric mirror of the NeoForge access-transformer
+    // (src/main/resources/META-INF/accesstransformer.cfg). Every AT entry has a matching
+    // AW line here (see the .cfg header + the .accesswidener file).
+    accessWidenerPath = file('src/main/resources/dungeontrain.accesswidener')
+
     runs {
         client {
             client()
@@ -108,6 +184,10 @@ loom {
             ideConfigGenerated = false
         }
     }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
 }
 
 processResources {

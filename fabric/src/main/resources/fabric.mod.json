@@ -1,19 +1,33 @@
 {
   "schemaVersion": 1,
-  "id": "dungeontrain_spike",
+  "id": "dungeontrain",
   "version": "${version}",
-  "name": "Dungeon Train — Sable-Fabric Spike",
-  "description": "Phase 0 go/no-go spike: proves Sable sub-level assembly, physics, and riding work on Fabric 1.21.1 before the Dungeon Train multiloader port.",
+  "name": "Dungeon Train",
+  "description": "A Minecraft port of Dungeon Train (brennanhatton.itch.io/dungeontrain) - a moving train that hosts procedurally generated dungeons.",
   "authors": ["Brennan Hatton"],
-  "license": "All-Rights-Reserved",
+  "license": "PolyForm Shield 1.0.0",
   "environment": "*",
   "entrypoints": {
-    "main": ["games.brennan.dungeontrain.spikefabric.SableSpike"]
+    "main": ["games.brennan.dungeontrain.fabric.DungeonTrainFabric"],
+    "client": ["games.brennan.dungeontrain.fabric.client.DungeonTrainFabricClient"]
   },
+  "mixins": [
+    "dungeontrain.mixins.json",
+    "dungeontrain.fabric.mixins.json",
+    "dungeontrain.vivecraft.mixins.json"
+  ],
+  "accessWidener": "dungeontrain.accesswidener",
   "depends": {
     "fabricloader": ">=0.16.0",
     "fabric-api": "*",
     "minecraft": "1.21.1",
     "sable": "*"
+  },
+  "suggests": {
+    "adventureitemnames": "*",
+    "adventureitemstats": "*",
+    "playermob": "*",
+    "discordpresence": "*",
+    "enderchestpersistence": "*"
   }
 }

@@ -1,0 +1,21 @@
+accessWidener	v2	named
+# Dungeon Train — Fabric access widener.
+#
+# The Fabric mirror of the NeoForge access-transformer
+# (src/main/resources/META-INF/accesstransformer.cfg — the single source of truth).
+# Every entry there widens a vanilla member so loader-neutral :common code can touch
+# it; each one MUST have a matching line here. Named (Mojang) mappings, 1.21.1.
+
+# Screen.renderables — DT screens iterate the widget list directly (read).
+accessible	field	net/minecraft/client/gui/screens/Screen	renderables	Ljava/util/List;
+
+# CreativeModeTabs tab keys — ModItems / ModBlocks compare against these by ResourceKey identity.
+accessible	field	net/minecraft/world/item/CreativeModeTabs	FUNCTIONAL_BLOCKS	Lnet/minecraft/resources/ResourceKey;
+accessible	field	net/minecraft/world/item/CreativeModeTabs	TOOLS_AND_UTILITIES	Lnet/minecraft/resources/ResourceKey;
+
+# UseOnContext 5-arg (protected) ctor — VariantBlockInteractions synthesizes a use-on-block context.
+accessible	method	net/minecraft/world/item/context/UseOnContext	<init>	(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/phys/BlockHitResult;)V
+
+# RenderType.CompositeState (protected nested class) + RenderType.create(...) 7-arg factory (private).
+accessible	class	net/minecraft/client/renderer/RenderType$CompositeState
+accessible	method	net/minecraft/client/renderer/RenderType	create	(Ljava/lang/String;Lcom/mojang/blaze3d/vertex/VertexFormat;Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;IZZLnet/minecraft/client/renderer/RenderType$CompositeState;)Lnet/minecraft/client/renderer/RenderType$CompositeRenderType;
