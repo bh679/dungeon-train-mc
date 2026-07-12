@@ -37,6 +37,36 @@ repositories {
     }
 }
 
+// Loom does not expand JiJ'd nested jars of dependency mods into the dev
+// runtime, and the maven-published sable_rapier artifact is intermediary-mapped
+// with no fabric.mod.json (un-remappable). So we pull the nested copy out of
+// the sable-fabric jar — it carries a Loom-generated fabric.mod.json — and add
+// it as a file mod-dependency below. Same pattern as the root build's
+// extractSableCompanion task, done eagerly because Loom needs the file to
+// exist at configuration time.
+configurations {
+    sableDist { transitive = false }
+}
+dependencies {
+    sableDist "dev.ryanhcode.sable:sable-fabric-${project.minecraft_version}:${project.sable_mod_version}"
+}
+def rapierJarName = "sable-sable_rapier-${project.minecraft_version}-${project.sable_mod_version}.jar"
+def rapierDir = layout.buildDirectory.dir('extracted-rapier').get().asFile
+def rapierJar = new File(rapierDir, rapierJarName)
+if (!rapierJar.exists()) {
+    copy {
+        from(zipTree(configurations.sableDist.singleFile)) {
+            include "META-INF/jars/sable-sable_rapier-*.jar"
+            eachFile { fcd -> fcd.relativePath = new org.gradle.api.file.RelativePath(true, fcd.name) }
+            includeEmptyDirs = false
+        }
+        into rapierDir
+    }
+    if (!rapierJar.exists()) {
+        throw new GradleException("Failed to extract ${rapierJarName} from the sable-fabric jar")
+    }
+}
+
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     // Mojmap + parchment layering mirrors what the real :fabric module will use,
@@ -49,7 +79,16 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-    modApi "dev.ryanhcode.sable:sable-fabric-${project.minecraft_version}:${project.sable_mod_version}"
+    modApi("dev.ryanhcode.sable:sable-fabric-${project.minecraft_version}:${project.sable_mod_version}") {
+        // The POM declares sable_rapier as a plain (non-mod) runtime dep, but
+        // that jar is intermediary-mapped with no fabric.mod.json, so Loom
+        // can't remap it and it AbstractMethodErrors in the mojmap dev
+        // runtime. The sable-fabric jar JiJ-bundles its own copy (with a
+        // Loom-generated fabric.mod.json) which dev extracts + remaps fine.
+        exclude group: 'dev.ryanhcode.sable', module: "sable-sable_rapier-${project.minecraft_version}"
+    }
+    // Dev-runtime Rapier physics: the nested (mod-ified) copy extracted above.
+    modRuntimeOnly files(rapierJar)
 }
 
 java {

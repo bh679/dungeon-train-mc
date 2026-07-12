@@ -133,7 +133,9 @@ public final class SableSpike implements ModInitializer {
         for (SubLevel sub : container.getAllSubLevels()) {
             if (sub instanceof ServerSubLevel server && !server.isRemoved()) {
                 count++;
-                out.append("\n  ").append(server.getUniqueId());
+                var pos = server.logicalPose().position();
+                out.append("\n  ").append(server.getUniqueId())
+                    .append(String.format(" @ (%.2f, %.2f, %.2f)", pos.x(), pos.y(), pos.z()));
             }
         }
         int total = count;
