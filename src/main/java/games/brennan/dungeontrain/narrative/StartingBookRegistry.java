@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 
 /**
  * In-memory registry of every welcome / starting book bundled in the mod jar
@@ -172,9 +173,22 @@ public final class StartingBookRegistry {
 
     /** Snapshot of every registered book basename across every pool, alphabetical (unique). */
     public static synchronized List<String> basenames() {
+        return basenames(ctx -> true);
+    }
+
+    /**
+     * Snapshot of every registered book basename across pools whose context
+     * passes {@code contextFilter}, alphabetical (unique). Lets callers scope
+     * a "seen everything" check to only the contexts actually deliverable to
+     * a player — e.g. excluding dimension-routed folders
+     * ({@link StartingBookContext#achievementSetId()} present) when the
+     * dimension they route from is no longer selectable at world creation.
+     */
+    public static synchronized List<String> basenames(Predicate<StartingBookContext> contextFilter) {
         TreeSet<String> out = new TreeSet<>();
-        for (Map<ResourceLocation, RandomBookFile> pool : POOLS.values()) {
-            for (ResourceLocation rl : pool.keySet()) {
+        for (StartingBookContext ctx : StartingBookContext.values()) {
+            if (!contextFilter.test(ctx)) continue;
+            for (ResourceLocation rl : POOLS.get(ctx).keySet()) {
                 out.add(tailOf(rl));
             }
         }
