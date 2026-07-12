@@ -8,7 +8,6 @@ import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;

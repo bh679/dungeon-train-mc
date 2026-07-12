@@ -2,8 +2,6 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.mojang.logging.LogUtils;
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -170,8 +168,8 @@ public final class UserContentExporter {
     }
 
     private static String modVersion() {
-        return ModList.get().getModContainerById("dungeontrain")
-            .map(c -> c.getModInfo().getVersion().toString())
+        return games.brennan.dungeontrain.platform.DtPlatform.get()
+            .getModVersion("dungeontrain")
             .orElse("unknown");
     }
 

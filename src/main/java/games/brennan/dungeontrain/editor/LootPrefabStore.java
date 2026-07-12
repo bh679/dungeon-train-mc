@@ -9,11 +9,6 @@ import com.mojang.logging.LogUtils;
 
 import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.event.server.ServerStartingEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
