@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.DtCore;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
 import org.slf4j.Logger;
 
 import java.net.URI;

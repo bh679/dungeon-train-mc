@@ -4,7 +4,6 @@ import games.brennan.dungeontrain.DtCore;
 import com.mojang.logging.LogUtils;
 
 import games.brennan.dungeontrain.discord.FreePlayReport;
-import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.AdvancementHolder;
@@ -24,7 +23,7 @@ import games.brennan.dungeontrain.platform.DtAttachments;
  * creative/spectator/cinematographer, or uses a non-allowlisted command (see
  * {@link games.brennan.dungeontrain.event.CheatDetectionEvents} and
  * {@link CommandAllowlist}). The taint is a sticky per-world attachment
- * ({@link ModDataAttachments#RUN_CHEATED}): once set it survives relog and
+ * ({@link DtAttachments#RUN_CHEATED}): once set it survives relog and
  * respawn; a brand-new world / run starts clean.</p>
  *
  * <p>While cheated, advancements still earn live (the advancement screen works
