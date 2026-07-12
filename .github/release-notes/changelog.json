@@ -4318,9 +4318,9 @@
       ],
       "pr": 736,
       "date": "2026-07-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.447.0",
+      "released_at": "2026-07-12T11:30:47Z"
     },
     {
       "id": "room-lighting-pass",
@@ -4333,9 +4333,9 @@
         "Reduces unlit dark spots that could allow unwanted mob spawns"
       ],
       "date": "2026-07-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.447.0",
+      "released_at": "2026-07-12T11:30:47Z"
     }
   ]
 }
