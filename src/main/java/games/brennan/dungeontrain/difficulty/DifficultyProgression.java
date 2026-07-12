@@ -41,7 +41,7 @@ public final class DifficultyProgression {
         int max = 0;
         boolean any = false;
         for (ServerPlayer player : serverLevel.getServer().getPlayerList().getPlayers()) {
-            int t = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex();
+            int t = ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).travelledCarriageIndex();
             if (!any || Math.abs(t) > Math.abs(max)) {
                 max = t;
                 any = true;

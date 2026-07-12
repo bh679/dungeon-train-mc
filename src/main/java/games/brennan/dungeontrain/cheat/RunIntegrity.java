@@ -40,7 +40,7 @@ public final class RunIntegrity {
 
     /** Has this player's current world/run been cheated? */
     public static boolean isCheated(ServerPlayer player) {
-        return Boolean.TRUE.equals(player.getData(ModDataAttachments.RUN_CHEATED.get()));
+        return Boolean.TRUE.equals(ModDataAttachments.DT_RUN_CHEATED.get(player));
     }
 
     /**
@@ -55,7 +55,7 @@ public final class RunIntegrity {
      */
     public static void markCheated(ServerPlayer player, Component cause) {
         if (isCheated(player)) return;
-        player.setData(ModDataAttachments.RUN_CHEATED.get(), Boolean.TRUE);
+        ModDataAttachments.DT_RUN_CHEATED.set(player, Boolean.TRUE);
         applyFreePlayEffect(player);
         LOGGER.info("[DungeonTrain] Run is now Free Play for {} — {}",
             player.getName().getString(), cause.getString());

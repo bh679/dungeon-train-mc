@@ -53,7 +53,7 @@ public final class DeathNoteSigning {
         player.drop(book, /*dropAround*/ false, /*includeThrowerName*/ false);
 
         // Count it as a written book for the death-screen cargo tally (a book was authored + signed).
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksWritten();
+        ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).incrementBooksWritten();
 
         if (targetName == null || targetName.isBlank()) {
             player.sendSystemMessage(Component.literal("The Death Note finds no name; it burns to nothing.")

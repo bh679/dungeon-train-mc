@@ -1,18 +1,17 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.platform.DtRegistrar;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredRegister;
+
+import java.util.function.Supplier;
 
 /**
- * Mod-side worldgen-feature registry. Mirrors the
- * {@link games.brennan.dungeontrain.registry.ModItems} pattern: a
- * {@link DeferredRegister} attached to the mod-event bus from the mod
- * constructor.
+ * Mod-side worldgen-feature registry. Registered via {@link DtRegistrar}
+ * (loader-neutral) instead of a direct {@code DeferredRegister} — see
+ * {@link games.brennan.dungeontrain.advancement.ModAdvancementTriggers} for
+ * the pattern and the root attach timing.
  *
  * <p>Registers {@link TrackBedFeature} under id {@code dungeontrain:track_bed},
  * which the datapack JSONs in
@@ -25,28 +24,21 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  */
 public final class ModFeatures {
 
-    public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(
-        Registries.FEATURE, DungeonTrain.MOD_ID);
+    public static final Supplier<Feature<NoneFeatureConfiguration>> TRACK_BED =
+        register("track_bed", TrackBedFeature::new);
 
-    public static final DeferredHolder<Feature<?>, Feature<NoneFeatureConfiguration>> TRACK_BED = FEATURES.register(
-        "track_bed",
-        TrackBedFeature::new
-    );
+    public static final Supplier<Feature<NoneFeatureConfiguration>> DISINTEGRATION =
+        register("disintegration", DisintegrationFeature::new);
 
-    public static final DeferredHolder<Feature<?>, Feature<NoneFeatureConfiguration>> DISINTEGRATION = FEATURES.register(
-        "disintegration",
-        DisintegrationFeature::new
-    );
-
-    public static final DeferredHolder<Feature<?>, Feature<NoneFeatureConfiguration>> NETHER_TRANSITION = FEATURES.register(
-        "nether_transition",
-        NetherTransitionFeature::new
-    );
+    public static final Supplier<Feature<NoneFeatureConfiguration>> NETHER_TRANSITION =
+        register("nether_transition", NetherTransitionFeature::new);
 
     private ModFeatures() {}
 
-    /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */
-    public static void register(IEventBus modBus) {
-        FEATURES.register(modBus);
+    private static <I extends Feature<?>> Supplier<I> register(String name, Supplier<I> factory) {
+        return DtRegistrar.get().register(Registries.FEATURE, name, factory);
     }
+
+    /** Call from the mod constructor to force this class's static fields (and their registrations) to run. */
+    public static void init() {}
 }

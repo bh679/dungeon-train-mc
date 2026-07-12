@@ -101,7 +101,7 @@ public final class CinematicIntroService {
      */
     public static boolean shouldPlay(ServerPlayer player) {
         if (!DungeonTrainConfig.isIntroCinematicEnabled()) return false;
-        return !player.getData(ModDataAttachments.SEEN_INTRO_CINEMATIC.get());
+        return !ModDataAttachments.DT_SEEN_INTRO_CINEMATIC.get(player);
     }
 
     /**
@@ -147,7 +147,7 @@ public final class CinematicIntroService {
             RISE_HEIGHT, PULL_BACK, LOOK_Y_OFFSET,
             duration, preloadMaxWaitTicks);
         DungeonTrainNet.sendTo(player, pkt);
-        player.setData(ModDataAttachments.SEEN_INTRO_CINEMATIC.get(), Boolean.TRUE);
+        ModDataAttachments.DT_SEEN_INTRO_CINEMATIC.set(player, Boolean.TRUE);
         ACTIVE.add(player.getUUID());
         // Cover the client-side preload wait, the story hold that can follow it,
         // and the cinematic itself — the player is on a loading screen and can't

@@ -151,7 +151,7 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(serverPlayer, "signed_shared_book");
 
             // Count it for the death-screen "books written" cargo icon (per-run tally).
-            serverPlayer.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksWritten();
+            ModDataAttachments.DT_PLAYER_RUN_STATE.get(serverPlayer).incrementBooksWritten();
 
             ci.cancel();
             DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] SharedBook: {} signed a book — uploaded + dropped to burn",

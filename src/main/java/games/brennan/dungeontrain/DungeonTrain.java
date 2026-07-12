@@ -217,20 +217,33 @@ public class DungeonTrain {
 
         // First DeferredRegister in the project — wires the variant
         // clipboard item produced by the block-variant menu's Copy button.
-        ModItems.register(modBus);
+        // ModItems / ModBlocks / ModCreativeTabs / ModFeatures / ModSounds / ModAdvancementTriggers
+        // now register through the loader-neutral DtRegistrar seam (each entry
+        // is created eagerly by the static field initializers .init() forces to
+        // run); the underlying DeferredRegisters are attached to modBus in one
+        // shot via NeoForgeRegistrar.attachAll(modBus) below — same code
+        // position, same timing as the old per-class .register(modBus) calls.
+        ModItems.init();
         // narrative_lectern + its BlockItem — first block-registry in the
         // project. NarrativeLecternHooks (mod-bus) attaches it to vanilla
         // BlockEntityType.LECTERN's valid blocks.
-        ModBlocks.register(modBus);
+        ModBlocks.init();
 
-        ModCreativeTabs.register(modBus);
-        ModFeatures.register(modBus);
+        ModCreativeTabs.init();
+        ModFeatures.init();
+        // ModMobEffects stays on DeferredRegister directly: its callers
+        // (WarmthOfTheFireTooltip, FreePlayTooltip, CheatDetectionEvents) need
+        // DeferredHolder#getId(), which a plain Supplier does not expose.
         ModMobEffects.register(modBus);
-        ModSounds.register(modBus);
+        ModSounds.init();
 
         // Global achievements (advancements) — custom criterion triggers
         // + per-player run-state attachment.
-        ModAdvancementTriggers.register(modBus);
+        ModAdvancementTriggers.init();
+        games.brennan.dungeontrain.platform.neoforge.NeoForgeRegistrar.attachAll(modBus);
+        // ModDataAttachments stays on DeferredRegister/AttachmentType directly:
+        // AttachmentType registration is NeoForge-specific API with no vanilla
+        // registry key, so it cannot route through DtRegistrar.
         ModDataAttachments.register(modBus);
 
         modContainer.registerConfig(

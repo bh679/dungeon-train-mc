@@ -408,6 +408,20 @@ public final class DtEvents {
     public static final DtEvent<DtClientTooltipComponentFactoryRegistrationCallback> CLIENT_TOOLTIP_FACTORY_REGISTRATION =
         new DtEvent<>();
 
+    /**
+     * Creative-tab contents registration — NeoForge mod-bus
+     * {@code BuildCreativeModeTabContentsEvent}. Fires once PER registered
+     * {@code CreativeModeTab} (vanilla and mod tabs alike), on both logical
+     * sides (harmless server-side — no display effect there; kept unchanged
+     * from the original {@code @EventBusSubscriber(modid=...)} handlers, which
+     * were NOT {@code Dist.CLIENT}-gated). Not cancellable; each listener
+     * checks the tab key and, if it matches, feeds stacks to the output sink.
+     * Two handlers ({@code ModItems}, {@code ModBlocks}), independent (order
+     * irrelevant).
+     */
+    public static final DtEvent<DtBuildCreativeTabContentsCallback> BUILD_CREATIVE_TAB_CONTENTS =
+        new DtEvent<>();
+
     // ---- Client tooltip / render / observation (Stage 2c) -----------------
 
     /**

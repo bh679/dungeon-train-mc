@@ -143,7 +143,7 @@ public final class AchievementEvents {
         LAST_CHEST_POS.put(uuid, pos.immutable());
         LAST_CHEST_TICK.put(uuid, tick);
 
-        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        PlayerRunState run = ModDataAttachments.DT_PLAYER_RUN_STATE.get(player);
         // Flat per-open counter for the death-screen summary — increments on
         // every (debounced) chest/barrel open, including repeats of the same
         // position. Decorated-pot breaks feed the same counter from
@@ -190,7 +190,7 @@ public final class AchievementEvents {
      */
     public static void notifyCartAdvance(ServerPlayer player, int delta) {
         if (delta == 0) return;
-        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        PlayerRunState run = ModDataAttachments.DT_PLAYER_RUN_STATE.get(player);
         run.recordCartMovement(delta);
         // Carriage-distance milestones read the EFFECTIVE progress (raw travel + the
         // admin difficulty offset), so an admin-set difficulty is treated as genuine
@@ -649,11 +649,11 @@ public final class AchievementEvents {
         public static void onPlayerRespawn(net.minecraft.world.entity.player.Player respawnedPlayer, boolean endConquered) {
         if (!(respawnedPlayer instanceof ServerPlayer player)) return;
         if (endConquered) return; // End → overworld portal, not a death.
-        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        PlayerRunState run = ModDataAttachments.DT_PLAYER_RUN_STATE.get(player);
         run.resetAll();
         // Exploration progress is per-life too — clear distinct biomes so the
         // count tiers (and "Terra Omnia") restart for the new run.
-        player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).clear();
+        ModDataAttachments.DT_PLAYER_BIOME_PROGRESS.get(player).clear();
         // Per-life travelled-carriage-index is now 0; push the HUD packet
         // immediately so the overlay reflects the reset without waiting for
         // the next 10-tick BoardingProgressEvents scan.
@@ -926,7 +926,7 @@ public final class AchievementEvents {
                 && !id.getPath().startsWith("editor/")) {
             // Death-screen "accolades": record this genuine, non-editor Dungeon Train
             // earn into the per-life run state; read into the death packet on death.
-            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).recordEarnedAdvancement(id);
+            ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).recordEarnedAdvancement(id);
             DungeonTrainNet.sendTo(player, new AdvancementsHintPacket());
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside

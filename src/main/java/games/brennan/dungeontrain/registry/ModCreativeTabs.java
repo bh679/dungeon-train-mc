@@ -1,10 +1,10 @@
 package games.brennan.dungeontrain.registry;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.PrefabTabState;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.event.PrefabUseHandler;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
+import games.brennan.dungeontrain.platform.DtRegistrar;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -17,9 +17,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.registries.DeferredHolder;
+
+import java.util.function.Supplier;
 
 /**
  * Custom {@link CreativeModeTab}s for prefab browsing. Each tab is populated
@@ -29,13 +28,15 @@ import net.neoforged.neoforge.registries.DeferredHolder;
  * ({@link PrefabUseHandler#NBT_BV_PREFAB_ID} or
  * {@link PrefabUseHandler#NBT_LOOT_PREFAB_ID}) tells the use handler how to
  * interpret the stack on right-click.
+ *
+ * <p>Registered via {@link DtRegistrar} (loader-neutral) instead of a direct
+ * {@code DeferredRegister} — see
+ * {@link games.brennan.dungeontrain.advancement.ModAdvancementTriggers} for
+ * the pattern and the root attach timing.</p>
  */
 public final class ModCreativeTabs {
 
-    public static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(
-        Registries.CREATIVE_MODE_TAB, DungeonTrain.MOD_ID);
-
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> PREFAB_VARIANTS = TABS.register(
+    public static final Supplier<CreativeModeTab> PREFAB_VARIANTS = register(
         "prefab_variants",
         () -> CreativeModeTab.builder()
             .title(Component.translatable("gui.dungeontrain.prefab_tab.variants"))
@@ -51,7 +52,7 @@ public final class ModCreativeTabs {
             .build()
     );
 
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> PREFAB_LOOT = TABS.register(
+    public static final Supplier<CreativeModeTab> PREFAB_LOOT = register(
         "prefab_loot",
         () -> CreativeModeTab.builder()
             .title(Component.translatable("gui.dungeontrain.prefab_tab.loot"))
@@ -75,7 +76,7 @@ public final class ModCreativeTabs {
      * vs {@code item_frame}) so a future split into two tabs is a one-line
      * filter change.
      */
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> PREFAB_LOOT_ENTITY = TABS.register(
+    public static final Supplier<CreativeModeTab> PREFAB_LOOT_ENTITY = register(
         "prefab_loot_entity",
         () -> CreativeModeTab.builder()
             .title(Component.translatable("gui.dungeontrain.prefab_tab.loot_entity"))
@@ -108,7 +109,7 @@ public final class ModCreativeTabs {
      *       discoverability).</li>
      * </ul>
      */
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> NARRATIVE = TABS.register(
+    public static final Supplier<CreativeModeTab> NARRATIVE = register(
         "narrative",
         () -> CreativeModeTab.builder()
             .title(Component.translatable("gui.dungeontrain.creative_tab.narrative"))
@@ -122,9 +123,12 @@ public final class ModCreativeTabs {
 
     private ModCreativeTabs() {}
 
-    public static void register(IEventBus modBus) {
-        TABS.register(modBus);
+    private static Supplier<CreativeModeTab> register(String name, Supplier<CreativeModeTab> factory) {
+        return DtRegistrar.get().register(Registries.CREATIVE_MODE_TAB, name, factory);
     }
+
+    /** Call from the mod constructor to force this class's static fields (and their registrations) to run. */
+    public static void init() {}
 
     /**
      * Build a vanilla {@code BlockItem} stack for {@code blockIdString} with

@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.registry;
 
 import com.mojang.serialization.Codec;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.platform.DtAttachment;
+import games.brennan.dungeontrain.platform.neoforge.NeoForgeAttachment;
 import games.brennan.dungeontrain.player.PlayerBiomeProgress;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import net.neoforged.bus.api.IEventBus;
@@ -18,6 +20,17 @@ import java.util.function.Supplier;
  *
  * <p>Registered from {@link DungeonTrain}'s constructor on the mod-event
  * bus, mirroring {@link ModItems#register(IEventBus)}.</p>
+ *
+ * <p>Stays entirely in the root NeoForge module: {@code AttachmentType}
+ * registration is NeoForge-specific API (there is no vanilla registry key for
+ * it, so it cannot be routed through {@link games.brennan.dungeontrain.platform.DtRegistrar},
+ * which only handles vanilla {@code Registry<T>} keys). Player-scoped entries
+ * additionally expose a loader-neutral {@link DtAttachment} handle so
+ * converted {@code :common} callers never touch {@code AttachmentType} or
+ * {@code Player.getData} directly — see the {@code DT_*} fields below. The
+ * chunk-scoped {@link #NEEDS_UPSIDE_DOWN_MIRROR} has no handle: it is read via
+ * {@code LevelChunk.getData/setData/hasData/removeData}, not
+ * {@code Player}, which {@link DtAttachment} does not model.</p>
  */
 public final class ModDataAttachments {
 
@@ -112,6 +125,20 @@ public final class ModDataAttachments {
                 .serialize(Codec.BOOL)
                 .build()
         );
+
+    // ---- Loader-neutral DtAttachment handles (Player-scoped entries only) ----
+
+    /** Loader-neutral handle for {@link #PLAYER_RUN_STATE}. */
+    public static final DtAttachment<PlayerRunState> DT_PLAYER_RUN_STATE = new NeoForgeAttachment<>(PLAYER_RUN_STATE);
+
+    /** Loader-neutral handle for {@link #PLAYER_BIOME_PROGRESS}. */
+    public static final DtAttachment<PlayerBiomeProgress> DT_PLAYER_BIOME_PROGRESS = new NeoForgeAttachment<>(PLAYER_BIOME_PROGRESS);
+
+    /** Loader-neutral handle for {@link #SEEN_INTRO_CINEMATIC}. */
+    public static final DtAttachment<Boolean> DT_SEEN_INTRO_CINEMATIC = new NeoForgeAttachment<>(SEEN_INTRO_CINEMATIC);
+
+    /** Loader-neutral handle for {@link #RUN_CHEATED}. */
+    public static final DtAttachment<Boolean> DT_RUN_CHEATED = new NeoForgeAttachment<>(RUN_CHEATED);
 
     private ModDataAttachments() {}
 

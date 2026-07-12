@@ -1,20 +1,22 @@
 package games.brennan.dungeontrain.registry;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.item.VariantClipboardItem;
+import games.brennan.dungeontrain.platform.DtRegistrar;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.registries.DeferredItem;
-import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraft.world.item.ItemStack;
+
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
- * Mod-side item registry. Wires up custom items via the mod-event bus during
- * construction.
+ * Mod-side item registry. Registered via {@link DtRegistrar} (loader-neutral)
+ * instead of a direct {@code DeferredRegister} — see
+ * {@link games.brennan.dungeontrain.advancement.ModAdvancementTriggers} for
+ * the pattern and the root attach timing.
  *
  * <p>Currently registers only {@link VariantClipboardItem}, the per-cell
  * variant snippet produced by the block-variant menu's Copy button. Prefab
@@ -23,15 +25,15 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * mod-side item needed for those.</p>
  *
  * <p>The variant clipboard is hooked into the Creative inventory's
- * TOOLS_AND_UTILITIES tab via {@link BuildCreativeModeTabContentsEvent} so
- * authors can grab a blank clipboard for testing.</p>
+ * TOOLS_AND_UTILITIES tab via the loader-neutral
+ * {@code DtEvents.BUILD_CREATIVE_TAB_CONTENTS} declarative registration (see
+ * {@link #onBuildCreativeTabs}), registered from
+ * {@code DungeonTrainCommon.init()}.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class ModItems {
 
-    public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(DungeonTrain.MOD_ID);
-
-    public static final DeferredItem<Item> VARIANT_CLIPBOARD = ITEMS.register(
+    public static final Supplier<Item> VARIANT_CLIPBOARD = DtRegistrar.get().register(
+        Registries.ITEM,
         "variant_clipboard",
         () -> new VariantClipboardItem(new Item.Properties().stacksTo(1))
     );
@@ -43,17 +45,16 @@ public final class ModItems {
      * {@code WRITTEN_BOOK} rolled from
      * {@link games.brennan.dungeontrain.narrative.RandomBookRegistry}.
      */
-    public static final DeferredItem<Item> RANDOM_BOOK = ITEMS.register(
+    public static final Supplier<Item> RANDOM_BOOK = DtRegistrar.get().register(
+        Registries.ITEM,
         "random_book",
         () -> new Item(new Item.Properties().stacksTo(1))
     );
 
     private ModItems() {}
 
-    /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */
-    public static void register(IEventBus modBus) {
-        ITEMS.register(modBus);
-    }
+    /** Call from the mod constructor to force this class's static fields (and their registrations) to run. */
+    public static void init() {}
 
     /**
      * Add the variant clipboard to the Creative inventory's TOOLS_AND_UTILITIES
@@ -62,10 +63,9 @@ public final class ModItems {
      * here — narrative authoring deserves its own grouping rather than being
      * mixed in with editor tools.
      */
-    @SubscribeEvent
-    public static void onBuildCreativeTabs(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
-            event.accept(VARIANT_CLIPBOARD.get());
+    public static void onBuildCreativeTabs(ResourceKey<CreativeModeTab> tabKey, Consumer<ItemStack> output) {
+        if (tabKey == CreativeModeTabs.TOOLS_AND_UTILITIES) {
+            output.accept(new ItemStack(VARIANT_CLIPBOARD.get()));
         }
     }
 }

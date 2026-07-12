@@ -95,7 +95,7 @@ public final class LetterSigning {
         }
 
         // Count it for the death-screen "books written" cargo tally (a book was authored + signed).
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksWritten();
+        ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).incrementBooksWritten();
 
         player.sendSystemMessage(Component.literal("\"" + finalTitle + "\" is sealed and sent — Letter "
                 + series.letterIndex() + " of this life.").withStyle(ChatFormatting.GRAY));

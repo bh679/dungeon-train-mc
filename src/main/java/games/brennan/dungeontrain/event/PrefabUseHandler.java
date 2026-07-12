@@ -236,7 +236,7 @@ public final class PrefabUseHandler {
         // Effective (offset-inclusive) progress so a placed container rolls at the
         // player's admin-set difficulty too, matching the naturally-generated carriages.
         int placedCarriageIndex = DifficultyProgression.effectiveTravelled(
-            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex());
+            ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).travelledCarriageIndex());
         CompoundTag baseNbt = be.saveWithFullMetadata(serverLevel.registryAccess());
         CompoundTag rolled = ContainerContentsRoller.roll(
             loaded.get().pool(), placedState, pos, worldSeed, placedCarriageIndex, baseNbt,

@@ -224,7 +224,7 @@ public final class NarrativeBookEvents {
      */
     public static void countLecternBookForRun(ServerPlayer player, NarrativeBookTag.NarrativeIdentity id) {
         String key = id.storyBasename() + "#" + id.letterIndex();
-        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        PlayerRunState run = ModDataAttachments.DT_PLAYER_RUN_STATE.get(player);
         if (run.recordNarrativeRead(key)) {
             run.incrementBooksRead();
         }
@@ -240,7 +240,7 @@ public final class NarrativeBookEvents {
     public static void countPlayerSeriesLetterForRun(ServerPlayer player,
                                                      PlayerNarrativeBookTag.PlayerNarrativeIdentity pid) {
         String key = "pnarr:" + pid.seriesId() + "#" + pid.letterIndex();
-        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        PlayerRunState run = ModDataAttachments.DT_PLAYER_RUN_STATE.get(player);
         if (run.recordNarrativeRead(key)) {
             run.incrementBooksRead();
         }

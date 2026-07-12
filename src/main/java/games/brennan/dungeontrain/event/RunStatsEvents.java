@@ -117,7 +117,7 @@ public final class RunStatsEvents {
         // holding a damaging item, etc.). Stat is "things I killed" not
         // "deaths I caused".
         if (victim == killer) return;
-        PlayerRunState run = killer.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        PlayerRunState run = ModDataAttachments.DT_PLAYER_RUN_STATE.get(killer);
         run.incrementMobKills();
         // PlayerMob kills are also tallied separately (the "players killed"
         // death-screen cell) and the victim's look is snapshotted for the
@@ -165,7 +165,7 @@ public final class RunStatsEvents {
         // Accumulate this run's per-life totals into the cross-world lifetime
         // counters BEFORE respawn resets PlayerRunState. trainTicks already
         // accrues live (BoardingProgressEvents), so it is NOT re-added here.
-        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        PlayerRunState run = ModDataAttachments.DT_PLAYER_RUN_STATE.get(player);
         UUID id = player.getUUID();
         // Cheated runs don't accrue the cross-world lifetime counters. The death
         // screen still renders below — it reads the per-run state plus the current
@@ -419,7 +419,7 @@ public final class RunStatsEvents {
             long lifeDeaths, long lifeCarriages, double lifeDistance,
             long lifeFriends, long lifeBooks, long lifeTrainTicks,
             DeathNarrative narrative, String deathCause) {
-        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        PlayerRunState run = ModDataAttachments.DT_PLAYER_RUN_STATE.get(player);
         UUID id = player.getUUID();
         // All-lives icon-row lifetime totals — the current cross-world totals (accrued just above at
         // death, or live for encountered/echos), plus a point-in-time count of earned DT advancements.
@@ -502,7 +502,7 @@ public final class RunStatsEvents {
 
         public static void onPlayerTick(net.minecraft.world.entity.player.Player tickedPlayer) {
         if (!(tickedPlayer instanceof ServerPlayer player)) return;
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addRunTicks(1L);
+        ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).addRunTicks(1L);
     }
 
         public static void onPotBreak(net.minecraft.world.level.LevelAccessor breakLevel, net.minecraft.world.entity.player.Player breakPlayer, net.minecraft.core.BlockPos breakPos, net.minecraft.world.level.block.state.BlockState breakState, boolean breakCanceled) {
@@ -511,7 +511,7 @@ public final class RunStatsEvents {
         if (!(breakPlayer instanceof ServerPlayer player)) return;
         BlockState state = breakState;
         if (!(state.getBlock() instanceof DecoratedPotBlock)) return;
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementContainersOpened();
+        ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).incrementContainersOpened();
     }
 
         public static void onBookRead(net.minecraft.world.entity.player.Player interactPlayer, net.minecraft.world.level.Level interactLevel, net.minecraft.world.item.ItemStack interactItem) {
@@ -520,7 +520,7 @@ public final class RunStatsEvents {
         ItemStack stack = interactItem;
         if (stack.isEmpty()) return;
         if (!(stack.getItem() instanceof WrittenBookItem)) return;
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksRead();
+        ModDataAttachments.DT_PLAYER_RUN_STATE.get(player).incrementBooksRead();
     }
 
     /**
@@ -540,10 +540,10 @@ public final class RunStatsEvents {
         float amount = newDamage;
         if (!Float.isFinite(amount) || amount <= 0.0f || amount > MAX_TRACKED_DAMAGE) return;
         if (victim instanceof ServerPlayer hurt) {
-            hurt.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDamageTaken(amount);
+            ModDataAttachments.DT_PLAYER_RUN_STATE.get(hurt).addDamageTaken(amount);
         }
         if (hitSource.getEntity() instanceof ServerPlayer dealer && dealer != victim) {
-            dealer.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDamageDealt(amount);
+            ModDataAttachments.DT_PLAYER_RUN_STATE.get(dealer).addDamageDealt(amount);
         }
     }
 
@@ -560,7 +560,7 @@ public final class RunStatsEvents {
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;
         for (ServerPlayer player : players) {
-            PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+            PlayerRunState run = ModDataAttachments.DT_PLAYER_RUN_STATE.get(player);
             boolean cheated = RunIntegrity.isCheated(player);
             AABB box = player.getBoundingBox().inflate(ENCOUNTER_RADIUS);
             for (Entity mob : level.getEntitiesOfClass(Entity.class, box, RunStatsEvents::isPlayerMob)) {

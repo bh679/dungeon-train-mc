@@ -56,6 +56,20 @@ public final class NeoForgeServerEvents {
         registerChunk();
         registerBlockAndAttack();
         registerInteract();
+        registerCreativeTabContents();
+    }
+
+    /**
+     * Creative-tab contents (BuildCreativeModeTabContentsEvent, mod-bus). Two
+     * root-resident handlers ({@code ModItems}, {@code ModBlocks} — converted
+     * to {@code DtRegistrar} but not yet moved to {@code :common}); order
+     * irrelevant.
+     */
+    private static void registerCreativeTabContents() {
+        games.brennan.dungeontrain.platform.event.DtEvents.BUILD_CREATIVE_TAB_CONTENTS
+            .register(games.brennan.dungeontrain.registry.ModItems::onBuildCreativeTabs);
+        games.brennan.dungeontrain.platform.event.DtEvents.BUILD_CREATIVE_TAB_CONTENTS
+            .register(games.brennan.dungeontrain.registry.ModBlocks::onBuildCreativeTabs);
     }
 
     /**
