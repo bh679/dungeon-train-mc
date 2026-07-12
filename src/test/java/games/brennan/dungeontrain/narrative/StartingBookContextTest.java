@@ -3,7 +3,9 @@ package games.brennan.dungeontrain.narrative;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -67,5 +69,27 @@ final class StartingBookContextTest {
     void folderNames() {
         assertEquals("nether", StartingBookContext.NETHER.folderName());
         assertEquals("end", StartingBookContext.END.folderName());
+    }
+
+    @Test
+    @DisplayName("achievementSetId partitions dimension-routed vs lifecycle contexts")
+    void achievementSetIdPartitionsDimensionRoutedContexts() {
+        // Exactly NETHER/END declare a set id — this is the predicate
+        // AchievementEvents uses (both for the "Welcome Back" title check and
+        // the grand-slam check) to tell dimension-routed folders, which
+        // require a starting dimension no longer selectable at world
+        // creation (Nether/End dropped from #minecraft:normal — see #639),
+        // apart from the always-reachable lifecycle folders.
+        Set<StartingBookContext> dimensionRouted = EnumSet.noneOf(StartingBookContext.class);
+        for (StartingBookContext ctx : StartingBookContext.values()) {
+            if (ctx.achievementSetId().isPresent()) dimensionRouted.add(ctx);
+        }
+        assertEquals(EnumSet.of(StartingBookContext.NETHER, StartingBookContext.END), dimensionRouted);
+
+        for (StartingBookContext ctx : EnumSet.of(StartingBookContext.DEFAULT,
+                StartingBookContext.NEW_WORLD, StartingBookContext.JOINED_WORLD, StartingBookContext.RESPAWN)) {
+            assertTrue(ctx.achievementSetId().isEmpty(),
+                ctx + " is a lifecycle folder and must stay reachable for \"Welcome Back\"");
+        }
     }
 }
