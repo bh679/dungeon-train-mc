@@ -245,4 +245,14 @@ public final class DtEvents {
     public static final DtEvent<DtFinalizeSpawnCallback> FINALIZE_SPAWN =
         new DtEvent<>();
 
+    // ---- Chunk events (Stage 2b) ------------------------------------------
+
+    /**
+     * Chunk load — NeoForge {@code ChunkEvent.Load}. Fires when a chunk loads
+     * (client and server; handlers self-filter). Not cancellable; read-only. All
+     * six DT handlers NORMAL. DT has no {@code ChunkEvent.Unload} handlers.
+     */
+    public static final DtEvent<DtChunkLoadCallback> CHUNK_LOAD =
+        new DtEvent<>();
+
 }

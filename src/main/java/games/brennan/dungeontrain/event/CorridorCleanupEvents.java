@@ -79,7 +79,6 @@ import java.util.function.Predicate;
  * above); worldgen-placed water is drained at generation time by {@code NetherTransitionFeature}
  * instead. The stone-brick walls sit outside {@code airMinZ..airMaxZ}, so they're never touched.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CorridorCleanupEvents {
 
     /**
@@ -115,9 +114,8 @@ public final class CorridorCleanupEvents {
 
     private CorridorCleanupEvents() {}
 
-    @SubscribeEvent
-    public static void onChunkLoad(ChunkEvent.Load event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onChunkLoad(net.minecraft.world.level.LevelAccessor chunkLevel, net.minecraft.world.level.chunk.ChunkAccess loadedChunk, boolean newChunk) {
+        if (!(chunkLevel instanceof ServerLevel level)) return;
 
         MinecraftServer server = level.getServer();
         if (server == null) return;
@@ -127,7 +125,7 @@ public final class CorridorCleanupEvents {
         StartingDimension expected = data.startingDimension();
         if (!level.dimension().equals(expected.levelKey())) return;
 
-        ChunkAccess chunk = event.getChunk();
+        ChunkAccess chunk = loadedChunk;
         ChunkPos pos = chunk.getPos();
         int cx = pos.x;
         int cz = pos.z;

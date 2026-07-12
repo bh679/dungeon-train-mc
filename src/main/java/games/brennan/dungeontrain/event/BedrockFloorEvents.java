@@ -41,15 +41,13 @@ import java.util.Optional;
  * hook (block updates, light, observers, physics) and just stamp the palette;
  * we mark the chunk unsaved so the change persists to disk.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class BedrockFloorEvents {
 
     private BedrockFloorEvents() {}
 
-    @SubscribeEvent
-    public static void onChunkLoad(ChunkEvent.Load event) {
-        if (!event.isNewChunk()) return;
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onChunkLoad(net.minecraft.world.level.LevelAccessor chunkLevel, net.minecraft.world.level.chunk.ChunkAccess loadedChunk, boolean newChunk) {
+        if (!newChunk) return;
+        if (!(chunkLevel instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
 
         Optional<ResourceKey<DimensionType>> dimTypeKey =
@@ -59,7 +57,7 @@ public final class BedrockFloorEvents {
             return;
         }
 
-        ChunkAccess chunk = event.getChunk();
+        ChunkAccess chunk = loadedChunk;
         int chunkMinX = chunk.getPos().getMinBlockX();
 
         // The disintegration band's void has no floor — skip bedrock in columns whose band

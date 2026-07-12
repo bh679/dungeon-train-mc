@@ -27,17 +27,15 @@ import net.neoforged.fml.common.Mod;
  * already loaded at spawn (which never fire Load after this listener
  * registers).</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TrackChunkEvents {
 
     private TrackChunkEvents() {}
 
-    @SubscribeEvent
-    public static void onChunkLoad(ChunkEvent.Load event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onChunkLoad(net.minecraft.world.level.LevelAccessor chunkLevel, net.minecraft.world.level.chunk.ChunkAccess loadedChunk, boolean newChunk) {
+        if (!(chunkLevel instanceof ServerLevel level)) return;
         if (!DungeonTrainConfig.getGenerateTracks()) return;
 
-        ChunkAccess chunk = event.getChunk();
+        ChunkAccess chunk = loadedChunk;
         ChunkPos pos = chunk.getPos();
         int cx = pos.x;
         int cz = pos.z;

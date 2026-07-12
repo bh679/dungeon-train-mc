@@ -35,7 +35,6 @@ import net.neoforged.neoforge.event.level.ChunkEvent;
  * {@link LevelChunkSection#setBlockState}, the Sable-safe path (see
  * {@link BedrockFloorEvents}).</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class WorldDisintegrationEvents {
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
@@ -47,15 +46,14 @@ public final class WorldDisintegrationEvents {
         return state.is(Blocks.END_STONE) || state.is(Blocks.CHORUS_PLANT) || state.is(Blocks.CHORUS_FLOWER);
     }
 
-    @SubscribeEvent
-    public static void onChunkLoad(ChunkEvent.Load event) {
-        if (!event.isNewChunk()) return;
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onChunkLoad(net.minecraft.world.level.LevelAccessor chunkLevel, net.minecraft.world.level.chunk.ChunkAccess loadedChunk, boolean newChunk) {
+        if (!newChunk) return;
+        if (!(chunkLevel instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
 
         long startX = DisintegrationBand.startX(level);
 
-        ChunkAccess chunk = event.getChunk();
+        ChunkAccess chunk = loadedChunk;
         ChunkPos pos = chunk.getPos();
         int chunkMinX = pos.getMinBlockX();
         if (chunkMinX + 15 < startX) return; // before the first band (or disabled)

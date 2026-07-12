@@ -33,23 +33,21 @@ import net.neoforged.neoforge.event.level.ChunkEvent;
  * to keep the old bare stamped mountains clean — which also deleted the trees/flowers the new
  * real-terrain mountains are meant to have. Scoped to the netherrack zone so mountains stay forested.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NetherTransitionEvents {
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
     private NetherTransitionEvents() {}
 
-    @SubscribeEvent
-    public static void onChunkLoad(ChunkEvent.Load event) {
-        if (!event.isNewChunk()) return;
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onChunkLoad(net.minecraft.world.level.LevelAccessor chunkLevel, net.minecraft.world.level.chunk.ChunkAccess loadedChunk, boolean newChunk) {
+        if (!newChunk) return;
+        if (!(chunkLevel instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
 
         long startX = NetherBand.startX(level);
         if (startX == NetherBand.OFF) return;
 
-        ChunkAccess chunk = event.getChunk();
+        ChunkAccess chunk = loadedChunk;
         ChunkPos pos = chunk.getPos();
         int chunkMinX = pos.getMinBlockX();
         if (chunkMinX + 15 < startX) return; // before the first band

@@ -53,6 +53,27 @@ public final class NeoForgeServerEvents {
         registerPlayerConnection();
         registerCancellable();
         registerLiving();
+        registerChunk();
+    }
+
+    /**
+     * Chunk-load handlers, fired by {@code NeoForgeChunkBridge}. All six were
+     * NORMAL priority, not cancellable, not dist-gated; order within the tier is
+     * irrelevant.
+     */
+    private static void registerChunk() {
+        games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
+            .register(games.brennan.dungeontrain.event.NetherTransitionEvents::onChunkLoad);
+        games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
+            .register(games.brennan.dungeontrain.event.TrackChunkEvents::onChunkLoad);
+        games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
+            .register(games.brennan.dungeontrain.event.WorldDisintegrationEvents::onChunkLoad);
+        games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
+            .register(games.brennan.dungeontrain.event.BedrockFloorEvents::onChunkLoad);
+        games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
+            .register(games.brennan.dungeontrain.event.CorridorCleanupEvents::onChunkLoad);
+        games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
+            .register(games.brennan.dungeontrain.event.WorldUpsideDownEvents::onChunkLoad);
     }
 
     /**

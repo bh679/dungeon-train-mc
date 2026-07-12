@@ -64,13 +64,12 @@ public final class WorldUpsideDownEvents {
      * re-enqueue it (the marker is still set) — without this the chunk stays permanently un-mirrored
      * because {@code isNewChunk()} is false on reload.
      */
-    @SubscribeEvent
-    public static void onChunkLoad(ChunkEvent.Load event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onChunkLoad(net.minecraft.world.level.LevelAccessor chunkLevel, net.minecraft.world.level.chunk.ChunkAccess loadedChunk, boolean newChunk) {
+        if (!(chunkLevel instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
-        ChunkAccess chunk = event.getChunk();
+        ChunkAccess chunk = loadedChunk;
 
-        if (event.isNewChunk()) {
+        if (newChunk) {
             if (!isInAnyUpsideDownZone(level, chunk)) return;
             chunk.setData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get(), Boolean.TRUE);
             DungeonTrainWorldData.get(level).enqueueMirrorChunk(chunk.getPos().toLong());
