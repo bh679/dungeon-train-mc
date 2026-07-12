@@ -80,7 +80,8 @@ public final class DungeonTrainWorldData extends SavedData {
         DungeonTrainWorldData data = overworld.getDataStorage().computeIfAbsent(
             new SavedData.Factory<>(
                 DungeonTrainWorldData::createDefault,
-                (tag, registries) -> load(tag)
+                (tag, registries) -> load(tag),
+                null
             ),
             NAME
         );
