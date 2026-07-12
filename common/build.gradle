@@ -1,0 +1,31 @@
+// :common — loader-neutral Dungeon Train code shared by the NeoForge (root) and
+// Fabric modules. ModDevGradle "vanilla mode" (NeoForm, no loader) keeps this
+// module free of NeoForge/Fabric API references so both loaders can compile its
+// sources. Empty skeleton in Phase 1; loader-neutral classes migrate here in Phase 2.
+plugins {
+    id 'net.neoforged.moddev' version '2.0.141'
+}
+
+group = mod_group_id
+version = mod_version
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+repositories {
+    mavenCentral()
+}
+
+neoForge {
+    // Vanilla mode: a NeoForm version instead of a NeoForge version. Only the
+    // client/server/data run types exist here — this module ships no loader code.
+    neoFormVersion = '1.21.1-20240808.144430'
+
+    parchment {
+        mappingsVersion = parchment_mappings_version
+        minecraftVersion = parchment_minecraft_version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}

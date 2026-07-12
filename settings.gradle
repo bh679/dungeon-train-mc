@@ -1,6 +1,12 @@
 pluginManagement {
     repositories {
         gradlePluginPortal()
+        // Fabric Loom (fabric/ module) resolves from Fabric's maven.
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
+        mavenCentral()
     }
 }
 
@@ -9,3 +15,10 @@ plugins {
 }
 
 rootProject.name = 'dungeon-train-mc'
+
+// Multiloader skeleton (Phase 1). The ROOT project is the shipping NeoForge mod
+// (build.gradle + src/ unchanged); these subprojects are additive:
+//   :common — loader-neutral code (MDG vanilla mode); empty skeleton until Phase 2
+//   :fabric — Fabric Loom edition, seeded from the Phase 0 Sable spike
+include 'common'
+include 'fabric'
