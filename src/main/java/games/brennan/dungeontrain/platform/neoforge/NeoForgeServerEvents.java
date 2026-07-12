@@ -27,5 +27,10 @@ public final class NeoForgeServerEvents {
     /** Register every converted server-side handler with its {@code DtEvents} field. */
     public static void register() {
         // Category registrations are added here, one block per converted category.
+
+        // --- Command registration (RegisterCommandsEvent) --------------------
+        // Single handler; order irrelevant.
+        games.brennan.dungeontrain.platform.event.DtEvents.COMMAND_REGISTRATION
+            .register(games.brennan.dungeontrain.event.CommandEvents::onRegisterCommands);
     }
 }

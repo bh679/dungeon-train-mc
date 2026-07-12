@@ -24,4 +24,14 @@ public final class DtEvents {
     // ---- Server-side categories (Stage 2a) --------------------------------
     // Fields are added here per category, each with its exact-semantics Javadoc.
 
+    /**
+     * Command registration — NeoForge {@code RegisterCommandsEvent}. Fires once
+     * per server start (integrated and dedicated) on the server thread, while
+     * the command tree is built. Not cancellable. Listeners mutate the passed
+     * dispatcher by registering command nodes. Bridge invokes every listener in
+     * registration order.
+     */
+    public static final DtEvent<DtCommandRegistrationCallback> COMMAND_REGISTRATION =
+        new DtEvent<>();
+
 }
