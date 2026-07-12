@@ -4255,6 +4255,23 @@
       "released": true,
       "released_in": "v0.443.0",
       "released_at": "2026-07-12T08:55:21Z"
+    },
+    {
+      "id": "datapack-overridable-prose",
+      "version": "0.444.0",
+      "type": "feat",
+      "title": "Translate the train's books & death messages with a datapack",
+      "summary": "Dungeon Train's narrative books, welcome letters, random chest books, and death-screen messages can now be translated or replaced by a datapack \u2014 no more editing files inside the mod jar. Overrides apply on /reload, and only the server needs the datapack (translated books reach everyone on the server automatically).",
+      "highlights": [
+        "Narrative stories, random books, welcome/starting books, and death-lore are now datapack-overridable",
+        "Localizers can ship a translation datapack instead of editing the mod jar",
+        "Honored on /reload; server-only (clients need nothing)"
+      ],
+      "pr": 735,
+      "date": "2026-07-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
