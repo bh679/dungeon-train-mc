@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.ShowFreePlayConfirmPacket;
 import games.brennan.dungeontrain.registry.ModMobEffects;
+import com.mojang.brigadier.ParseResults;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -15,7 +16,6 @@ import net.minecraft.world.level.GameType;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.CommandEvent;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
@@ -62,20 +62,26 @@ public final class CheatDetectionEvents {
 
     private CheatDetectionEvents() {}
 
-    @SubscribeEvent
-    public static void onCommand(CommandEvent event) {
-        CommandSourceStack source = event.getParseResults().getContext().getSource();
+    /**
+     * Converted off the NeoForge bus (Stage 2a) — now a plain cancellable
+     * {@link games.brennan.dungeontrain.platform.event.DtCommandCallback}
+     * registered via {@code DtEvents.COMMAND_EXEC} (see {@code NeoForgeServerEvents}),
+     * fired by {@code NeoForgeCommandBridge}. Returns {@code true} to cancel the
+     * command (was {@code event.setCanceled(true)}); logic otherwise unchanged.
+     */
+    public static boolean onCommand(ParseResults<CommandSourceStack> parseResults) {
+        CommandSourceStack source = parseResults.getContext().getSource();
         ServerPlayer player = source.getPlayer();
-        if (player == null) return;                 // console / command block / function
-        if (RunIntegrity.isCheated(player)) return; // already Free Play — let it run (incl. re-dispatch)
-        if (!CommandAllowlist.taints(event.getParseResults())) return;
+        if (player == null) return false;                 // console / command block / function
+        if (RunIntegrity.isCheated(player)) return false; // already Free Play — let it run (incl. re-dispatch)
+        if (!CommandAllowlist.taints(parseResults)) return false;
 
         // Hold the command, ask the player to confirm Free Play first.
-        event.setCanceled(true);
-        String raw = event.getParseResults().getReader().getString();
-        String label = CommandAllowlist.label(event.getParseResults());
+        String raw = parseResults.getReader().getString();
+        String label = CommandAllowlist.label(parseResults);
         PENDING.put(player.getUUID(), new Pending(raw, label));
         DungeonTrainNet.sendTo(player, new ShowFreePlayConfirmPacket(label));
+        return true; // cancel the command — held until the Free Play confirm resolves
     }
 
     /** Called from {@code FreePlayConfirmResponsePacket} on the server thread. */

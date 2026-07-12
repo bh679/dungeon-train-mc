@@ -37,5 +37,10 @@ public final class NeoForgeServerEvents {
         // Single (observe-only) handler; order irrelevant.
         games.brennan.dungeontrain.platform.event.DtEvents.SERVER_CHAT
             .register(games.brennan.dungeontrain.event.MentionPresenceEvents::onServerChat);
+
+        // --- Command execution (CommandEvent, cancellable) -------------------
+        // Single handler; the Free Play gate cancels a tainting command.
+        games.brennan.dungeontrain.platform.event.DtEvents.COMMAND_EXEC
+            .register(games.brennan.dungeontrain.event.CheatDetectionEvents::onCommand);
     }
 }

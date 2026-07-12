@@ -45,4 +45,14 @@ public final class DtEvents {
     public static final DtEvent<DtServerChatCallback> SERVER_CHAT =
         new DtEvent<>();
 
+    /**
+     * Command execution — NeoForge {@code CommandEvent}. Fires on the server
+     * thread after a command is parsed, before it runs. <b>Cancellable:</b>
+     * listeners return {@code true} to cancel (see {@link DtCommandCallback});
+     * the bridge stops on the first {@code true} and cancels the command. The
+     * parse results are read-only here (DT does not rewrite them).
+     */
+    public static final DtEvent<DtCommandCallback> COMMAND_EXEC =
+        new DtEvent<>();
+
 }
