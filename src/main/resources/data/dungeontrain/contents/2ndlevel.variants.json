@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 8,
   "variants": {
     "3,1,2": { "lockId": 1, "states": [{"state": "minecraft:prismarine_brick_slab[type=top,waterlogged=false]", "weight": 10}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}] },
     "3,0,2": { "lockId": 1, "states": [{"state": "minecraft:prismarine_brick_slab[type=top,waterlogged=false]", "weight": 10}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}] },
