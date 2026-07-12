@@ -1,13 +1,9 @@
 package games.brennan.dungeontrain.narrative;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.server.ServerStartingEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
 import org.slf4j.Logger;
 
 import java.io.InputStream;
@@ -17,7 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeSet;
 
 /**
@@ -34,17 +29,22 @@ import java.util.TreeSet;
  * top-level. A context-specific pool falls back to the DEFAULT pool when
  * empty (or when its total weight is 0) — see {@link #pickWeighted}.</p>
  *
- * <p>Loaded once at {@link ServerStartingEvent}. Server-thread synchronous,
- * no datapack-reload listener (bundled content only).</p>
+ * <p>Loaded through the vanilla {@link ResourceManager} server-data channel via
+ * {@link NarrativeDataLoaders} (fires at world load and on {@code /reload}), so a
+ * datapack can override any bundled welcome book by shipping
+ * {@code data/dungeontrain/narratives/starting_books/[<context>/]<name>.json} at
+ * the matching path — the context sub-folder is preserved in the id.</p>
  *
  * <p>Consumed by {@link StartingBookFactory#rollFromPool} and the per-player
  * login / respawn hook in {@code StartingBookEvents}.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class StartingBookRegistry {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String RESOURCE_PREFIX = "/data/" + DungeonTrain.MOD_ID + "/narratives/starting_books/";
+    /** ResourceManager directory (namespace-relative, no leading/trailing slash). */
+    private static final String DIR = "narratives/starting_books";
+    /** {@link #DIR} + '/', stripped from a book id to read its context sub-folder. */
+    private static final String BASE_PATH = DIR + "/";
     private static final String JSON_EXT = ".json";
 
     /**
@@ -64,62 +64,77 @@ public final class StartingBookRegistry {
 
     private StartingBookRegistry() {}
 
-    /** Reload every per-context pool from the bundled resources. */
-    public static synchronized void reload() {
+    /**
+     * Reload every per-context pool from the given {@link ResourceManager}
+     * (bundled data + datapack overrides). A single recursive
+     * {@code listResources} call returns every context sub-folder; the context
+     * is re-derived from each book's path segment (see {@link #contextFor}).
+     * Called by the reload listener at world load / {@code /reload} and by the
+     * {@code /dungeontrain narrative reload} command.
+     */
+    public static synchronized void load(ResourceManager resourceManager) {
         for (Map<ResourceLocation, RandomBookFile> pool : POOLS.values()) pool.clear();
+
+        EnumMap<StartingBookContext, Integer> perContext = new EnumMap<>(StartingBookContext.class);
+        for (StartingBookContext ctx : StartingBookContext.values()) perContext.put(ctx, 0);
 
         int totalLoaded = 0;
         int totalFailed = 0;
-        for (StartingBookContext ctx : StartingBookContext.values()) {
-            String subdir = ctx.folderName().isEmpty() ? "" : ctx.folderName() + "/";
-            String prefix = RESOURCE_PREFIX + subdir;
-            Set<String> basenames = BundledNbtScanner.scanBasenames(
-                StartingBookRegistry.class, prefix, LOGGER, JSON_EXT);
-
-            int loaded = 0;
-            int failed = 0;
-            Map<ResourceLocation, RandomBookFile> pool = POOLS.get(ctx);
-            for (String basename : basenames) {
-                String resourcePath = prefix + basename + JSON_EXT;
-                String idPath = "narratives/starting_books/" + subdir + basename;
-                ResourceLocation id;
-                try {
-                    id = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, idPath);
-                } catch (RuntimeException e) {
-                    // Filename has chars Minecraft's ResourceLocation rejects
-                    // (e.g. a space, uppercase letter, punctuation outside
-                    // [a-z0-9._-]). Skip rather than crash the whole server —
-                    // common author paper-cut, e.g. "lighting copy.json".
-                    LOGGER.warn("[DungeonTrain] StartingBook: filename '{}' in context '{}' is not a valid ResourceLocation path — rename to use only [a-z0-9._-]. Skipping. ({})",
-                        basename, ctx.name(), e.getMessage());
-                    failed++;
-                    continue;
-                }
-                try (InputStream in = StartingBookRegistry.class.getResourceAsStream(resourcePath)) {
-                    if (in == null) {
-                        LOGGER.warn("[DungeonTrain] StartingBook: scanner found '{}' but resource stream is null — skipping",
-                            basename);
-                        failed++;
-                        continue;
-                    }
-                    RandomBookFile book = RandomBookCodec.parse(in, id);
-                    pool.put(id, book);
-                    loaded++;
-                } catch (RandomBookCodec.RandomBookParseException e) {
-                    LOGGER.error("[DungeonTrain] StartingBook: failed to parse {} — {}", resourcePath, e.getMessage());
-                    failed++;
-                } catch (Exception e) {
-                    LOGGER.error("[DungeonTrain] StartingBook: unexpected error reading {} — {}", resourcePath, e.toString());
-                    failed++;
-                }
+        Map<ResourceLocation, Resource> resources =
+            resourceManager.listResources(DIR, rl -> rl.getPath().endsWith(JSON_EXT));
+        for (Map.Entry<ResourceLocation, Resource> entry : resources.entrySet()) {
+            ResourceLocation file = entry.getKey();
+            // Preserve the historical id shape (dungeontrain:narratives/starting_books/[<ctx>/]<name>).
+            ResourceLocation id = stripJson(file);
+            StartingBookContext ctx = contextFor(id);
+            try (InputStream in = entry.getValue().open()) {
+                RandomBookFile book = RandomBookCodec.parse(in, id);
+                POOLS.get(ctx).put(id, book);
+                perContext.merge(ctx, 1, Integer::sum);
+                totalLoaded++;
+            } catch (RandomBookCodec.RandomBookParseException e) {
+                LOGGER.error("[DungeonTrain] StartingBook: failed to parse {} — {}", file, e.getMessage());
+                totalFailed++;
+            } catch (Exception e) {
+                LOGGER.error("[DungeonTrain] StartingBook: unexpected error reading {} — {}", file, e.toString());
+                totalFailed++;
             }
-            LOGGER.info("[DungeonTrain] StartingBook context '{}' loaded — {} books from {} (failed: {})",
-                ctx.name(), loaded, prefix, failed);
-            totalLoaded += loaded;
-            totalFailed += failed;
+        }
+        for (StartingBookContext ctx : StartingBookContext.values()) {
+            LOGGER.info("[DungeonTrain] StartingBook context '{}' loaded — {} books",
+                ctx.name(), perContext.get(ctx));
         }
         LOGGER.info("[DungeonTrain] StartingBook registry loaded — {} books across {} contexts (failed: {})",
             totalLoaded, StartingBookContext.values().length, totalFailed);
+    }
+
+    /** Drop every per-context pool (called on server stop). */
+    public static synchronized void clear() {
+        for (Map<ResourceLocation, RandomBookFile> pool : POOLS.values()) pool.clear();
+    }
+
+    /** Strip the trailing {@code .json} from a resource location, keeping namespace + path. */
+    private static ResourceLocation stripJson(ResourceLocation file) {
+        String path = file.getPath();
+        return ResourceLocation.fromNamespaceAndPath(
+            file.getNamespace(), path.substring(0, path.length() - JSON_EXT.length()));
+    }
+
+    /**
+     * Derive the {@link StartingBookContext} for a book id from its path: the
+     * folder segment right after {@code narratives/starting_books/}. A top-level
+     * file (no sub-folder) is {@link StartingBookContext#DEFAULT}; an unrecognised
+     * sub-folder (e.g. a datapack's own bucket) also falls back to DEFAULT so the
+     * book still loads and is usable.
+     */
+    private static StartingBookContext contextFor(ResourceLocation id) {
+        String path = id.getPath();
+        if (!path.startsWith(BASE_PATH)) return StartingBookContext.DEFAULT;
+        String rel = path.substring(BASE_PATH.length());
+        int slash = rel.indexOf('/');
+        if (slash < 0) return StartingBookContext.DEFAULT;
+        String folder = rel.substring(0, slash);
+        return StartingBookContext.fromString(folder).orElse(StartingBookContext.DEFAULT);
     }
 
     /** Snapshot of every registered book id across every pool, alphabetical. */
@@ -284,17 +299,5 @@ public final class StartingBookRegistry {
         String path = rl.getPath();
         int slash = path.lastIndexOf('/');
         return slash >= 0 ? path.substring(slash + 1) : path;
-    }
-
-    @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
-        reload();
-    }
-
-    @SubscribeEvent
-    public static void onServerStopped(ServerStoppedEvent event) {
-        synchronized (StartingBookRegistry.class) {
-            for (Map<ResourceLocation, RandomBookFile> pool : POOLS.values()) pool.clear();
-        }
     }
 }
