@@ -53,4 +53,14 @@ public final class VersionInfo {
     }
 
     private VersionInfo() {}
+
+    /**
+     * Whether this is a development build — any build whose baked git branch is not
+     * {@code main}. Single source of truth for the dev-vs-release signal, readable from
+     * loader-neutral code (config, server) as well as the client. Release builds are on
+     * {@code main}; feature branches / worktrees report dev.
+     */
+    public static boolean isDevBuild() {
+        return !"main".equals(BRANCH);
+    }
 }

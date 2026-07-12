@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.config;
 
-import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.VersionInfo;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -579,21 +579,21 @@ public final class DungeonTrainCommonConfig {
     /**
      * Whether the disintegration band runs in <b>dev-test mode</b> — the old compact 500-block
      * journey — which is on automatically whenever the build is running from a branch (any
-     * non-{@code main}/non-release build). Single source of truth is {@link DungeonTrain#isDevBuild()}
+     * non-{@code main}/non-release build). Single source of truth is {@link VersionInfo#isDevBuild()}
      * (the baked git branch). On a release build this is false and the configured long journey is used.
      */
     public static boolean isDisintegrationDevTestMode() {
-        return DungeonTrain.isDevBuild();
+        return VersionInfo.isDevBuild();
     }
 
     /**
      * Whether the Nether band runs in <b>dev-test mode</b> — the real-Nether core expanded to
      * {@link #DEVTEST_NETHER_CORE_HOLD_BLOCKS} so the biome variety is fast to traverse — on automatically
      * for any non-{@code main}/non-release build. Same single source of truth as the disintegration band:
-     * {@link DungeonTrain#isDevBuild()} (the baked git branch). Release builds keep the configured length.
+     * {@link VersionInfo#isDevBuild()} (the baked git branch). Release builds keep the configured length.
      */
     public static boolean isNetherDevTestMode() {
-        return DungeonTrain.isDevBuild();
+        return VersionInfo.isDevBuild();
     }
 
     /** Blocks from spawn where the band pattern is anchored; falls back to the hardcoded default pre-load. */
@@ -715,10 +715,10 @@ public final class DungeonTrainCommonConfig {
      * Whether the upside-down band runs in <b>dev-test mode</b> — the core span shrunk to
      * {@link #DEVTEST_UPSIDE_DOWN_HOLD_BLOCKS} so the mirrored band is fast to reach and cross — on
      * automatically for any non-{@code main}/non-release build. Same single source of truth as the
-     * other bands: {@link DungeonTrain#isDevBuild()} (the baked git branch).
+     * other bands: {@link VersionInfo#isDevBuild()} (the baked git branch).
      */
     public static boolean isUpsideDownDevTestMode() {
-        return DungeonTrain.isDevBuild();
+        return VersionInfo.isDevBuild();
     }
 
     /** Fade-in/out span (blocks) of the upside-down atmosphere at each band edge; falls back pre-load. */

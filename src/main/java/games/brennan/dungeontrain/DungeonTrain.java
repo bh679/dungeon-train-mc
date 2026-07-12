@@ -117,7 +117,7 @@ public class DungeonTrain {
      * source of truth rather than a duplicated branch check.
      */
     public static boolean isDevBuild() {
-        return !"main".equals(VersionInfo.BRANCH);
+        return VersionInfo.isDevBuild();
     }
 
     /** The relay capability this build reports through: the dev channel for dev builds, live on main. */
