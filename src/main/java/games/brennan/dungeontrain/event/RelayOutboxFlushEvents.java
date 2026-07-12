@@ -20,7 +20,6 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
  * of how many levels (or Sable sub-levels) are ticking. {@link RelayOutbox#flush()} is a cheap no-op
  * when the queue is empty.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class RelayOutboxFlushEvents {
 
     /** ~30 s at 20 tps — telemetry is not latency-sensitive, so a coarse cadence keeps overhead nil. */
@@ -32,9 +31,8 @@ public final class RelayOutboxFlushEvents {
         RelayOutbox.get().flush();
     }
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) {
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) {
             return;
         }
         // Gate to a single, always-ticking level so the cadence is one flush per period, not one

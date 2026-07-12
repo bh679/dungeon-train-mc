@@ -167,9 +167,8 @@ public final class CorridorCleanupEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (PENDING.isEmpty()) return;
 
         // Resolve corridor geometry once per tick. If data isn't ready yet

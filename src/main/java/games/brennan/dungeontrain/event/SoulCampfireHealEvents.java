@@ -43,7 +43,6 @@ import java.util.Map;
  * precedent that "worldAABB() returns the rendered post-transform position,
  * not the storage coords — iterate the plot's loaded chunks instead".</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class SoulCampfireHealEvents {
 
     /** Under the jitter namespace so DungeonTrain.commonSetup's DEBUG level applies. */
@@ -60,9 +59,8 @@ public final class SoulCampfireHealEvents {
 
     private SoulCampfireHealEvents() {}
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (Math.floorMod(tickCounter++, SCAN_PERIOD_TICKS) != 0) return;
 
         for (ServerPlayer player : level.players()) {

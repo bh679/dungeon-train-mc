@@ -56,9 +56,8 @@ public final class EchoEncounterEvents {
         RemoteEchoEncounters.onEntityDeath(level, event.getEntity(), event.getSource().getEntity());
     }
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         long now = level.getGameTime();
         if (now % SCAN_PERIOD_TICKS != 0) return;
         RemoteEchoEncounters.scan(level, now);

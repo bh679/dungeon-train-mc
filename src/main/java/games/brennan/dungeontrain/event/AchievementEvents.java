@@ -888,9 +888,8 @@ public final class AchievementEvents {
      * trigger. Once-per-second per player; {@link NothingButBooksAdvancement
      * #checkAndGrant} itself early-returns once already earned.
      */
-    @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onPlayerTick(net.minecraft.world.entity.player.Player tickedPlayer) {
+        if (!(tickedPlayer instanceof ServerPlayer player)) return;
         if (player.tickCount % 20 != 0) return;
         NothingButBooksAdvancement.checkAndGrant(player);
     }

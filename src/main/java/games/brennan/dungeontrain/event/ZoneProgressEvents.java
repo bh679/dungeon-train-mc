@@ -57,7 +57,6 @@ import java.util.List;
  * scan a no-op. When disintegration is disabled {@link DisintegrationBand#zoneAt} always returns
  * {@code OVERWORLD} and the overworld-again gate is never satisfied, so nothing fires.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class ZoneProgressEvents {
 
     /** Zone-scan cadence (ticks) — matches the other per-level advancement scans. */
@@ -88,9 +87,8 @@ public final class ZoneProgressEvents {
 
     private ZoneProgressEvents() {}
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (!Level.OVERWORLD.equals(level.dimension())) return;
         if (level.getGameTime() % SCAN_PERIOD_TICKS != 0) return;
         List<ServerPlayer> players = level.players();

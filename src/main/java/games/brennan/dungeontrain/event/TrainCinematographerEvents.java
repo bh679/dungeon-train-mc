@@ -35,9 +35,8 @@ public final class TrainCinematographerEvents {
 
     private TrainCinematographerEvents() {}
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (Math.floorMod(tickCounter++, SCAN_PERIOD_TICKS) != 0) return;
 
         for (ServerPlayer player : level.players()) {

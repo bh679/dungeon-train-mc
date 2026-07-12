@@ -67,9 +67,8 @@ public final class DeathNoteRefreshEvents {
         LAST_REFRESH_CARRIAGE.remove(player.getUUID());
     }
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (level.dimension() != Level.OVERWORLD) return;            // run the scan once per game tick
         if (level.getGameTime() % SCAN_PERIOD_TICKS != 0) return;
         for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {

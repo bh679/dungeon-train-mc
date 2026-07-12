@@ -217,9 +217,8 @@ public final class PlayerJoinEvents {
      * dimensions (placement is dimension-agnostic — it redirects to the
      * starting dimension).
      */
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (level.dimension() != Level.OVERWORLD) return;
 
         MinecraftServer server = level.getServer();

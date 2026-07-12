@@ -504,9 +504,8 @@ public final class RunStatsEvents {
                 packet.armorHead(), packet.armorChest(), packet.armorLegs(), packet.armorFeet());
     }
 
-    @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        public static void onPlayerTick(net.minecraft.world.entity.player.Player tickedPlayer) {
+        if (!(tickedPlayer instanceof ServerPlayer player)) return;
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addRunTicks(1L);
     }
 
@@ -562,9 +561,8 @@ public final class RunStatsEvents {
      * is seen this run, the all-time {@link GlobalPlayerStats#addPlayersEncountered}
      * counter ticks and the "Strangers on a Train" milestone is checked.
      */
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (level.getGameTime() % ENCOUNTER_SCAN_PERIOD_TICKS != 0L) return;
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;

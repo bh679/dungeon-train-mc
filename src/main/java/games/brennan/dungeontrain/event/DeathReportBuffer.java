@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * client, or a dropped packet), a short timeout posts the report with the gear-composite fallback — so it
  * always lands. The <i>threaded</i> report still posts instantly at death; only the top-level copy waits.
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DeathReportBuffer {
 
     /** How long to wait for the client's ride photo before posting with the gear-composite fallback. */
@@ -64,8 +63,7 @@ public final class DeathReportBuffer {
     }
 
     /** Flush any reports whose photo never arrived within {@link #TIMEOUT_MS} — gear-composite fallback. */
-    @SubscribeEvent
-    public static void onServerTick(ServerTickEvent.Post event) {
+        public static void onServerTick(net.minecraft.server.MinecraftServer tickedServer) {
         if (PENDING.isEmpty()) return;
         long now = Util.getMillis();
         for (Iterator<Map.Entry<UUID, Pending>> it = PENDING.entrySet().iterator(); it.hasNext(); ) {

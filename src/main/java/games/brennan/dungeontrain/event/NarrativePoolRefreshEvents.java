@@ -32,7 +32,6 @@ import java.util.Set;
  * <p>When discovery is disabled the ticker does nothing (no fetches, no cost). The tick counter is a plain
  * server-thread int — {@link ServerTickEvent.Post} is single-threaded.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NarrativePoolRefreshEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -61,15 +60,14 @@ public final class NarrativePoolRefreshEvents {
         NarrativePool.clear();
     }
 
-    @SubscribeEvent
-    public static void onServerTick(ServerTickEvent.Post event) {
+        public static void onServerTick(net.minecraft.server.MinecraftServer tickedServer) {
         if (!SharedBookGate.canDiscoverNarratives()) return;
 
         if (firstRefreshCountdown > 0) {
             firstRefreshCountdown--;
             if (firstRefreshCountdown == 0) {
                 firstRefreshCountdown = -1;
-                refresh(event.getServer());
+                refresh(tickedServer);
                 return;
             }
         }
@@ -77,7 +75,7 @@ public final class NarrativePoolRefreshEvents {
         tickCounter++;
         if (tickCounter >= REFRESH_PERIOD_TICKS) {
             tickCounter = 0;
-            refresh(event.getServer());
+            refresh(tickedServer);
         }
     }
 

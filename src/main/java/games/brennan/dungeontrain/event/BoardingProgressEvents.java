@@ -115,9 +115,8 @@ public final class BoardingProgressEvents {
 
     private BoardingProgressEvents() {}
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (level.getGameTime() % SCAN_PERIOD_TICKS != 0) return;
 
         List<Trains.Carriage> carriages = Trains.allCarriages(level);

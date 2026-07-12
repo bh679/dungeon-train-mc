@@ -45,7 +45,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * tick, and shutdown handlers all run on the server thread, so the queue and cooldown map are touched
  * single-threaded.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class MentionPresenceEvents {
 
     private MentionPresenceEvents() {}
@@ -118,12 +117,11 @@ public final class MentionPresenceEvents {
     }
 
     /** Once-per-server-tick drain, anchored on the overworld so it runs once rather than per dimension. */
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
         if (PENDING.isEmpty()) {
             return;
         }
-        if (!(event.getLevel() instanceof ServerLevel level) || level.dimension() != Level.OVERWORLD) {
+        if (!(tickedLevel instanceof ServerLevel level) || level.dimension() != Level.OVERWORLD) {
             return;
         }
         MinecraftServer server = level.getServer();

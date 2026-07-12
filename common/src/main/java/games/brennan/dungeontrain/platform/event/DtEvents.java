@@ -110,4 +110,41 @@ public final class DtEvents {
     public static final DtEvent<DtServerStoppedCallback> SERVER_STOPPED =
         new DtEvent<>();
 
+    // ---- Tick events (Stage 2b) -------------------------------------------
+
+    /**
+     * Level tick (post) — NeoForge {@code LevelTickEvent.Post}. Fires after each
+     * level ticks, on BOTH client and server levels (handlers self-filter via
+     * {@code instanceof ServerLevel}). Not cancellable; read-only ({@code Level}).
+     * All DT handlers were NORMAL priority — {@code NeoForgeTickBridge} fires them
+     * in registration order under a single NORMAL subscription.
+     */
+    public static final DtEvent<DtLevelTickCallback> LEVEL_TICK =
+        new DtEvent<>();
+
+    /**
+     * Server tick (post) — NeoForge {@code ServerTickEvent.Post}. Fires after
+     * each server tick on the server thread. Not cancellable; read-only
+     * ({@code MinecraftServer}). All DT handlers NORMAL.
+     */
+    public static final DtEvent<DtServerTickCallback> SERVER_TICK =
+        new DtEvent<>();
+
+    /**
+     * Player tick (post) — NeoForge {@code PlayerTickEvent.Post}. Fires after
+     * each player ticks. Not cancellable; read-only ({@code Player}). All DT
+     * handlers NORMAL.
+     */
+    public static final DtEvent<DtPlayerTickCallback> PLAYER_TICK =
+        new DtEvent<>();
+
+    /**
+     * Entity tick (pre) — NeoForge {@code EntityTickEvent.Pre}. Fires before each
+     * entity ticks. NeoForge's {@code Pre} is cancellable, but DT's only handler
+     * never cancels, so this is a {@code void} passthrough. All DT handlers
+     * NORMAL.
+     */
+    public static final DtEvent<DtEntityTickCallback> ENTITY_TICK =
+        new DtEvent<>();
+
 }

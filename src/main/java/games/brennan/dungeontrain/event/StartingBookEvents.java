@@ -214,9 +214,8 @@ public final class StartingBookEvents {
      *   <li>{@link #BURN_ENTITIES} — in-progress book burns (close-and-throw).</li>
      * </ol>
      */
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (level.dimension() != Level.OVERWORLD) return;
 
         MinecraftServer server = level.getServer();

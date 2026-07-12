@@ -45,7 +45,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * test-runtime classpath), and {@code @EventBusSubscriber} method-signature
  * verification at mod-construction time would otherwise fault under JUnit.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CarriageGroupGapTicker {
 
     private static final int BROADCAST_PERIOD_TICKS = 4;
@@ -70,9 +69,8 @@ public final class CarriageGroupGapTicker {
 
     private CarriageGroupGapTicker() {}
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (Math.floorMod(tickCounter++, BROADCAST_PERIOD_TICKS) != 0) return;
 
         List<ServerPlayer> players = level.players();

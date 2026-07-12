@@ -26,7 +26,6 @@ import java.util.List;
  * matching where {@code TrackGenerator} recorded the boxes. Throttled to once
  * every {@link #SCAN_PERIOD_TICKS} ticks, like the other train scanners.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class StairsUsageEvents {
 
     /** Per-level scan period, in ticks. Matches the other train scanners. */
@@ -44,9 +43,8 @@ public final class StairsUsageEvents {
 
     private StairsUsageEvents() {}
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (level.getGameTime() % SCAN_PERIOD_TICKS != 0) return;
 
         List<ServerPlayer> players = level.players();

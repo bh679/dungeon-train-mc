@@ -159,9 +159,8 @@ public final class PlayerMobAdvancementEvents {
         }
     }
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (level.getGameTime() % SCAN_PERIOD_TICKS != 0) return;
         long now = level.getGameTime();
         pruneEchoStrikes(now);
@@ -278,9 +277,8 @@ public final class PlayerMobAdvancementEvents {
      * {@link #ECHO_SCAN_PERIOD_TICKS} cadence, narrowed by a centre-to-centre distance check.
      * Re-firing for an already-granted player is a vanilla no-op.
      */
-    @SubscribeEvent
-    public static void onEchoProximityScan(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onEchoProximityScan(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (level.getGameTime() % ECHO_SCAN_PERIOD_TICKS != 0) return;
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;

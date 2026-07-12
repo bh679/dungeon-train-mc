@@ -31,14 +31,12 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
  * <p>This complements (does not replace) {@code TrainWindowManager.onLevelTick}
  * — that class still owns the compensated-pivot logic for mutation ticks.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class SableKinematicTicker {
 
     private SableKinematicTicker() {}
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
 
         long gameTime = level.getGameTime();
         Shipyard shipyard = Shipyards.of(level);

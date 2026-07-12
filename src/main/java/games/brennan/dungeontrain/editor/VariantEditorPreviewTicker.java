@@ -48,7 +48,6 @@ import java.util.List;
  * carriage editor plot with ~100 variant cells = 100 cheap state
  * comparisons + the few that actually changed get a {@code setBlockSilent}.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class VariantEditorPreviewTicker {
 
     /** Cycle rate — one tick of preview work per second. */
@@ -59,9 +58,8 @@ public final class VariantEditorPreviewTicker {
 
     private VariantEditorPreviewTicker() {}
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         long gameTime = level.getGameTime();
         if (gameTime % TICK_PERIOD != 0) return;
 

@@ -49,6 +49,86 @@ public final class NeoForgeServerEvents {
             .register(games.brennan.dungeontrain.event.AchievementEvents::onAdvancementEarn);
 
         registerServerLifecycle();
+        registerTicks();
+    }
+
+    /**
+     * Tick handlers (LevelTick.Post, ServerTick.Post, PlayerTick.Post,
+     * EntityTick.Pre), fired by {@code NeoForgeTickBridge}. Every DT tick handler
+     * was NORMAL priority and none are dist-gated, so all register at NORMAL in a
+     * single tier. Registration order within an event is irrelevant (independent
+     * handlers). None of these events are cancelled by DT.
+     */
+    private static void registerTicks() {
+        // LevelTickEvent.Post (25 handlers)
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.echo.EchoEncounterEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.ship.sable.SableKinematicTicker::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.StairsUsageEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.StartingBookEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.ResumeWatchdog::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.TrainTickEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.RelayOutboxFlushEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.DtpPlacementService::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.TrackPresenceEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.NetherMobSpawner::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.TrainCinematographerEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.SoulCampfireHealEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.ZoneProgressEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.RunStatsEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.PlayerJoinEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.CorridorCleanupEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.BoardingProgressEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.PlayerMobAdvancementEvents::onEchoProximityScan);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.DeathNoteRefreshEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.DeathNoteEchoController::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.CarriageGroupGapTicker::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.RoofRunEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.event.MentionPresenceEvents::onLevelTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_TICK
+            .register(games.brennan.dungeontrain.editor.VariantEditorPreviewTicker::onLevelTick);
+
+        // ServerTickEvent.Post (3 handlers)
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_TICK
+            .register(games.brennan.dungeontrain.event.NarrativePoolRefreshEvents::onServerTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_TICK
+            .register(games.brennan.dungeontrain.event.DeathReportBuffer::onServerTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_TICK
+            .register(games.brennan.dungeontrain.event.SharedBookRefreshEvents::onServerTick);
+
+        // PlayerTickEvent.Post (2 handlers)
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_TICK
+            .register(games.brennan.dungeontrain.event.RunStatsEvents::onPlayerTick);
+        games.brennan.dungeontrain.platform.event.DtEvents.PLAYER_TICK
+            .register(games.brennan.dungeontrain.event.AchievementEvents::onPlayerTick);
+
+        // EntityTickEvent.Pre (1 handler; never cancels)
+        games.brennan.dungeontrain.platform.event.DtEvents.ENTITY_TICK
+            .register(games.brennan.dungeontrain.event.NetherBandZombificationGuard::onEntityTick);
     }
 
     /**

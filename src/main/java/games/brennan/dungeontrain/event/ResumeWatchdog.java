@@ -49,7 +49,6 @@ import org.slf4j.Logger;
  * server via {@link MinecraftServer#isDedicatedServer()} (a dedicated server never pauses),
  * so it is inert on real server lag; a false positive only <em>holds</em> force-loads briefly.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class ResumeWatchdog {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -65,11 +64,10 @@ public final class ResumeWatchdog {
 
     private ResumeWatchdog() {}
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
         // Run once per SERVER tick by gating on the overworld server level (mirrors
         // PlayerJoinEvents.onLevelTick). Client levels never match ServerLevel.
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (level.dimension() != Level.OVERWORLD) return;
         MinecraftServer server = level.getServer();
         if (server.isDedicatedServer()) return; // only the integrated server pauses

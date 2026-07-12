@@ -30,7 +30,6 @@ import net.neoforged.neoforge.event.tick.EntityTickEvent;
  * applied, so the synced flag is only written on band entry/exit and we never clear immunity
  * some other system set.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NetherBandZombificationGuard {
 
     /** Marks a mob whose zombification immunity WE set because it's in the nether core. */
@@ -41,9 +40,8 @@ public final class NetherBandZombificationGuard {
 
     private NetherBandZombificationGuard() {}
 
-    @SubscribeEvent
-    public static void onEntityTick(EntityTickEvent.Pre event) {
-        Entity entity = event.getEntity();
+        public static void onEntityTick(net.minecraft.world.entity.Entity tickedEntity) {
+        Entity entity = tickedEntity;
         if (!(entity instanceof AbstractPiglin) && !(entity instanceof Hoglin)) return;
         if (!(entity.level() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;

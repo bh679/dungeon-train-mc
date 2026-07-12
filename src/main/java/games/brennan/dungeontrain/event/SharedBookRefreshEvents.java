@@ -26,7 +26,6 @@ import org.slf4j.Logger;
  * <p>When discovery is disabled the ticker does nothing (no fetches, no cost). The tick counter is a
  * plain server-thread int — {@link ServerTickEvent.Post} is single-threaded.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class SharedBookRefreshEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -49,15 +48,14 @@ public final class SharedBookRefreshEvents {
         firstRefreshCountdown = FIRST_REFRESH_DELAY_TICKS;
     }
 
-    @SubscribeEvent
-    public static void onServerTick(ServerTickEvent.Post event) {
+        public static void onServerTick(net.minecraft.server.MinecraftServer tickedServer) {
         if (!SharedBookGate.canDiscover()) return;
 
         if (firstRefreshCountdown > 0) {
             firstRefreshCountdown--;
             if (firstRefreshCountdown == 0) {
                 firstRefreshCountdown = -1;
-                SharedBookPool.refreshAsync(WorldLanguage.hostLocale(event.getServer()));
+                SharedBookPool.refreshAsync(WorldLanguage.hostLocale(tickedServer));
                 return;
             }
         }
@@ -65,7 +63,7 @@ public final class SharedBookRefreshEvents {
         tickCounter++;
         if (tickCounter >= REFRESH_PERIOD_TICKS) {
             tickCounter = 0;
-            SharedBookPool.refreshAsync(WorldLanguage.hostLocale(event.getServer()));
+            SharedBookPool.refreshAsync(WorldLanguage.hostLocale(tickedServer));
         }
     }
 }

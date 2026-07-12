@@ -57,7 +57,6 @@ import java.util.UUID;
  * <p>Tracked per player (every boarded player can earn it independently),
  * mirroring the per-level scan cadence of {@link BoardingProgressEvents}.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class RoofRunEvents {
 
     /** Per-level scan period, in ticks. Matches {@link BoardingProgressEvents}. */
@@ -98,9 +97,8 @@ public final class RoofRunEvents {
 
     private RoofRunEvents() {}
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         long now = level.getGameTime();
         if (now % SCAN_PERIOD_TICKS != 0) return;
 

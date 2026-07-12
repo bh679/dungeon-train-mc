@@ -108,9 +108,8 @@ public final class NetherMobSpawner {
         return (biome.is(Biomes.SOUL_SAND_VALLEY) || biome.is(Biomes.BASALT_DELTAS)) ? 3 : 6;
     }
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
         if (level.getGameTime() % SPAWN_PERIOD_TICKS != 0) return;
         if (NetherBand.startX(level) == NetherBand.OFF) return;

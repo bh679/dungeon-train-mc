@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * world-space AABB around the player would never find it. Steering compares carriage indices
  * ({@link TrainConfinement#carriageIndex}), a frame the echo and the player share.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DeathNoteEchoController {
 
     private static final int SCAN_PERIOD_TICKS = 10;
@@ -45,9 +44,8 @@ public final class DeathNoteEchoController {
         if (echoUuid != null) ACTIVE.remove(echoUuid);
     }
 
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        public static void onLevelTick(net.minecraft.world.level.Level tickedLevel) {
+        if (!(tickedLevel instanceof ServerLevel level)) return;
         if (ACTIVE.isEmpty()) return;
         if (level.getGameTime() % SCAN_PERIOD_TICKS != 0) return;
         for (Map.Entry<UUID, UUID> e : ACTIVE.entrySet()) {
