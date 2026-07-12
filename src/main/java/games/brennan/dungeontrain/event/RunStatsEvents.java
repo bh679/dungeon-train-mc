@@ -20,7 +20,7 @@ import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.net.AbandonRunPacket;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.player.PlayerMobAppearance;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.util.SecondPersonDeathMessage;
@@ -204,7 +204,7 @@ public final class RunStatsEvents {
                 GlobalPlayerStats.trainTicks(id),
                 narrative,
                 deathCause);
-        DungeonTrainNet.sendTo(player, packet);
+        DtNetSender.get().sendToPlayer(player, packet);
 
         // Relay the worn armor + held item to dp-relay for the data explorer's player cards.
         // Independent of the Discord toggle below — gated on its own inside the reporter.

@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.editor;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.ContainerContentsEditPacket;
 import games.brennan.dungeontrain.net.ContainerContentsSyncPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -86,7 +85,7 @@ public final class ContainerContentsMenuController {
     public static void toggle(ServerPlayer player, boolean open) {
         if (!open) {
             OPEN.remove(player.getUUID());
-            DungeonTrainNet.sendTo(player, ContainerContentsSyncPacket.empty());
+            DtNetSender.get().sendToPlayer(player, ContainerContentsSyncPacket.empty());
             return;
         }
         if (!player.hasPermissions(2)) {
@@ -251,7 +250,7 @@ public final class ContainerContentsMenuController {
         String link = store.linkAt(localPos);
         BlockState state = player.serverLevel().getBlockState(worldPos);
         int containerSize = ContainerContentsRoller.slotsForContainer(state);
-        DungeonTrainNet.sendTo(player,
+        DtNetSender.get().sendToPlayer(player,
             buildSyncPacket(plot, localPos, worldPos, face, up, pool, containerSize, link));
     }
 
@@ -543,7 +542,7 @@ public final class ContainerContentsMenuController {
             // menu since the pool is now empty.
             if (next.isEmpty() && packet.op() == ContainerContentsEditPacket.Op.CLEAR) {
                 OPEN.remove(player.getUUID());
-                DungeonTrainNet.sendTo(player, ContainerContentsSyncPacket.empty());
+                DtNetSender.get().sendToPlayer(player, ContainerContentsSyncPacket.empty());
                 return;
             }
             resyncSameFace(player, plot, localPos);
@@ -574,7 +573,7 @@ public final class ContainerContentsMenuController {
 
         if (next.isEmpty() && packet.op() == ContainerContentsEditPacket.Op.CLEAR) {
             OPEN.remove(player.getUUID());
-            DungeonTrainNet.sendTo(player, ContainerContentsSyncPacket.empty());
+            DtNetSender.get().sendToPlayer(player, ContainerContentsSyncPacket.empty());
             return;
         }
         resyncSameFace(player, plot, localPos);

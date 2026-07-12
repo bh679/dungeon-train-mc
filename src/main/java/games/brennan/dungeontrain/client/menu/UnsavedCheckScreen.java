@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.EditorUnsavedRequestPacket;
 
 import java.util.ArrayList;
@@ -68,7 +68,7 @@ public final class UnsavedCheckScreen implements MenuScreen {
             // Clear any stale list from a previous drill-in so we don't
             // momentarily render rows from the last category we checked.
             EditorStatusHudOverlay.clearUnsavedList();
-            DungeonTrainNet.sendToServer(new EditorUnsavedRequestPacket());
+            DtNetSender.get().sendToServer(new EditorUnsavedRequestPacket());
             requestSent = true;
             return List.of(new CommandMenuEntry.Loading("Checking..."));
         }

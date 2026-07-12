@@ -27,7 +27,7 @@ import games.brennan.dungeontrain.narrative.StartingBookRegistry;
 import games.brennan.dungeontrain.narrative.StoryFile;
 import games.brennan.dungeontrain.narrative.StoryRegistry;
 import games.brennan.dungeontrain.net.AdvancementsHintPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
@@ -920,7 +920,7 @@ public final class AchievementEvents {
             // Death-screen "accolades": record this genuine, non-editor Dungeon Train
             // earn into the per-life run state; read into the death packet on death.
             DtAttachments.PLAYER_RUN_STATE.get(player).recordEarnedAdvancement(id);
-            DungeonTrainNet.sendTo(player, new AdvancementsHintPacket());
+            DtNetSender.get().sendToPlayer(player, new AdvancementsHintPacket());
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside
             // checkAndGrant re-fires this event, and the id guard avoids the

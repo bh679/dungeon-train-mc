@@ -3,7 +3,7 @@ import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.platform.InputConstants;
 
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.ManualSpawnRequestPacket;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -47,7 +47,7 @@ public final class ManualSpawnHotkeyClient {
         public static void onClientTick() {
             if (Minecraft.getInstance().getConnection() == null) return;
             while (KEY.consumeClick()) {
-                DungeonTrainNet.sendToServer(new ManualSpawnRequestPacket());
+                DtNetSender.get().sendToServer(new ManualSpawnRequestPacket());
             }
         }
     }

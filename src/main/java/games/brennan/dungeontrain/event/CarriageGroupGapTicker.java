@@ -4,7 +4,7 @@ import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.net.CarriageGroupGapPacket;
 import games.brennan.dungeontrain.net.CarriageNextSpawnPacket;
 import games.brennan.dungeontrain.net.CarriageSpawnCollisionPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.train.CarriageGroupGap;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import net.minecraft.ChatFormatting;
@@ -122,7 +122,7 @@ public final class CarriageGroupGapTicker {
                 ? CarriageSpawnCollisionPacket.empty()
                 : new CarriageSpawnCollisionPacket(collisionEntries);
             for (ServerPlayer player : players) {
-                DungeonTrainNet.sendTo(player, collisionPacket);
+                DtNetSender.get().sendToPlayer(player, collisionPacket);
             }
         }
 
@@ -134,7 +134,7 @@ public final class CarriageGroupGapTicker {
                 ? CarriageGroupGapPacket.empty()
                 : new CarriageGroupGapPacket(entries);
             for (ServerPlayer player : players) {
-                DungeonTrainNet.sendTo(player, packet);
+                DtNetSender.get().sendToPlayer(player, packet);
             }
         }
 
@@ -158,7 +158,7 @@ public final class CarriageGroupGapTicker {
                 ? CarriageNextSpawnPacket.empty()
                 : new CarriageNextSpawnPacket(previewEntries);
             for (ServerPlayer player : players) {
-                DungeonTrainNet.sendTo(player, previewPacket);
+                DtNetSender.get().sendToPlayer(player, previewPacket);
             }
         }
     }

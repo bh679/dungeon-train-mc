@@ -5,7 +5,7 @@ import games.brennan.dungeontrain.event.PrefabUseHandler;
 import games.brennan.dungeontrain.item.VariantClipboardItem;
 import games.brennan.dungeontrain.net.BlockVariantEditPacket;
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -90,7 +90,7 @@ public final class BlockVariantMenuController {
     public static void toggle(ServerPlayer player, boolean open) {
         if (!open) {
             OPEN.remove(player.getUUID());
-            DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.empty());
+            DtNetSender.get().sendToPlayer(player, BlockVariantSyncPacket.empty());
             return;
         }
         if (!player.hasPermissions(2)) {
@@ -160,7 +160,7 @@ public final class BlockVariantMenuController {
         List<VariantState> states = plot.statesAt(localPos);
         if (states == null) states = List.of();
         int lockId = plot.lockIdAt(localPos);
-        DungeonTrainNet.sendTo(player,
+        DtNetSender.get().sendToPlayer(player,
             buildSyncPacket(plot, localPos, worldPos, face, up, states, lockId));
     }
 
@@ -589,7 +589,7 @@ public final class BlockVariantMenuController {
 
         if (dropCell) {
             OPEN.remove(player.getUUID());
-            DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.empty());
+            DtNetSender.get().sendToPlayer(player, BlockVariantSyncPacket.empty());
             return;
         }
 
@@ -725,7 +725,7 @@ public final class BlockVariantMenuController {
         Vec3 up = open != null ? open.up() : computeUp(face, player);
         // Close the block-variant menu — the container menu takes over.
         OPEN.remove(player.getUUID());
-        DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.empty());
+        DtNetSender.get().sendToPlayer(player, BlockVariantSyncPacket.empty());
         ContainerContentsMenuController.openAt(player, plot, localPos, face, up);
     }
 

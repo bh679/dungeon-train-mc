@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.client.snapshot;
 
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.EchoPhotoPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
@@ -33,7 +33,7 @@ public final class EchoSnapshotClient {
         UUID echoId = echo.getUUID();
         RideSnapshotCapture.requestEchoCapture(echoEntityId, png -> {
             if (png != null && png.length > 0) {
-                DungeonTrainNet.sendToServer(new EchoPhotoPacket(echoId, png));
+                DtNetSender.get().sendToServer(new EchoPhotoPacket(echoId, png));
             }
         });
     }

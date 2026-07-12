@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.PartAssignmentEditPacket;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 
@@ -187,7 +187,7 @@ public final class StagePickerScreen implements MenuScreen {
         if (partsMode) {
             String stageId = "custom".equals(token) ? "" : token;
             return new CommandMenuEntry.ClientAction(label, () -> {
-                DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
+                DtNetSender.get().sendToServer(new PartAssignmentEditPacket(
                     PartAssignmentEditPacket.Op.SET_STAGE, partsVariantId, partsKind, partsName, 0, stageId));
                 CommandMenuState.close();
             });

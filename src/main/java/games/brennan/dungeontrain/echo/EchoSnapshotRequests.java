@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.echo;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CaptureEchoPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ final class EchoSnapshotRequests {
     static void requestIfEnabled(ServerPlayer player, Entity echo) {
         if (!DungeonTrainConfig.isEchoEncounterToDiscord()) return; // same gate as the post
         try {
-            DungeonTrainNet.sendTo(player, new CaptureEchoPacket(echo.getId()));
+            DtNetSender.get().sendToPlayer(player, new CaptureEchoPacket(echo.getId()));
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] echo snapshot request failed: {}", t.toString());
         }

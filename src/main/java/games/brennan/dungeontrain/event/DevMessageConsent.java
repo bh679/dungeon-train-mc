@@ -3,7 +3,7 @@ import games.brennan.dungeontrain.platform.DtPlatform;
 
 import games.brennan.dungeontrain.discord.DevMessageReport;
 import games.brennan.dungeontrain.net.ConsentUpdatePacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -185,7 +185,7 @@ public final class DevMessageConsent {
             AchievementEvents.notifyCreatorAnswered(player);
         }
         DevMessageReport.postConsentAccepted(player);
-        DungeonTrainNet.sendTo(player, new ConsentUpdatePacket(true, sessionId, (double) now));
+        DtNetSender.get().sendToPlayer(player, new ConsentUpdatePacket(true, sessionId, (double) now));
     }
 
     /**

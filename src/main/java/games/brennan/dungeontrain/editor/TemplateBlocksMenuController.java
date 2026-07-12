@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.TemplateBlocksEditPacket;
 import games.brennan.dungeontrain.net.TemplateBlocksSyncPacket;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -81,7 +81,7 @@ public final class TemplateBlocksMenuController {
     public static void toggle(ServerPlayer player, boolean open) {
         if (!open) {
             OPEN.remove(player.getUUID());
-            DungeonTrainNet.sendTo(player, TemplateBlocksSyncPacket.empty());
+            DtNetSender.get().sendToPlayer(player, TemplateBlocksSyncPacket.empty());
             return;
         }
         if (!player.hasPermissions(2)) {
@@ -149,7 +149,7 @@ public final class TemplateBlocksMenuController {
         OpenMenu open = OPEN.get(player.getUUID());
         if (open == null) return;
         List<TemplateBlocksSyncPacket.Entry> entries = buildBlockList(player.serverLevel(), plot);
-        DungeonTrainNet.sendTo(player, new TemplateBlocksSyncPacket(
+        DtNetSender.get().sendToPlayer(player, new TemplateBlocksSyncPacket(
             plot.key(), true, open.anchor(), open.right(), open.up(), entries));
     }
 

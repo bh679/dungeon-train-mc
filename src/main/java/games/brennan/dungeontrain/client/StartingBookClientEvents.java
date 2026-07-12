@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.narrative.BurnableBookTag;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.StartingBookClosedPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -55,6 +55,6 @@ public final class StartingBookClientEvents {
             && !BurnableBookTag.isBurnable(player.getOffhandItem())) {
             return;
         }
-        DungeonTrainNet.sendToServer(new StartingBookClosedPacket());
+        DtNetSender.get().sendToServer(new StartingBookClosedPacket());
     }
 }

@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.FreePlayConfirmResponsePacket;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -111,7 +111,7 @@ public final class FreePlayConfirmScreen extends Screen {
         if (confirmed && dontShowBox != null && dontShowBox.selected()) {
             ClientDisplayConfig.setFreePlayConfirmOptedOut(true);
         }
-        DungeonTrainNet.sendToServer(new FreePlayConfirmResponsePacket(confirmed));
+        DtNetSender.get().sendToServer(new FreePlayConfirmResponsePacket(confirmed));
         onClose();
     }
 
@@ -119,7 +119,7 @@ public final class FreePlayConfirmScreen extends Screen {
     public void onClose() {
         if (!responded) {
             responded = true;
-            DungeonTrainNet.sendToServer(new FreePlayConfirmResponsePacket(false));
+            DtNetSender.get().sendToServer(new FreePlayConfirmResponsePacket(false));
         }
         super.onClose();
     }

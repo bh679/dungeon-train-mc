@@ -4,7 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CinematicIntroPacket;
 import games.brennan.dungeontrain.net.CinematicPreloadBeginPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
@@ -117,7 +117,7 @@ public final class CinematicIntroService {
     public static void armPreloadIfNeeded(ServerPlayer player) {
         if (!DungeonTrainConfig.isIntroCinematicChunkPreloadEnabled()) return;
         if (!shouldPlay(player)) return;
-        DungeonTrainNet.sendTo(player, new CinematicPreloadBeginPacket(PLACE_HOLD_TIMEOUT_TICKS));
+        DtNetSender.get().sendToPlayer(player, new CinematicPreloadBeginPacket(PLACE_HOLD_TIMEOUT_TICKS));
         ACTIVE.add(player.getUUID());
         beginInvuln(player, PLACE_HOLD_TIMEOUT_TICKS);
         LOGGER.info("[DungeonTrain] Preload hold armed for {} (placeTimeout={}t)",
@@ -146,7 +146,7 @@ public final class CinematicIntroService {
             groundPose.yaw(), groundPose.pitch(),
             RISE_HEIGHT, PULL_BACK, LOOK_Y_OFFSET,
             duration, preloadMaxWaitTicks);
-        DungeonTrainNet.sendTo(player, pkt);
+        DtNetSender.get().sendToPlayer(player, pkt);
         DtAttachments.SEEN_INTRO_CINEMATIC.set(player, Boolean.TRUE);
         ACTIVE.add(player.getUUID());
         // Cover the client-side preload wait, the story hold that can follow it,

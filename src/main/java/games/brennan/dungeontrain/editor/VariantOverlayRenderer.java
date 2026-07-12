@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.editor;
 import com.mojang.logging.LogUtils;
 
 import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.template.TemplateGate;
@@ -172,16 +172,16 @@ public final class VariantOverlayRenderer {
         BlockPos last = LAST_HOVER_POS.remove(player.getUUID());
         // Clear the client HUD on exit so it doesn't linger in a non-editor context.
         if (last != null) {
-            DungeonTrainNet.sendTo(player, VariantHoverPacket.empty());
+            DtNetSender.get().sendToPlayer(player, VariantHoverPacket.empty());
         }
         String lastStatus = LAST_STATUS.remove(player.getUUID());
         if (lastStatus != null) {
-            DungeonTrainNet.sendTo(player, EditorStatusPacket.empty());
+            DtNetSender.get().sendToPlayer(player, EditorStatusPacket.empty());
         }
         PartPositionMenuController.forget(player);
         // Clear the client lock-id overlay too — player has left every plot.
         if (LAST_LOCK_SNAPSHOT_KEY.remove(player.getUUID()) != null) {
-            DungeonTrainNet.sendTo(player, BlockVariantLockIdsPacket.empty());
+            DtNetSender.get().sendToPlayer(player, BlockVariantLockIdsPacket.empty());
         }
         clearOutlineIfStale(player);
         clearPlotLabelsIfStale(player);
@@ -364,7 +364,7 @@ public final class VariantOverlayRenderer {
             LAST_STATUS.put(uuid, partKey);
             // Parts have no weight pool — pass the part name as modelName for
             // consistency, but the menu won't render a weight row for parts.
-            DungeonTrainNet.sendTo(player, new EditorStatusPacket(
+            DtNetSender.get().sendToPlayer(player, new EditorStatusPacket(
                 "Parts", partModel, partModel, partLoc.name(), partDevmode, EditorStatusPacket.NO_WEIGHT,
                 0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
                 partMenuEnabled, partMirror[0], partMirror[1], partMirror[2], partMirror[3],
@@ -376,7 +376,7 @@ public final class VariantOverlayRenderer {
         if (located.isEmpty()) {
             if (prev != null) {
                 LAST_STATUS.remove(uuid);
-                DungeonTrainNet.sendTo(player, EditorStatusPacket.empty());
+                DtNetSender.get().sendToPlayer(player, EditorStatusPacket.empty());
             }
             return;
         }
@@ -409,7 +409,7 @@ public final class VariantOverlayRenderer {
             + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + mirror[3] + "|" + excludedKey;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
-        DungeonTrainNet.sendTo(player, new EditorStatusPacket(
+        DtNetSender.get().sendToPlayer(player, new EditorStatusPacket(
             l.category().displayName(), l.model().displayName(), l.model().id(), modelName,
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
             mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId));
@@ -464,7 +464,7 @@ public final class VariantOverlayRenderer {
 
     private static void clearHoverIfStale(ServerPlayer player) {
         if (LAST_HOVER_POS.remove(player.getUUID()) != null) {
-            DungeonTrainNet.sendTo(player, VariantHoverPacket.empty());
+            DtNetSender.get().sendToPlayer(player, VariantHoverPacket.empty());
         }
     }
 
@@ -493,7 +493,7 @@ public final class VariantOverlayRenderer {
         BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
         if (plot == null) {
             if (LAST_LOCK_SNAPSHOT_KEY.remove(uuid) != null) {
-                DungeonTrainNet.sendTo(player, BlockVariantLockIdsPacket.empty());
+                DtNetSender.get().sendToPlayer(player, BlockVariantLockIdsPacket.empty());
             }
             return;
         }
@@ -528,7 +528,7 @@ public final class VariantOverlayRenderer {
         for (java.util.Map.Entry<net.minecraft.core.BlockPos, Integer> e : sorted) {
             entries.add(new BlockVariantLockIdsPacket.Entry(e.getKey(), e.getValue()));
         }
-        DungeonTrainNet.sendTo(player,
+        DtNetSender.get().sendToPlayer(player,
             new BlockVariantLockIdsPacket(plot.key(), plot.origin(), entries));
     }
 
@@ -575,11 +575,11 @@ public final class VariantOverlayRenderer {
 
         LAST_OUTLINE_SNAPSHOT_KEY.put(uuid, snapshotKey);
         if (sorted.isEmpty()) {
-            DungeonTrainNet.sendTo(player,
+            DtNetSender.get().sendToPlayer(player,
                 games.brennan.dungeontrain.net.BlockVariantOutlinePacket.empty());
             return;
         }
-        DungeonTrainNet.sendTo(player,
+        DtNetSender.get().sendToPlayer(player,
             new games.brennan.dungeontrain.net.BlockVariantOutlinePacket(
                 plot.key(), plot.origin(), sorted));
     }
@@ -587,7 +587,7 @@ public final class VariantOverlayRenderer {
     /** Send the empty outline packet if the player previously had a non-empty snapshot. */
     private static void clearOutlineIfStale(ServerPlayer player) {
         if (LAST_OUTLINE_SNAPSHOT_KEY.remove(player.getUUID()) != null) {
-            DungeonTrainNet.sendTo(player,
+            DtNetSender.get().sendToPlayer(player,
                 games.brennan.dungeontrain.net.BlockVariantOutlinePacket.empty());
         }
     }
@@ -667,7 +667,7 @@ public final class VariantOverlayRenderer {
         if (labels.isEmpty()) {
             LOGGER.info("[DungeonTrain] EditorPlotLabels: clear (category {}, player {})",
                 category, player.getName().getString());
-            DungeonTrainNet.sendTo(player, EditorPlotLabelsPacket.empty());
+            DtNetSender.get().sendToPlayer(player, EditorPlotLabelsPacket.empty());
             return;
         }
         java.util.List<EditorPlotLabelsPacket.Entry> entries = new java.util.ArrayList<>(labels.size());
@@ -681,13 +681,13 @@ public final class VariantOverlayRenderer {
         LOGGER.info("[DungeonTrain] EditorPlotLabels: send {} entries (category {}, first '{}' weight={} @ {}) to {}",
             entries.size(), category, first.name(), first.weight(), first.worldPos(),
             player.getName().getString());
-        DungeonTrainNet.sendTo(player, new EditorPlotLabelsPacket(entries));
+        DtNetSender.get().sendToPlayer(player, new EditorPlotLabelsPacket(entries));
     }
 
     /** Send the empty plot-labels packet if the player previously had a non-empty snapshot. */
     private static void clearPlotLabelsIfStale(ServerPlayer player) {
         if (LAST_PLOT_LABELS_KEY.remove(player.getUUID()) != null) {
-            DungeonTrainNet.sendTo(player, EditorPlotLabelsPacket.empty());
+            DtNetSender.get().sendToPlayer(player, EditorPlotLabelsPacket.empty());
         }
     }
 
@@ -756,20 +756,20 @@ public final class VariantOverlayRenderer {
         if (menus.isEmpty()) {
             LOGGER.info("[DungeonTrain] EditorTypeMenus: clear (category {}, player {})",
                 category, player.getName().getString());
-            DungeonTrainNet.sendTo(player, EditorTypeMenusPacket.empty());
+            DtNetSender.get().sendToPlayer(player, EditorTypeMenusPacket.empty());
             return;
         }
         EditorTypeMenusPacket.Menu first = menus.get(0);
         LOGGER.info("[DungeonTrain] EditorTypeMenus: send {} menus (category {}, first '{}' with {} variants @ {}) to {}",
             menus.size(), category, first.typeName(), first.variants().size(), first.worldPos(),
             player.getName().getString());
-        DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(menus, EditorStageSelection.effective()));
+        DtNetSender.get().sendToPlayer(player, new EditorTypeMenusPacket(menus, EditorStageSelection.effective()));
     }
 
     /** Send the empty type-menus packet if the player previously had a non-empty snapshot. */
     private static void clearTypeMenusIfStale(ServerPlayer player) {
         if (LAST_TYPE_MENUS_KEY.remove(player.getUUID()) != null) {
-            DungeonTrainNet.sendTo(player, EditorTypeMenusPacket.empty());
+            DtNetSender.get().sendToPlayer(player, EditorTypeMenusPacket.empty());
         }
     }
 
@@ -803,14 +803,14 @@ public final class VariantOverlayRenderer {
             strips.add(new games.brennan.dungeontrain.net.StageBlockStripsPacket.Strip(
                 e.getKey(), capped, ids.size()));
         }
-        DungeonTrainNet.sendTo(player,
+        DtNetSender.get().sendToPlayer(player,
             new games.brennan.dungeontrain.net.StageBlockStripsPacket(strips));
     }
 
     /** Send the empty strips packet if the player previously had a non-empty snapshot. */
     private static void clearStageStripsIfStale(ServerPlayer player) {
         if (LAST_STAGE_STRIPS_KEY.remove(player.getUUID()) != null) {
-            DungeonTrainNet.sendTo(player,
+            DtNetSender.get().sendToPlayer(player,
                 games.brennan.dungeontrain.net.StageBlockStripsPacket.empty());
         }
     }
@@ -836,13 +836,13 @@ public final class VariantOverlayRenderer {
             entries.add(new games.brennan.dungeontrain.net.PartVisibilityPacket.Entry(
                 (byte) ref.kind().ordinal(), ref.name()));
         }
-        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.PartVisibilityPacket(entries));
+        DtNetSender.get().sendToPlayer(player, new games.brennan.dungeontrain.net.PartVisibilityPacket(entries));
     }
 
     /** Send the empty visibility packet if the player previously had a non-empty snapshot. */
     private static void clearPartVisibilityIfStale(ServerPlayer player) {
         if (LAST_PART_VIS_KEY.remove(player.getUUID()) != null) {
-            DungeonTrainNet.sendTo(player,
+            DtNetSender.get().sendToPlayer(player,
                 games.brennan.dungeontrain.net.PartVisibilityPacket.empty());
         }
     }
@@ -1099,14 +1099,14 @@ public final class VariantOverlayRenderer {
         if (flaggedPos == null) {
             if (prev != null) {
                 LAST_HOVER_POS.remove(player.getUUID());
-                DungeonTrainNet.sendTo(player, VariantHoverPacket.empty());
+                DtNetSender.get().sendToPlayer(player, VariantHoverPacket.empty());
             }
             return;
         }
         if (flaggedPos.equals(prev)) return;
 
         LAST_HOVER_POS.put(player.getUUID(), flaggedPos);
-        DungeonTrainNet.sendTo(player, new VariantHoverPacket(toBlockIds(states)));
+        DtNetSender.get().sendToPlayer(player, new VariantHoverPacket(toBlockIds(states)));
     }
 
     /** Vec3i-based bounds overload for part plots — local pos inside the part's footprint. */
@@ -1162,7 +1162,7 @@ public final class VariantOverlayRenderer {
      */
     public static void pushImmediateHover(ServerPlayer player, BlockPos worldPos, List<VariantState> states) {
         LAST_HOVER_POS.put(player.getUUID(), worldPos.immutable());
-        DungeonTrainNet.sendTo(player, new VariantHoverPacket(toBlockIds(states)));
+        DtNetSender.get().sendToPlayer(player, new VariantHoverPacket(toBlockIds(states)));
     }
 
     private static boolean inBounds(BlockPos p, CarriageDims dims) {

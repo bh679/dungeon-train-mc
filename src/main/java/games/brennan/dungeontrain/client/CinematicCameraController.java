@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.CinematicDonePacket;
 import games.brennan.dungeontrain.net.CinematicIntroPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
@@ -175,7 +175,7 @@ public final class CinematicCameraController {
     public static void end(boolean sendDone) {
         if (!active || releasing) return;
         if (sendDone) {
-            DungeonTrainNet.sendToServer(new CinematicDonePacket());
+            DtNetSender.get().sendToServer(new CinematicDonePacket());
         }
         if (RELEASE_BLEND_TICKS > 0) {
             Pose now = computePose(1.0f);

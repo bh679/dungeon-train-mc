@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.SaveBlockVariantPrefabPacket;
 import games.brennan.dungeontrain.net.SaveLootPrefabPacket;
 import net.minecraft.client.Minecraft;
@@ -109,9 +109,9 @@ public final class PrefabNameScreen extends Screen {
         String name = this.nameField.getValue();
         if (!NAME_PATTERN.matcher(name).matches()) return;
         switch (this.kind) {
-            case VARIANT -> DungeonTrainNet.sendToServer(
+            case VARIANT -> DtNetSender.get().sendToServer(
                 new SaveBlockVariantPrefabPacket(this.localPos, name));
-            case LOOT -> DungeonTrainNet.sendToServer(
+            case LOOT -> DtNetSender.get().sendToServer(
                 new SaveLootPrefabPacket(this.localPos, name));
         }
         onClose();

@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.PartAssignmentEditPacket;
 import games.brennan.dungeontrain.net.PartAssignmentSyncPacket;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -84,7 +84,7 @@ public final class PartPositionMenuController {
             // until the next hover transition.
             String prev = LAST_HOVER.put(uuid, "");
             if (prev == null || !prev.isEmpty()) {
-                DungeonTrainNet.sendTo(player, PartAssignmentSyncPacket.empty());
+                DtNetSender.get().sendToPlayer(player, PartAssignmentSyncPacket.empty());
             }
         }
     }
@@ -100,7 +100,7 @@ public final class PartPositionMenuController {
         UUID uuid = player.getUUID();
         DISABLED.remove(uuid);
         if (LAST_HOVER.remove(uuid) != null) {
-            DungeonTrainNet.sendTo(player, PartAssignmentSyncPacket.empty());
+            DtNetSender.get().sendToPlayer(player, PartAssignmentSyncPacket.empty());
         }
     }
 
@@ -118,7 +118,7 @@ public final class PartPositionMenuController {
             String prev = LAST_HOVER.get(uuid);
             if (prev != null && !prev.isEmpty()) {
                 LAST_HOVER.put(uuid, "");
-                DungeonTrainNet.sendTo(player, PartAssignmentSyncPacket.empty());
+                DtNetSender.get().sendToPlayer(player, PartAssignmentSyncPacket.empty());
             }
             return;
         }
@@ -131,7 +131,7 @@ public final class PartPositionMenuController {
             String prev = LAST_HOVER.get(uuid);
             if (prev != null && !prev.isEmpty()) {
                 LAST_HOVER.put(uuid, "");
-                DungeonTrainNet.sendTo(player, PartAssignmentSyncPacket.empty());
+                DtNetSender.get().sendToPlayer(player, PartAssignmentSyncPacket.empty());
             }
             return;
         }
@@ -149,7 +149,7 @@ public final class PartPositionMenuController {
         if (key.equals(prev)) return;
 
         LAST_HOVER.put(uuid, key);
-        DungeonTrainNet.sendTo(player,
+        DtNetSender.get().sendToPlayer(player,
             buildSyncPacket(variant, kindCentre, kind, inwardFace));
     }
 
@@ -549,7 +549,7 @@ public final class PartPositionMenuController {
 
         if (updated == current) {
             // No-op; still resync so the client UI is authoritative.
-            DungeonTrainNet.sendTo(player,
+            DtNetSender.get().sendToPlayer(player,
                 buildSyncPacket(standingIn, kindCentre, packet.kind(), inwardFace));
             return;
         }
@@ -559,7 +559,7 @@ public final class PartPositionMenuController {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] PartMenu save failed for '{}': {}", standingIn.id(), e.toString());
             // Sync the unchanged-on-disk state so the client doesn't drift.
-            DungeonTrainNet.sendTo(player,
+            DtNetSender.get().sendToPlayer(player,
                 buildSyncPacket(standingIn, kindCentre, packet.kind(), inwardFace));
             return;
         }
@@ -576,7 +576,7 @@ public final class PartPositionMenuController {
         // even though the (variantId, kind) key didn't change.
         UUID uuid = player.getUUID();
         LAST_HOVER.remove(uuid);
-        DungeonTrainNet.sendTo(player,
+        DtNetSender.get().sendToPlayer(player,
             buildSyncPacket(standingIn, kindCentre, packet.kind(), inwardFace));
         LAST_HOVER.put(uuid, standingIn.id() + "|" + packet.kind().name() + "|" + inwardFace.name());
     }

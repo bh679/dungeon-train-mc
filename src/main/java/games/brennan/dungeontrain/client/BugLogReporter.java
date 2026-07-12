@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.dungeontrain.net.BugReportLogsPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
 
@@ -51,7 +51,7 @@ public final class BugLogReporter {
             // Hop back to the client thread to send the packet (collection ran on a worker thread).
             Minecraft.getInstance().execute(() -> {
                 try {
-                    DungeonTrainNet.sendToServer(new BugReportLogsPacket(label, spec, blobs));
+                    DtNetSender.get().sendToServer(new BugReportLogsPacket(label, spec, blobs));
                 } catch (Exception ex) {
                     LOGGER.warn("[DungeonTrain] Failed to send bug-report logs: {}", ex.toString());
                 }

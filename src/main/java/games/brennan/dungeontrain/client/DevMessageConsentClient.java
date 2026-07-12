@@ -4,7 +4,7 @@ import com.mojang.logging.LogUtils;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.ConsentSyncPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
 
@@ -88,7 +88,7 @@ public final class DevMessageConsentClient {
     private static void sendSyncIfConnected() {
         try {
             if (Minecraft.getInstance().getConnection() == null) return;
-            DungeonTrainNet.sendToServer(new ConsentSyncPacket(granted, grantSession, (double) lastMsgToDevMs));
+            DtNetSender.get().sendToServer(new ConsentSyncPacket(granted, grantSession, (double) lastMsgToDevMs));
         } catch (Throwable t) {
             LOGGER.debug("Dev-message consent: sync to server failed: {}", t.toString());
         }

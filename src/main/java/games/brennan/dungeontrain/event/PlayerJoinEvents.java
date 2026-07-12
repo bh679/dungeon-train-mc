@@ -4,7 +4,7 @@ import com.mojang.logging.LogUtils;
 
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.EditorWelcome;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.VoidBandSyncPacket;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import games.brennan.dungeontrain.net.SpawnDeckHoldPacket;
@@ -180,14 +180,14 @@ public final class PlayerJoinEvents {
 
         public static void onPlayerLogin(net.minecraft.world.entity.player.Player joinedPlayer) {
         if (!(joinedPlayer instanceof ServerPlayer player)) return;
-        DungeonTrainNet.sendTo(player, PrefabRegistrySyncPacket.fromRegistries());
+        DtNetSender.get().sendToPlayer(player, PrefabRegistrySyncPacket.fromRegistries());
         // Seed debug flags so the in-world Debug menu's Toggle states render
         // the correct value the first time it's opened on this client.
         DebugFlags.sendSnapshotTo(player);
         // Sync the disintegration-band geometry (per-world carriage length + train
         // flag) so the client can fade the sky/fog toward the End across the band.
         DungeonTrainWorldData bandData = DungeonTrainWorldData.get(player.serverLevel().getServer().overworld());
-        DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(), bandData.startsWithTrain(), bandData.getTrainY()));
+        DtNetSender.get().sendToPlayer(player, new VoidBandSyncPacket(bandData.dims().length(), bandData.startsWithTrain(), bandData.getTrainY()));
         // If the intro cinematic will play, open the loading screen + freeze the
         // player from world-entry so they don't fall while the train settles.
         CinematicIntroService.armPreloadIfNeeded(player);
@@ -323,7 +323,7 @@ public final class PlayerJoinEvents {
         // client keeps ticking and free-falls the local player off the just-
         // teleported deck onto the world bed under the train. The local player's
         // movement is client-authoritative, so the hold must run client-side.
-        DungeonTrainNet.sendTo(player, new SpawnDeckHoldPacket(
+        DtNetSender.get().sendToPlayer(player, new SpawnDeckHoldPacket(
             data.getTrainY() + 1.0, SpawnDeckHoldPacket.DEFAULT_HOLD_TICKS));
 
         boolean cinematic = CinematicIntroService.shouldPlay(player);

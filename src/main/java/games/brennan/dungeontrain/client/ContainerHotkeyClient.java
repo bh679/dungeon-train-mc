@@ -6,7 +6,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import games.brennan.dungeontrain.client.menu.containercontents.ContainerContentsMenu;
 import games.brennan.dungeontrain.net.ContainerContentsMenuTogglePacket;
 import games.brennan.dungeontrain.net.ContainerHotkeyPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 
@@ -63,7 +63,7 @@ public final class ContainerHotkeyClient {
             if (Minecraft.getInstance().getConnection() == null
                     || !EditorStatusHudOverlay.isActive()) {
                 if (lastSentHeld) {
-                    DungeonTrainNet.sendToServer(new ContainerHotkeyPacket(false));
+                    DtNetSender.get().sendToServer(new ContainerHotkeyPacket(false));
                     lastSentHeld = false;
                 }
                 pressStartTick = -1;
@@ -73,7 +73,7 @@ public final class ContainerHotkeyClient {
             boolean held = KEY.isDown();
             if (held == lastSentHeld) return;
 
-            DungeonTrainNet.sendToServer(new ContainerHotkeyPacket(held));
+            DtNetSender.get().sendToServer(new ContainerHotkeyPacket(held));
             lastSentHeld = held;
 
             if (held) {
@@ -84,7 +84,7 @@ public final class ContainerHotkeyClient {
                     && tick - pressStartTick < TAP_THRESHOLD_TICKS
                     && !useDuringPress) {
                     boolean opening = !ContainerContentsMenu.isActive();
-                    DungeonTrainNet.sendToServer(new ContainerContentsMenuTogglePacket(opening));
+                    DtNetSender.get().sendToServer(new ContainerContentsMenuTogglePacket(opening));
                 }
                 pressStartTick = -1;
                 useDuringPress = false;

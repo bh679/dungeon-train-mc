@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.client;
 
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.LetterDraftToLecternPacket;
 import net.minecraft.client.gui.screens.inventory.BookEditScreen;
 import net.minecraft.core.BlockPos;
@@ -25,7 +25,7 @@ public final class LetterLecternClientEvents {
         if (!(screen instanceof BookEditScreen)) return;
         BlockPos pos = LetterEditorClient.onEditScreenClosing();
         if (pos != null) {
-            DungeonTrainNet.sendToServer(new LetterDraftToLecternPacket(pos));
+            DtNetSender.get().sendToServer(new LetterDraftToLecternPacket(pos));
         }
     }
 }

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.VariantHoverPacket;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -77,7 +77,7 @@ public final class VariantEntityBreakHandler {
 
         if (removedVariants == 0 && !hadLink) return;
 
-        DungeonTrainNet.sendTo(player, VariantHoverPacket.empty());
+        DtNetSender.get().sendToPlayer(player, VariantHoverPacket.empty());
 
         final int lx = local.getX();
         final int ly = local.getY();

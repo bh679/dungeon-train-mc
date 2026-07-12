@@ -120,7 +120,7 @@ public final class SaveCommand {
             // when nothing is left outstanding.
             ServerLevel overworld = source.getServer().overworld();
             CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-            games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(
+            games.brennan.dungeontrain.net.platform.DtNetSender.get().sendToPlayer(
                 player,
                 new games.brennan.dungeontrain.net.EditorUnsavedListPacket(
                     games.brennan.dungeontrain.editor.EditorDirtyCheck.findDirty(overworld, dims)

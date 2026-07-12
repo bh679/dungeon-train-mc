@@ -6,7 +6,7 @@ import com.mojang.logging.LogUtils;
 
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.event.SharedBookGate;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.OpenLetterEditorPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -81,7 +81,7 @@ public final class LetterLecternEvents {
         event.setCancellationResult(InteractionResult.CONSUME);
 
         PENDING_LECTERN.put(player.getUUID(), GlobalPos.of(level.dimension(), pos.immutable()));
-        DungeonTrainNet.sendTo(player,
+        DtNetSender.get().sendToPlayer(player,
                 new OpenLetterEditorPacket(event.hand().ordinal(), pos.immutable(), readPages(stack)));
         LOGGER.debug("[DungeonTrain] Letter: {} opened the sign screen from a lectern at {}",
                 player.getName().getString(), pos);

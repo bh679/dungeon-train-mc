@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.EditorChangesRequestPacket;
 
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ public final class ChangesListScreen implements MenuScreen {
             // Drop any stale changes so the loading row renders cleanly even
             // if a previous drill-in left a different template's data behind.
             EditorStatusHudOverlay.clearChangesList();
-            DungeonTrainNet.sendToServer(new EditorChangesRequestPacket(categoryId, modelId));
+            DtNetSender.get().sendToServer(new EditorChangesRequestPacket(categoryId, modelId));
             requestSent = true;
             return List.of(new CommandMenuEntry.Loading("Computing diff..."));
         }

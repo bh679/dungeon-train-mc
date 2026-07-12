@@ -5,7 +5,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 
 import games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenu;
 import games.brennan.dungeontrain.net.BlockVariantMenuTogglePacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.VariantHotkeyPacket;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -75,7 +75,7 @@ public final class VariantHotkeyClient {
                 if (lastSentHeld) {
                     // Walked out of an editor plot mid-hold — release on the
                     // server so right-click-to-add doesn't stay armed.
-                    DungeonTrainNet.sendToServer(new VariantHotkeyPacket(false));
+                    DtNetSender.get().sendToServer(new VariantHotkeyPacket(false));
                     lastSentHeld = false;
                 }
                 pressStartTick = -1;
@@ -88,7 +88,7 @@ public final class VariantHotkeyClient {
             // Send the held-state packet so the server-side
             // VariantHotkeyState (used by the existing right-click-to-add
             // flow) tracks this player's key state.
-            DungeonTrainNet.sendToServer(new VariantHotkeyPacket(held));
+            DtNetSender.get().sendToServer(new VariantHotkeyPacket(held));
             lastSentHeld = held;
 
             if (held) {
@@ -100,7 +100,7 @@ public final class VariantHotkeyClient {
                     && tick - pressStartTick < TAP_THRESHOLD_TICKS
                     && !useDuringPress) {
                     boolean opening = !BlockVariantMenu.isActive();
-                    DungeonTrainNet.sendToServer(new BlockVariantMenuTogglePacket(opening));
+                    DtNetSender.get().sendToServer(new BlockVariantMenuTogglePacket(opening));
                 }
                 pressStartTick = -1;
                 useDuringPress = false;

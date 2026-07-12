@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.StageBlocksSyncPacket;
 import games.brennan.dungeontrain.net.StagePanelEditPacket;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -93,7 +93,7 @@ public final class StagePanelController {
 
     private static void close(ServerPlayer player) {
         OPEN.remove(player.getUUID());
-        DungeonTrainNet.sendTo(player, StageBlocksSyncPacket.closed());
+        DtNetSender.get().sendToPlayer(player, StageBlocksSyncPacket.closed());
     }
 
     /**
@@ -240,7 +240,7 @@ public final class StagePanelController {
                 (byte) pb.part().kind().ordinal(), pb.part().name(), capped, ids.size()));
         }
 
-        DungeonTrainNet.sendTo(player, new StageBlocksSyncPacket(true, stageId, stageName, anchor,
+        DtNetSender.get().sendToPlayer(player, new StageBlocksSyncPacket(true, stageId, stageName, anchor,
             cappedBlocks, aggregated.size(), parts, EditorPartsStageFilter.isActive()));
     }
 

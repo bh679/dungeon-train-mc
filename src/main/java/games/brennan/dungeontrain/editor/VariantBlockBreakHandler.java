@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.VariantHoverPacket;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -58,7 +58,7 @@ public final class VariantBlockBreakHandler {
         // Mirror the removal to the symmetric cells when the "V" toggle is on.
         EditorVariantMirror.mirrorEditLive(level, plot, local, null);
 
-        DungeonTrainNet.sendTo(player, VariantHoverPacket.empty());
+        DtNetSender.get().sendToPlayer(player, VariantHoverPacket.empty());
         final int lx = local.getX();
         final int ly = local.getY();
         final int lz = local.getZ();

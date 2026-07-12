@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.FreePlayConfirmResponsePacket;
 import net.minecraft.client.Minecraft;
 
@@ -17,7 +17,7 @@ public final class FreePlayConfirmClient {
 
     public static void onShow(String label) {
         if (ClientDisplayConfig.isFreePlayConfirmOptedOut()) {
-            DungeonTrainNet.sendToServer(new FreePlayConfirmResponsePacket(true));
+            DtNetSender.get().sendToServer(new FreePlayConfirmResponsePacket(true));
             return;
         }
         Minecraft.getInstance().setScreen(new FreePlayConfirmScreen(label));

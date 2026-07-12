@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.client.menu.containercontents;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.net.ContainerContentsEditPacket;
 import games.brennan.dungeontrain.net.ContainerContentsMenuTogglePacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.BlockHitResult;
@@ -117,7 +117,7 @@ public final class ContainerContentsMenuInputHandler {
         if (local == null) return;
         String plotKey = ContainerContentsMenu.plotKey();
         switch (hit.kind()) {
-            case ADD -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+            case ADD -> DtNetSender.get().sendToServer(new ContainerContentsEditPacket(
                 // Empty itemId signals "use main-hand item" — server captures
                 // the held stack's item + count. Mirrors the block-variant
                 // ADD behaviour: hold an item, click Add.
@@ -146,62 +146,62 @@ public final class ContainerContentsMenuInputHandler {
             }
             case FILL_MIN -> {
                 int delta = shift ? -1 : 1;
-                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                DtNetSender.get().sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.BUMP_FILL_MIN, plotKey, local, -1, "", delta));
             }
             case FILL_MAX -> {
                 int delta = shift ? -1 : 1;
-                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                DtNetSender.get().sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.BUMP_FILL_MAX, plotKey, local, -1, "", delta));
             }
-            case CLEAR -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+            case CLEAR -> DtNetSender.get().sendToServer(new ContainerContentsEditPacket(
                 ContainerContentsEditPacket.Op.CLEAR, plotKey, local, -1, "", 0));
-            case CLOSE -> DungeonTrainNet.sendToServer(new ContainerContentsMenuTogglePacket(false));
+            case CLOSE -> DtNetSender.get().sendToServer(new ContainerContentsMenuTogglePacket(false));
             case ENTRY_COUNT_PLUS -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
                 int delta = shift ? -1 : 1;
-                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                DtNetSender.get().sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.BUMP_COUNT, plotKey, local, hit.index(), "", delta));
             }
             case ENTRY_WEIGHT_PLUS -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
                 int delta = shift ? -1 : 1;
-                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                DtNetSender.get().sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.BUMP_WEIGHT, plotKey, local, hit.index(), "", delta));
             }
             case ENTRY_REMOVE_X -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
-                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                DtNetSender.get().sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.REMOVE, plotKey, local, hit.index(), "", 0));
             }
             case ENTRY_RAND_DUR_TOGGLE -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
-                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                DtNetSender.get().sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.TOGGLE_RAND_DUR, plotKey, local, hit.index(), "", 0));
             }
             case ENTRY_RAND_ENCH_TOGGLE -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
-                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                DtNetSender.get().sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.TOGGLE_RAND_ENCH, plotKey, local, hit.index(), "", 0));
             }
             case ENTRY_DUR_CHANCE -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
                 int delta = shift ? -5 : 5;
-                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                DtNetSender.get().sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.BUMP_DUR_CHANCE, plotKey, local, hit.index(), "", delta));
             }
             case ENTRY_ENCH_CHANCE -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
                 int delta = shift ? -5 : 5;
-                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                DtNetSender.get().sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.BUMP_ENCH_CHANCE, plotKey, local, hit.index(), "", delta));
             }
             case ENTRY_SLOT_ASSIGN -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
-                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                DtNetSender.get().sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.CYCLE_SLOT_ASSIGN, plotKey, local, hit.index(), "", 0));
             }
-            case LINK_UNLINK -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+            case LINK_UNLINK -> DtNetSender.get().sendToServer(new ContainerContentsEditPacket(
                 ContainerContentsEditPacket.Op.UNLINK, plotKey, local, -1, "", 0));
             // LINK_INDICATOR is informational — no click action.
             default -> {}
@@ -218,7 +218,7 @@ public final class ContainerContentsMenuInputHandler {
             case SEARCH_RESULT -> {
                 List<String> filtered = ContainerContentsMenu.filteredItemIds();
                 if (hit.index() < 0 || hit.index() >= filtered.size()) return;
-                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                DtNetSender.get().sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.ADD, plotKey, local, -1, filtered.get(hit.index()), 0));
                 ContainerContentsMenu.backToRoot();
             }

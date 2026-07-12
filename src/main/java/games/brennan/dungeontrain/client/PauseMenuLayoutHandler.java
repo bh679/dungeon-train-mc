@@ -4,7 +4,7 @@ import com.mojang.logging.LogUtils;
 
 import games.brennan.dungeontrain.client.menu.PauseMenuActionButton;
 import games.brennan.dungeontrain.net.AbandonRunPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -132,7 +132,7 @@ public final class PauseMenuLayoutHandler {
      */
     private static void abandonRun() {
         Minecraft.getInstance().setScreen(null);
-        DungeonTrainNet.sendToServer(new AbandonRunPacket());
+        DtNetSender.get().sendToServer(new AbandonRunPacket());
     }
 
     private static Button findButton(games.brennan.dungeontrain.platform.event.DtScreenInit event, Component message) {

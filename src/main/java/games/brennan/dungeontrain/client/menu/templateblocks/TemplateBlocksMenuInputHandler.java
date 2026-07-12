@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client.menu.templateblocks;
 
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.TemplateBlocksEditPacket;
 import games.brennan.dungeontrain.net.TemplateBlocksMenuTogglePacket;
 import games.brennan.dungeontrain.net.TemplateBlocksSyncPacket;
@@ -92,15 +92,15 @@ public final class TemplateBlocksMenuInputHandler {
         String key = TemplateBlocksMenu.key();
         List<TemplateBlocksSyncPacket.Entry> entries = TemplateBlocksMenu.entries();
         switch (hit.kind()) {
-            case CLOSE -> DungeonTrainNet.sendToServer(new TemplateBlocksMenuTogglePacket(false));
+            case CLOSE -> DtNetSender.get().sendToServer(new TemplateBlocksMenuTogglePacket(false));
             case ROW -> {
                 if (hit.index() < 0 || hit.index() >= entries.size()) return;
-                DungeonTrainNet.sendToServer(new TemplateBlocksEditPacket(
+                DtNetSender.get().sendToServer(new TemplateBlocksEditPacket(
                     TemplateBlocksEditPacket.Op.PREVIEW_BLOCK, key, entries.get(hit.index()).blockId()));
             }
             case ROW_SWAP -> {
                 if (hit.index() < 0 || hit.index() >= entries.size()) return;
-                DungeonTrainNet.sendToServer(new TemplateBlocksEditPacket(
+                DtNetSender.get().sendToServer(new TemplateBlocksEditPacket(
                     TemplateBlocksEditPacket.Op.SWAP_BLOCK, key, entries.get(hit.index()).blockId()));
             }
             default -> {}

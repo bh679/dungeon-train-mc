@@ -6,7 +6,7 @@ import games.brennan.dungeontrain.narrative.RandomBookTag;
 import games.brennan.dungeontrain.narrative.SharedBookReadTag;
 import games.brennan.dungeontrain.narrative.StartingBookTag;
 import games.brennan.dungeontrain.net.BookReadClosedPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.BookViewScreen;
@@ -101,7 +101,7 @@ public final class BookReadClientEvents {
         }
         boolean completed = pageCount > 0 && maxPage >= pageCount - 1;
 
-        DungeonTrainNet.sendToServer(new BookReadClosedPacket(
+        DtNetSender.get().sendToServer(new BookReadClosedPacket(
             bookType, bookId, title, author, pageCount, pagesViewed, maxPage, completed,
             Math.max(0, durationMs), dwell, story, letter, variantIndex));
         reset();

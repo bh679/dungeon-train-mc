@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.debug;
 
 import games.brennan.dungeontrain.net.DebugFlagsPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -168,14 +168,14 @@ public final class DebugFlags {
      * client cache before any toggle event fires.
      */
     public static void sendSnapshotTo(ServerPlayer player) {
-        DungeonTrainNet.sendTo(player, snapshotPacket());
+        DtNetSender.get().sendToPlayer(player, snapshotPacket());
     }
 
     private static void broadcastTo(MinecraftServer server) {
         if (server == null) return;
         DebugFlagsPacket packet = snapshotPacket();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            DungeonTrainNet.sendTo(player, packet);
+            DtNetSender.get().sendToPlayer(player, packet);
         }
     }
 

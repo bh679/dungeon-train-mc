@@ -5,7 +5,7 @@ import dev.ryanhcode.sable.SableConfig;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
@@ -1598,7 +1598,7 @@ public final class TrainCarriageAppender {
             seenThisTick.add(uuid);
             Integer lastSent = LAST_SENT_PIDX.get(uuid);
             if (lastSent == null || lastSent != pIdx) {
-                DungeonTrainNet.sendTo(player, new CarriageIndexPacket(true, pIdx));
+                DtNetSender.get().sendToPlayer(player, new CarriageIndexPacket(true, pIdx));
                 LAST_SENT_PIDX.put(uuid, pIdx);
             }
 
@@ -3939,7 +3939,7 @@ public final class TrainCarriageAppender {
             if (seenThisTick.contains(uuid)) continue;
             ServerPlayer player = level.getServer().getPlayerList().getPlayer(uuid);
             if (player != null) {
-                DungeonTrainNet.sendTo(player, CarriageIndexPacket.absent());
+                DtNetSender.get().sendToPlayer(player, CarriageIndexPacket.absent());
             }
             it.remove();
         }

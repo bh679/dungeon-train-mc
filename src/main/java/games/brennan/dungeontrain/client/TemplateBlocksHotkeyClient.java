@@ -4,7 +4,7 @@ import games.brennan.dungeontrain.DtCore;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import games.brennan.dungeontrain.client.menu.templateblocks.TemplateBlocksMenu;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.TemplateBlocksMenuTogglePacket;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -47,7 +47,7 @@ public final class TemplateBlocksHotkeyClient {
             boolean down = KEY.isDown();
             if (down && !lastDown) {
                 boolean opening = !TemplateBlocksMenu.isActive();
-                DungeonTrainNet.sendToServer(new TemplateBlocksMenuTogglePacket(opening));
+                DtNetSender.get().sendToServer(new TemplateBlocksMenuTogglePacket(opening));
             }
             lastDown = down;
         }

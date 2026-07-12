@@ -6,7 +6,6 @@ import games.brennan.dungeontrain.net.platform.DtPayloadContext;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -70,15 +69,5 @@ public final class DungeonTrainNet {
             case C2S -> registrar.playToServer(type, codec,
                 (payload, ctx) -> handler.accept(payload, new NeoForgePayloadContext(ctx)));
         }
-    }
-
-    /** Convenience: send a payload to the server (client → server). */
-    public static void sendToServer(CustomPacketPayload payload) {
-        DtNetSender.get().sendToServer(payload);
-    }
-
-    /** Convenience: send a payload to a single player. */
-    public static void sendTo(ServerPlayer player, CustomPacketPayload payload) {
-        DtNetSender.get().sendToPlayer(player, payload);
     }
 }

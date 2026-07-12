@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.net;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 
 import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
@@ -46,7 +47,7 @@ public record EditorChangesRequestPacket(String categoryId, String modelId) impl
             CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
             List<EditorDirtyCheck.DiffEntry> changes =
                 EditorDirtyCheck.findChanges(overworld, dims, packet.categoryId, packet.modelId);
-            DungeonTrainNet.sendTo(player, new EditorChangesListPacket(packet.categoryId, packet.modelId, changes));
+            DtNetSender.get().sendToPlayer(player, new EditorChangesListPacket(packet.categoryId, packet.modelId, changes));
         });
     }
 }

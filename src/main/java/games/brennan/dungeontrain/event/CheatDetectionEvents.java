@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.ShowFreePlayConfirmPacket;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import com.mojang.brigadier.ParseResults;
@@ -73,7 +73,7 @@ public final class CheatDetectionEvents {
         String raw = parseResults.getReader().getString();
         String label = CommandAllowlist.label(parseResults);
         PENDING.put(player.getUUID(), new Pending(raw, label));
-        DungeonTrainNet.sendTo(player, new ShowFreePlayConfirmPacket(label));
+        DtNetSender.get().sendToPlayer(player, new ShowFreePlayConfirmPacket(label));
         return true; // cancel the command — held until the Free Play confirm resolves
     }
 

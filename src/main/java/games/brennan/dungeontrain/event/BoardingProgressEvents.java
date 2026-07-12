@@ -6,7 +6,7 @@ import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.discord.DifficultyLevelReport;
 import games.brennan.dungeontrain.net.BoardingProgressPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.player.PlayerBiomeProgress;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.train.Trains;
@@ -319,7 +319,7 @@ public final class BoardingProgressEvents {
             Integer last = LAST_BROADCAST.get(player.getUUID());
             if (last != null && last == travelled) continue;
             LAST_BROADCAST.put(player.getUUID(), travelled);
-            DungeonTrainNet.sendTo(player, packetFor(travelled));
+            DtNetSender.get().sendToPlayer(player, packetFor(travelled));
             int tier = DifficultyProgression.tierForTravelled(travelled);
             Integer lastNotifiedTier = LAST_NOTIFIED_TIER.get(player.getUUID());
             if (lastNotifiedTier != null && tier > lastNotifiedTier) {
@@ -335,7 +335,7 @@ public final class BoardingProgressEvents {
             DtAttachments.PLAYER_RUN_STATE.get(player).travelledCarriageIndex());
         LAST_BROADCAST.put(player.getUUID(), travelled);
         LAST_NOTIFIED_TIER.put(player.getUUID(), DifficultyProgression.tierForTravelled(travelled));
-        DungeonTrainNet.sendTo(player, packetFor(travelled));
+        DtNetSender.get().sendToPlayer(player, packetFor(travelled));
     }
 
     private static BoardingProgressPacket packetFor(int travelled) {

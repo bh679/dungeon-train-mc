@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.net;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 
 import games.brennan.dungeontrain.net.platform.DtModId;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
@@ -49,7 +50,7 @@ public record EditorUnsavedRequestPacket() implements CustomPacketPayload {
             ServerLevel overworld = server.overworld();
             CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
             List<EditorDirtyCheck.DirtyEntry> rows = EditorDirtyCheck.findDirty(overworld, dims);
-            DungeonTrainNet.sendTo(player, new EditorUnsavedListPacket(rows));
+            DtNetSender.get().sendToPlayer(player, new EditorUnsavedListPacket(rows));
         });
     }
 }

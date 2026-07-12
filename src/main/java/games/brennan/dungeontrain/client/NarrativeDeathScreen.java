@@ -6,7 +6,7 @@ import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathPhotoPacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.client.sound.TrainEngineSound;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundAssigner;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundPainter;
@@ -346,7 +346,7 @@ public final class NarrativeDeathScreen extends Screen {
         photoSent = true;
         RideSnapshot fall = bgFor(0); // page 0 is FALL, assigned a SCENIC shot
         byte[] png = fall != null ? fall.pngBytes() : null;
-        DungeonTrainNet.sendToServer(new DeathPhotoPacket(png != null ? png : new byte[0]));
+        DtNetSender.get().sendToServer(new DeathPhotoPacket(png != null ? png : new byte[0]));
     }
 
     @Override

@@ -1,4 +1,5 @@
 package games.brennan.dungeontrain.net;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.platform.DtModId;
@@ -69,7 +70,7 @@ public record PackageListRequestPacket() implements CustomPacketPayload {
             PackageListSyncPacket sync = build();
             LOGGER.debug("[DungeonTrain] PackageListRequest: sending sync to {} ({} packages)",
                 player.getName().getString(), sync.entries().size());
-            DungeonTrainNet.sendTo(player, sync);
+            DtNetSender.get().sendToPlayer(player, sync);
         });
     }
 

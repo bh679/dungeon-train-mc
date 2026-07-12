@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PackageInfo;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.PackageListRequestPacket;
 import games.brennan.dungeontrain.net.PackageListSyncPacket;
 import org.slf4j.Logger;
@@ -124,7 +124,7 @@ public final class PackageListClient {
      * menu immediately (Save, Activate, Enable, Reload).
      */
     public static void requestRefresh() {
-        DungeonTrainNet.sendToServer(new PackageListRequestPacket());
+        DtNetSender.get().sendToServer(new PackageListRequestPacket());
         lastRequestTick = currentTick();
         LOGGER.debug("[DungeonTrain] PackageListClient: sent immediate refresh request");
     }
@@ -145,7 +145,7 @@ public final class PackageListClient {
         boolean firstRequest = lastRequestTick == Long.MIN_VALUE;
         if (!firstRequest && now - lastRequestTick < THROTTLE_TICKS) return;
         lastRequestTick = now;
-        DungeonTrainNet.sendToServer(new PackageListRequestPacket());
+        DtNetSender.get().sendToServer(new PackageListRequestPacket());
         if (firstRequest) {
             LOGGER.debug("[DungeonTrain] PackageListClient: sent initial refresh request");
         }

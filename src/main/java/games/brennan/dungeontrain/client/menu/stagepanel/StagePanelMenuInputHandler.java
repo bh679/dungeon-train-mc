@@ -5,7 +5,7 @@ import games.brennan.dungeontrain.client.menu.StageDuplicateNameScreen;
 import games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenu;
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.StagePanelEditPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Direction;
@@ -101,7 +101,7 @@ public final class StagePanelMenuInputHandler {
             // stage (the single open/close axis) rather than an independent panel close.
             case CLOSE -> games.brennan.dungeontrain.client.menu.CommandRunner.run(
                 "dungeontrain editor stage deselect");
-            case HIDE_TOGGLE -> DungeonTrainNet.sendToServer(
+            case HIDE_TOGGLE -> DtNetSender.get().sendToServer(
                 new StagePanelEditPacket(StagePanelEditPacket.Op.TOGGLE_HIDE_UNUSED, stageId, ""));
             case DUPLICATE -> CommandMenuState.openAt(new StageDuplicateNameScreen(stageId));
             case BLOCK_ROW -> {
@@ -125,7 +125,7 @@ public final class StagePanelMenuInputHandler {
 
     /** Send an immediate stage-wide swap of {@code blockId} with the player's held block (#636 style). */
     private static void swap(String stageId, String blockId) {
-        DungeonTrainNet.sendToServer(
+        DtNetSender.get().sendToServer(
             new StagePanelEditPacket(StagePanelEditPacket.Op.SWAP_BLOCK, stageId, blockId));
     }
 }
