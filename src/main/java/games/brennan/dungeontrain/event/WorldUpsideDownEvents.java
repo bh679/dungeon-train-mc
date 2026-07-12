@@ -6,11 +6,14 @@ import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -98,20 +101,67 @@ public final class WorldUpsideDownEvents {
 
     private WorldUpsideDownEvents() {}
 
+    /**
+     * At generation, MARK the chunk + enqueue it for the deferred mirror drain instead of mirroring
+     * inline. The synchronous ~7 ms/chunk mirror used to run here on the server main thread; when the
+     * train streams new band terrain many chunks reach FULL in one tick and the mirror blows the tick
+     * budget → stutter. {@code applyMirror} now runs later, spread across ticks under a per-tick budget
+     * ({@code TrainTickEvents}), with the persistent {@code NEEDS_UPSIDE_DOWN_MIRROR} marker making the
+     * deferral crash/unload-safe. On a plain reload of a chunk that was saved before its mirror applied,
+     * re-enqueue it (the marker is still set) — without this the chunk stays permanently un-mirrored
+     * because {@code isNewChunk()} is false on reload.
+     */
     @SubscribeEvent
     public static void onChunkLoad(ChunkEvent.Load event) {
-        if (!event.isNewChunk()) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
-
-        long startX = UpsideDownBand.startX(level);
-        if (startX == UpsideDownBand.OFF) return;
-
         ChunkAccess chunk = event.getChunk();
+
+        if (event.isNewChunk()) {
+            if (!isInAnyUpsideDownZone(level, chunk)) return;
+            chunk.setData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get(), Boolean.TRUE);
+            DungeonTrainWorldData.get(level).enqueueMirrorChunk(chunk.getPos().toLong());
+        } else if (chunk.hasData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get())) {
+            DungeonTrainWorldData.get(level).enqueueMirrorChunk(chunk.getPos().toLong());
+        }
+    }
+
+    /** True iff any column of {@code chunk} lies in the upside-down band, its entry lead-in, or its exit fade. */
+    private static boolean isInAnyUpsideDownZone(ServerLevel level, ChunkAccess chunk) {
+        long startX = UpsideDownBand.startX(level);
+        if (startX == UpsideDownBand.OFF) return false;
+        int chunkMinX = chunk.getPos().getMinBlockX();
+        if (chunkMinX + 15 < startX) return false;           // entirely before the first band
+        for (int dx = 0; dx < 16; dx++) {
+            int worldX = chunkMinX + dx;
+            if (UpsideDownBand.isInBand(level, worldX)
+                    || UpsideDownBand.isInEntryLead(level, worldX)
+                    || UpsideDownBand.isInExitFade(level, worldX)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Apply the upside-down mirror to one chunk on the MAIN THREAD — mirror each in-band column, stamp
+     * the bedrock roof, open/close the underside, and lay the flipped corridor. Byte-identical to the old
+     * synchronous {@code ChunkEvent.Load} body; self-gating (returns {@code false} without writing if the
+     * chunk is no longer in a band zone, e.g. the band was disabled after the marker was set).
+     *
+     * <p><b>Not idempotent on its own:</b> it re-snapshots the column each call, so re-running it on an
+     * already-mirrored chunk would mirror the mirror. Exactly-once is the caller's job via the
+     * {@code NEEDS_UPSIDE_DOWN_MIRROR} marker check-and-clear (single server thread). Returns whether any
+     * block changed, so the caller can resend the chunk only when needed.</p>
+     */
+    public static boolean applyMirror(ServerLevel level, LevelChunk chunk) {
+        long startX = UpsideDownBand.startX(level);
+        if (startX == UpsideDownBand.OFF) return false;
+
         ChunkPos pos = chunk.getPos();
         int chunkMinX = pos.getMinBlockX();
         int chunkMinZ = pos.getMinBlockZ();
-        if (chunkMinX + 15 < startX) return; // before the first band
+        if (chunkMinX + 15 < startX) return false; // before the first band
 
         boolean[] inBand = new boolean[16];
         boolean[] inLead = new boolean[16];
@@ -147,7 +197,7 @@ public final class WorldUpsideDownEvents {
             if (inExit[dx]) anyExit = true;
             if (inBand[dx] || inLead[dx] || inExit[dx]) any = true;
         }
-        if (!any) return;
+        if (!any) return false;
 
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         long seed = data.getGenerationSeed();          // drives the lead-in fade dither (matches the void erosion noise)
@@ -428,11 +478,51 @@ public final class WorldUpsideDownEvents {
         // length — over void on the mirror-dominant side (the mirror encloses the tube) and through the
         // returning overworld on the far side (a carved cutting) — with the stamped bed giving the train a
         // continuous floor either way (bed/rails stay at bedY/railY, so the track is continuous).
-        if ((anyInBand || anyLead || anyExit) && chunk instanceof LevelChunk levelChunk) {
-            TrackGenerator.layFlippedCorridor(level, levelChunk, data.dims(), pos.x, pos.z, g);
+        if (anyInBand || anyLead || anyExit) {
+            TrackGenerator.layFlippedCorridor(level, chunk, data.dims(), pos.x, pos.z, g);
             changed = true;
         }
 
         if (changed) chunk.setUnsaved(true);
+        return changed;
+    }
+
+    // ---- deferred-apply plumbing --------------------------------------------------------------
+
+    /** Apply the mirror to a marked, neighbour-FULL chunk, clear its marker, and resend it to trackers. */
+    public static void applyMirrorAndResend(ServerLevel level, LevelChunk chunk) {
+        boolean changed = applyMirror(level, chunk);
+        chunk.removeData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get());  // exactly-once: clear even on a no-op self-heal
+        chunk.setUnsaved(true);                                               // persist the cleared marker (applyMirror only sets it when changed)
+        if (changed) resendChunk(level, chunk);
+    }
+
+    /**
+     * True iff the chunk and all 8 neighbours are loaded to FULL. The deferred writes use the raw
+     * lock-skipping {@code LevelChunkSection.setBlockState(...,false)} primitive, which can race a worker
+     * light task reading the same section lock-free ({@code MissingPaletteEntryException}); a FULL 3×3
+     * neighbourhood means no such async light task is still touching these sections — the same guard
+     * {@code TrainCarriageAppender.ensureSpawnFootprintReady} uses.
+     */
+    public static boolean neighboursFull(ServerLevel level, int cx, int cz) {
+        var cache = level.getChunkSource();
+        for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                if (cache.getChunkNow(cx + dx, cz + dz) == null) return false;
+            }
+        }
+        return true;
+    }
+
+    /** Resend the whole chunk (one {@code ClientboundLevelChunkWithLightPacket} per tracker) after a deferred mirror. */
+    public static void resendChunk(ServerLevel level, LevelChunk chunk) {
+        var players = level.getChunkSource().chunkMap.getPlayers(chunk.getPos(), false);
+        if (players.isEmpty()) return;
+        // Same packet PlayerChunkSender.sendChunk builds (that method is private); ships the mirrored
+        // blocks + the current gen-light snapshot, replacing the client's copy (idempotent, no double-light).
+        var packet = new ClientboundLevelChunkWithLightPacket(chunk, level.getLightEngine(), null, null);
+        for (ServerPlayer player : players) {
+            player.connection.send(packet);
+        }
     }
 }

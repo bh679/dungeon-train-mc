@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.PhysicsSubstepTuner;
 import games.brennan.dungeontrain.track.TrackGenerator;
@@ -17,11 +19,13 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -100,6 +104,19 @@ public final class TrainTickEvents {
     private static final int TRACK_FILL_PERIOD_TICKS = 10;
     private static final int TRACK_FILL_PHASE_OFFSET = 5;
 
+    /**
+     * Per-tick nanoTime budget for the deferred upside-down-mirror drain (the streaming scenery, not the
+     * train's own path — that goes through the un-budgeted backstop). Bounds the added main-thread cost so
+     * a generation burst is spread across ticks instead of spiking the gen tick (~7 ms/chunk).
+     */
+    private static final long MIRROR_DRAIN_BUDGET_NANOS = 3_000_000L; // 3 ms
+    /**
+     * Blocks ahead of the train (along velocity) the mirror BACKSTOP force-applies, bypassing the budget,
+     * so the flipped corridor is never missing under a carriage. Covers the appender's ~48-block forward
+     * spawn reach so a just-spawned front carriage lands on already-mirrored terrain.
+     */
+    private static final int MIRROR_BACKSTOP_AHEAD_BLOCKS = 48;
+
     private static int tickCounter = 0;
 
     private TrainTickEvents() {}
@@ -132,6 +149,10 @@ public final class TrainTickEvents {
             // No trains here — if we had lowered this level's physics substeps for a
             // long train that has since despawned, restore its baseline (#642).
             PhysicsSubstepTuner.restoreIfTuned(level);
+            // Still drain any deferred upside-down mirrors: a player can explore the band on foot with the
+            // train culled elsewhere, and the marker/queue outlive the train. Backstop is a no-op with no
+            // train; the budgeted drain orders by nearest player instead.
+            drainPendingMirrors(level, trainsById);
             tickCounter++;
             return;
         }
@@ -204,6 +225,13 @@ public final class TrainTickEvents {
         }
         long tAfterTracks = System.nanoTime();
 
+        // Deferred upside-down-mirror drain: a train-fall BACKSTOP (force-apply the chunks under/ahead of
+        // the train, bypassing the budget, so the flipped corridor is never missing) + a nanoTime-budgeted
+        // nearest-first drain of streaming scenery, so the ~7 ms/chunk mirror is spread across ticks
+        // instead of spiking the generation tick. See WorldUpsideDownEvents / project_upside_down_perf.
+        drainPendingMirrors(level, trainsById);   // self-logs [ud-drain]; timed below for [stuck.timing]
+        long tAfterMirror = System.nanoTime();
+
         // Tunnel runtime drain removed — tunnels are now generated entirely
         // at worldgen time via TunnelGenerator.placeTunnelStampsAtWorldgen.
         long tAfterTunnels = System.nanoTime();
@@ -214,7 +242,7 @@ public final class TrainTickEvents {
             for (List<Trains.Carriage> train : trainsById.values()) totalCarriages += train.size();
             int nearCarriages = countNearCarriages(level, trainsById);
             JITTER_LOGGER.debug(
-                "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms fluid={}ms tracks={}ms tunnels={}ms trains={} carriages={} near={}",
+                "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms fluid={}ms tracks={}ms mirror={}ms tunnels={}ms trains={} carriages={} near={}",
                 level.getGameTime(), totalMs,
                 (tAfterAppender - t0) / 1_000_000,
                 (tAfterOverlay - tAfterAppender) / 1_000_000,
@@ -222,10 +250,124 @@ public final class TrainTickEvents {
                 (tAfterKill - tAfterFindTrains) / 1_000_000,
                 (tAfterFluid - tAfterKill) / 1_000_000,
                 (tAfterTracks - tAfterFluid) / 1_000_000,
-                (tAfterTunnels - tAfterTracks) / 1_000_000,
+                (tAfterMirror - tAfterTracks) / 1_000_000,
+                (tAfterTunnels - tAfterMirror) / 1_000_000,
                 trainsById.size(), totalCarriages, nearCarriages);
         }
         tickCounter++;
+    }
+
+    /**
+     * Deferred upside-down-mirror maintenance, run once per level tick while trains are present:
+     * <ol>
+     *   <li><b>Backstop</b> — force-apply (no budget) every marked chunk overlapping each train's footprint
+     *       plus a forward slab, so the train never rides onto an un-mirrored (corridor-less) chunk.</li>
+     *   <li><b>Budgeted drain</b> — apply the remaining marked chunks nearest-first under
+     *       {@link #MIRROR_DRAIN_BUDGET_NANOS}, so streaming scenery is mirrored smoothly.</li>
+     * </ol>
+     * Each applied chunk clears its {@code NEEDS_UPSIDE_DOWN_MIRROR} marker and is resent to trackers.
+     * Returns the number of chunks applied this tick (for the timing line).
+     */
+    private static int drainPendingMirrors(ServerLevel level, Map<UUID, List<Trains.Carriage>> trainsById) {
+        long t0 = System.nanoTime();
+        java.util.Set<Long> pending = DungeonTrainWorldData.get(level).pendingMirrorChunks();
+        int applied = 0;
+
+        // (1) Backstop: checks the marker directly (not queue membership) so it is robust even right after
+        // a server restart, before the chunk's reload re-enqueue has fired.
+        for (List<Trains.Carriage> train : trainsById.values()) {
+            applied += forceApplyMirrorAroundTrain(level, train, pending);
+        }
+        if (pending.isEmpty()) { logDrain(level, applied, pending, t0); return applied; }
+
+        // (2) Budgeted drain, nearest-first by the first train's footprint centre (typically one train;
+        // the backstop already covers every train's own path, so ordering only affects scenery smoothness).
+        double refX = 0, refZ = 0;
+        boolean haveRef = false;
+        for (List<Trains.Carriage> train : trainsById.values()) {
+            if (train.isEmpty()) continue;
+            AABB a = CarriageFootprint.activeWorldAABB(train);
+            refX = (a.minX + a.maxX) * 0.5;
+            refZ = (a.minZ + a.maxZ) * 0.5;
+            haveRef = true;
+            break;
+        }
+        if (!haveRef) {                                       // no resident train → order by nearest player
+            List<? extends Player> players = level.players();
+            if (!players.isEmpty()) {
+                Player p = players.get(0);
+                refX = p.getX();
+                refZ = p.getZ();
+                haveRef = true;
+            }
+        }
+        Long[] keys = pending.toArray(new Long[0]);
+        if (haveRef) {
+            final double fx = refX, fz = refZ;
+            java.util.Arrays.sort(keys, java.util.Comparator.comparingDouble(k -> {
+                double dx = (ChunkPos.getX(k) * 16 + 8) - fx;
+                double dz = (ChunkPos.getZ(k) * 16 + 8) - fz;
+                return dx * dx + dz * dz;
+            }));
+        }
+        var cache = level.getChunkSource();
+        long deadline = System.nanoTime() + MIRROR_DRAIN_BUDGET_NANOS;
+        for (Long key : keys) {
+            if (System.nanoTime() >= deadline) break;
+            int cx = ChunkPos.getX(key);
+            int cz = ChunkPos.getZ(key);
+            LevelChunk chunk = cache.getChunkNow(cx, cz);
+            if (chunk == null) { pending.remove(key); continue; }                 // unloaded → reload re-enqueues
+            if (!chunk.hasData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get())) { pending.remove(key); continue; } // already applied
+            if (!WorldUpsideDownEvents.neighboursFull(level, cx, cz)) continue;   // palette-race guard → retry next tick
+            WorldUpsideDownEvents.applyMirrorAndResend(level, chunk);
+            pending.remove(key);
+            applied++;
+        }
+        logDrain(level, applied, pending, t0);
+        return applied;
+    }
+
+    /** Periodic DEBUG line for the deferred-mirror drain (fires from either call site — train-present or not). */
+    private static void logDrain(ServerLevel level, int applied, java.util.Set<Long> pending, long t0) {
+        if (applied > 0 && level.getGameTime() % 20 == 0) {
+            JITTER_LOGGER.debug("[ud-drain] mirrored={} backlog={} ms={}",
+                applied, pending.size(), String.format("%.2f", (System.nanoTime() - t0) / 1_000_000.0));
+        }
+    }
+
+    /**
+     * Force-apply every marked, neighbour-FULL chunk overlapping this train's footprint plus a
+     * {@link #MIRROR_BACKSTOP_AHEAD_BLOCKS} forward slab (along velocity) — bypassing the drain budget.
+     * The mirror lays the train's corridor floor, so an un-applied chunk under/ahead of the train would
+     * drop it into the void; this closes that window. Bounded to the few chunks actually under/ahead of
+     * the train, never the whole generation burst.
+     */
+    private static int forceApplyMirrorAroundTrain(ServerLevel level, List<Trains.Carriage> train, java.util.Set<Long> pending) {
+        if (train.isEmpty()) return 0;
+        AABB aabb = CarriageFootprint.activeWorldAABB(train);
+        if (aabb.getXsize() <= 0 || aabb.getYsize() <= 0 || aabb.getZsize() <= 0) return 0;
+        Trains.Carriage lead = Trains.lead(train);
+        Vector3dc vel = lead != null ? lead.provider().getTargetVelocity() : null;
+        double ex = vel != null ? Math.signum(vel.x()) * MIRROR_BACKSTOP_AHEAD_BLOCKS : 0.0;
+        double ez = vel != null ? Math.signum(vel.z()) * MIRROR_BACKSTOP_AHEAD_BLOCKS : 0.0;
+        int minCX = Math.floorDiv((int) Math.floor(Math.min(aabb.minX, aabb.minX + ex)), 16);
+        int maxCX = Math.floorDiv((int) Math.floor(Math.max(aabb.maxX, aabb.maxX + ex)), 16);
+        int minCZ = Math.floorDiv((int) Math.floor(Math.min(aabb.minZ, aabb.minZ + ez)), 16);
+        int maxCZ = Math.floorDiv((int) Math.floor(Math.max(aabb.maxZ, aabb.maxZ + ez)), 16);
+        var cache = level.getChunkSource();
+        int applied = 0;
+        for (int cz = minCZ; cz <= maxCZ; cz++) {
+            for (int cx = minCX; cx <= maxCX; cx++) {
+                LevelChunk chunk = cache.getChunkNow(cx, cz);
+                if (chunk == null || !chunk.hasData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get())) continue;
+                if (!WorldUpsideDownEvents.neighboursFull(level, cx, cz)) continue;
+                WorldUpsideDownEvents.applyMirrorAndResend(level, chunk);
+                pending.remove(ChunkPos.asLong(cx, cz));
+                applied++;
+            }
+        }
+        return applied;
     }
 
     /**
