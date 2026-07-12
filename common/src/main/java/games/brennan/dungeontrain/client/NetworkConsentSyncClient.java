@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 
-import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.platform.DtNetSender;
 import games.brennan.dungeontrain.net.NetworkConsentSyncPacket;
 import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
@@ -35,7 +35,7 @@ public final class NetworkConsentSyncClient {
     private static void sendConsentIfConnected() {
         try {
             if (Minecraft.getInstance().getConnection() == null) return;
-            DungeonTrainNet.sendToServer(new NetworkConsentSyncPacket(DiscordPresenceClientConfig.isGranted()));
+            DtNetSender.get().sendToServer(new NetworkConsentSyncPacket(DiscordPresenceClientConfig.isGranted()));
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] network-consent sync to server failed: {}", t.toString());
         }

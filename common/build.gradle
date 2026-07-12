@@ -33,6 +33,33 @@ repositories {
         name = 'Fuzs Mod Resources'
         url = 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/'
     }
+
+    // Sibling-mod API surfaces (games.brennan.*). Same two Ivy GitHub-Releases repos the
+    // root NeoForge build declares — copied verbatim so :common resolves the identical
+    // artifacts. These jars are NeoForge-built, but the games.brennan.* API classes DT
+    // compiles against are pure-Java, loader-agnostic bytecode — safe as compileOnly here.
+    // See the `compileOnly "bh679:…"` block below for the runtime-absence contract on Fabric.
+    ivy {
+        name = 'GitHubReleases'
+        url = 'https://github.com/'
+        patternLayout {
+            artifact '[organization]/[module]-mc/releases/download/v[revision]/[module]-neoforge-[revision].[ext]'
+        }
+        metadataSources { artifact() }
+        content {
+            includeGroup 'bh679'
+            excludeModule('bh679', 'playermob')
+        }
+    }
+    ivy {
+        name = 'GitHubReleasesPlayerMob'
+        url = 'https://github.com/'
+        patternLayout {
+            artifact "[organization]/[module]-mc/releases/download/v[revision]/[module]-neoforge-[revision]+${minecraft_version}.[ext]"
+        }
+        metadataSources { artifact() }
+        content { includeModule('bh679', 'playermob') }
+    }
 }
 
 dependencies {
@@ -62,6 +89,25 @@ dependencies {
     compileOnly 'org.spongepowered:mixin:0.8.5'
     // MixinExtras — @ModifyExpressionValue / @WrapOperation etc. used by several DT mixins.
     compileOnly 'io.github.llamalad7:mixinextras-common:0.4.1'
+
+    // ── Sibling-mod API surfaces (games.brennan.*) — COMPILE-TIME ONLY ──────────────
+    // DT's loader-neutral compat/reporter/spawner code compiles against these sibling
+    // mods' public Java APIs. They are `compileOnly` here for TWO reasons:
+    //   1. :common never packages them (the root NeoForge jar jarJar-bundles them; the
+    //      Fabric module will bundle sibling Fabric ports once those exist).
+    //   2. On Fabric these sibling classes are ABSENT at runtime until the siblings ship
+    //      Fabric editions. Every :common file that touches a sibling class must therefore
+    //      only dereference it behind a runtime guard (DtPlatform.isModLoaded / compat-bridge
+    //      indirection) — see the Stage-4a classload-isolation audit. On NeoForge the siblings
+    //      are always present, so those guards are no-ops in practice; NeoForge behavior is
+    //      unchanged. The jars are NeoForge-built but the games.brennan.* API is loader-agnostic
+    //      bytecode, so compiling :common (vanilla mode) against them is safe.
+    // Versions are read from the root gradle.properties (single source of truth).
+    compileOnly "bh679:adventureitemnames:${adventureitemnames_version}"
+    compileOnly "bh679:adventureitemstats:${adventureitemstats_version}"
+    compileOnly "bh679:playermob:${playermob_version}"
+    compileOnly "bh679:discordpresence:${discordpresence_version}"
+    compileOnly "bh679:enderchestpersistence:${enderchestpersistence_version}"
 }
 
 neoForge {
