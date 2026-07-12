@@ -13,14 +13,34 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 repositories {
     mavenCentral()
+    // Sable's cross-loader artifacts (sable-common / sable-companion-common). Same
+    // maven the fabric module uses; loader-neutral by construction.
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'RyanHCode Maven'
+                url = 'https://maven.ryanhcode.dev/releases'
+            }
+        }
+        filter {
+            includeGroup 'dev.ryanhcode.sable'
+            includeGroup 'dev.ryanhcode.sable-companion'
+        }
+    }
 }
 
 dependencies {
-    // The only external dep the loader-neutral files need beyond vanilla MC:
     // org.joml.primitives (AABBd etc.). NeoForm supplies net.minecraft, DataFixerUpper,
-    // gson, slf4j, joml core, blaze3d, fastutil and log4j. compileOnly — these classes
-    // are packaged by each loader module, not by :common.
+    // gson, slf4j, joml core, blaze3d, fastutil and log4j.
     compileOnly 'org.joml:joml-primitives:1.10.0'
+
+    // Sable — cross-loader (common) artifacts so loader-neutral DT code that touches
+    // Sable's sublevel/physics/companion-math APIs compiles here. compileOnly: Sable is
+    // provided at runtime by the loader modules, never packaged by :common. sable-common
+    // has the api/sublevel/physics classes; sable-companion-common adds the companion.math
+    // types (Pose3d, BoundingBox3dc) that sable-common does not bundle.
+    compileOnly "dev.ryanhcode.sable:sable-common-${minecraft_version}:${sable_mod_version}"
+    compileOnly "dev.ryanhcode.sable-companion:sable-companion-common-${minecraft_version}:1.6.0"
 }
 
 neoForge {
