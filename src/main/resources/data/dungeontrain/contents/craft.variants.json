@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 8,
   "variants": {
     "3,0,4": ["minecraft:crafting_table", "minecraft:cartography_table", "minecraft:fletching_table", "minecraft:smithing_table", {"state": "minecraft:grindstone[face=wall,facing=north]", "rotation": {"mode": "options", "dirs": ["west", "east"]}}],
     "4,0,0": [{"state": "minecraft:stripped_oak_wood[axis=y]", "weight": 3}, {"state": "minecraft:crafting_table", "weight": 4}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "starter"}],
