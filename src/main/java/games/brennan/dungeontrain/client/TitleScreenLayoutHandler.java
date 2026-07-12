@@ -4,6 +4,9 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PulsingDiscordButton;
+import games.brennan.dungeontrain.client.localization.LocalizationCredit;
+import games.brennan.dungeontrain.client.localization.LocalizationCreditLabel;
+import games.brennan.dungeontrain.client.localization.LocalizationCreditRegistry;
 import games.brennan.dungeontrain.client.version.LauncherDetector;
 import games.brennan.dungeontrain.client.version.VersionCheckState;
 import games.brennan.dungeontrain.client.version.VersionStatusButton;
@@ -24,6 +27,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.slf4j.Logger;
 
 import java.net.URI;
+import java.util.List;
 
 /**
  * Restructures the title screen so the NeoForge "Mods" button slot is replaced
@@ -55,6 +59,7 @@ public final class TitleScreenLayoutHandler {
     private static final Component MODS_KEY = Component.translatable("fml.menu.mods");
     private static final Component OPTIONS_KEY = Component.translatable("menu.options");
     private static final Component QUIT_KEY = Component.translatable("menu.quit");
+    private static final Component LANGUAGE_KEY = Component.translatable("options.language");
 
     private static final int GAP = 4;
 
@@ -77,6 +82,24 @@ public final class TitleScreenLayoutHandler {
         VersionCheckState.ensureChecked();
         LauncherDetector.source();
         event.addListener(new VersionStatusButton(4, 4));
+
+        // Thank-you text for whoever shipped a resource pack translating the game into
+        // the player's CURRENTLY SELECTED language — sits immediately left of vanilla's
+        // own language-select button so it reads as an annotation on that button, not a
+        // separate menu section. Silent (no widget added) unless a credit exists for the
+        // active locale, so stock installs never see it.
+        Button language = findButton(event, LANGUAGE_KEY);
+        if (language == null) {
+            LOGGER.warn("TitleScreenLayout: could not locate the vanilla language button; skipping localization credit.");
+        } else {
+            String locale = Minecraft.getInstance().getLanguageManager().getSelected();
+            List<LocalizationCredit> credits = LocalizationCreditRegistry.creditsFor(locale);
+            LocalizationCreditLabel creditLabel = LocalizationCreditLabel.createLeftOf(
+                    titleScreen, credits, language.getX(), language.getY() + language.getHeight(), GAP);
+            if (creditLabel != null) {
+                event.addListener(creditLabel);
+            }
+        }
 
         // Defensive: if the user bailed mid-world-load, the auto-open flag
         // would still be armed. Reaching the title screen means we have no
