@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.platform.event.DtEvents;
 import games.brennan.dungeontrain.platform.event.DtGuiLayerRegistrar;
 import games.brennan.dungeontrain.platform.event.DtGuiLayerRegistrationCallback;
 import games.brennan.dungeontrain.platform.event.DtKeyMappingRegistrationCallback;
+import games.brennan.dungeontrain.platform.event.DtReloadListenerRegistrationCallback;
 import java.util.function.Function;
 import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
@@ -15,6 +16,7 @@ import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
@@ -58,6 +60,14 @@ public final class NeoForgeClientRegistryBridge {
         };
         for (DtGuiLayerRegistrationCallback cb : DtEvents.GUI_LAYER_REGISTRATION.listeners()) {
             cb.registerGuiLayers(registrar);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onRegisterClientReloadListeners(RegisterClientReloadListenersEvent event) {
+        for (DtReloadListenerRegistrationCallback cb :
+                DtEvents.CLIENT_RELOAD_LISTENER_REGISTRATION.listeners()) {
+            cb.registerReloadListeners(event::registerReloadListener);
         }
     }
 

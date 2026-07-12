@@ -1,11 +1,9 @@
 package games.brennan.dungeontrain.narrative.block;
 import games.brennan.dungeontrain.DtCore;
 
+import games.brennan.dungeontrain.platform.event.DtBlockEntityTypeRegistrar;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent;
 
 /**
  * Mod-bus subscriber that adds {@link ModBlocks#NARRATIVE_LECTERN} to
@@ -17,13 +15,11 @@ import net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent;
  * <p>{@link BlockEntityTypeAddBlocksEvent} is the NeoForge-blessed way to
  * extend a vanilla BE type's valid-block set without mixins or reflection.</p>
  */
-@EventBusSubscriber(modid = DtCore.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
 public final class NarrativeLecternHooks {
 
     private NarrativeLecternHooks() {}
 
-    @SubscribeEvent
-    public static void onAddBlocks(BlockEntityTypeAddBlocksEvent event) {
-        event.modify(BlockEntityType.LECTERN, ModBlocks.NARRATIVE_LECTERN.get());
+    public static void onAddBlocks(DtBlockEntityTypeRegistrar registrar) {
+        registrar.addBlocks(BlockEntityType.LECTERN, ModBlocks.NARRATIVE_LECTERN.get());
     }
 }

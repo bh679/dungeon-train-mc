@@ -66,6 +66,28 @@ public final class DtEvents {
     public static final DtEvent<DtAdvancementEarnCallback> ADVANCEMENT_EARN =
         new DtEvent<>();
 
+    /**
+     * Server-data reload-listener registration — NeoForge {@code AddReloadListenerEvent}
+     * (game bus). Fires once per server start (integrated and dedicated) while the
+     * datapack reload pipeline is assembled, and again on {@code /reload}. Not
+     * cancellable; declarative (each listener registers its
+     * {@code PreparableReloadListener}(s) via {@link DtReloadListenerRegistrar}). One
+     * handler ({@code NarrativeDataLoaders}) registers the four narrative-prose
+     * registries so bundled prose loads through the vanilla datapack pipeline.
+     */
+    public static final DtEvent<DtReloadListenerRegistrationCallback> SERVER_RELOAD_LISTENER_REGISTRATION =
+        new DtEvent<>();
+
+    /**
+     * Block-entity-type valid-block extension — NeoForge mod-bus
+     * {@code BlockEntityTypeAddBlocksEvent}. Fires once during setup (both sides).
+     * Not cancellable; declarative (via {@link DtBlockEntityTypeRegistrar}). One
+     * handler ({@code NarrativeLecternHooks}) binds the narrative lectern block to
+     * {@code BlockEntityType.LECTERN}.
+     */
+    public static final DtEvent<DtBlockEntityTypeAddBlocksCallback> BLOCK_ENTITY_TYPE_ADD_BLOCKS =
+        new DtEvent<>();
+
     // ---- Server lifecycle (Stage 2b) --------------------------------------
 
     /**
@@ -255,6 +277,14 @@ public final class DtEvents {
     public static final DtEvent<DtChunkLoadCallback> CHUNK_LOAD =
         new DtEvent<>();
 
+    /**
+     * Level unload — NeoForge {@code LevelEvent.Unload}. Fires as a level unloads
+     * (client and server; handlers self-filter). Not cancellable; read-only. One DT
+     * handler ({@code WorldUpsideDownEvents}, NORMAL).
+     */
+    public static final DtEvent<DtLevelUnloadCallback> LEVEL_UNLOAD =
+        new DtEvent<>();
+
     // ---- Block / attack / leave events (Stage 2b) -------------------------
 
     /**
@@ -406,6 +436,18 @@ public final class DtEvents {
      * mapping via the {@link DtClientTooltipFactoryRegistrar}. One handler.
      */
     public static final DtEvent<DtClientTooltipComponentFactoryRegistrationCallback> CLIENT_TOOLTIP_FACTORY_REGISTRATION =
+        new DtEvent<>();
+
+    /**
+     * Client-resource reload-listener registration — NeoForge mod-bus
+     * {@code RegisterClientReloadListenersEvent} (client only). Fires once at
+     * {@code Minecraft} construction and again on every resource-pack reload. Not
+     * cancellable; declarative (via {@link DtReloadListenerRegistrar}). One handler
+     * ({@code LocalizationCreditsClientLoaders}) registers the localization-credits
+     * registry on the client resource channel (deliberately not the server datapack
+     * channel — the main menu has no server running).
+     */
+    public static final DtEvent<DtReloadListenerRegistrationCallback> CLIENT_RELOAD_LISTENER_REGISTRATION =
         new DtEvent<>();
 
     /**

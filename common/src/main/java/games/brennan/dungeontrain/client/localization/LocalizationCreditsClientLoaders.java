@@ -1,12 +1,9 @@
 package games.brennan.dungeontrain.client.localization;
 import games.brennan.dungeontrain.DtCore;
 
+import games.brennan.dungeontrain.platform.event.DtReloadListenerRegistrar;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 
 /**
  * NeoForge registration seam for {@link LocalizationCreditRegistry}. Registers
@@ -21,14 +18,12 @@ import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
  * channel {@code NarrativeDataLoaders} uses — the main menu has no
  * world/server running yet, so only resource packs are active there.</p>
  */
-@EventBusSubscriber(modid = DtCore.MOD_ID, value = Dist.CLIENT)
 public final class LocalizationCreditsClientLoaders {
 
     private LocalizationCreditsClientLoaders() {}
 
-    @SubscribeEvent
-    public static void onRegisterClientReloadListeners(RegisterClientReloadListenersEvent event) {
-        event.registerReloadListener(new ResourceManagerReloadListener() {
+    public static void registerReloadListeners(DtReloadListenerRegistrar registrar) {
+        registrar.register(new ResourceManagerReloadListener() {
             @Override
             public void onResourceManagerReload(ResourceManager resourceManager) {
                 LocalizationCreditRegistry.load(resourceManager);

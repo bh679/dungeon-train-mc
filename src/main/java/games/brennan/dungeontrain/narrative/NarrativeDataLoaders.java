@@ -1,12 +1,9 @@
 package games.brennan.dungeontrain.narrative;
 import games.brennan.dungeontrain.DtCore;
 
+import games.brennan.dungeontrain.platform.event.DtReloadListenerRegistrar;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
 import java.util.function.Consumer;
 
@@ -25,17 +22,15 @@ import java.util.function.Consumer;
  * class is NeoForge-specific (mirrors the AdventureItemNames sibling's
  * loader-neutral-listener + per-loader-entrypoint split).</p>
  */
-@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class NarrativeDataLoaders {
 
     private NarrativeDataLoaders() {}
 
-    @SubscribeEvent
-    public static void onAddReloadListeners(AddReloadListenerEvent event) {
-        event.addListener(listener("dungeontrain:narrative/stories", StoryRegistry::load));
-        event.addListener(listener("dungeontrain:narrative/random_books", RandomBookRegistry::load));
-        event.addListener(listener("dungeontrain:narrative/starting_books", StartingBookRegistry::load));
-        event.addListener(listener("dungeontrain:narrative/death_lore", DeathLoreStore::load));
+    public static void registerReloadListeners(DtReloadListenerRegistrar registrar) {
+        registrar.register(listener("dungeontrain:narrative/stories", StoryRegistry::load));
+        registrar.register(listener("dungeontrain:narrative/random_books", RandomBookRegistry::load));
+        registrar.register(listener("dungeontrain:narrative/starting_books", StartingBookRegistry::load));
+        registrar.register(listener("dungeontrain:narrative/death_lore", DeathLoreStore::load));
     }
 
         public static void onServerStopped(net.minecraft.server.MinecraftServer server) {

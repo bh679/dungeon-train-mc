@@ -15,10 +15,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.level.ChunkEvent;
-import net.neoforged.neoforge.event.level.LevelEvent;
 
 /**
  * Realises the <b>upside-down band</b> ({@link UpsideDownBand}) by mirroring each in-band column of
@@ -49,7 +45,6 @@ import net.neoforged.neoforge.event.level.LevelEvent;
  * primitive (the Sable-safe, light-skipping path), guarded by a FULL 3×3 neighbourhood
  * ({@link #neighboursFull}).
  */
-@EventBusSubscriber(modid = DtCore.MOD_ID)
 public final class WorldUpsideDownEvents {
 
     private WorldUpsideDownEvents() {}
@@ -82,9 +77,8 @@ public final class WorldUpsideDownEvents {
      * Drop any pending precomputed plans when the overworld unloads, so a stale plan from a previous
      * world can never be applied to a same-positioned chunk in a newly loaded one.
      */
-    @SubscribeEvent
-    public static void onLevelUnload(LevelEvent.Unload event) {
-        if (event.getLevel() instanceof ServerLevel level && level.dimension().equals(Level.OVERWORLD)) {
+    public static void onLevelUnload(net.minecraft.world.level.LevelAccessor unloadedLevel) {
+        if (unloadedLevel instanceof ServerLevel level && level.dimension().equals(Level.OVERWORLD)) {
             MirrorPlanCache.clear();
         }
     }

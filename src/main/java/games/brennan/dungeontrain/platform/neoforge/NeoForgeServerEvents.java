@@ -57,6 +57,28 @@ public final class NeoForgeServerEvents {
         registerBlockAndAttack();
         registerInteract();
         registerCreativeTabContents();
+        registerReloadListeners();
+        registerBlockEntityTypes();
+    }
+
+    /**
+     * Server-data reload listeners (AddReloadListenerEvent, game bus), fired by
+     * {@code NeoForgeReloadListenerBridge}. One handler ({@code NarrativeDataLoaders})
+     * registers the four narrative-prose registries onto the datapack pipeline.
+     */
+    private static void registerReloadListeners() {
+        games.brennan.dungeontrain.platform.event.DtEvents.SERVER_RELOAD_LISTENER_REGISTRATION
+            .register(games.brennan.dungeontrain.narrative.NarrativeDataLoaders::registerReloadListeners);
+    }
+
+    /**
+     * Block-entity-type valid-block extensions (BlockEntityTypeAddBlocksEvent, mod-bus,
+     * both sides), fired by {@code NeoForgeBlockEntityBridge}. One handler
+     * ({@code NarrativeLecternHooks}) binds the narrative lectern to the vanilla lectern BE.
+     */
+    private static void registerBlockEntityTypes() {
+        games.brennan.dungeontrain.platform.event.DtEvents.BLOCK_ENTITY_TYPE_ADD_BLOCKS
+            .register(games.brennan.dungeontrain.narrative.block.NarrativeLecternHooks::onAddBlocks);
     }
 
     /**
@@ -184,6 +206,10 @@ public final class NeoForgeServerEvents {
             .register(games.brennan.dungeontrain.event.CorridorCleanupEvents::onChunkLoad);
         games.brennan.dungeontrain.platform.event.DtEvents.CHUNK_LOAD
             .register(games.brennan.dungeontrain.event.WorldUpsideDownEvents::onChunkLoad);
+
+        // LevelEvent.Unload — one handler (drops the overworld mirror-plan cache).
+        games.brennan.dungeontrain.platform.event.DtEvents.LEVEL_UNLOAD
+            .register(games.brennan.dungeontrain.event.WorldUpsideDownEvents::onLevelUnload);
     }
 
     /**

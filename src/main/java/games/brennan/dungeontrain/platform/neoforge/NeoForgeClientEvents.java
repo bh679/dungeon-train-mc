@@ -305,6 +305,10 @@ public final class NeoForgeClientEvents {
         // RegisterClientTooltipComponentFactoriesEvent
         DtEvents.CLIENT_TOOLTIP_FACTORY_REGISTRATION
             .register(games.brennan.dungeontrain.client.tooltip.PrefabTooltipEvents.ModBus::onRegisterFactories);
+
+        // RegisterClientReloadListenersEvent (client resource channel)
+        DtEvents.CLIENT_RELOAD_LISTENER_REGISTRATION
+            .register(games.brennan.dungeontrain.client.localization.LocalizationCreditsClientLoaders::registerReloadListeners);
     }
 
     /**
