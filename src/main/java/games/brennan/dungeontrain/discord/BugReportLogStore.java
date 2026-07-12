@@ -3,7 +3,7 @@ import games.brennan.dungeontrain.platform.DtPlatform;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.net.BugReportLogsPacket.LogBlob;
 import net.neoforged.fml.ModList;
 import org.slf4j.Logger;

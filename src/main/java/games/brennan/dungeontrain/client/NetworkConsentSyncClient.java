@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.NetworkConsentSyncPacket;
 import net.minecraft.client.Minecraft;

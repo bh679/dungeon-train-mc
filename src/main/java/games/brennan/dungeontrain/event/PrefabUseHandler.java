@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.BlockVariantPrefabStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;

@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.client.PendingWorldChoices;
 import games.brennan.dungeontrain.client.worldgen.PendingStartingDimension;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;

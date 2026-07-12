@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.mixin.client.AdvancementsScreenAccessor;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.client.gui.screens.advancements.AdvancementTab;

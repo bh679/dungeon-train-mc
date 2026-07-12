@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import org.slf4j.Logger;
 
 import java.io.IOException;

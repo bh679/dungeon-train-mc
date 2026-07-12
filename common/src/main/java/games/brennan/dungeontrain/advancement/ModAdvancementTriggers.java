@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.advancement;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.DtRegistrar;
 import net.minecraft.advancements.CriterionTrigger;
 import net.minecraft.core.registries.Registries;

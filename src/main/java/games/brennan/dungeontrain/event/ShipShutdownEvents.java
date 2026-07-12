@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;

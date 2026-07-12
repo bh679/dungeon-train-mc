@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client.menu.plot;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.client.menu.CarriageContentsAllowScreen;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.CommandRunner;

@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;

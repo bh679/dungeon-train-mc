@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.cheat;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.discord.FreePlayReport;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.registry.ModMobEffects;

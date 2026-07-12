@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.ship.ManagedShip;

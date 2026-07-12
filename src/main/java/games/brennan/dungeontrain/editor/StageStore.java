@@ -6,7 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.template.Stage;
 import games.brennan.dungeontrain.template.TemplateGate;
 import net.neoforged.bus.api.SubscribeEvent;

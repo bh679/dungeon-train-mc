@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;

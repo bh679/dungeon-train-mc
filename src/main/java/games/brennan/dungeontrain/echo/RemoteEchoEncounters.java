@@ -3,7 +3,7 @@ import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.train.Trains;

@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.track.variant;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateKind;

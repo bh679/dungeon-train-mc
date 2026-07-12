@@ -6,7 +6,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;

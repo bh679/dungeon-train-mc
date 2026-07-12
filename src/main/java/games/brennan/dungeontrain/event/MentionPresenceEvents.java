@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.DtCore;
 
 import games.brennan.discordpresence.discord.DiscordService;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.util.PresenceLine;
 import net.minecraft.network.chat.Component;

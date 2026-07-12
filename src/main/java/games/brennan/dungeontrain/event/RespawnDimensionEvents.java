@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.SpawnDeckHoldPacket;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;

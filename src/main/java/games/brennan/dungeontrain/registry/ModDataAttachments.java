@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.registry;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.serialization.Codec;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.platform.DtAttachment;
 import games.brennan.dungeontrain.platform.neoforge.NeoForgeAttachment;
 import games.brennan.dungeontrain.player.PlayerBiomeProgress;

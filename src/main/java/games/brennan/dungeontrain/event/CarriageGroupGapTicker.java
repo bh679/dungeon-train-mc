@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.event;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.net.CarriageGroupGapPacket;
 import games.brennan.dungeontrain.net.CarriageNextSpawnPacket;

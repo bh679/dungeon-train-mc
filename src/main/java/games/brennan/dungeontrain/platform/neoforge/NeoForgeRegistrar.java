@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.platform.neoforge;
 import games.brennan.dungeontrain.DtCore;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.platform.DtRegistrar;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;

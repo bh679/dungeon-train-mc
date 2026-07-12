@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.platform.DtPlatform;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;

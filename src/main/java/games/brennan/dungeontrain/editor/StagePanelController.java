@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.StageBlocksSyncPacket;
 import games.brennan.dungeontrain.net.StagePanelEditPacket;

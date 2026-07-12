@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.dungeontrain.DtCore;
 
 import games.brennan.discordpresence.client.SurveySubmitClientHook;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;

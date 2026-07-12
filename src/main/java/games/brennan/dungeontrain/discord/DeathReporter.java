@@ -3,7 +3,7 @@ import games.brennan.dungeontrain.DtCore;
 
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import net.minecraft.server.level.ServerPlayer;

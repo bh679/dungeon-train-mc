@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.narrative;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.net.DungeonTrainNet;

@@ -3,7 +3,7 @@ import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.FarStartAdvancement;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;

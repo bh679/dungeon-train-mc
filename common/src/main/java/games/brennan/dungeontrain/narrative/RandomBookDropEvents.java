@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.narrative;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;

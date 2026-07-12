@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.train;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;

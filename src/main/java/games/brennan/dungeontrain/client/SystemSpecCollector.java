@@ -4,7 +4,7 @@ import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.blaze3d.platform.GlUtil;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.discord.LauncherInfo;
 import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;

@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.narrative.BookReadMarkerTag;

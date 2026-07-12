@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.advancement;
 import games.brennan.dungeontrain.DtCore;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.narrative.NarrativeBookTag;
 import games.brennan.dungeontrain.narrative.RandomBookTag;
 import games.brennan.dungeontrain.narrative.SharedBookFoundTag;

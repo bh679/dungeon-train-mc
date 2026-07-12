@@ -7,7 +7,7 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;

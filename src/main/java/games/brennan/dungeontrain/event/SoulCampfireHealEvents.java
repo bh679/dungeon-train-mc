@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.event;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.registry.effect.WarmthOfTheFireEffect;
 import games.brennan.dungeontrain.ship.ManagedShip;

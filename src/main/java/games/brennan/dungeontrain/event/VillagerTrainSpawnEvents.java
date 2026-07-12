@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NameComposer;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.difficulty.ProceduralTiers;

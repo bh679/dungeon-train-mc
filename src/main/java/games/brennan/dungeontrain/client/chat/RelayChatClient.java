@@ -7,7 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
-import games.brennan.dungeontrain.DungeonTrain;
+
 import org.slf4j.Logger;
 
 import java.net.URI;
