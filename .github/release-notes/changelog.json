@@ -4499,8 +4499,21 @@
       "released_at": null
     },
     {
-      "id": "discordpresence-consent-seam-i18n",
+      "id": "relay-outbox-http1-pin",
       "version": "0.455.0",
+      "type": "chore",
+      "title": "Pin relay outbox HTTP client to HTTP/1.1",
+      "summary": "Internal/dev change with no player-facing effect: the relay telemetry outbox now pins HTTP/1.1, matching the other relay reporters, so outbox submits reach a bare-Node localhost relay during local testing. Production is unaffected (it already terminates HTTP/1.1 at the reverse proxy).",
+      "highlights": [],
+      "pr": 751,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "discordpresence-consent-seam-i18n",
+      "version": "0.456.0",
       "type": "fix",
       "title": "Network-consent popup fully translatable",
       "summary": "The four bullet points and the \"Harvest your soul\" line on the \"Connect to the internet?\" popup were still hard-coded in English even after the previous localization fix, because they're supplied by Dungeon Train itself rather than the bundled Discord Presence mod. They're now translatable like the rest of the popup.",
