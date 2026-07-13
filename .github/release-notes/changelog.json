@@ -4452,6 +4452,20 @@
       "released": true,
       "released_in": "v0.454.0",
       "released_at": "2026-07-13T12:22:07Z"
+    },
+    {
+      "id": "consent-message-order-after-accept",
+      "version": "0.455.0",
+      "type": "fix",
+      "title": "Developer message now arrives after you accept it",
+      "summary": "When the Developer sends you a message in-game, the reply now lands after your \"@Dev\" accept line (and the \"online now\" note) instead of appearing above it \u2014 so the conversation reads in the right order.",
+      "highlights": [
+        "Held Developer message is delivered after your @Dev acceptance, not before it"
+      ],
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
