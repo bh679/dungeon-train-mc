@@ -479,6 +479,7 @@
   "key.categories.dungeontrain": "Dungeon Train",
   "item.dungeontrain.variant_clipboard": "Block Variant Clipboard",
   "item.dungeontrain.random_book": "Random Book",
+  "item.dungeontrain.random_playerbook": "Random Player Book",
   "gui.dungeontrain.prefab_tab.variants": "Block Variants",
   "gui.dungeontrain.prefab_tab.loot": "Containers / Loot",
   "gui.dungeontrain.prefab_tab.loot_entity": "Armor Stands / Item Frames",

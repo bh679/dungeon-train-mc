@@ -760,6 +760,22 @@ public final class ContainerContentsRoller {
             return RandomBookFactory.rollFromPool(bookSeed).orElse(ItemStack.EMPTY);
         }
 
+        // Editor-only placeholder dungeontrain:random_playerbook — like
+        // random_book, but sources EXCLUSIVELY from player-written community
+        // books. The shared pool is tried unconditionally (no read-scaled
+        // taper), so player books are the primary source. When discovery is
+        // off or the shared pool is empty/offline it falls back to a hardcoded
+        // local random book so the slot is never wasted.
+        if (item == ModItems.RANDOM_PLAYERBOOK.get()) {
+            if (SharedBookGate.canDiscover()) {
+                long sharedSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_SHARED_BOOK_PICK);
+                ItemStack shared = SharedBookPool.rollShared(sharedSeed);
+                if (!shared.isEmpty()) return shared;
+            }
+            long bookSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
+            return RandomBookFactory.rollFromPool(bookSeed).orElse(ItemStack.EMPTY);
+        }
+
         int maxStack = new ItemStack(item).getMaxStackSize();
         ItemStack stack = new ItemStack(item, Math.max(1, Math.min(maxStack, rolledCount)));
 
