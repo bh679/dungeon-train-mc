@@ -232,7 +232,7 @@
     {
       "name": "copper",
       "weight": 1,
-      "stage": "mud"
+      "stage": "copper"
     },
     {
       "name": "quartz",
