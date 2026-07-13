@@ -128,7 +128,12 @@ public final class DeathLoreStore {
             resourceManager.listResources(SUBDIR, rl -> rl.getPath().endsWith(EXT));
         for (Map.Entry<ResourceLocation, Resource> entry : resources.entrySet()) {
             ResourceLocation file = entry.getKey();
-            try (InputStream in = entry.getValue().open();
+            // Overlay the host-locale variant on the English base when one is bundled/shipped
+            // (see NarrativeContentLocale). Tier 2 (filesystem overrides, below) is untouched.
+            ResourceLocation baseId = ResourceLocation.fromNamespaceAndPath(
+                file.getNamespace(), file.getPath().substring(0, file.getPath().length() - EXT.length()));
+            Resource source = NarrativeContentLocale.localized(resourceManager, baseId, SUBDIR).orElse(entry.getValue());
+            try (InputStream in = source.open();
                  Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
                 parseInto(r, file.toString());
             } catch (Exception e) {

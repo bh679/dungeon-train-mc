@@ -1,0 +1,23 @@
+{
+  "discordpresence.consent.title": "连接到互联网？",
+  "discordpresence.consent.body": "此模组可使用在线连接来：",
+  "discordpresence.consent.feature_fallback": "处理反应、聊天中继，以及加入/死亡报告。",
+  "discordpresence.consent.footnote": "可随时在配置中修改，或使用 /chatconnect on 开启。",
+  "discordpresence.consent.enable": "启用",
+  "discordpresence.consent.not_now": "暂不",
+  "discordpresence.survey.give_feedback": "提供反馈",
+  "discordpresence.survey.title": "反馈",
+  "discordpresence.survey.comment": "评论",
+  "discordpresence.survey.hint.choice": "添加更多细节（可选）",
+  "discordpresence.survey.hint.scale": "你给出这个评分的主要原因是什么？（可选）",
+  "discordpresence.survey.hint.text": "在这里输入你的回答……",
+  "discordpresence.survey.skip": "跳过",
+  "discordpresence.survey.submit": "提交",
+  "discordpresence.survey.submit_next": "提交并继续",
+  "discordpresence.survey.progress": "第 %s / %s 个问题",
+  "discordpresence.survey.unavailable": "反馈功能暂时不可用。",
+  "discordpresence.chatconnect.status_enabled": "在线功能当前已启用。",
+  "discordpresence.chatconnect.status_disabled": "在线功能当前已禁用。",
+  "discordpresence.chatconnect.set_enabled": "已启用在线功能。",
+  "discordpresence.chatconnect.set_disabled": "已禁用在线功能。"
+}
