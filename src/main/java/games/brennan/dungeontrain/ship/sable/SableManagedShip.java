@@ -169,6 +169,15 @@ public final class SableManagedShip implements ManagedShip {
 
     @Override
     public void applyTickOutput(KinematicDriver.TickOutput output) {
+        // A DT-frozen carriage (#646 soft-freeze) has been parked: its body stays in the physics
+        // scene, but DT stops teleporting it here so it sits at rest while Sable does no per-body work
+        // for it. Skipping this per-tick teleport + velocity write IS the park (and part of the
+        // soft-freeze saving); PhysicsFreeze.freeze already zeroed its velocity so it won't drift. It
+        // resumes teleporting the tick after PhysicsFreeze.unfreeze clears the flag.
+        if (PhysicsFreeze.isFrozen(subLevel)) {
+            return;
+        }
+
         RigidBodyHandle handle = RigidBodyHandle.of(subLevel);
         if (handle == null || !handle.isValid()) {
             LOGGER.trace("[Sable] applyTickOutput: handle invalid for sub-level {}",
