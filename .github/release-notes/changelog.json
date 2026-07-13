@@ -4404,6 +4404,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-crossing-gen-perf",
+      "version": "0.451.0",
+      "type": "perf",
+      "title": "Smoother Nether crossings \u2014 big cut in moving-train gen lag",
+      "summary": "Riding the train through the Nether band no longer causes the heavy server-tick spikes that dropped TPS. The real-Nether terrain beneath the band was being re-sampled far more than needed as it generated; it is now computed once per chunk and reused \u2014 identical terrain, a fraction of the cost. In testing the worst server tick during a Nether crossing fell from ~290 ms to ~75 ms.",
+      "highlights": [
+        "Worst-case Nether-crossing tick cut ~4x (about 290 ms down to 75 ms)",
+        "Long moving rides stay closer to full TPS through the Nether band"
+      ],
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
