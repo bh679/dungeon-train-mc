@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.GenProfiler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.MinecraftServer;
@@ -76,6 +77,15 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
 
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> ctx) {
+        long genT0 = GenProfiler.t0();
+        try {
+            return placeInner(ctx);
+        } finally {
+            GenProfiler.add(GenProfiler.Bucket.DISINTEGRATION, genT0);
+        }
+    }
+
+    private boolean placeInner(FeaturePlaceContext<NoneFeatureConfiguration> ctx) {
         try {
             WorldGenLevel level = ctx.level();
             ChunkPos cp = new ChunkPos(ctx.origin());

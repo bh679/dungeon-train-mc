@@ -57,7 +57,12 @@ public final class GenProfiler {
         /** {@code ChunkStatusSpawnMixin} upside-down mirror precompute. */
         MIRROR_PRECOMPUTE,
         /** {@code TrackBedFeature.place} — track/rail/pillar stamping. */
-        TRACK_FEATURE
+        TRACK_FEATURE,
+        /** {@code DisintegrationFeature.place} — real-End router island sampling for the void-fade band (worker-thread). */
+        DISINTEGRATION,
+        /** {@code WorldDisintegrationEvents.onChunkLoad} — void erosion of the fade band (MAIN-thread; reported
+         *  separately, not in {@link Sample#dtTotalMs} which is a worker-thread parallel sum). */
+        EROSION
     }
 
     private static final int N = Bucket.values().length;
@@ -108,10 +113,11 @@ public final class GenProfiler {
             return chunks > 0 ? ms(b) / chunks : 0.0;
         }
 
-        /** DT's total added gen cost this window — excludes {@link Bucket#CORE_REPLACE} (already inside NETHER_FEATURE). */
+        /** DT's total added worker-thread gen cost this window — excludes {@link Bucket#CORE_REPLACE}
+         *  (already inside NETHER_FEATURE) and {@link Bucket#EROSION} (main-thread, not a worker slice). */
         public double dtTotalMs() {
             return ms(Bucket.DF) + ms(Bucket.NETHER_FEATURE) + ms(Bucket.BIOME_FORCE)
-                    + ms(Bucket.MIRROR_PRECOMPUTE) + ms(Bucket.TRACK_FEATURE);
+                    + ms(Bucket.MIRROR_PRECOMPUTE) + ms(Bucket.TRACK_FEATURE) + ms(Bucket.DISINTEGRATION);
         }
 
         public double dtTotalPerChunkMs() {

@@ -2,9 +2,13 @@ package games.brennan.dungeontrain.worldgen.density;
 
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import net.minecraft.world.level.levelgen.DensityFunction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -109,5 +113,118 @@ final class NetherBandTerrainDensityFunctionTest {
         NetherBandContext.publish(new NetherBandContext(
                 false, 1L, 63, 320, 40, 100, CYCLE, null, null, null, null));   // enabled=false
         assertEquals(-3.25, df.raisedOrBase(1500, 0, 100, -3.25), 0.0);
+    }
+
+    // ---- fillArray path (the batch-invariant-hoisting refactor) ----------------------------------
+
+    /** Deterministic per-sample child base, varied above/below the raise target so both {@code max} branches fire. */
+    private static double childBase(int x, int y, int z) {
+        return ((x * 31 + z) * 7 + y) % 23 - 11;
+    }
+
+    /**
+     * A {@link DensityFunction.ContextProvider} + child density that replay the real full-cell fill order
+     * ({@link net.minecraft.world.level.levelgen.NoiseChunk#fillAllDirectly}: Y-outer, X-mid, Z-inner) so the
+     * refactored {@code fillArray} is exercised exactly as chunk gen drives it. The wrapped child fills each
+     * slot with {@link #childBase}; nothing else on it is touched by {@code fillArray}.
+     */
+    private record Sample(int x, int y, int z) {}
+
+    private static final class CellProvider implements DensityFunction.ContextProvider {
+        final List<Sample> samples;
+        CellProvider(List<Sample> samples) { this.samples = samples; }
+        @Override public DensityFunction.FunctionContext forIndex(int i) {
+            Sample s = samples.get(i);
+            return new DensityFunction.SinglePointContext(s.x(), s.y(), s.z());
+        }
+        @Override public void fillAllDirectly(double[] values, DensityFunction fn) {
+            throw new UnsupportedOperationException("not exercised by NetherBandTerrainDensityFunction.fillArray");
+        }
+    }
+
+    /** Child that fills {@code values} with {@link #childBase} at each sample's coords — stands in for the router. */
+    private static final class BaseChild implements DensityFunction {
+        final List<Sample> samples;
+        BaseChild(List<Sample> samples) { this.samples = samples; }
+        @Override public void fillArray(double[] values, ContextProvider cp) {
+            for (int i = 0; i < values.length; i++) {
+                Sample s = samples.get(i);
+                values[i] = childBase(s.x(), s.y(), s.z());
+            }
+        }
+        @Override public double compute(FunctionContext ctx) { throw new UnsupportedOperationException(); }
+        @Override public DensityFunction mapAll(Visitor v) { throw new UnsupportedOperationException(); }
+        @Override public double minValue() { return Double.NEGATIVE_INFINITY; }
+        @Override public double maxValue() { return Double.POSITIVE_INFINITY; }
+        @Override public net.minecraft.util.KeyDispatchDataCodec<? extends DensityFunction> codec() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    @Test
+    @DisplayName("fillArray (invariant-hoisted loop) is byte-identical to per-sample reference across OW + band")
+    void fillArrayIsByteIdentical() {
+        long seed = 0x1234_5678L;
+        int seaLevel = 63, ceiling = 320, netherTop = 40, baseRelief = 100;
+        NetherBandContext.publish(new NetherBandContext(
+                true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null));
+
+        // Build full-cell batches (4×4 columns × several Y layers, Y-outer/X-mid/Z-inner) at cell origins that
+        // span leading OW → nether band → trailing OW, so batches are fully-off-band, straddling, and fully-in-band.
+        List<Sample> samples = new ArrayList<>();
+        int[] cellOriginX = {1264, 1296, 1328, 1600, 1900, 1952};   // band ≈ world-X [1300,1960)
+        for (int ox : cellOriginX) {
+            for (int y = 200; y >= 40; y -= 8) {                     // Y-outer, descending (matches fillAllDirectly)
+                for (int dx = 0; dx < 4; dx++) {                     // X-mid
+                    for (int dz = 0; dz < 4; dz++) {                 // Z-inner
+                        samples.add(new Sample(ox + dx, y, -8 + dz));
+                    }
+                }
+            }
+        }
+
+        NetherBandTerrainDensityFunction df = new NetherBandTerrainDensityFunction(new BaseChild(samples));
+        double[] values = new double[samples.size()];
+        df.fillArray(values, new CellProvider(samples));
+
+        for (int i = 0; i < samples.size(); i++) {
+            Sample s = samples.get(i);
+            double expected = reference(CYCLE, seed, seaLevel, ceiling, netherTop, baseRelief,
+                    s.x(), s.z(), s.y(), childBase(s.x(), s.y(), s.z()));
+            assertEquals(expected, values[i], 0.0,
+                    "fillArray mismatch at x=" + s.x() + " z=" + s.z() + " y=" + s.y());
+        }
+    }
+
+    @Test
+    @DisplayName("fillArray with null / disabled context leaves the child output untouched")
+    void fillArrayPassThroughWhenDisabled() {
+        List<Sample> samples = new ArrayList<>();
+        for (int y = 100; y >= 60; y -= 8) {
+            for (int dx = 0; dx < 4; dx++) {
+                for (int dz = 0; dz < 4; dz++) {
+                    samples.add(new Sample(1500 + dx, y, dz));      // in-band X, but context disabled
+                }
+            }
+        }
+        NetherBandTerrainDensityFunction df = new NetherBandTerrainDensityFunction(new BaseChild(samples));
+
+        // No context published → pure pass-through.
+        double[] values = new double[samples.size()];
+        df.fillArray(values, new CellProvider(samples));
+        for (int i = 0; i < samples.size(); i++) {
+            Sample s = samples.get(i);
+            assertEquals(childBase(s.x(), s.y(), s.z()), values[i], 0.0, "expected untouched child base at i=" + i);
+        }
+
+        // enabled=false → also pass-through.
+        NetherBandContext.publish(new NetherBandContext(
+                false, 1L, 63, 320, 40, 100, CYCLE, null, null, null, null));
+        double[] values2 = new double[samples.size()];
+        df.fillArray(values2, new CellProvider(samples));
+        for (int i = 0; i < samples.size(); i++) {
+            Sample s = samples.get(i);
+            assertEquals(childBase(s.x(), s.y(), s.z()), values2[i], 0.0, "expected untouched child base at i=" + i);
+        }
     }
 }
