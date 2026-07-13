@@ -54,9 +54,11 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -226,6 +228,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 }
             }
 
+            // Per-chunk cache of real-Nether density profiles keyed by corner column (x,z). The core
+            // columns share their 4 XZ cell corners across the whole chunk, so caching collapses the
+            // ~16k router evaluations/chunk to the few hundred distinct corners — the dominant
+            // Nether-crossing gen cost (see GenProfiler CORE_REPLACE). Scoped to this place() call.
+            Map<Long, double[]> netherCornerCache = new HashMap<>();
+
             boolean changed = false;
             for (int dx = 0; dx < 16; dx++) {
                 int worldX = chunkMinX + dx;
@@ -260,10 +268,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     boolean colChanged;
                     if (core) {
                         ResourceKey<Biome> coreBiome = coreBiomeKeyAt(bandCtx, worldX, worldZ);
-                        long coreT0 = GenProfiler.t0();       // real-Nether router sampling — the suspected DT hotspot
+                        long coreT0 = GenProfiler.t0();       // real-Nether router sampling — the confirmed DT hotspot
                         colChanged = fillNetherColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 minY, worldTop, sampleX, netherDensity, cellW, cellH, netherSeaLevel,
-                                seed, coreBiome);
+                                seed, coreBiome, netherCornerCache);
                         GenProfiler.add(GenProfiler.Bucket.CORE_REPLACE, coreT0);
                     } else if (inBeachSpan) {
                         colChanged = fillShoreColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
@@ -667,7 +675,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                                      int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
                                      int minY, int worldTop, int sampleX, DensityFunction netherDensity,
                                      int cellW, int cellH, int netherSeaLevel,
-                                     long seed, ResourceKey<Biome> coreBiome) {
+                                     long seed, ResourceKey<Biome> coreBiome, Map<Long, double[]> cornerCache) {
         int yLo = Math.max(minY, bedY + (NETHER_SAMPLE_Y_MIN - NETHER_CENTER_Y));
         int yHi = Math.min(worldTop, bedY + (NETHER_SAMPLE_Y_MAX - NETHER_CENTER_Y));
         if (yLo > yHi) return false;
@@ -682,17 +690,13 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         int netherYLo = NETHER_CENTER_Y + (yLo - bedY);
         int cellRowBase = Math.floorDiv(netherYLo, cellH);
         int rows = Math.floorDiv(NETHER_CENTER_Y + (yHi - bedY), cellH) - cellRowBase + 2;
-        double[] c00 = new double[rows];
-        double[] c10 = new double[rows];
-        double[] c01 = new double[rows];
-        double[] c11 = new double[rows];
-        for (int r = 0; r < rows; r++) {
-            int by = (cellRowBase + r) * cellH;
-            c00[r] = netherDensity.compute(new DensityFunction.SinglePointContext(x0, by, z0));
-            c10[r] = netherDensity.compute(new DensityFunction.SinglePointContext(x1, by, z0));
-            c01[r] = netherDensity.compute(new DensityFunction.SinglePointContext(x0, by, z1));
-            c11[r] = netherDensity.compute(new DensityFunction.SinglePointContext(x1, by, z1));
-        }
+        // Corner profiles are cached per (cornerX, cornerZ) for this chunk — cellRowBase/rows/cellH are
+        // constant across every column of the chunk, so a corner's profile is identical wherever it is
+        // referenced. This collapses the per-block-column re-sampling of the shared corners.
+        double[] c00 = cornerProfile(cornerCache, netherDensity, x0, z0, cellRowBase, rows, cellH);
+        double[] c10 = cornerProfile(cornerCache, netherDensity, x1, z0, cellRowBase, rows, cellH);
+        double[] c01 = cornerProfile(cornerCache, netherDensity, x0, z1, cellRowBase, rows, cellH);
+        double[] c11 = cornerProfile(cornerCache, netherDensity, x1, z1, cellRowBase, rows, cellH);
 
         ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
@@ -748,6 +752,34 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             }
         }
         return changed;
+    }
+
+    /**
+     * The real-Nether density profile of one corner column {@code (cornerX, cornerZ)} — the {@code rows}
+     * samples {@code netherDensity.compute(cornerX, (cellRowBase+r)*cellH, cornerZ)} — memoised in
+     * {@code cache} for the duration of a single chunk's {@code place()}. Every core block-column shares
+     * its 4 XZ cell corners with its neighbours in the same {@code cellW} cell / Z-row, so the same corner
+     * was previously re-evaluated once per block-column (~16k router walks/chunk); caching evaluates each
+     * distinct corner exactly once (a few hundred/chunk). Byte-identical — a pure memo of the pure
+     * {@code compute}, removing only duplicate evaluations.
+     *
+     * <p>Correctness rests on {@code cellRowBase}, {@code rows} and {@code cellH} being constant across
+     * every column of the chunk (they derive from {@code bedY}/{@code minY}/{@code worldTop}, not the
+     * column), so a corner's profile is independent of which column requests it. Package-private + static
+     * so it is unit-testable with a stub {@link DensityFunction}.</p>
+     */
+    static double[] cornerProfile(Map<Long, double[]> cache, DensityFunction netherDensity,
+                                  int cornerX, int cornerZ, int cellRowBase, int rows, int cellH) {
+        long key = (((long) cornerX) << 32) ^ (cornerZ & 0xFFFFFFFFL);
+        double[] cached = cache.get(key);
+        if (cached != null) return cached;
+        double[] profile = new double[rows];
+        for (int r = 0; r < rows; r++) {
+            int by = (cellRowBase + r) * cellH;
+            profile[r] = netherDensity.compute(new DensityFunction.SinglePointContext(cornerX, by, cornerZ));
+        }
+        cache.put(key, profile);
+        return profile;
     }
 
     /** True for the stone-brick bed and the two rail blocks — never overwritten so the train keeps its track. */
