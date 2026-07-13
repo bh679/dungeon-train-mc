@@ -4349,6 +4349,19 @@
       "released": true,
       "released_in": "v0.448.0",
       "released_at": "2026-07-13T00:51:50Z"
+    },
+    {
+      "id": "dungeon-train-advancement-cinematic-timing",
+      "version": "0.449.0",
+      "type": "fix",
+      "title": "Dungeon Train advancement now waits for the intro cinematic",
+      "summary": "The \"Dungeon Train\" advancement no longer pops up mid-loading-screen or mid-cinematic on a fresh world join \u2014 it now waits until you've actually seen the intro fly-around before the toast appears.",
+      "highlights": [],
+      "pr": 740,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
