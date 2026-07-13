@@ -29,6 +29,7 @@ import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import java.util.List;
 import java.util.UUID;
+import net.minecraft.network.chat.Component;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
@@ -332,15 +333,15 @@ public class DungeonTrain {
             // (PlayerMob's external-reincarnation seam, surfaced via DP).
             @Override public List<String> networkConsentFeatures() {
                 return List.of(
-                        "Leaderboard scoring (coming soon)",
-                        "Dev support chat",
-                        "Share books you write for others to find",
-                        "Reincarnate as a mob in other players' worlds");
+                        Component.translatable("gui.dungeontrain.consent.feature.leaderboard").getString(),
+                        Component.translatable("gui.dungeontrain.consent.feature.dev_chat").getString(),
+                        Component.translatable("gui.dungeontrain.consent.feature.book_share").getString(),
+                        Component.translatable("gui.dungeontrain.consent.feature.reincarnate").getString());
             }
             // A "won't do" line (DP renders these with a red ✗ marker below the bullets above) — a
             // deliberately silly reassurance that sets the positive features apart from the absurd.
             @Override public List<String> networkConsentNonFeatures() {
-                return List.of("Harvest your soul");
+                return List.of(Component.translatable("gui.dungeontrain.consent.nonfeature.harvest_soul").getString());
             }
             // Append a one-time world-info block (DT version + train regeneration data + installed-mods
             // list) under the first player-join message in each world, into the joining player's Discord
