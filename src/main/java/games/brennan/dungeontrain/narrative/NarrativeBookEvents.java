@@ -7,9 +7,11 @@ import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.event.AchievementEvents;
+import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -287,6 +289,27 @@ public final class NarrativeBookEvents {
         if (slot != EquipmentSlot.MAINHAND && slot != EquipmentSlot.OFFHAND) return;
         ItemStack stack = event.getTo();
         if (stack.isEmpty()) return;
+
+        // random_playerbook cold-pool fallback: a local book baked before the shared pool warmed,
+        // marked pending. Upgrade it in place to a real community book now that a hand is holding it
+        // (and the pool is warm), then fall through to the shared-found branch so it gets the same
+        // held-marker + author greeting as a natively-rolled discovered book. If the pool is still
+        // cold/disabled, leave the marker and return — the next hold retries.
+        if (PlayerBookPendingTag.isPending(stack)) {
+            if (!SharedBookGate.canDiscover() || SharedBookPool.isEmpty()) return;
+            long seed = player.level().getGameTime() ^ player.getUUID().getLeastSignificantBits();
+            ItemStack shared = SharedBookPool.rollShared(seed);
+            if (shared.isEmpty()) return;
+            stack.set(DataComponents.WRITTEN_BOOK_CONTENT,
+                shared.get(DataComponents.WRITTEN_BOOK_CONTENT));
+            RandomBookTag.clearIdentity(stack);   // drop stale dt_random_book* keys
+            PlayerBookPendingTag.clear(stack);    // upgraded — no longer pending
+            SharedBookFoundTag.stamp(stack);      // it's now a discovered player book
+            SharedBookReadTag.readId(shared).ifPresent(id -> SharedBookReadTag.stampId(stack, id));
+            LOGGER.info("[DungeonTrain] PlayerBook: upgraded cold-pool fallback to a community book (held by {})",
+                player.getName().getString());
+            // fall through — the shared-found branch below marks held + greets the author.
+        }
 
         // Discovered community books: no content-swap needed (unlike random books below) — just
         // stamp the "held" marker so the burn-after-reading flow (BurnableBookTag) can fire on a

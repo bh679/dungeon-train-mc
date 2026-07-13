@@ -4419,6 +4419,23 @@
       "released": true,
       "released_in": "v0.451.0",
       "released_at": "2026-07-13T06:04:07Z"
+    },
+    {
+      "id": "random-playerbook-loot",
+      "version": "0.452.0",
+      "type": "feat",
+      "title": "Player-written books in loot: the random_playerbook item",
+      "summary": "A new loot book that pulls exclusively from books other players wrote and shared. When it lands in a chest before the community pool has loaded, it fills in with a regular random book and quietly upgrades to a real player-written one the moment you pick it up to read it.",
+      "highlights": [
+        "New random_playerbook loot book, sourced only from player-written community books",
+        "Falls back to a normal random book when no shared books are available yet",
+        "Fallback books upgrade to a real player-written book when you pick them up, once the pool loads"
+      ],
+      "pr": 744,
+      "date": "2026-07-13",
+      "released": true,
+      "released_in": "v0.452.0",
+      "released_at": "2026-07-13T07:46:59Z"
     }
   ]
 }

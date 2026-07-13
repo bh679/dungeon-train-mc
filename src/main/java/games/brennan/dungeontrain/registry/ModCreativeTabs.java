@@ -103,6 +103,9 @@ public final class ModCreativeTabs {
      *   <li>{@link ModItems#RANDOM_BOOK} — placeholder for the chest-loot
      *       random-book intercept (substitutes a stamped vanilla written book
      *       at carriage-spawn time).</li>
+     *   <li>{@link ModItems#RANDOM_PLAYERBOOK} — sibling placeholder that
+     *       substitutes an exclusively player-written community book (local
+     *       fallback when the shared pool is unavailable).</li>
      *   <li>{@link ModBlocks#NARRATIVE_LECTERN_ITEM} — progression-aware
      *       lectern variant (also remains in vanilla FUNCTIONAL_BLOCKS for
      *       discoverability).</li>
@@ -115,6 +118,7 @@ public final class ModCreativeTabs {
             .icon(() -> new ItemStack(Items.WRITTEN_BOOK))
             .displayItems((parameters, output) -> {
                 output.accept(ModItems.RANDOM_BOOK.get());
+                output.accept(ModItems.RANDOM_PLAYERBOOK.get());
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
             })
             .build()
