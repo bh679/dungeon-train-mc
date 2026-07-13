@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.editor.ContainerContentsRoller;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
@@ -57,6 +58,13 @@ public final class DebugCommand {
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("debug")
             .then(Commands.literal("scan").executes(ctx -> runScan(ctx.getSource())))
+            // /dungeontrain debug physicsfreeze <on|off|status> — toggles the #646 physics-freeze
+            // of untracked carriages. `off` restores every frozen body next tick. Drives the Gate 2
+            // matched-toggle A/B (freeze off vs on, same seed/path — chunk-gen noise cancels).
+            .then(Commands.literal("physicsfreeze")
+                .then(Commands.literal("on").executes(ctx -> setPhysicsFreeze(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setPhysicsFreeze(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> physicsFreezeStatus(ctx.getSource()))))
             .then(Commands.literal("pair")
                 .executes(ctx -> runPair(ctx.getSource(), 0.0))
                 .then(Commands.argument("velocity", DoubleArgumentType.doubleArg())
@@ -142,6 +150,23 @@ public final class DebugCommand {
             .then(Commands.literal("reroll")
                 .then(Commands.argument("prefabId", StringArgumentType.string())
                     .executes(ctx -> runReroll(ctx.getSource(), StringArgumentType.getString(ctx, "prefabId")))));
+    }
+
+    private static int setPhysicsFreeze(CommandSourceStack source, boolean on) {
+        PhysicsFreezeController.ENABLED = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Physics-freeze " + (on ? "ON" : "OFF — all bodies restored next tick")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int physicsFreezeStatus(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal(String.format(
+            "[DungeonTrain] Physics-freeze %s — resident=%d active=%d frozen=%d",
+            PhysicsFreezeController.ENABLED ? "ON" : "OFF",
+            PhysicsFreezeController.lastResident(), PhysicsFreezeController.lastActive(),
+            PhysicsFreezeController.lastFrozen())), false);
+        return 1;
     }
 
     private static int setAllWireframes(CommandSourceStack source, boolean enabled) {
