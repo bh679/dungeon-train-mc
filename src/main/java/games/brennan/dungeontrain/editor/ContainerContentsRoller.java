@@ -50,6 +50,7 @@ import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.RandomBookFactory;
 import games.brennan.dungeontrain.narrative.RandomBookRegistry;
+import games.brennan.dungeontrain.narrative.PlayerBookPendingTag;
 import games.brennan.dungeontrain.narrative.SharedBookPool;
 import net.minecraft.server.MinecraftServer;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
@@ -771,7 +772,17 @@ public final class ContainerContentsRoller {
                 long sharedSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_SHARED_BOOK_PICK);
                 ItemStack shared = SharedBookPool.rollShared(sharedSeed);
                 if (!shared.isEmpty()) return shared;
+                // Discovery is on but the pool is still cold (not yet warmed after
+                // world load). Bake a local fallback so the slot isn't wasted, but
+                // mark it pending so it upgrades to a real player book the next time
+                // it reaches a player's hand (NarrativeBookEvents.onEquipmentChange).
+                long pendingSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
+                ItemStack local = RandomBookFactory.rollFromPool(pendingSeed).orElse(ItemStack.EMPTY);
+                if (!local.isEmpty()) PlayerBookPendingTag.markPending(local);
+                return local;
             }
+            // Discovery disabled — a permanent, intended local book; nothing to
+            // upgrade to, so it is not marked pending.
             long bookSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
             return RandomBookFactory.rollFromPool(bookSeed).orElse(ItemStack.EMPTY);
         }

@@ -73,6 +73,23 @@ public final class RandomBookTag {
     }
 
     /**
+     * Strip the random-book identity keys ({@link #NBT_BOOK}, {@link #NBT_VARIANT},
+     * {@link #NBT_HELD}) from {@code stack}. Used when a {@code random_playerbook}
+     * cold-pool fallback is upgraded in place to a community book (see
+     * {@code NarrativeBookEvents.onEquipmentChange}) so the upgraded stack carries
+     * only its shared-book identity — no stale {@code dt_random_book*} keys to skew
+     * telemetry or the burn flow. No-op on empty/null stacks.
+     */
+    public static void clearIdentity(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return;
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+            tag.remove(NBT_BOOK);
+            tag.remove(NBT_VARIANT);
+            tag.remove(NBT_HELD);
+        });
+    }
+
+    /**
      * Decode the identifier from {@code stack}'s CUSTOM_DATA. Empty when the
      * stack has no random-book tag (vanilla written book, narrative book,
      * foreign book, etc.).
