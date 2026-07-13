@@ -4375,6 +4375,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "physics-freeze-untracked-carriages",
+      "version": "0.450.0",
+      "type": "perf",
+      "title": "Long trains cost less server physics time",
+      "summary": "Carriages that no player is nearby now have their physics parked, so a long train's per-tick physics cost scales with the carriages actually being watched instead of the whole train length. Most noticeable on multiplayer servers and long trains; carriages you're near behave exactly as before.",
+      "highlights": [
+        "Long-train physics cost now scales with watched carriages, not total length",
+        "Biggest win on multiplayer servers and long trains"
+      ],
+      "pr": 742,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
