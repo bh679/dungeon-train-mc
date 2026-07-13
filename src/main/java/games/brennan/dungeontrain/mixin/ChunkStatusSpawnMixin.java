@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.MirrorPlanCache;
 import games.brennan.dungeontrain.worldgen.UpsideDownMirror;
 import net.minecraft.server.level.GenerationChunkHolder;
@@ -52,7 +53,9 @@ public abstract class ChunkStatusSpawnMixin {
             ServerLevel level = worldGenContext.level();
             if (!level.dimension().equals(Level.OVERWORLD)) return; // band is overworld-only; excludes Sable sub-levels
 
+            long genT0 = GenProfiler.t0();
             UpsideDownMirror.MirrorPlan plan = UpsideDownMirror.compute(level, chunk);
+            GenProfiler.add(GenProfiler.Bucket.MIRROR_PRECOMPUTE, genT0);
             if (plan != null) {
                 MirrorPlanCache.put(chunk.getPos().toLong(), plan);
             }

@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
@@ -147,6 +148,15 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> ctx) {
+        long genT0 = GenProfiler.t0();
+        try {
+            return placeInner(ctx);
+        } finally {
+            GenProfiler.add(GenProfiler.Bucket.NETHER_FEATURE, genT0);
+        }
+    }
+
+    private boolean placeInner(FeaturePlaceContext<NoneFeatureConfiguration> ctx) {
         try {
             WorldGenLevel level = ctx.level();
             ChunkPos cp = new ChunkPos(ctx.origin());
@@ -250,9 +260,11 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     boolean colChanged;
                     if (core) {
                         ResourceKey<Biome> coreBiome = coreBiomeKeyAt(bandCtx, worldX, worldZ);
+                        long coreT0 = GenProfiler.t0();       // real-Nether router sampling — the suspected DT hotspot
                         colChanged = fillNetherColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 minY, worldTop, sampleX, netherDensity, cellW, cellH, netherSeaLevel,
                                 seed, coreBiome);
+                        GenProfiler.add(GenProfiler.Bucket.CORE_REPLACE, coreT0);
                     } else if (inBeachSpan) {
                         colChanged = fillShoreColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 minY, worldTop, seaLevel, seed, beachProgress);

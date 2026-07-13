@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen.density;
 
 import com.mojang.serialization.MapCodec;
+import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.util.KeyDispatchDataCodec;
@@ -50,32 +51,93 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
         this.wrapped = wrapped;
     }
 
-    /** Apply the mountain raise at this position, or return {@code base} unchanged when out of band. */
-    private double raisedOrBase(int worldX, int worldZ, int worldY, double base) {
+    /**
+     * Per-worker <b>column memo</b>: caches the Y-independent {@code {skip, targetTop}} decision of
+     * {@link #raisedOrBase} so a column's 4-octave {@code MountainNoise} evaluations (inside
+     * {@code wavyX} and {@code targetTop}) run once per {@code (x,z)} column instead of once per Y
+     * sample. Direct-mapped by {@code (x,z)}; a miss or hash collision simply recomputes the exact
+     * same value — the memo is a pure function of the inputs, so it is byte-identical to the
+     * un-memoised path (worst case it degrades to today's recompute, never to a wrong value). Guarded
+     * by the {@link NetherBandContext} identity so a world/config republish can never serve a stale
+     * target (the target depends on the seed / sea level / ceiling captured in the context).
+     *
+     * <p>Off-band columns (the ride's majority) memoise {@code skip=true} after one {@code wavyX};
+     * in-band columns memoise the raise target. The table is small and per-thread, so concurrent
+     * {@code fillArray} workers never contend, and it is robust to fill order (unlike a single-entry
+     * cache): a chunk has only 16×16 columns, well under the table size.</p>
+     */
+    private static final int COL_BITS = 8;
+    private static final int COL_SIZE = 1 << COL_BITS;   // 256 — > the 256 columns of a chunk
+    private static final int COL_MASK = COL_SIZE - 1;
+
+    private static final class ColumnMemo {
+        NetherBandContext ctx;                    // identity guard — republish drops every cached column
+        final long[] key = new long[COL_SIZE];
+        final boolean[] present = new boolean[COL_SIZE];
+        final boolean[] skip = new boolean[COL_SIZE];
+        final double[] target = new double[COL_SIZE];
+    }
+
+    private static final ThreadLocal<ColumnMemo> COLUMN_MEMO = ThreadLocal.withInitial(ColumnMemo::new);
+
+    /**
+     * Apply the mountain raise at this position, or return {@code base} unchanged when out of band.
+     * Package-private (not {@code private}) so the byte-identical column-memo behaviour is unit-testable
+     * against a direct recomputation without a {@code NoiseChunk} / {@code DensityFunction} stub.
+     */
+    double raisedOrBase(int worldX, int worldZ, int worldY, double base) {
         NetherBandContext ctx = NetherBandContext.current();
         if (ctx == null || !ctx.enabled()) return base;
-        WorldGenCycle cycle = ctx.cycle();
-        // Evaluate the band at the edge-waved X so the leading/trailing front undulates across Z rather
-        // than starting at one straight X (matched in the biome source + post-process feature).
-        int wx = NetherMountainTerrain.wavyX(ctx.generationSeed(), worldX, worldZ);
-        if (!NetherMountainTerrain.raises(cycle, wx)) return base;
-        double t = NetherMountainTerrain.targetTop(cycle, ctx.generationSeed(), wx, worldZ,
-                ctx.seaLevel(), ctx.worldCeiling(), ctx.netherTop(), ctx.baseRelief());
+
+        ColumnMemo memo = COLUMN_MEMO.get();
+        if (memo.ctx != ctx) {                    // world/config republish → drop every stale column
+            java.util.Arrays.fill(memo.present, false);
+            memo.ctx = ctx;
+        }
+
+        long ckey = (((long) worldX) << 32) ^ (worldZ & 0xFFFFFFFFL);
+        int idx = (worldX * 31 + worldZ) & COL_MASK;
+        boolean skip;
+        double t;
+        if (memo.present[idx] && memo.key[idx] == ckey) {
+            skip = memo.skip[idx];
+            t = memo.target[idx];
+        } else {
+            WorldGenCycle cycle = ctx.cycle();
+            // Evaluate the band at the edge-waved X so the leading/trailing front undulates across Z rather
+            // than starting at one straight X (matched in the biome source + post-process feature).
+            int wx = NetherMountainTerrain.wavyX(ctx.generationSeed(), worldX, worldZ);
+            skip = !NetherMountainTerrain.raises(cycle, wx);
+            t = skip ? 0.0 : NetherMountainTerrain.targetTop(cycle, ctx.generationSeed(), wx, worldZ,
+                    ctx.seaLevel(), ctx.worldCeiling(), ctx.netherTop(), ctx.baseRelief());
+            memo.key[idx] = ckey;
+            memo.skip[idx] = skip;
+            memo.target[idx] = t;
+            memo.present[idx] = true;
+        }
+
+        if (skip) return base;
         return Math.max(base, RAISE_SLOPE * (t - worldY));
     }
 
     @Override
     public double compute(FunctionContext ctx) {
-        return raisedOrBase(ctx.blockX(), ctx.blockZ(), ctx.blockY(), wrapped.compute(ctx));
+        double base = wrapped.compute(ctx);             // vanilla child — not DT's added tax
+        long t0 = GenProfiler.t0();
+        double raised = raisedOrBase(ctx.blockX(), ctx.blockZ(), ctx.blockY(), base);
+        GenProfiler.add(GenProfiler.Bucket.DF, t0);
+        return raised;
     }
 
     @Override
     public void fillArray(double[] values, ContextProvider contextProvider) {
-        wrapped.fillArray(values, contextProvider);
+        wrapped.fillArray(values, contextProvider);     // vanilla child — not DT's added tax
+        long t0 = GenProfiler.t0();
         for (int i = 0; i < values.length; i++) {
             FunctionContext ctx = contextProvider.forIndex(i);
             values[i] = raisedOrBase(ctx.blockX(), ctx.blockZ(), ctx.blockY(), values[i]);
         }
+        GenProfiler.add(GenProfiler.Bucket.DF, t0);
     }
 
     @Override
