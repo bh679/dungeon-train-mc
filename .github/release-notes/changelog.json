@@ -4480,6 +4480,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "barrel-vase-books2-content-tuning",
+      "version": "0.455.0",
+      "type": "content",
+      "title": "Barrel/vase decor variants + books2 tuning",
+      "summary": "Added new barrel room and vertical barrel stack decor variants, refined existing barrel/vase groupings, and tuned the books2 content prefab for better in-world variety.",
+      "highlights": [
+        "New barrelsroom and barrelsvert2 decor variants",
+        "Refined barrels_vert and vase grouping",
+        "books2 prefab tuning pass"
+      ],
+      "pr": 747,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
