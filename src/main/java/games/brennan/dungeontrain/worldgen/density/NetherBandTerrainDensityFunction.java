@@ -81,20 +81,30 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
     private static final ThreadLocal<ColumnMemo> COLUMN_MEMO = ThreadLocal.withInitial(ColumnMemo::new);
 
     /**
-     * Apply the mountain raise at this position, or return {@code base} unchanged when out of band.
-     * Package-private (not {@code private}) so the byte-identical column-memo behaviour is unit-testable
-     * against a direct recomputation without a {@code NoiseChunk} / {@code DensityFunction} stub.
+     * Resolve the per-worker memo for {@code ctx}, dropping every cached column when the context identity
+     * changed (a world/config republish). The identity guard is a batch invariant — {@code ctx} is constant
+     * across a whole {@code fillArray} cell — so callers run this once per batch, not once per sample.
      */
-    double raisedOrBase(int worldX, int worldZ, int worldY, double base) {
-        NetherBandContext ctx = NetherBandContext.current();
-        if (ctx == null || !ctx.enabled()) return base;
-
+    private static ColumnMemo memoFor(NetherBandContext ctx) {
         ColumnMemo memo = COLUMN_MEMO.get();
         if (memo.ctx != ctx) {                    // world/config republish → drop every stale column
             java.util.Arrays.fill(memo.present, false);
             memo.ctx = ctx;
         }
+        return memo;
+    }
 
+    /**
+     * Apply the mountain raise at this position, or return {@code base} unchanged when out of band — the
+     * hot per-sample core, with every batch-invariant already resolved by the caller ({@code ctx}, its
+     * {@code cycle}/seed/sea-level/ceiling/nether-top/base-relief, and the per-worker {@code memo}). Keeping
+     * these out of the loop removes a {@link NetherBandContext#current()} static read, a {@link ThreadLocal}
+     * probe, an {@code enabled()} call and the identity-guard from every density sample; only the column-memo
+     * lookup + {@code max} remain. Package-private so the byte-identical memo behaviour is unit-testable
+     * (via {@link #raisedOrBase}) without a {@code NoiseChunk} / {@code DensityFunction} stub.
+     */
+    private static double raise(ColumnMemo memo, WorldGenCycle cycle, long seed, int seaLevel, int ceiling,
+                                int netherTop, int baseRelief, int worldX, int worldZ, int worldY, double base) {
         long ckey = (((long) worldX) << 32) ^ (worldZ & 0xFFFFFFFFL);
         int idx = (worldX * 31 + worldZ) & COL_MASK;
         boolean skip;
@@ -103,13 +113,12 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
             skip = memo.skip[idx];
             t = memo.target[idx];
         } else {
-            WorldGenCycle cycle = ctx.cycle();
             // Evaluate the band at the edge-waved X so the leading/trailing front undulates across Z rather
             // than starting at one straight X (matched in the biome source + post-process feature).
-            int wx = NetherMountainTerrain.wavyX(ctx.generationSeed(), worldX, worldZ);
+            int wx = NetherMountainTerrain.wavyX(seed, worldX, worldZ);
             skip = !NetherMountainTerrain.raises(cycle, wx);
-            t = skip ? 0.0 : NetherMountainTerrain.targetTop(cycle, ctx.generationSeed(), wx, worldZ,
-                    ctx.seaLevel(), ctx.worldCeiling(), ctx.netherTop(), ctx.baseRelief());
+            t = skip ? 0.0 : NetherMountainTerrain.targetTop(cycle, seed, wx, worldZ,
+                    seaLevel, ceiling, netherTop, baseRelief);
             memo.key[idx] = ckey;
             memo.skip[idx] = skip;
             memo.target[idx] = t;
@@ -118,6 +127,19 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
 
         if (skip) return base;
         return Math.max(base, RAISE_SLOPE * (t - worldY));
+    }
+
+    /**
+     * Single-sample convenience over {@link #raise}: resolves the context + memo (a null/disabled context is
+     * a pure pass-through) then delegates. Used by {@link #compute} and the unit tests; the hot
+     * {@link #fillArray} path hoists the same resolution out of its loop instead.
+     */
+    double raisedOrBase(int worldX, int worldZ, int worldY, double base) {
+        NetherBandContext ctx = NetherBandContext.current();
+        if (ctx == null || !ctx.enabled()) return base;
+        ColumnMemo memo = memoFor(ctx);
+        return raise(memo, ctx.cycle(), ctx.generationSeed(), ctx.seaLevel(), ctx.worldCeiling(),
+                ctx.netherTop(), ctx.baseRelief(), worldX, worldZ, worldY, base);
     }
 
     @Override
@@ -133,9 +155,21 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
     public void fillArray(double[] values, ContextProvider contextProvider) {
         wrapped.fillArray(values, contextProvider);     // vanilla child — not DT's added tax
         long t0 = GenProfiler.t0();
-        for (int i = 0; i < values.length; i++) {
-            FunctionContext ctx = contextProvider.forIndex(i);
-            values[i] = raisedOrBase(ctx.blockX(), ctx.blockZ(), ctx.blockY(), values[i]);
+        // Batch invariants (context identity + per-column shaping inputs + the memo) are constant across the
+        // whole cell, so resolve them ONCE here rather than per density sample inside the loop. A null/
+        // disabled context makes the whole batch a pure pass-through — the child's output is already in place.
+        NetherBandContext ctx = NetherBandContext.current();
+        if (ctx != null && ctx.enabled()) {
+            ColumnMemo memo = memoFor(ctx);
+            WorldGenCycle cycle = ctx.cycle();
+            long seed = ctx.generationSeed();
+            int seaLevel = ctx.seaLevel(), ceiling = ctx.worldCeiling();
+            int netherTop = ctx.netherTop(), baseRelief = ctx.baseRelief();
+            for (int i = 0; i < values.length; i++) {
+                FunctionContext fc = contextProvider.forIndex(i);
+                values[i] = raise(memo, cycle, seed, seaLevel, ceiling, netherTop, baseRelief,
+                        fc.blockX(), fc.blockZ(), fc.blockY(), values[i]);
+            }
         }
         GenProfiler.add(GenProfiler.Bucket.DF, t0);
     }

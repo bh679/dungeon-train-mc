@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -95,6 +96,9 @@ public final class WorldDisintegrationEvents {
         int chunkMinZ = pos.getMinBlockZ();
         boolean changed = false;
 
+        // Time the void erosion (main-thread; the [gen.timing] EROSION bucket). Started here — after the
+        // cheap new-chunk / dimension / band guards — so only real fade-band erosion work is attributed.
+        long genT0 = GenProfiler.t0();
         for (int sIdx = 0; sIdx < chunk.getSectionsCount(); sIdx++) {
             LevelChunkSection section = chunk.getSection(sIdx);
             if (section.hasOnlyAir()) continue;
@@ -127,6 +131,7 @@ public final class WorldDisintegrationEvents {
                 }
             }
         }
+        GenProfiler.add(GenProfiler.Bucket.EROSION, genT0);
         if (changed) chunk.setUnsaved(true);
     }
 }
