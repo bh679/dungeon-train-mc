@@ -4465,6 +4465,38 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "consent-message-order-after-accept",
+      "version": "0.455.0",
+      "type": "fix",
+      "title": "Developer message now arrives after you accept it",
+      "summary": "When the Developer sends you a message in-game, the reply now lands after your \"@Dev\" accept line (and the \"online now\" note) instead of appearing above it \u2014 so the conversation reads in the right order.",
+      "highlights": [
+        "Held Developer message is delivered after your @Dev acceptance, not before it"
+      ],
+      "pr": 749,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "barrel-vase-books2-content-tuning",
+      "version": "0.455.0",
+      "type": "content",
+      "title": "Barrel/vase decor variants + books2 tuning",
+      "summary": "Added new barrel room and vertical barrel stack decor variants, refined existing barrel/vase groupings, and tuned the books2 content prefab for better in-world variety.",
+      "highlights": [
+        "New barrelsroom and barrelsvert2 decor variants",
+        "Refined barrels_vert and vase grouping",
+        "books2 prefab tuning pass"
+      ],
+      "pr": 747,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
