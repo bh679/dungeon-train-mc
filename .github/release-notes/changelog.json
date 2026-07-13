@@ -4523,6 +4523,32 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "strip-baked-ain-item-names",
+      "version": "0.457.0",
+      "type": "fix",
+      "title": "Removed stray leftover item names from leatherworker/mule structures",
+      "summary": "A display armor stand in the leatherworker structure and a mule's equipped armor were permanently showing odd leftover item names (like \"Silver, Rationality Diadem\") that got accidentally frozen in during content creation. They now show their plain, normal item names.",
+      "highlights": [],
+      "pr": 752,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "standard-carriage-copper-stage-fix",
+      "version": "0.457.0",
+      "type": "fix",
+      "title": "Fixed copper part appearing in the wrong stage in the standard carriage",
+      "summary": "A copper-themed part in the standard carriage was incorrectly tagged to appear during the mud stage instead of the copper stage. It now shows up at the correct point in progression.",
+      "highlights": [],
+      "pr": 752,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
