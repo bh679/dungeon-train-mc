@@ -4505,6 +4505,7 @@
       "title": "Network-consent popup fully translatable",
       "summary": "The four bullet points and the \"Harvest your soul\" line on the \"Connect to the internet?\" popup were still hard-coded in English even after the previous localization fix, because they're supplied by Dungeon Train itself rather than the bundled Discord Presence mod. They're now translatable like the rest of the popup.",
       "highlights": [],
+      "pr": 750,
       "date": "2026-07-13",
       "released": false,
       "released_in": null,
