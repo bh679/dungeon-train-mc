@@ -240,8 +240,15 @@ public final class TrainTickEvents {
             PhysicsSubstepTuner.reconcile(level, carriages);
 
             double avgTickMs = level.getServer().getAverageTickTimeNanos() / 1_000_000.0;
-            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={}",
+            // active= is the physics-active (tracked-or-entity-aboard) count from the last
+            // PhysicsFreezeController.reconcile (which ran earlier this tick). Surfacing it here
+            // lets the tracked-vs-resident gap be read straight from the log next to near=: on a
+            // moving train active≈carriages (every resident carriage is tracked → #742's freeze
+            // parks ~none), whereas near= is the far tighter 48-block set. That gap is the physics
+            // headroom no current lever reaches — see issue #646 / the train-length profile.
+            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} active={} near={} trains={}",
                 level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
+                PhysicsFreezeController.lastActive(),
                 countNearCarriages(level, trainsById), trainsById.size());
         }
 
