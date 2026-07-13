@@ -175,6 +175,14 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             WorldGenCycle cycle = WorldGenCycle.fromConfig();
             int seaLevel = overworld.getSeaLevel();
 
+            // Resolve the End-band gate ONCE per chunk. DisintegrationBand.middleRampAt(overworld, wx)
+            // internally calls startX(overworld) -> DungeonTrainWorldData.get(overworld) on EVERY call;
+            // invoked per in-band column in the loop below, in clearCorridorClearance and in
+            // isFullCoreChunk that was ~550 world-data lookups per chunk during a crossing. The gate
+            // (does the End band exist for this world?) is constant per place() call, and the per-column
+            // ramp is then the cheap, already-memoized cycle.endMiddleRamp(wx) — byte-identical result.
+            boolean endBandActive = DisintegrationBand.startX(overworld) != DisintegrationBand.OFF;
+
             // The band front is edge-waved (NetherMountainTerrain#wavyX) per column, so a chunk within one
             // wave-shift of the band can have in-band columns; test the X range expanded by that margin.
             boolean anyHeight = false;
@@ -234,6 +242,11 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             // Nether-crossing gen cost (see GenProfiler CORE_REPLACE). Scoped to this place() call.
             Map<Long, double[]> netherCornerCache = new HashMap<>();
 
+            // Per-column edge-waved X, computed once here for all 256 columns and reused by
+            // clearCorridorClearance below (which otherwise recomputes the 4-octave wavyX noise for the
+            // same corridor columns). Indexed (dx << 4) | dz.
+            int[] wavyXCache = new int[256];
+
             boolean changed = false;
             for (int dx = 0; dx < 16; dx++) {
                 int worldX = chunkMinX + dx;
@@ -242,9 +255,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     // Evaluate the band at the edge-waved X (matched to the density router + biome source) so
                     // the leading/trailing front, the beach span and the crossfade all undulate together.
                     int wx = NetherMountainTerrain.wavyX(seed, worldX, worldZ);
+                    wavyXCache[(dx << 4) | dz] = wx;
                     if (cycle.netherHeightRamp(wx) <= 0.0) continue;
                     // Precedence: the End band always wins — skip columns it owns.
-                    if (DisintegrationBand.middleRampAt(overworld, wx) > 0.0) continue;
+                    if (endBandActive && cycle.endMiddleRamp(wx) > 0.0) continue;
 
                     double n = cycle.netherRamp(wx);
                     boolean core = n >= CORE_THRESHOLD && netherDensity != null;
@@ -286,14 +300,18 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 }
             }
 
-            // Prime heightmaps before decoration so the vanilla nether features see the real surface.
-            if (changed) Heightmap.primeHeightmaps(chunk, WG_HEIGHTMAPS);
-
             // Decorate the real-Nether core with the actual vanilla Nether features (fire, glowstone,
             // springs, ores, mushrooms). Only chunks whose every column is core get it — the core biome
             // is nether_wastes there (so each feature's biome filter passes) and the terrain is netherrack
             // (so the features land correctly).
-            if (isFullCoreChunk(overworld, cycle, netherDensity, chunkMinX)) {
+            boolean fullCore = isFullCoreChunk(cycle, netherDensity, chunkMinX, endBandActive);
+
+            // Prime heightmaps before decoration so the vanilla nether features see the real surface.
+            // Only needed to feed decoration; on non-core chunks (no decoration) the terminal
+            // primeHeightmaps below already produces the final heightmaps, so skip this pass there.
+            if (changed && fullCore) Heightmap.primeHeightmaps(chunk, WG_HEIGHTMAPS);
+
+            if (fullCore) {
                 decorateCoreChunkWithNetherFeatures(level, ctx.chunkGenerator(), server, cp, bedY, bandCtx);
             }
 
@@ -301,7 +319,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             // pure-mountain chunks the terrain loop skipped, and after decoration so a feature dropped
             // into the lane is removed too): clears the train's airspace of any solid netherrack/stone the
             // later track_bed wouldn't carve, so the tunnel/viaduct ride space is never blocked.
-            changed |= clearCorridorClearance(chunk, overworld, cycle, seed, chunkMinX, chunkMinZ,
+            changed |= clearCorridorClearance(chunk, cycle, endBandActive, wavyXCache, chunkMinX, chunkMinZ,
                     bedY, railY, zMin, zMax, tg, minY, worldTop);
 
             if (!changed) return false;
@@ -331,8 +349,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * ({@link ColumnWriter#isSolidGround}); air and lava (which sits well below the bed) are left
      * alone, and the bed/rails are preserved. Returns whether any block was cleared.</p>
      */
-    private boolean clearCorridorClearance(ChunkAccess chunk, ServerLevel overworld, WorldGenCycle cycle,
-                                           long seed, int chunkMinX, int chunkMinZ, int bedY, int railY,
+    private boolean clearCorridorClearance(ChunkAccess chunk, WorldGenCycle cycle, boolean endBandActive,
+                                           int[] wavyXCache, int chunkMinX, int chunkMinZ, int bedY, int railY,
                                            int zMin, int zMax, TunnelGeometry tg, int minY, int worldTop) {
         int zClearMin = Math.max(chunkMinZ, tg.airMinZ());
         int zClearMax = Math.min(chunkMinZ + 15, tg.airMaxZ());
@@ -344,14 +362,14 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
         for (int dx = 0; dx < 16; dx++) {
-            int worldX = chunkMinX + dx;
             for (int worldZ = zClearMin; worldZ <= zClearMax; worldZ++) {
                 int dz = worldZ - chunkMinZ;
-                // Band membership is edge-waved per column (matched to place()'s main loop), so resolve the
-                // waved X here too before testing in-band / End-precedence.
-                int wx = NetherMountainTerrain.wavyX(seed, worldX, worldZ);
+                // Band membership is edge-waved per column (matched to place()'s main loop). The waved X
+                // was already computed for every column in place() — reuse it instead of re-running the
+                // 4-octave wavyX noise here.
+                int wx = wavyXCache[(dx << 4) | dz];
                 if (cycle.netherHeightRamp(wx) <= 0.0) continue;            // not in the band at this column
-                if (DisintegrationBand.middleRampAt(overworld, wx) > 0.0) continue; // End owns this column
+                if (endBandActive && cycle.endMiddleRamp(wx) > 0.0) continue; // End owns this column
                 for (int y = yBot; y <= yTop; y++) {
                     if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
                     if (!w.isSolidGround(dx, y, dz)) continue;    // leave air / lava; clear solid stubs only
@@ -369,8 +387,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * vanilla Nether feature pass, so decoration never bleeds onto the netherrack crossfade or the
      * green mountains flanking the core.
      */
-    private static boolean isFullCoreChunk(ServerLevel overworld, WorldGenCycle cycle,
-                                           DensityFunction netherDensity, int chunkMinX) {
+    private static boolean isFullCoreChunk(WorldGenCycle cycle, DensityFunction netherDensity,
+                                           int chunkMinX, boolean endBandActive) {
         if (netherDensity == null) return false;
         // The core boundary is edge-waved per Z (NetherMountainTerrain#wavyX, ±maxEdgeShift), so require the
         // core to extend a wave-margin past the chunk on both X sides — then EVERY column's waved X is core,
@@ -378,7 +396,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         int margin = NetherMountainTerrain.maxEdgeShift();
         for (int worldX = chunkMinX - margin; worldX <= chunkMinX + 15 + margin; worldX++) {
             if (!cycle.isNetherCore(worldX)) return false;
-            if (DisintegrationBand.middleRampAt(overworld, worldX) > 0.0) return false;
+            if (endBandActive && cycle.endMiddleRamp(worldX) > 0.0) return false;
         }
         return true;
     }
