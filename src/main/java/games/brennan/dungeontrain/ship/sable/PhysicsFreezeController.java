@@ -18,13 +18,13 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Issue #646 — each tick, keeps a carriage's Rapier body only while a client is watching it (or a
- * live entity is standing on it), and {@link PhysicsFreeze#freeze}s the rest. Physics cost then
- * scales with <em>watched</em> carriages, not total train length. Mirrors
+ * Issue #646 (soft-freeze) — each tick, keeps a carriage's physics active only while a client is
+ * watching it (or a live entity is standing on it), and {@link PhysicsFreeze#freeze}s (parks) the
+ * rest. Physics cost then scales with <em>watched</em> carriages, not total train length. Mirrors
  * {@link PhysicsSubstepTuner}'s "reconcile a live Sable structure each tick" shape.
  *
  * <p><b>Active predicate = tracked OR live-entity-aboard.</b> {@code getTrackingPlayers()} is the
- * self-scaling, correct signal — a carriage no client tracks is rendered by nobody, so removing its
+ * self-scaling, correct signal — a carriage no client tracks is rendered by nobody, so parking its
  * body is invisible; anything a client renders or stands on is tracked and stays active. The
  * live-entity scan (run only for <em>untracked</em> candidates) keeps the body under a mob/item in
  * world space so it never drops through. Carriage-<em>contents</em> entities live at shipyard coords
@@ -97,7 +97,7 @@ public final class PhysicsFreezeController {
                 boolean frozenNow = PhysicsFreeze.isFrozen(sl);
 
                 if (!ENABLED) {
-                    if (frozenNow) PhysicsFreeze.unfreeze(system, sl);
+                    if (frozenNow) PhysicsFreeze.unfreeze(sl);
                     PhysicsFreeze.setInactiveTicks(sl, 0);
                     continue;
                 }
@@ -110,8 +110,8 @@ public final class PhysicsFreezeController {
                 PhysicsFreeze.setInactiveTicks(sl, inactive);
 
                 switch (decide(activeNow, inactive, frozenNow)) {
-                    case FREEZE -> PhysicsFreeze.freeze(system, sl);
-                    case UNFREEZE -> PhysicsFreeze.unfreeze(system, sl);
+                    case FREEZE -> PhysicsFreeze.freeze(sl);
+                    case UNFREEZE -> PhysicsFreeze.unfreeze(sl);
                     case NONE -> { }
                 }
                 if (PhysicsFreeze.isFrozen(sl)) frozen++;

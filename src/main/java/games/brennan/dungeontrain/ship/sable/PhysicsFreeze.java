@@ -1,89 +1,71 @@
 package games.brennan.dungeontrain.ship.sable;
 
-import dev.ryanhcode.sable.api.physics.PhysicsPipeline;
-import dev.ryanhcode.sable.api.physics.mass.MassData;
+import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
+import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
-import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.joml.Vector3d;
 
 /**
- * Removes / restores a single carriage's Rapier body from Sable's shared physics scene while
- * keeping the sub-level LOADED — the mechanism behind issue #646 (drop the ~O(bodies) physics
- * cost of carriages no client is watching). {@link PhysicsFreezeController} decides <em>which</em>
- * carriages; this class performs the pipeline op safely.
+ * <b>Soft-freeze</b> a single carriage's physics (issue #646) — flatten the ~O(bodies) cost of Sable
+ * stepping every resident carriage, for carriages no client is watching. {@link PhysicsFreezeController}
+ * decides <em>which</em> carriages; this class performs the freeze.
  *
- * <p><b>Why a mixin is still required.</b> {@code pipeline.remove(sl)} frees the native body but
- * leaves {@code sl.isRemoved()} == false, so Sable's per-tick native readers
- * ({@code updatePose}/{@code prePhysicsTick}/{@code applyQueuedForces}, each guarded only by
- * {@code isRemoved()}) would still touch the freed handle → segfault. The reader mixins skip any
- * sub-level whose {@link DtFreezable#dt$isPhysicsFrozen()} flag is set, which this class toggles.</p>
+ * <p><b>Soft, not hard.</b> Unlike the abandoned hard-freeze (which called {@code pipeline.remove()} to
+ * drop the body — a Rust panic in Rapier aborts the JVM <em>uncatchably</em>, and DT can't race Sable's
+ * async spawn/cull/recover for scene membership), soft-freeze <em>never mutates Sable's Rapier scene</em>.
+ * The body stays IN the scene, valid and queryable. We just (a) set a per-instance flag so the reader
+ * mixins skip Sable's per-body Java work for it ({@code prePhysicsTick}/{@code applyQueuedForces}/
+ * {@code updatePose} + the pipeline read/write gates — that skipped work is the saving), and (b) stop DT
+ * teleporting it in {@link SableManagedShip#applyTickOutput} (parks it). With nothing removed there is
+ * <em>no native-abort surface</em> — it cannot crash.</p>
  *
- * <p><b>Ordering (single-threaded, server tick).</b> Freeze sets the flag <em>before</em>
- * {@code remove()} and unfreeze clears it <em>after</em> a successful {@code add()}, so a reader
- * never sees a body that is out of the scene but not flagged. The re-add mirrors Sable's own
- * blessed {@code recoverSubLevel}/{@code onSubLevelAdded} sequence:
- * {@code buildMassTracker()} → {@code pipeline.add(sl, sl.logicalPose())}.</p>
+ * <p><b>Park-at-rest on freeze.</b> A parked kinematic body must have zero velocity, or the native step
+ * drifts it. On freeze we do one final {@link #parkAtRest} pass (teleport to the authoritative
+ * {@code logicalPose} + zero linear/angular velocity) <em>before</em> setting the flag, so the reader
+ * mixins don't cancel that final teleport/velocity write. On unfreeze {@code applyTickOutput} resumes
+ * and re-teleports to the driver's pose on the next tick.</p>
  */
 public final class PhysicsFreeze {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
-
     private PhysicsFreeze() {}
 
-    /** True while this sub-level's body is removed from the scene (readers must skip it). */
+    /** True while this sub-level is DT-frozen (readers skip it; {@code applyTickOutput} stops teleporting it). */
     public static boolean isFrozen(ServerSubLevel sl) {
         return sl instanceof DtFreezable f && f.dt$isPhysicsFrozen();
     }
 
     /**
-     * Drop {@code sl}'s Rapier body from the scene (keeping the sub-level loaded), marking DT-intent
-     * so the reader mixins skip it. <b>Idempotent + lifecycle-safe:</b> only calls {@code remove} when
-     * the body is actually in the scene ({@code dt$isInScene}). A native {@code removeSubLevel} on an
-     * absent body aborts the JVM uncatchably (and a Java {@code try/catch} cannot save it), so a
-     * carriage Sable is mid-spawn ({@code !inScene}) is skipped and retried next tick once Sable's
-     * {@code add} fires.
+     * Soft-freeze {@code sl}: park its kinematic body at rest, then set the frozen flag. The body stays
+     * in Sable's Rapier scene — nothing is removed, so there is no uncatchable-abort surface. Idempotent.
      */
-    public static void freeze(SubLevelPhysicsSystem system, ServerSubLevel sl) {
+    public static void freeze(ServerSubLevel sl) {
         if (!(sl instanceof DtFreezable flag)) return;
-        if (flag.dt$isPhysicsFrozen()) return;   // already DT-frozen
-        if (!flag.dt$isInScene()) return;        // not in the scene — nothing to remove (see javadoc)
-        flag.dt$setPhysicsFrozen(true);          // readers skip from here
-        system.getPipeline().remove(sl);         // RapierPipelineFreezeMixin flips inScene → false
+        if (flag.dt$isPhysicsFrozen()) return;
+        parkAtRest(sl);                  // final teleport + zero velocity while the flag is still clear (ungated)
+        flag.dt$setPhysicsFrozen(true);  // readers skip from here; applyTickOutput parks it
+    }
+
+    /** Clear the frozen flag; {@link SableManagedShip#applyTickOutput} resumes teleporting next tick. Idempotent. */
+    public static void unfreeze(ServerSubLevel sl) {
+        if (sl instanceof DtFreezable flag) flag.dt$setPhysicsFrozen(false);
     }
 
     /**
-     * Re-add {@code sl}'s body at its logical pose (blessed sequence) and clear DT-intent so the
-     * readers resume. <b>Idempotent:</b> if the body is already back in the scene (Sable re-added it),
-     * just clears the flag — a second {@code add} would abort. On a Java-side re-add failure or invalid
-     * mass it re-freezes so no reader touches a half-added body.
+     * One final kinematic-park pass, mirroring {@link SableManagedShip#applyTickOutput}: teleport the body
+     * to its authoritative {@code logicalPose} and zero linear+angular velocity so the native kinematic
+     * step doesn't drift it while frozen. MUST run while the frozen flag is still clear — otherwise
+     * {@code RapierPipelineFreezeMixin} cancels the teleport/velocity writes. No-op if the handle is gone.
      */
-    public static void unfreeze(SubLevelPhysicsSystem system, ServerSubLevel sl) {
-        if (!(sl instanceof DtFreezable flag)) return;
-        if (!flag.dt$isPhysicsFrozen()) return;  // not DT-frozen
-        if (flag.dt$isInScene()) {               // already in the scene → adding again would double-add
-            flag.dt$setPhysicsFrozen(false);
-            return;
-        }
-        PhysicsPipeline pipeline = system.getPipeline();
-        // Clear the flag BEFORE the re-add so the pipeline machinery runs ungated by the reader mixins;
-        // safe (post-tick, single-threaded). Re-freeze on failure so no reader touches a half-added body.
-        flag.dt$setPhysicsFrozen(false);
-        try {
-            sl.buildMassTracker();
-            pipeline.add(sl, sl.logicalPose());  // RapierPipelineFreezeMixin flips inScene → true
-        } catch (Throwable t) {
-            flag.dt$setPhysicsFrozen(true);
-            LOGGER.warn("[freeze] re-add failed for sub-level {} — staying frozen", sl.getUniqueId(), t);
-            return;
-        }
-        MassData mass = sl.getMassTracker();
-        if (mass == null || mass.isInvalid() || mass.getCenterOfMass() == null) {
-            LOGGER.warn("[freeze] re-add produced invalid mass for sub-level {} — reverting to frozen",
-                sl.getUniqueId());
-            flag.dt$setPhysicsFrozen(true);
-            pipeline.remove(sl); // valid: add above succeeded, body is in the scene
-        }
+    private static void parkAtRest(ServerSubLevel sl) {
+        RigidBodyHandle handle = RigidBodyHandle.of(sl);
+        if (handle == null || !handle.isValid()) return;
+        Pose3dc pose = sl.logicalPose();
+        handle.teleport(pose.position(), pose.orientation());
+        Vector3d curLin = new Vector3d();
+        Vector3d curAng = new Vector3d();
+        handle.getLinearVelocity(curLin);
+        handle.getAngularVelocity(curAng);
+        handle.addLinearAndAngularVelocity(curLin.negate(), curAng.negate());
     }
 
     /** Hysteresis counter accessors (stored on the sub-level via the mixin). */

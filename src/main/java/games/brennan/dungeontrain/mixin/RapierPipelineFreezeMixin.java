@@ -2,9 +2,7 @@ package games.brennan.dungeontrain.mixin;
 
 import dev.ryanhcode.sable.api.physics.PhysicsPipelineBody;
 import dev.ryanhcode.sable.companion.math.Pose3d;
-import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
-import games.brennan.dungeontrain.ship.sable.DtFreezable;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreeze;
 import org.joml.Quaterniondc;
 import org.joml.Vector3d;
@@ -16,18 +14,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Issue #646 — the <b>true</b> native boundary. Every native Rapier call funnels through the
- * pipeline impl {@code RapierPhysicsPipeline}: {@code RigidBodyHandle} delegates here, and callers
- * <em>outside</em> {@code SubLevelPhysicsSystem} reach it directly — e.g. the per-tick
- * {@code PhysicsChunkTicketManager.update} calls {@code pipeline.getLinearVelocity(body, out)}, which
- * bypasses both the handle and the SubLevelPhysicsSystem method gates and panics on a DT-frozen
- * (removed) body (exit 134). Gating the pipeline's per-body reads/writes catches <em>all</em> such
- * callers by construction.
+ * Issue #646 (soft-freeze) — the per-body native boundary. Every native Rapier call funnels through
+ * the pipeline impl {@code RapierPhysicsPipeline}: {@code RigidBodyHandle} delegates here, and callers
+ * <em>outside</em> {@code SubLevelPhysicsSystem} reach it directly (e.g. the per-tick
+ * {@code PhysicsChunkTicketManager.update} calls {@code pipeline.getLinearVelocity(body, out)}).
+ * Gating the pipeline's per-body reads/writes for a DT-frozen carriage skips Sable's per-body work for
+ * <em>all</em> such callers by construction — and that skipped work is the soft-freeze saving.
  *
- * <p>For a frozen body: velocity reads return zero, pose read returns the caller's buffer unchanged,
- * and velocity/impulse/teleport writes no-op. {@code add}/{@code remove} are deliberately NOT gated —
- * they are the freeze/unfreeze primitives themselves, and {@link PhysicsFreeze} runs them with the
- * flag cleared so this mixin never blocks them.
+ * <p>Soft-freeze leaves the body IN the scene (nothing is removed), so these gates are a pure
+ * optimisation, not a crash guard — they cannot abort. For a frozen (parked) body: velocity reads
+ * return zero (it is genuinely parked), pose read returns the caller's buffer unchanged (its
+ * last-known frozen pose stands), and velocity/impulse/teleport/stat writes no-op so nothing can nudge
+ * the parked body. {@link PhysicsFreeze#freeze} runs its one-time park pass with the flag still clear,
+ * so this mixin never blocks that final teleport/velocity write.
  *
  * <p>String target + {@code remap = false}: {@code RapierPhysicsPipeline} ships in Sable's jar-in-jar
  * and is not on DT's compile classpath (same pattern as the Vivecraft mixin). Its method args
@@ -39,20 +38,6 @@ public abstract class RapierPipelineFreezeMixin {
 
     private static boolean dungeonTrain$frozen(Object body) {
         return body instanceof ServerSubLevel sl && PhysicsFreeze.isFrozen(sl);
-    }
-
-    // Authoritative scene-membership tracking — fires for Sable's own spawn/cull/recover AND for DT's
-    // freeze/unfreeze, so PhysicsFreeze can keep remove/add idempotent (never remove a body already
-    // out, never add one already in). Descriptor-qualified to the ServerSubLevel overloads (not the
-    // KinematicContraption ones). Not cancellable — pure observation.
-    @Inject(method = "add(Ldev/ryanhcode/sable/sublevel/ServerSubLevel;Ldev/ryanhcode/sable/companion/math/Pose3dc;)V", at = @At("HEAD"))
-    private void dungeonTrain$trackAdd(ServerSubLevel subLevel, Pose3dc pose, CallbackInfo ci) {
-        if (subLevel instanceof DtFreezable f) f.dt$setInScene(true);
-    }
-
-    @Inject(method = "remove(Ldev/ryanhcode/sable/sublevel/ServerSubLevel;)V", at = @At("HEAD"))
-    private void dungeonTrain$trackRemove(ServerSubLevel subLevel, CallbackInfo ci) {
-        if (subLevel instanceof DtFreezable f) f.dt$setInScene(false);
     }
 
     @Inject(method = "getLinearVelocity", at = @At("HEAD"), cancellable = true)
@@ -91,8 +76,8 @@ public abstract class RapierPipelineFreezeMixin {
     }
 
     // Pushes centre-of-mass / mass / bounds to the native body (setCenterOfMass et al.) on a stat
-    // change — e.g. world-load mass settling. Crashed the integrated (single-player) server on a
-    // frozen carriage. Skipping is correct: the re-add on unfreeze re-establishes stats natively.
+    // change — e.g. world-load mass settling. Skipping is correct for a parked body: its mass/pose are
+    // frozen, and applyTickOutput re-establishes them natively the tick after it unfreezes.
     @Inject(method = "onStatsChanged", at = @At("HEAD"), cancellable = true)
     private void dungeonTrain$frozenOnStatsChanged(ServerSubLevel subLevel, CallbackInfo ci) {
         if (dungeonTrain$frozen(subLevel)) ci.cancel();

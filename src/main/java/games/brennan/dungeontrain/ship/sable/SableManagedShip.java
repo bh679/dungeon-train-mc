@@ -169,12 +169,11 @@ public final class SableManagedShip implements ManagedShip {
 
     @Override
     public void applyTickOutput(KinematicDriver.TickOutput output) {
-        // A DT-frozen carriage (#646) has been pipeline.remove()d from the physics scene but is
-        // still LOADED, so RigidBodyHandle.isValid() — which only checks isRemoved() — still reports
-        // true. Reading its velocity below (getLinearVelocity) would panic native Rapier on the
-        // freed body (exit 134). This is DT's own per-tick native reader, distinct from the Sable
-        // readers gated by the *FreezeMixin classes; it must be gated here too. The frozen body is
-        // re-added on unfreeze and resumes teleporting the next tick.
+        // A DT-frozen carriage (#646 soft-freeze) has been parked: its body stays in the physics
+        // scene, but DT stops teleporting it here so it sits at rest while Sable does no per-body work
+        // for it. Skipping this per-tick teleport + velocity write IS the park (and part of the
+        // soft-freeze saving); PhysicsFreeze.freeze already zeroed its velocity so it won't drift. It
+        // resumes teleporting the tick after PhysicsFreeze.unfreeze clears the flag.
         if (PhysicsFreeze.isFrozen(subLevel)) {
             return;
         }

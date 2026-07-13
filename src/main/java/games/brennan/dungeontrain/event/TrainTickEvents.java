@@ -158,10 +158,11 @@ public final class TrainTickEvents {
             return;
         }
 
-        // Physics-freeze reconcile (#646): remove the Rapier body of every carriage no client is
-        // tracking (keeping the sub-level loaded), so physics cost scales with watched carriages,
-        // not train length. Runs every tick so it reacts promptly to players/mobs crossing the
-        // freeze boundary. Stacks with the substep tuner above. See PhysicsFreezeController.
+        // Physics-freeze reconcile (#646 soft-freeze): park (freeze) every carriage no client is
+        // tracking — leaving its body in the scene but skipping Sable's per-body work and DT's
+        // teleport — so physics cost scales with watched carriages, not train length. Runs every tick
+        // so it reacts promptly to players/mobs crossing the freeze boundary. Stacks with the substep
+        // tuner above. See PhysicsFreezeController.
         PhysicsFreezeController.reconcile(level, trainsById);
 
         // Steady-state MSPT sample every MSPT_LOG_PERIOD_TICKS. Unlike the

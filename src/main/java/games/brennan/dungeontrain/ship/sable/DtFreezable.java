@@ -6,10 +6,12 @@ package games.brennan.dungeontrain.ship.sable;
  * per-body "physics frozen" flag <em>on the instance itself</em> — O(1) to read, no external
  * map to key/clean, and it dies with the sub-level when Sable removes it.
  *
- * <p><b>"Frozen"</b> means DT has {@code pipeline.remove()}d the carriage's Rapier body from
- * the shared physics scene (issue #646) while keeping the sub-level fully <em>loaded</em>
- * (chunks, blocks, {@code logicalPose} all in memory). This is <em>not</em> the cull→reload
- * path that caused the jitter/vanish bugs (#628/#630/#623) — only the physics body is dropped.</p>
+ * <p><b>"Frozen"</b> (soft-freeze, issue #646) means DT has parked this carriage's kinematic body
+ * at rest and flagged it so the reader mixins skip Sable's per-body Java work and
+ * {@link SableManagedShip#applyTickOutput} stops teleporting it. The body stays fully <em>in</em> the
+ * Rapier scene (valid, queryable) and the sub-level stays <em>loaded</em> — nothing is removed, so
+ * there is no uncatchable-abort surface. This is <em>not</em> the cull→reload path that caused the
+ * jitter/vanish bugs (#628/#630/#623); only per-body physics work is skipped.</p>
  *
  * <p>The flag is read on the hot physics path ({@code isFrozen} is called ~O(bodies × substeps)
  * times per tick from the reader mixins), so it must stay a plain field read — hence the
@@ -22,10 +24,10 @@ package games.brennan.dungeontrain.ship.sable;
  */
 public interface DtFreezable {
 
-    /** True while DT has removed this sub-level's Rapier body from the physics scene. */
+    /** True while DT has soft-frozen (parked) this sub-level's physics body. */
     boolean dt$isPhysicsFrozen();
 
-    /** Set by {@link PhysicsFreeze#freeze}/{@link PhysicsFreeze#unfreeze} around the pipeline op. */
+    /** Set by {@link PhysicsFreeze#freeze}/{@link PhysicsFreeze#unfreeze}. */
     void dt$setPhysicsFrozen(boolean frozen);
 
     /** Consecutive ticks this carriage has been inactive (untracked, no live entity aboard). */
@@ -33,18 +35,4 @@ public interface DtFreezable {
 
     /** Updated each reconcile tick by {@link PhysicsFreezeController}. */
     void dt$setInactiveTicks(int ticks);
-
-    /**
-     * True iff this sub-level's body is currently in the Rapier scene. Tracked authoritatively by
-     * {@code RapierPipelineFreezeMixin} on every {@code pipeline.add}/{@code remove} — for Sable's
-     * own lifecycle (spawn/cull/recover) as well as DT's freeze/unfreeze. {@link PhysicsFreeze} uses
-     * it to keep the write ops idempotent: never {@code remove} a body that is already out, never
-     * {@code add} one that is already in — the fix for the {@code removeSubLevel} native abort that
-     * fired when DT froze a carriage the appender was mid-spawn. Distinct from
-     * {@link #dt$isPhysicsFrozen()} (DT <em>intent</em>, which gates the readers): a freshly-spawned
-     * carriage Sable hasn't added yet is {@code !inScene} but not DT-frozen. Defaults false.
-     */
-    boolean dt$isInScene();
-
-    void dt$setInScene(boolean inScene);
 }
