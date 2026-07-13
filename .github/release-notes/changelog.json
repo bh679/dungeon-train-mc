@@ -4362,6 +4362,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-advancement-delay",
+      "version": "0.450.0",
+      "type": "fix",
+      "title": "Inter-Dimensional Passenger advancement delayed",
+      "summary": "The Inter-Dimensional Passenger advancement now grants further into the Nether-reading zone, so it reads as a deeper journey rather than firing right at the edge.",
+      "highlights": [],
+      "pr": 741,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
