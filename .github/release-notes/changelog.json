@@ -4401,9 +4401,9 @@
       "highlights": [],
       "pr": 739,
       "date": "2026-07-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.451.0",
+      "released_at": "2026-07-13T06:04:07Z"
     },
     {
       "id": "nether-crossing-gen-perf",
@@ -4416,9 +4416,9 @@
         "Long moving rides stay closer to full TPS through the Nether band"
       ],
       "date": "2026-07-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.451.0",
+      "released_at": "2026-07-13T06:04:07Z"
     }
   ]
 }
