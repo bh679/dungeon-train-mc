@@ -94,7 +94,19 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
             java.util.Arrays.fill(memo.present, false);
             memo.ctx = ctx;
         }
+        return raiseWithMemo(ctx, memo, worldX, worldZ, worldY, base);
+    }
 
+    /**
+     * The per-sample raise, given an already-resolved (non-null, enabled) {@link NetherBandContext} and
+     * its per-thread {@link ColumnMemo} (republish already reconciled). Split out so {@link #fillArray}
+     * can hoist the context/memo resolution — {@code NetherBandContext.current()}, the {@code enabled()}
+     * gate, the {@code ThreadLocal} lookup and the republish check — out of its ~1.2k-iteration
+     * per-sample loop (they are loop-invariant across a single {@code fillArray} lattice). Byte-identical
+     * to inlining the body back into {@link #raisedOrBase}.
+     */
+    private static double raiseWithMemo(NetherBandContext ctx, ColumnMemo memo,
+                                        int worldX, int worldZ, int worldY, double base) {
         long ckey = (((long) worldX) << 32) ^ (worldZ & 0xFFFFFFFFL);
         int idx = (worldX * 31 + worldZ) & COL_MASK;
         boolean skip;
@@ -132,10 +144,20 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
     @Override
     public void fillArray(double[] values, ContextProvider contextProvider) {
         wrapped.fillArray(values, contextProvider);     // vanilla child — not DT's added tax
+        // Hoist the loop-invariant context/memo resolution out of the per-sample loop: when the band is
+        // inactive the whole lattice is a pass-through (skip it), and when active the ThreadLocal + volatile
+        // + enabled() checks run once per fillArray instead of ~1.2k times.
+        NetherBandContext bandCtx = NetherBandContext.current();
+        if (bandCtx == null || !bandCtx.enabled()) return;
         long t0 = GenProfiler.t0();
+        ColumnMemo memo = COLUMN_MEMO.get();
+        if (memo.ctx != bandCtx) {                       // world/config republish → drop every stale column
+            java.util.Arrays.fill(memo.present, false);
+            memo.ctx = bandCtx;
+        }
         for (int i = 0; i < values.length; i++) {
-            FunctionContext ctx = contextProvider.forIndex(i);
-            values[i] = raisedOrBase(ctx.blockX(), ctx.blockZ(), ctx.blockY(), values[i]);
+            FunctionContext fc = contextProvider.forIndex(i);
+            values[i] = raiseWithMemo(bandCtx, memo, fc.blockX(), fc.blockZ(), fc.blockY(), values[i]);
         }
         GenProfiler.add(GenProfiler.Bucket.DF, t0);
     }
