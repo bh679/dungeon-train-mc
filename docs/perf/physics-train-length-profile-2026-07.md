@@ -3,22 +3,30 @@
 Issue #646 remainder. Question: can DT cut the Sable **physics** server-tick cost that
 scales with carriage count, and is it worth doing for the felt long-ride lag?
 
-**Headline: no new physics work is warranted.** Profile-first measurement shows the
-per-carriage physics cost is already small after the shipped optimisations (#640, #648,
-#742), and the felt long-moving-ride lag is dominated by **chunk generation**, not
-physics. Details below.
+**Headline: no new physics work is warranted — train-length physics scaling is already
+broken by the shipped optimisations (#648 substeps + #742 soft-freeze).** A live
+singleplayer ride shows physics cost tracks the ~constant *tracked* carriage set, not
+train length, and the residual server-tick cost is dominated by chunk generation +
+resume/world-load transients, not physics. Details below.
+
+> **Corrected 2026-07-14 by a live in-game ride** (manual Gate-2 test). An earlier draft
+> claimed `active ≈ resident` on a moving train (from a Gate-1 code inference) → that
+> #742 reaches ~none of it. **The live data refutes that**: DT force-holds far more
+> carriages resident than the client tracks, so #742 parks the majority *while riding*.
+> The conclusion (no new physics work) is unchanged and in fact strengthened.
 
 ## Method
 
-- Build `0.451.1` (adds `active=` to the `[mspt]` DEBUG line). Headless dedicated
-  `runServer`, pinned seed, `view-distance=20`, RCON. Harness per
-  `project_dt_server_perf_ab_harness`.
+- Build `0.451.x` (adds `active=` to the `[mspt]` DEBUG line). Headless dedicated
+  `runServer`, pinned seed, `view-distance=20`, RCON, for the A/B; live integrated client
+  for the ride. Harness per `project_dt_server_perf_ab_harness`.
 - Metric: vanilla `tick query` / `[mspt]` `avgTickMs` (`getAverageTickTimeNanos`,
   whole-server mean incl. Sable physics), matched-toggle A/B via
   `/dungeontrain debug physicsfreeze on|off` over RCON.
-- Fixture: a **25-sub-level train, parked, player-less** (the cleanest physics isolation
-  — no rider, no forward chunk-gen, no DT train-work). The substep tuner (#648) engaged
-  (`2->1` at 25 residents), so these are the **shipping** substep=1 numbers.
+- Fixtures: (a) a **25-sub-level train, parked, player-less** for the clean per-body A/B
+  (no rider, no gen, no train-work; substep tuner engaged `2->1`, so **shipping** substep=1
+  numbers); (b) a **live singleplayer ride** (14→48 carriages) captured from `[mspt]`/
+  `[freeze]` — the real felt scenario, which supplied the decisive scaling data below.
 
 ## Run B — per-body physics cost (25 bodies, substep=1)
 
@@ -36,61 +44,75 @@ physics. Details below.
   DT removing the body = the abandoned hard-freeze uncatchable JVM abort).
 - Parked-floor base (server tick minus all 25 bodies' native step) ≈ **2.9 ms**.
 
-Extrapolated to a **63-carriage** train (the felt-lag size): physics ≈ 63 × 0.20 ≈
-**12.6 ms**, + ~2.9 ms base ≈ **~15 ms** of server tick. DT-skippable part = 63 × 0.126 ≈
-**7.9 ms**; irreducible native = 63 × 0.073 ≈ **4.6 ms**.
+This per-body split is what soft-freeze exploits. On the shipping build only the ~14
+*active* carriages pay the full 0.20 ms/body; the frozen surplus pays just the 0.073 ms/body
+native step (see the live ride below) — which is why physics stays flat as the train grows.
+Fully-stepped-everywhere (freeze OFF) a 63-car train would be 63 × 0.20 + base ≈ **~15 ms**;
+with freeze ON it is ~14 × 0.20 + ~49 × 0.073 + base ≈ **~9 ms** — and flat vs length.
 
-## The `active ≈ resident` gap — proven from code (linchpin)
+## Live singleplayer ride (0.451.2, `[mspt]`/`[freeze]`, 14→48 carriages, 91 samples)
 
-`TrainCarriageAppender.bootstrapTargetFromServerViewDistance` sizes the resident
-force-load target as `(viewDistance × 16 × 2) / carriageLength`
-([TrainCarriageAppender.java:3301](../../src/main/java/games/brennan/dungeontrain/train/TrainCarriageAppender.java)),
-and the steady-state hold is the same **render-distance-bounded near-player window**
-([:2344](../../src/main/java/games/brennan/dungeontrain/train/TrainCarriageAppender.java)).
-That is the **identical span a client tracks at that view distance**. Therefore on a
-normally-ridden train **every resident carriage is tracked → `active` ≈ `resident`**, and
-#742's "park untracked carriages" parks **~none** of the active train. Confirmed by the
-`active=` instrumentation on the player-less fixture (`active=0` when nothing tracks).
+The decisive dataset — a real ride on the shipping build, the felt scenario:
 
-> Live long **moving** ride was not reproducible headlessly: the auto-join rendering
-> client connects only briefly on macOS and the spawn-deck hand-off fails without real
-> player input, collapsing the train to a 1-car stub. The `active≈resident` claim rests on
-> the code proof above (stronger than a flaky reading); the felt moving-ride MSPT figures
-> below are from a prior **real interactive** session (`project_transition_zone_gen_profile`).
+| carriages (resident) | active (tracked) | frozen | avgTickMs (p15 floor) |
+|---|---|---|---|
+| 14–22 (early / just after a resume-pause) | ~10 | ~4–11 | 40–46 (transient) |
+| 25–37 (settled) | ~12–14 | ~13–24 | 16–20 |
+| 47 (steady dwell, n=37) | **~14** | **~33** | **~22** |
 
-## Why physics is NOT the felt moving-ride bottleneck
+- **`active` (tracked) is essentially FLAT ~10–14 across the whole 14→48 range** — the
+  client's tracked carriage set does **not** grow with train length. Physics cost is bound
+  to that set, so **it does not scale with train length**.
+- **`resident` grows to 47 while `active` stays ~14 → `frozen` grows to ~33.** #742's
+  soft-freeze parks the untracked majority **while riding** (74% at 47 carriages). DT
+  force-holds far more resident than the client tracks (trailing-N window + near-player
+  window + #547 resume-hold which pins the whole train transiently — a 5807 ms resume
+  fling fired mid-ride), so the "park untracked" set is large, not empty.
+- **`avgTickMs` does NOT track carriage count.** The p15 floor at 47 carriages (~22 ms) is
+  *lower* than at 18–20 carriages (44–46 ms). The high early values are world-load + the
+  resume fling, not physics — once settled the floor is flat ~18–22 ms from 25→47 carriages.
 
-- Prior real-ride profile: `avgTickMs` ~**45–60 ms** at 55–63 carriages.
-- This profile's physics floor at 63 carriages (substep-tuned, shipping): ~**15 ms**.
-- The remaining ~**30–45 ms** is chunk generation + DT per-tick train-work (appender /
-  kill-ahead / fluid displacement) that only exist on a *moving* train. This matches #742's
-  direct finding: a matched freeze ON-vs-OFF toggle **on the moving run washed to ~0 net**,
-  swamped by gen.
-- The old "63 × 0.65 ms ≈ 41 ms physics" estimate (`project_sable_physics_shared_scene_resident_scaling`)
-  predates the substep tuner (that was 2 substeps) and the #640 overlay fix. The
-  **0.65 ms/body figure is superseded by 0.20 ms/body** at the shipping substep=1.
+**Correction to the Gate-1 inference.** `bootstrapTargetFromServerViewDistance` sizes the
+*bootstrap* target as `(viewDistance×16×2)/carriageLength`, but the live steady-state
+resident count (trailing window + resume-hold) runs far above the client's tracked set, so
+`active ≪ resident` in practice (measured 14 vs 47), the opposite of the earlier draft.
+
+## Why physics is NOT the felt bottleneck (revised, live-data-backed)
+
+- Physics cost is bound to the flat ~14 *active* carriages: ≈ 14 × 0.20 ms + base ≈ **~6 ms**
+  of the observed ~22 ms floor at 47 carriages. The other ~16 ms is chunk-gen + DT
+  train-work + transients (resume fling / world-load).
+- Train-length physics **scaling** is already broken: #742 parks the untracked majority and
+  #648 halves substeps ≥24 residents, so adding carriages adds frozen bodies (only the
+  ~0.073 ms/body native step) not stepped ones — and `avgTickMs` is flat with length, as
+  measured.
+- Matches #742's own finding that a freeze ON-vs-OFF toggle on a moving run washed to ~0
+  net (swamped by gen). The old "0.65 ms/body → 41 ms @63car" estimate predates #648/#742
+  and is superseded.
 
 ## Levers, measured payoff, verdict
 
-| Lever | Helps moving ride? | Max payoff @63car | Risk | Verdict |
+| Lever | Helps the felt ride? | Payoff | Risk | Verdict |
 |---|---|---|---|---|
-| **Velocity-gated distance park** (DT-side, safe) | No — parks only stationary carriages; a moving train's carriages must keep teleporting or they visibly desync | 0 on moving; extends #742 to parked/server long trains only | Low | **Defer** — #742 already covers the parked/server case; marginal |
-| **Upstream Sable `set_enabled`/sleep** (skip native step for tracked-but-distant) | Partially — the only thing that touches the native floor on a moving train | ≤ 4.6 ms (the irreducible native part) | Cross-repo, depends on Sable author; DT ships stock Modrinth 2.0.2 (no fork) | **File as low-priority upstream request** — small absolute win |
-| **Risky sim-decouple** (keep teleport, skip Java) | Barely — pose read-back needed for visuals must stay | < 7.9 ms, minus the read-back you must keep | Visual desync; high effort | **Reject** |
-| **Chunk-gen work** (separate session) | **Yes — dominates the felt moving-ride lag** | ~30–45 ms of the felt 45–60 ms | n/a here | **This is where effort belongs** |
+| **Reduce over-hold** (force-hold fewer resident so fewer bodies in scene) | Only the native step of the frozen surplus (~0.073 ms/body × ~33 ≈ 2.4 ms @47car) | Tiny | Re-introduces the cull→reload jitter/vanish class (#628/#630/#623) the over-hold exists to prevent | **Reject** — cost ≫ benefit |
+| **Upstream Sable `set_enabled`/sleep** (skip native step of frozen bodies) | Removes the frozen surplus's native step | ~2–5 ms | Cross-repo, Sable author; DT ships stock Modrinth 2.0.2 (no fork) | **Optional low-priority upstream ask** |
+| **Risky sim-decouple** (keep teleport, skip Java for tracked-distant) | Marginal — only the ~14 active bodies, pose read-back must stay | < 2 ms | Visual desync; high effort | **Reject** |
+| **Chunk-gen + transients** (separate session) | **Yes — dominates the residual ~16 ms of the ~22 ms floor** | Most of the felt lag | n/a here | **This is where effort belongs** |
 
 ## Recommendation
 
-1. **Do not build a new physics decoupling for this.** Post-#648/#640/#742 the physics
-   floor is ~15 ms at 63 carriages; even a perfect DT-side park saves ~7.9 ms and can't be
-   applied to a moving train anyway (active≈resident, and parking a moving carriage
-   desyncs it). Low ceiling, real risk. Profile-first has saved us that build.
-2. **Direct effort to chunk generation** — it is the measured dominant term of the felt
-   long-ride lag (the gen session already spawned per #742/#743; leads: memoize
-   `WorldGenCycle.fromConfig`, off-thread pre-gen ahead of the train).
-3. **Optionally** file the upstream Sable per-body `set_enabled`/sleep request as a
-   nice-to-have for dedicated servers hosting many long trains (removes the ~4.6 ms native
-   floor). Not DT-shippable alone.
+1. **Do not build a new physics decoupling.** The live ride proves train-length physics
+   scaling is *already handled* by the shipped #742 (parks the untracked majority — ~33 of
+   47 while riding) + #648 (substeps). `avgTickMs` is flat with train length; physics is
+   ~6 ms of a ~22 ms floor. Every remaining lever is <5 ms and/or reintroduces jitter.
+   Profile-first has saved building a complex, risky decoupling that wouldn't move the needle.
+2. **Direct effort to chunk generation + ride transients** — the measured dominant terms
+   (the gen session already spawned per #742/#743; leads: memoize `WorldGenCycle.fromConfig`,
+   off-thread pre-gen ahead of the train). The 40–46 ms early-ride spikes here were
+   world-load + a #547 resume fling — worth a look separately.
+3. **Optionally** file the upstream Sable per-body `set_enabled`/sleep request (removes the
+   frozen surplus's native step, ~2–5 ms) as a dedicated-server nice-to-have. Not
+   DT-shippable alone.
 
 ## Shipped from this session
 
