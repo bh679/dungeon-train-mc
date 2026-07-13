@@ -4359,9 +4359,9 @@
       "highlights": [],
       "pr": 740,
       "date": "2026-07-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.450.0",
+      "released_at": "2026-07-13T03:05:22Z"
     },
     {
       "id": "nether-advancement-delay",
@@ -4372,9 +4372,9 @@
       "highlights": [],
       "pr": 741,
       "date": "2026-07-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.450.0",
+      "released_at": "2026-07-13T03:05:22Z"
     },
     {
       "id": "physics-freeze-untracked-carriages",
@@ -4388,9 +4388,9 @@
       ],
       "pr": 742,
       "date": "2026-07-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.450.0",
+      "released_at": "2026-07-13T03:05:22Z"
     }
   ]
 }
