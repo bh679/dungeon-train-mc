@@ -4391,6 +4391,19 @@
       "released": true,
       "released_in": "v0.450.0",
       "released_at": "2026-07-13T03:05:22Z"
+    },
+    {
+      "id": "discordpresence-localization",
+      "version": "0.450.0",
+      "type": "fix",
+      "title": "Discord Presence text is now translatable",
+      "summary": "The \"Connect to the internet?\" consent card, the feedback survey screen, and related chat messages can now be localized by translation packs \u2014 previously this text was hard-coded in English.",
+      "highlights": [],
+      "pr": 739,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
