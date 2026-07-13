@@ -4454,6 +4454,19 @@
       "released_at": "2026-07-13T12:22:07Z"
     },
     {
+      "id": "smooth-swapping-modpack-config",
+      "version": "0.452.0",
+      "type": "feat",
+      "title": "Smooth Swapping ships with a tuned default config",
+      "summary": "The optional Smooth Swapping companion mod now ships pre-configured with a tuned item-swap animation speed, instead of the mod's stock defaults.",
+      "highlights": [],
+      "pr": 745,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "barrel-vase-books2-content-tuning",
       "version": "0.454.0",
       "type": "content",
