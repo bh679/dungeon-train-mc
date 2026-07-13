@@ -8,6 +8,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.narrative.BookFactory;
+import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.narrative.Letter;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
@@ -31,6 +32,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
@@ -182,9 +184,15 @@ public final class NarrativeCommand {
     }
 
     private static int runReload(CommandContext<CommandSourceStack> ctx) {
-        StoryRegistry.reload();
-        RandomBookRegistry.reload();
-        StartingBookRegistry.reload();
+        // Reload straight off the server's live ResourceManager so the command
+        // reflects the currently-loaded datapacks (bundled + overrides) without a
+        // full /reload. The AddReloadListenerEvent listeners handle world-load and
+        // /reload automatically; this stays a DT-only fast path.
+        ResourceManager rm = ctx.getSource().getServer().getResourceManager();
+        StoryRegistry.load(rm);
+        RandomBookRegistry.load(rm);
+        StartingBookRegistry.load(rm);
+        DeathLoreStore.load(rm);
         int stories = StoryRegistry.count();
         int randomBooks = RandomBookRegistry.count();
         int startingBooks = StartingBookRegistry.count();
@@ -312,7 +320,7 @@ public final class NarrativeCommand {
     }
 
     private static int runStartingBookReload(CommandContext<CommandSourceStack> ctx) {
-        StartingBookRegistry.reload();
+        StartingBookRegistry.load(ctx.getSource().getServer().getResourceManager());
         int startingBooks = StartingBookRegistry.count();
         ctx.getSource().sendSuccess(() ->
             Component.literal("Starting-book pool reloaded: " + startingBooks + " books")

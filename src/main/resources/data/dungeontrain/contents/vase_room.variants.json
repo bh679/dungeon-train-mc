@@ -43,6 +43,8 @@
     "4,0,4": ["minecraft:command_block[conditional=false,facing=north]", {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
     "6,0,4": ["minecraft:command_block[conditional=false,facing=north]", {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
     "4,2,4": ["minecraft:command_block[conditional=false,facing=north]", {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
-    "2,2,4": ["minecraft:command_block[conditional=false,facing=north]", {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}]
+    "2,2,4": ["minecraft:command_block[conditional=false,facing=north]", {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "3,3,4": { "lockId": 7, "states": ["minecraft:torch", "minecraft:soul_torch", "minecraft:redstone_torch[lit=true]"] },
+    "3,3,0": { "lockId": 7, "states": ["minecraft:torch", "minecraft:soul_torch", "minecraft:redstone_torch[lit=true]"] }
   }
 }

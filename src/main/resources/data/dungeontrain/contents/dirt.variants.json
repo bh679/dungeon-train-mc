@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 8,
   "variants": {
     "0,0,0": { "lockId": 1, "states": ["minecraft:grass_block[snowy=false]", "minecraft:podzol[snowy=false]", "minecraft:mycelium[snowy=false]", "minecraft:coarse_dirt", "minecraft:rooted_dirt", "minecraft:mud", "minecraft:clay"] },
     "0,0,1": { "lockId": 1, "states": ["minecraft:grass_block[snowy=false]", "minecraft:podzol[snowy=false]", "minecraft:mycelium[snowy=false]", "minecraft:coarse_dirt", "minecraft:rooted_dirt", "minecraft:mud", "minecraft:clay"] },

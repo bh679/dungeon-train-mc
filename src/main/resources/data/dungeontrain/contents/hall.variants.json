@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 8,
   "variants": {
     "3,1,1": { "lockId": 1, "states": [{"state": "minecraft:stone_bricks", "weight": 15}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:stone_brick_wall[east=none,north=none,south=none,up=true,waterlogged=false,west=none]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
     "3,0,1": { "lockId": 1, "states": [{"state": "minecraft:stone_bricks", "weight": 15}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:stone_brick_wall[east=none,north=none,south=none,up=true,waterlogged=false,west=none]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },

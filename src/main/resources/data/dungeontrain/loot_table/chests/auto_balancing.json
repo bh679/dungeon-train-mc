@@ -7,12 +7,12 @@
         {
           "type": "minecraft:item",
           "name": "minecraft:wheat",
-          "weight": 17
+          "weight": 19
         },
         {
           "type": "minecraft:item",
           "name": "minecraft:potato",
-          "weight": 20
+          "weight": 19
         },
         {
           "type": "minecraft:item",

@@ -27,6 +27,9 @@ sourceSets.main.resources {
     srcDir 'src/generated/resources'
     exclude '**/*.bbmodel'
     exclude 'src/generated/**/.cache'
+    exclude '**/narratives/originals/**'   // raw author .txt drafts — never loaded at runtime
+    exclude '**/narratives/unused/**'      // held-back .txt content — never loaded at runtime
+    exclude '**/CLAUDE.md'                 // authoring docs (uppercase-named) — never a MC resource
 }
 
 repositories {

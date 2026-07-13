@@ -459,13 +459,23 @@ public final class AchievementEvents {
     }
 
     /**
-     * True when every starting book has at least one variant marked seen.
-     * Drives the {@code starting_books_all_titles} milestone ("Welcome Back")
-     * — weaker than {@link #allStartingBooksSeen}; requires every title to
-     * have been encountered at least once, not every variant.
+     * True when every <em>reachable</em> starting book has at least one
+     * variant marked seen. Drives the {@code starting_books_all_titles}
+     * milestone ("Welcome Back") — weaker than {@link #allStartingBooksSeen};
+     * requires every title to have been encountered at least once, not every
+     * variant.
+     *
+     * <p>Scoped to lifecycle folders only ({@code ctx.achievementSetId()}
+     * empty) — dimension-routed folders (NETHER/END) are excluded because a
+     * new world can no longer be created starting in the Nether or the End
+     * (Nether/End presets were dropped from the {@code #minecraft:normal}
+     * world-preset tag; see PR #639), so their books can never be delivered
+     * to a fresh player. Mirrors the same dimension-routed vs. lifecycle
+     * split {@link #allStartingBooksSeen} already applies.</p>
      */
     private static boolean allStartingBookTitlesSeen(games.brennan.dungeontrain.narrative.NarrativeProgressData data) {
-        java.util.List<String> all = games.brennan.dungeontrain.narrative.StartingBookRegistry.basenames();
+        java.util.List<String> all = games.brennan.dungeontrain.narrative.StartingBookRegistry.basenames(
+            ctx -> ctx.achievementSetId().isEmpty());
         if (all.isEmpty()) return false;
         java.util.Map<String, games.brennan.dungeontrain.narrative.NarrativeProgress> snapshot =
             data.startingBookSeenSnapshot();

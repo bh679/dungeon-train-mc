@@ -4007,9 +4007,9 @@
       ],
       "pr": 715,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "loading-screen-stories",
@@ -4022,9 +4022,9 @@
       ],
       "pr": 716,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "upside-down-band",
@@ -4039,9 +4039,9 @@
       ],
       "pr": 717,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "loading-screen-story-9",
@@ -4052,9 +4052,9 @@
       "highlights": [],
       "pr": 718,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "dtp-teleport-command",
@@ -4068,9 +4068,9 @@
       ],
       "pr": 719,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "upside-down-exit-island-crossfade",
@@ -4084,9 +4084,9 @@
       ],
       "pr": 720,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "dtp-difficulty-scaling",
@@ -4099,9 +4099,9 @@
       ],
       "pr": 722,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "upside-down-advancements",
@@ -4115,9 +4115,9 @@
       ],
       "pr": 721,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "train-upright-upside-down-band",
@@ -4130,9 +4130,9 @@
       ],
       "pr": 723,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "upsidedown-no-animal-spawns",
@@ -4145,9 +4145,9 @@
       ],
       "pr": 724,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "deepdark-vase-content-update",
@@ -4161,9 +4161,9 @@
       ],
       "pr": 725,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "upside-down-ceiling-cap-perf",
@@ -4178,9 +4178,9 @@
       ],
       "pr": 726,
       "date": "2026-07-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "upside-down-band-smooth-stream",
@@ -4192,9 +4192,9 @@
         "No more frame stutter when the train enters the upside-down band"
       ],
       "date": "2026-07-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "session-language-telemetry",
@@ -4207,9 +4207,9 @@
         "Data explorer Games list gains a sortable Language column"
       ],
       "date": "2026-07-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
     },
     {
       "id": "player-content-language-tag",
@@ -4222,6 +4222,156 @@
       ],
       "pr": 727,
       "date": "2026-07-12",
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
+    },
+    {
+      "id": "exclude-narrative-source-from-jar",
+      "version": "0.443.0",
+      "type": "chore",
+      "title": "Trim unused authoring files from the mod jar",
+      "summary": "Internal packaging cleanup: the mod jar no longer bundles unused story-draft text files and authoring notes that were never used in-game. No gameplay or content changes \u2014 just a slightly smaller download.",
+      "highlights": [],
+      "pr": 731,
+      "date": "2026-07-12",
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
+    },
+    {
+      "id": "player-content-language-filter",
+      "version": "0.443.0",
+      "type": "feat",
+      "title": "Player-written books and letters now match your language",
+      "summary": "Community books you find in chests and player-written stories on lecterns are now matched to the language your game is set to. If your language has no player-written content yet, you'll get English instead \u2014 so you always have something to read. Language variants are grouped together (all English styles including Pirate; all Chinese including Classical), so you see every book written in a language you can actually read.",
+      "highlights": [
+        "Chest community books and lectern narratives are filtered to your game's language",
+        "Falls back to English when your language has no player-written content yet",
+        "Language variants are grouped (e.g. all English styles together, all Chinese together)"
+      ],
+      "pr": 732,
+      "date": "2026-07-12",
+      "released": true,
+      "released_in": "v0.443.0",
+      "released_at": "2026-07-12T08:55:21Z"
+    },
+    {
+      "id": "localize-remaining-gui-strings",
+      "version": "0.444.0",
+      "type": "chore",
+      "title": "Remaining menu text is now translatable",
+      "summary": "The last hard-coded strings in Dungeon Train's config, world-options, cinematic-skip, and dev-message screens now use translation keys, so the whole mod UI can be localized through a resource/language pack. No change to the English text.",
+      "highlights": [
+        "Settings and world-options screens fully translatable",
+        "Cinematic 'Press Space to skip' prompt translatable",
+        "Dev-message attachment and author labels translatable"
+      ],
+      "pr": 733,
+      "date": "2026-07-12",
+      "released": true,
+      "released_in": "v0.445.0",
+      "released_at": "2026-07-12T09:18:15Z"
+    },
+    {
+      "id": "upside-down-mirror-precompute",
+      "version": "0.443.0",
+      "type": "perf",
+      "title": "Upside-down band re-flip keeps pace with the train",
+      "summary": "The upside-down band's terrain flip is now precomputed off the main server thread as chunks generate, so the deferred re-flip drains its backlog roughly twice as fast \u2014 far less briefly-un-flipped terrain trails behind you when you ride into a band. Terrain is unchanged.",
+      "highlights": [
+        "Flip precomputed off-thread during world generation",
+        "Deferred re-flip backlog clears ~2x faster"
+      ],
+      "pr": 734,
+      "date": "2026-07-12",
+      "released": true,
+      "released_in": "v0.445.0",
+      "released_at": "2026-07-12T09:18:15Z"
+    },
+    {
+      "id": "datapack-overridable-prose",
+      "version": "0.445.0",
+      "type": "feat",
+      "title": "Translate the train's books & death messages with a datapack",
+      "summary": "Dungeon Train's narrative books, welcome letters, random chest books, and death-screen messages can now be translated or replaced by a datapack \u2014 no more editing files inside the mod jar. Overrides apply on /reload, and only the server needs the datapack (translated books reach everyone on the server automatically).",
+      "highlights": [
+        "Narrative stories, random books, welcome/starting books, and death-lore are now datapack-overridable",
+        "Localizers can ship a translation datapack instead of editing the mod jar",
+        "Honored on /reload; server-only (clients need nothing)"
+      ],
+      "pr": 735,
+      "date": "2026-07-12",
+      "released": true,
+      "released_in": "v0.445.0",
+      "released_at": "2026-07-12T09:18:15Z"
+    },
+    {
+      "id": "localization-credits-menu",
+      "version": "0.446.0",
+      "type": "feat",
+      "title": "Localization credit on the title screen",
+      "summary": "If you're playing in a language someone translated the game into, and they shipped a credit with their translation pack, the main menu now thanks them for you \u2014 their name appears right next to the language button, with a clickable link if they included one.",
+      "highlights": [
+        "Translators can be credited by name (with an optional link) next to the title screen's language button",
+        "Only shows for languages that actually have a credited translator \u2014 silent otherwise"
+      ],
+      "pr": 736,
+      "date": "2026-07-12",
+      "released": true,
+      "released_in": "v0.447.0",
+      "released_at": "2026-07-12T11:30:47Z"
+    },
+    {
+      "id": "room-lighting-pass",
+      "version": "0.447.0",
+      "type": "content",
+      "title": "Room lighting improvements across most rooms",
+      "summary": "Nearly all room content parts received a lighting pass in the in-game editor, adding light sources to reduce dark corners and mob-spawnable gaps throughout the train.",
+      "highlights": [
+        "Added lighting to nearly all room content parts (dining, kitchen, storage, bedrooms, maze rooms, and more)",
+        "Reduces unlit dark spots that could allow unwanted mob spawns"
+      ],
+      "date": "2026-07-12",
+      "released": true,
+      "released_in": "v0.447.0",
+      "released_at": "2026-07-12T11:30:47Z"
+    },
+    {
+      "id": "welcome-back-nether-end-fix",
+      "version": "0.448.0",
+      "type": "fix",
+      "title": "Welcome Back no longer needs a Nether/End start",
+      "summary": "The Welcome Back advancement could get stuck requiring a starting book that only ever showed up if your world began in the Nether or the End \u2014 dimensions you can no longer pick when creating a new world. Welcome Back now only asks for books you can actually still encounter.",
+      "highlights": [],
+      "pr": 738,
+      "date": "2026-07-12",
+      "released": true,
+      "released_in": "v0.448.0",
+      "released_at": "2026-07-13T00:51:50Z"
+    },
+    {
+      "id": "dungeon-train-advancement-cinematic-timing",
+      "version": "0.449.0",
+      "type": "fix",
+      "title": "Dungeon Train advancement now waits for the intro cinematic",
+      "summary": "The \"Dungeon Train\" advancement no longer pops up mid-loading-screen or mid-cinematic on a fresh world join \u2014 it now waits until you've actually seen the intro fly-around before the toast appears.",
+      "highlights": [],
+      "pr": 740,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "nether-advancement-delay",
+      "version": "0.450.0",
+      "type": "fix",
+      "title": "Inter-Dimensional Passenger advancement delayed",
+      "summary": "The Inter-Dimensional Passenger advancement now grants further into the Nether-reading zone, so it reads as a deeper journey rather than firing right at the edge.",
+      "highlights": [],
+      "pr": 741,
+      "date": "2026-07-13",
       "released": false,
       "released_in": null,
       "released_at": null

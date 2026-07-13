@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 8,
   "variants": {
     "1,0,2": { "lockId": 1, "states": ["minecraft:dirt", {"state": "minecraft:command_block[conditional=false,facing=up]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
     "1,1,2": { "lockId": 1, "states": ["minecraft:dirt", {"state": "minecraft:command_block[conditional=false,facing=up]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },

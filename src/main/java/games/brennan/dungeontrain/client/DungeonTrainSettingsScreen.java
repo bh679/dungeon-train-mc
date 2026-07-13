@@ -14,6 +14,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -21,6 +22,7 @@ import org.joml.Vector3d;
 import org.slf4j.Logger;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Mods-menu config screen for Dungeon Train — edit rolling-window carriage
@@ -51,7 +53,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
     private CycleButton<Boolean> compatibleTerrainButton;
 
     public DungeonTrainSettingsScreen(Screen parent) {
-        super(Component.literal("Dungeon Train Settings"));
+        super(Component.translatable("gui.dungeontrain.settings.title"));
         this.parent = parent;
     }
 
@@ -61,19 +63,19 @@ public final class DungeonTrainSettingsScreen extends Screen {
         int topY = this.height / 2 - 80;
 
         carriagesField = new EditBox(this.font, centerX + 10, topY, FIELD_WIDTH, FIELD_HEIGHT,
-                Component.literal("Carriages"));
+                Component.translatable("gui.dungeontrain.settings.narrate.carriages"));
         carriagesField.setValue(Integer.toString(DungeonTrainConfig.getNumCarriages()));
         carriagesField.setFilter(DungeonTrainSettingsScreen::isIntegerInput);
         addRenderableWidget(carriagesField);
 
         speedField = new EditBox(this.font, centerX + 10, topY + ROW_GAP, FIELD_WIDTH, FIELD_HEIGHT,
-                Component.literal("Speed"));
+                Component.translatable("gui.dungeontrain.settings.narrate.speed"));
         speedField.setValue(Double.toString(DungeonTrainConfig.getSpeed()));
         speedField.setFilter(DungeonTrainSettingsScreen::isDecimalInput);
         addRenderableWidget(speedField);
 
         trainYField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 2, FIELD_WIDTH, FIELD_HEIGHT,
-                Component.literal("Train Y"));
+                Component.translatable("gui.dungeontrain.settings.narrate.train_y"));
         trainYField.setValue(Integer.toString(DungeonTrainConfig.getTrainY()));
         trainYField.setFilter(DungeonTrainSettingsScreen::isSignedIntegerInput);
         addRenderableWidget(trainYField);
@@ -85,13 +87,13 @@ public final class DungeonTrainSettingsScreen extends Screen {
                 .create(
                         centerX + 10, topY + ROW_GAP * 3,
                         FIELD_WIDTH, FIELD_HEIGHT,
-                        Component.literal("Generation mode"),
+                        Component.translatable("gui.dungeontrain.settings.narrate.generation_mode"),
                         (btn, value) -> refreshGroupSizeVisibility()
                 );
         addRenderableWidget(modeButton);
 
         playerMobSpawnField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 4, FIELD_WIDTH, FIELD_HEIGHT,
-                Component.literal("PlayerMob 1-in-N"));
+                Component.translatable("gui.dungeontrain.settings.narrate.playermob_spawn"));
         // Two-tier: in a world the field shows THIS world's effective rate;
         // on the title screen it shows the global default for new worlds.
         playerMobSpawnField.setValue(Integer.toString(currentPlayerMobSpawnOneIn()));
@@ -99,7 +101,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
         addRenderableWidget(playerMobSpawnField);
 
         playerMobBehindSpawnField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 5, FIELD_WIDTH, FIELD_HEIGHT,
-                Component.literal("Behind %"));
+                Component.translatable("gui.dungeontrain.settings.narrate.behind_percent"));
         // Two-tier like the forward field: in a world this is THIS world's effective behind-spawn
         // percent; on the title screen it's the global default for new worlds.
         playerMobBehindSpawnField.setValue(Integer.toString(currentPlayerMobBehindSpawnPercent()));
@@ -107,7 +109,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
         addRenderableWidget(playerMobBehindSpawnField);
 
         groupSizeField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 6, FIELD_WIDTH, FIELD_HEIGHT,
-                Component.literal("Group size"));
+                Component.translatable("gui.dungeontrain.settings.narrate.group_size"));
         groupSizeField.setValue(Integer.toString(DungeonTrainConfig.getGroupSize()));
         groupSizeField.setFilter(DungeonTrainSettingsScreen::isIntegerInput);
         addRenderableWidget(groupSizeField);
@@ -119,14 +121,14 @@ public final class DungeonTrainSettingsScreen extends Screen {
         compatibleTerrainButton = CycleButton.onOffBuilder(DungeonTrainCommonConfig.getDefaultCompatibleTerrain())
                 .displayOnlyValue()
                 .create(centerX + 10, topY + ROW_GAP * 7, FIELD_WIDTH, FIELD_HEIGHT,
-                        Component.literal("Compatible Terrain"));
+                        Component.translatable("gui.dungeontrain.settings.narrate.compatible_terrain"));
         addRenderableWidget(compatibleTerrainButton);
 
-        addRenderableWidget(Button.builder(Component.literal("Save"), b -> saveAndClose())
+        addRenderableWidget(Button.builder(Component.translatable("gui.dungeontrain.settings.save"), b -> saveAndClose())
                 .bounds(centerX - 105, topY + ROW_GAP * 8 + 20, 100, 20)
                 .build());
 
-        addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> onClose())
+        addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose())
                 .bounds(centerX + 5, topY + ROW_GAP * 8 + 20, 100, 20)
                 .build());
     }
@@ -145,41 +147,42 @@ public final class DungeonTrainSettingsScreen extends Screen {
 
         graphics.drawCenteredString(this.font, this.title, centerX, topY - 40, 0xFFFFFFFF);
 
-        graphics.drawString(this.font, "Carriages:", centerX - LABEL_OFFSET, topY + 6, 0xFFFFFFFF);
-        graphics.drawString(this.font, "Speed (m/s):", centerX - LABEL_OFFSET, topY + ROW_GAP + 6, 0xFFFFFFFF);
-        graphics.drawString(this.font, "Train Y:", centerX - LABEL_OFFSET, topY + ROW_GAP * 2 + 6, 0xFFFFFFFF);
-        graphics.drawString(this.font, "Mode:", centerX - LABEL_OFFSET, topY + ROW_GAP * 3 + 6, 0xFFFFFFFF);
-        graphics.drawString(this.font, "PlayerMob 1-in-N:", centerX - LABEL_OFFSET, topY + ROW_GAP * 4 + 6, 0xFFFFFFFF);
-        graphics.drawString(this.font, "Behind %:", centerX - LABEL_OFFSET, topY + ROW_GAP * 5 + 6, 0xFFFFFFFF);
+        graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.carriages"), centerX - LABEL_OFFSET, topY + 6, 0xFFFFFFFF);
+        graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.speed"), centerX - LABEL_OFFSET, topY + ROW_GAP + 6, 0xFFFFFFFF);
+        graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.train_y"), centerX - LABEL_OFFSET, topY + ROW_GAP * 2 + 6, 0xFFFFFFFF);
+        graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.mode"), centerX - LABEL_OFFSET, topY + ROW_GAP * 3 + 6, 0xFFFFFFFF);
+        graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.playermob_spawn"), centerX - LABEL_OFFSET, topY + ROW_GAP * 4 + 6, 0xFFFFFFFF);
+        graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.behind_percent"), centerX - LABEL_OFFSET, topY + ROW_GAP * 5 + 6, 0xFFFFFFFF);
         if (modeButton != null && modeButton.getValue() == CarriageGenerationMode.RANDOM_GROUPED) {
-            graphics.drawString(this.font, "Group size:", centerX - LABEL_OFFSET, topY + ROW_GAP * 6 + 6, 0xFFFFFFFF);
+            graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.group_size"), centerX - LABEL_OFFSET, topY + ROW_GAP * 6 + 6, 0xFFFFFFFF);
         }
-        graphics.drawString(this.font, "Compat terrain:", centerX - LABEL_OFFSET, topY + ROW_GAP * 7 + 6, 0xFFFFFFFF);
+        graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.compatible_terrain"), centerX - LABEL_OFFSET, topY + ROW_GAP * 7 + 6, 0xFFFFFFFF);
 
-        String rangeHint = "Carriages " + DungeonTrainConfig.MIN_CARRIAGES + "-" + DungeonTrainConfig.MAX_CARRIAGES
-                + ", Speed " + DungeonTrainConfig.MIN_SPEED + "-" + DungeonTrainConfig.MAX_SPEED
-                + ", Train Y " + DungeonTrainConfig.MIN_TRAIN_Y + "-" + DungeonTrainConfig.MAX_TRAIN_Y
-                + ", Group " + CarriageGenerationConfig.MIN_GROUP_SIZE + "-" + CarriageGenerationConfig.MAX_GROUP_SIZE
-                + ", PlayerMob " + DungeonTrainCommonConfig.MIN_PLAYER_MOB_SPAWN_ONE_IN + "-" + DungeonTrainCommonConfig.MAX_PLAYER_MOB_SPAWN_ONE_IN;
+        Component rangeHint = Component.translatable("gui.dungeontrain.settings.range_hint",
+                DungeonTrainConfig.MIN_CARRIAGES, DungeonTrainConfig.MAX_CARRIAGES,
+                DungeonTrainConfig.MIN_SPEED, DungeonTrainConfig.MAX_SPEED,
+                DungeonTrainConfig.MIN_TRAIN_Y, DungeonTrainConfig.MAX_TRAIN_Y,
+                CarriageGenerationConfig.MIN_GROUP_SIZE, CarriageGenerationConfig.MAX_GROUP_SIZE,
+                DungeonTrainCommonConfig.MIN_PLAYER_MOB_SPAWN_ONE_IN, DungeonTrainCommonConfig.MAX_PLAYER_MOB_SPAWN_ONE_IN);
         graphics.drawCenteredString(this.font, rangeHint, centerX, topY + ROW_GAP * 8 - 4, 0xFFAAAAAA);
 
         graphics.drawCenteredString(this.font,
-                "Train Y applies to next spawn only. Mode affects new carriage placements.",
+                Component.translatable("gui.dungeontrain.settings.hint_general"),
                 centerX, topY + ROW_GAP * 8 + 50, 0xFFAAAAAA);
 
         boolean inWorld = Minecraft.getInstance().getSingleplayerServer() != null;
-        String playerMobScope = inWorld
-                ? "PlayerMob = 1-in-N ahead spawns; Behind = % chance one also spawns a group behind you (THIS world)."
-                : "PlayerMob = 1-in-N ahead spawns; Behind = % chance one also spawns a group behind you (new worlds).";
+        Component playerMobScope = Component.translatable(inWorld
+                ? "gui.dungeontrain.settings.hint_playermob_world"
+                : "gui.dungeontrain.settings.hint_playermob_title");
         graphics.drawCenteredString(this.font, playerMobScope, centerX, topY + ROW_GAP * 8 + 64, 0xFFAAAAAA);
 
         graphics.drawCenteredString(this.font,
-                "Compat terrain = default for NEW worlds; lets terrain mods (Tectonic) + Distant Horizons generate.",
+                Component.translatable("gui.dungeontrain.settings.hint_compat_terrain"),
                 centerX, topY + ROW_GAP * 8 + 78, 0xFFAAAAAA);
 
         if (!inWorld) {
             graphics.drawCenteredString(this.font,
-                    "Note: other settings require an active world; PlayerMob + Compat terrain defaults save here.",
+                    Component.translatable("gui.dungeontrain.settings.hint_note"),
                     centerX, topY + ROW_GAP * 8 + 92, 0xFFFFAA55);
         }
     }
@@ -264,11 +267,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
     }
 
     private static Component modeLabel(CarriageGenerationMode mode) {
-        return switch (mode) {
-            case RANDOM -> Component.literal("Random");
-            case RANDOM_GROUPED -> Component.literal("Random Grouped");
-            case LOOPING -> Component.literal("Looping");
-        };
+        return Component.translatable("gui.dungeontrain.options.mode." + mode.name().toLowerCase(Locale.ROOT));
     }
 
     private static void applyToLiveTrains(int carriages, double speed) {

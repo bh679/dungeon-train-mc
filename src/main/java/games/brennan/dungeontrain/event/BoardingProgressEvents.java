@@ -147,8 +147,14 @@ public final class BoardingProgressEvents {
                     long newTotal = GlobalPlayerStats.addTrainTicks(uuid, SCAN_PERIOD_TICKS);
                     AchievementEvents.notifyTrainTime(p, newTotal);
                 }
-                games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
-                    .trigger(p, "boarded");
+                // Defer the "Dungeon Train" toast until the spawn intro loading
+                // screen + cinematic have finished — same signal StartingBookEvents
+                // uses to hold the welcome lightning, so the player sees the reveal
+                // before the toast.
+                if (!CinematicIntroService.isCinematicActive(uuid)) {
+                    games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+                        .trigger(p, "boarded");
+                }
                 // Single-life time aboard: per-run boarded-tick counter that
                 // resets on death. Twin of the cross-world train-time above —
                 // also frozen while dead so the death screen doesn't rack up run time.

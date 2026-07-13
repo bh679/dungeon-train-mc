@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 8,
   "variants": {
     "3,3,0": [{"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "starter"}, {"state": "minecraft:command_block[conditional=false,facing=south]", "weight": 50, "rotation": {"mode": "lock", "dirs": ["south"]}}],
     "2,0,3": [{"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "starter"}, {"state": "minecraft:command_block[conditional=false,facing=south]", "weight": 50, "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:decorated_pot[cracked=false,facing=south,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "pot"}],
