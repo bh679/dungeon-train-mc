@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import net.minecraft.core.Holder;
@@ -31,6 +32,7 @@ public abstract class MultiNoiseBiomeSourceMixin {
         method = "getNoiseBiome(IIILnet/minecraft/world/level/biome/Climate$Sampler;)Lnet/minecraft/core/Holder;",
         at = @At("RETURN"))
     private Holder<Biome> dungeontrain$forceHighlandBiome(Holder<Biome> original, int x, int y, int z, Climate.Sampler sampler) {
+        long genT0 = GenProfiler.t0();
         try {
             NetherBandContext ctx = NetherBandContext.current();
             if (ctx == null || !ctx.enabled() || ctx.highlandBiomes() == null) return original;
@@ -63,6 +65,8 @@ public abstract class MultiNoiseBiomeSourceMixin {
             return ctx.highlandBiomes().biomeFor(blockX, blockY, blockZ);
         } catch (Throwable t) {
             return original;
+        } finally {
+            GenProfiler.add(GenProfiler.Bucket.BIOME_FORCE, genT0);
         }
     }
 }

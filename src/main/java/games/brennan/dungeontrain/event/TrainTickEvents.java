@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
 import games.brennan.dungeontrain.ship.sable.PhysicsSubstepTuner;
@@ -21,6 +22,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LiquidBlock;
@@ -30,6 +32,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import org.joml.Vector3dc;
@@ -129,9 +132,62 @@ public final class TrainTickEvents {
         }
     }
 
+    /**
+     * Count each newly-<em>generated</em> overworld chunk reaching FULL, for the {@code [gen.timing]}
+     * per-chunk normalisation (see {@link GenProfiler}). {@code isNewChunk()} distinguishes fresh
+     * generation from a region-file reload; overworld-only matches the band/train dimension. Fires on
+     * the main server thread, so a plain counter increment is safe. No-op unless the profiler is enabled.
+     */
+    @SubscribeEvent
+    public static void onChunkLoad(ChunkEvent.Load event) {
+        if (!GenProfiler.enabled()) return;
+        if (!(event.getLevel() instanceof ServerLevel lvl)) return;
+        if (!lvl.dimension().equals(Level.OVERWORLD)) return;
+        if (!event.isNewChunk()) return;
+        GenProfiler.countChunk();
+    }
+
+    /**
+     * Drain and log the {@code [gen.timing]} gen-attribution window (see {@link GenProfiler}). Fires
+     * from the overworld level tick every {@link #MSPT_LOG_PERIOD_TICKS} ticks, gated on
+     * {@code chunksFulled>0} so idle / stationary windows (no new chunks generated → nothing to
+     * attribute) stay quiet. The window ms are a <b>parallel sum across worldgen worker threads</b>, so
+     * they can exceed the wall-clock window and must not be compared to {@code avgTickMs} — the
+     * load-bearing figures are the {@code perChunk} ones. {@code core} is a sub-portion of {@code nether}.
+     */
+    private static void logGenTiming(ServerLevel level) {
+        GenProfiler.Sample s = GenProfiler.sampleAndReset();
+        if (s.chunks() <= 0) return;
+        JITTER_LOGGER.debug(
+            "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} biome={} mirror={} track={} | perChunk df={} nether={} core={} biome={} mirror={} track={}",
+            level.dimension().location(), s.chunks(),
+            String.format("%.2f", s.dtTotalMs()), String.format("%.3f", s.dtTotalPerChunkMs()),
+            String.format("%.2f", s.ms(GenProfiler.Bucket.DF)),
+            String.format("%.2f", s.ms(GenProfiler.Bucket.NETHER_FEATURE)),
+            String.format("%.2f", s.ms(GenProfiler.Bucket.CORE_REPLACE)),
+            String.format("%.2f", s.ms(GenProfiler.Bucket.BIOME_FORCE)),
+            String.format("%.2f", s.ms(GenProfiler.Bucket.MIRROR_PRECOMPUTE)),
+            String.format("%.2f", s.ms(GenProfiler.Bucket.TRACK_FEATURE)),
+            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.DF)),
+            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.NETHER_FEATURE)),
+            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.CORE_REPLACE)),
+            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.BIOME_FORCE)),
+            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.MIRROR_PRECOMPUTE)),
+            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.TRACK_FEATURE)));
+    }
+
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
+
+        // [gen.timing] flush — drain the worker-thread gen-attribution buckets once per window from the
+        // OVERWORLD level only (the buckets are global; flushing per-level would double-reset them). Placed
+        // before the no-trains early return below so it still flushes if the train is momentarily culled.
+        if (GenProfiler.enabled()
+            && level.dimension().equals(Level.OVERWORLD)
+            && level.getGameTime() % MSPT_LOG_PERIOD_TICKS == 0) {
+            logGenTiming(level);
+        }
 
         long t0 = System.nanoTime();
 

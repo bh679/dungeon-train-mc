@@ -21,6 +21,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.GenProfiler;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -65,6 +66,13 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setPhysicsFreeze(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setPhysicsFreeze(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> physicsFreezeStatus(ctx.getSource()))))
+            // /dungeontrain debug gen-timing <on|off|status> — toggles the [gen.timing] chunk-gen
+            // attribution profiler (see GenProfiler). Default ON in dev, OFF in prod. Grep [gen.timing]
+            // in latest.log while riding to read per-chunk DT gen-cost buckets.
+            .then(Commands.literal("gen-timing")
+                .then(Commands.literal("on").executes(ctx -> setGenTiming(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setGenTiming(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> genTimingStatus(ctx.getSource()))))
             .then(Commands.literal("pair")
                 .executes(ctx -> runPair(ctx.getSource(), 0.0))
                 .then(Commands.argument("velocity", DoubleArgumentType.doubleArg())
@@ -166,6 +174,23 @@ public final class DebugCommand {
             PhysicsFreezeController.ENABLED ? "ON" : "OFF",
             PhysicsFreezeController.lastResident(), PhysicsFreezeController.lastActive(),
             PhysicsFreezeController.lastFrozen())), false);
+        return 1;
+    }
+
+    private static int setGenTiming(CommandSourceStack source, boolean on) {
+        GenProfiler.setEnabled(on);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Gen-timing profiler " + (on
+                ? "ON — grep [gen.timing] in latest.log while riding forward"
+                : "OFF")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int genTimingStatus(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Gen-timing profiler " + (GenProfiler.enabled() ? "ON" : "OFF")
+        ).withStyle(GenProfiler.enabled() ? ChatFormatting.GREEN : ChatFormatting.GRAY), false);
         return 1;
     }
 

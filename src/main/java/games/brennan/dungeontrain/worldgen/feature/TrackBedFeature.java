@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -61,6 +62,15 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
 
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> ctx) {
+        long genT0 = GenProfiler.t0();
+        try {
+            return placeInner(ctx);
+        } finally {
+            GenProfiler.add(GenProfiler.Bucket.TRACK_FEATURE, genT0);
+        }
+    }
+
+    private boolean placeInner(FeaturePlaceContext<NoneFeatureConfiguration> ctx) {
         try {
             WorldGenLevel level = ctx.level();
             ChunkPos chunkPos = new ChunkPos(ctx.origin());

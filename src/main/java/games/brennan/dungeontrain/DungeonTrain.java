@@ -23,6 +23,7 @@ import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.registry.ModSounds;
+import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
@@ -270,6 +271,11 @@ public class DungeonTrain {
         // {@link Level#TRACE} to re-enable them when diagnosing a
         // regression of the train-hop fix.
         Configurator.setLevel("games.brennan.dungeontrain.jitter", Level.DEBUG);
+
+        // [gen.timing] chunk-gen attribution profiler (see GenProfiler): default ON for dev builds so a
+        // dev ride profiles with no command, OFF in prod (the per-quart biome timer is a diagnostic-only
+        // cost). Toggle at runtime with /dungeontrain debug gen-timing on|off.
+        GenProfiler.setEnabled(isDevBuild());
 
         // Suppress ONE spammy Sable log line — the per-call stack-trace-capturing "Aborting entity
         // get for abnormally large AABB" ERROR — without touching Sable's log level. It fires on the
