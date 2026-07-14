@@ -4465,6 +4465,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "localize-book-narrative-flavour-lines",
+      "version": "0.455.0",
+      "type": "feat",
+      "title": "Localizable book & narrative flavour messages (+ Simplified Chinese)",
+      "summary": "The gray flavour lines shown when you write, share, or find a book \u2014 plus the Death Note messages, the narrative 'sealed and sent' line, and the Developer-message prompt \u2014 are now translatable and ship with Simplified Chinese. They were previously hard-coded English on every client.",
+      "highlights": [
+        "Author's 'a familiar book\u2026' line now localized",
+        "Shared-book send-off and narrative 'sealed and sent' lines now localized",
+        "Death Note messages and the Developer-consent prompt now localized",
+        "Simplified Chinese (zh_cn) translations bundled for all of the above"
+      ],
+      "pr": 753,
+      "date": "2026-07-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

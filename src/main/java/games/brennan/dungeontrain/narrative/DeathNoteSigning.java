@@ -56,7 +56,7 @@ public final class DeathNoteSigning {
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksWritten();
 
         if (targetName == null || targetName.isBlank()) {
-            player.sendSystemMessage(Component.literal("The Death Note finds no name; it burns to nothing.")
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.deathnote.no_name")
                 .withStyle(ChatFormatting.DARK_GRAY));
             return;
         }
@@ -72,10 +72,9 @@ public final class DeathNoteSigning {
             .add(new PendingDeathNotes.PendingDeathNote(player.getUUID(), author, targetName, targetUuid));
 
         player.sendSystemMessage(
-            Component.literal("The Death Note takes ").withStyle(ChatFormatting.DARK_GRAY)
-                .append(Component.literal(targetName).withStyle(ChatFormatting.GRAY))
-                .append(Component.literal(". When you fall, your echo will hunt them.")
-                    .withStyle(ChatFormatting.DARK_GRAY)));
+            Component.translatable("chat.dungeontrain.deathnote.taken",
+                    Component.literal(targetName).withStyle(ChatFormatting.GRAY))
+                .withStyle(ChatFormatting.DARK_GRAY));
     }
 
     /**
