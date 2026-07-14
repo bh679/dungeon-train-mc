@@ -305,7 +305,13 @@ public final class RelayOutbox {
     }
 
     private static Sender defaultSender() {
-        HttpClient http = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
+        // Pin HTTP/1.1: the default h2c upgrade over plaintext http:// is dropped by a bare-Node
+        // localhost relay (breaks local 127.0.0.1 testing). Harmless in prod — Apache proxies
+        // HTTP/1.1 to the origin regardless. Matches the sibling relay reporters.
+        HttpClient http = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(CONNECT_TIMEOUT)
+                .build();
         return (url, body) -> {
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)

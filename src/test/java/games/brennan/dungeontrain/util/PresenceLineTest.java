@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.util;
 
+import net.minecraft.network.chat.contents.TranslatableContents;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -7,6 +8,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
@@ -69,5 +71,38 @@ class PresenceLineTest {
     @Test
     void futureLastSeenFromClockSkewIsSilent() {
         assertNull(phrase(Optional.of(false), Optional.of(NOW.plus(Duration.ofMinutes(5)))));
+    }
+
+    /** Reads back the {@code chat.dungeontrain.time.*} key + count the localized duration component encodes. */
+    private static void assertAgo(Duration d, String expectedKey, long expectedCount) {
+        var contents = PresenceLine.agoComponent(d).getContents();
+        var tc = assertInstanceOf(TranslatableContents.class, contents);
+        assertEquals("chat.dungeontrain.time." + expectedKey, tc.getKey());
+        assertEquals(1, tc.getArgs().length);
+        assertEquals(expectedCount, tc.getArgs()[0]);
+    }
+
+    @Test
+    void agoComponentPicksSingularKeys() {
+        assertAgo(Duration.ofSeconds(1), "second", 1L);
+        assertAgo(Duration.ofMinutes(1), "minute", 1L);
+        assertAgo(Duration.ofHours(1), "hour", 1L);
+        assertAgo(Duration.ofDays(1), "day", 1L);
+    }
+
+    @Test
+    void agoComponentPicksPluralKeys() {
+        assertAgo(Duration.ofSeconds(0), "seconds", 0L);
+        assertAgo(Duration.ofSeconds(7), "seconds", 7L);
+        assertAgo(Duration.ofMinutes(7), "minutes", 7L);
+        assertAgo(Duration.ofHours(5), "hours", 5L);
+        assertAgo(Duration.ofDays(3), "days", 3L);
+    }
+
+    @Test
+    void agoComponentPicksLargestWholeUnit() {
+        assertAgo(Duration.ofSeconds(119), "minute", 1L);   // truncates, not rounds
+        assertAgo(Duration.ofSeconds(3599), "minutes", 59L);
+        assertAgo(Duration.ofMinutes(60), "hour", 1L);
     }
 }

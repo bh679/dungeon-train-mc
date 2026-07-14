@@ -7,18 +7,24 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Gates a relayed Developer message behind an in-game consent handshake before it is shown in a
@@ -59,10 +65,6 @@ public final class DevMessageConsent {
     /** Sliding window: consent stays valid this long after the player's last message to the dev. */
     public static final long CONSENT_WINDOW_MS = 20L * 60_000L;
 
-    /** The prompt shown in-game when a held Developer message is awaiting consent. */
-    private static final String PROMPT_TEXT =
-        "The Developer wants to send you a message, type @Dev to accept.";
-
     /** Per-player mirror of the client's persisted consent state, seeded on login and updated here. */
     private static final class Mirror {
         boolean granted;
@@ -74,6 +76,21 @@ public final class DevMessageConsent {
 
     /** Developer messages held awaiting this player's consent (delivered in order once accepted). */
     private static final Map<UUID, Deque<String>> PENDING = new ConcurrentHashMap<>();
+
+    /**
+     * How long, after {@code @Dev} is typed, to hold back the accepted messages before flushing them
+     * to chat. Deferring past {@link MentionPresenceEvents#REPLY_DELAY_TICKS} (the 10-tick presence
+     * beat) makes the {@code [Developer]} line land <em>after</em> both the player's own {@code @Dev}
+     * line — broadcast on a delayed async chat path, so a same-tick flush would still precede it — and
+     * the "Brennan is online" presence reply, matching the intended read order.
+     */
+    private static final long DELIVERY_DELAY_TICKS = 12L; // ~0.6 s at 20 TPS, just past the presence beat
+
+    /** An accepted batch waiting out its delay: deliver {@code messages} to {@code playerId} at {@code dueTick}. */
+    private record PendingDelivery(long dueTick, UUID playerId, List<String> messages) {}
+
+    /** Accepted batches deferred a beat so they land after the {@code @Dev} line + presence reply. Server-thread only. */
+    private static final Queue<PendingDelivery> DELIVERIES = new ConcurrentLinkedQueue<>();
 
     /**
      * Token for the current world session, set on {@link ServerStartedEvent}. A fresh integrated
@@ -94,6 +111,31 @@ public final class DevMessageConsent {
         // Nothing leaks into the next world: the client re-seeds its state on the next login.
         MIRRORS.clear();
         PENDING.clear();
+        DELIVERIES.clear(); // gameTime resets next world; drop any un-flushed deferred deliveries
+    }
+
+    /**
+     * Once-per-server-tick drain of accepted-but-deferred Developer messages, anchored on the overworld
+     * so it runs once rather than per dimension. Mirrors {@link MentionPresenceEvents}'s presence-reply
+     * drain — the shared idiom for timed chat lines.
+     */
+    @SubscribeEvent
+    public static void onLevelTick(LevelTickEvent.Post event) {
+        if (DELIVERIES.isEmpty()) return;
+        if (!(event.getLevel() instanceof ServerLevel level) || level.dimension() != Level.OVERWORLD) return;
+        MinecraftServer server = level.getServer();
+        long now = server.overworld().getGameTime();
+        DELIVERIES.removeIf(d -> {
+            if (now < d.dueTick()) return false; // not yet due
+            ServerPlayer p = server.getPlayerList().getPlayer(d.playerId());
+            if (p != null) {
+                for (String content : d.messages()) {
+                    p.sendSystemMessage(deliveredLine(content));
+                    AchievementEvents.notifyCreatorAnswered(p);
+                }
+            }
+            return true; // drop whether delivered or the player has since logged out
+        });
     }
 
     /** Drop per-player state when a player leaves; called from {@link PlayerJoinEvents} logout. */
@@ -163,7 +205,8 @@ public final class DevMessageConsent {
         boolean firstPending = queue.isEmpty();
         queue.addLast(content);
         if (firstPending) {
-            player.sendSystemMessage(Component.literal(PROMPT_TEXT).withStyle(ChatFormatting.YELLOW));
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.dev_message.consent_prompt")
+                .withStyle(ChatFormatting.YELLOW));
             DevMessageReport.postConsentRequested(player);
         }
     }
@@ -189,9 +232,14 @@ public final class DevMessageConsent {
         m.grantSession = sessionId;
         m.lastMsgToDevMs = now;
 
-        for (String content : queue) {
-            player.sendSystemMessage(deliveredLine(content));
-            AchievementEvents.notifyCreatorAnswered(player);
+        // Defer the held-message flush by DELIVERY_DELAY_TICKS so the [Developer] line lands AFTER
+        // the player's own "@Dev" line (broadcast on a delayed async chat path) and the presence
+        // reply, rather than on top of / before them. Consent state above is already updated, so a
+        // later flush doesn't affect validity. Snapshot the queue: it's about to fall out of scope.
+        MinecraftServer server = player.getServer();
+        if (server != null) {
+            long dueTick = server.overworld().getGameTime() + DELIVERY_DELAY_TICKS;
+            DELIVERIES.add(new PendingDelivery(dueTick, player.getUUID(), List.copyOf(queue)));
         }
         DevMessageReport.postConsentAccepted(player);
         DungeonTrainNet.sendTo(player, new ConsentUpdatePacket(true, sessionId, (double) now));
@@ -210,7 +258,9 @@ public final class DevMessageConsent {
     }
 
     private static Component deliveredLine(String content) {
-        return Component.literal("[Developer] ").withStyle(ChatFormatting.AQUA)
+        // Prefix is a translation key (localized per client); the message content itself is dynamic
+        // relay text and stays a literal.
+        return Component.translatable("chat.dungeontrain.dev_message.prefix").withStyle(ChatFormatting.AQUA)
             .append(Component.literal(content).withStyle(ChatFormatting.WHITE));
     }
 }

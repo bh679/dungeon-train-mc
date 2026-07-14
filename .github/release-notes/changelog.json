@@ -4479,6 +4479,80 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "consent-message-order-after-accept",
+      "version": "0.455.0",
+      "type": "fix",
+      "title": "Developer message now arrives after you accept it",
+      "summary": "When the Developer sends you a message in-game, the reply now lands after your \"@Dev\" accept line (and the \"online now\" note) instead of appearing above it \u2014 so the conversation reads in the right order.",
+      "highlights": [
+        "Held Developer message is delivered after your @Dev acceptance, not before it"
+      ],
+      "pr": 749,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "barrel-vase-books2-content-tuning",
+      "version": "0.455.0",
+      "type": "content",
+      "title": "Barrel/vase decor variants + books2 tuning",
+      "summary": "Added new barrel room and vertical barrel stack decor variants, refined existing barrel/vase groupings, and tuned the books2 content prefab for better in-world variety.",
+      "highlights": [
+        "New barrelsroom and barrelsvert2 decor variants",
+        "Refined barrels_vert and vase grouping",
+        "books2 prefab tuning pass"
+      ],
+      "pr": 747,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "relay-outbox-http1-pin",
+      "version": "0.455.0",
+      "type": "chore",
+      "title": "Pin relay outbox HTTP client to HTTP/1.1",
+      "summary": "Internal/dev change with no player-facing effect: the relay telemetry outbox now pins HTTP/1.1, matching the other relay reporters, so outbox submits reach a bare-Node localhost relay during local testing. Production is unaffected (it already terminates HTTP/1.1 at the reverse proxy).",
+      "highlights": [],
+      "pr": 751,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "discordpresence-consent-seam-i18n",
+      "version": "0.456.0",
+      "type": "fix",
+      "title": "Network-consent popup fully translatable",
+      "summary": "The four bullet points and the \"Harvest your soul\" line on the \"Connect to the internet?\" popup were still hard-coded in English even after the previous localization fix, because they're supplied by Dungeon Train itself rather than the bundled Discord Presence mod. They're now translatable like the rest of the popup.",
+      "highlights": [],
+      "pr": 750,
+      "date": "2026-07-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "localize-dev-message-presence-zh",
+      "version": "0.457.0",
+      "type": "feat",
+      "title": "Chinese for developer-message and presence chat lines",
+      "summary": "Simplified-Chinese players now see three more in-game chat lines in their own language instead of English: the prompt to accept a message from the Developer, the [Developer] prefix on a delivered developer message, and the line telling you whether Brennan is online on Discord (shown when you type @dev and in the editor welcome), including its \"N minutes ago\" duration.",
+      "highlights": [
+        "@Dev accept-prompt now localized",
+        "[Developer] message prefix now localized",
+        "\"Brennan is online / was online N ago\" presence line now localized (Chinese draft pending localizer review)"
+      ],
+      "date": "2026-07-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
