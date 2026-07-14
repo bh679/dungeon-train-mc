@@ -1,2 +1,0 @@
-resourcePacks:["vanilla","file/DungeonTrain-zh_cn-compat.zip"]
-incompatibleResourcePacks:[]
