@@ -4465,6 +4465,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "echo-mob-nameplate-i18n",
+      "version": "0.454.2",
+      "type": "chore",
+      "title": "Reincarnated-echo nameplate is now translatable",
+      "summary": "The 'Echo of <player>' name floating above a reincarnated author-echo now shows in your client language instead of always English \u2014 part of the Chinese localization wave.",
+      "highlights": [
+        "Echo mob nameplate localized (English + Simplified Chinese)"
+      ],
+      "date": "2026-07-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
