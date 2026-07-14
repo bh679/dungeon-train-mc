@@ -309,6 +309,7 @@
   "chat.dungeontrain.shared_book.9": "Sealed, signed, surrendered. The rails will carry it to a stranger.",
   "chat.dungeontrain.shared_book.10": "Into the fire, and out into the world. May another find your words.",
   "chat.dungeontrain.letter.sealed": "\"%1$s\" is sealed and sent — Letter %2$s of this life.",
+  "chat.dungeontrain.narrative.all_complete": "All narratives complete.",
   "effect.dungeontrain.warmth_of_the_fire": "Warmth Of The Fire",
   "effect.dungeontrain.warmth_of_the_fire.description": "Slow Healing",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
