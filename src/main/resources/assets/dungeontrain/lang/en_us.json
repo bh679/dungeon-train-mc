@@ -505,6 +505,20 @@
   "gui.dungeontrain.developer_popup.close": "Maybe later",
   "gui.dungeontrain.developer_popup.dont_ask_again": "Don't ask again",
 
+  "chat.dungeontrain.dev_message.consent_prompt": "The Developer wants to send you a message, type @Dev to accept.",
+  "chat.dungeontrain.dev_message.prefix": "[Developer] ",
+  "chat.dungeontrain.presence.online_now": "Brennan is online on Discord right now!",
+  "chat.dungeontrain.presence.was_online": "Brennan was online %s ago.",
+  "chat.dungeontrain.presence.last_seen": "Brennan was last seen online %s ago.",
+  "chat.dungeontrain.time.second": "%s second",
+  "chat.dungeontrain.time.seconds": "%s seconds",
+  "chat.dungeontrain.time.minute": "%s minute",
+  "chat.dungeontrain.time.minutes": "%s minutes",
+  "chat.dungeontrain.time.hour": "%s hour",
+  "chat.dungeontrain.time.hours": "%s hours",
+  "chat.dungeontrain.time.day": "%s day",
+  "chat.dungeontrain.time.days": "%s days",
+
   "advancements.dungeontrain.hidden_description": "???",
 
   "advancements.dungeontrain.dungeon_train.landed_on_tracks.hint": "Its not on the train.",

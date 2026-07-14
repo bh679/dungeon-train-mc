@@ -65,10 +65,6 @@ public final class DevMessageConsent {
     /** Sliding window: consent stays valid this long after the player's last message to the dev. */
     public static final long CONSENT_WINDOW_MS = 20L * 60_000L;
 
-    /** The prompt shown in-game when a held Developer message is awaiting consent. */
-    private static final String PROMPT_TEXT =
-        "The Developer wants to send you a message, type @Dev to accept.";
-
     /** Per-player mirror of the client's persisted consent state, seeded on login and updated here. */
     private static final class Mirror {
         boolean granted;
@@ -209,7 +205,8 @@ public final class DevMessageConsent {
         boolean firstPending = queue.isEmpty();
         queue.addLast(content);
         if (firstPending) {
-            player.sendSystemMessage(Component.literal(PROMPT_TEXT).withStyle(ChatFormatting.YELLOW));
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.dev_message.consent_prompt")
+                .withStyle(ChatFormatting.YELLOW));
             DevMessageReport.postConsentRequested(player);
         }
     }
@@ -261,7 +258,9 @@ public final class DevMessageConsent {
     }
 
     private static Component deliveredLine(String content) {
-        return Component.literal("[Developer] ").withStyle(ChatFormatting.AQUA)
+        // Prefix is a translation key (localized per client); the message content itself is dynamic
+        // relay text and stays a literal.
+        return Component.translatable("chat.dungeontrain.dev_message.prefix").withStyle(ChatFormatting.AQUA)
             .append(Component.literal(content).withStyle(ChatFormatting.WHITE));
     }
 }
