@@ -4523,6 +4523,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "localize-dev-message-presence-zh",
+      "version": "0.457.0",
+      "type": "feat",
+      "title": "Chinese for developer-message and presence chat lines",
+      "summary": "Simplified-Chinese players now see three more in-game chat lines in their own language instead of English: the prompt to accept a message from the Developer, the [Developer] prefix on a delivered developer message, and the line telling you whether Brennan is online on Discord (shown when you type @dev and in the editor welcome), including its \"N minutes ago\" duration.",
+      "highlights": [
+        "@Dev accept-prompt now localized",
+        "[Developer] message prefix now localized",
+        "\"Brennan is online / was online N ago\" presence line now localized (Chinese draft pending localizer review)"
+      ],
+      "date": "2026-07-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
