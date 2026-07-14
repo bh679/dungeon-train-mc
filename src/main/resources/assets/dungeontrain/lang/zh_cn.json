@@ -1,4 +1,5 @@
 {
+  "echo.dungeontrain.mob_name": "%s 的回声",
   "chat.dungeontrain.free_play.title": "自由模式。",
   "chat.dungeontrain.free_play.cause.gamemode": "你切换到%s。",
   "chat.dungeontrain.free_play.cause.command": "你使用了%s。",

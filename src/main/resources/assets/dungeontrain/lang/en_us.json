@@ -1,4 +1,5 @@
 {
+  "echo.dungeontrain.mob_name": "Echo of %s",
   "chat.dungeontrain.free_play.title": "Free Play.",
   "chat.dungeontrain.free_play.cause.gamemode": "You switched to %s.",
   "chat.dungeontrain.free_play.cause.command": "You used %s.",
