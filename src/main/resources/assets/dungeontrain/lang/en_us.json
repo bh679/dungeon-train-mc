@@ -303,7 +303,6 @@
   "chat.dungeontrain.familiar_book.dur.s": "%ss",
   "chat.dungeontrain.deathnote.no_name": "The Death Note finds no name; it burns to nothing.",
   "chat.dungeontrain.deathnote.taken": "The Death Note takes %s. When you fall, your echo will hunt them.",
-  "chat.dungeontrain.dev_message.consent_prompt": "The Developer wants to send you a message, type @Dev to accept.",
   "chat.dungeontrain.shared_book.1": "The train has your book now. For someone else's eyes…",
   "chat.dungeontrain.shared_book.2": "Your words ride the rails now — bound for a stranger's hands.",
   "chat.dungeontrain.shared_book.3": "The book burns away. Somewhere down the line, someone will find it.",
@@ -541,7 +540,7 @@
   "gui.dungeontrain.developer_popup.close": "Maybe later",
   "gui.dungeontrain.developer_popup.dont_ask_again": "Don't ask again",
 
-  "chat.dungeontrain.dev_message.consent_prompt": "The Developer wants to send you a message, type @Dev to accept.",
+  "chat.dungeontrain.dev_message.consent_prompt": "The Developer wants to send you a message, type %s to accept.",
   "chat.dungeontrain.dev_message.prefix": "[Developer] ",
   "chat.dungeontrain.presence.online_now": "Brennan is online on Discord right now!",
   "chat.dungeontrain.presence.was_online": "Brennan was online %s ago.",
