@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.narrative.AinLocaleOverlay;
 import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.narrative.NarrativeContentLocale;
 import games.brennan.dungeontrain.narrative.RandomBookRegistry;
@@ -67,6 +68,7 @@ public final class NarrativeLocaleWatcher {
     public static void onServerStopped(ServerStoppedEvent event) {
         tickCounter = 0;
         NarrativeContentLocale.set("");
+        AinLocaleOverlay.restoreBase();
     }
 
     /**
@@ -86,6 +88,15 @@ public final class NarrativeLocaleWatcher {
         RandomBookRegistry.load(rm);
         StartingBookRegistry.load(rm);
         DeathLoreStore.load(rm);
+        // AIN item names / mob titles: overlaid via AIN's session-overlay API (host-keyed, English
+        // players untouched), NOT a global datapack override. Guarded — a cross-mod API failure
+        // must degrade to English names, never disrupt the server tick.
+        try {
+            AinLocaleOverlay.select(rm, desired);
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] AIN item-name overlay failed for '{}' — leaving item names in AIN's base language",
+                desired.isEmpty() ? "en (base)" : desired, t);
+        }
         LOGGER.info("[DungeonTrain] Narrative content locale set to '{}' (host locale '{}') — prose registries reloaded",
             desired.isEmpty() ? "en (base)" : desired, host);
     }

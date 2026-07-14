@@ -411,6 +411,7 @@
   "gui.dungeontrain.discord_button": "Discord",
   "gui.dungeontrain.exit_to_title": "退出至主菜单",
   "gui.dungeontrain.editor_button": "列车编辑器",
+  "gui.dungeontrain.new_world": "新世界",
   "gui.dungeontrain.localization_credits.prefix": "汉化",
   "gui.dungeontrain.editor_help.title": "地牢列车编辑器",
   "gui.dungeontrain.editor_help.welcome_1": "欢迎使用地牢列车编辑器。",
