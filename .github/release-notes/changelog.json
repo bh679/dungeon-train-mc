@@ -4462,9 +4462,9 @@
       "highlights": [],
       "pr": 745,
       "date": "2026-07-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
     },
     {
       "id": "echo-mob-nameplate-i18n",
@@ -4476,9 +4476,9 @@
         "Echo mob nameplate localized (English + Simplified Chinese)"
       ],
       "date": "2026-07-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
     },
     {
       "id": "consent-message-order-after-accept",
@@ -4491,9 +4491,9 @@
       ],
       "pr": 749,
       "date": "2026-07-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
     },
     {
       "id": "barrel-vase-books2-content-tuning",
@@ -4508,9 +4508,9 @@
       ],
       "pr": 747,
       "date": "2026-07-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
     },
     {
       "id": "relay-outbox-http1-pin",
@@ -4521,9 +4521,9 @@
       "highlights": [],
       "pr": 751,
       "date": "2026-07-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
     },
     {
       "id": "discordpresence-consent-seam-i18n",
@@ -4534,9 +4534,9 @@
       "highlights": [],
       "pr": 750,
       "date": "2026-07-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
     },
     {
       "id": "localize-dev-message-presence-zh",
@@ -4550,9 +4550,9 @@
         "\"Brennan is online / was online N ago\" presence line now localized (Chinese draft pending localizer review)"
       ],
       "date": "2026-07-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
     },
     {
       "id": "localize-book-narrative-flavour-lines",
@@ -4568,9 +4568,9 @@
       ],
       "pr": 753,
       "date": "2026-07-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
     },
     {
       "id": "discordpresence-050-localized-dev-mention",
@@ -4583,9 +4583,9 @@
         "\"Whispers into the darkness\" idle chat lines now render in Chinese"
       ],
       "date": "2026-07-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
     },
     {
       "id": "dev-tag-consent-prompt-localized",
@@ -4597,9 +4597,9 @@
         "Consent prompt now shows @\u5f00\u53d1\u8005 on Simplified Chinese instead of the English @Dev"
       ],
       "date": "2026-07-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
     }
   ]
 }
