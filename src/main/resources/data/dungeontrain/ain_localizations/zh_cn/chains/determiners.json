@@ -1,0 +1,30 @@
+{
+  "id": "adventureitemnames:determiners",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "限定词",
+      "refs": [
+        {
+          "ref": "adventureitemnames:determiner_singular",
+          "weight": 5.0
+        },
+        {
+          "ref": "adventureitemnames:the_epithet",
+          "weight": 3.0
+        },
+        {
+          "ref": "adventureitemnames:determiner_phrase",
+          "weight": 3.0
+        },
+        {
+          "ref": "adventureitemnames:determiner_archaic",
+          "weight": 1.0
+        }
+      ]
+    }
+  ]
+}
