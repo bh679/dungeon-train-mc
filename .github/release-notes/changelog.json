@@ -4576,11 +4576,25 @@
       "id": "discordpresence-050-localized-dev-mention",
       "version": "0.457.1",
       "type": "feat",
-      "title": "Chinese players can ping Brennan with @开发者",
-      "summary": "Discord Presence 0.50.0 shows a localized @dev chat-tag alias for non-English clients (@开发者 on Simplified Chinese); Dungeon Train now accepts that alias as a real trigger too, so typing it actually reaches Brennan instead of just highlighting. Also picks up DP's newly self-localized \"whispers into the darkness\" idle chat lines.",
+      "title": "Chinese players can ping Brennan with @\u5f00\u53d1\u8005",
+      "summary": "Discord Presence 0.50.0 shows a localized @dev chat-tag alias for non-English clients (@\u5f00\u53d1\u8005 on Simplified Chinese); Dungeon Train now accepts that alias as a real trigger too, so typing it actually reaches Brennan instead of just highlighting. Also picks up DP's newly self-localized \"whispers into the darkness\" idle chat lines.",
       "highlights": [
-        "Typing @开发者 now pings Brennan, same as @dev",
+        "Typing @\u5f00\u53d1\u8005 now pings Brennan, same as @dev",
         "\"Whispers into the darkness\" idle chat lines now render in Chinese"
+      ],
+      "date": "2026-07-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dev-tag-consent-prompt-localized",
+      "version": "0.458.0",
+      "type": "fix",
+      "title": "The @Dev accept-prompt now names the alias you actually type",
+      "summary": "The consent prompt (\"The Developer wants to send you a message, type @Dev to accept.\") always said \"@Dev\" even on a Simplified Chinese client, where typing the localized @\u5f00\u53d1\u8005 alias is what actually works. It now names whichever alias your own game is set up to use.",
+      "highlights": [
+        "Consent prompt now shows @\u5f00\u53d1\u8005 on Simplified Chinese instead of the English @Dev"
       ],
       "date": "2026-07-14",
       "released": false,
