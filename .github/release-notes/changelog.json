@@ -4467,6 +4467,20 @@
       "released_at": null
     },
     {
+      "id": "echo-mob-nameplate-i18n",
+      "version": "0.454.2",
+      "type": "chore",
+      "title": "Reincarnated-echo nameplate is now translatable",
+      "summary": "The 'Echo of <player>' name floating above a reincarnated author-echo now shows in your client language instead of always English \u2014 part of the Chinese localization wave.",
+      "highlights": [
+        "Echo mob nameplate localized (English + Simplified Chinese)"
+      ],
+      "date": "2026-07-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "consent-message-order-after-accept",
       "version": "0.455.0",
       "type": "fix",
@@ -4534,6 +4548,53 @@
         "@Dev accept-prompt now localized",
         "[Developer] message prefix now localized",
         "\"Brennan is online / was online N ago\" presence line now localized (Chinese draft pending localizer review)"
+      ],
+      "date": "2026-07-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "localize-book-narrative-flavour-lines",
+      "version": "0.455.0",
+      "type": "feat",
+      "title": "Localizable book & narrative flavour messages (+ Simplified Chinese)",
+      "summary": "The gray flavour lines shown when you write, share, or find a book \u2014 plus the Death Note messages, the narrative 'sealed and sent' line, and the Developer-message prompt \u2014 are now translatable and ship with Simplified Chinese. They were previously hard-coded English on every client.",
+      "highlights": [
+        "Author's 'a familiar book\u2026' line now localized",
+        "Shared-book send-off and narrative 'sealed and sent' lines now localized",
+        "Death Note messages and the Developer-consent prompt now localized",
+        "Simplified Chinese (zh_cn) translations bundled for all of the above"
+      ],
+      "pr": 753,
+      "date": "2026-07-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "discordpresence-050-localized-dev-mention",
+      "version": "0.457.1",
+      "type": "feat",
+      "title": "Chinese players can ping Brennan with @\u5f00\u53d1\u8005",
+      "summary": "Discord Presence 0.50.0 shows a localized @dev chat-tag alias for non-English clients (@\u5f00\u53d1\u8005 on Simplified Chinese); Dungeon Train now accepts that alias as a real trigger too, so typing it actually reaches Brennan instead of just highlighting. Also picks up DP's newly self-localized \"whispers into the darkness\" idle chat lines.",
+      "highlights": [
+        "Typing @\u5f00\u53d1\u8005 now pings Brennan, same as @dev",
+        "\"Whispers into the darkness\" idle chat lines now render in Chinese"
+      ],
+      "date": "2026-07-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dev-tag-consent-prompt-localized",
+      "version": "0.458.0",
+      "type": "fix",
+      "title": "The @Dev accept-prompt now names the alias you actually type",
+      "summary": "The consent prompt (\"The Developer wants to send you a message, type @Dev to accept.\") always said \"@Dev\" even on a Simplified Chinese client, where typing the localized @\u5f00\u53d1\u8005 alias is what actually works. It now names whichever alias your own game is set up to use.",
+      "highlights": [
+        "Consent prompt now shows @\u5f00\u53d1\u8005 on Simplified Chinese instead of the English @Dev"
       ],
       "date": "2026-07-14",
       "released": false,

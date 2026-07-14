@@ -101,7 +101,7 @@ public class NarrativeLecternBlock extends LecternBlock {
         Optional<ItemStack> resolved = BookFactory.buildOrRandomForLectern(overworld, pos.asLong());
         if (resolved.isEmpty()) {
             sp.displayClientMessage(
-                Component.literal("All narratives complete.").withStyle(ChatFormatting.YELLOW),
+                Component.translatable("chat.dungeontrain.narrative.all_complete").withStyle(ChatFormatting.YELLOW),
                 /*actionBar*/ true);
             return InteractionResult.CONSUME;
         }

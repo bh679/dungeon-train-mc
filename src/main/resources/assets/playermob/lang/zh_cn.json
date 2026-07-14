@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "乘客",
+  "item.playermob.player_mob_spawn_egg": "乘客刷怪蛋",
+  "item.playermob.player_mob_aggressive_spawn_egg": "敌对乘客刷怪蛋",
+  "item.playermob.player_mob_friendly_spawn_egg": "友好乘客刷怪蛋",
+  "item.playermob.player_mob_passive_spawn_egg": "被动乘客刷怪蛋",
+  "item.playermob.player_mob_skeptical_spawn_egg": "疑心乘客刷怪蛋",
+  "item.playermob.player_mob_shy_spawn_egg": "胆怯乘客刷怪蛋",
+  "container.playermob.player_mob": "乘客"
+}

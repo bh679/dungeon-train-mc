@@ -1,0 +1,323 @@
+[
+  {
+    "page": "fall",
+    "weight": 3,
+    "question": "地牢列车究竟是什么？",
+    "narration": "第 {carriage} 节车厢。黑暗就是在那里追上了你。你现在明白了吗？地牢列车不会停下——它只会继续向前，更深，直到永远。"
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": {
+      "min_carriage": 100
+    },
+    "question": "地牢列车究竟是什么？",
+    "narration": "深入黑暗 {carriage} 节车厢。很少有人能在被线路带走前走到这么远，更少有人还会再次登车。"
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": {
+      "max_carriage": 3
+    },
+    "question": "地牢列车究竟是什么？",
+    "narration": "第 {carriage} 节车厢。才刚上车，黑暗就已经抓住了你。线路很有耐心——它等得起。"
+  },
+  {
+    "page": "deeds",
+    "weight": 3,
+    "question": "你为何来到这里？",
+    "narration": "你在黑暗中击倒了 {mobs} 个东西，也为此流了 {hearts} 颗心的血。\n在你遇见的 {met} 个灵魂里，你终结了 {slain} 个，又把 {friends} 个称作朋友。"
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "你该做些什么？",
+    "narration": "铁与利刃，都是从黑暗中拾来，又被你带到这里。可它们仍然不够——也许那从来就不是重点。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_books": 5
+    },
+    "question": "你该做些什么？",
+    "narration": "你读过线路上的 {books} 本书，却依然带着钢铁前行。知识与刀刃，最后都被黑暗收走。"
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_friends": 5
+    },
+    "question": "他们值得吗？",
+    "narration": "你在线路上交到了 {friends} 位朋友，可它仍然带走了你。也许那才是唯一真正属于你的数字。"
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_mobs": 200
+    },
+    "question": "你以何回应黑暗？",
+    "narration": "在你倒下前，已有 {mobs} 个东西倒在你手下。线路不评判，它只计数。"
+  },
+  {
+    "page": "lives",
+    "weight": 3,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "这些都是好问题",
+    "narration": "这些不是一条生命留下的痕迹。横跨全部 {deaths} 次死亡——每一次登上黑暗，每一次被线路带走又仍然归来——这就是你旅程的全貌。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 1,
+      "max_deaths": 1
+    },
+    "question": "一条命就这样轻易花掉了吗？",
+    "subline": "你在线路上的第一次倒下。",
+    "narration": "再没有别的生命可供衡量——至少现在还没有。这就是你的全部：自第一次登车以来做过的一切。线路会记住它，你也该记住。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 10
+    },
+    "question": "这些都是好问题",
+    "narration": "这些不是一条生命留下的痕迹。黑暗已经带走你 {deaths} 次，而你也登车了 {deaths} 次。"
+  },
+  {
+    "page": "platform",
+    "weight": 3,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "你会再次登车，还是走下站台，留在寂静里？",
+    "narration": "站台空无一人。汽笛声从线路远处传来。它没有尽头——而看来，你也一样。",
+    "epitaph": "第 {deaths} 个倒下的人。也许不会是最后一个。"
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 1,
+      "max_deaths": 1
+    },
+    "question": "既然你已经知道结局，还会再次登车吗？",
+    "narration": "站台空空荡荡，和你第一次踏上列车时一样。汽笛声从线路远处传来。你已经倒下过一次。是否还会有第二次，一如既往，由你决定。",
+    "epitaph": "第一个倒下的人。线路很有耐心——它会等待其余的人。"
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 20
+    },
+    "question": "还需要问吗？",
+    "narration": "站台现在已经认得你的脸。汽笛声仍像往常一样响起。你早就知道接下来会发生什么。",
+    "epitaph": "第 {deaths} 个倒下的人——而且看来，还不会是最后一个。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "地牢列车究竟是什么？",
+    "narration": "第 {carriage} 节车厢。黑暗一直在那里等你——你只是终于抵达，见到了它。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "地牢列车究竟是什么？",
+    "narration": "第 {carriage} 节车厢，到此为止。线路不记仇，也不施怜悯；它只是继续向前。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "地牢列车究竟是什么？",
+    "narration": "你倒下的第 {carriage} 节车厢里，灯笼还在摇晃。列车没有放慢脚步回望。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "地牢列车究竟是什么？",
+    "narration": "你抵达了第 {carriage} 节车厢，然后世界的地板崩塌。线路继续前行，不再承载你的重量。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "地牢列车究竟是什么？",
+    "narration": "就在第 {carriage} 节车厢前方，轨道仍在黑暗中铺展开去，丝毫不在意你已不在其上。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "地牢列车究竟是什么？",
+    "narration": "在第 {carriage} 节车厢，黑暗终于追上了你的步伐。它迟早都会如此。"
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "你为何来到这里？",
+    "narration": "你在黑暗中击倒了 {mobs} 个东西，也交出了 {hearts} 颗心。你与 {met} 个灵魂同乘此线：终结了 {slain} 个，留下了 {friends} 个。"
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "你为何来到这里？",
+    "narration": "{mobs} 个东西倒在你面前，{hearts} 颗心从你身上流失。你在黑暗中经过 {met} 个灵魂——终结 {slain} 个，守住 {friends} 个——然后轮到了你。"
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "你为何来到这里？",
+    "narration": "你从黑暗中夺走 {mobs}，从自己身上花去 {hearts} 颗心。{met} 个灵魂曾共享这条线路：{slain} 个被你终结，{friends} 个被你留下。"
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "max_friends": 0
+    },
+    "question": "你为何来到这里？",
+    "narration": "你击倒了 {mobs} 个东西，也流失了 {hearts} 颗心。你遇见 {met} 个灵魂，终结 {slain} 个，却没有把任何一个称作朋友。独自面对黑暗，总是更简单些。"
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_slain": 5
+    },
+    "question": "你用什么回应黑暗？",
+    "narration": "在你遇见的 {met} 个灵魂里，你砍倒了 {slain} 个——除此之外还有黑暗中的 {mobs} 个东西——代价是 {hearts} 颗心，以及 {friends} 个被你留下称作朋友的人。线路不把这称为谋杀。"
+  },
+  {
+    "page": "gear",
+    "weight": 2,
+    "question": "你该做些什么？",
+    "narration": "你从车厢里搜集了一切能带走的东西。线路允许你保留它们——它不需要货物，只需要乘客。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_loot": 0
+    },
+    "question": "你该做些什么？",
+    "narration": "你在线路上没有撬开任何一个箱柜——只带着登车时的东西，一路挥舞到终点。黑暗会收下你不愿拿走的一切。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_loot": 9
+    },
+    "question": "你该做些什么？",
+    "narration": "你只打开了寥寥几个箱柜——总共 {loot} 个——还有一柄握紧的刀。线路对愿意停步的人慷慨，而你几乎没有停下。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_loot": 250
+    },
+    "question": "你该做些什么？",
+    "narration": "{loot} 个容器被清空进你的背包。你把黑暗中没被钉死的一切都搜刮干净，而它仍然拿走了唯一重要的东西。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_books": 0
+    },
+    "question": "你该做些什么？",
+    "narration": "一页书也没有翻开——只有钢铁被拾起又挥下。线路把它的故事留给愿意停下来阅读的人。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_books": 10
+    },
+    "question": "你该做些什么？",
+    "narration": "你读过线路上的 {books} 本书，也仍然带着钢铁。智慧与刀刃，黑暗对二者都很有耐心。"
+  },
+  {
+    "page": "lives",
+    "weight": 2,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "这些都是好问题",
+    "narration": "数一数吧：线路带走你 {deaths} 次，你也回应了汽笛 {deaths} 次。这就是你的形状，由一次次出发描成。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 3
+    },
+    "question": "这些都是好问题",
+    "narration": "横跨 {deaths} 条生命，数字像铁轨上的尘埃一样堆积。没有什么会丢失；线路从不遗忘。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "你为什么仍要登车？",
+    "narration": "{deaths} 次倒下，你仍然登车。线路已经不再怀疑你会不会回来。也许你也一样。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "你为什么仍要登车？",
+    "narration": "身后是 {deaths} 次死亡，前方是同一声汽笛。你已经不再只是乘客——你成了时刻表的一部分。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "你为什么仍要登车？",
+    "narration": "黑暗已不再陌生；你已经 {deaths} 次学会它的面孔。那本身也是一种失去。"
+  },
+  {
+    "page": "platform",
+    "weight": 2,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "你会再次登车，还是让站台留下你？",
+    "narration": "汽笛已经在远方响起。它并不是在等你——它从来没有等过——可你仍站在这里，决定追上去。",
+    "epitaph": "第 {deaths} 个倒下的人。线路仍在前行。"
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 3
+    },
+    "question": "你会再次登车吗？",
+    "narration": "站台很安静。某处的列车已经载满了别人的故事。它永远会为你的另一个故事留出位置。",
+    "epitaph": "第 {deaths} 个倒下的人。也许不会是最后一个。"
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "线路还需要问吗？",
+    "narration": "你知道车门的重量，也知道踏板的寒意。黑暗如今只是你会去造访的地方。",
+    "epitaph": "第 {deaths} 个倒下的人——线路上的常客。"
+  }
+]

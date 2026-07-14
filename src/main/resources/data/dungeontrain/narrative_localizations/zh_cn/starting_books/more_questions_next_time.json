@@ -1,0 +1,10 @@
+{
+  "id": "more_questions_next_time",
+  "title": "更多问题",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "欢迎来到地牢列车\n列车是什么？\n你为什么在这里？\n你该做什么？\n这些都是好问题\n\n如果你还想要更多问题，下次再来。"
+  ]
+}

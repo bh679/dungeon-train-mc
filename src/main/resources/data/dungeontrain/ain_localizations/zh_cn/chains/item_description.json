@@ -1,0 +1,90 @@
+{
+  "id": "adventureitemnames:item_description",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "物品描述",
+      "refs": [
+        {
+          "ref": "adventureitemnames:looks_like_something",
+          "weight": 5.0
+        },
+        {
+          "ref": "adventureitemnames:do_you_know_x",
+          "weight": 1.0
+        },
+        {
+          "ref": "adventureitemnames:has_a_x_x",
+          "weight": 5.0
+        },
+        {
+          "ref": "adventureitemnames:it_asks_you",
+          "weight": 2.0
+        },
+        {
+          "ref": "adventureitemnames:forged_by",
+          "weight": 5.0
+        }
+      ]
+    },
+    {
+      "chance": 0.25296757,
+      "connection": "\n",
+      "newline": false,
+      "label": "第二句",
+      "refs": [
+        {
+          "ref": "adventureitemnames:looks_like_something",
+          "weight": 5.0
+        },
+        {
+          "ref": "adventureitemnames:do_you_know_x",
+          "weight": 1.0
+        },
+        {
+          "ref": "adventureitemnames:has_a_x_x",
+          "weight": 5.0
+        },
+        {
+          "ref": "adventureitemnames:it_asks_you",
+          "weight": 2.0
+        },
+        {
+          "ref": "adventureitemnames:forged_by",
+          "weight": 5.0
+        }
+      ]
+    },
+    {
+      "chance": 0.25448963,
+      "connection": "\n",
+      "newline": false,
+      "label": "第三句",
+      "refs": [
+        {
+          "ref": "adventureitemnames:has_a_x_x",
+          "weight": 1.0
+        },
+        {
+          "ref": "adventureitemnames:do_you_know_x",
+          "weight": 6.0
+        },
+        {
+          "ref": "adventureitemnames:forged_by",
+          "weight": 1.0
+        },
+        {
+          "ref": "adventureitemnames:looks_like_something",
+          "weight": 1.0
+        },
+        {
+          "ref": "adventureitemnames:it_asks_you",
+          "weight": 6.0
+        }
+      ]
+    }
+  ]
+}
