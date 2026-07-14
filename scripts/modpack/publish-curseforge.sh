@@ -141,9 +141,16 @@ METADATA=$(jq -nc \
 echo "Declaring $REL_COUNT CurseForge relation(s): $(printf '%s' "$RELATIONS_PROJECTS" | jq -c 'map(.slug + "(" + .type + ")")')"
 
 # --- Upload ---
+# The metadata part MUST be typed application/json (with a UTF-8-safe charset) — curl's -F
+# leaves plain (non-@file) fields untyped by default, and CurseForge's upload-file endpoint then
+# appears to mis-decode multi-byte UTF-8 (e.g. CJK changelog text) instead of treating it as
+# UTF-8 JSON, corrupting the payload into "Invalid JSON" (errorCode 1002) — even though the JSON
+# we send is valid (verified with `jq -e .`). ASCII-only changelogs never hit this, since ASCII
+# bytes are identical under UTF-8 and a Latin-1-style fallback. mc-publish (used for the mod's own
+# CurseForge upload) sets this correctly and has never hit the bug with the same content.
 RESPONSE=$(curl -sS -w $'\n%{http_code}' \
   -H "X-Api-Token: $CURSEFORGE_TOKEN" \
-  -F "metadata=$METADATA" \
+  -F "metadata=$METADATA;type=application/json;charset=utf-8" \
   -F "file=@$ZIP_PATH" \
   "$API/projects/$CURSEFORGE_MODPACK_PROJECT_ID/upload-file")
 HTTP_CODE=$(printf '%s' "$RESPONSE" | tail -n1)
