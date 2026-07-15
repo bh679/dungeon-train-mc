@@ -4618,6 +4618,24 @@
       "released_at": null
     },
     {
+      "id": "zh-cn-localization-refresh",
+      "version": "0.460.0",
+      "type": "feat",
+      "title": "Simplified Chinese (zh_cn) translation refreshed & expanded",
+      "summary": "Simplified Chinese is now fully up to date: every in-game menu string is translated, and dozens of books, character stories, and death lore were re-translated for a more natural read. Chinese players also get the DiscordPresence prompts, the loading-screen status text, and death-screen tallies written out as Chinese numerals.",
+      "highlights": [
+        "Full Simplified Chinese UI coverage, plus refreshed book & story translations",
+        "DiscordPresence consent & chat UI now in Chinese (modpack)",
+        "Loading-screen phase text now localized",
+        "Death-screen counts shown as Chinese numerals instead of English words"
+      ],
+      "pr": 759,
+      "date": "2026-07-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "no-lava-upside-down-band",
       "version": "0.460.0",
       "type": "fix",

@@ -3037,7 +3037,7 @@ public final class TrainCarriageAppender {
         int forwardGroupsToFill = Math.max(0, Math.ceilDiv(Math.max(0, neededMax), groupSize));
         int backwardGroupsToFill = Math.max(0, Math.ceilDiv(Math.max(0, -neededMin), groupSize));
         int alignedTotalCarriages = (1 + forwardGroupsToFill + backwardGroupsToFill) * groupSize;
-        BootstrapProgress.start("Assembling train", alignedTotalCarriages, groupSize);
+        BootstrapProgress.start("gui.dungeontrain.loading.phase.assembling", alignedTotalCarriages, groupSize);
 
         int startMin = Integer.MAX_VALUE;
         int startMax = Integer.MIN_VALUE;
