@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.discordpresence.client.SurveyClientState;
 import games.brennan.discordpresence.network.DPNetwork;
 import games.brennan.discordpresence.network.SurveyQuestionPayload;
+import games.brennan.discordpresence.survey.SurveyKeys;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathPhotoPacket;
@@ -1034,7 +1035,9 @@ public final class NarrativeDeathScreen extends Screen {
         y = drawCentered(g, Component.translatable(introKey), cx, w, y, NARR);
         y += 6;
         if (e != null) {
-            y = drawQuestion(g, e.prompt(), cx, w, y);
+            // Localize the prompt for display via DiscordPresence's derived survey key (falling back
+            // to the literal, which still drives the Discord embed + the answer-matching logic below).
+            y = drawQuestion(g, Component.translatableWithFallback(SurveyKeys.promptKey(e.id()), e.prompt()).getString(), cx, w, y);
             y += 4;
             int selected = scores.getOrDefault(e.id(), -1);
             if (!e.options().isEmpty()) {
@@ -1052,7 +1055,8 @@ public final class NarrativeDeathScreen extends Screen {
                     boolean sel = selected == value;
                     g.fill(tx, y, tx + cellW, y + tileH, fade(sel ? BTN_PRI_BG : SCORE_BG));
                     drawBorder(g, tx, y, cellW, tileH, sel ? BTN_PRI_LIGHT : SCORE_BORDER);
-                    drawCenteredStr(g, options.get(i), tx + cellW / 2, y + (tileH - this.font.lineHeight) / 2 + 1,
+                    drawCenteredStr(g, Component.translatableWithFallback(SurveyKeys.optionKey(e.id(), i), options.get(i)).getString(),
+                            tx + cellW / 2, y + (tileH - this.font.lineHeight) / 2 + 1,
                             sel ? 0xFFFFFFFF : SCORE_TEXT);
                     scoreRects.add(new Rect(tx, y, cellW, tileH));
                 }
