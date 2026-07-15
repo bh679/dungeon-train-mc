@@ -233,6 +233,27 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("cycleIndex: -1 before the anchor, 0 across the first period, +1 each repeat; endPassIndex is an alias")
+    void cycleIndex() {
+        // Before the anchor the cycle hasn't started.
+        assertEquals(-1L, C.cycleIndex(0));
+        assertEquals(-1L, C.cycleIndex(999));
+        // First period [1000, 2940): index 0 — including the FIRST nether band (worldX [1300,1960)).
+        assertEquals(0L, C.cycleIndex(1000));
+        assertEquals(0L, C.cycleIndex(1500));                  // deep in the first nether band
+        assertEquals(0L, C.cycleIndex(1000 + PERIOD - 1));
+        // Second period [2940, 4880): index 1 — including the SECOND nether band, PERIOD blocks on.
+        // This is the gate "Nether Return Again" keys off (netherPassIndex ≥ 1).
+        assertEquals(1L, C.cycleIndex(1000 + PERIOD));
+        assertEquals(1L, C.cycleIndex(1500 + PERIOD));         // deep in the second nether band
+        assertEquals(2L, C.cycleIndex(1000 + 2 * PERIOD));
+        // endPassIndex is a straight alias of cycleIndex (unchanged End-biome behaviour).
+        for (int wx : new int[] {999, 1000, 1500, 1500 + PERIOD, 1000 + 2 * PERIOD}) {
+            assertEquals(C.cycleIndex(wx), C.endPassIndex(wx), "endPassIndex alias @" + wx);
+        }
+    }
+
+    @Test
     @DisplayName("a leading beach span lengthens the rise, reads as base ×1, and reports the band entrance")
     void beachStage() {
         WorldGenCycle b = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);

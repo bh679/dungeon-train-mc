@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.config;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -84,19 +83,6 @@ public final class DungeonTrainCommonConfig {
     public static final int DEFAULT_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS = 120;
 
     /**
-     * Dev-test preset for the disintegration band — the old compact 500-block journey, used
-     * automatically whenever the build is running from a branch (any non-{@code main}/non-release
-     * build, see {@link #isDisintegrationDevTestMode()}). Keeps the long player-facing journey on
-     * release builds while making in-game iteration fast: first void at ~500 blocks, full cycle
-     * ~2,480 blocks. firstOverworld == overworldHold ⇒ no phase shift (the pre-tuning journey).
-     */
-    public static final int DEVTEST_DISINTEGRATION_FADE_BLOCKS = 120;
-    public static final int DEVTEST_DISINTEGRATION_VOID_HOLD_BLOCKS = 500;
-    public static final int DEVTEST_DISINTEGRATION_END_HOLD_BLOCKS = 500;
-    public static final int DEVTEST_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 500;
-    public static final int DEVTEST_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = 500;
-
-    /**
      * Nether transition band — a second, independent looping phase (parallel to the
      * disintegration/End band). Terrain swells into a world-height mountain the train
      * tunnels through, the far side is real Nether terrain, then it mirrors back. The
@@ -129,13 +115,6 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_NETHER_CORE_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_CORE_HOLD_BLOCKS = 100_000_000;
     public static final int DEFAULT_NETHER_CORE_HOLD_BLOCKS = 5000;
-    /**
-     * Dev-test preset for the real-Nether core span — a short 1000-block core (vs the 5000-block release
-     * default) so the full sweep of Nether biomes is fast to walk through in-game. Used automatically on
-     * any non-{@code main}/non-release build (see {@link #isNetherDevTestMode()}); release builds keep the
-     * configured value. The multi-biome core itself ships to release — only this length is dev-gated.
-     */
-    public static final int DEVTEST_NETHER_CORE_HOLD_BLOCKS = 1000;
 
     /**
      * Upside-down band — a third looping phase (parallel to the disintegration/End and nether bands),
@@ -226,18 +205,6 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_UPSIDE_DOWN_CLOUD_Y = -256;
     public static final int MAX_UPSIDE_DOWN_CLOUD_Y = 256;
     public static final int DEFAULT_UPSIDE_DOWN_CLOUD_Y = 0;
-    /**
-     * Dev-test preset for the upside-down core span — a short 1000-block core (vs the 5000-block
-     * release default) so the mirrored band is fast to reach and traverse in-game. Used automatically
-     * on any non-{@code main}/non-release build (see {@link #isUpsideDownDevTestMode()}).
-     */
-    public static final int DEVTEST_UPSIDE_DOWN_HOLD_BLOCKS = 1000;
-    /**
-     * Dev-test preset for the upside-down exit crossfade — a shortened 2000-block fade (vs the
-     * 10000-block release default) so it is quick to reach and cross in-game on branch builds. Used
-     * automatically on any non-{@code main}/non-release build (see {@link #isUpsideDownDevTestMode()}).
-     */
-    public static final int DEVTEST_UPSIDE_DOWN_EXIT_FADE_BLOCKS = 2000;
     /**
      * Precompute the in-band vertical mirror on the worldgen worker thread at the SPAWN generation
      * step, then only apply the writes at chunk load — instead of doing the whole snapshot + reflection
@@ -593,52 +560,28 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? DISINTEGRATION_ENABLED.get() : DEFAULT_DISINTEGRATION_ENABLED;
     }
 
-    /**
-     * Whether the disintegration band runs in <b>dev-test mode</b> — the old compact 500-block
-     * journey — which is on automatically whenever the build is running from a branch (any
-     * non-{@code main}/non-release build). Single source of truth is {@link DungeonTrain#isDevBuild()}
-     * (the baked git branch). On a release build this is false and the configured long journey is used.
-     */
-    public static boolean isDisintegrationDevTestMode() {
-        return DungeonTrain.isDevBuild();
-    }
-
-    /**
-     * Whether the Nether band runs in <b>dev-test mode</b> — the real-Nether core expanded to
-     * {@link #DEVTEST_NETHER_CORE_HOLD_BLOCKS} so the biome variety is fast to traverse — on automatically
-     * for any non-{@code main}/non-release build. Same single source of truth as the disintegration band:
-     * {@link DungeonTrain#isDevBuild()} (the baked git branch). Release builds keep the configured length.
-     */
-    public static boolean isNetherDevTestMode() {
-        return DungeonTrain.isDevBuild();
-    }
-
     /** Blocks from spawn where the band pattern is anchored; falls back to the hardcoded default pre-load. */
     public static int getDisintegrationStartBlocks() {
         return isLoaded() ? DISINTEGRATION_START_BLOCKS.get() : DEFAULT_DISINTEGRATION_START_BLOCKS;
     }
 
-    /** Fade-in/out span (blocks) at each band edge; dev-test preset on branch builds, else config. */
+    /** Fade-in/out span (blocks) at each band edge; falls back to the hardcoded default pre-load. */
     public static int getDisintegrationFadeBlocks() {
-        if (isDisintegrationDevTestMode()) return DEVTEST_DISINTEGRATION_FADE_BLOCKS;
         return isLoaded() ? DISINTEGRATION_FADE_BLOCKS.get() : DEFAULT_DISINTEGRATION_FADE_BLOCKS;
     }
 
-    /** Pure-void buffer span (blocks) on each side of the End; dev-test preset on branch builds, else config. */
+    /** Pure-void buffer span (blocks) on each side of the End; falls back to the hardcoded default pre-load. */
     public static int getDisintegrationVoidHoldBlocks() {
-        if (isDisintegrationDevTestMode()) return DEVTEST_DISINTEGRATION_VOID_HOLD_BLOCKS;
         return isLoaded() ? DISINTEGRATION_VOID_HOLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_VOID_HOLD_BLOCKS;
     }
 
-    /** End world-gen core span (blocks); dev-test preset on branch builds, else config. */
+    /** End world-gen core span (blocks); falls back to the hardcoded default pre-load. */
     public static int getDisintegrationEndHoldBlocks() {
-        if (isDisintegrationDevTestMode()) return DEVTEST_DISINTEGRATION_END_HOLD_BLOCKS;
         return isLoaded() ? DISINTEGRATION_END_HOLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS;
     }
 
-    /** Overworld stretch (blocks) between band repeats; dev-test preset on branch builds, else config. */
+    /** Overworld stretch (blocks) between band repeats; falls back to the hardcoded default pre-load. */
     public static int getDisintegrationOverworldHoldBlocks() {
-        if (isDisintegrationDevTestMode()) return DEVTEST_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS;
         return isLoaded() ? DISINTEGRATION_OVERWORLD_HOLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS;
     }
 
@@ -695,15 +638,13 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? NETHER_CORE_FADE_BLOCKS.get() : DEFAULT_NETHER_CORE_FADE_BLOCKS;
     }
 
-    /** Real-Nether core span (blocks); dev-test preset (1000) on branch builds, else config. */
+    /** Real-Nether core span (blocks); falls back to the hardcoded default pre-load. */
     public static int getNetherCoreHoldBlocks() {
-        if (isNetherDevTestMode()) return DEVTEST_NETHER_CORE_HOLD_BLOCKS;
         return isLoaded() ? NETHER_CORE_HOLD_BLOCKS.get() : DEFAULT_NETHER_CORE_HOLD_BLOCKS;
     }
 
-    /** Overworld stretch (blocks) before the first band; dev-test preset on branch builds, else config. */
+    /** Overworld stretch (blocks) before the first band; falls back to the hardcoded default pre-load. */
     public static int getDisintegrationFirstOverworldBlocks() {
-        if (isDisintegrationDevTestMode()) return DEVTEST_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS;
         return isLoaded() ? DISINTEGRATION_FIRST_OVERWORLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS;
     }
 
@@ -728,24 +669,13 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? UPSIDE_DOWN_ENABLED.get() : DEFAULT_UPSIDE_DOWN_ENABLED;
     }
 
-    /**
-     * Whether the upside-down band runs in <b>dev-test mode</b> — the core span shrunk to
-     * {@link #DEVTEST_UPSIDE_DOWN_HOLD_BLOCKS} so the mirrored band is fast to reach and cross — on
-     * automatically for any non-{@code main}/non-release build. Same single source of truth as the
-     * other bands: {@link DungeonTrain#isDevBuild()} (the baked git branch).
-     */
-    public static boolean isUpsideDownDevTestMode() {
-        return DungeonTrain.isDevBuild();
-    }
-
     /** Fade-in/out span (blocks) of the upside-down atmosphere at each band edge; falls back pre-load. */
     public static int getUpsideDownFadeBlocks() {
         return isLoaded() ? UPSIDE_DOWN_FADE_BLOCKS.get() : DEFAULT_UPSIDE_DOWN_FADE_BLOCKS;
     }
 
-    /** Mirrored upside-down core span (blocks); dev-test preset (1000) on branch builds, else config. */
+    /** Mirrored upside-down core span (blocks); falls back to the hardcoded default pre-load. */
     public static int getUpsideDownHoldBlocks() {
-        if (isUpsideDownDevTestMode()) return DEVTEST_UPSIDE_DOWN_HOLD_BLOCKS;
         return isLoaded() ? UPSIDE_DOWN_HOLD_BLOCKS.get() : DEFAULT_UPSIDE_DOWN_HOLD_BLOCKS;
     }
 
@@ -754,9 +684,8 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? UPSIDE_DOWN_EXIT_GAP_BLOCKS.get() : DEFAULT_UPSIDE_DOWN_EXIT_GAP_BLOCKS;
     }
 
-    /** Exit crossfade span (blocks) where the mirror disperses and overworld fades in; dev-test preset (400) on branch builds. */
+    /** Exit crossfade span (blocks) where the mirror disperses and overworld fades in; falls back pre-load. */
     public static int getUpsideDownExitFadeBlocks() {
-        if (isUpsideDownDevTestMode()) return DEVTEST_UPSIDE_DOWN_EXIT_FADE_BLOCKS;
         return isLoaded() ? UPSIDE_DOWN_EXIT_FADE_BLOCKS.get() : DEFAULT_UPSIDE_DOWN_EXIT_FADE_BLOCKS;
     }
 
