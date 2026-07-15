@@ -57,8 +57,9 @@ import java.util.Map;
  * ]
  * </pre>
  * Placeholders {@code {carriage} {friends} {books} {mobs} {met} {slain} {loot}
- * {hearts} {deaths}} are substituted as English <em>words</em> ("twenty-eight"),
- * and {@code {distance}} as a numeric metre count. Condition keys:
+ * {hearts} {deaths}} are substituted as <em>words</em> in the active content locale
+ * (English "twenty-eight", or Chinese "二十八"), and {@code {distance}} as a numeric
+ * metre count. Condition keys:
  * {@code cause, min_carriage, max_carriage, min_friends, max_friends, min_books,
  * max_books, min_mobs, min_slain, min_loot, max_loot, min_deaths, max_deaths} —
  * all optional; absent ones match anything.
@@ -288,7 +289,7 @@ public final class DeathLoreStore {
         POOL.clear();
     }
 
-    // ---- Number → English words (so narration reads "twenty-eight", not "28") ----
+    // ---- Number → words (English by default; Chinese via zhWords when the content locale is zh) ----
 
     private static final String[] ONES = {
             "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
@@ -309,6 +310,10 @@ public final class DeathLoreStore {
     }
 
     static String words(long n) {
+        // Match the figure's language to the prose language the pool was loaded in:
+        // NarrativeContentLocale drives which locale's death_lore templates are active,
+        // so Chinese prose must carry Chinese numerals rather than English words.
+        if (NarrativeContentLocale.current().startsWith("zh")) return zhWords(n);
         if (n < 0) return Long.toString(n);
         if (n < 20) return ONES[(int) n];
         if (n < 100) {
@@ -325,5 +330,44 @@ public final class DeathLoreStore {
         }
         long m = n / 1_000_000, r = n % 1_000_000;
         return r == 0 ? words(m) + " million" : words(m) + " million " + words(r);
+    }
+
+    // ---- Number → Chinese words (Simplified) — used when the content locale is Chinese ----
+
+    private static final char[] ZH_DIGITS = {'零', '一', '二', '三', '四', '五', '六', '七', '八', '九'};
+
+    /** Chinese numerals for 0..99999; larger or negative values fall back to plain digits. */
+    static String zhWords(long n) {
+        if (n == 0) return "零";
+        if (n < 0 || n >= 100_000) return Long.toString(n);
+        if (n >= 10_000) {
+            long wan = n / 10_000, rem = n % 10_000;
+            String s = ZH_DIGITS[(int) wan] + "万";
+            if (rem == 0) return s;
+            return s + (rem < 1_000 ? "零" : "") + zhBelow10000(rem);
+        }
+        return zhBelow10000(n);
+    }
+
+    /** Chinese numerals for 1..9999, applying the internal-zero and leading-"十" rules. */
+    private static String zhBelow10000(long n) {
+        long[] units = {1000, 100, 10, 1};
+        char[] unitChars = {'千', '百', '十', ' '};
+        StringBuilder sb = new StringBuilder();
+        boolean zeroPending = false;
+        boolean any = false;
+        for (int i = 0; i < 4; i++) {
+            int d = (int) ((n / units[i]) % 10);
+            if (d == 0) {
+                if (any) zeroPending = true;
+                continue;
+            }
+            if (zeroPending) { sb.append('零'); zeroPending = false; }
+            // 10..19 read "十X", not "一十X".
+            if (!(units[i] == 10 && d == 1 && !any)) sb.append(ZH_DIGITS[d]);
+            if (units[i] != 1) sb.append(unitChars[i]);
+            any = true;
+        }
+        return sb.toString();
     }
 }

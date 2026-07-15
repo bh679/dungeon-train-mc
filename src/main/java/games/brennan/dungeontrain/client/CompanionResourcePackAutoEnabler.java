@@ -20,8 +20,8 @@ import java.util.Optional;
  * One-shot: the first time the DT modpack's companion Chinese resource pack
  * ({@code DungeonTrain-zh_cn-compat.zip}, shipped in the pack's
  * {@code overrides/resourcepacks/}) is present but not yet selected, enable it and save — so the
- * companion-mod (Jade, Tectonic, Distant Horizons, Controlling, ModernFix, CreativeCore, Sable)
- * zh_cn translations apply automatically alongside DT's own jar-bundled lang.
+ * companion-mod (Jade, Tectonic, Distant Horizons, Controlling, ModernFix, CreativeCore, Sable,
+ * DiscordPresence) zh_cn translations apply automatically alongside DT's own jar-bundled lang.
  *
  * <p>Deliberately a client-side hook rather than a shipped {@code options.txt}: a bundled
  * {@code options.txt} is copied wholesale by launchers and would reset the player's OTHER options

@@ -23,6 +23,10 @@
   "gui.dungeontrain.cinematic.press_space_to_start": "Press Space to Start",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Press Space to skip",
   "gui.dungeontrain.loading.title": "Loading the world…",
+  "gui.dungeontrain.loading.phase.assembling": "Assembling train",
+  "gui.dungeontrain.loading.phase.spawning_train": "Spawning Dungeon Train…",
+  "gui.dungeontrain.loading.phase.spawning_seed": "Spawning seed train…",
+  "gui.dungeontrain.loading.phase.anchoring_spawn": "Anchoring world spawn…",
 
   "gui.dungeontrain.loading.story.1.line.1": "What is the Dungeon Train?",
   "gui.dungeontrain.loading.story.1.line.2": "The train is a curious thing.",
