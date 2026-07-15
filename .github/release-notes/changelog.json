@@ -4649,6 +4649,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "freeze-mixin-removed-body-guard",
+      "version": "0.461.0",
+      "type": "fix",
+      "title": "Fix crash when animals ride near a vanishing train car",
+      "summary": "Fixed a crash that could kick you out of your world when livestock (like chickens) stood on or beside a train carriage right as the game unloaded that carriage's physics. The game now treats the vanished car as motionless instead of crashing, so worlds keep running smoothly.",
+      "highlights": [
+        "No more \"Body has been removed\" crash from mobs near a train",
+        "Improves stability on long play sessions and busier trains"
+      ],
+      "pr": 761,
+      "date": "2026-07-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
