@@ -79,7 +79,7 @@ public final class ZoneProgressEvents {
      * not "just crossed the band's trailing edge". The default exit-fade span (10,000 blocks)
      * comfortably contains this depth.
      */
-    private static final int UD_EXIT_FADE_DEPTH_BLOCKS = 800;
+    private static final int UD_EXIT_FADE_DEPTH_BLOCKS = 1800;
 
     private static final ResourceLocation REACHED_VOID =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_void");
@@ -143,15 +143,15 @@ public final class ZoneProgressEvents {
                 case OVERWORLD -> {
                     // "Reach the OW again" — guard against the spawn overworld by requiring the
                     // player to have already been to the void or the End islands at least once.
-                    // Also exclude the upside-down band and its exit crossfade: zoneAt is driven
-                    // purely by the End band's own ramps, which hit 0 the instant the UD band
-                    // begins (it flows directly out of End with no void gap) — so without this
-                    // exclusion, "overworld again" would fire the moment the player enters the
-                    // mirrored band, not once they're actually back on real ground past the
-                    // islands.
+                    // Also exclude the ENTIRE upside-down stretch — the band, its entry lead-in, and
+                    // its exit crossfade — so this fires only once the player is back on real ground
+                    // AFTER the upside-down islands finish. The entry lead-in covers the End band's
+                    // trailing fade (the OVERWORLD sliver zoneAt reads right before the mirrored band,
+                    // since End flows into it with no void gap); without excluding it, "overworld
+                    // again" would fire before the player ever reaches the upside-down band, and the
+                    // exit-fade exclusion keeps it from firing among the dispersing islands.
                     if ((earned(player, REACHED_VOID) || earned(player, REACHED_END_ISLANDS))
-                        && !UpsideDownBand.isInBand(level, px)
-                        && !UpsideDownBand.isInExitFade(level, px)) {
+                        && !UpsideDownBand.isInBandEntryLeadOrExit(level, px)) {
                         ModAdvancementTriggers.GAMEPLAY_ACTION.get()
                             .trigger(player, "reached_overworld_again");
                     }
