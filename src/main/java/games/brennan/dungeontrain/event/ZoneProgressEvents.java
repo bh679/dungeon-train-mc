@@ -31,17 +31,19 @@ import java.util.List;
  *       player has already reached the void or the End islands (so it never fires from the spawn
  *       overworld) AND is outside the upside-down band/exit crossfade (see below — {@code zoneAt}
  *       alone would otherwise fire this the instant the mirrored band begins).</li>
- *   <li>{@code END_ISLANDS} again, once {@code reached_overworld_again} is already earned →
- *       {@code nether_return_again} ("Nether Return Again") — a full loop out and back, then a
- *       second trip into the End. Correctness here rides entirely on
- *       {@code reached_overworld_again} actually meaning "back on real ground past the islands",
- *       not just "past the End band".</li>
  * </ul>
  *
- * <p>Independently of the void/End {@code zoneAt} classification, the same scan also grants
- * {@code reached_nether} ("Entered the Nether") when the player's column reads as the Nether core
- * of the cycle's Nether band (via {@link NetherBand#isInNetherBiome}). The Nether band is a
- * separate phase of the same repeating {@link WorldGenCycle}, so it is checked separately.</p>
+ * <p>Independently of the void/End {@code zoneAt} classification, the same scan also grants two
+ * Nether-band markers when the player's column reads as the Nether core of the cycle's Nether band
+ * (via {@link NetherBand#isInNetherBiome}): {@code reached_nether} ("Entered the Nether") on any
+ * Nether band, and {@code nether_return_again} ("Nether Return Again") once the player is deep in
+ * the Nether band on the SECOND or later cycle repeat (via {@link NetherBand#netherPassIndex} ≥ 1)
+ * — i.e. they have looped all the way out to the End and back to solid ground, then returned to the
+ * Nether. That second-band gate is positional, not advancement-based: the loop-completion
+ * advancement {@code reached_overworld_again} is cross-world (a returning player already holds it on
+ * login), so keying off world position is what stops the return from firing on the first pass. The
+ * Nether band is a separate phase of the same repeating {@link WorldGenCycle}, so it is checked
+ * separately.</p>
  *
  * <p>The scan also grants two markers for the upside-down band, which flows directly out of the
  * End band ({@code ... End islands → Void → Upside-down → exit-fade → Void → OW}, per
@@ -83,8 +85,6 @@ public final class ZoneProgressEvents {
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_void");
     private static final ResourceLocation REACHED_END_ISLANDS =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_end_islands");
-    private static final ResourceLocation REACHED_OVERWORLD_AGAIN =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_overworld_again");
 
     private ZoneProgressEvents() {}
 
@@ -109,6 +109,17 @@ public final class ZoneProgressEvents {
             if (NetherBand.isInNetherBiome(level, px)
                 && NetherBand.isInNetherBiome(level, px - NETHER_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_nether");
+                // "Nether Return Again" — deep inside the Nether band on the SECOND (or later)
+                // cycle repeat: the player has ridden a full loop out to the End and back to solid
+                // overworld ground, then returned to the Nether. Gated purely on world position
+                // (the cycle-repeat index), NOT on an earned advancement — reached_overworld_again
+                // is a cross-world sidecar advancement a returning player already holds on login,
+                // which would otherwise fire this on the first pass. The first Nether band is cycle
+                // repeat 0, so index >= 1 is the second band onward.
+                if (NetherBand.netherPassIndex(level, px) >= 1) {
+                    ModAdvancementTriggers.GAMEPLAY_ACTION.get()
+                        .trigger(player, "nether_return_again");
+                }
             }
 
             // Upside-down band — a separate phase from the void/End classification below, flowing
@@ -127,15 +138,8 @@ public final class ZoneProgressEvents {
             switch (DisintegrationBand.zoneAt(level, player.getBlockX())) {
                 case VOID ->
                     ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_void");
-                case END_ISLANDS -> {
+                case END_ISLANDS ->
                     ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_end_islands");
-                    // "Nether Return Again" — re-entering the End after already having looped
-                    // all the way out and back to solid overworld ground once.
-                    if (earned(player, REACHED_OVERWORLD_AGAIN)) {
-                        ModAdvancementTriggers.GAMEPLAY_ACTION.get()
-                            .trigger(player, "nether_return_again");
-                    }
-                }
                 case OVERWORLD -> {
                     // "Reach the OW again" — guard against the spawn overworld by requiring the
                     // player to have already been to the void or the End islands at least once.
