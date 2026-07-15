@@ -47,12 +47,12 @@ import java.util.List;
  *
  * <p>The scan also grants two markers for the upside-down band, which flows directly out of the
  * End band ({@code ... End islands → Void → Upside-down → exit-fade → Void → OW}, per
- * {@link WorldGenCycle}'s layout): {@code the_upside_down} ("The Upside Down") when the player's
- * column is anywhere in the mirrored band (via {@link UpsideDownBand#isInBand} — no depth-gating,
- * like the void/End checks), and {@code reassembly_required} ("Reassembly Required") once the
- * player is {@code UD_EXIT_FADE_DEPTH_BLOCKS} into the band's floating-island exit crossfade back
- * to overworld (via {@link UpsideDownBand#isInExitFade}, depth-gated the same way as
- * {@code reached_nether} since the crossfade is a single trapezoid too).</p>
+ * {@link WorldGenCycle}'s layout): {@code the_upside_down} ("The Upside Down") once the player is
+ * {@code UD_BAND_DEPTH_BLOCKS} into the mirrored band (via {@link UpsideDownBand#isInBand}), and
+ * {@code reassembly_required} ("Reassembly Required") once the player is
+ * {@code UD_EXIT_FADE_DEPTH_BLOCKS} into the band's floating-island exit crossfade back to overworld
+ * (via {@link UpsideDownBand#isInExitFade}) — both depth-gated the same way as {@code reached_nether},
+ * since each zone is a single trapezoid.</p>
  *
  * <p>All seven are one-shot {@code gameplay_action} markers (same trigger as
  * {@code landed_on_tracks} etc.); vanilla advancement dedupe makes re-firing the same id every
@@ -74,12 +74,20 @@ public final class ZoneProgressEvents {
     private static final int NETHER_DEPTH_BLOCKS = 400;
 
     /**
+     * How far (blocks) into the upside-down band the player must be before {@code the_upside_down} is
+     * granted — so it reads as "properly inside the mirrored world", not "just touched the leading
+     * edge". The train travels +X so the player enters from the -X side; requiring the column this far
+     * behind them to also read as in-band proves they are at least that deep.
+     */
+    private static final int UD_BAND_DEPTH_BLOCKS = 500;
+
+    /**
      * How far (blocks) into the upside-down exit crossfade the player must be before
      * {@code reassembly_required} is granted — so it reads as "well into the dispersing islands",
      * not "just crossed the band's trailing edge". The default exit-fade span (10,000 blocks)
      * comfortably contains this depth.
      */
-    private static final int UD_EXIT_FADE_DEPTH_BLOCKS = 1800;
+    private static final int UD_EXIT_FADE_DEPTH_BLOCKS = 3800;
 
     private static final ResourceLocation REACHED_VOID =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_void");
@@ -123,11 +131,13 @@ public final class ZoneProgressEvents {
             }
 
             // Upside-down band — a separate phase from the void/End classification below, flowing
-            // directly out of the End band. Entry doesn't need depth-gating (same as void/End), but
-            // the exit crossfade does: it's a single trapezoid (like the Nether core), so requiring
-            // the column UD_EXIT_FADE_DEPTH_BLOCKS behind the player to also read as exit-fade proves
-            // they're at least that far into the dispersing islands, not just at the band's edge.
-            if (UpsideDownBand.isInBand(level, px)) {
+            // directly out of the End band. Both markers are depth-gated the same way (the band and
+            // the exit crossfade are each a single trapezoid, so two in-zone samples imply everything
+            // between is too): requiring the column UD_BAND_DEPTH_BLOCKS / UD_EXIT_FADE_DEPTH_BLOCKS
+            // behind the player to also read in-zone proves they are properly inside, not just at the
+            // leading edge.
+            if (UpsideDownBand.isInBand(level, px)
+                && UpsideDownBand.isInBand(level, px - UD_BAND_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "the_upside_down");
             }
             if (UpsideDownBand.isInExitFade(level, px)
