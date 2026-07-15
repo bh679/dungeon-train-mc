@@ -141,16 +141,21 @@ METADATA=$(jq -nc \
 echo "Declaring $REL_COUNT CurseForge relation(s): $(printf '%s' "$RELATIONS_PROJECTS" | jq -c 'map(.slug + "(" + .type + ")")')"
 
 # --- Upload ---
-# The metadata part MUST be typed application/json (with a UTF-8-safe charset) — curl's -F
-# leaves plain (non-@file) fields untyped by default, and CurseForge's upload-file endpoint then
-# appears to mis-decode multi-byte UTF-8 (e.g. CJK changelog text) instead of treating it as
-# UTF-8 JSON, corrupting the payload into "Invalid JSON" (errorCode 1002) — even though the JSON
-# we send is valid (verified with `jq -e .`). ASCII-only changelogs never hit this, since ASCII
-# bytes are identical under UTF-8 and a Latin-1-style fallback. mc-publish (used for the mod's own
-# CurseForge upload) sets this correctly and has never hit the bug with the same content.
+# Pass the metadata part by READING FROM A FILE (`-F name=<file`) rather than inline
+# (`-F name=$METADATA`). curl's -F parses `;` in an INLINE value as the delimiter before its
+# `;type=`/`;filename=`/`;headers=` parameters, so a semicolon anywhere in the JSON (e.g. a
+# changelog sentence like "…Simplified Chinese); Dungeon Train…") silently TRUNCATES the value at
+# that first `;` — CurseForge then receives a cut-off `{"changelog":"…` and rejects it with HTTP
+# 400 errorCode 1002 "Invalid JSON". The JSON we build is valid (jq -e passes); the corruption is
+# purely curl's inline-value parsing. Reading the field content from a file sidesteps `;`/`@`/`<`
+# interpretation entirely, and `;type=application/json` after the filename still sets the part's
+# Content-Type. (ASCII boilerplate changelogs never hit this — they happened to contain no `;`;
+# the mod's own upload via mc-publish never hit it — different HTTP client, no curl -F quirk.)
+META_FILE="$WORKDIR/curseforge-metadata.json"
+printf '%s' "$METADATA" > "$META_FILE"
 RESPONSE=$(curl -sS -w $'\n%{http_code}' \
   -H "X-Api-Token: $CURSEFORGE_TOKEN" \
-  -F "metadata=$METADATA;type=application/json;charset=utf-8" \
+  -F "metadata=<$META_FILE;type=application/json" \
   -F "file=@$ZIP_PATH" \
   "$API/projects/$CURSEFORGE_MODPACK_PROJECT_ID/upload-file")
 HTTP_CODE=$(printf '%s' "$RESPONSE" | tail -n1)
