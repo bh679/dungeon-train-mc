@@ -4634,6 +4634,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "no-lava-upside-down-band",
+      "version": "0.460.0",
+      "type": "fix",
+      "title": "No lava in the upside-down band",
+      "summary": "Lava no longer creeps into the upside-down region. Vanilla lava from the surrounding overworld could previously flow into the mirrored band; now it's held back at the edges, so the flipped world stays lava-free while its hanging water still sits perfectly still.",
+      "highlights": [
+        "Lava can no longer flow into the upside-down band, its entry lead-in, or its exit crossfade",
+        "Mirrored ceiling/island water still hangs static, unchanged"
+      ],
+      "date": "2026-07-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
