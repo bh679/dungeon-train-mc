@@ -4667,12 +4667,32 @@
       "released_at": null
     },
     {
-      "id": "sable-removed-body-crash-guard",
-      "version": "0.460.0",
+      "id": "freeze-mixin-removed-body-guard",
+      "version": "0.461.0",
       "type": "fix",
-      "title": "Fixed a server crash from unloaded train physics",
-      "summary": "Fixed a crash ('Body has been removed') that could take down the server when a train passenger's physics unloaded \u2014 for example after teleporting a long way from the train.",
-      "highlights": [],
+      "title": "Fix crash when animals ride near a vanishing train car",
+      "summary": "Fixed a crash that could kick you out of your world when livestock (like chickens) stood on or beside a train carriage right as the game unloaded that carriage's physics. The game now treats the vanished car as motionless instead of crashing, so worlds keep running smoothly.",
+      "highlights": [
+        "No more \"Body has been removed\" crash from mobs near a train",
+        "Improves stability on long play sessions and busier trains"
+      ],
+      "pr": 761,
+      "date": "2026-07-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "upside-down-snow-support",
+      "version": "0.461.0",
+      "type": "fix",
+      "title": "Snow no longer crumbles off the upside-down ceiling",
+      "summary": "In the upside-down band, snow layers on the mirrored ceiling used to pop out of existence the moment anything updated nearby, because the game expected solid ground beneath them. They now stay frozen in place, matching the grass and water that already hold fast in the band.",
+      "highlights": [
+        "Mirrored ceiling snow stays put in the upside-down band",
+        "Normal-world snow still melts and falls as usual"
+      ],
+      "pr": 764,
       "date": "2026-07-15",
       "released": false,
       "released_in": null,
