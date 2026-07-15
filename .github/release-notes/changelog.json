@@ -4649,6 +4649,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "upside-down-snow-support",
+      "version": "0.461.0",
+      "type": "fix",
+      "title": "Snow no longer crumbles off the upside-down ceiling",
+      "summary": "In the upside-down band, snow layers on the mirrored ceiling used to pop out of existence the moment anything updated nearby, because the game expected solid ground beneath them. They now stay frozen in place, matching the grass and water that already hold fast in the band.",
+      "highlights": [
+        "Mirrored ceiling snow stays put in the upside-down band",
+        "Normal-world snow still melts and falls as usual"
+      ],
+      "date": "2026-07-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
