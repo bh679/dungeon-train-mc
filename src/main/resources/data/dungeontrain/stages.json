@@ -53,7 +53,7 @@
   },
   "quartz": {
     "name": "quartz",
-    "minLevel": 47,
+    "minLevel": 51,
     "maxLevel": 70,
     "phases": [
       "OVERWORLD",
