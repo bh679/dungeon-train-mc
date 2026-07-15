@@ -4616,6 +4616,46 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "journey-advancement-timing",
+      "version": "0.460.0",
+      "type": "fix",
+      "title": "Journey advancements unlock at the right moments",
+      "summary": "Several ride-along advancements were unlocking too early. 'Nether Return Again' now waits until you loop all the way around and return to the Nether a second time; 'The Upside Down' and 'Reassembly Required' now trigger once you're properly inside the mirrored band and its dispersing islands; and 'Re-Over-World' waits until the Upside-Down islands are fully behind you.",
+      "highlights": [
+        "'Nether Return Again' requires a full loop back to the Nether",
+        "'Re-Over-World' unlocks after the Upside-Down islands end",
+        "'The Upside Down' and 'Reassembly Required' trigger deeper into their zones"
+      ],
+      "date": "2026-07-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sable-removed-body-crash-guard",
+      "version": "0.460.0",
+      "type": "fix",
+      "title": "Fixed a server crash from unloaded train physics",
+      "summary": "Fixed a crash ('Body has been removed') that could take down the server when a train passenger's physics unloaded \u2014 for example after teleporting a long way from the train.",
+      "highlights": [],
+      "date": "2026-07-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "copper-carriage-part-stage",
+      "version": "0.460.0",
+      "type": "fix",
+      "title": "Copper carriage part uses the right blocks",
+      "summary": "The copper carriage part was mistakenly built from the mud block set; it now uses copper as intended.",
+      "highlights": [],
+      "date": "2026-07-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
