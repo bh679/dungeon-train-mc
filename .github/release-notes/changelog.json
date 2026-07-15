@@ -4600,6 +4600,22 @@
       "released": true,
       "released_in": "v0.458.0",
       "released_at": "2026-07-14T12:02:37Z"
+    },
+    {
+      "id": "end-band-beds-explode",
+      "version": "0.459.0",
+      "type": "feat",
+      "title": "Beds explode in the End band",
+      "summary": "Beds now explode when you try to use one anywhere in the End band's core, exactly like they do in the Nether band and in the real End. The End is no place to set a spawn \u2014 lay a bed down on the end-stone and it goes off. Normal overworld stretches still let you sleep as usual.",
+      "highlights": [
+        "Beds detonate in the End band core, matching the Nether band and vanilla End",
+        "Normal overworld stretches are unaffected \u2014 beds still work there"
+      ],
+      "pr": 758,
+      "date": "2026-07-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

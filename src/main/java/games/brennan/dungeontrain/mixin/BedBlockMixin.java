@@ -1,11 +1,13 @@
 package games.brennan.dungeontrain.mixin;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
@@ -19,36 +21,40 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Makes beds explode when used inside the Nether transition band's core, exactly as they do in
- * the real Nether — even though the band is still the <b>overworld</b> dimension (where
- * {@code dimensionType().bedWorks()} is {@code true}).
+ * Makes beds explode when used inside the Nether <b>or</b> End transition band's core, exactly as
+ * they do in the real Nether and End — even though both bands are still the <b>overworld</b>
+ * dimension (where {@code dimensionType().bedWorks()} is {@code true}).
  *
  * <p>Vanilla decides explode-vs-sleep purely on the dimension's {@code bedWorks} flag
  * ({@link BedBlock#canSetSpawn}) inside {@code useWithoutItem}. We reproduce vanilla's exact
  * explosion branch — resolve the head half, remove both halves, detonate with the
  * {@code badRespawnPointExplosion} damage source — when the bed's <b>baked biome</b> at
  * {@code pos} is tagged {@link net.minecraft.tags.BiomeTags#IS_NETHER} (every core biome
- * {@code NetherCoreBiomes} assigns carries it). We gate on the persisted biome, not a live
- * band-formula recompute, so the explosion follows what the world actually generated and the
- * player sees — green highland/crossfade approach columns and config/build-drift columns are
- * not {@code IS_NETHER} and sleep normally. Server-side only (the explosion path is); the
- * {@code bedWorks()} guard means the real Nether/End keep their own handling and we only
- * <i>add</i> behaviour the overworld lacks.</p>
+ * {@code NetherCoreBiomes} assigns carries it) or {@link net.minecraft.tags.BiomeTags#IS_END}
+ * (every core biome {@code EndCoreBiomes} assigns — sampled from the real End's biome source, so
+ * {@code the_end} and the four outer-island biomes — carries it). We gate on the persisted biome,
+ * not a live band-formula recompute, so the explosion follows what the world actually generated
+ * and the player sees — the green highland/crossfade approach columns and any config/build-drift
+ * columns are neither {@code IS_NETHER} nor {@code IS_END} and sleep normally. Server-side only
+ * (the explosion path is); the {@code bedWorks()} guard means the real Nether/End keep their own
+ * handling and we only <i>add</i> behaviour the overworld lacks.</p>
  */
 @Mixin(BedBlock.class)
 public abstract class BedBlockMixin {
 
     @Inject(method = "useWithoutItem", at = @At("HEAD"), cancellable = true)
-    private void dungeontrain$explodeInNetherCore(BlockState state, Level level, BlockPos pos, Player player,
-                                                  BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> cir) {
+    private void dungeontrain$explodeInHostileBand(BlockState state, Level level, BlockPos pos, Player player,
+                                                   BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> cir) {
         if (level.isClientSide) return;
         if (!level.dimensionType().bedWorks()) return;          // real Nether/End: vanilla already explodes
         if (!(level instanceof ServerLevel serverLevel)) return;
         // Gate on the bed's ACTUAL baked biome — what the world generated and the player sees —
         // not a live band-formula recompute. Only the real Nether core carries an IS_NETHER biome
-        // (all five via NetherCoreBiomes); the green highland/crossfade approach and any
-        // config/build-drift columns are not IS_NETHER, so beds sleep there as in vanilla.
-        if (!serverLevel.getBiome(pos).is(BiomeTags.IS_NETHER)) return;
+        // (all five via NetherCoreBiomes) and only the real End core carries an IS_END biome (via
+        // EndCoreBiomes); the green highland/crossfade approach and any config/build-drift columns
+        // are neither, so beds sleep there as in vanilla.
+        Holder<Biome> biome = serverLevel.getBiome(pos);
+        if (!biome.is(BiomeTags.IS_NETHER) && !biome.is(BiomeTags.IS_END)) return;
 
         Block self = (Block) (Object) this;
         BlockState headState = state;
