@@ -1,5 +1,6 @@
 {
   "id": "deathnote",
+  "_translator_note": "TITLE = the in-game trigger. Players make a Death Note by naming their own book & quill this exact title (case and spacing are ignored). Keep the translated title to 15 characters or fewer — Minecraft's book-title field won't accept more, so a longer title can't be typed and the game skips it as a trigger (English 'Death Note' always still works). This field is ignored by the game; it's only guidance for translators.",
   "title": "死亡笔记",
   "author": "匿名",
   "generation": 0,
