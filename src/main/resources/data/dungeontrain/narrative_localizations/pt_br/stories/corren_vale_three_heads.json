@@ -1,0 +1,78 @@
+{
+  "id": "corren_vale_three_heads",
+  "character": "Corren Vale",
+  "story": "Três Cabeças",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta Um",
+      "variants": [
+        "Mira,\n\nSuas mãos viviam cobertas de giz.\n\nVocê desenhava linhas em tudo.\n\nVocê dizia que linhas retas mantinham o mundo honesto.\n\nVocê acreditava nisso.\n\nAcho que eu também acreditava.\n\n- Corren",
+        "Mira.\n\nVocê ria baixinho.\n\nComo se tentasse não acordar alguma coisa.\n\nBram nunca sabia quando você estava brincando.\n\neu sabia.\n\n- corren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta Dois",
+      "variants": [
+        "Mira.\n\nA areia das almas estava fria.\n\nNão me lembro do calor depois.\n\nVocê disse alguma coisa.\n\nAcho que você disse meu nome.\n\nAcho que você disse Corra.\nEu não me virei.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta Três",
+      "variants": [
+        "Bram.\n\nVocê ria como quem cai.\n\nDe repente. Alto. Sempre alto demais.\n\nVocê dizia que ria para que o escuro soubesse que você estava ali.\n\nEle sempre soube.\n\n- Corren",
+        "Bram.\n\nSeu escudo era grande demais para você.\n\nVocê passava de lado pelas portas.\n\nEsa chamava de a mesa.\n\nVocê dizia que a mesa nunca deixava ninguém na mão.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta Quatro",
+      "variants": [
+        "Bram.\n\nO primeiro crânio foi o seu.\n\nVocê o pegou.\n\nVocê gritou alguma coisa.\n\nEu não consegui ouvir por cima do fogo.\n\nAs rodas deste trem fazem três notas.\n\nA primeira é a sua, Bram.\n\n- Corren",
+        "Bram.\n\neu escrevi isto cinco vezes.\n\ntoda vez que chego no crânio a caneta para.\n\nvocê o ergueu. você sorriu.\n\nvocê disse que ele não pesava nada.\n\neu acho que ele pesava muito.\n\nAs rodas deste trem fazem três notas.\n\nA primeira é a sua, Bram.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta Cinco",
+      "variants": [
+        "Esa.\n\nSuas mãos ficavam frias de tanto preparar poções.\n\nO resto de você era quente.\n\nMira dizia que você era a única de nós que era quente.\n\nEla tinha razão.\n\n- Corren",
+        "Esa.\n\nVocê cantava enquanto fazia curativos.\n\nCanções antigas. Nenhum de nós as conhecia.\n\nVocê dizia que inventava conforme ia cantando.\n\nA gente fingia acreditar em você.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta Seis",
+      "variants": [
+        "Esa.\n\nSua mão estava nas minhas costas.\n\nFria de tanto preparar poções.\n\nVocê empurrou uma vez.\n\nEu tropecei até a segurança.\n\nVocê não empurrou de novo.\n\nVocê já tinha partido, eu acho.\n\nAntes do empurrão.\n\n- Corren",
+        "Esa.\n\nHá pessoas neste trem que viveram mais que eu.\n\nnenhuma delas parece certa.\n\neu não quero saber com o que eu me pareço.\n\nvocê teria me dito.\n\nvocê teria dito senta aqui Corren e deixa eu ver.\n\n- corren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Carta Sete",
+      "variants": [
+        "Não sei como eu saí.\n\nO portal estava quebrado. Disso eu me lembro.\n\nNão me lembro de atravessar.\n\nEu surgi num campo. Grama alta. O trem já estava lá.\n\nEle estava em movimento.\n\nSempre esteve em movimento. Disso eu sei agora.\n\nCorri ao lado dele. Saltei para a porta mais próxima.\n\nNão sei como me segurei nele.\n\nAchei que tinha conseguido.\n\nVenho conseguindo faz semanas.\n\nO trem não para.\n\nNão há saída.\n\n- Corren",
+        "o calor atrás de mim. o frio à frente.\n\neu não sabia para que lado era cima.\n\nlembro de cair na grama.\n\na grama não estava pegando fogo.\n\naquilo pareceu importante.\n\ndepois um prédio.\n\neu não conhecia o prédio.\n\neu conheço todos os prédios desta região.\n\neu mapeei esta região.\n\num trem estava no prédio.\n\nas portas estavam abertas.\n\neu estava vivo e as portas estavam abertas.\n\nisso parecia serem fatos relacionados.\n\n- corren"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Carta Oito",
+      "variants": [
+        "Eu o escuto faz semanas.\n\nUm guincho. Três vozes, quase sobrepostas.\n\nÀs vezes uma vem sozinha. Às vezes as três.\n\nE as explosões.\n\nEu as sinto no chão antes de ouvi-las.\n\nElas nunca quebram nada que eu possa ver.\n\nNão sei onde elas caem.\n\nEu caminho para a frente.\n\nO guincho volta. Dois vagões atrás.\n\nSempre de lá.\n\nNunca mais longe.\n\nTenho certeza.\n\n- Corren",
+        "há um som.\n\neu o escuto faz semanas.\n\nnão são as rodas.\n\nas rodas carregam música. três notas.\n\neste carrega outra coisa.\n\nele grita.\n\ntrês vozes. quase no compasso. nunca de todo.\n\ne há explosões.\n\neu as sinto no chão. elas não quebram nada.\n\neu perguntei aos outros no trem.\n\nnenhum deles o escuta.\n\nsó eu escuto.\n\nele é para mim.\n\nele tem tempo.\n\n- corren"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Carta Nove",
+      "variants": [
+        "Ah.. ah não.\n\nMira.\n\nVocê teria notado antes de mim.\n\nO guincho está na minha frente agora.\n\nNão deveria haver uma frente.\n\nBram teria ficado na frente.\n\nEle teria rido disso.\n\nEle sempre ria das coisas grandes demais para enfrentar.\n\nEsa teria preparado alguma coisa.\n\nResistência ao fogo. Rapidez. A coisa certa.\n\nEla sempre preparava a coisa certa.\n\nEu caminhei para a frente por semanas.\n\nEu estava caminhando em direção a ele.\n\nO trem não tem frente.\n\nCada passo à frente era um passo mais perto.\n\nAgora eu consigo vê-lo.\n\nTrês cabeças. Três vozes.\n\nA quarta voz será a minha.\n\nAcho que ela é minha faz semanas.\n\n- Corren",
+        "está aqui.\n\nmira.\n\nnão estava atrás de mim.\n\nestava à frente.\n\nsempre esteve à frente.\n\nvocê teria visto isso. você via tudo primeiro.\n\nbram teria ficado na minha frente.\n\nele teria rido.\n\nele ria das coisas grandes demais para enfrentar.\n\nteria funcionado. por um instante.\n\nesa teria posto a mão nas minhas costas.\n\nfria.\n\nela teria empurrado.\n\neu teria ido.\n\neu caminhei em direção a ele.\n\neu achava que estava caminhando para longe.\n\no trem não tem frente. você teria rido de mim por esquecer isso.\n\neu consigo vê-lo.\n\ntrês cabeças. três de vocês.\n\nbram. esa. você.\n\neu sou a quarta.\n\neu sou a quarta desde o começo.\n\n- corren"
+      ]
+    }
+  ]
+}

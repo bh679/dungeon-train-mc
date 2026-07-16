@@ -64,7 +64,7 @@ public final class DevQuickWorldHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Component SINGLEPLAYER_KEY = Component.translatable("menu.singleplayer");
-    private static final Component NEW_WORLD_LABEL = Component.literal("New World");
+    private static final Component NEW_WORLD_LABEL = Component.translatable("gui.dungeontrain.new_world");
     private static final Component SETTINGS_ICON_LABEL =
             Component.literal("⚙").withStyle(ChatFormatting.BOLD);
 

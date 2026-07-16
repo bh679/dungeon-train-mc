@@ -1,0 +1,55 @@
+{
+  "id": "edda_marsh_the_wither_at_the_window",
+  "character": "Edda Marsh",
+  "story": "El wither en la ventana",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta uno",
+      "variants": [
+        "Me llamo Edda Marsh.\n\nEscribo esto desde un asiento que no es el mío.\n\nMi asiento estaba tres vagones atrás. Lo dejé rápido. No por miedo. Más bien como se deja una habitación cuando la tetera lleva demasiado tiempo al fuego.\n\nExplicaré cuando haya caminado más lejos. Por ahora: me he movido. He comenzado a moverme.\n\nEdda Marsh",
+        "Edda Marsh.\n\nEste asiento está tibio. No por mí.\n\nMi asiento quedó por donde vine. Tres vagones, quizá cuatro. No los conté.\n\nMi chal sigue en él. Doblado. Doblarlo fue lo último que no hice.\n\nMás cuando haya caminado más lejos.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta dos",
+      "variants": [
+        "Estoy en un coche cama. La cama está tendida. No por mí.\n\nAnoche algo estaba en mi antigua ventana.\n\nTres cabezas. Hueso del color de la ceniza mojada. La del centro más grande que las otras.\n\nSe movían de una en una. La del centro se quedaba quieta y las dos de los lados giraban. Las tres miraban adentro.\n\nNo aparté la vista. No parecía haber razón para hacerlo. Al cabo de un rato se fueron.\n\nEsperé una hora. Luego me levanté. Luego caminé.\n\nEdda Marsh",
+        "Un coche cama. La cama está tendida. No por mí.\n\nTres cabezas en la antigua ventana anoche.\n\nGris hueso. La del centro más grande. Las dos de los lados giraban cuando ella no.\n\nLas tres miraron adentro.\n\nHe mirado cosas peores en mi vida. Les devolví la mirada.\n\nAl cabo de un rato se fueron. Esperé. Caminé.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta tres",
+      "variants": [
+        "Caminé cuatro vagones hacia adelante. Escribo desde un rincón de lectura en lo que quizá sea un vagón biblioteca. Algunos de los libros son reales. Otros son solo lomos pegados a la pared.\n\nAquí también está. En mi ventana. No la que dejé. Esta nueva.\n\nLas mismas tres cabezas. La del centro ligeramente ladeada, como escuchando.\n\nCaminé al otro lado del vagón. Esa ventana estaba oscura. Regresé. Volvía a estar en la mía.\n\nEdda Marsh",
+        "Cuatro vagones hacia adelante. Un vagón biblioteca. Algunos libros son reales. Otros son lomos pegados a la pared.\n\nAquí también está. En esta ventana. No la que dejé.\n\nLas mismas tres cabezas. La del centro ladeada, como escuchando.\n\nCrucé el vagón. La otra ventana estaba oscura. Regresé. La mía brillaba de hueso otra vez.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta cuatro",
+      "variants": [
+        "Estoy en un vagón de carga. Las cajas están clavadas. La luz es lo único que no está encajonado.\n\nDebería contarte de Hollin.\n\nEra mi esposo. Cavaba arena de almas. Vendía casi toda. Guardaba un poco para sí mismo.\n\nCavó demasiado hondo, al final. Algo subió del lugar donde cavaba.\n\nTres cabezas. La del centro más grande que las otras. Una inclinación en la del centro. Como escuchando.\n\nHollin no volvió a subir.\n\nHe esperado mucho tiempo para volver a ver esa cara. Ahora la tengo.\n\nEstá en cada ventana junto a la que me siento.\n\nEdda Marsh",
+        "Un vagón de carga. Cajas clavadas. La luz es lo único que no está encajonado.\n\nHollin.\n\nEra mi esposo. Cavaba arena de almas. Vendía casi toda. Guardaba un poco.\n\nCavó demasiado hondo. Algo subió.\n\nTres cabezas. La del centro más grande. Ladeada. Como escuchando.\n\nHollin se quedó.\n\nEsperé mucho tiempo para volver a ver esa cara.\n\nAhora la tengo.\n\nEdda"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta cinco",
+      "variants": [
+        "Estoy en un vagón mirador. Ventanas largas. Muchas. Unos cuantos pasajeros más.\n\nLlevo horas sentada aquí. Miré las ventanas. No hacia afuera. A ellas.\n\nEl tren avanza a paso constante. La vista no. Un árbol se queda a nuestro lado demasiado tiempo. Un río corre al revés y luego corre con nosotros.\n\nEl siguiente vagón tenía su propia vista. Otro valle. El vagón de después tenía un campo que conocí a los doce años.\n\nHay un hombre dos asientos más allá que mira una cocina. Creo que es la cocina de su madre. Lleva una hora llorando muy quedito.\n\nLas ventanas no muestran el afuera. Muestran lo que carga quien mira.\n\nYo he estado cargando a Hollin. He estado cargando lo que subió de su excavación.\n\nNo me sigue. Siempre ha sido mío.\n\nEstoy firme. Quiero que sepas que estoy firme.\n\nEdda Marsh",
+        "Vagón mirador. Ventanas largas. Varias. Unos cuantos pasajeros más.\n\nMiré las ventanas. No hacia afuera. A ellas. Durante horas.\n\nEl tren avanza a paso constante. La vista no. Un árbol se queda demasiado tiempo. Un río corre al revés y luego corre con nosotros.\n\nSiguiente vagón: otro valle. El de después: un campo que conocí a los doce años.\n\nDos asientos más allá un hombre mira una cocina. Creo que es la de su madre. Lleva rato llorando muy quedito.\n\nLas ventanas muestran lo que cargamos.\n\nYo he estado cargando a Hollin. Y lo que subió de su excavación.\n\nSiempre ha sido mío. No me sigue. Es mío.\n\nEstoy firme.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta seis",
+      "variants": [
+        "He dejado de caminar.\n\nEstoy en un vagón pequeño cerca del final. O cerca del frente. La luz es igual en ambas direcciones.\n\nHay una ventana. Hay un pestillo en la ventana. Llevo un buen rato mirando el pestillo.\n\nLas tres cabezas están aquí. Ya no en el cristal. Un poco más afuera, en la oscuridad. Esperando.\n\nHe decidido que no voy a caminar de nuevo. He decidido que voy a levantar el pestillo.\n\nHe levantado el pestillo.\n\nLa ventana está abierta. La noche está muy fría. El cedro huele más fuerte cuando el aire se mueve entre él.\n\nVoy a dejar esto aquí. Voy a dejar la ventana abierta también. Para quien tome el asiento después.",
+        "Me detuve.\n\nUn vagón pequeño. Cerca del final. O del frente. La luz es igual en ambas direcciones.\n\nUna ventana. Un pestillo. Llevo un buen rato mirándolo.\n\nLas tres cabezas están aquí. Ya no en el cristal. Un poco más afuera. Esperando.\n\nNo voy a caminar de nuevo. Voy a levantar el pestillo.\n\nLo he levantado.\n\nLa ventana está abierta. La noche está fría. El cedro huele más fuerte cuando el aire se mueve.\n\nDejando esto aquí.\n\nDejando la ventana abierta también."
+      ]
+    }
+  ]
+}

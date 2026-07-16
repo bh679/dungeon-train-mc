@@ -9,6 +9,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
@@ -93,11 +94,13 @@ public abstract class LevelLoadingScreenThemeMixin {
     }
 
     private Component dungeontrain$bootstrapStatus() {
-        String phase = BootstrapProgress.phase();
-        String text = BootstrapProgress.hasCount()
-            ? phase + ": " + BootstrapProgress.current() + " / " + BootstrapProgress.total()
-            : phase;
-        return Component.literal(text);
+        // BootstrapProgress.phase() holds a translation key — localize it client-side so the
+        // loading-screen phase label follows the player's selected language.
+        MutableComponent status = Component.translatable(BootstrapProgress.phase());
+        if (BootstrapProgress.hasCount()) {
+            status.append(Component.literal(": " + BootstrapProgress.current() + " / " + BootstrapProgress.total()));
+        }
+        return status;
     }
 
     /** This screen's own 0..1 progress estimate — folded into the shared timeline by the caller. */

@@ -1,0 +1,55 @@
+{
+  "id": "tomas_aaro_the_walking_father",
+  "character": "Tomas Aaro",
+  "story": "O Pai que Caminha",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta Um",
+      "variants": [
+        "Minha querida.\n\nEu encontrei o trem.\nEle é real.\n\nAinda assim guardo dúvidas.\n\n\nDizem que o trem carrega o que você precisa.\n\nNinguém diz o que exatamente.\nSó espero que a nossa necessidade não seja grande demais.\n\nPouco tempo a bordo, e ele não tem fim.\n\n— Tomas",
+        "Eu disse à minha pequena que voltaria até a colheita.\n\nEu não devia ter prometido uma estação. Não sei se este lugar tem estações.\n\nMas este trem guarda a nossa única esperança.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta Dois",
+      "variants": [
+        "Minha pequena.\n\nHá homens mortos neste trem. Eles andam.\n\nSei como isso soa.\n\nO Pai teve que lutar com um.\n\n\nMinhas mãos conhecem semente e solo.\nHoje elas aprenderam que a enxada corta dos dois lados.\n\nEu tive medo. Fiz mesmo assim. É isso que é ser corajoso.\n\nEle caiu. Eu não estou ferido.\n\nO Pai ainda está voltando para casa.\n\n— Pai",
+        "Minha pequena.\n\nEu fiz uma coisa que não posso desfazer. Um homem veio para cima de mim, só que ele já não era mais um homem.\n\nUsei o que tinha nas mãos.\n\n\nVocê teria fechado os olhos. Eu mantive os meus abertos. Um de nós tinha que manter.\n\nDepois, minhas mãos tremiam como as suas tremem no frio.\n\nSegurei elas até pararem. Depois segui caminhando.\n\n— Pai"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta Três",
+      "variants": [
+        "Minha querida.\n\nUm rato falou comigo hoje. Com um coletinho.\n\nNão estou perdendo o juízo. Outros também o veem.\n\nEle me deu papel, e um enigma.\n\n\n\"Uma semente não corre atrás da primavera,\" ele disse. \"Ela espera. Os jovens aprendem isso primeiro.\"\n\nDepois desejou-me boa sorte, e pareceu triste. Eu agradeci e segui caminhando.\n\n— Tomas",
+        "Minha querida.\n\nEncontrei o rato de novo. Ele fala como um cavalheiro, o que é estranho num rato.\n\nPerguntei-lhe qual o caminho para a frente.\n\n\n\"Não há frente para quem caminha,\" ele disse. \"Só os que param é que são encontrados. Os pequenos sabem disso.\"\n\nNão tenho tempo para parar. Ele me desejou boa sorte mesmo assim.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta Quatro",
+      "variants": [
+        "Minha querida.\n\nO trem está cheio de caixas trancadas. Cada vagão tem as suas.\n\nQualquer uma pode guardar o que precisamos. Então eu abro todas.\n\n\nOuro. Ferro. O bastante para comprar a vila de volta duas vezes.\n\nEu levo tudo. É para você, eu digo.\n\nVou parar na caixa certa. Também não paro de dizer isso.\n\n— Tomas",
+        "Minha querida.\n\nEu sempre pretendo seguir em frente. Aí aparece outra caixa, e outra.\n\nUm homem encheria um celeiro com o que deixei para trás.\n\n\nAgora só levo o que cabe na mochila. A mochila está sempre cheia.\n\nOntem eu não consegui lembrar o que vim buscar a bordo.\n\nApenas que eu saberia ao ver. Então continuo abrindo caixas.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta Cinco",
+      "variants": [
+        "não sei há quanto tempo estou aqui.\n\nas rodas fazem três notas. eu conto elas em vez dos dias.\n\ntentei dizer o nome da vila em voz alta. ele não veio.\n\n\nainda sei do livro laranja. pequeno. laranja. ela nunca o largava.\n\nse eu conseguir me agarrar a isso, consigo segurar o resto.\n\nnão consigo.\n\n— tomas",
+        "me pego falando. em voz alta. sem ninguém ali.\n\nolho para minhas mãos e elas não são de um lavrador. não sei de quem são.\n\n\ncontinuo caminhando porque parar parece morrer.\n\no rato disse o contrário. o rato. será que sonhei com o rato.\n\nesqueço para onde estou caminhando. caminho até lá mesmo assim.\n\n— tomas"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta Seis",
+      "variants": [
+        "Minha querida.\n\nHá uma criança à frente. Lá longe no vagão.\n\nEla segura algo laranja. Ela não larga.\n\nMeu peito. Meu peito.\n\n\nÉ ela? Poderia ser, depois de tudo isto?\n\nQuem é a mulher ao lado dela? Onde está a mãe dela? Por que uma criança estaria aqui?\n\nOu será que perdi o juízo, e o trem só está sendo gentil?\n\n— Pai",
+        "Minha querida.\n\nUma criança, à frente no vagão. Uma mulher que não conheço está sentada com ela.\n\nA criança tem algo laranja no colo.\n\nEu conheço aquele laranja.\n\n\nE se eu me aproximar e não for ela? O que sobra de mim então?\n\nE se for? Por que ela está aqui? Onde você está? E quem é aquela mulher?\n\nEu parei de caminhar. Depois de todo este tempo, eu parei.\n\n— Tomas"
+      ]
+    }
+  ]
+}

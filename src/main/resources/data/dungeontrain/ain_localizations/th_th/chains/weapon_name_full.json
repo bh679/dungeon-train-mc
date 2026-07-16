@@ -1,0 +1,86 @@
+{
+  "id": "adventureitemnames:weapon_name_full",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 0.6005283,
+      "connection": "",
+      "newline": false,
+      "label": "คำนำหน้า",
+      "refs": [
+        {
+          "ref": "adventureitemnames:title_prefix",
+          "weight": 99.0
+        },
+        {
+          "ref": "adventureitemnames:titles",
+          "weight": 53.0
+        },
+        {
+          "ref": "adventureitemnames:mob_titles",
+          "weight": 30.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "หลัก",
+      "refs": [
+        {
+          "ref": "adventureitemnames:colors",
+          "weight": 27.0
+        },
+        {
+          "ref": "adventureitemnames:animals",
+          "weight": 23.0
+        },
+        {
+          "ref": "adventureitemnames:math",
+          "weight": 23.0
+        },
+        {
+          "ref": "adventureitemnames:elements",
+          "weight": 14.0
+        },
+        {
+          "ref": "adventureitemnames:food",
+          "weight": 11.0
+        },
+        {
+          "ref": "adventureitemnames:title_combinations",
+          "weight": 1.0
+        },
+        {
+          "ref": "adventureitemnames:material_or_element",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.79931927,
+      "connection": " ",
+      "newline": false,
+      "label": "คำต่อท้าย",
+      "refs": [
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 1.0
+        },
+        {
+          "ref": "adventureitemnames:title_combinations",
+          "weight": 1.0
+        },
+        {
+          "ref": "adventureitemnames:titles",
+          "weight": 53.0
+        },
+        {
+          "ref": "adventureitemnames:math",
+          "weight": 23.0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "id": "adventureitemnames:hand_crafted_with_love",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 0.29578075,
+      "connection": "",
+      "newline": false,
+      "label": "Buatan tangan",
+      "refs": []
+    },
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "Dibuat",
+      "refs": [
+        {
+          "ref": "adventureitemnames:crafted_by",
+          "weight": 5.0
+        }
+      ]
+    },
+    {
+      "chance": 0.29920536,
+      "connection": " dengan ",
+      "newline": false,
+      "label": "Dengan Cinta",
+      "refs": []
+    }
+  ]
+}

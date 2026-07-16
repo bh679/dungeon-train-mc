@@ -133,7 +133,7 @@ public final class DeathNoteEchoSpawner {
             if (authorUuid != null) {
                 mob.setSkinTextureUrl(SourceProfileSkin.encode(authorUuid, authorName));
             }
-            mob.setCustomName(Component.literal("Echo of " + authorName));
+            mob.setCustomName(Component.translatable("echo.dungeontrain.mob_name", authorName));
             mob.setCustomNameVisible(true);
 
             // Difficulty-scaled gear so its FIGHT/FLEE self-assessment lands on FIGHT (an armed threat).

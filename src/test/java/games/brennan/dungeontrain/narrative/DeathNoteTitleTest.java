@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Verifies the pure "Death Note" signing rules (see {@link DeathNoteTitle}): the trigger title is
- * matched case- and whitespace-insensitively, and the curse target is the first non-empty line of
- * page 1.
+ * matched case- and whitespace-insensitively (in English and, when supplied, the author's own
+ * language), and the curse target is the first non-empty line of page 1.
  */
 class DeathNoteTitleTest {
 
@@ -33,6 +33,29 @@ class DeathNoteTitleTest {
         assertFalse(DeathNoteTitle.isDeathNoteTitle("death notes")); // plural → "deathnotes"
         assertFalse(DeathNoteTitle.isDeathNoteTitle("deathnotebook"));
         assertFalse(DeathNoteTitle.isDeathNoteTitle("the death note")); // extra word
+    }
+
+    @Test
+    void acceptsALocalizedTitleAlongsideEnglish() {
+        List<String> zh = List.of(DeathNoteTitle.normalize("死亡笔记"));
+        // The author's own-language title triggers...
+        assertTrue(DeathNoteTitle.isDeathNoteTitle("死亡笔记", zh));
+        assertTrue(DeathNoteTitle.isDeathNoteTitle("  死亡 笔记 ", zh)); // whitespace still ignored
+        // ...and English is *always* still accepted, even under a non-English locale.
+        assertTrue(DeathNoteTitle.isDeathNoteTitle("Death Note", zh));
+        assertTrue(DeathNoteTitle.isDeathNoteTitle("deathnote", zh));
+        // Unrelated titles remain rejected.
+        assertFalse(DeathNoteTitle.isDeathNoteTitle("我的日记", zh));
+        assertFalse(DeathNoteTitle.isDeathNoteTitle("my diary", zh));
+        assertFalse(DeathNoteTitle.isDeathNoteTitle(null, zh));
+    }
+
+    @Test
+    void nullOrEmptyLocalizedTitlesReduceToEnglishOnly() {
+        assertTrue(DeathNoteTitle.isDeathNoteTitle("Death Note", null));
+        assertTrue(DeathNoteTitle.isDeathNoteTitle("Death Note", List.of()));
+        assertFalse(DeathNoteTitle.isDeathNoteTitle("死亡笔记", null));
+        assertFalse(DeathNoteTitle.isDeathNoteTitle("死亡笔记", List.of()));
     }
 
     @Test

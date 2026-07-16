@@ -1,0 +1,58 @@
+{
+  "id": "adventureitemnames:the_something",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "ang",
+      "refs": [
+        {
+          "ref": "adventureitemnames:determiners",
+          "weight": 6.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "ANG bagay",
+      "refs": [
+        {
+          "ref": "adventureitemnames:material_or_element",
+          "weight": 50.0
+        },
+        {
+          "ref": "adventureitemnames:title_prefix",
+          "weight": 153.0
+        },
+        {
+          "ref": "adventureitemnames:type_synonyms",
+          "weight": 84.0
+        },
+        {
+          "ref": "adventureitemnames:mob_titles",
+          "weight": 30.0
+        },
+        {
+          "ref": "adventureitemnames:colors",
+          "weight": 27.0
+        },
+        {
+          "ref": "adventureitemnames:animals",
+          "weight": 23.0
+        },
+        {
+          "ref": "adventureitemnames:math",
+          "weight": 23.0
+        },
+        {
+          "ref": "adventureitemnames:numbers",
+          "weight": 10.0
+        }
+      ]
+    }
+  ]
+}

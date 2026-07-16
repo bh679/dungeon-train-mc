@@ -62,8 +62,14 @@ public class DungeonTrain {
      * and the in-game presence reply ({@link games.brennan.dungeontrain.event.MentionPresenceEvents}). DP
      * matches each token as a case-insensitive substring, so the in-game detector mirrors that to fire in
      * lock-step with the real ping.
+     *
+     * <p>{@code @开发者} is the zh_cn display alias DP's chat box shows/autocompletes for {@code @dev}
+     * (DP's {@code discordpresence.chattag.dev} lang key, per-locale as of DP 0.49.0) — DP only
+     * localizes the client-side <em>display</em>, so the bundling mod (us) must separately accept the
+     * localized alias as a real trigger here, or a Chinese player typing it gets highlighting but no
+     * ping. Add one entry per locale DP ships a {@code chattag.dev} translation for.</p>
      */
-    public static final List<String> MENTION_TOKENS = List.of("@dev", "@brennanhatton");
+    public static final List<String> MENTION_TOKENS = List.of("@dev", "@brennanhatton", "@开发者");
 
     /**
      * Discord relay capability URLs. Release builds (the {@code main} branch) report to the live

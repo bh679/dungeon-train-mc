@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CarriageContentsAllowScreen;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
+import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer.CellKind;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer.Hovered;
@@ -116,6 +117,7 @@ public final class EditorPlotPanelInputHandler {
     }
 
     private static boolean shouldHandle() {
+        if (!EditorStatusHudOverlay.isEditorMenusVisible()) return false;
         if (EditorPlotLabelsRenderer.entries().isEmpty()) return false;
         // Defer to the keyboard menu and the part-position menu when either is
         // taking input — both have their own click handlers we'd otherwise

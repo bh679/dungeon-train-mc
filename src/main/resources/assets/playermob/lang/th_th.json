@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "ผู้เล่น",
+  "item.playermob.player_mob_spawn_egg": "ไข่เกิดผู้เล่น",
+  "item.playermob.player_mob_aggressive_spawn_egg": "ไข่เกิดผู้เล่นก้าวร้าว",
+  "item.playermob.player_mob_friendly_spawn_egg": "ไข่เกิดผู้เล่นเป็นมิตร",
+  "item.playermob.player_mob_passive_spawn_egg": "ไข่เกิดผู้เล่นไม่ก้าวร้าว",
+  "item.playermob.player_mob_skeptical_spawn_egg": "ไข่เกิดผู้เล่นระแวง",
+  "item.playermob.player_mob_shy_spawn_egg": "ไข่เกิดผู้เล่นขี้อาย",
+  "container.playermob.player_mob": "ผู้เล่น"
+}

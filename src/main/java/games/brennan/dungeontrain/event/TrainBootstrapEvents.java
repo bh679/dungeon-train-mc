@@ -81,7 +81,7 @@ public final class TrainBootstrapEvents {
         // this the player stares at a finished progress bar with no
         // indication that DT is still working. The indicator is cleared
         // in the finally block below regardless of which step threw.
-        BootstrapProgress.setPhase("Spawning Dungeon Train...");
+        BootstrapProgress.setPhase("gui.dungeontrain.loading.phase.spawning_train");
         try {
             doBootstrap(event, overworld, data);
         } finally {
@@ -110,10 +110,10 @@ public final class TrainBootstrapEvents {
         int trainY = data.getTrainY();
         CarriageDims dims = data.dims();
 
-        BootstrapProgress.setPhase("Spawning seed train...");
+        BootstrapProgress.setPhase("gui.dungeontrain.loading.phase.spawning_seed");
         ManagedShip seedShip = ensureTrainSpawned(target, data);
 
-        BootstrapProgress.setPhase("Anchoring world spawn...");
+        BootstrapProgress.setPhase("gui.dungeontrain.loading.phase.anchoring_spawn");
         anchorWorldSpawnNearCorridor(target, dims, trainY);
 
         // Eager-fill the train to the server-configured window NOW (while

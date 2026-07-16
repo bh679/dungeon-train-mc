@@ -1,0 +1,274 @@
+[
+  {
+    "page": "fall",
+    "weight": 3,
+    "question": "Dungeon Train là gì?",
+    "narration": "Toa {carriage}. Đó là nơi bóng tối chạm tới bạn. Giờ bạn đã hiểu nó chưa? Dungeon Train không bao giờ dừng lại — nó chỉ tiếp tục, sâu hơn, mãi mãi."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "min_carriage": 100 },
+    "question": "Dungeon Train là gì?",
+    "narration": "{carriage} toa sâu vào bóng tối. Ít ai đi được xa đến vậy trước khi tuyến đường nuốt chửng họ. Càng ít người lên tàu lần nữa."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "max_carriage": 3 },
+    "question": "Dungeon Train là gì?",
+    "narration": "Toa {carriage}. Vừa mới lên tàu, mà bóng tối đã tóm lấy bạn. Tuyến đường này kiên nhẫn — nó thừa sức để kiên nhẫn."
+  },
+  {
+    "page": "deeds",
+    "weight": 3,
+    "question": "Tại sao bạn ở đây?",
+    "narration": "Bạn đã hạ gục {mobs} sinh vật trong bóng tối, và đổ {hearts} trái tim máu vì điều đó.\nTrong {met} linh hồn bạn gặp, {slain} kẻ bị bạn kết liễu — và {friends} kẻ bạn gọi là bạn bè."
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "Bạn phải làm gì?",
+    "narration": "Sắt thép và lưỡi bén, gom góp từ bóng tối và mang đi xa đến thế này. Chẳng thứ nào là đủ — có lẽ đó chưa bao giờ là điều cốt yếu."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 5 },
+    "question": "Bạn phải làm gì?",
+    "narration": "Bạn đã đọc {books} quyển sách của tuyến đường mà vẫn mang theo thép. Tri thức và một lưỡi kiếm, rồi bóng tối lấy đi cả hai."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_friends": 5 },
+    "question": "Họ có đáng không?",
+    "narration": "Bạn đã kết được {friends} người bạn trên tuyến đường, vậy mà nó vẫn cướp bạn đi. Có lẽ đó là con số duy nhất từng thật sự thuộc về bạn."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_mobs": 200 },
+    "question": "Bạn đã đáp trả bóng tối bằng bao nhiêu?",
+    "narration": "{mobs} sinh vật gục ngã dưới tay bạn trước khi bạn gục dưới tay chúng. Tuyến đường không phán xét. Nó chỉ đếm."
+  },
+  {
+    "page": "lives",
+    "weight": 3,
+    "conditions": { "min_deaths": 2 },
+    "question": "Đều là những câu hỏi hay cả",
+    "narration": "Đây không phải dấu ấn của một kiếp người duy nhất. Trải qua tất cả {deaths} lần — mỗi bóng tối bạn từng lên tàu, mỗi lần tuyến đường cướp bạn đi mà bạn vẫn quay lại — đây là toàn bộ hành trình của bạn."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "Một kiếp người lẽ nào tiêu tan dễ dàng đến thế?",
+    "subline": "cú ngã đầu tiên của bạn trên tuyến đường.",
+    "narration": "Chẳng có kiếp nào khác để đặt lên cân với kiếp này — chưa có. Đây là toàn bộ con người bạn: mọi điều đã làm kể từ lần đầu lên tàu. Tuyến đường sẽ ghi nhớ nó. Bạn cũng nên vậy."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 10 },
+    "question": "Đều là những câu hỏi hay cả",
+    "narration": "Đây không phải dấu ấn của một kiếp người duy nhất. {deaths} lần bóng tối cướp bạn đi, và {deaths} lần bạn lại lên tàu."
+  },
+  {
+    "page": "platform",
+    "weight": 3,
+    "conditions": { "min_deaths": 2 },
+    "question": "Bạn sẽ lại lên tàu, hay bước ra chốn tĩnh lặng?",
+    "narration": "Sân ga trống vắng. Tiếng còi vọng lại từ xa cuối tuyến đường. Nó chạy không ngừng nghỉ — và, dường như, bạn cũng vậy.",
+    "epitaph": "kẻ thứ {deaths} gục ngã. có lẽ chưa phải kẻ cuối cùng."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "Bạn sẽ lại lên tàu — giờ khi bạn đã biết nó kết thúc ra sao?",
+    "narration": "Sân ga trống vắng, y như khi bạn lần đầu bước lên tàu. Tiếng còi vọng lại từ xa cuối tuyến đường. Bạn đã ngã xuống một lần. Liệu có lần thứ hai hay không, như mọi khi, là điều bạn tự định đoạt.",
+    "epitaph": "kẻ đầu tiên gục ngã. tuyến đường kiên nhẫn — nó sẽ chờ những kẻ còn lại."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 20 },
+    "question": "Cần gì phải hỏi nữa?",
+    "narration": "Đến giờ sân ga đã thuộc mặt bạn. Tiếng còi vọng lên y như mọi khi. Bạn đã biết điều gì đến tiếp theo rồi.",
+    "epitaph": "kẻ thứ {deaths} gục ngã — và, dường như, chưa phải kẻ cuối."
+  },
+
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Train là gì?",
+    "narration": "Toa {carriage}. Bóng tối đã chờ ở đó suốt bấy lâu — bạn chỉ vừa đến để chạm mặt nó."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Train là gì?",
+    "narration": "Toa {carriage}, và không xa hơn. Tuyến đường chẳng giữ hận thù cũng chẳng ban khoan dung; nó chỉ đơn giản là cứ tiếp tục đi."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Train là gì?",
+    "narration": "Những ngọn đèn lồng của toa {carriage} vẫn đung đưa nơi bạn ngã xuống. Con tàu không chậm lại để nhìn."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Train là gì?",
+    "narration": "Bạn đã đến toa {carriage} trước khi mặt sàn của thế giới sụp xuống. Tuyến đường tiếp tục đi mà chẳng cần trọng lượng của bạn."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Train là gì?",
+    "narration": "Toa {carriage}. Ở đâu đó phía trước, đường ray vẫn trải dài vào bóng đen, thờ ơ với việc bạn không còn ở trên nó nữa."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Train là gì?",
+    "narration": "Ở đây, tại toa {carriage}, bóng tối cuối cùng cũng bắt kịp nhịp của bạn. Điều đó vốn dĩ luôn sẽ xảy ra."
+  },
+
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Tại sao bạn ở đây?",
+    "narration": "Bạn đã hạ gục {mobs} sinh vật trong bóng tối và trả {hearts} trái tim để làm điều đó. Trong {met} linh hồn bạn đi ngang qua, {slain} kẻ bị bạn đánh gục và {friends} kẻ bạn cho lại gần."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Tại sao bạn ở đây?",
+    "narration": "{mobs} sinh vật gục ngã trước bạn và {hearts} trái tim rơi khỏi bạn. Bạn gặp {met} linh hồn khác trong bóng tối — kết liễu {slain}, giữ lại {friends} — rồi đến lượt bạn."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Tại sao bạn ở đây?",
+    "narration": "Từ bóng tối bạn lấy đi {mobs}; từ chính mình bạn tiêu {hearts} trái tim. {met} linh hồn cùng chung tuyến đường: {slain} kẻ bạn kết liễu, {friends} kẻ bạn níu giữ."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "max_friends": 0 },
+    "question": "Tại sao bạn ở đây?",
+    "narration": "Bạn đã hạ gục {mobs} sinh vật và đổ {hearts} trái tim máu. Bạn gặp {met} linh hồn, kết liễu {slain}, và chẳng gọi lấy một kẻ nào là bạn bè. Bóng tối đơn giản hơn khi ta cô độc."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_slain": 5 },
+    "question": "Bạn đã đáp trả bóng tối bằng gì?",
+    "narration": "Trong {met} kẻ bạn gặp, {slain} kẻ bạn đốn hạ — thêm {mobs} sinh vật nữa trong bóng tối — đổi lấy {hearts} trái tim, và {friends} kẻ bạn tha để gọi là bạn bè. Tuyến đường không gọi đó là giết chóc."
+  },
+
+  {
+    "page": "gear",
+    "weight": 2,
+    "question": "Bạn phải làm gì?",
+    "narration": "Bạn đã gom hết những gì mình có thể mang từ các toa tàu. Tuyến đường để bạn giữ lại — nó chẳng cần hàng hóa, chỉ cần hành khách."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 0 },
+    "question": "Bạn phải làm gì?",
+    "narration": "Bạn chẳng cạy nổi một cái thùng nào trên tuyến đường — chỉ mang theo những gì đã lên tàu, và vung nó cho đến tận cùng. Bóng tối giữ lại những gì bạn không chịu lấy."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 9 },
+    "question": "Bạn phải làm gì?",
+    "narration": "Một nhúm thùng được mở ra — {loot} tất cả — và một lưỡi kiếm luôn kề bên. Tuyến đường hào phóng với những ai dừng lại; bạn thì hầu như chẳng ngừng chân."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_loot": 250 },
+    "question": "Bạn phải làm gì?",
+    "narration": "{loot} chiếc thùng đổ hết vào túi bạn. Bạn vơ sạch bóng tối tất cả những gì không bị đóng đinh, vậy mà nó vẫn lấy đi thứ duy nhất quan trọng."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_books": 0 },
+    "question": "Bạn phải làm gì?",
+    "narration": "Chẳng một trang nào được lật — chỉ có thép được gom và vung. Tuyến đường giữ lại những câu chuyện cho những ai dừng chân để đọc."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 10 },
+    "question": "Bạn phải làm gì?",
+    "narration": "Bạn đã đọc {books} quyển sách của tuyến đường và còn mang theo thép bên mình. Trí tuệ và một lưỡi kiếm, rồi bóng tối kiên nhẫn với cả hai."
+  },
+
+  {
+    "page": "lives",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "Đều là những câu hỏi hay cả",
+    "narration": "Hãy đếm chúng: {deaths} lần tuyến đường cướp bạn đi, {deaths} lần bạn đáp lại tiếng còi. Đây là hình hài của bạn, được phác nên từ những lần rời đi."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "Đều là những câu hỏi hay cả",
+    "narration": "Qua {deaths} kiếp người, những con số tụ lại như bụi trên đường ray. Chẳng gì mất đi cả; tuyến đường không quên điều gì."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Tại sao bạn cứ lên tàu?",
+    "narration": "{deaths} lần ngã, mà bạn vẫn lên tàu. Tuyến đường đã thôi băn khoăn liệu bạn có quay lại. Và có lẽ, bạn cũng vậy."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Tại sao bạn cứ lên tàu?",
+    "narration": "{deaths} lần chết sau lưng và cùng một tiếng còi phía trước. Bạn không còn là hành khách nữa — bạn đã là một phần của thời khắc biểu."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Tại sao bạn cứ lên tàu?",
+    "narration": "Bóng tối đã thôi là kẻ xa lạ; {deaths} lần rồi bạn đã học thuộc gương mặt của nó. Đó cũng là một kiểu mất mát riêng."
+  },
+
+  {
+    "page": "platform",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "Bạn sẽ lại lên tàu, hay để sân ga giữ bạn lại?",
+    "narration": "Tiếng còi đã vang lên rồi, từ xa phía trước. Nó không chờ bạn — nó chưa bao giờ chờ — vậy mà bạn vẫn đứng đây, quyết định đi theo.",
+    "epitaph": "kẻ thứ {deaths} gục ngã. tuyến đường vẫn cứ tiếp tục."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "Bạn sẽ lại lên tàu chứ?",
+    "narration": "Sân ga lặng yên. Ở đâu đó con tàu đã đầy ắp câu chuyện của một người khác. Luôn có chỗ cho thêm một câu chuyện của bạn.",
+    "epitaph": "kẻ thứ {deaths} gục ngã. có lẽ chưa phải kẻ cuối cùng."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Tuyến đường có cần phải hỏi không?",
+    "narration": "Bạn đã biết sức nặng của cánh cửa, cái lạnh của bậc lên tàu. Bóng tối giờ chỉ là một nơi bạn ghé thăm.",
+    "epitaph": "kẻ thứ {deaths} gục ngã — một khách quen của tuyến đường."
+  }
+]

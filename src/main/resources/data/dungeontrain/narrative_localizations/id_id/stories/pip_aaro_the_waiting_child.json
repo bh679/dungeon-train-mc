@@ -1,0 +1,47 @@
+{
+  "id": "pip_aaro_the_waiting_child",
+  "character": "Pip Aaro",
+  "story": "Anak yang Menunggu",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Surat Satu",
+      "variants": [
+        "Namaku Pip. Umurku delapan.\n\nAku di kereta yang tak kukenal. Kursinya berbau seperti mantel Nenek.\n\nSeekor tikus memberiku kertas ini. Tikus sungguhan. Pakai baju.\n\nAku sedang mencari Ibu.\n\nSedikit takut. Cuma sedikit.\n\nPip",
+        "Aku ketiduran di kereta bersama Ibu. Aku bangun dan Ibu sudah tak ada.\n\nKeretanya beda sekarang. Tasku beda. Buku oranye itu tak ada di dalamnya.\n\nSeekor tikus memberiku kertas ini. Dia pakai rompi.\n\nAku akan menemukan Ibu. Gerbongnya banyak sekali.\n\nAku tidak menangis.\n\nPip"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Surat Dua",
+      "variants": [
+        "Aku bertanya pada seorang pria di mana kondekturnya.\n\nDia pakai mantel kuning. Dia tertawa. Katanya sayang, tak ada kondektur. Katanya kereta ini tak berhenti.\n\nAku tak percaya. Kereta itu berhenti.\n\nPria bermantel kuning itu sekarang banyak tidur. Kurasa dia sedih.\n\nAku tak mau jadi seperti itu.\n\nPip",
+        "Aku menemukan buku catatan di bawah kursi.\n\nSeseorang menghitung gerbongnya. Sampai 384 lalu berhenti. Katanya tak ada gunanya mencari ujung depan.\n\nAku tak paham maksudnya. Kereta punya ujung depan.\n\nBuku catatannya kusimpan. Rasanya seperti punya teman bicara.\n\nMereka terdengar lelah. Aku belum lelah.\n\nPip"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Surat Tiga",
+      "variants": [
+        "Sebagian orang di kereta ini cuma pura-pura.\n\nMereka tampak nyata. Tapi mereka tak melihatmu. Aku melambai pada seorang ibu dan dia lewat begitu saja.\n\nSebagian orang MEMANG ada. Pria bermantel kuning. Tikus itu. Seorang ibu yang memberiku apel.\n\nAku membuat daftar orang yang nyata. Ada empat. Mungkin aku salah satunya juga.\n\nPip",
+        "Aku membuat rencana.\n\nJalan ke satu arah. Jangan menoleh. Nanti aku sampai di ujung belakang kereta.\n\nAku berjalan lama sekali. Empat puluh tujuh gerbong. Aku tak menoleh.\n\nTak ada ujung belakang. Ujungnya tampak seperti tempatku mulai. Bau Nenek yang sama.\n\nAku tak mengerti. Aku mau Ibu.\n\nPip"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Surat Empat",
+      "variants": [
+        "Ibu yang punya apel itu sekarang temanku. Namanya Soren.\n\nDia sudah lama sekali di kereta ini. Dia tak mau bilang berapa lama.\n\nSoren bertanya soal Ibu. Aku menceritakannya. Dia terdiam. Lalu katanya Ibumu terdengar luar biasa.\n\nDia mengatakannya dengan cara yang sama seperti pria bermantel kuning bilang kereta ini tak berhenti.\n\nAku tetap akan menemukan Ibu.\n\nPip",
+        "Ada slime di gerbongku. Kunamai dia Pebble.\n\nDia kecil dan hijau. Soren bilang dia masih terlalu kecil untuk berbahaya. Aku tak percaya itu soal Pebble.\n\nDia mengikutiku sampai pintu tapi tak mau lewat. Kurasa dia mengira pintu itu tembok.\n\nIbu pasti bilang slime itu monster. Ibu salah soal Pebble.\n\nAku rindu Ibu.\n\nTapi aku punya Pebble.\n\nPip"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Surat Lima",
+      "variants": [
+        "Soren bercerita soal pintu itu.\n\nKatanya ada sebuah pintu di kereta ini yang menuju ke luar. Katanya kalau aku menemukannya, aku harus melewatinya.\n\nAku memikirkannya lama sekali. Soal Ibu. Soal Pebble.\n\nKalau Ibu ada di kereta ini, aku harus terus mencari. Kalau tidak, aku pun tak bisa menjangkaunya.\n\nSaat aku menemukan pintu itu, aku akan duduk di sebelahnya. Dan menunggu.\n\nSoren bilang baiklah, sayang. Kali ini seolah dia sungguh-sungguh.\n\nPip",
+        "Aku menulis surat untuk Ibu.\n\nSoren bilang kadang orang melewati gerbong yang sama berkali-kali. Jadi kutinggalkan di tempat yang dilewati semua orang.\n\nSuratnya menyebut namaku. Menyebut aku punya teman bernama Soren dan slime bernama Pebble.\n\nSuratnya bilang aku baik-baik saja. Bilang aku sedang menunggu.\n\nIbu pasti menemukannya. Ibu selalu menemukan segala hal.\n\nPip"
+      ]
+    }
+  ]
+}

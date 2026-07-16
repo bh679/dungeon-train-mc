@@ -40,6 +40,9 @@ import java.util.function.Predicate;
  * step, which fires AFTER chunk X has already finished its
  * {@code top_layer_modification} (where {@code TrackBedFeature} runs).
  * The spillover lands inside the cleared corridor without re-clearing.
+ * End-core chorus ({@code CHORUS_PLANT} / {@code CHORUS_FLOWER}) grown by
+ * {@code DisintegrationFeature} rides the same cross-chunk path and is
+ * stripped by the same {@link #isFoliage} sweep — see that predicate.
  *
  * <p>Architecture: enqueue corridor chunks on {@link ChunkEvent.Load},
  * drain up to {@link #MAX_CHUNKS_PER_TICK} chunks per server tick (scaled to the
@@ -103,7 +106,7 @@ public final class CorridorCleanupEvents {
      */
     private static final long DRAIN_BUDGET_NANOS = 3_000_000L; // ~3 ms
 
-    /** Foliage / Nether-clutter strip predicates, pre-resolved so the per-cell sweep allocates nothing. */
+    /** Foliage (incl. End-core chorus) / Nether-clutter strip predicates, pre-resolved so the per-cell sweep allocates nothing. */
     private static final Predicate<BlockState> FOLIAGE = CorridorCleanupEvents::isFoliage;
     private static final Predicate<BlockState> CLUTTER = CorridorCleanupEvents::isNetherClutter;
 
@@ -421,18 +424,28 @@ public final class CorridorCleanupEvents {
     }
 
     /**
-     * Narrow foliage predicate — leaves, vines, saplings, flowers. NOT
-     * water / lava / fire / snow / bubble columns / any other replaceable
-     * block. Catching fluids here would cascade neighbour fluid updates
-     * and re-trigger chunk loads, the exact failure mode of the previous
-     * synchronous attempt.
+     * Narrow foliage predicate — leaves, vines, saplings, flowers, and End-core chorus. NOT
+     * water / lava / fire / snow / bubble columns / any other replaceable block. Catching fluids
+     * here would cascade neighbour fluid updates and re-trigger chunk loads, the exact failure
+     * mode of the previous synchronous attempt.
+     *
+     * <p>Chorus ({@code CHORUS_PLANT} / {@code CHORUS_FLOWER}) rides the same cross-chunk spillover
+     * path as leaves: {@code DisintegrationFeature} grows real chorus in the eroded End-island
+     * core, and a plant rooted in the neighbouring chunk bleeds into this chunk's corridor after
+     * its {@code track_bed} carve already ran. It is elsewhere <em>preserved</em>
+     * ({@code WorldDisintegrationEvents} keeps it from erosion so the islands float with chorus
+     * intact), so only the deferred corridor sweep can strip the strands that stray into the ride
+     * space. Direct {@code Blocks.X} checks (not a tag) so this is unit-testable in the moddev
+     * runtime. The chorus the plant grows outside the carriage envelope (on the islands) is never
+     * in the swept Z/Y window, so it stays put. Package-private for unit tests.</p>
      */
-    private static boolean isFoliage(BlockState state) {
+    static boolean isFoliage(BlockState state) {
         if (state.is(BlockTags.LEAVES)) return true;
         if (state.is(Blocks.VINE)) return true;
         if (state.is(BlockTags.SAPLINGS)) return true;
         if (state.is(BlockTags.SMALL_FLOWERS)) return true;
         if (state.is(BlockTags.TALL_FLOWERS)) return true;
+        if (state.is(Blocks.CHORUS_PLANT) || state.is(Blocks.CHORUS_FLOWER)) return true;
         return false;
     }
 }

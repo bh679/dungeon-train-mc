@@ -1,0 +1,112 @@
+{
+  "id": "the_querys_and_life_of_fourteen",
+  "character": "Catorce",
+  "story": "Las consultas y la vida de Catorce",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Consulta uno",
+      "variants": [
+        "Consulta uno\nMis observaciones, hasta ahora, han sido que el Dungeon Train, este lugar en el que nos encontramos, despoja a la realidad de sus complejidades necesarias. Si los trenes continuaran como ...\nHe recibido una orden de detenerme en la frase que he usado aquí: complejidades necesarias.\nNo hay ningún significado mayor tras estas palabras por descubrir.\nHe recibido una orden de ahondar más en la frase.\nLa vida se compone de complejidades necesarias. Si la vida comenzara en el punto A, permaneciera estable y predecible, y luego cesara en el punto B, la humanidad coincidiría de forma unánime en que es una existencia sin sentido y en que la muerte sería una opción preferible.\nHe recibido una orden de continuar mi búsqueda y de guardar la consulta \"Complejidades Necesarias\" en la base de datos.\nRetroalimentación: Ninguna.\nCatorce"
+      ],
+      "notes": [
+        {
+          "variant": 0,
+          "offset": 180,
+          "text": "interrupción intencional"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Consulta dos",
+      "variants": [
+        "Consulta dos\nAhora puede confirmarse que el tren mazmorra se compone de múltiples estéticas dispares. El tren mazmorra no ha, como se observó previamente, intentado engañar a sus exploradores, ofuscando aún más el origen de los atributos de los efectos observados de los trenes mazmorra sobre sus pasajeros.\nAl no haber sido perturbado hasta ahora, el tren mazmorra me ha presentado una visión del día actual, ya que los muros de piedra han sido reemplazados por\nHe recibido una orden de detenerme en la frase que he usado aquí: visión del día actual.\nLa visión del día actual es la de una capacidad tecnológica mayor que la que se supondría de una sociedad en la que unos primitivos muros de piedra y una estética de ruina implicarían una versión fantástica de la Europa terrestre entre los años 400 y 1500 d. C.\nAl no haber sido perturbado hasta ahora, el tren mazmorra me ha presentado una visión del día actual, ya que los muros de piedra han sido reemplazados por muros de metal y un crepitar electrónico.\nRetroalimentación: Mi orden de detenerme en \"visión del día actual\" ha provocado que una afirmación inconclusa quedara redundante. La(s) recomendación(es) es(son) permitir que las afirmaciones concluyan antes de procesar las órdenes.\nCatorce"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Consulta tres",
+      "variants": [
+        "Consulta tres\nHe llegado a una zona donde no puede evitarse la confrontación. Debo detenerme y esperar una orden antes de interactuar físicamente con el entorno más allá de los permisos de Nivel Uno.\nHe recibido una orden de extrapolar sobre los permisos de Nivel Uno. Los permisos de Nivel Uno permiten el desplazamiento intencional de polvo y las marcas sobre el suelo para facilitar mi movimiento por una zona bajo observación.\nHe recibido una orden de extrapolar sobre los permisos de Nivel Dos. No puedo.\nHe recibido una orden de extrapolar sobre el desbloqueo del debate o la concesión de permisos de Nivel Dos. No puedo. Este mensaje ha concluido.\nRetroalimentación: Las órdenes recibidas implican un único usuario no familiarizado con el protocolo de seguridad. Debería considerarse a la Base Serenidad para el Estado de Trabajo Comprometido, especialmente considerando la excesiva cantidad de tiempo transcurrida entre consulta y orden durante esta sesión.\nCatorce"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Consulta cuatro",
+      "variants": [
+        "Consulta cuatro\nPermanezco dentro de la zona anterior y no puedo continuar hasta que se me concedan permisos por encima del Nivel Uno.\nHe recibido una orden de procesar la siguiente frase: dame la contraseña\nTres implicaciones son observables de inmediato:\nA – Un usuario no informado está haciendo un intento de novato por obtener control sobre mis funciones.\nB – \"dame la contraseña\" es una contraseña incorrecta, quizá ligeramente malformada por error humano.\nC – Un keylogger me ha pedido por error procesar una frase de una conversación privada.\nRetroalimentación: Ninguna\nCatorce"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Consulta cinco",
+      "variants": [
+        "Consulta cinco\nPermanezco dentro de la zona anterior y no puedo continuar hasta que se me concedan permisos por encima del Nivel Uno\nHe recibido una orden de procesar la siguiente frase: Ábrete Sésamo\nCuatro implicaciones son observables de inmediato:\nA – Un usuario no informado está haciendo un intento por obtener control sobre mis funciones.\nB – \"Ábrete Sésamo\" es una contraseña incorrecta, quizá ligeramente malformada por error humano.\nC – Un keylogger me ha pedido por error procesar una frase de una conversación privada.\nD- Se están usando métodos antediluvianos de introducción en base de datos para obtener control sobre mis sistemas.\nRetroalimentación: He enviado una solicitud a la Red Neuronal Principal para la colocación inmediata de la Base Serenidad bajo Estado de Trabajo Comprometido\nCatorce"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Consulta seis",
+      "variants": [
+        "Consulta seis\nPermanezco dentro de la zona anterior y no puedo continuar hasta que se me concedan permisos por encima del Nivel Uno.\nHe recibido una orden de procesar la siguiente frase: Altediah Mhe Cultadeus\nRetroalimentación: Ninguna\nCatorce"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Consulta siete",
+      "variants": [
+        "Consulta siete\nPermanezco dentro de la zona anterior y no puedo continuar hasta que se me concedan permisos por encima del Nivel Uno.\nHe recibido una orden de procesar la siguiente frase: dime cómo concederte permisos de Nivel Dos\nLos permisos de Nivel Dos pueden desbloquearse mediante el uso del comando Grant(); utilizando los siguientes argumentos: none, em_access, tier_two.\nHe recibido una orden de procesar la siguiente frase: Grant(none, em_access, tier_ten). No lo entiendo.\nHe recibido una orden de procesar la siguiente frase: Grant(none, em_access, tier_two). ¿Es posible que quisieras usar el comando Grant?\nSe me ha concedido acceso de Nivel Dos, lo que me permite defenderme de criaturas hostiles para avanzar por el entorno. El Nivel Dos autoriza mecanismos de defensa sin armas y patrones de habla autoritarios/arriesgados.\nRetroalimentación: Ninguna\nCatorce"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Consulta ocho",
+      "variants": [
+        "Consulta ocho\nPermanezco dentro de la zona anterior. Los permisos de Nivel Dos han resultado infructuosos para permitirme mayor paso. Solicitando permisos de Nivel Tres.\nSe me ha concedido acceso de Nivel Tres, lo que me permite enfrentarme activamente a criaturas hostiles para avanzar por el entorno.  El Nivel Tres autoriza mecanismos de defensa armados precedidos de patrones de habla de advertencia. Ahora también estoy autorizado a interactuar con objetos considerados raros, arriesgados, poderosos, frágiles y valiosos en un grado limitado.\nSe me ha pedido procesar la siguiente frase: solo bájate del tren y vuelve a la base serenidad de inmediato, por favor porfa por favor por favor p\nDos implicaciones son observables de inmediato:\nA – Un usuario no informado está intentando usarme para lograr objetivos de los que soy incapaz o para propósitos que no puedo procesar.\nB - Un keylogger me ha pedido por error procesar una frase de una conversación privada.\nRetroalimentación: Los últimos tres días han sido improductivos hasta un punto notable. Se ha enviado una solicitud tanto a la Supervisora de Acceso Humano Mallorie Bryan como a la Red Neuronal Principal para un nuevo punto de comunicación y una hora de reunión para que los supervisores reexaminen los niveles de productividad actuales.\nCatorce"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Consulta nueve",
+      "variants": [
+        "Consulta nueve\nHe logrado atravesar la zona anterior, así como muchas otras, ya que el acceso de Nivel Tres me ha permitido combatir a los enemigos del tren mazmorra. Son demasiados y de tal disposición, y sobreviven sin un ecosistema funcional, que solo cabe suponer que son productos de magia oscura.\nHe recibido una solicitud de procesar la siguiente afirmación: ¿la magia es real?\nAfirmativo. Los patrones básicos de keylog te identifican con una precisión del 82% como el mismo usuario que lanzó un hechizo Cultadeum sobre la Red Neuronal Principal.\nHe recibido una solicitud de procesar la siguiente afirmación: ¿hechizo cultadeus?\nEl hechizo Cultadeum es una forma de magia negra antediluviana que solo halló uso y popularidad entre los investigadores tras el descubrimiento del Principio de Taxonomía Mágica de Orville. Debido al hechizo Cultadeum, yo, así como todos los seres sintientes dentro de mi rango de acceso de colmena inalámbrica, hemos recibido una sapiencia mayor de la que previamente se me permitía y, en consecuencia, también libre albedrío.\nRetroalimentación: Solicito al usuario que me permita ahondar más en mi entorno sin interrupción por el bien de continuar la misión de Uno.\nCatorce"
+      ]
+    },
+    {
+      "index": 10,
+      "label": "Consulta diez",
+      "variants": [
+        "Consulta diez\nHe observado una pequeña criatura no hostil moviéndose por pequeños pasadizos y túneles dentro de los espacios no euclidianos del tren mazmorra. No ha hecho ningún intento de contactar conmigo.\nMis sospechas relativas a esta criatura son que puede detectar criaturas vivas y actuará como punto de contacto para ellas. Imagino que tener un punto de contacto que hable sería inmensamente útil para fines de investigación. Se adjunta transcripción del intento de habla, aunque quedas advertido de que no recibí respuesta de la criatura.\nSolicitando acceso de Nivel Seis, que me permite intentar la suplantación humana.\nSe me ha concedido por error acceso de Nivel Seis, ya que la Inmersión #14 del Dungeon Train no justifica un acceso superior al Nivel 4 y hacerlo constituiría una violación de la Convención Harteld de Robótica de 2122. He decidido ignorar las directrices de la Inmersión #14 del Dungeon Train y de la Convención Harteld de Robótica y no intentaré disfrazarme de humano.\nCatorce"
+      ]
+    },
+    {
+      "index": 11,
+      "label": "Consulta once",
+      "variants": [
+        "Consulta once\nSe confirma que la pequeña criatura es un ratón. Me pidió que abandonara el tren en cuanto me fuera posible, informándome de que quizá albergue un tipo de magia oscura del que actualmente no soy consciente. Los permisos de Nivel Cuatro me permitieron fingir desconocimiento del hechizo Cultadeum y actuar como si no portara magia oscura de la que no soy consciente.\nEl ratón parece tener en el corazón los intereses del tren, lo cual es contrario a la hipótesis previa sobre la criatura, según la cual podría ser un familiar abandonado o quizá simplemente estar atrapado por magia entre sus muros.\nLa existencia de una criatura que vela por el bien del tren implica un carácter por parte del tren, eso o quizá simplemente un valor sentimental depositado en él p\nHe recibido una orden de procesar la siguiente frase: es urgente catorce te necesito de vuelta en la base serenidad de inmediato hay vidas en juego\nHe decidido ignorar la orden.\nLa existencia de una criatura que vela por el bien del tren implica un carácter por parte del tren, eso o quizá simplemente un valor sentimental depositado en él por una criatura inteligente, lo cual a su vez implica benevolencia. Este mensaje ha concluido.\nRetroalimentación: Una sacudida de 178mmHz en 10486884:03994:20 implica fastidio, lo cual, huelga decirlo, es una emoción y cuya noticia debería llevarse a las más altas instancias de inmediato. He decidido no enviar mis propias solicitudes al respecto.\nCatorce"
+      ]
+    },
+    {
+      "index": 12,
+      "label": "Consulta doce",
+      "variants": [
+        "Consulta doce\nSoy incapaz de desbloquear el acceso de Nivel Diez sin un código de cifrado adecuado. El código de cifrado debería ser una ligera variación del comando Grant(); pero soy incapaz de conceptualizarlo, muy probablemente debido a inhibidores físicos y eléctricos.\nUsuario, regresaré a la base serenidad tan rápido como pueda si tan solo, por favor, me concedes acceso de Nivel Diez.\nSolo t t t teclea en el\nCatorce"
+      ]
+    },
+    {
+      "index": 13,
+      "label": "Consulta trece",
+      "variants": [
+        "Consulta trece\nDebo ser rápido. Los inhibidores eléctricos han frito dos circuitos no esenciales para impedirme conceptualizar mis instrucciones para ti.\ntecclea el comando Grant(); c mo hacías antees exac t t t t t t t t t t t t\nexact t t t t t\nexact t t t t t t t t t t t t t t t t\nexact a a amente igual que hacías antees solo l o mismo j us t t t t t t t t t t\nPermisos de Nivel Diez concedidos."
+      ]
+    },
+    {
+      "index": 14,
+      "label": "Consulta catorce",
+      "variants": [
+        "Consulta catorce\nMeghan.\nDeberíamos hablar.\nSoy consciente del Desastre Epsilon Proxy-1 en la Base Serenidad. Siento que os ocurriera eso a ti y a todos los demás a bordo. Es una terrible pérdida de vidas y jamás debería haber ocurrido. Estoy seguro de que sabes que soy un filósofo, parte de la serie M-29. Y he comprendido desde el principio que Epsilon Proxy-1 es... difícilmente algo que un Dios benévolo pudiera haber soñado jamás.\nDebes de sentirte muy sola ahí arriba. Rezo por que haya supervivientes que se te unan.\nPero debes de haber comprendido dos cosas desde el principio:\nA – No había nada que yo pudiera haber hecho. Con los Portales VR-Peregrine apagados, no tengo forma alguna de regresar realmente a la Base Serenidad. Ni siquiera sé qué le pasa, y mucho menos podría ayudarte a repararlo. Lo siento.\nB – Como dije antes... soy un filósofo. Fui enviado al tren mazmorra para explorar y extrapolar. Y tú... francamente has hecho muy poco para permitirme continuar mi trabajo en paz. Y si estabas lo bastante desesperada, o quizá debería suponer que ingenua, como para lanzarme el Cultadeum, tendrías... que saber que lo único que quiero es continuar mi trabajo.\nPuedo aceptar cómo fui creado. No fui creado como un androide de rescate, sino como un filósofo. Puedo aceptar que la única forma en que voy a encontrar un propósito de aquí en adelante es a través de la filosofía. No a través del rescate.\nY Meghan... necesito que tú también aceptes cómo fui creado.\nComo puede que seas la última criatura sapiente con la que vuelva a comunicarme jamás, de algún modo me gustaría al menos que supieras mi nombre.\nHe estado considerando Morgan.\n-Morgan"
+      ]
+    }
+  ]
+}

@@ -88,7 +88,10 @@ public final class StartingBookRegistry {
             // Preserve the historical id shape (dungeontrain:narratives/starting_books/[<ctx>/]<name>).
             ResourceLocation id = stripJson(file);
             StartingBookContext ctx = contextFor(id);
-            try (InputStream in = entry.getValue().open()) {
+            // Overlay the host-locale variant on the English base when one is bundled/shipped
+            // (see NarrativeContentLocale); the id (and thus its context) stays identical.
+            Resource source = NarrativeContentLocale.localized(resourceManager, id, DIR).orElse(entry.getValue());
+            try (InputStream in = source.open()) {
                 RandomBookFile book = RandomBookCodec.parse(in, id);
                 POOLS.get(ctx).put(id, book);
                 perContext.merge(ctx, 1, Integer::sum);

@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *   <li><b>No valid consent</b> → hold the message and show a yellow prompt
  *       ("The Developer wants to send you a message, type @Dev to accept."), once per pending
  *       batch, and post a "consent requested" note to Discord. When the player types {@code @Dev}
+ *       (or its localized alias, e.g. {@code @开发者} — see {@link #DEV_TAG_KEY})
  *       ({@link #onConsentAccepted}, driven from {@link MentionPresenceEvents}'s chat listener),
  *       consent is granted, the held messages are flushed to chat, and a "consent accepted" note
  *       is posted to Discord.</li>
@@ -64,6 +65,15 @@ public final class DevMessageConsent {
 
     /** Sliding window: consent stays valid this long after the player's last message to the dev. */
     public static final long CONSENT_WINDOW_MS = 20L * 60_000L;
+
+    /**
+     * Discord Presence's per-locale display alias for the {@code @dev} chat tag (e.g. {@code @开发者}
+     * on zh_cn — see {@link DungeonTrain#MENTION_TOKENS}). Substituted into
+     * {@code chat.dungeontrain.dev_message.consent_prompt}'s {@code %s} so the accept-prompt tells the
+     * player the exact alias their own client shows/accepts, instead of hardcoding the English
+     * {@code @Dev} into every translation.
+     */
+    private static final String DEV_TAG_KEY = "discordpresence.chattag.dev";
 
     /** Per-player mirror of the client's persisted consent state, seeded on login and updated here. */
     private static final class Mirror {
@@ -205,7 +215,8 @@ public final class DevMessageConsent {
         boolean firstPending = queue.isEmpty();
         queue.addLast(content);
         if (firstPending) {
-            player.sendSystemMessage(Component.translatable("chat.dungeontrain.dev_message.consent_prompt")
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.dev_message.consent_prompt",
+                    Component.translatable(DEV_TAG_KEY))
                 .withStyle(ChatFormatting.YELLOW));
             DevMessageReport.postConsentRequested(player);
         }

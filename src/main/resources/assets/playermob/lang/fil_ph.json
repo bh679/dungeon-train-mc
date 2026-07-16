@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "Manlalaro",
+  "item.playermob.player_mob_spawn_egg": "Itlog na Pansibol ng Manlalaro",
+  "item.playermob.player_mob_aggressive_spawn_egg": "Itlog na Pansibol ng Agresibong Manlalaro",
+  "item.playermob.player_mob_friendly_spawn_egg": "Itlog na Pansibol ng Palakaibigang Manlalaro",
+  "item.playermob.player_mob_passive_spawn_egg": "Itlog na Pansibol ng Mapayapang Manlalaro",
+  "item.playermob.player_mob_skeptical_spawn_egg": "Itlog na Pansibol ng Nag-aalinlangang Manlalaro",
+  "item.playermob.player_mob_shy_spawn_egg": "Itlog na Pansibol ng Mahiyaing Manlalaro",
+  "container.playermob.player_mob": "Manlalaro"
+}

@@ -1,0 +1,509 @@
+{
+  "id": "adventureitemnames:type_synonyms",
+  "entries": [
+    {
+      "text": "Hoja",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Espada",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Mandoble",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Cuchilla",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Sable",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Filo",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Segador",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Pincho",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Hacha",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Hacha de Guerra",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Tajador",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Hachuela",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Partidor",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Bardiche",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Tomahawk",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Destrozamaderas",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Pico",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Zapapico",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Martillo",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Mazo",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Alcotana",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Talador",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Almádena",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Tuneladora",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Muerderrocas",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Pala",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Laya",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Palustre",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Cucharón",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Palo Cavador",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Removedor de Tierra",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Excavadora",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Recogearena",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Azada",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Guadaña",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Cultivadora",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Labradora",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Rastrillo",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Segadora",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Arado",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Hoz",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Casco",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Sombrero",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Gorra",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Corona",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Capucha",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Yelmo",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Cofia",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Casquete",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Diadema",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Cubocerebros",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Túnica",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Camisa",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Armadura",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Coraza",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Chaleco",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Cota de Malla",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Jubón",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Babero",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Perneras",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Pantalones",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Perniles",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Pantalón",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Grebas",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Calzones",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Bombachos",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Calcetacosas",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Zapatos",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Botas",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Sandalias",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Pezuñas",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Zapatillas",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Katiuskas",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Pisotones",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Manoplas de Pie",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Zuecos",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Escudo",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Broquel",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Égida",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Bastión",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Rodela",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Pavés",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Defensor",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Tapón",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    }
+  ]
+}

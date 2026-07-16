@@ -1,0 +1,12 @@
+{
+  "id": "joined_world",
+  "title": "¿Multijugador?",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "¡Bienvenido a bordo, aventurero!\n¡Te has unido a un mundo! Qué emocionante.\n\n¡Explorad juntos, conectad con el tren juntos!\n\nCon más gente alrededor, ¡seguro que el tren crece!\n\n¿Crees que conseguiremos más vagones?",
+    "¡Eh, lo lograste! ¡Te uniste a un mundo nuevo!\n¡Un tren nuevo!\n¡Bienvenido al Dungeon Train!\n\n¿Qué es el dungeon train?\n¿Por qué está aquí?\n¿Qué encontrarás?\n\n¡Buena suerte!",
+    "¡Lo lograste! ¡Te uniste a un mundo nuevo!\n¡Te uniste al Dungeon Train!\n\nMultijugador,\n¡varias personas, en un solo mundo!\nJuntas.\n\n¡Menuda tecnología!\nOrdenadores, conectándose.\nGente interactuando,\nen un tren\ndentro de tu ordenador\n¡en internet!"
+  ]
+}

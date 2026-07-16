@@ -21,12 +21,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Gating the pipeline's per-body reads/writes for a DT-frozen carriage skips Sable's per-body work for
  * <em>all</em> such callers by construction — and that skipped work is the soft-freeze saving.
  *
- * <p>Soft-freeze leaves the body IN the scene (nothing is removed), so these gates are a pure
- * optimisation, not a crash guard — they cannot abort. For a frozen (parked) body: velocity reads
- * return zero (it is genuinely parked), pose read returns the caller's buffer unchanged (its
- * last-known frozen pose stands), and velocity/impulse/teleport/stat writes no-op so nothing can nudge
- * the parked body. {@link PhysicsFreeze#freeze} runs its one-time park pass with the flag still clear,
- * so this mixin never blocks that final teleport/velocity write.
+ * <p>Soft-freeze leaves the body IN the scene (nothing is removed), so the <em>freeze</em> gates are a
+ * pure optimisation — they cannot abort. For a frozen (parked) body: velocity reads return zero (it is
+ * genuinely parked), pose read returns the caller's buffer unchanged (its last-known frozen pose stands),
+ * and velocity/impulse/teleport/stat writes no-op so nothing can nudge the parked body.
+ * {@link PhysicsFreeze#freeze} runs its one-time park pass with the flag still clear, so this mixin never
+ * blocks that final teleport/velocity write.
+ *
+ * <p>The two velocity-<em>read</em> handlers ({@code getLinearVelocity}/{@code getAngularVelocity})
+ * additionally double as a <b>removed-body crash guard</b>: they return zero for a body Sable has already
+ * removed (see {@link #dungeonTrain$parkedForRead}), turning the {@code assertBodyValid}
+ * "Body has been removed" abort into a benign parked read. This is independent of soft-freeze and must be
+ * preserved on any {@code sable_version} re-audit.
  *
  * <p>String target + {@code remap = false}: {@code RapierPhysicsPipeline} ships in Sable's jar-in-jar
  * and is not on DT's compile classpath (same pattern as the Vivecraft mixin). Its method args
@@ -40,14 +46,28 @@ public abstract class RapierPipelineFreezeMixin {
         return body instanceof ServerSubLevel sl && PhysicsFreeze.isFrozen(sl);
     }
 
+    /**
+     * A body reads as parked (zero velocity) when it is either DT soft-frozen (genuinely at rest) or
+     * already removed from Sable's Rapier scene. A removed body makes {@code assertBodyValid} throw
+     * {@code RuntimeException("Body has been removed")}: Sable's own {@code ActiveSableCompanion#getVelocity}
+     * can query a stale {@code RigidBodyHandle} during an entity tick (livestock standing near a ship) after
+     * an async cull removes the sub-level's body, crashing the server thread. Returning zero here mirrors
+     * Sable's own {@code getContaining == null → Vector3d.zero()} fallback and is the correct relative
+     * velocity for a ship that no longer exists. Null-safe, though {@code assertBodyValid} would itself NPE
+     * on a null body, so null is not a real runtime scenario.
+     */
+    private static boolean dungeonTrain$parkedForRead(PhysicsPipelineBody body) {
+        return dungeonTrain$frozen(body) || (body != null && body.isRemoved());
+    }
+
     @Inject(method = "getLinearVelocity", at = @At("HEAD"), cancellable = true)
     private void dungeonTrain$frozenLinVel(PhysicsPipelineBody body, Vector3d out, CallbackInfoReturnable<Vector3d> cir) {
-        if (dungeonTrain$frozen(body)) cir.setReturnValue(out.set(0.0, 0.0, 0.0));
+        if (dungeonTrain$parkedForRead(body)) cir.setReturnValue(out.set(0.0, 0.0, 0.0));
     }
 
     @Inject(method = "getAngularVelocity", at = @At("HEAD"), cancellable = true)
     private void dungeonTrain$frozenAngVel(PhysicsPipelineBody body, Vector3d out, CallbackInfoReturnable<Vector3d> cir) {
-        if (dungeonTrain$frozen(body)) cir.setReturnValue(out.set(0.0, 0.0, 0.0));
+        if (dungeonTrain$parkedForRead(body)) cir.setReturnValue(out.set(0.0, 0.0, 0.0));
     }
 
     @Inject(method = "readPose", at = @At("HEAD"), cancellable = true)

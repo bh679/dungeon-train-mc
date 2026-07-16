@@ -59,7 +59,11 @@ public final class StoryRegistry {
             // seen-book tracking and story-set achievements persist these ids, so only
             // the ".json" suffix is stripped from the full resource location.
             ResourceLocation id = stripJson(file);
-            try (InputStream in = entry.getValue().open()) {
+            // Overlay the host-locale variant on the English base when one is bundled/shipped
+            // (see NarrativeContentLocale); the id stays identical, so seen-book/achievement
+            // tracking is unaffected.
+            Resource source = NarrativeContentLocale.localized(resourceManager, id, DIR).orElse(entry.getValue());
+            try (InputStream in = source.open()) {
                 StoryFile story = StoryCodec.parse(in, id);
                 STORIES.put(id, story);
                 loaded++;

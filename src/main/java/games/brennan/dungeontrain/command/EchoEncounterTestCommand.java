@@ -134,7 +134,7 @@ public final class EchoEncounterTestCommand {
         } catch (Throwable ignored) {
             // Defaults are fine for a test mob.
         }
-        mob.setCustomName(Component.literal("Echo of " + name));
+        mob.setCustomName(Component.translatable("echo.dungeontrain.mob_name", name));
         mob.setCustomNameVisible(true);
         mob.setPersistenceRequired();
         if (!level.addFreshEntity(mob)) {

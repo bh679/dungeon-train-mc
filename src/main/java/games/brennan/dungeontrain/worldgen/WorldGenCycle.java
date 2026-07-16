@@ -370,16 +370,28 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * Which repeat of the world-gen cycle {@code worldX} falls in (0-based), or {@code -1} before the
+     * anchor / when the cycle is empty. The general form behind {@link #endPassIndex}: because the Nether
+     * band is the first special band of every period, this doubles as the Nether-band pass index (repeat
+     * 0 = first Nether band, ≥ 1 = second onward), which the "Nether Return Again" advancement keys off
+     * via {@link games.brennan.dungeontrain.worldgen.NetherBand#netherPassIndex}.
+     */
+    public long cycleIndex(int worldX) {
+        long p = period();
+        if (p <= 0L || worldX < startX) return -1L;
+        return Math.floorDiv((long) worldX - startX + phaseShift, p);
+    }
+
+    /**
      * Which repeat of the world-gen cycle this world-X falls in (0-based), or {@code -1} before the
      * anchor / when the cycle is empty. Drives {@link games.brennan.dungeontrain.worldgen.density.EndCoreBiomes}'s
      * sweep from the real End's main island (pass 0) out into its outer noise field (later passes), so
      * a normal game session's handful of End-band crossings covers all five real End biomes instead of
-     * repeatedly sampling the same spot.
+     * repeatedly sampling the same spot. Alias of {@link #cycleIndex} — the End band sits in every cycle
+     * repeat, so its pass index is the cycle index.
      */
     public long endPassIndex(int worldX) {
-        long p = period();
-        if (p <= 0L || worldX < startX) return -1L;
-        return Math.floorDiv((long) worldX - startX + phaseShift, p);
+        return cycleIndex(worldX);
     }
 
     /**

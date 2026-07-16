@@ -1,0 +1,509 @@
+{
+  "id": "adventureitemnames:type_synonyms",
+  "entries": [
+    {
+      "text": "ใบมีด",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "ดาบ",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "มหาดาบ",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "มีดสับ",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "ดาบเซเบอร์",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "คมดาบ",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "ดาบทำลาย",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "ไม้เสียบ",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "ขวาน",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "ขวานศึก",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "ขวานสับ",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "ขวานเล็ก",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "ขวานผ่า",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "ขวานด้ามยาว",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "ขวานโทมาฮอว์ก",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "เครื่องทำลายไม้",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "อีเต้อ",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "อีเต้อ",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "ค้อน",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "ค้อนใหญ่",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "จอบขุด",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "เครื่องฟัน",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "ค้อนปอนด์",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "เครื่องเจาะอุโมงค์",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "เครื่องแทะหิน",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "พลั่ว",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "เสียม",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "เกรียง",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "ช้อนตัก",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "ไม้ขุด",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "เครื่องขุดดิน",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "รถขุด",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "เครื่องตักทราย",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "จอบ",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "เคียวใหญ่",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "เครื่องพรวนดิน",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "เครื่องไถ",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "คราด",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "เคียวเก็บเกี่ยว",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "คันไถ",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "เคียว",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "หมวกเกราะ",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "หมวก",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "หมวกแก๊ป",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "มงกุฎ",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "ผ้าคลุมหัว",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "เครื่องสวมหัว",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "หมวกคลุม",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "หมวกกะโหลก",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "มงกุฎเพชร",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "ถังครอบหัว",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "เสื้อคลุม",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "เสื้อ",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "เกราะ",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "เกราะอก",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "เสื้อกั๊ก",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "เกราะโซ่",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "เสื้อรัดรูป",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "ผ้ากันเปื้อน",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "เกราะขา",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "กางเกง",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "กางเกงยาว",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "กางเกงขายาว",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "สนับแข้ง",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "กางเกงขาสั้น",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "กางเกงลำลอง",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "ถุงน่อง",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "รองเท้า",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "รองเท้าบูท",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "รองเท้าแตะ",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "กีบ",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "รองเท้าแตะนุ่ม",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "รองเท้ายาง",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "รองเท้ากระทืบ",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "ถุงหุ้มเท้า",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "รองเท้าหนัก",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "โล่",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "โล่เล็ก",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "โล่ศักดิ์สิทธิ์",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "ปราการ",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "โล่กลม",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "โล่ใหญ่",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "เครื่องป้องกัน",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "เครื่องกั้น",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    }
+  ]
+}

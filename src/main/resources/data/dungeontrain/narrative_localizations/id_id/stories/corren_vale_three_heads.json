@@ -1,0 +1,78 @@
+{
+  "id": "corren_vale_three_heads",
+  "character": "Corren Vale",
+  "story": "Tiga Kepala",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Surat Satu",
+      "variants": [
+        "Mira,\n\nTanganmu selalu berlepotan kapur.\n\nKau menggambar garis di segala hal.\n\nKatamu garis lurus membuat dunia tetap jujur.\n\nKau memercayainya.\n\nKurasa aku pun begitu.\n\n- Corren",
+        "Mira.\n\nKau tertawa pelan.\n\nSeolah kau berusaha tak membangunkan sesuatu.\n\nBram tak pernah tahu kapan kau bercanda.\n\naku tahu.\n\n- corren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Surat Dua",
+      "variants": [
+        "Mira.\n\nPasir jiwa itu dingin.\n\nAku tak ingat panas yang menyusul.\n\nKau mengatakan sesuatu.\n\nKurasa kau menyebut namaku.\n\nKurasa kau bilang Lari.\nAku tak menoleh.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Surat Tiga",
+      "variants": [
+        "Bram.\n\nTawamu seperti orang terjatuh.\n\nTiba-tiba. Keras. Selalu terlalu keras.\n\nKatamu kau tertawa agar kegelapan tahu kau ada di sana.\n\nKegelapan selalu tahu.\n\n- Corren",
+        "Bram.\n\nPerisaimu terlalu besar untukmu.\n\nKau berjalan menyamping saat lewat pintu.\n\nEsa menyebutnya meja.\n\nKatamu meja itu tak pernah mengecewakan siapa pun.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Surat Empat",
+      "variants": [
+        "Bram.\n\nTengkorak pertama itu milikmu.\n\nKau memungutnya.\n\nKau meneriakkan sesuatu.\n\nAku tak bisa mendengar di atas deru api.\n\nRoda-roda kereta ini membunyikan tiga nada.\n\nYang pertama milikmu, Bram.\n\n- Corren",
+        "Bram.\n\naku menulis ini lima kali.\n\ntiap kali sampai di tengkorak itu, penaku berhenti.\n\nkau mengangkatnya. kau nyengir.\n\nkatamu ia tak berbobot.\n\nkurasa ia berbobot berat.\n\nRoda-roda kereta ini membunyikan tiga nada.\n\nYang pertama milikmu, Bram.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Surat Lima",
+      "variants": [
+        "Esa.\n\nTanganmu dingin karena meracik ramuan.\n\nSelebihnya dirimu hangat.\n\nMira bilang kau satu-satunya di antara kami yang hangat.\n\nDia benar.\n\n- Corren",
+        "Esa.\n\nKau bernyanyi sambil membalut luka.\n\nLagu-lagu lama. Tak satu pun dari kami mengenalnya.\n\nKatamu kau mengarangnya sambil jalan.\n\nKami berpura-pura memercayaimu.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Surat Enam",
+      "variants": [
+        "Esa.\n\nTanganmu ada di punggungku.\n\nDingin karena meracik ramuan.\n\nKau mendorong sekali.\n\nAku terhuyung ke tempat aman.\n\nKau tak mendorong lagi.\n\nKau sudah tiada, kurasa.\n\nSebelum dorongan itu.\n\n- Corren",
+        "Esa.\n\nAda orang di kereta ini yang telah hidup lebih lama dariku.\n\ntak satu pun dari mereka tampak benar.\n\naku tak mau tahu seperti apa rupaku.\n\nkau pasti akan memberitahuku.\n\nkau pasti akan bilang duduklah Corren dan biar kulihat.\n\n- corren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Surat Tujuh",
+      "variants": [
+        "Aku tak tahu bagaimana aku bisa keluar.\n\nPortalnya rusak. Aku ingat itu.\n\nAku tak ingat melangkah menembusnya.\n\nAku muncul di sebuah ladang. Rumput tinggi. Kereta itu sudah ada di sana.\n\nIa bergerak.\n\nIa selalu bergerak. Kini aku tahu itu.\n\nAku berlari di sampingnya. Aku melompat ke pintu terdekat.\n\nAku tak tahu bagaimana aku bisa meraihnya.\n\nKukira aku sudah selamat.\n\nSudah berminggu-minggu aku terus \"selamat\".\n\nKereta ini tak berhenti.\n\nTak ada jalan turun.\n\n- Corren",
+        "panas di belakangku. dingin di depan.\n\naku tak tahu mana arah atas.\n\naku ingat terjatuh ke rumput.\n\nrumputnya tak terbakar.\n\nitu terasa penting.\n\nlalu sebuah bangunan.\n\naku tak mengenal bangunan itu.\n\naku mengenal semua bangunan di wilayah ini.\n\naku yang memetakan wilayah ini.\n\nsebuah kereta ada di bangunan itu.\n\npintu-pintunya terbuka.\n\naku hidup dan pintu-pintunya terbuka.\n\nkedua hal itu terasa saling berkaitan.\n\n- corren"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Surat Delapan",
+      "variants": [
+        "Sudah berminggu-minggu aku mendengarnya.\n\nSebuah jeritan. Tiga suara, nyaris bertumpuk.\n\nKadang satu datang sendiri. Kadang ketiganya.\n\nDan ledakan-ledakan itu.\n\nAku merasakannya di lantai sebelum mendengarnya.\n\nMereka tak pernah menghancurkan apa pun yang bisa kulihat.\n\nAku tak tahu di mana mereka jatuh.\n\nAku berjalan maju.\n\nJeritan itu datang lagi. Dua gerbong di belakang.\n\nSelalu dari sana.\n\nTak pernah lebih jauh.\n\nAku yakin.\n\n- Corren",
+        "ada sebuah suara.\n\nsudah berminggu-minggu aku mendengarnya.\n\nitu bukan roda-rodanya.\n\nroda-roda membawa musik. tiga nada.\n\nyang ini membawa sesuatu yang lain.\n\nia menjerit.\n\ntiga suara. nyaris seirama. tak pernah pas.\n\ndan ada ledakan-ledakan.\n\naku merasakannya di lantai. mereka tak menghancurkan apa pun.\n\naku sudah bertanya pada yang lain di kereta.\n\ntak satu pun dari mereka mendengarnya.\n\nhanya aku yang mendengarnya.\n\nia untukku.\n\nia punya waktu.\n\n- corren"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Surat Sembilan",
+      "variants": [
+        "Oh.. oh tidak.\n\nMira.\n\nKau pasti sudah menyadarinya sebelum aku.\n\nJeritan itu kini ada di depanku.\n\nSeharusnya tak ada ujung depan.\n\nBram pasti akan berdiri di depan.\n\nDia pasti akan menertawakannya.\n\nDia selalu menertawakan hal-hal yang terlalu besar untuk dilawan.\n\nEsa pasti akan meracik sesuatu.\n\nResistansi Api. Kecepatan. Yang tepat.\n\nDia selalu meracik yang tepat.\n\nAku berjalan maju selama berminggu-minggu.\n\nAku sedang berjalan menujunya.\n\nKereta ini tak punya ujung depan.\n\nTiap langkah maju adalah langkah mendekat.\n\nKini aku bisa melihatnya.\n\nTiga kepala. Tiga suara.\n\nSuara keempat akan jadi milikku.\n\nKurasa ia sudah jadi milikku sejak berminggu-minggu.\n\n- Corren",
+        "ia di sini.\n\nmira.\n\nia tak ada di belakangku.\n\nia di depan.\n\nia selalu di depan.\n\nkau pasti sudah melihat ini. kau selalu melihat segalanya lebih dulu.\n\nbram pasti akan berdiri di depanku.\n\ndia pasti akan tertawa.\n\ndia menertawakan hal-hal yang terlalu besar untuk dilawan.\n\nitu pasti berhasil. sesaat.\n\nesa pasti akan menaruh tangannya di punggungku.\n\ndingin.\n\ndia pasti akan mendorong.\n\naku pasti akan terlempar selamat.\n\naku berjalan menujunya.\n\nkukira aku berjalan menjauh.\n\nkereta ini tak punya ujung depan. kau pasti akan menertawakanku karena melupakan itu.\n\naku bisa melihatnya.\n\ntiga kepala. tiga dirimu.\n\nbram. esa. kau.\n\naku yang keempat.\n\naku memang yang keempat sejak semula.\n\n- corren"
+      ]
+    }
+  ]
+}

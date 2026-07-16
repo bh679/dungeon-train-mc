@@ -1,0 +1,12 @@
+{
+  "id": "joined_world",
+  "title": "Berbilang Pemain?",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Selamat Datang ke Atas Kereta Api Pengembara!\nMenyertai sebuah dunia rupanya! Itu mengujakan.\n\nTerokai bersama, berhubung dengan kereta api bersama!\n\nDengan lebih ramai orang di sekeliling, kereta api pasti akan membesar!\n\nAdakah kau rasa kita akan mendapat lebih banyak gerabak kereta api?",
+    "Hei, kau berjaya! Kau menyertai sebuah dunia baharu!\nSebuah kereta api baharu!\nSelamat datang ke Dungeon Train!\n\nApakah dungeon train?\nMengapa ia di sini?\nApa yang akan kau temui?\n\nSemoga berjaya!",
+    "Kau berjaya! Kau menyertai sebuah dunia baharu!\nKau menyertai Dungeon Train!\n\nBerbilang pemain,\nBeberapa orang, dalam satu dunia!\nBersama.\n\nSungguh satu teknologi!\nKomputer, berhubung.\nOrang berinteraksi,\ndi atas kereta api\ndalam komputermu\ndi internet!"
+  ]
+}
