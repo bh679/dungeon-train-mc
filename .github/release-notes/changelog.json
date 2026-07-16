@@ -4808,6 +4808,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-hidden-menus-not-clickable",
+      "version": "0.465.0",
+      "type": "fix",
+      "title": "Hidden editor menus no longer respond to clicks",
+      "summary": "In the in-game editor, hiding the world-space menus with the \"Editor Menus\" toggle now fully disables them \u2014 previously the panels turned invisible but their buttons stayed clickable, so you could still trigger teleports, weight/gate edits, and pickers by accident, and the hidden cells blocked you from breaking the blocks underneath them.",
+      "highlights": [
+        "Hidden editor menus no longer respond to clicks",
+        "Breaking blocks underneath a hidden menu works again"
+      ],
+      "pr": 773,
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
