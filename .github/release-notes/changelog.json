@@ -4726,6 +4726,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "lamppost-carriage-and-spawn-tuning",
+      "version": "0.462.0",
+      "type": "content",
+      "title": "New lamppost content + enemy spawn tuning",
+      "summary": "A new lamppost content set adds decorated loot pots to the train \u2014 food, a weapon, and the occasional signed Deathnote book. Breezes now show up in the void, end, and upside-down stretches, and enemy/loot spawn balance has been retuned across several carriage types.",
+      "highlights": [
+        "New lamppost content: decorated pots with food, a wooden axe, and a chance at a signed Deathnote book",
+        "Breeze enemies now appear in VOID / END / UPSIDE_DOWN phases and later stages",
+        "Retuned enemy and loot spawn weights across bogged, skeleton, and zombie-room carriages"
+      ],
+      "pr": 765,
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
