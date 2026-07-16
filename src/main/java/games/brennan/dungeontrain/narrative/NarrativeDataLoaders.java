@@ -36,7 +36,7 @@ public final class NarrativeDataLoaders {
         event.addListener(listener("dungeontrain:narrative/random_books", RandomBookRegistry::load));
         event.addListener(listener("dungeontrain:narrative/starting_books", StartingBookRegistry::load));
         event.addListener(listener("dungeontrain:narrative/death_lore", DeathLoreStore::load));
-        event.addListener(listener("dungeontrain:narrative/deathnote_titles", DeathNoteTitleLocalization::load));
+        event.addListener(listener("dungeontrain:narrative/deathnote_triggers", DeathNoteTitleLocalization::load));
     }
 
     @SubscribeEvent

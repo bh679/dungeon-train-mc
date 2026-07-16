@@ -4,51 +4,68 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringReader;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- * Verifies the pure parsing helpers of {@link DeathNoteTitleLocalization}: the per-locale title file
- * parses from either shape, entries are normalized, and malformed input degrades to an empty list
- * (never throws) so a bad datapack file can't break signing.
+ * Verifies the pure helpers of {@link DeathNoteTitleLocalization}, which derives each locale's
+ * Death Note trigger word from that locale's instruction-book title (a single source of truth so the
+ * shown instructions and the trigger can never drift): {@code titleFrom} normalizes a book's title,
+ * ignores the always-accepted English form and placeholders, and never throws; {@code localeFromPath}
+ * extracts the locale from an overlay path.
  */
 class DeathNoteTitleLocalizationTest {
 
-    @Test
-    void parsesAJsonArrayOfTitlesAndNormalisesThem() {
-        List<String> titles = DeathNoteTitleLocalization.parseTitles(
-                new StringReader("[\"死亡笔记\", \"  Death  Note  \"]"), "test");
-        // Normalized: whitespace stripped, English lowercased.
-        assertEquals(List.of("死亡笔记", "deathnote"), titles);
+    /** A minimal instruction-book JSON body with the given title. */
+    private static String book(String titleJson) {
+        return "{\"id\":\"deathnote\",\"title\":" + titleJson
+                + ",\"author\":\"匿名\",\"weight\":1,\"variants\":[\"...\"]}";
     }
 
     @Test
-    void parsesTheTitlesObjectShape() {
-        List<String> titles = DeathNoteTitleLocalization.parseTitles(
-                new StringReader("{\"titles\": [\"死亡笔记\"]}"), "test");
-        assertEquals(List.of("死亡笔记"), titles);
+    void derivesTheNormalisedTitleFromALocalisedBook() {
+        assertEquals("死亡笔记",
+                DeathNoteTitleLocalization.titleFrom(new StringReader(book("\"死亡笔记\""))));
+        // Whitespace is stripped, matching how a signed title is normalized.
+        assertEquals("cahierdelamort",
+                DeathNoteTitleLocalization.titleFrom(new StringReader(book("\"Cahier de la Mort\""))));
     }
 
     @Test
-    void skipsBlankAndNonStringEntries() {
-        List<String> titles = DeathNoteTitleLocalization.parseTitles(
-                new StringReader("[\"死亡笔记\", \"  \", 42, null, {}]"), "test");
-        assertEquals(List.of("死亡笔记"), titles);
+    void englishBaseTitleAddsNothing() {
+        // "Deathnote" (and "Death Note") reduce to the always-accepted English form → no locale entry.
+        assertTrue(DeathNoteTitleLocalization.titleFrom(new StringReader(book("\"Deathnote\""))).isEmpty());
+        assertTrue(DeathNoteTitleLocalization.titleFrom(new StringReader(book("\"Death Note\""))).isEmpty());
+    }
+
+    @Test
+    void missingBlankOrPlaceholderTitleYieldsEmpty() {
+        assertTrue(DeathNoteTitleLocalization.titleFrom(new StringReader(book("\"\""))).isEmpty());
+        assertTrue(DeathNoteTitleLocalization.titleFrom(new StringReader(book("\"   \""))).isEmpty());
+        assertTrue(DeathNoteTitleLocalization.titleFrom(new StringReader(book("\"Untitled\""))).isEmpty());
+        // title field absent entirely
+        assertTrue(DeathNoteTitleLocalization.titleFrom(
+                new StringReader("{\"id\":\"deathnote\",\"variants\":[\"x\"]}")).isEmpty());
+        // title present but not a string
+        assertTrue(DeathNoteTitleLocalization.titleFrom(new StringReader(book("42"))).isEmpty());
     }
 
     @Test
     void malformedOrUnexpectedJsonYieldsEmptyWithoutThrowing() {
-        assertTrue(DeathNoteTitleLocalization.parseTitles(new StringReader("not json"), "test").isEmpty());
-        assertTrue(DeathNoteTitleLocalization.parseTitles(new StringReader("{\"other\": 1}"), "test").isEmpty());
-        assertTrue(DeathNoteTitleLocalization.parseTitles(new StringReader("\"a string\""), "test").isEmpty());
-        assertTrue(DeathNoteTitleLocalization.parseTitles(new StringReader(""), "test").isEmpty());
+        assertTrue(DeathNoteTitleLocalization.titleFrom(new StringReader("not json")).isEmpty());
+        assertTrue(DeathNoteTitleLocalization.titleFrom(new StringReader("[\"an array\"]")).isEmpty());
+        assertTrue(DeathNoteTitleLocalization.titleFrom(new StringReader("")).isEmpty());
     }
 
     @Test
-    void localeOfExtractsTheFileBasename() {
-        assertEquals("zh_cn", DeathNoteTitleLocalization.localeOf("deathnote_titles/zh_cn.json"));
-        assertEquals("es_es", DeathNoteTitleLocalization.localeOf("es_es.json"));
-        assertEquals("", DeathNoteTitleLocalization.localeOf("deathnote_titles/notjson.txt"));
+    void localeFromPathExtractsTheOverlayLocale() {
+        assertEquals("zh_cn", DeathNoteTitleLocalization.localeFromPath(
+                "narrative_localizations/zh_cn/random_books/deathnote.json"));
+        assertEquals("fr_fr", DeathNoteTitleLocalization.localeFromPath(
+                "narrative_localizations/fr_fr/random_books/deathnote.json"));
+        // Not an overlay path → empty.
+        assertEquals("", DeathNoteTitleLocalization.localeFromPath(
+                "narratives/random_books/deathnote.json"));
+        assertEquals("", DeathNoteTitleLocalization.localeFromPath("deathnote.json"));
     }
 
     @Test

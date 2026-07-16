@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.narrative;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -14,8 +13,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -28,22 +27,33 @@ import java.util.Map;
  * canonical English "death note" is always accepted by {@link DeathNoteTitle} regardless of this
  * table, so this only <em>adds</em> per-locale aliases.
  *
- * <p>Client {@code .lang} assets aren't loaded on a dedicated server, so the translated titles live
- * in the server-data channel: bundled files under {@code data/dungeontrain/deathnote_titles/*.json},
- * each named for its locale ({@code zh_cn.json}) and containing a JSON array of accepted titles
- * (or {@code {"titles":[...]}}). A datapack can override or add locales. Registered by
- * {@link NarrativeDataLoaders}, so it honours {@code /reload}.</p>
+ * <h2>Single source of truth: the instruction book</h2>
+ * The game ships a random loot book that teaches players how to make a Death Note
+ * ({@code data/dungeontrain/narratives/random_books/deathnote.json}, whose per-locale overlays live
+ * at {@code narrative_localizations/<locale>/random_books/deathnote.json}). The word that book is
+ * <em>titled</em> is exactly the word a player must name their own book — so the trigger for each
+ * locale is derived straight from that locale's instruction-book title. There is no separate
+ * trigger file to keep in sync: one translated book drives both the shown instructions and the
+ * trigger, and they cannot drift because they are the same string. Adding a new language's book
+ * overlay automatically enables that language's trigger.
  *
- * <p>The load body is plain {@link ResourceManager} code (no loader-specific imports), matching the
- * other narrative loaders, so a future Fabric entrypoint can reuse it.</p>
+ * <p>The English base title ("Deathnote") is intentionally ignored here — it normalizes to
+ * {@code deathnote}, which {@link DeathNoteTitle} already accepts everywhere. Only genuinely
+ * different (non-English) overlay titles are stored.</p>
+ *
+ * <p>Client {@code .lang} assets aren't loaded on a dedicated server, so this reads the server-data
+ * channel (bundled data + datapack overrides) via {@link ResourceManager}. Registered by
+ * {@link NarrativeDataLoaders}, so it honours {@code /reload}. The load body is plain
+ * {@link ResourceManager} code, matching the other narrative loaders.</p>
  */
 public final class DeathNoteTitleLocalization {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Datapack directory holding the per-locale trigger-title files. */
-    static final String SUBDIR = "deathnote_titles";
-    private static final String EXT = ".json";
+    /** Root of the per-locale narrative overlays (shared with {@link NarrativeContentLocale#ROOT}). */
+    private static final String ROOT = NarrativeContentLocale.ROOT;
+    /** The instruction book whose title defines the trigger word: {@code random_books/deathnote}. */
+    static final String INSTRUCTION_BOOK_SUFFIX = "/random_books/deathnote.json";
 
     /**
      * Locale (lowercased, e.g. {@code zh_cn}) → normalized accepted titles. Rebuilt wholesale on each
@@ -56,8 +66,9 @@ public final class DeathNoteTitleLocalization {
 
     /**
      * The accepted trigger titles for {@code locale}, or an empty list when the locale is unknown,
-     * blank, or English. Returned titles are already {@link DeathNoteTitle#normalize normalized};
-     * callers still get English matching for free from {@link DeathNoteTitle}.
+     * blank, English, or ships no localized instruction book. Returned titles are already
+     * {@link DeathNoteTitle#normalize normalized}; callers still get English matching for free from
+     * {@link DeathNoteTitle}.
      */
     public static Collection<String> titlesFor(String locale) {
         if (locale == null || locale.isEmpty()) return List.of();
@@ -65,35 +76,32 @@ public final class DeathNoteTitleLocalization {
     }
 
     /**
-     * Reload the table from the datapack channel (bundled data + datapack overrides). Called by the
-     * reload listener at world load / {@code /reload} and by the {@code /dungeontrain narrative reload}
-     * command. Builds a fresh map and swaps it in — never mutates the live one.
+     * Reload the table by scanning the per-locale instruction-book overlays through the datapack
+     * channel (bundled data + datapack overrides). Called by the reload listener at world load /
+     * {@code /reload} and by {@code /dungeontrain narrative reload}. Builds a fresh map and swaps it
+     * in — never mutates the live one.
      */
     public static void load(ResourceManager resourceManager) {
-        Map<String, List<String>> next = new java.util.HashMap<>();
+        Map<String, List<String>> next = new HashMap<>();
         Map<ResourceLocation, Resource> resources =
-            resourceManager.listResources(SUBDIR, rl -> rl.getPath().endsWith(EXT));
+            resourceManager.listResources(ROOT, rl -> rl.getPath().endsWith(INSTRUCTION_BOOK_SUFFIX));
         for (Map.Entry<ResourceLocation, Resource> entry : resources.entrySet()) {
             ResourceLocation file = entry.getKey();
-            String locale = localeOf(file.getPath());
+            String locale = localeFromPath(file.getPath());
             if (locale.isEmpty()) continue;
             try (InputStream in = entry.getValue().open();
                  Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-                List<String> titles = parseTitles(r, file.toString());
-                if (!titles.isEmpty()) {
-                    next.computeIfAbsent(locale, k -> new ArrayList<>()).addAll(titles);
+                String title = titleFrom(r);
+                // Ignore an absent/blank title or one that reduces to the always-accepted English form.
+                if (!title.isEmpty()) {
+                    next.put(locale, List.of(title));
                 }
             } catch (Exception e) {
-                LOGGER.error("[DungeonTrain] deathnote_titles: failed reading '{}': {}", file, e.toString());
+                LOGGER.error("[DungeonTrain] deathnote trigger: failed reading '{}': {}", file, e.toString());
             }
         }
-        // Freeze each locale's list before publishing the immutable snapshot.
-        Map<String, List<String>> frozen = new java.util.HashMap<>();
-        for (Map.Entry<String, List<String>> e : next.entrySet()) {
-            frozen.put(e.getKey(), List.copyOf(e.getValue()));
-        }
-        byLocale = Map.copyOf(frozen);
-        LOGGER.info("[DungeonTrain] deathnote_titles loaded — {} locale(s)", byLocale.size());
+        byLocale = Map.copyOf(next);
+        LOGGER.info("[DungeonTrain] deathnote localized triggers loaded — {} locale(s)", byLocale.size());
     }
 
     /** Drop the table (called on server stop). */
@@ -101,42 +109,42 @@ public final class DeathNoteTitleLocalization {
         byLocale = Map.of();
     }
 
-    /** The locale key from a resource path like {@code deathnote_titles/zh_cn.json} → {@code zh_cn}. */
-    static String localeOf(String path) {
-        int slash = path.lastIndexOf('/');
-        String name = slash >= 0 ? path.substring(slash + 1) : path;
-        if (!name.endsWith(EXT)) return "";
-        return name.substring(0, name.length() - EXT.length()).toLowerCase(Locale.ROOT);
+    /**
+     * The locale key from an overlay path like
+     * {@code narrative_localizations/zh_cn/random_books/deathnote.json} → {@code zh_cn}. Empty when
+     * the path isn't a {@code <root>/<locale>/…} overlay.
+     */
+    static String localeFromPath(String path) {
+        String prefix = ROOT + "/";
+        if (!path.startsWith(prefix)) return "";
+        String rest = path.substring(prefix.length());
+        int slash = rest.indexOf('/');
+        if (slash <= 0) return "";
+        return rest.substring(0, slash).toLowerCase(Locale.ROOT);
     }
 
-    /** Parse a file body — a JSON array of titles, or {@code {"titles":[...]}}. Normalizes each entry. */
-    static List<String> parseTitles(Reader reader, String source) {
+    /**
+     * The normalized {@code title} of an instruction-book JSON body, or {@code ""} when the title is
+     * absent/blank, a placeholder ({@code "Untitled"}), or reduces to the English {@code deathnote}
+     * form (already accepted everywhere). Never throws — malformed JSON yields {@code ""}.
+     */
+    static String titleFrom(Reader reader) {
         JsonElement root;
         try {
             root = JsonParser.parseReader(reader);
         } catch (Exception e) {
-            LOGGER.warn("[DungeonTrain] deathnote_titles: {} is not valid JSON — skipped ({})",
-                    source, e.toString());
-            return List.of();
+            return "";
         }
-        JsonArray arr;
-        if (root.isJsonArray()) {
-            arr = root.getAsJsonArray();
-        } else if (root.isJsonObject() && root.getAsJsonObject().has("titles")
-                && root.getAsJsonObject().get("titles").isJsonArray()) {
-            arr = root.getAsJsonObject().getAsJsonArray("titles");
-        } else {
-            LOGGER.warn("[DungeonTrain] deathnote_titles: {} is neither an array nor {{titles:[...]}} — skipped",
-                    source);
-            return List.of();
+        if (!root.isJsonObject()) return "";
+        JsonObject obj = root.getAsJsonObject();
+        if (!obj.has("title") || !obj.get("title").isJsonPrimitive()
+                || !obj.getAsJsonPrimitive("title").isString()) {
+            return "";
         }
-        List<String> out = new ArrayList<>();
-        for (JsonElement el : arr) {
-            if (!el.isJsonPrimitive() || !el.getAsJsonPrimitive().isString()) continue;
-            String title = el.getAsString();
-            if (title == null || title.isBlank()) continue;
-            out.add(DeathNoteTitle.normalize(title));
-        }
-        return out;
+        String raw = obj.get("title").getAsString();
+        if (raw == null || raw.isBlank() || raw.equalsIgnoreCase("Untitled")) return "";
+        String normalized = DeathNoteTitle.normalize(raw);
+        // "Deathnote" (English base) normalizes to the always-accepted form — nothing to add.
+        return DeathNoteTitle.isDeathNoteTitle(raw) ? "" : normalized;
     }
 }
