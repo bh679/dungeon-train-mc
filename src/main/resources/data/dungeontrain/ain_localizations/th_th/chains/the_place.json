@@ -1,0 +1,25 @@
+{
+  "id": "adventureitemnames:the_place",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "The",
+      "refs": [
+        {
+          "ref": "adventureitemnames:determiners",
+          "weight": 6.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "สถานที่",
+      "refs": []
+    }
+  ]
+}
