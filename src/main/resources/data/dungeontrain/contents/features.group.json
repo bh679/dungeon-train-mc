@@ -8,7 +8,7 @@
     },
     {
       "id": "tree",
-      "weight": 7
+      "weight": 5
     },
     {
       "id": "cherryblossom",
@@ -93,6 +93,10 @@
     },
     {
       "id": "irongolem2",
+      "weight": 1
+    },
+    {
+      "id": "lamppost",
       "weight": 1
     }
   ]
