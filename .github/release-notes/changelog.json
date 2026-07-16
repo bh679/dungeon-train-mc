@@ -4824,6 +4824,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stopsound-anticheat-whitelist",
+      "version": "0.466.0",
+      "type": "fix",
+      "title": "Whitelisted /stopsound for Free Play runs",
+      "summary": "Running /stopsound to silence a sound no longer marks your run as cheated \u2014 it has no gameplay effect, so it's now treated the same as /playanimation, /help, and /me.",
+      "highlights": [],
+      "pr": 774,
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
