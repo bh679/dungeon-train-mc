@@ -314,7 +314,11 @@ public final class DeathLoreStore {
         // NarrativeContentLocale drives which locale's death_lore templates are active,
         // so Chinese prose must carry Chinese numerals rather than English words.
         String loc = NarrativeContentLocale.current();
-        if (loc.startsWith("zh")) return zhWords(n);
+        if (loc.startsWith("zh")) {
+            // Traditional variants (Taiwan/Hong Kong) use 萬 rather than Simplified 万.
+            boolean traditional = loc.startsWith("zh_tw") || loc.startsWith("zh_hk");
+            return zhWords(n, traditional);
+        }
         // Only the English base spells figures with the English word tables below. Other localized
         // prose (es, pt, id, ms, fil, vi, th, …) spells figures in its own language via
         // LocaleNumberWords, so numbers read naturally instead of leaking English words ("zero").
@@ -346,11 +350,19 @@ public final class DeathLoreStore {
 
     /** Chinese numerals for 0..99999; larger or negative values fall back to plain digits. */
     static String zhWords(long n) {
+        return zhWords(n, false);
+    }
+
+    /**
+     * Chinese numerals for 0..99999. When {@code traditional}, the myriad marker is 萬 (Traditional)
+     * rather than 万 (Simplified); every other glyph in this range is script-identical.
+     */
+    static String zhWords(long n, boolean traditional) {
         if (n == 0) return "零";
         if (n < 0 || n >= 100_000) return Long.toString(n);
         if (n >= 10_000) {
             long wan = n / 10_000, rem = n % 10_000;
-            String s = ZH_DIGITS[(int) wan] + "万";
+            String s = ZH_DIGITS[(int) wan] + (traditional ? "萬" : "万");
             if (rem == 0) return s;
             return s + (rem < 1_000 ? "零" : "") + zhBelow10000(rem);
         }
