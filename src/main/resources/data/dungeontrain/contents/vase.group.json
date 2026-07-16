@@ -4,7 +4,7 @@
   "variants": [
     {
       "id": "barrels",
-      "weight": 7
+      "weight": 3
     },
     {
       "id": "chest",
@@ -37,6 +37,14 @@
     {
       "id": "vases",
       "weight": 1
+    },
+    {
+      "id": "barrelsroom",
+      "weight": 1
+    },
+    {
+      "id": "barrelsvert2",
+      "weight": 4
     }
   ]
 }

@@ -1,0 +1,20 @@
+{
+  "id": "adventureitemnames:crafted_by",
+  "entries": [
+    {
+      "text": "Gefertigt"
+    },
+    {
+      "text": "Entworfen"
+    },
+    {
+      "text": "Gemacht"
+    },
+    {
+      "text": "Gebaut"
+    },
+    {
+      "text": "Geschmiedet"
+    }
+  ]
+}

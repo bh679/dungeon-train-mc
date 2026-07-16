@@ -1,0 +1,20 @@
+{
+  "id": "adventureitemnames:crafted_by",
+  "entries": [
+    {
+      "text": "Изготовлено"
+    },
+    {
+      "text": "Создано"
+    },
+    {
+      "text": "Сделано"
+    },
+    {
+      "text": "Построено"
+    },
+    {
+      "text": "Выковано"
+    }
+  ]
+}

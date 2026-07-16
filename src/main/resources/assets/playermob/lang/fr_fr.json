@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "Joueur",
+  "item.playermob.player_mob_spawn_egg": "Œuf d'apparition de joueur",
+  "item.playermob.player_mob_aggressive_spawn_egg": "Œuf d'apparition de joueur agressif",
+  "item.playermob.player_mob_friendly_spawn_egg": "Œuf d'apparition de joueur amical",
+  "item.playermob.player_mob_passive_spawn_egg": "Œuf d'apparition de joueur passif",
+  "item.playermob.player_mob_skeptical_spawn_egg": "Œuf d'apparition de joueur sceptique",
+  "item.playermob.player_mob_shy_spawn_egg": "Œuf d'apparition de joueur timide",
+  "container.playermob.player_mob": "Joueur"
+}

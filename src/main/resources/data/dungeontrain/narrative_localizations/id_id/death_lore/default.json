@@ -1,0 +1,274 @@
+[
+  {
+    "page": "fall",
+    "weight": 3,
+    "question": "Apa itu Dungeon Train?",
+    "narration": "Gerbong {carriage}. Di situlah kegelapan menjangkaumu. Sudah paham sekarang? Dungeon Train tak pernah berhenti — ia hanya terus melaju, lebih dalam, selamanya."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "min_carriage": 100 },
+    "question": "Apa itu Dungeon Train?",
+    "narration": "{carriage} gerbong ke dalam kegelapan. Sedikit yang menumpang sejauh itu sebelum rel merenggutnya. Lebih sedikit lagi yang naik kembali."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "max_carriage": 3 },
+    "question": "Apa itu Dungeon Train?",
+    "narration": "Gerbong {carriage}. Baru saja naik, dan kegelapan sudah menerkammu. Rel itu sabar — ia sanggup bersabar."
+  },
+  {
+    "page": "deeds",
+    "weight": 3,
+    "question": "Mengapa kau ada di sini?",
+    "narration": "Kau menumbangkan {mobs} makhluk dalam kegelapan, dan berdarah demi itu sebanyak {hearts} hati.\nDari {met} jiwa yang kautemui, {slain} kauakhiri — dan {friends} kausebut teman."
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "Apa yang seharusnya kaulakukan?",
+    "narration": "Besi dan mata bilah, dikumpulkan dari kegelapan dan dibawa sejauh ini. Tak satu pun cukup — mungkin itu memang tak pernah jadi intinya."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 5 },
+    "question": "Apa yang seharusnya kaulakukan?",
+    "narration": "Kau membaca {books} buku milik rel ini dan tetap membawa baja. Pengetahuan dan sebilah pedang, dan kegelapan merenggut keduanya."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_friends": 5 },
+    "question": "Apakah mereka sepadan?",
+    "narration": "Kau menjalin {friends} teman di rel ini, dan ia tetap merenggutmu. Mungkin hanya angka itulah yang pernah benar-benar milikmu untuk kausimpan."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_mobs": 200 },
+    "question": "Seberapa banyak kegelapan kaubalas dengan cara yang sama?",
+    "narration": "{mobs} makhluk tumbang di tanganmu sebelum kau tumbang di tangan mereka. Rel tak menghakimi. Ia hanya menghitung."
+  },
+  {
+    "page": "lives",
+    "weight": 3,
+    "conditions": { "min_deaths": 2 },
+    "question": "Semua ini pertanyaan bagus",
+    "narration": "Ini bukan tanda-tanda satu kehidupan. Melintasi seluruh {deaths} — tiap kegelapan yang kaunaiki, tiap kali rel merenggutmu dan kau tetap kembali — inilah keseluruhan pengembaraanmu."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "Apakah satu kehidupan begitu mudah dihabiskan?",
+    "subline": "kejatuhan pertamamu di rel ini.",
+    "narration": "Tak ada kehidupan lain untuk ditimbang terhadap yang satu ini — belum. Inilah keseluruhan dirimu: segala yang telah kaulakukan sejak pertama kali naik. Rel akan mengingatnya. Kau pun seharusnya begitu."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 10 },
+    "question": "Semua ini pertanyaan bagus",
+    "narration": "Ini bukan tanda-tanda satu kehidupan. {deaths} kali kegelapan merenggutmu, dan {deaths} kali kau naik kembali."
+  },
+  {
+    "page": "platform",
+    "weight": 3,
+    "conditions": { "min_deaths": 2 },
+    "question": "Akankah kau naik lagi, atau turun ke dalam kesunyian?",
+    "narration": "Peron itu kosong. Peluit berbunyi jauh di ujung rel. Ia berjalan tanpa akhir — dan begitu pula, tampaknya, kau.",
+    "epitaph": "yang ke-{deaths} tumbang. mungkin bukan yang terakhir."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "Akankah kau naik lagi — kini setelah kau tahu bagaimana ia berakhir?",
+    "narration": "Peron itu kosong, sama seperti saat pertama kali kau melangkah naik. Peluit berbunyi jauh di ujung rel. Kau telah tumbang sekali. Apakah ada kali kedua, seperti biasa, terserah padamu untuk memutuskan.",
+    "epitaph": "yang pertama tumbang. rel itu sabar — ia akan menunggu selebihnya."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 20 },
+    "question": "Perlukah kau bertanya lagi?",
+    "narration": "Peron sudah mengenali wajahmu sekarang. Peluit berbunyi seperti biasanya. Kau sudah tahu apa yang datang berikutnya.",
+    "epitaph": "yang ke-{deaths} tumbang — dan, tampaknya, bukan yang terakhir."
+  },
+
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Apa itu Dungeon Train?",
+    "narration": "Gerbong {carriage}. Kegelapan telah menunggu di sana selama ini — kau hanya baru tiba untuk menemuinya."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Apa itu Dungeon Train?",
+    "narration": "Gerbong {carriage}, dan tidak lebih jauh. Rel tak menyimpan dendam maupun belas kasih; ia hanya terus melaju."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Apa itu Dungeon Train?",
+    "narration": "Lentera gerbong {carriage} masih berayun di tempat kau tumbang. Kereta tak melambat untuk menoleh."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Apa itu Dungeon Train?",
+    "narration": "Kau mencapai gerbong {carriage} sebelum lantai dunia runtuh. Rel melaju terus tanpa bobotmu."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Apa itu Dungeon Train?",
+    "narration": "Gerbong {carriage}. Di suatu tempat di depan, rel terus terbentang ke dalam kegelapan, acuh bahwa kau tak lagi di atasnya."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Apa itu Dungeon Train?",
+    "narration": "Di sini, di gerbong {carriage}, kegelapan akhirnya menyamai langkahmu. Ia memang selalu akan begitu."
+  },
+
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Mengapa kau ada di sini?",
+    "narration": "Kau menumbangkan {mobs} makhluk dalam kegelapan dan menyerahkan {hearts} hati untuk melakukannya. Dari {met} jiwa yang kaulewati, {slain} kautebas dan {friends} kaubiarkan mendekat."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Mengapa kau ada di sini?",
+    "narration": "{mobs} makhluk tumbang di hadapanmu dan {hearts} hati luruh darimu. Kau berpapasan dengan {met} jiwa lain dalam kegelapan — mengakhiri {slain}, menyimpan {friends} — lalu tiba giliranmu."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Mengapa kau ada di sini?",
+    "narration": "Dari kegelapan kaurenggut {mobs}; dari dirimu sendiri kauhabiskan {hearts} hati. {met} jiwa berbagi rel ini: {slain} kauakhiri, {friends} kaupertahankan."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "max_friends": 0 },
+    "question": "Mengapa kau ada di sini?",
+    "narration": "Kau menumbangkan {mobs} makhluk dan berdarah {hearts} hati. Kau menemui {met} jiwa, mengakhiri {slain}, dan tak menyebut satu pun teman. Kegelapan lebih sederhana saat sendirian."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_slain": 5 },
+    "question": "Dengan apa kaubalas kegelapan?",
+    "narration": "Dari {met} yang kautemui, {slain} kautebas — {mobs} makhluk lagi dalam kegelapan selain itu — demi {hearts} hati, dan {friends} kauampuni untuk kausebut teman. Rel tak menyebutnya pembunuhan."
+  },
+
+  {
+    "page": "gear",
+    "weight": 2,
+    "question": "Apa yang seharusnya kaulakukan?",
+    "narration": "Kau mengumpulkan segala yang bisa kaubawa dari gerbong-gerbong. Rel membiarkanmu menyimpannya — ia tak butuh muatan, hanya penumpang."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 0 },
+    "question": "Apa yang seharusnya kaulakukan?",
+    "narration": "Kau tak membongkar satu peti pun di rel ini — hanya membawa apa yang kaunaiki, dan mengayunkannya sampai akhir. Kegelapan menyimpan apa yang tak kauambil."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 9 },
+    "question": "Apa yang seharusnya kaulakukan?",
+    "narration": "Segelintir peti terbuka — {loot} semuanya — dan sebilah pedang tetap terdekap. Rel murah hati kepada yang berhenti; kau nyaris tak berhenti."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_loot": 250 },
+    "question": "Apa yang seharusnya kaulakukan?",
+    "narration": "{loot} wadah kaukosongkan ke dalam ranselmu. Kau menguliti kegelapan dari segala yang tak terpaku, dan ia tetap merenggut satu hal yang penting."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_books": 0 },
+    "question": "Apa yang seharusnya kaulakukan?",
+    "narration": "Tak satu halaman pun terbuka — hanya baja yang dikumpulkan dan diayunkan. Rel menyimpan kisah-kisahnya untuk mereka yang berhenti untuk membaca."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 10 },
+    "question": "Apa yang seharusnya kaulakukan?",
+    "narration": "Kau membaca {books} buku milik rel ini dan tetap membawa baja pula. Kebijaksanaan dan sebilah pedang, dan kegelapan bersabar dengan keduanya."
+  },
+
+  {
+    "page": "lives",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "Semua ini pertanyaan bagus",
+    "narration": "Hitunglah: {deaths} kali rel merenggutmu, {deaths} kali kau menyahut peluit. Inilah wujudmu, digambar dalam kepergian."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "Semua ini pertanyaan bagus",
+    "narration": "Melintasi {deaths} kehidupan, angka-angka mengumpul bagai debu di atas rel. Tak satu pun hilang; rel tak melupakan apa pun."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Mengapa kau terus naik?",
+    "narration": "{deaths} kejatuhan, dan kau tetap naik. Rel berhenti bertanya-tanya apakah kau akan kembali. Begitu pula, mungkin, kau."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Mengapa kau terus naik?",
+    "narration": "{deaths} kematian di belakangmu dan peluit yang sama di depan. Kau bukan lagi seorang penumpang — kau bagian dari jadwal perjalanan."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Mengapa kau terus naik?",
+    "narration": "Kegelapan tak lagi jadi orang asing; sudah {deaths} kali kau mempelajari wajahnya. Itu pun semacam kehilangan tersendiri."
+  },
+
+  {
+    "page": "platform",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "Akankah kau naik lagi, atau membiarkan peron menahanmu?",
+    "narration": "Peluit sudah berbunyi, jauh di depan. Ia tak menunggumu — tak pernah — namun di sinilah kau berdiri, memutuskan untuk mengikuti.",
+    "epitaph": "yang ke-{deaths} tumbang. rel terus melaju."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "Akankah kau naik lagi?",
+    "narration": "Peron itu sunyi. Di suatu tempat kereta sudah penuh dengan kisah orang lain. Selalu ada ruang untuk satu lagi kisahmu.",
+    "epitaph": "yang ke-{deaths} tumbang. mungkin bukan yang terakhir."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Perlukah rel bertanya lagi?",
+    "narration": "Kau mengenal bobot pintunya, dinginnya anak tangga. Kegelapan kini hanyalah tempat yang sesekali kaukunjungi.",
+    "epitaph": "yang ke-{deaths} tumbang — pelanggan tetap rel ini."
+  }
+]

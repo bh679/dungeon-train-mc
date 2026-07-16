@@ -159,7 +159,7 @@ public final class TrainTickEvents {
         GenProfiler.Sample s = GenProfiler.sampleAndReset();
         if (s.chunks() <= 0) return;
         JITTER_LOGGER.debug(
-            "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} biome={} mirror={} track={} | perChunk df={} nether={} core={} biome={} mirror={} track={}",
+            "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} biome={} mirror={} track={} disint={} erosion={} | perChunk df={} nether={} core={} biome={} mirror={} track={} disint={} erosion={}",
             level.dimension().location(), s.chunks(),
             String.format("%.2f", s.dtTotalMs()), String.format("%.3f", s.dtTotalPerChunkMs()),
             String.format("%.2f", s.ms(GenProfiler.Bucket.DF)),
@@ -168,12 +168,16 @@ public final class TrainTickEvents {
             String.format("%.2f", s.ms(GenProfiler.Bucket.BIOME_FORCE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.MIRROR_PRECOMPUTE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.TRACK_FEATURE)),
+            String.format("%.2f", s.ms(GenProfiler.Bucket.DISINTEGRATION)),
+            String.format("%.2f", s.ms(GenProfiler.Bucket.EROSION)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.DF)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.NETHER_FEATURE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.CORE_REPLACE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.BIOME_FORCE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.MIRROR_PRECOMPUTE)),
-            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.TRACK_FEATURE)));
+            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.TRACK_FEATURE)),
+            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.DISINTEGRATION)),
+            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.EROSION)));
     }
 
     @SubscribeEvent

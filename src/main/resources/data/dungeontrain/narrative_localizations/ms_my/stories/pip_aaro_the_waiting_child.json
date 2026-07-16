@@ -1,0 +1,47 @@
+{
+  "id": "pip_aaro_the_waiting_child",
+  "character": "Pip Aaro",
+  "story": "Anak yang Menunggu",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Surat Pertama",
+      "variants": [
+        "Nama saya Pip. Saya lapan tahun.\n\nSaya berada di dalam keretapi yang saya tak kenal. Kerusinya berbau macam kot Nenek.\n\nSeekor tikus beri saya kertas ini. Tikus betul. Berpakaian.\n\nSaya sedang mencari Mama.\n\nSedikit takut. Sikit sahaja.\n\nPip",
+        "Saya tertidur di dalam keretapi bersama Mama. Saya terjaga dan Mama sudah tiada.\n\nKeretapi ini berbeza sekarang. Beg saya berbeza. Buku oren itu tiada di dalamnya.\n\nSeekor tikus beri saya kertas ini. Dia pakai rompi.\n\nSaya akan cari Mama. Banyaknya gerabak.\n\nSaya tak menangis.\n\nPip"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Surat Kedua",
+      "variants": [
+        "Saya tanya seorang lelaki di mana konduktor.\n\nDia pakai kot kuning. Dia ketawa. Dia kata sayang, tiada konduktor di sini. Dia kata keretapi ini tak berhenti.\n\nSaya tak percaya dia. Keretapi berhenti.\n\nLelaki berkot kuning itu banyak tidur sekarang. Saya rasa dia sedih.\n\nSaya tak mahu jadi macam itu.\n\nPip",
+        "Saya jumpa sebuah buku nota di bawah kerusi.\n\nAda orang mengira gerabak. Mereka sampai ke 384 dan berhenti. Mereka kata tiada gunanya mencari bahagian hadapan.\n\nSaya tak faham maksud mereka. Keretapi ada bahagian hadapan.\n\nSaya simpan buku nota itu. Rasa macam ada kawan untuk berbual.\n\nMereka bunyi macam penat. Saya belum penat lagi.\n\nPip"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Surat Ketiga",
+      "variants": [
+        "Sesetengah orang di dalam keretapi ini pura-pura.\n\nMereka nampak betul. Tapi mereka tak nampak awak. Saya lambai pada seorang wanita dan dia terus berjalan melepasi saya.\n\nSesetengah orang MEMANG ada. Lelaki berkot kuning. Tikus itu. Seorang wanita yang beri saya epal.\n\nSaya simpan senarai orang yang betul. Ada empat. Mungkin saya pun seorang.\n\nPip",
+        "Saya buat satu rancangan.\n\nJalan satu arah. Jangan pusing. Kemudian saya akan sampai ke belakang keretapi.\n\nSaya jalan lama. Empat puluh tujuh gerabak. Saya tak menoleh.\n\nTiada bahagian belakang. Hujungnya nampak macam tempat saya mula. Bau Nenek yang sama.\n\nSaya tak faham. Saya mahu Mama.\n\nPip"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Surat Keempat",
+      "variants": [
+        "Wanita yang beri epal itu kawan saya sekarang. Namanya Soren.\n\nDia sudah lama lama di dalam keretapi ini. Dia tak mahu beritahu berapa lama.\n\nSoren tanya pasal Mama. Saya beritahu dia. Dia jadi diam. Kemudian dia kata Mama awak bunyi macam hebat.\n\nDia cakap dengan cara yang sama macam lelaki berkot kuning cakap keretapi ini tak berhenti.\n\nSaya tetap akan cari Mama.\n\nPip",
+        "Ada seekor slime di gerabak saya. Saya namakan dia Pebble.\n\nDia kecil dan hijau. Soren kata dia terlalu kecil untuk berbahaya lagi. Saya tak percaya itu tentang Pebble.\n\nDia ikut saya ke pintu tapi tak melaluinya. Saya rasa dia ingat pintu itu dinding.\n\nMama tentu kata slime itu raksasa. Mama silap tentang Pebble.\n\nSaya rindu Mama.\n\nTapi saya ada Pebble.\n\nPip"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Surat Kelima",
+      "variants": [
+        "Soren beritahu saya tentang pintu itu.\n\nDia kata ada satu pintu di keretapi ini yang menuju ke luar. Dia kata kalau saya jumpa, saya patut melaluinya.\n\nSaya fikir lama tentangnya. Tentang Mama. Tentang Pebble.\n\nKalau Mama ada di keretapi ini, saya mesti terus mencari. Kalau dia tiada, saya tetap tak dapat sampai kepadanya.\n\nBila saya jumpa pintu itu, saya akan duduk di sebelahnya. Dan menunggu.\n\nSoren kata baiklah sayang. Macam dia bersungguh kali ini.\n\nPip",
+        "Saya tulis sepucuk surat untuk Mama.\n\nSoren kata kadang-kadang orang melalui gerabak yang sama banyak kali. Jadi saya tinggalkannya di tempat semua orang lalu.\n\nIa tulis nama saya. Ia kata saya ada kawan bernama Soren dan seekor slime bernama Pebble.\n\nIa kata saya okey. Ia kata saya sedang menunggu.\n\nMama akan jumpa. Mama pandai jumpa benda.\n\nPip"
+      ]
+    }
+  ]
+}

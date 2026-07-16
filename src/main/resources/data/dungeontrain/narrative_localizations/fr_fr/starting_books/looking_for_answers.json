@@ -1,0 +1,10 @@
+{
+  "id": "looking_for_answers",
+  "title": "En quête de réponses",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "En quête de réponses ?\nBienvenue dans le Dungeon Train\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQue dois-tu faire ?\nVoilà de bonnes questions\n\nLes questions sont importantes.\n\nCertaines questions sont plus importantes que les réponses.\nCertaines questions ont plusieurs réponses.\nCertaines questions n'ont pas besoin de réponses.\nCertaines réponses créent les questions.\nCertaines questions partagent des réponses.\nCertaines réponses partagent une question.\nMais toutes les questions n'ont pas la même importance.\nCertaines questions sont plus importantes.\nCertaines questions sont les bonnes questions.\nQuelle est la bonne question ?\nPeut-être est-ce là la réponse."
+  ]
+}

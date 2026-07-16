@@ -4419,6 +4419,472 @@
       "released": true,
       "released_in": "v0.451.0",
       "released_at": "2026-07-13T06:04:07Z"
+    },
+    {
+      "id": "random-playerbook-loot",
+      "version": "0.452.0",
+      "type": "feat",
+      "title": "Player-written books in loot: the random_playerbook item",
+      "summary": "A new loot book that pulls exclusively from books other players wrote and shared. When it lands in a chest before the community pool has loaded, it fills in with a regular random book and quietly upgrades to a real player-written one the moment you pick it up to read it.",
+      "highlights": [
+        "New random_playerbook loot book, sourced only from player-written community books",
+        "Falls back to a normal random book when no shared books are available yet",
+        "Fallback books upgrade to a real player-written book when you pick them up, once the pool loads"
+      ],
+      "pr": 744,
+      "date": "2026-07-13",
+      "released": true,
+      "released_in": "v0.452.0",
+      "released_at": "2026-07-13T07:46:59Z"
+    },
+    {
+      "id": "nether-crossing-gen-lag-fix",
+      "version": "0.454.0",
+      "type": "perf",
+      "title": "Smoother Nether-band crossings on long trains",
+      "summary": "Riding a long train across the Nether-transition band is much smoother. The heavy world-generation cost of the band has been cut, and turning around mid-band no longer freezes the game for several seconds while chunks catch up.",
+      "highlights": [
+        "Nether-band chunk generation is markedly cheaper, cutting the stutter while a long train crosses it.",
+        "Reversing direction mid-band no longer freezes the server for seconds at a time."
+      ],
+      "pr": 748,
+      "date": "2026-07-13",
+      "released": true,
+      "released_in": "v0.454.0",
+      "released_at": "2026-07-13T12:22:07Z"
+    },
+    {
+      "id": "smooth-swapping-modpack-config",
+      "version": "0.452.0",
+      "type": "feat",
+      "title": "Smooth Swapping ships with a tuned default config",
+      "summary": "The optional Smooth Swapping companion mod now ships pre-configured with a tuned item-swap animation speed, instead of the mod's stock defaults.",
+      "highlights": [],
+      "pr": 745,
+      "date": "2026-07-13",
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
+    },
+    {
+      "id": "echo-mob-nameplate-i18n",
+      "version": "0.454.2",
+      "type": "chore",
+      "title": "Reincarnated-echo nameplate is now translatable",
+      "summary": "The 'Echo of <player>' name floating above a reincarnated author-echo now shows in your client language instead of always English \u2014 part of the Chinese localization wave.",
+      "highlights": [
+        "Echo mob nameplate localized (English + Simplified Chinese)"
+      ],
+      "date": "2026-07-14",
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
+    },
+    {
+      "id": "consent-message-order-after-accept",
+      "version": "0.455.0",
+      "type": "fix",
+      "title": "Developer message now arrives after you accept it",
+      "summary": "When the Developer sends you a message in-game, the reply now lands after your \"@Dev\" accept line (and the \"online now\" note) instead of appearing above it \u2014 so the conversation reads in the right order.",
+      "highlights": [
+        "Held Developer message is delivered after your @Dev acceptance, not before it"
+      ],
+      "pr": 749,
+      "date": "2026-07-13",
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
+    },
+    {
+      "id": "barrel-vase-books2-content-tuning",
+      "version": "0.455.0",
+      "type": "content",
+      "title": "Barrel/vase decor variants + books2 tuning",
+      "summary": "Added new barrel room and vertical barrel stack decor variants, refined existing barrel/vase groupings, and tuned the books2 content prefab for better in-world variety.",
+      "highlights": [
+        "New barrelsroom and barrelsvert2 decor variants",
+        "Refined barrels_vert and vase grouping",
+        "books2 prefab tuning pass"
+      ],
+      "pr": 747,
+      "date": "2026-07-13",
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
+    },
+    {
+      "id": "relay-outbox-http1-pin",
+      "version": "0.455.0",
+      "type": "chore",
+      "title": "Pin relay outbox HTTP client to HTTP/1.1",
+      "summary": "Internal/dev change with no player-facing effect: the relay telemetry outbox now pins HTTP/1.1, matching the other relay reporters, so outbox submits reach a bare-Node localhost relay during local testing. Production is unaffected (it already terminates HTTP/1.1 at the reverse proxy).",
+      "highlights": [],
+      "pr": 751,
+      "date": "2026-07-13",
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
+    },
+    {
+      "id": "discordpresence-consent-seam-i18n",
+      "version": "0.456.0",
+      "type": "fix",
+      "title": "Network-consent popup fully translatable",
+      "summary": "The four bullet points and the \"Harvest your soul\" line on the \"Connect to the internet?\" popup were still hard-coded in English even after the previous localization fix, because they're supplied by Dungeon Train itself rather than the bundled Discord Presence mod. They're now translatable like the rest of the popup.",
+      "highlights": [],
+      "pr": 750,
+      "date": "2026-07-13",
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
+    },
+    {
+      "id": "localize-dev-message-presence-zh",
+      "version": "0.457.0",
+      "type": "feat",
+      "title": "Chinese for developer-message and presence chat lines",
+      "summary": "Simplified-Chinese players now see three more in-game chat lines in their own language instead of English: the prompt to accept a message from the Developer, the [Developer] prefix on a delivered developer message, and the line telling you whether Brennan is online on Discord (shown when you type @dev and in the editor welcome), including its \"N minutes ago\" duration.",
+      "highlights": [
+        "@Dev accept-prompt now localized",
+        "[Developer] message prefix now localized",
+        "\"Brennan is online / was online N ago\" presence line now localized (Chinese draft pending localizer review)"
+      ],
+      "date": "2026-07-14",
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
+    },
+    {
+      "id": "localize-book-narrative-flavour-lines",
+      "version": "0.455.0",
+      "type": "feat",
+      "title": "Localizable book & narrative flavour messages (+ Simplified Chinese)",
+      "summary": "The gray flavour lines shown when you write, share, or find a book \u2014 plus the Death Note messages, the narrative 'sealed and sent' line, and the Developer-message prompt \u2014 are now translatable and ship with Simplified Chinese. They were previously hard-coded English on every client.",
+      "highlights": [
+        "Author's 'a familiar book\u2026' line now localized",
+        "Shared-book send-off and narrative 'sealed and sent' lines now localized",
+        "Death Note messages and the Developer-consent prompt now localized",
+        "Simplified Chinese (zh_cn) translations bundled for all of the above"
+      ],
+      "pr": 753,
+      "date": "2026-07-14",
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
+    },
+    {
+      "id": "discordpresence-050-localized-dev-mention",
+      "version": "0.457.1",
+      "type": "feat",
+      "title": "Chinese players can ping Brennan with @\u5f00\u53d1\u8005",
+      "summary": "Discord Presence 0.50.0 shows a localized @dev chat-tag alias for non-English clients (@\u5f00\u53d1\u8005 on Simplified Chinese); Dungeon Train now accepts that alias as a real trigger too, so typing it actually reaches Brennan instead of just highlighting. Also picks up DP's newly self-localized \"whispers into the darkness\" idle chat lines.",
+      "highlights": [
+        "Typing @\u5f00\u53d1\u8005 now pings Brennan, same as @dev",
+        "\"Whispers into the darkness\" idle chat lines now render in Chinese"
+      ],
+      "date": "2026-07-14",
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
+    },
+    {
+      "id": "dev-tag-consent-prompt-localized",
+      "version": "0.458.0",
+      "type": "fix",
+      "title": "The @Dev accept-prompt now names the alias you actually type",
+      "summary": "The consent prompt (\"The Developer wants to send you a message, type @Dev to accept.\") always said \"@Dev\" even on a Simplified Chinese client, where typing the localized @\u5f00\u53d1\u8005 alias is what actually works. It now names whichever alias your own game is set up to use.",
+      "highlights": [
+        "Consent prompt now shows @\u5f00\u53d1\u8005 on Simplified Chinese instead of the English @Dev"
+      ],
+      "date": "2026-07-14",
+      "released": true,
+      "released_in": "v0.458.0",
+      "released_at": "2026-07-14T12:02:37Z"
+    },
+    {
+      "id": "end-band-beds-explode",
+      "version": "0.459.0",
+      "type": "feat",
+      "title": "Beds explode in the End band",
+      "summary": "Beds now explode when you try to use one anywhere in the End band's core, exactly like they do in the Nether band and in the real End. The End is no place to set a spawn \u2014 lay a bed down on the end-stone and it goes off. Normal overworld stretches still let you sleep as usual.",
+      "highlights": [
+        "Beds detonate in the End band core, matching the Nether band and vanilla End",
+        "Normal overworld stretches are unaffected \u2014 beds still work there"
+      ],
+      "pr": 758,
+      "date": "2026-07-15",
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
+    },
+    {
+      "id": "journey-advancement-timing",
+      "version": "0.460.0",
+      "type": "fix",
+      "title": "Journey advancements unlock at the right moments",
+      "summary": "Several ride-along advancements were unlocking too early. 'Nether Return Again' now waits until you loop all the way around and return to the Nether a second time; 'The Upside Down' and 'Reassembly Required' now trigger once you're properly inside the mirrored band and its dispersing islands; and 'Re-Over-World' waits until the Upside-Down islands are fully behind you.",
+      "highlights": [
+        "'Nether Return Again' requires a full loop back to the Nether",
+        "'Re-Over-World' unlocks after the Upside-Down islands end",
+        "'The Upside Down' and 'Reassembly Required' trigger deeper into their zones"
+      ],
+      "date": "2026-07-15",
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
+    },
+    {
+      "id": "zh-cn-localization-refresh",
+      "version": "0.460.0",
+      "type": "feat",
+      "title": "Simplified Chinese (zh_cn) translation refreshed & expanded",
+      "summary": "Simplified Chinese is now fully up to date: every in-game menu string is translated, and dozens of books, character stories, and death lore were re-translated for a more natural read. Chinese players also get the DiscordPresence prompts, the loading-screen status text, and death-screen tallies written out as Chinese numerals.",
+      "highlights": [
+        "Full Simplified Chinese UI coverage, plus refreshed book & story translations",
+        "DiscordPresence consent & chat UI now in Chinese (modpack)",
+        "Loading-screen phase text now localized",
+        "Death-screen counts shown as Chinese numerals instead of English words"
+      ],
+      "pr": 759,
+      "date": "2026-07-15",
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
+    },
+    {
+      "id": "no-lava-upside-down-band",
+      "version": "0.460.0",
+      "type": "fix",
+      "title": "No lava in the upside-down band",
+      "summary": "Lava no longer creeps into the upside-down region. Vanilla lava from the surrounding overworld could previously flow into the mirrored band; now it's held back at the edges, so the flipped world stays lava-free while its hanging water still sits perfectly still.",
+      "highlights": [
+        "Lava can no longer flow into the upside-down band, its entry lead-in, or its exit crossfade",
+        "Mirrored ceiling/island water still hangs static, unchanged"
+      ],
+      "date": "2026-07-15",
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
+    },
+    {
+      "id": "freeze-mixin-removed-body-guard",
+      "version": "0.461.0",
+      "type": "fix",
+      "title": "Fix crash when animals ride near a vanishing train car",
+      "summary": "Fixed a crash that could kick you out of your world when livestock (like chickens) stood on or beside a train carriage right as the game unloaded that carriage's physics. The game now treats the vanished car as motionless instead of crashing, so worlds keep running smoothly.",
+      "highlights": [
+        "No more \"Body has been removed\" crash from mobs near a train",
+        "Improves stability on long play sessions and busier trains"
+      ],
+      "pr": 761,
+      "date": "2026-07-15",
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
+    },
+    {
+      "id": "upside-down-snow-support",
+      "version": "0.461.0",
+      "type": "fix",
+      "title": "Snow no longer crumbles off the upside-down ceiling",
+      "summary": "In the upside-down band, snow layers on the mirrored ceiling used to pop out of existence the moment anything updated nearby, because the game expected solid ground beneath them. They now stay frozen in place, matching the grass and water that already hold fast in the band.",
+      "highlights": [
+        "Mirrored ceiling snow stays put in the upside-down band",
+        "Normal-world snow still melts and falls as usual"
+      ],
+      "pr": 764,
+      "date": "2026-07-15",
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
+    },
+    {
+      "id": "copper-carriage-part-stage",
+      "version": "0.460.0",
+      "type": "fix",
+      "title": "Copper carriage part uses the right blocks",
+      "summary": "The copper carriage part was mistakenly built from the mud block set; it now uses copper as intended.",
+      "highlights": [],
+      "date": "2026-07-15",
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
+    },
+    {
+      "id": "multilingual-death-notes",
+      "version": "0.462.0",
+      "type": "feat",
+      "title": "Death Notes in your own language",
+      "summary": "You can now create a Death Note by naming your book & quill in your own language \u2014 not just English. A book titled \u6b7b\u4ea1\u7b14\u8bb0 (Chinese) or \"Nota de Muerte\" (Spanish) casts the curse exactly like \"Death Note\" does, and any language's title works for every player, ignoring capitals and spacing. Simplified Chinese and Spanish versions of the in-world Death Note instruction book are included, so the name the book teaches you is the name that actually works.",
+      "highlights": [
+        "Make a Death Note in your own language \u2014 \u6b7b\u4ea1\u7b14\u8bb0, Nota de Muerte, or English \"Death Note\"",
+        "Any language's title works for every player; capitals and spacing are ignored",
+        "Added Simplified Chinese and Spanish Death Note instruction books"
+      ],
+      "pr": 766,
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
+    },
+    {
+      "id": "lamppost-carriage-and-spawn-tuning",
+      "version": "0.462.0",
+      "type": "content",
+      "title": "New lamppost content + enemy spawn tuning",
+      "summary": "A new lamppost content set adds decorated loot pots to the train \u2014 food, a weapon, and the occasional signed Deathnote book. Breezes now show up in the void, end, and upside-down stretches, and enemy/loot spawn balance has been retuned across several carriage types.",
+      "highlights": [
+        "New lamppost content: decorated pots with food, a wooden axe, and a chance at a signed Deathnote book",
+        "Breeze enemies now appear in VOID / END / UPSIDE_DOWN phases and later stages",
+        "Retuned enemy and loot spawn weights across bogged, skeleton, and zombie-room carriages"
+      ],
+      "pr": 765,
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.464.0",
+      "released_at": "2026-07-16T05:48:40Z"
+    },
+    {
+      "id": "playanimation-anticheat-whitelist",
+      "version": "0.463.0",
+      "type": "fix",
+      "title": "Whitelisted /playanimation for Free Play runs",
+      "summary": "Running /playanimation to play a cosmetic entity animation no longer marks your run as cheated \u2014 it has no gameplay effect, so it's now treated the same as harmless commands like /help and /me.",
+      "highlights": [],
+      "pr": 767,
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.464.0",
+      "released_at": "2026-07-16T05:48:40Z"
+    },
+    {
+      "id": "multilingual-localization-8-languages",
+      "version": "0.464.0",
+      "type": "feat",
+      "title": "Play in 8 more languages",
+      "summary": "Dungeon Train is now playable in eight more languages \u2014 Spanish (Spain & Mexico), Brazilian Portuguese, Bahasa Indonesia, Bahasa Melayu, Filipino, Vietnamese, and Thai. Menus, generated item names, in-world books, the death-screen ledger, and the bundled companion mods are all translated, and each language has its own Death Note trigger word. These are AI translations (marked as such on the title screen) \u2014 native-speaker corrections are very welcome.",
+      "highlights": [
+        "Spanish, Portuguese, Indonesian, Malay, Filipino, Vietnamese & Thai support",
+        "Menus, item names, books, and death-screen prose all localized",
+        "Per-language Death Note trigger titles",
+        "AI-translated \u2014 native-speaker feedback welcome"
+      ],
+      "pr": 768,
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.464.0",
+      "released_at": "2026-07-16T05:48:40Z"
+    },
+    {
+      "id": "playermobs-0-78-upgrade",
+      "version": "0.464.0",
+      "type": "feat",
+      "title": "Smarter Player Mobs: firearms, fire escape, persistent orders",
+      "summary": "The bundled Player Mobs got a big upgrade. They can now wield modded firearms \u2014 muskets, pistols and the like \u2014 reloading and firing with the mod's own ammo. If one catches fire it drops everything to save itself: sprinting to nearby water, or dousing itself with a water bucket and picking it back up. Orders you give them (walk, greet, gift, steal\u2026) now stick until the job is done instead of being forgotten after a few seconds, and they'll fight or flee a threat mid-task then resume. You can also summon a Player Mob wearing a named player's skin via an NBT tag.",
+      "highlights": [
+        "Player Mobs can wield modded firearms (MusketMod) with real reload + ammo",
+        "Burning Player Mobs run for water or self-douse with a bucket",
+        "Orders persist until completed (were dropped after ~10s)",
+        "Summon a Player Mob in a named player's skin via NBT"
+      ],
+      "pr": 769,
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.464.0",
+      "released_at": "2026-07-16T05:48:40Z"
+    },
+    {
+      "id": "human-reviewed-localization-badge",
+      "version": "0.465.0",
+      "type": "feat",
+      "title": "Human-reviewed translations marked in the language menu",
+      "summary": "The language selection screen now shows at a glance which Dungeon Train translations have been proofread by a human. Human-reviewed languages display a solid Dungeon Train badge; machine-translated languages show a faded one. Chinese is the first fully human-reviewed translation.",
+      "highlights": [
+        "Chinese (\u7b80\u4f53\u4e2d\u6587) is now marked as human-reviewed with a solid badge",
+        "Machine-translated languages show a faded badge so you know what's AI vs. proofread"
+      ],
+      "pr": 770,
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.467.0",
+      "released_at": "2026-07-16T10:57:24Z"
+    },
+    {
+      "id": "editor-hidden-menus-not-clickable",
+      "version": "0.465.0",
+      "type": "fix",
+      "title": "Hidden editor menus no longer respond to clicks",
+      "summary": "In the in-game editor, hiding the world-space menus with the \"Editor Menus\" toggle now fully disables them \u2014 previously the panels turned invisible but their buttons stayed clickable, so you could still trigger teleports, weight/gate edits, and pickers by accident, and the hidden cells blocked you from breaking the blocks underneath them.",
+      "highlights": [
+        "Hidden editor menus no longer respond to clicks",
+        "Breaking blocks underneath a hidden menu works again"
+      ],
+      "pr": 773,
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.467.0",
+      "released_at": "2026-07-16T10:57:24Z"
+    },
+    {
+      "id": "stopsound-anticheat-whitelist",
+      "version": "0.466.0",
+      "type": "fix",
+      "title": "Whitelisted /stopsound for Free Play runs",
+      "summary": "Running /stopsound to silence a sound no longer marks your run as cheated \u2014 it has no gameplay effect, so it's now treated the same as /playanimation, /help, and /me.",
+      "highlights": [],
+      "pr": 774,
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.467.0",
+      "released_at": "2026-07-16T10:57:24Z"
+    },
+    {
+      "id": "corridor-chorus-sweep",
+      "version": "0.466.0",
+      "type": "fix",
+      "title": "Chorus no longer blocks the train in the End band",
+      "summary": "Chorus plants that occasionally grew into the train's path through the floating End-island stretch are now cleared out ahead of the train, so the ride no longer snags on them. The islands and the chorus growing on them off to the sides are left untouched.",
+      "highlights": [
+        "Chorus fruit no longer obstructs the train in the End-island band"
+      ],
+      "pr": 771,
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.467.0",
+      "released_at": "2026-07-16T10:57:24Z"
+    },
+    {
+      "id": "kinetic-hosting-integration-modpack",
+      "version": "0.466.0",
+      "type": "content",
+      "title": "Kinetic Hosting banner in the modpacks",
+      "summary": "The Dungeon Train modpacks now bundle the Kinetic Hosting Integration mod, adding a Kinetic Hosting banner to the multiplayer menu. It's on by default and links straight to our hosting partner.",
+      "highlights": [
+        "Kinetic Hosting Integration bundled in both the CurseForge and Modrinth packs, enabled by default",
+        "Multiplayer-menu banner links to the Kinetic Hosting affiliate page out of the box"
+      ],
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.467.0",
+      "released_at": "2026-07-16T10:57:24Z"
+    },
+    {
+      "id": "multilingual-localization-10-major-languages",
+      "version": "0.467.0",
+      "type": "feat",
+      "title": "Play in 10 more languages",
+      "summary": "Dungeon Train is now playable in ten more languages \u2014 German, French, Italian, European Portuguese, Dutch, Polish, Russian, Japanese, Korean, and Traditional Chinese. Menus, generated item names, in-world books, the death-screen ledger, and the bundled companion mods are all translated, and each language has its own Death Note trigger word. These are AI translations (marked as such on the title screen, with a faded language-menu badge) \u2014 native-speaker corrections are very welcome.",
+      "highlights": [
+        "German, French, Italian, European Portuguese, Dutch, Polish, Russian, Japanese, Korean & Traditional Chinese",
+        "Menus, item names, books, and death-screen prose all localized",
+        "Per-language Death Note trigger titles (\u30c7\u30b9\u30ce\u30fc\u30c8, \u0422\u0435\u0442\u0440\u0430\u0434\u044c \u0441\u043c\u0435\u0440\u0442\u0438, \u6b7b\u4ea1\u7b46\u8a18, \u2026)",
+        "AI-translated, faded language-menu badge \u2014 native-speaker feedback welcome"
+      ],
+      "pr": 776,
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.467.0",
+      "released_at": "2026-07-16T10:57:24Z"
     }
   ]
 }

@@ -48,6 +48,23 @@ public final class ModItems {
         () -> new Item(new Item.Properties().stacksTo(1))
     );
 
+    /**
+     * Editor-only placeholder, sibling to {@link #RANDOM_BOOK}. Never appears
+     * in survival inventories — at chest spawn time {@code
+     * ContainerContentsRoller.rollItemStack} intercepts entries with this item
+     * id and substitutes a written book drawn <b>exclusively from
+     * player-written community books</b>
+     * ({@link games.brennan.dungeontrain.narrative.SharedBookPool}). When the
+     * shared pool is disabled/empty/offline it falls back to a hardcoded local
+     * book from
+     * {@link games.brennan.dungeontrain.narrative.RandomBookRegistry} so the
+     * slot is never wasted.
+     */
+    public static final DeferredItem<Item> RANDOM_PLAYERBOOK = ITEMS.register(
+        "random_playerbook",
+        () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
     private ModItems() {}
 
     /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */

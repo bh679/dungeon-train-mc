@@ -117,6 +117,7 @@ public final class EditorTypeMenuInputHandler {
     }
 
     private static boolean shouldHandle() {
+        if (!EditorStatusHudOverlay.isEditorMenusVisible()) return false;
         if (EditorTypeMenuRenderer.menus().isEmpty()) return false;
         if (CommandMenuState.isOpen()) return false;
         if (PartPositionMenu.isActive()) return false;

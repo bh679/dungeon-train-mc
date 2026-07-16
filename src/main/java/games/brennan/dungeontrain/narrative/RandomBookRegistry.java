@@ -54,7 +54,11 @@ public final class RandomBookRegistry {
         for (Map.Entry<ResourceLocation, Resource> entry : resources.entrySet()) {
             ResourceLocation file = entry.getKey();
             ResourceLocation id = stripJson(file);
-            try (InputStream in = entry.getValue().open()) {
+            // Overlay the host-locale variant on the English base when one is bundled/shipped
+            // (see NarrativeContentLocale); the id stays identical, so pool weights and
+            // variant-count denominators are unaffected.
+            Resource source = NarrativeContentLocale.localized(resourceManager, id, DIR).orElse(entry.getValue());
+            try (InputStream in = source.open()) {
                 RandomBookFile book = RandomBookCodec.parse(in, id);
                 BOOKS.put(id, book);
                 loaded++;

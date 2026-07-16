@@ -61,10 +61,11 @@ Each non-core mod is an entry in `modpack.config.json` → `optional_mods[]` car
 flag straight into the manifest:
 
 - **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, AmbientSounds,
-  Advancement Plaques (QoL / perf / cosmetic companions the pack turns on for everyone), plus their
-  inert library deps **CreativeCore** (AmbientSounds), **Iceberg** (Advancement Plaques) and
-  **Lithostitched** (Tectonic). The libraries ship enabled so their dependent loads on a default
-  install (CreativeCore — AmbientSounds is on; Iceberg — AP is on) and so enabling an opt-in stays
+  Advancement Plaques (QoL / perf / cosmetic companions the pack turns on for everyone), **Kinetic
+  Hosting Integration** (partner banner on the multiplayer menu), plus their inert library deps
+  **CreativeCore** (AmbientSounds), **Iceberg** (Advancement Plaques) and **Lithostitched**
+  (Tectonic). The libraries ship enabled so their dependent loads on a default install
+  (CreativeCore — AmbientSounds is on; Iceberg — AP is on) and so enabling an opt-in stays
   one-click (Lithostitched — Tectonic is off, but its lib is already present).
 - **Bundled but off by default (`required:false`)** — Mouse Tweaks, Jade, Distant Horizons,
   Tectonic. Shipped in the pack so a player can flip them on with one click, but inert until they
@@ -178,7 +179,8 @@ Keep the two in sync so both packs ship the same build. A stale pin just ships a
 | File | Purpose |
 |---|---|
 | `modpack.config.json` | Editable config (drives **both** packs): pack name/author, DT project IDs, the pinned Sable project/file/version + `modrinth_project`/`modrinth_version`, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard, a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in — and a `modrinth_project`/`modrinth_version` pin), and `curseforge_relations` (sable + the jarJar'd siblings). |
-| `overrides/` | Copied into the player's instance on install. Empty for now. Shared by both packs. |
+| `overrides/` | Config files copied verbatim into the player's instance on install (shared by both packs). Currently ships `config/smoothswapping.json` (tuned Smooth Swapping) and `config/khi.toml` (the Kinetic Hosting affiliate URL + banner text, so every install gets the partner link pre-filled), plus the localization compat packs — see below. |
+| `overrides/resourcepacks/DungeonTrain-zh_cn-compat.zip` | zh_cn translations for the bundled **companion** mods (Jade, Tectonic, Distant Horizons, Controlling, ModernFix, CreativeCore, Sable). Dungeon Train's own namespaces (+ AIN/PlayerMob/DiscordPresence) ship their zh_cn `lang/` inside the mod jar, so they're not in here. **Auto-enabled by a client-side one-shot** in the mod (`CompanionResourcePackAutoEnabler`) — it selects this pack the first time it's found and writes a marker so it never fights a player who later disables it. This replaces a shipped `options.txt` (which a launcher would copy wholesale and reset the player's other options); the hook only ever touches the resource-pack selection. |
 | `../scripts/modpack/build-manifest.py` | CurseForge: renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
 | `../scripts/modpack/build-mrpack.py` | Modrinth: renders `modrinth.index.json` from this config + `gradle.properties` + the release's DT Modrinth version (resolving each pin's URL/hashes from the Modrinth API). `--check-config` validates pins with no network (CI). |
 | `../scripts/modpack/check-relations.py` | CI guard: every `optional_mods` entry must also be an `<slug>(optional)` dependency of the mod in `release.yml`. Run by the `modpack-checks` job. |
@@ -208,7 +210,8 @@ Modrinth publishes from the **same `modpack.config.json`** but the format differ
 a `.mrpack` is a zip of `modrinth.index.json` + `overrides/`, and each mod is referenced by its
 **download URL + sha1 + sha512 + fileSize** (not a `project_id`/`file_id`). Those fields are
 resolved at build time from the Modrinth API, from each mod's pinned `modrinth_version`. Because
-every bundled mod — including Sable — is on Modrinth, nothing is bundled into `overrides/`.
+every bundled mod — including Sable — is on Modrinth, no *mod jars* are bundled into `overrides/`;
+only config files and companion-localization resourcepacks are (see the `overrides/` rows above).
 
 ```
 release.yml (real release OR auto-release cascade tick)

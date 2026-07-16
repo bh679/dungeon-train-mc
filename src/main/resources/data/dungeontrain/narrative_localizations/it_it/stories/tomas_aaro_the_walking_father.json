@@ -1,0 +1,55 @@
+{
+  "id": "tomas_aaro_the_walking_father",
+  "character": "Tomas Aaro",
+  "story": "Il padre che cammina",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettera uno",
+      "variants": [
+        "Cara mia.\n\nHo trovato il treno.\nÈ reale.\n\nEppure nutro dei dubbi.\n\n\nDicono che il treno porti ciò di cui hai bisogno.\n\nNessuno dice cosa esattamente.\nSpero solo che ciò di cui abbiamo bisogno non sia troppo.\n\nSono a bordo da poco, e non ha fine.\n\n— Tomas",
+        "Ho detto alla mia piccola che sarei tornato per il raccolto.\n\nNon avrei dovuto promettere una stagione. Non so se questo luogo le abbia.\n\nMa questo treno custodisce la nostra unica speranza.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettera due",
+      "variants": [
+        "Piccola mia.\n\nCi sono uomini morti su questo treno. Camminano.\n\nSo come suona.\n\nPapà ha dovuto combatterne uno.\n\n\nLe mie mani conoscono il seme e la terra.\nOggi hanno imparato che una zappa taglia in due sensi.\n\nEbbi paura. Lo feci lo stesso. Questo è essere coraggiosi.\n\nCadde. Non sono ferito.\n\nPapà è ancora in cammino verso casa.\n\n— Papà",
+        "Piccola mia.\n\nHo fatto una cosa che non posso disfare. Un uomo mi venne incontro, solo che non era più un uomo.\n\nUsai ciò che avevo tra le mani.\n\n\nTu avresti chiuso gli occhi. Io tenni i miei aperti. Uno di noi due doveva farlo.\n\nDopo, le mani mi tremarono come tremano a te con il freddo.\n\nLe tenni ferme finché non si fermarono. Poi continuai a camminare.\n\n— Papà"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettera tre",
+      "variants": [
+        "Cara mia.\n\nOggi mi ha parlato un topo. Con un piccolo gilè.\n\nNon sto perdendo la testa. Anche altri lo vedono.\n\nMi ha dato della carta, e un indovinello.\n\n\n\"Un seme non insegue la primavera\", disse. \"Aspetta. I giovani lo imparano per primi.\"\n\nPoi mi augurò buona fortuna, e parve triste. Lo ringraziai e continuai a camminare.\n\n— Tomas",
+        "Cara mia.\n\nMi sono imbattuto di nuovo nel topo. Parla come un gentiluomo, il che è strano in un topo.\n\nGli ho chiesto da che parte si andasse verso la testa.\n\n\n\"Non c'è una testa per chi cammina\", disse. \"Trovano solo chi si ferma. I piccoli lo sanno.\"\n\nNon ho tempo di fermarmi. Mi augurò buona fortuna lo stesso.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettera quattro",
+      "variants": [
+        "Cara mia.\n\nIl treno è pieno di casse chiuse. Ogni vagone ne ha.\n\nUna qualsiasi potrebbe custodire ciò di cui abbiamo bisogno. Così le apro tutte.\n\n\nOro. Ferro. Abbastanza da ricomprare il villaggio due volte.\n\nPrendo tutto. È per te, mi dico.\n\nMi fermerò alla cassa giusta. Anche questo mi ripeto.\n\n— Tomas",
+        "Cara mia.\n\nNon smetto di ripromettermi di andare avanti. E poi spunta un'altra cassa, e un'altra.\n\nUn uomo potrebbe riempire un fienile con ciò che ho lasciato indietro.\n\n\nOra prendo solo ciò che entra nello zaino. Lo zaino è sempre pieno.\n\nIeri non riuscivo a ricordare cosa fossi salito a cercare.\n\nSolo che l'avrei riconosciuto. Così continuo ad aprire casse.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettera cinque",
+      "variants": [
+        "non so da quanto tempo sono qui.\n\nle ruote fanno tre note. conto quelle invece dei giorni.\n\nho provato a dire ad alta voce il nome del villaggio. non mi è uscito.\n\n\nricordo ancora il libro arancione. piccolo. arancione. lei non lo mollava mai.\n\nse riesco ad aggrapparmi a quello, posso aggrapparmi al resto.\n\nvero?\n\n— tomas",
+        "mi sorprendo a parlare. ad alta voce. senza nessuno lì.\n\nmi guardo le mani e non sono quelle di un contadino. non so di chi siano.\n\n\ncontinuo a camminare perché fermarmi somiglia a morire.\n\nil topo disse il contrario. il topo. ho sognato il topo?\n\nmi dimentico verso cosa cammino. ci cammino verso lo stesso.\n\n— tomas"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lettera sei",
+      "variants": [
+        "Cara mia.\n\nC'è una bambina più avanti. In fondo al vagone.\n\nTiene in mano qualcosa di arancione. Non lo molla.\n\nIl mio petto. Il mio petto.\n\n\nÈ lei? Potrebbe esserlo, dopo tutto questo?\n\nChi è la donna che le sta accanto? Dov'è sua madre? Perché mai ci sarebbe una bambina qui?\n\nO ho perso la ragione, e il treno sta solo essendo gentile?\n\n— Papà",
+        "Cara mia.\n\nUna bambina, più avanti nel vagone. Una donna che non conosco è seduta con lei.\n\nLa bambina ha qualcosa di arancione in grembo.\n\nConosco quell'arancione.\n\n\nE se mi avvicino e non è lei? Cosa resta di me allora?\n\nE se lo è? Perché è qui? Dove sei tu? E chi è quella donna?\n\nHo smesso di camminare. Dopo tutto questo tempo, mi sono fermato.\n\n— Tomas"
+      ]
+    }
+  ]
+}

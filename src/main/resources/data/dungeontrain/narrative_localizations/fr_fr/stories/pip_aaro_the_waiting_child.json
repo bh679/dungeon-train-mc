@@ -1,0 +1,47 @@
+{
+  "id": "pip_aaro_the_waiting_child",
+  "character": "Pip Aaro",
+  "story": "L'enfant qui attend",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettre une",
+      "variants": [
+        "Je m'appelle Pip. J'ai huit ans.\n\nJe suis dans un train que je connais pas. Les sièges sentent le manteau de Mamie.\n\nUn rat m'a donné ce papier. Un vrai rat. Avec des habits.\n\nJe cherche Maman.\n\nUn petit peu peur. Juste un petit peu.\n\nPip",
+        "Je me suis endormie dans un train avec Maman. Je me suis réveillée et Maman avait disparu.\n\nLe train est différent maintenant. Mon sac est différent. Le livre orange n'est plus dedans.\n\nUn rat m'a donné ce papier. Il avait un gilet.\n\nJe vais retrouver Maman. Il y a tellement de wagons.\n\nJe pleure pas.\n\nPip"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettre deux",
+      "variants": [
+        "J'ai demandé à un homme où est le contrôleur.\n\nIl avait un manteau jaune. Il a ri. Il a dit ma puce il n'y a pas de contrôleur. Il a dit que le train ne s'arrête pas.\n\nJe le crois pas. Les trains s'arrêtent.\n\nL'homme au manteau jaune dort beaucoup maintenant. Je crois qu'il est triste.\n\nJe vais pas devenir comme ça.\n\nPip",
+        "J'ai trouvé un carnet sous un siège.\n\nQuelqu'un a compté les wagons. Il est arrivé à 384 et s'est arrêté. Il a dit que ça sert à rien de chercher l'avant.\n\nJe sais pas ce qu'il voulait dire. Les trains ont un avant.\n\nJe garde le carnet. C'est comme avoir quelqu'un à qui parler.\n\nIl avait l'air fatigué. Moi je suis pas encore fatiguée.\n\nPip"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettre trois",
+      "variants": [
+        "Certaines personnes sur le train sont pour de faux.\n\nElles ont l'air vraies. Mais elles te voient pas. J'ai fait signe à une dame et elle est passée juste à côté de moi.\n\nCertaines personnes SONT là. L'homme au manteau jaune. Le rat. Une dame qui m'a donné une pomme.\n\nJe garde une liste des vraies personnes. Il y en a quatre. J'en suis sûrement une aussi.\n\nPip",
+        "J'ai fait un plan.\n\nMarcher dans un sens. Pas me retourner. Comme ça je serais à l'arrière du train.\n\nJ'ai marché longtemps. Quarante-sept wagons. Je me suis pas retournée.\n\nIl n'y avait pas d'arrière. La fin ressemblait à là où j'avais commencé. La même odeur de Mamie.\n\nJe comprends pas. Je veux Maman.\n\nPip"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettre quatre",
+      "variants": [
+        "La dame à la pomme est mon amie maintenant. Elle s'appelle Soren.\n\nElle est sur le train depuis très très longtemps. Elle veut pas dire depuis combien de temps.\n\nSoren a demandé pour Maman. Je lui ai dit. Elle est devenue silencieuse. Puis elle a dit ta Maman a l'air merveilleuse.\n\nElle l'a dit de la même façon que l'homme au manteau jaune a dit que le train s'arrête pas.\n\nJe vais quand même retrouver Maman.\n\nPip",
+        "Il y a un slime dans mon wagon. Je l'ai appelé Caillou.\n\nIl est petit et vert. Soren a dit qu'il est trop petit pour être dangereux pour l'instant. Je crois pas ça de Caillou.\n\nIl me suit jusqu'à la porte mais il traverse pas. Je crois qu'il pense que la porte est un mur.\n\nMaman dirait qu'un slime est un monstre. Maman se trompe sur Caillou.\n\nMaman me manque.\n\nMais j'ai Caillou.\n\nPip"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettre cinq",
+      "variants": [
+        "Soren m'a parlé de la porte.\n\nElle a dit qu'il y a une porte sur le train qui mène dehors. Elle a dit que si je la trouve je devrais la traverser.\n\nJ'y ai pensé longtemps. À Maman. À Caillou.\n\nSi Maman est sur ce train je dois continuer à chercher. Si elle y est pas je peux pas la rejoindre de toute façon.\n\nQuand je trouverai la porte je vais m'asseoir à côté. Et attendre.\n\nSoren a dit d'accord ma puce. Comme si elle le pensait cette fois.\n\nPip",
+        "J'ai écrit une lettre pour Maman.\n\nSoren a dit que parfois les gens passent plusieurs fois dans le même wagon. Alors je la laisse là où tout le monde va.\n\nElle dit mon nom. Elle dit que j'ai une amie qui s'appelle Soren et un slime qui s'appelle Caillou.\n\nElle dit que je vais bien. Elle dit que j'attends.\n\nMaman la trouvera. Les mamans retrouvent les choses.\n\nPip"
+      ]
+    }
+  ]
+}

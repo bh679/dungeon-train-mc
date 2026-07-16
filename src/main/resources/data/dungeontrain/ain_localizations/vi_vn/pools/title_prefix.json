@@ -1,0 +1,305 @@
+{
+  "id": "adventureitemnames:title_prefix",
+  "entries": [
+    {
+      "text": "Công Chúa"
+    },
+    {
+      "text": "Hoàng Tử"
+    },
+    {
+      "text": "Nữ Hoàng"
+    },
+    {
+      "text": "Vua"
+    },
+    {
+      "text": "Chúa Tể"
+    },
+    {
+      "text": "Phu Nhân"
+    },
+    {
+      "text": "Chủ Nhân"
+    },
+    {
+      "text": "Nữ Chúa"
+    },
+    {
+      "text": "Nô Bộc"
+    },
+    {
+      "text": "Thần"
+    },
+    {
+      "text": "Nữ Thần"
+    },
+    {
+      "text": "Bóng Ma"
+    },
+    {
+      "text": "Hồn Ma"
+    },
+    {
+      "text": "Titan"
+    },
+    {
+      "text": "Người Con Trai"
+    },
+    {
+      "text": "Người Cha"
+    },
+    {
+      "text": "Người Mẹ"
+    },
+    {
+      "text": "Người Con Gái"
+    },
+    {
+      "text": "Chị Em"
+    },
+    {
+      "text": "Anh Em"
+    },
+    {
+      "text": "Người Tình"
+    },
+    {
+      "text": "Kẻ Mang Đến"
+    },
+    {
+      "text": "Kẻ Hủy Diệt"
+    },
+    {
+      "text": "Đấu Sĩ"
+    },
+    {
+      "text": "Kẻ Man Rợ"
+    },
+    {
+      "text": "Kẻ Rình Rập"
+    },
+    {
+      "text": "Kẻ Mắc Dịch"
+    },
+    {
+      "text": "Kẻ Mang Diệt Vong"
+    },
+    {
+      "text": "Vệ Binh Ngọn Lửa"
+    },
+    {
+      "text": "Công Chúa"
+    },
+    {
+      "text": "Nhà Phát Triển"
+    },
+    {
+      "text": "Trưởng Nhóm Phát Triển"
+    },
+    {
+      "text": "Đấng Sáng Tạo"
+    },
+    {
+      "text": "Chủ Nhân"
+    },
+    {
+      "text": "Nhà Phát Minh"
+    },
+    {
+      "text": "Hoàng Đế"
+    },
+    {
+      "text": "Kẻ Chinh Phục"
+    },
+    {
+      "text": "Thuyền Trưởng"
+    },
+    {
+      "text": "Tiến Sĩ"
+    },
+    {
+      "text": "Tiến Sĩ"
+    },
+    {
+      "text": "Cử Nhân"
+    },
+    {
+      "text": "Bếp Trưởng"
+    },
+    {
+      "text": "Bệ Hạ"
+    },
+    {
+      "text": "Thị Trưởng"
+    },
+    {
+      "text": "Phó Hiệu Trưởng"
+    },
+    {
+      "text": "Giáo Sư"
+    },
+    {
+      "text": "Học Giả"
+    },
+    {
+      "text": "Nam Tước"
+    },
+    {
+      "text": "Nữ Nam Tước"
+    },
+    {
+      "text": "Công Tước"
+    },
+    {
+      "text": "Nữ Công Tước"
+    },
+    {
+      "text": "Ngài"
+    },
+    {
+      "text": "Quý Bà"
+    },
+    {
+      "text": "Bá Tước"
+    },
+    {
+      "text": "Nữ Bá Tước"
+    },
+    {
+      "text": "Tướng Quân"
+    },
+    {
+      "text": "Hiệp Sĩ"
+    },
+    {
+      "text": "Cận Vệ"
+    },
+    {
+      "text": "Nhà Vô Địch"
+    },
+    {
+      "text": "Nhà Vô Địch Thế Giới"
+    },
+    {
+      "text": "Bá Chủ"
+    },
+    {
+      "text": "Bá Chủ Thế Giới"
+    },
+    {
+      "text": "Bá Chủ Tối Cao"
+    },
+    {
+      "text": "Bá Chủ Thế Giới Tối Cao"
+    },
+    {
+      "text": "Pháp Sư"
+    },
+    {
+      "text": "Phù Thủy"
+    },
+    {
+      "text": "Thầy Gọi Hồn"
+    },
+    {
+      "text": "Thánh Kỵ Sĩ"
+    },
+    {
+      "text": "Người Hát Rong"
+    },
+    {
+      "text": "Hiền Triết"
+    },
+    {
+      "text": "Ẩn Sĩ"
+    },
+    {
+      "text": "Đức Sư"
+    },
+    {
+      "text": "Nhà Giả Kim"
+    },
+    {
+      "text": "Nhà Tiên Tri"
+    },
+    {
+      "text": "Pháp Sư Bộ Lạc"
+    },
+    {
+      "text": "Giám Mục"
+    },
+    {
+      "text": "Thánh Nhân"
+    },
+    {
+      "text": "Nhà Tiên Tri"
+    },
+    {
+      "text": "Thượng Tế"
+    },
+    {
+      "text": "Giáo Hoàng"
+    },
+    {
+      "text": "Người Sáng Lập"
+    },
+    {
+      "text": "Tổng Thống"
+    },
+    {
+      "text": "Đại Ca"
+    },
+    {
+      "text": "Thợ Rèn"
+    },
+    {
+      "text": "Thợ Săn"
+    },
+    {
+      "text": "Kiểm Lâm"
+    },
+    {
+      "text": "Người Nấu Rượu"
+    },
+    {
+      "text": "Thợ Vặt"
+    },
+    {
+      "text": "Sếp Lớn"
+    },
+    {
+      "text": "Kẻ Đứng Đầu"
+    },
+    {
+      "text": "Yêu Tinh"
+    },
+    {
+      "text": "Tiểu Quỷ"
+    },
+    {
+      "text": "Quán Quân"
+    },
+    {
+      "text": "Thủ Lĩnh"
+    },
+    {
+      "text": "Ngài Đáng Kính"
+    },
+    {
+      "text": "Bạn Hiền"
+    },
+    {
+      "text": "Chiến Hữu"
+    },
+    {
+      "text": "Anh Bạn"
+    },
+    {
+      "text": "Chị Bạn"
+    },
+    {
+      "text": "Pháp Sư"
+    }
+  ]
+}

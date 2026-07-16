@@ -1,0 +1,323 @@
+[
+  {
+    "page": "fall",
+    "weight": 3,
+    "question": "Dungeon Train이란 무엇인가?",
+    "narration": "{carriage}번 객차. 어둠이 그대에게 닿은 곳이 바로 거기다. 이제 알겠는가? Dungeon Train은 멈추지 않는다 — 그저 나아갈 뿐이다, 더 깊이, 영원히."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": {
+      "min_carriage": 100
+    },
+    "question": "Dungeon Train이란 무엇인가?",
+    "narration": "어둠 속으로 {carriage}객차. 노선이 데려가기 전에 이토록 멀리 오는 이는 드물다. 다시 오르는 이는 더욱 드물다."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": {
+      "max_carriage": 3
+    },
+    "question": "Dungeon Train이란 무엇인가?",
+    "narration": "{carriage}번 객차. 겨우 올라탔을 뿐인데, 어둠은 벌써 그대를 붙들었다. 노선은 참을성이 있다 — 그럴 여유가 있으니까."
+  },
+  {
+    "page": "deeds",
+    "weight": 3,
+    "question": "그대는 왜 여기 있는가?",
+    "narration": "그대는 어둠 속에서 {mobs}의 것들을 쓰러뜨렸고, 그 대가로 {hearts}의 심장을 피 흘렸다.\n그대가 만난 {met}의 영혼 가운데, {slain}을 그대가 끝냈고 — {friends}을 그대는 벗이라 불렀다."
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "그대는 무엇을 하도록 되어 있는가?",
+    "narration": "쇠붙이와 칼날, 어둠에서 그러모아 여기까지 지고 왔다. 그 무엇도 충분치 않았다 — 어쩌면 애초에 그것이 요점이 아니었으리라."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_books": 5
+    },
+    "question": "그대는 무엇을 하도록 되어 있는가?",
+    "narration": "그대는 노선의 책 {books}권을 읽고도 여전히 강철을 지녔다. 앎과 칼 한 자루, 그리고 어둠은 둘 다 앗아 갔다."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_friends": 5
+    },
+    "question": "그럴 만한 값어치가 있었는가?",
+    "narration": "그대는 노선에서 {friends}의 벗을 사귀었고, 그런데도 노선은 그대를 데려갔다. 어쩌면 그것이 애초에 그대가 간직할 수 있던 유일한 수(數)이리라."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_mobs": 200
+    },
+    "question": "그대는 어둠에 얼마만큼 같은 방식으로 응답했는가?",
+    "narration": "그대가 그것들의 손에 쓰러지기 전에 {mobs}의 것들이 그대의 손에 쓰러졌다. 노선은 심판하지 않는다. 그저 셀 뿐이다."
+  },
+  {
+    "page": "lives",
+    "weight": 3,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "모두 좋은 물음이다",
+    "narration": "이것은 한 생의 자취가 아니다. {deaths}번 모두에 걸쳐 — 그대가 오른 모든 어둠, 노선이 그대를 데려가도 그대가 다시 돌아온 그 모든 번 — 이것이 그대 여정의 전부다."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 1,
+      "max_deaths": 1
+    },
+    "question": "한 생이 그리도 쉽게 쓰이는가?",
+    "subline": "노선에서의 그대의 첫 추락.",
+    "narration": "이 생과 견줄 다른 생은 없다 — 아직은. 이것이 그대의 전부다. 그대가 처음 오른 이래 행한 모든 것. 노선은 그것을 기억할 것이다. 그대 또한 그리해야 한다."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 10
+    },
+    "question": "모두 좋은 물음이다",
+    "narration": "이것은 한 생의 자취가 아니다. {deaths}번 어둠이 그대를 데려갔고, {deaths}번 그대는 다시 올라탔다."
+  },
+  {
+    "page": "platform",
+    "weight": 3,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "다시 오르겠는가, 아니면 고요 속으로 내려서겠는가?",
+    "narration": "승강장은 비어 있다. 기적 소리가 노선 저 멀리서 울린다. 그것은 끝없이 달린다 — 그리고 보아하니, 그대 또한 그러하다.",
+    "epitaph": "쓰러진 {deaths}번째. 어쩌면 마지막은 아니리라."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 1,
+      "max_deaths": 1
+    },
+    "question": "이제 어떻게 끝나는지 알았으니, 다시 오르겠는가?",
+    "narration": "승강장은 비어 있다, 그대가 처음 올라탔을 때와 똑같이. 기적 소리가 노선 저 멀리서 울린다. 그대는 한 번 쓰러졌다. 두 번째가 있을지는, 늘 그렇듯, 그대가 정할 몫이다.",
+    "epitaph": "처음으로 쓰러진 이. 노선은 참을성이 있다 — 나머지를 기다릴 것이다."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 20
+    },
+    "question": "물을 필요나 있는가?",
+    "narration": "승강장은 이제 그대의 얼굴을 안다. 기적은 늘 그렇듯 울린다. 그대는 이미 다음에 무엇이 올지 안다.",
+    "epitaph": "쓰러진 {deaths}번째 — 그리고 보아하니, 마지막은 아닌."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Train이란 무엇인가?",
+    "narration": "{carriage}번 객차. 어둠은 줄곧 그곳에서 기다리고 있었다 — 그대는 그저 그것을 만나러 이르렀을 뿐."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Train이란 무엇인가?",
+    "narration": "{carriage}번 객차, 그리고 더는 없다. 노선은 원한도 자비도 품지 않는다. 그저 계속 나아갈 뿐이다."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Train이란 무엇인가?",
+    "narration": "{carriage}번 객차의 랜턴들이 그대가 쓰러진 자리에서 아직도 흔들린다. 기차는 보려고 속도를 늦추지 않는다."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Train이란 무엇인가?",
+    "narration": "세상의 바닥이 꺼지기 전에 그대는 {carriage}번 객차에 이르렀다. 노선은 그대의 무게 없이도 계속 나아간다."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Train이란 무엇인가?",
+    "narration": "{carriage}번 객차. 저 앞 어딘가에서 선로는 검은 어둠 속으로 계속 펼쳐진다, 그대가 더는 그 위에 없다는 데 아랑곳없이."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Train이란 무엇인가?",
+    "narration": "여기, {carriage}번 객차에서, 어둠이 마침내 그대의 걸음을 따라잡았다. 언제나 그럴 참이었다."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "그대는 왜 여기 있는가?",
+    "narration": "그대는 어둠 속에서 {mobs}의 것들을 쓰러뜨렸고, 그러느라 {hearts}의 심장을 내주었다. 그대가 스쳐 지난 {met}의 영혼 가운데, {slain}을 그대가 베어 넘겼고 {friends}을 곁에 두었다."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "그대는 왜 여기 있는가?",
+    "narration": "{mobs}의 것들이 그대에게 쓰러졌고 {hearts}의 심장이 그대에게서 떨어졌다. 그대는 어둠 속에서 {met}의 다른 영혼과 마주쳤고 — {slain}을 끝냈고, {friends}을 간직했으며 — 그러고는 그대의 차례였다."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "그대는 왜 여기 있는가?",
+    "narration": "어둠에서 그대는 {mobs}을 앗았고, 그대 자신에게서 {hearts}의 심장을 썼다. {met}의 영혼이 노선을 함께했다. {slain}을 그대가 끝냈고, {friends}을 그대가 붙들었다."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "max_friends": 0
+    },
+    "question": "그대는 왜 여기 있는가?",
+    "narration": "그대는 {mobs}의 것들을 쓰러뜨렸고 {hearts}의 심장을 피 흘렸다. 그대는 {met}의 영혼을 만났고, {slain}을 끝냈으며, 그중 누구도 벗이라 부르지 않았다. 어둠은 홀로일 때 더 단순하다."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_slain": 5
+    },
+    "question": "그대는 무엇으로 어둠에 응답했는가?",
+    "narration": "그대가 만난 {met} 가운데, {slain}을 베어 넘겼고 — 그 밖에도 어둠 속 {mobs}의 것들을 — {hearts}의 심장을 치르고, {friends}을 살려 두어 벗이라 불렀다. 노선은 그것을 살인이라 부르지 않는다."
+  },
+  {
+    "page": "gear",
+    "weight": 2,
+    "question": "그대는 무엇을 하도록 되어 있는가?",
+    "narration": "그대는 객차에서 담을 수 있는 것을 모조리 그러모았다. 노선은 그것을 그대가 갖도록 둔다 — 노선에게 화물은 쓸모가 없고, 오직 승객만이 쓸모 있으니."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_loot": 0
+    },
+    "question": "그대는 무엇을 하도록 되어 있는가?",
+    "narration": "그대는 노선에서 상자 하나 열지 않았다 — 오직 올라탈 때 지녔던 것만 지니고, 그것을 끝까지 휘둘렀다. 어둠은 그대가 가져가지 않으려 한 것을 간직한다."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_loot": 9
+    },
+    "question": "그대는 무엇을 하도록 되어 있는가?",
+    "narration": "상자 몇 개를 열었다 — 통틀어 {loot}개 — 그리고 칼 한 자루를 곁에 두었다. 노선은 멈추는 이에게 후하다. 그대는 좀처럼 멈추지 않았다."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_loot": 250
+    },
+    "question": "그대는 무엇을 하도록 되어 있는가?",
+    "narration": "{loot}개의 용기를 그대의 배낭에 비워 담았다. 그대는 못질로 박히지 않은 것이라면 죄다 어둠에서 벗겨 냈으나, 그런데도 어둠은 정작 중요한 단 하나를 앗아 갔다."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_books": 0
+    },
+    "question": "그대는 무엇을 하도록 되어 있는가?",
+    "narration": "책장 한 장 넘기지 않았다 — 오직 강철만 그러모아 휘둘렀다. 노선은 그 이야기들을, 멈추어 읽는 이들을 위해 간직한다."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_books": 10
+    },
+    "question": "그대는 무엇을 하도록 되어 있는가?",
+    "narration": "그대는 노선의 책 {books}권을 읽었고 그 밖에 강철도 지녔다. 지혜와 칼 한 자루, 그리고 어둠은 둘 다에 참을성이 있었다."
+  },
+  {
+    "page": "lives",
+    "weight": 2,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "모두 좋은 물음이다",
+    "narration": "세어 보라. {deaths}번 노선이 그대를 데려갔고, {deaths}번 그대가 기적에 응답했다. 이것이 그대의 모습이다, 떠남으로 그려진."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 3
+    },
+    "question": "모두 좋은 물음이다",
+    "narration": "{deaths}번의 생에 걸쳐 숫자들이 선로 위 먼지처럼 쌓인다. 그 무엇도 잃지 않는다. 노선은 아무것도 잊지 않는다."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "그대는 어찌하여 계속 오르는가?",
+    "narration": "{deaths}번의 추락, 그런데도 그대는 오른다. 노선은 그대가 돌아올지 궁금해하기를 그쳤다. 그리고, 어쩌면, 그대 또한."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "그대는 어찌하여 계속 오르는가?",
+    "narration": "등 뒤엔 {deaths}번의 죽음, 앞엔 똑같은 기적. 그대는 더 이상 승객이 아니다 — 그대는 시간표의 일부다."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "그대는 어찌하여 계속 오르는가?",
+    "narration": "어둠은 더 이상 낯선 이가 아니게 되었다. {deaths}번에 걸쳐 그대는 그 얼굴을 익혔다. 그것은 그 나름의 상실이다."
+  },
+  {
+    "page": "platform",
+    "weight": 2,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "다시 오르겠는가, 아니면 승강장이 그대를 붙들게 두겠는가?",
+    "narration": "기적은 이미 울리고 있다, 저 앞 멀리서. 그것은 그대를 기다리지 않는다 — 한 번도 기다린 적 없다 — 그런데도 그대는 여기 서서, 따라가기로 정하고 있다.",
+    "epitaph": "쓰러진 {deaths}번째. 노선은 계속된다."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 3
+    },
+    "question": "다시 오르겠는가?",
+    "narration": "승강장은 고요하다. 어딘가에서 기차는 이미 다른 이의 이야기로 가득하다. 그대의 이야기 하나 더 들일 자리는 언제나 있다.",
+    "epitaph": "쓰러진 {deaths}번째. 어쩌면 마지막은 아닐."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "노선이 물을 필요나 있는가?",
+    "narration": "그대는 문의 무게를, 발판의 냉기를 안다. 어둠은 이제 그대가 들르는 하나의 장소일 뿐이다.",
+    "epitaph": "쓰러진 {deaths}번째 — 노선의 단골."
+  }
+]

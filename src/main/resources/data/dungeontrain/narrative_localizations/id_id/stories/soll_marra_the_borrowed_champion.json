@@ -1,0 +1,55 @@
+{
+  "id": "soll_marra_the_borrowed_champion",
+  "character": "Soll Marra",
+  "story": "Sang Jawara Pinjaman",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Surat Satu",
+      "variants": [
+        "Hari Pertama. Perlengkapan.\n\nPedang besi, x2 (satu cadangan sesuai buku catatan).\nBusur, 64 panah.\nKulit berpesona, set lengkap, Proteksi I.\nMutiara Ender, x16.\nKasur, x1.\nKentang mentah, x32.\n\nBuku catatan menuntut apel emas. Kota tak punya. Akan kucari dalam perjalanan.\n\nTikus itu nyata. Sudah kucatat.\n\nHari Pertama.\n\n- S. Marra",
+        "Hari Pertama. Perlengkapan.\n\nPedang besi, x2.\nBusur, 64 panah.\nKulit berpesona, Prot I.\nMutiara Ender, x16.\nKasur.\nKentang, x32.\n\nBuku catatan bilang apel emas tak bisa ditawar. Kota tak punya. Aku pergi sebelum ada yang sadar aku menghilang.\n\nSeekor tikus berompi memberiku kertas ini. Ia tampak sedih. Aku tak tahu harus mencatatnya sebagai apa.\n\nAku siap.\n\n- Soll Marra"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Surat Dua",
+      "variants": [
+        "Buku catatan ini milik Halric. Ia mulai menulisnya dua puluh enam tahun lalu, setahun sebelum ia mengenalku.\n\nSpesifikasi untuk End. Tinggi pilar. Sangkar kristal. Urutan pecahkan sangkar. Hasil ledakan kasur. Lintasan mutiara.\n\nIa tak pernah pergi.\n\nIa mati saat musim semi. Penyakit paru. Buku catatan menyebutnya \"penghentian, tanpa pertempuran.\"\n\nSang naga tak pernah bertemu Halric.\n\nAku membawa buku ini kepada sang naga.\n\n- S. Marra",
+        "Buku catatan ini milik Halric. Ia mulai menulisnya setahun sebelum aku lahir. Dua puluh enam tahun spesifikasi dan tak ada naga di ujungnya.\n\nTinggi pilar. Sangkar kristal. Urutan pecahkan sangkar. Hasil ledakan kasur. Lintasan mutiara. Seluruh pertempuran, di atas kertas.\n\nIa mati saat musim semi. Buku catatan menyebutnya \"penghentian, tanpa pertempuran.\" Kurasa itu parunya. Ia sering batuk. Ia tak pernah menyebut kata itu.\n\nSang naga tak pernah bertemu Halric.\n\nAku membawa dirinya kepada sang naga.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Surat Tiga",
+      "variants": [
+        "Latihan Satu. Gerbong 14.\n\nSasaran: zombie, tanpa zirah.\nJarak: 9 blok.\nPerlindungan: sebuah bangku.\nBusur: tarik penuh, dua detik.\n\nSiklus-bertengger Halric bisa disesuaikan. Lampu gerbong menggantikan kristal. Jatuhkan kristal lebih dulu. Berputar. Lepaskan.\n\nHasil: satu tembakan. Waktu sasaran di buku catatan sebelas detik. Milikku, empat.\n\nBuku catatan tak menyebutkan seperti apa rasanya siap.\n\n- S. Marra",
+        "Latihan Satu. Gerbong empat belas.\n\nAku memilih zombie karena buku catatan dimulai dengan kristal dan aku tak punya kristal. Lampu di dinding bentuknya pas.\n\nBerlindung di bangku. Sembilan blok. Tarik penuh. Berputar. Lepaskan.\n\nZombie itu tumbang dalam satu tembakan. Waktu sasaran Halric sebelas detik. Aku empat.\n\nAku siap, waktu itu. Lalu aku duduk di bangku dan gerbongnya sunyi dan lampu itu berayun sedikit.\n\nAku tak tahu apa yang kuharapkan.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Surat Empat",
+      "variants": [
+        "Gerbong 28. Perjumpaan.\n\nPenumpang: perempuan, pertengahan lima puluhan, mantel wol abu-abu. Tampaknya nyata.\n\nDia menanyakan namaku. Kuberi gelar Halric. Murid Halric.\n\nKatanya, \"Halric. Jadi kau muridnya yang keempat.\"\n\nAku tak tahu sudah ada tiga sebelumnya.\n\nKucatat nomor kursinya. Aku melanjutkan.\n\nPengamatan ditutup.\n\n- S. Marra",
+        "Gerbong dua puluh delapan. Seorang perempuan bermantel abu-abu menanyakan namaku.\n\nKuberi gelar Halric. Murid Halric.\n\nKatanya, \"Halric? Si pembuat panah yang batuk-batuk itu?\"\n\nAku tak tahu ia seorang pembuat panah. Ada salah satu busurnya di tasku.\n\nHarusnya aku duduk. Harusnya kutanya apa lagi yang dia tahu. Aku tidak. Aku berjalan ke gerbong berikutnya dan kini aku duduk di sini menulis.\n\nDia masih di kursi 14. Kurasa.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Surat Lima",
+      "variants": [
+        "Percobaan 47. Mata Ender.\n\nVektor lempar: ke depan, dua puluh lima derajat dari horizontal. Sesuai buku catatan halaman sembilan.\n\nMata itu diam di tempat. Enam detik. Ia berputar berlawanan arah jarum jam, lalu menetap.\n\nArah: utara-menyerong-timur laut.\n\nAku pindah gerbong. Kulempar lagi.\n\nArah: utara-menyerong-timur laut.\n\nGerbong itu menghadap selatan.\n\nMata itu membaca sebuah arah. Kereta ini tak berada di suatu arah.\n\nAku berhenti melempar.\n\n- S. Marra",
+        "Mata Ender itu tak mau terbang.\n\nKulempar empat puluh tujuh kali. Ke depan. Ke atas. Ke samping. Ke luar pintu.\n\nMata itu melayang. Ia berputar. Ia tak memilih arah. Halric menulis bahwa mata selalu memilih. Mata itu, halaman sembilan: \"satu-satunya hal jujur dalam pendekatan menuju benteng.\"\n\nIa memang jujur. Tak ada benteng.\n\nAku duduk dengan mata itu di tanganku. Ia hangat. Kini ia tak hangat.\n\nAku tak tahu ke arah mana aku pergi.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Surat Enam",
+      "variants": [
+        "Aku sudah menutup buku catatan itu.\n\nSampulnya kulit cokelat. Ada nama-nama di bagian dalam sampul depan. Aku tak melihatnya.\n\nAku menulis di halaman belakang. Halric tak menulis di sini.\n\nUmurku sembilan belas. Aku tak pernah melihat naga. Aku tak mau membunuhnya.\n\nAku akan terus berjalan sampai kutemukan jendela dengan cahaya yang tepat. Lalu aku akan duduk.\n\nSoll Marra",
+        "Aku menutup buku catatan itu.\n\nHalaman belakangnya kosong. Aku duduk dengan buku itu terbuka lama sekali.\n\nHalric tak ada di halaman belakang. Halric ada di halaman-halaman depan. Sudah terlalu sering kubaca.\n\nUmurku sembilan belas. Aku tak pernah melihat naga. Aku tak mau membunuhnya.\n\nAku tak tahu ke mana kereta ini pergi. Kurasa itu tak apa.\n\nAku akan mencari sebuah jendela.\n\nSoll"
+      ]
+    }
+  ]
+}

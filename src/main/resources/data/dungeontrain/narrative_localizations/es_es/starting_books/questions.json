@@ -1,0 +1,10 @@
+{
+  "id": "questions",
+  "title": "Preguntas del Dungeon Train",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "¿Preguntas?\nBienvenido al Dungeon Train\n¿Qué es el tren?\n¿Por qué estás aquí?\n¿Qué se supone que debes hacer?\nTodas estas son buenas preguntas\n\nNo encontrarás respuestas en este fajo de papel.\n\nLas respuestas sencillamente no están aquí.\n\nYo hago las preguntas, tú encuentras las respuestas.\n\n¿Así que «cuál es la pregunta», preguntas?\n\nQuizá esa sea la respuesta."
+  ]
+}

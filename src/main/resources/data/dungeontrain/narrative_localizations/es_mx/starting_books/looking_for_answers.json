@@ -1,0 +1,10 @@
+{
+  "id": "looking_for_answers",
+  "title": "En busca de respuestas",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "¿Buscas respuestas?\nBienvenido al Dungeon Train\n¿Qué es el tren?\n¿Por qué estás aquí?\n¿Qué se supone que debes hacer?\nTodas estas son buenas preguntas\n\nLas preguntas son importantes.\n\nAlgunas preguntas son más importantes que las respuestas.\nAlgunas preguntas tienen múltiples respuestas.\nAlgunas preguntas no necesitan respuestas.\nAlgunas respuestas crean las preguntas.\nAlgunas preguntas comparten respuestas.\nAlgunas respuestas comparten una pregunta.\nPero no todas las preguntas comparten la misma importancia.\nAlgunas preguntas son más importantes.\nAlgunas preguntas son las preguntas correctas.\n¿Cuál es la pregunta correcta?\nQuizás esa es la respuesta."
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "id": "adventureitemnames:mob_titles",
+  "entries": [
+    {
+      "text": "Brave"
+    },
+    {
+      "text": "Sage"
+    },
+    {
+      "text": "Paresseux"
+    },
+    {
+      "text": "Vieux"
+    },
+    {
+      "text": "Jeune"
+    },
+    {
+      "text": "Errant"
+    },
+    {
+      "text": "Curieux"
+    },
+    {
+      "text": "Rapide"
+    },
+    {
+      "text": "Lent"
+    },
+    {
+      "text": "Doux"
+    },
+    {
+      "text": "Puissant"
+    },
+    {
+      "text": "Affamé"
+    },
+    {
+      "text": "Patient"
+    },
+    {
+      "text": "Agité"
+    },
+    {
+      "text": "Enjoué"
+    },
+    {
+      "text": "Grincheux"
+    },
+    {
+      "text": "Fort"
+    },
+    {
+      "text": "Bien-aimé"
+    },
+    {
+      "text": "Perdu"
+    },
+    {
+      "text": "Timide"
+    },
+    {
+      "text": "Audacieux"
+    },
+    {
+      "text": "Dodu"
+    },
+    {
+      "text": "Fougueux"
+    },
+    {
+      "text": "Constant"
+    },
+    {
+      "text": "Chanceux"
+    },
+    {
+      "text": "Endormi"
+    },
+    {
+      "text": "le Curieux"
+    },
+    {
+      "text": "Robuste"
+    },
+    {
+      "text": "Agile"
+    },
+    {
+      "text": "Silencieux"
+    }
+  ]
+}

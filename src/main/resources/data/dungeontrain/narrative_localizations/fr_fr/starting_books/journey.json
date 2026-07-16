@@ -1,0 +1,10 @@
+{
+  "id": "journey",
+  "title": "Le train du voyage",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Bienvenue dans le Dungeon Train\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQue dois-tu faire ?\nVoilà de bonnes questions\n\nMoi aussi, je me suis posé un jour ces questions.\nTout comme tu peux te les poser, maintenant je te les ai données.\nPeut-être te poserais-tu ces questions de toute façon,\nmême si je ne te les avais pas données.\nMais cela n'a plus d'importance.\nCe qui importe, ce sont les questions.\nQu'est-ce que cet endroit ?\nPourquoi es-tu sur ce train ?\nQue fais-tu sur ce train ?\nJe me les suis posées et d'autres se les sont posées.\nMais ma réponse n'est pas ta réponse.\nNi la leur, la tienne.\nEt pourtant.\nPeut-être le voyage d'un autre peut-il aider le tien.\nMais quoi qu'il en soit.\nCe voyage.\nEst le tien."
+  ]
+}

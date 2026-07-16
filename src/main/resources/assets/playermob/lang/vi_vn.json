@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "Người chơi",
+  "item.playermob.player_mob_spawn_egg": "Trứng sinh sản Người chơi",
+  "item.playermob.player_mob_aggressive_spawn_egg": "Trứng sinh sản Người chơi Hung hãn",
+  "item.playermob.player_mob_friendly_spawn_egg": "Trứng sinh sản Người chơi Thân thiện",
+  "item.playermob.player_mob_passive_spawn_egg": "Trứng sinh sản Người chơi Ôn hòa",
+  "item.playermob.player_mob_skeptical_spawn_egg": "Trứng sinh sản Người chơi Hoài nghi",
+  "item.playermob.player_mob_shy_spawn_egg": "Trứng sinh sản Người chơi Nhút nhát",
+  "container.playermob.player_mob": "Người chơi"
+}

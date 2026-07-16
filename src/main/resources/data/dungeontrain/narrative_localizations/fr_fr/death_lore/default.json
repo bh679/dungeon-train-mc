@@ -1,0 +1,274 @@
+[
+  {
+    "page": "fall",
+    "weight": 3,
+    "question": "Qu'est-ce que le Dungeon Train ?",
+    "narration": "Wagon {carriage}. C'est là que les ténèbres t'ont rattrapé. Le comprends-tu à présent ? Le Dungeon Train ne s'arrête pas : il ne fait qu'avancer, toujours plus profond, à jamais."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "min_carriage": 100 },
+    "question": "Qu'est-ce que le Dungeon Train ?",
+    "narration": "{carriage} wagons au cœur des ténèbres. Peu vont si loin avant que la ligne ne les emporte. Moins encore remontent à bord."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "max_carriage": 3 },
+    "question": "Qu'est-ce que le Dungeon Train ?",
+    "narration": "Wagon {carriage}. À peine monté, et déjà les ténèbres te tenaient. La ligne est patiente : elle peut se le permettre."
+  },
+  {
+    "page": "deeds",
+    "weight": 3,
+    "question": "Pourquoi es-tu là ?",
+    "narration": "Tu as abattu {mobs} créatures dans les ténèbres, et l'as payé de {hearts} cœurs.\nDes {met} âmes que tu as croisées, tu en as achevé {slain} — et {friends} que tu as appelées amies."
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "Qu'es-tu censé faire ?",
+    "narration": "Fer et tranchant, glanés dans les ténèbres et portés jusqu'ici. Rien de tout cela n'a suffi ; peut-être n'était-ce jamais le propos."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 5 },
+    "question": "Qu'es-tu censé faire ?",
+    "narration": "Tu as lu {books} des livres de la ligne et portais pourtant l'acier. Le savoir et une lame, et les ténèbres ont pris les deux."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_friends": 5 },
+    "question": "En valaient-ils la peine ?",
+    "narration": "Tu t'es fait {friends} amis sur la ligne, et pourtant elle t'a emporté. C'est peut-être le seul nombre qui t'ait jamais vraiment appartenu."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_mobs": 200 },
+    "question": "Quelle part des ténèbres as-tu rendue à leur mesure ?",
+    "narration": "{mobs} créatures sont tombées sous ta main avant que tu ne tombes sous les leurs. La ligne ne juge pas. Elle ne fait que compter."
+  },
+  {
+    "page": "lives",
+    "weight": 3,
+    "conditions": { "min_deaths": 2 },
+    "question": "Ce sont toutes de bonnes questions",
+    "narration": "Ce ne sont pas les marques d'une seule vie. À travers les {deaths} — chaque obscurité où tu es monté, chaque fois que la ligne t'a emporté et que pourtant tu es revenu —, voici l'entièreté de ton voyage."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "Une seule vie se dépense-t-elle si aisément ?",
+    "subline": "ta première chute sur la ligne.",
+    "narration": "Il n'est pas d'autres vies à peser contre celle-ci — pas encore. Voici tout ce que tu es : tout ce qui fut accompli depuis ta première montée. La ligne s'en souviendra. Tu le devrais aussi."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 10 },
+    "question": "Ce sont toutes de bonnes questions",
+    "narration": "Ce ne sont pas les marques d'une seule vie. {deaths} fois les ténèbres t'ont emporté, et {deaths} fois tu es remonté à bord."
+  },
+  {
+    "page": "platform",
+    "weight": 3,
+    "conditions": { "min_deaths": 2 },
+    "question": "Remonteras-tu à bord, ou descendras-tu dans le silence ?",
+    "narration": "Le quai est vide. Le sifflet retentit au loin sur la ligne. Elle roule sans fin — et toi aussi, semble-t-il.",
+    "epitaph": "le {deaths}e à tomber. peut-être pas le dernier."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "Remonteras-tu à bord, maintenant que tu sais comment cela finit ?",
+    "narration": "Le quai est vide, tel qu'il l'était quand tu es monté pour la première fois. Le sifflet retentit au loin sur la ligne. Tu es tombé une fois. Qu'il y ait une seconde, cela, comme toujours, ne tient qu'à toi.",
+    "epitaph": "le premier à tomber. la ligne est patiente : elle attendra les autres."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 20 },
+    "question": "As-tu même besoin de demander ?",
+    "narration": "Le quai connaît ton visage désormais. Le sifflet retentit comme il le fait toujours. Tu sais déjà ce qui vient ensuite.",
+    "epitaph": "le {deaths}e à tomber — et non, semble-t-il, le dernier."
+  },
+
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Qu'est-ce que le Dungeon Train ?",
+    "narration": "Wagon {carriage}. Les ténèbres attendaient là depuis toujours ; tu n'as fait qu'arriver à leur rencontre."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Qu'est-ce que le Dungeon Train ?",
+    "narration": "Wagon {carriage}, et pas plus loin. La ligne ne garde ni rancune ni pitié ; elle continue, simplement."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Qu'est-ce que le Dungeon Train ?",
+    "narration": "Les lanternes du wagon {carriage} se balancent encore là où tu es tombé. Le train ne ralentit pas pour regarder."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Qu'est-ce que le Dungeon Train ?",
+    "narration": "Tu as atteint le wagon {carriage} avant que le sol du monde ne cède. La ligne poursuit sans ton poids."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Qu'est-ce que le Dungeon Train ?",
+    "narration": "Wagon {carriage}. Quelque part devant, la voie continue de se dérouler vers le noir, indifférente à ce que tu n'y sois plus."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Qu'est-ce que le Dungeon Train ?",
+    "narration": "Ici, au wagon {carriage}, les ténèbres ont enfin égalé ton pas. Elles allaient toujours le faire."
+  },
+
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Pourquoi es-tu là ?",
+    "narration": "Tu as abattu {mobs} créatures dans les ténèbres et cédé {hearts} cœurs pour y parvenir. Des {met} âmes que tu as croisées, tu en as terrassé {slain} et laissé {friends} s'approcher."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Pourquoi es-tu là ?",
+    "narration": "{mobs} créatures sont tombées devant toi et {hearts} cœurs sont tombés de toi. Tu as croisé {met} autres âmes dans les ténèbres — en as achevé {slain}, gardé {friends} — puis vint ton tour."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Pourquoi es-tu là ?",
+    "narration": "Des ténèbres tu as pris {mobs} ; de toi-même tu as dépensé {hearts} cœurs. {met} âmes ont partagé la ligne : {slain} tu as achevées, {friends} tu as retenues."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "max_friends": 0 },
+    "question": "Pourquoi es-tu là ?",
+    "narration": "Tu as abattu {mobs} créatures et saigné {hearts} cœurs. Tu as rencontré {met} âmes, en as achevé {slain}, et n'en as appelé aucune amie. Les ténèbres sont plus simples seul."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_slain": 5 },
+    "question": "Avec quoi as-tu répondu aux ténèbres ?",
+    "narration": "Des {met} que tu as rencontrées, {slain} tu as abattues — et {mobs} créatures de plus dans les ténèbres, en outre — au prix de {hearts} cœurs, et {friends} tu as épargnées pour les appeler amies. La ligne n'appelle pas cela un meurtre."
+  },
+
+  {
+    "page": "gear",
+    "weight": 2,
+    "question": "Qu'es-tu censé faire ?",
+    "narration": "Tu as amassé tout ce que tu pouvais porter des wagons. La ligne te laisse le garder : elle n'a que faire du fret, seulement des passagers."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 0 },
+    "question": "Qu'es-tu censé faire ?",
+    "narration": "Tu n'as pas fracturé une seule caisse sur la ligne : tu n'as porté que ce avec quoi tu es monté, et l'as brandi jusqu'au bout. Les ténèbres gardent ce que tu n'as pas voulu prendre."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 9 },
+    "question": "Qu'es-tu censé faire ?",
+    "narration": "Une poignée de caisses ouvertes — {loot} en tout — et une lame toujours à portée. La ligne est généreuse envers ceux qui s'arrêtent ; toi, tu t'es à peine arrêté."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_loot": 250 },
+    "question": "Qu'es-tu censé faire ?",
+    "narration": "{loot} conteneurs vidés dans ton sac. Tu as dépouillé les ténèbres de tout ce qui n'était pas cloué au sol, et pourtant elles ont pris la seule chose qui comptait."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_books": 0 },
+    "question": "Qu'es-tu censé faire ?",
+    "narration": "Pas une page tournée : seulement de l'acier ramassé et brandi. La ligne garde ses histoires pour ceux qui s'arrêtent pour lire."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 10 },
+    "question": "Qu'es-tu censé faire ?",
+    "narration": "Tu as lu {books} des livres de la ligne et portais l'acier en plus. La sagesse et une lame, et les ténèbres furent patientes avec les deux."
+  },
+
+  {
+    "page": "lives",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "Ce sont toutes de bonnes questions",
+    "narration": "Compte-les : {deaths} fois la ligne t'a emporté, {deaths} fois tu as répondu au sifflet. Voici ta silhouette, tracée en départs."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "Ce sont toutes de bonnes questions",
+    "narration": "À travers {deaths} vies, les nombres s'amassent comme la poussière sur les rails. Rien n'en est perdu ; la ligne n'oublie rien."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Pourquoi continues-tu de monter ?",
+    "narration": "{deaths} chutes, et pourtant tu montes. La ligne a cessé de se demander si tu reviendrais. Et toi aussi, peut-être."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Pourquoi continues-tu de monter ?",
+    "narration": "{deaths} morts derrière toi et le même sifflet devant. Tu n'es plus un passager : tu fais partie de l'horaire."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Pourquoi continues-tu de monter ?",
+    "narration": "Les ténèbres ont cessé d'être une étrangère ; {deaths} fois tu as appris leur visage. C'est là une forme de perte à part entière."
+  },
+
+  {
+    "page": "platform",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "Remonteras-tu à bord, ou laisseras-tu le quai te retenir ?",
+    "narration": "Le sifflet retentit déjà, loin devant. Il ne t'attend pas — il ne l'a jamais fait —, et pourtant te voici, décidant de le suivre.",
+    "epitaph": "le {deaths}e à tomber. la ligne continue."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "Remonteras-tu à bord ?",
+    "narration": "Le quai est silencieux. Quelque part, le train est déjà plein de l'histoire d'un autre. Il y a toujours de la place pour une de plus des tiennes.",
+    "epitaph": "le {deaths}e à tomber. peut-être pas le dernier."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "La ligne a-t-elle même besoin de demander ?",
+    "narration": "Tu connais le poids de la porte, le froid de la marche. Les ténèbres ne sont plus qu'un lieu que tu visites désormais.",
+    "epitaph": "le {deaths}e à tomber : un habitué de la ligne."
+  }
+]

@@ -1160,6 +1160,7 @@ public final class TrainCarriageAppender {
         RESUME_STARTED_TICK.clear();
         SPAWN_GEN_WAIT_FORWARD.clear();
         SPAWN_GEN_WAIT_BACKWARD.clear();
+        lastSyncGenTick = Long.MIN_VALUE;
     }
 
     /**
@@ -3036,7 +3037,7 @@ public final class TrainCarriageAppender {
         int forwardGroupsToFill = Math.max(0, Math.ceilDiv(Math.max(0, neededMax), groupSize));
         int backwardGroupsToFill = Math.max(0, Math.ceilDiv(Math.max(0, -neededMin), groupSize));
         int alignedTotalCarriages = (1 + forwardGroupsToFill + backwardGroupsToFill) * groupSize;
-        BootstrapProgress.start("Assembling train", alignedTotalCarriages, groupSize);
+        BootstrapProgress.start("gui.dungeontrain.loading.phase.assembling", alignedTotalCarriages, groupSize);
 
         int startMin = Integer.MAX_VALUE;
         int startMax = Integer.MIN_VALUE;
@@ -3338,12 +3339,33 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Long> SPAWN_GEN_WAIT_BACKWARD = new ConcurrentHashMap<>();
 
     /**
-     * Max ticks a spawn may defer waiting for async footprint generation before
-     * it fires anyway (accepting one synchronous-gen spike over a stuck train).
-     * ~5 s at 20 TPS — generation of a ~3-chunk footprint completes in a handful
-     * of ticks in practice, so the timeout is only a stall backstop.
+     * Max ticks a spawn may defer waiting for async footprint generation before it may fire the
+     * synchronous-gen backstop. ~15 s at 20 TPS. Deliberately generous: a ~3-chunk footprint
+     * completes in a handful of ticks on flat overworld, but while a moving train crosses the
+     * expensive Nether-transition band the worldgen workers are saturated and async gen legitimately
+     * takes many seconds — the old 5 s value fired the sync backstop during that *normal* heavy load,
+     * blocking the server thread. At 15 s the backstop only trips on a genuine async stall, not
+     * ordinary band-crossing backpressure.
      */
-    private static final long SPAWN_GEN_WAIT_MAX_TICKS = 100L;
+    private static final long SPAWN_GEN_WAIT_MAX_TICKS = 300L;
+
+    /**
+     * Server-wide minimum spacing (ticks) between two synchronous {@link #forceRegionFullChunks}
+     * backstops, across ALL trains and both spawn lanes. The 16.85 s reversal freeze was two lanes'
+     * blocking {@code getChunk(FULL)} joins <em>stacking</em> in one tick while the worldgen queue was
+     * saturated. This budget lets at most one forced sync-gen fire per window; every other lane keeps
+     * deferring (async ticket stays live) instead of piling a second multi-second main-thread join on
+     * top. ~10 s at 20 TPS.
+     */
+    private static final long SYNC_GEN_COOLDOWN_TICKS = 200L;
+
+    /**
+     * Game-tick of the most recent synchronous {@link #forceRegionFullChunks} backstop, server-wide
+     * (all trains / both lanes). Guards {@link #SYNC_GEN_COOLDOWN_TICKS}. {@code Long.MIN_VALUE} = none
+     * yet; reset on {@link #clearSettleTracker} so a new world starts with the budget available.
+     * Server-thread only (the appender spawn loop), so a plain field is sufficient.
+     */
+    private static long lastSyncGenTick = Long.MIN_VALUE;
 
     /**
      * True once every world chunk under {@code plan}'s footprint is loaded to at
@@ -3398,15 +3420,25 @@ public final class TrainCarriageAppender {
         requestFootprintGen(level, cxMin, cxMax, czMin, czMax);
         long waitedSince = waitMap.computeIfAbsent(trainId, k -> now);
         if (now - waitedSince >= SPAWN_GEN_WAIT_MAX_TICKS) {
-            // Backstop: async gen has stalled for the whole timeout. We must NOT
-            // "spawn anyway" with section-local writes — that races the still-running
-            // light workers and tears the palette (the soft-hang this gate exists to
-            // prevent). Instead force the whole quiescence region to FULL synchronously
-            // on the server thread: blocking getChunk(FULL) drives gen AND drains each
-            // chunk's light here (not on a worker), so afterwards nothing reads those
-            // sections and the spawn's section-local writes have no concurrent reader.
-            // Accepts one bounded sync-gen spike (the pre-#645 behaviour) over a
-            // corrupted chunk — only on this pathological stall path.
+            // Backstop: async gen has stalled for the whole (generous) timeout. We must NOT
+            // "spawn anyway" with section-local writes — that races the still-running light workers
+            // and tears the palette (the soft-hang this gate exists to prevent). The only safe
+            // recoveries are to keep deferring or to force the region to FULL synchronously (blocking
+            // getChunk(FULL) drives gen AND drains light here, so afterwards nothing reads those
+            // sections and the spawn's section-local writes have no concurrent reader).
+            //
+            // A synchronous force is a multi-second main-thread join while the worldgen queue is
+            // saturated (a train reversal at the Nether band). To stop two lanes/trains from STACKING
+            // those joins in one tick (the 16.85 s freeze), gate the force behind a server-wide budget:
+            // fire at most one per SYNC_GEN_COOLDOWN_TICKS. If the budget isn't available, keep
+            // deferring — the async ticket stays live (re-requested above) and almost always completes
+            // before the next window, so the sync spike is avoided entirely rather than piled on.
+            // (now < lastSyncGenTick guards a world reload resetting the game clock backwards.)
+            boolean budgetAvailable = now - lastSyncGenTick >= SYNC_GEN_COOLDOWN_TICKS || now < lastSyncGenTick;
+            if (!budgetAvailable) {
+                return false;                                  // defer; another lane holds the sync budget this window
+            }
+            lastSyncGenTick = now;
             LOGGER.warn("[DungeonTrain] Spawn footprint gen wait timed out ({} ticks) trainId={} forward={} — forcing footprint+margin chunks X[{},{}] Z[{},{}] to FULL synchronously (one sync-gen spike)",
                 now - waitedSince, trainId, forward, cxMin, cxMax, czMin, czMax);
             forceRegionFullChunks(level, cxMin, cxMax, czMin, czMax);

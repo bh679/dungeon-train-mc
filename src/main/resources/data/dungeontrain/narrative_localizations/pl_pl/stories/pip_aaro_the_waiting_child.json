@@ -1,0 +1,47 @@
+{
+  "id": "pip_aaro_the_waiting_child",
+  "character": "Pip Aaro",
+  "story": "Czekające Dziecko",
+  "letters": [
+    {
+      "index": 1,
+      "label": "List pierwszy",
+      "variants": [
+        "Nazywam się Pip. Mam osiem lat.\n\nJestem w pociągu, którego nie znam. Siedzenia pachną jak płaszcz Babci.\n\nSzczur dał mi ten papier. Prawdziwy szczur. W ubraniu.\n\nSzukam Mamy.\n\nTrochę się boję. Tylko trochę.\n\nPip",
+        "Zasnęłam w pociągu z Mamą. Obudziłam się, a Mamy nie było.\n\nPociąg jest teraz inny. Moja torba jest inna. Nie ma w niej pomarańczowej książki.\n\nSzczur dał mi ten papier. Miał kamizelkę.\n\nZnajdę Mamę. Jest tyle wagonów.\n\nNie płaczę.\n\nPip"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "List drugi",
+      "variants": [
+        "Spytałam pana, gdzie jest konduktor.\n\nMiał żółty płaszcz. Roześmiał się. Powiedział, skarbie, tu nie ma konduktora. Powiedział, że pociąg się nie zatrzymuje.\n\nNie wierzę mu. Pociągi się zatrzymują.\n\nPan w żółtym płaszczu teraz dużo śpi. Chyba jest smutny.\n\nJa taka nie będę.\n\nPip",
+        "Znalazłam notes pod siedzeniem.\n\nKtoś liczył wagony. Doszedł do 384 i przestał. Napisał, że nie ma sensu szukać przodu.\n\nNie wiem, o co mu chodziło. Pociągi mają przód.\n\nZatrzymam ten notes. To jak mieć z kim pogadać.\n\nBrzmieli na zmęczonych. Ja jeszcze nie jestem zmęczona.\n\nPip"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "List trzeci",
+      "variants": [
+        "Niektórzy ludzie w pociągu są na niby.\n\nWyglądają prawdziwie. Ale cię nie widzą. Pomachałam pani, a ona przeszła prosto obok mnie.\n\nNiektórzy ludzie SĄ tutaj. Pan w żółtym płaszczu. Szczur. Pani, która dała mi jabłko.\n\nProwadzę listę prawdziwych ludzi. Jest ich czworo. Ja pewnie też jestem jednym.\n\nPip",
+        "Zrobiłam plan.\n\nIść w jedną stronę. Nie zawracać. Wtedy dotrę na koniec pociągu.\n\nSzłam długo. Czterdzieści siedem wagonów. Nie obejrzałam się.\n\nNie było końca. Koniec wyglądał tak jak miejsce, gdzie zaczęłam. Ten sam zapach Babci.\n\nNie rozumiem. Chcę Mamy.\n\nPip"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "List czwarty",
+      "variants": [
+        "Pani z jabłkiem jest teraz moją przyjaciółką. Nazywa się Soren.\n\nJest w pociągu bardzo, bardzo długo. Nie chce powiedzieć jak długo.\n\nSoren spytała o Mamę. Powiedziałam jej. Ucichła. Potem powiedziała, że moja Mama brzmi cudownie.\n\nPowiedziała to tak samo, jak pan w żółtym płaszczu powiedział, że pociąg się nie zatrzymuje.\n\nI tak znajdę Mamę.\n\nPip",
+        "W moim wagonie jest szlam. Nazwałam ją Pebble.\n\nJest mała i zielona. Soren powiedziała, że jest za mała, żeby być jeszcze groźna. Nie wierzę w to co do Pebble.\n\nIdzie za mną do drzwi, ale przez nie nie przechodzi. Chyba myśli, że drzwi to ściana.\n\nMama powiedziałaby, że szlam to potwór. Mama się myli co do Pebble.\n\nTęsknię za Mamą.\n\nAle mam Pebble.\n\nPip"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "List piąty",
+      "variants": [
+        "Soren opowiedziała mi o drzwiach.\n\nPowiedziała, że w pociągu są drzwi, które prowadzą na zewnątrz. Powiedziała, że jak je znajdę, powinnam przez nie przejść.\n\nDługo o tym myślałam. O Mamie. O Pebble.\n\nJeśli Mama jest w tym pociągu, muszę dalej szukać. Jeśli jej nie ma, i tak do niej nie dotrę.\n\nGdy znajdę te drzwi, usiądę przy nich. I będę czekać.\n\nSoren powiedziała dobrze, skarbie. Tym razem tak, jakby naprawdę tak myślała.\n\nPip",
+        "Napisałam list do Mamy.\n\nSoren powiedziała, że czasem ludzie przechodzą przez ten sam wagon wiele razy. Więc zostawiam go tam, gdzie każdy chodzi.\n\nPisze moje imię. Pisze, że mam przyjaciółkę Soren i szlama Pebble.\n\nPisze, że nic mi nie jest. Pisze, że czekam.\n\nMama go znajdzie. Mamy znajdują rzeczy.\n\nPip"
+      ]
+    }
+  ]
+}

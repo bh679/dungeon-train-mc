@@ -30,54 +30,104 @@ public final class PresenceLine {
     public static final Duration MENTION_PRESENCE_WINDOW = Duration.ofMinutes(30);
 
     /**
-     * The text of the {@code @}-tag reply, or {@code null} to stay silent: "online right now" when online
-     * now (winning over any stale last-seen); "was online {@literal <N>} ago." when last seen within
-     * {@link #MENTION_PRESENCE_WINDOW}; {@code null} when offline longer than the window, never seen, or
-     * presence is unknown. A future {@code lastSeen} (clock skew) is treated as out-of-window. Pure —
-     * {@code now} is injected for tests.
+     * The presence decision shared by {@link #recentPhrase} (English test seam) and {@link #recentLine}
+     * (localized component): {@code onlineNow} means Brennan is online right now (winning over any stale
+     * last-seen); otherwise {@code ago} is the in-window elapsed time since he was last seen. {@code null}
+     * from {@link #decide} means "stay silent". Keeping the gate in one place stops the two renderings from
+     * drifting apart.
      */
-    static String recentPhrase(Optional<Boolean> online, Optional<Instant> lastSeen, Instant now) {
+    private record Presence(boolean onlineNow, Duration ago) {}
+
+    /**
+     * The online/window gate: online now → {@code onlineNow}; last seen within
+     * {@link #MENTION_PRESENCE_WINDOW} → {@code ago}; else {@code null} (offline longer than the window,
+     * never seen, unknown presence, or a future {@code lastSeen} from clock skew). Pure — {@code now} is
+     * injected for tests.
+     */
+    private static Presence decide(Optional<Boolean> online, Optional<Instant> lastSeen, Instant now) {
         if (online.orElse(false)) {
-            return "Brennan is online on Discord right now!";
+            return new Presence(true, null);
         }
         if (lastSeen.isPresent()) {
             Duration ago = Duration.between(lastSeen.get(), now);
             if (!ago.isNegative() && ago.compareTo(MENTION_PRESENCE_WINDOW) <= 0) {
-                return "Brennan was online " + humanizeAgo(ago) + " ago.";
+                return new Presence(false, ago);
             }
         }
         return null; // > window, never seen, or unknown — say nothing
     }
 
     /**
-     * The {@code @}-tag reply as a styled {@link Component} — green when online now, gray when recently
-     * seen — or {@code null} to stay silent (when {@link #recentPhrase} is {@code null}).
+     * The English text of the {@code @}-tag reply, or {@code null} to stay silent. Retained as the pure
+     * unit-tested seam ({@code PresenceLineTest}); the player-facing line is the localized
+     * {@link #recentLine}, which mirrors these exact phrasings via {@code en_us.json}.
      */
-    public static Component recentLine(Optional<Boolean> online, Optional<Instant> lastSeen, Instant now) {
-        String text = recentPhrase(online, lastSeen, now);
-        if (text == null) {
+    static String recentPhrase(Optional<Boolean> online, Optional<Instant> lastSeen, Instant now) {
+        Presence p = decide(online, lastSeen, now);
+        if (p == null) {
             return null;
         }
-        ChatFormatting color = online.orElse(false) ? ChatFormatting.GREEN : ChatFormatting.GRAY;
-        return Component.literal(text).withStyle(color);
+        return p.onlineNow()
+            ? "Brennan is online on Discord right now!"
+            : "Brennan was online " + humanizeAgo(p.ago()) + " ago.";
     }
 
     /**
-     * Formats a positive elapsed {@link Duration} as a coarse human phrase — "5 minutes", "1 hour",
-     * "3 days" — picking the largest whole unit (second → minute → hour → day) and pluralising. A zero or
-     * negative duration (clock skew) clamps to "0 seconds".
+     * The {@code @}-tag reply as a localized, styled {@link Component} — green when online now, gray when
+     * recently seen — or {@code null} to stay silent. Uses {@code chat.dungeontrain.presence.*} keys so the
+     * line renders in each client's own language; the duration is a nested {@link #agoComponent}.
      */
-    public static String humanizeAgo(Duration d) {
-        long secs = Math.max(0L, d.getSeconds());
-        if (secs < 60L) return plural(secs, "second");
-        long mins = secs / 60L;
-        if (mins < 60L) return plural(mins, "minute");
-        long hours = mins / 60L;
-        if (hours < 24L) return plural(hours, "hour");
-        return plural(hours / 24L, "day");
+    public static Component recentLine(Optional<Boolean> online, Optional<Instant> lastSeen, Instant now) {
+        Presence p = decide(online, lastSeen, now);
+        if (p == null) {
+            return null;
+        }
+        if (p.onlineNow()) {
+            return Component.translatable("chat.dungeontrain.presence.online_now").withStyle(ChatFormatting.GREEN);
+        }
+        return Component.translatable("chat.dungeontrain.presence.was_online", agoComponent(p.ago()))
+            .withStyle(ChatFormatting.GRAY);
     }
 
-    private static String plural(long n, String unit) {
-        return n + " " + unit + (n == 1L ? "" : "s");
+    /** The largest whole time unit and its count for an elapsed duration; the shared basis of both renderings. */
+    private enum Unit { second, minute, hour, day }
+
+    /** A count paired with the largest whole {@link Unit} it fits — e.g. 7 + {@code minute}. */
+    private record Elapsed(long count, Unit unit) {}
+
+    /**
+     * Picks the largest whole unit (second → minute → hour → day) for a positive elapsed {@link Duration}.
+     * A zero or negative duration (clock skew) clamps to 0 seconds. Single source of the unit thresholds so
+     * {@link #humanizeAgo} (English) and {@link #agoComponent} (localized) never drift apart.
+     */
+    private static Elapsed largestUnit(Duration d) {
+        long secs = Math.max(0L, d.getSeconds());
+        if (secs < 60L) return new Elapsed(secs, Unit.second);
+        long mins = secs / 60L;
+        if (mins < 60L) return new Elapsed(mins, Unit.minute);
+        long hours = mins / 60L;
+        if (hours < 24L) return new Elapsed(hours, Unit.hour);
+        return new Elapsed(hours / 24L, Unit.day);
+    }
+
+    /**
+     * Formats a positive elapsed {@link Duration} as a coarse English phrase — "5 minutes", "1 hour",
+     * "3 days" — picking the largest whole unit and pluralising. A zero or negative duration clamps to
+     * "0 seconds". Kept as the pure English seam exercised by {@code EditorWelcomeTest}.
+     */
+    public static String humanizeAgo(Duration d) {
+        Elapsed e = largestUnit(d);
+        return e.count() + " " + e.unit().name() + (e.count() == 1L ? "" : "s");
+    }
+
+    /**
+     * The elapsed {@link Duration} as a localized "N unit" {@link Component} — "7 minutes" / "7 分钟" — via
+     * the {@code chat.dungeontrain.time.*} keys, picking the singular or plural key by count. Passed as the
+     * {@code %s} argument of the presence lines so the whole sentence renders in the client's language.
+     */
+    public static Component agoComponent(Duration d) {
+        Elapsed e = largestUnit(d);
+        String key = e.unit().name() + (e.count() == 1L ? "" : "s");
+        return Component.translatable("chat.dungeontrain.time." + key, e.count());
     }
 }

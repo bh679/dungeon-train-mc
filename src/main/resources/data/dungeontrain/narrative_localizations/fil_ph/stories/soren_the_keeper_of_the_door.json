@@ -1,0 +1,63 @@
+{
+  "id": "soren_the_keeper_of_the_door",
+  "character": "Soren",
+  "story": "Ang Tagabantay ng Pinto",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Unang Liham",
+      "variants": [
+        "Kung sinuman ang makakita ng upuang ito,\n\nmainit ito. Kaaalis ko lang.\n\nSa iyo ang mansanas. Isang regalong tiyak na pinaghirapan mo.\n\nMas matagal na akong sakay kaysa sa kaya kong bilangin. Matagal na akong tumigil sa paghahanap ng harap.\n\n\nIsang bagay, mahal. Umiwas ka sa madidilim na bahagi.\n\nAnuman ang nawala sa iyo, wala iyon doon. Iniingatan ng dilim ang inaagaw nito.\n\nKumain ka muna.\n\nSoren",
+        "Kung binabasa mo ito, mahal, bago ka. O mabait ka. Pareho silang napapagod dito.\n\nIniwan ko ang mansanas dahil ang pagpapakain sa iba ang huling bagay dito na parang panalo pa rin.\n\n\nNaniwala akong makakalabas ako minsan. Ginamot ako ng tren doon.\n\nIwasan ang madidilim na bahagi. Alam ko na kung bakit. Mas mahal iyon kaysa sa kaya ko. Iniingatan ng dilim ang inaagaw nito.\n\nMagpahinga ka muna rito.\n\nSoren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Ikalawang Liham",
+      "variants": [
+        "Totoo!\n\nSigurado na ako ngayon.\n\nSa loob ng maraming taon sinabi ko sa mga tao ang tungkol sa pinto.\n\nIsang paraan palabas ng tren. Dumaan ka rito, sabi ko, kapag natagpuan mo.\n\nBahagya ko itong ibig sabihin. Binibigyan mo ang mga tao ng pag-asang hindi mo tiyak. Pag-asa pa rin iyon.\n\n\nNgayon nalaman kong totoo ito. Hindi ko sasabihin kung paano. Pero alam ko na ito ngayon.\n\nSa lahat ng taong ito, ipinamigay ko ang isang pag-asang hindi ko tiyak. Ngayon totoo na ang pag-asa.\n\nKung matagpuan mo ang pintong iyon, iha.\n\nDumaan ka rito.\n\nSoren",
+        "Totoo! Totoong-totoo!\n\nTanggap ko na sana ang lahat. Kapayapaan ang hindi na paghahangad ng anuman. Isang uri ito ng pagtulog.\n\nTapos nalaman kong totoo ang pinto, at biglang nagising ang paghahangad.\n\nGising na ako ngayon. Hindi ako sigurado kung dapat kong pasalamatan iyon.\n\n\nMaaari akong makauwi pagsapit ng umaga. Nakakalimutan mo kung gaano kakaiba ang salitang iyon. Uwi.\n\nPero hindi pa ako kailanman dumaan sa isang takot na mukha rito nang basta lang. Hindi ako magsisimula ngayon.\n\nKaya gagabayan ko ang iba papunta rito, habang patungo ako roon.\n\nDumaan ka rito.\n\nSoren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Ikatlong Liham",
+      "variants": [
+        "Della.\n\nNatagpuan kita sa kailaliman ng isang masamang oras. Binigyan kita ng mansanas. Hindi ako umalis.\n\nMga taon nang hindi ako lumalakad katabi ng kahit sino. Nakalimutan ko na ang bigat nito.\n\nMagkasama nating hinahanap ang anak mo ngayon. Dalawang pares ng mata.\n\n\nTotoo ang pinto, Della. Maaari kang makauwi.\n\nUmiling ka. Hindi ka aalis nang wala siya.\n\nIsang batang babae, walong taong gulang. Isang kahel na libro sa bag niya. Ikaw ang nagturo sa kanyang bumasa. Pip.\n\nKumain ka. Maglalakad tayo pagsikat ng araw.\n\nSoren",
+        "Della.\n\nMga taong nag-iisa, tapos ikaw. Ibinalik mo sa akin ang isang bagay na tumigil na akong pahintulutan ang sariling ma-miss. Isang tinig na sumasagot.\n\nKahit matapos kunin ng tren na ito ang anak mo, patuloy kang naglalakad. Kaya tinutulungan kita sa paghahanap. Makakapaghintay pa nang saglit ang pinto ko.\n\n\nNakita ko na kung paano pinupurga ng tren na ito ang mga tao. Natatakot akong pupurgahin ka nito.\n\nMasyado mong itinutulak ang sarili. Natatakot akong tama kang gawin iyon.\n\nNaroon ang pinto para sa aming tatlo. Kapag natagpuan namin ang maliit na Philippa.\n\nKumain ka. Maglalakad tayo pagsikat ng araw.\n\nSoren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Ikaapat na Liham",
+      "variants": [
+        "Della.\n\nPumasok sa isang madilim na bahagi ang bakas. Ang uring hindi ko pinapasukan. Nagmakaawa akong bumalik ka.\n\nSabi mo, pasulong ito, kaya pasulong ka. May sinabi kaming matitigas na salita. Iyon ang mga huli.\n\n\nTapos parang bumigay ang sahig. Sa tingin ko narinig kong nahulog ka sa dilim sa pagitan ng mga bagon.\n\nNarinig ko ang iyong sigaw.\nTapos... wala.\n\n\nSinigaw ko ang pangalan mo hanggang mawalan ng tinig, at walang ibinalik ang dilim. Iniingatan ng dilim ang inaagaw nito.\n\nSoren",
+        "Della.\n\nSinabi ko sa iyong papatayin ka ng madilim na bahagi. Sabi mo, doon patungo ang bakas ng anak mo.\n\nKaya pumasok ka. Gusto kong mabuhay ka. Gusto mo ang anak mo. Pareho tayong tama. Iyon ang malupit na bahagi.\n\n\nUlit-ulit kong binalikan ang paghulog sa isip ko nang isang libong beses. Walang bersyon kung saan nahuhuli kita.\n\nWalang tatlo na kami ngayon. Sinira ko ang sarili kong tuntunin, at kinuha ka ng dilim. Iniingatan ng dilim ang inaagaw nito.\n\nSoren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Ikalimang Liham",
+      "variants": [
+        "Della.\n\nPagkatapos ng dilim, tumigil ako. Tumigil akong mamigay ng mga mansanas. Tumigil akong tumingin sa mga mukha. Naglakad ako, at hindi ko nakita ang mga bagon na dumaan.\n\nAng pighati ay sarili nitong madilim na bahagi. Hindi ko sinunod ang sarili kong tuntunin.\n\n\nHindi ko alam kung gaano na katagal akong ganito. Kinakain ng tren ang oras. Masyadong matagal, sa tingin ko.\n\nPero ngayon nawala ang ulap. Nalalasahan ko ulit ang isang mansanas. Panahon na, Della. Pupunta na ako sa pinto.\n\nSoren",
+        "Della.\n\nMay mga tao sa tren na ito na tumigil na. Nakakasalubong mo sila. Nasa iba ang kanilang mga mata. Lagi ko silang naaawaan.\n\nPagkatapos ng dilim, naging isa ako sa kanila. Hindi ko alam kung gaano katagal.\n\n\nKinakain ng tren ang oras. Sa tingin ko masyado nitong kinain ang akin. Nahihiya ako sa mga mansanas na hinayaan kong lumamig.\n\nPero gising na ako ngayon. Kaya kong dalhin ang pighati at maglakad pa rin. Kaya pupunta na ako sa pinto. Panahon na sa wakas.\n\nSoren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Ikaanim na Liham",
+      "variants": [
+        "Pip.\n\nNagtanong ka tungkol sa iyong ina, at nakilala kita agad. Naglakad ako kasama niya, hanggang kunin siya ng dilim.\n\nNakita mo lang ang isang babae na may mansanas. Ibinigay ko ito sa iyo, at tinawag mo kaming magkaibigan.\n\n\nIkinuwento mo sa akin ang lahat tungkol sa kanya. Tumahimik ako.\n\nSinabi kong mukhang napakabuti ng iyong ina. Lumabas itong hungkag, gaya ng isang bagay na sinasabi mo ngunit hindi mo na pinaniniwalaan. Hahanapin mo pa rin siya.\n\nSoren",
+        "Pip.\n\nNasa iyo ang mukha niya. Nakilala kita bago mo pa natapos ang tanong. Naglakad siya kasama ko hanggang mahulog siya sa dilim at hindi na umahon.\n\nIkaw ang anak niya, hinahanap siya, at hindi mo alam na wala na siya.\n\n\nTinanong mo kung gaano na ako katagal dito. Ayaw kong sabihin. Ikinuwento mo sa akin ang tungkol sa kanya.\n\nTumahimik ako. Sinabi kong mukhang napakabuti niya. Isa pang salita ay pagsasabing patay na siya. Kaya hinayaan kitang patuloy na maghanap. Patawarin mo ako, iha.\n\nSoren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Ikapitong Liham",
+      "variants": [
+        "Pip.\n\nSinabi ko na sa iyo sa wakas ang tungkol sa pinto. Ang tunay na daan pauwi. Dumaan ka rito, sabi ko, sa sandaling matagpuan mo.\n\nSabi mo, uupo ka sa tabi nito at hihintayin ang iyong ina. Sabi ko, sige. Sa pagkakataong ito, totoo ang ibig kong sabihin.\n\n\nAalis na sana ako, hawak ang daang pauwi. Pero hindi ako maglalakad palabas ng dilim habang may batang naghihintay dito.\n\nKaya ako na ang tagabantay ng pinto ngayon. Naghihintay siya ng isang ina na tiyak kong wala na, at hindi ko kailanman sinasabi sa kanya.\n\nSoren",
+        "Pip.\n\nIbinigay ko sa iyo ang daang pauwi. Ang tunay, sa wakas. Sinabi kong dumaan ka rito at huwag lumingon.\n\nHindi mo gagawin. Uupo ka sa tabi nito at itatabi ang upuan mo para sa iyong ina. Hindi ako nakipagtalo. Sa minsang ito, totoo ang kabaitan.\n\n\nHawak ko na ang sarili kong daang pauwi. Binitawan ko ito.\n\nTatanda ako sa pintong ito, ipinamimigay ito at hindi ginagamit para sa kahit sino. May batang naghihintay dito para sa isang inang wala na, at iniingatan ko ang katotohanang hindi ko kailanman sasabihin.\n\nSoren"
+      ]
+    }
+  ]
+}

@@ -22,6 +22,7 @@
     "RandomStateMixin",
     "ServerGamePacketListenerImplSignBookMixin",
     "SpreadingSnowyDirtBlockUpsideDownMixin",
+    "SnowLayerBlockUpsideDownMixin",
     "FlowingFluidUpsideDownMixin",
     "ServerSubLevelFreezeMixin",
     "SubLevelPhysicsSystemFreezeMixin",
@@ -52,7 +53,8 @@
     "client.LightTextureUpsideDownBandMixin",
     "client.LevelGetShadeMixin",
     "client.ModelBlockRendererUpsideDownMixin",
-    "client.SoundEngineMusicFadeMixin"
+    "client.SoundEngineMusicFadeMixin",
+    "client.LanguageSelectEntryLogoMixin"
   ],
   "server": [],
   "injectors": {

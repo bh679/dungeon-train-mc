@@ -1,0 +1,10 @@
+{
+  "id": "questions",
+  "title": "Soalan Dungeon Train",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Soalan?\nSelamat datang ke Dungeon Train\nApakah kereta api itu?\nMengapa kau di sini?\nApa yang kau sepatutnya lakukan?\nIni semua soalan yang baik\n\nKau takkan menemui jawapan dalam timbunan kertas ini.\n\nJawapannya sekadar tiada di sini.\n\nAku bertanya soalan, kau mencari jawapan.\n\nJadi \"apakah soalannya\" kau bertanya?\n\nMungkin itulah jawapannya."
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "id": "quiet_rules",
+  "title": "Regras Tácitas do Comboio",
+  "author": "Desconhecido",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Há regras neste comboio, embora ninguém tas diga.\n\nNão abras um baú que já tenhas aberto.\nNão sigas o mesmo passageiro por tempo demais.\nQuando as lanternas escurecerem duas vezes seguidas, continua a andar.\n\nEstas são as regras que fiz para mim.\nPodem não ser as tuas.\nMas em breve farás as tuas próprias.",
+    "Regra 71\nTem cuidado com o que comes; nem toda a carne é tão boa como a de Rato.",
+    "Regra 108\nSe um estranho te perguntar o nome, ignora-o.",
+    "Regra 96\nAtenção aos crânios; alguns ainda guardam sentimentos.",
+    "Regra 327\nNão voltes atrás em ziguezague. Se voltares para trás, continua para trás.",
+    "Regra 5\nConfia mais nas lanternas do que nos mapas. Os mapas são velhos.",
+    "Regra 44\nPassos atrás de ti numa carruagem vazia? Anda mais depressa. Nunca corras.",
+    "Regra 211\nSe vires a tua própria cara noutro passageiro, não dês por ele. Ainda não se apercebeu.",
+    "Regra 401\nNão assobies depois de as lanternas escurecerem. Algo mais responde com um assobio.",
+    "Regra 323\nSó quem deseja chegar a quem construiu o comboio diz «@Dev». Para os poucos escolhidos, invocará o grande criador.",
+    "Regra 17\nO comboio guarda a lista do que vieste aqui fazer, mesmo depois de a teres perdido.\n\n«Prime {key.advancements}», dizem. Mas o que significa isso? O que é «{key.advancements}»? Como se prime? Premir contra quê? Premido como???",
+    "Regra 205\nMostra respeito a todos os aventureiros no primeiro encontro. Faz uma vénia, agacha-te ou dá presentes.\n\nConquista um aventureiro por completo e ele muda. Cumprimenta-te de um lado ao outro da carruagem. Os bondosos enfiam-te presentes nas mãos sem que peças. Alguns seguem-te. Alguns lutam ao teu lado e não param até a coisa que te ameaçava estar abatida.",
+    "Regra 29\nNem todo o aventureiro é um amigo. Uns viajam ao teu lado; outros puxam do aço à vista da tua cara. Não consegues distinguir olhando. Aprendes vivendo.",
+    "Regra 63\nUm presente cativa sempre um aventureiro. Dá melhor do que aquilo que ele já carrega e cativa-o ainda mais. Uma espada a mais comprou-me mais amigos do que as palavras amáveis alguma vez compraram.",
+    "Regra 140\nColoca-te entre um aventureiro e aquilo que o ataca. Lembram-se de quem puxou de uma lâmina em sua defesa, e retribuem.",
+    "Regra 88\nAtravessa as carruagens ao lado de um aventureiro. Viajem juntos tempo suficiente e algo assenta entre vocês. É o caminho mais lento para um amigo, e o mais seguro.",
+    "Regra 174\nGolpeia um aventureiro e ele virar-se-á contra ti — mas não para sempre. Faz nova vénia, e continua a fazê-las. Uma ferida que causaste pode ser sarada por quem a causou.",
+    "Regra 256\nUm aventureiro repara em quem golpeias. Abate alguém que ele ame e nunca o perdoará. Abate alguém que ele odeie, e vê-o cativar-se por ti.",
+    "Regra 312\nPuxa da lâmina perto de um aventureiro assustado e ele foge; perto de um corajoso e ele arremete. O mesmo aço, dois desfechos. Uma retirada não é paz.",
+    "Regra 156\nAço gasto não é aço esgotado. Põe uma peça a ceder ao lado da sua gémea e as duas fundem-se numa só — lâmina ou placa, o truque é o mesmo.\n\nA reparação mantém o que quer que tenhas posto à esquerda. Põe aí o teu melhor. A da direita é só combustível.",
+    "Trata bem os outros passageiros.\nHá de te servir bem\nna tua próxima vida.\n\nOs ecos lembram-se.",
+    "Os ecos do nosso passado\nrefletem em nós vidas passadas.\n\nSê bondoso.\n\nTalvez possas\nfazer dele um amigo."
+  ]
+}

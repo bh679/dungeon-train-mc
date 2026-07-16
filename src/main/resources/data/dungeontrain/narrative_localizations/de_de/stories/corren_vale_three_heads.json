@@ -1,0 +1,78 @@
+{
+  "id": "corren_vale_three_heads",
+  "character": "Corren Vale",
+  "story": "Drei Köpfe",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Brief eins",
+      "variants": [
+        "Mira,\n\nDeine Hände waren immer voller Kreide.\n\nDu hast auf alles Linien gezeichnet.\n\nDu sagtest, gerade Linien hielten die Welt ehrlich.\n\nDu hast es geglaubt.\n\nIch glaube, ich auch.\n\n- Corren",
+        "Mira.\n\nDu hast leise gelacht.\n\nAls wolltest du etwas nicht wecken.\n\nBram wusste nie, wann du Scherze machtest.\n\nich schon.\n\n- corren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Brief zwei",
+      "variants": [
+        "Mira.\n\nDer Seelensand war kalt.\n\nAn die Hitze danach erinnere ich mich nicht.\n\nDu sagtest etwas.\n\nIch glaube, du sagtest meinen Namen.\n\nIch glaube, du sagtest Lauf.\nIch drehte mich nicht um.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Brief drei",
+      "variants": [
+        "Bram.\n\nDu hast gelacht wie ein Sturz.\n\nPlötzlich. Laut. Immer zu laut.\n\nDu sagtest, du lachtest, damit die Dunkelheit wusste, dass du da warst.\n\nSie wusste es immer.\n\n- Corren",
+        "Bram.\n\nDein Schild war zu groß für dich.\n\nDu gingst seitwärts durch Türen.\n\nEsa nannte ihn den Tisch.\n\nDu sagtest, der Tisch habe nie jemanden im Stich gelassen.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Brief vier",
+      "variants": [
+        "Bram.\n\nDer erste Schädel war deiner.\n\nDu hobst ihn auf.\n\nDu riefst etwas.\n\nIch konnte es über dem Feuer nicht hören.\n\nDie Räder dieses Zuges machen drei Töne.\n\nDer erste ist deiner, Bram.\n\n- Corren",
+        "Bram.\n\nich habe das fünfmal geschrieben.\n\njedes mal komme ich zum schädel, und der stift hält an.\n\ndu hobst ihn hoch. du grinstest.\n\ndu sagtest, er wiege nichts.\n\nich glaube, er wog viel.\n\nDie Räder dieses Zuges machen drei Töne.\n\nDer erste ist deiner, Bram.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Brief fünf",
+      "variants": [
+        "Esa.\n\nDeine Hände waren kalt vom Brauen.\n\nDer Rest von dir war warm.\n\nMira sagte, du seist die einzig Warme unter uns.\n\nSie hatte recht.\n\n- Corren",
+        "Esa.\n\nDu sangst, während du verbandest.\n\nAlte Lieder. Keiner von uns kannte sie.\n\nDu sagtest, du dächtest sie dir dabei aus.\n\nWir taten so, als glaubten wir dir.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Brief sechs",
+      "variants": [
+        "Esa.\n\nDeine Hand lag auf meinem Rücken.\n\nKalt vom Brauen.\n\nDu stießt einmal.\n\nIch taumelte in Sicherheit.\n\nDu stießt kein zweites Mal.\n\nDu warst schon fort, glaube ich.\n\nVor dem Stoß.\n\n- Corren",
+        "Esa.\n\nAuf diesem Zug gibt es Menschen, die länger gelebt haben als ich.\n\nkeiner von ihnen sieht richtig aus.\n\nich will nicht wissen, wie ich aussehe.\n\ndu hättest es mir gesagt.\n\ndu hättest gesagt setz dich, Corren, und lass mich sehen.\n\n- corren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Brief sieben",
+      "variants": [
+        "Ich weiß nicht, wie ich herauskam.\n\nDas Portal war zerstört. Daran erinnere ich mich.\n\nAn das Hindurchgehen erinnere ich mich nicht.\n\nIch kam auf einem Feld zu mir. Hohes Gras. Der Zug war schon da.\n\nEr fuhr.\n\nEr war immer schon gefahren. Das weiß ich jetzt.\n\nIch lief neben ihm her. Ich sprang zur nächsten Tür.\n\nIch weiß nicht, wie ich sie erwischte.\n\nIch dachte, ich hätte es geschafft.\n\nSeit Wochen schaffe ich es jetzt.\n\nDer Zug hält nicht an.\n\nEs gibt kein Aussteigen.\n\n- Corren",
+        "die hitze hinter mir. die kälte voraus.\n\nich wusste nicht, wo oben war.\n\nich erinnere mich, wie ich ins gras fiel.\n\ndas gras brannte nicht.\n\ndas schien wichtig.\n\ndann ein gebäude.\n\nich kannte das gebäude nicht.\n\nich kenne alle gebäude in dieser gegend.\n\nich habe diese gegend kartiert.\n\nein zug stand am gebäude.\n\ndie türen waren offen.\n\nich lebte, und die türen waren offen.\n\ndas fühlte sich nach zusammenhängenden tatsachen an.\n\n- corren"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Brief acht",
+      "variants": [
+        "Seit Wochen höre ich es jetzt.\n\nEin Kreischen. Drei Stimmen, fast übereinandergelegt.\n\nManchmal kommt eine allein. Manchmal alle drei.\n\nUnd die Detonationen.\n\nIch spüre sie im Boden, ehe ich sie höre.\n\nSie zerbrechen nie etwas, das ich sehen kann.\n\nIch weiß nicht, wo sie einschlagen.\n\nIch gehe nach vorn.\n\nDas Kreischen kommt wieder. Zwei Waggons zurück.\n\nImmer von dort.\n\nNie weiter.\n\nIch bin sicher.\n\n- Corren",
+        "da ist ein geräusch.\n\nich höre es seit wochen.\n\nes sind nicht die räder.\n\ndie räder tragen musik. drei töne.\n\ndieses trägt etwas anderes.\n\nes schreit.\n\ndrei stimmen. fast im takt. nie ganz.\n\nund da sind detonationen.\n\nich spüre sie im boden. sie zerbrechen nichts.\n\nich habe die anderen im zug gefragt.\n\nkeiner von ihnen hört es.\n\nnur ich höre es.\n\nes ist für mich.\n\nes hat zeit.\n\n- corren"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Brief neun",
+      "variants": [
+        "Oh.. oh nein.\n\nMira.\n\nDu hättest es vor mir bemerkt.\n\nDas Kreischen ist jetzt vor mir.\n\nEs sollte kein Vorn geben.\n\nBram hätte sich davorgestellt.\n\nEr hätte darüber gelacht.\n\nEr lachte immer über Dinge, die zu groß zum Bekämpfen waren.\n\nEsa hätte etwas gebraut.\n\nFeuerresistenz. Schnelligkeit. Das Richtige.\n\nSie braute immer das Richtige.\n\nWochenlang ging ich nach vorn.\n\nIch ging darauf zu.\n\nDer Zug hat kein Vorn.\n\nJeder Schritt nach vorn war ein Schritt näher.\n\nJetzt kann ich es sehen.\n\nDrei Köpfe. Drei Stimmen.\n\nDie vierte Stimme wird meine sein.\n\nIch glaube, sie ist seit Wochen meine.\n\n- Corren",
+        "es ist da.\n\nmira.\n\nes war nicht hinter mir.\n\nes war vorn.\n\nes war immer vorn.\n\ndu hättest das gesehen. du hast alles zuerst gesehen.\n\nbram hätte sich vor mich gestellt.\n\ner hätte gelacht.\n\ner lachte über dinge, die zu groß zum bekämpfen waren.\n\nes hätte funktioniert. einen augenblick lang.\n\nesa hätte ihre hand auf meinen rücken gelegt.\n\nkalt.\n\nsie hätte gestoßen.\n\nich wäre gegangen.\n\nich ging darauf zu.\n\nich dachte, ich ginge fort.\n\nder zug hat kein vorn. du hättest mich ausgelacht, weil ich das vergessen habe.\n\nich kann es sehen.\n\ndrei köpfe. drei von euch.\n\nbram. esa. du.\n\nich bin der vierte.\n\nich war die ganze zeit der vierte.\n\n- corren"
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.narrative;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
@@ -10,16 +11,39 @@ import java.util.Locale;
  */
 public final class DeathNoteTitle {
 
+    /** The canonical English trigger, in normalized form — always accepted regardless of locale. */
+    private static final String ENGLISH = "deathnote";
+
     private DeathNoteTitle() {}
 
     /**
-     * True when {@code title} names a Death Note — matched case-insensitively and ignoring
+     * True when {@code title} names a Death Note in English — matched case-insensitively and ignoring
      * whitespace, so "Death Note", "DEATHNOTE", "death note" and "  death  note " all qualify.
      */
     public static boolean isDeathNoteTitle(String title) {
+        return isDeathNoteTitle(title, null);
+    }
+
+    /**
+     * True when {@code title} names a Death Note — either the canonical English "death note" (always
+     * accepted) or any of {@code localizedTitles}, the translated trigger words for the author's own
+     * client locale (see {@link DeathNoteTitleLocalization}). All comparisons ignore case and
+     * whitespace. A {@code null}/empty {@code localizedTitles} reduces to English-only matching.
+     */
+    public static boolean isDeathNoteTitle(String title, Collection<String> localizedTitles) {
         if (title == null) return false;
-        String normalized = title.toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
-        return normalized.equals("deathnote");
+        String normalized = normalize(title);
+        if (normalized.equals(ENGLISH)) return true;
+        if (localizedTitles == null) return false;
+        for (String candidate : localizedTitles) {
+            if (candidate != null && normalize(candidate).equals(normalized)) return true;
+        }
+        return false;
+    }
+
+    /** Lowercase (locale-independent) and strip all whitespace — the shared title-matching form. */
+    static String normalize(String title) {
+        return title.toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
     }
 
     /**

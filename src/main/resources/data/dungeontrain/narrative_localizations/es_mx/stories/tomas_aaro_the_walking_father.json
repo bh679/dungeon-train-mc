@@ -1,0 +1,55 @@
+{
+  "id": "tomas_aaro_the_walking_father",
+  "character": "Tomas Aaro",
+  "story": "El padre que camina",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta uno",
+      "variants": [
+        "Mi querida.\n\nEncontré el tren.\nEs real.\n\nY aun así guardo dudas.\n\n\nDicen que el tren lleva lo que necesitas.\n\nNadie dice qué exactamente.\nSolo espero que nuestra necesidad no sea demasiado grande.\n\nUn rato a bordo, y no tiene final.\n\n— Tomas",
+        "Le dije a mi pequeña que volvería para la cosecha.\n\nNo debí prometer una estación. No sé si este lugar las tenga.\n\nPero este tren guarda nuestra única esperanza.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta dos",
+      "variants": [
+        "Mi pequeña.\n\nHay hombres muertos en este tren. Caminan.\n\nSé cómo suena eso.\n\nPapá tuvo que pelear con uno.\n\n\nMis manos conocen la semilla y la tierra.\nHoy aprendieron que un azadón corta de dos maneras.\n\nTuve miedo. Lo hice de todos modos. Eso es ser valiente.\n\nCayó. No estoy herido.\n\nPapá sigue de camino a casa.\n\n— Papá",
+        "Mi pequeña.\n\nHe hecho algo que no puedo deshacer. Un hombre vino hacia mí, solo que ya no era un hombre.\n\nUsé lo que tenía en las manos.\n\n\nTú habrías cerrado los ojos. Yo mantuve los míos abiertos. Uno de los dos tenía que hacerlo.\n\nDespués, las manos me temblaban como las tuyas en el frío.\n\nLas sostuve hasta que pararon. Luego seguí caminando.\n\n— Papá"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta tres",
+      "variants": [
+        "Mi querida.\n\nHoy una rata me habló. Con un pequeño chaleco.\n\nNo estoy perdiendo la cabeza. Los demás también lo ven.\n\nMe dio papel, y un acertijo.\n\n\n\"Una semilla no persigue a la primavera\", dijo. \"Espera. Los jóvenes lo aprenden primero.\"\n\nLuego me deseó suerte, y se veía triste. Le di las gracias y seguí caminando.\n\n— Tomas",
+        "Mi querida.\n\nMe encontré de nuevo con la rata. Habla como un caballero, lo cual es extraño en una rata.\n\nLe pregunté por dónde se llega al frente.\n\n\n\"No hay frente para los que caminan\", dijo. \"Solo a los que se detienen los encuentran. Los pequeños lo saben.\"\n\nNo tengo tiempo de detenerme. De todos modos me deseó suerte.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta cuatro",
+      "variants": [
+        "Mi querida.\n\nEl tren está lleno de cajas cerradas con llave. Cada vagón las tiene.\n\nCualquiera podría guardar lo que necesitamos. Así que las abro todas.\n\n\nOro. Hierro. Suficiente para comprar la aldea dos veces.\n\nMe lo llevo todo. Es para ti, me digo.\n\nMe detendré en la caja correcta. Eso también me lo repito.\n\n— Tomas",
+        "Mi querida.\n\nSigo con la intención de seguir caminando. Y entonces aparece otra caja, y otra.\n\nUn hombre podría llenar un granero con lo que he dejado atrás.\n\n\nAhora solo tomo lo que cabe en la mochila. La mochila siempre está llena.\n\nAyer no logré recordar qué vine a buscar a bordo.\n\nSolo que lo reconocería. Así que sigo abriendo cajas.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta cinco",
+      "variants": [
+        "no sé cuánto tiempo llevo aquí.\n\nlas ruedas hacen tres notas. cuento esas en lugar de días.\n\nintenté decir el nombre de la aldea en voz alta. no salió.\n\n\ntodavía conozco el libro naranja. pequeño. naranja. ella nunca lo soltaba.\n\nsi puedo aferrarme a eso, puedo aferrarme a lo demás.\n\n¿verdad que sí?\n\n— tomas",
+        "me sorprendo hablando. en voz alta. sin nadie ahí.\n\nme miro las manos y no son las de un campesino. no sé de quién son.\n\n\nsigo caminando porque detenerme se siente como morir.\n\nla rata dijo lo contrario. la rata. ¿soñé a la rata?\n\nolvido hacia qué camino. camino hacia ello de todos modos.\n\n— tomas"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta seis",
+      "variants": [
+        "Mi querida.\n\nHay una niña más adelante. Al fondo del vagón.\n\nSostiene algo naranja. No lo suelta.\n\nMi pecho. Mi pecho.\n\n\n¿Es ella? ¿Podría ser, después de todo esto?\n\n¿Quién es la mujer a su lado? ¿Dónde está su madre? ¿Por qué habría una niña aquí siquiera?\n\n¿O he perdido la razón, y el tren solo está siendo amable?\n\n— Papá",
+        "Mi querida.\n\nUna niña, más adelante en el vagón. Una mujer que no conozco está sentada con ella.\n\nLa niña tiene algo naranja en el regazo.\n\nConozco ese naranja.\n\n\n¿Y si me acerco y no es ella? ¿Qué queda de mí entonces?\n\n¿Y si lo es? ¿Por qué está aquí? ¿Dónde estás tú? ¿Y quién es esa mujer?\n\nDejé de caminar. Después de todo este tiempo, me detuve.\n\n— Tomas"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "joined_world",
+  "title": "Tryb wieloosobowy?",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Witaj na pokładzie, poszukiwaczu przygód!\nDołączyłeś do świata, hej! Ekscytujące.\n\nOdkrywajcie razem, łączcie się z pociągiem razem!\n\nGdy jest więcej ludzi wokół, pociąg na pewno się rozrośnie!\n\nMyślisz, że dostaniemy więcej wagonów?",
+    "Hej, udało się! Dołączyłeś do nowego świata!\nNowego pociągu!\nWitaj w Dungeon Train!\n\nCzym jest dungeon train?\nCzemu tu jest?\nCo znajdziesz?\n\nPowodzenia!",
+    "Udało się! Dołączyłeś do nowego świata!\nDołączyłeś do Dungeon Train!\n\nTryb wieloosobowy,\nWiele osób, w jednym świecie!\nRazem.\n\nCóż za technologia!\nKomputery, łączące się.\nLudzie, wchodzący w interakcje,\nw pociągu\nw twoim komputerze\nw internecie!"
+  ]
+}

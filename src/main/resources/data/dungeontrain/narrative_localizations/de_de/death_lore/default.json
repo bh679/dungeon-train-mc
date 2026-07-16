@@ -1,0 +1,323 @@
+[
+  {
+    "page": "fall",
+    "weight": 3,
+    "question": "Was ist der Dungeon Train?",
+    "narration": "Waggon {carriage}. Dort hat die Dunkelheit dich eingeholt. Begreifst du es jetzt? Der Dungeon Train hält nicht an — er fährt nur weiter, tiefer, für immer."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": {
+      "min_carriage": 100
+    },
+    "question": "Was ist der Dungeon Train?",
+    "narration": "{carriage} Waggons tief in der Dunkelheit. Nur wenige fahren so weit, ehe die Linie sie holt. Noch weniger steigen wieder ein."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": {
+      "max_carriage": 3
+    },
+    "question": "Was ist der Dungeon Train?",
+    "narration": "Waggon {carriage}. Kaum an Bord, und die Dunkelheit hatte dich schon. Die Linie ist geduldig — sie kann es sich leisten."
+  },
+  {
+    "page": "deeds",
+    "weight": 3,
+    "question": "Warum bist du hier?",
+    "narration": "Du hast {mobs} Kreaturen in der Dunkelheit gefällt und mit {hearts} Herzen dafür geblutet.\nVon den {met} Seelen, denen du begegnet bist, hast du {slain} beendet — und {friends} nanntest du Freund."
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "Was solltest du tun?",
+    "narration": "Eisen und Klinge, aus der Dunkelheit geborgen und bis hierher getragen. Nichts davon war genug — vielleicht ging es nie darum."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_books": 5
+    },
+    "question": "Was solltest du tun?",
+    "narration": "Du hast {books} der Bücher der Linie gelesen und trugst dennoch Stahl. Wissen und eine Klinge, und die Dunkelheit nahm sich beides."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_friends": 5
+    },
+    "question": "Waren sie es wert?",
+    "narration": "Du hast {friends} Freunde auf der Linie gewonnen, und dennoch hat sie dich geholt. Vielleicht ist das die einzige Zahl, die je dir gehörte."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_mobs": 200
+    },
+    "question": "Wie viel der Dunkelheit hast du mit gleicher Münze vergolten?",
+    "narration": "{mobs} Kreaturen fielen durch deine Hand, ehe du durch ihre fielst. Die Linie richtet nicht. Sie zählt nur."
+  },
+  {
+    "page": "lives",
+    "weight": 3,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "Das sind alles gute Fragen",
+    "narration": "Dies sind nicht die Spuren eines einzigen Lebens. Über all die {deaths} hinweg — jede Dunkelheit, in die du eingestiegen bist, jedes Mal, da die Linie dich holte und du dennoch zurückkehrtest — dies ist die Gesamtheit deiner Reise."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 1,
+      "max_deaths": 1
+    },
+    "question": "Ist ein einziges Leben so leicht verspielt?",
+    "subline": "dein erster Sturz auf der Linie.",
+    "narration": "Es gibt keine anderen Leben, gegen die man dieses aufwiegen könnte — noch nicht. Dies bist du ganz und gar: alles, was du getan hast, seit du zum ersten Mal eingestiegen bist. Die Linie wird sich erinnern. Das solltest du auch."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 10
+    },
+    "question": "Das sind alles gute Fragen",
+    "narration": "Dies sind nicht die Spuren eines einzigen Lebens. {deaths} Mal hat die Dunkelheit dich geholt, und {deaths} Mal bist du wieder eingestiegen."
+  },
+  {
+    "page": "platform",
+    "weight": 3,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "Wirst du wieder einsteigen oder hinaus in die Stille treten?",
+    "narration": "Der Bahnsteig ist leer. Die Pfeife ertönt weit voraus auf der Linie. Sie fährt ohne Ende — und so, wie es scheint, auch du.",
+    "epitaph": "als {deaths}. gefallen. vielleicht nicht als letzte(r)."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 1,
+      "max_deaths": 1
+    },
+    "question": "Wirst du wieder einsteigen — jetzt, da du weißt, wie es endet?",
+    "narration": "Der Bahnsteig ist leer, so wie er es war, als du zum ersten Mal einstiegst. Die Pfeife ertönt weit voraus auf der Linie. Du bist einmal gefallen. Ob es ein zweites Mal gibt, liegt, wie stets, bei dir.",
+    "epitaph": "als erste(r) gefallen. die linie ist geduldig — sie wartet auf die übrigen."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 20
+    },
+    "question": "Musst du überhaupt noch fragen?",
+    "narration": "Der Bahnsteig kennt dein Gesicht inzwischen. Die Pfeife ertönt, wie sie es immer tut. Du weißt bereits, was als Nächstes kommt.",
+    "epitaph": "als {deaths}. gefallen — und, wie es scheint, nicht als letzte(r)."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Was ist der Dungeon Train?",
+    "narration": "Waggon {carriage}. Die Dunkelheit hatte dort die ganze Zeit gewartet — du bist ihr nur entgegengekommen."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Was ist der Dungeon Train?",
+    "narration": "Waggon {carriage}, und nicht weiter. Die Linie hegt keinen Groll und keine Gnade; sie fährt einfach weiter."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Was ist der Dungeon Train?",
+    "narration": "Die Laternen von Waggon {carriage} schwingen noch dort, wo du gefallen bist. Der Zug wird nicht langsamer, um hinzusehen."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Was ist der Dungeon Train?",
+    "narration": "Du hast Waggon {carriage} erreicht, ehe der Boden der Welt nachgab. Die Linie fährt weiter, ohne dein Gewicht."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Was ist der Dungeon Train?",
+    "narration": "Waggon {carriage}. Irgendwo voraus rollt das Gleis weiter ins Schwarze, gleichgültig, dass du nicht mehr darauf bist."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Was ist der Dungeon Train?",
+    "narration": "Hier, in Waggon {carriage}, hat die Dunkelheit endlich deinen Schritt eingeholt. Es sollte immer so kommen."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Warum bist du hier?",
+    "narration": "Du hast {mobs} Kreaturen in der Dunkelheit gefällt und {hearts} Herzen dafür hingegeben. Von den {met} Seelen, an denen du vorbeigingst, hast du {slain} niedergestreckt und {friends} nah an dich herangelassen."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Warum bist du hier?",
+    "narration": "{mobs} Kreaturen fielen an dich und {hearts} Herzen fielen von dir. Du kreuztest {met} andere Seelen in der Dunkelheit — beendetest {slain}, behieltest {friends} — und dann warst du an der Reihe."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Warum bist du hier?",
+    "narration": "Von der Dunkelheit nahmst du {mobs}; von dir selbst gabst du {hearts} Herzen aus. {met} Seelen teilten die Linie: {slain} hast du beendet, {friends} hast du festgehalten."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "max_friends": 0
+    },
+    "question": "Warum bist du hier?",
+    "narration": "Du hast {mobs} Kreaturen gefällt und {hearts} Herzen verblutet. Du bist {met} Seelen begegnet, hast {slain} beendet und keine einzige Freund genannt. Die Dunkelheit ist einfacher, wenn man allein ist."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_slain": 5
+    },
+    "question": "Womit hast du der Dunkelheit geantwortet?",
+    "narration": "Von den {met}, denen du begegnet bist, hast du {slain} niedergestreckt — und {mobs} Kreaturen mehr in der Dunkelheit obendrein — für {hearts} Herzen, und {friends} hast du verschont, um sie Freund zu nennen. Die Linie nennt es nicht Mord."
+  },
+  {
+    "page": "gear",
+    "weight": 2,
+    "question": "Was solltest du tun?",
+    "narration": "Du hast alles zusammengetragen, was du aus den Waggons tragen konntest. Die Linie lässt es dir — für Fracht hat sie keine Verwendung, nur für Fahrgäste."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_loot": 0
+    },
+    "question": "Was solltest du tun?",
+    "narration": "Nicht eine einzige Kiste hast du auf der Linie aufgebrochen — trugst nur, womit du eingestiegen bist, und schwangst es bis zum Ende. Die Dunkelheit behält, was du nicht nehmen wolltest."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_loot": 9
+    },
+    "question": "Was solltest du tun?",
+    "narration": "Eine Handvoll geöffneter Kisten — {loot} insgesamt — und eine Klinge stets zur Hand. Die Linie ist großzügig zu denen, die innehalten; du hast kaum verweilt."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_loot": 250
+    },
+    "question": "Was solltest du tun?",
+    "narration": "{loot} Behälter in deinen Rucksack geleert. Du hast der Dunkelheit alles genommen, was nicht niet- und nagelfest war, und dennoch nahm sie sich das Einzige, was zählte."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_books": 0
+    },
+    "question": "Was solltest du tun?",
+    "narration": "Nicht eine Seite umgeblättert — nur Stahl gesammelt und geschwungen. Die Linie bewahrt ihre Geschichten für die, die zum Lesen innehalten."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_books": 10
+    },
+    "question": "Was solltest du tun?",
+    "narration": "Du hast {books} der Bücher der Linie gelesen und trugst obendrein Stahl. Weisheit und eine Klinge, und die Dunkelheit war geduldig mit beidem."
+  },
+  {
+    "page": "lives",
+    "weight": 2,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "Das sind alles gute Fragen",
+    "narration": "Zähle sie: {deaths} Mal hat die Linie dich geholt, {deaths} Mal bist du der Pfeife gefolgt. Dies ist deine Gestalt, gezeichnet in Abschieden."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 3
+    },
+    "question": "Das sind alles gute Fragen",
+    "narration": "Über {deaths} Leben hinweg häufen sich die Zahlen wie Staub auf den Schienen. Nichts geht verloren; die Linie vergisst nichts."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "Warum steigst du immer wieder ein?",
+    "narration": "{deaths} Stürze, und dennoch steigst du ein. Die Linie hat aufgehört, sich zu fragen, ob du zurückkehrst. Und du vielleicht auch."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "Warum steigst du immer wieder ein?",
+    "narration": "{deaths} Tode hinter dir und dieselbe Pfeife voraus. Du bist kein Fahrgast mehr — du bist Teil des Fahrplans."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "Warum steigst du immer wieder ein?",
+    "narration": "Die Dunkelheit ist keine Fremde mehr; {deaths} Mal hast du ihr Gesicht kennengelernt. Das ist ein eigener Verlust."
+  },
+  {
+    "page": "platform",
+    "weight": 2,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "Wirst du wieder einsteigen oder dich vom Bahnsteig halten lassen?",
+    "narration": "Die Pfeife ertönt schon, weit voraus. Sie wartet nicht auf dich — das tat sie nie — und doch stehst du hier und entscheidest dich, ihr zu folgen.",
+    "epitaph": "als {deaths}. gefallen. die linie fährt weiter."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 3
+    },
+    "question": "Wirst du wieder einsteigen?",
+    "narration": "Der Bahnsteig ist still. Irgendwo ist der Zug bereits voll von der Geschichte eines anderen. Für eine weitere von deinen ist immer Platz.",
+    "epitaph": "als {deaths}. gefallen. vielleicht nicht als letzte(r)."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "Muss die Linie überhaupt noch fragen?",
+    "narration": "Du kennst das Gewicht der Tür, die Kälte der Stufe. Die Dunkelheit ist nur noch ein Ort, den du besuchst.",
+    "epitaph": "als {deaths}. gefallen — ein stammgast der linie."
+  }
+]

@@ -1,0 +1,56 @@
+{
+  "id": "adventureitemnames:do_you_know_x",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "คุณรู้จัก",
+      "refs": []
+    },
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "คำนาม",
+      "refs": [
+        {
+          "ref": "adventureitemnames:math",
+          "weight": 50.0
+        },
+        {
+          "ref": "adventureitemnames:names",
+          "weight": 20.0
+        },
+        {
+          "ref": "adventureitemnames:people",
+          "weight": 20.0
+        },
+        {
+          "ref": "adventureitemnames:food",
+          "weight": 11.0
+        },
+        {
+          "ref": "adventureitemnames:material_or_element",
+          "weight": 50.0
+        },
+        {
+          "ref": "adventureitemnames:the_place",
+          "weight": 100.0
+        },
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 100.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": "หรือไม่?",
+      "newline": false,
+      "refs": [],
+      "label": ""
+    }
+  ]
+}

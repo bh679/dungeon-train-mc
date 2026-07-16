@@ -1,0 +1,31 @@
+{
+  "id": "quiet_rules",
+  "title": "Regras Silenciosas do Trem",
+  "author": "Desconhecido",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Há regras neste trem, embora ninguém vá te contá-las.\n\nNão abra um baú que você já abriu.\nNão siga o mesmo passageiro por tempo demais.\nQuando as lanternas escurecerem duas vezes seguidas, continue andando.\n\nEstas são as regras que fiz para mim mesmo.\nElas podem não ser as suas.\nMas você fará as suas próprias, muito em breve.",
+    "Regra 71\nCuidado com o que você come, nem todo pedaço de carne é tão bom quanto o de Rato.",
+    "Regra 108\nSe um estranho perguntar seu nome, ignore-o.",
+    "Regra 96\nAtenção aos crânios, alguns ainda abrigam sentimentos.",
+    "Regra 327\nNão volte pela mesma direção. Se você voltar, continue voltando.",
+    "Regra 5\nConfie mais nas lanternas do que nos mapas. Os mapas são antigos.",
+    "Regra 44\nPassos atrás de você numa carruagem vazia? Ande mais rápido. Nunca corra.",
+    "Regra 211\nSe você vir o próprio rosto em outro passageiro, não o reconheça. Eles ainda não perceberam.",
+    "Regra 401\nNão assobie depois que as lanternas escurecerem. Algo mais assobia de volta.",
+    "Regra 323\nApenas aqueles que desejam alcançar quem construiu o trem dizem \"@Dev\". Para os poucos escolhidos, isso invocará o grande criador.",
+    "Regra 17\nO trem guarda a lista do que você veio fazer aqui, mesmo depois de você tê-la perdido.\n\n\"Pressione {key.advancements}\" eles dizem. Mas o que isso significa? O que é \"{key.advancements}\"? Como se pressiona isso? Pressionar contra o quê? Pressionar como???",
+    "Regra 205\nMostre respeito a todos os aventureiros no primeiro encontro. Ou faça uma reverência, ou se agache, ou dê presentes.\n\nConquiste um aventureiro por completo e ele muda. Ele te cumprimenta do outro lado de uma carruagem. Os gentis colocam presentes em suas mãos sem que você peça. Alguns te seguem. Alguns lutam ao seu lado, e não param até que a coisa que te ameaçava esteja no chão.",
+    "Regra 29\nNem todo aventureiro é um amigo. Alguns viajam ao seu lado; alguns sacam o aço ao ver seu rosto. Você não consegue dizer qual é só olhando. Você aprende vivendo.",
+    "Regra 63\nUm presente sempre aquece o coração de um aventureiro para com você. Dê algo melhor do que ele já carrega e o aquece ainda mais. Uma espada sobressalente me comprou mais amigos do que palavras gentis jamais compraram.",
+    "Regra 140\nColoque-se entre um aventureiro e o que o ataca. Eles lembram de quem sacou uma lâmina em sua defesa, e retribuem.",
+    "Regra 88\nCruze as carruagens ao lado de um aventureiro. Viajem juntos o suficiente e algo se assenta entre vocês. É o caminho mais lento para uma amizade, e o mais seguro.",
+    "Regra 174\nGolpeie um aventureiro e ele se voltará contra você — mas não para sempre. Faça reverência de novo, e continue fazendo. Uma ferida que você causou pode ser curada por quem a causou.",
+    "Regra 256\nUm aventureiro observa quem você golpeia. Abata alguém que ele ama e ele nunca o perdoará. Abata alguém que ele odeia, e veja-o se afeiçoar a você.",
+    "Regra 312\nSaque sua lâmina perto de um aventureiro assustado e ele foge; perto de um corajoso e ele avança. O mesmo aço, dois extremos. Uma retirada não é paz.",
+    "Regra 156\nO aço gasto não é aço esgotado. Coloque uma peça em falha ao lado de sua gêmea e as duas se fundem numa só — lâmina ou placa, o mesmo truque vale.\n\nO conserto mantém o que quer que você tenha posto à esquerda. Ponha ali o seu melhor. O da direita é apenas combustível.",
+    "Trate bem os outros passageiros.\nIsso lhe servirá bem\nna sua próxima vida.\n\nOs ecos lembram.",
+    "Os ecos do nosso passado\nrefletem vidas passadas de volta para nós.\n\nSeja gentil.\n\nTalvez você consiga\nfazer amizade com ele."
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "questions",
+  "title": "Câu Hỏi Dungeon Train",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Câu hỏi?\nChào mừng đến với Dungeon Train\nCon tàu là gì?\nTại sao bạn ở đây?\nBạn phải làm gì?\nĐều là những câu hỏi hay cả\n\nBạn sẽ không tìm thấy câu trả lời trong xấp giấy này.\n\nCâu trả lời đơn giản là không có ở đây.\n\nTôi đặt câu hỏi, bạn tìm câu trả lời.\n\nVậy \"câu hỏi là gì\" bạn hỏi thế?\n\nBiết đâu đó chính là câu trả lời."
+  ]
+}

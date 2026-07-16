@@ -1,0 +1,47 @@
+{
+  "id": "pip_aaro_the_waiting_child",
+  "character": "Pip Aaro",
+  "story": "La niña que espera",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta uno",
+      "variants": [
+        "Me llamo Pip. Tengo ocho años.\n\nEstoy en un tren que no conozco. Los asientos huelen al abrigo de la abuela.\n\nUna rata me dio este papel. Una rata de verdad. Con ropa.\n\nEstoy buscando a mamá.\n\nUn poquito asustada. Solo un poquito.\n\nPip",
+        "Me quedé dormida en un tren con mamá. Desperté y mamá ya no estaba.\n\nEl tren es distinto ahora. Mi mochila es distinta. El libro naranja ya no está en ella.\n\nUna rata me dio este papel. Traía un chaleco.\n\nVoy a encontrar a mamá. Hay muchísimos vagones.\n\nNo estoy llorando.\n\nPip"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta dos",
+      "variants": [
+        "Le pregunté a un señor dónde está el conductor.\n\nTraía un abrigo amarillo. Se rió. Dijo cariño, no hay conductor. Dijo que el tren no se detiene.\n\nNo le creo. Los trenes se detienen.\n\nEl señor del abrigo amarillo duerme mucho ahora. Creo que está triste.\n\nYo no voy a ser así.\n\nPip",
+        "Encontré un cuaderno debajo de un asiento.\n\nAlguien contó los vagones. Llegó a 384 y se detuvo. Dijo que no tiene caso buscar el frente.\n\nNo sé qué quiso decir. Los trenes tienen frente.\n\nMe quedo con el cuaderno. Es como tener con quién platicar.\n\nSonaba cansado. Yo todavía no estoy cansada.\n\nPip"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta tres",
+      "variants": [
+        "Algunas de las personas del tren son de mentiras.\n\nSe ven reales. Pero no te ven. Le hice adiós a una señora y pasó junto a mí sin más.\n\nAlgunas personas SÍ están. El señor del abrigo amarillo. La rata. Una señora que me dio una manzana.\n\nEstoy haciendo una lista de las personas reales. Son cuatro. Seguramente yo también soy una.\n\nPip",
+        "Hice un plan.\n\nCaminar hacia un lado. No voltear. Así llegaría a la parte de atrás del tren.\n\nCaminé mucho tiempo. Cuarenta y siete vagones. No volteé.\n\nNo había atrás. El final se veía igual que donde empecé. El mismo olor a abuela.\n\nNo entiendo. Quiero a mamá.\n\nPip"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta cuatro",
+      "variants": [
+        "La señora de la manzana ahora es mi amiga. Se llama Soren.\n\nLleva muchísimo tiempo en el tren. No quiere decir cuánto.\n\nSoren me preguntó por mamá. Le conté. Se quedó callada. Luego dijo que tu mamá suena maravillosa.\n\nLo dijo igual que el señor del abrigo amarillo dijo que el tren no se detiene.\n\nDe todos modos voy a encontrar a mamá.\n\nPip",
+        "Hay un slime en mi vagón. La llamé Piedrita.\n\nEs chiquita y verde. Soren dijo que todavía es muy chiquita para ser peligrosa. Yo no creo eso de Piedrita.\n\nMe sigue hasta la puerta pero no la cruza. Creo que piensa que la puerta es una pared.\n\nMamá diría que un slime es un monstruo. Mamá está equivocada con Piedrita.\n\nExtraño a mamá.\n\nPero tengo a Piedrita.\n\nPip"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta cinco",
+      "variants": [
+        "Soren me contó sobre la puerta.\n\nDijo que hay una puerta en el tren que da al afuera. Dijo que si la encuentro debo cruzarla.\n\nLo pensé mucho tiempo. En mamá. En Piedrita.\n\nSi mamá está en este tren tengo que seguir buscando. Si no está, de todos modos no puedo alcanzarla.\n\nCuando encuentre la puerta me voy a sentar junto a ella. Y esperar.\n\nSoren dijo está bien, cariño. Como si esta vez lo dijera en serio.\n\nPip",
+        "Le escribí una carta a mamá.\n\nSoren dijo que a veces la gente pasa muchas veces por el mismo vagón. Así que la estoy dejando donde todos pasan.\n\nDice mi nombre. Dice que tengo una amiga que se llama Soren y un slime que se llama Piedrita.\n\nDice que estoy bien. Dice que estoy esperando.\n\nMamá la va a encontrar. Las mamás encuentran las cosas.\n\nPip"
+      ]
+    }
+  ]
+}

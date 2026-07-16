@@ -1,0 +1,12 @@
+{
+  "id": "why_the_nether",
+  "title": "¿El Nether?",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "¿Esto no puede estar bien?\n ¿Esto está bien?\n\n¿Será un bug?\nEste no es el mundo que conozco.\n\nBueno... ¡buena suerte!",
+    "Un tren interminable, saltando entre dimensiones, mundos y realidades.",
+    "Bienvenido al Dungeon Train\n¿Qué es el tren?\n¿Por qué estás aquí?\n¿Qué se supone que debes hacer?\nTodas estas son buenas preguntas\n\nAunque...\n\n¿Por qué estás aquí, en el Nether, específicamente?\n\nEmpezaste en el infierno.\n\n¿A propósito?\n\n...Atrevido.\n\nHay un tren adelante. Súbete.\nRápido, antes de que algo te note."
+  ]
+}

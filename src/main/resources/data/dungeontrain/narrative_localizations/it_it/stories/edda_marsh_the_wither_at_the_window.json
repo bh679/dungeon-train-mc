@@ -1,0 +1,55 @@
+{
+  "id": "edda_marsh_the_wither_at_the_window",
+  "character": "Edda Marsh",
+  "story": "Il Wither alla finestra",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettera uno",
+      "variants": [
+        "Mi chiamo Edda Marsh.\n\nScrivo questo da un sedile che non è il mio.\n\nIl mio sedile era tre vagoni indietro. L'ho lasciato in fretta. Non per paura. Piuttosto come si abbandona una stanza quando il bollitore è rimasto troppo a lungo sul fuoco.\n\nLo spiegherò quando avrò camminato di più. Per ora: mi sono spostata. Ho cominciato a muovermi.\n\nEdda Marsh",
+        "Edda Marsh.\n\nQuesto sedile è caldo. Non per causa mia.\n\nIl mio sedile è rimasto da dove sono venuta. Tre vagoni, forse quattro. Non li ho contati.\n\nIl mio scialle è ancora lì. Piegato. Piegarlo è stata l'ultima cosa che non ho fatto.\n\nAltro quando avrò camminato di più.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettera due",
+      "variants": [
+        "Sono in un vagone letto. Il letto è rifatto. Non da me.\n\nIeri notte c'era qualcosa alla mia vecchia finestra.\n\nTre teste. Osso del colore della cenere bagnata. Quella centrale più grande delle altre.\n\nSi muovevano una alla volta. Quella centrale restava ferma e le due ai lati giravano. Tutte e tre guardarono dentro.\n\nNon distolsi lo sguardo. Non sembrava esserci motivo. Dopo un po' non c'erano più.\n\nAttesi un'ora. Poi mi alzai. Poi camminai.\n\nEdda Marsh",
+        "Un vagone letto. Il letto è rifatto. Non da me.\n\nTre teste alla vecchia finestra ieri notte.\n\nGrigio osso. Quella centrale più grande. Le due ai lati giravano quando lei no.\n\nTutte guardarono dentro.\n\nHo visto cose peggiori nella mia vita. Ricambiai lo sguardo.\n\nDopo un po' non c'erano più. Attesi. Camminai.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettera tre",
+      "variants": [
+        "Camminai quattro vagoni in avanti. Scrivo da un angolo di lettura in quello che forse è un vagone biblioteca. Alcuni libri sono veri. Altri sono solo dorsi incollati alla parete.\n\nÈ qui anche adesso. Alla mia finestra. Non quella che ho lasciato. Questa nuova.\n\nLe stesse tre teste. Quella centrale leggermente inclinata, come se ascoltasse.\n\nPassai dall'altra parte del vagone. Quella finestra era al buio. Tornai. Era di nuovo alla mia.\n\nEdda Marsh",
+        "Quattro vagoni in avanti. Un vagone biblioteca. Alcuni libri sono veri. Altri sono dorsi incollati alla parete.\n\nÈ qui anche adesso. A questa finestra. Non quella che ho lasciato.\n\nLe stesse tre teste. Quella centrale inclinata, come se ascoltasse.\n\nAttraversai il vagone. L'altra finestra era al buio. Tornai. La mia tornava a brillare d'osso.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettera quattro",
+      "variants": [
+        "Sono in un vagone merci. Le casse sono inchiodate. La luce è l'unica cosa non inscatolata.\n\nDovrei parlarti di Hollin.\n\nEra mio marito. Scavava sabbia delle anime. Ne vendeva quasi tutta. Ne teneva un po' per sé.\n\nAlla fine scavò troppo in profondità. Qualcosa risalì dal luogo dove scavava.\n\nTre teste. Quella centrale più grande delle altre. Un'inclinazione in quella centrale. Come se ascoltasse.\n\nHollin non risalì.\n\nÈ da molto tempo che aspetto di rivedere quel volto. Ora l'ho visto.\n\nÈ a ogni finestra accanto a cui mi siedo.\n\nEdda Marsh",
+        "Un vagone merci. Casse inchiodate. La luce è l'unica cosa non inscatolata.\n\nHollin.\n\nEra mio marito. Scavava sabbia delle anime. Ne vendeva quasi tutta. Ne teneva un po'.\n\nScavò troppo in profondità. Qualcosa risalì.\n\nTre teste. Quella centrale più grande. Inclinata. Come se ascoltasse.\n\nHollin rimase.\n\nHo aspettato a lungo di rivedere quel volto.\n\nOra l'ho visto.\n\nEdda"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettera cinque",
+      "variants": [
+        "Sono in un vagone panoramico. Finestre lunghe. Molte. Qualche altro passeggero.\n\nSono rimasta seduta qui per ore. Ho guardato le finestre. Non fuori da esse. Esse.\n\nIl treno avanza a passo costante. La vista no. Un albero resta al nostro fianco troppo a lungo. Un fiume scorre al contrario e poi scorre nel nostro senso.\n\nIl vagone successivo aveva la sua vista. Una valle diversa. Quello dopo aveva un campo che conobbi a dodici anni.\n\nDue sedili più in là c'è un uomo che guarda una cucina. Credo sia la cucina di sua madre. È un'ora che piange in gran silenzio.\n\nLe finestre non mostrano l'esterno. Mostrano ciò che porta con sé chi guarda.\n\nIo ho portato con me Hollin. Ho portato con me ciò che risalì dal suo scavo.\n\nNon mi segue. È sempre stato mio.\n\nSono serena. Voglio che tu sappia che sono serena.\n\nEdda Marsh",
+        "Vagone panoramico. Finestre lunghe. Diverse. Qualche altro passeggero.\n\nHo guardato le finestre. Non fuori da esse. Esse. Per ore.\n\nIl treno avanza a passo costante. La vista no. Un albero resta troppo a lungo. Un fiume scorre al contrario e poi scorre nel nostro senso.\n\nVagone successivo: una valle diversa. Quello dopo: un campo che conobbi a dodici anni.\n\nDue sedili più in là un uomo guarda una cucina. Credo sia quella di sua madre. È da un po' che piange in gran silenzio.\n\nLe finestre mostrano ciò che portiamo con noi.\n\nIo ho portato con me Hollin. E ciò che risalì dal suo scavo.\n\nÈ sempre stato mio. Non mi segue. Mio.\n\nSono serena.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lettera sei",
+      "variants": [
+        "Ho smesso di camminare.\n\nSono in un piccolo vagone vicino alla coda. O vicino alla testa. La luce è uguale in entrambi i sensi.\n\nC'è una finestra. C'è un chiavistello sulla finestra. È un bel pezzo che fisso il chiavistello.\n\nLe tre teste sono qui. Non sono più al vetro. Sono un po' oltre di esso, nel buio. In attesa.\n\nHo deciso che non camminerò più. Ho deciso che alzerò il chiavistello.\n\nHo alzato il chiavistello.\n\nLa finestra è aperta. La notte è molto fredda. Il cedro profuma più forte quando l'aria lo attraversa.\n\nLascio questo qui. Lascio anche la finestra aperta. Per chi troverà il posto dopo di me.",
+        "Mi sono fermata.\n\nUn piccolo vagone. Vicino alla coda. O alla testa. La luce è uguale in entrambi i sensi.\n\nUna finestra. Un chiavistello. È un bel pezzo che lo fisso.\n\nLe tre teste sono qui. Non più al vetro. Un po' oltre. In attesa.\n\nNon camminerò più. Alzerò il chiavistello.\n\nL'ho alzato.\n\nLa finestra è aperta. La notte è fredda. Il cedro profuma più forte quando l'aria si muove.\n\nLascio questo qui.\n\nLascio anche la finestra aperta."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "id": "adventureitemnames:the_epithet",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "the",
+      "refs": [
+        {
+          "ref": "adventureitemnames:determiner_definite",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "สมญา",
+      "refs": [
+        {
+          "ref": "adventureitemnames:epithet",
+          "weight": 1.0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "Jogador",
+  "item.playermob.player_mob_spawn_egg": "Ovo gerador de jogador",
+  "item.playermob.player_mob_aggressive_spawn_egg": "Ovo gerador de jogador agressivo",
+  "item.playermob.player_mob_friendly_spawn_egg": "Ovo gerador de jogador amigável",
+  "item.playermob.player_mob_passive_spawn_egg": "Ovo gerador de jogador passivo",
+  "item.playermob.player_mob_skeptical_spawn_egg": "Ovo gerador de jogador cético",
+  "item.playermob.player_mob_shy_spawn_egg": "Ovo gerador de jogador tímido",
+  "container.playermob.player_mob": "Jogador"
+}

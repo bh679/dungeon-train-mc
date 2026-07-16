@@ -29,6 +29,7 @@ import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import java.util.List;
 import java.util.UUID;
+import net.minecraft.network.chat.Component;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
@@ -61,8 +62,14 @@ public class DungeonTrain {
      * and the in-game presence reply ({@link games.brennan.dungeontrain.event.MentionPresenceEvents}). DP
      * matches each token as a case-insensitive substring, so the in-game detector mirrors that to fire in
      * lock-step with the real ping.
+     *
+     * <p>{@code @开发者} is the zh_cn display alias DP's chat box shows/autocompletes for {@code @dev}
+     * (DP's {@code discordpresence.chattag.dev} lang key, per-locale as of DP 0.49.0) — DP only
+     * localizes the client-side <em>display</em>, so the bundling mod (us) must separately accept the
+     * localized alias as a real trigger here, or a Chinese player typing it gets highlighting but no
+     * ping. Add one entry per locale DP ships a {@code chattag.dev} translation for.</p>
      */
-    public static final List<String> MENTION_TOKENS = List.of("@dev", "@brennanhatton");
+    public static final List<String> MENTION_TOKENS = List.of("@dev", "@brennanhatton", "@开发者");
 
     /**
      * Discord relay capability URLs. Release builds (the {@code main} branch) report to the live
@@ -332,15 +339,15 @@ public class DungeonTrain {
             // (PlayerMob's external-reincarnation seam, surfaced via DP).
             @Override public List<String> networkConsentFeatures() {
                 return List.of(
-                        "Leaderboard scoring (coming soon)",
-                        "Dev support chat",
-                        "Share books you write for others to find",
-                        "Reincarnate as a mob in other players' worlds");
+                        Component.translatable("gui.dungeontrain.consent.feature.leaderboard").getString(),
+                        Component.translatable("gui.dungeontrain.consent.feature.dev_chat").getString(),
+                        Component.translatable("gui.dungeontrain.consent.feature.book_share").getString(),
+                        Component.translatable("gui.dungeontrain.consent.feature.reincarnate").getString());
             }
             // A "won't do" line (DP renders these with a red ✗ marker below the bullets above) — a
             // deliberately silly reassurance that sets the positive features apart from the absurd.
             @Override public List<String> networkConsentNonFeatures() {
-                return List.of("Harvest your soul");
+                return List.of(Component.translatable("gui.dungeontrain.consent.nonfeature.harvest_soul").getString());
             }
             // Append a one-time world-info block (DT version + train regeneration data + installed-mods
             // list) under the first player-join message in each world, into the joining player's Discord

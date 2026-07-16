@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "Игрок",
+  "item.playermob.player_mob_spawn_egg": "Яйцо призыва игрока",
+  "item.playermob.player_mob_aggressive_spawn_egg": "Яйцо призыва агрессивного игрока",
+  "item.playermob.player_mob_friendly_spawn_egg": "Яйцо призыва дружелюбного игрока",
+  "item.playermob.player_mob_passive_spawn_egg": "Яйцо призыва пассивного игрока",
+  "item.playermob.player_mob_skeptical_spawn_egg": "Яйцо призыва скептичного игрока",
+  "item.playermob.player_mob_shy_spawn_egg": "Яйцо призыва застенчивого игрока",
+  "container.playermob.player_mob": "Игрок"
+}

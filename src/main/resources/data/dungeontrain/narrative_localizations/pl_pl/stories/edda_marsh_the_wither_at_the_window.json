@@ -1,0 +1,55 @@
+{
+  "id": "edda_marsh_the_wither_at_the_window",
+  "character": "Edda Marsh",
+  "story": "Wither w Oknie",
+  "letters": [
+    {
+      "index": 1,
+      "label": "List pierwszy",
+      "variants": [
+        "Nazywam się Edda Marsh.\n\nPiszę to z siedzenia, które nie jest moje.\n\nMoje siedzenie było trzy wagony wstecz. Opuściłam je szybko. Nie ze strachu. Bliżej temu, jak opuszcza się pokój, gdy czajnik stoi na ogniu za długo.\n\nWyjaśnię, gdy zajdę dalej. Na razie: ruszyłam się. Zaczęłam się ruszać.\n\nEdda Marsh",
+        "Edda Marsh.\n\nTo siedzenie jest ciepłe. Nie ode mnie.\n\nMoje siedzenie jest tam, skąd przyszłam. Trzy wagony, może cztery. Nie liczyłam.\n\nMój szal wciąż na nim leży. Złożony. Złożenie było ostatnią rzeczą, której nie zrobiłam.\n\nWięcej, gdy zajdę dalej.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "List drugi",
+      "variants": [
+        "Jestem w wagonie sypialnym. Łóżko zostało pościelone. Nie przeze mnie.\n\nZeszłej nocy coś było przy moim starym oknie.\n\nTrzy głowy. Kość barwy mokrego popiołu. Środkowa większa od pozostałych.\n\nPoruszały się po kolei. Środkowa znieruchomiała, a dwie po bokach się obracały. Wszystkie trzy zaglądały do środka.\n\nNie odwróciłam wzroku. Nie było ku temu powodu. Po chwili zniknęły.\n\nCzekałam godzinę. Potem wstałam. Potem poszłam.\n\nEdda Marsh",
+        "Wagon sypialny. Łóżko pościelone. Nie przeze mnie.\n\nTrzy głowy przy starym oknie zeszłej nocy.\n\nKościsto-szare. Środkowa większa. Dwie po bokach obracały się, gdy ona nie.\n\nWszystkie zaglądały do środka.\n\nWidziałam w życiu gorsze rzeczy. Odwzajemniłam spojrzenie.\n\nPo chwili zniknęły. Czekałam. Poszłam.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "List trzeci",
+      "variants": [
+        "Przeszłam naprzód cztery wagony. Piszę z kącika do czytania w czymś, co może być wagonem biblioteką. Niektóre książki są prawdziwe. Niektóre to same grzbiety przyklejone do ściany.\n\nTo jest tu również. Przy moim oknie. Nie tym, które opuściłam. Tym nowym.\n\nTe same trzy głowy. Środkowa przechylona lekko na bok, jakby nasłuchiwała.\n\nPrzeszłam na drugą stronę wagonu. Tamto okno było ciemne. Wróciłam. Znowu było przy moim.\n\nEdda Marsh",
+        "Cztery wagony naprzód. Wagon biblioteka. Niektóre książki są prawdziwe. Niektóre to grzbiety przyklejone do ściany.\n\nTo jest tu również. Przy tym oknie. Nie tym, które opuściłam.\n\nTe same trzy głowy. Środkowa przechylona, jakby nasłuchiwała.\n\nPrzeszłam przez wagon. Tamto okno było ciemne. Wróciłam. Moje znów jaśniało kością.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "List czwarty",
+      "variants": [
+        "Jestem w wagonie towarowym. Skrzynie są zabite gwoźdźmi. Światło to jedyna rzecz, której nie zapakowano.\n\nPowinnam ci opowiedzieć o Hollinie.\n\nBył moim mężem. Kopał piasek dusz. Większość sprzedawał. Trochę zostawiał dla siebie.\n\nW końcu wykopał się za głęboko. Coś wyszło z miejsca, które kopał.\n\nTrzy głowy. Środkowa większa od pozostałych. Przechylenie środkowej. Jakby nasłuchiwała.\n\nHollin nie wyszedł.\n\nDługo czekałam, by znów ujrzeć tę twarz. Teraz ją ujrzałam.\n\nJest przy każdym oknie, przy którym siadam.\n\nEdda Marsh",
+        "Wagon towarowy. Skrzynie zabite gwoźdźmi. Światło to jedyna rzecz, której nie zapakowano.\n\nHollin.\n\nBył moim mężem. Kopał piasek dusz. Większość sprzedawał. Trochę zostawiał.\n\nWykopał się za głęboko. Coś wyszło.\n\nTrzy głowy. Środkowa większa. Przechylona. Jakby nasłuchiwała.\n\nHollin został.\n\nDługo czekałam, by znów ujrzeć tę twarz.\n\nTeraz ją ujrzałam.\n\nEdda"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "List piąty",
+      "variants": [
+        "Jestem w wagonie widokowym. Długie okna. Wiele z nich. Kilkoro innych pasażerów.\n\nSiedziałam tu godzinami. Patrzyłam na okna. Nie przez nie. Na nie.\n\nPociąg jedzie miarowym tempem. Widok nie. Drzewo zostaje przy nas za długo. Rzeka płynie w złą stronę, a potem płynie w naszą.\n\nNastępny wagon miał swój własny widok. Inna dolina. Wagon po nim miał pole, które znałam, gdy miałam dwanaście lat.\n\nDwa siedzenia dalej jest mężczyzna, który patrzy na kuchnię. Chyba to kuchnia jego matki. Od godziny płacze bardzo cicho.\n\nOkna nie pokazują tego, co na zewnątrz. Pokazują to, co niesie patrzący.\n\nJa niosłam Hollina. Niosłam to, co wyszło z jego kopania.\n\nOno mnie nie śledzi. Zawsze było moje.\n\nJestem opanowana. Chcę, żebyś wiedział, że jestem opanowana.\n\nEdda Marsh",
+        "Wagon widokowy. Długie okna. Kilka. Kilkoro innych pasażerów.\n\nPatrzyłam na okna. Nie przez nie. Na nie. Godzinami.\n\nPociąg jedzie miarowym tempem. Widok nie. Drzewo zostaje za długo. Rzeka płynie w złą stronę, a potem płynie w naszą.\n\nNastępny wagon: inna dolina. Ten po nim: pole, które znałam, gdy miałam dwanaście lat.\n\nDwa siedzenia dalej mężczyzna patrzy na kuchnię. Chyba jego matki. Płacze bardzo cicho.\n\nOkna pokazują to, co niesiemy.\n\nJa niosłam Hollina. I to, co wyszło z jego kopania.\n\nZawsze było moje. Nie śledzi. Moje.\n\nJestem opanowana.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "List szósty",
+      "variants": [
+        "Przestałam iść.\n\nJestem w małym wagonie blisko końca. Albo blisko przodu. Światło jest takie samo w obu kierunkach.\n\nJest okno. Na oknie jest zasuwka. Długą chwilę patrzę na tę zasuwkę.\n\nTrzy głowy są tutaj. Nie przy szybie teraz. Kawałek dalej, w ciemności. Czekają.\n\nPostanowiłam, że już nie pójdę. Postanowiłam, że podniosę zasuwkę.\n\nPodniosłam zasuwkę.\n\nOkno jest otwarte. Noc jest bardzo zimna. Cedr pachnie mocniej, gdy porusza się powietrze.\n\nZostawię to tutaj. Zostawię też otwarte okno. Dla tego, kto następny znajdzie to siedzenie.",
+        "Zatrzymałam się.\n\nMały wagon. Blisko końca. Albo przodu. Światło jest takie samo w obu kierunkach.\n\nOkno. Zasuwka. Długą chwilę na nią patrzę.\n\nTrzy głowy są tutaj. Nie przy szybie teraz. Kawałek dalej. Czekają.\n\nJuż nie pójdę. Podniosę zasuwkę.\n\nPodniosłam ją.\n\nOkno jest otwarte. Noc jest zimna. Cedr pachnie mocniej, gdy porusza się powietrze.\n\nZostawiam to tutaj.\n\nZostawiam też otwarte okno."
+      ]
+    }
+  ]
+}

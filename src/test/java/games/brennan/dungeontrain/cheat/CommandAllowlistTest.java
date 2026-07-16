@@ -129,6 +129,30 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("/playanimation (cosmetic entity animation) is allowed")
+    void playAnimationAllowed() {
+        assertFalse(CommandAllowlist.taints("playanimation @s minecraft:humanoid.emote sneeze"));
+        assertFalse(CommandAllowlist.taints("/playanimation @s minecraft:humanoid.emote sneeze"));
+        assertFalse(CommandAllowlist.taints("minecraft:playanimation @s minecraft:humanoid.emote sneeze"));
+    }
+
+    @Test
+    @DisplayName("/stopsound (cosmetic, silences a sound) is allowed")
+    void stopSoundAllowed() {
+        assertFalse(CommandAllowlist.taints("stopsound @s"));
+        assertFalse(CommandAllowlist.taints("/stopsound @s master"));
+        assertFalse(CommandAllowlist.taints("minecraft:stopsound @s"));
+    }
+
+    @Test
+    @DisplayName("/weather still taints (has real gameplay effects, unlike playanimation/stopsound)")
+    void weatherTaints() {
+        assertTrue(CommandAllowlist.taints("weather clear"));
+        assertTrue(CommandAllowlist.taints("/weather thunder 300"));
+        assertTrue(CommandAllowlist.taints("minecraft:weather rain"));
+    }
+
+    @Test
     @DisplayName("/kill (bare, self-only) and /new-world (end / reset the run) are allowed")
     void runControlAllowed() {
         assertFalse(CommandAllowlist.taints("kill"));

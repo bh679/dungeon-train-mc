@@ -1,0 +1,62 @@
+{
+  "id": "adventureitemnames:playernamesuffix",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "akhiran nama pemain",
+      "refs": [
+        {
+          "ref": "adventureitemnames:connecting_symbols",
+          "weight": 3.0
+        }
+      ]
+    },
+    {
+      "chance": 0.1960102,
+      "connection": "200",
+      "newline": false,
+      "refs": [
+        {
+          "ref": "adventureitemnames:numbers",
+          "weight": 10.0
+        }
+      ]
+    },
+    {
+      "chance": 0.20216364,
+      "connection": "9",
+      "newline": false,
+      "refs": [
+        {
+          "ref": "adventureitemnames:numbers",
+          "weight": 10.0
+        }
+      ]
+    },
+    {
+      "chance": 0.22258088,
+      "connection": "",
+      "newline": false,
+      "refs": [
+        {
+          "ref": "adventureitemnames:numbers",
+          "weight": 10.0
+        }
+      ]
+    },
+    {
+      "chance": 0.06383079,
+      "connection": "201",
+      "newline": false,
+      "refs": [
+        {
+          "ref": "adventureitemnames:numbers",
+          "weight": 10.0
+        }
+      ]
+    }
+  ]
+}

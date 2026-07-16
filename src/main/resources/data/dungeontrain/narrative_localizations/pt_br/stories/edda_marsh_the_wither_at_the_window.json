@@ -1,0 +1,55 @@
+{
+  "id": "edda_marsh_the_wither_at_the_window",
+  "character": "Edda Marsh",
+  "story": "O Wither na Janela",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta Um",
+      "variants": [
+        "Meu nome é Edda Marsh.\n\nEstou escrevendo de um assento que não é o meu.\n\nMeu assento ficava três vagões atrás. Eu o deixei depressa. Não por medo. Mais parecido com o jeito que você sai de uma sala quando a chaleira ficou tempo demais no fogo.\n\nVou explicar quando tiver caminhado mais. Por ora: eu me mudei. Comecei a me mover.\n\nEdda Marsh",
+        "Edda Marsh.\n\nEste assento está quente. Não por minha causa.\n\nMeu assento fica pelo caminho de onde vim. Três vagões, talvez quatro. Não contei.\n\nMeu xale ainda está lá. Dobrado. Dobrá-lo foi a última coisa que eu não fiz.\n\nMais quando eu tiver caminhado mais.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta Dois",
+      "variants": [
+        "Estou num vagão-dormitório. A cama foi arrumada. Não por mim.\n\nNa noite passada havia algo na minha antiga janela.\n\nTrês cabeças. Osso da cor de cinza molhada. A do meio maior que as outras.\n\nElas se moviam uma de cada vez. A do meio ficava imóvel e as duas ao lado se viravam. As três olhavam para dentro.\n\nEu não desviei o olhar. Não parecia haver motivo. Depois de um tempo, elas se foram.\n\nEsperei uma hora. Então me levantei. Então caminhei.\n\nEdda Marsh",
+        "Um vagão-dormitório. A cama está arrumada. Não por mim.\n\nTrês cabeças na antiga janela ontem à noite.\n\nCinza-osso. A do meio maior. As duas ao lado se viravam quando ela não se virava.\n\nTodas olharam para dentro.\n\nJá olhei para coisas piores na vida. Olhei de volta.\n\nDepois de um tempo, elas se foram. Esperei. Caminhei.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta Três",
+      "variants": [
+        "Caminhei quatro vagões para a frente. Estou escrevendo de um cantinho de leitura no que talvez seja um vagão-biblioteca. Alguns dos livros são reais. Alguns são só lombadas coladas na parede.\n\nEstá aqui também. Na minha janela. Não a que deixei. Esta nova.\n\nAs mesmas três cabeças. A do meio ligeiramente inclinada para fora do centro, como se escutasse.\n\nFui para o outro lado do vagão. Aquela janela estava escura. Voltei. Estava de novo na minha.\n\nEdda Marsh",
+        "Quatro vagões à frente. Um vagão-biblioteca. Alguns dos livros são reais. Alguns são lombadas coladas na parede.\n\nEstá aqui também. Nesta janela. Não a que deixei.\n\nAs mesmas três cabeças. A do meio inclinada, como se escutasse.\n\nAtravessei o vagão. A outra janela estava escura. Voltei. A minha estava de novo brilhando com osso.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta Quatro",
+      "variants": [
+        "Estou num vagão de carga. Os caixotes estão pregados e fechados. A luz é a única coisa que não está encaixotada.\n\nEu deveria te contar sobre o Hollin.\n\nEle era meu marido. Ele cavava areia das almas. Vendia a maior parte. Guardava um pouco para si.\n\nCavou fundo demais, no fim. Algo subiu do lugar onde ele cavava.\n\nTrês cabeças. Uma do meio maior que as outras. Uma inclinação na do meio. Como se escutasse.\n\nHollin não subiu.\n\nFaz muito tempo que eu espero ver aquele rosto de novo. Agora vi.\n\nEstá em cada janela ao lado da qual eu me sento.\n\nEdda Marsh",
+        "Um vagão de carga. Caixotes pregados e fechados. A luz é a única coisa que não está encaixotada.\n\nHollin.\n\nEle era meu marido. Ele cavava areia das almas. Vendia a maior parte. Guardava um pouco.\n\nCavou fundo demais. Algo subiu.\n\nTrês cabeças. A do meio maior. Inclinada. Como se escutasse.\n\nHollin ficou.\n\nEsperei muito tempo para ver aquele rosto de novo.\n\nAgora vi.\n\nEdda"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta Cinco",
+      "variants": [
+        "Estou num vagão-mirante. Janelas compridas. Muitas delas. Alguns outros passageiros.\n\nFiquei sentada aqui por horas. Observei as janelas. Não para fora delas. Para elas.\n\nO trem se move num ritmo constante. A vista não. Uma árvore fica ao nosso lado tempo demais. Um rio corre para o lado errado e depois corre com a gente.\n\nO próximo vagão tinha sua própria vista. Um vale diferente. O vagão depois desse tinha um campo que eu conheci quando tinha doze anos.\n\nHá um homem dois assentos adiante que observa uma cozinha. Acho que é a cozinha da mãe dele. Ele chora muito baixinho faz uma hora.\n\nAs janelas não mostram o lado de fora. Mostram o que quem observa carrega.\n\nEu venho carregando o Hollin. Venho carregando o que subiu da cava dele.\n\nNão está me seguindo. Sempre foi meu.\n\nEstou firme. Quero que você saiba que estou firme.\n\nEdda Marsh",
+        "Vagão-mirante. Janelas compridas. Várias. Alguns outros passageiros.\n\nObservei as janelas. Não para fora delas. Para elas. Por horas.\n\nO trem se move num ritmo constante. A vista não. Uma árvore fica tempo demais. Um rio corre para o lado errado e depois corre com a gente.\n\nPróximo vagão: um vale diferente. O de depois: um campo que eu conheci quando tinha doze anos.\n\nDois assentos adiante um homem observa uma cozinha. Acho que é a da mãe dele. Ele chora muito baixinho.\n\nAs janelas mostram o que carregamos.\n\nEu venho carregando o Hollin. E o que subiu da cava dele.\n\nSempre foi meu. Não me seguindo. Meu.\n\nEstou firme.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta Seis",
+      "variants": [
+        "Eu parei de caminhar.\n\nEstou num pequeno vagão perto do fim. Ou perto da frente. A luz é a mesma nas duas direções.\n\nHá uma janela. Há uma tranca na janela. Faz um bom tempo que olho para a tranca.\n\nAs três cabeças estão aqui. Não estão no vidro agora. Estão um pouco afastadas dele, no escuro. Esperando.\n\nEu decidi que não vou caminhar de novo. Decidi que vou levantar a tranca.\n\nEu levantei a tranca.\n\nA janela está aberta. A noite está muito fria. O cedro cheira mais forte quando o ar passa.\n\nVou deixar isto aqui. Vou deixar a janela aberta também. Para quem encontrar o assento depois.",
+        "Eu parei.\n\nUm pequeno vagão. Perto do fim. Ou da frente. A luz é a mesma nas duas direções.\n\nUma janela. Uma tranca. Faz um bom tempo que olho para ela.\n\nAs três cabeças estão aqui. Não no vidro agora. Um pouco afastadas. Esperando.\n\nEu não vou caminhar de novo. Vou levantar a tranca.\n\nEu a levantei.\n\nA janela está aberta. A noite está fria. O cedro cheira mais forte quando o ar se move.\n\nDeixando isto aqui.\n\nDeixando a janela aberta também."
+      ]
+    }
+  ]
+}

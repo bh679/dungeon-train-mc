@@ -1,0 +1,509 @@
+{
+  "id": "adventureitemnames:type_synonyms",
+  "entries": [
+    {
+      "text": "검날",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "검",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "대검",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "도",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "사브르",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "칼날",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "약탈검",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "꼬챙이",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "도끼",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "전투도끼",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "벌목도끼",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "손도끼",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "쪼개는 도끼",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "미늘도끼",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "토마호크",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "나무 파괴자",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "곡괭이",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "곡괭이",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "망치",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "큰 망치",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "곡괭이 괭이",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "채석 곡괭이",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "대형 망치",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "굴착기",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "바위 씹개",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "삽",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "가래",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "모종삽",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "국자삽",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "파는 막대",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "흙 파개",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "굴착삽",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "모래 퍼개",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "괭이",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "낫",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "경운기",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "쟁기",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "갈퀴",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "수확 낫",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "쟁기",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "낫",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "투구",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "모자",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "챙모자",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "왕관",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "두건",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "머리장식",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "코이프",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "두개모",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "보관",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "골통 바가지",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "튜닉",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "셔츠",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "갑옷",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "흉갑",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "조끼",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "사슬갑옷",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "더블릿",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "턱받이",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "각반",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "바지",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "긴 바지",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "바지",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "정강이 보호구",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "반바지",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "슬랙스",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "스타킹 같은 것",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "신발",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "장화",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "샌들",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "발굽",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "슬리퍼",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "덧신",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "밟개",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "발 벙어리장갑",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "뚜벅이",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "방패",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "소형 방패",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "아이기스",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "방벽",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "원형 방패",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "대형 방패",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "수호 방패",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "저지기",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    }
+  ]
+}

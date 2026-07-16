@@ -1,0 +1,69 @@
+{
+  "id": "adventureitemnames:mob_name",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 0.10047965,
+      "connection": "",
+      "newline": false,
+      "label": "Titel",
+      "refs": [
+        {
+          "ref": "adventureitemnames:material_or_element",
+          "weight": 40.0
+        },
+        {
+          "ref": "adventureitemnames:title_prefix",
+          "weight": 200.0
+        },
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 80.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "Vorname",
+      "refs": [
+        {
+          "ref": "adventureitemnames:names",
+          "weight": 250.0
+        },
+        {
+          "ref": "adventureitemnames:type_synonyms",
+          "weight": 30.0
+        },
+        {
+          "ref": "adventureitemnames:colors",
+          "weight": 20.0
+        }
+      ]
+    },
+    {
+      "chance": 0.05,
+      "connection": " ",
+      "newline": false,
+      "label": "Nachname",
+      "refs": []
+    },
+    {
+      "chance": 0.014733723,
+      "connection": ", ",
+      "newline": false,
+      "label": "Titel",
+      "refs": [
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 80.0
+        },
+        {
+          "ref": "adventureitemnames:title_combinations",
+          "weight": 100.0
+        }
+      ]
+    }
+  ]
+}

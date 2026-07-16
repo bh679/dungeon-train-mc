@@ -1,0 +1,14 @@
+{
+  "id": "meme_start",
+  "title": "Das Spiel",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Hey, du.\nDu bist endlich wach.\n\nWillkommen im Dungeon Train\nWas ist der Zug?\nWarum bist du hier?\nWas sollst du tun?\nDas sind alles gute Fragen",
+    "Steh auf.\nSo ist es gut.\nDu hast geträumt.\nWillkommen im Dungeon Train\nWas ist der Zug?\nWarum bist du hier?\nWas sollst du tun?\nDas sind alles gute Fragen",
+    "Willkommen im Dungeon Train\nWas ist der Zug?\nWarum bist du hier?\nWas sollst du tun?\nDas sind alles gute Fragen\n\nBist du Passagier Nr. 427?",
+    "Willkommen im Dungeon Train\nWas ist der Zug?\nWarum bist du hier?\nWas sollst du tun?\nDas sind alles gute Fragen\n\nKennst du Stanley?\n\nStanley arbeitete für eine Firma in einem großen Gebäude, wo er Mitarbeiter Nr. 427 war.\n\nDie Aufgabe von Mitarbeiter Nr. 427 war einfach: Er saß an seinem Schreibtisch in Raum 427 und drückte Knöpfe auf einer Tastatur.\n\nBefehle erreichten ihn über einen Monitor auf seinem Schreibtisch, die ihm sagten, welche Knöpfe er drücken solle, wie lange und in welcher Reihenfolge.\n\nAber du bist nicht Stanley.\n\nDu bist nicht einmal in jener Welt.\n\nHier gibt es keine Tastaturen.\n\nHier gibt es keine Firmen und keine großen Gebäude.\n\nHier gibt es keine Arbeit.\n\nHier gibt es keinen Stanley.",
+    "Willkommen im Dungeon Train\nWas ist der Zug?\nWarum bist du hier?\nWas sollst du tun?\nDas sind alles gute Fragen\n\naber...\n\nGute Fragen bekommen nicht immer gute Antworten\n\nDu kannst eine gute Frage stellen.\n\nAuch wenn Menschen manchmal lügen.\n\nMenschen können dir eine gute Frage stellen.\n\nund manchmal belügst du dich vielleicht selbst.\n\nwie auch immer, das ist hier sicher nicht von Belang.\n\nWas ist der Zug?\nWarum bist du hier?\nWas sollst du tun?\nEndet der Zug?\nWas wäre am Ende des Zuges?\n\nEs gibt Kuchen."
+  ]
+}

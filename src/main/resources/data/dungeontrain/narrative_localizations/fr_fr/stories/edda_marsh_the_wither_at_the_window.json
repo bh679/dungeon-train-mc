@@ -1,0 +1,55 @@
+{
+  "id": "edda_marsh_the_wither_at_the_window",
+  "character": "Edda Marsh",
+  "story": "Le Wither à la fenêtre",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettre une",
+      "variants": [
+        "Je m'appelle Edda Marsh.\n\nJ'écris ceci depuis un siège qui n'est pas le mien.\n\nMon siège était trois wagons en arrière. Je l'ai quitté vite. Pas par peur. Plus proche de la façon dont on quitte une pièce quand la bouilloire a chauffé trop longtemps.\n\nJ'expliquerai quand j'aurai marché plus loin. Pour l'instant : j'ai bougé. J'ai commencé à bouger.\n\nEdda Marsh",
+        "Edda Marsh.\n\nCe siège est chaud. Pas de mon fait.\n\nMon siège est en arrière, d'où je viens. Trois wagons, peut-être quatre. Je n'ai pas compté.\n\nMon châle y est encore. Plié. Le plier fut la dernière chose que je n'ai pas faite.\n\nPlus quand j'aurai marché plus loin.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettre deux",
+      "variants": [
+        "Je suis dans une voiture-lit. Le lit a été fait. Pas par moi.\n\nLa nuit dernière, quelque chose était à mon ancienne fenêtre.\n\nTrois têtes. Un os couleur de cendre humide. Celle du milieu plus grosse que les autres.\n\nElles bougeaient une à une. Celle du milieu s'immobilisait et les deux à côté se tournaient. Toutes trois regardaient à l'intérieur.\n\nJe n'ai pas détourné le regard. Il ne semblait y avoir aucune raison. Au bout d'un moment, elles étaient parties.\n\nJ'ai attendu une heure. Puis je me suis levée. Puis j'ai marché.\n\nEdda Marsh",
+        "Une voiture-lit. Le lit est fait. Pas par moi.\n\nTrois têtes à l'ancienne fenêtre la nuit dernière.\n\nGris os. Celle du milieu plus grosse. Les deux à côté se tournaient quand elle ne bougeait pas.\n\nToutes regardaient à l'intérieur.\n\nJ'ai vu pires choses dans ma vie. J'ai soutenu le regard.\n\nAu bout d'un moment, elles étaient parties. J'ai attendu. J'ai marché.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettre trois",
+      "variants": [
+        "J'ai avancé de quatre wagons. J'écris depuis un coin lecture dans ce qui est peut-être une voiture-bibliothèque. Certains livres sont réels. Certains ne sont que des dos collés au mur.\n\nC'est là aussi. À ma fenêtre. Pas celle que j'ai quittée. Cette nouvelle.\n\nLes mêmes trois têtes. Celle du milieu légèrement inclinée de côté, comme à l'écoute.\n\nJe suis passée de l'autre côté de la voiture. Cette fenêtre était sombre. Je suis revenue. C'était de nouveau à la mienne.\n\nEdda Marsh",
+        "Quatre wagons en avant. Une voiture-bibliothèque. Certains livres sont réels. Certains sont des dos collés au mur.\n\nC'est là aussi. À cette fenêtre. Pas celle que j'ai quittée.\n\nLes mêmes trois têtes. Celle du milieu inclinée, comme à l'écoute.\n\nJ'ai traversé la voiture. L'autre fenêtre était sombre. Je suis revenue. La mienne brillait de nouveau d'os.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettre quatre",
+      "variants": [
+        "Je suis dans un fourgon à marchandises. Les caisses sont clouées. La lumière est la seule chose qui ne soit pas en caisse.\n\nJe devrais te parler de Hollin.\n\nC'était mon mari. Il creusait le sable des âmes. Il en vendait la plupart. Il en gardait un peu pour lui.\n\nIl a creusé trop profond, à la fin. Quelque chose est remonté de l'endroit qu'il creusait.\n\nTrois têtes. Celle du milieu plus grosse que les autres. Une inclinaison à celle du milieu. Comme à l'écoute.\n\nHollin n'est pas remonté.\n\nJ'ai attendu longtemps de revoir ce visage. Maintenant c'est fait.\n\nIl est à chaque fenêtre où je m'assois.\n\nEdda Marsh",
+        "Un fourgon à marchandises. Caisses clouées. La lumière est la seule chose qui ne soit pas en caisse.\n\nHollin.\n\nC'était mon mari. Il creusait le sable des âmes. En vendait la plupart. En gardait un peu.\n\nIl a creusé trop profond. Quelque chose est remonté.\n\nTrois têtes. Celle du milieu plus grosse. Inclinée. Comme à l'écoute.\n\nHollin est resté.\n\nJ'ai attendu longtemps de revoir ce visage.\n\nMaintenant c'est fait.\n\nEdda"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettre cinq",
+      "variants": [
+        "Je suis dans une voiture d'observation. De longues fenêtres. Beaucoup. Quelques autres passagers.\n\nJe suis restée assise ici des heures. J'ai regardé les fenêtres. Pas au travers. Elles.\n\nLe train avance à allure régulière. La vue, non. Un arbre reste près de nous trop longtemps. Une rivière coule à contresens puis coule dans le nôtre.\n\nLe wagon suivant avait sa propre vue. Une autre vallée. Le wagon d'après avait un champ que je connaissais à douze ans.\n\nIl y a un homme deux sièges plus loin qui regarde une cuisine. Je crois que c'est la cuisine de sa mère. Il pleure très doucement depuis une heure.\n\nLes fenêtres ne montrent pas le dehors. Elles montrent ce que porte celui qui regarde.\n\nJ'ai porté Hollin. J'ai porté ce qui est remonté de ce qu'il creusait.\n\nCela ne me suit pas. Cela a toujours été mien.\n\nJe suis stable. Je veux que tu saches que je suis stable.\n\nEdda Marsh",
+        "Voiture d'observation. De longues fenêtres. Plusieurs. Quelques autres passagers.\n\nJ'ai regardé les fenêtres. Pas au travers. Elles. Des heures durant.\n\nLe train avance à allure régulière. La vue, non. Un arbre reste trop longtemps. Une rivière coule à contresens puis coule dans le nôtre.\n\nWagon suivant : une autre vallée. Celui d'après : un champ que je connaissais à douze ans.\n\nDeux sièges plus loin un homme regarde une cuisine. Je crois que c'est celle de sa mère. Il pleure très doucement.\n\nLes fenêtres montrent ce que nous portons.\n\nJ'ai porté Hollin. Et ce qui est remonté de ce qu'il creusait.\n\nCela a toujours été mien. Ne me suit pas. Mien.\n\nJe suis stable.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lettre six",
+      "variants": [
+        "J'ai cessé de marcher.\n\nJe suis dans un petit wagon près de l'arrière. Ou près de l'avant. La lumière est la même dans les deux sens.\n\nIl y a une fenêtre. Il y a un loquet à la fenêtre. Je regarde le loquet depuis un long moment.\n\nLes trois têtes sont là. Elles ne sont pas au carreau maintenant. Elles sont un peu à l'écart, dans le noir. À attendre.\n\nJ'ai décidé que je ne marcherai plus. J'ai décidé que je vais lever le loquet.\n\nJ'ai levé le loquet.\n\nLa fenêtre est ouverte. La nuit est très froide. Le cèdre sent plus fort quand l'air passe.\n\nJe vais laisser ceci ici. Je vais laisser la fenêtre ouverte aussi. Pour qui trouvera le siège ensuite.",
+        "Je me suis arrêtée.\n\nUn petit wagon. Près de l'arrière. Ou de l'avant. La lumière est la même dans les deux sens.\n\nUne fenêtre. Un loquet. Je le regarde depuis un long moment.\n\nLes trois têtes sont là. Pas au carreau maintenant. Un peu à l'écart. À attendre.\n\nJe ne marcherai plus. Je vais lever le loquet.\n\nJe l'ai levé.\n\nLa fenêtre est ouverte. La nuit est froide. Le cèdre sent plus fort quand l'air passe.\n\nJe laisse ceci ici.\n\nJe laisse la fenêtre ouverte aussi."
+      ]
+    }
+  ]
+}

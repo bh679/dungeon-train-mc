@@ -1,0 +1,47 @@
+{
+  "id": "pip_aaro_the_waiting_child",
+  "character": "Pip Aaro",
+  "story": "A Criança que Espera",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta Um",
+      "variants": [
+        "Meu nome é Pip. Tenho oito anos.\n\nEstou num trem que não conheço. Os bancos cheiram ao casaco da Vovó.\n\nUm rato me deu este papel. Um rato de verdade. De roupas.\n\nEstou procurando a Mãe.\n\nUm pouquinho com medo. Só um pouquinho.\n\nPip",
+        "Eu dormi num trem com a Mãe. Acordei e a Mãe tinha sumido.\n\nO trem está diferente agora. Minha bolsa está diferente. O livro laranja não está nela.\n\nUm rato me deu este papel. Ele usava um colete.\n\nEu vou achar a Mãe. Tem tantos vagões.\n\nEu não estou chorando.\n\nPip"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta Dois",
+      "variants": [
+        "Perguntei a um homem onde fica o maquinista.\n\nEle usava um casaco amarelo. Ele riu. Ele disse querida, não tem maquinista. Ele disse que o trem não para.\n\nEu não acredito nele. Trens param.\n\nO homem do casaco amarelo dorme muito agora. Acho que ele está triste.\n\nEu não vou ficar assim.\n\nPip",
+        "Achei um caderno debaixo de um banco.\n\nAlguém contou os vagões. Chegou a 384 e parou. Disse que não adianta procurar a frente.\n\nEu não sei o que quiseram dizer. Trens têm frente.\n\nVou ficar com o caderno. É como ter alguém para conversar.\n\nParecia cansado. Eu ainda não estou cansada.\n\nPip"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta Três",
+      "variants": [
+        "Algumas das pessoas no trem são de mentira.\n\nElas parecem reais. Mas não te veem. Acenei para uma moça e ela passou reto por mim.\n\nAlgumas pessoas ESTÃO ali. O homem do casaco amarelo. O rato. Uma moça que me deu uma maçã.\n\nEstou fazendo uma lista das pessoas reais. São quatro. Eu provavelmente sou uma também.\n\nPip",
+        "Eu fiz um plano.\n\nAndar num sentido só. Não me virar. Aí eu chegaria no fim do trem.\n\nAndei muito tempo. Quarenta e sete vagões. Não olhei para trás.\n\nNão tinha fim. O fim parecia igual ao lugar onde comecei. O mesmo cheiro da Vovó.\n\nEu não entendo. Eu quero a Mãe.\n\nPip"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta Quatro",
+      "variants": [
+        "A moça da maçã é minha amiga agora. O nome dela é Soren.\n\nEla está no trem faz muito, muito tempo. Ela não diz quanto.\n\nSoren perguntou da Mãe. Eu contei. Ela ficou quieta. Aí ela disse que a sua Mãe parece maravilhosa.\n\nEla falou do mesmo jeito que o homem do casaco amarelo falou que o trem não para.\n\nEu ainda vou achar a Mãe.\n\nPip",
+        "Tem um slime no meu vagão. Eu chamei ela de Pedrinha.\n\nEla é pequena e verde. Soren disse que ela é pequena demais para ser perigosa ainda. Eu não acredito nisso da Pedrinha.\n\nEla me segue até a porta mas não passa. Acho que ela pensa que a porta é uma parede.\n\nA Mãe diria que um slime é um monstro. A Mãe está errada sobre a Pedrinha.\n\nEu sinto falta da Mãe.\n\nMas eu tenho a Pedrinha.\n\nPip"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta Cinco",
+      "variants": [
+        "Soren me contou da porta.\n\nEla disse que tem uma porta no trem que dá para fora. Ela disse que se eu achar, eu devo passar por ela.\n\nEu pensei nisso por muito tempo. Na Mãe. Na Pedrinha.\n\nSe a Mãe está neste trem eu tenho que continuar procurando. Se ela não está, eu não consigo chegar até ela de qualquer jeito.\n\nQuando eu achar a porta eu vou sentar do lado dela. E esperar.\n\nSoren disse tudo bem, querida. Como se dessa vez ela falasse de verdade.\n\nPip",
+        "Eu escrevi uma carta para a Mãe.\n\nSoren disse que às vezes as pessoas passam pelo mesmo vagão muitas vezes. Então eu vou deixar onde todo mundo passa.\n\nEla diz o meu nome. Diz que eu tenho uma amiga chamada Soren e um slime chamado Pedrinha.\n\nDiz que eu estou bem. Diz que eu estou esperando.\n\nA Mãe vai achar. Mães acham as coisas.\n\nPip"
+      ]
+    }
+  ]
+}

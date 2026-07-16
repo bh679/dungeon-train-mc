@@ -1,0 +1,12 @@
+{
+  "id": "joined_world",
+  "title": "Multipemain?",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Selamat Datang di Kereta, Petualang!\nBergabung ke sebuah dunia ya! Itu menyenangkan.\n\nJelajahi bersama, terhubung dengan kereta bersama-sama!\n\nDengan lebih banyak orang di sekitar, kereta pasti akan tumbuh!\n\nMenurutmu apa kita akan mendapat lebih banyak gerbong kereta?",
+    "Hei, kau berhasil! Kau bergabung ke dunia baru!\nKereta baru!\nSelamat datang di Dungeon Train!\n\nApa itu dungeon train?\nMengapa ia ada di sini?\nApa yang akan kau temukan?\n\nSemoga beruntung!",
+    "Kau berhasil! Kau bergabung ke dunia baru!\nKau bergabung ke Dungeon Train!\n\nMultipemain,\nBanyak orang, dalam satu dunia!\nBersama-sama.\n\nSungguh teknologi luar biasa!\nKomputer, saling terhubung.\nOrang-orang berinteraksi,\ndi sebuah kereta\ndi dalam komputermu\ndi internet!"
+  ]
+}

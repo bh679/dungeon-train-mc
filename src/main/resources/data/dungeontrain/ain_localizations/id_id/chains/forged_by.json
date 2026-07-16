@@ -1,0 +1,98 @@
+{
+  "id": "adventureitemnames:forged_by",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "Ditempa oleh",
+      "refs": [
+        {
+          "ref": "adventureitemnames:created_by",
+          "weight": 52.0
+        },
+        {
+          "ref": "adventureitemnames:hand_crafted_with_love",
+          "weight": 30.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " oleh ",
+      "newline": false,
+      "label": "Orang",
+      "refs": [
+        {
+          "ref": "adventureitemnames:material_or_element",
+          "weight": 100.0
+        },
+        {
+          "ref": "adventureitemnames:names",
+          "weight": 258.0
+        },
+        {
+          "ref": "adventureitemnames:people",
+          "weight": 20.0
+        },
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 100.0
+        },
+        {
+          "ref": "adventureitemnames:title_combinations",
+          "weight": 100.0
+        }
+      ]
+    },
+    {
+      "chance": 0.25393516,
+      "connection": " di ",
+      "newline": false,
+      "label": "Lokasi",
+      "refs": [
+        {
+          "ref": "adventureitemnames:places",
+          "weight": 30.0
+        },
+        {
+          "ref": "adventureitemnames:the_place",
+          "weight": 50.0
+        }
+      ]
+    },
+    {
+      "chance": 0.12329957,
+      "connection": " dari ",
+      "newline": false,
+      "label": "Dari",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/item_material",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.1,
+      "connection": " untuk",
+      "newline": false,
+      "label": "Khusus untuk",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/player_name",
+          "weight": 10.0
+        },
+        {
+          "ref": "adventureitemnames:people",
+          "weight": 20.0
+        },
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 150.0
+        }
+      ]
+    }
+  ]
+}

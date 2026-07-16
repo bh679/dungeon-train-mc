@@ -1,0 +1,274 @@
+[
+  {
+    "page": "fall",
+    "weight": 3,
+    "question": "¿Qué es el Dungeon Train?",
+    "narration": "Vagón {carriage}. Ahí fue donde la oscuridad te alcanzó. ¿Lo comprendes ahora? El Dungeon Train no se detiene: solo sigue adelante, más hondo, para siempre."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "min_carriage": 100 },
+    "question": "¿Qué es el Dungeon Train?",
+    "narration": "{carriage} vagones adentro de la oscuridad. Pocos llegan tan lejos antes de que la línea se los lleve. Menos aún vuelven a subir."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "max_carriage": 3 },
+    "question": "¿Qué es el Dungeon Train?",
+    "narration": "Vagón {carriage}. Apenas a bordo, y la oscuridad ya te tenía. La línea es paciente: puede permitírselo."
+  },
+  {
+    "page": "deeds",
+    "weight": 3,
+    "question": "¿Por qué estás aquí?",
+    "narration": "Abatiste {mobs} criaturas en la oscuridad, y lo pagaste con {hearts} corazones.\nDe las {met} almas que encontraste, a {slain} pusiste fin, y a {friends} llamaste amigo."
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "¿Qué se supone que debes hacer?",
+    "narration": "Hierro y filo, recogidos de la oscuridad y traídos hasta aquí. Nada de ello bastó; quizá esa nunca fue la cuestión."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 5 },
+    "question": "¿Qué se supone que debes hacer?",
+    "narration": "Leíste {books} de los libros de la línea y aun así portabas acero. Conocimiento y una hoja, y la oscuridad se llevó ambos."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_friends": 5 },
+    "question": "¿Merecieron la pena?",
+    "narration": "Hiciste {friends} amigos en la línea, y aun así te llevó. Quizá ese sea el único número que de verdad fue tuyo."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_mobs": 200 },
+    "question": "¿Con cuánto de la oscuridad respondiste en su misma moneda?",
+    "narration": "{mobs} criaturas cayeron ante tu mano antes de que tú cayeras ante las suyas. La línea no juzga. Solo cuenta."
+  },
+  {
+    "page": "lives",
+    "weight": 3,
+    "conditions": { "min_deaths": 2 },
+    "question": "Todas estas son buenas preguntas",
+    "narration": "Estas no son las marcas de una sola vida. A lo largo de las {deaths} —cada oscuridad en la que subiste, cada vez que la línea te llevó y aun así volviste—, esto es todo tu viaje."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "¿Tan fácilmente se gasta una sola vida?",
+    "subline": "tu primera caída en la línea.",
+    "narration": "No hay otras vidas con las que sopesar esta, todavía no. Esto eres tú por entero: todo lo hecho desde que subiste por primera vez. La línea lo recordará. Tú también deberías."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 10 },
+    "question": "Todas estas son buenas preguntas",
+    "narration": "Estas no son las marcas de una sola vida. {deaths} veces te ha llevado la oscuridad, y {deaths} veces volviste a subir."
+  },
+  {
+    "page": "platform",
+    "weight": 3,
+    "conditions": { "min_deaths": 2 },
+    "question": "¿Volverás a subir, o te apearás hacia el silencio?",
+    "narration": "El andén está vacío. El silbato suena a lo lejos por la línea. Corre sin fin; y tú, al parecer, también.",
+    "epitaph": "el {deaths}.º en caer. quizá no el último."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "¿Volverás a subir, ahora que sabes cómo termina?",
+    "narration": "El andén está vacío, igual que cuando subiste por primera vez. El silbato suena a lo lejos por la línea. Has caído una vez. Si habrá una segunda es, como siempre, cosa tuya.",
+    "epitaph": "el primero en caer. la línea es paciente: esperará al resto."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 20 },
+    "question": "¿Hace falta siquiera que preguntes?",
+    "narration": "El andén ya conoce tu rostro. El silbato suena como siempre suena. Ya sabes lo que viene después.",
+    "epitaph": "el {deaths}.º en caer, y no, al parecer, el último."
+  },
+
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "¿Qué es el Dungeon Train?",
+    "narration": "Vagón {carriage}. La oscuridad llevaba allí esperando desde siempre; tú solo llegaste a su encuentro."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "¿Qué es el Dungeon Train?",
+    "narration": "Vagón {carriage}, y de ahí no pasaste. La línea no guarda rencor ni clemencia; simplemente sigue adelante."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "¿Qué es el Dungeon Train?",
+    "narration": "Las linternas del vagón {carriage} aún se mecen donde caíste. El tren no aminora para mirar."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "¿Qué es el Dungeon Train?",
+    "narration": "Llegaste al vagón {carriage} antes de que el suelo del mundo cediera. La línea continúa sin tu peso."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "¿Qué es el Dungeon Train?",
+    "narration": "Vagón {carriage}. En algún lugar por delante la vía sigue desplegándose hacia lo negro, indiferente a que ya no estés sobre ella."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "¿Qué es el Dungeon Train?",
+    "narration": "Aquí, en el vagón {carriage}, la oscuridad igualó al fin tu paso. Siempre iba a hacerlo."
+  },
+
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "¿Por qué estás aquí?",
+    "narration": "Abatiste {mobs} criaturas en la oscuridad y entregaste {hearts} corazones para lograrlo. De las {met} almas con que te cruzaste, a {slain} derribaste y a {friends} dejaste acercarse."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "¿Por qué estás aquí?",
+    "narration": "{mobs} criaturas cayeron ante ti y {hearts} corazones cayeron de ti. Te cruzaste con {met} almas en la oscuridad —pusiste fin a {slain}, conservaste a {friends}— y luego te tocó a ti."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "¿Por qué estás aquí?",
+    "narration": "De la oscuridad tomaste {mobs}; de ti mismo gastaste {hearts} corazones. {met} almas compartieron la línea: a {slain} pusiste fin, a {friends} retuviste."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "max_friends": 0 },
+    "question": "¿Por qué estás aquí?",
+    "narration": "Abatiste {mobs} criaturas y sangraste {hearts} corazones. Encontraste {met} almas, pusiste fin a {slain}, y a ninguna llamaste amigo. La oscuridad es más simple en soledad."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_slain": 5 },
+    "question": "¿Con qué respondiste a la oscuridad?",
+    "narration": "De las {met} que encontraste, a {slain} abatiste —y {mobs} criaturas más en la oscuridad, además— a costa de {hearts} corazones, y a {friends} perdonaste para llamarlos amigos. La línea no lo llama asesinato."
+  },
+
+  {
+    "page": "gear",
+    "weight": 2,
+    "question": "¿Qué se supone que debes hacer?",
+    "narration": "Reuniste todo lo que pudiste cargar de los vagones. La línea te deja quedártelo: no tiene uso para la carga, solo para los pasajeros."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 0 },
+    "question": "¿Qué se supone que debes hacer?",
+    "narration": "No abriste ni una sola caja en la línea: cargaste solo con lo que subiste, y lo blandiste hasta el final. La oscuridad guarda lo que no quisiste llevarte."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 9 },
+    "question": "¿Qué se supone que debes hacer?",
+    "narration": "Un puñado de cajas abiertas —{loot} en total— y una hoja siempre a mano. La línea es generosa con quienes se detienen; tú apenas te detuviste."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_loot": 250 },
+    "question": "¿Qué se supone que debes hacer?",
+    "narration": "{loot} contenedores vaciados en tu mochila. Despojaste a la oscuridad de todo lo que no estaba clavado, y aun así se llevó lo único que importaba."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_books": 0 },
+    "question": "¿Qué se supone que debes hacer?",
+    "narration": "Ni una página pasada: solo acero recogido y blandido. La línea guarda sus historias para quienes se detienen a leer."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 10 },
+    "question": "¿Qué se supone que debes hacer?",
+    "narration": "Leíste {books} de los libros de la línea y, además, portabas acero. Sabiduría y una hoja, y la oscuridad fue paciente con ambas."
+  },
+
+  {
+    "page": "lives",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "Todas estas son buenas preguntas",
+    "narration": "Cuéntalas: {deaths} veces te llevó la línea, {deaths} veces respondiste al silbato. Esta es tu silueta, trazada en despedidas."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "Todas estas son buenas preguntas",
+    "narration": "A lo largo de {deaths} vidas los números se acumulan como polvo sobre los raíles. Nada se pierde; la línea no olvida nada."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "¿Por qué sigues subiendo?",
+    "narration": "{deaths} caídas, y aun así subes. La línea dejó de preguntarse si volverías. Y tú, quizá, también."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "¿Por qué sigues subiendo?",
+    "narration": "{deaths} muertes a tu espalda y el mismo silbato por delante. Ya no eres un pasajero: eres parte del horario."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "¿Por qué sigues subiendo?",
+    "narration": "La oscuridad ha dejado de ser una extraña; {deaths} veces has aprendido su rostro. Esa es su propia clase de pérdida."
+  },
+
+  {
+    "page": "platform",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "¿Volverás a subir, o dejarás que el andén te retenga?",
+    "narration": "El silbato ya suena, lejos por delante. No te espera —nunca lo hizo—, y sin embargo aquí estás, decidiendo seguirlo.",
+    "epitaph": "el {deaths}.º en caer. la línea continúa."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "¿Volverás a subir?",
+    "narration": "El andén está en silencio. En algún lugar el tren ya va lleno de la historia de otro. Siempre hay sitio para una más de las tuyas.",
+    "epitaph": "el {deaths}.º en caer. quizá no el último."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "¿Hace falta siquiera que la línea pregunte?",
+    "narration": "Conoces el peso de la puerta, el frío del escalón. La oscuridad no es más que un lugar que ahora visitas.",
+    "epitaph": "el {deaths}.º en caer: un habitual de la línea."
+  }
+]

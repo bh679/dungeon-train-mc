@@ -35,6 +35,17 @@ public final class DungeonTrainWorldData extends SavedData {
 
     public static final String NAME = "dungeontrain_world";
 
+    /**
+     * Reusable {@link SavedData.Factory} for {@link #get}. Both references are static, so the
+     * factory holds no per-world state and is safe to share. Hoisted to a constant because
+     * {@link #get} is called on the worldgen hot path (e.g. {@code DisintegrationBand.startX} /
+     * {@code NetherBand.startX} per chunk); allocating a fresh factory + capturing lambda per call
+     * showed up as a per-chunk allocation storm while a train crosses the Nether band.
+     */
+    private static final SavedData.Factory<DungeonTrainWorldData> FACTORY = new SavedData.Factory<>(
+            DungeonTrainWorldData::createDefault,
+            (tag, registries) -> load(tag));
+
     private static final String TAG_TRAIN_Y = "trainY";
     private static final String TAG_STARTS_WITH_TRAIN = "startsWithTrain";
     private static final String TAG_CARRIAGE_LENGTH = "carriageLength";
@@ -77,13 +88,7 @@ public final class DungeonTrainWorldData extends SavedData {
     }
 
     public static DungeonTrainWorldData get(ServerLevel overworld) {
-        DungeonTrainWorldData data = overworld.getDataStorage().computeIfAbsent(
-            new SavedData.Factory<>(
-                DungeonTrainWorldData::createDefault,
-                (tag, registries) -> load(tag)
-            ),
-            NAME
-        );
+        DungeonTrainWorldData data = overworld.getDataStorage().computeIfAbsent(FACTORY, NAME);
         // Legacy upgrade path: missing NBT tag loaded as seed=0. Replace with
         // a real per-world seed drawn from the overworld's random so the
         // Random/RandomGrouped modes produce the same layout on future

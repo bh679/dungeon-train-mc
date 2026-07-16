@@ -1,0 +1,63 @@
+{
+  "id": "soren_the_keeper_of_the_door",
+  "character": "Soren",
+  "story": "La guardiana della porta",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettera uno",
+      "variants": [
+        "Chiunque tu sia che trovi questo posto,\n\nè caldo. L'ho appena lasciato.\n\nLa mela è tua. Un regalo che di certo ti sei guadagnato.\n\nSono a bordo da più tempo di quanto sappia contare. Ho smesso di cercare la testa del treno già da molto.\n\n\nUna cosa, mio caro. Stai lontano dai tratti bui.\n\nQualunque cosa tu abbia perso, non è là dentro. Il buio custodisce ciò che si prende.\n\nMangia qualcosa prima.\n\nSoren",
+        "Se stai leggendo questo, tesoro, sei nuovo. O sei gentile. Entrambe le cose si consumano qui.\n\nHo lasciato la mela perché dar da mangiare a qualcuno è l'ultima cosa che qui somiglia ancora a vincere.\n\n\nUna volta credevo che sarei scesa. Il treno mi ha guarita da questo.\n\nEvita i tratti bui. Ora so perché. Mi è costato più di quanto avessi. Il buio custodisce ciò che si prende.\n\nRiposa qui un po'.\n\nSoren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettera due",
+      "variants": [
+        "È reale!\n\nOra lo so con certezza\n\nPer anni ho parlato alla gente della porta.\n\nUn'uscita dal treno. Attraversala, dicevo, se mai la trovi.\n\nCi credevo a metà. Dai alla gente una speranza di cui non sei sicura. È comunque speranza.\n\n\nOggi ho saputo che è reale. Non ti dirò come. Ma ora lo so.\n\nPer tutti questi anni ho regalato una speranza di cui non ero sicura. Ora la speranza è vera.\n\nSe trovi quella porta, cuore mio.\n\nAttraversala.\n\nSoren",
+        "È reale! È davvero reale!\n\nIo avevo già fatto pace. La pace è solo non volere nulla. È una specie di sonno.\n\nPoi seppi che la porta è reale, e il volere si svegliò di colpo.\n\nOra sono di nuovo sveglia. Non sono sicura di esserne grata.\n\n\nPotrei essere a casa entro mattina. Ci si dimentica quanto strana diventi quella parola. Casa.\n\nMa qui non sono mai passata oltre davanti a un volto spaventato. Non comincerò adesso.\n\nCosì guiderò altri fino a lei, mentre mi dirigo là.\n\nAttraversala.\n\nSoren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettera tre",
+      "variants": [
+        "Della.\n\nTi trovai nel fondo di un'ora brutta. Ti diedi una mela. Non me ne andai.\n\nErano anni che non camminavo accanto a nessuno. Ne avevo dimenticato il peso.\n\nOra cerchiamo tua figlia insieme. Due paia di occhi.\n\n\nLa porta è reale, Della. Potresti essere a casa.\n\nScuotesti la testa. Non te ne andrai senza di lei.\n\nUna bambina di otto anni. Un libro arancione nello zaino. Le hai insegnato tu a leggere. Pip.\n\nMangia. Camminiamo all'alba.\n\nSoren",
+        "Della.\n\nAnni in solitudine, e poi tu. Mi hai restituito qualcosa che avevo smesso di permettermi di rimpiangere. Una voce che risponde.\n\nPersino dopo che questo treno si è portato via tua figlia, continui a camminare. Così ti aiuto a cercare. La mia porta può aspettare ancora un momento.\n\n\nHo visto questo treno logorare la gente fino al nulla. Temo che logori te.\n\nTi sforzi troppo. Temo che tu abbia ragione a farlo.\n\nLa porta resterà lì per tutte e tre. Non appena troveremo la piccola Philippa.\n\nMangia. Camminiamo all'alba.\n\nSoren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettera quattro",
+      "variants": [
+        "Della.\n\nLa traccia si infilava in un tratto buio. Di quelli in cui io non metto piede. Ti supplicai di tornare indietro.\n\nDicesti che va avanti, quindi tu vai avanti. Ci dicemmo cose dure. Furono le ultime.\n\n\nPoi fu come se il pavimento cedesse. Credo di aver sentito che cadevi nel buio tra i vagoni.\n\nSentii il tuo grido.\nPoi... nulla.\n\n\nGridai il tuo nome finché non rimasi senza voce, e il buio non ne restituì nulla. Il buio custodisce ciò che si prende.\n\nSoren",
+        "Della.\n\nTi dissi che il tratto buio ti avrebbe uccisa. Dicesti che la traccia della tua bambina si infilava lì dentro.\n\nCosì entrasti. Io volevo che tu vivessi. Tu volevi tua figlia. Avevamo ragione entrambe. Questa è la parte crudele.\n\n\nHo ripercorso la caduta mille volte. Non c'è versione in cui ti afferro.\n\nOra non siamo più tre. Ho infranto la mia stessa regola, e il buio ti ha portata via. Il buio custodisce ciò che si prende.\n\nSoren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettera cinque",
+      "variants": [
+        "Della.\n\nDopo il buio, mi fermai. Smisi di distribuire mele. Smisi di guardare i volti. Camminavo, e non vedevo passare i vagoni.\n\nIl lutto è un suo proprio tratto buio. Non diedi ascolto alla mia stessa regola.\n\n\nNon so da quanto tempo sono così. Il treno si mangia il tempo. Troppo, credo.\n\nMa oggi la nebbia si è diradata. Torno a gustare una mela. È l'ora, Della. Vado alla porta.\n\nSoren",
+        "Della.\n\nC'è gente su questo treno che si è fermata. Ci si incrocia. I loro occhi sono altrove. Ne ho sempre avuto pietà.\n\nDopo il buio, diventai una di loro. Non so per quanto tempo.\n\n\nIl treno si mangia il tempo. Credo si sia mangiato troppo del mio. Mi vergogno delle mele che lasciai raffreddare.\n\nMa ora sono sveglia. Posso portare il lutto e camminare comunque. Così vado alla porta. Finalmente è l'ora.\n\nSoren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lettera sei",
+      "variants": [
+        "Pip.\n\nChiedesti di tua madre, e ti riconobbi all'istante. Avevo camminato con lei, finché il buio non se la portò via.\n\nTu vedesti solo una donna con una mela. Te la diedi, e ci chiamasti amiche.\n\n\nMi raccontasti tutto di lei. Rimasi in silenzio.\n\nDissi che tua madre sembra meravigliosa. Mi uscì vuoto, come qualcosa che si dice ma non si crede più. Tu continui a ostinarti a trovarla.\n\nSoren",
+        "Pip.\n\nAvevi il suo viso. Ti riconobbi prima che finissi di chiedere. Lei camminò con me finché non cadde nel buio e non risalì più.\n\nSei la sua bambina, che la cerca, e non sai che non c'è più.\n\n\nMi chiedesti da quanto tempo fossi qui. Non volli dirlo. Mi parlasti di lei.\n\nRimasi in silenzio. Dissi che sembra meravigliosa. Una parola in più sarebbe stata dire che è morta. Così ti lasciai continuare a cercare. Perdonami, cuore mio.\n\nSoren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Lettera sette",
+      "variants": [
+        "Pip.\n\nFinalmente ti parlai della porta. Il vero cammino verso casa. Attraversala, dissi, appena la trovi.\n\nDicesti che ti saresti seduta accanto a lei e avresti aspettato tua madre. Dissi va bene. Stavolta lo dicevo sul serio.\n\n\nStavo già andando, con la mano sul cammino verso casa. Ma non uscirò dal buio finché una bambina aspetta al suo interno.\n\nCosì ora sono la guardiana della porta. Lei aspetta una madre che sono certa non ci sia più, e non glielo dico mai.\n\nSoren",
+        "Pip.\n\nTi diedi il cammino verso casa. Quello vero, finalmente. Ti dissi di attraversarlo e di non guardare indietro.\n\nNon lo farai. Ti siederai accanto a esso e terrai il posto per tua madre. Non discussi. Per una volta sentii davvero la bontà.\n\n\nAvevo il mio cammino verso casa in mano. Lo lasciai andare.\n\nInvecchierò a questa porta, regalandola senza usarla per nessuno. Una bambina aspetta qui una madre che non c'è più, e io custodisco la verità che non dirò mai.\n\nSoren"
+      ]
+    }
+  ]
+}

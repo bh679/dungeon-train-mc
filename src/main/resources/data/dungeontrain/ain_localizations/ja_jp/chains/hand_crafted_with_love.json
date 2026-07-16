@@ -1,0 +1,32 @@
+{
+  "id": "adventureitemnames:hand_crafted_with_love",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 0.29578075,
+      "connection": "",
+      "newline": false,
+      "label": "手作りの",
+      "refs": []
+    },
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "製作",
+      "refs": [
+        {
+          "ref": "adventureitemnames:crafted_by",
+          "weight": 5.0
+        }
+      ]
+    },
+    {
+      "chance": 0.29920536,
+      "connection": " ",
+      "newline": false,
+      "label": "愛を込めて",
+      "refs": []
+    }
+  ]
+}
