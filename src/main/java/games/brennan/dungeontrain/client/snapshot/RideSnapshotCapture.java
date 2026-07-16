@@ -172,19 +172,17 @@ public final class RideSnapshotCapture {
         if (shot != full) full.close();   // downscale returns src as-is when already small
 
         if (subjectCb != null) {
-            // Targeted echo capture: PNG-encode the grabbed frame and hand it to the callback —
+            // Targeted echo capture: JPEG-encode the grabbed frame and hand it to the callback —
             // it never enters the gallery, so we own and must close this NativeImage.
-            byte[] png = null;
+            byte[] jpeg;
             try {
-                png = shot.asByteArray();
-            } catch (Exception e) {
-                LOGGER.warn("[DungeonTrain] Echo snapshot PNG encode failed", e);
+                jpeg = SnapshotJpegEncoder.encode(shot);
             } finally {
                 shot.close();
             }
-            if (png != null) {
-                subjectCb.accept(png);
-                LOGGER.debug("[DungeonTrain] Echo snapshot captured ({} bytes)", png.length);
+            if (jpeg != null) {
+                subjectCb.accept(jpeg);
+                LOGGER.debug("[DungeonTrain] Echo snapshot captured ({} bytes)", jpeg.length);
             }
         } else {
             DynamicTexture texture = new DynamicTexture(shot);

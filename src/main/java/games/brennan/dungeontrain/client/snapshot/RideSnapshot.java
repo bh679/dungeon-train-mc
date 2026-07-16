@@ -7,7 +7,6 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -89,21 +88,31 @@ public final class RideSnapshot {
     }
 
     /**
-     * PNG-encode this photo for sending off the client (e.g. the Discord death report's ride-photo
-     * image). Prefers the already-written disk PNG; otherwise encodes the live texture's pixels. Lazily
-     * reloads a released shot via {@link #texture()}. Returns {@code null} when no pixels are available
-     * or encoding fails — callers fall back to no/other image. Runs on the client thread (a small
-     * ≤640px PNG — cheap).
+     * JPEG-encode this photo for sending off the client (e.g. the Discord death report's ride-photo
+     * image). Local storage (disk/gallery) stays lossless PNG; this re-encodes to JPEG only for the
+     * network hop, since JPEG runs well under the packet's 1&nbsp;MB cap at 1080p where PNG does not.
+     * Lazily reloads a released shot via {@link #texture()}. Returns {@code null} when no pixels are
+     * available or encoding fails — callers fall back to no/other image. Runs on the client thread,
+     * only on the rare "send this run's photo" event (once per death / echo encounter), not per frame.
      */
-    public byte[] pngBytes() {
+    public byte[] photoBytes() {
         try {
-            if (diskPath != null) return Files.readAllBytes(diskPath);
+            NativeImage px;
+            if (diskPath != null) {
+                px = RideSnapshotDisk.read(diskPath);
+                if (px == null) return null;
+                try {
+                    return SnapshotJpegEncoder.encode(px);
+                } finally {
+                    px.close();
+                }
+            }
             if (liveTexture == null) texture(); // lazy reload if the texture was released
             if (liveTexture == null) return null;
-            NativeImage px = liveTexture.getPixels();
-            return px == null ? null : px.asByteArray();
+            px = liveTexture.getPixels();
+            return px == null ? null : SnapshotJpegEncoder.encode(px);
         } catch (Exception e) {
-            LOGGER.warn("[DungeonTrain] Ride snapshot PNG encode failed", e);
+            LOGGER.warn("[DungeonTrain] Ride snapshot JPEG encode failed", e);
             return null;
         }
     }

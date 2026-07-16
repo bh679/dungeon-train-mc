@@ -66,7 +66,7 @@ public final class RemoteEchoEncounters {
     /** Safety cap on deferred (awaiting-photo) posts. */
     private static final int MAX_PENDING_POST = 64;
 
-    private static final String PHOTO_FILENAME = "echo.png";
+    private static final String PHOTO_FILENAME = "echo.jpg";
     /** Embed bar colour for the encounter story — greyish-blue (Blue Grey), distinct from death-red. */
     private static final int EMBED_COLOR = 0x607D8B;
 
