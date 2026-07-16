@@ -4774,6 +4774,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "playermobs-0-78-upgrade",
+      "version": "0.464.0",
+      "type": "feat",
+      "title": "Smarter Player Mobs: firearms, fire escape, persistent orders",
+      "summary": "The bundled Player Mobs got a big upgrade. They can now wield modded firearms \u2014 muskets, pistols and the like \u2014 reloading and firing with the mod's own ammo. If one catches fire it drops everything to save itself: sprinting to nearby water, or dousing itself with a water bucket and picking it back up. Orders you give them (walk, greet, gift, steal\u2026) now stick until the job is done instead of being forgotten after a few seconds, and they'll fight or flee a threat mid-task then resume. You can also summon a Player Mob wearing a named player's skin via an NBT tag.",
+      "highlights": [
+        "Player Mobs can wield modded firearms (MusketMod) with real reload + ammo",
+        "Burning Player Mobs run for water or self-douse with a bucket",
+        "Orders persist until completed (were dropped after ~10s)",
+        "Summon a Player Mob in a named player's skin via NBT"
+      ],
+      "pr": 769,
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
