@@ -51,6 +51,13 @@ public final class DeathNoteTitleLocalization {
     private static final String ROOT = NarrativeContentLocale.ROOT;
     /** The instruction book whose title defines the trigger word: {@code random_books/deathnote}. */
     static final String INSTRUCTION_BOOK_SUFFIX = "/random_books/deathnote.json";
+    /**
+     * The most characters a player can type into a book title. Vanilla's book edit screen filters the
+     * title field with {@code p -> p.length() < 16} ({@code BookEditScreen#titleEdit}), so a title of
+     * 16+ characters can never be typed — a trigger derived from one would be unreachable. Any longer
+     * localized title is skipped (with a warning) rather than becoming a silent dead trigger.
+     */
+    static final int VANILLA_MAX_TITLE_CHARS = 15;
 
     /**
      * Every localized trigger title, normalized. Rebuilt wholesale on each reload and swapped in
@@ -122,6 +129,13 @@ public final class DeathNoteTitleLocalization {
         }
         String raw = obj.get("title").getAsString();
         if (raw == null || raw.isBlank() || raw.equalsIgnoreCase("Untitled")) return "";
+        // A title a player can't type is a dead trigger — warn loudly instead of shipping it silently.
+        if (raw.strip().length() > VANILLA_MAX_TITLE_CHARS) {
+            LOGGER.warn("[DungeonTrain] deathnote trigger: title \"{}\" exceeds {} chars — a player cannot"
+                    + " type it as a book title, so it is NOT a usable Death Note trigger. Shorten it.",
+                    raw, VANILLA_MAX_TITLE_CHARS);
+            return "";
+        }
         // "Deathnote" / "Death Note" (English base) reduce to the always-accepted form — nothing to add.
         return DeathNoteTitle.isDeathNoteTitle(raw) ? "" : DeathNoteTitle.normalize(raw);
     }
