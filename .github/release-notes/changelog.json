@@ -4740,9 +4740,9 @@
       ],
       "pr": 765,
       "date": "2026-07-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.464.0",
+      "released_at": "2026-07-16T05:48:40Z"
     },
     {
       "id": "playanimation-anticheat-whitelist",
@@ -4753,9 +4753,9 @@
       "highlights": [],
       "pr": 767,
       "date": "2026-07-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.464.0",
+      "released_at": "2026-07-16T05:48:40Z"
     },
     {
       "id": "multilingual-localization-8-languages",
@@ -4771,9 +4771,9 @@
       ],
       "pr": 768,
       "date": "2026-07-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.464.0",
+      "released_at": "2026-07-16T05:48:40Z"
     },
     {
       "id": "playermobs-0-78-upgrade",
@@ -4789,9 +4789,9 @@
       ],
       "pr": 769,
       "date": "2026-07-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.464.0",
+      "released_at": "2026-07-16T05:48:40Z"
     }
   ]
 }
