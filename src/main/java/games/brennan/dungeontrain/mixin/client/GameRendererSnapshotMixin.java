@@ -9,31 +9,24 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Drives the live-frame ride-snapshot grab around the real
- * {@code GameRenderer.renderLevel(DeltaTracker)}:
+ * Drives the off-screen ride-snapshot pass at the TAIL of
+ * {@code GameRenderer.render(DeltaTracker, boolean)} — after the live frame
+ * (world + GUI) has already been drawn to the main target this frame, but
+ * before it is blitted to the screen.
  *
- * <ul>
- *   <li>HEAD → {@link RideSnapshotCapture#beginLiveCapture} arms the
- *       third-person override for this frame (so the world is drawn from the
- *       snapshot pose by the normal render path);</li>
- *   <li>TAIL → {@link RideSnapshotCapture#finishLiveCapture} reads the
- *       just-rendered world back (before the GUI) and restores the view.</li>
- * </ul>
- *
- * <p>The actual pose is applied by {@code CameraCinematicMixin} on
- * {@code Camera.setup} (called between these two points) while the capture is
- * armed.</p>
+ * <p>{@link RideSnapshotCapture#runOffscreenCapture} then renders the world one
+ * extra time from the snapshot pose into a private off-screen target and reads
+ * it back, so the player's on-screen view is never disturbed (no flicker). The
+ * pose is applied by {@code CameraCinematicMixin} on {@code Camera.setup} during
+ * that extra {@code renderLevel} pass while the capture is armed.</p>
  */
 @Mixin(GameRenderer.class)
 public abstract class GameRendererSnapshotMixin {
 
-    @Inject(method = "renderLevel(Lnet/minecraft/client/DeltaTracker;)V", at = @At("HEAD"))
-    private void dungeontrain$beginRideSnapshot(DeltaTracker deltaTracker, CallbackInfo ci) {
-        RideSnapshotCapture.beginLiveCapture((GameRenderer) (Object) this, deltaTracker);
-    }
-
-    @Inject(method = "renderLevel(Lnet/minecraft/client/DeltaTracker;)V", at = @At("TAIL"))
-    private void dungeontrain$finishRideSnapshot(DeltaTracker deltaTracker, CallbackInfo ci) {
-        RideSnapshotCapture.finishLiveCapture((GameRenderer) (Object) this);
+    @Inject(method = "render(Lnet/minecraft/client/DeltaTracker;Z)V", at = @At("TAIL"))
+    private void dungeontrain$offscreenRideSnapshot(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
+        if (renderLevel) {
+            RideSnapshotCapture.runOffscreenCapture((GameRenderer) (Object) this, deltaTracker);
+        }
     }
 }
