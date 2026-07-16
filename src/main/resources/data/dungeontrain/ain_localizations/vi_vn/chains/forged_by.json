@@ -1,0 +1,98 @@
+{
+  "id": "adventureitemnames:forged_by",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "Rèn bởi",
+      "refs": [
+        {
+          "ref": "adventureitemnames:created_by",
+          "weight": 52.0
+        },
+        {
+          "ref": "adventureitemnames:hand_crafted_with_love",
+          "weight": 30.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " bởi ",
+      "newline": false,
+      "label": "Người",
+      "refs": [
+        {
+          "ref": "adventureitemnames:material_or_element",
+          "weight": 100.0
+        },
+        {
+          "ref": "adventureitemnames:names",
+          "weight": 258.0
+        },
+        {
+          "ref": "adventureitemnames:people",
+          "weight": 20.0
+        },
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 100.0
+        },
+        {
+          "ref": "adventureitemnames:title_combinations",
+          "weight": 100.0
+        }
+      ]
+    },
+    {
+      "chance": 0.25393516,
+      "connection": " tại ",
+      "newline": false,
+      "label": "Địa điểm",
+      "refs": [
+        {
+          "ref": "adventureitemnames:places",
+          "weight": 30.0
+        },
+        {
+          "ref": "adventureitemnames:the_place",
+          "weight": 50.0
+        }
+      ]
+    },
+    {
+      "chance": 0.12329957,
+      "connection": " từ ",
+      "newline": false,
+      "label": "Từ",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/item_material",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.1,
+      "connection": " cho",
+      "newline": false,
+      "label": "Chỉ dành cho",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/player_name",
+          "weight": 10.0
+        },
+        {
+          "ref": "adventureitemnames:people",
+          "weight": 20.0
+        },
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 150.0
+        }
+      ]
+    }
+  ]
+}

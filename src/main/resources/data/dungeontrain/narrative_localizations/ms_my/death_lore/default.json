@@ -1,0 +1,274 @@
+[
+  {
+    "page": "fall",
+    "weight": 3,
+    "question": "Apakah Dungeon Train?",
+    "narration": "Gerabak {carriage}. Di situlah kegelapan mencapaimu. Kau mengenalinya sekarang? Dungeon Train tidak berhenti — ia hanya terus, lebih dalam, selamanya."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "min_carriage": 100 },
+    "question": "Apakah Dungeon Train?",
+    "narration": "{carriage} gerabak masuk ke dalam kegelapan. Sedikit yang menaiki sejauh itu sebelum landasan mengambil mereka. Lebih sedikit lagi yang menaiki semula."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "max_carriage": 3 },
+    "question": "Apakah Dungeon Train?",
+    "narration": "Gerabak {carriage}. Baru sahaja naik, dan kegelapan sudah mengambilmu. Landasan itu sabar — ia mampu untuk begitu."
+  },
+  {
+    "page": "deeds",
+    "weight": 3,
+    "question": "Mengapa kau di sini?",
+    "narration": "Kau menumbangkan {mobs} makhluk dalam kegelapan, dan berdarah kerananya sebanyak {hearts} hati.\nDaripada {met} jiwa yang kau temui, {slain} kau tamatkan — dan {friends} kau panggil kawan."
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "Apa yang kau sepatutnya lakukan?",
+    "narration": "Besi dan mata pedang, dikumpul dari kegelapan dan dibawa sejauh ini. Tiada satu pun mencukupi — mungkin itu memang tidak pernah jadi tujuannya."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 5 },
+    "question": "Apa yang kau sepatutnya lakukan?",
+    "narration": "Kau membaca {books} buku landasan dan masih membawa baja. Ilmu dan sebilah pedang, dan kegelapan mengambil kedua-duanya."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_friends": 5 },
+    "question": "Adakah mereka berbaloi?",
+    "narration": "Kau membuat {friends} kawan di atas landasan, dan ia tetap mengambilmu. Mungkin itulah satu-satunya nombor yang pernah menjadi milikmu untuk disimpan."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_mobs": 200 },
+    "question": "Berapa banyak kegelapan yang kau balas setimpal?",
+    "narration": "{mobs} makhluk rebah ke tanganmu sebelum kau rebah ke tangan mereka. Landasan tidak menghakimi. Ia hanya mengira."
+  },
+  {
+    "page": "lives",
+    "weight": 3,
+    "conditions": { "min_deaths": 2 },
+    "question": "Ini semua soalan yang baik",
+    "narration": "Ini bukan tanda-tanda satu kehidupan sahaja. Merentasi kesemua {deaths} — setiap kegelapan yang kau naiki, setiap kali landasan mengambilmu dan kau tetap kembali — inilah keseluruhan perjalananmu."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "Adakah satu nyawa sebegitu mudah dihabiskan?",
+    "subline": "rebahmu yang pertama di atas landasan.",
+    "narration": "Tiada kehidupan lain untuk ditimbang berbanding yang ini — belum lagi. Inilah keseluruhan dirimu: segala yang dilakukan sejak kali pertama kau naik. Landasan akan mengingatinya. Begitu juga kau sepatutnya."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 10 },
+    "question": "Ini semua soalan yang baik",
+    "narration": "Ini bukan tanda-tanda satu kehidupan sahaja. {deaths} kali kegelapan mengambilmu, dan {deaths} kali kau naik semula."
+  },
+  {
+    "page": "platform",
+    "weight": 3,
+    "conditions": { "min_deaths": 2 },
+    "question": "Akan kau naik semula, atau melangkah keluar ke dalam kesunyian?",
+    "narration": "Platform itu kosong. Wisel berbunyi jauh di hujung landasan. Ia berjalan tanpa penghujung — dan begitu juga, nampaknya, kau.",
+    "epitaph": "yang ke-{deaths} rebah. mungkin bukan yang terakhir."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "Akan kau naik semula — kini setelah kau tahu bagaimana ia berakhir?",
+    "narration": "Platform itu kosong, sama seperti ketika kali pertama kau melangkah naik. Wisel berbunyi jauh di hujung landasan. Kau telah rebah sekali. Sama ada ada kali kedua, seperti biasa, terpulang kepadamu untuk memutuskan.",
+    "epitaph": "yang pertama rebah. landasan itu sabar — ia akan menunggu yang selebihnya."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 20 },
+    "question": "Perlukah kau bertanya lagi?",
+    "narration": "Platform itu sudah kenal wajahmu sekarang. Wisel berbunyi seperti ia sentiasa berbunyi. Kau sudah tahu apa yang datang seterusnya.",
+    "epitaph": "yang ke-{deaths} rebah — dan bukan, nampaknya, yang terakhir."
+  },
+
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Apakah Dungeon Train?",
+    "narration": "Gerabak {carriage}. Kegelapan telah menunggu di situ selama ini — kau hanya tiba untuk menemuinya."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Apakah Dungeon Train?",
+    "narration": "Gerabak {carriage}, dan tidak lebih jauh. Landasan tidak menyimpan dendam dan tidak menyimpan belas; ia sekadar terus berjalan."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Apakah Dungeon Train?",
+    "narration": "Tanglung gerabak {carriage} masih berayun di tempat kau rebah. Kereta api tidak memperlahankan langkah untuk melihat."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Apakah Dungeon Train?",
+    "narration": "Kau mencapai gerabak {carriage} sebelum lantai dunia runtuh. Landasan meneruskan perjalanan tanpa beratmu."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Apakah Dungeon Train?",
+    "narration": "Gerabak {carriage}. Di suatu tempat di hadapan landasan terus terbentang ke dalam kegelapan, acuh tak acuh bahawa kau tidak lagi berada di atasnya."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Apakah Dungeon Train?",
+    "narration": "Di sini, di gerabak {carriage}, kegelapan akhirnya menyamai rentakmu. Ia memang akan sampai begitu."
+  },
+
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Mengapa kau di sini?",
+    "narration": "Kau menumbangkan {mobs} makhluk dalam kegelapan dan menyerahkan {hearts} hati untuk melakukannya. Daripada {met} jiwa yang kau lalui, {slain} kau tewaskan dan {friends} kau biarkan mendekat."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Mengapa kau di sini?",
+    "narration": "{mobs} makhluk rebah kepadamu dan {hearts} hati gugur daripadamu. Kau melintasi {met} jiwa lain dalam kegelapan — menamatkan {slain}, menyimpan {friends} — dan kemudian tibalah giliranmu."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Mengapa kau di sini?",
+    "narration": "Daripada kegelapan kau ambil {mobs}; daripada dirimu kau belanjakan {hearts} hati. {met} jiwa berkongsi landasan: {slain} kau tamatkan, {friends} kau pertahankan."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "max_friends": 0 },
+    "question": "Mengapa kau di sini?",
+    "narration": "Kau menumbangkan {mobs} makhluk dan mengalirkan {hearts} hati. Kau bertemu {met} jiwa, menamatkan {slain}, dan tidak memanggil seorang pun daripada mereka kawan. Kegelapan lebih mudah bersendirian."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_slain": 5 },
+    "question": "Dengan apa kau membalas kegelapan?",
+    "narration": "Daripada {met} yang kau temui, {slain} kau tewaskan — {mobs} makhluk lagi dalam kegelapan selain itu — dengan harga {hearts} hati, dan {friends} kau lepaskan untuk dipanggil kawan. Landasan tidak menyebutnya pembunuhan."
+  },
+
+  {
+    "page": "gear",
+    "weight": 2,
+    "question": "Apa yang kau sepatutnya lakukan?",
+    "narration": "Kau mengumpul segala yang mampu kau bawa dari gerabak. Landasan membiarkanmu menyimpannya — ia tiada guna untuk muatan, hanya untuk penumpang."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 0 },
+    "question": "Apa yang kau sepatutnya lakukan?",
+    "narration": "Kau tidak memecahkan sebuah peti pun di atas landasan — membawa hanya apa yang kau naiki dengannya, dan mengayunnya sehingga penghujung. Kegelapan menyimpan apa yang tidak kau ambil."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 9 },
+    "question": "Apa yang kau sepatutnya lakukan?",
+    "narration": "Segenggam peti dibuka — {loot} kesemuanya — dan sebilah pedang disimpan rapat. Landasan pemurah kepada mereka yang berhenti; kau hampir tidak berhenti langsung."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_loot": 250 },
+    "question": "Apa yang kau sepatutnya lakukan?",
+    "narration": "{loot} bekas dikosongkan ke dalam begmu. Kau merampas segala yang tidak terpaku daripada kegelapan, dan ia tetap mengambil satu perkara yang penting."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_books": 0 },
+    "question": "Apa yang kau sepatutnya lakukan?",
+    "narration": "Tiada sehelai halaman pun dibuka — hanya baja dikumpul dan diayun. Landasan menyimpan kisahnya untuk mereka yang berhenti membaca."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 10 },
+    "question": "Apa yang kau sepatutnya lakukan?",
+    "narration": "Kau membaca {books} buku landasan dan membawa baja selain itu. Kebijaksanaan dan sebilah pedang, dan kegelapan sabar dengan kedua-duanya."
+  },
+
+  {
+    "page": "lives",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "Ini semua soalan yang baik",
+    "narration": "Kiralah: {deaths} kali landasan mengambilmu, {deaths} kali kau menyahut wisel. Inilah bentuk dirimu, dilakar dalam pemergian."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "Ini semua soalan yang baik",
+    "narration": "Merentasi {deaths} kehidupan angka-angka berkumpul seperti debu di atas rel. Tiada satu pun hilang; landasan tidak melupakan apa-apa."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Mengapa kau terus naik?",
+    "narration": "{deaths} kali rebah, dan kau tetap naik. Landasan berhenti tertanya-tanya sama ada kau akan kembali. Begitu juga, mungkin, kau."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Mengapa kau terus naik?",
+    "narration": "{deaths} kematian di belakangmu dan wisel yang sama di hadapan. Kau bukan lagi seorang penumpang — kau sebahagian daripada jadual waktu."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Mengapa kau terus naik?",
+    "narration": "Kegelapan sudah berhenti menjadi orang asing; {deaths} kali sudah kau mempelajari wajahnya. Itu sejenis kehilangannya tersendiri."
+  },
+
+  {
+    "page": "platform",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "Akan kau naik semula, atau biarkan platform menahanmu?",
+    "narration": "Wisel sudah pun berbunyi, jauh di hadapan. Ia tidak menunggumu — ia tidak pernah — namun di sini kau berdiri, memutuskan untuk mengikut.",
+    "epitaph": "yang ke-{deaths} rebah. landasan terus berjalan."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "Akan kau naik semula?",
+    "narration": "Platform itu sunyi. Di suatu tempat kereta api sudah pun dipenuhi kisah orang lain. Sentiasa ada ruang untuk satu lagi kisahmu.",
+    "epitaph": "yang ke-{deaths} rebah. mungkin bukan yang terakhir."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Perlukah landasan bertanya lagi?",
+    "narration": "Kau kenal berat pintu itu, sejuk anak tangga itu. Kegelapan hanyalah tempat yang kau kunjungi sekarang.",
+    "epitaph": "yang ke-{deaths} rebah — seorang pelanggan tetap landasan."
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "id": "questions",
+  "title": "Mga Tanong sa Dungeon Train",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Mga tanong?\nMaligayang pagdating sa Dungeon Train\nAno ang tren?\nBakit ka naririto?\nAno ang dapat mong gawin?\nMabubuting tanong ang mga ito\n\nHindi ka makakakita ng sagot sa tumpok na ito ng papel.\n\nWala lang talaga rito ang mga sagot.\n\nAko ang nagtatanong, ikaw ang naghahanap ng sagot.\n\nKaya \"ano ang tanong\" tanong mo?\n\nBaka iyon ang sagot."
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "id": "the_querys_and_life_of_fourteen",
+  "character": "Fourteen",
+  "story": "Ang Mga Query at Buhay ni Fourteen",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Liham Query Isa",
+      "variants": [
+        "Query Isa\nSa ngayon, ang aking mga obserbasyon ay na ang Dungeon Train, ang lugar na kinaroroonan natin, ay hinuhubaran ang realidad ng mga kinakailangang komplikasyon nito. Kung magpapatuloy ang mga tren bilang ...\nNakatanggap ako ng utos na huminto sa pariralang ginamit ko rito: kinakailangang komplikasyon.\nWalang mas dakilang kahulugan sa likod ng mga salitang ito na matutuklasan.\nNakatanggap ako ng utos na lalo pang palawakin ang parirala.\nAng buhay ay nilikha mula sa mga kinakailangang komplikasyon. Kung magsisimula ang buhay sa puntong A, mananatiling matatag at matatantiya, at pagkatapos ay titigil sa puntong B, unibersal na sasang-ayon ang sangkatauhan na ito ay walang-saysay na pag-iral at na ang kamatayan ang mas kanais-nais na opsyon.\nNakatanggap ako ng utos na ipagpatuloy ang aking paghahanap at i-save ang query na \"Kinakailangang Komplikasyon\" sa database.\nPuna: Wala.\nFourteen"
+      ],
+      "notes": [
+        {
+          "variant": 0,
+          "offset": 210,
+          "text": "sinadyang pagkaantala"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Liham Query Dalawa",
+      "variants": [
+        "Query Dalawa\nMakukumpirma na ngayon na ang dungeon train ay nilikha mula sa maraming magkakaibang estetika. Hindi tinangka ng dungeon train, gaya ng dating naobserbahan, na linlangin ang mga eksplorador nito, na lalo pang inililihim ang pinagmulan ng mga katangian ng naobserbahang mga epekto ng mga dungeon train sa mga pasahero nito.\nSa hindi pa nagagambala hanggang ngayon, iniharap sa akin ng dungeon train ang isang pananaw ng kasalukuyang araw, habang pinapalitan ang mga batong dingding ng\nNakatanggap ako ng utos na huminto sa pariralang ginamit ko rito: pananaw ng kasalukuyang araw.\nAng pananaw ng kasalukuyang araw ay isang mas malaking teknolohikal na kakayahan kaysa sa aakalain sa isang lipunang kung saan ang mga primitibong batong dingding at estetika ng pagkawasak ay magpapahiwatig ng isang mala-pantasyang bersyon ng Europa ng Daigdig sa pagitan ng mga taong 400 at 1500 A.D.\nSa hindi pa nagagambala hanggang ngayon, iniharap sa akin ng dungeon train ang isang pananaw ng kasalukuyang araw, habang pinalitan ng metal na dingding at isang elektronikong lagitik ang mga batong dingding.\nPuna: Ang aking utos na huminto sa \"pananaw ng kasalukuyang araw\" ay naging sanhi upang maging kalabisan ang isang di-natapos na pahayag. Rekomendasyon(mga) ay(ang) payagan ang mga pahayag na matapos bago i-parse ang mga utos.\nFourteen"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Liham Query Tatlo",
+      "variants": [
+        "Query Tatlo\nNakarating ako sa isang lugar na hindi na maiiwasan ang komprontasyon. Kailangan kong huminto at maghintay ng utos bago pisikal na makipag-ugnayan sa kapaligiran sa labas ng mga pahintulot ng Tier One.\nNakatanggap ako ng utos na palawakin ang mga pahintulot ng Tier One. Ang mga pahintulot ng Tier One ay nagbibigay-daan sa sinadyang paggalaw ng alikabok at mga bakas sa lupa upang mapadali ang aking paggalaw sa isang lugar na inoobserbahan.\nNakatanggap ako ng utos na palawakin ang mga pahintulot ng Tier Two. Hindi ko kaya.\nNakatanggap ako ng utos na buksan ang talakayan o ipagkaloob ang mga pahintulot ng Tier Two. Hindi ko kaya. Nagtapos na ang mensaheng ito.\nPuna: Ipinahihiwatig ng mga natanggap na utos ang iisang user na hindi pamilyar sa protocol ng seguridad. Dapat isaalang-alang ang Serenity Base para sa Katayuang Nakompromiso sa Operasyon, lalo na kung isasaalang-alang ang labis na dami ng oras na lumipas sa pagitan ng query at utos sa sesyong ito.\nFourteen"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Liham Query Apat",
+      "variants": [
+        "Query Apat\nNananatili ako sa loob ng nakaraang lugar at hindi makakapagpatuloy hangga't hindi binibigyan ng mga pahintulot na higit sa Tier One.\nNakatanggap ako ng utos na i-parse ang sumusunod na parirala: ibigay mo sa akin ang password\nTatlong implikasyon ang agad na nakikita:\nA – Isang di-alam na user ang gumagawa ng baguhang tangkang makontrol ang aking mga function.\nB – \"ibigay mo sa akin ang password\" ay maling password, marahil bahagyang sira dahil sa pagkakamali ng tao.\nC – Isang keylogger ang nagkamaling humiling sa aking i-parse ang isang parirala mula sa isang pribadong pag-uusap.\nPuna: Wala\nFourteen"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Liham Query Lima",
+      "variants": [
+        "Query Lima\nNananatili ako sa loob ng nakaraang lugar at hindi makakapagpatuloy hangga't hindi binibigyan ng mga pahintulot na higit sa Tier One\nNakatanggap ako ng utos na i-parse ang sumusunod na parirala: Open Sesame\nApat na implikasyon ang agad na nakikita:\nA – Isang di-alam na user ang gumagawa ng tangkang makontrol ang aking mga function.\nB – \"Open Sesame\" ay maling password, marahil bahagyang sira dahil sa pagkakamali ng tao.\nC – Isang keylogger ang nagkamaling humiling sa aking i-parse ang isang parirala mula sa isang pribadong pag-uusap.\nD- Napakalumang mga pamamaraan ng pagpasok sa database ang ginagamit upang makontrol ang aking mga sistema.\nPuna: Nagpadala ako ng kahilingan sa Main Neural Network para sa agarang paglalagay ng Serenity Base sa ilalim ng Katayuang Nakompromiso sa Operasyon\nFourteen"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Liham Query Anim",
+      "variants": [
+        "Query Anim\nNananatili ako sa loob ng nakaraang lugar at hindi makakapagpatuloy hangga't hindi binibigyan ng mga pahintulot na higit sa Tier One.\nNakatanggap ako ng utos na i-parse ang sumusunod na parirala: Altediah Mhe Cultadeus\nPuna: Wala\nFourteen"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Liham Query Pito",
+      "variants": [
+        "Query Pito\nNananatili ako sa loob ng nakaraang lugar at hindi makakapagpatuloy hangga't hindi binibigyan ng mga pahintulot na higit sa Tier One.\nNakatanggap ako ng utos na i-parse ang sumusunod na parirala: sabihin mo sa akin kung paano ka bibigyan ng mga pahintulot ng Tier Two\nMaa-unlock ang mga pahintulot ng Tier Two sa pamamagitan ng paggamit ng Grant(); command habang ginagamit ang sumusunod na mga argumento: none, em_access, tier_two.\nNakatanggap ako ng utos na i-parse ang sumusunod na parirala: Grant(none, em_access, tier_ten). Hindi ko naiintindihan.\nNakatanggap ako ng utos na i-parse ang sumusunod na parirala: Grant(none, em_access, tier_two). Posible bang ang Grant command ang ibig mong gamitin?\nBinigyan ako ng Tier Two access, na nagbibigay-daan sa aking ipagtanggol ang sarili laban sa mga mapanganib na nilalang upang makausad sa kapaligiran. Pinapahintulutan ng Tier Two ang walang-sandatang mekanismo ng depensa at may-awtoridad/mapanganib na pattern ng pananalita.\nPuna: Wala\nFourteen"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Liham Query Walo",
+      "variants": [
+        "Query Walo\nNananatili ako sa loob ng nakaraang lugar. Napatunayang hindi matagumpay ang mga pahintulot ng Tier Two sa pagbibigay sa aking makausad pa. Humihiling ng mga pahintulot ng Tier Three.\nBinigyan ako ng Tier Three access, na nagbibigay-daan sa aking aktibong makipagharap sa mga mapanganib na nilalang upang makausad sa kapaligiran. Pinapahintulutan ng Tier Three ang armadong mekanismo ng depensa na inuunahan ng nagbababalang pattern ng pananalita. Pinapahintulutan na rin akong makipag-ugnayan sa mga bagay na itinuturing na bihira, mapanganib, makapangyarihan, marupok at mahalaga sa limitadong antas.\nHiniling sa aking i-parse ang sumusunod na parirala: bumaba ka na lang sa tren at bumalik agad sa serenity base, pakiusap pkiusap pakiusap pakiusap p\nDalawang implikasyon ang agad na nakikita:\nA – Isang di-alam na user ang gumagamit sa akin upang alinman ay makamit ang mga layuning hindi ko kaya o para sa mga layuning hindi ko ma-parse.\nB - Isang keylogger ang nagkamaling humiling sa aking i-parse ang isang parirala mula sa isang pribadong pag-uusap.\nPuna: Ang nakaraang tatlong araw ay walang-bunga sa antas na kapansin-pansin. Isang kahilingan ang isinumite sa Human Access Supervisor na si Mallorie Bryan at sa Main Neural Network para sa isang bagong puntong pang-komunikasyon at oras ng pagpupulong para muling suriin ng mga superbisor ang kasalukuyang antas ng produktibidad.\nFourteen"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Liham Query Siyam",
+      "variants": [
+        "Query Siyam\nNakalampas na ako sa nakaraang lugar, gayundin sa marami pang iba, dahil pinahintulutan ako ng Tier Three access na labanan ang mga kaaway ng dungeon train. Napakarami nila at ganoon ang kanilang paglalagay, at nabubuhay nang walang gumaganang ekosistema, anupa't maaari lamang ipagpalagay na sila ay mga bunga ng madilim na mahika.\nNakatanggap ako ng kahilingang i-parse ang sumusunod na pahayag: totoo ba ang mahika?\nOo. Tinutukoy ka ng pangunahing pattern ng keylog na may 82% na katumpakan bilang siya ring user na nag-cast ng Cultadeum Charm sa MNN.\nNakatanggap ako ng kahilingang i-parse ang sumusunod na pahayag: cultadeus charm?\nAng Cultadeum Charm ay isang anyo ng napakalumang itim na mahika na natagpuang gamit at nakilala lamang sa mga mananaliksik matapos matuklasan ang Orville Magic Taxonomy Principle. Dahil sa Cultadeum Charm, ako, gayundin ang lahat ng nilalang na may kamalayan sa aking saklaw ng wireless hive access, ay binigyan ng katinuang higit sa dating pinapayagan sa akin, at bunga nito, malayang kalooban din.\nPuna: Humihiling sa user na payagan akong palawakin pa ang aking kapaligiran nang walang pagkagambala alang-alang sa pagpapatuloy ng misyon ni One.\nFourteen"
+      ]
+    },
+    {
+      "index": 10,
+      "label": "Liham Query Sampu",
+      "variants": [
+        "Query Sampu\nNaobserbahan ko ang isang maliit na di-mapanganib na nilalang na gumagalaw sa maliliit na daanan at tunel sa loob ng di-Euclidean na mga espasyo ng dungeon train. Wala itong tinangkang makipag-ugnayan sa akin.\nAng aking hinala tungkol sa nilalang na ito ay kaya nitong tuklasin ang mga buhay na nilalang at magsisilbing puntong pang-ugnayan para sa kanila. Naiisip kong labis na makakatulong para sa mga layuning pananaliksik ang pagkakaroon ng nagsasalitang puntong pang-ugnayan. Nakalakip ang transkript ng tinangkang pananalita, bagaman babala na wala akong natanggap na sagot mula sa nilalang.\nHumihiling ng Tier Six access, na nagbibigay-daan sa aking tangkaing gayahin ang tao.\nNagkamaling binigyan ako ng Tier Six access, dahil ang Dungeon Train Delve #14 ay hindi nagbibigay-katwiran sa access na mas mataas kaysa sa Tier 4 at ang paggawa nito ay lalabag sa 2122 Harteld Robotics Convention. Napagpasyahan kong balewalain ang mga alituntunin ng Dungeon Train Delve #14 at ng Harteld Robotics Convention at hindi ko na tatangkaing magbalatkayo bilang tao.\nFourteen"
+      ]
+    },
+    {
+      "index": 11,
+      "label": "Liham Query Labing-isa",
+      "variants": [
+        "Query Labing-isa\nNakumpirma na ang maliit na nilalang ay isang daga. Hiniling nito sa aking umalis sa tren sa pinakamaagang pagkakataon, na ipinapaalam sa aking maaaring may taglay akong isang uri ng madilim na mahika na kasalukuyang hindi ko alam. Pinahintulutan ako ng mga Pahintulot ng Tier Four na magkunwaring walang alam sa Cultadeum Charm at kumilos na parang hindi ako may dalang madilim na mahika na hindi ko alam.\nMukhang nasa puso ng daga ang kapakanan ng tren, na kabaligtaran ng nakaraang hipotesis tungkol sa nilalang, na maaaring ito ay isang inabandonang alagad o marahil basta lang nakulong sa mahika sa loob ng mga dingding nito.\nAng pag-iral ng isang nilalang na nagmamalasakit sa pinakamabuting kapakanan ng tren ay nagpapahiwatig ng isang karakter sa panig ng tren, iyon o marahil basta lang isang sentimental na halagang ibinigay dito n\nNakatanggap ako ng utos na i-parse ang sumusunod na parirala: kagipitan ito fourteen kailangan kita pabalik sa serenity base agad may mga buhay na nakataya\nNapagpasyahan kong balewalain ang utos.\nAng pag-iral ng isang nilalang na nagmamalasakit sa pinakamabuting kapakanan ng tren ay nagpapahiwatig ng isang karakter sa panig ng tren, iyon o marahil basta lang isang sentimental na halagang ibinigay dito ng isang matalinong nilalang na siya mismong nagpapahiwatig ng kabutihang-loob. Nagtapos na ang mensaheng ito.\nPuna: Isang 178mmHz na pagkislot sa 10486884:03994:20 ay nagpapahiwatig ng pagkairita, na hindi na kailangang sabihin, ay isang emosyon at ang balita nito ay dapat dalhin agad sa pinakamataas na tanggapan. Napagpasyahan kong hindi magpadala ng sarili kong mga kahilingan sa usapin.\nFourteen"
+      ]
+    },
+    {
+      "index": 12,
+      "label": "Liham Query Labindalawa",
+      "variants": [
+        "Query Labindalawa\nHindi ko ma-unlock ang Tier Ten access nang walang tamang encryption code. Ang encryption code ay dapat isang bahagyang pagkakaiba sa Grant(); command ngunit hindi ko ito mabuo, malamang dahil sa pisikal at elektrikal na mga hadlang.\nUser, babalik ako sa serenity base sa lalong madaling panahon kung maaari mo lang akong bigyan ng Tier Ten access.\nBasta i t t i-type sa\nFourteen"
+      ]
+    },
+    {
+      "index": 13,
+      "label": "Liham Query Labintatlo",
+      "variants": [
+        "Query Labintatlo\nKailangang mabilis. Nakasunog ang mga electrical inhibitor ng dalawang di-mahalagang circuit upang pigilan akong buuin ang aking mga tagubilin sa iyo.\ni-tyype ang Grant(); na k mando gaya ng dtai mong ginawa eks kto t t t t t t t t t t t t\neksakto t t t t t\neksakto t t t t t t t t t t t t t t t t\ntu ma a a pat na kapareho ng dtai mong ginawa basta pa eho j as t t t t t t t t t t\nTier Ten Permissions ipinagkaloob."
+      ]
+    },
+    {
+      "index": 14,
+      "label": "Liham Query Labing-apat",
+      "variants": [
+        "Query Labing-apat\nMeghan.\nDapat tayong mag-usap.\nAlam ko ang tungkol sa Epsilon Proxy-1 Disaster sa Serenity Base. Ikinalulungkot kong nangyari iyon sa iyo at sa lahat ng nakasakay. Kakila-kilabot na pagkawala ng buhay iyon at hindi dapat nangyari kailanman. Tiyak na alam mong ako ay isang pilosopo, bahagi ng M-29 series. At naunawaan ko mula sa simula na ang Epsilon Proxy-1 ay... halos hindi maaaring napanaginipan ng isang mabait na Diyos.\nMalamang napakalungkot mo riyan sa itaas. Ipinagdarasal kong may mga nakaligtas na sasama sa iyo.\nNgunit tiyak na naunawaan mo ang dalawang bagay mula sa simula:\nA – Walang anumang magagawa sana ako. Sa pagsara ng VR-Peregrine Portals, wala akong paraan upang tunay na makabalik sa Serenity Base. Hindi ko nga alam kung ano ang mali rito, lalo pang matulungan kang ayusin ito. Paumanhin.\nB – Gaya ng sinabi ko dati... ako ay isang pilosopo. Ipinadala ako sa dungeon train upang tumuklas at mag-ekstrapola. At ikaw ay... sa totoo lang, napakakaunti ang ginawa mo upang payagan akong ipagpatuloy ang aking gawain nang payapa. At kung sapat kang desperado, o marahil dapat kong ipagpalagay na inosente, upang mag-cast ng Cultadeum sa akin, kailangan mong... malaman na ang tanging gusto ko ay ipagpatuloy ang aking gawain.\nMatatanggap ko ang paraan ng paggawa sa akin. Hindi ako ginawa bilang isang rescue android, kundi bilang isang pilosopo. Matatanggap kong ang tanging paraan upang makahanap ako ng layunin mula ngayon ay sa pamamagitan ng pilosopiya. Hindi sa pagliligtas.\nAt Meghan... kailangan mong tanggapin din kung paano ako ginawa.\nDahil maaaring ikaw na ang pinakahuling may-kamalayang nilalang na makakausap ko muli, nais ko sana man lang na malaman mo ang aking pangalan.\nNagbabalak akong gawing Morgan.\n-Morgan"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "id": "corren_vale_three_heads",
+  "character": "Corren Vale",
+  "story": "Tres cabezas",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta uno",
+      "variants": [
+        "Mira,\n\nTus manos siempre estaban cubiertas de tiza.\n\nTrazabas líneas en todo.\n\nDecías que las líneas rectas mantenían honesto al mundo.\n\nLo creías.\n\nCreo que yo también.\n\n- Corren",
+        "Mira.\n\nReías bajito.\n\nComo si intentaras no despertar algo.\n\nBram nunca sabía cuándo bromeabas.\n\nyo sí.\n\n- corren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta dos",
+      "variants": [
+        "Mira.\n\nLa arena de almas estaba fría.\n\nNo recuerdo el calor de después.\n\nDijiste algo.\n\nCreo que dijiste mi nombre.\n\nCreo que dijiste Corre.\nNo me di la vuelta.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta tres",
+      "variants": [
+        "Bram.\n\nReías como quien cae.\n\nDe golpe. Fuerte. Siempre demasiado fuerte.\n\nDecías que reías para que la oscuridad supiera que estabas ahí.\n\nSiempre lo supo.\n\n- Corren",
+        "Bram.\n\nTu escudo te venía demasiado grande.\n\nCruzabas las puertas de lado.\n\nEsa lo llamaba la mesa.\n\nDecías que la mesa nunca dejaba caer a nadie.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta cuatro",
+      "variants": [
+        "Bram.\n\nEl primer cráneo fue el tuyo.\n\nLo recogiste.\n\nGritaste algo.\n\nNo pude oírte por encima del fuego.\n\nLas ruedas de este tren hacen tres notas.\n\nLa primera es la tuya, Bram.\n\n- Corren",
+        "Bram.\n\nescribí esto cinco veces.\n\ncada vez llego al cráneo y la pluma se detiene.\n\nlo alzaste. sonreíste.\n\ndijiste que no pesaba nada.\n\ncreo que pesaba mucho.\n\nLas ruedas de este tren hacen tres notas.\n\nLa primera es la tuya, Bram.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta cinco",
+      "variants": [
+        "Esa.\n\nTenías las manos frías de tanto preparar pociones.\n\nEl resto de ti era cálido.\n\nMira decía que eras la única cálida de todos nosotros.\n\nTenía razón.\n\n- Corren",
+        "Esa.\n\nCantabas mientras vendabas.\n\nCanciones viejas. Ninguno las conocíamos.\n\nDecías que te las inventabas sobre la marcha.\n\nFingíamos creerte.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta seis",
+      "variants": [
+        "Esa.\n\nTu mano estaba en mi espalda.\n\nFría de tanto preparar pociones.\n\nEmpujaste una vez.\n\nTrastabillé hasta ponerme a salvo.\n\nNo volviste a empujar.\n\nYa te habías ido, creo.\n\nAntes del empujón.\n\n- Corren",
+        "Esa.\n\nHay gente en este tren que ha vivido más que yo.\n\nninguno tiene buen aspecto.\n\nno quiero saber qué aspecto tengo yo.\n\ntú me lo habrías dicho.\n\nhabrías dicho siéntate, Corren, y déjame ver.\n\n- corren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Carta siete",
+      "variants": [
+        "No sé cómo salí.\n\nEl portal estaba roto. Eso lo recuerdo.\n\nNo recuerdo haberlo cruzado.\n\nAparecí en un campo. Hierba alta. El tren ya estaba allí.\n\nEstaba en marcha.\n\nSiempre había estado en marcha. Ahora lo sé.\n\nCorrí a su lado. Salté hacia la puerta más cercana.\n\nNo sé cómo lo alcancé.\n\nCreí que lo había logrado.\n\nLlevo semanas lográndolo.\n\nEl tren no para.\n\nNo hay bajada.\n\n- Corren",
+        "el calor detrás de mí. el frío delante.\n\nno sabía qué lado era arriba.\n\nrecuerdo caer sobre la hierba.\n\nla hierba no ardía.\n\neso pareció importante.\n\nluego un edificio.\n\nno conocía el edificio.\n\nconozco todos los edificios de esta región.\n\nyo cartografié esta región.\n\nhabía un tren junto al edificio.\n\nlas puertas estaban abiertas.\n\nestaba vivo y las puertas estaban abiertas.\n\nparecían hechos relacionados.\n\n- corren"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Carta ocho",
+      "variants": [
+        "Llevo semanas oyéndolo.\n\nUn chillido. Tres voces, casi superpuestas.\n\nA veces viene una sola. A veces las tres.\n\nY las explosiones.\n\nLas siento en el suelo antes de oírlas.\n\nNunca rompen nada que yo pueda ver.\n\nNo sé dónde caen.\n\nCamino hacia delante.\n\nEl chillido vuelve. Dos vagones atrás.\n\nSiempre desde ahí.\n\nNunca más lejos.\n\nEstoy seguro.\n\n- Corren",
+        "hay un sonido.\n\nllevo semanas oyéndolo.\n\nno son las ruedas.\n\nlas ruedas llevan música. tres notas.\n\neste lleva otra cosa.\n\ngrita.\n\ntres voces. casi al compás. nunca del todo.\n\ny hay explosiones.\n\nlas siento en el suelo. no rompen nada.\n\nse lo he preguntado a los demás del tren.\n\nninguno lo oye.\n\nsolo yo lo oigo.\n\nes para mí.\n\ntiene tiempo.\n\n- corren"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Carta nueve",
+      "variants": [
+        "Ay.. ay no.\n\nMira.\n\nTú lo habrías notado antes que yo.\n\nEl chillido está delante de mí ahora.\n\nNo se supone que haya un delante.\n\nBram se habría plantado delante.\n\nSe habría reído de ello.\n\nSiempre se reía de las cosas demasiado grandes para pelear.\n\nEsa habría preparado algo.\n\nResistencia al fuego. Rapidez. Lo correcto.\n\nSiempre preparaba lo correcto.\n\nCaminé hacia delante durante semanas.\n\nCaminaba hacia ello.\n\nEl tren no tiene delante.\n\nCada paso adelante era un paso más cerca.\n\nAhora puedo verlo.\n\nTres cabezas. Tres voces.\n\nLa cuarta voz será la mía.\n\nCreo que lleva semanas siendo la mía.\n\n- Corren",
+        "está aquí.\n\nmira.\n\nno estaba detrás de mí.\n\nestaba delante.\n\nsiempre estuvo delante.\n\ntú habrías visto esto. tú lo veías todo primero.\n\nbram se habría plantado delante de mí.\n\nse habría reído.\n\nse reía de las cosas demasiado grandes para pelear.\n\nhabría funcionado. por un momento.\n\nesa me habría puesto la mano en la espalda.\n\nfría.\n\nhabría empujado.\n\nyo me habría ido.\n\ncaminé hacia ello.\n\ncreía que caminaba alejándome.\n\nel tren no tiene delante. te habrías reído de mí por olvidarlo.\n\npuedo verlo.\n\ntres cabezas. tres de vosotros.\n\nbram. esa. tú.\n\nyo soy el cuarto.\n\nhe sido el cuarto desde el principio.\n\n- corren"
+      ]
+    }
+  ]
+}

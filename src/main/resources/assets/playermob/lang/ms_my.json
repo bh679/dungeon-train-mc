@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "Pemain",
+  "item.playermob.player_mob_spawn_egg": "Telur Jelma Pemain",
+  "item.playermob.player_mob_aggressive_spawn_egg": "Telur Jelma Pemain Agresif",
+  "item.playermob.player_mob_friendly_spawn_egg": "Telur Jelma Pemain Mesra",
+  "item.playermob.player_mob_passive_spawn_egg": "Telur Jelma Pemain Pasif",
+  "item.playermob.player_mob_skeptical_spawn_egg": "Telur Jelma Pemain Ragu-ragu",
+  "item.playermob.player_mob_shy_spawn_egg": "Telur Jelma Pemain Pemalu",
+  "container.playermob.player_mob": "Pemain"
+}

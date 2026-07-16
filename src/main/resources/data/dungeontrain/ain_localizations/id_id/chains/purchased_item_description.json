@@ -1,0 +1,54 @@
+{
+  "id": "adventureitemnames:purchased_item_description",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "Dibuat",
+      "refs": [
+        {
+          "ref": "adventureitemnames:hand_crafted_with_love",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " oleh ",
+      "newline": false,
+      "label": "Penduduk Desa",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/villager_name",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.15056606,
+      "connection": " dari ",
+      "newline": false,
+      "label": "Menggunakan",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/item_material",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.009645718,
+      "connection": "Bukan berkat ",
+      "newline": true,
+      "label": "Tanpa terima kasih",
+      "refs": [
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 2.0
+        }
+      ]
+    }
+  ]
+}

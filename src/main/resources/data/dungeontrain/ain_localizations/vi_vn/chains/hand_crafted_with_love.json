@@ -1,0 +1,32 @@
+{
+  "id": "adventureitemnames:hand_crafted_with_love",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 0.29578075,
+      "connection": "Thủ công",
+      "newline": false,
+      "label": "thủ công",
+      "refs": []
+    },
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "Chế tác",
+      "refs": [
+        {
+          "ref": "adventureitemnames:crafted_by",
+          "weight": 5.0
+        }
+      ]
+    },
+    {
+      "chance": 0.29920536,
+      "connection": " với ",
+      "newline": false,
+      "label": "Với tình yêu",
+      "refs": []
+    }
+  ]
+}

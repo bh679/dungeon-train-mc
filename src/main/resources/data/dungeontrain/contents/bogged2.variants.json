@@ -53,10 +53,10 @@
     "0,0,0": ["minecraft:moss_block", "minecraft:mossy_cobblestone"],
     "1,0,4": ["minecraft:moss_block", "minecraft:mossy_cobblestone"],
     "4,1,2": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:bogged", "difficulty": {"min": 5, "max": "all"}}],
-    "3,1,2": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:bogged", "difficulty": {"min": 10, "max": "all"}}],
-    "3,3,1": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:bogged", "difficulty": {"min": 15, "max": "all"}}],
-    "3,3,3": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:bogged", "difficulty": {"min": 20, "max": "all"}}],
-    "2,1,2": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4}, {"entity": "minecraft:husk", "difficulty": {"min": 24, "max": "all"}}],
-    "4,2,2": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4}, {"entity": "minecraft:husk", "difficulty": {"min": 36, "max": "all"}}]
+    "3,1,2": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 2}, {"entity": "minecraft:bogged", "difficulty": {"min": 10, "max": "all"}}],
+    "3,3,1": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 3}, {"entity": "minecraft:bogged", "difficulty": {"min": 15, "max": "all"}}],
+    "3,3,3": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 3}, {"entity": "minecraft:bogged", "difficulty": {"min": 20, "max": "all"}}],
+    "2,1,2": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 5}, {"entity": "minecraft:husk", "difficulty": {"min": 24, "max": "all"}}],
+    "4,2,2": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 6}, {"entity": "minecraft:husk", "difficulty": {"min": 36, "max": "all"}}]
   }
 }

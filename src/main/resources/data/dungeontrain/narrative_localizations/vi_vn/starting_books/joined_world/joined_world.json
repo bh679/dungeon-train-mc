@@ -1,0 +1,12 @@
+{
+  "id": "joined_world",
+  "title": "Nhiều Người Chơi?",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Chào mừng lên tàu, nhà thám hiểm!\nBạn đã tham gia một thế giới rồi này! Thật hào hứng.\n\nHãy cùng nhau khám phá, cùng nhau kết nối với con tàu!\n\nCó nhiều người xung quanh hơn, con tàu chắc chắn sẽ lớn dần lên!\n\nBạn có nghĩ ta sẽ có thêm nhiều toa tàu hơn không?",
+    "Này, bạn làm được rồi! Bạn đã tham gia một thế giới mới!\nMột con tàu mới!\nChào mừng đến với Dungeon Train!\n\nDungeon train là gì?\nTại sao nó ở đây?\nBạn sẽ tìm thấy điều gì?\n\nChúc may mắn!",
+    "Bạn làm được rồi! Bạn đã tham gia một thế giới mới!\nBạn đã lên Dungeon Train!\n\nNhiều người chơi,\nNhiều người, trong cùng một thế giới!\nCùng nhau.\n\nThật là một công nghệ tuyệt vời!\nNhững chiếc máy tính, đang kết nối.\nCon người tương tác với nhau,\ntrên một con tàu\ntrong chiếc máy tính của bạn\ntrên mạng internet!"
+  ]
+}

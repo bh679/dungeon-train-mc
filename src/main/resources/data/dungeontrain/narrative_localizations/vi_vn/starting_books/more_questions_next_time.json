@@ -1,0 +1,10 @@
+{
+  "id": "more_questions_next_time",
+  "title": "Thêm Câu Hỏi",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Chào mừng đến với Dungeon Train\nCon tàu là gì?\nTại sao bạn ở đây?\nBạn phải làm gì?\nĐều là những câu hỏi hay cả\n\nHãy quay lại lần sau nếu bạn muốn thêm câu hỏi."
+  ]
+}

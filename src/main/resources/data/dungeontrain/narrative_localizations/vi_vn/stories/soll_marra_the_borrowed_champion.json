@@ -1,0 +1,55 @@
+{
+  "id": "soll_marra_the_borrowed_champion",
+  "character": "Soll Marra",
+  "story": "Nhà Vô Địch Vay Mượn",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lá Thư Thứ Nhất",
+      "variants": [
+        "Ngày Một. Trang bị.\n\nKiếm sắt, x2 (một cái dự phòng theo cuốn sổ).\nCung, 64 mũi tên.\nDa phù phép, đủ bộ, Bảo Vệ I.\nNgọc Ender, x16.\nGiường, x1.\nKhoai tây sống, x32.\n\nCuốn sổ đòi phải có táo vàng. Trong thị trấn không có. Tôi sẽ kiếm dọc đường.\n\nCon chuột có thật. Tôi đã ghi nhận nó.\n\nNgày Một.\n\n- S. Marra",
+        "Ngày Một. Trang bị.\n\nKiếm sắt, x2.\nCung, 64 mũi tên.\nDa phù phép, Bảo Vệ I.\nNgọc Ender, x16.\nGiường.\nKhoai tây, x32.\n\nCuốn sổ nói táo vàng là thứ không thể thiếu. Trong thị trấn không có. Tôi rời đi trước khi ai kịp nhận ra tôi đã đi.\n\nMột con chuột mặc áo gi-lê đưa tôi tờ giấy này. Nó trông buồn bã. Tôi không biết phải ghi nhận nó là gì.\n\nTôi đã sẵn sàng.\n\n- Soll Marra"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lá Thư Thứ Hai",
+      "variants": [
+        "Cuốn sổ là của Halric. Ông bắt đầu nó hai mươi sáu năm trước, một năm trước khi gặp tôi.\n\nChi tiết cho Điểm Kết. Chiều cao các cột đá. Lồng pha lê. Thứ tự phá lồng. Sức công phá của giường. Quỹ đạo ngọc ender.\n\nÔng chưa bao giờ đi.\n\nÔng mất vào mùa xuân. Chuyện ở phổi. Cuốn sổ gọi đó là \"ngừng lại, ngoài chiến đấu.\"\n\nCon rồng chưa bao giờ gặp Halric.\n\nTôi mang cuốn sổ đến cho nó.\n\n- S. Marra",
+        "Cuốn sổ là của Halric. Ông bắt đầu viết nó một năm trước khi tôi ra đời. Hai mươi sáu năm chi tiết mà chẳng có con rồng nào ở cuối.\n\nChiều cao các cột đá. Lồng pha lê. Thứ tự phá lồng. Sức công phá của giường. Quỹ đạo ngọc ender. Cả trận đánh, trên giấy.\n\nÔng mất vào mùa xuân. Cuốn sổ gọi đó là \"ngừng lại, ngoài chiến đấu.\" Tôi nghĩ là do phổi ông. Ông ho nhiều lắm. Ông chưa bao giờ nói ra cái từ đó.\n\nCon rồng chưa bao giờ gặp Halric.\n\nTôi mang ông đến cho nó.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lá Thư Thứ Ba",
+      "variants": [
+        "Buổi Tập Một. Toa 14.\n\nMục tiêu: thây ma, không giáp.\nTầm: 9 khối.\nVật che: một băng ghế.\nCung: kéo hết cỡ, hai giây.\n\nVòng đổi chỗ đứng của Halric có điều chỉnh. Ngọn đèn toa tàu thay cho pha lê. Hạ pha lê trước. Xoay người. Buông tên.\n\nKết quả: một phát. Thời gian mục tiêu trong sổ là mười một giây. Của tôi, bốn.\n\nCuốn sổ không nói cảm giác sẵn sàng là như thế nào.\n\n- S. Marra",
+        "Buổi Tập Một. Toa mười bốn.\n\nTôi chọn một con thây ma vì cuốn sổ bắt đầu bằng pha lê mà tôi lại không có pha lê. Ngọn đèn trên tường có đúng hình dạng ấy.\n\nBăng ghế che thân. Chín khối. Kéo hết cỡ. Xoay người. Buông tên.\n\nCon thây ma gục xuống trong một phát. Thời gian mục tiêu của Halric là mười một giây. Tôi mất bốn.\n\nLúc đó, tôi đã sẵn sàng. Rồi tôi ngồi xuống băng ghế, toa tàu lặng im và ngọn đèn đung đưa khe khẽ.\n\nTôi không biết mình đã trông đợi điều gì.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lá Thư Thứ Tư",
+      "variants": [
+        "Toa 28. Chạm mặt.\n\nHành khách: nữ, ngoài năm mươi, áo khoác len xám. Có vẻ là thật.\n\nBà hỏi tên tôi. Tôi đáp bằng danh xưng của Halric. Học trò của Halric.\n\nBà nói, \"Halric. Vậy cô là người thứ tư của ông ấy.\"\n\nTôi không biết là đã từng có ba người.\n\nTôi ghi lại số ghế của bà. Tôi đi tiếp.\n\nKhép lại lần chạm mặt.\n\n- S. Marra",
+        "Toa hai mươi tám. Một người đàn bà mặc áo khoác xám hỏi tên tôi.\n\nTôi đáp bằng danh xưng của Halric. Học trò của Halric.\n\nBà nói, \"Halric? Cái ông thợ làm cung hay ho ấy à?\"\n\nTôi không biết ông là thợ làm cung. Tôi có một trong những cây cung của ông trong túi.\n\nĐáng lẽ tôi nên ngồi xuống. Đáng lẽ tôi nên hỏi bà còn biết những gì. Tôi đã không làm vậy. Tôi đi sang toa kế bên và đang ngồi đây viết.\n\nBà vẫn ở ghế số 14. Tôi nghĩ vậy.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lá Thư Thứ Năm",
+      "variants": [
+        "Lần Thử 47. Mắt ender.\n\nHướng ném: về phía trước, chếch hai mươi lăm độ so với phương ngang. Theo trang chín cuốn sổ.\n\nMắt ender giữ nguyên vị trí. Sáu giây. Nó xoay ngược chiều kim đồng hồ, rồi dừng lại.\n\nHướng: bắc chếch đông bắc.\n\nTôi đổi toa. Tôi ném lại.\n\nHướng: bắc chếch đông bắc.\n\nToa tàu quay về hướng nam.\n\nMắt ender đang chỉ một phương hướng. Con tàu thì không nằm theo một phương hướng nào.\n\nTôi đã ngừng ném.\n\n- S. Marra",
+        "Mắt ender không chịu bay.\n\nTôi ném nó bốn mươi bảy lần. Về trước. Lên trên. Sang ngang. Ra ngoài cửa.\n\nMắt ender lơ lửng. Nó quay tròn. Nó không chọn một phương hướng nào. Halric viết rằng mắt ender luôn chọn. Mắt ender, trang chín: \"thứ duy nhất trung thực trên đường tới thành trì.\"\n\nNó đang trung thực. Chẳng có thành trì nào cả.\n\nTôi ngồi với mắt ender trong tay. Nó ấm. Giờ nó không còn ấm nữa.\n\nTôi không biết mình đang đi về hướng nào.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lá Thư Thứ Sáu",
+      "variants": [
+        "Tôi đã gấp cuốn sổ lại.\n\nBìa bằng da nâu. Bên trong tấm bìa trước có những cái tên. Tôi không nhìn chúng.\n\nTôi đang viết ở trang cuối. Halric chưa từng viết ở đây.\n\nTôi mười chín tuổi. Tôi chưa bao giờ thấy một con rồng. Tôi không muốn giết nó.\n\nTôi sẽ cứ bước đi cho tới khi tìm được một khung cửa sổ với thứ ánh sáng vừa vặn. Rồi tôi sẽ ngồi xuống.\n\nSoll Marra",
+        "Tôi gấp cuốn sổ lại.\n\nTrang cuối để trống. Tôi ngồi mở nó ra thật lâu.\n\nHalric không có trong trang cuối. Halric ở trong những trang đầu. Tôi đã đọc chúng quá nhiều lần.\n\nTôi mười chín tuổi. Tôi chưa bao giờ thấy một con rồng. Tôi không muốn giết nó.\n\nTôi không biết con tàu này đang đi về đâu. Tôi nghĩ như vậy cũng ổn.\n\nTôi sẽ đi tìm một khung cửa sổ.\n\nSoll"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "id": "weakness_then_gold",
+  "story": "Yếu Đuối, Rồi Vàng",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lá Thư Thứ Nhất",
+      "variants": [
+        "óóóc.\n\nnãão. não.\n\nóóóccc.\n\nẤM.\ncái ấm bước lại gần.\nẤM.\n\nthêêm.\ntao muốn thêm.",
+        "óóóc.\n\nthịt. tao ngửi thấy thịt.\n\nnãão.\nthịtt.\n\ncái ấm có thịt.\ntao đi theo.\ntao luôn đi theo."
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lá Thư Thứ Hai",
+      "variants": [
+        "tao theo cái ấm.\nMuốn nãão.\ntao dừng lại.\nnhìn tờ giấy.\n\nvết mực trên giấy.\n\nyếu đuối.vàng.\nquay lại.\nnão?",
+        "tao theo cái ấm.\nnãão. Muốn.\ntao dừng lại.\nnhìn tờ giấy.\n\nvết dưới vết.\n\nxác..sống?\nngười?\nlàm sao thành người?"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lá Thư Thứ Ba",
+      "variants": [
+        "tao nhìn những cái ấm.\ngiờ không đuổi.\nchỉ nhìn.\n\nvài đứa ngoái lại.\nvài đứa bước xuyên qua tao.\nnhư tao không có ở đây.\n\nđứa ngoái lại là thật.\n\n\nmột đứa lại gần.\ncổ ấm.\nmiệng há ra.\n\ntờ giấy trên ngực động đậy.\nyếu đuối. vàng. quay lại.\n\nmiệng ngậm lại.\ntao lùi ra sau.\n\nkhông bao giờ lùi. không bao giờ.\n\n\nkhông quên.\nkhông quên.\n\ntao khắc chữ lên tường.\nyếu đuối. rồi vàng.\n\nvết viết đẹp hơn rồi.\ntao viết được vết.\n\nb."
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lá Thư Thứ Tư",
+      "variants": [
+        "yếu đuối?\nyếu đuối .. phù thủy.\n\nphù thủy làm.\n\ntao tìm phù thủy.\ntao lại gần."
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lá Thư Thứ Năm",
+      "variants": [
+        "phù thủy thấy tao.\nphù thủy ném.\n\nlửa xanh bỏng rát.\ntao không dừng.\ncơn đói không thấy đau.\n\nmột lọ vỡ ra màu xám.\nsương xám. không bỏng.\n\n\nmềm.\ntay chậm lại. yếu.\n\nrồi—\nlàn sương tan.\n\ntôi biết nghĩ.\nnhững chữ này là của tôi.\n\nyếu. chậm.\nnhưng còn ở đây.\n\n- br"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lá Thư Thứ Sáu",
+      "variants": [
+        "những chữ nói là vàng.\ngiờ tôi biết vàng rồi.\n\ntôi mở những chiếc rương.\ntay vẫn còn chậm.\nsự yếu đuối chưa rời đi.\n\n\nvàng mà không phải quả táo.\nkhối vàng. lục bảo.\n\nrồi một tấm gương trong rương.\ngương mặt xám. đôi mắt trũng.\n\nnhưng sau nó—\nmột cánh cửa thấp. một căn phòng ấm.\nai đó gọi một cái tên.\n\ntôi từng có một cái tên.\nbr...?\n\n\nrồi vàng mà lại tròn.\n\nnó sáng như thể đang ấm.\nmột quả táo, nhưng bằng vàng.\n\ntôi cầm nó. tôi không cắn.\n\nsự yếu đuối trong tôi.\nvàng trong tay tôi.\n\ncả hai. tôi có cả hai.\n\n- bri"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Lá Thư Thứ Bảy",
+      "variants": [
+        "tôi ép sự yếu đuối vào máu mình.\nrồi tôi cắn vào vàng.\n\nnó ngọt.\ntôi đã quên mất vị ngọt.\n\n\nrồi cơn run rẩy.\ncon tàu ửng đỏ nơi rìa mắt.\n\nđôi tay tôi — ấm.\ntrái tim là một nắm đấm, gõ cửa đòi được vào.\n\nmàu xám chảy ra khỏi tôi như nước lạnh rời khỏi chiếc cốc.\n\n\ntôi nhớ ra.\nmột cánh cửa thấp. một căn phòng ấm.\nmột người đàn bà gọi tôi vào ăn tối.\n\ngọi tôi là Brianne.\n\ntôi là Brianne.\n\n\ntôi vẫn ở trên con tàu.\nkhông đầu tàu. không lối xuống.\nnhưng giờ một con người đang ngồi trên nó.\n\nvậy nên tôi viết điều này cho bạn —\nkẻ xám chưa đọc được nó.\nrồi bạn sẽ đọc được.\n\nyếu đuối. rồi vàng.\nvà bạn sẽ quay trở lại.\n\nnó có hiệu quả. tôi đã làm được.\nhãy tiếp tục.\n\n- Brianne"
+      ]
+    }
+  ]
+}

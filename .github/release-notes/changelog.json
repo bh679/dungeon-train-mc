@@ -4613,9 +4613,9 @@
       ],
       "pr": 758,
       "date": "2026-07-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "journey-advancement-timing",
@@ -4629,9 +4629,9 @@
         "'The Upside Down' and 'Reassembly Required' trigger deeper into their zones"
       ],
       "date": "2026-07-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "zh-cn-localization-refresh",
@@ -4647,9 +4647,9 @@
       ],
       "pr": 759,
       "date": "2026-07-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "no-lava-upside-down-band",
@@ -4662,9 +4662,9 @@
         "Mirrored ceiling/island water still hangs static, unchanged"
       ],
       "date": "2026-07-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "freeze-mixin-removed-body-guard",
@@ -4678,9 +4678,9 @@
       ],
       "pr": 761,
       "date": "2026-07-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "upside-down-snow-support",
@@ -4694,9 +4694,9 @@
       ],
       "pr": 764,
       "date": "2026-07-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "copper-carriage-part-stage",
@@ -4706,9 +4706,9 @@
       "summary": "The copper carriage part was mistakenly built from the mud block set; it now uses copper as intended.",
       "highlights": [],
       "date": "2026-07-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "multilingual-death-notes",
@@ -4723,9 +4723,75 @@
       ],
       "pr": 766,
       "date": "2026-07-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
+    },
+    {
+      "id": "lamppost-carriage-and-spawn-tuning",
+      "version": "0.462.0",
+      "type": "content",
+      "title": "New lamppost content + enemy spawn tuning",
+      "summary": "A new lamppost content set adds decorated loot pots to the train \u2014 food, a weapon, and the occasional signed Deathnote book. Breezes now show up in the void, end, and upside-down stretches, and enemy/loot spawn balance has been retuned across several carriage types.",
+      "highlights": [
+        "New lamppost content: decorated pots with food, a wooden axe, and a chance at a signed Deathnote book",
+        "Breeze enemies now appear in VOID / END / UPSIDE_DOWN phases and later stages",
+        "Retuned enemy and loot spawn weights across bogged, skeleton, and zombie-room carriages"
+      ],
+      "pr": 765,
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.464.0",
+      "released_at": "2026-07-16T05:48:40Z"
+    },
+    {
+      "id": "playanimation-anticheat-whitelist",
+      "version": "0.463.0",
+      "type": "fix",
+      "title": "Whitelisted /playanimation for Free Play runs",
+      "summary": "Running /playanimation to play a cosmetic entity animation no longer marks your run as cheated \u2014 it has no gameplay effect, so it's now treated the same as harmless commands like /help and /me.",
+      "highlights": [],
+      "pr": 767,
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.464.0",
+      "released_at": "2026-07-16T05:48:40Z"
+    },
+    {
+      "id": "multilingual-localization-8-languages",
+      "version": "0.464.0",
+      "type": "feat",
+      "title": "Play in 8 more languages",
+      "summary": "Dungeon Train is now playable in eight more languages \u2014 Spanish (Spain & Mexico), Brazilian Portuguese, Bahasa Indonesia, Bahasa Melayu, Filipino, Vietnamese, and Thai. Menus, generated item names, in-world books, the death-screen ledger, and the bundled companion mods are all translated, and each language has its own Death Note trigger word. These are AI translations (marked as such on the title screen) \u2014 native-speaker corrections are very welcome.",
+      "highlights": [
+        "Spanish, Portuguese, Indonesian, Malay, Filipino, Vietnamese & Thai support",
+        "Menus, item names, books, and death-screen prose all localized",
+        "Per-language Death Note trigger titles",
+        "AI-translated \u2014 native-speaker feedback welcome"
+      ],
+      "pr": 768,
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.464.0",
+      "released_at": "2026-07-16T05:48:40Z"
+    },
+    {
+      "id": "playermobs-0-78-upgrade",
+      "version": "0.464.0",
+      "type": "feat",
+      "title": "Smarter Player Mobs: firearms, fire escape, persistent orders",
+      "summary": "The bundled Player Mobs got a big upgrade. They can now wield modded firearms \u2014 muskets, pistols and the like \u2014 reloading and firing with the mod's own ammo. If one catches fire it drops everything to save itself: sprinting to nearby water, or dousing itself with a water bucket and picking it back up. Orders you give them (walk, greet, gift, steal\u2026) now stick until the job is done instead of being forgotten after a few seconds, and they'll fight or flee a threat mid-task then resume. You can also summon a Player Mob wearing a named player's skin via an NBT tag.",
+      "highlights": [
+        "Player Mobs can wield modded firearms (MusketMod) with real reload + ammo",
+        "Burning Player Mobs run for water or self-douse with a bucket",
+        "Orders persist until completed (were dropped after ~10s)",
+        "Summon a Player Mob in a named player's skin via NBT"
+      ],
+      "pr": 769,
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.464.0",
+      "released_at": "2026-07-16T05:48:40Z"
     }
   ]
 }

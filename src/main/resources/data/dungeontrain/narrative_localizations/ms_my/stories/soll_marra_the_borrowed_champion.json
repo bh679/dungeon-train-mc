@@ -1,0 +1,55 @@
+{
+  "id": "soll_marra_the_borrowed_champion",
+  "character": "Soll Marra",
+  "story": "Jaguh Pinjaman",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Surat Pertama",
+      "variants": [
+        "Hari Pertama. Kelengkapan.\n\nPedang besi, x2 (satu simpanan menurut buku nota).\nBusur, 64 anak panah.\nKulit bersihir, satu set penuh, Perlindungan I.\nMutiara Ender, x16.\nKatil, x1.\nUbi kentang mentah, x32.\n\nBuku nota menuntut epal emas. Pekan itu tiada langsung. Aku akan memperolehnya dalam perjalanan.\n\nTikus itu benar. Aku telah mencatatnya.\n\nHari Pertama.\n\n- S. Marra",
+        "Hari Pertama. Kelengkapan.\n\nPedang besi, x2.\nBusur, 64 anak panah.\nKulit bersihir, Perlindungan I.\nMutiara Ender, x16.\nKatil.\nUbi kentang, x32.\n\nBuku nota berkata epal emas tidak boleh ditawar. Pekan itu tiada langsung. Aku pergi sebelum sesiapa perasan aku sudah tiada.\n\nSeekor tikus berompi memberiku kertas ini. Dia kelihatan sedih. Aku tak tahu hendak mencatatnya sebagai apa.\n\nAku sudah bersedia.\n\n- Soll Marra"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Surat Kedua",
+      "variants": [
+        "Buku nota ini milik Halric. Dia memulakannya dua puluh enam tahun lalu, setahun sebelum dia bertemu denganku.\n\nSpesifikasi untuk The End. Ketinggian tiang. Sangkar kristal. Susunan memecah sangkar. Hasil letupan katil. Lintasan mutiara.\n\nDia tak pernah pergi.\n\nDia meninggal pada musim bunga. Hal paru-paru. Buku nota menyebutnya \"pemberhentian, bukan pertempuran.\"\n\nNaga itu tak pernah bertemu Halric.\n\nAku membawanya kepadanya.\n\n- S. Marra",
+        "Buku nota ini milik Halric. Dia mula menulisnya setahun sebelum aku dilahirkan. Dua puluh enam tahun spesifikasi dan tiada naga di penghujungnya.\n\nKetinggian tiang. Sangkar kristal. Susunan memecah sangkar. Hasil letupan katil. Lintasan mutiara. Keseluruhan pertarungan, atas kertas.\n\nDia meninggal pada musim bunga. Buku nota menyebutnya \"pemberhentian, bukan pertempuran.\" Aku rasa itu paru-parunya. Dia banyak batuk. Dia tak pernah menyebut perkataan itu.\n\nNaga itu tak pernah bertemu Halric.\n\nAku membawanya kepadanya.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Surat Ketiga",
+      "variants": [
+        "Latihan Satu. Gerabak 14.\n\nSasaran: zombi, tiada perisai.\nJarak: 9 blok.\nPerlindungan: sebuah bangku.\nBusur: tarik penuh, dua saat.\n\nKitaran hinggap Halric boleh disesuaikan. Lampu gerabak menggantikan kristal. Jatuhkan kristal dahulu. Pusing. Lepaskan.\n\nHasil: satu tembakan. Masa sasaran buku nota sebelas saat. Masaku, empat.\n\nBuku nota tak menyatakan bagaimana rasanya bersedia.\n\n- S. Marra",
+        "Latihan Satu. Gerabak empat belas.\n\nAku memilih zombi kerana buku nota bermula dengan kristal dan aku tiada kristal. Lampu di dinding itu bentuknya betul.\n\nPerlindungan bangku. Sembilan blok. Tarik penuh. Pusing. Lepaskan.\n\nZombi itu tumbang dengan satu. Masa sasaran Halric sebelas saat. Aku mengambil empat.\n\nAku sudah bersedia, ketika itu. Kemudian aku duduk di bangku dan gerabak itu sunyi dan lampu berayun sedikit.\n\nAku tak tahu apa yang kuharapkan.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Surat Keempat",
+      "variants": [
+        "Gerabak 28. Pertemuan.\n\nPenumpang: wanita, pertengahan lima puluhan, kot bulu kelabu. Nampaknya nyata.\n\nDia bertanya namaku. Aku memberikan gelaran Halric. Perantis Halric.\n\nDia berkata, \"Halric. Jadi kaulah yang keempatnya.\"\n\nAku tak tahu pernah ada tiga.\n\nAku mencatat nombor kerusinya. Aku beredar.\n\nPemerhatian ditutup.\n\n- S. Marra",
+        "Gerabak dua puluh lapan. Seorang wanita berkot kelabu bertanya namaku.\n\nAku memberikan gelaran Halric. Perantis Halric.\n\nDia berkata, \"Halric? Pembuat panah yang berbatuk itu?\"\n\nAku tak tahu dia seorang pembuat panah. Aku ada salah satu busurnya dalam begku.\n\nAku sepatutnya duduk. Aku sepatutnya bertanya apa lagi yang dia tahu. Aku tidak. Aku berjalan ke gerabak seterusnya dan aku sedang duduk di sini menulis.\n\nDia masih di kerusi 14. Aku rasa.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Surat Kelima",
+      "variants": [
+        "Percubaan 47. Mata Ender.\n\nVektor lontaran: ke hadapan, dua puluh lima darjah dari mengufuk. Menurut buku nota halaman sembilan.\n\nMata itu bertahan pada kedudukannya. Enam saat. Ia berputar lawan arah jam, kemudian tetap.\n\nHaluan: utara-ke-timur-laut.\n\nAku bertukar gerabak. Aku melontar lagi.\n\nHaluan: utara-ke-timur-laut.\n\nGerabak itu mengadap selatan.\n\nMata itu membaca satu arah. Keretapi tidak berada dalam satu arah.\n\nAku telah berhenti melontar.\n\n- S. Marra",
+        "Mata Ender itu tak mahu terbang.\n\nAku melontarnya empat puluh tujuh kali. Ke hadapan. Ke atas. Ke sisi. Ke luar pintu.\n\nMata itu terapung-apung. Ia berpusing. Ia tak memilih arah. Halric menulis bahawa mata sentiasa memilih. Mata itu, halaman sembilan: \"satu-satunya perkara jujur dalam menghampiri kubu.\"\n\nIa sedang berlaku jujur. Tiada kubu.\n\nAku duduk dengan mata itu di tanganku. Ia hangat. Ia tak hangat sekarang.\n\nAku tak tahu ke arah mana aku menuju.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Surat Keenam",
+      "variants": [
+        "Aku telah menutup buku nota itu.\n\nSampulnya diperbuat daripada kulit coklat. Ada nama-nama di sebelah dalam papan hadapan. Aku tak memandangnya.\n\nAku menulis pada halaman belakang. Halric tak menulis di sini.\n\nAku sembilan belas tahun. Aku tak pernah melihat seekor naga. Aku tak mahu membunuhnya.\n\nAku akan terus berjalan sehingga aku menemui sebuah tingkap dengan jenis cahaya yang betul. Kemudian aku akan duduk.\n\nSoll Marra",
+        "Aku menutup buku nota itu.\n\nHalaman belakang kosong. Aku duduk dengan ia terbuka untuk waktu yang lama.\n\nHalric tiada di halaman belakang. Halric ada di halaman-halaman hadapan. Aku telah membacanya terlalu banyak kali.\n\nAku sembilan belas tahun. Aku tak pernah melihat seekor naga. Aku tak mahu membunuhnya.\n\nAku tak tahu ke mana keretapi ini menuju. Aku rasa itu tak mengapa.\n\nAku akan mencari sebuah tingkap.\n\nSoll"
+      ]
+    }
+  ]
+}

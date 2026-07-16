@@ -76,8 +76,20 @@
     },
     {
       "id": "breeze",
-      "weight": 1,
-      "minLevel": 3
+      "weight": 4,
+      "phases": [
+        "VOID",
+        "END",
+        "UPSIDE_DOWN"
+      ],
+      "stages": [
+        "copper",
+        "nether",
+        "obsidian",
+        "quartz",
+        "mud",
+        "deepdark"
+      ]
     },
     {
       "id": "elder",

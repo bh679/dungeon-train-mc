@@ -1,0 +1,31 @@
+{
+  "id": "quiet_rules",
+  "title": "Las reglas calladas del tren",
+  "author": "Desconocido",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Este tren tiene reglas, aunque nadie te las dirá.\n\nNo abras un cofre que ya hayas abierto.\nNo sigas al mismo pasajero demasiado tiempo.\nCuando las linternas se atenúen dos veces seguidas, sigue caminando.\n\nEstas son las reglas que me he hecho para mí.\nQuizá no sean las tuyas.\nPero pronto te harás las tuyas.",
+    "Regla 71\nTen cuidado con lo que comes; no toda carne es tan buena como la de rata.",
+    "Regla 108\nSi un desconocido te pregunta tu nombre, ignóralo.",
+    "Regla 96\nAnda con ojo con las calaveras; algunas aún albergan sentimientos.",
+    "Regla 327\nNo desandes lo desandado. Si te das la vuelta, sigue volviendo.",
+    "Regla 5\nFíate más de las linternas que de los mapas. Los mapas son viejos.",
+    "Regla 44\n¿Pasos a tu espalda en un vagón vacío? Camina más rápido. Nunca corras.",
+    "Regla 211\nSi ves tu propia cara en otro pasajero, no le des muestras de reconocerlo. Aún no se ha dado cuenta.",
+    "Regla 401\nNo silbes después de que las linternas se atenúen. Otra cosa silba de vuelta.",
+    "Regla 323\nSolo quienes desean llegar hasta el que construyó el tren dicen «@Dev». Para los pocos elegidos, invocará al gran creador.",
+    "Regla 17\nEl tren guarda la lista de aquello a lo que viniste, incluso después de que la hayas perdido.\n\n«Pulsa {key.advancements}», dicen. ¿Pero qué significa eso? ¿Qué es «{key.advancements}»? ¿Cómo se pulsa? ¿Pulsar contra qué? ¿Pulsar cómo???",
+    "Regla 205\nMuestra respeto a todos los aventureros en el primer encuentro. Haz una reverencia, agáchate o dales regalos.\n\nGánate del todo a un aventurero y cambia. Te saluda de un extremo a otro del vagón. Los amables te ponen regalos en las manos sin que se los pidas. Algunos te siguen. Algunos luchan a tu lado, y no paran hasta que lo que te amenazaba cae.",
+    "Regla 29\nNo todo aventurero es un amigo. Algunos viajan a tu lado; otros desenvainan el acero al ver tu cara. No puedes saber cuál con solo mirar. Se aprende viviendo.",
+    "Regla 63\nUn regalo siempre predispone a un aventurero a tu favor. Da algo mejor que lo que ya lleva y lo predispone aún más. Una espada de sobra me ha comprado más amigos que jamás lo hicieron las palabras amables.",
+    "Regla 140\nPonte entre un aventurero y lo que lo ataca. Recuerdan quién desenvainó en su defensa, y lo devuelven.",
+    "Regla 88\nCruza los vagones junto a un aventurero. Viajad juntos el tiempo suficiente y algo se asienta entre vosotros. Es el camino más lento hacia un amigo, y el más seguro.",
+    "Regla 174\nGolpea a un aventurero y se volverá contra ti — pero no para siempre. Haz una reverencia otra vez, y sigue haciéndolas. Una herida que causaste puede sanarla quien la causó.",
+    "Regla 256\nUn aventurero se fija en a quién golpeas. Abate a alguien a quien ama y no lo perdonará jamás. Abate a alguien a quien odia, y verás cómo se ablanda contigo.",
+    "Regla 312\nDesenvaina cerca de un aventurero asustado y huirá; cerca de uno valiente y cargará. El mismo acero, dos desenlaces. Una retirada no es paz.",
+    "Regla 156\nEl acero gastado no es acero agotado. Coloca una pieza que flaquea junto a su gemela y las dos se reparan en una — hoja o placa, el mismo truco vale.\n\nLa reparación conserva lo que hayas puesto a la izquierda. Pon ahí lo mejor que tengas. La derecha es solo combustible.",
+    "Trata bien a los demás pasajeros.\nTe será de provecho\nen tu próxima vida.\n\nLos ecos recuerdan.",
+    "Los ecos de nuestro pasado\nnos reflejan vidas pasadas.\n\nSé amable.\n\nQuizá puedas\nhacerte su amigo."
+  ]
+}

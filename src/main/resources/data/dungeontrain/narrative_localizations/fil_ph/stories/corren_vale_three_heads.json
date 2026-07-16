@@ -1,0 +1,78 @@
+{
+  "id": "corren_vale_three_heads",
+  "character": "Corren Vale",
+  "story": "Tatlong Ulo",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Unang Liham",
+      "variants": [
+        "Mira,\n\nLagi mong may tisa sa mga kamay.\n\nGumuguhit ka ng linya sa lahat ng bagay.\n\nSabi mo, pinananatiling tapat ng mga tuwid na linya ang mundo.\n\nPinaniwalaan mo iyon.\n\nSa tingin ko, ako rin.\n\n- Corren",
+        "Mira.\n\nMahina kang tumawa.\n\nParang ayaw mong may magising na kung ano.\n\nHindi alam ni Bram kung kailan ka nagbibiro.\n\nalam ko.\n\n- corren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Ikalawang Liham",
+      "variants": [
+        "Mira.\n\nMalamig ang soul sand.\n\nHindi ko na naaalala ang init pagkatapos.\n\nMay sinabi ka.\n\nSa tingin ko, sinabi mo ang pangalan ko.\n\nSa tingin ko, sinabi mong Takbo.\nHindi ako lumingon.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Ikatlong Liham",
+      "variants": [
+        "Bram.\n\nTumatawa kang parang bumabagsak.\n\nBiglaan. Malakas. Laging sobrang lakas.\n\nSabi mo, tumatawa ka para malaman ng dilim na naroon ka.\n\nLagi nga niyang nalalaman.\n\n- Corren",
+        "Bram.\n\nMasyadong malaki sa iyo ang iyong kalasag.\n\nPahilis kang dumadaan sa mga pinto.\n\nTinawag itong mesa ni Esa.\n\nSabi mo, hindi kailanman binibigo ng mesa ang sinuman.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Ikaapat na Liham",
+      "variants": [
+        "Bram.\n\nSa iyo ang unang bungo.\n\nDinampot mo ito.\n\nSumigaw ka ng kung ano.\n\nHindi ko marinig sa lakas ng apoy.\n\nTatlong nota ang tunog ng mga gulong ng tren na ito.\n\nSa iyo ang una, Bram.\n\n- Corren",
+        "Bram.\n\nlimang beses ko na itong isinulat.\n\nkada balik ko sa bungo, humihinto ang pluma.\n\nitinaas mo ito. ngumiti ka nang malapad.\n\nsabi mo, walang bigat ito.\n\nsa tingin ko, mabigat ito.\n\nTatlong nota ang tunog ng mga gulong ng tren na ito.\n\nSa iyo ang una, Bram.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Ikalimang Liham",
+      "variants": [
+        "Esa.\n\nMalamig ang mga kamay mo sa pagtitimpla.\n\nMainit naman ang iba mong bahagi.\n\nSabi ni Mira, ikaw lang ang mainit sa aming lahat.\n\nTama siya.\n\n- Corren",
+        "Esa.\n\nKumakanta ka habang nagbebenda.\n\nMga lumang awit. Wala sa amin ang nakakaalam ng mga iyon.\n\nSabi mo, gawa-gawa mo lang habang umuusad.\n\nNagkunwari kaming naniwala sa iyo.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Ikaanim na Liham",
+      "variants": [
+        "Esa.\n\nNasa likod ko ang iyong kamay.\n\nMalamig sa pagtitimpla.\n\nMinsan mong itinulak.\n\nNadapa ako patungo sa ligtas.\n\nHindi mo na muling itinulak.\n\nWala ka na, sa tingin ko.\n\nBago pa ang pagtulak.\n\n- Corren",
+        "Esa.\n\nMay mga tao sa tren na ito na mas matagal nang nabubuhay kaysa sa akin.\n\nwalang tama ang itsura nila.\n\nayaw kong malaman kung ano ang itsura ko.\n\nsasabihin mo sana sa akin.\n\nsasabihin mong umupo ka Corren at hayaan mo akong tumingin.\n\n- corren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Ikapitong Liham",
+      "variants": [
+        "Hindi ko alam kung paano ako nakalabas.\n\nSira ang portal. Naaalala ko iyon.\n\nHindi ko naaalala na dumaan ako roon.\n\nNasa isang bukid ako nang matauhan. Matataas na damo. Naroon na ang tren.\n\nGumagalaw ito.\n\nLagi na itong gumagalaw. Alam ko na iyon ngayon.\n\nTumakbo ako sa tabi nito. Tumalon ako para sa pinakamalapit na pinto.\n\nHindi ko alam kung paano ko ito naabot.\n\nAkala ko, nakarating na ako.\n\nMga linggo na akong nakararating.\n\nHindi humihinto ang tren.\n\nWalang labasan.\n\n- Corren",
+        "ang init sa likod ko. ang lamig sa unahan.\n\nhindi ko alam kung saan ang itaas.\n\nnaaalala kong bumagsak sa damo.\n\nhindi nagliliyab ang damo.\n\nmukhang mahalaga iyon.\n\ntapos isang gusali.\n\nhindi ko kilala ang gusali.\n\nkilala ko ang lahat ng gusali sa rehiyong ito.\n\nako ang nagmapa sa rehiyong ito.\n\nmay tren sa gusali.\n\nbukas ang mga pinto.\n\nbuhay ako at bukas ang mga pinto.\n\nparang magkaugnay ang mga bagay na ito.\n\n- corren"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Ikawalong Liham",
+      "variants": [
+        "Mga linggo ko na itong naririnig.\n\nIsang tili. Tatlong tinig, halos magkapatong.\n\nMinsan iisa lang ang dumarating. Minsan tatlo.\n\nAt ang mga pagsabog.\n\nNararamdaman ko ito sa sahig bago ko marinig.\n\nWala silang sinisira na nakikita ko.\n\nHindi ko alam kung saan sila tumatama.\n\nPatuloy akong naglalakad pasulong.\n\nDumarating muli ang tili. Dalawang bagon sa likod.\n\nLaging mula roon.\n\nHindi kailanman mas malayo.\n\nSigurado ako.\n\n- Corren",
+        "may isang tunog.\n\nmga linggo ko nang naririnig.\n\nhindi ito ang mga gulong.\n\nmay dalang musika ang mga gulong. tatlong nota.\n\nmay dala itong iba.\n\ntumitili ito.\n\ntatlong tinig. halos sabay. hindi kailanman ganap.\n\nat may mga pagsabog.\n\nnararamdaman ko sila sa sahig. wala silang sinisira.\n\ntinanong ko ang iba sa tren.\n\nwala sa kanilang nakakarinig nito.\n\nako lang ang nakakarinig nito.\n\npara sa akin ito.\n\nmay panahon ito.\n\n- corren"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Ikasiyam na Liham",
+      "variants": [
+        "Ay.. ay hindi.\n\nMira.\n\nMapapansin mo sana ito bago ako.\n\nNasa harapan ko na ngayon ang tili.\n\nHindi dapat may harapan.\n\nTatayo sana si Bram sa harapan.\n\nTatawanan niya sana ito.\n\nLagi niyang tinatawanan ang mga bagay na napakalaki para labanan.\n\nMagtitimpla sana si Esa ng kung ano.\n\nProteksyon sa apoy. Bilis. Ang tamang bagay.\n\nLagi siyang nagtitimpla ng tamang bagay.\n\nMga linggo akong naglakad pasulong.\n\nPapalapit pala ako rito.\n\nWalang harapan ang tren.\n\nBawat hakbang pasulong ay hakbang palapit.\n\nNakikita ko na ito ngayon.\n\nTatlong ulo. Tatlong tinig.\n\nAkin ang ikaapat na tinig.\n\nSa tingin ko, akin na ito nang mga linggo.\n\n- Corren",
+        "narito na.\n\nmira.\n\nwala ito sa likod ko.\n\nnasa harapan ito.\n\nlagi itong nasa harapan.\n\nmakikita mo sana ito. lahat ay nauuna mong nakikita.\n\ntatayo sana si bram sa harapan ko.\n\ntatawa sana siya.\n\ntinatawanan niya ang mga bagay na napakalaki para labanan.\n\ngagana sana iyon. saglit lang.\n\nilalagay sana ni esa ang kamay niya sa likod ko.\n\nmalamig.\n\nitutulak sana niya ako.\n\naalis sana ako.\n\nnaglakad ako palapit dito.\n\nakala ko palayo ako.\n\nwalang harapan ang tren. tatawanan mo sana ako sa pagkalimot niyan.\n\nnakikita ko na ito.\n\ntatlong ulo. tatlo kayo.\n\nbram. esa. ikaw.\n\nako ang ikaapat.\n\nako pala ang ikaapat sa simula pa lang.\n\n- corren"
+      ]
+    }
+  ]
+}

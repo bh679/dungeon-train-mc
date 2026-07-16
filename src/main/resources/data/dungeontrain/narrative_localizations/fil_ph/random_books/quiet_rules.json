@@ -1,0 +1,31 @@
+{
+  "id": "quiet_rules",
+  "title": "Mga Tahimik na Alituntunin ng Tren",
+  "author": "Hindi Kilala",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "May mga alituntunin ang tren na ito, bagama't walang magsasabi sa iyo ng mga ito.\n\nHuwag buksan ang kabang binuksan mo na.\nHuwag sundan ang parehong pasahero nang matagal.\nKapag dumilim ang mga parol nang dalawang sunod, magpatuloy sa paglakad.\n\nIto ang mga alituntuning ginawa ko para sa sarili ko.\nMaaaring hindi ito ang sa iyo.\nPero gagawa ka rin ng sarili mo, sa lalong madaling panahon.",
+    "Alituntunin 71\nMag-ingat sa kinakain mo, hindi lahat ng piraso ng karne ay kasingsarap ng Daga.",
+    "Alituntunin 108\nKung may estrangherong nagtatanong ng pangalan mo, balewalain mo sila.",
+    "Alituntunin 96\nMag-ingat sa mga bungo, may ilang naghihimay pa ng damdamin.",
+    "Alituntunin 327\nHuwag bumalik nang paatras. Kung babalik ka, magpatuloy sa pagbalik.",
+    "Alituntunin 5\nMagtiwala sa mga parol nang higit sa mga mapa. Luma na ang mga mapa.",
+    "Alituntunin 44\nMga yabag sa likod mo sa walang laman na bagon? Lumakad nang mas mabilis. Huwag tumakbo.",
+    "Alituntunin 211\nKung makita mo ang sarili mong mukha sa ibang pasahero, huwag mo silang kilalanin. Hindi pa nila napapansin.",
+    "Alituntunin 401\nHuwag sumipol matapos dumilim ang mga parol. May iba pang sumisipol pabalik.",
+    "Alituntunin 323\nAng mga nagnanais lamang marating ang gumawa ng tren ang nagsasabing \"@Dev\". Para sa iilang pinili, tatawagin nito ang dakilang lumikha.",
+    "Alituntunin 17\nItinatago ng tren ang talaan ng ginawa mo rito, kahit na naiwala mo na ito.\n\n\"Pindutin ang {key.advancements}\" sabi nila. Pero ano ang ibig sabihin niyon? Ano ang \"{key.advancements}\"? Paano ito pinipindot? Idiin laban saan? Pindutin paano???",
+    "Alituntunin 205\nMagpakita ng paggalang sa lahat ng manlalakbay sa unang pagkikita. Yumuko, lumuhod, o magbigay ng regalo.\n\nManalo nang lubos sa isang manlalakbay at magbabago sila. Bibigyan ka nila ng pansin sa kabuuan ng bagon. Ang mababait ay iniaabot ang regalo sa iyong mga kamay nang hindi hinihiling. May sumusunod sa iyo. May lumalaban sa tabi mo, at hindi titigil hanggang bumagsak ang nagbanta sa iyo.",
+    "Alituntunin 29\nHindi lahat ng manlalakbay ay kaibigan. May naglalakbay sa tabi mo; may bumubunot ng bakal sa tanaw ng iyong mukha. Hindi mo masasabi kung alin sa pagtingin lamang. Matututunan mo sa pamumuhay.",
+    "Alituntunin 63\nLaging nakakabuti ng loob ng manlalakbay ang regalo. Magbigay ng mas mabuti kaysa sa dala nila at mas magiging mabuti ang loob nila. Ang ekstrang espada ay nakabili sa akin ng mas maraming kaibigan kaysa sa mababait na salita.",
+    "Alituntunin 140\nTumayo sa pagitan ng manlalakbay at ng umaatake sa kanila. Naaalala nila kung sino ang bumunot ng talim sa kanilang depensa, at ginagantimpalaan ito.",
+    "Alituntunin 88\nTumawid sa mga bagon sa tabi ng isang manlalakbay. Sumakay nang magkasama nang sapat na tagal at may naghuhusay sa pagitan ninyo. Ito ang pinakamabagal na daan tungo sa isang kaibigan, at ang pinakatiyak.",
+    "Alituntunin 174\nTamaan ang isang manlalakbay at sila'y babaling sa iyo — pero hindi habambuhay. Yumuko muli, at magpatuloy sa pagyuko. Ang sugat na iyong dinulot ay maaaring pagalingin ng dumulot nito.",
+    "Alituntunin 256\nPinapanood ng manlalakbay kung sino ang tinatamaan mo. Patayin ang isang mahal nila at hindi ka nila kailanman patatawarin. Patayin ang isang kinasusuklaman nila, at panoorin silang mabuti ang loob sa iyo.",
+    "Alituntunin 312\nBumunot ng talim malapit sa takot na manlalakbay at tatakas sila; malapit sa matapang at sisugod sila. Parehong bakal, dalawang dulo. Ang pag-atras ay hindi kapayapaan.",
+    "Alituntunin 156\nAng gasgas na bakal ay hindi ubos na bakal. Ilagay ang naghihingalong piraso sa tabi ng kambal nito at ang dalawa ay pagagalingin bilang isa — talim man o baluti, iisa ang lansi.\n\nPinananatili ng paggaling kung anuman ang inilagay mo sa kaliwa. Ilagay mo roon ang iyong pinakamainam. Ang kanan ay panggatong lamang.",
+    "Pakitunguhang mabuti ang ibang pasahero.\nMakakabuti ito sa iyo\nsa iyong susunod na buhay.\n\nNaaalala ng mga alingawngaw.",
+    "Ang mga alingawngaw ng ating nakaraan\nay isinasalamin ang mga nakaraang buhay sa atin.\n\nMaging mabait.\n\nBaka mapakaibigan mo ito."
+  ]
+}
