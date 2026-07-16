@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import games.brennan.dungeontrain.client.DungeonTrainLanguages;
+import games.brennan.dungeontrain.client.localization.LocalizationCreditRegistry;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Final;
@@ -29,6 +30,8 @@ public abstract class LanguageSelectEntryLogoMixin {
         ResourceLocation.fromNamespaceAndPath("dungeontrain", "textures/gui/language_logo.png");
     /** Source texture is square 64x64. */
     private static final int TEX = 64;
+    /** Opacity for languages whose translation has not been human-reviewed. */
+    private static final float UNREVIEWED_ALPHA = 0.1F;
 
     @Inject(
         method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIIIIIIZF)V",
@@ -44,8 +47,12 @@ public abstract class LanguageSelectEntryLogoMixin {
         int y = top + (height - size) / 2;
         int x = left + 2;
 
+        // Human-reviewed translations show the logo solid; machine-only ones are faded right down.
+        float alpha = LocalizationCreditRegistry.isHumanReviewed(this.code) ? 1.0F : UNREVIEWED_ALPHA;
+
         RenderSystem.enableBlend();
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
         g.blit(DT_LANG_LOGO, x, y, size, size, 0.0F, 0.0F, TEX, TEX, TEX, TEX);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 }
