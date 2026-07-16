@@ -7,11 +7,10 @@ import java.io.StringReader;
 import org.junit.jupiter.api.Test;
 
 /**
- * Verifies the pure helpers of {@link DeathNoteTitleLocalization}, which derives each locale's
- * Death Note trigger word from that locale's instruction-book title (a single source of truth so the
- * shown instructions and the trigger can never drift): {@code titleFrom} normalizes a book's title,
- * ignores the always-accepted English form and placeholders, and never throws; {@code localeFromPath}
- * extracts the locale from an overlay path.
+ * Verifies the pure helpers of {@link DeathNoteTitleLocalization}, which derives the Death Note
+ * trigger words from the instruction books' titles (a single source of truth so the shown
+ * instructions and the trigger can never drift): {@code titleFrom} normalizes a book's title,
+ * ignores the always-accepted English form and placeholders, and never throws.
  */
 class DeathNoteTitleLocalizationTest {
 
@@ -57,23 +56,9 @@ class DeathNoteTitleLocalizationTest {
     }
 
     @Test
-    void localeFromPathExtractsTheOverlayLocale() {
-        assertEquals("zh_cn", DeathNoteTitleLocalization.localeFromPath(
-                "narrative_localizations/zh_cn/random_books/deathnote.json"));
-        assertEquals("fr_fr", DeathNoteTitleLocalization.localeFromPath(
-                "narrative_localizations/fr_fr/random_books/deathnote.json"));
-        // Not an overlay path → empty.
-        assertEquals("", DeathNoteTitleLocalization.localeFromPath(
-                "narratives/random_books/deathnote.json"));
-        assertEquals("", DeathNoteTitleLocalization.localeFromPath("deathnote.json"));
-    }
-
-    @Test
-    void unknownOrEnglishLocaleHasNoLocalizedTitles() {
-        // Nothing loaded in a unit context → every lookup is empty (English matching lives in
+    void allIsEmptyUntilLoaded() {
+        // Nothing loaded in a unit context → the set is empty (English matching lives in
         // DeathNoteTitle, not here).
-        assertTrue(DeathNoteTitleLocalization.titlesFor("").isEmpty());
-        assertTrue(DeathNoteTitleLocalization.titlesFor(null).isEmpty());
-        assertTrue(DeathNoteTitleLocalization.titlesFor("en_us").isEmpty());
+        assertTrue(DeathNoteTitleLocalization.all().isEmpty());
     }
 }
