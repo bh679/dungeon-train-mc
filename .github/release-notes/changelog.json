@@ -4885,6 +4885,22 @@
       "released": true,
       "released_in": "v0.467.0",
       "released_at": "2026-07-16T10:57:24Z"
+    },
+    {
+      "id": "ride-photo-no-camera-flicker",
+      "version": "0.468.0",
+      "type": "fix",
+      "title": "Ride photos no longer jolt your camera",
+      "summary": "The train's automatic ride photos are now taken completely behind the scenes. Previously the camera would briefly snap to a third-person angle the instant a photo was captured; now your view stays perfectly steady while the memory is saved to your gallery.",
+      "highlights": [
+        "No more camera flicker when a ride photo is taken",
+        "Photos are captured invisibly \u2014 your view never changes"
+      ],
+      "pr": 777,
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

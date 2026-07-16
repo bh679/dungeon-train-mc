@@ -9,31 +9,25 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Drives the live-frame ride-snapshot grab around the real
- * {@code GameRenderer.renderLevel(DeltaTracker)}:
+ * Drives the no-hijack ride-snapshot grab at the HEAD of
+ * {@code GameRenderer.renderLevel(DeltaTracker)}.
  *
- * <ul>
- *   <li>HEAD → {@link RideSnapshotCapture#beginLiveCapture} arms the
- *       third-person override for this frame (so the world is drawn from the
- *       snapshot pose by the normal render path);</li>
- *   <li>TAIL → {@link RideSnapshotCapture#finishLiveCapture} reads the
- *       just-rendered world back (before the GUI) and restores the view.</li>
- * </ul>
+ * <p>When a shot is pending, {@link RideSnapshotCapture#beginNestedCapture}
+ * renders one extra full pass from the snapshot pose (into the main target),
+ * reads it back, then restores the camera — all before the original pass runs.
+ * The original {@code renderLevel} invocation then draws the player's real view
+ * and overwrites the snapshot pose, so nothing but the real view reaches the
+ * screen (no flicker). The nested pass is re-entrant-safe: its own HEAD hook
+ * short-circuits on {@code RideSnapshotCapture.isCapturing()}.</p>
  *
- * <p>The actual pose is applied by {@code CameraCinematicMixin} on
- * {@code Camera.setup} (called between these two points) while the capture is
- * armed.</p>
+ * <p>The pose is applied by {@code CameraCinematicMixin} on {@code Camera.setup}
+ * during the nested pass while the capture is armed.</p>
  */
 @Mixin(GameRenderer.class)
 public abstract class GameRendererSnapshotMixin {
 
     @Inject(method = "renderLevel(Lnet/minecraft/client/DeltaTracker;)V", at = @At("HEAD"))
-    private void dungeontrain$beginRideSnapshot(DeltaTracker deltaTracker, CallbackInfo ci) {
-        RideSnapshotCapture.beginLiveCapture((GameRenderer) (Object) this, deltaTracker);
-    }
-
-    @Inject(method = "renderLevel(Lnet/minecraft/client/DeltaTracker;)V", at = @At("TAIL"))
-    private void dungeontrain$finishRideSnapshot(DeltaTracker deltaTracker, CallbackInfo ci) {
-        RideSnapshotCapture.finishLiveCapture((GameRenderer) (Object) this);
+    private void dungeontrain$rideSnapshot(DeltaTracker deltaTracker, CallbackInfo ci) {
+        RideSnapshotCapture.beginNestedCapture((GameRenderer) (Object) this, deltaTracker);
     }
 }

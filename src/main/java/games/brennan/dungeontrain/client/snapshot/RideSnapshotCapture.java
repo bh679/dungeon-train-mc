@@ -19,22 +19,29 @@ import org.slf4j.Logger;
 import java.util.function.Consumer;
 
 /**
- * Captures a third-person ride photo by grabbing the <em>real</em> rendered
- * frame. For one frame the live camera is overridden to the snapshot pose
- * (third-person, so the player and the train are in view) and the world is
- * drawn by the normal render path — so terrain, the Sable carriages, and the
- * player all appear. The main framebuffer is then read back at the tail of
- * {@code renderLevel} (before the GUI) into a {@link DynamicTexture}.
+ * Captures a third-person ride photo <em>without hijacking the on-screen view</em>
+ * by rendering the world <b>twice</b> within the frame's normal
+ * {@code renderLevel} pass: the snapshot pose is drawn FIRST (into the main
+ * target, grabbed, then discarded), and the real player view is drawn LAST by
+ * the original pass — so the real view is what gets presented and the snapshot
+ * pose never reaches the screen (no flicker).
  *
- * <p>The pose is computed <b>here, at render time</b> ({@link #beginLiveCapture}),
- * not by the director at tick time — a player riding a Sable ship reports far
- * sub-level coordinates during the tick but renders at the real world position,
- * so a tick-time pose would place the camera millions of blocks away (sky only).
- * The director just chooses the tag.</p>
+ * <p>Why not an off-screen {@code RenderTarget}? Veil (and Sodium, bundled by
+ * Sable) manage/cache the main framebuffer, so a runtime swap of
+ * {@code Minecraft.mainRenderTarget} does not redirect the world render — the
+ * off-screen target stays empty (black). Two ordinary, in-context
+ * {@code renderLevel} calls, by contrast, are handled by those pipelines exactly
+ * like normal frames; nothing is redirected.</p>
  *
- * <p>Driven by {@code GameRendererSnapshotMixin}: HEAD arms the override
- * (consumed by {@code CameraCinematicMixin} via {@link #isCapturing()} /
- * {@link #capturePose()}); TAIL grabs + restores.</p>
+ * <p>The pose is computed <b>at render time</b> — a player riding a Sable ship
+ * reports far sub-level coordinates during the tick but renders at the real
+ * world position, so a tick-time pose would place the camera millions of blocks
+ * away (sky only). The director just chooses the tag.</p>
+ *
+ * <p>Driven by {@code GameRendererSnapshotMixin} at {@code renderLevel} HEAD:
+ * {@link #beginNestedCapture} runs the extra snapshot pass, grabs it, and
+ * restores the camera before the original pass proceeds. {@code CameraCinematicMixin}
+ * applies the pose while {@link #isCapturing()} is set (during the nested pass only).</p>
  */
 public final class RideSnapshotCapture {
 
@@ -49,7 +56,6 @@ public final class RideSnapshotCapture {
     private static volatile boolean capturing = false;
     private static CinematicCameraController.Pose capturePose;
     private static SnapshotTag captureTag;
-    private static CameraType savedCameraType;
 
     private static volatile SnapshotTag pendingTag;
 
@@ -57,7 +63,6 @@ public final class RideSnapshotCapture {
     private static volatile int pendingSubjectId = -1;
     private static volatile Consumer<byte[]> pendingSubjectCallback;
     private static int subjectRetries;                 // render frames left to find a clean angle
-    private static Consumer<byte[]> activeSubjectCallback; // non-null while a targeted shot is armed
 
     private RideSnapshotCapture() {}
 
@@ -88,9 +93,15 @@ public final class RideSnapshotCapture {
     /** A normal gallery shot, or a targeted echo capture, is queued or in flight. */
     public static boolean hasPending() { return pendingTag != null || pendingSubjectCallback != null; }
 
-    /** renderLevel HEAD: build the render-space pose and arm the override for this frame. */
-    public static void beginLiveCapture(GameRenderer gr, DeltaTracker deltaTracker) {
-        if (capturing) return;
+    /**
+     * {@code renderLevel} HEAD. If a shot is pending, render one extra full pass from the snapshot
+     * pose into the main target, grab it, and restore the camera — all before the original pass runs,
+     * so the player's real view (drawn by that original pass) overwrites this one and is what reaches
+     * the screen. Re-entrant: the nested {@code renderLevel} call is short-circuited by the
+     * {@code capturing} guard so we render the extra pass exactly once.
+     */
+    public static void beginNestedCapture(GameRenderer gr, DeltaTracker deltaTracker) {
+        if (capturing || !hasPending()) return; // guard our own nested pass / nothing to do
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
@@ -98,112 +109,96 @@ public final class RideSnapshotCapture {
 
         float partialTick = deltaTracker.getGameTimeDeltaPartialTick(false);
 
-        // A targeted echo capture takes priority — it's a rare, explicit, once-per-encounter shot.
-        // It owns this frame's begin slot whether or not it arms (the bounded retry handles giving up),
-        // so a gallery shot never sneaks the camera override out from under it.
+        // ── Arm the pose. A targeted echo capture takes priority — a rare, explicit, once-per-encounter
+        // shot — and owns this frame's slot whether or not it arms (bounded retry handles giving up), so
+        // a gallery shot never sneaks in under it. ──
+        Consumer<byte[]> subjectCb = null;
         if (pendingSubjectCallback != null) {
-            beginSubjectCapture(gr, mc, level, partialTick);
-            return;
-        }
-
-        if (pendingTag == null) return;
-
-        SnapshotTag tag = pendingTag;
-        pendingTag = null;
-
-        // Pose in render space (correct world coords). The render partial tick lets the
-        // carriage-occlusion check transform against where Sable draws the carriage blocks
-        // this frame. Null = too dark or no clear/unobstructed angle → skip; the director
-        // requests again shortly (its global cool-down throttles retries).
-        CinematicCameraController.Pose pose = SnapshotCamera.poseFor(level, tag, player, partialTick);
-        if (pose == null) return;
-
-        captureTag = tag;
-        capturePose = pose;
-        capturing = true;
-        // Third-person camera type → detached view (no hand) at the player's normal FOV.
-        savedCameraType = mc.options.getCameraType();
-        mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
-        gr.setRenderBlockOutline(false);
-    }
-
-    /**
-     * Try to arm a targeted echo capture this frame: resolve the subject entity, frame it, and arm the
-     * same camera override the gallery path uses (but routing the result to {@link #activeSubjectCallback}
-     * rather than the gallery). If the entity is gone or no lit, clip-free angle exists this frame, the
-     * bounded {@link #subjectRetries} budget is spent down and the request is dropped on exhaustion —
-     * the encounter then posts text-only.
-     */
-    private static void beginSubjectCapture(GameRenderer gr, Minecraft mc, ClientLevel level, float partialTick) {
-        Entity subject = level.getEntity(pendingSubjectId);
-        if (subject != null && subject.isAlive()) {
-            CinematicCameraController.Pose pose = SnapshotCamera.poseFor(level, SUBJECT_TAG, subject, partialTick);
-            if (pose != null) {
-                captureTag = SUBJECT_TAG;
-                capturePose = pose;
-                capturing = true;
-                activeSubjectCallback = pendingSubjectCallback;
-                pendingSubjectCallback = null;
-                pendingSubjectId = -1;
-                savedCameraType = mc.options.getCameraType();
-                mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
-                gr.setRenderBlockOutline(false);
+            Entity subject = level.getEntity(pendingSubjectId);
+            CinematicCameraController.Pose pose = (subject != null && subject.isAlive())
+                    ? SnapshotCamera.poseFor(level, SUBJECT_TAG, subject, partialTick)
+                    : null;
+            if (pose == null) {
+                // Not ready this frame (entity gone, too dark, or boxed in) — retry next frame, then give up.
+                if (--subjectRetries <= 0) {
+                    pendingSubjectCallback = null;
+                    pendingSubjectId = -1;
+                }
                 return;
             }
-        }
-        // Not ready this frame (entity gone, too dark, or boxed in) — retry next frame, then give up.
-        if (--subjectRetries <= 0) {
+            captureTag = SUBJECT_TAG;
+            capturePose = pose;
+            subjectCb = pendingSubjectCallback;
             pendingSubjectCallback = null;
             pendingSubjectId = -1;
+        } else {
+            SnapshotTag tag = pendingTag;
+            if (tag == null) return;
+            pendingTag = null;
+            // Pose in render space (correct world coords). Null = too dark or no clear/unobstructed
+            // angle → skip; the director requests again shortly (its cool-down throttles retries).
+            CinematicCameraController.Pose pose = SnapshotCamera.poseFor(level, tag, player, partialTick);
+            if (pose == null) return;
+            captureTag = tag;
+            capturePose = pose;
         }
-    }
 
-    /** renderLevel TAIL: grab the just-rendered world, store it, then restore the view. */
-    public static void finishLiveCapture(GameRenderer gr) {
-        if (!capturing) return;
-        Minecraft mc = Minecraft.getInstance();
-        Consumer<byte[]> subjectCb = activeSubjectCallback;
+        CameraType savedCameraType = mc.options.getCameraType();
+        capturing = true;
+        // Third-person camera type → detached view (no hand) at the player's normal FOV.
+        mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+        gr.setRenderBlockOutline(false);
         try {
-            NativeImage full = Screenshot.takeScreenshot(mc.getMainRenderTarget());
-            NativeImage shot = downscale(full, MAX_EDGE);
-            if (shot != full) full.close();   // downscale returns src as-is when already small
-            if (subjectCb != null) {
-                // Targeted echo capture: PNG-encode the grabbed frame and hand it to the callback —
-                // it never enters the gallery, so we own and must close this NativeImage.
-                byte[] png = null;
-                try {
-                    png = shot.asByteArray();
-                } catch (Exception e) {
-                    LOGGER.warn("[DungeonTrain] Echo snapshot PNG encode failed", e);
-                } finally {
-                    shot.close();
-                }
-                if (png != null) {
-                    subjectCb.accept(png);
-                    LOGGER.debug("[DungeonTrain] Echo snapshot captured ({} bytes)", png.length);
-                }
-            } else {
-                DynamicTexture texture = new DynamicTexture(shot);
-                ResourceLocation id = mc.getTextureManager().register("dungeontrain_ride", texture);
-                ClientLevel level = mc.level;
-                long tick = level != null ? level.getGameTime() : 0L;
-                // Keep the DynamicTexture on the snapshot so it can be flushed to disk later (reading
-                // its pixels), freeing this texture when the game has headroom and a menu is open.
-                RideSnapshotGallery.add(
-                        new RideSnapshot(texture, id, captureTag, shot.getWidth(), shot.getHeight(), tick),
-                        ClientDisplayConfig.getRideSnapshotMaxStored(),
-                        ClientDisplayConfig.getRideSnapshotMaxOnDisk());
-                RideSnapshotDirector.onCaptureCommitted(captureTag);
-                LOGGER.debug("[DungeonTrain] Ride snapshot {} tag={} ({}x{}) gallery={}",
-                        id, captureTag, shot.getWidth(), shot.getHeight(), RideSnapshotGallery.size());
-            }
+            // Extra in-context render pass from the snapshot pose. The nested renderLevel's own
+            // HEAD hook short-circuits on the `capturing` guard, so this runs exactly once.
+            mc.getMainRenderTarget().bindWrite(true);
+            gr.renderLevel(deltaTracker);
+            grab(mc, level, subjectCb);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Ride snapshot capture failed", e);
         } finally {
             capturing = false;
-            activeSubjectCallback = null;
-            if (savedCameraType != null) mc.options.setCameraType(savedCameraType);
+            mc.options.setCameraType(savedCameraType);
             gr.setRenderBlockOutline(true);
+            // Re-bind the main target so the original renderLevel pass draws the real view cleanly.
+            mc.getMainRenderTarget().bindWrite(true);
+        }
+    }
+
+    /** Read back the just-rendered snapshot-pose frame and route it to the gallery or echo callback. */
+    private static void grab(Minecraft mc, ClientLevel level, Consumer<byte[]> subjectCb) {
+        NativeImage full = Screenshot.takeScreenshot(mc.getMainRenderTarget());
+        NativeImage shot = downscale(full, MAX_EDGE);
+        if (shot != full) full.close();   // downscale returns src as-is when already small
+
+        if (subjectCb != null) {
+            // Targeted echo capture: PNG-encode the grabbed frame and hand it to the callback —
+            // it never enters the gallery, so we own and must close this NativeImage.
+            byte[] png = null;
+            try {
+                png = shot.asByteArray();
+            } catch (Exception e) {
+                LOGGER.warn("[DungeonTrain] Echo snapshot PNG encode failed", e);
+            } finally {
+                shot.close();
+            }
+            if (png != null) {
+                subjectCb.accept(png);
+                LOGGER.debug("[DungeonTrain] Echo snapshot captured ({} bytes)", png.length);
+            }
+        } else {
+            DynamicTexture texture = new DynamicTexture(shot);
+            ResourceLocation id = mc.getTextureManager().register("dungeontrain_ride", texture);
+            long tick = level.getGameTime();
+            // Keep the DynamicTexture on the snapshot so it can be flushed to disk later (reading
+            // its pixels), freeing this texture when the game has headroom and a menu is open.
+            RideSnapshotGallery.add(
+                    new RideSnapshot(texture, id, captureTag, shot.getWidth(), shot.getHeight(), tick),
+                    ClientDisplayConfig.getRideSnapshotMaxStored(),
+                    ClientDisplayConfig.getRideSnapshotMaxOnDisk());
+            RideSnapshotDirector.onCaptureCommitted(captureTag);
+            LOGGER.debug("[DungeonTrain] Ride snapshot {} tag={} ({}x{}) gallery={}",
+                    id, captureTag, shot.getWidth(), shot.getHeight(), RideSnapshotGallery.size());
         }
     }
 
