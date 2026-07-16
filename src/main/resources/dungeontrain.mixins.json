@@ -47,7 +47,6 @@
     "client.DeathScreenMoveTextMixin",
     "client.CameraCinematicMixin",
     "client.GameRendererSnapshotMixin",
-    "client.MinecraftMainRenderTargetAccessor",
     "client.LevelRendererVoidSkyMixin",
     "client.LightTextureEndBandMixin",
     "client.LightTextureNetherBandMixin",

@@ -1,13 +1,9 @@
 package games.brennan.dungeontrain.client.snapshot;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.pipeline.TextureTarget;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.CinematicCameraController;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
-import games.brennan.dungeontrain.mixin.client.MinecraftMainRenderTargetAccessor;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -23,26 +19,29 @@ import org.slf4j.Logger;
 import java.util.function.Consumer;
 
 /**
- * Captures a third-person ride photo by rendering the world an <em>extra</em>
- * time into a private off-screen {@link RenderTarget} — the player's on-screen
- * frame is never touched (no flicker). Driven from {@code GameRendererSnapshotMixin}
- * at the TAIL of {@code GameRenderer.render}, after the live frame (world + GUI)
- * is already drawn: {@link #runOffscreenCapture} builds the pose, redirects
- * {@link Minecraft#getMainRenderTarget()} to our off-screen target (via
- * {@link MinecraftMainRenderTargetAccessor}), runs one {@code renderLevel} pass
- * from the snapshot pose, reads the pixels back, then restores the real target.
+ * Captures a third-person ride photo <em>without hijacking the on-screen view</em>
+ * by rendering the world <b>twice</b> within the frame's normal
+ * {@code renderLevel} pass: the snapshot pose is drawn FIRST (into the main
+ * target, grabbed, then discarded), and the real player view is drawn LAST by
+ * the original pass — so the real view is what gets presented and the snapshot
+ * pose never reaches the screen (no flicker).
  *
- * <p>The pose is computed <b>here, at render time</b>, not by the director at
- * tick time — a player riding a Sable ship reports far sub-level coordinates
- * during the tick but renders at the real world position, so a tick-time pose
- * would place the camera millions of blocks away (sky only). The director just
- * chooses the tag.</p>
+ * <p>Why not an off-screen {@code RenderTarget}? Veil (and Sodium, bundled by
+ * Sable) manage/cache the main framebuffer, so a runtime swap of
+ * {@code Minecraft.mainRenderTarget} does not redirect the world render — the
+ * off-screen target stays empty (black). Two ordinary, in-context
+ * {@code renderLevel} calls, by contrast, are handled by those pipelines exactly
+ * like normal frames; nothing is redirected.</p>
  *
- * <p>The off-screen target is sized to match the main target so the projection
- * (derived from the window) is correct and {@code LevelRenderer}'s auxiliary
- * targets can {@code copyDepthFrom} it. While the pass runs,
- * {@code CameraCinematicMixin} applies the pose (keyed on {@link #isCapturing()}
- * / {@link #capturePose()}).</p>
+ * <p>The pose is computed <b>at render time</b> — a player riding a Sable ship
+ * reports far sub-level coordinates during the tick but renders at the real
+ * world position, so a tick-time pose would place the camera millions of blocks
+ * away (sky only). The director just chooses the tag.</p>
+ *
+ * <p>Driven by {@code GameRendererSnapshotMixin} at {@code renderLevel} HEAD:
+ * {@link #beginNestedCapture} runs the extra snapshot pass, grabs it, and
+ * restores the camera before the original pass proceeds. {@code CameraCinematicMixin}
+ * applies the pose while {@link #isCapturing()} is set (during the nested pass only).</p>
  */
 public final class RideSnapshotCapture {
 
@@ -57,9 +56,6 @@ public final class RideSnapshotCapture {
     private static volatile boolean capturing = false;
     private static CinematicCameraController.Pose capturePose;
     private static SnapshotTag captureTag;
-
-    /** Reused off-screen colour+depth target for the extra render pass (render thread only). */
-    private static RenderTarget offscreenTarget;
 
     private static volatile SnapshotTag pendingTag;
 
@@ -98,13 +94,14 @@ public final class RideSnapshotCapture {
     public static boolean hasPending() { return pendingTag != null || pendingSubjectCallback != null; }
 
     /**
-     * {@code GameRenderer.render} TAIL: if a shot is pending, build the render-space pose and render
-     * the world one extra time from it into our off-screen target, read it back, and route the result
-     * to the gallery or the echo callback. Runs entirely off the on-screen frame — the live view the
-     * player already saw this frame is left intact.
+     * {@code renderLevel} HEAD. If a shot is pending, render one extra full pass from the snapshot
+     * pose into the main target, grab it, and restore the camera — all before the original pass runs,
+     * so the player's real view (drawn by that original pass) overwrites this one and is what reaches
+     * the screen. Re-entrant: the nested {@code renderLevel} call is short-circuited by the
+     * {@code capturing} guard so we render the extra pass exactly once.
      */
-    public static void runOffscreenCapture(GameRenderer gr, DeltaTracker deltaTracker) {
-        if (capturing || !hasPending()) return;
+    public static void beginNestedCapture(GameRenderer gr, DeltaTracker deltaTracker) {
+        if (capturing || !hasPending()) return; // guard our own nested pass / nothing to do
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
@@ -146,79 +143,63 @@ public final class RideSnapshotCapture {
             capturePose = pose;
         }
 
-        RenderTarget realMain = mc.getMainRenderTarget();
-        RenderTarget offscreen = acquireTarget(realMain);
-        if (offscreen == null) return; // window not sized yet
-
         CameraType savedCameraType = mc.options.getCameraType();
         capturing = true;
         // Third-person camera type → detached view (no hand) at the player's normal FOV.
         mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
         gr.setRenderBlockOutline(false);
         try {
-            // Redirect the world render to our off-screen target, draw one frame from the pose, grab it.
-            ((MinecraftMainRenderTargetAccessor) mc).dungeontrain$setMainRenderTarget(offscreen);
-            offscreen.bindWrite(true);
-            offscreen.clear(Minecraft.ON_OSX);
+            // Extra in-context render pass from the snapshot pose. The nested renderLevel's own
+            // HEAD hook short-circuits on the `capturing` guard, so this runs exactly once.
+            mc.getMainRenderTarget().bindWrite(true);
             gr.renderLevel(deltaTracker);
-
-            NativeImage full = Screenshot.takeScreenshot(offscreen);
-            NativeImage shot = downscale(full, MAX_EDGE);
-            if (shot != full) full.close();   // downscale returns src as-is when already small
-
-            if (subjectCb != null) {
-                // Targeted echo capture: PNG-encode the grabbed frame and hand it to the callback —
-                // it never enters the gallery, so we own and must close this NativeImage.
-                byte[] png = null;
-                try {
-                    png = shot.asByteArray();
-                } catch (Exception e) {
-                    LOGGER.warn("[DungeonTrain] Echo snapshot PNG encode failed", e);
-                } finally {
-                    shot.close();
-                }
-                if (png != null) {
-                    subjectCb.accept(png);
-                    LOGGER.debug("[DungeonTrain] Echo snapshot captured ({} bytes)", png.length);
-                }
-            } else {
-                DynamicTexture texture = new DynamicTexture(shot);
-                ResourceLocation id = mc.getTextureManager().register("dungeontrain_ride", texture);
-                long tick = level.getGameTime();
-                // Keep the DynamicTexture on the snapshot so it can be flushed to disk later (reading
-                // its pixels), freeing this texture when the game has headroom and a menu is open.
-                RideSnapshotGallery.add(
-                        new RideSnapshot(texture, id, captureTag, shot.getWidth(), shot.getHeight(), tick),
-                        ClientDisplayConfig.getRideSnapshotMaxStored(),
-                        ClientDisplayConfig.getRideSnapshotMaxOnDisk());
-                RideSnapshotDirector.onCaptureCommitted(captureTag);
-                LOGGER.debug("[DungeonTrain] Ride snapshot {} tag={} ({}x{}) gallery={}",
-                        id, captureTag, shot.getWidth(), shot.getHeight(), RideSnapshotGallery.size());
-            }
+            grab(mc, level, subjectCb);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Ride snapshot capture failed", e);
         } finally {
-            // Restore the real on-screen target before render() returns / the frame is blitted.
-            ((MinecraftMainRenderTargetAccessor) mc).dungeontrain$setMainRenderTarget(realMain);
-            realMain.bindWrite(true);
             capturing = false;
             mc.options.setCameraType(savedCameraType);
             gr.setRenderBlockOutline(true);
+            // Re-bind the main target so the original renderLevel pass draws the real view cleanly.
+            mc.getMainRenderTarget().bindWrite(true);
         }
     }
 
-    /** Lazily create / resize the off-screen target to match the main target (same aspect + depth copy). */
-    private static RenderTarget acquireTarget(RenderTarget main) {
-        int w = main.width;
-        int h = main.height;
-        if (w <= 0 || h <= 0) return null;
-        if (offscreenTarget == null) {
-            offscreenTarget = new TextureTarget(w, h, true, Minecraft.ON_OSX);
-            offscreenTarget.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
-        } else if (offscreenTarget.width != w || offscreenTarget.height != h) {
-            offscreenTarget.resize(w, h, Minecraft.ON_OSX);
+    /** Read back the just-rendered snapshot-pose frame and route it to the gallery or echo callback. */
+    private static void grab(Minecraft mc, ClientLevel level, Consumer<byte[]> subjectCb) {
+        NativeImage full = Screenshot.takeScreenshot(mc.getMainRenderTarget());
+        NativeImage shot = downscale(full, MAX_EDGE);
+        if (shot != full) full.close();   // downscale returns src as-is when already small
+
+        if (subjectCb != null) {
+            // Targeted echo capture: PNG-encode the grabbed frame and hand it to the callback —
+            // it never enters the gallery, so we own and must close this NativeImage.
+            byte[] png = null;
+            try {
+                png = shot.asByteArray();
+            } catch (Exception e) {
+                LOGGER.warn("[DungeonTrain] Echo snapshot PNG encode failed", e);
+            } finally {
+                shot.close();
+            }
+            if (png != null) {
+                subjectCb.accept(png);
+                LOGGER.debug("[DungeonTrain] Echo snapshot captured ({} bytes)", png.length);
+            }
+        } else {
+            DynamicTexture texture = new DynamicTexture(shot);
+            ResourceLocation id = mc.getTextureManager().register("dungeontrain_ride", texture);
+            long tick = level.getGameTime();
+            // Keep the DynamicTexture on the snapshot so it can be flushed to disk later (reading
+            // its pixels), freeing this texture when the game has headroom and a menu is open.
+            RideSnapshotGallery.add(
+                    new RideSnapshot(texture, id, captureTag, shot.getWidth(), shot.getHeight(), tick),
+                    ClientDisplayConfig.getRideSnapshotMaxStored(),
+                    ClientDisplayConfig.getRideSnapshotMaxOnDisk());
+            RideSnapshotDirector.onCaptureCommitted(captureTag);
+            LOGGER.debug("[DungeonTrain] Ride snapshot {} tag={} ({}x{}) gallery={}",
+                    id, captureTag, shot.getWidth(), shot.getHeight(), RideSnapshotGallery.size());
         }
-        return offscreenTarget;
     }
 
     /** Nearest-neighbour down-scale so the long edge is at most {@code maxEdge}. */
@@ -246,20 +227,10 @@ public final class RideSnapshotCapture {
         return dst;
     }
 
-    /** Drop any pending/in-flight capture and free the off-screen target (world leave). */
+    /** Drop any pending/in-flight capture (world leave). */
     public static void disposeTarget() {
         pendingTag = null;
         pendingSubjectCallback = null;
         pendingSubjectId = -1;
-        RenderTarget target = offscreenTarget;
-        if (target != null) {
-            offscreenTarget = null;
-            // GL buffer teardown must run on the render thread.
-            if (RenderSystem.isOnRenderThread()) {
-                target.destroyBuffers();
-            } else {
-                RenderSystem.recordRenderCall(target::destroyBuffers);
-            }
-        }
     }
 }
