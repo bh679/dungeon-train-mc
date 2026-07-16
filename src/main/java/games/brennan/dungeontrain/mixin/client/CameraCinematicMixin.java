@@ -39,8 +39,8 @@ public abstract class CameraCinematicMixin {
         CallbackInfo ci
     ) {
         // Off-screen ride-snapshot pass: apply the snapshot's third-person pose to
-        // our own Camera instance. Set only around RideSnapshotCapture's own
-        // renderLevel call, so it never touches the player's on-screen camera.
+        // our own Camera instance. Armed only around RideSnapshotCapture's extra
+        // off-screen renderLevel call, so it never touches the player's on-screen camera.
         if (RideSnapshotCapture.isCapturing()) {
             CinematicCameraController.Pose shot = RideSnapshotCapture.capturePose();
             if (shot != null) {
