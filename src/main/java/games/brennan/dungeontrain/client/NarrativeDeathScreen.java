@@ -346,8 +346,8 @@ public final class NarrativeDeathScreen extends Screen {
         if (photoSent) return;
         photoSent = true;
         RideSnapshot fall = bgFor(0); // page 0 is FALL, assigned a SCENIC shot
-        byte[] png = fall != null ? fall.pngBytes() : null;
-        DungeonTrainNet.sendToServer(new DeathPhotoPacket(png != null ? png : new byte[0]));
+        byte[] jpeg = fall != null ? fall.photoBytes() : null;
+        DungeonTrainNet.sendToServer(new DeathPhotoPacket(jpeg != null ? jpeg : new byte[0]));
     }
 
     @Override

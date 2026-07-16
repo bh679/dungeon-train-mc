@@ -47,7 +47,7 @@ public final class RideSnapshotCapture {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     /** Long-edge resolution stored shots are down-scaled to. */
-    private static final int MAX_EDGE = 640;
+    private static final int MAX_EDGE = 1080;
     /** Tag used to frame a targeted echo capture — SOCIAL gives a front/side portrait angle. */
     private static final SnapshotTag SUBJECT_TAG = SnapshotTag.SOCIAL;
     /** Render frames a targeted echo capture keeps retrying a clean angle before giving up (~1.3 s @ 60 fps). */
@@ -172,19 +172,17 @@ public final class RideSnapshotCapture {
         if (shot != full) full.close();   // downscale returns src as-is when already small
 
         if (subjectCb != null) {
-            // Targeted echo capture: PNG-encode the grabbed frame and hand it to the callback —
+            // Targeted echo capture: JPEG-encode the grabbed frame and hand it to the callback —
             // it never enters the gallery, so we own and must close this NativeImage.
-            byte[] png = null;
+            byte[] jpeg;
             try {
-                png = shot.asByteArray();
-            } catch (Exception e) {
-                LOGGER.warn("[DungeonTrain] Echo snapshot PNG encode failed", e);
+                jpeg = SnapshotJpegEncoder.encode(shot);
             } finally {
                 shot.close();
             }
-            if (png != null) {
-                subjectCb.accept(png);
-                LOGGER.debug("[DungeonTrain] Echo snapshot captured ({} bytes)", png.length);
+            if (jpeg != null) {
+                subjectCb.accept(jpeg);
+                LOGGER.debug("[DungeonTrain] Echo snapshot captured ({} bytes)", jpeg.length);
             }
         } else {
             DynamicTexture texture = new DynamicTexture(shot);

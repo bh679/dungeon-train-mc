@@ -28,7 +28,7 @@ public final class DeathReportBuffer {
 
     /** How long to wait for the client's ride photo before posting with the gear-composite fallback. */
     private static final long TIMEOUT_MS = 5_000L;
-    private static final String PHOTO_FILENAME = "ride.png";
+    private static final String PHOTO_FILENAME = "ride.jpg";
 
     private record Pending(ServerPlayer player, String title, String description,
                            List<DeathField> fields, List<ItemStack> fallbackIcons,
