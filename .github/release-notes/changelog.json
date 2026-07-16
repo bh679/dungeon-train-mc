@@ -4711,17 +4711,17 @@
       "released_at": null
     },
     {
-      "id": "lamppost-carriage-and-spawn-tuning",
-      "version": "0.461.0",
-      "type": "content",
-      "title": "New lamppost content + enemy spawn tuning",
-      "summary": "A new lamppost content set adds decorated loot pots to the train \u2014 food, a weapon, and the occasional signed Deathnote book. Breezes now show up in the void, end, and upside-down stretches, and enemy/loot spawn balance has been retuned across several carriage types.",
+      "id": "multilingual-death-notes",
+      "version": "0.462.0",
+      "type": "feat",
+      "title": "Death Notes in your own language",
+      "summary": "You can now create a Death Note by naming your book & quill in your own language \u2014 not just English. A book titled \u6b7b\u4ea1\u7b14\u8bb0 (Chinese) or \"Nota de Muerte\" (Spanish) casts the curse exactly like \"Death Note\" does, and any language's title works for every player, ignoring capitals and spacing. Simplified Chinese and Spanish versions of the in-world Death Note instruction book are included, so the name the book teaches you is the name that actually works.",
       "highlights": [
-        "New lamppost content: decorated pots with food, a wooden axe, and a chance at a signed Deathnote book",
-        "Breeze enemies now appear in VOID / END / UPSIDE_DOWN phases and later stages",
-        "Retuned enemy and loot spawn weights across bogged, skeleton, and zombie-room carriages"
+        "Make a Death Note in your own language \u2014 \u6b7b\u4ea1\u7b14\u8bb0, Nota de Muerte, or English \"Death Note\"",
+        "Any language's title works for every player; capitals and spacing are ignored",
+        "Added Simplified Chinese and Spanish Death Note instruction books"
       ],
-      "pr": 765,
+      "pr": 766,
       "date": "2026-07-16",
       "released": false,
       "released_in": null,
