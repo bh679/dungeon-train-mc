@@ -90,6 +90,23 @@ public final class LocalizationCreditRegistry {
         return out;
     }
 
+    /**
+     * Whether {@code localeCode}'s translation is human-reviewed — {@code true} if any loaded
+     * credit for that locale carries {@code "human_reviewed": true}. Used to render the language's
+     * Dungeon Train logo at full (vs faded) opacity in the language-selection list.
+     */
+    public static synchronized boolean isHumanReviewed(String localeCode) {
+        if (localeCode == null || localeCode.isEmpty()) {
+            return false;
+        }
+        for (LocalizationCredit credit : CREDITS.values()) {
+            if (credit.humanReviewed() && credit.locale().equalsIgnoreCase(localeCode)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static LocalizationCredit parse(InputStream in, ResourceLocation id) throws ParseException {
         JsonElement rootEl;
         try {
@@ -105,8 +122,9 @@ public final class LocalizationCreditRegistry {
         String locale = requiredString(root, "locale");
         String name = requiredString(root, "name");
         Optional<String> url = optionalString(root, "url");
+        boolean humanReviewed = optionalBoolean(root, "human_reviewed");
 
-        return new LocalizationCredit(id, locale, name, url);
+        return new LocalizationCredit(id, locale, name, url, humanReviewed);
     }
 
     private static String requiredString(JsonObject obj, String key) throws ParseException {
@@ -126,6 +144,14 @@ public final class LocalizationCreditRegistry {
         }
         String v = obj.get(key).getAsString();
         return v.isEmpty() ? Optional.empty() : Optional.of(v);
+    }
+
+    /** Optional boolean field; {@code false} when absent or not a boolean primitive. */
+    private static boolean optionalBoolean(JsonObject obj, String key) {
+        if (!obj.has(key) || !obj.get(key).isJsonPrimitive() || !obj.get(key).getAsJsonPrimitive().isBoolean()) {
+            return false;
+        }
+        return obj.get(key).getAsBoolean();
     }
 
     /** Strip the trailing {@code .json} from a resource location, keeping namespace + path. */

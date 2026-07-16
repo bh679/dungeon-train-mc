@@ -4792,6 +4792,22 @@
       "released": true,
       "released_in": "v0.464.0",
       "released_at": "2026-07-16T05:48:40Z"
+    },
+    {
+      "id": "human-reviewed-localization-badge",
+      "version": "0.465.0",
+      "type": "feat",
+      "title": "Human-reviewed translations marked in the language menu",
+      "summary": "The language selection screen now shows at a glance which Dungeon Train translations have been proofread by a human. Human-reviewed languages display a solid Dungeon Train badge; machine-translated languages show a faded one. Chinese is the first fully human-reviewed translation.",
+      "highlights": [
+        "Chinese (\u7b80\u4f53\u4e2d\u6587) is now marked as human-reviewed with a solid badge",
+        "Machine-translated languages show a faded badge so you know what's AI vs. proofread"
+      ],
+      "pr": 770,
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
