@@ -31,7 +31,7 @@ public abstract class LanguageSelectEntryLogoMixin {
     /** Source texture is square 64x64. */
     private static final int TEX = 64;
     /** Opacity for languages whose translation has not been human-reviewed. */
-    private static final float UNREVIEWED_ALPHA = 0.1F;
+    private static final float UNREVIEWED_ALPHA = 0.35F;
 
     @Inject(
         method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIIIIIIZF)V",

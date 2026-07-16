@@ -30,7 +30,7 @@ only resource packs (the same channel your lang-file override already uses) are 
 - `human_reviewed` — optional boolean, default `false`. Set `true` once a human has proofread
   this locale's translation. A language counts as human-reviewed if **any** of its credit entries
   sets this `true`. This drives the Dungeon Train logo in the vanilla language-selection list:
-  human-reviewed languages show the logo solid, everything else shows it faded to 10% opacity
+  human-reviewed languages show the logo solid, everything else shows it faded to 35% opacity
   (see `LanguageSelectEntryLogoMixin`).
 
 ## Where it shows up
