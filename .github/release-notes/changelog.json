@@ -4854,6 +4854,21 @@
       "released_at": null
     },
     {
+      "id": "kinetic-hosting-integration-modpack",
+      "version": "0.466.0",
+      "type": "content",
+      "title": "Kinetic Hosting banner in the modpacks",
+      "summary": "The Dungeon Train modpacks now bundle the Kinetic Hosting Integration mod, adding a Kinetic Hosting banner to the multiplayer menu. It's on by default and links straight to our hosting partner.",
+      "highlights": [
+        "Kinetic Hosting Integration bundled in both the CurseForge and Modrinth packs, enabled by default",
+        "Multiplayer-menu banner links to the Kinetic Hosting affiliate page out of the box"
+      ],
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "multilingual-localization-10-major-languages",
       "version": "0.467.0",
       "type": "feat",

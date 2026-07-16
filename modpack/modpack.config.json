@@ -29,7 +29,8 @@
     { "name": "Item Highlighter", "slug": "item-highlighter", "project_id": 521590, "file_id": 5591015, "required": true, "modrinth_project": "item-highlighter", "modrinth_version": "AsQ0Y2G9" },
     { "name": "Pick Up Notifier", "slug": "pick-up-notifier", "project_id": 351441, "file_id": 6409785, "required": true, "modrinth_project": "pick-up-notifier", "modrinth_version": "5NZounJc" },
     { "name": "Puzzles Lib", "slug": "puzzles-lib", "project_id": 495476, "file_id": 8251525, "required": true, "modrinth_project": "puzzles-lib", "modrinth_version": "5A6wiMVf" },
-    { "name": "Smooth Swapping", "slug": "smooth-swapping", "project_id": 513689, "file_id": 7274625, "required": false, "modrinth_project": "smooth-swapping", "modrinth_version": "tnvwgXE6" }
+    { "name": "Smooth Swapping", "slug": "smooth-swapping", "project_id": 513689, "file_id": 7274625, "required": false, "modrinth_project": "smooth-swapping", "modrinth_version": "tnvwgXE6" },
+    { "name": "Kinetic Hosting Integration", "slug": "kinetic-hosting-integration", "project_id": 1048150, "file_id": 8188461, "required": true, "modrinth_project": "kinetic-hosting-integration", "modrinth_version": "MU40ZSjV" }
   ],
   "curseforge_relations": [
     { "slug": "sable", "type": "requiredDependency" },

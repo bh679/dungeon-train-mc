@@ -248,6 +248,7 @@ jobs:
             pick-up-notifier(optional)
             puzzles-lib(optional)
             smooth-swapping(optional)
+            kinetic-hosting-integration(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
