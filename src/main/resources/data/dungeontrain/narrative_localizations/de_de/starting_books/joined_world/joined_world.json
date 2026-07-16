@@ -1,0 +1,12 @@
+{
+  "id": "joined_world",
+  "title": "Mehrspieler?",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Willkommen an Bord, Abenteurer!\nEiner Welt beigetreten, was? Das ist aufregend.\n\nErkundet gemeinsam, verbindet euch mit dem Zug gemeinsam!\n\nMit mehr Leuten drum herum wird der Zug bestimmt wachsen!\n\nGlaubst du, wir bekommen mehr Zugwaggons?",
+    "Hey, du hast es geschafft! Du bist einer neuen Welt beigetreten!\nEin neuer Zug!\nWillkommen im Dungeon Train!\n\nWas ist der Dungeon Train?\nWarum ist er hier?\nWas wirst du finden?\n\nViel Glück!",
+    "Du hast es geschafft! Du bist einer neuen Welt beigetreten!\nDu bist dem Dungeon Train beigetreten!\n\nMehrspieler,\nmehrere Leute, in einer einzigen Welt!\nGemeinsam.\n\nWas für eine Technologie!\nComputer, die sich verbinden.\nMenschen, die miteinander umgehen,\nin einem Zug\nin deinem Computer\nim Internet!"
+  ]
+}

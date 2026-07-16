@@ -1,0 +1,46 @@
+{
+  "id": "wren_halloway_rebuttals",
+  "character": "Wren Halloway",
+  "story": "Widerlegungen",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Brief eins",
+      "variants": [
+        "Faulthurst.\nIch habe deine Bücher gelesen.\nAlle.\n\n\nDu schriebst:\n\"wir vertrauen unseren augen\nan einem ort, wo wir\nnarren sind, irgendeinem\nunserer sinne zu trauen.\"\n\n\nNiedlich.\n\n\nEs ist prozedural.\nDer Seed ändert sich zwischen den Räumen.\nDas sind nicht deine Sinne, die versagen.\nDas ist eine fehlerhafte Schleife.\n\n\n— Wren",
+        "Faulthurst.\nIch arbeite mich durch deine Bücher.\nDieses handelt vom Gewicht.\n\n\nDu schriebst:\n\"Hast du je\ndas Gewicht eines\nunendlichen Zuges bedacht?\nDenn jeder dieser\nBlöcke würde etwas\nKonstantes wiegen.\"\n\n\nUnd.\n\n\nNichts wiegt irgendetwas.\nDas Gleis existiert nur\ndort, wo du es sehen kannst.\nEs gibt keinen unendlichen Zug.\nEs gibt einen Waggon nach dem anderen.\n\n\n— W."
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Brief zwei",
+      "variants": [
+        "Faulthurst.\nZweiter Brief.\nIch bin nicht fertig.\n\n\nDu schriebst:\n\"Ich finde euch\nfaszinierend.\nEure Unterschiede.\nDie feinen Arten,\nwie ihr euch\nvoneinander abhebt, ohne\nes auch nur zu versuchen.\"\n\n\nGelangweilt.\n\n\nDu bist zu lange\nhier gewesen.\nDu findest uns nicht\n\"faszinierend.\"\nDu findest uns neu.\nDas ist nicht dasselbe.\n\n\nEine Skeptikerin, Wren",
+        "Faulthurst.\nDerselbe Autor.\nAnderes Buch.\nDasselbe Problem.\n\n\nDu schriebst:\n\"Die Bücher werden sich\nbald öffnen.\"\n\n\nBald.\n\n\nVor Monaten.\nUnd davor.\nEs gibt kein \"bald.\"\nEs gibt jetzt.\nDu ziehst es hin.\n\n\n— Wren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Brief drei",
+      "variants": [
+        "Faulthurst.\nDie mit der Wurst.\nJa. Die.\n\n\nDu schriebst:\n\"eine Wurst? Und nur\neine? Wer hat sie gemacht?\nSie war einzigartig.\"\n\n\nStatistik.\n\n\nIch habe gezählt.\nSchweinefleisch taucht ständig auf.\nRindfleisch taucht ständig auf.\nDie Wurst tauchte\neinmal auf. Das ist kein\nWunder, Faulthurst.\nDas ist das Muster.\nDas eine unter zehntausend\nist das, was die\nanderen neuntausend\ngewöhnlich aussehen lässt.\n\n\n— Wren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Brief vier",
+      "variants": [
+        "Faulthurst.\nDie mit dem \"Zurückkommen\".\nIch habe Anmerkungen.\n\n\nDu schriebst:\n\"Wenn nicht, versuch\nzurückzukommen! Ich hab's\nbei anderen geschehen\nsehen! Wie sie es\nmachen, hab ich nicht den\nblassesten Schimmer.\"\n\n\nEinfach.\n\n\nDu wachst auf, weil\ndie Welt sich dorthin zurücksetzt,\nwo du standest.\nDu kehrst nicht zurück.\nDie Welt spult zurück.\nDas ist die Antwort.\n\n\nNur.\nIch erinnere mich an die Kälte.\nDie Welt spulte zurück.\nIch nicht.\nEigentlich.",
+        "Faulthurst.\nDu schriebst über die Zeit.\nNatürlich tatest du das.\n\n\nDu schriebst:\n\"Ich weiß, dass die Zeit\nsich nicht so bewegen\nsollte, wie sie es im\nDungeon Train\ntut. Das weiß ich\nirgendwie.\"\n\n\nGezählt.\n\n\nIch habe gezählt.\nTage dauern etwa\nzwanzig Minuten.\nNächte sind kürzer.\nDas ist die Uhr.\nDas ist die Antwort.\n\n\nNur.\nTage hier sind nicht\nTage draußen.\nDas weiß ich.\nGenau wie du.\nEigentlich."
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Brief fünf",
+      "variants": [
+        "Faulthurst.\nDer letzte.\nGlaube ich.\n\n\nDu schriebst:\n\"Es ist eine Freude\nüber alle Freuden,\ndeinem Abenteuer\nbeizuwohnen.\"\n\n\nFreude.\n\n\nDas meintest du ernst.\n\n\nVerdammt.",
+        "Faulthurst.\n\n\nIch schreibe keine\nweitere.\n\n\nDas ist die Widerlegung."
+      ]
+    }
+  ]
+}

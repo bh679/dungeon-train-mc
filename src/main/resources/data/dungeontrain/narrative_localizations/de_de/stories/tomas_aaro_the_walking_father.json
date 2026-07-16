@@ -1,0 +1,55 @@
+{
+  "id": "tomas_aaro_the_walking_father",
+  "character": "Tomas Aaro",
+  "story": "Der wandernde Vater",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Brief eins",
+      "variants": [
+        "Meine Liebe.\n\nIch habe den Zug gefunden.\nEr ist echt.\n\nUnd doch hege ich noch Zweifel.\n\n\nMan sagt, der Zug trägt, was man braucht.\n\nNiemand sagt, was genau.\nIch hoffe nur, dass unsere Not nicht zu groß ist.\n\nErst kurz an Bord, und er hat kein Ende.\n\n— Tomas",
+        "Ich habe meinem Kind gesagt, ich sei bis zur Ernte zurück.\n\nIch hätte keine Jahreszeit versprechen sollen. Ich weiß nicht, ob es sie an diesem Ort gibt.\n\nDoch dieser Zug birgt unsere einzige Hoffnung.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Brief zwei",
+      "variants": [
+        "Mein Kind.\n\nAuf diesem Zug sind tote Männer. Sie gehen umher.\n\nIch weiß, wie das klingt.\n\nPapa musste gegen einen kämpfen.\n\n\nMeine Hände kennen Saat und Boden.\nHeute lernten sie, dass eine Hacke nach zwei Seiten schlägt.\n\nIch hatte Angst. Ich tat es trotzdem. Das ist es, was Mut bedeutet.\n\nEr ging zu Boden. Ich bin nicht verletzt.\n\nPapa kommt trotzdem nach Hause.\n\n— Papa",
+        "Mein Kind.\n\nIch habe etwas getan, das ich nicht rückgängig machen kann. Ein Mann kam auf mich zu, nur war er kein Mann mehr.\n\nIch benutzte, was ich in den Händen hielt.\n\n\nDu hättest die Augen geschlossen. Ich hielt meine offen. Einer von uns musste es.\n\nDanach zitterten meine Hände, wie deine es in der Kälte tun.\n\nIch hielt sie, bis sie ruhig waren. Dann ging ich weiter.\n\n— Papa"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Brief drei",
+      "variants": [
+        "Meine Liebe.\n\nHeute hat eine Ratte zu mir gesprochen. In einer kleinen Weste.\n\nIch verliere nicht den Verstand. Andere sehen sie auch.\n\nSie gab mir Papier und ein Rätsel.\n\n\n\"Ein Samen jagt dem Frühling nicht nach\", sagte sie. \"Er wartet. Die Jungen lernen es zuerst.\"\n\nDann wünschte sie mir Gutes und sah traurig aus. Ich dankte ihr und ging weiter.\n\n— Tomas",
+        "Meine Liebe.\n\nIch traf die Ratte wieder. Sie spricht wie ein Gentleman, was bei einer Ratte seltsam ist.\n\nIch fragte sie, wo es zum vorderen Ende geht.\n\n\n\"Für die Gehenden gibt es kein vorderes Ende\", sagte sie. \"Nur die, die anhalten, werden gefunden. Die Kleinen wissen es.\"\n\nIch habe keine Zeit anzuhalten. Sie wünschte mir trotzdem Gutes.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Brief vier",
+      "variants": [
+        "Meine Liebe.\n\nDer Zug ist voller verschlossener Kisten. Jeder Wagen hat welche.\n\nJede einzelne könnte enthalten, was wir brauchen. Also öffne ich sie alle.\n\n\nGold. Eisen. Genug, um das Dorf zweimal zurückzukaufen.\n\nIch nehme alles. Es ist für dich, sage ich.\n\nBei der richtigen Kiste höre ich auf. Auch das sage ich mir immer wieder.\n\n— Tomas",
+        "Meine Liebe.\n\nImmer wieder will ich weitergehen. Dann ist da noch eine Kiste, und noch eine.\n\nMit dem, was ich zurückgelassen habe, könnte ein Mann eine Scheune füllen.\n\n\nIch nehme jetzt nur noch, was in den Rucksack passt. Der Rucksack ist immer voll.\n\nGestern konnte ich mich nicht erinnern, was ich an Bord zu finden suchte.\n\nNur, dass ich es erkennen würde. Also öffne ich weiter Kisten.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Brief fünf",
+      "variants": [
+        "ich weiß nicht, wie lange ich schon hier bin.\n\ndie räder machen drei töne. die zähle ich statt der tage.\n\nich habe versucht, den namen des dorfes laut zu sagen. er wollte nicht kommen.\n\n\ndas orangene buch kenne ich noch. klein. orange. sie hat es nie aus der hand gelegt.\n\nwenn ich das halten kann, kann ich den rest halten.\n\noder nicht.\n\n— tomas",
+        "ich ertappe mich beim reden. laut. niemand da.\n\nich sehe auf meine hände, und es sind nicht die eines bauern. ich weiß nicht, wessen hände das sind.\n\n\nich gehe weiter, weil anhalten sich wie sterben anfühlt.\n\ndie ratte sagte das gegenteil. die ratte. habe ich die ratte geträumt.\n\nich vergesse, worauf ich zugehe. ich gehe trotzdem darauf zu.\n\n— tomas"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Brief sechs",
+      "variants": [
+        "Meine Liebe.\n\nVoraus ist ein Kind. Weit vorne im Wagen.\n\nSie hält etwas Orangenes. Sie legt es nicht aus der Hand.\n\nMeine Brust. Meine Brust.\n\n\nIst sie es? Könnte sie es sein, nach all dem?\n\nWer ist die Frau neben ihr? Wo ist ihre Mutter? Warum sollte überhaupt ein Kind hier sein?\n\nOder habe ich den Verstand verloren, und der Zug ist nur gütig?\n\n— Papa",
+        "Meine Liebe.\n\nEin Kind, voraus im Wagen. Eine Frau, die ich nicht kenne, sitzt bei ihr.\n\nDas Kind hat etwas Orangenes im Schoß.\n\nIch kenne dieses Orange.\n\n\nWas, wenn ich hingehe und sie es nicht ist? Was bleibt dann von mir?\n\nUnd was, wenn sie es ist? Warum ist sie hier? Wo bist du? Und wer ist diese Frau?\n\nIch bin stehen geblieben. Nach all dieser Zeit bin ich stehen geblieben.\n\n— Tomas"
+      ]
+    }
+  ]
+}

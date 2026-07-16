@@ -1,0 +1,54 @@
+{
+  "id": "adventureitemnames:crafted_item_description",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "Gefertigt",
+      "refs": [
+        {
+          "ref": "adventureitemnames:hand_crafted_with_love",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " von ",
+      "newline": false,
+      "label": "Spieler",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/player_name",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.15056606,
+      "connection": " aus ",
+      "newline": false,
+      "label": "Material",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/item_material",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.009645718,
+      "connection": "Kein Dank an ",
+      "newline": true,
+      "label": "Kein Dank an",
+      "refs": [
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 2.0
+        }
+      ]
+    }
+  ]
+}
