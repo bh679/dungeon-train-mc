@@ -4901,6 +4901,22 @@
       "released": true,
       "released_in": "v0.468.0",
       "released_at": "2026-07-16T13:06:21Z"
+    },
+    {
+      "id": "death-screen-photo-resolution",
+      "version": "0.469.0",
+      "type": "feat",
+      "title": "Sharper death-screen photos",
+      "summary": "Your death-screen ride photo now captures at a much higher resolution, so the scene looks noticeably crisper.",
+      "highlights": [
+        "Ride photos capture at up to 1080p instead of the old lower-res cap",
+        "Photos are compressed smartly before sending, keeping load times snappy"
+      ],
+      "pr": 778,
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
