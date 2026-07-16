@@ -4792,6 +4792,21 @@
       "released": true,
       "released_in": "v0.464.0",
       "released_at": "2026-07-16T05:48:40Z"
+    },
+    {
+      "id": "corridor-chorus-sweep",
+      "version": "0.464.0",
+      "type": "fix",
+      "title": "Chorus no longer blocks the train in the End band",
+      "summary": "Chorus plants that occasionally grew into the train's path through the floating End-island stretch are now cleared out ahead of the train, so the ride no longer snags on them. The islands and the chorus growing on them off to the sides are left untouched.",
+      "highlights": [
+        "Chorus fruit no longer obstructs the train in the End-island band"
+      ],
+      "pr": 771,
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
