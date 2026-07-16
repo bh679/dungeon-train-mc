@@ -1,0 +1,55 @@
+{
+  "id": "soll_marra_the_borrowed_champion",
+  "character": "Soll Marra",
+  "story": "La campeona prestada",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta uno",
+      "variants": [
+        "Día Uno. Equipo.\n\nEspada de hierro, x2 (una de repuesto, según el cuaderno).\nArco, 64 flechas.\nCuero encantado, equipo completo, Protección I.\nPerlas de ender, x16.\nCama, x1.\nPatatas crudas, x32.\n\nEl cuaderno exige manzanas doradas. El pueblo no tenía. Las conseguiré por el camino.\n\nLa rata es real. La he registrado.\n\nDía Uno.\n\n- S. Marra",
+        "Día Uno. Equipo.\n\nEspada de hierro, x2.\nArco, 64 flechas.\nCuero encantado, Prot I.\nPerlas de ender, x16.\nCama.\nPatatas, x32.\n\nEl cuaderno dice que las manzanas doradas son innegociables. El pueblo no tenía. Me fui antes de que nadie notara mi ausencia.\n\nUna rata con chaleco me dio este papel. Parecía triste. No sé cómo registrarla.\n\nEstoy lista.\n\n- Soll Marra"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta dos",
+      "variants": [
+        "El cuaderno es de Halric. Lo empezó hace veintiséis años, el año antes de conocerme.\n\nEspecificaciones para el End. Alturas de los pilares. Jaulas de cristal. Orden de rotura de jaulas. Rendimiento de las explosiones de cama. Trayectorias de perlas.\n\nNunca fue.\n\nMurió en primavera. Algo de los pulmones. El cuaderno lo llama \"cese, sin combate\".\n\nEl dragón nunca conoció a Halric.\n\nSe lo llevo yo a ella.\n\n- S. Marra",
+        "El cuaderno es de Halric. Empezó a escribirlo el año antes de que yo naciera. Veintiséis años de especificaciones y ningún dragón al final.\n\nAlturas de los pilares. Jaulas de cristal. Orden de rotura de jaulas. Rendimiento de las explosiones de cama. Trayectorias de perlas. Toda la pelea, sobre papel.\n\nMurió en primavera. El cuaderno lo llama \"cese, sin combate\". Creo que fueron los pulmones. Tosía mucho. Nunca dijo la palabra.\n\nEl dragón nunca conoció a Halric.\n\nSe lo llevo yo a ella.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta tres",
+      "variants": [
+        "Ejercicio Uno. Vagón 14.\n\nObjetivo: zombi, sin armadura.\nDistancia: 9 bloques.\nCobertura: un banco.\nArco: tensado completo, dos segundos.\n\nEl ciclo de posiciones de Halric se adapta. La lámpara del vagón hace de cristal. Derriba el cristal primero. Gira. Suelta.\n\nResultado: un disparo. Tiempo objetivo del cuaderno, once segundos. El mío, cuatro.\n\nEl cuaderno no dice cómo se siente estar lista.\n\n- S. Marra",
+        "Ejercicio Uno. Vagón catorce.\n\nElegí un zombi porque el cuaderno empieza con cristales y no tengo cristal. La lámpara de la pared tenía la forma correcta.\n\nCobertura de banco. Nueve bloques. Tensado completo. Giro. Suelta.\n\nEl zombi cayó de uno. El tiempo objetivo de Halric era once segundos. Yo tardé cuatro.\n\nEntonces estaba lista. Luego me senté en el banco y el vagón estaba en silencio y la lámpara se mecía un poco.\n\nNo sé qué esperaba.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta cuatro",
+      "variants": [
+        "Vagón 28. Encuentro.\n\nPasajera: mujer, cincuenta y tantos, abrigo de lana gris. Aparentemente real.\n\nMe preguntó el nombre. Le di el título de Halric. Aprendiz de Halric.\n\nDijo: \"Halric. Así que eres su cuarta.\"\n\nNo sabía que había habido tres.\n\nAnoté el número de su asiento. Seguí adelante.\n\nAvistamiento cerrado.\n\n- S. Marra",
+        "Vagón veintiocho. Una mujer de abrigo gris me preguntó el nombre.\n\nLe di el título de Halric. Aprendiz de Halric.\n\nDijo: \"¿Halric? ¿El flechero de la tos?\"\n\nNo sabía que era fabricante de flechas. Llevo uno de sus arcos en la mochila.\n\nDebí sentarme. Debí preguntarle qué más sabía. No lo hice. Caminé hasta el siguiente vagón y aquí estoy sentada, escribiendo.\n\nSigue en el asiento 14. Creo.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta cinco",
+      "variants": [
+        "Intento 47. Ojo de ender.\n\nVector de lanzamiento: adelante, veinticinco grados sobre la horizontal. Según la página nueve del cuaderno.\n\nEl ojo mantuvo la posición. Seis segundos. Rotó en sentido antihorario, y luego se estabilizó.\n\nRumbo: nor-nornoreste.\n\nCambié de vagón. Lo lancé otra vez.\n\nRumbo: nor-nornoreste.\n\nEl vagón mira al sur.\n\nEl ojo lee una dirección. El tren no está en una dirección.\n\nHe dejado de lanzar.\n\n- S. Marra",
+        "El ojo de ender no vuela.\n\nLo lancé cuarenta y siete veces. Adelante. Arriba. De lado. Por la puerta.\n\nEl ojo flota. Gira. No elige dirección. Halric escribió que un ojo siempre elige. El ojo, página nueve: \"lo único honesto en la aproximación a una fortaleza\".\n\nEstá siendo honesto. No hay fortaleza.\n\nMe quedé con el ojo en la mano. Estaba caliente. Ahora no lo está.\n\nNo sé hacia dónde voy.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta seis",
+      "variants": [
+        "He cerrado el cuaderno.\n\nLa tapa es de cuero marrón. Hay nombres en el interior de la cubierta. No los miré.\n\nEscribo en la última página. Halric no escribió aquí.\n\nTengo diecinueve años. Nunca he visto un dragón. No quiero matarla.\n\nVoy a seguir caminando hasta encontrar una ventana con la clase de luz correcta. Entonces me voy a sentar.\n\nSoll Marra",
+        "Cerré el cuaderno.\n\nLa última página está vacía. Me quedé con ella abierta mucho rato.\n\nHalric no está en la última página. Halric está en las primeras. Las he leído demasiadas veces.\n\nTengo diecinueve años. Nunca he visto un dragón. No quiero matarla.\n\nNo sé hacia dónde va este tren. Creo que está bien.\n\nVoy a buscar una ventana.\n\nSoll"
+      ]
+    }
+  ]
+}

@@ -34,7 +34,7 @@ public final class LocalizationCreditLabel extends AbstractWidget {
     private static final int LINK_COLOR = 0xFF6699FF;
     private static final int LINK_HOVER_COLOR = 0xFFFFFFAA;
     private static final int SCREEN_MARGIN = 4;
-    private static final int MAX_LINES = 2;
+    private static final int MAX_LINES = 5;
 
     private final Screen parent;
     private final List<Piece> pieces = new ArrayList<>();
@@ -59,54 +59,73 @@ public final class LocalizationCreditLabel extends AbstractWidget {
             return null;
         }
         Font font = Minecraft.getInstance().font;
-        String prefixText = Component.translatable("gui.dungeontrain.localization_credits.prefix").getString() + " ";
-
-        List<Word> words = new ArrayList<>();
-        words.add(new Word(prefixText, null));
-        for (int i = 0; i < credits.size(); i++) {
-            if (i > 0) {
-                words.add(new Word(", ", null));
-            }
-            LocalizationCredit credit = credits.get(i);
-            words.add(new Word(credit.name(), credit.url().orElse(null)));
-        }
+        String prefixText = Component.translatable("gui.dungeontrain.localization_credits.prefix").getString();
 
         int rightEdge = anchorX - gap;
         int maxLineWidth = Math.max(font.width("…"), rightEdge - SCREEN_MARGIN);
+        int space = font.width(" ");
 
-        // Greedy-pack words onto lines (never splitting a word), capped at MAX_LINES —
-        // an overlong last line is left to overflow rather than growing a 3rd line.
+        // Tokenize into words. Space-delimited scripts wrap between words; a single token wider than
+        // a line (no-space scripts like Thai/Chinese, or one over-long word) is broken into character
+        // chunks so nothing runs off the edge. `spaceBefore` records where a real space belongs, so
+        // char-chunks join seamlessly while separate words stay spaced.
+        List<Word> words = new ArrayList<>();
+        boolean firstToken = true;
+        for (String w : prefixText.trim().split("\\s+")) {
+            if (w.isEmpty()) continue;
+            addToken(words, w, null, !firstToken, maxLineWidth, font);
+            firstToken = false;
+        }
+        for (int i = 0; i < credits.size(); i++) {
+            LocalizationCredit credit = credits.get(i);
+            String url = credit.url().orElse(null);
+            String[] nameWords = credit.name().trim().split("\\s+");
+            for (int j = 0; j < nameWords.length; j++) {
+                String w = nameWords[j];
+                if (w.isEmpty()) continue;
+                // Comma-join consecutive credits (attach to the last token of a non-final credit).
+                if (j == nameWords.length - 1 && i < credits.size() - 1) w = w + ",";
+                addToken(words, w, url, !firstToken, maxLineWidth, font);
+                firstToken = false;
+            }
+        }
+
+        // Greedy-pack onto lines (up to MAX_LINES), adding a space only where one belongs.
         List<List<Word>> lines = new ArrayList<>();
         List<Word> current = new ArrayList<>();
         int currentWidth = 0;
         for (Word word : words) {
             int w = font.width(word.text());
-            if (!current.isEmpty() && currentWidth + w > maxLineWidth && lines.size() + 1 < MAX_LINES) {
+            int gapBefore = (!current.isEmpty() && word.spaceBefore()) ? space : 0;
+            if (!current.isEmpty() && currentWidth + gapBefore + w > maxLineWidth && lines.size() + 1 < MAX_LINES) {
                 lines.add(current);
                 current = new ArrayList<>();
                 currentWidth = 0;
+                gapBefore = 0;
             }
             current.add(word);
-            currentWidth += w;
+            currentWidth += gapBefore + w;
         }
         lines.add(current);
 
-        int lineHeight = font.lineHeight;
-        int totalHeight = lines.size() * lineHeight;
+        int totalHeight = lines.size() * font.lineHeight;
         int topY = anchorBottomY - totalHeight;
 
         int minX = Integer.MAX_VALUE;
         int maxX = Integer.MIN_VALUE;
-        LocalizationCreditLabel label = new LocalizationCreditLabel(parent, 0, topY, 0, totalHeight, lineHeight);
+        LocalizationCreditLabel label = new LocalizationCreditLabel(parent, 0, topY, 0, totalHeight, font.lineHeight);
         for (int line = 0; line < lines.size(); line++) {
             List<Word> lineWords = lines.get(line);
             int lineWidth = 0;
-            for (Word word : lineWords) {
-                lineWidth += font.width(word.text());
+            for (int k = 0; k < lineWords.size(); k++) {
+                if (k > 0 && lineWords.get(k).spaceBefore()) lineWidth += space;
+                lineWidth += font.width(lineWords.get(k).text());
             }
-            int y = topY + line * lineHeight;
+            int y = topY + line * font.lineHeight;
             int x = rightEdge - lineWidth;
-            for (Word word : lineWords) {
+            for (int k = 0; k < lineWords.size(); k++) {
+                Word word = lineWords.get(k);
+                if (k > 0 && word.spaceBefore()) x += space;
                 int w = font.width(word.text());
                 label.pieces.add(new Piece(word.text(), x, x + w, y, word.url()));
                 minX = Math.min(minX, x);
@@ -117,6 +136,26 @@ public final class LocalizationCreditLabel extends AbstractWidget {
         label.setX(minX);
         label.setWidth(Math.max(0, maxX - minX));
         return label;
+    }
+
+    /** Add {@code text} as one word, or several char-chunks when it alone exceeds a line's width. */
+    private static void addToken(List<Word> out, String text, String url, boolean spaceBefore,
+                                 int maxLineWidth, Font font) {
+        if (font.width(text) <= maxLineWidth) {
+            out.add(new Word(text, url, spaceBefore));
+            return;
+        }
+        StringBuilder chunk = new StringBuilder();
+        boolean first = true;
+        for (int c = 0; c < text.length(); c++) {
+            if (chunk.length() > 0 && font.width(chunk.toString() + text.charAt(c)) > maxLineWidth) {
+                out.add(new Word(chunk.toString(), url, first && spaceBefore));
+                first = false;
+                chunk.setLength(0);
+            }
+            chunk.append(text.charAt(c));
+        }
+        if (chunk.length() > 0) out.add(new Word(chunk.toString(), url, first && spaceBefore));
     }
 
     @Override
@@ -166,8 +205,8 @@ public final class LocalizationCreditLabel extends AbstractWidget {
         output.add(NarratedElementType.TITLE, Component.literal(sb.toString()));
     }
 
-    /** One word/segment before line-wrapping — never split across lines. */
-    private record Word(String text, String url) {}
+    /** One word/segment before line-wrapping. {@code spaceBefore} = a real space precedes it. */
+    private record Word(String text, String url, boolean spaceBefore) {}
 
     /** One rendered segment at an absolute screen position after line-wrapping. */
     private record Piece(String text, int startX, int endX, int y, String url) {}

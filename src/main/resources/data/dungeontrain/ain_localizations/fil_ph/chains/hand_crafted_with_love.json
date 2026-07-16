@@ -1,0 +1,32 @@
+{
+  "id": "adventureitemnames:hand_crafted_with_love",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 0.29578075,
+      "connection": "Yaring-kamay",
+      "newline": false,
+      "label": "kamay",
+      "refs": []
+    },
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "Ginawa",
+      "refs": [
+        {
+          "ref": "adventureitemnames:crafted_by",
+          "weight": 5.0
+        }
+      ]
+    },
+    {
+      "chance": 0.29920536,
+      "connection": " nang may pagmamahal",
+      "newline": false,
+      "label": "Nang may Pagmamahal",
+      "refs": []
+    }
+  ]
+}

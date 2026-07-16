@@ -1,0 +1,10 @@
+{
+  "id": "more_questions_next_time",
+  "title": "Lebih Banyak Pertanyaan",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Selamat datang di Dungeon Train\nApa itu kereta ini?\nMengapa kau ada di sini?\nApa yang seharusnya kaulakukan?\nSemua ini pertanyaan bagus\n\nKembalilah lain kali kalau kau ingin lebih banyak pertanyaan."
+  ]
+}

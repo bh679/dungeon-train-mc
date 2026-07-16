@@ -313,7 +313,15 @@ public final class DeathLoreStore {
         // Match the figure's language to the prose language the pool was loaded in:
         // NarrativeContentLocale drives which locale's death_lore templates are active,
         // so Chinese prose must carry Chinese numerals rather than English words.
-        if (NarrativeContentLocale.current().startsWith("zh")) return zhWords(n);
+        String loc = NarrativeContentLocale.current();
+        if (loc.startsWith("zh")) return zhWords(n);
+        // Only the English base spells figures with the English word tables below. Other localized
+        // prose (es, pt, id, ms, fil, vi, th, …) spells figures in its own language via
+        // LocaleNumberWords, so numbers read naturally instead of leaking English words ("zero").
+        if (!loc.isEmpty() && !loc.startsWith("en")) {
+            String spelled = LocaleNumberWords.forLocale(loc, n);
+            return spelled != null ? spelled : Long.toString(n);
+        }
         if (n < 0) return Long.toString(n);
         if (n < 20) return ONES[(int) n];
         if (n < 100) {

@@ -1,0 +1,88 @@
+{
+  "id": "adventureitemnames:playermob_name",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 0.10047965,
+      "connection": " ",
+      "newline": false,
+      "label": "Titulo",
+      "refs": [
+        {
+          "ref": "adventureitemnames:material_or_element",
+          "weight": 40.0
+        },
+        {
+          "ref": "adventureitemnames:title_prefix",
+          "weight": 200.0
+        },
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 80.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "Unang Pangalan",
+      "refs": [
+        {
+          "ref": "adventureitemnames:names",
+          "weight": 250.0
+        },
+        {
+          "ref": "adventureitemnames:type_synonyms",
+          "weight": 30.0
+        },
+        {
+          "ref": "adventureitemnames:colors",
+          "weight": 20.0
+        }
+      ]
+    },
+    {
+      "chance": 0.052698065,
+      "connection": " ",
+      "newline": false,
+      "label": "Apelyido",
+      "refs": []
+    },
+    {
+      "chance": 0.2,
+      "connection": " ",
+      "newline": false,
+      "label": "Tagahanga",
+      "refs": []
+    },
+    {
+      "chance": 0.3,
+      "connection": "",
+      "newline": false,
+      "label": "Suffix",
+      "refs": [
+        {
+          "ref": "adventureitemnames:playernamesuffix",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.01,
+      "connection": ", ",
+      "newline": false,
+      "label": "Titulo",
+      "refs": [
+        {
+          "ref": "adventureitemnames:title_combinations",
+          "weight": 100.0
+        },
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 80.0
+        }
+      ]
+    }
+  ]
+}

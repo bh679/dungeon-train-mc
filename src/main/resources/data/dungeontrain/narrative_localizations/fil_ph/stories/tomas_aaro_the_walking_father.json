@@ -1,0 +1,55 @@
+{
+  "id": "tomas_aaro_the_walking_father",
+  "character": "Tomas Aaro",
+  "story": "Ang Lumalakad na Ama",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Unang Liham",
+      "variants": [
+        "Mahal ko.\n\nNatagpuan ko ang tren.\nTotoo ito.\n\nGayunman may mga pagdududa pa rin ako.\n\n\nSabi nila dinadala ng tren ang kailangan mo.\n\nWalang nagsasabi kung ano nga.\nUmaasa lang akong hindi masyadong malaki ang kailangan natin.\n\nIlang saglit pa lamang sakay, at wala na itong dulo.\n\n— Tomas",
+        "Sinabi ko sa aking anak, babalik ako pagdating ng anihan.\n\nHindi ko dapat ipinangako ang isang panahon. Hindi ko alam kung mayroon nito ang lugar na ito.\n\nPero ang tren na ito ang tangi nating pag-asa.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Ikalawang Liham",
+      "variants": [
+        "Anak ko.\n\nMay mga patay na tao sa tren na ito. Lumalakad sila.\n\nAlam kong kakaiba iyon pakinggan.\n\nKinailangang labanan ni Itay ang isa.\n\n\nBihasa ang mga kamay ko sa binhi at lupa.\nNgayon natutuhan nila na dalawa ang paraan ng pag-indayog ng asarol.\n\nNatakot ako. Ginawa ko pa rin. Iyon ang tapang.\n\nBumagsak ito. Hindi ako nasaktan.\n\nUuwi pa rin si Itay.\n\n— Itay",
+        "Anak ko.\n\nMay ginawa akong hindi na mababawi. May lalaking humarap sa akin, ngunit hindi na siya tao.\n\nGinamit ko ang nasa aking mga kamay.\n\n\nIpipikit mo sana ang iyong mga mata. Iginanap ko ang akin. Isa sa amin ang kailangang gumawa noon.\n\nPagkatapos, nanginig ang mga kamay ko gaya ng sa iyo sa lamig.\n\nHinawakan ko sila hanggang tumigil. Tapos nagpatuloy akong maglakad.\n\n— Itay"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Ikatlong Liham",
+      "variants": [
+        "Mahal ko.\n\nMay dagang kumausap sa akin ngayon. May maliit na tsaleko.\n\nHindi ako nababaliw. Nakikita rin siya ng iba.\n\nBinigyan niya ako ng papel, at isang bugtong.\n\n\n\"Hindi hinahabol ng binhi ang tagsibol,\" sabi niya. \"Naghihintay ito. Ang bata ang unang natututo nito.\"\n\nTapos binati niya ako ng mabuti, at namuklaw ang mukha. Nagpasalamat ako at nagpatuloy sa paglalakad.\n\n— Tomas",
+        "Mahal ko.\n\nNakita ko ulit ang daga. Nagsasalita siyang parang ginoo, na kakaiba sa isang daga.\n\nTinanong ko siya kung saan ang daan patungong harap.\n\n\n\"Walang harap para sa lumalakad,\" sabi niya. \"Ang tumitigil lang ang natatagpuan. Alam ng maliliit.\"\n\nWala akong oras para tumigil. Binati pa rin niya ako ng mabuti.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Ikaapat na Liham",
+      "variants": [
+        "Mahal ko.\n\nPuno ang tren ng mga nakakandadong kahon. May ganito ang bawat bagon.\n\nAlinman ay maaaring maglaman ng kailangan natin. Kaya binubuksan ko lahat.\n\n\nGinto. Bakal. Sapat para bilhing muli ang nayon nang dalawang beses.\n\nKinukuha ko lahat. Para sa iyo ito, sabi ko.\n\nHihinto ako sa tamang kahon. Iyon din ang paulit-ulit kong sinasabi.\n\n— Tomas",
+        "Mahal ko.\n\nLagi kong balak magpatuloy. Tapos may isa pang kahon, at isa pa.\n\nMapupuno ng isang tao ang isang kamalig sa mga naiwan ko na.\n\n\nKinukuha ko na lang ang kasya sa bag ngayon. Laging puno ang bag.\n\nKahapon hindi ko na maalala kung ano ang hinahanap kong isinakay ako rito.\n\nAng alam ko lang, makikilala ko ito. Kaya patuloy kong binubuksan ang mga kahon.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Ikalimang Liham",
+      "variants": [
+        "hindi ko alam kung gaano na katagal ako rito.\n\ntatlong nota ang tunog ng mga gulong. iyon ang binibilang ko sa halip na mga araw.\n\nsinubukan kong sabihin nang malakas ang pangalan ng nayon. ayaw lumabas.\n\n\nkilala ko pa rin ang kahel na libro. maliit. kahel. hindi niya ito binibitawan.\n\nkung mahahawakan ko iyon, mahahawakan ko ang iba pa.\n\ndi ba.\n\n— tomas",
+        "napapansin kong nagsasalita ako. nang malakas. walang kausap.\n\ntinitingnan ko ang mga kamay ko at hindi ito ng magsasaka. hindi ko alam kung kanino ito.\n\n\npatuloy akong naglalakad dahil parang kamatayan ang tumigil.\n\nkabaligtaran ang sabi ng daga. ang daga. napanaginipan ko ba ang daga.\n\nnakakalimutan ko kung ano ang nilalakaran ko. nilalakaran ko pa rin ito.\n\n— tomas"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Ikaanim na Liham",
+      "variants": [
+        "Mahal ko.\n\nMay batang nasa unahan. Malayo sa dulo ng bagon.\n\nMay hawak siyang kahel. Ayaw niyang bitawan.\n\nAng dibdib ko. Ang dibdib ko.\n\n\nSiya kaya? Maaari kaya, pagkatapos ng lahat ng ito?\n\nSino ang babae sa tabi niya? Nasaan ang kanyang ina? Bakit may batang naririto?\n\nO nabaliw na ba ako, at nagiging mabait lang ang tren?\n\n— Itay",
+        "Mahal ko.\n\nMay bata, sa unahan ng bagon. Isang babaeng hindi ko kilala ang nakaupo sa tabi niya.\n\nMay hawak na kahel ang bata sa kandungan.\n\nKilala ko ang kahel na iyon.\n\n\nPaano kung lumapit ako at hindi pala siya? Ano na ang matitira sa akin?\n\nAt paano kung siya nga? Bakit siya naririto? Nasaan ka? At sino ang babaeng iyon?\n\nTumigil na ako sa paglalakad. Pagkatapos ng lahat ng ito, tumigil na ako.\n\n— Tomas"
+      ]
+    }
+  ]
+}
