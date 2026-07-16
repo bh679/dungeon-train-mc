@@ -4613,9 +4613,9 @@
       ],
       "pr": 758,
       "date": "2026-07-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "journey-advancement-timing",
@@ -4629,9 +4629,9 @@
         "'The Upside Down' and 'Reassembly Required' trigger deeper into their zones"
       ],
       "date": "2026-07-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "zh-cn-localization-refresh",
@@ -4647,9 +4647,9 @@
       ],
       "pr": 759,
       "date": "2026-07-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "no-lava-upside-down-band",
@@ -4662,9 +4662,9 @@
         "Mirrored ceiling/island water still hangs static, unchanged"
       ],
       "date": "2026-07-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "freeze-mixin-removed-body-guard",
@@ -4678,9 +4678,9 @@
       ],
       "pr": 761,
       "date": "2026-07-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "upside-down-snow-support",
@@ -4694,9 +4694,9 @@
       ],
       "pr": 764,
       "date": "2026-07-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "copper-carriage-part-stage",
@@ -4706,9 +4706,9 @@
       "summary": "The copper carriage part was mistakenly built from the mud block set; it now uses copper as intended.",
       "highlights": [],
       "date": "2026-07-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "multilingual-death-notes",
@@ -4723,9 +4723,9 @@
       ],
       "pr": 766,
       "date": "2026-07-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:25Z"
     },
     {
       "id": "lamppost-carriage-and-spawn-tuning",
