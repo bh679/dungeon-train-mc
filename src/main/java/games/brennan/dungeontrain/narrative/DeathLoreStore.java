@@ -315,11 +315,13 @@ public final class DeathLoreStore {
         // so Chinese prose must carry Chinese numerals rather than English words.
         String loc = NarrativeContentLocale.current();
         if (loc.startsWith("zh")) return zhWords(n);
-        // Only the English base spells figures as English words. Other localized prose
-        // (es, pt, id, ms, fil, vi, th, …) uses locale-neutral Arabic numerals — every one of
-        // those languages writes numbers as digits, and this avoids English words ("zero")
-        // leaking into translated sentences and per-language number-grammar (gender/plural) pitfalls.
-        if (!loc.isEmpty() && !loc.startsWith("en")) return Long.toString(n);
+        // Only the English base spells figures with the English word tables below. Other localized
+        // prose (es, pt, id, ms, fil, vi, th, …) spells figures in its own language via
+        // LocaleNumberWords, so numbers read naturally instead of leaking English words ("zero").
+        if (!loc.isEmpty() && !loc.startsWith("en")) {
+            String spelled = LocaleNumberWords.forLocale(loc, n);
+            return spelled != null ? spelled : Long.toString(n);
+        }
         if (n < 0) return Long.toString(n);
         if (n < 20) return ONES[(int) n];
         if (n < 100) {
