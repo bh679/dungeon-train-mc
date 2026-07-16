@@ -1,4 +1,5 @@
 {
   "locale": "pt_br",
-  "name": "IA sem revisão humana"
+  "name": "IA sem revisão humana",
+  "human_reviewed": false
 }

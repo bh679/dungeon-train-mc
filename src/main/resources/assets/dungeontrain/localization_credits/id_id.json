@@ -1,4 +1,5 @@
 {
   "locale": "id_id",
-  "name": "AI tanpa tinjauan manusia"
+  "name": "AI tanpa tinjauan manusia",
+  "human_reviewed": false
 }
