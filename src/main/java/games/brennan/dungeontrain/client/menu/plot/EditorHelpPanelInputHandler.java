@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu.plot;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
 import games.brennan.dungeontrain.client.menu.plot.EditorHelpPanelRenderer.CellKind;
@@ -96,6 +97,7 @@ public final class EditorHelpPanelInputHandler {
     }
 
     private static boolean shouldHandle() {
+        if (!EditorStatusHudOverlay.isEditorMenusVisible()) return false;
         if (EditorHelpPanelRenderer.firstNavMenu() == null) return false;
         if (CommandMenuState.isOpen()) return false;
         if (PartPositionMenu.isActive()) return false;
