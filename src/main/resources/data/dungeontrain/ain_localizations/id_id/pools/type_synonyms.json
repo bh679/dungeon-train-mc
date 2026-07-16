@@ -1,0 +1,509 @@
+{
+  "id": "adventureitemnames:type_synonyms",
+  "entries": [
+    {
+      "text": "Bilah",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Pedang",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Pedang Besar",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Golok",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Pedang Lengkung",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Mata Pedang",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Pembelah",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Tusuk",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Kapak",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Kapak Perang",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Pencacah",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Kapak Kecil",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Pembelah",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Bardiche",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Tomahawk",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Penghancur Kayu",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Beliung",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Beliung",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Palu",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Godam",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Cangkul-Beliung",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Pemahat",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Godam Besar",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Penggali Terowongan",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Penggigit Batu",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Sekop",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Sekop",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Cetok",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Serok",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Tongkat Gali",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Pemindah Tanah",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Ekskavator",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Penyerok Pasir",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Cangkul",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Sabit Besar",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Penggarap",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Pembajak",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Garu",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Pemanen",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Bajak",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Sabit",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Helm",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Topi",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Peci",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Mahkota",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Tudung",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Penutup Kepala",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Kudung Zirah",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Kopiah",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Diadem",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Ember Otak",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Tunik",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Kemeja",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Baju Zirah",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Zirah Dada",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Rompi",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Zirah Rantai",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Jubah Ketat",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Oto",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Legging",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Celana",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Si Celana Panjang",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Celana Panjang",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Pelindung Betis",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Celana Selutut",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Celana Santai",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Si Kaus Kaki",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Sepatu",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Bot",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Sandal",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Teracak",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Selop",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Sepatu Bot Karet",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Si Penjejak",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Sarung Kaki",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Si Bakiak",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Perisai",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Perisai Kecil",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Aigis",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Benteng",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Perisai Bundar",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Perisai Besar",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Pelindung",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Penahan",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    }
+  ]
+}

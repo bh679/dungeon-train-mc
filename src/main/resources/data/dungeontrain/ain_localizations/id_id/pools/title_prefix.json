@@ -1,0 +1,305 @@
+{
+  "id": "adventureitemnames:title_prefix",
+  "entries": [
+    {
+      "text": "Putri"
+    },
+    {
+      "text": "Pangeran"
+    },
+    {
+      "text": "Ratu"
+    },
+    {
+      "text": "Raja"
+    },
+    {
+      "text": "Tuan"
+    },
+    {
+      "text": "Nyonya"
+    },
+    {
+      "text": "Tuan Besar"
+    },
+    {
+      "text": "Nyonya Besar"
+    },
+    {
+      "text": "Pelayan"
+    },
+    {
+      "text": "Dewa"
+    },
+    {
+      "text": "Dewi"
+    },
+    {
+      "text": "Arwah"
+    },
+    {
+      "text": "Hantu"
+    },
+    {
+      "text": "Titan"
+    },
+    {
+      "text": "Putra"
+    },
+    {
+      "text": "Ayah"
+    },
+    {
+      "text": "Ibu"
+    },
+    {
+      "text": "Anak Perempuan"
+    },
+    {
+      "text": "Saudari"
+    },
+    {
+      "text": "Saudara"
+    },
+    {
+      "text": "Kekasih"
+    },
+    {
+      "text": "Pembawa"
+    },
+    {
+      "text": "Penghancur"
+    },
+    {
+      "text": "Gladiator"
+    },
+    {
+      "text": "Barbar"
+    },
+    {
+      "text": "Pengintai"
+    },
+    {
+      "text": "Terkutuk Wabah"
+    },
+    {
+      "text": "Pembawa Kiamat"
+    },
+    {
+      "text": "Penjaga Kobar"
+    },
+    {
+      "text": "Putri"
+    },
+    {
+      "text": "Pengembang"
+    },
+    {
+      "text": "Pengembang Utama"
+    },
+    {
+      "text": "Sang Pencipta"
+    },
+    {
+      "text": "Pemilik"
+    },
+    {
+      "text": "Penemu"
+    },
+    {
+      "text": "Kaisar"
+    },
+    {
+      "text": "Penakluk"
+    },
+    {
+      "text": "Kapten"
+    },
+    {
+      "text": "Dokter"
+    },
+    {
+      "text": "PhD"
+    },
+    {
+      "text": "Sarjana"
+    },
+    {
+      "text": "Koki Ulung"
+    },
+    {
+      "text": "Yang Mulia"
+    },
+    {
+      "text": "Wali Kota"
+    },
+    {
+      "text": "Wakil Rektor"
+    },
+    {
+      "text": "Profesor"
+    },
+    {
+      "text": "Cendekiawan"
+    },
+    {
+      "text": "Baron"
+    },
+    {
+      "text": "Baroness"
+    },
+    {
+      "text": "Adipati"
+    },
+    {
+      "text": "Adipati Wanita"
+    },
+    {
+      "text": "Tuan"
+    },
+    {
+      "text": "Dame"
+    },
+    {
+      "text": "Bangsawan"
+    },
+    {
+      "text": "Bangsawan Wanita"
+    },
+    {
+      "text": "Jenderal"
+    },
+    {
+      "text": "Ksatria"
+    },
+    {
+      "text": "Calon Ksatria"
+    },
+    {
+      "text": "Juara"
+    },
+    {
+      "text": "Juara Dunia"
+    },
+    {
+      "text": "Penguasa"
+    },
+    {
+      "text": "Penguasa Dunia"
+    },
+    {
+      "text": "Penguasa Tertinggi"
+    },
+    {
+      "text": "Penguasa Dunia Tertinggi"
+    },
+    {
+      "text": "Penyihir"
+    },
+    {
+      "text": "Penyihir Wanita"
+    },
+    {
+      "text": "Nekromancer"
+    },
+    {
+      "text": "Paladin"
+    },
+    {
+      "text": "Pujangga"
+    },
+    {
+      "text": "Resi"
+    },
+    {
+      "text": "Pertapa"
+    },
+    {
+      "text": "Druid"
+    },
+    {
+      "text": "Alkemis"
+    },
+    {
+      "text": "Peramal"
+    },
+    {
+      "text": "Dukun"
+    },
+    {
+      "text": "Uskup"
+    },
+    {
+      "text": "Santo"
+    },
+    {
+      "text": "Nabi"
+    },
+    {
+      "text": "Imam Besar"
+    },
+    {
+      "text": "Paus"
+    },
+    {
+      "text": "Pendiri"
+    },
+    {
+      "text": "Presiden"
+    },
+    {
+      "text": "Bos"
+    },
+    {
+      "text": "Pandai Besi"
+    },
+    {
+      "text": "Pemburu"
+    },
+    {
+      "text": "Penjelajah"
+    },
+    {
+      "text": "Peramu"
+    },
+    {
+      "text": "Tukang"
+    },
+    {
+      "text": "Orang Penting"
+    },
+    {
+      "text": "Yang Terkemuka"
+    },
+    {
+      "text": "Goblin"
+    },
+    {
+      "text": "Imp"
+    },
+    {
+      "text": "Jagoan"
+    },
+    {
+      "text": "Kepala"
+    },
+    {
+      "text": "Yang Terhormat"
+    },
+    {
+      "text": "Kawan"
+    },
+    {
+      "text": "Sobat"
+    },
+    {
+      "text": "Bro"
+    },
+    {
+      "text": "Sis"
+    },
+    {
+      "text": "Penyihir"
+    }
+  ]
+}
