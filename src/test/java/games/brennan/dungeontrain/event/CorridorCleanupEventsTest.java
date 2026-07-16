@@ -15,11 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Coverage for {@link CorridorCleanupEvents#isNetherClutter} — the predicate that decides which
- * blocks the deferred corridor sweep strips out of the train tunnel inside the Nether band core
- * (cross-chunk basalt-deltas / crimson / warped / soul-sand decoration spillover). This pins the
- * accepted Nether terrain/decoration set and the rejected set (tunnel-template blocks, track,
- * fluids, plain overworld terrain).
+ * Coverage for the two corridor-sweep block predicates:
+ * {@link CorridorCleanupEvents#isNetherClutter} (Nether band core — cross-chunk basalt-deltas /
+ * crimson / warped / soul-sand decoration spillover) and {@link CorridorCleanupEvents#isFoliage}
+ * (all-dimension foliage + End-core chorus spillover). This pins the accepted terrain/decoration
+ * sets and the rejected sets (tunnel-template blocks, track, fluids, End islands, plain terrain).
  *
  * <p>Requires {@code unitTest.enable()} in build.gradle so the NeoForge moddev runtime bootstraps
  * {@code Blocks.*} registry singletons before the test class loads — mirrors {@code TunnelPaletteTest}.</p>
@@ -93,6 +93,34 @@ final class CorridorCleanupEventsTest {
         );
     }
 
+    /**
+     * Foliage the corridor sweep must strip — including End-core chorus, the reported offender that
+     * spills into the ride space from a neighbouring disintegration-core chunk. Direct {@code Blocks.X}
+     * matches only: the tag-backed foliage branches ({@code LEAVES} / {@code SAPLINGS} / flowers) rely
+     * on datapack tags the moddev unit runtime does not bootstrap (same caveat as {@code isNetherClutter}
+     * above), so their in-game behaviour is verified at Gate 2 instead.
+     */
+    static Stream<Block> corridorFoliage() {
+        return Stream.of(
+            Blocks.CHORUS_PLANT,   // the reported offender — End-core chorus in the corridor
+            Blocks.CHORUS_FLOWER,
+            Blocks.VINE            // direct-match foliage that already worked
+        );
+    }
+
+    /**
+     * Blocks the foliage sweep must leave alone — the End islands the chorus grows on ({@code END_STONE},
+     * never removed or the islands collapse), the track/tunnel template, and air.
+     */
+    static Stream<Block> foliagePreserved() {
+        return Stream.of(
+            Blocks.END_STONE,      // the island chorus sits on — must survive
+            Blocks.RAIL,           // track
+            Blocks.STONE_BRICKS,   // tunnel/bed template
+            Blocks.AIR
+        );
+    }
+
     @ParameterizedTest
     @MethodSource("netherClutter")
     @DisplayName("nether terrain/decoration — removed from the band tunnel")
@@ -110,6 +138,26 @@ final class CorridorCleanupEventsTest {
         assertFalse(
             CorridorCleanupEvents.isNetherClutter(block.defaultBlockState()),
             () -> block + " must NOT be treated as Nether clutter"
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("corridorFoliage")
+    @DisplayName("foliage (incl. End-core chorus) — stripped from the corridor")
+    void corridorFoliageStripped(Block block) {
+        assertTrue(
+            CorridorCleanupEvents.isFoliage(block.defaultBlockState()),
+            () -> block + " must be treated as corridor foliage and swept from the ride space"
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("foliagePreserved")
+    @DisplayName("End islands / track / tunnel / air — NOT stripped as foliage")
+    void foliagePreservedKept(Block block) {
+        assertFalse(
+            CorridorCleanupEvents.isFoliage(block.defaultBlockState()),
+            () -> block + " must NOT be treated as corridor foliage"
         );
     }
 

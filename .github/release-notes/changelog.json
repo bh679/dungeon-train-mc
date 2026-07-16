@@ -4792,6 +4792,66 @@
       "released": true,
       "released_in": "v0.464.0",
       "released_at": "2026-07-16T05:48:40Z"
+    },
+    {
+      "id": "human-reviewed-localization-badge",
+      "version": "0.465.0",
+      "type": "feat",
+      "title": "Human-reviewed translations marked in the language menu",
+      "summary": "The language selection screen now shows at a glance which Dungeon Train translations have been proofread by a human. Human-reviewed languages display a solid Dungeon Train badge; machine-translated languages show a faded one. Chinese is the first fully human-reviewed translation.",
+      "highlights": [
+        "Chinese (\u7b80\u4f53\u4e2d\u6587) is now marked as human-reviewed with a solid badge",
+        "Machine-translated languages show a faded badge so you know what's AI vs. proofread"
+      ],
+      "pr": 770,
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-hidden-menus-not-clickable",
+      "version": "0.465.0",
+      "type": "fix",
+      "title": "Hidden editor menus no longer respond to clicks",
+      "summary": "In the in-game editor, hiding the world-space menus with the \"Editor Menus\" toggle now fully disables them \u2014 previously the panels turned invisible but their buttons stayed clickable, so you could still trigger teleports, weight/gate edits, and pickers by accident, and the hidden cells blocked you from breaking the blocks underneath them.",
+      "highlights": [
+        "Hidden editor menus no longer respond to clicks",
+        "Breaking blocks underneath a hidden menu works again"
+      ],
+      "pr": 773,
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stopsound-anticheat-whitelist",
+      "version": "0.466.0",
+      "type": "fix",
+      "title": "Whitelisted /stopsound for Free Play runs",
+      "summary": "Running /stopsound to silence a sound no longer marks your run as cheated \u2014 it has no gameplay effect, so it's now treated the same as /playanimation, /help, and /me.",
+      "highlights": [],
+      "pr": 774,
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "corridor-chorus-sweep",
+      "version": "0.466.0",
+      "type": "fix",
+      "title": "Chorus no longer blocks the train in the End band",
+      "summary": "Chorus plants that occasionally grew into the train's path through the floating End-island stretch are now cleared out ahead of the train, so the ride no longer snags on them. The islands and the chorus growing on them off to the sides are left untouched.",
+      "highlights": [
+        "Chorus fruit no longer obstructs the train in the End-island band"
+      ],
+      "pr": 771,
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

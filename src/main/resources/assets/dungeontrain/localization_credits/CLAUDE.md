@@ -16,7 +16,8 @@ only resource packs (the same channel your lang-file override already uses) are 
 {
   "locale": "es_es",
   "name": "Your Name",
-  "url": "https://example.com"
+  "url": "https://example.com",
+  "human_reviewed": true
 }
 ```
 
@@ -26,6 +27,11 @@ only resource packs (the same channel your lang-file override already uses) are 
 - `url` — optional. If present, your name becomes a clickable link (players get a confirmation
   prompt before it opens, same as every other external link in the game). Omit it to show as
   plain text.
+- `human_reviewed` — optional boolean, default `false`. Set `true` once a human has proofread
+  this locale's translation. A language counts as human-reviewed if **any** of its credit entries
+  sets this `true`. This drives the Dungeon Train logo in the vanilla language-selection list:
+  human-reviewed languages show the logo solid, everything else shows it faded to 35% opacity
+  (see `LanguageSelectEntryLogoMixin`).
 
 ## Where it shows up
 

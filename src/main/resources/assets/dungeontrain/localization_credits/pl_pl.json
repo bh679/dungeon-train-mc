@@ -1,4 +1,5 @@
 {
   "locale": "pl_pl",
-  "name": "SI bez ludzkiej weryfikacji"
+  "name": "SI bez ludzkiej weryfikacji",
+  "human_reviewed": false
 }

@@ -74,6 +74,10 @@
         "obsidian",
         "quartz"
       ]
+    },
+    {
+      "id": "bookslevel2",
+      "weight": 1
     }
   ]
 }

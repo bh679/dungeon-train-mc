@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu.stagepanel;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.StageDuplicateNameScreen;
 import games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenu;
@@ -84,6 +85,7 @@ public final class StagePanelMenuInputHandler {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
+        if (!EditorStatusHudOverlay.isEditorMenusVisible()) return;
         if (!StagePanelMenu.isActive()) return;
         if (mc.screen == null) {
             StagePanelMenuRaycast.updateHovered();
@@ -91,6 +93,7 @@ public final class StagePanelMenuInputHandler {
     }
 
     private static boolean shouldHandle() {
+        if (!EditorStatusHudOverlay.isEditorMenusVisible()) return false;
         if (!StagePanelMenu.isActive()) return false;
         if (CommandMenuState.isOpen()) return false;
         // Defer to the other world-space menus while they own the crosshair.

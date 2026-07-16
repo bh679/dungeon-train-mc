@@ -1,4 +1,5 @@
 {
   "locale": "nl_nl",
-  "name": "AI zonder menselijke controle"
+  "name": "AI zonder menselijke controle",
+  "human_reviewed": false
 }
