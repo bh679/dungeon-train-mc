@@ -1,0 +1,12 @@
+{
+  "id": "joined_world",
+  "title": "Multiplayer?",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Maligayang Pagsakay Manlalakbay!\nSumali sa isang mundo, ha! Nakakatuwa iyan.\n\nMagtuklas nang sabay, kumonekta sa tren nang sabay!\n\nSa mas maraming tao sa paligid, tiyak na lalago ang tren!\n\nSa tingin mo ba magkakaroon tayo ng mas maraming bagon?",
+    "Uy, nagawa mo! Sumali ka sa bagong mundo!\nBagong tren!\nMaligayang pagdating sa Dungeon Train!\n\nAno ang dungeon train?\nBakit ito naririto?\nAno ang matatagpuan mo?\n\nGood luck!",
+    "Nagawa mo! Sumali ka sa bagong mundo!\nSumali ka sa Dungeon Train!\n\nMultiplayer,\nMaraming tao, sa iisang mundo!\nNang sabay-sabay.\n\nAnong teknolohiya!\nMga kompyuter, kumokonekta.\nMga taong nag-uugnayan,\nsa isang tren\nsa iyong kompyuter\nsa internet!"
+  ]
+}

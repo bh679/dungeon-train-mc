@@ -1,0 +1,305 @@
+{
+  "id": "adventureitemnames:title_prefix",
+  "entries": [
+    {
+      "text": "Prinsesa"
+    },
+    {
+      "text": "Prinsipe"
+    },
+    {
+      "text": "Reyna"
+    },
+    {
+      "text": "Hari"
+    },
+    {
+      "text": "Panginoon"
+    },
+    {
+      "text": "Ginang"
+    },
+    {
+      "text": "Amo"
+    },
+    {
+      "text": "Panginoong Babae"
+    },
+    {
+      "text": "Alipin"
+    },
+    {
+      "text": "Diyos"
+    },
+    {
+      "text": "Diyosa"
+    },
+    {
+      "text": "Multo"
+    },
+    {
+      "text": "Espiritu"
+    },
+    {
+      "text": "Titan"
+    },
+    {
+      "text": "Anak na Lalaki"
+    },
+    {
+      "text": "Ama"
+    },
+    {
+      "text": "Ina"
+    },
+    {
+      "text": "Anak na Babae"
+    },
+    {
+      "text": "Kapatid na Babae"
+    },
+    {
+      "text": "Kapatid na Lalaki"
+    },
+    {
+      "text": "Mangingibig"
+    },
+    {
+      "text": "Tagapagdala"
+    },
+    {
+      "text": "Tagawasak"
+    },
+    {
+      "text": "Gladiador"
+    },
+    {
+      "text": "Barbaro"
+    },
+    {
+      "text": "Manunubok"
+    },
+    {
+      "text": "Sinalot"
+    },
+    {
+      "text": "Tagapagdala ng Kapahamakan"
+    },
+    {
+      "text": "Bantay-Apoy"
+    },
+    {
+      "text": "Prinsesa"
+    },
+    {
+      "text": "Developer"
+    },
+    {
+      "text": "Punong Developer"
+    },
+    {
+      "text": "Lumikha"
+    },
+    {
+      "text": "May-ari"
+    },
+    {
+      "text": "Imbentor"
+    },
+    {
+      "text": "Emperador"
+    },
+    {
+      "text": "Mananakop"
+    },
+    {
+      "text": "Kapitan"
+    },
+    {
+      "text": "Doktor"
+    },
+    {
+      "text": "PhD"
+    },
+    {
+      "text": "Nagtapos"
+    },
+    {
+      "text": "Master Chef"
+    },
+    {
+      "text": "Kamahalan"
+    },
+    {
+      "text": "Alkalde"
+    },
+    {
+      "text": "Bise Chancellor"
+    },
+    {
+      "text": "Propesor"
+    },
+    {
+      "text": "Iskolar"
+    },
+    {
+      "text": "Baron"
+    },
+    {
+      "text": "Baronesa"
+    },
+    {
+      "text": "Duke"
+    },
+    {
+      "text": "Dukesa"
+    },
+    {
+      "text": "Ginoo"
+    },
+    {
+      "text": "Dama"
+    },
+    {
+      "text": "Konde"
+    },
+    {
+      "text": "Kondesa"
+    },
+    {
+      "text": "Heneral"
+    },
+    {
+      "text": "Kabalyero"
+    },
+    {
+      "text": "Skwayer"
+    },
+    {
+      "text": "Kampeon"
+    },
+    {
+      "text": "Kampeon ng Mundo"
+    },
+    {
+      "text": "Amo ng Lahat"
+    },
+    {
+      "text": "Amo ng Buong Mundo"
+    },
+    {
+      "text": "Kataas-taasang Amo"
+    },
+    {
+      "text": "Kataas-taasang Amo ng Mundo"
+    },
+    {
+      "text": "Salamangkero"
+    },
+    {
+      "text": "Mangkukulam"
+    },
+    {
+      "text": "Nekromanser"
+    },
+    {
+      "text": "Paladin"
+    },
+    {
+      "text": "Bard"
+    },
+    {
+      "text": "Pantas"
+    },
+    {
+      "text": "Ermitanyo"
+    },
+    {
+      "text": "Druido"
+    },
+    {
+      "text": "Alkemista"
+    },
+    {
+      "text": "Orakulo"
+    },
+    {
+      "text": "Shaman"
+    },
+    {
+      "text": "Obispo"
+    },
+    {
+      "text": "Santo"
+    },
+    {
+      "text": "Propeta"
+    },
+    {
+      "text": "Punong Pari"
+    },
+    {
+      "text": "Papa"
+    },
+    {
+      "text": "Tagapagtatag"
+    },
+    {
+      "text": "Pangulo"
+    },
+    {
+      "text": "Boss"
+    },
+    {
+      "text": "Panday"
+    },
+    {
+      "text": "Mangangaso"
+    },
+    {
+      "text": "Ranger"
+    },
+    {
+      "text": "Tagagawa ng Alak"
+    },
+    {
+      "text": "Tinker"
+    },
+    {
+      "text": "Malaking Kabuluhan"
+    },
+    {
+      "text": "Nangungunang Aso"
+    },
+    {
+      "text": "Goblin"
+    },
+    {
+      "text": "Imp"
+    },
+    {
+      "text": "Kampeon"
+    },
+    {
+      "text": "Pinuno"
+    },
+    {
+      "text": "Ang Kagalang-galang"
+    },
+    {
+      "text": "Kaibigan"
+    },
+    {
+      "text": "Katropa"
+    },
+    {
+      "text": "Pare"
+    },
+    {
+      "text": "Ate"
+    },
+    {
+      "text": "Salamangkero"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "id": "soll_marra_the_borrowed_champion",
+  "character": "Soll Marra",
+  "story": "Ang Hiram na Kampeon",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Unang Liham",
+      "variants": [
+        "Unang Araw. Kagamitan.\n\nEspadang bakal, x2 (isang reserba ayon sa kuwaderno).\nPana, 64 na palaso.\nEngkantadong katad, buong set, Proteksyon I.\nEnder pearl, x16.\nKama, x1.\nHilaw na patatas, x32.\n\nHumihingi ang kuwaderno ng gintong mansanas. Wala nito sa bayan. Kukunin ko habang naglalakbay.\n\nTotoo ang daga. Naitala ko na siya.\n\nUnang Araw.\n\n- S. Marra",
+        "Unang Araw. Kagamitan.\n\nEspadang bakal, x2.\nPana, 64 na palaso.\nEngkantadong katad, Prot I.\nEnder pearl, x16.\nKama.\nPatatas, x32.\n\nSabi ng kuwaderno hindi mapag-uusapan ang gintong mansanas. Wala nito sa bayan. Umalis ako bago may makapansin na wala na ako.\n\nBinigyan ako ng papel na ito ng dagang may tsaleko. Malungkot ang mukha niya. Hindi ko alam kung paano siya itatala.\n\nHanda na ako.\n\n- Soll Marra"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Ikalawang Liham",
+      "variants": [
+        "Kay Halric ang kuwaderno. Sinimulan niya ito dalawampu't anim na taon na ang nakalipas, ang taon bago niya ako nakilala.\n\nMga detalye para sa End. Taas ng mga haligi. Mga hawla ng kristal. Pagkakasunod ng pagbasag sa hawla. Ani ng pagsabog ng kama. Direksyon ng pearl.\n\nHindi siya kailanman nakapunta.\n\nNamatay siya noong tagsibol. Sakit sa baga. \"paghinto, hindi labanan\" ang tawag ng kuwaderno.\n\nHindi kailanman nakilala ng dragon si Halric.\n\nDinadala ko ito sa kanya.\n\n- S. Marra",
+        "Kay Halric ang kuwaderno. Sinimulan niya itong isulat ang taon bago ako ipinanganak. Dalawampu't anim na taon ng mga detalye at walang dragon sa dulo.\n\nTaas ng mga haligi. Mga hawla ng kristal. Pagkakasunod ng pagbasag sa hawla. Ani ng pagsabog ng kama. Direksyon ng pearl. Ang buong laban, sa papel.\n\nNamatay siya noong tagsibol. \"paghinto, hindi labanan\" ang tawag ng kuwaderno. Sa tingin ko ang baga niya. Madalas siyang umuubo. Hindi niya kailanman sinabi ang salita.\n\nHindi kailanman nakilala ng dragon si Halric.\n\nDinadala ko siya sa kanya.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Ikatlong Liham",
+      "variants": [
+        "Ehersisyo Isa. Bagon 14.\n\nTarget: zombie, walang baluti.\nLayo: 9 na bloke.\nTakip: isang bangko.\nPana: buong hila, dalawang segundo.\n\nUmaangkop ang pag-ikot ni Halric. Ang ilaw ng bagon ang kapalit ng kristal. Ihulog muna ang kristal. Pihit. Bitaw.\n\nResulta: isang tira. Target na oras ng kuwaderno labing-isang segundo. Sa akin, apat.\n\nHindi sinasabi ng kuwaderno kung ano ang pakiramdam ng maging handa.\n\n- S. Marra",
+        "Ehersisyo Isa. Bagon labing-apat.\n\nPumili ako ng zombie dahil nagsisimula ang kuwaderno sa mga kristal at wala akong kristal. Ang ilaw sa dingding ang tamang hugis.\n\nTakip ng bangko. Siyam na bloke. Buong hila. Pihit. Bitaw.\n\nBumagsak ang zombie sa isang tira. Labing-isang segundo ang target na oras ni Halric. Apat ang inabot ko.\n\nHanda na ako noon. Tapos umupo ako sa bangko at tahimik ang bagon at bahagyang umindayog ang ilaw.\n\nHindi ko alam kung ano ang inaasahan ko.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Ikaapat na Liham",
+      "variants": [
+        "Bagon 28. Pagkikita.\n\nPasahero: babae, kalagitnaan ng limampu, kulay-abong lanang kapote. Mukhang totoo.\n\nTinanong niya ang pangalan ko. Ibinigay ko ang titulo ni Halric. Alagad ni Halric.\n\nSabi niya, \"Halric. Kaya ikaw ang pang-apat niya.\"\n\nHindi ko alam na may tatlo na pala.\n\nItinala ko ang numero ng upuan niya. Nagpatuloy ako.\n\nSarado ang paglilista.\n\n- S. Marra",
+        "Bagon dalawampu't walo. Isang babae sa kulay-abong kapote ang nagtanong ng pangalan ko.\n\nIbinigay ko ang titulo ni Halric. Alagad ni Halric.\n\nSabi niya, \"Halric? Ang gumagawa ng pana na may ubo?\"\n\nHindi ko alam na gumagawa siya ng pana. May isang pana niya sa bag ko.\n\nDapat umupo na lang ako. Dapat tinanong ko siya kung ano pa ang alam niya. Hindi ko ginawa. Naglakad ako sa susunod na bagon at dito ako nakaupo na sumusulat.\n\nNasa upuan 14 pa rin siya. Sa tingin ko.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Ikalimang Liham",
+      "variants": [
+        "Ikaapatnapu't pitong tangka. Mata ng ender.\n\nDireksyon ng hagis: pasulong, dalawampu't limang digri mula sa pahalang. Ayon sa pahina siyam ng kuwaderno.\n\nNanatili sa posisyon ang mata. Anim na segundo. Umikot ito pakaliwa, tapos huminto.\n\nDireksyon: hilaga-patungong-hilagang-silangan.\n\nLumipat ako ng bagon. Naghagis ulit ako.\n\nDireksyon: hilaga-patungong-hilagang-silangan.\n\nNakaharap sa timog ang bagon.\n\nBinabasa ng mata ang isang direksyon. Wala sa isang direksyon ang tren.\n\nTumigil na ako sa paghagis.\n\n- S. Marra",
+        "Ayaw lumipad ng mata ng ender.\n\nApatnapu't pitong beses ko itong inihagis. Pasulong. Pataas. Patagilid. Palabas ng pinto.\n\nLumulutang ang mata. Umiikot ito. Hindi ito pumipili ng direksyon. Isinulat ni Halric na laging pumipili ang mata. Ang mata, pahina siyam: \"ang tanging matapat sa isang paglapit sa stronghold.\"\n\nMatapat nga ito. Walang stronghold.\n\nUmupo ako na hawak ang mata. Mainit ito. Hindi na ito mainit ngayon.\n\nHindi ko alam kung saan ako patungo.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Ikaanim na Liham",
+      "variants": [
+        "Isinara ko na ang kuwaderno.\n\nKayumangging katad ang pabalat. May mga pangalan sa loob ng unang tabla. Hindi ko sila tiningnan.\n\nSumusulat ako sa huling pahina. Hindi sumulat dito si Halric.\n\nLabinsiyam na taong gulang ako. Hindi pa ako nakakita ng dragon. Ayaw ko siyang patayin.\n\nMaglalakad ako hanggang makakita ng bintana na may tamang uri ng liwanag. Tapos uupo ako.\n\nSoll Marra",
+        "Isinara ko ang kuwaderno.\n\nWalang laman ang huling pahina. Matagal akong nakaupo na bukas ito.\n\nWala sa huling pahina si Halric. Nasa mga unang pahina si Halric. Napakadalas ko na itong binasa.\n\nLabinsiyam na taong gulang ako. Hindi pa ako nakakita ng dragon. Ayaw ko siyang patayin.\n\nHindi ko alam kung saan patungo ang tren na ito. Sa tingin ko okay lang iyon.\n\nMaghahanap ako ng bintana.\n\nSoll"
+      ]
+    }
+  ]
+}

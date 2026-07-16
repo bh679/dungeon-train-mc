@@ -1,0 +1,129 @@
+{
+  "id": "augustus_park",
+  "character": "Augustus Park",
+  "story": "Walang Pamagat",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Unang Liham",
+      "variants": [
+        "Binigyan ako ng daga ng mga pahinang ito na sinasabing kakailanganin ko sila.\nNakalimutan ko ang pangalan niya, isa iyong totoo, tipong, pangalan ng tao. Kakaiba.\nSineseryoso ko ito noong una, tipong, \"kapag kailangan mo sila malalaman mo\", pero sa tingin ko printer paper lang ito at isang pluma.\nPero sa tingin ko kailangan ko na sila ngayon dahil biglang lumala nang husto ang tren na ito.\nWalang ako makausap tungkol dito at hindi ko mahanap ang telepono ko.\nSusugalan kong hindi ito mahikang piraso ng printer.\nSusulat pa mamaya. Nahihilo na ako.\nA.P.",
+        "Sana tama ang paggamit ko nito. Sabi niya \"Kapag kailangan mo sila malalaman mo\".\nPero, paano ko malalaman? Paano kung mahikang papel ito na dapat gamitin sa pag-unawa sa tren na ito at inaaksaya ko sila rito?\nMukha lang silang normal na printer paper. Pero puwedeng mahika sila! Ibig kong sabihin, daga ang lalaki! Tipong tunay na daga.\nMay buntot siya, bigote at balahibo, pero nagsasalita siyang parang tao. Ano nga ba ang pangalan niya?\nFall hurts? Foul hurst? Faul.. Hindi ko alam.\nBasta, sana pigilan ako ng papel na ito na mabaliw dito.\nIyon ang inaasahan ko.\nA.P.",
+        "Nagbibigay ba talaga ng kaligtasan ang mga pugon sa tren na ito? O isa pa itong lansi ng tren.\nMahirap malaman ang anuman nang tiyak. Saan ba galing ang papel na ito?\nIbig kong sabihin, alam ko kung saan ko ito nakuha. O sa tingin ko alam ko.\nDaga siya, ang pangalan niya ay ... aba hindi ko naaalala ang pangalan niya. Pero tunay siyang daga at binigyan niya ako ng papel na ito.\nSinabi lang niya \"Kapag kailangan mo sila malalaman mo\".\nSa tuwing akala ko nasisimulan ko nang unawain ang lugar na ito.\nMga pugon, ano? Kung hindi mapipigilan ng pagsusulat nito na mabaliw ako, baka sila ang makapigil\nSana.\nA.P.",
+        "Ito ba ang ibig niyang sabihin? Kasi magiging kapaki-pakinabang nga kung makakakuha ako ng mas maraming pagkain gamit ang papel na ito.\nIlang mansanas pa, karne.. o kalabasa? Ginugutom ako ng lugar na ito.\nInabot lang niya sa akin ang papel na ito at sinabing \"Kapag kailangan mo sila malalaman mo\".\nPero nagsisimula na akong isipin na kahit mahanap ko ang lahat ng pagkaing gusto ko, baka mabaliw pa rin ako.\nIbig kong sabihin, binigyan ako ng papel na ito ng isang daga! Isang tunay na nagsasalitang daga.\nHindi naman siya masyadong nagsalita. Pero pakiramdam ko naiintindihan pa rin niya ako.\nUmaasa akong makahanap ako ng isa pang 'panloob na kalikasang bagon'. Mukhang mas madalas silang may pagkain.\n\nSusulat pa.\nA.P."
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Ikalawang Liham",
+      "variants": [
+        "Faulhurst pala ang pangalan niya, nakasalubong ko siya ulit. Ang lalaking daga.\n\nOo, sabi lang niya, ay, marami lang akong ganitong papel, hindi naman sila mahika o kung ano at mukhang nakakatulong sila sa mga tao.\nTinanong ko siya, tipong, aa, makayanan ang ano at sinabi niyang huwag ko nang alalahanin pero sinabi niya ito sa British accent.\n\nSa tingin ko hindi pa ako handang pag-usapan ang nangyari.\nO isulat ito.\nMas normal pang makausap ang daga.\nHindi ko alam kung bakit kaya kong pag-usapan iyon at hindi ito.\nHay.\n\nBasta. Aa.\n\nA.P."
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Ikatlong Liham",
+      "variants": [
+        "Inimbita ako sa poker ng mga kalansay ayan sinabi ko na.\nA.P."
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Ikaapat na Liham",
+      "variants": [
+        "Wala pang kasingkaiba ng bagay na kalansay na nangyari.\nMas maraming halimaw, maraming slime, isang bagay na parang kristal na langgam?\nPero hindi ko maalis sa isip ang mga kalansay.\nGrabe iyon kakaiba.\nHindi ako gaanong nahihilo sa pagsulat ngayon.\nKailangan ko rin namang umupo nang matagal-tagal.\nMagsulat na lang, maganda ang pakiramdam.\nBaka ang simoy sa butas ng bagon na ito.\nAng ganda sa labas.\nWala kaming ganitong panahon sa amin.\nBaka umidlip muna ako sandali.\nA.P.",
+        "Kakaiba ang bagay na kalansay na iyon. Pero wala nang katulad niyon simula noon.\nDumadaan sa maraming puno, bundok.\nMagandang bansa.\nHindi ko inakalang magiging mapang-akit ang mga kalansay na iyon, sinubukan ba nila akong lokohin?\nNakakaasiwa ang kabuuan nito.\nNakakabahala kapag iniisip, o baka nahihilo lang ako.\nBaka umidlip muna ako sandali.\nA.P."
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Ikalimang Liham",
+      "variants": [
+        "Naghihintay pa rin ako ng mas maraming kakaibang bagay na mangyari.\nPumasok ako sa isa sa mga bagon ng kalakal at may ilang kalansay na nakaupo sa paligid ng mesa.\nKailangan ko ng maupuan at may bakanteng silya.\nUmupo ako at buhay ang mga kalansay na parang ganoon sila sa buong panahon.\nNasa gitna sila ng usapan.\nPinag-uusapan nila ang panahon, tipong, kung tagsibol o tag-init, hindi nila masabi.\nSinabihan akong mag-ante at nahulog ako sa silya at tumakbo sa susunod na bagon ng kalakal.\nHinihintay ko itong bumalik at hindi pa.\nA.P.",
+        "Kakaiba ang mga bagay, pero hindi kasingdalas ng dati.\nNakaabang ako sa susunod na bagay. May isang kahon na biglang nagliwanag.\nLumakas ito habang papalapit ako. Muntik na akong mabulag, tapos wala na ito.\nSa tingin ko nasa ibang bagon ako o nagpalit-palit ang mga bagay.\nUmalis ako agad, at mukhang normal na ulit ang lahat.\nHa, \"normal\". Walang katapusan ang tren na ito.\nA. P."
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Ikaanim na Liham",
+      "variants": [
+        "Sa tingin ko hindi ko inaasahang ganito karami ang iisipin ko sa tren.\nSinabi ng mga kaibigan ko na sige.\nSinabi ng mga magulang ko na huwag magsayang ng oras.\nNadala lang ako sa sandali.\nNgayong narito na ako at wala akong maraming makausap,\nparang mga gago na ang mga kaibigan ko at ang mga magulang ko... parang ganoon din,\npero sa ibang paraan kaysa dati.\nSa tingin ko hindi ko inaasahan ang ganito karaming katahimikan.\nHindi ako marunong maglaro ng poker. Sa tingin ko hindi ito lalaruin ng mga kaibigan ko.\nMedyo namimiss ko ang karit? Tipong, malayo ito sa Euclander Spear, at astig ito, pero, ewan, gusto ko ang karit. Napalitan ko rin ang lumang singsing ko.\nA.P.",
+        "Marami akong naisip sa tren na ito.\nTahimik ang lugar na ito.\nMedyo ito ang inaasahan ko...\npero sa tingin ko hindi ko alam kung ano ang inaasahan ko.\nSa tingin ko gusto kong nasa ibang lugar.\nNgayon nasa ibang lugar ako pero ang hindi ko naisip ay ang ugong sa mga tenga ko.\nTipong, mabundol at maingay ang tren, pero maingay ito sa, ewan, tipong drone-y, monotone-y na paraan.\nHindi nagsasalita ang mga magulang ko, pero grabe hindi ganito ang pakiramdam kahit sa amin.\nNakakita ako ng tansong singsing ng katatagan. Mas mabuti kaysa sa pilak na singsing ng pagkain. Bakit ko ito nakita ngayon? Matagal na akong nandito.\nA.P."
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Ikapitong Liham",
+      "variants": [
+        "Isang rosas sa pagitan ng mga bitak\nNg isang mabilis na\nNg dalawang kahoy na\nNg isang marahang gumagalaw na",
+        "Isang maitim na ulap\nDumaraan\nNgunit hindi nang hindi umuulan sa\nNgunit hindi\nMabilis\nMabilis itong umuulan na parang\nParang\nPapunta sa isang tadhana\nna hindi ko c\nNa walang kinalaman sa akin.\nAugustus Park",
+        "M̵a̷h̶a̸l̴ k̵o̷,̶ n̸a̴g̵-̷a̶a̸l̴a̵l̷a̶ a̸k̴o̵ k̷u̶n̸g̴"
+      ],
+      "notes": [
+        {
+          "variant": 2,
+          "offset": 54,
+          "text": "Na parang nagpapahiwatig ng isang linyang magaspang na kinuwit-kuwitan."
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Ikawalong Liham",
+      "variants": [
+        "Nagugutom na."
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Ikasiyam na Liham",
+      "variants": [
+        "May nakain.\nNakita ko ulit si Faulhurst ngayon nang sapat na para humingi ng isa pang pluma."
+      ]
+    },
+    {
+      "index": 10,
+      "label": "Ikasampung Liham",
+      "variants": [
+        "Posible bang napapaligiran ako ng mga taong hindi ko gusto?",
+        "Kailangan kong pag-isipan ang ilang bagay.\nGanoon din, mas mabilis akong nagugutom kamakailan, ano kaya iyon?"
+      ]
+    },
+    {
+      "index": 11,
+      "label": "Ikalabing-isang Liham",
+      "variants": [
+        "Ayaw kong umuwi, pero sa tingin ko ayaw ko ring manatili rito.\nO man lang, ayaw ko nang magpatuloy sa tren.\nTipong, masaya ito, huwag mo akong intindihin nang mali, pero natalo ko na ang Dating Monarko.\nHindi ko alam kung ano ang dapat niyang ginagawa rito, hindi naman ako nakikinig.\nHindi ko nga alam kung ano ang ginagawa ko rito, sa totoo lang.\nSa tingin ko puwede na akong umalis, matagal na… simula nang sumakay ako rito.\nMay sapat na akong dala para patunayan sa mga kaibigan ko na natagpuan ko ito, at malamang tinawagan na ng mga magulang ko ang pulis o kung ano.\nPero ayaw ko naman. Ayaw kong nandito at ayaw kong umalis.\nHindi pa naubusan ng sorpresa ang lugar na ito, hindi iyon ang dahilan. Pakiramdam ko lang hindi na ako dapat nandito.\nPero, ibig kong sabihin, aalis ako tapos ano?\nA.P."
+      ]
+    },
+    {
+      "index": 12,
+      "label": "Ikalabindalawang Liham",
+      "variants": [
+        "Gusto kong umupo\nAt ipahinga sa hangin ang ulo\nKumot na sinag-araw\nA.P.",
+        "Puwede akong mamatay dito\nSa tabi ng mabilis na parang\nat hindi na magising\nA.P."
+      ]
+    },
+    {
+      "index": 13,
+      "label": "Ikalabintatlong Liham",
+      "variants": [
+        "May nakita akong mesa na may tatlong kalansay na nakaupo sa paligid pero nang umupo ako walang nangyari.\nSa lahat ng kakaibang nangyari sa tren na ito, sa tingin ko iyon lang ang bagay na talagang napanaginipan ko.\nNalulungkot ako nang husto.\nAt hindi ko alam kung bakit.\nTipong, ano, kulang pa ba ang naganap na kakaibang bagay?\nTipong iyon pa ang kailangang totoo?\nGutom na gutom ba ako sa mga kaibigan kaya sinusubukan kong hanapin ang isang partikular na grupong kalansay na hindi tinrato ang presensya ko na parang malaking bagay?\nTipong sa kung anong dahilan ang pagkasabihang mag-ante, na parang lagi akong tanggap doon nang hindi kailangang, tipong, patunayan ang sarili, ay dapat na maging isang malaking bagay?"
+      ]
+    },
+    {
+      "index": 14,
+      "label": "Ikalabing-apat na Liham",
+      "variants": [
+        "Kung hindi ako makaalis sa tren na ito ngayon, sa tingin ko masusuka ako.\nKailangan ko ring kumain, gutom na naman ako."
+      ]
+    },
+    {
+      "index": 15,
+      "label": "Ikalabinlimang Liham",
+      "variants": [
+        "Sa tingin ko wala akong pakialam kung tinawagan ng mga magulang ko ang pulis\nat sa tingin ko wala akong pakialam kung na-impress ang mga kaibigan ko sa mga dala kong bagay.\nSa tingin ko gusto ko lang humiga sa isang lugar na hindi gumagalaw o sumusubok libangin ako. Puwede naman akong bumalik kung gusto ko.\nTanga ito.\nTanga ang kabuuan nito.\nMagagalit si Mama at wala namang pakialam si Papa.\nKailangan kong bumalik sa eskuwela at malamang babagsak ako sa Calc. Sino ba may paki?\nPero, ibig kong sabihin, dapat may mas mabuti pang naghihintay sa amin?\nSiguro?\nTipong hindi ko alam kung ano iyon, walang kwenta ang lahat sa eskuwela, walang kwenta ang lahat sa amin, nasa ibang bansa si Marcus at magiging pareho ring kalokohan nang paulit-ulit, pero...\nEwan ko.\nBaka sa pagitan ng mga bitak may mahahangad?\nWala akong maisip. Isinusugal ko lang na baka may mahahanap sa kung saan.\nLalo na't sa tingin ko baka nalinis ko na sa wakas ang lugar na ito.\nKung may makakita nito, magkunwari kang hindi mo ito nakita.\nAugustus Park"
+      ]
+    }
+  ]
+}

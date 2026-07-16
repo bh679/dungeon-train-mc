@@ -1,0 +1,47 @@
+{
+  "id": "pip_aaro_the_waiting_child",
+  "character": "Pip Aaro",
+  "story": "Ang Naghihintay na Bata",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Unang Liham",
+      "variants": [
+        "Ang pangalan ko ay Pip. Walong taong gulang ako.\n\nNasa isang tren ako na hindi ko kilala. Amoy ng kapote ni Lola ang mga upuan.\n\nBinigyan ako ng papel na ito ng isang daga. Totoong daga. May damit.\n\nHinahanap ko si Mama.\n\nMedyo takot. Kaunti lang.\n\nPip",
+        "Nakatulog ako sa isang tren kasama si Mama. Paggising ko, wala na si Mama.\n\nIba na ang tren ngayon. Iba na ang bag ko. Wala na roon ang kahel na libro.\n\nBinigyan ako ng papel na ito ng isang daga. May tsaleko siya.\n\nHahanapin ko si Mama. Napakaraming bagon.\n\nHindi ako umiiyak.\n\nPip"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Ikalawang Liham",
+      "variants": [
+        "Tinanong ko ang isang lalaki kung nasaan ang konduktor.\n\nMay dilaw siyang kapote. Tumawa siya. Sabi niya iha walang konduktor. Sabi niya hindi humihinto ang tren.\n\nHindi ako naniniwala sa kanya. Humihinto ang mga tren.\n\nMadalas nang natutulog ang lalaking may dilaw na kapote. Sa tingin ko malungkot siya.\n\nHindi ako magiging ganoon.\n\nPip",
+        "May nakita akong kuwaderno sa ilalim ng upuan.\n\nMay bumilang ng mga bagon. Umabot sila sa 384 at tumigil. Sabi nila walang saysay hanapin ang harap.\n\nHindi ko alam ang ibig nilang sabihin. May harap ang mga tren.\n\nItatago ko ang kuwaderno. Parang may kausap ako.\n\nPagod ang tunog nila. Hindi pa ako pagod.\n\nPip"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Ikatlong Liham",
+      "variants": [
+        "Ang ilan sa mga tao sa tren ay hindi totoo.\n\nMukha silang totoo. Pero hindi ka nila nakikita. Kumaway ako sa isang ale at dumaan lang siya sa tabi ko.\n\nMay mga taong TOTOO nga. Ang lalaking may dilaw na kapote. Ang daga. Isang ale na nagbigay sa akin ng mansanas.\n\nGumagawa ako ng listahan ng mga totoong tao. Apat sila. Malamang ako rin ay isa.\n\nPip",
+        "Gumawa ako ng plano.\n\nMaglakad sa isang direksyon. Huwag lumingon. Tapos maaabot ko ang dulo ng tren.\n\nMatagal akong naglakad. Apatnapu't pitong bagon. Hindi ako lumingon.\n\nWalang dulo. Kamukha ng pinagsimulan ko ang dulo. Parehong amoy ni Lola.\n\nHindi ko maintindihan. Gusto ko si Mama.\n\nPip"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Ikaapat na Liham",
+      "variants": [
+        "Kaibigan ko na ang ale na may mansanas. Soren ang pangalan niya.\n\nMatagal na siyang nasa tren, napakatagal. Ayaw niyang sabihin kung gaano katagal.\n\nNagtanong si Soren tungkol kay Mama. Sinabi ko sa kanya. Tumahimik siya. Tapos sabi niya mukhang napakabuti ng Mama mo.\n\nSinabi niya ito sa parehong paraan na sinabi ng lalaking may dilaw na kapote na hindi humihinto ang tren.\n\nHahanapin ko pa rin si Mama.\n\nPip",
+        "May slime sa bagon ko. Pinangalanan ko siyang Pebble.\n\nMaliit siya at berde. Sabi ni Soren masyado pa siyang maliit para maging mapanganib. Hindi ako naniniwala niyan tungkol kay Pebble.\n\nSinusundan niya ako hanggang sa pinto pero hindi dumadaan. Sa tingin ko akala niya pader ang pinto.\n\nSasabihin ni Mama na halimaw ang isang slime. Mali si Mama tungkol kay Pebble.\n\nMiss ko si Mama.\n\nPero nasa akin si Pebble.\n\nPip"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Ikalimang Liham",
+      "variants": [
+        "Sinabi sa akin ni Soren ang tungkol sa pinto.\n\nSabi niya may pinto sa tren na patungo sa labas. Sabi niya kung mahanap ko ito dapat akong dumaan dito.\n\nMatagal ko itong pinag-isipan. Tungkol kay Mama. Tungkol kay Pebble.\n\nKung nasa tren na ito si Mama kailangan kong patuloy na maghanap. Kung wala siya hindi ko rin siya maaabot.\n\nKapag nahanap ko ang pinto uupo ako sa tabi nito. At maghihintay.\n\nSabi ni Soren sige iha. Parang totoo ang ibig niyang sabihin ngayon.\n\nPip",
+        "Sumulat ako ng liham para kay Mama.\n\nSabi ni Soren minsan dumadaan ang mga tao sa parehong bagon nang maraming beses. Kaya iniiwan ko ito sa dinaraanan ng lahat.\n\nNakasulat ang pangalan ko. Nakasulat na may kaibigan akong si Soren at isang slime na si Pebble.\n\nNakasulat na okay ako. Nakasulat na naghihintay ako.\n\nMahahanap ito ni Mama. Nakakahanap ang mga Mama ng mga bagay.\n\nPip"
+      ]
+    }
+  ]
+}
