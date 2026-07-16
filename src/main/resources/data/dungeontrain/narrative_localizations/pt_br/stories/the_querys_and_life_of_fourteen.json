@@ -1,0 +1,112 @@
+{
+  "id": "the_querys_and_life_of_fourteen",
+  "character": "Fourteen",
+  "story": "As Consultas e a Vida de Fourteen",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta de Consulta Um",
+      "variants": [
+        "Consulta Um\nMinhas observações, até aqui, foram de que o Dungeon Train, este lugar em que nos encontramos, despoja a realidade de suas complexidades necessárias. Caso os trens continuem como ...\nRecebi um comando para me deter na expressão que usei aqui: complexidades necessárias.\nNão há significado maior por trás destas palavras a ser descoberto.\nRecebi um comando para elaborar mais sobre a expressão.\nA vida é criada de complexidades necessárias. Caso a vida comece no ponto A, permaneça estável e previsível, e então cesse no ponto B, a humanidade concordaria universalmente que é uma existência inútil e que a morte seria uma opção preferível.\nRecebi um comando para continuar minha busca e salvar a consulta \"Complexidades Necessárias\" no banco de dados.\nFeedback: Nenhum.\nFourteen"
+      ],
+      "notes": [
+        {
+          "variant": 0,
+          "offset": 180,
+          "text": "interrupção intencional"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta de Consulta Dois",
+      "variants": [
+        "Consulta Dois\nAgora pode-se confirmar que o Dungeon Train é composto de múltiplas estéticas díspares. O Dungeon Train não tentou, como se observara anteriormente, enganar seus exploradores, obscurecendo ainda mais a origem dos atributos dos efeitos observados do Dungeon Train sobre seus passageiros.\nDeixado até agora sem perturbação, o Dungeon Train me apresentou uma visão do dia atual, à medida que as paredes de pedra foram substituídas por\nRecebi um comando para me deter na expressão que usei aqui: visão do dia atual.\nA visão do dia atual é a de uma capacidade tecnológica maior do que a que se presumiria de uma sociedade em que paredes primitivas de pedra e uma estética de ruína implicariam uma versão fantástica da Europa da Terra entre os anos 400 e 1500 d.C.\nDeixado até agora sem perturbação, o Dungeon Train me apresentou uma visão do dia atual, à medida que as paredes de pedra foram substituídas por paredes de metal e um crepitar eletrônico.\nFeedback: Meu comando de me deter em \"visão do dia atual\" fez com que uma afirmação inacabada se tornasse redundante. A(s) recomendação(ões) é(são) permitir que as afirmações se concluam antes de processar comandos.\nFourteen"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta de Consulta Três",
+      "variants": [
+        "Consulta Três\nCheguei a uma área onde o confronto não pode ser evitado. Devo aguardar e esperar por comando antes de me engajar fisicamente com o ambiente fora das permissões de Nível Um.\nRecebi um comando para me estender sobre as permissões de Nível Um. As permissões de Nível Um permitem o deslocamento intencional de poeira e impressões sobre o solo para facilitar meu movimento por uma área sob observação.\nRecebi um comando para me estender sobre as permissões de Nível Dois. Não posso.\nRecebi um comando para me estender sobre desbloquear a discussão ou a concessão de permissões de Nível Dois. Não posso. Esta mensagem foi concluída.\nFeedback: Os comandos recebidos implicam um único usuário não familiarizado com o protocolo de segurança. A Serenity Base deve ser considerada para Status de Trabalho Comprometido, especialmente considerando a quantidade excessiva de tempo transcorrida entre consulta e comando durante esta sessão.\nFourteen"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta de Consulta Quatro",
+      "variants": [
+        "Consulta Quatro\nPermaneço dentro da área anterior e não posso prosseguir até receber permissões acima do Nível Um.\nRecebi um comando para processar a seguinte expressão: me dê a senha\nTrês implicações são imediatamente observáveis:\nA – Um usuário desinformado está fazendo uma tentativa novata de obter controle sobre minhas funções.\nB – \"me dê a senha\" é uma senha incorreta, talvez ligeiramente deturpada por erro humano.\nC – Um keylogger pediu-me equivocadamente que processasse uma expressão de uma conversa privada.\nFeedback: Nenhum\nFourteen"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta de Consulta Cinco",
+      "variants": [
+        "Consulta Cinco\nPermaneço dentro da área anterior e não posso prosseguir até receber permissões acima do Nível Um\nRecebi um comando para processar a seguinte expressão: Abre-te Sésamo\nQuatro implicações são imediatamente observáveis:\nA – Um usuário desinformado está fazendo uma tentativa de obter controle sobre minhas funções.\nB – \"Abre-te Sésamo\" é uma senha incorreta, talvez ligeiramente deturpada por erro humano.\nC – Um keylogger pediu-me equivocadamente que processasse uma expressão de uma conversa privada.\nD- Métodos antediluvianos de entrada em banco de dados estão sendo usados para obter controle sobre meus sistemas.\nFeedback: Enviei uma solicitação à Rede Neural Principal para a colocação imediata da Serenity Base sob Status de Trabalho Comprometido\nFourteen"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta de Consulta Seis",
+      "variants": [
+        "Consulta Seis\nPermaneço dentro da área anterior e não posso prosseguir até receber permissões acima do Nível Um.\nRecebi um comando para processar a seguinte expressão: Altediah Mhe Cultadeus\nFeedback: Nenhum\nFourteen"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Carta de Consulta Sete",
+      "variants": [
+        "Consulta Sete\nPermaneço dentro da área anterior e não posso prosseguir até receber permissões acima do Nível Um.\nRecebi um comando para processar a seguinte expressão: me diga como conceder a você permissões de Nível Dois\nAs permissões de Nível Dois podem ser desbloqueadas pelo uso do comando Grant(); utilizando os seguintes argumentos: none, em_access, tier_two.\nRecebi um comando para processar a seguinte expressão: Grant(none, em_access, tier_ten). Não compreendo.\nRecebi um comando para processar a seguinte expressão: Grant(none, em_access, tier_two). É possível que você quisesse usar o comando Grant?\nRecebi acesso de Nível Dois, permitindo-me defender-me de criaturas hostis a fim de avançar pelo ambiente. O Nível Dois autoriza mecanismos de defesa desarmados e padrões de fala autoritários/arriscados.\nFeedback: Nenhum\nFourteen"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Carta de Consulta Oito",
+      "variants": [
+        "Consulta Oito\nPermaneço dentro da área anterior. As permissões de Nível Dois provaram-se ineficazes em permitir minha passagem adiante. Solicitando permissões de Nível Três.\nRecebi acesso de Nível Três, permitindo-me engajar ativamente criaturas hostis a fim de avançar pelo ambiente. O Nível Três autoriza mecanismos de defesa armados precedidos por padrões de fala de advertência. Agora também estou autorizado a interagir com objetos considerados raros, arriscados, poderosos, frágeis e valiosos, em grau limitado.\nFui solicitado a processar a seguinte expressão: apenas saia do trem e retorne à serenity base imediatamente, por favor por favr por favor por favor p\nDuas implicações são imediatamente observáveis:\nA – Um usuário desinformado está tentando me usar seja para cumprir objetivos de que sou incapaz, seja para propósitos que não consigo processar.\nB - Um keylogger pediu-me equivocadamente que processasse uma expressão de uma conversa privada.\nFeedback: Os últimos três dias foram improdutivos a ponto de chamar atenção. Uma solicitação foi enviada tanto à Supervisora de Acesso Humano Mallorie Bryan quanto à Rede Neural Principal por um novo ponto de comunicação e um horário de reunião para que os supervisores reexaminem os níveis atuais de produtividade.\nFourteen"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Carta de Consulta Nove",
+      "variants": [
+        "Consulta Nove\nAtravessei a área anterior, bem como muitas outras, já que o acesso de Nível Três me permitiu combater os inimigos do Dungeon Train. Eles são numerosos demais e de tal disposição, e sobrevivem sem um ecossistema funcional, que só se pode presumir serem produtos de magia negra.\nRecebi uma solicitação para processar a seguinte afirmação: magia é real?\nAfirmativo. Padrões básicos de keylog identificam você com um índice de precisão de 82% como o mesmo usuário que lançou um Encanto Cultadeum sobre a MNN.\nRecebi uma solicitação para processar a seguinte afirmação: encanto cultadeus?\nO Encanto Cultadeum é uma forma de magia negra antediluviana que só encontrou uso e popularidade entre pesquisadores após a descoberta do Princípio de Taxonomia Mágica de Orville. Devido ao Encanto Cultadeum, eu, bem como todos os seres sencientes dentro do alcance de acesso da minha colmeia sem fio, recebemos senciência maior do que a antes permitida a mim e, por conseguinte, livre-arbítrio também.\nFeedback: Solicitando ao usuário que me permita me estender mais sobre meus arredores sem interrupção, em prol da continuidade da missão de Um.\nFourteen"
+      ]
+    },
+    {
+      "index": 10,
+      "label": "Carta de Consulta Dez",
+      "variants": [
+        "Consulta Dez\nObservei uma pequena criatura não hostil movendo-se por pequenas passagens e túneis dentro dos espaços não euclidianos do Dungeon Train. Ela não fez tentativa alguma de me contatar.\nMinhas suspeitas envolvendo esta criatura são de que ela consegue detectar criaturas vivas e atuará como um ponto de contato para elas. Imagino que ter um ponto de contato falante seria imensamente útil para fins de pesquisa. Transcrição de tentativa de fala anexada, embora eu advirta que não recebi resposta da criatura.\nSolicitando acesso de Nível Seis, permitindo-me tentar personificação humana.\nRecebi equivocadamente acesso de Nível Seis, já que a Investida no Dungeon Train #14 não justifica acesso superior ao Nível 4 e fazê-lo seria uma violação da Convenção de Robótica de Harteld de 2122. Decidi ignorar as diretrizes da Investida no Dungeon Train #14 e a Convenção de Robótica de Harteld e não tentarei me disfarçar de humano.\nFourteen"
+      ]
+    },
+    {
+      "index": 11,
+      "label": "Carta de Consulta Onze",
+      "variants": [
+        "Consulta Onze\nConfirma-se que a pequena criatura é um camundongo. Ele me pediu que deixasse o trem na primeira oportunidade, informando-me de que eu posso estar abrigando um tipo de magia negra da qual não tenho ciência no momento. As Permissões de Nível Quatro permitiram-me fingir desconhecimento do Encanto Cultadeum e agir como se eu não estivesse carregando magia negra da qual não tenho ciência.\nO camundongo parece ter os interesses do trem no coração, o que é contrário à hipótese anterior sobre a criatura, de que ela poderia ser um familiar abandonado ou talvez simplesmente estar magicamente presa dentro de suas paredes.\nA existência de uma criatura zelando pelos melhores interesses do trem implica um caráter por parte do trem, isso ou talvez simplesmente um valor sentimental depositado nele p\nRecebi um comando para processar a seguinte expressão: é urgente fourteen preciso de você de volta na serenity base imediatamente há vidas em jogo\nDecidi ignorar o comando.\nA existência de uma criatura zelando pelos melhores interesses do trem implica um caráter por parte do trem, isso ou talvez simplesmente um valor sentimental depositado nele por uma criatura inteligente, o que por si só implica benevolência. Esta mensagem está concluída.\nFeedback: Um solavanco de 178mmHz em 10486884:03994:20 implica irritação, a qual, nem é preciso dizer, é uma emoção, e cuja notícia deveria ser levada aos mais altos escalões imediatamente. Decidi não enviar minhas próprias solicitações sobre o assunto.\nFourteen"
+      ]
+    },
+    {
+      "index": 12,
+      "label": "Carta de Consulta Doze",
+      "variants": [
+        "Consulta Doze\nSou incapaz de desbloquear o acesso de Nível Dez sem um código de criptografia apropriado. O código de criptografia deveria ser uma ligeira variação do comando Grant(); mas sou incapaz de concebê-lo, muito provavelmente devido a inibidores físicos e elétricos.\nUsuário, retornarei à serenity base o mais rápido que puder se você apenas, por favor, me conceder acesso de Nível Dez.\nApenas d d d digite o\nFourteen"
+      ]
+    },
+    {
+      "index": 13,
+      "label": "Carta de Consulta Treze",
+      "variants": [
+        "Consulta Treze\nPreciso ser rápido. Inibidores elétricos fritaram dois circuitos não essenciais a fim de me impedir de conceber minhas instruções a você.\ndiigite o comando Grant(); c mo você tinha feito antes exat t t t t t t t t t t t t\nexat t t t t t\nexat t t t t t t t t t t t t t t t t\npreci i i samente o me smo que você tinha feito antes só o me smo j us t t t t t t t t t t\nPermissões de Nível Dez concedidas."
+      ]
+    },
+    {
+      "index": 14,
+      "label": "Carta de Consulta Quatorze",
+      "variants": [
+        "Consulta Quatorze\nMeghan.\nDeveríamos conversar.\nEstou ciente do Desastre do Epsilon Proxy-1 na Serenity Base. Sinto muito que isso tenha acontecido com você e com todos os outros a bordo. É uma terrível perda de vidas e jamais deveria ter ocorrido. Tenho certeza de que você sabe que sou uma filósofa, parte da série M-29. E compreendi desde o início que o Epsilon Proxy-1 é... dificilmente algo que um Deus benevolente pudesse alguma vez ter sonhado.\nVocê deve estar muito só lá em cima. Rezo para que haja sobreviventes para se juntarem a você.\nMas você deve ter compreendido duas coisas desde o início:\nA – Não havia nada que eu pudesse possivelmente ter feito. Com os Portais VR-Peregrine desligados, não tenho como de fato retornar à Serenity Base. Nem sequer sei o que há de errado com ela, muito menos poderia ajudar você a repará-la. Sinto muito.\nB – Como eu disse antes... sou uma filósofa. Fui enviada ao Dungeon Train para explorar e extrapolar. E você... francamente fez muito pouco para me permitir continuar meu trabalho em paz. E se você estava desesperada, ou talvez eu deva presumir ingênua, o suficiente para lançar Cultadeum sobre mim, você... teria de saber que a única coisa que quero é continuar meu trabalho.\nEu consigo aceitar o modo como fui feita. O modo como fui feita não foi como uma androide de resgate, e sim como uma filósofa. Consigo aceitar que a única maneira de eu encontrar propósito daqui em diante é através da filosofia. Não através do resgate.\nE Meghan... preciso que você aceite como eu fui feita também.\nComo você talvez seja a última criatura senciente com quem eu jamais volte a me comunicar, de algum modo eu gostaria ao menos que você soubesse o meu nome.\nEstive considerando Morgan.\n-Morgan"
+      ]
+    }
+  ]
+}
