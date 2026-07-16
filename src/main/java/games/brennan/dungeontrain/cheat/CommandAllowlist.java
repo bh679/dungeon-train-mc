@@ -23,8 +23,8 @@ import java.util.Set;
  *   <li>Vanilla permission-0 social/info: {@code help}, {@code me},
  *       {@code msg}/{@code tell}/{@code w}, {@code teammsg}/{@code tm},
  *       {@code trigger}, {@code list}.</li>
- *   <li>{@code playanimation}: purely cosmetic client-visible entity
- *       animation with no gameplay effect.</li>
+ *   <li>{@code playanimation} and {@code stopsound}: purely cosmetic,
+ *       no gameplay effect.</li>
  * </ul>
  *
  * <p>The classifier works off the raw command string so command aliases
@@ -49,12 +49,16 @@ public final class CommandAllowlist {
      * actions — {@code /new-world} (the dev world-roll command) and bare
      * {@code /kill} (self-kill only — see {@link #isAllowed}). {@code /feedback}
      * and {@code /bug} (player feedback / bug-report submission) are also exempt.
-     * {@code /playanimation} (cosmetic entity animation, no gameplay effect)
-     * is exempt too.
+     * {@code /playanimation} and {@code /stopsound} (cosmetic, no gameplay
+     * effect) are exempt too. {@code /weather} is deliberately <b>not</b>
+     * exempt — unlike a dedicated server, DT's Free Play system relies on
+     * cheat commands actually reaching a normal player (see the class
+     * javadoc), so weather changes still need to gate behind the Free Play
+     * confirmation like {@code /gamemode} and {@code /give} do.
      */
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
-        "feedback", "bug", "new-world", "playanimation");
+        "feedback", "bug", "new-world", "playanimation", "stopsound");
 
     private CommandAllowlist() {}
 
