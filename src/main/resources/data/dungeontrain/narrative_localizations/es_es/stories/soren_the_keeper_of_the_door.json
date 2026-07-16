@@ -1,0 +1,63 @@
+{
+  "id": "soren_the_keeper_of_the_door",
+  "character": "Soren",
+  "story": "La guardiana de la puerta",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta uno",
+      "variants": [
+        "Quienquiera que encuentre este asiento,\n\nestá cálido. Acabo de dejarlo.\n\nLa manzana es tuya. Un regalo que sin duda te has ganado.\n\nLlevo a bordo más tiempo del que puedo contar. Dejé de buscar la cabeza del tren hace ya mucho.\n\n\nUna cosa, querido mío. Mantente lejos de los tramos oscuros.\n\nSea lo que sea lo que has perdido, no está ahí dentro. La oscuridad guarda lo que se lleva.\n\nCome algo primero.\n\nSoren",
+        "Si estás leyendo esto, cariño, eres nuevo. O eres amable. Ambas cosas se gastan aquí.\n\nDejé la manzana porque dar de comer a alguien es lo último que aquí todavía se parece a ganar.\n\n\nUna vez creí que me bajaría. El tren me curó de eso.\n\nEvita los tramos oscuros. Ahora sé por qué. Me costó más de lo que tenía. La oscuridad guarda lo que se lleva.\n\nDescansa aquí un rato.\n\nSoren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta dos",
+      "variants": [
+        "¡Es real!\n\nAhora lo sé con certeza\n\nDurante años le hablé a la gente de la puerta.\n\nUna salida del tren. Crúzala, decía yo, si alguna vez la encuentras.\n\nLo creía a medias. Das a la gente una esperanza de la que no estás segura. Aun así es esperanza.\n\n\nHoy he sabido que es real. No te diré cómo. Pero ahora lo sé.\n\nTodos estos años regalé una esperanza de la que no estaba segura. Ahora la esperanza es cierta.\n\nSi encuentras esa puerta, corazón.\n\nCrúzala.\n\nSoren",
+        "¡Es real! ¡Es real de verdad!\n\nYo ya había hecho las paces. La paz es solo no querer nada. Es una especie de sueño.\n\nLuego supe que la puerta es real, y el querer despertó de golpe.\n\nAhora vuelvo a estar despierta. No estoy segura de agradecérselo.\n\n\nPodría estar en casa por la mañana. Se te olvida lo extraña que se vuelve esa palabra. Casa.\n\nPero aquí nunca he pasado de largo ante un rostro asustado. No voy a empezar ahora.\n\nAsí que guiaré a otros hasta ella, de camino hacia allí.\n\nCrúzala.\n\nSoren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta tres",
+      "variants": [
+        "Della.\n\nTe encontré en el fondo de una mala hora. Te di una manzana. No me marché.\n\nHacía años que no caminaba junto a nadie. Había olvidado su peso.\n\nAhora buscamos a tu hija juntas. Dos pares de ojos.\n\n\nLa puerta es real, Della. Podrías estar en casa.\n\nNegaste con la cabeza. No te irás sin ella.\n\nUna niña pequeña de ocho años. Un libro naranja en la mochila. Tú le enseñaste a leer. Pip.\n\nCome. Caminamos al alba.\n\nSoren",
+        "Della.\n\nAños a solas, y luego tú. Me devolviste algo que había dejado de permitirme echar de menos. Una voz que responde.\n\nIncluso después de que este tren se llevara a tu hija, sigues caminando. Así que te ayudo a buscar. Mi puerta puede esperar un momento más.\n\n\nHe visto a este tren desgastar a la gente hasta la nada. Temo que te desgaste a ti.\n\nTe exiges demasiado. Temo que tengas razón en hacerlo.\n\nLa puerta seguirá ahí para las tres. En cuanto encontremos a la pequeña Philippa.\n\nCome. Caminamos al alba.\n\nSoren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta cuatro",
+      "variants": [
+        "Della.\n\nEl rastro se metía en un tramo oscuro. De los que yo no piso. Te supliqué que dieras la vuelta.\n\nDijiste que va hacia delante, así que tú vas hacia delante. Nos dijimos cosas duras. Fueron las últimas.\n\n\nLuego fue como si el suelo cediera. Creo que oí que caíste a la oscuridad entre los vagones.\n\nOí tu grito.\nLuego... nada.\n\n\nGrité tu nombre hasta quedarme sin voz, y la oscuridad no devolvió nada de él. La oscuridad guarda lo que se lleva.\n\nSoren",
+        "Della.\n\nTe dije que el tramo oscuro te mataría. Dijiste que el rastro de tu niña se metía en él.\n\nAsí que entraste. Yo quería que vivieras. Tú querías a tu hija. Las dos teníamos razón. Esa es la parte cruel.\n\n\nHe repasado la caída mil veces. No hay versión en la que te sujete.\n\nYa no somos tres. Rompí mi propia regla, y la oscuridad se te llevó. La oscuridad guarda lo que se lleva.\n\nSoren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta cinco",
+      "variants": [
+        "Della.\n\nDespués de la oscuridad, me detuve. Dejé de repartir manzanas. Dejé de mirar rostros. Caminaba, y no veía pasar los vagones.\n\nEl duelo es su propio tramo oscuro. No hice caso de mi propia regla.\n\n\nNo sé cuánto tiempo llevo así. El tren se come el tiempo. Demasiado, creo.\n\nPero hoy la niebla se ha disipado. Vuelvo a saborear una manzana. Es la hora, Della. Voy a la puerta.\n\nSoren",
+        "Della.\n\nHay gente en este tren que se ha detenido. Te los cruzas. Sus ojos están en otra parte. Siempre les tuve lástima.\n\nDespués de la oscuridad, me convertí en una de ellos. No sé por cuánto tiempo.\n\n\nEl tren se come el tiempo. Creo que se comió demasiado del mío. Me avergüenzan las manzanas que dejé enfriarse.\n\nPero ahora estoy despierta. Puedo cargar el duelo y aun así caminar. Así que voy a la puerta. Por fin es la hora.\n\nSoren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta seis",
+      "variants": [
+        "Pip.\n\nPreguntaste por tu madre, y te reconocí al instante. Yo había caminado con ella, hasta que la oscuridad se la llevó.\n\nTú solo viste a una mujer con una manzana. Te la di, y nos llamaste amigas.\n\n\nMe lo contaste todo sobre ella. Me quedé callada.\n\nDije que tu madre suena maravillosa. Me salió hueco, como algo que se dice pero ya no se cree. Tú sigues empeñada en encontrarla.\n\nSoren",
+        "Pip.\n\nTenías su cara. Te reconocí antes de que terminaras de preguntar. Ella caminó conmigo hasta que cayó a la oscuridad y no volvió a subir.\n\nEres su niña, buscándola, y no sabes que ya no está.\n\n\nMe preguntaste cuánto tiempo llevaba aquí. No quise decirlo. Me hablaste de ella.\n\nMe quedé callada. Dije que suena maravillosa. Una palabra más habría sido decir que está muerta. Así que dejé que siguieras buscando. Perdóname, corazón.\n\nSoren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Carta siete",
+      "variants": [
+        "Pip.\n\nPor fin te hablé de la puerta. El verdadero camino a casa. Crúzala, dije, en cuanto la encuentres.\n\nDijiste que te sentarías junto a ella y esperarías a tu madre. Dije vale. Esta vez lo decía en serio.\n\n\nYa me iba, con la mano en el camino a casa. Pero no voy a salir de la oscuridad mientras una niña espera dentro de ella.\n\nAsí que ahora soy la guardiana de la puerta. Ella espera a una madre que estoy segura de que ya no está, y nunca se lo digo.\n\nSoren",
+        "Pip.\n\nTe di el camino a casa. El verdadero, por fin. Te dije que lo cruzaras y no miraras atrás.\n\nNo lo harás. Te sentarás junto a él y le guardarás el sitio a tu madre. No discutí. Por una vez sentí de verdad la bondad.\n\n\nTenía mi propio camino a casa en la mano. Lo dejé ir.\n\nEnvejeceré en esta puerta, regalándola sin usarla para nadie. Una niña espera aquí a una madre que ya no está, y yo guardo la verdad que nunca diré.\n\nSoren"
+      ]
+    }
+  ]
+}

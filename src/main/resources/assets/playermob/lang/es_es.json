@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "Jugador",
+  "item.playermob.player_mob_spawn_egg": "Huevo generador de jugador",
+  "item.playermob.player_mob_aggressive_spawn_egg": "Huevo generador de jugador agresivo",
+  "item.playermob.player_mob_friendly_spawn_egg": "Huevo generador de jugador amistoso",
+  "item.playermob.player_mob_passive_spawn_egg": "Huevo generador de jugador pasivo",
+  "item.playermob.player_mob_skeptical_spawn_egg": "Huevo generador de jugador escéptico",
+  "item.playermob.player_mob_shy_spawn_egg": "Huevo generador de jugador tímido",
+  "container.playermob.player_mob": "Jugador"
+}
