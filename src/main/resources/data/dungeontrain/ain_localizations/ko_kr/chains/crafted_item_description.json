@@ -1,0 +1,54 @@
+{
+  "id": "adventureitemnames:crafted_item_description",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "제작",
+      "refs": [
+        {
+          "ref": "adventureitemnames:hand_crafted_with_love",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " · ",
+      "newline": false,
+      "label": "플레이어",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/player_name",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.15056606,
+      "connection": " · 재료 ",
+      "newline": false,
+      "label": "재료",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/item_material",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.009645718,
+      "connection": "결코 고맙지 않은 ",
+      "newline": true,
+      "label": "고마울 것 없음",
+      "refs": [
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 2.0
+        }
+      ]
+    }
+  ]
+}

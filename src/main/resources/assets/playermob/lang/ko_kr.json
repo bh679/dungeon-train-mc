@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "플레이어",
+  "item.playermob.player_mob_spawn_egg": "플레이어 스폰 알",
+  "item.playermob.player_mob_aggressive_spawn_egg": "공격적인 플레이어 스폰 알",
+  "item.playermob.player_mob_friendly_spawn_egg": "우호적인 플레이어 스폰 알",
+  "item.playermob.player_mob_passive_spawn_egg": "평화로운 플레이어 스폰 알",
+  "item.playermob.player_mob_skeptical_spawn_egg": "회의적인 플레이어 스폰 알",
+  "item.playermob.player_mob_shy_spawn_egg": "수줍은 플레이어 스폰 알",
+  "container.playermob.player_mob": "플레이어"
+}

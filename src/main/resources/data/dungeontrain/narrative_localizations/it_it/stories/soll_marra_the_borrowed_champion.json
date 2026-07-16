@@ -1,0 +1,55 @@
+{
+  "id": "soll_marra_the_borrowed_champion",
+  "character": "Soll Marra",
+  "story": "La campionessa in prestito",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettera uno",
+      "variants": [
+        "Giorno Uno. Equipaggiamento.\n\nSpada di ferro, x2 (una di riserva, secondo il taccuino).\nArco, 64 frecce.\nCuoio incantato, set completo, Protezione I.\nPerle dell'End, x16.\nLetto, x1.\nPatate crude, x32.\n\nIl taccuino esige mele dorate. Il villaggio non ne aveva. Le procurerò lungo la strada.\n\nIl topo è reale. L'ho registrato.\n\nGiorno Uno.\n\n- S. Marra",
+        "Giorno Uno. Equipaggiamento.\n\nSpada di ferro, x2.\nArco, 64 frecce.\nCuoio incantato, Prot I.\nPerle dell'End, x16.\nLetto.\nPatate, x32.\n\nIl taccuino dice che le mele dorate non sono negoziabili. Il villaggio non ne aveva. Me ne andai prima che qualcuno notasse la mia assenza.\n\nUn topo con un gilè mi ha dato questo foglio. Sembrava triste. Non so come registrarlo.\n\nSono pronta.\n\n- Soll Marra"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettera due",
+      "variants": [
+        "Il taccuino è di Halric. Lo iniziò ventisei anni fa, l'anno prima di conoscermi.\n\nSpecifiche per l'End. Altezze dei pilastri. Gabbie di cristallo. Ordine di rottura delle gabbie. Rendimento delle esplosioni con il letto. Traiettorie delle perle.\n\nNon ci andò mai.\n\nMorì in primavera. Qualcosa ai polmoni. Il taccuino lo chiama \"cessazione, senza combattimento\".\n\nIl drago non conobbe mai Halric.\n\nGlielo porto io a lei.\n\n- S. Marra",
+        "Il taccuino è di Halric. Cominciò a scriverlo l'anno prima che io nascessi. Ventisei anni di specifiche e nessun drago alla fine.\n\nAltezze dei pilastri. Gabbie di cristallo. Ordine di rottura delle gabbie. Rendimento delle esplosioni con il letto. Traiettorie delle perle. Tutta la lotta, sulla carta.\n\nMorì in primavera. Il taccuino lo chiama \"cessazione, senza combattimento\". Credo fossero i polmoni. Tossiva molto. Non pronunciò mai la parola.\n\nIl drago non conobbe mai Halric.\n\nGlielo porto io a lei.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettera tre",
+      "variants": [
+        "Esercitazione Uno. Vagone 14.\n\nBersaglio: zombie, senza armatura.\nDistanza: 9 blocchi.\nRiparo: una panca.\nArco: tensione completa, due secondi.\n\nIl ciclo di posizioni di Halric si adatta. La lampada del vagone fa da cristallo. Abbatti prima il cristallo. Ruota. Rilascia.\n\nRisultato: un colpo. Tempo obiettivo del taccuino, undici secondi. Il mio, quattro.\n\nIl taccuino non dice come ci si sente a essere pronti.\n\n- S. Marra",
+        "Esercitazione Uno. Vagone quattordici.\n\nHo scelto uno zombie perché il taccuino comincia con i cristalli e non ho un cristallo. La lampada sulla parete aveva la forma giusta.\n\nRiparo di panca. Nove blocchi. Tensione completa. Ruoto. Rilascio.\n\nLo zombie cadde con uno. Il tempo obiettivo di Halric era undici secondi. Io ci misi quattro.\n\nAllora ero pronta. Poi mi sedetti sulla panca e il vagone era silenzioso e la lampada dondolava un poco.\n\nNon so cosa mi aspettassi.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettera quattro",
+      "variants": [
+        "Vagone 28. Incontro.\n\nPasseggera: donna, sulla cinquantina, cappotto di lana grigia. Apparentemente reale.\n\nMi ha chiesto il nome. Le ho dato il titolo di Halric. Apprendista di Halric.\n\nHa detto: \"Halric. Quindi sei la sua quarta.\"\n\nNon sapevo che ce ne fossero state tre.\n\nHo annotato il numero del suo posto. Ho proseguito.\n\nAvvistamento chiuso.\n\n- S. Marra",
+        "Vagone ventotto. Una donna dal cappotto grigio mi ha chiesto il nome.\n\nLe ho dato il titolo di Halric. Apprendista di Halric.\n\nHa detto: \"Halric? Il fabbricante di frecce con la tosse?\"\n\nNon sapevo che fosse un fabbricante di frecce. Ho uno dei suoi archi nello zaino.\n\nAvrei dovuto sedermi. Avrei dovuto chiederle cos'altro sapeva. Non l'ho fatto. Ho camminato fino al vagone successivo ed eccomi qui seduta, a scrivere.\n\nÈ ancora al posto 14. Credo.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettera cinque",
+      "variants": [
+        "Tentativo 47. Occhio dell'End.\n\nVettore di lancio: in avanti, venticinque gradi sopra l'orizzontale. Secondo la pagina nove del taccuino.\n\nL'occhio mantenne la posizione. Sei secondi. Ruotò in senso antiorario, e poi si stabilizzò.\n\nRotta: nord-nordest.\n\nHo cambiato vagone. L'ho lanciato di nuovo.\n\nRotta: nord-nordest.\n\nIl vagone è rivolto a sud.\n\nL'occhio legge una direzione. Il treno non è in una direzione.\n\nHo smesso di lanciare.\n\n- S. Marra",
+        "L'occhio dell'End non vola.\n\nL'ho lanciato quarantasette volte. In avanti. In alto. Di lato. Fuori dalla porta.\n\nL'occhio fluttua. Gira. Non sceglie una direzione. Halric scrisse che un occhio sceglie sempre. L'occhio, pagina nove: \"l'unica cosa onesta nell'approccio a una roccaforte\".\n\nÈ onesto. Non c'è nessuna roccaforte.\n\nRimasi con l'occhio in mano. Era caldo. Ora non lo è.\n\nNon so verso dove sto andando.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lettera sei",
+      "variants": [
+        "Ho chiuso il taccuino.\n\nLa copertina è di cuoio marrone. Ci sono dei nomi all'interno del piatto. Non li ho guardati.\n\nScrivo sull'ultima pagina. Halric non scrisse qui.\n\nHo diciannove anni. Non ho mai visto un drago. Non voglio ucciderla.\n\nContinuerò a camminare finché non troverò una finestra con il giusto tipo di luce. Allora mi siederò.\n\nSoll Marra",
+        "Ho chiuso il taccuino.\n\nL'ultima pagina è vuota. Rimasi con essa aperta a lungo.\n\nHalric non è nell'ultima pagina. Halric è nelle prime. Le ho lette troppe volte.\n\nHo diciannove anni. Non ho mai visto un drago. Non voglio ucciderla.\n\nNon so verso dove va questo treno. Credo vada bene così.\n\nVado a cercare una finestra.\n\nSoll"
+      ]
+    }
+  ]
+}

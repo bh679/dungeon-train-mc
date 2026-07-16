@@ -1,0 +1,78 @@
+{
+  "id": "corren_vale_three_heads",
+  "character": "Corren Vale",
+  "story": "Tre teste",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettera uno",
+      "variants": [
+        "Mira,\n\nLe tue mani erano sempre coperte di gesso.\n\nTracciavi linee su ogni cosa.\n\nDicevi che le linee dritte tenevano onesto il mondo.\n\nCi credevi.\n\nCredo di averci creduto anch'io.\n\n- Corren",
+        "Mira.\n\nRidevi piano.\n\nCome se cercassi di non svegliare qualcosa.\n\nBram non sapeva mai quando scherzavi.\n\nio sì.\n\n- corren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettera due",
+      "variants": [
+        "Mira.\n\nLa sabbia delle anime era fredda.\n\nNon ricordo il calore di dopo.\n\nHai detto qualcosa.\n\nCredo tu abbia detto il mio nome.\n\nCredo tu abbia detto Corri.\nNon mi sono voltato.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettera tre",
+      "variants": [
+        "Bram.\n\nRidevi come chi cade.\n\nDi colpo. Forte. Sempre troppo forte.\n\nDicevi che ridevi perché l'oscurità sapesse che eri lì.\n\nL'ha sempre saputo.\n\n- Corren",
+        "Bram.\n\nIl tuo scudo era troppo grande per te.\n\nAttraversavi le porte di traverso.\n\nEsa lo chiamava il tavolo.\n\nDicevi che il tavolo non lasciava mai cadere nessuno.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettera quattro",
+      "variants": [
+        "Bram.\n\nIl primo teschio fu il tuo.\n\nLo raccogliesti.\n\nGridasti qualcosa.\n\nNon riuscii a sentirti sopra il fuoco.\n\nLe ruote di questo treno fanno tre note.\n\nLa prima è la tua, Bram.\n\n- Corren",
+        "Bram.\n\nho scritto questo cinque volte.\n\nogni volta arrivo al teschio e la penna si ferma.\n\nlo alzasti. sorridesti.\n\ndicesti che non pesava niente.\n\ncredo pesasse molto.\n\nLe ruote di questo treno fanno tre note.\n\nLa prima è la tua, Bram.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettera cinque",
+      "variants": [
+        "Esa.\n\nAvevi le mani fredde a furia di preparare pozioni.\n\nIl resto di te era caldo.\n\nMira diceva che eri l'unica calda tra noi.\n\nAveva ragione.\n\n- Corren",
+        "Esa.\n\nCantavi mentre bendavi.\n\nVecchie canzoni. Nessuno di noi le conosceva.\n\nDicevi che te le inventavi al momento.\n\nFingevamo di crederti.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lettera sei",
+      "variants": [
+        "Esa.\n\nLa tua mano era sulla mia schiena.\n\nFredda a furia di preparare pozioni.\n\nSpingesti una volta.\n\nBarcollai fino a mettermi in salvo.\n\nNon spingesti più.\n\nTe n'eri già andata, credo.\n\nPrima della spinta.\n\n- Corren",
+        "Esa.\n\nC'è gente su questo treno che è vissuta più di me.\n\nnessuno ha un bell'aspetto.\n\nnon voglio sapere che aspetto ho io.\n\ntu me l'avresti detto.\n\navresti detto siediti, Corren, e fammi vedere.\n\n- corren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Lettera sette",
+      "variants": [
+        "Non so come sono uscito.\n\nIl portale era rotto. Quello lo ricordo.\n\nNon ricordo di averlo attraversato.\n\nSono apparso in un campo. Erba alta. Il treno era già lì.\n\nEra in corsa.\n\nEra sempre stato in corsa. Ora lo so.\n\nGli corsi accanto. Saltai verso la porta più vicina.\n\nNon so come l'ho afferrata.\n\nCredevo di avercela fatta.\n\nSono settimane che ce la faccio.\n\nIl treno non si ferma.\n\nNon c'è discesa.\n\n- Corren",
+        "il caldo dietro di me. il freddo davanti.\n\nnon sapevo quale lato fosse su.\n\nricordo di essere caduto sull'erba.\n\nl'erba non bruciava.\n\nla cosa sembrò importante.\n\npoi un edificio.\n\nnon conoscevo l'edificio.\n\nconosco tutti gli edifici di questa regione.\n\nio ho cartografato questa regione.\n\nc'era un treno accanto all'edificio.\n\nle porte erano aperte.\n\nero vivo e le porte erano aperte.\n\nsembravano fatti collegati.\n\n- corren"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Lettera otto",
+      "variants": [
+        "Sono settimane che lo sento.\n\nUno strillo. Tre voci, quasi sovrapposte.\n\nA volte ne arriva una sola. A volte tutte e tre.\n\nE le esplosioni.\n\nLe sento nel pavimento prima di udirle.\n\nNon rompono mai niente che io possa vedere.\n\nNon so dove cadano.\n\nCammino in avanti.\n\nLo strillo torna. Due vagoni indietro.\n\nSempre da lì.\n\nMai più lontano.\n\nNe sono sicuro.\n\n- Corren",
+        "c'è un suono.\n\nsono settimane che lo sento.\n\nnon sono le ruote.\n\nle ruote portano musica. tre note.\n\nquesto porta un'altra cosa.\n\ngrida.\n\ntre voci. quasi a tempo. mai del tutto.\n\ne ci sono esplosioni.\n\nle sento nel pavimento. non rompono niente.\n\nl'ho chiesto agli altri sul treno.\n\nnessuno lo sente.\n\nsolo io lo sento.\n\nè per me.\n\nha tempo.\n\n- corren"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Lettera nove",
+      "variants": [
+        "Ah.. ah no.\n\nMira.\n\nTu te ne saresti accorta prima di me.\n\nLo strillo ora è davanti a me.\n\nNon dovrebbe esserci un davanti.\n\nBram si sarebbe piantato davanti.\n\nCi avrebbe riso su.\n\nRideva sempre delle cose troppo grandi per combatterle.\n\nEsa avrebbe preparato qualcosa.\n\nResistenza al fuoco. Rapidità. La cosa giusta.\n\nPreparava sempre la cosa giusta.\n\nHo camminato in avanti per settimane.\n\nCamminavo verso di esso.\n\nIl treno non ha un davanti.\n\nOgni passo avanti era un passo più vicino.\n\nOra riesco a vederlo.\n\nTre teste. Tre voci.\n\nLa quarta voce sarà la mia.\n\nCredo sia la mia da settimane.\n\n- Corren",
+        "è qui.\n\nmira.\n\nnon era dietro di me.\n\nera davanti.\n\nè sempre stato davanti.\n\ntu l'avresti visto. tu vedevi tutto per prima.\n\nbram si sarebbe piantato davanti a me.\n\navrebbe riso.\n\nrideva delle cose troppo grandi per combatterle.\n\navrebbe funzionato. per un momento.\n\nesa mi avrebbe messo la mano sulla schiena.\n\nfredda.\n\navrebbe spinto.\n\nme ne sarei andato.\n\nho camminato verso di esso.\n\ncredevo di camminare allontanandomi.\n\nil treno non ha un davanti. avresti riso di me per averlo dimenticato.\n\nriesco a vederlo.\n\ntre teste. tre di voi.\n\nbram. esa. tu.\n\nio sono il quarto.\n\nsono stato il quarto fin dall'inizio.\n\n- corren"
+      ]
+    }
+  ]
+}

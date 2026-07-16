@@ -1,0 +1,31 @@
+{
+  "id": "quiet_rules",
+  "title": "Regole tacite del treno",
+  "author": "Sconosciuto",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Ci sono delle regole su questo treno, anche se nessuno te le dirà.\n\nNon aprire un baule che hai già aperto.\nNon seguire lo stesso passeggero troppo a lungo.\nQuando le lanterne si affievoliscono due volte di fila, continua a camminare.\n\nQueste sono le regole che ho stabilito per me stesso.\nPotrebbero non essere le tue.\nMa presto ne stabilirai di tue.",
+    "Regola 71\nFa' attenzione a ciò che mangi, non tutta la carne è buona quanto quella di Ratto.",
+    "Regola 108\nSe uno sconosciuto ti chiede il nome, ignoralo.",
+    "Regola 96\nBada ai teschi, alcuni conservano ancora dei sentimenti.",
+    "Regola 327\nNon tornare due volte sui tuoi passi. Se torni indietro, continua a tornare indietro.",
+    "Regola 5\nFidati delle lanterne più che delle mappe. Le mappe sono vecchie.",
+    "Regola 44\nPassi dietro di te in un vagone vuoto? Cammina più in fretta. Non correre mai.",
+    "Regola 211\nSe vedi il tuo stesso volto su un altro passeggero, non dargli confidenza. Non se ne è ancora accorto.",
+    "Regola 401\nNon fischiettare dopo che le lanterne si affievoliscono. Qualcos'altro risponde con un fischio.",
+    "Regola 323\nSolo coloro che desiderano raggiungere chi ha costruito il treno dicono \"@Dev\". Per i pochi eletti, evocherà il grande creatore.",
+    "Regola 17\nIl treno conserva la lista di ciò che sei venuto qui a fare, anche dopo che l'hai persa.\n\n\"Premi {key.advancements}\" dicono. Ma cosa significa? Cos'è \"{key.advancements}\"? Come si preme? Premere contro cosa? Premere come???",
+    "Regola 205\nMostra rispetto a tutti gli avventurieri al primo incontro. O inchinati, o accovacciati, oppure fa' doni.\n\nConquista pienamente un avventuriero e cambierà. Ti saluta da un capo all'altro di un vagone. I più gentili ti mettono doni tra le mani senza che tu lo chieda. Alcuni ti seguono. Alcuni combattono al tuo fianco, e non si fermano finché ciò che ti minacciava non è a terra.",
+    "Regola 29\nNon ogni avventuriero è un amico. Alcuni viaggiano al tuo fianco; altri sguainano l'acciaio alla vista del tuo volto. Non puoi capire quale sia guardandolo. Lo impari vivendo.",
+    "Regola 63\nUn dono predispone sempre un avventuriero a tuo favore. Dagli qualcosa di meglio di ciò che già porta e lo predispone ancora di più. Una spada di scorta mi ha comprato più amici di quanti ne abbiano mai comprati le parole gentili.",
+    "Regola 140\nMettiti tra un avventuriero e ciò che lo attacca. Ricordano chi ha sguainato una lama in loro difesa, e lo ripagano.",
+    "Regola 88\nAttraversa i vagoni accanto a un avventuriero. Viaggiate insieme abbastanza a lungo e qualcosa si posa tra voi. È la via più lenta verso un amico, e la più sicura.",
+    "Regola 174\nColpisci un avventuriero e ti si rivolterà contro — ma non per sempre. Inchinati di nuovo, e continua a inchinarti. Una ferita che hai inferto può essere sanata da chi l'ha inferta.",
+    "Regola 256\nUn avventuriero osserva chi colpisci. Abbatti qualcuno che ama e non te lo perdonerà mai. Abbatti qualcuno che odia, e guardalo scaldarsi nei tuoi confronti.",
+    "Regola 312\nSguaina la lama vicino a un avventuriero spaventato e fuggirà; vicino a uno coraggioso e caricherà. Lo stesso acciaio, due estremità. Una ritirata non è pace.",
+    "Regola 156\nL'acciaio consumato non è acciaio esaurito. Metti un pezzo difettoso accanto al suo gemello e i due si riparano in uno solo — lama o piastra, lo stesso trucco vale.\n\nLa riparazione conserva ciò che hai posato a sinistra. Metti lì il tuo migliore. Quello a destra è solo combustibile.",
+    "Tratta bene gli altri passeggeri.\nTi servirà bene\nnella tua prossima vita.\n\nGli echi ricordano.",
+    "Gli echi del nostro passato\nci riflettono le vite passate.\n\nSii gentile.\n\nForse potrai\nfartelo amico."
+  ]
+}

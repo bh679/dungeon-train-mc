@@ -1,0 +1,47 @@
+{
+  "id": "pip_aaro_the_waiting_child",
+  "character": "Pip Aaro",
+  "story": "A menina que espera",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta um",
+      "variants": [
+        "Chamo-me Pip. Tenho oito anos.\n\nEstou num comboio que não conheço. Os bancos cheiram ao casaco da avó.\n\nUm rato deu-me este papel. Um rato a sério. Com roupa.\n\nAndo à procura da mãe.\n\nUm bocadinho assustada. Só um bocadinho.\n\nPip",
+        "Adormeci num comboio com a mãe. Acordei e a mãe já não estava.\n\nO comboio está diferente agora. A minha mochila está diferente. O livro laranja não está lá dentro.\n\nUm rato deu-me este papel. Trazia um colete.\n\nVou encontrar a mãe. Há imensas carruagens.\n\nNão estou a chorar.\n\nPip"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta dois",
+      "variants": [
+        "Perguntei a um senhor onde está o revisor.\n\nTinha um casaco amarelo. Riu-se. Disse querida, não há revisor. Disse que o comboio não pára.\n\nNão acredito nele. Os comboios param.\n\nO senhor do casaco amarelo dorme muito agora. Acho que está triste.\n\nEu não vou ser assim.\n\nPip",
+        "Encontrei um caderno debaixo de um banco.\n\nAlguém contou as carruagens. Chegou a 384 e parou. Disse que não vale a pena procurar a frente.\n\nNão sei o que queria dizer. Os comboios têm frente.\n\nVou ficar com o caderno. É como ter alguém com quem falar.\n\nParecia cansado. Eu ainda não estou cansada.\n\nPip"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta três",
+      "variants": [
+        "Algumas das pessoas no comboio são a fingir.\n\nParecem reais. Mas não te veem. Acenei a uma senhora e passou mesmo por mim.\n\nAlgumas pessoas ESTÃO cá. O senhor do casaco amarelo. O rato. Uma senhora que me deu uma maçã.\n\nAndo a fazer uma lista das pessoas reais. São quatro. Eu também sou uma, se calhar.\n\nPip",
+        "Fiz um plano.\n\nAndar para um lado. Não me virar. Assim chegaria à parte de trás do comboio.\n\nAndei muito tempo. Quarenta e sete carruagens. Não olhei para trás.\n\nNão havia parte de trás. O fim parecia o sítio onde comecei. O mesmo cheiro da avó.\n\nNão percebo. Quero a mãe.\n\nPip"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta quatro",
+      "variants": [
+        "A senhora da maçã agora é minha amiga. Chama-se Soren.\n\nEstá no comboio há muito muito tempo. Não quer dizer há quanto.\n\nA Soren perguntou pela mãe. Contei-lhe. Ficou calada. Depois disse que a minha mãe parece maravilhosa.\n\nDisse-o do mesmo jeito que o senhor do casaco amarelo disse que o comboio não pára.\n\nEu vou na mesma encontrar a mãe.\n\nPip",
+        "Há um slime na minha carruagem. Chamei-lhe Seixo.\n\nÉ pequena e verde. A Soren disse que ainda é demasiado pequena para ser perigosa. Eu não acredito nisso do Seixo.\n\nSegue-me até à porta mas não a atravessa. Acho que pensa que a porta é uma parede.\n\nA mãe diria que um slime é um monstro. A mãe está enganada sobre o Seixo.\n\nTenho saudades da mãe.\n\nMas tenho o Seixo.\n\nPip"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta cinco",
+      "variants": [
+        "A Soren falou-me da porta.\n\nDisse que há uma porta no comboio que dá para fora. Disse que se a encontrar devia atravessá-la.\n\nPensei nisso muito tempo. Na mãe. No Seixo.\n\nSe a mãe está neste comboio tenho de continuar à procura. Se não está, também não consigo chegar a ela.\n\nQuando encontrar a porta vou sentar-me ao pé dela. E esperar.\n\nA Soren disse está bem, querida. Como se desta vez falasse a sério.\n\nPip",
+        "Escrevi uma carta para a mãe.\n\nA Soren disse que às vezes as pessoas passam pela mesma carruagem muitas vezes. Por isso deixo-a onde toda a gente passa.\n\nDiz o meu nome. Diz que tenho uma amiga chamada Soren e um slime chamado Seixo.\n\nDiz que estou bem. Diz que estou à espera.\n\nA mãe há de a encontrar. As mães encontram as coisas.\n\nPip"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "id": "quiet_rules",
+  "title": "Ciche zasady pociągu",
+  "author": "Nieznany",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Ten pociąg ma swoje zasady, choć nikt ci ich nie zdradzi.\n\nNie otwieraj skrzyni, którą już otworzyłeś.\nNie podążaj za tym samym pasażerem zbyt długo.\nGdy latarnie przygasną dwa razy z rzędu, idź dalej.\n\nTo zasady, które ustaliłem dla siebie.\nMogą nie być twoimi.\nAle wkrótce ułożysz własne.",
+    "Zasada 71\nUważaj, co jesz — nie każdy kawałek mięsa jest tak dobry jak Szczur.",
+    "Zasada 108\nJeśli obcy pyta o twoje imię, zignoruj go.",
+    "Zasada 96\nMiej się na baczności przed czaszkami — niektóre wciąż żywią uczucia.",
+    "Zasada 327\nNie zawracaj po dwakroć. Jeśli już zawrócisz, idź dalej wstecz.",
+    "Zasada 5\nUfaj latarniom bardziej niż mapom. Mapy są stare.",
+    "Zasada 44\nKroki za tobą w pustym wagonie? Przyspiesz. Nigdy nie biegnij.",
+    "Zasada 211\nJeśli ujrzysz własną twarz u innego pasażera, nie okazuj, że go widzisz. On jeszcze tego nie pojął.",
+    "Zasada 401\nNie gwiżdż, gdy latarnie przygasną. Coś odgwizduje w odpowiedzi.",
+    "Zasada 323\nTylko ci, którzy pragną dosięgnąć tego, kto zbudował pociąg, mówią „@Dev”. Dla nielicznych wybrańców przywoła to wielkiego twórcę.",
+    "Zasada 17\nPociąg przechowuje listę tego, po co tu przybyłeś, nawet gdy już ją zgubisz.\n\n„Naciśnij {key.advancements}”, mówią. Ale co to znaczy? Czym jest „{key.advancements}”? Jak się to naciska? Naciska o co? Jak naciska???",
+    "Zasada 205\nOkaż szacunek każdemu poszukiwaczowi przygód przy pierwszym spotkaniu. Ukłoń się, kucnij albo wręcz dary.\n\nZdobądź w pełni poszukiwacza przygód, a się odmieni. Pozdrowi cię przez cały wagon. Ci życzliwi wciskają dary w twoje dłonie, nieproszeni. Niektórzy podążają za tobą. Niektórzy walczą u twego boku i nie ustają, póki to, co ci zagrażało, nie padnie.",
+    "Zasada 29\nNie każdy poszukiwacz przygód jest przyjacielem. Jedni podróżują u twego boku; inni dobywają stali na widok twojej twarzy. Po wyglądzie tego nie odróżnisz. Uczysz się, żyjąc.",
+    "Zasada 63\nDar zawsze zjednuje ci poszukiwacza przygód. Podaruj coś lepszego, niż już nosi, a zjedna go bardziej. Zapasowy miecz kupił mi więcej przyjaciół niż kiedykolwiek miłe słowa.",
+    "Zasada 140\nStań między poszukiwaczem przygód a tym, co go atakuje. Pamiętają, kto dobył ostrza w ich obronie, i odpłacają się za to.",
+    "Zasada 88\nPrzemierzaj wagony u boku poszukiwacza przygód. Jedźcie razem dość długo, a coś się między wami ułoży. To najwolniejsza droga do przyjaźni i najpewniejsza.",
+    "Zasada 174\nUderz poszukiwacza przygód, a zwróci się przeciw tobie — ale nie na zawsze. Ukłoń się znowu i kłaniaj się dalej. Ranę, którą zadałeś, może zagoić ten, kto ją zadał.",
+    "Zasada 256\nPoszukiwacz przygód patrzy, kogo uderzasz. Zetnij kogoś, kogo kocha, a nigdy ci nie wybaczy. Zetnij kogoś, kogo nienawidzi, a zobaczysz, jak do ciebie łagodnieje.",
+    "Zasada 312\nDobądź ostrza przy przestraszonym poszukiwaczu przygód, a ucieknie; przy odważnym — rzuci się do natarcia. Ta sama stal, dwa końce. Odwrót to nie pokój.",
+    "Zasada 156\nZużyta stal to nie stal stracona. Połóż podniszczony przedmiot obok jego bliźniaka, a oba scalą się w jeden — ostrze czy pancerz, ta sama sztuczka działa.\n\nScalenie zachowuje to, co położyłeś po lewej. Połóż tam swój najlepszy. Prawy jest jedynie paliwem.",
+    "Traktuj innych pasażerów dobrze.\nPrzysłuży ci się to\nw następnym życiu.\n\nEcha pamiętają.",
+    "Echa naszej przeszłości\nodbijają ku nam dawne żywoty.\n\nBądź życzliwy.\n\nByć może zdołasz\nsię z tym zaprzyjaźnić."
+  ]
+}

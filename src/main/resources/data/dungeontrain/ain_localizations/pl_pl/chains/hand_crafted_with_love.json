@@ -1,0 +1,32 @@
+{
+  "id": "adventureitemnames:hand_crafted_with_love",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 0.29578075,
+      "connection": "Ręcznie",
+      "newline": false,
+      "label": "wykonane ręcznie",
+      "refs": []
+    },
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "Wykonany",
+      "refs": [
+        {
+          "ref": "adventureitemnames:crafted_by",
+          "weight": 5.0
+        }
+      ]
+    },
+    {
+      "chance": 0.29920536,
+      "connection": " z miłością",
+      "newline": false,
+      "label": "z miłością",
+      "refs": []
+    }
+  ]
+}

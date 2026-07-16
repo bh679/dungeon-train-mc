@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "Gracz",
+  "item.playermob.player_mob_spawn_egg": "Jajko przywołujące gracza",
+  "item.playermob.player_mob_aggressive_spawn_egg": "Jajko przywołujące agresywnego gracza",
+  "item.playermob.player_mob_friendly_spawn_egg": "Jajko przywołujące przyjaznego gracza",
+  "item.playermob.player_mob_passive_spawn_egg": "Jajko przywołujące pasywnego gracza",
+  "item.playermob.player_mob_skeptical_spawn_egg": "Jajko przywołujące sceptycznego gracza",
+  "item.playermob.player_mob_shy_spawn_egg": "Jajko przywołujące nieśmiałego gracza",
+  "container.playermob.player_mob": "Gracz"
+}

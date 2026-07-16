@@ -1,0 +1,55 @@
+{
+  "id": "soll_marra_the_borrowed_champion",
+  "character": "Soll Marra",
+  "story": "La championne d'emprunt",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettre une",
+      "variants": [
+        "Jour Un. Équipement.\n\nÉpée en fer, x2 (une de secours, selon le carnet).\nArc, 64 flèches.\nCuir enchanté, panoplie complète, Protection I.\nPerles de l'Ender, x16.\nLit, x1.\nPommes de terre crues, x32.\n\nLe carnet réclame des pommes d'or. La ville n'en avait pas. Je m'en procurerai en chemin.\n\nLe rat est réel. Je l'ai consigné.\n\nJour Un.\n\n- S. Marra",
+        "Jour Un. Équipement.\n\nÉpée en fer, x2.\nArc, 64 flèches.\nCuir enchanté, Prot I.\nPerles de l'Ender, x16.\nLit.\nPommes de terre, x32.\n\nLe carnet dit que les pommes d'or ne sont pas négociables. La ville n'en avait pas. Je suis partie avant qu'on remarque mon absence.\n\nUn rat en gilet m'a donné ce papier. Il avait l'air triste. Je ne sais pas comment le consigner.\n\nJe suis prête.\n\n- Soll Marra"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettre deux",
+      "variants": [
+        "Le carnet est celui de Halric. Il l'a commencé il y a vingt-six ans, l'année avant de me rencontrer.\n\nSpécifications pour l'End. Hauteurs des piliers. Cages de cristal. Ordre de destruction des cages. Rendements des explosions de lit. Trajectoires des perles.\n\nIl n'y est jamais allé.\n\nIl est mort au printemps. Un mal aux poumons. Le carnet appelle ça « cessation, hors combat ».\n\nLe dragon n'a jamais rencontré Halric.\n\nJe le lui apporte.\n\n- S. Marra",
+        "Le carnet est celui de Halric. Il a commencé à l'écrire l'année avant ma naissance. Vingt-six ans de spécifications et aucun dragon au bout.\n\nHauteurs des piliers. Cages de cristal. Ordre de destruction des cages. Rendements des explosions de lit. Trajectoires des perles. Tout le combat, sur le papier.\n\nIl est mort au printemps. Le carnet appelle ça « cessation, hors combat ». Je crois que c'étaient ses poumons. Il toussait beaucoup. Il n'a jamais dit le mot.\n\nLe dragon n'a jamais rencontré Halric.\n\nJe le lui apporte.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettre trois",
+      "variants": [
+        "Exercice Un. Wagon 14.\n\nCible : zombie, sans armure.\nPortée : 9 blocs.\nCouvert : un banc.\nArc : pleine tension, deux secondes.\n\nLe cycle de position de Halric s'adapte. La lampe du wagon tient lieu de cristal. Détruire le cristal d'abord. Pivoter. Décocher.\n\nRésultat : un seul tir. Temps cible du carnet : onze secondes. Le mien : quatre.\n\nLe carnet ne dit pas ce que ça fait, d'être prête.\n\n- S. Marra",
+        "Exercice Un. Wagon quatorze.\n\nJ'ai choisi un zombie parce que le carnet commence par des cristaux et que je n'ai pas de cristal. La lampe au mur avait la bonne forme.\n\nCouvert du banc. Neuf blocs. Pleine tension. Pivoter. Décocher.\n\nLe zombie est tombé en un tir. Le temps cible de Halric était onze secondes. J'ai mis quatre.\n\nJ'étais prête, alors. Puis je me suis assise sur le banc et le wagon était silencieux et la lampe se balançait un peu.\n\nJe ne sais pas à quoi je m'attendais.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettre quatre",
+      "variants": [
+        "Wagon 28. Rencontre.\n\nPassagère : femme, la cinquantaine, manteau de laine gris. Apparemment réelle.\n\nElle a demandé mon nom. J'ai donné le titre de Halric. Apprentie de Halric.\n\nElle a dit : « Halric. Alors tu es sa quatrième. »\n\nJe ne savais pas qu'il y en avait eu trois.\n\nJ'ai noté son numéro de siège. J'ai poursuivi.\n\nRencontre close.\n\n- S. Marra",
+        "Wagon vingt-huit. Une femme en manteau gris a demandé mon nom.\n\nJ'ai donné le titre de Halric. Apprentie de Halric.\n\nElle a dit : « Halric ? Le fléchier à la toux ? »\n\nJe ne savais pas qu'il était fléchier. J'ai un de ses arcs dans mon sac.\n\nJ'aurais dû m'asseoir. J'aurais dû lui demander ce qu'elle savait d'autre. Je ne l'ai pas fait. J'ai marché jusqu'au wagon suivant et je suis assise ici à écrire.\n\nElle est toujours au siège 14. Je crois.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettre cinq",
+      "variants": [
+        "Tentative 47. Œil de l'Ender.\n\nVecteur de lancer : en avant, vingt-cinq degrés au-dessus de l'horizontale. Selon la page neuf du carnet.\n\nL'œil a tenu sa position. Six secondes. Il a tourné dans le sens antihoraire, puis s'est fixé.\n\nCap : nord-nord-est.\n\nJ'ai changé de wagon. J'ai relancé.\n\nCap : nord-nord-est.\n\nLe wagon fait face au sud.\n\nL'œil lit une direction. Le train n'est pas dans une direction.\n\nJ'ai cessé de lancer.\n\n- S. Marra",
+        "L'œil de l'Ender ne veut pas voler.\n\nJe l'ai lancé quarante-sept fois. En avant. En haut. De côté. Par la porte.\n\nL'œil plane. Il tourne. Il ne choisit pas de direction. Halric a écrit qu'un œil choisit toujours. L'œil, page neuf : « la seule chose honnête dans l'approche d'un fort ».\n\nIl est honnête. Il n'y a pas de fort.\n\nJe suis restée assise, l'œil dans la main. Il était chaud. Il ne l'est plus.\n\nJe ne sais pas dans quelle direction je vais.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lettre six",
+      "variants": [
+        "J'ai fermé le carnet.\n\nLa couverture est en cuir brun. Il y a des noms à l'intérieur du plat avant. Je ne les ai pas regardés.\n\nJ'écris sur la dernière page. Halric n'a pas écrit ici.\n\nJ'ai dix-neuf ans. Je n'ai jamais vu de dragon. Je ne veux pas la tuer.\n\nJe vais continuer à marcher jusqu'à trouver une fenêtre avec la bonne lumière. Ensuite je vais m'asseoir.\n\nSoll Marra",
+        "J'ai fermé le carnet.\n\nLa dernière page est vide. Je suis restée assise longtemps, elle ouverte devant moi.\n\nHalric n'est pas dans la dernière page. Halric est dans les premières pages. Je les ai lues trop de fois.\n\nJ'ai dix-neuf ans. Je n'ai jamais vu de dragon. Je ne veux pas la tuer.\n\nJe ne sais pas où va ce train. Je crois que ça va.\n\nJe vais trouver une fenêtre.\n\nSoll"
+      ]
+    }
+  ]
+}

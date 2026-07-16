@@ -1,0 +1,509 @@
+{
+  "id": "adventureitemnames:type_synonyms",
+  "entries": [
+    {
+      "text": "Клинок",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Меч",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Большой Меч",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Тесак",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Сабля",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Лезвие",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Крушитель",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Вертел",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Топор",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Боевой Топор",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Секач",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Топорик",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Раскалыватель",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Бердыш",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Томагавк",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Древорез",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Кайло",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Кирка",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Молот",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Кувалда",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Мотыга-кирка",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Рубило",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Палица",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Проходчик",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Камнегрыз",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Лопата",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Заступ",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Совок",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Черпак",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Копалка",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Землерой",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Экскаватор",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Песколоп",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Мотыга",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Коса",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Культиватор",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Рыхлитель",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Грабли",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Жнец",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Плуг",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Серп",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Шлем",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Шляпа",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Шапка",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Корона",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Капюшон",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Наголовье",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Койф",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Черепник",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Диадема",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Котелок",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Туника",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Рубаха",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Броня",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Кираса",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Жилет",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Кольчуга",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Дублет",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Нагрудник",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Поножи",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Штаны",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Штанины",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Брюки",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Наголенники",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Портки",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Слаксы",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Чулки",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Туфли",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Ботинки",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Сандалии",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Копыта",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Тапки",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Галоши",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Топталки",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Ножные Варежки",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Топотуны",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Щит",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Баклер",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Эгида",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Оплот",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Тарч",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Павеза",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Защитник",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Заслон",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    }
+  ]
+}

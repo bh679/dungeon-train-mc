@@ -1,0 +1,54 @@
+{
+  "id": "adventureitemnames:purchased_item_description",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "Wykonany",
+      "refs": [
+        {
+          "ref": "adventureitemnames:hand_crafted_with_love",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " przez ",
+      "newline": false,
+      "label": "Mieszkaniec",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/villager_name",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.15056606,
+      "connection": ", z ",
+      "newline": false,
+      "label": "Materiał",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/item_material",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.009645718,
+      "connection": "Bez podziękowań dla ",
+      "newline": true,
+      "label": "Bez podziękowań dla",
+      "refs": [
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 2.0
+        }
+      ]
+    }
+  ]
+}

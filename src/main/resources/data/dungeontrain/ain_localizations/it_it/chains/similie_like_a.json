@@ -1,0 +1,42 @@
+{
+  "id": "adventureitemnames:similie_like_a",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "Verbo",
+      "refs": [
+        {
+          "ref": "adventureitemnames:verbs",
+          "weight": 42.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " come ",
+      "newline": false,
+      "label": "come un/una",
+      "refs": [
+        {
+          "ref": "adventureitemnames:determiners",
+          "weight": 11.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "Similitudine «come un»",
+      "refs": [
+        {
+          "ref": "adventureitemnames:type_synonyms",
+          "weight": 84.0
+        }
+      ]
+    }
+  ]
+}

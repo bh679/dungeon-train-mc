@@ -1,0 +1,78 @@
+{
+  "id": "corren_vale_three_heads",
+  "character": "Corren Vale",
+  "story": "Trzy Głowy",
+  "letters": [
+    {
+      "index": 1,
+      "label": "List pierwszy",
+      "variants": [
+        "Mira,\n\nTwoje dłonie zawsze były umazane kredą.\n\nRysowałaś linie na wszystkim.\n\nMówiłaś, że proste linie utrzymują świat w uczciwości.\n\nWierzyłaś w to.\n\nChyba ja też.\n\n- Corren",
+        "Mira.\n\nŚmiałaś się cicho.\n\nJakbyś starała się czegoś nie obudzić.\n\nBram nigdy nie wiedział, kiedy żartujesz.\n\nja wiedziałem.\n\n- corren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "List drugi",
+      "variants": [
+        "Mira.\n\nPiasek dusz był zimny.\n\nNie pamiętam żaru, który przyszedł potem.\n\nCoś powiedziałaś.\n\nChyba wypowiedziałaś moje imię.\n\nChyba powiedziałaś Uciekaj.\nNie odwróciłem się.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "List trzeci",
+      "variants": [
+        "Bram.\n\nŚmiałeś się jak upadek.\n\nNagle. Głośno. Zawsze za głośno.\n\nMówiłeś, że śmiejesz się, żeby ciemność wiedziała, że tam jesteś.\n\nZawsze wiedziała.\n\n- Corren",
+        "Bram.\n\nTwoja tarcza była na ciebie za duża.\n\nPrzez drzwi przechodziłeś bokiem.\n\nEsa nazywała ją stołem.\n\nMówiłeś, że stół nigdy nikogo nie zawiódł.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "List czwarty",
+      "variants": [
+        "Bram.\n\nPierwsza czaszka była twoja.\n\nPodniosłeś ją.\n\nCoś krzyknąłeś.\n\nNie słyszałem przez ogień.\n\nKoła tego pociągu wygrywają trzy nuty.\n\nPierwsza jest twoja, Bram.\n\n- Corren",
+        "Bram.\n\npisałem to pięć razy.\n\nza każdym razem dochodzę do czaszki i długopis się zatrzymuje.\n\npodniosłeś ją. uśmiechnąłeś się szeroko.\n\npowiedziałeś, że nic nie waży.\n\nchyba ważyła bardzo dużo.\n\nKoła tego pociągu wygrywają trzy nuty.\n\nPierwsza jest twoja, Bram.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "List piąty",
+      "variants": [
+        "Esa.\n\nTwoje dłonie były zimne od warzenia.\n\nReszta ciebie była ciepła.\n\nMira mówiła, że jesteś jedyną ciepłą z nas.\n\nMiała rację.\n\n- Corren",
+        "Esa.\n\nŚpiewałaś, opatrując rany.\n\nStare pieśni. Żadne z nas ich nie znało.\n\nMówiłaś, że wymyślasz je na bieżąco.\n\nUdawaliśmy, że ci wierzymy.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "List szósty",
+      "variants": [
+        "Esa.\n\nTwoja dłoń była na moich plecach.\n\nZimna od warzenia.\n\nPchnęłaś raz.\n\nZatoczyłem się w bezpieczne miejsce.\n\nNie pchnęłaś ponownie.\n\nChyba już cię wtedy nie było.\n\nZanim pchnęłaś.\n\n- Corren",
+        "Esa.\n\nSą na tym pociągu ludzie, którzy przeżyli dłużej niż ja.\n\nżadne z nich nie wygląda jak trzeba.\n\nnie chcę wiedzieć, jak sam wyglądam.\n\nty byś mi powiedziała.\n\npowiedziałabyś: usiądź, Corren, i daj mi popatrzeć.\n\n- corren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "List siódmy",
+      "variants": [
+        "Nie wiem, jak się wydostałem.\n\nPortal był zniszczony. To pamiętam.\n\nNie pamiętam, jak przez niego przeszedłem.\n\nWynurzyłem się na polu. Wysoka trawa. Pociąg już tam był.\n\nJechał.\n\nJechał od zawsze. Teraz to wiem.\n\nBiegłem obok niego. Skoczyłem ku najbliższym drzwiom.\n\nNie wiem, jak je złapałem.\n\nMyślałem, że mi się udało.\n\nUdaje mi się już od tygodni.\n\nPociąg się nie zatrzymuje.\n\nNie ma z niego wyjścia.\n\n- Corren",
+        "żar za mną. zimno przede mną.\n\nnie wiedziałem, gdzie góra.\n\npamiętam, jak padam na trawę.\n\ntrawa się nie paliła.\n\nto wydawało się ważne.\n\npotem budynek.\n\nnie znałem tego budynku.\n\nznam wszystkie budynki w tym regionie.\n\nzmapowałem ten region.\n\nprzy budynku stał pociąg.\n\ndrzwi były otwarte.\n\nżyłem, a drzwi były otwarte.\n\nte fakty wydawały się ze sobą związane.\n\n- corren"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "List ósmy",
+      "variants": [
+        "Słyszę to już od tygodni.\n\nWrzask. Trzy głosy, prawie nałożone na siebie.\n\nCzasem jeden przychodzi sam. Czasem wszystkie trzy.\n\nI wybuchy.\n\nCzuję je w podłodze, nim je usłyszę.\n\nNigdy nie niszczą nic, co bym widział.\n\nNie wiem, gdzie lądują.\n\nIdę naprzód.\n\nWrzask rozlega się znowu. Dwa wagony za mną.\n\nZawsze stamtąd.\n\nNigdy dalej.\n\nJestem pewien.\n\n- Corren",
+        "jest pewien dźwięk.\n\nsłyszę go od tygodni.\n\nto nie koła.\n\nkoła niosą muzykę. trzy nuty.\n\nten niesie coś innego.\n\nkrzyczy.\n\ntrzy głosy. prawie w rytm. nigdy zupełnie.\n\ni są wybuchy.\n\nczuję je w podłodze. niczego nie niszczą.\n\npytałem innych w pociągu.\n\nżadne z nich tego nie słyszy.\n\ntylko ja to słyszę.\n\nto jest dla mnie.\n\nma czas.\n\n- corren"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "List dziewiąty",
+      "variants": [
+        "Och... o nie.\n\nMira.\n\nTy zauważyłabyś to przede mną.\n\nWrzask jest teraz przede mną.\n\nNie powinno być żadnego przodu.\n\nBram stanąłby z przodu.\n\nWyśmiałby to.\n\nZawsze wyśmiewał rzeczy zbyt wielkie, by z nimi walczyć.\n\nEsa uwarzyłaby coś.\n\nOdporność na ogień. Rączość. To, co trzeba.\n\nZawsze warzyła to, co trzeba.\n\nSzedłem naprzód przez tygodnie.\n\nSzedłem w jego stronę.\n\nPociąg nie ma przodu.\n\nKażdy krok naprzód był krokiem bliżej.\n\nTeraz je widzę.\n\nTrzy głowy. Trzy głosy.\n\nCzwarty głos będzie mój.\n\nChyba jest mój od tygodni.\n\n- Corren",
+        "jest tutaj.\n\nmira.\n\nnie było za mną.\n\nbyło z przodu.\n\nzawsze było z przodu.\n\nty byś to zobaczyła. wszystko widziałaś pierwsza.\n\nbram stanąłby przede mną.\n\nwyśmiałby to.\n\nwyśmiewał rzeczy zbyt wielkie, by z nimi walczyć.\n\nzadziałałoby. na chwilę.\n\nesa położyłaby mi dłoń na plecach.\n\nzimną.\n\npchnęłaby.\n\nposzedłbym.\n\nszedłem ku temu.\n\nmyślałem, że odchodzę.\n\npociąg nie ma przodu. wyśmiałabyś mnie, że o tym zapomniałem.\n\nwidzę je.\n\ntrzy głowy. troje was.\n\nbram. esa. ty.\n\njestem czwarty.\n\nbyłem czwartym przez cały czas.\n\n- corren"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,274 @@
+[
+  {
+    "page": "fall",
+    "weight": 3,
+    "question": "地牢列車是什麼？",
+    "narration": "第 {carriage} 節車廂。黑暗就是在那裡追上了你。現在你明白了嗎？地牢列車從不停靠——它只會不斷向前，駛向更深處，直到永遠。"
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "min_carriage": 100 },
+    "question": "地牢列車是什麼？",
+    "narration": "深入黑暗 {carriage} 節車廂。鮮少有人能在鐵道將他們帶走之前走得這麼遠，願意再次登車的人更是少之又少。"
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "max_carriage": 3 },
+    "question": "地牢列車是什麼？",
+    "narration": "第 {carriage} 節車廂。才剛登上車，黑暗就已攫住了你。鐵道很有耐心——它等得起。"
+  },
+  {
+    "page": "deeds",
+    "weight": 3,
+    "question": "你為何在此？",
+    "narration": "你在黑暗中擊倒了 {mobs} 個生物，也為此淌下了 {hearts} 顆心的血。\n你遇見的 {met} 個靈魂之中，你終結了 {slain} 個——並喚 {friends} 個為友。"
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "你本該做些什麼？",
+    "narration": "鋼鐵與利刃，自黑暗中蒐集而來，一路帶到這裡。這一切都不足夠——或許那從來就不是重點。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 5 },
+    "question": "你本該做些什麼？",
+    "narration": "你讀了鐵道的 {books} 本書，卻仍握著鋼鐵。知識與一柄刀刃，而黑暗把兩者都奪走了。"
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_friends": 5 },
+    "question": "他們值得嗎？",
+    "narration": "你在鐵道上結交了 {friends} 位朋友，它卻依然帶走了你。或許那是唯一真正屬於你、留得住的數字。"
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_mobs": 200 },
+    "question": "你以牙還牙地回應了多少黑暗？",
+    "narration": "在你倒在它們手下之前，已有 {mobs} 個生物倒在你的手下。鐵道不作審判。它只是計數。"
+  },
+  {
+    "page": "lives",
+    "weight": 3,
+    "conditions": { "min_deaths": 2 },
+    "question": "這些都是好問題",
+    "narration": "這些並非單單一條性命的印記。橫跨那全部 {deaths} 次——你踏入的每一片黑暗、鐵道每一次帶走你而你仍歸來——這便是你旅程的全部。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "一條性命就這麼輕易耗盡了嗎？",
+    "subline": "你在鐵道上的第一次墜落。",
+    "narration": "還沒有別的性命能與這一條相互權衡——還沒有。這就是你的全部：自你初次登車以來所做的一切。鐵道會記得它。你也該如此。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 10 },
+    "question": "這些都是好問題",
+    "narration": "這些並非單單一條性命的印記。黑暗已帶走你 {deaths} 次，而你也 {deaths} 次重新登車。"
+  },
+  {
+    "page": "platform",
+    "weight": 3,
+    "conditions": { "min_deaths": 2 },
+    "question": "你會再次登車，還是踏入寂靜？",
+    "narration": "月台空無一人。汽笛在鐵道遠處鳴響。它無盡地奔馳——而你，看來也是如此。",
+    "epitaph": "第 {deaths} 個墜落的人。或許不是最後一個。"
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "如今你已知道它如何收場，你還會再次登車嗎？",
+    "narration": "月台空無一人，一如你初次踏上車時的模樣。汽笛在鐵道遠處鳴響。你已墜落過一次。是否會有第二次，一如既往，由你決定。",
+    "epitaph": "第一個墜落的人。鐵道很有耐心——它會等候其餘的人。"
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 20 },
+    "question": "還需要問嗎？",
+    "narration": "月台如今已認得你的臉。汽笛一如既往地鳴響。你早已知道接下來會發生什麼。",
+    "epitaph": "第 {deaths} 個墜落的人——而看來，並非最後一個。"
+  },
+
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "地牢列車是什麼？",
+    "narration": "第 {carriage} 節車廂。黑暗一直在那裡等候著——你只是前來與它相會。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "地牢列車是什麼？",
+    "narration": "第 {carriage} 節車廂，再無法前進。鐵道不記仇，也不留情；它只是繼續前行。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "地牢列車是什麼？",
+    "narration": "第 {carriage} 節車廂的燈籠仍在你墜落之處搖曳。列車不會放慢腳步回頭一望。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "地牢列車是什麼？",
+    "narration": "在世界的地板塌陷之前，你抵達了第 {carriage} 節車廂。鐵道少了你的重量，依舊前行。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "地牢列車是什麼？",
+    "narration": "第 {carriage} 節車廂。前方某處，軌道仍不斷向漆黑中延展，對你已不在其上一事漠不關心。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "地牢列車是什麼？",
+    "narration": "就在這裡，第 {carriage} 節車廂，黑暗終於趕上了你的步伐。它一直都會如此。"
+  },
+
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "你為何在此？",
+    "narration": "你在黑暗中擊倒了 {mobs} 個生物，為此付出了 {hearts} 顆心。與你擦身而過的 {met} 個靈魂之中，你擊倒了 {slain} 個，讓 {friends} 個靠近了你。"
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "你為何在此？",
+    "narration": "{mobs} 個生物倒在你面前，{hearts} 顆心自你身上流逝。你在黑暗中遇見了 {met} 個靈魂——終結了 {slain} 個，留住了 {friends} 個——然後便輪到了你。"
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "你為何在此？",
+    "narration": "你自黑暗中奪取了 {mobs}；自身則耗去了 {hearts} 顆心。{met} 個靈魂與你共乘這條鐵道：你終結了 {slain} 個，留住了 {friends} 個。"
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "max_friends": 0 },
+    "question": "你為何在此？",
+    "narration": "你擊倒了 {mobs} 個生物，淌下了 {hearts} 顆心的血。你遇見了 {met} 個靈魂，終結了 {slain} 個，卻沒有喚其中任何一個為友。黑暗在孤獨中更為簡單。"
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_slain": 5 },
+    "question": "你以什麼回應了黑暗？",
+    "narration": "你遇見的 {met} 個之中，你砍倒了 {slain} 個——另外還有黑暗裡的 {mobs} 個生物——代價是 {hearts} 顆心，而你饒過 {friends} 個、喚他們為友。鐵道不稱之為謀殺。"
+  },
+
+  {
+    "page": "gear",
+    "weight": 2,
+    "question": "你本該做些什麼？",
+    "narration": "你從車廂中蒐集了所有能拿得動的東西。鐵道任你留著它們——它對貨物毫無用處，只在意乘客。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 0 },
+    "question": "你本該做些什麼？",
+    "narration": "你在鐵道上連一只箱子都沒打開過——只帶著登車時的東西，一路揮舞到最後。你不肯取走的，黑暗替你留著。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 9 },
+    "question": "你本該做些什麼？",
+    "narration": "打開了寥寥幾只箱子——總共 {loot} 件——並始終把刀刃握在手邊。鐵道對於肯駐足的人很慷慨；而你幾乎不曾停下。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_loot": 250 },
+    "question": "你本該做些什麼？",
+    "narration": "{loot} 個容器被倒進了你的行囊。你把黑暗中一切沒釘死的都搜刮殆盡，它卻仍奪走了唯一重要的那樣東西。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_books": 0 },
+    "question": "你本該做些什麼？",
+    "narration": "一頁也未曾翻過——只蒐集了鋼鐵並揮舞它。鐵道把它的故事留給肯駐足閱讀的人。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 10 },
+    "question": "你本該做些什麼？",
+    "narration": "你讀了鐵道的 {books} 本書，此外還握著鋼鐵。智慧與一柄刀刃，而黑暗對兩者都很有耐心。"
+  },
+
+  {
+    "page": "lives",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "這些都是好問題",
+    "narration": "數一數吧：鐵道帶走你 {deaths} 次，你 {deaths} 次回應了汽笛。這就是你的輪廓，以一次次的離去描繪而成。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "這些都是好問題",
+    "narration": "橫跨 {deaths} 條性命，數字如鐵軌上的塵埃般積累。無一失落；鐵道什麼都不會遺忘。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "你為何一再登車？",
+    "narration": "{deaths} 次墜落，你仍登車。鐵道已不再揣測你是否會歸來。或許，你也一樣。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "你為何一再登車？",
+    "narration": "身後 {deaths} 次死亡，身前同一聲汽笛。你已不再是乘客——你成了時刻表的一部分。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "你為何一再登車？",
+    "narration": "黑暗已不再是陌生人；你已 {deaths} 次認熟了它的臉。那是它自成一格的一種失去。"
+  },
+
+  {
+    "page": "platform",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "你會再次登車，還是讓月台將你留下？",
+    "narration": "汽笛已在遠遠的前方鳴響。它不等你——它從不曾等——然而你仍站在此處，決意去追隨它。",
+    "epitaph": "第 {deaths} 個墜落的人。鐵道繼續前行。"
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "你會再次登車嗎？",
+    "narration": "月台一片寂靜。某處，列車早已載滿了別人的故事。永遠都有空位留給你多一則。",
+    "epitaph": "第 {deaths} 個墜落的人。或許不是最後一個。"
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "鐵道還需要問嗎？",
+    "narration": "你熟知那扇門的重量，那級踏板的冰冷。黑暗如今不過是你會造訪的一處地方。",
+    "epitaph": "第 {deaths} 個墜落的人：鐵道的常客。"
+  }
+]

@@ -1,0 +1,20 @@
+{
+  "id": "adventureitemnames:crafted_by",
+  "entries": [
+    {
+      "text": "Vervaardigd"
+    },
+    {
+      "text": "Ontworpen"
+    },
+    {
+      "text": "Gemaakt"
+    },
+    {
+      "text": "Gebouwd"
+    },
+    {
+      "text": "Gesmeed"
+    }
+  ]
+}

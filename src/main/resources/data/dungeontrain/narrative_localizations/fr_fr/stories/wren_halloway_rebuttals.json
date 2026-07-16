@@ -1,0 +1,46 @@
+{
+  "id": "wren_halloway_rebuttals",
+  "character": "Wren Halloway",
+  "story": "Réfutations",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettre une",
+      "variants": [
+        "Faulthurst.\nJ'ai lu tes livres.\nTous.\n\n\nTu as écrit :\n« nous nous fions à nos yeux\ndans un lieu où nous\nsommes fous de nous fier\nà aucun de nos sens. »\n\n\nMignon.\n\n\nC'est procédural.\nLa graine change d'une salle à l'autre.\nCe ne sont pas tes sens qui te lâchent.\nC'est une mauvaise boucle.\n\n\n— Wren",
+        "Faulthurst.\nJe travaille tes livres.\nCelui-ci parle du poids.\n\n\nTu as écrit :\n« As-tu déjà\nsongé au poids\nd'un train infini ?\nCar chacun de ces\nblocs pèserait\nquelque chose de constant. »\n\n\nEt.\n\n\nRien ne pèse rien.\nLa voie n'existe\nque là où tu peux la voir.\nIl n'y a pas de train infini.\nIl y a un wagon à la fois.\n\n\n— W."
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettre deux",
+      "variants": [
+        "Faulthurst.\nDeuxième lettre.\nJe n'ai pas fini.\n\n\nTu as écrit :\n« Je te trouve\nfascinant.\nVos différences.\nLes façons subtiles\ndont vous vous\ndistinguez sans\nmême essayer. »\n\n\nEnnuyeux.\n\n\nTu es ici depuis\ntrop longtemps.\nTu ne nous trouves pas\n« fascinants ».\nTu nous trouves nouveaux.\nCe n'est pas pareil.\n\n\nUne Sceptique, Wren",
+        "Faulthurst.\nMême auteur.\nAutre livre.\nMême problème.\n\n\nTu as écrit :\n« Les livres vont\nbientôt s'ouvrir. »\n\n\nBientôt.\n\n\nIl y a des mois.\nEt avant ça.\nIl n'y a pas de « bientôt ».\nIl y a maintenant.\nTu temporises.\n\n\n— Wren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettre trois",
+      "variants": [
+        "Faulthurst.\nCelui de la saucisse.\nOui. Celui-là.\n\n\nTu as écrit :\n« une saucisse ? Et une\nseule ? Qui l'a faite ?\nElle était unique en son genre. »\n\n\nStatistiques.\n\n\nJ'ai compté.\nLe porc revient sans cesse.\nLe bœuf revient sans cesse.\nLa saucisse est revenue\nune fois. Ce n'est pas\nun miracle, Faulthurst.\nC'est le schéma.\nCelui sur dix mille\nest ce qui fait paraître\nles neuf mille autres\nordinaires.\n\n\n— Wren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettre quatre",
+      "variants": [
+        "Faulthurst.\nCelui du « reviens ».\nJ'ai des notes.\n\n\nTu as écrit :\n« Si tu ne le fais pas,\nessaie de revenir ! Je l'ai\nvu arriver avec\nd'autres ! Comment ils\nfont, je n'en ai pas\nla moindre idée. »\n\n\nFacile.\n\n\nTu te réveilles parce que\nle monde se réinitialise\nlà où tu te tenais.\nTu ne reviens pas.\nLe monde se rembobine.\nVoilà la réponse.\n\n\nSauf.\nJe me souviens du froid.\nLe monde s'est rembobiné.\nMoi non.\nEn fait.",
+        "Faulthurst.\nTu as écrit sur le temps.\nBien sûr que oui.\n\n\nTu as écrit :\n« Je sais que le temps\nn'est pas censé\ns'écouler comme il le\nfait dans le train-donjon.\nJe le sais\nd'une certaine façon. »\n\n\nComptés.\n\n\nJ'ai compté.\nLes jours durent environ\nvingt minutes.\nLes nuits sont plus courtes.\nVoilà l'horloge.\nVoilà la réponse.\n\n\nSauf.\nLes jours ici ne sont pas\nles jours du dehors.\nJe le sais.\nComme toi.\nEn fait."
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettre cinq",
+      "variants": [
+        "Faulthurst.\nLe dernier.\nJe crois.\n\n\nTu as écrit :\n« C'est un plaisir\nau-delà des plaisirs\nque de témoigner\nde ton aventure. »\n\n\nPlaisir.\n\n\nTu le pensais.\n\n\nZut.",
+        "Faulthurst.\n\n\nJe n'en écris pas\nun autre.\n\n\nVoilà la réfutation."
+      ]
+    }
+  ]
+}

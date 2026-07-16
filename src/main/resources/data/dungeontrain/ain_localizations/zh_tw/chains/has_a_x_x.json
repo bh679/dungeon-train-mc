@@ -1,0 +1,82 @@
+{
+  "id": "adventureitemnames:has_a_x_x",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "擁有",
+      "refs": [
+        {
+          "ref": "adventureitemnames:has_a",
+          "weight": 50.0
+        }
+      ]
+    },
+    {
+      "chance": 0.3465835,
+      "connection": "",
+      "newline": false,
+      "label": "痕跡",
+      "refs": [
+        {
+          "ref": "adventureitemnames:traces_of",
+          "weight": 6.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "限定",
+      "refs": [
+        {
+          "ref": "adventureitemnames:determiners",
+          "weight": 6.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "一件",
+      "refs": [
+        {
+          "ref": "adventureitemnames:it_has_a",
+          "weight": 31.0
+        }
+      ]
+    },
+    {
+      "chance": 0.2516847,
+      "connection": "",
+      "newline": false,
+      "label": "形容",
+      "refs": [
+        {
+          "ref": "adventureitemnames:material_or_element",
+          "weight": 25.0
+        },
+        {
+          "ref": "adventureitemnames:colors",
+          "weight": 27.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "性質",
+      "refs": [
+        {
+          "ref": "adventureitemnames:verbs_singular",
+          "weight": 42.0
+        }
+      ]
+    }
+  ]
+}

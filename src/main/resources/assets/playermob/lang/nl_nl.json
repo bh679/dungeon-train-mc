@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "Speler",
+  "item.playermob.player_mob_spawn_egg": "Speler-spawnei",
+  "item.playermob.player_mob_aggressive_spawn_egg": "Agressieve speler-spawnei",
+  "item.playermob.player_mob_friendly_spawn_egg": "Vriendelijke speler-spawnei",
+  "item.playermob.player_mob_passive_spawn_egg": "Passieve speler-spawnei",
+  "item.playermob.player_mob_skeptical_spawn_egg": "Sceptische speler-spawnei",
+  "item.playermob.player_mob_shy_spawn_egg": "Verlegen speler-spawnei",
+  "container.playermob.player_mob": "Speler"
+}

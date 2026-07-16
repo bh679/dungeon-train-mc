@@ -1,0 +1,10 @@
+{
+  "id": "more_questions_next_time",
+  "title": "Altre domande",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Benvenuto al Dungeon Train\nCos'è il treno?\nPerché sei qui?\nCosa dovresti fare?\nSono tutte belle domande\n\nTorna la prossima volta se vuoi altre domande."
+  ]
+}

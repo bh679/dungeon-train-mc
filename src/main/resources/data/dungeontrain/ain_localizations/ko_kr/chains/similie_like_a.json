@@ -1,0 +1,42 @@
+{
+  "id": "adventureitemnames:similie_like_a",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "동사",
+      "refs": [
+        {
+          "ref": "adventureitemnames:verbs",
+          "weight": 42.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " 마치 ",
+      "newline": false,
+      "label": "~같이",
+      "refs": [
+        {
+          "ref": "adventureitemnames:determiners",
+          "weight": 11.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "직유 '~같은'",
+      "refs": [
+        {
+          "ref": "adventureitemnames:type_synonyms",
+          "weight": 84.0
+        }
+      ]
+    }
+  ]
+}

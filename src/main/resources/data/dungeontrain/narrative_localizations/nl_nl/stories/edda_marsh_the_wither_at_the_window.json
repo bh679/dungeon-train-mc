@@ -1,0 +1,55 @@
+{
+  "id": "edda_marsh_the_wither_at_the_window",
+  "character": "Edda Marsh",
+  "story": "De Wither aan het raam",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Brief één",
+      "variants": [
+        "Mijn naam is Edda Marsh.\n\nIk schrijf dit vanaf een stoel die niet de mijne is.\n\nMijn stoel was drie wagons terug. Ik verliet hem snel. Niet uit angst. Meer zoals je een kamer verlaat als de ketel te lang op het vuur heeft gestaan.\n\nIk leg het uit als ik verder ben gelopen. Voor nu: ik heb me verplaatst. Ik ben begonnen met bewegen.\n\nEdda Marsh",
+        "Edda Marsh.\n\nDeze stoel is warm. Niet door mij.\n\nMijn stoel ligt terug waar ik vandaan kwam. Drie wagons, misschien vier. Ik heb niet geteld.\n\nMijn omslagdoek ligt er nog op. Opgevouwen. Opvouwen was het laatste wat ik niet deed.\n\nMeer als ik verder ben gelopen.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Brief twee",
+      "variants": [
+        "Ik zit in een slaaprijtuig. Het bed is opgemaakt. Niet door mij.\n\nGisternacht was er iets aan mijn oude raam.\n\nDrie koppen. Bot in de kleur van natte as. De middelste groter dan de andere.\n\nZe bewogen één voor één. De middelste bleef stil en de twee ernaast draaiden. Alle drie keken naar binnen.\n\nIk keek niet weg. Er leek geen reden toe. Na een tijdje waren ze weg.\n\nIk wachtte een uur. Toen stond ik op. Toen liep ik.\n\nEdda Marsh",
+        "Een slaaprijtuig. Het bed is opgemaakt. Niet door mij.\n\nDrie koppen aan het oude raam vannacht.\n\nBotgrijs. De middelste groter. De twee ernaast draaiden wanneer zij dat niet deed.\n\nAlle drie keken naar binnen.\n\nIk heb ergere dingen gezien in mijn leven. Ik keek terug.\n\nNa een tijdje waren ze weg. Ik wachtte. Ik liep.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Brief drie",
+      "variants": [
+        "Ik liep vier wagons naar voren. Ik schrijf vanuit een leeshoek in wat misschien een bibliotheekwagon is. Sommige boeken zijn echt. Andere zijn alleen ruggen, vastgelijmd aan de muur.\n\nHet is hier ook. Aan mijn raam. Niet het raam dat ik verliet. Dit nieuwe.\n\nDezelfde drie koppen. De middelste iets scheef, alsof hij luistert.\n\nIk liep naar de andere kant van de wagon. Dat raam was donker. Ik kwam terug. Het was weer aan het mijne.\n\nEdda Marsh",
+        "Vier wagons naar voren. Een bibliotheekwagon. Sommige boeken zijn echt. Andere zijn ruggen, vastgelijmd aan de muur.\n\nHet is hier ook. Aan dit raam. Niet het raam dat ik verliet.\n\nDezelfde drie koppen. De middelste scheef, alsof hij luistert.\n\nIk stak de wagon over. Het andere raam was donker. Ik kwam terug. Het mijne glansde weer van bot.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Brief vier",
+      "variants": [
+        "Ik zit in een goederenwagon. De kratten zijn dichtgespijkerd. Het licht is het enige wat niet in een krat zit.\n\nIk moet je over Hollin vertellen.\n\nHij was mijn man. Hij groef zielenzand. Het meeste verkocht hij. Een beetje hield hij voor zichzelf.\n\nUiteindelijk groef hij te diep. Er kwam iets omhoog uit de plek waar hij groef.\n\nDrie koppen. Een middelste groter dan de andere. Een scheefheid in de middelste. Alsof hij luistert.\n\nHollin kwam niet omhoog.\n\nIk wacht al lang om dat gezicht weer te zien. Nu heb ik het gezien.\n\nHet is aan elk raam waar ik bij ga zitten.\n\nEdda Marsh",
+        "Een goederenwagon. Kratten dichtgespijkerd. Het licht is het enige wat niet in een krat zit.\n\nHollin.\n\nHij was mijn man. Hij groef zielenzand. Verkocht het meeste. Hield een beetje.\n\nHij groef te diep. Er kwam iets omhoog.\n\nDrie koppen. De middelste groter. Scheef. Alsof hij luistert.\n\nHollin bleef.\n\nIk wachtte lang om dat gezicht weer te zien.\n\nNu heb ik het gezien.\n\nEdda"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Brief vijf",
+      "variants": [
+        "Ik zit in een uitkijkwagon. Lange ramen. Veel ervan. Een paar andere passagiers.\n\nIk zat hier urenlang. Ik keek naar de ramen. Niet erdoorheen. Ernaar.\n\nDe trein rijdt met een gelijkmatige snelheid. Het uitzicht niet. Een boom blijft te lang naast ons. Een rivier stroomt de verkeerde kant op en stroomt dan de onze.\n\nDe volgende wagon had zijn eigen uitzicht. Een ander dal. De wagon daarna had een veld dat ik kende toen ik twaalf was.\n\nEr zit twee stoelen verderop een man die naar een keuken kijkt. Ik denk dat het de keuken van zijn moeder is. Hij huilt al een uur heel zacht.\n\nDe ramen tonen niet het buiten. Ze tonen wat de kijker draagt.\n\nIk heb Hollin gedragen. Ik heb gedragen wat omhoogkwam uit zijn graven.\n\nHet volgt me niet. Het is altijd van mij geweest.\n\nIk ben kalm. Ik wil dat je weet dat ik kalm ben.\n\nEdda Marsh",
+        "Uitkijkwagon. Lange ramen. Meerdere. Een paar andere passagiers.\n\nIk keek naar de ramen. Niet erdoorheen. Ernaar. Urenlang.\n\nDe trein rijdt met een gelijkmatige snelheid. Het uitzicht niet. Een boom blijft te lang. Een rivier stroomt de verkeerde kant op en stroomt dan de onze.\n\nVolgende wagon: een ander dal. De wagon daarna: een veld dat ik kende toen ik twaalf was.\n\nTwee stoelen verderop kijkt een man naar een keuken. Ik denk dat het die van zijn moeder is. Hij huilt al heel zacht.\n\nDe ramen tonen wat we dragen.\n\nIk heb Hollin gedragen. En wat omhoogkwam uit zijn graven.\n\nHet is altijd van mij geweest. Het volgt me niet. Van mij.\n\nIk ben kalm.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Brief zes",
+      "variants": [
+        "Ik ben gestopt met lopen.\n\nIk zit in een kleine wagon dicht bij de achterkant. Of dicht bij de voorkant. Het licht is hetzelfde in beide richtingen.\n\nEr is een raam. Er zit een grendel op het raam. Ik kijk al een hele tijd naar de grendel.\n\nDe drie koppen zijn hier. Ze zijn nu niet aan het glas. Ze zijn er een stukje vandaan, in het donker. Wachtend.\n\nIk heb besloten dat ik niet weer ga lopen. Ik heb besloten dat ik de grendel ga optillen.\n\nIk heb de grendel opgetild.\n\nHet raam is open. De nacht is erg koud. De ceder ruikt sterker wanneer de lucht erdoorheen beweegt.\n\nIk laat dit hier achter. Ik laat het raam ook open. Voor wie de stoel als volgende vindt.",
+        "Ik ben gestopt.\n\nEen kleine wagon. Dicht bij de achterkant. Of de voorkant. Het licht is hetzelfde in beide richtingen.\n\nEen raam. Een grendel. Ik kijk er al een hele tijd naar.\n\nDe drie koppen zijn hier. Nu niet aan het glas. Een stukje verderop. Wachtend.\n\nIk ga niet weer lopen. Ik ga de grendel optillen.\n\nIk heb hem opgetild.\n\nHet raam is open. De nacht is koud. De ceder ruikt sterker wanneer de lucht beweegt.\n\nIk laat dit hier achter.\n\nIk laat het raam ook open."
+      ]
+    }
+  ]
+}

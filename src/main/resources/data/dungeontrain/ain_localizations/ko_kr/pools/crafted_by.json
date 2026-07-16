@@ -1,0 +1,20 @@
+{
+  "id": "adventureitemnames:crafted_by",
+  "entries": [
+    {
+      "text": "제작한"
+    },
+    {
+      "text": "설계한"
+    },
+    {
+      "text": "만든"
+    },
+    {
+      "text": "지은"
+    },
+    {
+      "text": "벼린"
+    }
+  ]
+}

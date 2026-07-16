@@ -1,0 +1,323 @@
+[
+  {
+    "page": "fall",
+    "weight": 3,
+    "question": "Dungeon Trainとは何か?",
+    "narration": "車両{carriage}。そこで、闇はあなたに届いた。今なら分かるか? Dungeon Trainは止まらない――ただ進みつづける、より深く、永遠に。"
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": {
+      "min_carriage": 100
+    },
+    "question": "Dungeon Trainとは何か?",
+    "narration": "闇の中へ、車両{carriage}両。路線に連れ去られる前に、これほど遠くまで乗る者は少ない。ふたたび乗り込む者は、さらに少ない。"
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": {
+      "max_carriage": 3
+    },
+    "question": "Dungeon Trainとは何か?",
+    "narration": "車両{carriage}。乗り込んだばかりで、闇はもうあなたを捕らえていた。路線は辛抱強い――そうしていられる余裕があるのだから。"
+  },
+  {
+    "page": "deeds",
+    "weight": 3,
+    "question": "なぜ、あなたはここにいる?",
+    "narration": "あなたは闇の中で{mobs}体を打ち倒し、その代償に{hearts}のハートを流した。\n出会った{met}の魂のうち、{slain}に終止符を打ち――{friends}を友と呼んだ。"
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "あなたは何をなすべき者なのか?",
+    "narration": "鉄と刃、闇の中から集め、ここまで運んできた。そのどれも足りはしなかった――おそらく、それは初めから肝心なことではなかった。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_books": 5
+    },
+    "question": "あなたは何をなすべき者なのか?",
+    "narration": "あなたは路線の本を{books}冊読み、それでも鋼を携えていた。知識と刃、そのどちらも、闇が奪った。"
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_friends": 5
+    },
+    "question": "彼らは、それだけの価値があったか?",
+    "narration": "あなたは路線で{friends}人の友を得た、それでも路線はあなたを連れ去った。おそらくそれが、あなたが手元に留めておける、ただ一つの数だったのだ。"
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_mobs": 200
+    },
+    "question": "あなたは、闇にどれだけ同じもので応えたか?",
+    "narration": "あなたが彼らの手に倒れる前に、{mobs}体があなたの手に倒れた。路線は裁かない。ただ数えるだけだ。"
+  },
+  {
+    "page": "lives",
+    "weight": 3,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "どれも、よい問いだ",
+    "narration": "これらは、ただ一つの命の刻印ではない。{deaths}のすべてにわたって――あなたが乗り込んだあらゆる闇、路線があなたを連れ去り、それでもあなたが戻ってきたそのたびごと――これが、あなたの旅のすべてだ。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 1,
+      "max_deaths": 1
+    },
+    "question": "一つの命は、そう易々と費やされるものか?",
+    "subline": "この路線での、あなたの最初の落命。",
+    "narration": "この命と比べるべき、ほかの命はない――まだ。これが、あなたのすべて。初めて乗り込んで以来、なしてきたことのすべて。路線はそれを覚えているだろう。あなたも、そうであるべきだ。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 10
+    },
+    "question": "どれも、よい問いだ",
+    "narration": "これらは、ただ一つの命の刻印ではない。{deaths}度、闇はあなたを連れ去り、{deaths}度、あなたはふたたび乗り込んだ。"
+  },
+  {
+    "page": "platform",
+    "weight": 3,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "もう一度乗り込むか、それとも静寂へと降りるか?",
+    "narration": "ホームは無人だ。汽笛が、線路のはるか先で鳴る。それは果てもなく走りつづける――そしてどうやら、あなたも。",
+    "epitaph": "{deaths}人目の落命者。おそらく、最後ではない。"
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 1,
+      "max_deaths": 1
+    },
+    "question": "もう一度乗り込むか――終わりようを知った今?",
+    "narration": "ホームは無人だ。あなたが初めて乗り込んだときと変わらず。汽笛が、線路のはるか先で鳴る。あなたは一度、倒れた。二度目があるかどうかは、いつものように、あなたが決めること。",
+    "epitaph": "最初の落命者。路線は辛抱強い――残りを待つだろう。"
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 20
+    },
+    "question": "問うまでもないのでは?",
+    "narration": "ホームは、もうあなたの顔を知っている。汽笛は、いつもどおりに鳴る。次に何が来るか、あなたはもう分かっている。",
+    "epitaph": "{deaths}人目の落命者――そしてどうやら、最後ではない。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Trainとは何か?",
+    "narration": "車両{carriage}。闇は、ずっとそこで待っていた――あなたはただ、それに会いに着いただけだ。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Trainとは何か?",
+    "narration": "車両{carriage}、それより先はない。路線は、恨みも慈悲も抱かない。ただ進みつづけるだけだ。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Trainとは何か?",
+    "narration": "あなたが倒れた場所で、車両{carriage}のランタンが、いまも揺れている。列車は、見ようとして速度を緩めたりはしない。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Trainとは何か?",
+    "narration": "世界の床が抜ける前に、あなたは車両{carriage}まで辿り着いた。路線は、あなたの重みなしに、進みつづける。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Trainとは何か?",
+    "narration": "車両{carriage}。どこか前方で、線路は闇の中へと延びつづける。あなたがもうその上にいないことなど、意にも介さず。"
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Dungeon Trainとは何か?",
+    "narration": "ここ、車両{carriage}で、闇はついにあなたの歩調に追いついた。いつかは必ず、そうなるはずだった。"
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "なぜ、あなたはここにいる?",
+    "narration": "あなたは闇の中で{mobs}体を打ち倒し、そのために{hearts}のハートを差し出した。すれ違った{met}の魂のうち、{slain}を討ち倒し、{friends}を近くに寄らせた。"
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "なぜ、あなたはここにいる?",
+    "narration": "{mobs}体があなたに倒れ、{hearts}のハートがあなたから零れた。あなたは闇の中で{met}の魂と行き合い――{slain}に終止符を打ち、{friends}を手元に留め――そして、あなたの番が来た。"
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "なぜ、あなたはここにいる?",
+    "narration": "闇からは{mobs}体を奪い、己からは{hearts}のハートを費やした。{met}の魂が、この路線を共にした。{slain}に終止符を打ち、{friends}を手放さずにいた。"
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "max_friends": 0
+    },
+    "question": "なぜ、あなたはここにいる?",
+    "narration": "あなたは{mobs}体を打ち倒し、{hearts}のハートを流した。{met}の魂に出会い、{slain}に終止符を打ち、そのうちの一人も友とは呼ばなかった。闇は、独りのほうが単純だ。"
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_slain": 5
+    },
+    "question": "あなたは、闇に何をもって応えたか?",
+    "narration": "出会った{met}のうち、{slain}を斬り伏せ――そのほかにも闇の中で{mobs}体を――{hearts}のハートと引き換えに。そして{friends}を、友と呼ぶために見逃した。路線は、それを殺しとは呼ばない。"
+  },
+  {
+    "page": "gear",
+    "weight": 2,
+    "question": "あなたは何をなすべき者なのか?",
+    "narration": "あなたは、車両から抱えられるだけのものを集めた。路線は、それを持たせておく――積荷に用はなく、ただ乗客にのみ用があるのだから。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_loot": 0
+    },
+    "question": "あなたは何をなすべき者なのか?",
+    "narration": "あなたは、この路線で木箱ひとつ開けなかった――乗り込んだときのものだけを携え、最後までそれを振るった。あなたが取ろうとしなかったものを、闇は留め置く。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_loot": 9
+    },
+    "question": "あなたは何をなすべき者なのか?",
+    "narration": "ひと握りの木箱を開けた――ぜんぶで{loot}個――そして刃を手元に置いていた。路線は、立ち止まる者には気前がいい。あなたは、ほとんど足を止めなかった。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_loot": 250
+    },
+    "question": "あなたは何をなすべき者なのか?",
+    "narration": "{loot}個の容器を、荷袋に空けた。あなたは、釘付けされていないものすべてを闇から剥ぎ取った。それでも闇は、ただ一つの大切なものを奪った。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_books": 0
+    },
+    "question": "あなたは何をなすべき者なのか?",
+    "narration": "一頁もめくらなかった――ただ鋼を集め、振るっただけ。路線は、その物語を、立ち止まって読む者のために取っておく。"
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_books": 10
+    },
+    "question": "あなたは何をなすべき者なのか?",
+    "narration": "あなたは路線の本を{books}冊読み、そのうえで鋼を携えた。叡智と刃、そのどちらにも、闇は辛抱強かった。"
+  },
+  {
+    "page": "lives",
+    "weight": 2,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "どれも、よい問いだ",
+    "narration": "数えてみよ。{deaths}度、路線はあなたを連れ去り、{deaths}度、あなたは汽笛に応えた。これが、旅立ちによって描かれた、あなたのかたちだ。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 3
+    },
+    "question": "どれも、よい問いだ",
+    "narration": "{deaths}の生にわたって、数の数々が、線路の上の塵のように積もる。その何ひとつ失われはしない。路線は、何も忘れない。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "なぜ、あなたは乗りつづける?",
+    "narration": "{deaths}度の落命、それでもあなたは乗り込む。あなたが戻るかどうかを、路線は訝しむのをやめた。そしておそらく、あなたも。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "なぜ、あなたは乗りつづける?",
+    "narration": "背には{deaths}の死、前には同じ汽笛。あなたはもう乗客ではない――あなたは、時刻表の一部だ。"
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "なぜ、あなたは乗りつづける?",
+    "narration": "闇は、もう見知らぬものではなくなった。{deaths}度にわたり、あなたはその顔を覚えた。それはそれで、一つの喪失だ。"
+  },
+  {
+    "page": "platform",
+    "weight": 2,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "もう一度乗り込むか、それともホームに留め置かれるか?",
+    "narration": "汽笛は、はるか前方で、もう鳴っている。それはあなたを待ってはいない――一度も待ったことはない――それでもあなたはここに立ち、ついていくと決めている。",
+    "epitaph": "{deaths}人目の落命者。路線は続いていく。"
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 3
+    },
+    "question": "もう一度乗り込むか?",
+    "narration": "ホームは静かだ。どこかで列車は、もう誰か別の者の物語で満ちている。あなたの物語を、もう一つ載せる余地は、いつだってある。",
+    "epitaph": "{deaths}人目の落命者。おそらく、最後ではない。"
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "この路線が、あえて問う必要があろうか?",
+    "narration": "あなたは、扉の重み、踏み段の冷たさを知っている。闇はもう、あなたが訪れる、ただの場所にすぎない。",
+    "epitaph": "{deaths}人目の落命者――この路線の、常連。"
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "プレイヤー",
+  "item.playermob.player_mob_spawn_egg": "プレイヤースポーンエッグ",
+  "item.playermob.player_mob_aggressive_spawn_egg": "攻撃的なプレイヤースポーンエッグ",
+  "item.playermob.player_mob_friendly_spawn_egg": "友好的なプレイヤースポーンエッグ",
+  "item.playermob.player_mob_passive_spawn_egg": "受動的なプレイヤースポーンエッグ",
+  "item.playermob.player_mob_skeptical_spawn_egg": "懐疑的なプレイヤースポーンエッグ",
+  "item.playermob.player_mob_shy_spawn_egg": "内気なプレイヤースポーンエッグ",
+  "container.playermob.player_mob": "プレイヤー"
+}
