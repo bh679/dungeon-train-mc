@@ -19,8 +19,8 @@ import java.util.UUID;
  * journal ({@link RemoteEchoEncounters#onPhoto}); when the encounter ends it's attached to the Discord
  * story embed.
  *
- * <p>Mirrors {@link DeathPhotoPacket}: the down-scaled (≤640px) shot is ≈ ≤200&nbsp;KB, a single packet
- * well under the 1&nbsp;MB cap the codec also enforces.</p>
+ * <p>Mirrors {@link DeathPhotoPacket}: the down-scaled (≤1080px) shot stays a single packet well
+ * under the 1&nbsp;MB cap the codec also enforces.</p>
  */
 public record EchoPhotoPacket(UUID echoId, byte[] png) implements CustomPacketPayload {
 

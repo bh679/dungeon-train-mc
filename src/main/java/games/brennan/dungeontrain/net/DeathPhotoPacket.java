@@ -16,8 +16,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * death report ({@link DeathReportBuffer}); an empty array means "no photo this run", which posts the
  * report with the gear-composite fallback instead.
  *
- * <p>A stored ride shot is downscaled to ≤640px, so its PNG is ≈ ≤200&nbsp;KB — a single packet, well
- * under the 1&nbsp;MB payload cap (which the codec also enforces).</p>
+ * <p>A stored ride shot is downscaled to ≤1080px, so its PNG stays a single packet well under the
+ * 1&nbsp;MB payload cap (which the codec also enforces).</p>
  */
 public record DeathPhotoPacket(byte[] png) implements CustomPacketPayload {
 
