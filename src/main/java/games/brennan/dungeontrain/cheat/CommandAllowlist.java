@@ -23,6 +23,8 @@ import java.util.Set;
  *   <li>Vanilla permission-0 social/info: {@code help}, {@code me},
  *       {@code msg}/{@code tell}/{@code w}, {@code teammsg}/{@code tm},
  *       {@code trigger}, {@code list}.</li>
+ *   <li>{@code playanimation}: purely cosmetic client-visible entity
+ *       animation with no gameplay effect.</li>
  * </ul>
  *
  * <p>The classifier works off the raw command string so command aliases
@@ -47,10 +49,12 @@ public final class CommandAllowlist {
      * actions — {@code /new-world} (the dev world-roll command) and bare
      * {@code /kill} (self-kill only — see {@link #isAllowed}). {@code /feedback}
      * and {@code /bug} (player feedback / bug-report submission) are also exempt.
+     * {@code /playanimation} (cosmetic entity animation, no gameplay effect)
+     * is exempt too.
      */
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
-        "feedback", "bug", "new-world");
+        "feedback", "bug", "new-world", "playanimation");
 
     private CommandAllowlist() {}
 

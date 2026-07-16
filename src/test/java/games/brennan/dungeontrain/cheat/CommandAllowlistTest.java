@@ -129,6 +129,14 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("/playanimation (cosmetic entity animation) is allowed")
+    void playAnimationAllowed() {
+        assertFalse(CommandAllowlist.taints("playanimation @s minecraft:humanoid.emote sneeze"));
+        assertFalse(CommandAllowlist.taints("/playanimation @s minecraft:humanoid.emote sneeze"));
+        assertFalse(CommandAllowlist.taints("minecraft:playanimation @s minecraft:humanoid.emote sneeze"));
+    }
+
+    @Test
     @DisplayName("/kill (bare, self-only) and /new-world (end / reset the run) are allowed")
     void runControlAllowed() {
         assertFalse(CommandAllowlist.taints("kill"));

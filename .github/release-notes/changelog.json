@@ -4743,6 +4743,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "playanimation-anticheat-whitelist",
+      "version": "0.463.0",
+      "type": "fix",
+      "title": "Whitelisted /playanimation for Free Play runs",
+      "summary": "Running /playanimation to play a cosmetic entity animation no longer marks your run as cheated \u2014 it has no gameplay effect, so it's now treated the same as harmless commands like /help and /me.",
+      "highlights": [],
+      "pr": 767,
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
