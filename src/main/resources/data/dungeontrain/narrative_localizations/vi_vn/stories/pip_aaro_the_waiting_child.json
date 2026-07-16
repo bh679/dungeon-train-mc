@@ -1,0 +1,47 @@
+{
+  "id": "pip_aaro_the_waiting_child",
+  "character": "Pip Aaro",
+  "story": "Đứa Trẻ Chờ Đợi",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lá Thư Thứ Nhất",
+      "variants": [
+        "Tên con là Pip. Con tám tuổi.\n\nCon đang ở trên một con tàu con không biết. Ghế ngồi có mùi giống áo khoác của Bà.\n\nMột con chuột đưa con tờ giấy này. Chuột thật đấy. Có mặc quần áo.\n\nCon đang đi tìm Mẹ.\n\nHơi sợ một chút. Chỉ một chút thôi.\n\nPip",
+        "Con ngủ thiếp đi trên tàu cùng Mẹ. Con tỉnh dậy thì Mẹ đã đi mất.\n\nCon tàu giờ khác rồi. Cái túi của con cũng khác. Cuốn sách màu cam không còn trong đó.\n\nMột con chuột đưa con tờ giấy này. Nó mặc áo gi-lê.\n\nCon sẽ đi tìm Mẹ. Có nhiều toa tàu quá.\n\nCon không khóc đâu.\n\nPip"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lá Thư Thứ Hai",
+      "variants": [
+        "Con hỏi một chú là người soát vé ở đâu.\n\nChú mặc áo khoác vàng. Chú cười. Chú nói cưng à làm gì có người soát vé. Chú nói con tàu không bao giờ dừng.\n\nCon không tin chú. Tàu phải dừng chứ.\n\nChú áo khoác vàng giờ ngủ nhiều lắm. Con nghĩ chú buồn.\n\nCon sẽ không giống như vậy đâu.\n\nPip",
+        "Con tìm thấy một cuốn sổ dưới ghế.\n\nCó ai đó đã đếm các toa tàu. Họ đếm tới 384 thì dừng. Họ nói tìm đầu tàu chẳng ích gì.\n\nCon không hiểu họ nói gì. Tàu phải có đầu chứ.\n\nCon giữ cuốn sổ lại. Nó giống như có ai đó để trò chuyện.\n\nHọ nghe có vẻ mệt mỏi. Con thì chưa mệt.\n\nPip"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lá Thư Thứ Ba",
+      "variants": [
+        "Có vài người trên tàu là giả.\n\nHọ trông như thật. Nhưng họ không thấy mình. Con vẫy tay chào một cô và cô đi thẳng qua con luôn.\n\nCó vài người thì CÓ thật. Chú áo khoác vàng. Con chuột. Một cô cho con quả táo.\n\nCon đang ghi danh sách những người thật. Có bốn người. Chắc con cũng là một người thật.\n\nPip",
+        "Con nghĩ ra một kế hoạch.\n\nĐi về một hướng. Đừng quay lại. Thế thì con sẽ ra tới đuôi tàu.\n\nCon đi lâu lắm. Bốn mươi bảy toa. Con không hề ngoái lại.\n\nChẳng có đuôi tàu nào cả. Chỗ cuối trông giống hệt chỗ con bắt đầu. Cùng cái mùi của Bà.\n\nCon không hiểu. Con muốn Mẹ.\n\nPip"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lá Thư Thứ Tư",
+      "variants": [
+        "Cô có quả táo giờ là bạn của con rồi. Tên cô là Soren.\n\nCô đã ở trên tàu lâu lâu lắm rồi. Cô không chịu nói là bao lâu.\n\nSoren hỏi về Mẹ. Con kể cho cô nghe. Cô lặng đi. Rồi cô nói mẹ con nghe tuyệt vời quá.\n\nCô nói y như cái cách chú áo khoác vàng nói con tàu không bao giờ dừng.\n\nCon vẫn sẽ đi tìm Mẹ.\n\nPip",
+        "Có một con slime trong toa của con. Con đặt tên nó là Pebble.\n\nNó nhỏ và màu xanh. Soren nói nó còn quá nhỏ để nguy hiểm. Con không tin điều đó về Pebble đâu.\n\nNó theo con tới cửa nhưng không đi qua. Con nghĩ nó tưởng cửa là bức tường.\n\nMẹ sẽ nói slime là quái vật. Mẹ nói sai về Pebble rồi.\n\nCon nhớ Mẹ.\n\nNhưng con có Pebble.\n\nPip"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lá Thư Thứ Năm",
+      "variants": [
+        "Soren kể cho con nghe về cánh cửa.\n\nCô nói trên tàu có một cánh cửa dẫn ra ngoài. Cô nói nếu con tìm thấy nó thì con nên đi qua.\n\nCon nghĩ về nó lâu lắm. Về Mẹ. Về Pebble.\n\nNếu Mẹ ở trên con tàu này thì con phải tiếp tục tìm. Nếu Mẹ không ở đây thì con cũng chẳng thể tới chỗ Mẹ được.\n\nKhi tìm thấy cánh cửa, con sẽ ngồi bên cạnh nó. Và chờ.\n\nSoren nói được rồi cưng à. Như thể lần này cô nói thật lòng.\n\nPip",
+        "Con viết một lá thư cho Mẹ.\n\nSoren nói đôi khi người ta đi qua cùng một toa nhiều lần. Nên con để nó ở nơi ai cũng đi qua.\n\nNó ghi tên con. Nó ghi con có một người bạn tên Soren và một con slime tên Pebble.\n\nNó ghi con vẫn ổn. Nó ghi con đang chờ.\n\nMẹ sẽ tìm thấy nó. Các bà mẹ luôn tìm ra mọi thứ.\n\nPip"
+      ]
+    }
+  ]
+}

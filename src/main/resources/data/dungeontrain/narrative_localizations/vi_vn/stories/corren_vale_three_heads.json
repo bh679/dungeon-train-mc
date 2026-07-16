@@ -1,0 +1,78 @@
+{
+  "id": "corren_vale_three_heads",
+  "character": "Corren Vale",
+  "story": "Ba Cái Đầu",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lá Thư Thứ Nhất",
+      "variants": [
+        "Mira,\n\nBàn tay em lúc nào cũng lấm phấn.\n\nEm vẽ những đường kẻ lên mọi thứ.\n\nEm nói những đường thẳng giữ cho thế giới lương thiện.\n\nEm tin điều đó.\n\nAnh nghĩ anh cũng tin.\n\n- Corren",
+        "Mira.\n\nEm cười khẽ.\n\nNhư thể em đang cố không đánh thức thứ gì đó.\n\nBram chẳng bao giờ biết khi nào em đùa.\n\nanh thì biết.\n\n- corren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lá Thư Thứ Hai",
+      "variants": [
+        "Mira.\n\nCát linh hồn lạnh buốt.\n\nAnh không nhớ hơi nóng sau đó.\n\nEm nói điều gì đó.\n\nAnh nghĩ em gọi tên anh.\n\nAnh nghĩ em nói Chạy đi.\nAnh đã không quay lại.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lá Thư Thứ Ba",
+      "variants": [
+        "Bram.\n\nCậu cười như thể đang ngã.\n\nĐột ngột. Ầm ĩ. Lúc nào cũng quá to.\n\nCậu nói cậu cười để bóng tối biết cậu đang ở đó.\n\nNó luôn biết.\n\n- Corren",
+        "Bram.\n\nCái khiên của cậu quá to so với cậu.\n\nCậu phải đi nghiêng người qua các khung cửa.\n\nEsa gọi nó là cái bàn.\n\nCậu nói cái bàn chưa bao giờ phụ lòng ai.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lá Thư Thứ Tư",
+      "variants": [
+        "Bram.\n\nCái hộp sọ đầu tiên là của cậu.\n\nCậu nhặt nó lên.\n\nCậu hét lên điều gì đó.\n\nAnh không nghe được vì ngọn lửa.\n\nBánh xe con tàu này kêu ba nốt.\n\nNốt đầu tiên là của cậu đấy Bram.\n\n- Corren",
+        "Bram.\n\nanh viết cái này năm lần.\n\nlần nào tới đoạn cái hộp sọ là cây bút lại dừng.\n\ncậu giơ nó lên. cậu nhe răng cười.\n\ncậu nói nó chẳng nặng gì cả.\n\nanh nghĩ nó nặng lắm.\n\nBánh xe con tàu này kêu ba nốt.\n\nNốt đầu tiên là của cậu đấy Bram.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lá Thư Thứ Năm",
+      "variants": [
+        "Esa.\n\nBàn tay em lạnh vì pha chế.\n\nPhần còn lại của em thì ấm.\n\nMira nói em là người ấm áp duy nhất trong chúng ta.\n\nCô ấy nói đúng.\n\n- Corren",
+        "Esa.\n\nEm hát trong khi băng bó vết thương.\n\nNhững bài hát cũ. Chẳng ai trong chúng ta biết.\n\nEm nói em tự bịa ra khi hát.\n\nChúng ta giả vờ tin em.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lá Thư Thứ Sáu",
+      "variants": [
+        "Esa.\n\nBàn tay em đặt trên lưng anh.\n\nLạnh vì pha chế.\n\nEm đẩy một cái.\n\nAnh loạng choạng thoát ra nơi an toàn.\n\nEm không đẩy lần thứ hai.\n\nAnh nghĩ em đã đi rồi.\n\nTrước cả cái đẩy ấy.\n\n- Corren",
+        "Esa.\n\nCó những người trên con tàu này đã sống lâu hơn anh.\n\nchẳng ai trông bình thường cả.\n\nanh không muốn biết mình trông ra sao.\n\nem hẳn đã nói cho anh biết.\n\nem hẳn đã nói ngồi xuống đi Corren để em xem nào.\n\n- corren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Lá Thư Thứ Bảy",
+      "variants": [
+        "Anh không biết mình đã thoát ra bằng cách nào.\n\nCổng dịch chuyển đã vỡ. Anh nhớ điều đó.\n\nAnh không nhớ mình đã bước qua.\n\nAnh tỉnh dậy giữa một cánh đồng. Cỏ cao. Con tàu đã ở đó rồi.\n\nNó đang chuyển động.\n\nNó vẫn luôn chuyển động. Giờ anh hiểu điều đó.\n\nAnh chạy bên cạnh nó. Anh nhảy tới cánh cửa gần nhất.\n\nAnh không biết mình đã bám được nó bằng cách nào.\n\nAnh tưởng mình đã làm được.\n\nAnh đã cứ làm được như thế suốt nhiều tuần nay.\n\nCon tàu không bao giờ dừng.\n\nKhông có lối xuống.\n\n- Corren",
+        "hơi nóng phía sau. cái lạnh phía trước.\n\nanh không biết hướng nào là lên.\n\nanh nhớ mình ngã xuống cỏ.\n\ncỏ không bốc cháy.\n\nđiều đó có vẻ quan trọng.\n\nrồi một tòa nhà.\n\nanh không biết tòa nhà đó.\n\nanh biết mọi tòa nhà trong vùng này.\n\nanh đã vẽ bản đồ vùng này.\n\nmột con tàu đậu bên tòa nhà.\n\nnhững cánh cửa mở toang.\n\nanh còn sống và những cánh cửa mở toang.\n\nnhững điều này dường như có liên quan với nhau.\n\n- corren"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Lá Thư Thứ Tám",
+      "variants": [
+        "Anh đã nghe nó suốt nhiều tuần nay.\n\nMột tiếng rít. Ba giọng, gần như chồng lên nhau.\n\nĐôi khi một giọng cất lên đơn độc. Đôi khi cả ba.\n\nVà những tiếng nổ.\n\nAnh cảm nhận chúng dưới sàn trước khi nghe thấy.\n\nChúng chẳng bao giờ phá vỡ thứ gì anh nhìn thấy được.\n\nAnh không biết chúng rơi xuống đâu.\n\nAnh bước tiếp về phía trước.\n\nTiếng rít lại vang lên. Cách hai toa về phía sau.\n\nLúc nào cũng từ đó.\n\nKhông bao giờ xa hơn.\n\nAnh chắc chắn.\n\n- Corren",
+        "có một âm thanh.\n\nanh đã nghe nó suốt nhiều tuần.\n\nnó không phải tiếng bánh xe.\n\nbánh xe mang theo âm nhạc. ba nốt.\n\nâm thanh này mang theo thứ khác.\n\nnó gào thét.\n\nba giọng. gần như cùng nhịp. chẳng bao giờ khớp hẳn.\n\nvà có những tiếng nổ.\n\nanh cảm nhận chúng dưới sàn. chúng chẳng phá vỡ gì.\n\nanh đã hỏi những người khác trên tàu.\n\nchẳng ai trong họ nghe thấy.\n\nchỉ mình anh nghe thấy.\n\nnó dành cho anh.\n\nnó có thời gian.\n\n- corren"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Lá Thư Thứ Chín",
+      "variants": [
+        "Ôi.. ôi không.\n\nMira.\n\nEm hẳn đã nhận ra nó trước anh.\n\nGiờ tiếng rít ở ngay trước mặt anh.\n\nLẽ ra không có phía trước.\n\nBram hẳn đã đứng chắn phía trước.\n\nCậu ấy hẳn đã cười vào mặt nó.\n\nCậu ấy luôn cười vào những thứ quá lớn để chống lại.\n\nEsa hẳn đã pha chế thứ gì đó.\n\nKháng lửa. Nhanh nhẹn. Đúng thứ cần dùng.\n\nCô ấy luôn pha đúng thứ.\n\nAnh đã bước về phía trước suốt nhiều tuần.\n\nAnh đang bước về phía nó.\n\nCon tàu không có phía trước.\n\nMỗi bước tiến là một bước lại gần hơn.\n\nGiờ anh nhìn thấy nó.\n\nBa cái đầu. Ba giọng nói.\n\nGiọng thứ tư sẽ là của anh.\n\nAnh nghĩ nó đã là của anh suốt nhiều tuần rồi.\n\n- Corren",
+        "nó ở đây rồi.\n\nmira.\n\nnó không ở sau lưng anh.\n\nnó ở phía trước.\n\nnó luôn ở phía trước.\n\nem hẳn đã thấy điều này. em thấy mọi thứ trước tiên.\n\nbram hẳn đã đứng chắn trước anh.\n\ncậu ấy hẳn đã cười.\n\ncậu ấy cười vào những thứ quá lớn để chống lại.\n\nnó hẳn đã có tác dụng. trong một khoảnh khắc.\n\nesa hẳn đã đặt tay lên lưng anh.\n\nlạnh.\n\ncô ấy hẳn đã đẩy.\n\nanh hẳn đã thoát đi.\n\nanh đã bước về phía nó.\n\nanh tưởng mình đang bước đi xa khỏi nó.\n\ncon tàu không có phía trước. em hẳn đã cười anh vì quên mất điều đó.\n\nanh nhìn thấy nó.\n\nba cái đầu. ba người các em.\n\nbram. esa. em.\n\nanh là người thứ tư.\n\nanh đã là người thứ tư ngay từ đầu.\n\n- corren"
+      ]
+    }
+  ]
+}
