@@ -1,0 +1,55 @@
+{
+  "id": "soll_marra_the_borrowed_champion",
+  "character": "Soll Marra",
+  "story": "Wypożyczony Mistrz",
+  "letters": [
+    {
+      "index": 1,
+      "label": "List pierwszy",
+      "variants": [
+        "Dzień pierwszy. Ekwipunek.\n\nŻelazny miecz, x2 (jeden zapasowy wedle notesu).\nŁuk, 64 strzały.\nZaczarowana skóra, pełny komplet, Ochrona I.\nPerły Endermana, x16.\nŁóżko, x1.\nSurowe ziemniaki, x32.\n\nNotes wymaga złotych jabłek. Miasto ich nie miało. Zdobędę je po drodze.\n\nSzczur jest prawdziwy. Odnotowałam go.\n\nDzień pierwszy.\n\n- S. Marra",
+        "Dzień pierwszy. Ekwipunek.\n\nŻelazny miecz, x2.\nŁuk, 64 strzały.\nZaczarowana skóra, Ochr. I.\nPerły Endermana, x16.\nŁóżko.\nZiemniaki, x32.\n\nNotes mówi, że złote jabłka są niepodlegające negocjacji. Miasto ich nie miało. Odeszłam, nim ktoś zauważył moją nieobecność.\n\nSzczur w kamizelce dał mi ten papier. Wyglądał na smutnego. Nie wiem, jak go odnotować.\n\nJestem gotowa.\n\n- Soll Marra"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "List drugi",
+      "variants": [
+        "Notes należy do Halrica. Zaczął go dwadzieścia sześć lat temu, rok przed tym, jak mnie poznał.\n\nSpecyfikacje na Kraj. Wysokości filarów. Klatki kryształów. Kolejność rozbijania klatek. Wydajność wybuchów łóżkiem. Trajektorie pereł.\n\nNigdy nie poszedł.\n\nUmarł na wiosnę. Coś z płucami. Notes nazywa to \"ustanie, poza walką\".\n\nSmok nigdy nie poznał Halrica.\n\nNiosę jej go.\n\n- S. Marra",
+        "Notes należy do Halrica. Zaczął go pisać rok przed tym, nim się urodziłam. Dwadzieścia sześć lat specyfikacji i żadnego smoka na końcu.\n\nWysokości filarów. Klatki kryształów. Kolejność rozbijania klatek. Wydajność wybuchów łóżkiem. Trajektorie pereł. Cała walka, na papierze.\n\nUmarł na wiosnę. Notes nazywa to \"ustanie, poza walką\". Chyba to były jego płuca. Dużo kaszlał. Nigdy nie wypowiedział tego słowa.\n\nSmok nigdy nie poznał Halrica.\n\nNiosę go jej.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "List trzeci",
+      "variants": [
+        "Ćwiczenie pierwsze. Wagon 14.\n\nCel: zombie, bez zbroi.\nDystans: 9 bloków.\nOsłona: ławka.\nŁuk: pełne naciągnięcie, dwie sekundy.\n\nCykl pozycji Halrica się dostosowuje. Lampa wagonowa zastępuje kryształ. Najpierw zestrzel kryształ. Obrót. Strzał.\n\nWynik: jeden strzał. Czas docelowy z notesu: jedenaście sekund. Mój: cztery.\n\nNotes nie mówi, jak się czuje bycie gotowym.\n\n- S. Marra",
+        "Ćwiczenie pierwsze. Wagon czternasty.\n\nWybrałam zombie, bo notes zaczyna się od kryształów, a ja nie mam kryształu. Lampa na ścianie miała odpowiedni kształt.\n\nOsłona za ławką. Dziewięć bloków. Pełne naciągnięcie. Obrót. Strzał.\n\nZombie padło za jednym razem. Czas docelowy Halrica to jedenaście sekund. Zajęło mi cztery.\n\nByłam wtedy gotowa. Potem usiadłam na ławce, a wagon był cichy i lampa się lekko kołysała.\n\nNie wiem, czego się spodziewałam.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "List czwarty",
+      "variants": [
+        "Wagon 28. Spotkanie.\n\nPasażer: kobieta, koło pięćdziesiątki, szary wełniany płaszcz. Najwyraźniej prawdziwa.\n\nSpytała o moje imię. Podałam tytuł Halrica. Uczennica Halrica.\n\nPowiedziała: \"Halric. Więc jesteś jego czwartą\".\n\nNie wiedziałam, że było trzy przede mną.\n\nOdnotowałam numer jej siedzenia. Ruszyłam dalej.\n\nObserwacja zamknięta.\n\n- S. Marra",
+        "Wagon dwudziesty ósmy. Kobieta w szarym płaszczu spytała o moje imię.\n\nPodałam tytuł Halrica. Uczennica Halrica.\n\nPowiedziała: \"Halric? Ten łuczarz z kaszlem?\"\n\nNie wiedziałam, że był łuczarzem. Mam jeden z jego łuków w plecaku.\n\nPowinnam była usiąść. Powinnam była spytać, co jeszcze wie. Nie zrobiłam tego. Przeszłam do następnego wagonu i siedzę tu, pisząc.\n\nWciąż jest na siedzeniu 14. Chyba.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "List piąty",
+      "variants": [
+        "Próba 47. Oko Endera.\n\nWektor rzutu: naprzód, dwadzieścia pięć stopni od poziomu. Wedle strony dziewiątej notesu.\n\nOko utrzymało pozycję. Sześć sekund. Obróciło się w lewo, potem się ustabilizowało.\n\nAzymut: północny-północny-wschód.\n\nZmieniłam wagon. Rzuciłam ponownie.\n\nAzymut: północny-północny-wschód.\n\nWagon jest zwrócony na południe.\n\nOko odczytuje kierunek. Pociąg nie jest w żadnym kierunku.\n\nPrzestałam rzucać.\n\n- S. Marra",
+        "Oko Endera nie chce lecieć.\n\nRzuciłam nim czterdzieści siedem razy. Naprzód. W górę. W bok. Za drzwi.\n\nOko unosi się. Wiruje. Nie wybiera kierunku. Halric pisał, że oko zawsze wybiera. Oko, strona dziewiąta: \"jedyna uczciwa rzecz przy podejściu do twierdzy\".\n\nJest uczciwe. Nie ma żadnej twierdzy.\n\nSiedziałam z okiem w dłoni. Było ciepłe. Teraz nie jest ciepłe.\n\nNie wiem, w którą stronę zmierzam.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "List szósty",
+      "variants": [
+        "Zamknęłam notes.\n\nOkładka jest z brązowej skóry. Na wewnętrznej stronie przedniej deski są imiona. Nie patrzyłam na nie.\n\nPiszę na tylnej stronie. Halric tu nie pisał.\n\nMam dziewiętnaście lat. Nigdy nie widziałam smoka. Nie chcę jej zabić.\n\nBędę iść dalej, aż znajdę okno z właściwym rodzajem światła. Wtedy usiądę.\n\nSoll Marra",
+        "Zamknęłam notes.\n\nTylna strona jest pusta. Siedziałam z nią otwartą przez długi czas.\n\nHalrica nie ma na tylnej stronie. Halric jest na przednich stronach. Czytałam je zbyt wiele razy.\n\nMam dziewiętnaście lat. Nigdy nie widziałam smoka. Nie chcę jej zabić.\n\nNie wiem, dokąd jedzie ten pociąg. Chyba to w porządku.\n\nPójdę poszukać okna.\n\nSoll"
+      ]
+    }
+  ]
+}

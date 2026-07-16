@@ -1,0 +1,509 @@
+{
+  "id": "adventureitemnames:type_synonyms",
+  "entries": [
+    {
+      "text": "Kling",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Zwaard",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Slagzwaard",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Hakmes",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Sabel",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Snede",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Rover",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Spies",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Bijl",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Strijdbijl",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Hakker",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Handbijl",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Splijter",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Bardiche",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Tomahawk",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Houtsloper",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Pik",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Pikhouweel",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Hamer",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Moker",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Houweel",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Houwer",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Voorhamer",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Tunnelaar",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Rotsbijter",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Schep",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Spade",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Troffel",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Schepje",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Graafstok",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Grondverzetter",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Graafmachine",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Zandschepper",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Schoffel",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Zeis",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Cultivator",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Frees",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Hark",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Maaier",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Ploeg",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Sikkel",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Helm",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Hoed",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Pet",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Kroon",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Capuchon",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Hoofddeksel",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Maliënkap",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Kalotje",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Diadeem",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Breinemmer",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Tuniek",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Hemd",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Harnas",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Kuras",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Vest",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Maliënkolder",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Wambuis",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Slabbetje",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Beenkappen",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Broek",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Langpijpen",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Pantalon",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Scheenplaten",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Kniebroek",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Lange Broek",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Kousendingen",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Schoenen",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Laarzen",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Sandalen",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Hoeven",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Pantoffels",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Overschoenen",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Stampers",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Voetwanten",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Klompers",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Schild",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Beukelaar",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Aegis",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Bolwerk",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Rondas",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Pavise",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Verdediger",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Stopper",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    }
+  ]
+}

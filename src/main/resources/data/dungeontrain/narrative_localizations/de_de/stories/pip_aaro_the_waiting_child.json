@@ -1,0 +1,47 @@
+{
+  "id": "pip_aaro_the_waiting_child",
+  "character": "Pip Aaro",
+  "story": "Das wartende Kind",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Brief eins",
+      "variants": [
+        "Ich heiße Pip. Ich bin acht.\n\nIch bin in einem Zug, den ich nicht kenne. Die Sitze riechen wie Omas Mantel.\n\nEine Ratte hat mir dieses Papier gegeben. Eine echte Ratte. Mit Kleidung.\n\nIch suche Mama.\n\nEin bisschen Angst. Nur ein bisschen.\n\nPip",
+        "Ich bin in einem Zug bei Mama eingeschlafen. Ich wachte auf, und Mama war weg.\n\nDer Zug ist jetzt anders. Meine Tasche ist anders. Das orangene Buch ist nicht darin.\n\nEine Ratte hat mir dieses Papier gegeben. Sie hatte eine Weste an.\n\nIch werde Mama finden. Es gibt so viele Waggons.\n\nIch weine nicht.\n\nPip"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Brief zwei",
+      "variants": [
+        "Ich habe einen Mann gefragt, wo der Schaffner ist.\n\nEr hatte einen gelben Mantel. Er lachte. Er sagte, Schätzchen, es gibt keinen Schaffner. Er sagte, der Zug hält nicht an.\n\nIch glaube ihm nicht. Züge halten an.\n\nDer Mann im gelben Mantel schläft jetzt viel. Ich glaube, er ist traurig.\n\nIch werde nicht so werden.\n\nPip",
+        "Ich habe unter einem Sitz ein Notizbuch gefunden.\n\nJemand hat die Waggons gezählt. Er kam bis 384 und hörte auf. Er schrieb, es hat keinen Sinn, nach dem vorderen Ende zu suchen.\n\nIch weiß nicht, was er meinte. Züge haben ein vorderes Ende.\n\nIch behalte das Notizbuch. Es ist, als hätte man jemanden zum Reden.\n\nEr klang müde. Ich bin noch nicht müde.\n\nPip"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Brief drei",
+      "variants": [
+        "Manche Leute im Zug sind nicht echt.\n\nSie sehen echt aus. Aber sie sehen dich nicht. Ich habe einer Dame gewinkt, und sie ging einfach an mir vorbei.\n\nManche Leute SIND da. Der Mann im gelben Mantel. Die Ratte. Eine Dame, die mir einen Apfel gegeben hat.\n\nIch führe eine Liste der echten Leute. Es sind vier. Ich bin wahrscheinlich auch einer.\n\nPip",
+        "Ich habe einen Plan gemacht.\n\nIn eine Richtung gehen. Nicht umdrehen. Dann wäre ich am hinteren Ende des Zuges.\n\nIch bin lange gegangen. Siebenundvierzig Waggons. Ich habe nicht zurückgeschaut.\n\nEs gab kein hinteres Ende. Das Ende sah aus wie da, wo ich angefangen habe. Derselbe Oma-Geruch.\n\nIch verstehe es nicht. Ich will Mama.\n\nPip"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Brief vier",
+      "variants": [
+        "Die Dame mit dem Apfel ist jetzt meine Freundin. Sie heißt Soren.\n\nSie ist schon sehr, sehr lange im Zug. Sie sagt nicht, wie lange.\n\nSoren hat nach Mama gefragt. Ich habe es ihr erzählt. Sie wurde still. Dann sagte sie, deine Mama klingt wunderbar.\n\nSie sagte es genauso, wie der Mann im gelben Mantel sagte, dass der Zug nicht anhält.\n\nIch werde Mama trotzdem finden.\n\nPip",
+        "In meinem Waggon ist ein Schleim. Ich habe ihn Pebble genannt.\n\nSie ist klein und grün. Soren sagt, sie ist noch zu klein, um gefährlich zu sein. Das glaube ich von Pebble nicht.\n\nSie folgt mir bis zur Tür, geht aber nicht hindurch. Ich glaube, sie hält die Tür für eine Wand.\n\nMama würde sagen, ein Schleim ist ein Monster. Mama irrt sich bei Pebble.\n\nIch vermisse Mama.\n\nAber ich habe Pebble.\n\nPip"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Brief fünf",
+      "variants": [
+        "Soren hat mir von der Tür erzählt.\n\nSie sagte, es gibt im Zug eine Tür, die nach draußen führt. Sie sagte, wenn ich sie finde, soll ich hindurchgehen.\n\nIch habe lange darüber nachgedacht. Über Mama. Über Pebble.\n\nWenn Mama in diesem Zug ist, muss ich weitersuchen. Wenn nicht, kann ich sie sowieso nicht erreichen.\n\nWenn ich die Tür finde, setze ich mich daneben. Und warte.\n\nSoren sagte, okay, Schätzchen. Als ob sie es diesmal ernst meinte.\n\nPip",
+        "Ich habe einen Brief für Mama geschrieben.\n\nSoren sagte, manchmal kommen Leute viele Male durch denselben Waggon. Also lasse ich ihn dort, wo jeder langgeht.\n\nDarin steht mein Name. Darin steht, dass ich eine Freundin namens Soren habe und einen Schleim namens Pebble.\n\nDarin steht, dass es mir gut geht. Darin steht, dass ich warte.\n\nMama wird ihn finden. Mamas finden Dinge.\n\nPip"
+      ]
+    }
+  ]
+}

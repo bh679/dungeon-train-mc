@@ -1,0 +1,55 @@
+{
+  "id": "soll_marra_the_borrowed_champion",
+  "character": "Soll Marra",
+  "story": "A campeã emprestada",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta um",
+      "variants": [
+        "Dia Um. Equipamento.\n\nEspada de ferro, x2 (uma de reserva, segundo o caderno).\nArco, 64 flechas.\nCabedal encantado, conjunto completo, Proteção I.\nPérolas de ender, x16.\nCama, x1.\nBatatas cruas, x32.\n\nO caderno exige maçãs douradas. A aldeia não tinha. Arranjo-as pelo caminho.\n\nO rato é real. Registei-o.\n\nDia Um.\n\n- S. Marra",
+        "Dia Um. Equipamento.\n\nEspada de ferro, x2.\nArco, 64 flechas.\nCabedal encantado, Prot I.\nPérolas de ender, x16.\nCama.\nBatatas, x32.\n\nO caderno diz que as maçãs douradas são inegociáveis. A aldeia não tinha. Parti antes de alguém dar pela minha falta.\n\nUm rato de colete deu-me este papel. Parecia triste. Não sei como o registar.\n\nEstou pronta.\n\n- Soll Marra"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta dois",
+      "variants": [
+        "O caderno é do Halric. Começou-o há vinte e seis anos, no ano antes de me conhecer.\n\nEspecificações para o End. Alturas dos pilares. Gaiolas de cristal. Ordem de quebra das gaiolas. Rendimento das explosões de cama. Trajetórias das pérolas.\n\nNunca foi.\n\nMorreu na primavera. Coisa dos pulmões. O caderno chama-lhe \"cessação, não-combate\".\n\nO dragão nunca conheceu o Halric.\n\nSou eu que lho levo a ela.\n\n- S. Marra",
+        "O caderno é do Halric. Começou a escrevê-lo no ano antes de eu nascer. Vinte e seis anos de especificações e nenhum dragão no fim.\n\nAlturas dos pilares. Gaiolas de cristal. Ordem de quebra das gaiolas. Rendimento das explosões de cama. Trajetórias das pérolas. Toda a luta, no papel.\n\nMorreu na primavera. O caderno chama-lhe \"cessação, não-combate\". Acho que foram os pulmões. Tossia muito. Nunca disse a palavra.\n\nO dragão nunca conheceu o Halric.\n\nLevo-o eu até ela.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta três",
+      "variants": [
+        "Treino Um. Carruagem 14.\n\nAlvo: zombie, sem armadura.\nDistância: 9 blocos.\nAbrigo: um banco.\nArco: tensão máxima, dois segundos.\n\nO ciclo de posições do Halric adapta-se. A lâmpada da carruagem faz de cristal. Abate o cristal primeiro. Gira. Larga.\n\nResultado: um disparo. Tempo-alvo do caderno, onze segundos. O meu, quatro.\n\nO caderno não diz como se sente estar pronta.\n\n- S. Marra",
+        "Treino Um. Carruagem catorze.\n\nEscolhi um zombie porque o caderno começa com cristais e eu não tenho cristal. A lâmpada da parede tinha a forma certa.\n\nAbrigo de banco. Nove blocos. Tensão máxima. Gira. Larga.\n\nO zombie caiu de um só. O tempo-alvo do Halric era onze segundos. Eu levei quatro.\n\nEstava pronta, então. Depois sentei-me no banco e a carruagem estava silenciosa e a lâmpada baloiçava um pouco.\n\nNão sei o que esperava.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta quatro",
+      "variants": [
+        "Carruagem 28. Encontro.\n\nPassageira: mulher, cinquenta e muitos, casaco de lã cinzento. Aparentemente real.\n\nPerguntou-me o nome. Dei o título do Halric. Aprendiz de Halric.\n\nDisse: \"Halric. Então és a quarta dele.\"\n\nNão sabia que tinham existido três.\n\nAnotei o número do lugar dela. Segui em frente.\n\nAvistamento encerrado.\n\n- S. Marra",
+        "Carruagem vinte e oito. Uma mulher de casaco cinzento perguntou-me o nome.\n\nDei o título do Halric. Aprendiz de Halric.\n\nDisse: \"Halric? O flecheiro da tosse?\"\n\nNão sabia que era fabricante de flechas. Tenho um dos arcos dele na mochila.\n\nDevia ter-me sentado. Devia ter-lhe perguntado o que mais sabia. Não o fiz. Fui até à carruagem seguinte e aqui estou sentada, a escrever.\n\nContinua no lugar 14. Acho eu.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta cinco",
+      "variants": [
+        "Tentativa 47. Olho de ender.\n\nVetor de lançamento: em frente, vinte e cinco graus acima da horizontal. Segundo a página nove do caderno.\n\nO olho manteve a posição. Seis segundos. Rodou no sentido anti-horário e depois estabilizou.\n\nRumo: nor-nordeste.\n\nMudei de carruagem. Lancei outra vez.\n\nRumo: nor-nordeste.\n\nA carruagem está virada a sul.\n\nO olho lê uma direção. O comboio não está numa direção.\n\nDeixei de lançar.\n\n- S. Marra",
+        "O olho de ender não voa.\n\nLancei-o quarenta e sete vezes. Em frente. Para cima. De lado. Pela porta fora.\n\nO olho flutua. Roda. Não escolhe direção. O Halric escreveu que um olho escolhe sempre. O olho, página nove: \"a única coisa honesta na aproximação a uma fortaleza\".\n\nEstá a ser honesto. Não há fortaleza.\n\nFiquei com o olho na mão. Estava quente. Já não está.\n\nNão sei para onde vou.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta seis",
+      "variants": [
+        "Já fechei o caderno.\n\nA capa é de cabedal castanho. Há nomes no interior da capa. Não os olhei.\n\nEstou a escrever na última página. O Halric não escreveu aqui.\n\nTenho dezanove anos. Nunca vi um dragão. Não a quero matar.\n\nVou continuar a andar até encontrar uma janela com o tipo de luz certo. Depois vou sentar-me.\n\nSoll Marra",
+        "Fechei o caderno.\n\nA última página está vazia. Fiquei muito tempo com ela aberta.\n\nO Halric não está na última página. O Halric está nas primeiras. Li-as demasiadas vezes.\n\nTenho dezanove anos. Nunca vi um dragão. Não a quero matar.\n\nNão sei para onde vai este comboio. Acho que está tudo bem.\n\nVou procurar uma janela.\n\nSoll"
+      ]
+    }
+  ]
+}

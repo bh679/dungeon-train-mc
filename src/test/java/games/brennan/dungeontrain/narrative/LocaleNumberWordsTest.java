@@ -122,11 +122,164 @@ final class LocaleNumberWordsTest {
         check("th_th", 1234, "หนึ่งพันสองร้อยสามสิบสี่");
     }
 
+    @Test @DisplayName("German")
+    void german() {
+        check("de_de", 0, "null");
+        check("de_de", 1, "eins");
+        check("de_de", 16, "sechzehn");
+        check("de_de", 17, "siebzehn");
+        check("de_de", 21, "einundzwanzig");
+        check("de_de", 45, "fünfundvierzig");
+        check("de_de", 30, "dreißig");
+        check("de_de", 100, "einhundert");
+        check("de_de", 101, "einhunderteins");
+        check("de_de", 234, "zweihundertvierunddreißig");
+        check("de_de", 1000, "eintausend");
+        check("de_de", 2001, "zweitausendeins");
+        check("de_de", 21000, "einundzwanzigtausend");
+        check("de_de", 999999, "neunhundertneunundneunzigtausendneunhundertneunundneunzig");
+    }
+
+    @Test @DisplayName("French")
+    void french() {
+        check("fr_fr", 0, "zéro");
+        check("fr_fr", 17, "dix-sept");
+        check("fr_fr", 21, "vingt et un");
+        check("fr_fr", 22, "vingt-deux");
+        check("fr_fr", 71, "soixante et onze");
+        check("fr_fr", 72, "soixante-douze");
+        check("fr_fr", 80, "quatre-vingts");
+        check("fr_fr", 81, "quatre-vingt-un");
+        check("fr_fr", 91, "quatre-vingt-onze");
+        check("fr_fr", 99, "quatre-vingt-dix-neuf");
+        check("fr_fr", 100, "cent");
+        check("fr_fr", 200, "deux cents");
+        check("fr_fr", 201, "deux cent un");
+        check("fr_fr", 1000, "mille");
+        check("fr_fr", 2000, "deux mille");
+        check("fr_fr", 21000, "vingt et un mille");
+        check("fr_fr", 80000, "quatre-vingt mille");
+        check("fr_fr", 200000, "deux cent mille");
+        check("fr_ca", 99, "quatre-vingt-dix-neuf");   // fr_ca uses the same speller
+    }
+
+    @Test @DisplayName("Italian")
+    void italian() {
+        check("it_it", 0, "zero");
+        check("it_it", 3, "tre");
+        check("it_it", 21, "ventuno");
+        check("it_it", 23, "ventitré");
+        check("it_it", 28, "ventotto");
+        check("it_it", 33, "trentatré");
+        check("it_it", 100, "cento");
+        check("it_it", 101, "centuno");
+        check("it_it", 108, "centotto");
+        check("it_it", 180, "centottanta");
+        check("it_it", 200, "duecento");
+        check("it_it", 234, "duecentotrentaquattro");
+        check("it_it", 1000, "mille");
+        check("it_it", 2000, "duemila");
+        check("it_it", 1234, "milleduecentotrentaquattro");
+        check("it_it", 100000, "centomila");
+    }
+
+    @Test @DisplayName("Dutch")
+    void dutch() {
+        check("nl_nl", 0, "nul");
+        check("nl_nl", 8, "acht");
+        check("nl_nl", 21, "eenentwintig");
+        check("nl_nl", 22, "tweeëntwintig");
+        check("nl_nl", 23, "drieëntwintig");
+        check("nl_nl", 24, "vierentwintig");
+        check("nl_nl", 100, "honderd");
+        check("nl_nl", 234, "tweehonderdvierendertig");
+        check("nl_nl", 1000, "duizend");
+        check("nl_nl", 2000, "tweeduizend");
+        check("nl_be", 24, "vierentwintig");   // nl_be uses the same speller
+    }
+
+    @Test @DisplayName("Polish")
+    void polish() {
+        check("pl_pl", 0, "zero");
+        check("pl_pl", 15, "piętnaście");
+        check("pl_pl", 21, "dwadzieścia jeden");
+        check("pl_pl", 45, "czterdzieści pięć");
+        check("pl_pl", 200, "dwieście");
+        check("pl_pl", 234, "dwieście trzydzieści cztery");
+        check("pl_pl", 1000, "tysiąc");
+        check("pl_pl", 2000, "dwa tysiące");
+        check("pl_pl", 5000, "pięć tysięcy");
+        check("pl_pl", 12000, "dwanaście tysięcy");
+        check("pl_pl", 21000, "dwadzieścia jeden tysięcy");
+        check("pl_pl", 22000, "dwadzieścia dwa tysiące");
+        check("pl_pl", 100000, "sto tysięcy");
+    }
+
+    @Test @DisplayName("Russian")
+    void russian() {
+        check("ru_ru", 0, "ноль");
+        check("ru_ru", 15, "пятнадцать");
+        check("ru_ru", 21, "двадцать один");
+        check("ru_ru", 200, "двести");
+        check("ru_ru", 234, "двести тридцать четыре");
+        check("ru_ru", 1000, "тысяча");
+        check("ru_ru", 2000, "две тысячи");
+        check("ru_ru", 5000, "пять тысяч");
+        check("ru_ru", 21000, "двадцать одна тысяча");
+        check("ru_ru", 22000, "двадцать две тысячи");
+        check("ru_ru", 100000, "сто тысяч");
+        check("ru_ru", 123456, "сто двадцать три тысячи четыреста пятьдесят шесть");
+    }
+
+    @Test @DisplayName("Japanese")
+    void japanese() {
+        check("ja_jp", 0, "零");
+        check("ja_jp", 10, "十");
+        check("ja_jp", 11, "十一");
+        check("ja_jp", 21, "二十一");
+        check("ja_jp", 100, "百");
+        check("ja_jp", 234, "二百三十四");
+        check("ja_jp", 1000, "千");
+        check("ja_jp", 10000, "一万");
+        check("ja_jp", 20000, "二万");
+        check("ja_jp", 100000, "十万");
+        check("ja_jp", 12345, "一万二千三百四十五");
+        check("ja_jp", 999999, "九十九万九千九百九十九");
+    }
+
+    @Test @DisplayName("Korean")
+    void korean() {
+        check("ko_kr", 0, "영");
+        check("ko_kr", 10, "십");
+        check("ko_kr", 11, "십일");
+        check("ko_kr", 21, "이십일");
+        check("ko_kr", 100, "백");
+        check("ko_kr", 234, "이백삼십사");
+        check("ko_kr", 1000, "천");
+        check("ko_kr", 10000, "만");
+        check("ko_kr", 20000, "이만");
+        check("ko_kr", 100000, "십만");
+        check("ko_kr", 12345, "만이천삼백사십오");
+        check("ko_kr", 999999, "구십구만구천구백구십구");
+    }
+
+    @Test @DisplayName("Chinese numerals: Simplified vs Traditional myriad marker")
+    void chineseTraditional() {
+        // zhWords lives in DeathLoreStore (same package); Traditional swaps 万→萬.
+        assertEquals("一万", DeathLoreStore.zhWords(10000, false));
+        assertEquals("一萬", DeathLoreStore.zhWords(10000, true));
+        assertEquals("九万九千九百九十九", DeathLoreStore.zhWords(99999, false));
+        assertEquals("九萬九千九百九十九", DeathLoreStore.zhWords(99999, true));
+        assertEquals("三千二百一十", DeathLoreStore.zhWords(3210, true));   // sub-万 glyphs identical
+    }
+
     @Test @DisplayName("out of range → digits; unknown locale → null")
     void bounds() {
         check("es_es", 1_000_000, "1000000");
         check("th_th", -5, "-5");
-        assertNull(LocaleNumberWords.forLocale("fr_fr", 5));
+        check("de_de", 1_000_000, "1000000");
+        check("ja_jp", 1_000_000, "1000000");
+        assertNull(LocaleNumberWords.forLocale("xx_zz", 5));
         assertNull(LocaleNumberWords.forLocale(null, 5));
     }
 }

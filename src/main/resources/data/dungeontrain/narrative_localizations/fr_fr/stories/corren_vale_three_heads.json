@@ -1,0 +1,78 @@
+{
+  "id": "corren_vale_three_heads",
+  "character": "Corren Vale",
+  "story": "Trois têtes",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettre une",
+      "variants": [
+        "Mira,\n\nTes mains étaient toujours couvertes de craie.\n\nTu traçais des lignes sur tout.\n\nTu disais que les lignes droites gardaient le monde honnête.\n\nTu y croyais.\n\nJe crois que moi aussi.\n\n- Corren",
+        "Mira.\n\nTu riais tout bas.\n\nComme si tu essayais de ne pas réveiller quelque chose.\n\nBram ne savait jamais quand tu plaisantais.\n\nmoi si.\n\n- corren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettre deux",
+      "variants": [
+        "Mira.\n\nLe sable des âmes était froid.\n\nJe ne me souviens pas de la chaleur d'après.\n\nTu as dit quelque chose.\n\nJe crois que tu as dit mon nom.\n\nJe crois que tu as dit Cours.\nJe ne me suis pas retourné.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettre trois",
+      "variants": [
+        "Bram.\n\nTu riais comme on tombe.\n\nSoudain. Fort. Toujours trop fort.\n\nTu disais que tu riais pour que les ténèbres sachent que tu étais là.\n\nElles le savaient toujours.\n\n- Corren",
+        "Bram.\n\nTon bouclier était trop grand pour toi.\n\nTu passais les portes de côté.\n\nEsa l'appelait la table.\n\nTu disais que la table ne laissait jamais tomber personne.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettre quatre",
+      "variants": [
+        "Bram.\n\nLe premier crâne était le tien.\n\nTu l'as ramassé.\n\nTu as crié quelque chose.\n\nJe n'entendais pas par-dessus le feu.\n\nLes roues de ce train font trois notes.\n\nLa première est la tienne, Bram.\n\n- Corren",
+        "Bram.\n\nj'ai écrit ceci cinq fois.\n\nà chaque fois j'arrive au crâne et le stylo s'arrête.\n\ntu l'as brandi. tu as souri.\n\ntu as dit qu'il ne pesait rien.\n\nje crois qu'il pesait lourd.\n\nLes roues de ce train font trois notes.\n\nLa première est la tienne, Bram.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettre cinq",
+      "variants": [
+        "Esa.\n\nTes mains étaient froides à force de brasser.\n\nLe reste de toi était chaud.\n\nMira disait que tu étais la seule chaude d'entre nous.\n\nElle avait raison.\n\n- Corren",
+        "Esa.\n\nTu chantais en bandant les plaies.\n\nDe vieilles chansons. Aucun de nous ne les connaissait.\n\nTu disais que tu les inventais au fur et à mesure.\n\nNous faisions semblant de te croire.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lettre six",
+      "variants": [
+        "Esa.\n\nTa main était sur mon dos.\n\nFroide à force de brasser.\n\nTu as poussé une fois.\n\nJ'ai trébuché vers la sécurité.\n\nTu n'as pas poussé une seconde fois.\n\nTu étais déjà partie, je crois.\n\nAvant la poussée.\n\n- Corren",
+        "Esa.\n\nIl y a des gens sur ce train qui ont vécu plus longtemps que moi.\n\naucun d'eux n'a l'air normal.\n\nje ne veux pas savoir de quoi j'ai l'air.\n\ntu me l'aurais dit.\n\ntu aurais dit assieds-toi Corren et laisse-moi voir.\n\n- corren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Lettre sept",
+      "variants": [
+        "Je ne sais pas comment je suis sorti.\n\nLe portail était brisé. Ça, je m'en souviens.\n\nJe ne me souviens pas d'avoir traversé.\n\nJe me suis retrouvé dans un champ. Des herbes hautes. Le train était déjà là.\n\nIl roulait.\n\nIl avait toujours roulé. Je le sais maintenant.\n\nJ'ai couru à côté. J'ai sauté vers la porte la plus proche.\n\nJe ne sais pas comment je l'ai attrapée.\n\nJe pensais que j'avais réussi.\n\nJe réussis depuis des semaines maintenant.\n\nLe train ne s'arrête pas.\n\nIl n'y a pas de descente.\n\n- Corren",
+        "la chaleur derrière moi. le froid devant.\n\nje ne savais pas où était le haut.\n\nje me souviens d'être tombé sur l'herbe.\n\nl'herbe n'était pas en feu.\n\nça semblait important.\n\npuis un bâtiment.\n\nje ne connaissais pas le bâtiment.\n\nje connais tous les bâtiments de cette région.\n\nj'ai cartographié cette région.\n\nun train était au bâtiment.\n\nles portes étaient ouvertes.\n\nj'étais vivant et les portes étaient ouvertes.\n\nces faits semblaient liés.\n\n- corren"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Lettre huit",
+      "variants": [
+        "Je l'entends depuis des semaines maintenant.\n\nUn cri strident. Trois voix, presque superposées.\n\nParfois une vient seule. Parfois les trois.\n\nEt les déflagrations.\n\nJe les sens dans le sol avant de les entendre.\n\nElles ne brisent jamais rien que je puisse voir.\n\nJe ne sais pas où elles atterrissent.\n\nJ'avance.\n\nLe cri revient. Deux wagons en arrière.\n\nToujours de là.\n\nJamais plus loin.\n\nJ'en suis sûr.\n\n- Corren",
+        "il y a un son.\n\nje l'entends depuis des semaines.\n\nce ne sont pas les roues.\n\nles roues portent une musique. trois notes.\n\ncelui-ci porte autre chose.\n\nil hurle.\n\ntrois voix. presque à l'unisson. jamais tout à fait.\n\net il y a des déflagrations.\n\nje les sens dans le sol. elles ne brisent rien.\n\nj'ai demandé aux autres sur le train.\n\naucun d'eux ne l'entend.\n\nmoi seul l'entends.\n\nc'est pour moi.\n\nil a le temps.\n\n- corren"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Lettre neuf",
+      "variants": [
+        "Oh.. oh non.\n\nMira.\n\nTu l'aurais remarqué avant moi.\n\nLe cri est devant moi maintenant.\n\nIl n'est pas censé y avoir de devant.\n\nBram se serait tenu devant.\n\nIl en aurait ri.\n\nIl riait toujours des choses trop grandes pour être combattues.\n\nEsa aurait brassé quelque chose.\n\nRésistance au feu. Célérité. La bonne chose.\n\nElle brassait toujours la bonne chose.\n\nJ'ai avancé pendant des semaines.\n\nJe marchais vers lui.\n\nLe train n'a pas de devant.\n\nChaque pas en avant était un pas plus près.\n\nJe le vois maintenant.\n\nTrois têtes. Trois voix.\n\nLa quatrième voix sera la mienne.\n\nJe crois qu'elle est la mienne depuis des semaines.\n\n- Corren",
+        "il est là.\n\nmira.\n\nil n'était pas derrière moi.\n\nil était devant.\n\nil était toujours devant.\n\ntu aurais vu ça. tu voyais tout la première.\n\nbram se serait tenu devant moi.\n\nil aurait ri.\n\nil riait des choses trop grandes pour être combattues.\n\nça aurait marché. un instant.\n\nesa aurait posé sa main sur mon dos.\n\nfroide.\n\nelle aurait poussé.\n\nje serais parti.\n\nj'ai marché vers lui.\n\nje croyais marcher dans l'autre sens.\n\nle train n'a pas de devant. tu aurais ri de moi d'avoir oublié ça.\n\nje le vois.\n\ntrois têtes. trois de vous.\n\nbram. esa. toi.\n\nje suis le quatrième.\n\nj'ai été le quatrième depuis le début.\n\n- corren"
+      ]
+    }
+  ]
+}

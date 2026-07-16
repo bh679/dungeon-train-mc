@@ -1,0 +1,47 @@
+{
+  "id": "pip_aaro_the_waiting_child",
+  "character": "Pip Aaro",
+  "story": "Het wachtende kind",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Brief één",
+      "variants": [
+        "Ik heet Pip. Ik ben acht.\n\nIk zit in een trein die ik niet ken. De stoelen ruiken naar oma's jas.\n\nEen rat gaf me dit papier. Een echte rat. Met kleren aan.\n\nIk zoek mama.\n\nEen beetje bang. Maar een klein beetje.\n\nPip",
+        "Ik viel in slaap in een trein met mama. Ik werd wakker en mama was weg.\n\nDe trein is nu anders. Mijn tas is anders. Het oranje boek zit er niet in.\n\nEen rat gaf me dit papier. Hij had een vestje aan.\n\nIk ga mama vinden. Er zijn zo veel wagons.\n\nIk huil niet.\n\nPip"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Brief twee",
+      "variants": [
+        "Ik vroeg een man waar de conducteur is.\n\nHij had een gele jas. Hij lachte. Hij zei lieverd, er is geen conducteur. Hij zei dat de trein niet stopt.\n\nIk geloof hem niet. Treinen stoppen.\n\nDe man in de gele jas slaapt nu veel. Ik denk dat hij verdrietig is.\n\nIk ga niet zo worden.\n\nPip",
+        "Ik vond een schriftje onder een stoel.\n\nIemand had de wagons geteld. Ze kwamen tot 384 en stopten. Ze zeiden dat het geen zin heeft om de voorkant te zoeken.\n\nIk weet niet wat ze bedoelden. Treinen hebben een voorkant.\n\nIk hou het schriftje. Het is net alsof ik iemand heb om mee te praten.\n\nZe klonken moe. Ik ben nog niet moe.\n\nPip"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Brief drie",
+      "variants": [
+        "Sommige mensen op de trein zijn nep.\n\nZe lijken echt. Maar ze zien je niet. Ik zwaaide naar een mevrouw en ze liep zo langs me heen.\n\nSommige mensen zijn er WEL. De man in de gele jas. De rat. Een mevrouw die me een appel gaf.\n\nIk hou een lijst bij van de echte mensen. Het zijn er vier. Ik ben er waarschijnlijk ook een.\n\nPip",
+        "Ik heb een plan gemaakt.\n\nEen kant op lopen. Niet omdraaien. Dan zou ik achterin de trein komen.\n\nIk liep lang. Zevenenveertig wagons. Ik keek niet om.\n\nEr was geen achterkant. Het einde leek op waar ik begon. Dezelfde omageur.\n\nIk snap het niet. Ik wil mama.\n\nPip"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Brief vier",
+      "variants": [
+        "De mevrouw met de appel is nu mijn vriendin. Ze heet Soren.\n\nZe is al heel heel lang op de trein. Ze wil niet zeggen hoe lang.\n\nSoren vroeg naar mama. Ik vertelde het haar. Ze werd stil. Toen zei ze dat mijn mama geweldig klinkt.\n\nZe zei het op dezelfde manier als de man in de gele jas zei dat de trein niet stopt.\n\nIk ga mama toch vinden.\n\nPip",
+        "Er zit een slime in mijn wagon. Ik heb haar Kiezel genoemd.\n\nZe is klein en groen. Soren zei dat ze nog te klein is om gevaarlijk te zijn. Dat geloof ik niet van Kiezel.\n\nZe volgt me tot aan de deur maar gaat er niet doorheen. Ik denk dat ze denkt dat de deur een muur is.\n\nMama zou zeggen dat een slime een monster is. Mama heeft het mis over Kiezel.\n\nIk mis mama.\n\nMaar ik heb Kiezel.\n\nPip"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Brief vijf",
+      "variants": [
+        "Soren vertelde me over de deur.\n\nZe zei dat er een deur op de trein is die naar buiten gaat. Ze zei dat als ik hem vind, ik erdoorheen moet gaan.\n\nIk heb er lang over nagedacht. Over mama. Over Kiezel.\n\nAls mama op deze trein is, moet ik blijven zoeken. Als ze er niet is, kan ik toch niet bij haar komen.\n\nAls ik de deur vind, ga ik ernaast zitten. En wachten.\n\nSoren zei oké lieverd. Alsof ze het deze keer meende.\n\nPip",
+        "Ik heb een brief voor mama geschreven.\n\nSoren zei dat mensen soms vaak door dezelfde wagon komen. Dus ik laat hem achter waar iedereen langskomt.\n\nEr staat mijn naam op. Er staat dat ik een vriendin heb die Soren heet en een slime die Kiezel heet.\n\nEr staat dat het goed met me gaat. Er staat dat ik wacht.\n\nMama zal hem vinden. Mama's vinden dingen.\n\nPip"
+      ]
+    }
+  ]
+}

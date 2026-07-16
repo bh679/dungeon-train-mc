@@ -1,0 +1,98 @@
+{
+  "id": "adventureitemnames:forged_by",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "來歷",
+      "refs": [
+        {
+          "ref": "adventureitemnames:created_by",
+          "weight": 52.0
+        },
+        {
+          "ref": "adventureitemnames:hand_crafted_with_love",
+          "weight": 30.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": "，出自",
+      "newline": false,
+      "label": "人物",
+      "refs": [
+        {
+          "ref": "adventureitemnames:material_or_element",
+          "weight": 100.0
+        },
+        {
+          "ref": "adventureitemnames:names",
+          "weight": 258.0
+        },
+        {
+          "ref": "adventureitemnames:people",
+          "weight": 20.0
+        },
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 100.0
+        },
+        {
+          "ref": "adventureitemnames:title_combinations",
+          "weight": 100.0
+        }
+      ]
+    },
+    {
+      "chance": 0.25393516,
+      "connection": "，地點：",
+      "newline": false,
+      "label": "地點",
+      "refs": [
+        {
+          "ref": "adventureitemnames:places",
+          "weight": 30.0
+        },
+        {
+          "ref": "adventureitemnames:the_place",
+          "weight": 50.0
+        }
+      ]
+    },
+    {
+      "chance": 0.12329957,
+      "connection": "，取材於",
+      "newline": false,
+      "label": "材質",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/item_material",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.1,
+      "connection": "，獻給",
+      "newline": false,
+      "label": "獻給",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/player_name",
+          "weight": 10.0
+        },
+        {
+          "ref": "adventureitemnames:people",
+          "weight": 20.0
+        },
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 150.0
+        }
+      ]
+    }
+  ]
+}

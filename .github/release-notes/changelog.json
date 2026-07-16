@@ -4867,6 +4867,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "multilingual-localization-10-major-languages",
+      "version": "0.467.0",
+      "type": "feat",
+      "title": "Play in 10 more languages",
+      "summary": "Dungeon Train is now playable in ten more languages \u2014 German, French, Italian, European Portuguese, Dutch, Polish, Russian, Japanese, Korean, and Traditional Chinese. Menus, generated item names, in-world books, the death-screen ledger, and the bundled companion mods are all translated, and each language has its own Death Note trigger word. These are AI translations (marked as such on the title screen, with a faded language-menu badge) \u2014 native-speaker corrections are very welcome.",
+      "highlights": [
+        "German, French, Italian, European Portuguese, Dutch, Polish, Russian, Japanese, Korean & Traditional Chinese",
+        "Menus, item names, books, and death-screen prose all localized",
+        "Per-language Death Note trigger titles (\u30c7\u30b9\u30ce\u30fc\u30c8, \u0422\u0435\u0442\u0440\u0430\u0434\u044c \u0441\u043c\u0435\u0440\u0442\u0438, \u6b7b\u4ea1\u7b46\u8a18, \u2026)",
+        "AI-translated, faded language-menu badge \u2014 native-speaker feedback welcome"
+      ],
+      "pr": 776,
+      "date": "2026-07-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

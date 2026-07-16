@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "玩家",
+  "item.playermob.player_mob_spawn_egg": "玩家生怪蛋",
+  "item.playermob.player_mob_aggressive_spawn_egg": "好戰玩家生怪蛋",
+  "item.playermob.player_mob_friendly_spawn_egg": "友善玩家生怪蛋",
+  "item.playermob.player_mob_passive_spawn_egg": "被動玩家生怪蛋",
+  "item.playermob.player_mob_skeptical_spawn_egg": "多疑玩家生怪蛋",
+  "item.playermob.player_mob_shy_spawn_egg": "害羞玩家生怪蛋",
+  "container.playermob.player_mob": "玩家"
+}

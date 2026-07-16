@@ -1,0 +1,509 @@
+{
+  "id": "adventureitemnames:type_synonyms",
+  "entries": [
+    {
+      "text": "刃",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "剣",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "大剣",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "肉切り包丁",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "サーベル",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "刃先",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "略奪刃",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "串刺し刀",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "斧",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "戦斧",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "鉈",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "手斧",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "割り斧",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "バルディッシュ",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "トマホーク",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "木材砕き",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "つるはし",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "ツルハシ",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "鎚",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "大槌",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "鶴嘴",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "掘削刃",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "大鎚",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "掘進機",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "岩噛み",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "シャベル",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "鋤",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "移植ごて",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "すくい",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "掘り棒",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "土砂運び",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "掘削機",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "砂すくい",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "クワ",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "大鎌",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "耕運機",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "耕し具",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "熊手",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "刈り取り機",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "犂",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "鎌",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "ヘルメット",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "帽子",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "縁なし帽",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "王冠",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "頭巾",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "頭当て",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "頭巾帷子",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "頭蓋帽",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "宝冠",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "脳味噌入れ",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "チュニック",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "シャツ",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "鎧",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "胸甲",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "胴着",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "鎖帷子",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "ダブレット",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "よだれかけ",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "レギンス",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "ズボン",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "長ズボン",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "スラックス",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "脛当て",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "半ズボン",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "スラックス",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "靴下的なもの",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "靴",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "ブーツ",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "サンダル",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "蹄",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "スリッパ",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "長靴",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "踏みつけ靴",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "足ミトン",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "どた靴",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "盾",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "小盾",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "イージス",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "防壁",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "円盾",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "大盾",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "守り手",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "阻む者",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    }
+  ]
+}

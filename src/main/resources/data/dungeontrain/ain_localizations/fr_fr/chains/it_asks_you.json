@@ -1,0 +1,32 @@
+{
+  "id": "adventureitemnames:it_asks_you",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "Il te demande",
+      "refs": []
+    },
+    {
+      "chance": 1.0,
+      "connection": " « ",
+      "newline": false,
+      "label": "Question",
+      "refs": [
+        {
+          "ref": "adventureitemnames:do_you_know_x",
+          "weight": 3.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " »",
+      "newline": false,
+      "label": "",
+      "refs": []
+    }
+  ]
+}

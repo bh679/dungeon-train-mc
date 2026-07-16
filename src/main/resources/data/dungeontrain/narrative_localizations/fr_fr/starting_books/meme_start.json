@@ -1,0 +1,14 @@
+{
+  "id": "meme_start",
+  "title": "Le jeu",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Hé, toi.\nTu es enfin réveillé.\n\nBienvenue dans le Dungeon Train\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQue dois-tu faire ?\nVoilà de bonnes questions",
+    "Debout.\nVoilà.\nTu rêvais.\nBienvenue dans le Dungeon Train\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQue dois-tu faire ?\nVoilà de bonnes questions",
+    "Bienvenue dans le Dungeon Train\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQue dois-tu faire ?\nVoilà de bonnes questions\n\nEs-tu le Passager n°427 ?",
+    "Bienvenue dans le Dungeon Train\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQue dois-tu faire ?\nVoilà de bonnes questions\n\nConnais-tu Stanley ?\n\nStanley travaillait pour une entreprise dans un grand bâtiment où il était l'Employé n°427.\n\nLe travail de l'Employé n°427 était simple : il s'asseyait à son bureau dans la Salle 427 et il appuyait sur des touches d'un clavier.\n\nLes ordres lui parvenaient par un écran sur son bureau, lui indiquant quelles touches appuyer, combien de temps les appuyer, et dans quel ordre.\n\nMais tu n'es pas Stanley.\n\nTu n'es même pas dans ce monde-là.\n\nIl n'y a pas de claviers ici.\n\nIl n'y a ni entreprises ni grands bâtiments.\n\nIl n'y a pas de travail.\n\nIl n'y a pas de Stanley.",
+    "Bienvenue dans le Dungeon Train\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQue dois-tu faire ?\nVoilà de bonnes questions\n\nmais...\n\nLes bonnes questions n'obtiennent pas toujours de bonnes réponses\n\nTu peux poser une bonne question.\n\nMême si parfois les gens mentent.\n\nLes gens peuvent te poser une bonne question.\n\net parfois tu pourrais te mentir à toi-même.\n\nbref, je suis sûr que ce n'est pas pertinent ici.\n\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQue dois-tu faire ?\nLe train finit-il ?\nQu'y aurait-il au bout du train ?\n\nIl y a du gâteau."
+  ]
+}

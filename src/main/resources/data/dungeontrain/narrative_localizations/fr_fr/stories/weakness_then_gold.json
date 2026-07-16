@@ -1,0 +1,57 @@
+{
+  "id": "weakness_then_gold",
+  "story": "Faiblesse, puis or",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettre une",
+      "variants": [
+        "cerveauux.\n\ncervveaux. cerveaux.\n\ncerveaauuxx.\n\nCHAUD.\nchaud a marché près.\nCHAUD.\n\nenccore.\nj'en veux plus.",
+        "cerveauux.\n\nviande. je sens la viande.\n\ncerveaauxx.\nviaande.\n\nles chauds ont de la viande.\nje suis.\nje suis toujours."
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettre deux",
+      "variants": [
+        "je suis le chaud.\nVeux cerveauux.\nj'arrête.\nregarde le papier.\n\nmarques sur papier.\n\nfaiblesse.or.\nfais demi-tour.\ncerveaux ?",
+        "je suis le chaud.\ncerveauux. Veux.\nj'arrête.\nregarde le papier.\n\nmarques sous les marques.\n\nzom..bie ?\nhumain ?\ncomment être humain ?"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettre trois",
+      "variants": [
+        "je regarde les chauds.\npas de chasse maintenant.\njuste regarder.\n\ncertains regardent en retour.\ncertains me traversent.\ncomme si j'étais pas là.\n\nceux qui regardent en retour sont réels.\n\n\nun s'approche.\nnuque chaude.\nbouche ouverte.\n\nle papier bouge sur ma poitrine.\nfaiblesse. or. fais demi-tour.\n\nbouche fermée.\nje recule.\n\njamais reculer. jamais.\n\n\npas oublier.\npas oublier.\n\nje grave des mots dans le mur.\nfaiblesse. puis or.\n\nles marques mieux maintenant.\nje fais une marque.\n\nb."
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettre quatre",
+      "variants": [
+        "faiblesse ?\nfaiblesse .. sorcière.\n\nsorcière fait.\n\nje trouve sorcière.\nje m'approche."
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettre cinq",
+      "variants": [
+        "sorcière me voit.\nsorcière lance.\n\nvert brûle.\nje m'arrête pas.\nla faim ne sent pas la douleur.\n\nune bouteille casse gris.\nbrume grise. pas de brûlure.\n\n\nmou.\nbras lents. faibles.\n\npuis—\nle brouillard se lève.\n\nje peux penser.\nles mots sont miens.\n\nfaible. lent.\nmais là.\n\n- br"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lettre six",
+      "variants": [
+        "les mots disent or.\nje connais l'or maintenant.\n\nj'ouvre des coffres.\nles mains encore lentes.\nla faiblesse n'est pas partie.\n\n\nde l'or qui n'est pas la pomme.\ndes blocs. des émeraudes.\n\npuis un miroir dans un coffre.\nvisage gris. yeux creux.\n\nmais derrière—\nune porte basse. une pièce chaude.\nquelqu'un qui appelle un nom.\n\nj'avais un nom autrefois.\nbr...?\n\n\npuis de l'or qui est rond.\n\nil brille comme s'il était chaud.\nune pomme, mais dorée.\n\nje la tiens. je ne mords pas.\n\nfaiblesse en moi.\nor dans ma main.\n\nles deux. j'ai les deux.\n\n- bri"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Lettre sept",
+      "variants": [
+        "j'ai pressé la faiblesse dans mon sang.\npuis j'ai mordu l'or.\n\nc'était sucré.\nj'avais oublié le sucré.\n\n\npuis le tremblement.\nle train est devenu rouge sur les bords.\n\nmes mains — chaudes.\nmon cœur un poing, cognant pour qu'on le laisse entrer.\n\nle gris a coulé hors de moi comme l'eau froide quitte une tasse.\n\n\nje me souviens.\nune porte basse. une pièce chaude.\nune femme qui m'appelle pour souper.\n\nqui m'appelle Brianne.\n\nje suis Brianne.\n\n\nje suis encore sur le train.\npas d'avant. pas de descente.\nmais une personne le chevauche maintenant.\n\nalors j'écris ceci pour toi —\ntoi, le gris qui ne peut pas encore le lire.\ntu le pourras.\n\nfaiblesse. puis or.\net tu fais demi-tour.\n\nça marche. je l'ai fait.\ncontinue.\n\n- Brianne"
+      ]
+    }
+  ]
+}

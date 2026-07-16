@@ -1,0 +1,15 @@
+{
+  "id": "deathnote",
+  "_translator_note": "TITLE = the in-game trigger. Players make a Death Note by naming their own book & quill this exact title (case and spacing are ignored). Keep the translated title to 15 characters or fewer — Minecraft's book-title field won't accept more, so a longer title can't be typed and the game skips it as a trigger (English 'Death Note' always still works). This field is ignored by the game; it's only guidance for translators.",
+  "title": "死亡筆記",
+  "author": "無名氏",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Elias Renn。\n\n\n三節車廂前的一個男人發誓說這有用，所以我趁自己還沒失去勇氣，先把名字寫在上面。\n\n你拿一本成書與筆。在第一頁寫下名字。只寫名字，別的什麼都不要，他說，不然它不會生效。然後你在上面署名。那才是關鍵的部分。署名。\n\n之後你只需要死去。在他們前方的某處，在那外頭的軌道上，你的迴響會爬起來，去尋找你寫下的那個名字。\n\n我已經寫下了。我的手還不肯署名。萬一什麼都沒發生怎麼辦？萬一真的發生了什麼怎麼辦？",
+    "Marlow Pike\n\n我不相信這種事。我要把這句話記錄下來。\n\n可是我看著一個女人在其中一本上署了名，我看著她在兩節車廂後從車頂走了下去，三天之後，一個頂著她那張臉的東西沿著車列走了過來，打聽一個叫 Corvin 的男人。\n\nCorvin 已經不在這列車上了。我不知道他是下車了，還是被帶走了。\n\n所以現在我就坐在這裡，帶著我自己的成書與筆，上面寫著那個我寧可不要大聲說出來的名字。我告訴自己，我只是在試試看而已。我告訴自己的話可多了。",
+    "Sabine Thorne。\n\n\n致找到這個的人：\n\n這是一道你承擔的詛咒，不是一道你施放的詛咒。你寫下名字——她的名字在前一頁——你在成書上署名，然後它就只是在你體內等待。它不花你分毫，直到你倒下的那一刻。然後它會一次把一切都花光。\n\n他們說那迴響確切知道你死在哪裡，並從那裡出發，一路向前追獵，直到抵達你所指名的那個人。我不知道它是如何跨越我們之間的距離的。我不知道那名字是否非得屬於某個真實存在的人。\n\n我在一個小時前署了名。我感覺完全正常。這正是我無法停止去想的部分。",
+    "Whit Calloway\n\nFaulthurst 叫我別做。他說這列車會記帳，而一本死亡筆記是一筆你用自己的血簽下的債。\n\n我問他這到底有沒有用。他看了我很久，然後說：「那是錯的問題。對的問題是，你能不能承受得了它真的有用。」\n\n我把名字寫在了最上面。我沒有署名。筆就在手邊。\n\n如果你是在一個儲物箱裡讀到這個，那代表我把書放下了。你可以把這當成忠告，也可以當成懦弱。我已經分不清那是哪一個了。",
+    "Dorne Vasco。\n\n\n實驗紀錄，第一次嘗試。\n\n假設：把乘客的名字寫在一本成書的第一頁上——已完成，見前一頁——並署名，會將一道詛咒綁定在我身上。在我下一次於列車上死亡時，一個我的迴響會生成於前方，追捕那位被指名的乘客。\n\n方法：我寫下了名字。我署了名。那本書變黑，並在我手中燒了起來，這件事不在說明裡，而我一點也不喜歡。\n\n結果：待定。這是當然。我得死去才能蒐集到數據，而我發現自己突然非常執著於不去死。\n\n結論：未知。如果你正在讀這個，這場實驗仍在進行中。小心你會署下誰的名字。更要小心我的。"
+  ]
+}

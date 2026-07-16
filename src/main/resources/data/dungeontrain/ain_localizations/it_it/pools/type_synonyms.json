@@ -1,0 +1,509 @@
+{
+  "id": "adventureitemnames:type_synonyms",
+  "entries": [
+    {
+      "text": "Lama",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Spada",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Spadone",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Mannaia",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Sciabola",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Filo",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Predone",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Spiedo",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Ascia",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Ascia da Guerra",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Mannarino",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Accetta",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Spaccatore",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Bardiche",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Tomahawk",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Distruggilegno",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Piccone",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Piccozza",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Martello",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Maglio",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Zappapicco",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Scalpellatore",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Mazza",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Scavatunnel",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Morderocce",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Pala",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Vanga",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Cazzuola",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Paletta",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Bastone da Scavo",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Spostaterra",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Escavatore",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Raccoglisabbia",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Zappa",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Falce",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Coltivatore",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Aratore",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Rastrello",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Mietitore",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Aratro",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Falcetto",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Elmo",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Cappello",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Berretto",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Corona",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Cappuccio",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Copricapo",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Cuffia",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Zucchetto",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Diadema",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Secchio-Cervello",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Tunica",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Camicia",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Armatura",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Corazza",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Gilet",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Cotta di Maglia",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Farsetto",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Bavaglino",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Gambali",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Pantaloni",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Gambaloni",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Calzoni",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Schinieri",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Brache",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Calzoni Larghi",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Calze-Cosi",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Scarpe",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Stivali",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Sandali",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Zoccoli",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Pantofole",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Galosce",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Pestoni",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Manopole da Piede",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Scarponi",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Scudo",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Brocchiero",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Egida",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Baluardo",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Targa",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Pavese",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Difensore",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Tappo",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    }
+  ]
+}

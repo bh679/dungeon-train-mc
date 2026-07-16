@@ -1,0 +1,14 @@
+{
+  "id": "meme_start",
+  "title": "Het Spel",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Hé, jij.\nJe bent eindelijk wakker.\n\nWelkom bij de Dungeon Train\nWat is de trein?\nWaarom ben je hier?\nWat wordt er van je verwacht?\nDit zijn allemaal goede vragen",
+    "Sta op.\nZo ja.\nJe lag te dromen.\nWelkom bij de Dungeon Train\nWat is de trein?\nWaarom ben je hier?\nWat wordt er van je verwacht?\nDit zijn allemaal goede vragen",
+    "Welkom bij de Dungeon Train\nWat is de trein?\nWaarom ben je hier?\nWat wordt er van je verwacht?\nDit zijn allemaal goede vragen\n\nBen jij Passagier #427?",
+    "Welkom bij de Dungeon Train\nWat is de trein?\nWaarom ben je hier?\nWat wordt er van je verwacht?\nDit zijn allemaal goede vragen\n\nKen je Stanley?\n\nStanley werkte voor een bedrijf in een groot gebouw waar hij Werknemer #427 was.\n\nDe taak van Werknemer #427 was simpel: hij zat aan zijn bureau in Kamer 427 en drukte op knoppen op een toetsenbord.\n\nOpdrachten kwamen bij hem binnen via een beeldscherm op zijn bureau dat hem vertelde welke knoppen hij moest indrukken, hoe lang hij ze moest indrukken, en in welke volgorde.\n\nMaar jij bent Stanley niet.\n\nJe bent niet eens in die wereld.\n\nHier zijn geen toetsenborden.\n\nEr zijn geen bedrijven of grote gebouwen.\n\nEr is geen werk.\n\nEr is geen Stanley.",
+    "Welkom bij de Dungeon Train\nWat is de trein?\nWaarom ben je hier?\nWat wordt er van je verwacht?\nDit zijn allemaal goede vragen\n\nmaar...\n\nGoede vragen krijgen niet altijd goede antwoorden\n\nJe kunt een goede vraag stellen.\n\nHoewel mensen soms liegen.\n\nMensen kunnen jou een goede vraag stellen.\n\nen soms lieg je misschien tegen jezelf.\n\nhoe dan ook, dat is hier vast niet relevant.\n\nWat is de trein?\nWaarom ben je hier?\nWat wordt er van je verwacht?\nEindigt de trein?\nWat zou er aan het eind van de trein zijn?\n\nEr is taart."
+  ]
+}

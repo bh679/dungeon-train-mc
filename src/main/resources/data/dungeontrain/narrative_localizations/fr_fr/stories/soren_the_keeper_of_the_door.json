@@ -1,0 +1,63 @@
+{
+  "id": "soren_the_keeper_of_the_door",
+  "character": "Soren",
+  "story": "La gardienne de la porte",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettre une",
+      "variants": [
+        "À qui trouvera ce siège,\n\nil est chaud. Je viens tout juste de le quitter.\n\nLa pomme est pour toi. Un cadeau que tu as sûrement mérité.\n\nJe suis à bord depuis plus longtemps que je ne saurais compter. J'ai cessé de chercher l'avant il y a bien longtemps.\n\n\nUne chose, mon cher. Reste à l'écart des passages obscurs.\n\nQuoi que tu aies perdu, ce n'est pas là-dedans. Le noir garde ce qu'il prend.\n\nMange d'abord quelque chose.\n\nSoren",
+        "Si tu lis ceci, mon amour, tu es nouveau. Ou tu es bon. Les deux s'usent ici.\n\nJ'ai laissé la pomme parce que nourrir quelqu'un est la dernière chose ici qui ressemble encore à une victoire.\n\n\nJ'ai cru un jour que je descendrais. Le train m'a guérie de ça.\n\nÉvite les passages obscurs. Je sais pourquoi maintenant. Ça a coûté plus que je n'avais. Le noir garde ce qu'il prend.\n\nRepose-toi ici un moment.\n\nSoren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettre deux",
+      "variants": [
+        "Elle est réelle !\n\nJe le sais avec certitude maintenant\n\nPendant des années j'ai parlé aux gens de la porte.\n\nUne issue hors du train. Traverse-la, disais-je, si jamais tu la trouves.\n\nJe le pensais à moitié. On donne aux gens un espoir dont on n'est pas sûr. C'est tout de même un espoir.\n\n\nAujourd'hui j'ai appris qu'elle est réelle. Je ne te dirai pas comment. Mais je le sais désormais.\n\nToutes ces années j'ai offert un espoir dont je n'étais pas sûre. Maintenant l'espoir est vrai.\n\nSi tu trouves cette porte, mon cœur.\n\nTraverse-la.\n\nSoren",
+        "Elle est réelle ! Elle est vraiment réelle !\n\nJ'avais fait ma paix. La paix, ce n'est que ne plus rien vouloir. C'est une sorte de sommeil.\n\nPuis j'ai appris que la porte est réelle, et le désir s'est réveillé d'un coup.\n\nJe suis éveillée de nouveau maintenant. Je ne suis pas certaine de l'en remercier.\n\n\nJe pourrais être chez moi au matin. On oublie combien ce mot devient étrange. Chez soi.\n\nMais je n'ai jamais dépassé un visage effrayé ici. Je ne vais pas commencer maintenant.\n\nAlors je guiderai les autres vers elle, sur mon propre chemin.\n\nTraverse-la.\n\nSoren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettre trois",
+      "variants": [
+        "Della.\n\nJe t'ai trouvée au fond d'une mauvaise heure. Je t'ai donné une pomme. Je ne suis pas partie.\n\nCela faisait des années que je n'avais marché aux côtés de personne. J'en avais oublié le poids.\n\nNous cherchons ton enfant ensemble maintenant. Deux paires d'yeux.\n\n\nLa porte est réelle, Della. Tu pourrais être chez toi.\n\nTu as secoué la tête. Tu ne partiras pas sans elle.\n\nUne petite fille de huit ans. Un livre orange dans son sac. Tu lui as appris à lire. Pip.\n\nMange. Nous marchons aux premières lueurs.\n\nSoren",
+        "Della.\n\nDes années seule, et puis toi. Tu m'as rendu quelque chose que j'avais cessé de me permettre de regretter. Une voix qui répond.\n\nMême après que ce train t'a pris ton enfant, tu continues de marcher. Alors je t'aide à chercher. Ma porte peut attendre un instant de plus.\n\n\nJ'ai vu ce train user les gens jusqu'au néant. J'ai peur qu'il t'use.\n\nTu te pousses trop. Je crains que tu aies raison de le faire.\n\nLa porte sera là pour nous trois. Une fois que nous aurons trouvé la petite Philippa.\n\nMange. Nous marchons aux premières lueurs.\n\nSoren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettre quatre",
+      "variants": [
+        "Della.\n\nLa piste menait dans un passage obscur. Le genre où je n'entre pas. Je t'ai suppliée de faire demi-tour.\n\nTu as dit que ça va en avant, alors tu vas en avant. Nous avons dit des choses dures. Ce furent les dernières.\n\n\nPuis on aurait dit que le sol cédait. Je crois t'avoir entendue chuter dans le noir entre les wagons.\n\nJ'ai entendu ton cri.\nPuis... rien.\n\n\nJ'ai hurlé ton nom jusqu'à n'avoir plus de voix, et le noir n'en a rien rendu. Le noir garde ce qu'il prend.\n\nSoren",
+        "Della.\n\nJe t'avais dit que le passage obscur te tuerait. Tu as dit que la piste de ta fille y menait.\n\nAlors tu y es entrée. Je voulais que tu vives. Tu voulais ta fille. Nous avions raison toutes les deux. C'est ça le plus cruel.\n\n\nJ'ai rejoué la chute mille fois. Il n'y a aucune version où je te rattrape.\n\nIl n'y a plus de nous trois maintenant. J'ai enfreint ma propre règle, et le noir t'a prise. Le noir garde ce qu'il prend.\n\nSoren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettre cinq",
+      "variants": [
+        "Della.\n\nAprès le noir, je me suis arrêtée. J'ai cessé de distribuer des pommes. J'ai cessé de regarder les visages. Je marchais, et je ne voyais pas les wagons défiler.\n\nLe deuil est son propre passage obscur. Je n'ai pas écouté ma propre règle.\n\n\nJe ne sais pas depuis combien de temps je suis ainsi. Le train dévore le temps. Trop longtemps, je crois.\n\nMais aujourd'hui le brouillard s'est levé. Je peux de nouveau goûter une pomme. Il est temps, Della. Je vais à la porte.\n\nSoren",
+        "Della.\n\nIl y a des gens sur ce train qui se sont arrêtés. On les croise. Leurs yeux sont ailleurs. Je les ai toujours plaints.\n\nAprès le noir, je suis devenue l'une d'eux. Je ne sais pas pour combien de temps.\n\n\nLe train dévore le temps. Je crois qu'il a dévoré trop du mien. J'ai honte des pommes que j'ai laissées refroidir.\n\nMais je suis éveillée maintenant. Je peux porter le deuil et marcher quand même. Alors je vais à la porte. Il est enfin temps.\n\nSoren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lettre six",
+      "variants": [
+        "Pip.\n\nTu as demandé après ta mère, et je t'ai reconnue aussitôt. J'avais marché avec elle, jusqu'à ce que le noir la prenne.\n\nTu n'as vu qu'une femme avec une pomme. Je te l'ai donnée, et tu nous as appelées amies.\n\n\nTu m'as tout raconté d'elle. Je me suis tue.\n\nJ'ai dit ta mère a l'air merveilleuse. C'est sorti creux, comme une chose qu'on dit mais qu'on ne croit plus. Tu vas quand même la retrouver.\n\nSoren",
+        "Pip.\n\nTu avais son visage. Je t'ai reconnue avant que tu finisses de demander. Elle a marché avec moi jusqu'à ce qu'elle tombe dans le noir et n'en remonte pas.\n\nTu es sa fille, à sa recherche, et tu ne sais pas qu'elle est partie.\n\n\nTu as demandé depuis combien de temps j'étais là. Je n'ai pas voulu le dire. Tu m'as parlé d'elle.\n\nJe me suis tue. J'ai dit qu'elle a l'air merveilleuse. Un mot de plus aurait été dire qu'elle est morte. Alors je t'ai laissée continuer à chercher. Pardonne-moi, mon cœur.\n\nSoren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Lettre sept",
+      "variants": [
+        "Pip.\n\nJe t'ai enfin parlé de la porte. Le vrai chemin du retour. Traverse-la, ai-je dit, à l'instant où tu la trouveras.\n\nTu as dit que tu t'assiérais à côté et attendrais ta mère. J'ai dit d'accord. Cette fois je le pensais.\n\n\nJe partais, la main sur le chemin du retour. Mais je ne sortirai pas du noir tant qu'une enfant y attend.\n\nAlors je suis la gardienne de la porte maintenant. Elle attend une mère que je sais partie, et jamais je ne le lui dis.\n\nSoren",
+        "Pip.\n\nJe t'ai donné le chemin du retour. Le vrai, enfin. Je t'ai dit de le traverser et de ne pas regarder en arrière.\n\nTu ne le feras pas. Tu t'assiéras à côté et garderas la place pour ta mère. Je n'ai pas discuté. Pour une fois j'ai pensé la bonté.\n\n\nJ'avais mon propre chemin du retour dans la main. Je l'ai laissé partir.\n\nJe vieillirai à cette porte, la donnant sans jamais m'en servir pour personne. Une enfant attend ici une mère qui est partie, et je garde la vérité que jamais je ne dirai.\n\nSoren"
+      ]
+    }
+  ]
+}

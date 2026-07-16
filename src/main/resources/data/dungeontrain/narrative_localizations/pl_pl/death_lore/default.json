@@ -1,0 +1,323 @@
+[
+  {
+    "page": "fall",
+    "weight": 3,
+    "question": "Czym jest Dungeon Train?",
+    "narration": "Wagon {carriage}. Tam właśnie dosięgła cię ciemność. Czy już to rozumiesz? Dungeon Train się nie zatrzymuje — po prostu jedzie dalej, głębiej, na zawsze."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": {
+      "min_carriage": 100
+    },
+    "question": "Czym jest Dungeon Train?",
+    "narration": "{carriage} wagonów w głąb ciemności. Niewielu dojeżdża tak daleko, nim linia ich zabierze. Jeszcze mniej wsiada ponownie."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": {
+      "max_carriage": 3
+    },
+    "question": "Czym jest Dungeon Train?",
+    "narration": "Wagon {carriage}. Ledwie na pokładzie, a ciemność już cię miała. Linia jest cierpliwa — może sobie na to pozwolić."
+  },
+  {
+    "page": "deeds",
+    "weight": 3,
+    "question": "Po co tu jesteś?",
+    "narration": "Powaliłeś {mobs} istot w ciemności i przypłaciłeś to {hearts} sercami.\nZ {met} dusz, które spotkałeś, {slain} skończyłeś — a {friends} nazwałeś przyjacielem."
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "Co masz właściwie robić?",
+    "narration": "Żelazo i ostrze, zebrane z ciemności i doniesione aż tu. Nic z tego nie wystarczyło — może nigdy nie o to chodziło."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_books": 5
+    },
+    "question": "Co masz właściwie robić?",
+    "narration": "Przeczytałeś {books} ksiąg linii i wciąż dźwigałeś stal. Wiedza i ostrze, a ciemność zabrała oboje."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_friends": 5
+    },
+    "question": "Czy byli tego warci?",
+    "narration": "Zyskałeś na linii {friends} przyjaciół, a ona i tak cię zabrała. Może to jedyna liczba, którą było ci dane zachować."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_mobs": 200
+    },
+    "question": "Iloma odpłaciłeś ciemności tym samym?",
+    "narration": "{mobs} istot padło od twej ręki, nim ty padłeś od ich. Linia nie osądza. Tylko liczy."
+  },
+  {
+    "page": "lives",
+    "weight": 3,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "To wszystko dobre pytania",
+    "narration": "To nie są znaki jednego życia. Przez wszystkie {deaths} — każdą ciemność, w którą wsiadłeś, każdy raz, gdy linia cię zabrała, a ty i tak wróciłeś — oto cała twoja podróż."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 1,
+      "max_deaths": 1
+    },
+    "question": "Czy jedno życie tak łatwo wydać?",
+    "subline": "twój pierwszy upadek na linii.",
+    "narration": "Nie ma innych żyć, by je zważyć z tym — jeszcze nie. Oto ty cały: wszystko, co uczynione, odkąd pierwszy raz wsiadłeś. Linia to zapamięta. Ty też powinieneś."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 10
+    },
+    "question": "To wszystko dobre pytania",
+    "narration": "To nie są znaki jednego życia. {deaths} razy ciemność cię zabrała i {deaths} razy wsiadłeś ponownie."
+  },
+  {
+    "page": "platform",
+    "weight": 3,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "Wsiądziesz ponownie, czy zejdziesz w ciszę?",
+    "narration": "Peron jest pusty. Gwizd rozlega się daleko na linii. Ona biegnie bez końca — i, jak się zdaje, ty również.",
+    "epitaph": "{deaths}. z upadłych. może nie ostatni."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 1,
+      "max_deaths": 1
+    },
+    "question": "Wsiądziesz ponownie — teraz, gdy wiesz, jak to się kończy?",
+    "narration": "Peron jest pusty, tak samo jak wtedy, gdy pierwszy raz wsiadłeś. Gwizd rozlega się daleko na linii. Upadłeś raz. Czy będzie drugi raz, to, jak zawsze, twoja decyzja.",
+    "epitaph": "pierwszy z upadłych. linia jest cierpliwa — poczeka na resztę."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 20
+    },
+    "question": "Czy w ogóle musisz pytać?",
+    "narration": "Peron zna już twoją twarz. Gwizd brzmi tak, jak zawsze brzmi. Już wiesz, co będzie dalej.",
+    "epitaph": "{deaths}. z upadłych — i, jak się zdaje, nie ostatni."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Czym jest Dungeon Train?",
+    "narration": "Wagon {carriage}. Ciemność czekała tam od zawsze — ty jedynie przybyłeś, by ją spotkać."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Czym jest Dungeon Train?",
+    "narration": "Wagon {carriage} i ani dalej. Linia nie chowa urazy ani litości; po prostu jedzie dalej."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Czym jest Dungeon Train?",
+    "narration": "Latarnie wagonu {carriage} wciąż kołyszą się tam, gdzie upadłeś. Pociąg nie zwalnia, by spojrzeć."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Czym jest Dungeon Train?",
+    "narration": "Dotarłeś do wagonu {carriage}, nim podłoga świata ustąpiła. Linia jedzie dalej bez twego ciężaru."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Czym jest Dungeon Train?",
+    "narration": "Wagon {carriage}. Gdzieś naprzód tor wciąż rozwija się w czerń, obojętny, że już cię na nim nie ma."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Czym jest Dungeon Train?",
+    "narration": "Tu, w wagonie {carriage}, ciemność w końcu dorównała twemu krokowi. Zawsze miała to zrobić."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Po co tu jesteś?",
+    "narration": "Powaliłeś {mobs} istot w ciemności i oddałeś na to {hearts} serc. Z {met} dusz, które minąłeś, {slain} zwaliłeś, a {friends} dopuściłeś blisko."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Po co tu jesteś?",
+    "narration": "{mobs} istot padło od ciebie i {hearts} serc opadło z ciebie. Skrzyżowałeś się z {met} innymi duszami w ciemności — skończyłeś {slain}, zachowałeś {friends} — a potem przyszła twoja kolej."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Po co tu jesteś?",
+    "narration": "Z ciemności wziąłeś {mobs}; z siebie wydałeś {hearts} serc. {met} dusz dzieliło linię: {slain} skończyłeś, {friends} utrzymałeś przy sobie."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "max_friends": 0
+    },
+    "question": "Po co tu jesteś?",
+    "narration": "Powaliłeś {mobs} istot i wykrwawiłeś {hearts} serc. Spotkałeś {met} dusz, skończyłeś {slain} i żadnej nie nazwałeś przyjacielem. W samotności ciemność jest prostsza."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_slain": 5
+    },
+    "question": "Czym odpowiedziałeś ciemności?",
+    "narration": "Z {met}, które spotkałeś, {slain} zwaliłeś — i {mobs} istot więcej w ciemności prócz tego — za {hearts} serc, a {friends} oszczędziłeś, by nazwać przyjacielem. Linia nie nazywa tego morderstwem."
+  },
+  {
+    "page": "gear",
+    "weight": 2,
+    "question": "Co masz właściwie robić?",
+    "narration": "Zebrałeś wszystko, co zdołałeś udźwignąć z wagonów. Linia pozwala ci to zatrzymać — nie ma pożytku z ładunku, tylko z pasażerów."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_loot": 0
+    },
+    "question": "Co masz właściwie robić?",
+    "narration": "Nie rozłupałeś ani jednej skrzyni na linii — dźwigałeś tylko to, z czym wsiadłeś, i wywijałeś tym aż do końca. Ciemność zatrzymuje to, czego nie chciałeś wziąć."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_loot": 9
+    },
+    "question": "Co masz właściwie robić?",
+    "narration": "Garść otwartych skrzyń — {loot} w sumie — i ostrze trzymane blisko. Linia jest hojna dla tych, którzy się zatrzymują; ty ledwie przystanąłeś."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_loot": 250
+    },
+    "question": "Co masz właściwie robić?",
+    "narration": "{loot} pojemników opróżnionych do twego plecaka. Ogołociłeś ciemność ze wszystkiego, co nie było przybite, a i tak zabrała jedyną rzecz, która się liczyła."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_books": 0
+    },
+    "question": "Co masz właściwie robić?",
+    "narration": "Ani jednej przewróconej stronicy — tylko stal zebrana i wywijana. Linia chowa swoje historie dla tych, którzy zatrzymują się, by czytać."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_books": 10
+    },
+    "question": "Co masz właściwie robić?",
+    "narration": "Przeczytałeś {books} ksiąg linii i dźwigałeś stal na dodatek. Mądrość i ostrze, a ciemność była cierpliwa dla obojga."
+  },
+  {
+    "page": "lives",
+    "weight": 2,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "To wszystko dobre pytania",
+    "narration": "Policz je: {deaths} razy linia cię zabrała, {deaths} razy odpowiedziałeś na gwizd. Oto twój kształt, wykreślony w pożegnaniach."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 3
+    },
+    "question": "To wszystko dobre pytania",
+    "narration": "Przez {deaths} żyć liczby gromadzą się jak kurz na szynach. Nic nie ginie; linia niczego nie zapomina."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "Czemu wciąż wsiadasz?",
+    "narration": "{deaths} upadków, a ty wciąż wsiadasz. Linia przestała się zastanawiać, czy wrócisz. Ty też, być może."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "Czemu wciąż wsiadasz?",
+    "narration": "{deaths} śmierci za tobą i ten sam gwizd przed tobą. Nie jesteś już pasażerem — jesteś częścią rozkładu jazdy."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "Czemu wciąż wsiadasz?",
+    "narration": "Ciemność przestała być obcą; {deaths} razy poznałeś jej twarz. To swoisty rodzaj straty."
+  },
+  {
+    "page": "platform",
+    "weight": 2,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "Wsiądziesz ponownie, czy pozwolisz peronowi cię zatrzymać?",
+    "narration": "Gwizd już brzmi, daleko naprzód. Nie czeka na ciebie — nigdy nie czekał — a jednak stoisz tu, postanawiając za nim pójść.",
+    "epitaph": "{deaths}. z upadłych. linia jedzie dalej."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 3
+    },
+    "question": "Wsiądziesz ponownie?",
+    "narration": "Peron jest cichy. Gdzieś pociąg jest już pełen czyjejś historii. Zawsze znajdzie się miejsce na jeszcze jedną twoją.",
+    "epitaph": "{deaths}. z upadłych. może nie ostatni."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "Czy linia w ogóle musi pytać?",
+    "narration": "Znasz ciężar drzwi, chłód stopnia. Ciemność to już tylko miejsce, które odwiedzasz.",
+    "epitaph": "{deaths}. z upadłych — bywalec linii."
+  }
+]

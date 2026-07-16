@@ -1,0 +1,15 @@
+{
+  "id": "new_world",
+  "title": "Un nouveau monde",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Ahhh, un nouveau monde ! Tout frais !\nAdieu, vieux monde !\nOn n'a pas besoin de toi !\n\nCe vieux monde nous freinait !\nPlus maintenant, avec ce grand et magnifique nouveau monde !\n\nRegarde-le ! Avec toute sa nouveauté, ses nouveaux blocs et ses nouvelles possibilités !",
+    "C'est... différent. Un tout nouveau monde !",
+    "Nouveau monde, nouveau train... attends... c'est le même train ?\n\nCe n'est pas possible !\nLe train peut traverser les mondes ?\n\nUn train interdimensionnel !?\n\nJ'imagine que ce serait un train qui voyage du monde principal vers le Nether et l'End, mais ça... c'est différent\n\nIl voyage au-delà des dimensions !\n De nouvelles.. réalités..",
+    "Eh bien, voilà ce qui arrive quand on enfreint les règles. Un tout nouveau monde !\n\nTu as vraiment fait fort cette fois, hein ?\nTu as dû abandonner cet autre monde.\n\nÇa en valait la peine ?\n\nEs-tu enfin heureux ?",
+    "Regarde cet endroit !\nTout est nouveau et différent.\n\nDe nouveaux blocs,\nde nouveaux mobs,\nun nouveau train !\n\nEst-ce un nouveau train...?\n\nOu avons-nous simplement avancé si loin sur le même train que nous sommes entrés dans un nouveau monde ?",
+    "Nouveau monde, nouvelle vie !\n\nEnfin, tu peux être la version de toi que tu étais destiné à être !\n\nSans le vieux monde qui te tire vers le bas !"
+  ]
+}

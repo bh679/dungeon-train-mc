@@ -1,0 +1,82 @@
+{
+  "id": "adventureitemnames:has_a_x_x",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "Heeft",
+      "refs": [
+        {
+          "ref": "adventureitemnames:has_a",
+          "weight": 50.0
+        }
+      ]
+    },
+    {
+      "chance": 0.3465835,
+      "connection": " ",
+      "newline": false,
+      "label": "sporen van",
+      "refs": [
+        {
+          "ref": "adventureitemnames:traces_of",
+          "weight": 6.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "de/een",
+      "refs": [
+        {
+          "ref": "adventureitemnames:determiners",
+          "weight": 6.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "een X X",
+      "refs": [
+        {
+          "ref": "adventureitemnames:it_has_a",
+          "weight": 31.0
+        }
+      ]
+    },
+    {
+      "chance": 0.2516847,
+      "connection": " ",
+      "newline": false,
+      "label": "Bijv. nw.",
+      "refs": [
+        {
+          "ref": "adventureitemnames:material_or_element",
+          "weight": 25.0
+        },
+        {
+          "ref": "adventureitemnames:colors",
+          "weight": 27.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "Werkwoord",
+      "refs": [
+        {
+          "ref": "adventureitemnames:verbs_singular",
+          "weight": 42.0
+        }
+      ]
+    }
+  ]
+}

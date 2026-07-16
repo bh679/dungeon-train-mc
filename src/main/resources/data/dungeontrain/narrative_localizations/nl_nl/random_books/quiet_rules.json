@@ -1,0 +1,31 @@
+{
+  "id": "quiet_rules",
+  "title": "Stille regels van de trein",
+  "author": "Onbekend",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Er zijn regels aan deze trein, al zal niemand ze je vertellen.\n\nOpen geen kist die je al hebt geopend.\nVolg dezelfde passagier niet te lang.\nAls de lantaarns twee keer op rij dimmen, blijf lopen.\n\nDit zijn de regels die ik voor mezelf heb gemaakt.\nMisschien zijn het niet de jouwe.\nMaar je maakt binnenkort je eigen regels.",
+    "Regel 71\nWees voorzichtig met wat je eet, niet elk stuk vlees is zo goed als Rat.",
+    "Regel 108\nAls een vreemde naar je naam vraagt, negeer hem.",
+    "Regel 96\nWees bedacht op de schedels, sommige koesteren nog gevoelens.",
+    "Regel 327\nGa niet dubbel terug. Als je omkeert, blijf teruggaan.",
+    "Regel 5\nVertrouw de lantaarns meer dan de kaarten. De kaarten zijn oud.",
+    "Regel 44\nVoetstappen achter je in een lege wagon? Loop sneller. Ren nooit.",
+    "Regel 211\nAls je je eigen gezicht op een andere passagier ziet, geef er geen blijk van. Zij hebben het nog niet door.",
+    "Regel 401\nFluit niet nadat de lantaarns dimmen. Iets anders fluit terug.",
+    "Regel 323\nAlleen wie degene die de trein bouwde wil bereiken, zegt \"@Dev\". Voor de weinige uitverkorenen zal het de grote schepper oproepen.",
+    "Regel 17\nDe trein bewaart de lijst van wat je hier kwam doen, zelfs nadat je hem bent kwijtgeraakt.\n\n\"Druk op {key.advancements}\", zeggen ze. Maar wat betekent dat? Wat is \"{key.advancements}\"? Hoe druk je erop? Waartegen drukken? Hoe drukken???",
+    "Regel 205\nToon respect aan alle avonturiers bij de eerste ontmoeting. Buig, hurk, of geef geschenken.\n\nWin een avonturier volledig voor je en ze veranderen. Ze groeten je van de andere kant van een wagon. De aardige drukken je ongevraagd geschenken in de handen. Sommige volgen je. Sommige vechten aan je zijde, en houden niet op tot het ding dat je bedreigde is geveld.",
+    "Regel 29\nNiet elke avonturier is een vriend. Sommigen reizen naast je; sommigen trekken staal bij het zien van je gezicht. Je kunt niet aan het kijken zien welke. Je leert het door te leven.",
+    "Regel 63\nEen geschenk maakt een avonturier altijd warmer voor je. Geef iets beters dan wat ze al dragen en het maakt ze nog warmer. Een reservezwaard heeft me meer vrienden opgeleverd dan vriendelijke woorden ooit deden.",
+    "Regel 140\nGa tussen een avonturier en wat hen aanvalt in staan. Ze onthouden wie een kling trok ter verdediging, en betalen het terug.",
+    "Regel 88\nSteek de wagons over naast een avonturier. Reis lang genoeg samen en er ontstaat iets tussen jullie. Het is de traagste weg naar een vriend, en de zekerste.",
+    "Regel 174\nSla een avonturier en ze keren zich tegen je — maar niet voor altijd. Buig opnieuw, en blijf buigen. Een wond die je toebracht kan worden geheeld door degene die hem toebracht.",
+    "Regel 256\nEen avonturier let op wie je slaat. Vel iemand van wie ze houden en ze zullen het je nooit vergeven. Vel iemand die ze haten, en zie ze warmer voor je worden.",
+    "Regel 312\nTrek je kling bij een bange avonturier en ze vluchten; bij een dappere en ze vallen aan. Hetzelfde staal, twee uitkomsten. Een terugtocht is geen vrede.",
+    "Regel 156\nVersleten staal is geen verbruikt staal. Zet een falend stuk naast zijn tweeling en de twee herstellen tot één — kling of plaat, dezelfde truc geldt.\n\nHet herstel behoudt wat je ook links legde. Leg daar je beste. Rechts is slechts brandstof.",
+    "Behandel andere passagiers goed.\nHet zal je goed van pas komen\nin je volgende leven.\n\nDe echo's onthouden.",
+    "De echo's van ons verleden\nweerkaatsen vorige levens naar ons terug.\n\nWees vriendelijk.\n\nMisschien kun je\nhet tot vriend maken."
+  ]
+}

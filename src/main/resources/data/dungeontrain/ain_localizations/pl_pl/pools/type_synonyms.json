@@ -1,0 +1,509 @@
+{
+  "id": "adventureitemnames:type_synonyms",
+  "entries": [
+    {
+      "text": "Ostrze",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Miecz",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Wielki Miecz",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Tasak",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Szabla",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Głownia",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Rozpruwacz",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Rożen",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Topór",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Topór Bojowy",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Siekacz",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Siekierka",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Rozłupywacz",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Berdysz",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Tomahawk",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Drewnokruszacz",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Oskard",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Kilof",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Młot",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Obuch",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Graca",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Rębacz",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Perlik",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Drążnik",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Skałogryz",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Łopata",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Szpadel",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Kielnia",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Czerpak",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Kij do Kopania",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Ziemioruch",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Koparka",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Piaskoczerpak",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Motyka",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Kosa",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Kultywator",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Spulchniacz",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Grabie",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Żniwiarz",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Pług",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Sierp",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Hełm",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Kapelusz",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Czapka",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Korona",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Kaptur",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Nakrycie Głowy",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Czepiec",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Myca",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Diadem",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Mózgownica",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Tunika",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Koszula",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Zbroja",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Kirys",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Kamizelka",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Kolczuga",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Kubrak",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Śliniak",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Nogawice",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Spodnie",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Długasy",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Portki",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Nagolenniki",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Bryczesy",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Luźne Spodnie",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Pończoszyska",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Buty",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Trzewiki",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Sandały",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Kopyta",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Kapcie",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Kalosze",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Tupacze",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Rękawice na Stopy",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Chodaki",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Tarcza",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Puklerz",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Egida",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Bastion",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Tarczka",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Pawęż",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Obrońca",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Zatyczka",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "Spieler",
+  "item.playermob.player_mob_spawn_egg": "Spieler-Spawn-Ei",
+  "item.playermob.player_mob_aggressive_spawn_egg": "Aggressives Spieler-Spawn-Ei",
+  "item.playermob.player_mob_friendly_spawn_egg": "Freundliches Spieler-Spawn-Ei",
+  "item.playermob.player_mob_passive_spawn_egg": "Passives Spieler-Spawn-Ei",
+  "item.playermob.player_mob_skeptical_spawn_egg": "Skeptisches Spieler-Spawn-Ei",
+  "item.playermob.player_mob_shy_spawn_egg": "Schüchternes Spieler-Spawn-Ei",
+  "container.playermob.player_mob": "Spieler"
+}

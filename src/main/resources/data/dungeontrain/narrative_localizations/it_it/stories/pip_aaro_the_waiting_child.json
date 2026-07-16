@@ -1,0 +1,47 @@
+{
+  "id": "pip_aaro_the_waiting_child",
+  "character": "Pip Aaro",
+  "story": "La bambina che aspetta",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettera uno",
+      "variants": [
+        "Mi chiamo Pip. Ho otto anni.\n\nSono su un treno che non conosco. I sedili sanno di cappotto della nonna.\n\nUn topo mi ha dato questo foglio. Un topo vero. Con i vestiti.\n\nSto cercando mamma.\n\nUn pochino spaventata. Solo un pochino.\n\nPip",
+        "Mi sono addormentata su un treno con mamma. Mi sono svegliata e mamma non c'era più.\n\nIl treno adesso è diverso. Il mio zaino è diverso. Il libro arancione non è dentro.\n\nUn topo mi ha dato questo foglio. Portava un gilè.\n\nTroverò mamma. Ci sono tantissimi vagoni.\n\nNon sto piangendo.\n\nPip"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettera due",
+      "variants": [
+        "Ho chiesto a un signore dov'è il controllore.\n\nPortava un cappotto giallo. Ha riso. Ha detto tesoro, non c'è nessun controllore. Ha detto che il treno non si ferma.\n\nNon gli credo. I treni si fermano.\n\nIl signore dal cappotto giallo adesso dorme molto. Credo sia triste.\n\nIo non diventerò così.\n\nPip",
+        "Ho trovato un taccuino sotto un sedile.\n\nQualcuno ha contato i vagoni. È arrivato a 384 e si è fermato. Ha detto che non ha senso cercare la parte davanti.\n\nNon so cosa volesse dire. I treni hanno una parte davanti.\n\nMi tengo il taccuino. È come avere qualcuno con cui parlare.\n\nSembrava stanco. Io non sono ancora stanca.\n\nPip"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettera tre",
+      "variants": [
+        "Alcune persone del treno sono finte.\n\nSembrano vere. Ma non ti vedono. Ho salutato con la mano una signora ed è passata dritta accanto a me.\n\nAlcune persone CI sono davvero. Il signore dal cappotto giallo. Il topo. Una signora che mi ha dato una mela.\n\nSto facendo una lista delle persone vere. Sono quattro. Ci sono anch'io, probabilmente.\n\nPip",
+        "Ho fatto un piano.\n\nCamminare da una parte. Non voltarmi. Così sarei arrivata in fondo al treno.\n\nHo camminato tanto tempo. Quarantasette vagoni. Non ho guardato indietro.\n\nNon c'era un fondo. La fine sembrava il posto da cui ero partita. Lo stesso odore di nonna.\n\nNon capisco. Voglio mamma.\n\nPip"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettera quattro",
+      "variants": [
+        "La signora della mela adesso è mia amica. Si chiama Soren.\n\nÈ sul treno da tantissimo tempo. Non vuole dire quanto.\n\nSoren mi ha chiesto di mamma. Gliel'ho raccontato. È rimasta zitta. Poi ha detto che la mia mamma sembra meravigliosa.\n\nL'ha detto proprio come il signore dal cappotto giallo ha detto che il treno non si ferma.\n\nIo mamma la troverò lo stesso.\n\nPip",
+        "C'è uno slime nel mio vagone. L'ho chiamata Sassolino.\n\nÈ piccola e verde. Soren ha detto che è ancora troppo piccola per essere pericolosa. Io non ci credo, di Sassolino.\n\nMi segue fino alla porta ma non la attraversa. Credo che pensi che la porta sia un muro.\n\nMamma direbbe che uno slime è un mostro. Mamma si sbaglia su Sassolino.\n\nMi manca mamma.\n\nMa ho Sassolino.\n\nPip"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettera cinque",
+      "variants": [
+        "Soren mi ha parlato della porta.\n\nHa detto che c'è una porta sul treno che dà sull'esterno. Ha detto che se la trovo dovrei attraversarla.\n\nCi ho pensato tanto tempo. A mamma. A Sassolino.\n\nSe mamma è su questo treno devo continuare a cercare. Se non c'è, comunque non posso raggiungerla.\n\nQuando troverò la porta mi siederò accanto a lei. E aspetterò.\n\nSoren ha detto va bene, tesoro. Come se stavolta lo dicesse sul serio.\n\nPip",
+        "Ho scritto una lettera per mamma.\n\nSoren ha detto che a volte le persone passano tante volte per lo stesso vagone. Così la lascio dove passano tutti.\n\nDice il mio nome. Dice che ho un'amica che si chiama Soren e uno slime che si chiama Sassolino.\n\nDice che sto bene. Dice che sto aspettando.\n\nMamma la troverà. Le mamme trovano le cose.\n\nPip"
+      ]
+    }
+  ]
+}

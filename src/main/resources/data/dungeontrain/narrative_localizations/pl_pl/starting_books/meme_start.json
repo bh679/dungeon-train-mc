@@ -1,0 +1,14 @@
+{
+  "id": "meme_start",
+  "title": "Gra",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Hej, ty.\nNareszcie się obudziłeś.\n\nWitaj w Dungeon Train\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo masz robić?\nTo wszystko dobre pytania",
+    "Wstań.\nO, właśnie tak.\nMiałeś sen.\nWitaj w Dungeon Train\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo masz robić?\nTo wszystko dobre pytania",
+    "Witaj w Dungeon Train\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo masz robić?\nTo wszystko dobre pytania\n\nCzy jesteś Pasażerem nr 427?",
+    "Witaj w Dungeon Train\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo masz robić?\nTo wszystko dobre pytania\n\nZnasz Stanleya?\n\nStanley pracował dla firmy w wielkim budynku, gdzie był Pracownikiem nr 427.\n\nZadanie Pracownika nr 427 było proste: siedział przy biurku w Pokoju 427 i naciskał klawisze na klawiaturze.\n\nPolecenia docierały do niego przez monitor na biurku, mówiąc mu, które klawisze naciskać, jak długo je naciskać i w jakiej kolejności.\n\nAle ty nie jesteś Stanleyem.\n\nNie ma cię nawet w tamtym świecie.\n\nTutaj nie ma klawiatur.\n\nNie ma firm ani wielkich budynków.\n\nNie ma pracy.\n\nNie ma Stanleya.",
+    "Witaj w Dungeon Train\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo masz robić?\nTo wszystko dobre pytania\n\nale...\n\nDobre pytania nie zawsze dostają dobre odpowiedzi\n\nMożesz zadać dobre pytanie.\n\nChoć czasem ludzie kłamią.\n\nLudzie mogą zadać ci dobre pytanie.\n\ni czasem możesz okłamać samego siebie.\n\nw każdym razie, na pewno nie ma to tu znaczenia.\n\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo masz robić?\nCzy pociąg się kończy?\nCo byłoby na końcu pociągu?\n\nJest ciasto."
+  ]
+}

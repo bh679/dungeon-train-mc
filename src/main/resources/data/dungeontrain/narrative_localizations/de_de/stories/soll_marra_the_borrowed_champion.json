@@ -1,0 +1,55 @@
+{
+  "id": "soll_marra_the_borrowed_champion",
+  "character": "Soll Marra",
+  "story": "Die geliehene Meisterin",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Brief eins",
+      "variants": [
+        "Tag eins. Ausrüstung.\n\nEisenschwert, x2 (eines als Reserve laut Notizbuch).\nBogen, 64 Pfeile.\nVerzauberte Lederrüstung, komplett, Schutz I.\nEnderperlen, x16.\nBett, x1.\nRohe Kartoffeln, x32.\n\nDas Notizbuch verlangt Goldäpfel. Die Stadt hatte keine. Ich beschaffe sie unterwegs.\n\nDie Ratte ist echt. Ich habe sie erfasst.\n\nTag eins.\n\n- S. Marra",
+        "Tag eins. Ausrüstung.\n\nEisenschwert, x2.\nBogen, 64 Pfeile.\nVerzauberte Lederrüstung, Schutz I.\nEnderperlen, x16.\nBett.\nKartoffeln, x32.\n\nDas Notizbuch sagt, Goldäpfel sind nicht verhandelbar. Die Stadt hatte keine. Ich ging, bevor jemand merkte, dass ich weg war.\n\nEine Ratte in einer Weste gab mir dieses Papier. Sie sah traurig aus. Ich weiß nicht, wie ich sie erfassen soll.\n\nIch bin bereit.\n\n- Soll Marra"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Brief zwei",
+      "variants": [
+        "Das Notizbuch ist Halrics. Er begann es vor sechsundzwanzig Jahren, im Jahr, bevor er mich traf.\n\nDaten für das End. Säulenhöhen. Kristallkäfige. Reihenfolge der Käfigzerstörung. Bett-Explosions-Erträge. Perlenflugbahnen.\n\nEr ging nie.\n\nEr starb im Frühling. Etwas mit der Lunge. Das Notizbuch nennt es \"Erlöschen, kampflos.\"\n\nDie Drachin traf Halric nie.\n\nIch bringe es zu ihr.\n\n- S. Marra",
+        "Das Notizbuch ist Halrics. Er begann es in dem Jahr zu schreiben, bevor ich geboren wurde. Sechsundzwanzig Jahre voller Daten und kein Drache am Ende.\n\nSäulenhöhen. Kristallkäfige. Reihenfolge der Käfigzerstörung. Bett-Explosions-Erträge. Perlenflugbahnen. Der ganze Kampf, auf Papier.\n\nEr starb im Frühling. Das Notizbuch nennt es \"Erlöschen, kampflos.\" Ich glaube, es war seine Lunge. Er hustete viel. Er sprach das Wort nie aus.\n\nDie Drachin traf Halric nie.\n\nIch bringe ihn zu ihr.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Brief drei",
+      "variants": [
+        "Übung eins. Waggon 14.\n\nZiel: Zombie, ohne Rüstung.\nDistanz: 9 Blöcke.\nDeckung: eine Bank.\nBogen: voll gespannt, zwei Sekunden.\n\nHalrics Ansitz-Zyklus lässt sich anpassen. Die Waggonlampe steht für den Kristall. Zuerst den Kristall ausschalten. Drehen. Schießen.\n\nErgebnis: ein Schuss. Zielzeit im Notizbuch elf Sekunden. Meine, vier.\n\nDas Notizbuch sagt nicht, wie sich bereit anfühlt.\n\n- S. Marra",
+        "Übung eins. Waggon vierzehn.\n\nIch wählte einen Zombie, weil das Notizbuch mit Kristallen beginnt und ich keinen Kristall habe. Die Lampe an der Wand hatte die richtige Form.\n\nDeckung hinter der Bank. Neun Blöcke. Voll gespannt. Drehen. Schießen.\n\nDer Zombie ging mit einem Schuss zu Boden. Halrics Zielzeit war elf Sekunden. Ich brauchte vier.\n\nDa war ich bereit. Dann setzte ich mich auf die Bank, und der Waggon war still, und die Lampe schwang ein wenig.\n\nIch weiß nicht, was ich erwartet hatte.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Brief vier",
+      "variants": [
+        "Waggon 28. Begegnung.\n\nFahrgast: weiblich, Mitte fünfzig, grauer Wollmantel. Anscheinend echt.\n\nSie fragte nach meinem Namen. Ich gab Halrics Titel an. Lehrling von Halric.\n\nSie sagte: \"Halric. Also bist du seine Vierte.\"\n\nIch wusste nicht, dass es drei gegeben hatte.\n\nIch notierte ihre Sitznummer. Ich ging weiter.\n\nSichtung geschlossen.\n\n- S. Marra",
+        "Waggon achtundzwanzig. Eine Frau in einem grauen Mantel fragte nach meinem Namen.\n\nIch gab Halrics Titel an. Lehrling von Halric.\n\nSie sagte: \"Halric? Der Pfeilmacher mit dem Husten?\"\n\nIch wusste nicht, dass er Pfeilmacher war. Ich habe einen seiner Bögen im Rucksack.\n\nIch hätte mich setzen sollen. Ich hätte sie fragen sollen, was sie sonst noch wusste. Tat ich nicht. Ich ging zum nächsten Waggon und sitze nun hier und schreibe.\n\nSie ist noch auf Sitz 14. Glaube ich.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Brief fünf",
+      "variants": [
+        "Versuch 47. Enderauge.\n\nWurfvektor: vorwärts, fünfundzwanzig Grad über der Horizontalen. Laut Notizbuch, Seite neun.\n\nDas Auge hielt die Position. Sechs Sekunden. Es drehte sich gegen den Uhrzeigersinn, dann kam es zur Ruhe.\n\nPeilung: Nord zu Nordost.\n\nIch wechselte den Waggon. Ich warf erneut.\n\nPeilung: Nord zu Nordost.\n\nDer Waggon zeigt nach Süden.\n\nDas Auge liest eine Richtung ab. Der Zug liegt in keiner Richtung.\n\nIch habe aufgehört zu werfen.\n\n- S. Marra",
+        "Das Enderauge will nicht fliegen.\n\nIch warf es siebenundvierzig Mal. Vorwärts. Nach oben. Zur Seite. Zur Tür hinaus.\n\nDas Auge schwebt. Es dreht sich. Es wählt keine Richtung. Halric schrieb, ein Auge wähle immer. Das Auge, Seite neun: \"das einzig Ehrliche bei der Annäherung an eine Festung.\"\n\nEs ist ehrlich. Es gibt keine Festung.\n\nIch saß da, das Auge in der Hand. Es war warm. Jetzt ist es nicht mehr warm.\n\nIch weiß nicht, wohin ich gehe.\n\n- Soll"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Brief sechs",
+      "variants": [
+        "Ich habe das Notizbuch geschlossen.\n\nDer Einband ist aus braunem Leder. Im vorderen Deckel stehen Namen. Ich sah sie mir nicht an.\n\nIch schreibe auf der letzten Seite. Halric schrieb hier nicht.\n\nIch bin neunzehn. Ich habe nie einen Drachen gesehen. Ich will sie nicht töten.\n\nIch werde weitergehen, bis ich ein Fenster mit der richtigen Art Licht finde. Dann werde ich mich setzen.\n\nSoll Marra",
+        "Ich schloss das Notizbuch.\n\nDie letzte Seite ist leer. Ich saß lange mit ihr aufgeschlagen da.\n\nHalric steht nicht auf der letzten Seite. Halric steht auf den vorderen Seiten. Ich habe sie zu oft gelesen.\n\nIch bin neunzehn. Ich habe nie einen Drachen gesehen. Ich will sie nicht töten.\n\nIch weiß nicht, wohin dieser Zug fährt. Ich glaube, das ist in Ordnung.\n\nIch werde ein Fenster finden.\n\nSoll"
+      ]
+    }
+  ]
+}

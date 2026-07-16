@@ -1,0 +1,509 @@
+{
+  "id": "adventureitemnames:type_synonyms",
+  "entries": [
+    {
+      "text": "Klinge",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Schwert",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Großschwert",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Hackmesser",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Säbel",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Schneide",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Reißer",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Spieß",
+      "item_types": [
+        "minecraft:swords"
+      ]
+    },
+    {
+      "text": "Axt",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Streitaxt",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Hacker",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Beil",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Spalter",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Bardische",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Tomahawk",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Holzzertrümmerer",
+      "item_types": [
+        "minecraft:axes"
+      ]
+    },
+    {
+      "text": "Picke",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Spitzhacke",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Hammer",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Schlägel",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Karst",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Hauer",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Vorschlaghammer",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Tunnelgräber",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Felsbeißer",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
+    },
+    {
+      "text": "Schaufel",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Spaten",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Kelle",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Schöpfer",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Grabstock",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Erdbeweger",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Bagger",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Sandschaufel",
+      "item_types": [
+        "minecraft:shovels"
+      ]
+    },
+    {
+      "text": "Hacke",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Sense",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Grubber",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Pflüger",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Rechen",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Schnitter",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Pflug",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Sichel",
+      "item_types": [
+        "minecraft:hoes"
+      ]
+    },
+    {
+      "text": "Helm",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Hut",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Kappe",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Krone",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Kapuze",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Kopfstück",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Haube",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Kalotte",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Diadem",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Hirnschale",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
+    },
+    {
+      "text": "Waffenrock",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Hemd",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Rüstung",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Kürass",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Weste",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Kettenhemd",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Wams",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Lätzchen",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
+    },
+    {
+      "text": "Beinlinge",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Hose",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Lange Dinger",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Beinkleider",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Beinschienen",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Bundhosen",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Stoffhosen",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Strumpfdinger",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
+    },
+    {
+      "text": "Schuhe",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Stiefel",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Sandalen",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Hufe",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Pantoffeln",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Galoschen",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Trampler",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Fußfäustlinge",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Klapperlatschen",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
+    },
+    {
+      "text": "Schild",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Faustschild",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Ägis",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Bollwerk",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Tartsche",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Pavese",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Verteidiger",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    },
+    {
+      "text": "Stopper",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "joined_world",
+  "title": "Multiplayer?",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Welkom aan boord, avonturier!\nEen wereld gejoined, hè! Wat spannend.\n\nVerken samen, verbind je samen met de trein!\n\nMet meer mensen erbij zal de trein vast groeien!\n\nDenk je dat we meer treinwagons krijgen?",
+    "Hé, het is je gelukt! Je bent een nieuwe wereld ingegaan!\nEen nieuwe trein!\nWelkom bij de Dungeon Train!\n\nWat is de dungeon train?\nWaarom is hij hier?\nWat zul je vinden?\n\nSucces!",
+    "Het is je gelukt! Je bent een nieuwe wereld ingegaan!\nJe bent bij de Dungeon Train gekomen!\n\nMultiplayer,\nmeerdere mensen, in één enkele wereld!\nSamen.\n\nWat een technologie!\nComputers die verbinden.\nMensen die met elkaar omgaan,\nop een trein\nin je computer\nop het internet!"
+  ]
+}

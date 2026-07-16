@@ -1,0 +1,63 @@
+{
+  "id": "soren_the_keeper_of_the_door",
+  "character": "Soren",
+  "story": "A guardiã da porta",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta um",
+      "variants": [
+        "Quem quer que encontre este lugar,\n\nestá quente. Acabei de o deixar.\n\nA maçã é tua. Um presente que de certeza mereceste.\n\nAndo a bordo há mais tempo do que consigo contar. Deixei de procurar a frente há muito.\n\n\nUma coisa, meu querido. Mantém-te longe dos troços escuros.\n\nSeja o que for que perdeste, não está lá dentro. A escuridão guarda o que leva.\n\nCome algo primeiro.\n\nSoren",
+        "Se estás a ler isto, amor, és novo. Ou és bondoso. Ambas as coisas se gastam aqui.\n\nDeixei a maçã porque dar de comer a alguém é a última coisa aqui que ainda se parece com vencer.\n\n\nAcreditei uma vez que sairia. O comboio curou-me disso.\n\nEvita os troços escuros. Agora sei porquê. Custou mais do que eu tinha. A escuridão guarda o que leva.\n\nDescansa aqui um bocado.\n\nSoren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta dois",
+      "variants": [
+        "É real!\n\nAgora sei-o com certeza\n\nDurante anos falei às pessoas da porta.\n\nUma saída do comboio. Atravessa-a, dizia eu, se alguma vez a encontrares.\n\nAcreditava a meias. Damos às pessoas uma esperança de que não temos certeza. Ainda assim é esperança.\n\n\nHoje soube que é real. Não te vou dizer como. Mas agora sei-o.\n\nTodos estes anos dei uma esperança de que não tinha certeza. Agora a esperança é verdadeira.\n\nSe encontrares essa porta, querida.\n\nAtravessa-a.\n\nSoren",
+        "É real! É mesmo real!\n\nEu já tinha feito as pazes. A paz é só não querer nada. É uma espécie de sono.\n\nDepois soube que a porta é real, e o querer acordou de repente.\n\nAgora estou desperta outra vez. Não tenho a certeza de lho agradecer.\n\n\nPodia estar em casa de manhã. Esquecemo-nos de quão estranha se torna essa palavra. Casa.\n\nMas nunca passei ao lado de um rosto assustado aqui. Não vou começar agora.\n\nPor isso vou guiar outros até ela, a caminho de lá.\n\nAtravessa-a.\n\nSoren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta três",
+      "variants": [
+        "Della.\n\nEncontrei-te no fundo de uma má hora. Dei-te uma maçã. Não me fui embora.\n\nHá anos que não caminhava ao lado de ninguém. Tinha esquecido o peso disso.\n\nAgora procuramos a tua filha juntas. Dois pares de olhos.\n\n\nA porta é real, Della. Podias estar em casa.\n\nAbanaste a cabeça. Não te vais embora sem ela.\n\nUma menina pequena de oito anos. Um livro laranja na mochila. Ensinaste-a a ler. Pip.\n\nCome. Caminhamos ao romper do dia.\n\nSoren",
+        "Della.\n\nAnos sozinha, e depois tu. Devolveste-me algo de que eu tinha deixado de me permitir sentir a falta. Uma voz que responde.\n\nMesmo depois de este comboio te ter levado a filha, continuas a caminhar. Por isso ajudo-te a procurar. A minha porta pode esperar mais um momento.\n\n\nJá vi este comboio gastar pessoas até ao nada. Tenho medo de que te gaste a ti.\n\nExiges-te demasiado. Receio que tenhas razão em fazê-lo.\n\nA porta há de estar lá para nós as três. Assim que encontrarmos a pequena Philippa.\n\nCome. Caminhamos ao romper do dia.\n\nSoren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta quatro",
+      "variants": [
+        "Della.\n\nO rasto metia-se num troço escuro. Do tipo em que eu não entro. Supliquei-te que voltasses para trás.\n\nDisseste que vai para a frente, por isso vais para a frente. Dissemos coisas duras. Foram as últimas.\n\n\nDepois foi como se o chão cedesse. Acho que ouvi que caíste na escuridão entre as carruagens.\n\nOuvi o teu grito.\nDepois... nada.\n\n\nGritei o teu nome até ficar sem voz, e a escuridão não devolveu nada dele. A escuridão guarda o que leva.\n\nSoren",
+        "Della.\n\nDisse-te que o troço escuro te mataria. Disseste que o rasto da tua menina se metia nele.\n\nPor isso entraste. Eu queria que vivesses. Tu querias a tua filha. Tínhamos as duas razão. Essa é a parte cruel.\n\n\nRevi a queda mil vezes. Não há versão em que eu te agarre.\n\nJá não somos três. Quebrei a minha própria regra, e a escuridão levou-te. A escuridão guarda o que leva.\n\nSoren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta cinco",
+      "variants": [
+        "Della.\n\nDepois da escuridão, parei. Deixei de repartir maçãs. Deixei de olhar para os rostos. Caminhava, e não via passar as carruagens.\n\nO luto é o seu próprio troço escuro. Não dei ouvidos à minha própria regra.\n\n\nNão sei há quanto tempo estou assim. O comboio come o tempo. Tempo demais, acho eu.\n\nMas hoje o nevoeiro dissipou-se. Volto a saborear uma maçã. É a hora, Della. Vou até à porta.\n\nSoren",
+        "Della.\n\nHá pessoas neste comboio que pararam. Cruzas-te com elas. Os olhos estão noutro lado. Sempre tive pena delas.\n\nDepois da escuridão, tornei-me uma delas. Não sei por quanto tempo.\n\n\nO comboio come o tempo. Acho que comeu demasiado do meu. Envergonham-me as maçãs que deixei arrefecer.\n\nMas agora estou desperta. Consigo carregar o luto e ainda assim caminhar. Por isso vou até à porta. É finalmente a hora.\n\nSoren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta seis",
+      "variants": [
+        "Pip.\n\nPerguntaste pela tua mãe, e reconheci-te logo. Eu tinha caminhado com ela, até a escuridão a levar.\n\nSó viste uma mulher com uma maçã. Dei-ta, e chamaste-nos amigas.\n\n\nContaste-me tudo sobre ela. Fiquei calada.\n\nDisse que a tua mãe parece maravilhosa. Saiu-me oco, como uma coisa que se diz mas em que já não se acredita. Tu continuas decidida a encontrá-la.\n\nSoren",
+        "Pip.\n\nTinhas a cara dela. Reconheci-te antes de acabares de perguntar. Ela caminhou comigo até cair na escuridão e não voltar a subir.\n\nÉs a menina dela, à procura dela, e não sabes que ela já não está.\n\n\nPerguntaste-me há quanto tempo eu estava aqui. Não quis dizer. Falaste-me dela.\n\nFiquei calada. Disse que ela parece maravilhosa. Uma palavra a mais seria dizer que está morta. Por isso deixei-te continuar à procura. Perdoa-me, querida.\n\nSoren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Carta sete",
+      "variants": [
+        "Pip.\n\nPor fim falei-te da porta. O verdadeiro caminho para casa. Atravessa-a, disse eu, mal a encontrares.\n\nDisseste que te sentarias ao pé dela e esperarias pela tua mãe. Disse está bem. Desta vez falava a sério.\n\n\nEu já ia a sair, com a mão no caminho para casa. Mas não vou sair da escuridão enquanto uma criança espera dentro dela.\n\nPor isso agora sou a guardiã da porta. Ela espera por uma mãe que tenho a certeza de que já não está, e nunca lho digo.\n\nSoren",
+        "Pip.\n\nDei-te o caminho para casa. O verdadeiro, por fim. Disse-te para o atravessares e não olhares para trás.\n\nNão o farás. Vais sentar-te ao pé dele e guardar o lugar para a tua mãe. Não discuti. Por uma vez senti a bondade a sério.\n\n\nTinha o meu próprio caminho para casa na mão. Deixei-o ir.\n\nVou envelhecer nesta porta, a dá-la e a não a usar para ninguém. Uma criança espera aqui por uma mãe que já não está, e eu guardo a verdade que nunca direi.\n\nSoren"
+      ]
+    }
+  ]
+}

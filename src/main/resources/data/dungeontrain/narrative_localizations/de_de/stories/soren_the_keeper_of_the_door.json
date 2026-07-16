@@ -1,0 +1,63 @@
+{
+  "id": "soren_the_keeper_of_the_door",
+  "character": "Soren",
+  "story": "Die Hüterin der Tür",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Brief eins",
+      "variants": [
+        "Wer auch immer diesen Sitz findet,\n\ner ist warm. Ich bin eben erst von ihm aufgestanden.\n\nDer Apfel gehört dir. Ein Geschenk, das du gewiss verdient hast.\n\nIch bin länger an Bord, als ich zählen kann. Die Suche nach dem vorderen Ende habe ich vor langer Zeit aufgegeben.\n\n\nEines noch, Liebes. Meide die dunklen Abschnitte.\n\nWas immer du verloren hast, dort drin ist es nicht. Die Dunkelheit behält, was sie nimmt.\n\nIss zuerst etwas.\n\nSoren",
+        "Wenn du das liest, Liebes, dann bist du neu. Oder du bist gütig. Beides nutzt sich hier ab.\n\nIch habe den Apfel dagelassen, weil jemanden zu speisen das Letzte hier ist, das sich noch wie ein Sieg anfühlt.\n\n\nEinst glaubte ich, ich käme hinaus. Der Zug hat mich davon geheilt.\n\nMeide die dunklen Abschnitte. Jetzt weiß ich, warum. Es kostete mehr, als ich hatte. Die Dunkelheit behält, was sie nimmt.\n\nRuh dich hier eine Weile aus.\n\nSoren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Brief zwei",
+      "variants": [
+        "Sie ist echt!\n\nJetzt weiß ich es sicher\n\nJahrelang habe ich den Leuten von der Tür erzählt.\n\nEin Weg vom Zug hinaus. Geh hindurch, sagte ich, wenn du sie je findest.\n\nIch meinte es halb. Man gibt den Leuten Hoffnung, deren man sich nicht sicher ist. Es ist trotzdem Hoffnung.\n\n\nHeute habe ich erfahren, dass sie echt ist. Ich sage dir nicht, wie. Aber jetzt weiß ich es.\n\nAll die Jahre verschenkte ich eine Hoffnung, deren ich nicht sicher war. Nun ist die Hoffnung wahr.\n\nWenn du diese Tür findest, Schätzchen.\n\nGeh hindurch.\n\nSoren",
+        "Sie ist echt! Sie ist wirklich echt!\n\nIch hatte meinen Frieden gemacht. Frieden ist nur, nichts zu wollen. Es ist eine Art Schlaf.\n\nDann erfuhr ich, dass die Tür echt ist, und das Wollen erwachte mit einem Schlag.\n\nJetzt bin ich wieder wach. Ich bin nicht sicher, ob ich es dafür danke.\n\n\nBis zum Morgen könnte ich zu Hause sein. Man vergisst, wie fremd dieses Wort wird. Zu Hause.\n\nDoch ich bin hier nie an einem verängstigten Gesicht vorbeigegangen. Ich fange jetzt nicht damit an.\n\nAlso führe ich andere dorthin, auf meinem eigenen Weg dahin.\n\nGeh hindurch.\n\nSoren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Brief drei",
+      "variants": [
+        "Della.\n\nIch fand dich am Grund einer schlimmen Stunde. Ich gab dir einen Apfel. Ich ging nicht fort.\n\nEs ist Jahre her, dass ich neben jemandem ging. Ich hatte vergessen, wie schwer das wiegt.\n\nJetzt suchen wir gemeinsam nach deinem Kind. Zwei Paar Augen.\n\n\nDie Tür ist echt, Della. Du könntest zu Hause sein.\n\nDu hast den Kopf geschüttelt. Du gehst nicht ohne sie.\n\nEin kleines Mädchen von acht Jahren. Ein orangenes Buch in ihrer Tasche. Du hast ihr das Lesen beigebracht. Pip.\n\nIss. Wir gehen bei Tagesanbruch weiter.\n\nSoren",
+        "Della.\n\nJahre allein, und dann du. Du hast mir etwas zurückgegeben, das ich mir nicht mehr zu vermissen erlaubt hatte. Eine Stimme, die antwortet.\n\nSelbst nachdem dieser Zug dein Kind genommen hat, gehst du weiter. Also helfe ich dir bei der Suche. Meine Tür kann einen Augenblick länger warten.\n\n\nIch habe gesehen, wie dieser Zug Menschen zu nichts zermürbt. Ich fürchte, er wird auch dich zermürben.\n\nDu treibst dich zu sehr an. Ich fürchte, du hast recht damit.\n\nDie Tür wird für uns drei da sein. Sobald wir die kleine Philippa gefunden haben.\n\nIss. Wir gehen bei Tagesanbruch weiter.\n\nSoren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Brief vier",
+      "variants": [
+        "Della.\n\nDie Spur führte in einen dunklen Abschnitt. Die Art, die ich nicht betrete. Ich flehte dich an umzukehren.\n\nDu sagtest, sie führt nach vorn, also gehst du nach vorn. Wir sagten harte Dinge. Es waren die letzten.\n\n\nDann war es, als gäbe der Boden nach. Ich glaube, ich hörte, wie du in die Dunkelheit zwischen den Waggons stürztest.\n\nIch hörte deinen Schrei.\nDann... nichts.\n\n\nIch schrie deinen Namen, bis ich keine Stimme mehr hatte, und die Dunkelheit gab nichts davon zurück. Die Dunkelheit behält, was sie nimmt.\n\nSoren",
+        "Della.\n\nIch sagte dir, der dunkle Abschnitt würde dich töten. Du sagtest, die Spur deines Mädchens führe hinein.\n\nAlso gingst du hinein. Ich wollte, dass du lebst. Du wolltest deine Tochter. Wir hatten beide recht. Das ist das Grausame daran.\n\n\nIch habe den Sturz tausendmal durchgespielt. Es gibt keine Fassung, in der ich dich auffange.\n\nEs gibt jetzt kein Wir-drei. Ich brach meine eigene Regel, und die Dunkelheit nahm dich. Die Dunkelheit behält, was sie nimmt.\n\nSoren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Brief fünf",
+      "variants": [
+        "Della.\n\nNach der Dunkelheit hielt ich an. Ich hörte auf, Äpfel zu verteilen. Ich hörte auf, in Gesichter zu sehen. Ich ging, und ich sah die Waggons nicht vorüberziehen.\n\nTrauer ist ein eigener dunkler Abschnitt. Ich befolgte meine eigene Regel nicht.\n\n\nIch weiß nicht, wie lange ich schon so bin. Der Zug frisst die Zeit. Zu lange, glaube ich.\n\nDoch heute lichtete sich der Nebel. Ich kann wieder einen Apfel schmecken. Es ist Zeit, Della. Ich gehe zur Tür.\n\nSoren",
+        "Della.\n\nAuf diesem Zug gibt es Menschen, die stehen geblieben sind. Man begegnet ihnen. Ihre Augen sind woanders. Ich hatte immer Mitleid mit ihnen.\n\nNach der Dunkelheit wurde ich eine von ihnen. Ich weiß nicht, wie lange.\n\n\nDer Zug frisst die Zeit. Ich glaube, er hat zu viel von meiner gefressen. Ich schäme mich für die Äpfel, die ich kalt werden ließ.\n\nDoch jetzt bin ich wach. Ich kann die Trauer tragen und dennoch gehen. Also gehe ich zur Tür. Endlich ist es Zeit.\n\nSoren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Brief sechs",
+      "variants": [
+        "Pip.\n\nDu hast nach deiner Mutter gefragt, und ich erkannte dich sofort. Ich war mit ihr gegangen, bis die Dunkelheit sie nahm.\n\nDu sahst nur eine Frau mit einem Apfel. Ich gab ihn dir, und du nanntest uns Freunde.\n\n\nDu hast mir alles über sie erzählt. Ich wurde still.\n\nIch sagte, deine Mutter klingt wunderbar. Es kam hohl heraus, wie etwas, das man sagt, aber nicht mehr glaubt. Du wirst sie trotzdem finden.\n\nSoren",
+        "Pip.\n\nDu hattest ihr Gesicht. Ich erkannte dich, ehe du deine Frage zu Ende gestellt hattest. Sie ging mit mir, bis sie in die Dunkelheit fiel und nicht wieder heraufkam.\n\nDu bist ihr Mädchen, das nach ihr sucht, und du weißt nicht, dass sie fort ist.\n\n\nDu fragtest, wie lange ich schon hier sei. Ich wollte es nicht sagen. Du hast mir von ihr erzählt.\n\nIch wurde still. Ich sagte, sie klingt wunderbar. Ein Wort mehr hätte geheißen zu sagen, dass sie tot ist. Also ließ ich dich weitersuchen. Verzeih mir, Schätzchen.\n\nSoren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Brief sieben",
+      "variants": [
+        "Pip.\n\nEndlich habe ich dir von der Tür erzählt. Dem wahren Weg nach Hause. Geh hindurch, sagte ich, sobald du sie findest.\n\nDu sagtest, du würdest dich daneben setzen und auf deine Mutter warten. Ich sagte, gut. Diesmal meinte ich es ernst.\n\n\nIch war im Aufbruch, die Hand am Weg nach Hause. Doch ich gehe nicht aus der Dunkelheit hinaus, während ein Kind darin wartet.\n\nAlso bin ich jetzt die Hüterin der Tür. Sie wartet auf eine Mutter, die, da bin ich sicher, fort ist, und ich sage es ihr nie.\n\nSoren",
+        "Pip.\n\nIch gab dir den Weg nach Hause. Endlich den wahren. Ich sagte dir, du sollst hindurchgehen und nicht zurückblicken.\n\nDu wirst es nicht. Du wirst dich daneben setzen und deinen Platz für deine Mutter frei halten. Ich stritt nicht. Ausnahmsweise meinte ich die Freundlichkeit ernst.\n\n\nIch hatte meinen eigenen Weg nach Hause in der Hand. Ich ließ ihn los.\n\nIch werde an dieser Tür alt werden, sie verschenken und für niemanden nutzen. Ein Kind wartet hier auf eine Mutter, die fort ist, und ich bewahre die Wahrheit, die ich nie sagen werde.\n\nSoren"
+      ]
+    }
+  ]
+}

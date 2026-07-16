@@ -1,0 +1,14 @@
+{
+  "id": "meme_start",
+  "title": "The Game",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Ehi, tu.\nFinalmente sei sveglio.\n\nBenvenuto al Dungeon Train\nCos'è il treno?\nPerché sei qui?\nCosa dovresti fare?\nSono tutte belle domande",
+    "Alzati.\nEcco fatto.\nStavi sognando.\nBenvenuto al Dungeon Train\nCos'è il treno?\nPerché sei qui?\nCosa dovresti fare?\nSono tutte belle domande",
+    "Benvenuto al Dungeon Train\nCos'è il treno?\nPerché sei qui?\nCosa dovresti fare?\nSono tutte belle domande\n\nSei tu il Passeggero n. 427?",
+    "Benvenuto al Dungeon Train\nCos'è il treno?\nPerché sei qui?\nCosa dovresti fare?\nSono tutte belle domande\n\nConosci Stanley?\n\nStanley lavorava per un'azienda in un grande edificio dove era l'Impiegato n. 427.\n\nIl compito dell'Impiegato n. 427 era semplice: sedeva alla sua scrivania nella Stanza 427 e premeva pulsanti su una tastiera.\n\nGli ordini gli arrivavano attraverso un monitor sulla scrivania che gli diceva quali pulsanti premere, per quanto tempo premerli e in quale ordine.\n\nMa tu non sei Stanley.\n\nNon sei nemmeno in quel mondo.\n\nQui non ci sono tastiere.\n\nNon ci sono aziende né grandi edifici.\n\nNon c'è lavoro.\n\nNon c'è nessuno Stanley.",
+    "Benvenuto al Dungeon Train\nCos'è il treno?\nPerché sei qui?\nCosa dovresti fare?\nSono tutte belle domande\n\nma...\n\nAlle belle domande non toccano sempre belle risposte\n\nPuoi porre una bella domanda.\n\nAnche se a volte la gente mente.\n\nLa gente può porti una bella domanda.\n\ne a volte potresti mentire a te stesso.\n\ncomunque, sono certo che qui non sia rilevante.\n\nCos'è il treno?\nPerché sei qui?\nCosa dovresti fare?\nIl treno finisce?\nCosa ci sarebbe alla fine del treno?\n\nC'è la torta."
+  ]
+}

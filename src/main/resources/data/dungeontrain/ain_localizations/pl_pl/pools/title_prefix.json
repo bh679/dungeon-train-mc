@@ -1,0 +1,305 @@
+{
+  "id": "adventureitemnames:title_prefix",
+  "entries": [
+    {
+      "text": "Księżniczka"
+    },
+    {
+      "text": "Książę"
+    },
+    {
+      "text": "Królowa"
+    },
+    {
+      "text": "Król"
+    },
+    {
+      "text": "Władca"
+    },
+    {
+      "text": "Pani"
+    },
+    {
+      "text": "Mistrz"
+    },
+    {
+      "text": "Władczyni"
+    },
+    {
+      "text": "Sługa"
+    },
+    {
+      "text": "Bóg"
+    },
+    {
+      "text": "Bogini"
+    },
+    {
+      "text": "Zjawa"
+    },
+    {
+      "text": "Duch"
+    },
+    {
+      "text": "Tytan"
+    },
+    {
+      "text": "Syn"
+    },
+    {
+      "text": "Ojciec"
+    },
+    {
+      "text": "Matka"
+    },
+    {
+      "text": "Córka"
+    },
+    {
+      "text": "Siostra"
+    },
+    {
+      "text": "Brat"
+    },
+    {
+      "text": "Kochanek"
+    },
+    {
+      "text": "Zwiastun"
+    },
+    {
+      "text": "Niszczyciel"
+    },
+    {
+      "text": "Gladiator"
+    },
+    {
+      "text": "Barbarzyńca"
+    },
+    {
+      "text": "Prześladowca"
+    },
+    {
+      "text": "Zadżumiony"
+    },
+    {
+      "text": "Zwiastun Zguby"
+    },
+    {
+      "text": "Strażnik Płomieni"
+    },
+    {
+      "text": "Księżniczka"
+    },
+    {
+      "text": "Deweloper"
+    },
+    {
+      "text": "Główny Deweloper"
+    },
+    {
+      "text": "Twórca"
+    },
+    {
+      "text": "Właściciel"
+    },
+    {
+      "text": "Wynalazca"
+    },
+    {
+      "text": "Cesarz"
+    },
+    {
+      "text": "Zdobywca"
+    },
+    {
+      "text": "Kapitan"
+    },
+    {
+      "text": "Doktor"
+    },
+    {
+      "text": "Doktor Nauk"
+    },
+    {
+      "text": "Absolwent"
+    },
+    {
+      "text": "Szef Kuchni"
+    },
+    {
+      "text": "Majestat"
+    },
+    {
+      "text": "Burmistrz"
+    },
+    {
+      "text": "Prorektor"
+    },
+    {
+      "text": "Profesor"
+    },
+    {
+      "text": "Uczony"
+    },
+    {
+      "text": "Baron"
+    },
+    {
+      "text": "Baronowa"
+    },
+    {
+      "text": "Diuk"
+    },
+    {
+      "text": "Księżna"
+    },
+    {
+      "text": "Sir"
+    },
+    {
+      "text": "Dama"
+    },
+    {
+      "text": "Hrabia"
+    },
+    {
+      "text": "Hrabina"
+    },
+    {
+      "text": "Generał"
+    },
+    {
+      "text": "Rycerz"
+    },
+    {
+      "text": "Giermek"
+    },
+    {
+      "text": "Czempion"
+    },
+    {
+      "text": "Mistrz Świata"
+    },
+    {
+      "text": "Zwierzchnik"
+    },
+    {
+      "text": "Władca Świata"
+    },
+    {
+      "text": "Najwyższy Zwierzchnik"
+    },
+    {
+      "text": "Najwyższy Władca Świata"
+    },
+    {
+      "text": "Czarodziej"
+    },
+    {
+      "text": "Wiedźma"
+    },
+    {
+      "text": "Nekromanta"
+    },
+    {
+      "text": "Paladyn"
+    },
+    {
+      "text": "Bard"
+    },
+    {
+      "text": "Mędrzec"
+    },
+    {
+      "text": "Pustelnik"
+    },
+    {
+      "text": "Druid"
+    },
+    {
+      "text": "Alchemik"
+    },
+    {
+      "text": "Wyrocznia"
+    },
+    {
+      "text": "Szaman"
+    },
+    {
+      "text": "Biskup"
+    },
+    {
+      "text": "Święty"
+    },
+    {
+      "text": "Prorok"
+    },
+    {
+      "text": "Arcykapłan"
+    },
+    {
+      "text": "Papież"
+    },
+    {
+      "text": "Założyciel"
+    },
+    {
+      "text": "Prezydent"
+    },
+    {
+      "text": "Szef"
+    },
+    {
+      "text": "Kowal"
+    },
+    {
+      "text": "Łowca"
+    },
+    {
+      "text": "Zwiadowca"
+    },
+    {
+      "text": "Piwowar"
+    },
+    {
+      "text": "Druciarz"
+    },
+    {
+      "text": "Gruba Ryba"
+    },
+    {
+      "text": "Szycha"
+    },
+    {
+      "text": "Goblin"
+    },
+    {
+      "text": "Chochlik"
+    },
+    {
+      "text": "As"
+    },
+    {
+      "text": "Wódz"
+    },
+    {
+      "text": "Czcigodny"
+    },
+    {
+      "text": "Kumpel"
+    },
+    {
+      "text": "Ziomek"
+    },
+    {
+      "text": "Brachu"
+    },
+    {
+      "text": "Siora"
+    },
+    {
+      "text": "Czarodziej"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "id": "tomas_aaro_the_walking_father",
+  "character": "Tomas Aaro",
+  "story": "O pai que caminha",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta um",
+      "variants": [
+        "Minha querida.\n\nEncontrei o comboio.\nÉ real.\n\nE mesmo assim tenho dúvidas.\n\n\nDizem que o comboio leva aquilo de que precisas.\n\nNinguém diz o quê ao certo.\nSó espero que aquilo de que precisamos não seja demasiado.\n\nMal levo um bocado a bordo, e não tem fim.\n\n— Tomas",
+        "Disse à minha pequena que voltaria pela colheita.\n\nNão devia ter prometido uma estação. Não sei se este lugar as tem.\n\nMas este comboio guarda a nossa única esperança.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta dois",
+      "variants": [
+        "Minha pequena.\n\nHá homens mortos neste comboio. Andam.\n\nSei como isso soa.\n\nO Papá teve de lutar com um.\n\n\nAs minhas mãos conhecem a semente e a terra.\nHoje aprenderam que uma enxada corta nos dois sentidos.\n\nTive medo. Fi-lo na mesma. É isso que é ser corajoso.\n\nCaiu. Não estou ferido.\n\nO Papá continua a caminho de casa.\n\n— Papá",
+        "Minha pequena.\n\nFiz uma coisa que não posso desfazer. Um homem veio contra mim, só que já não era um homem.\n\nUsei o que tinha nas mãos.\n\n\nTu terias fechado os olhos. Eu mantive os meus abertos. Um de nós tinha de o fazer.\n\nDepois, as mãos tremeram-me como as tuas tremem com o frio.\n\nSegurei-as até pararem. Depois continuei a caminhar.\n\n— Papá"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta três",
+      "variants": [
+        "Minha querida.\n\nHoje um rato falou comigo. De pequeno colete.\n\nNão estou a perder a cabeça. Os outros também o veem.\n\nDeu-me papel, e um enigma.\n\n\n\"Uma semente não persegue a primavera\", disse. \"Espera. Os novos aprendem-no primeiro.\"\n\nDepois desejou-me sorte, e pareceu triste. Agradeci-lhe e continuei a caminhar.\n\n— Tomas",
+        "Minha querida.\n\nVoltei a cruzar-me com o rato. Fala como um cavalheiro, o que é estranho num rato.\n\nPerguntei-lhe por onde se ia para a frente.\n\n\n\"Não há frente para quem caminha\", disse. \"Só os que param é que são encontrados. Os pequenos sabem-no.\"\n\nNão tenho tempo para parar. Ainda assim desejou-me sorte.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta quatro",
+      "variants": [
+        "Minha querida.\n\nO comboio está cheio de caixas fechadas. Cada carruagem as tem.\n\nQualquer uma poderia guardar aquilo de que precisamos. Por isso abro-as todas.\n\n\nOuro. Ferro. O suficiente para recomprar a aldeia duas vezes.\n\nLevo tudo. É para ti, digo.\n\nVou parar na caixa certa. Também não paro de dizer isso.\n\n— Tomas",
+        "Minha querida.\n\nProponho-me sempre seguir em frente. E depois aparece outra caixa, e outra.\n\nUm homem podia encher um celeiro com o que deixei para trás.\n\n\nAgora só levo o que cabe na mochila. A mochila está sempre cheia.\n\nOntem não conseguia lembrar-me do que tinha vindo procurar a bordo.\n\nSó que o reconheceria. Por isso continuo a abrir caixas.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta cinco",
+      "variants": [
+        "não sei há quanto tempo aqui estou.\n\nas rodas fazem três notas. conto-as a elas em vez dos dias.\n\ntentei dizer em voz alta o nome da aldeia. não me saiu.\n\n\nainda sei do livro laranja. pequeno. laranja. ela nunca o largava.\n\nse me conseguir agarrar a isso, consigo agarrar o resto.\n\nnão consigo.\n\n— tomas",
+        "dou por mim a falar. em voz alta. sem ninguém ali.\n\nolho para as minhas mãos e não são de um lavrador. não sei de quem são.\n\n\ncontinuo a caminhar porque parar parece-se com morrer.\n\no rato disse o contrário. o rato. terei sonhado o rato.\n\nesqueço-me para o que caminho. caminho na sua direção na mesma.\n\n— tomas"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta seis",
+      "variants": [
+        "Minha querida.\n\nHá uma criança à frente. Lá ao fundo da carruagem.\n\nSegura algo laranja. Não o larga.\n\nO meu peito. O meu peito.\n\n\nÉ ela? Poderá ser, depois de tudo isto?\n\nQuem é a mulher ao lado dela? Onde está a mãe dela? Porque estaria uma criança aqui, sequer?\n\nOu terei perdido o juízo, e o comboio está só a ser bondoso?\n\n— Papá",
+        "Minha querida.\n\nUma criança, à frente na carruagem. Uma mulher que não conheço está sentada com ela.\n\nA criança tem algo laranja no colo.\n\nConheço aquele laranja.\n\n\nE se me aproximo e não é ela? O que resta de mim então?\n\nE se é? Porque está aqui? Onde estás tu? E quem é essa mulher?\n\nParei de caminhar. Depois de todo este tempo, parei.\n\n— Tomas"
+      ]
+    }
+  ]
+}

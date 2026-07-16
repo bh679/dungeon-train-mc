@@ -1,0 +1,42 @@
+{
+  "id": "adventureitemnames:similie_like_a",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "Глагол",
+      "refs": [
+        {
+          "ref": "adventureitemnames:verbs",
+          "weight": 42.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " как ",
+      "newline": false,
+      "label": "как некий",
+      "refs": [
+        {
+          "ref": "adventureitemnames:determiners",
+          "weight": 11.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " ",
+      "newline": false,
+      "label": "Сравнение «как некий»",
+      "refs": [
+        {
+          "ref": "adventureitemnames:type_synonyms",
+          "weight": 84.0
+        }
+      ]
+    }
+  ]
+}

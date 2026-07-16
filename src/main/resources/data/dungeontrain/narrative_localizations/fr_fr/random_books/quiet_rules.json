@@ -1,0 +1,31 @@
+{
+  "id": "quiet_rules",
+  "title": "Les règles tacites du train",
+  "author": "Inconnu",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Ce train a des règles, même si personne ne te les dira.\n\nN'ouvre pas un coffre que tu as déjà ouvert.\nNe suis pas le même passager trop longtemps.\nQuand les lanternes faiblissent deux fois de suite, continue de marcher.\n\nCe sont les règles que je me suis faites.\nElles ne sont peut-être pas les tiennes.\nMais tu te feras les tiennes, bien assez tôt.",
+    "Règle 71\nFais attention à ce que tu manges ; toute viande ne vaut pas celle du Rat.",
+    "Règle 108\nSi un inconnu te demande ton nom, ignore-le.",
+    "Règle 96\nMéfie-toi des crânes ; certains abritent encore des sentiments.",
+    "Règle 327\nNe reviens pas sur tes pas déjà refaits. Si tu fais demi-tour, continue en arrière.",
+    "Règle 5\nFie-toi aux lanternes plus qu'aux cartes. Les cartes sont vieilles.",
+    "Règle 44\nDes pas derrière toi dans un wagon vide ? Marche plus vite. Ne cours jamais.",
+    "Règle 211\nSi tu vois ton propre visage sur un autre passager, n'en montre rien. Il ne s'en est pas encore rendu compte.",
+    "Règle 401\nNe siffle pas après que les lanternes ont faibli. Autre chose siffle en retour.",
+    "Règle 323\nSeuls ceux qui souhaitent atteindre celui qui a construit le train disent « @Dev ». Pour les rares élus, cela invoquera le grand créateur.",
+    "Règle 17\nLe train garde la liste de ce que tu es venu faire ici, même après que tu l'as perdue.\n\n« Appuie sur {key.advancements} », disent-ils. Mais qu'est-ce que ça veut dire ? Qu'est-ce que « {key.advancements} » ? Comment appuie-t-on dessus ? Appuyer contre quoi ? Appuyer comment ???",
+    "Règle 205\nMontre du respect à tous les aventuriers dès la première rencontre. Incline-toi, accroupis-toi, ou offre des cadeaux.\n\nGagne pleinement un aventurier et il change. Il te salue d'un bout à l'autre d'un wagon. Les plus gentils te glissent des cadeaux dans les mains sans que tu le demandes. Certains te suivent. Certains combattent à tes côtés, et ne s'arrêtent pas tant que la chose qui te menaçait n'est pas à terre.",
+    "Règle 29\nTout aventurier n'est pas un ami. Certains voyagent à tes côtés ; d'autres tirent l'acier à la vue de ton visage. Impossible de savoir lequel d'un simple regard. On l'apprend en vivant.",
+    "Règle 63\nUn cadeau prédispose toujours un aventurier en ta faveur. Donne mieux que ce qu'il porte déjà et cela le prédispose davantage. Une épée en trop m'a acheté plus d'amis que les mots gentils ne l'ont jamais fait.",
+    "Règle 140\nMets-toi entre un aventurier et ce qui l'attaque. Ils se souviennent de qui a tiré la lame pour les défendre, et le rendent.",
+    "Règle 88\nTraverse les wagons aux côtés d'un aventurier. Voyagez ensemble assez longtemps et quelque chose s'installe entre vous. C'est le chemin le plus lent vers un ami, et le plus sûr.",
+    "Règle 174\nFrappe un aventurier et il se retournera contre toi — mais pas pour toujours. Incline-toi de nouveau, et continue de t'incliner. Une blessure que tu as infligée peut être guérie par celui qui l'a infligée.",
+    "Règle 256\nUn aventurier observe qui tu frappes. Abats quelqu'un qu'il aime et il ne le pardonnera jamais. Abats quelqu'un qu'il déteste, et regarde-le s'adoucir envers toi.",
+    "Règle 312\nTire ta lame près d'un aventurier effrayé et il fuit ; près d'un brave et il charge. Le même acier, deux issues. Une retraite n'est pas la paix.",
+    "Règle 156\nL'acier usé n'est pas l'acier épuisé. Place une pièce défaillante à côté de sa jumelle et les deux se réparent en une seule — lame ou plaque, le même truc fonctionne.\n\nLa réparation conserve ce que tu as posé à gauche. Pose-y ce que tu as de meilleur. La droite n'est que du combustible.",
+    "Traite bien les autres passagers.\nCela te servira bien\ndans ta prochaine vie.\n\nLes échos se souviennent.",
+    "Les échos de notre passé\nnous renvoient des vies passées.\n\nSois bienveillant.\n\nPeut-être pourras-tu\nt'en faire un ami."
+  ]
+}

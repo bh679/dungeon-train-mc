@@ -1,0 +1,31 @@
+{
+  "id": "quiet_rules",
+  "title": "Die stillen Regeln des Zuges",
+  "author": "Unbekannt",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Dieser Zug hat Regeln, auch wenn niemand sie dir nennen wird.\n\nÖffne keine Truhe, die du schon geöffnet hast.\nFolge nicht zu lange demselben Passagier.\nWenn die Laternen zweimal hintereinander dunkler werden, geh weiter.\n\nDas sind die Regeln, die ich mir selbst gemacht habe.\nVielleicht sind es nicht deine.\nAber bald wirst du dir deine eigenen machen.",
+    "Regel 71\nSei vorsichtig, was du isst; nicht jedes Stück Fleisch ist so gut wie Ratte.",
+    "Regel 108\nWenn ein Fremder nach deinem Namen fragt, ignoriere ihn.",
+    "Regel 96\nAchte auf die Schädel, manche hegen noch Gefühle.",
+    "Regel 327\nKehr nicht doppelt zurück. Wenn du umkehrst, geh weiter zurück.",
+    "Regel 5\nVertrau den Laternen mehr als den Karten. Die Karten sind alt.",
+    "Regel 44\nSchritte hinter dir in einem leeren Waggon? Geh schneller. Renn niemals.",
+    "Regel 211\nWenn du dein eigenes Gesicht auf einem anderen Passagier siehst, gib ihm nichts zu erkennen. Sie haben es noch nicht bemerkt.",
+    "Regel 401\nPfeif nicht, nachdem die Laternen dunkler geworden sind. Etwas anderes pfeift zurück.",
+    "Regel 323\nNur wer den erreichen will, der den Zug erbaut hat, sagt „@Dev“. Für die wenigen Auserwählten wird es den großen Schöpfer herbeirufen.",
+    "Regel 17\nDer Zug bewahrt die Liste dessen auf, wozu du hierhergekommen bist, selbst nachdem du sie verloren hast.\n\n„Drücke {key.advancements}“, sagen sie. Aber was bedeutet das? Was ist „{key.advancements}“? Wie wird es gedrückt? Gegen was drücken? Wie drücken???",
+    "Regel 205\nErweise allen Abenteurern bei der ersten Begegnung Respekt. Verbeuge dich, geh in die Hocke oder mach Geschenke.\n\nGewinn einen Abenteurer ganz für dich, und er verändert sich. Er grüßt dich quer durch einen Waggon. Die Gütigen drücken dir ungefragt Geschenke in die Hand. Manche folgen dir. Manche kämpfen an deiner Seite und hören nicht auf, bis das, was dich bedrohte, am Boden liegt.",
+    "Regel 29\nNicht jeder Abenteurer ist ein Freund. Manche reisen neben dir; manche ziehen beim Anblick deines Gesichts den Stahl. Du kannst es nicht am Aussehen erkennen. Du lernst es durch Erleben.",
+    "Regel 63\nEin Geschenk stimmt einen Abenteurer stets für dich ein. Gib Besseres, als er schon trägt, und es stimmt ihn noch mehr für dich ein. Ein übriges Schwert hat mir mehr Freunde eingebracht als freundliche Worte je.",
+    "Regel 140\nStell dich zwischen einen Abenteurer und das, was ihn angreift. Sie merken sich, wer zu ihrer Verteidigung die Klinge zog, und vergelten es.",
+    "Regel 88\nDurchquer die Waggons an der Seite eines Abenteurers. Reist lange genug zusammen, und etwas legt sich zwischen euch. Es ist der langsamste Weg zu einem Freund, und der sicherste.",
+    "Regel 174\nSchlag einen Abenteurer, und er wendet sich gegen dich — aber nicht für immer. Verbeug dich erneut, und verbeug dich weiter. Eine Wunde, die du geschlagen hast, kann von dem geheilt werden, der sie schlug.",
+    "Regel 256\nEin Abenteurer beobachtet, wen du schlägst. Erschlag einen, den er liebt, und er wird es dir nie verzeihen. Erschlag einen, den er hasst, und sieh zu, wie er sich für dich erwärmt.",
+    "Regel 312\nZieh deine Klinge nahe einem verängstigten Abenteurer, und er flieht; nahe einem tapferen, und er stürmt vor. Derselbe Stahl, zwei Enden. Ein Rückzug ist kein Frieden.",
+    "Regel 156\nAbgenutzter Stahl ist nicht verbrauchter Stahl. Leg ein versagendes Stück neben sein Gegenstück, und die zwei fügen sich zu einem — Klinge oder Platte, derselbe Kniff greift.\n\nDie Fügung behält, was du links hingelegt hast. Leg dein Bestes dorthin. Das rechte ist nur Brennstoff.",
+    "Behandle andere Passagiere gut.\nEs wird dir gut dienen\nin deinem nächsten Leben.\n\nDie Echos erinnern sich.",
+    "Die Echos unserer Vergangenheit\nspiegeln uns vergangene Leben zurück.\n\nSei gütig.\n\nVielleicht kannst du dich\nmit ihm anfreunden."
+  ]
+}

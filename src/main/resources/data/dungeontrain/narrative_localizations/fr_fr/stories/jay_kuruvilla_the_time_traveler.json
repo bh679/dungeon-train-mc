@@ -1,0 +1,91 @@
+{
+  "id": "jay_kuruvilla_the_time_traveler",
+  "character": "Jay Kuruvilla, le voyageur du temps",
+  "story": "Sans titre",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Lettre une",
+      "variants": [
+        "Test.\nJay Kuruvilla\n1 2 3 4 5 6 7 8 9 10 11 12\nAllô ?\nPapier magique ?\nEst-ce du papier magique ?\nUne souris me regarde. Elle a l'air triste."
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Lettre deux",
+      "variants": [
+        "Sort de feu.\nLancé !\nJay Kuruvilla"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Lettre trois",
+      "variants": [
+        "Bonjour,\nIci Jay Kuruvilla. Je suis à bord du train-prison infini.\nFaulhurst, la petite souris, m'a dit que ce n'est pas du papier magique et qu'il ne pensera probablement pas à me le dire quand nous nous reverrons. Il prétend que ce sera le dernier pour lui, mais pas pour moi. Je suis très perplexe.\nJe crois que j'aimerais rentrer chez moi, mais pas assez. J'aimerais encore voir ce qu'il y a d'autre dans ce train. Les monstres sont terrifiants, et mes armes se brisent sur eux. Je n'en ai aucune idée. Quand j'ai demandé à la souris, elle a ri et m'a dit que je comprendrais bien assez tôt. Il a déjà expliqué ça ?\nParole, je suis perplexe.\n-Jay Kuruvilla"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Lettre quatre",
+      "variants": [
+        "Bonjour,\nJ'ai travaillé très très dur et je me suis fait très mal mais j'ai réussi à tuer un monstre. J'ai retrouvé Faulhurst et il était surpris. Il semble beaucoup m'apprécier, il est très amical. Il m'a demandé comment je tue encore des monstres ? Je ne sais pas ce qu'il voulait dire. Il a secoué sa petite tête et m'a dit qu'il se parlait à lui-même.\nFaulhurst est étrange mais il rit beaucoup et il semble heureux de me voir chaque fois que nos chemins se croisent. Je suis impatient de le revoir !\n-Jay Kuruvilla"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Lettre cinq",
+      "variants": [
+        "Bonjour,\nJe n'ai pas revu Faulhurst, mais j'ai tué un autre monstre ! C'était un slime ! Bien plus facile à tuer ! Bien bien plus facile ! J'ai dû l'attaquer de très nombreuses fois pour voir qu'il ne me jouait pas un tour !\nMa première rencontre avec Faulhurst était étrange. Je n'ai pas eu le temps de la noter. Il a pleuré quand je lui ai dit que je ne l'avais jamais vu, qu'il était un nouvel ami. Il est parti un instant et est revenu avec ce papier et ce stylo. Il a dû essayer de ne pas pleurer, ça m'a rendu très triste. Rien à bord de ce train n'a de sens, surtout ça.\n-Jay Kuruvilla"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Lettre six",
+      "variants": [
+        "Bonjour,\nJe ne peux pas continuer. Je vais peut-être devoir quitter ce train. Dans la salle suivante il y a un homme effrayant fait de feu sombre et de chair calcinée. Sa puissance est si forte et je sens qu'il est à peu près temps pour moi de rentrer chez moi.\nJe souhaite continuer, oui. Vraiment. Mais je ne le pourrai peut-être pas.\nJ'aimerais beaucoup reparler à Faulhurst.\n-Jay Kuruvilla"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Lettre sept",
+      "variants": [
+        "Bonjour,\nJ'écris ceci avec Faulhurst dans la salle. Il me dit que je passerai la créature de la salle suivante. Je ne suis pas sûr, mais il me dit de lui faire confiance, et que ce n'est pas une chose à remettre en question. Il dit plutôt que c'est un fait, que je passerai cette créature.\nIl veut écrire quelque chose sur ce papier. Le voilà.\nIl fait référence au Monarque de Jadis. Il y arrive. Je n'y croyais pas non plus. Tout est vrai. Tu avais raison. -F\nFaulhurst veut que je lui montre cette lettre la prochaine fois que nous nous rencontrerons, ou chaque fois que nous nous reverrons.\n-Jay Kuruvilla et Faulhurst"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Lettre huit",
+      "variants": [
+        "Je suis toujours dans cette salle. Faulhurst a apporté de la nourriture. Je lui ai montré la lettre qu'il m'avait dit de lui montrer plus tard. Il l'a parcourue et m'a dit que c'était trop tôt, et de la lui montrer de nouveau la prochaine fois que nous nous rencontrerions. Nous avons mangé ensemble. Faulhurst m'a dit qu'il croit que nous sommes au milieu maintenant. Je lui ai demandé d'expliquer, mais il m'a dit qu'il lui expliquerait tout un jour.\nIl a dit que j'étais le passager le plus fascinant qu'il ait jamais vu sur ce train. Il m'a dit qu'il espère avoir plus de temps avec moi que je n'en ai avec lui. Il est très étrange, mais il me fait rire.\n-Jay Kuruvilla"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Lettre neuf",
+      "variants": [
+        "J'ai réussi ! Ce fut une bataille terrifiante ! Je lui ai lancé un tas de choses et j'ai essayé de m'approcher de lui ! Tout est si difficile à me rappeler maintenant ! J'ai fait ce que Faulhurst m'avait dit et j'ai essayé de rester concentré sur ma survie plutôt que sur le fait de le blesser. La bataille a duré des heures mais ça a marché ! Faulhurst m'a dit que rien de ce que je combattrai ne sera aussi effrayant ! J'ai besoin de repos ! J'ai vraiment besoin de nourriture.\n-Jay Kuruvilla"
+      ]
+    },
+    {
+      "index": 10,
+      "label": "Lettre neuf",
+      "variants": [
+        "Faulhurst agit de plus en plus étrangement chaque fois que je le vois maintenant. Je sais depuis un moment que c'était une étrange petite créature, mais il agit plus étrangement qu'il ne l'a jamais fait. Moins amical, quoique poli. Je lui ai montré la lettre que nous avons écrite ensemble. Il l'a lue comme s'il ne l'avait jamais lue.\nFaulthurst est devenu très excité et m'a dit que je dois être très puissant maintenant ! J'ai gagné et jeté beaucoup d'armes, mais j'ai arrêté récemment car peu ont été aussi puissantes que ce que j'ai maintenant. Les monstres meurent très facilement.\nJe lui ai demandé d'expliquer ce qui m'est arrivé. Il m'a dit qu'il m'avait promis qu'il expliquerait la prochaine fois que nous nous rencontrerions.\nPuis il m'a dit qu'il espère qu'il a hâte de me revoir avant que j'aie combattu le… il a appelé ce monstre quelque chose, j'oublie le nom.\n-Jay Kuruvilla"
+      ]
+    },
+    {
+      "index": 11,
+      "label": "Lettre dix",
+      "variants": [
+        "Je parcours le train à l'envers ? Je n'ai pas envie d'écrire là-dessus, j'ai mal à la poitrine et je me sens étrange. J'aimerais ne pas avoir à y penser. J'ai l'impression d'être dans un mauvais rêve et d'essayer de me réveiller. Mais je ne veux pas oublier ça.\nJ'ai peur d'oublier ça."
+      ]
+    },
+    {
+      "index": 12,
+      "label": "Lettre onze",
+      "variants": [
+        "C'est vraiment un étrange train, il semble aller pour toujours. Je me demande si ce train finit, et comment suis-je monté dans ce train ?\n-Jay Kuruvilla"
+      ]
+    }
+  ]
+}

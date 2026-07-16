@@ -1,0 +1,95 @@
+{
+  "id": "adventureitemnames:mob_titles",
+  "entries": [
+    {
+      "text": "Coraggioso"
+    },
+    {
+      "text": "Saggio"
+    },
+    {
+      "text": "Pigro"
+    },
+    {
+      "text": "Vecchio"
+    },
+    {
+      "text": "Giovane"
+    },
+    {
+      "text": "Errante"
+    },
+    {
+      "text": "Curioso"
+    },
+    {
+      "text": "Svelto"
+    },
+    {
+      "text": "Lento"
+    },
+    {
+      "text": "Gentile"
+    },
+    {
+      "text": "Possente"
+    },
+    {
+      "text": "Affamato"
+    },
+    {
+      "text": "Paziente"
+    },
+    {
+      "text": "Irrequieto"
+    },
+    {
+      "text": "Allegro"
+    },
+    {
+      "text": "Brontolone"
+    },
+    {
+      "text": "Forte"
+    },
+    {
+      "text": "Amato"
+    },
+    {
+      "text": "Smarrito"
+    },
+    {
+      "text": "Timido"
+    },
+    {
+      "text": "Audace"
+    },
+    {
+      "text": "Paffuto"
+    },
+    {
+      "text": "Vivace"
+    },
+    {
+      "text": "Saldo"
+    },
+    {
+      "text": "Fortunato"
+    },
+    {
+      "text": "Assonnato"
+    },
+    {
+      "text": "Il Curioso"
+    },
+    {
+      "text": "Robusto"
+    },
+    {
+      "text": "Agile"
+    },
+    {
+      "text": "Silenzioso"
+    }
+  ]
+}

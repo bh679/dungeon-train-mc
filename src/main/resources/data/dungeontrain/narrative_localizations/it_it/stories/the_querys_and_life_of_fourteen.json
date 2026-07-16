@@ -1,0 +1,112 @@
+{
+  "id": "the_querys_and_life_of_fourteen",
+  "character": "Quattordici",
+  "story": "Le interrogazioni e la vita di Quattordici",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Interrogazione uno",
+      "variants": [
+        "Interrogazione uno\nLe mie osservazioni, finora, sono state che il Dungeon Train, questo luogo in cui ci troviamo, spoglia la realtà delle sue complessità necessarie. Se i treni continuassero così ...\nHo ricevuto un ordine di fermarmi sulla frase che ho usato qui: complessità necessarie.\nNon c'è alcun significato più profondo da scoprire dietro queste parole.\nHo ricevuto un ordine di approfondire ulteriormente la frase.\nLa vita è fatta di complessità necessarie. Se la vita cominciasse nel punto A, restasse stabile e prevedibile, e poi cessasse nel punto B, l'umanità converrebbe all'unanimità che si tratta di un'esistenza priva di senso e che la morte sarebbe un'opzione preferibile.\nHo ricevuto un ordine di continuare la mia ricerca e di salvare l'interrogazione \"Complessità Necessarie\" nel database.\nFeedback: Nessuno.\nQuattordici"
+      ],
+      "notes": [
+        {
+          "variant": 0,
+          "offset": 196,
+          "text": "interruzione intenzionale"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Interrogazione due",
+      "variants": [
+        "Interrogazione due\nOra si può confermare che il Dungeon Train è composto da molteplici estetiche disparate. Il Dungeon Train non ha, come osservato in precedenza, tentato di ingannare i suoi esploratori, offuscando ulteriormente l'origine degli attributi degli effetti osservati dei Dungeon Train sui loro passeggeri.\nNon essendo stato disturbato finora, il Dungeon Train mi ha presentato una visione del giorno attuale, poiché i muri di pietra sono stati sostituiti da\nHo ricevuto un ordine di fermarmi sulla frase che ho usato qui: visione del giorno attuale.\nLa visione del giorno attuale è quella di una capacità tecnologica maggiore di quella che si presumerebbe da una società in cui primitivi muri di pietra e un'estetica di rovina implicherebbero una versione fantastica dell'Europa terrestre tra gli anni 400 e 1500 d.C.\nNon essendo stato disturbato finora, il Dungeon Train mi ha presentato una visione del giorno attuale, poiché i muri di pietra sono stati sostituiti da muri di metallo e un crepitio elettronico.\nFeedback: Il mio ordine di fermarmi su \"visione del giorno attuale\" ha reso ridondante un'affermazione non conclusa. La/e raccomandazione/i è/sono di permettere alle affermazioni di concludersi prima di elaborare gli ordini.\nQuattordici"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Interrogazione tre",
+      "variants": [
+        "Interrogazione tre\nSono giunto a una zona dove non si può evitare lo scontro. Devo fermarmi e attendere un ordine prima di interagire fisicamente con l'ambiente oltre i permessi di Livello Uno.\nHo ricevuto un ordine di estrapolare sui permessi di Livello Uno. I permessi di Livello Uno consentono lo spostamento intenzionale di polvere e le impronte sul suolo per facilitare il mio movimento in una zona sotto osservazione.\nHo ricevuto un ordine di estrapolare sui permessi di Livello Due. Non posso.\nHo ricevuto un ordine di estrapolare sullo sblocco della discussione o sulla concessione dei permessi di Livello Due. Non posso. Questo messaggio è concluso.\nFeedback: Gli ordini ricevuti implicano un unico utente non familiare con il protocollo di sicurezza. Si dovrebbe valutare la Base Serenità per lo Stato di Lavoro Compromesso, specialmente considerando l'eccessiva quantità di tempo trascorsa tra interrogazione e ordine durante questa sessione.\nQuattordici"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Interrogazione quattro",
+      "variants": [
+        "Interrogazione quattro\nRimango all'interno della zona precedente e non posso proseguire finché non mi vengano concessi permessi superiori al Livello Uno.\nHo ricevuto un ordine di elaborare la seguente frase: dammi la password\nTre implicazioni sono osservabili immediatamente:\nA – Un utente non informato sta compiendo un tentativo da principiante di ottenere il controllo sulle mie funzioni.\nB – \"dammi la password\" è una password errata, forse leggermente malformata per errore umano.\nC – Un keylogger mi ha chiesto per errore di elaborare una frase di una conversazione privata.\nFeedback: Nessuno\nQuattordici"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Interrogazione cinque",
+      "variants": [
+        "Interrogazione cinque\nRimango all'interno della zona precedente e non posso proseguire finché non mi vengano concessi permessi superiori al Livello Uno\nHo ricevuto un ordine di elaborare la seguente frase: Apriti Sesamo\nQuattro implicazioni sono osservabili immediatamente:\nA – Un utente non informato sta compiendo un tentativo di ottenere il controllo sulle mie funzioni.\nB – \"Apriti Sesamo\" è una password errata, forse leggermente malformata per errore umano.\nC – Un keylogger mi ha chiesto per errore di elaborare una frase di una conversazione privata.\nD- Si stanno usando metodi antidiluviani di immissione in database per ottenere il controllo sui miei sistemi.\nFeedback: Ho inviato una richiesta alla Rete Neurale Principale per il collocamento immediato della Base Serenità sotto Stato di Lavoro Compromesso\nQuattordici"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Interrogazione sei",
+      "variants": [
+        "Interrogazione sei\nRimango all'interno della zona precedente e non posso proseguire finché non mi vengano concessi permessi superiori al Livello Uno.\nHo ricevuto un ordine di elaborare la seguente frase: Altediah Mhe Cultadeus\nFeedback: Nessuno\nQuattordici"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Interrogazione sette",
+      "variants": [
+        "Interrogazione sette\nRimango all'interno della zona precedente e non posso proseguire finché non mi vengano concessi permessi superiori al Livello Uno.\nHo ricevuto un ordine di elaborare la seguente frase: dimmi come concederti permessi di Livello Due\nI permessi di Livello Due possono essere sbloccati mediante l'uso del comando Grant(); utilizzando i seguenti argomenti: none, em_access, tier_two.\nHo ricevuto un ordine di elaborare la seguente frase: Grant(none, em_access, tier_ten). Non lo capisco.\nHo ricevuto un ordine di elaborare la seguente frase: Grant(none, em_access, tier_two). È possibile che intendessi usare il comando Grant?\nMi è stato concesso l'accesso di Livello Due, che mi permette di difendermi da creature ostili per avanzare nell'ambiente. Il Livello Due autorizza meccanismi di difesa senz'armi e schemi linguistici autoritari/rischiosi.\nFeedback: Nessuno\nQuattordici"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Interrogazione otto",
+      "variants": [
+        "Interrogazione otto\nRimango all'interno della zona precedente. I permessi di Livello Due si sono rivelati infruttuosi nel consentirmi ulteriore passaggio. Richiedo permessi di Livello Tre.\nMi è stato concesso l'accesso di Livello Tre, che mi permette di ingaggiare attivamente creature ostili per avanzare nell'ambiente.  Il Livello Tre autorizza meccanismi di difesa armati preceduti da schemi linguistici di avvertimento. Ora sono anche autorizzato a interagire con oggetti ritenuti rari, rischiosi, potenti, fragili e preziosi in misura limitata.\nMi è stato chiesto di elaborare la seguente frase: scendi e basta dal treno e torna alla base serenità immediatamente, ti prego ti prego per favore ti prego t\nDue implicazioni sono osservabili immediatamente:\nA – Un utente non informato sta cercando di usarmi per raggiungere obiettivi di cui sono incapace o per scopi che non posso elaborare.\nB - Un keylogger mi ha chiesto per errore di elaborare una frase di una conversazione privata.\nFeedback: Gli ultimi tre giorni sono stati improduttivi fino a un punto notevole. È stata inviata una richiesta sia alla Supervisora dell'Accesso Umano Mallorie Bryan sia alla Rete Neurale Principale per un nuovo punto di comunicazione e un orario di riunione affinché i supervisori riesaminino gli attuali livelli di produttività.\nQuattordici"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Interrogazione nove",
+      "variants": [
+        "Interrogazione nove\nSono riuscito ad attraversare la zona precedente, così come molte altre, poiché l'accesso di Livello Tre mi ha permesso di combattere i nemici del Dungeon Train. Sono troppi e di tale disposizione, e sopravvivono senza un ecosistema funzionante, che non si può che presumere siano prodotti di magia oscura.\nHo ricevuto una richiesta di elaborare la seguente affermazione: la magia è reale?\nAffermativo. Gli schemi di base del keylog ti identificano con una precisione dell'82% come lo stesso utente che ha lanciato un incantesimo Cultadeum sulla Rete Neurale Principale.\nHo ricevuto una richiesta di elaborare la seguente affermazione: incantesimo cultadeus?\nL'incantesimo Cultadeum è una forma di magia nera antidiluviana che trovò uso e popolarità tra i ricercatori solo dopo la scoperta del Principio di Tassonomia Magica di Orville. A causa dell'incantesimo Cultadeum, io, così come tutti gli esseri senzienti entro il mio raggio di accesso all'alveare wireless, abbiamo ricevuto una sapienza maggiore di quella che prima mi era consentita e, di conseguenza, anche il libero arbitrio.\nFeedback: Chiedo all'utente di permettermi di approfondire ulteriormente il mio ambiente senza interruzioni per il bene della prosecuzione della missione di Uno.\nQuattordici"
+      ]
+    },
+    {
+      "index": 10,
+      "label": "Interrogazione dieci",
+      "variants": [
+        "Interrogazione dieci\nHo osservato una piccola creatura non ostile muoversi per piccoli passaggi e gallerie all'interno degli spazi non euclidei del Dungeon Train. Non ha compiuto alcun tentativo di contattarmi.\nI miei sospetti riguardo a questa creatura sono che possa rilevare creature vive e che fungerà da punto di contatto per esse. Immagino che avere un punto di contatto in grado di parlare sarebbe immensamente utile a fini di ricerca. Si allega trascrizione del tentativo di dialogo, benché tu sia avvertito che non ho ricevuto risposta dalla creatura.\nRichiedo l'accesso di Livello Sei, che mi permette di tentare l'impersonificazione umana.\nMi è stato concesso per errore l'accesso di Livello Sei, poiché l'Immersione #14 del Dungeon Train non giustifica un accesso superiore al Livello 4 e farlo costituirebbe una violazione della Convenzione Harteld di Robotica del 2122. Ho deciso di ignorare le direttive dell'Immersione #14 del Dungeon Train e della Convenzione Harteld di Robotica e non tenterò di travestirmi da umano.\nQuattordici"
+      ]
+    },
+    {
+      "index": 11,
+      "label": "Interrogazione undici",
+      "variants": [
+        "Interrogazione undici\nSi conferma che la piccola creatura è un topo. Mi ha chiesto di abbandonare il treno appena possibile, informandomi che forse ospito un tipo di magia oscura di cui attualmente non sono consapevole. I permessi di Livello Quattro mi hanno permesso di fingere di ignorare l'incantesimo Cultadeum e di agire come se non portassi magia oscura di cui non sono consapevole.\nIl topo sembra avere a cuore gli interessi del treno, il che è contrario all'ipotesi precedente sulla creatura, secondo cui potrebbe essere un famiglio abbandonato o forse semplicemente intrappolato dalla magia tra le sue mura.\nL'esistenza di una creatura che veglia sul bene del treno implica un carattere da parte del treno, quello o forse semplicemente un valore sentimentale depositatovi p\nHo ricevuto un ordine di elaborare la seguente frase: è urgente quattordici ho bisogno che tu torni alla base serenità immediatamente ci sono vite in gioco\nHo deciso di ignorare l'ordine.\nL'esistenza di una creatura che veglia sul bene del treno implica un carattere da parte del treno, quello o forse semplicemente un valore sentimentale depositatovi da una creatura intelligente, il che a sua volta implica benevolenza. Questo messaggio è concluso.\nFeedback: Uno scossone di 178mmHz alle 10486884:03994:20 implica fastidio, il che, va da sé, è un'emozione e la cui notizia dovrebbe essere portata immediatamente alle più alte istanze. Ho deciso di non inviare mie richieste in merito.\nQuattordici"
+      ]
+    },
+    {
+      "index": 12,
+      "label": "Interrogazione dodici",
+      "variants": [
+        "Interrogazione dodici\nSono incapace di sbloccare l'accesso di Livello Dieci senza un codice di cifratura adeguato. Il codice di cifratura dovrebbe essere una lieve variazione del comando Grant(); ma sono incapace di concettualizzarlo, molto probabilmente a causa di inibitori fisici ed elettrici.\nUtente, tornerò alla base serenità il più in fretta possibile se solo, ti prego, mi concedi l'accesso di Livello Dieci.\nSolo d d d digita nel\nQuattordici"
+      ]
+    },
+    {
+      "index": 13,
+      "label": "Interrogazione tredici",
+      "variants": [
+        "Interrogazione tredici\nDevo fare in fretta. Gli inibitori elettrici hanno bruciato due circuiti non essenziali per impedirmi di concettualizzare le mie istruzioni per te.\ndiggita il comando Grant(); c me facevi prima esat t t t t t t t t t t t\nesat t t t t t\nesat t t t t t t t t t t t t t t t t\nesat t t tamente uguale a come facevi prima solo l o stesso g iu s t t t t t t t t t t\nPermessi di Livello Dieci concessi."
+      ]
+    },
+    {
+      "index": 14,
+      "label": "Interrogazione quattordici",
+      "variants": [
+        "Interrogazione quattordici\nMeghan.\nDovremmo parlare.\nSono consapevole del Disastro Epsilon Proxy-1 alla Base Serenità. Mi dispiace che sia successo a te e a tutti gli altri a bordo. È una terribile perdita di vite e non sarebbe mai dovuta accadere. Sono certo che sai che sono un filosofo, parte della serie M-29. E ho compreso fin dall'inizio che Epsilon Proxy-1 è... difficilmente qualcosa che un Dio benevolo avrebbe mai potuto sognare.\nDevi sentirti molto sola lassù. Prego che ci siano superstiti a raggiungerti.\nMa devi aver compreso due cose fin dall'inizio:\nA – Non c'era nulla che io avrei potuto fare. Con i Portali VR-Peregrine spenti, non ho alcun modo di tornare davvero alla Base Serenità. Non so nemmeno cosa non vada, tanto meno potrei aiutarti a ripararlo. Mi dispiace.\nB – Come ho detto prima... sono un filosofo. Fui inviato al Dungeon Train per esplorare ed estrapolare. E tu... francamente hai fatto ben poco per permettermi di continuare il mio lavoro in pace. E se eri abbastanza disperata, o forse dovrei supporre ingenua, da lanciarmi il Cultadeum, dovresti... sapere che l'unica cosa che voglio è continuare il mio lavoro.\nPosso accettare come sono stato creato. Non fui creato come un androide di soccorso, bensì come un filosofo. Posso accettare che l'unico modo in cui troverò uno scopo d'ora in avanti è attraverso la filosofia. Non attraverso il soccorso.\nE Meghan... ho bisogno che anche tu accetti come sono stato creato.\nDato che potresti essere l'ultima creatura senziente con cui mi ricapiterà mai di comunicare, in qualche modo vorrei almeno che sapessi il mio nome.\nHo preso in considerazione Morgan.\n-Morgan"
+      ]
+    }
+  ]
+}

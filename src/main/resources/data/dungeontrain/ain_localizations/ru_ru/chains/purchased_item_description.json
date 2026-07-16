@@ -1,0 +1,54 @@
+{
+  "id": "adventureitemnames:purchased_item_description",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "Изготовлено",
+      "refs": [
+        {
+          "ref": "adventureitemnames:hand_crafted_with_love",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " рукой ",
+      "newline": false,
+      "label": "Житель",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/villager_name",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.15056606,
+      "connection": ", из ",
+      "newline": false,
+      "label": "Материал",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/item_material",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.009645718,
+      "connection": "Не благодаря ",
+      "newline": true,
+      "label": "Не благодаря",
+      "refs": [
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 2.0
+        }
+      ]
+    }
+  ]
+}

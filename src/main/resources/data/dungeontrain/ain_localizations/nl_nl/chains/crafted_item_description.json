@@ -1,0 +1,54 @@
+{
+  "id": "adventureitemnames:crafted_item_description",
+  "replace": true,
+  "segments": [
+    {
+      "chance": 1.0,
+      "connection": "",
+      "newline": false,
+      "label": "Vervaardigd",
+      "refs": [
+        {
+          "ref": "adventureitemnames:hand_crafted_with_love",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 1.0,
+      "connection": " door ",
+      "newline": false,
+      "label": "Speler",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/player_name",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.15056606,
+      "connection": ", uit ",
+      "newline": false,
+      "label": "Materiaal",
+      "refs": [
+        {
+          "ref": "adventureitemnames:context/item_material",
+          "weight": 1.0
+        }
+      ]
+    },
+    {
+      "chance": 0.009645718,
+      "connection": "Geen dank aan ",
+      "newline": true,
+      "label": "Geen dank aan",
+      "refs": [
+        {
+          "ref": "adventureitemnames:the_something",
+          "weight": 2.0
+        }
+      ]
+    }
+  ]
+}

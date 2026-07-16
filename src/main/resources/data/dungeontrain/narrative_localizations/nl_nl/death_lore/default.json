@@ -1,0 +1,323 @@
+[
+  {
+    "page": "fall",
+    "weight": 3,
+    "question": "Wat is de Dungeon Train?",
+    "narration": "Wagon {carriage}. Daar bereikte de duisternis je. Weet je het nu? De Dungeon Train stopt niet — hij gaat alleen maar door, dieper, voor altijd."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": {
+      "min_carriage": 100
+    },
+    "question": "Wat is de Dungeon Train?",
+    "narration": "{carriage} wagons diep de duisternis in. Weinigen reizen zo ver voordat de lijn hen meeneemt. Nog minder stappen opnieuw op."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": {
+      "max_carriage": 3
+    },
+    "question": "Wat is de Dungeon Train?",
+    "narration": "Wagon {carriage}. Amper aan boord, en de duisternis had je al. De lijn is geduldig — dat kan ze zich veroorloven."
+  },
+  {
+    "page": "deeds",
+    "weight": 3,
+    "question": "Waarom ben je hier?",
+    "narration": "Je velde {mobs} wezens in de duisternis, en betaalde ervoor met {hearts} harten.\nVan de {met} zielen die je ontmoette, maakte je aan {slain} een einde — en {friends} noemde je vriend."
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "Wat wordt er van je verwacht?",
+    "narration": "IJzer en snede, vergaard uit de duisternis en tot hier gedragen. Niets ervan was genoeg — misschien was dat nooit de bedoeling."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_books": 5
+    },
+    "question": "Wat wordt er van je verwacht?",
+    "narration": "Je las {books} van de boeken van de lijn en droeg toch staal. Kennis en een kling, en de duisternis nam beide."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_friends": 5
+    },
+    "question": "Waren ze het waard?",
+    "narration": "Je maakte {friends} vrienden op de lijn, en toch nam ze je mee. Misschien is dat het enige getal dat ooit echt van jou was om te houden."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_mobs": 200
+    },
+    "question": "Hoeveel van de duisternis beantwoordde je met gelijke munt?",
+    "narration": "{mobs} wezens vielen door jouw hand voordat jij door de hunne viel. De lijn oordeelt niet. Ze telt alleen."
+  },
+  {
+    "page": "lives",
+    "weight": 3,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "Dit zijn allemaal goede vragen",
+    "narration": "Dit zijn niet de sporen van één enkel leven. Over alle {deaths} heen — elke duisternis waarop je bent gestapt, elke keer dat de lijn je meenam en je toch terugkeerde — dit is je hele reis."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 1,
+      "max_deaths": 1
+    },
+    "question": "Wordt één leven zo makkelijk verspild?",
+    "subline": "je eerste val op de lijn.",
+    "narration": "Er zijn geen andere levens om tegen dit ene af te wegen — nog niet. Dit ben jij in je geheel: alles wat gedaan is sinds je voor het eerst opstapte. De lijn zal het onthouden. Dat zou jij ook moeten doen."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 10
+    },
+    "question": "Dit zijn allemaal goede vragen",
+    "narration": "Dit zijn niet de sporen van één enkel leven. {deaths} keer heeft de duisternis je meegenomen, en {deaths} keer stapte je opnieuw op."
+  },
+  {
+    "page": "platform",
+    "weight": 3,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "Stap je opnieuw op, of stap je uit, de stilte in?",
+    "narration": "Het perron is leeg. De fluit klinkt ver weg langs de lijn. Ze rijdt zonder einde — en jij, zo lijkt het, ook.",
+    "epitaph": "de {deaths}e die valt. misschien niet de laatste."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 1,
+      "max_deaths": 1
+    },
+    "question": "Stap je opnieuw op — nu je weet hoe het eindigt?",
+    "narration": "Het perron is leeg, net als toen je voor het eerst opstapte. De fluit klinkt ver weg langs de lijn. Je bent één keer gevallen. Of er een tweede keer komt is, zoals altijd, aan jou om te beslissen.",
+    "epitaph": "de eerste die valt. de lijn is geduldig — ze zal op de rest wachten."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 20
+    },
+    "question": "Hoef je het zelfs maar te vragen?",
+    "narration": "Het perron kent je gezicht inmiddels. De fluit klinkt zoals ze altijd klinkt. Je weet al wat er nu komt.",
+    "epitaph": "de {deaths}e die valt — en niet, zo lijkt het, de laatste."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Wat is de Dungeon Train?",
+    "narration": "Wagon {carriage}. De duisternis had daar al die tijd al gewacht — jij kwam haar enkel tegemoet."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Wat is de Dungeon Train?",
+    "narration": "Wagon {carriage}, en niet verder. De lijn koestert geen wrok en geen genade; ze gaat eenvoudigweg door."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Wat is de Dungeon Train?",
+    "narration": "De lantaarns van wagon {carriage} zwaaien nog waar je viel. De trein vertraagt niet om te kijken."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Wat is de Dungeon Train?",
+    "narration": "Je bereikte wagon {carriage} voordat de bodem van de wereld bezweek. De lijn gaat door zonder jouw gewicht."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Wat is de Dungeon Train?",
+    "narration": "Wagon {carriage}. Ergens verderop blijft het spoor zich uitrollen het zwart in, onverschillig dat jij er niet langer op bent."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "Wat is de Dungeon Train?",
+    "narration": "Hier, bij wagon {carriage}, evenaarde de duisternis eindelijk jouw tempo. Dat zou ze altijd doen."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Waarom ben je hier?",
+    "narration": "Je velde {mobs} wezens in de duisternis en gaf er {hearts} harten voor op. Van de {met} zielen die je passeerde, sloeg je {slain} neer en liet je {friends} dichtbij."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Waarom ben je hier?",
+    "narration": "{mobs} wezens vielen voor jou en {hearts} harten vielen van jou. Je kruiste {met} andere zielen in de duisternis — maakte aan {slain} een einde, hield {friends} — en toen was jij aan de beurt."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Waarom ben je hier?",
+    "narration": "Van de duisternis nam je {mobs}; van jezelf gaf je {hearts} harten uit. {met} zielen deelden de lijn: aan {slain} maakte je een einde, {friends} hield je vast."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "max_friends": 0
+    },
+    "question": "Waarom ben je hier?",
+    "narration": "Je velde {mobs} wezens en bloedde {hearts} harten. Je ontmoette {met} zielen, maakte aan {slain} een einde, en noemde er niet één vriend. De duisternis is eenvoudiger alleen."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": {
+      "min_slain": 5
+    },
+    "question": "Waarmee beantwoordde je de duisternis?",
+    "narration": "Van de {met} die je ontmoette, hakte je {slain} neer — {mobs} wezens meer in de duisternis daarnaast — voor {hearts} harten, en {friends} spaarde je om vriend te noemen. De lijn noemt het geen moord."
+  },
+  {
+    "page": "gear",
+    "weight": 2,
+    "question": "Wat wordt er van je verwacht?",
+    "narration": "Je vergaarde alles wat je kon dragen uit de wagons. De lijn laat je het houden — ze heeft geen nut voor vracht, alleen voor passagiers."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_loot": 0
+    },
+    "question": "Wat wordt er van je verwacht?",
+    "narration": "Je kraakte geen enkele krat open op de lijn — droeg alleen wat je bij het opstappen had, en zwaaide het tot het einde. De duisternis houdt wat je niet wilde nemen."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_loot": 9
+    },
+    "question": "Wat wordt er van je verwacht?",
+    "narration": "Een handvol kratten geopend — {loot} in totaal — en een kling dicht bij de hand. De lijn is gul voor wie stopt; jij pauzeerde amper."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_loot": 250
+    },
+    "question": "Wat wordt er van je verwacht?",
+    "narration": "{loot} houders leeggehaald in je rugzak. Je ontdeed de duisternis van alles wat niet vastgespijkerd zat, en toch nam ze het enige wat ertoe deed."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "max_books": 0
+    },
+    "question": "Wat wordt er van je verwacht?",
+    "narration": "Geen bladzijde omgeslagen — enkel staal vergaard en gezwaaid. De lijn bewaart haar verhalen voor wie stopt om te lezen."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": {
+      "min_books": 10
+    },
+    "question": "Wat wordt er van je verwacht?",
+    "narration": "Je las {books} van de boeken van de lijn en droeg daarnaast staal. Wijsheid en een kling, en de duisternis was met beide geduldig."
+  },
+  {
+    "page": "lives",
+    "weight": 2,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "Dit zijn allemaal goede vragen",
+    "narration": "Tel ze: {deaths} keer nam de lijn je mee, {deaths} keer beantwoordde je de fluit. Dit is jouw gedaante, getekend in vertrekken."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 3
+    },
+    "question": "Dit zijn allemaal goede vragen",
+    "narration": "Over {deaths} levens verzamelen de getallen zich als stof op de rails. Niets ervan gaat verloren; de lijn vergeet niets."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "Waarom blijf je opstappen?",
+    "narration": "{deaths} vallen, en toch stap je op. De lijn hield op zich af te vragen of je zou terugkeren. En jij, misschien, ook."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "Waarom blijf je opstappen?",
+    "narration": "{deaths} doden achter je en dezelfde fluit voor je. Je bent geen passagier meer — je bent deel van de dienstregeling."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "Waarom blijf je opstappen?",
+    "narration": "De duisternis is geen vreemde meer; {deaths} keer heb je haar gezicht geleerd. Dat is een eigen soort verlies."
+  },
+  {
+    "page": "platform",
+    "weight": 2,
+    "conditions": {
+      "min_deaths": 2
+    },
+    "question": "Stap je opnieuw op, of laat je het perron je houden?",
+    "narration": "De fluit klinkt al, ver vooruit. Ze wacht niet op je — dat deed ze nooit — en toch sta je hier, besluitend te volgen.",
+    "epitaph": "de {deaths}e die valt. de lijn gaat door."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 3
+    },
+    "question": "Stap je opnieuw op?",
+    "narration": "Het perron is stil. Ergens zit de trein al vol met het verhaal van iemand anders. Er is altijd plaats voor nog een van het jouwe.",
+    "epitaph": "de {deaths}e die valt. misschien niet de laatste."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": {
+      "min_deaths": 5
+    },
+    "question": "Hoeft de lijn het zelfs maar te vragen?",
+    "narration": "Je kent het gewicht van de deur, de kou van de trede. De duisternis is nu gewoon een plek die je bezoekt.",
+    "epitaph": "de {deaths}e die valt — een vaste klant van de lijn."
+  }
+]

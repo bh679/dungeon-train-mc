@@ -1,0 +1,55 @@
+{
+  "id": "edda_marsh_the_wither_at_the_window",
+  "character": "Edda Marsh",
+  "story": "Der Wither am Fenster",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Brief eins",
+      "variants": [
+        "Mein Name ist Edda Marsh.\n\nIch schreibe dies von einem Sitz, der nicht meiner ist.\n\nMein Sitz war drei Waggons zurück. Ich verließ ihn rasch. Nicht aus Furcht. Eher so, wie man ein Zimmer verlässt, wenn der Kessel zu lange auf dem Herd stand.\n\nIch erkläre es, wenn ich weiter gegangen bin. Für jetzt: Ich habe mich fortbewegt. Ich habe begonnen, mich zu bewegen.\n\nEdda Marsh",
+        "Edda Marsh.\n\nDieser Sitz ist warm. Nicht von mir.\n\nMein Sitz liegt zurück, woher ich kam. Drei Waggons, vielleicht vier. Ich habe nicht gezählt.\n\nMein Schultertuch liegt noch darauf. Zusammengelegt. Das Zusammenlegen war das Letzte, was ich nicht tat.\n\nMehr, wenn ich weiter gegangen bin.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Brief zwei",
+      "variants": [
+        "Ich bin in einem Schlafwagen. Das Bett wurde gemacht. Nicht von mir.\n\nLetzte Nacht war etwas an meinem alten Fenster.\n\nDrei Köpfe. Knochen in der Farbe nasser Asche. Der mittlere größer als die anderen.\n\nSie bewegten sich einer nach dem anderen. Der mittlere hielt still, und die beiden daneben drehten sich. Alle drei sahen herein.\n\nIch sah nicht weg. Es schien keinen Grund dazu zu geben. Nach einer Weile waren sie fort.\n\nIch wartete eine Stunde. Dann stand ich auf. Dann ging ich.\n\nEdda Marsh",
+        "Ein Schlafwagen. Das Bett ist gemacht. Nicht von mir.\n\nLetzte Nacht drei Köpfe am alten Fenster.\n\nKnochengrau. Der mittlere größer. Die beiden daneben drehten sich, als er es nicht tat.\n\nSie sahen alle herein.\n\nIch habe in meinem Leben Schlimmeres angesehen. Ich sah zurück.\n\nNach einer Weile waren sie fort. Ich wartete. Ich ging.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Brief drei",
+      "variants": [
+        "Ich bin vier Waggons nach vorn gegangen. Ich schreibe aus einer Leseecke in etwas, das ein Bibliothekswagen sein könnte. Manche der Bücher sind echt. Manche sind nur Buchrücken, an die Wand geklebt.\n\nEs ist auch hier. An meinem Fenster. Nicht dem, das ich verließ. Diesem neuen.\n\nDieselben drei Köpfe. Der mittlere leicht aus der Mitte geneigt, als lausche er.\n\nIch ging auf die andere Seite des Wagens. Jenes Fenster war dunkel. Ich kam zurück. Es war wieder an meinem.\n\nEdda Marsh",
+        "Vier Waggons nach vorn. Ein Bibliothekswagen. Manche der Bücher sind echt. Manche sind Buchrücken, an die Wand geklebt.\n\nEs ist auch hier. An diesem Fenster. Nicht dem, das ich verließ.\n\nDieselben drei Köpfe. Der mittlere geneigt, als lausche er.\n\nIch durchquerte den Wagen. Das andere Fenster war dunkel. Ich kam zurück. Meines war wieder hell von Knochen.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Brief vier",
+      "variants": [
+        "Ich bin in einem Güterwaggon. Die Kisten sind zugenagelt. Das Licht ist das Einzige, das nicht verpackt ist.\n\nIch sollte dir von Hollin erzählen.\n\nEr war mein Mann. Er grub Seelensand. Das meiste verkaufte er. Ein wenig behielt er für sich.\n\nAm Ende grub er zu tief. Etwas kam aus der Stelle herauf, an der er grub.\n\nDrei Köpfe. Ein mittlerer, größer als die anderen. Eine Neigung im mittleren. Als lausche er.\n\nHollin kam nicht herauf.\n\nIch habe lange darauf gewartet, dieses Gesicht wiederzusehen. Jetzt habe ich es.\n\nEs ist an jedem Fenster, an dem ich sitze.\n\nEdda Marsh",
+        "Ein Güterwaggon. Kisten zugenagelt. Das Licht ist das Einzige, das nicht verpackt ist.\n\nHollin.\n\nEr war mein Mann. Er grub Seelensand. Verkaufte das meiste. Behielt ein wenig.\n\nEr grub zu tief. Etwas kam herauf.\n\nDrei Köpfe. Der mittlere größer. Geneigt. Als lausche er.\n\nHollin blieb.\n\nIch wartete lange darauf, dieses Gesicht wiederzusehen.\n\nJetzt habe ich es.\n\nEdda"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Brief fünf",
+      "variants": [
+        "Ich bin in einem Aussichtswagen. Lange Fenster. Viele davon. Ein paar andere Fahrgäste.\n\nIch saß hier stundenlang. Ich sah die Fenster an. Nicht hinaus. Sie selbst.\n\nDer Zug fährt in gleichmäßigem Tempo. Die Aussicht nicht. Ein Baum bleibt zu lange neben uns. Ein Fluss läuft in die falsche Richtung und läuft dann in unsere.\n\nDer nächste Waggon hatte seine eigene Aussicht. Ein anderes Tal. Der Waggon danach hatte ein Feld, das ich mit zwölf kannte.\n\nZwei Sitze weiter ist ein Mann, der eine Küche betrachtet. Ich glaube, es ist die Küche seiner Mutter. Er weint seit einer Stunde ganz leise.\n\nDie Fenster zeigen nicht das Draußen. Sie zeigen, was der Betrachter mit sich trägt.\n\nIch trage Hollin mit mir. Ich trage, was aus seinem Graben heraufkam.\n\nEs folgt mir nicht. Es war immer meines.\n\nIch bin gefasst. Ich möchte, dass du weißt, ich bin gefasst.\n\nEdda Marsh",
+        "Aussichtswagen. Lange Fenster. Mehrere. Ein paar andere Fahrgäste.\n\nIch sah die Fenster an. Nicht hinaus. Sie selbst. Stundenlang.\n\nDer Zug fährt in gleichmäßigem Tempo. Die Aussicht nicht. Ein Baum bleibt zu lange. Ein Fluss läuft in die falsche Richtung und läuft dann in unsere.\n\nNächster Waggon: ein anderes Tal. Der danach: ein Feld, das ich mit zwölf kannte.\n\nZwei Sitze weiter betrachtet ein Mann eine Küche. Ich glaube, die seiner Mutter. Er weint ganz leise.\n\nDie Fenster zeigen, was wir mit uns tragen.\n\nIch trage Hollin mit mir. Und was aus seinem Graben heraufkam.\n\nEs war immer meines. Folgt nicht. Meines.\n\nIch bin gefasst.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Brief sechs",
+      "variants": [
+        "Ich bin stehen geblieben.\n\nIch bin in einem kleinen Waggon nahe dem hinteren Ende. Oder nahe dem vorderen. Das Licht ist in beiden Richtungen gleich.\n\nDa ist ein Fenster. Da ist ein Riegel am Fenster. Ich sehe den Riegel schon lange an.\n\nDie drei Köpfe sind hier. Sie sind jetzt nicht am Glas. Sie sind ein Stück davon entfernt, im Dunkeln. Warten.\n\nIch habe beschlossen, nicht mehr weiterzugehen. Ich habe beschlossen, den Riegel zu heben.\n\nIch habe den Riegel gehoben.\n\nDas Fenster ist offen. Die Nacht ist sehr kalt. Die Zeder riecht stärker, wenn die Luft hindurchzieht.\n\nIch lasse dies hier zurück. Ich lasse auch das Fenster offen. Für den, der den Sitz als Nächstes findet.",
+        "Ich bin stehen geblieben.\n\nEin kleiner Waggon. Nahe dem hinteren Ende. Oder dem vorderen. Das Licht ist in beiden Richtungen gleich.\n\nEin Fenster. Ein Riegel. Ich sehe ihn schon lange an.\n\nDie drei Köpfe sind hier. Jetzt nicht am Glas. Ein Stück entfernt. Warten.\n\nIch gehe nicht mehr weiter. Ich hebe den Riegel.\n\nIch habe ihn gehoben.\n\nDas Fenster ist offen. Die Nacht ist kalt. Die Zeder riecht stärker, wenn die Luft sich bewegt.\n\nLasse dies hier zurück.\n\nLasse auch das Fenster offen."
+      ]
+    }
+  ]
+}

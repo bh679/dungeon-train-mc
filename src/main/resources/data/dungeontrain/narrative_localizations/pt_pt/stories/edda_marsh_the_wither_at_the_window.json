@@ -1,0 +1,55 @@
+{
+  "id": "edda_marsh_the_wither_at_the_window",
+  "character": "Edda Marsh",
+  "story": "O Wither na janela",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Carta um",
+      "variants": [
+        "Chamo-me Edda Marsh.\n\nEscrevo isto de um lugar que não é o meu.\n\nO meu lugar estava três carruagens atrás. Deixei-o depressa. Não por medo. Mais próximo do modo como se deixa uma sala quando a chaleira está ao lume há tempo demais.\n\nExplicarei quando tiver caminhado mais. Por agora: mexi-me. Comecei a mexer-me.\n\nEdda Marsh",
+        "Edda Marsh.\n\nEste lugar está quente. Não por minha causa.\n\nO meu lugar ficou pelo caminho por onde vim. Três carruagens, talvez quatro. Não as contei.\n\nO meu xaile ainda lá está. Dobrado. Dobrá-lo foi a última coisa que não fiz.\n\nMais quando tiver caminhado mais.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Carta dois",
+      "variants": [
+        "Estou numa carruagem-cama. A cama está feita. Não por mim.\n\nOntem à noite havia algo na minha antiga janela.\n\nTrês cabeças. Osso da cor da cinza molhada. A do meio maior do que as outras.\n\nMoviam-se uma de cada vez. A do meio ficava quieta e as duas ao lado giravam. As três olharam para dentro.\n\nNão desviei o olhar. Não parecia haver motivo. Passado um bocado, já não estavam.\n\nEsperei uma hora. Depois levantei-me. Depois caminhei.\n\nEdda Marsh",
+        "Uma carruagem-cama. A cama está feita. Não por mim.\n\nTrês cabeças na antiga janela ontem à noite.\n\nCinza-osso. A do meio maior. As duas ao lado giravam quando ela não.\n\nTodas olharam para dentro.\n\nJá vi coisas piores na minha vida. Retribuí o olhar.\n\nPassado um bocado, já não estavam. Esperei. Caminhei.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Carta três",
+      "variants": [
+        "Caminhei quatro carruagens para a frente. Escrevo de um cantinho de leitura no que talvez seja uma carruagem-biblioteca. Alguns dos livros são reais. Outros são só lombadas coladas à parede.\n\nTambém está aqui. Na minha janela. Não a que deixei. Esta nova.\n\nAs mesmas três cabeças. A do meio ligeiramente inclinada para o lado, como se escutasse.\n\nAtravessei para o outro lado da carruagem. Aquela janela estava às escuras. Voltei. Estava outra vez na minha.\n\nEdda Marsh",
+        "Quatro carruagens para a frente. Uma carruagem-biblioteca. Alguns dos livros são reais. Outros são lombadas coladas à parede.\n\nTambém está aqui. Nesta janela. Não a que deixei.\n\nAs mesmas três cabeças. A do meio inclinada, como se escutasse.\n\nAtravessei a carruagem. A outra janela estava às escuras. Voltei. A minha voltava a brilhar de osso.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Carta quatro",
+      "variants": [
+        "Estou numa carruagem de mercadorias. As caixas estão pregadas. A luz é a única coisa que não está encaixotada.\n\nDevia falar-te do Hollin.\n\nEra o meu marido. Escavava areia das almas. Vendia quase toda. Guardava um pouco para si.\n\nAo fim, escavou fundo demais. Algo subiu do lugar onde cavava.\n\nTrês cabeças. A do meio maior do que as outras. Uma inclinação na do meio. Como se escutasse.\n\nO Hollin não subiu.\n\nHá muito tempo que espero por voltar a ver aquele rosto. Agora vi.\n\nEstá em cada janela ao pé da qual me sento.\n\nEdda Marsh",
+        "Uma carruagem de mercadorias. Caixas pregadas. A luz é a única coisa que não está encaixotada.\n\nHollin.\n\nEra o meu marido. Escavava areia das almas. Vendia quase toda. Guardava um pouco.\n\nEscavou fundo demais. Algo subiu.\n\nTrês cabeças. A do meio maior. Inclinada. Como se escutasse.\n\nO Hollin ficou.\n\nEsperei muito tempo por voltar a ver aquele rosto.\n\nAgora vi.\n\nEdda"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Carta cinco",
+      "variants": [
+        "Estou numa carruagem-miradouro. Janelas compridas. Muitas. Mais uns quantos passageiros.\n\nFiquei aqui sentada durante horas. Observei as janelas. Não por elas. A elas.\n\nO comboio avança a ritmo constante. A vista não. Uma árvore fica a nosso lado tempo demais. Um rio corre ao contrário e depois corre no nosso sentido.\n\nA carruagem seguinte tinha a sua própria vista. Um vale diferente. A carruagem a seguir tinha um campo que conheci quando tinha doze anos.\n\nHá um homem dois lugares adiante que observa uma cozinha. Acho que é a cozinha da mãe dele. Há uma hora que chora muito em silêncio.\n\nAs janelas não mostram o exterior. Mostram o que quem olha carrega.\n\nEu tenho andado a carregar o Hollin. Tenho andado a carregar o que subiu da escavação dele.\n\nNão me persegue. Sempre foi meu.\n\nEstou serena. Quero que saibas que estou serena.\n\nEdda Marsh",
+        "Carruagem-miradouro. Janelas compridas. Várias. Mais uns quantos passageiros.\n\nObservei as janelas. Não por elas. A elas. Durante horas.\n\nO comboio avança a ritmo constante. A vista não. Uma árvore fica tempo demais. Um rio corre ao contrário e depois corre no nosso sentido.\n\nCarruagem seguinte: um vale diferente. A a seguir: um campo que conheci quando tinha doze anos.\n\nDois lugares adiante um homem observa uma cozinha. Acho que é a da mãe dele. Chora muito em silêncio.\n\nAs janelas mostram o que carregamos.\n\nEu tenho andado a carregar o Hollin. E o que subiu da escavação dele.\n\nSempre foi meu. Não me persegue. Meu.\n\nEstou serena.\n\nEdda Marsh"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Carta seis",
+      "variants": [
+        "Deixei de caminhar.\n\nEstou numa carruagem pequena perto da cauda. Ou perto da cabeça. A luz é igual nos dois sentidos.\n\nHá uma janela. Há um trinco na janela. Há um bom bocado que olho para o trinco.\n\nAs três cabeças estão aqui. Já não estão no vidro. Estão um pouco para lá dele, na escuridão. À espera.\n\nDecidi que não vou voltar a caminhar. Decidi que vou levantar o trinco.\n\nLevantei o trinco.\n\nA janela está aberta. A noite está muito fria. O cedro cheira mais forte quando o ar o atravessa.\n\nVou deixar isto aqui. Vou deixar a janela aberta também. Para quem encontrar o lugar a seguir.",
+        "Parei.\n\nUma carruagem pequena. Perto da cauda. Ou da cabeça. A luz é igual nos dois sentidos.\n\nUma janela. Um trinco. Há um bom bocado que olho para ele.\n\nAs três cabeças estão aqui. Já não no vidro. Um pouco para lá. À espera.\n\nNão vou voltar a caminhar. Vou levantar o trinco.\n\nLevantei-o.\n\nA janela está aberta. A noite está fria. O cedro cheira mais forte quando o ar se move.\n\nDeixo isto aqui.\n\nDeixo a janela aberta também."
+      ]
+    }
+  ]
+}
