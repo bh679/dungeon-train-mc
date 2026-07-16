@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
 import games.brennan.dungeontrain.narrative.DeathNoteTitle;
+import games.brennan.dungeontrain.narrative.DeathNoteTitleLocalization;
 import games.brennan.dungeontrain.narrative.LetterLecternEvents;
 import games.brennan.dungeontrain.narrative.LetterSigning;
 import games.brennan.dungeontrain.narrative.PlayerWrittenBookTag;
@@ -112,8 +113,11 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
 
             // Death Note curse — a book titled "Death Note" (any caps/spacing) is a personal + relay
             // mechanic, NOT a community contribution: it runs independently of the shared-book consent
-            // gate and never uploads its text. Handled locally; vanilla signing is cancelled.
-            if (DeathNoteTitle.isDeathNoteTitle(titleStr)
+            // gate and never uploads its text. Handled locally; vanilla signing is cancelled. The
+            // trigger also matches the author's own-language title (e.g. zh_cn "死亡笔记") — keyed off
+            // the signer's client locale, with English always accepted (DeathNoteTitleLocalization).
+            if (DeathNoteTitle.isDeathNoteTitle(titleStr,
+                        DeathNoteTitleLocalization.titlesFor(WorldInfoReporter.clientLanguage(serverPlayer)))
                     && games.brennan.dungeontrain.config.DungeonTrainConfig.isDeathNotesEnabled()) {
                 DeathNoteSigning.handleSigning(serverPlayer, titleStr, author, pageStrs, writable);
                 ci.cancel();
