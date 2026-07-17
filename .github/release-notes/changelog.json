@@ -4917,6 +4917,22 @@
       "released": true,
       "released_in": "v0.470.0",
       "released_at": "2026-07-17T00:27:33Z"
+    },
+    {
+      "id": "consistent-carriage-seam-gaps",
+      "version": "0.471.0",
+      "type": "fix",
+      "title": "Tighter, consistent gaps between train carriage groups",
+      "summary": "The seams between carriage groups on the train now settle at a small, even gap instead of varying in size or occasionally clipping into each other. Also fixes the seam jitter that happened when groups landed too close together.",
+      "highlights": [
+        "Even, small gaps between carriage groups",
+        "No more touching/clipping seams or seam jitter"
+      ],
+      "pr": 782,
+      "date": "2026-07-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
