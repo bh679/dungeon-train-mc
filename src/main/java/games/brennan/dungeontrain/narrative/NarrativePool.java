@@ -16,10 +16,10 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -50,8 +50,12 @@ public final class NarrativePool {
     /** Max series requested per fetch (the random window; pinned in-progress series come on top). */
     static final int POOL_LIMIT = 20;
 
-    /** Upper bound on the accumulated served/seen seriesId set passed as {@code exclude}. */
-    static final int SEEN_CAP = 200;
+    /**
+     * Stable per-process token identifying THIS world/server to the relay's server-side pool session
+     * state ({@code &session=}). Generated once at class load — the same lifetime the old process-static
+     * seen-set had, so a game restart starts a fresh session. Opaque to the relay.
+     */
+    private static final String SESSION = UUID.randomUUID().toString();
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1) // relay is HTTP/1.1; avoids h2c against a bare-Node relay (matches DeathReporter/BookStatsClient)
@@ -76,13 +80,6 @@ public final class NarrativePool {
      * relay, which the lectern taper reads as "nothing to discover" → mod-only selection.
      */
     private static volatile int approvedTotal = 0;
-
-    /**
-     * SeriesIds the world has served / seen, used as the {@code exclude} filter so repeat fetches walk
-     * toward fresh series. Insertion-ordered so the oldest evict first at {@link #SEEN_CAP}. In-progress
-     * series are forced back in via {@code include} regardless of this set.
-     */
-    private static final Set<String> SEEN_IDS = new LinkedHashSet<>();
 
     /** Prevents overlapping in-flight fetches (a slow relay shouldn't stack requests every tick). */
     private static volatile boolean fetchInFlight = false;
@@ -149,11 +146,9 @@ public final class NarrativePool {
         if (fetchInFlight) return;
         fetchInFlight = true;
         try {
-            String exclude = excludeCsv();
-            boolean hadExclude = !exclude.isEmpty();
             String include = idsCsv(pinnedInProgress);
             String url = DungeonTrain.relayBaseUrl()
-                    + "/narratives/pool?exclude=" + exclude + "&include=" + include + "&limit=" + POOL_LIMIT
+                    + "/narratives/pool?session=" + SESSION + "&include=" + include + "&limit=" + POOL_LIMIT
                     + langParam(hostLang);
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
@@ -171,7 +166,7 @@ public final class NarrativePool {
                                 LOGGER.debug("[DungeonTrain] narrative pool fetch -> HTTP {}", resp.statusCode());
                                 return;
                             }
-                            applyResponse(resp.body(), hadExclude);
+                            applyResponse(resp.body());
                         } catch (Throwable t) {
                             LOGGER.debug("[DungeonTrain] narrative pool parse failed: {}", t.toString());
                         } finally {
@@ -185,12 +180,13 @@ public final class NarrativePool {
     }
 
     /**
-     * Parse the relay JSON body, build the new snapshot, and accumulate served ids into the seen-set.
-     * {@code hadExclude} disambiguates the two zero-series outcomes exactly as {@link SharedBookPool}: an
-     * exclude-starvation (seen-set covers the whole pool) resets the seen-set and KEEPS the current snapshot
-     * (silent full cycle), whereas a genuinely empty pool (no exclude, still nothing) clears the snapshot.
+     * Parse the relay JSON body and swap in the new snapshot. With server-side session state the relay
+     * owns de-duplication and starvation-recycle, so a zero-series reply is unambiguous — the pool
+     * genuinely has nothing to discover (an exhausted session recycles server-side and comes back full,
+     * never empty), so an empty {@code series} array clears the snapshot. A malformed reply (missing
+     * array) keeps the last good snapshot rather than dropping lectern continuity over a transient blip.
      */
-    static void applyResponse(String body, boolean hadExclude) {
+    static void applyResponse(String body) {
         JsonElement root = JsonParser.parseString(body);
         if (!root.isJsonObject()) return;
         JsonObject obj = root.getAsJsonObject();
@@ -218,18 +214,13 @@ public final class NarrativePool {
             if (s != null) parsed.add(s);
         }
         if (parsed.isEmpty()) {
-            if (hadExclude) {
-                resetSeen();
-                LOGGER.debug("[DungeonTrain] narrative pool exhausted by exclude filter — reset seen-set, keeping {} series",
-                        snapshot.size());
-            } else {
-                snapshot = List.of();
-                LOGGER.debug("[DungeonTrain] narrative pool is empty");
-            }
+            // Relay has nothing to discover for this world (the session recycles server-side, so this is a
+            // genuinely empty pool, not exclude-starvation). Clear the snapshot.
+            snapshot = List.of();
+            LOGGER.debug("[DungeonTrain] narrative pool is empty");
             return;
         }
         snapshot = List.copyOf(parsed);
-        rememberSeen(parsed);
         LOGGER.debug("[DungeonTrain] narrative pool refreshed: {} series", parsed.size());
     }
 
@@ -272,27 +263,7 @@ public final class NarrativePool {
         return new SeriesLetter(letterIndex, title, pages);
     }
 
-    private static synchronized void rememberSeen(List<Series> series) {
-        for (Series s : series) {
-            SEEN_IDS.add(s.seriesId());
-        }
-        while (SEEN_IDS.size() > SEEN_CAP) {
-            var it = SEEN_IDS.iterator();
-            it.next();
-            it.remove();
-        }
-    }
-
-    private static synchronized String excludeCsv() {
-        if (SEEN_IDS.isEmpty()) return "";
-        return String.join(",", SEEN_IDS);
-    }
-
-    private static synchronized void resetSeen() {
-        SEEN_IDS.clear();
-    }
-
-    /** Comma-join a set of seriesIds for the {@code include}/{@code exclude} query params (empty → ""). */
+    /** Comma-join a set of seriesIds for the {@code include} query param (empty → ""). */
     private static String idsCsv(Set<String> ids) {
         if (ids == null || ids.isEmpty()) return "";
         return ids.stream().filter(s -> s != null && !s.isEmpty()).collect(Collectors.joining(","));
@@ -313,10 +284,9 @@ public final class NarrativePool {
         return state;
     }
 
-    /** Test/reset hook: drop the snapshot and seen-set (used by unit tests and on server stop). */
+    /** Test/reset hook: drop the snapshot (used by unit tests and on server stop). */
     public static synchronized void clear() {
         snapshot = List.of();
-        SEEN_IDS.clear();
         fetchInFlight = false;
         approvedTotal = 0;
     }

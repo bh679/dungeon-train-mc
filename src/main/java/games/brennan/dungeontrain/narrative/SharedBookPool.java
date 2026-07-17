@@ -17,10 +17,8 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 /**
  * Server-side, read-mostly cache of approved community books fetched from the Dungeon Train relay's
@@ -35,10 +33,13 @@ import java.util.stream.Collectors;
  * atomically swaps in a fresh immutable list when the relay replies. All swaps replace the reference
  * wholesale (never mutate a published list), so a reader always sees a consistent snapshot.</p>
  *
- * <h3>Bounds</h3>
- * <p>Each fetch requests at most {@link #POOL_LIMIT} books and passes the accumulated {@code exclude}
- * set of ids the world has already served, so repeat fetches favour fresh content. The seen-set is
- * capped at {@link #SEEN_CAP} (oldest ids evicted) so it can't grow without bound.</p>
+ * <h3>De-duplication (server-side)</h3>
+ * <p>Each fetch requests at most {@link #POOL_LIMIT} books and identifies this world with a stable
+ * per-process {@link #SESSION} token ({@code &session=}). The relay tracks which ids it has already
+ * offered this session and hands back fresh content on repeat fetches, recycling once the whole pool has
+ * been served — so the client no longer accumulates a "seen" set or ships a growing {@code exclude=}
+ * CSV (a T2 scaling fix). Against an older relay that ignores {@code session} the fetch still returns a
+ * random window — graceful degradation, just without the dedup.</p>
  */
 public final class SharedBookPool {
 
@@ -47,8 +48,12 @@ public final class SharedBookPool {
     /** Max books requested per fetch. */
     static final int POOL_LIMIT = 20;
 
-    /** Upper bound on the accumulated served/seen id set passed as {@code exclude}. */
-    static final int SEEN_CAP = 200;
+    /**
+     * Stable per-process token identifying THIS world/server to the relay's server-side pool session
+     * state. Generated once at class load — the same lifetime the old process-static seen-set had, so a
+     * game restart starts a fresh session (the relay re-offers), exactly as before. Opaque to the relay.
+     */
+    private static final String SESSION = UUID.randomUUID().toString();
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1) // relay is HTTP/1.1; avoids h2c against a bare-Node relay (matches NarrativePool/DeathReporter/BookStatsClient)
@@ -71,13 +76,6 @@ public final class SharedBookPool {
      * field, which the taper reads as "unknown" → no taper (today's flat-max behaviour).
      */
     private static volatile int approvedTotal = 0;
-
-    /**
-     * Ids the world has served / seen, used as the {@code exclude} filter so repeat fetches favour
-     * fresh books. Insertion-ordered so the oldest ids evict first at {@link #SEEN_CAP}. Guarded by its
-     * own monitor (only touched from the async fetch continuation + its exclude read).
-     */
-    private static final Set<Integer> SEEN_IDS = new LinkedHashSet<>();
 
     /** Prevents overlapping in-flight fetches (a slow relay shouldn't stack requests every tick). */
     private static volatile boolean fetchInFlight = false;
@@ -135,10 +133,8 @@ public final class SharedBookPool {
         if (fetchInFlight) return;
         fetchInFlight = true;
         try {
-            String exclude = excludeCsv();
-            boolean hadExclude = !exclude.isEmpty();
             String url = DungeonTrain.relayBaseUrl()
-                    + "/books/pool?exclude=" + exclude + "&limit=" + POOL_LIMIT + langParam(hostLang);
+                    + "/books/pool?session=" + SESSION + "&limit=" + POOL_LIMIT + langParam(hostLang);
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Accept", "application/json")
@@ -155,7 +151,7 @@ public final class SharedBookPool {
                                 LOGGER.debug("[DungeonTrain] shared-book pool fetch -> HTTP {}", resp.statusCode());
                                 return;
                             }
-                            applyResponse(resp.body(), hadExclude);
+                            applyResponse(resp.body());
                         } catch (Throwable t) {
                             LOGGER.debug("[DungeonTrain] shared-book pool parse failed: {}", t.toString());
                         } finally {
@@ -170,22 +166,15 @@ public final class SharedBookPool {
     }
 
     /**
-     * Parse the relay JSON body, build the new snapshot, and accumulate served ids into the seen-set.
+     * Parse the relay JSON body and swap in the new snapshot.
      *
-     * <p>{@code hadExclude} is whether this fetch sent a non-empty {@code exclude} filter — it
-     * disambiguates the two ways a fetch can come back with zero books:</p>
-     * <ul>
-     *   <li><b>Exclude-starvation</b> ({@code hadExclude} true, 0 books): the seen-set has grown to
-     *       cover every book the relay holds, so the filter excluded them all. This is NOT an empty
-     *       pool — reset the seen-set so the next refresh re-pulls the whole pool (a "silent full
-     *       cycle", mirroring the random-book picker), and KEEP the current snapshot so loot keeps
-     *       serving books meanwhile. Without this the pool empties permanently the moment every book
-     *       has been served once.</li>
-     *   <li><b>Genuinely empty pool</b> ({@code hadExclude} false, 0 books): nothing was excluded and
-     *       still nothing came back — the relay really has no approved books. Clear the snapshot.</li>
-     * </ul>
+     * <p>With server-side session state the relay now owns de-duplication and starvation-recycle, so a
+     * zero-book reply is unambiguous: the relay genuinely has no approved book to serve this world right
+     * now (an exhausted session is recycled server-side and comes back full, never empty). An empty
+     * {@code books} array therefore clears the snapshot; a malformed reply (missing array) keeps the last
+     * good snapshot rather than wiping loot over a transient blip.</p>
      */
-    static void applyResponse(String body, boolean hadExclude) {
+    static void applyResponse(String body) {
         JsonElement root = JsonParser.parseString(body);
         if (!root.isJsonObject()) return;
         JsonObject obj = root.getAsJsonObject();
@@ -194,8 +183,8 @@ public final class SharedBookPool {
             return;
         }
         // Capture the relay-reported total of APPROVED books before the books-array checks, so it is
-        // refreshed even on the exclude-starvation / empty-books branches (the relay counts the whole
-        // pool, not the excluded window). A relay too old to send `total` leaves the last value intact.
+        // refreshed even on the empty-books branch (the relay counts the whole pool, not the window). A
+        // relay too old to send `total` leaves the last value intact.
         if (obj.has("total") && obj.get("total").isJsonPrimitive()) {
             try {
                 approvedTotal = Math.max(0, obj.get("total").getAsInt());
@@ -215,21 +204,14 @@ public final class SharedBookPool {
             if (book != null) parsed.add(book);
         }
         if (parsed.isEmpty()) {
-            if (hadExclude) {
-                // Exclude-starvation, not an empty pool — reset the seen-set and keep serving the
-                // current snapshot; the next refresh (empty exclude) re-pulls the full pool.
-                resetSeen();
-                LOGGER.debug("[DungeonTrain] shared-book pool exhausted by exclude filter — reset seen-set, keeping {} book(s)",
-                        snapshot.size());
-            } else {
-                snapshot = List.of();
-                LOGGER.debug("[DungeonTrain] shared-book pool is empty");
-            }
+            // Relay has no approved book to serve this world (the session recycles server-side, so this is
+            // a genuinely empty pool, not exclude-starvation). Clear the snapshot.
+            snapshot = List.of();
+            LOGGER.debug("[DungeonTrain] shared-book pool is empty");
             return;
         }
         // Publish an immutable snapshot (copy so no external ref can mutate it).
         snapshot = List.copyOf(parsed);
-        rememberSeen(parsed);
         LOGGER.debug("[DungeonTrain] shared-book pool refreshed: {} book(s)", parsed.size());
     }
 
@@ -249,36 +231,10 @@ public final class SharedBookPool {
         return new PoolBook(id, title, author, pages);
     }
 
-    private static synchronized void rememberSeen(List<PoolBook> books) {
-        for (PoolBook b : books) {
-            SEEN_IDS.add(b.id());
-        }
-        // Evict oldest ids beyond the cap (LinkedHashSet iterates in insertion order).
-        while (SEEN_IDS.size() > SEEN_CAP) {
-            var it = SEEN_IDS.iterator();
-            it.next();
-            it.remove();
-        }
-    }
-
-    private static synchronized String excludeCsv() {
-        if (SEEN_IDS.isEmpty()) return "";
-        return SEEN_IDS.stream().map(String::valueOf).collect(Collectors.joining(","));
-    }
-
     /** The {@code &lang=<locale>} query fragment for language-matched delivery, or {@code ""} when blank. */
     static String langParam(String hostLang) {
         if (hostLang == null || hostLang.isBlank()) return "";
         return "&lang=" + URLEncoder.encode(hostLang, StandardCharsets.UTF_8);
-    }
-
-    /**
-     * Clear the served/seen id set so the next refresh sends an empty {@code exclude} and re-pulls the
-     * whole relay pool. Called when the exclude filter has starved the pool (see {@link #applyResponse}),
-     * mirroring the random-book picker's silent full-cycle reset.
-     */
-    private static synchronized void resetSeen() {
-        SEEN_IDS.clear();
     }
 
     /** Splittable-mix so a raw roll seed spreads uniformly across the pool index. */
@@ -290,10 +246,9 @@ public final class SharedBookPool {
         return state;
     }
 
-    /** Test/reset hook: drop the snapshot and seen-set (used by unit tests and on server stop). */
+    /** Test/reset hook: drop the snapshot (used by unit tests and on server stop). */
     static synchronized void clear() {
         snapshot = List.of();
-        SEEN_IDS.clear();
         fetchInFlight = false;
         approvedTotal = 0;
     }
