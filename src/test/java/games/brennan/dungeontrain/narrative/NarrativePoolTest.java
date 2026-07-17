@@ -33,7 +33,7 @@ final class NarrativePoolTest {
                 + "{\"seriesId\":\"s1\",\"author\":\"Alice\",\"letters\":["
                 + "{\"letterIndex\":1,\"title\":\"One\",\"pages\":[\"p1\"]},"
                 + "{\"letterIndex\":2,\"title\":\"Two\",\"pages\":[\"p2a\",\"p2b\"]}]}]}";
-        NarrativePool.applyResponse(body, false);
+        NarrativePool.applyResponse(body);
 
         assertEquals(5, NarrativePool.approvedTotal(), "total is the approved-LETTER count, not series");
         assertFalse(NarrativePool.isEmpty());
@@ -49,7 +49,7 @@ final class NarrativePoolTest {
     @Test
     @DisplayName("applyResponse: total is captured even when the series window is empty")
     void totalWithoutWindow() {
-        NarrativePool.applyResponse("{\"ok\":true,\"total\":7,\"series\":[]}", false);
+        NarrativePool.applyResponse("{\"ok\":true,\"total\":7,\"series\":[]}");
         assertEquals(7, NarrativePool.approvedTotal());
         assertTrue(NarrativePool.isEmpty());
     }
@@ -60,7 +60,7 @@ final class NarrativePoolTest {
         String body = "{\"ok\":true,\"total\":1,\"series\":["
                 + "{\"seriesId\":\"empty\",\"author\":\"X\",\"letters\":[]},"
                 + "{\"seriesId\":\"ok\",\"author\":\"Y\",\"letters\":[{\"letterIndex\":1,\"pages\":[\"p\"]}]}]}";
-        NarrativePool.applyResponse(body, false);
+        NarrativePool.applyResponse(body);
         assertTrue(NarrativePool.resolve("empty").isEmpty(), "a series with no approved letters is not servable");
         assertTrue(NarrativePool.resolve("ok").isPresent());
     }
@@ -69,25 +69,25 @@ final class NarrativePoolTest {
     @DisplayName("applyResponse: a not-ok / missing-series reply keeps the last good snapshot")
     void notOkKeepsSnapshot() {
         NarrativePool.applyResponse("{\"ok\":true,\"total\":2,\"series\":["
-                + "{\"seriesId\":\"keep\",\"letters\":[{\"letterIndex\":1,\"pages\":[\"p\"]}]}]}", false);
+                + "{\"seriesId\":\"keep\",\"letters\":[{\"letterIndex\":1,\"pages\":[\"p\"]}]}]}");
         assertTrue(NarrativePool.resolve("keep").isPresent());
-        NarrativePool.applyResponse("{\"ok\":false}", false);
+        NarrativePool.applyResponse("{\"ok\":false}");
         assertTrue(NarrativePool.resolve("keep").isPresent(), "snapshot survives a not-ok reply");
-        NarrativePool.applyResponse("{\"ok\":true}", false);
+        NarrativePool.applyResponse("{\"ok\":true}");
         assertTrue(NarrativePool.resolve("keep").isPresent(), "snapshot survives a missing-series reply");
     }
 
     @Test
-    @DisplayName("exclude-starvation (hadExclude + empty) keeps the snapshot; genuine-empty clears it")
-    void excludeStarvationVsEmpty() {
+    @DisplayName("an empty series array clears the snapshot (relay owns starvation-recycle server-side)")
+    void emptySeriesClearsSnapshot() {
         String good = "{\"ok\":true,\"total\":1,\"series\":["
                 + "{\"seriesId\":\"s\",\"letters\":[{\"letterIndex\":1,\"pages\":[\"p\"]}]}]}";
-        NarrativePool.applyResponse(good, false);
+        NarrativePool.applyResponse(good);
         assertTrue(NarrativePool.resolve("s").isPresent());
-        NarrativePool.applyResponse("{\"ok\":true,\"total\":1,\"series\":[]}", true);  // starvation
-        assertTrue(NarrativePool.resolve("s").isPresent(), "starvation keeps the current snapshot");
-        NarrativePool.applyResponse("{\"ok\":true,\"total\":0,\"series\":[]}", false); // genuinely empty
-        assertTrue(NarrativePool.isEmpty(), "a genuine-empty reply clears the snapshot");
+        // With server-side session state a zero-series reply is unambiguous — the relay recycles an
+        // exhausted session itself, so an empty window means a genuinely empty pool → clear the snapshot.
+        NarrativePool.applyResponse("{\"ok\":true,\"total\":0,\"series\":[]}");
+        assertTrue(NarrativePool.isEmpty(), "an empty reply clears the snapshot");
     }
 
     @Test
@@ -96,7 +96,7 @@ final class NarrativePoolTest {
         String body = "{\"ok\":true,\"total\":2,\"series\":["
                 + "{\"seriesId\":\"a\",\"letters\":[{\"letterIndex\":1,\"pages\":[\"p\"]}]},"
                 + "{\"seriesId\":\"b\",\"letters\":[{\"letterIndex\":1,\"pages\":[\"p\"]}]}]}";
-        NarrativePool.applyResponse(body, false);
+        NarrativePool.applyResponse(body);
 
         Optional<NarrativePool.Series> pick1 = NarrativePool.pickUnstarted(42L, Set.of());
         Optional<NarrativePool.Series> pick2 = NarrativePool.pickUnstarted(42L, Set.of());
