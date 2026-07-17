@@ -15,6 +15,7 @@ import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -211,6 +212,57 @@ class RelayOutboxTest {
         box.flush(); // ONE flush delivers all three in a single batch POST
         assertEquals(3, batch.lastBatchLineCount(), "all three coalesced into one NDJSON batch");
         assertEquals(0, box.pendingCount(), "all delivered");
+    }
+
+    @Test
+    void runBatchedCoalescesOnlineBurstIntoOneBatch(@TempDir Path dir) {
+        Path file = dir.resolve("outbox.json");
+        RecordingBatchSender batch = new RecordingBatchSender(200); // ONLINE: each bare enqueue delivers on its own
+        RelayOutbox box = outbox(file, NOOP_SENDER, batch, () -> 1_000L);
+
+        // The exact per-death burst: five batchable telemetry signals enqueued back-to-back.
+        box.runBatched(() -> {
+            box.enqueue("/telemetry/death", "{\"i\":1}");
+            box.enqueue("/telemetry/death-equipment", "{\"i\":2}");
+            box.enqueue("/telemetry/run-summary", "{\"i\":3}");
+            box.enqueue("/telemetry/death-detail", "{\"i\":4}");
+            box.enqueue("/telemetry/death-inventory", "{\"i\":5}");
+        });
+
+        assertEquals(1, batch.urls.size(), "the whole death burst coalesces into ONE batch POST");
+        assertEquals(5, batch.lastBatchLineCount(), "all five death signals rode a single NDJSON batch");
+        assertEquals(0, box.pendingCount(), "all delivered on the single trailing flush");
+    }
+
+    @Test
+    void onlineEnqueuesWithoutBatchScopeFanOutOneRequestEach(@TempDir Path dir) {
+        // Documents the behaviour runBatched fixes: absent a batch window, each online enqueue flushes
+        // immediately and reserves its item in-flight, so a synchronous burst still fans out per item.
+        Path file = dir.resolve("outbox.json");
+        RecordingBatchSender batch = new RecordingBatchSender(200);
+        RelayOutbox box = outbox(file, NOOP_SENDER, batch, () -> 1_000L);
+
+        box.enqueue("/telemetry/death", "{\"i\":1}");
+        box.enqueue("/telemetry/death-equipment", "{\"i\":2}");
+
+        assertEquals(2, batch.urls.size(), "each online enqueue flushes on its own -> one batch POST each");
+        assertEquals(0, box.pendingCount(), "both delivered");
+    }
+
+    @Test
+    void runBatchedFlushesEvenWhenWorkThrows(@TempDir Path dir) {
+        // The trailing flush runs in a finally, so an exception mid-burst never strands a queued item.
+        Path file = dir.resolve("outbox.json");
+        RecordingBatchSender batch = new RecordingBatchSender(200);
+        RelayOutbox box = outbox(file, NOOP_SENDER, batch, () -> 1_000L);
+
+        assertThrows(RuntimeException.class, () -> box.runBatched(() -> {
+            box.enqueue("/telemetry/death", "{\"i\":1}");
+            throw new RuntimeException("boom");
+        }));
+
+        assertEquals(1, batch.urls.size(), "the trailing flush still ran despite the throw");
+        assertEquals(0, box.pendingCount(), "the queued item was delivered, not stranded");
     }
 
     @Test
