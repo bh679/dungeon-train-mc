@@ -124,6 +124,7 @@ public final class RelayOutbox {
     private final LongSupplier nowMs;
     private Path file;
     private boolean loaded;
+    private int batchDepth; // >0 while inside runBatched(): suppresses the per-enqueue flush so a burst coalesces
 
     private record Item(String key, String path, String body, long createdAtMs) {}
 
@@ -152,14 +153,48 @@ public final class RelayOutbox {
         if (path == null || path.isBlank() || body == null || body.isBlank()) {
             return;
         }
+        boolean flushNow;
         synchronized (this) {
             ensureLoaded();
             String key = UUID.randomUUID().toString(); // dedup handle + relay idempotency key
             pending.put(key, new Item(key, path, body, nowMs.getAsLong()));
             evict();
             save();
+            flushNow = (batchDepth == 0); // inside a runBatched() scope → defer to its single trailing flush
         }
-        flush();
+        if (flushNow) {
+            flush();
+        }
+    }
+
+    /**
+     * Run {@code work} as a single batch window: any {@link #enqueue} it makes are persisted but their
+     * immediate per-item flush is suppressed, then exactly ONE {@link #flush()} runs when the outermost
+     * scope exits — so a burst of enqueues (e.g. the ~5 per-death telemetry reporters fired together in
+     * {@code RunStatsEvents.onPlayerDeath}) coalesces into a single {@code POST /telemetry/batch} instead
+     * of one request each. Without this, each {@code enqueue} flushes immediately and reserves its item
+     * in-flight before the async POST returns, so a synchronous burst still fans out one request per item.
+     *
+     * <p>Server-thread only, matching {@link #enqueue}; reentrant (nested scopes flush once, at the
+     * outermost exit). {@code work} always runs; a throw still triggers the trailing flush so nothing
+     * queued in the window is stranded.</p>
+     */
+    public void runBatched(Runnable work) {
+        synchronized (this) {
+            batchDepth++;
+        }
+        try {
+            work.run();
+        } finally {
+            boolean flushNow;
+            synchronized (this) {
+                batchDepth--;
+                flushNow = (batchDepth == 0);
+            }
+            if (flushNow) {
+                flush();
+            }
+        }
     }
 
     /**
