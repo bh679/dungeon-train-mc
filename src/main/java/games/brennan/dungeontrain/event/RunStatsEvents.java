@@ -20,6 +20,7 @@ import games.brennan.dungeontrain.net.AbandonRunPacket;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import games.brennan.dungeontrain.player.PlayerMobAppearance;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -218,25 +219,28 @@ public final class RunStatsEvents {
                 deathCause);
         DungeonTrainNet.sendTo(player, packet);
 
-        // Relay the worn armor + held item to dp-relay for the data explorer's player cards.
-        // Independent of the Discord toggle below — gated on its own inside the reporter.
-        DeathEquipmentReporter.report(player,
-                packet.armorHead(), packet.armorChest(), packet.armorLegs(), packet.armorFeet());
+        // Relay all ~5 per-death telemetry signals to dp-relay inside ONE RelayOutbox batch window, so
+        // the coalescing outbox folds them into a single POST /telemetry/batch instead of one request
+        // each (each enqueue would otherwise flush immediately and fan out). Every reporter is
+        // independent of the Discord toggle below — each is gated on its own (worldInfoToRelay) inside.
+        RelayOutbox.get().runBatched(() -> {
+            // Worn armor + held item -> the data explorer's player cards.
+            DeathEquipmentReporter.report(player,
+                    packet.armorHead(), packet.armorChest(), packet.armorLegs(), packet.armorFeet());
 
-        // Relay this life's run summary (duration + carriage + distance) to dp-relay for the data
-        // explorer's per-life playtime — same gate/pattern as the equipment reporter above.
-        RunSummaryReporter.report(player, packet);
+            // This life's run summary (duration + carriage + distance) -> the per-life playtime view.
+            RunSummaryReporter.report(player, packet);
 
-        // Relay a first-class per-death record so the explorer counts EVERY death, not only the ones
-        // that post a Discord death report below. Fires independent of isDeathReportToDiscord() (Free
-        // Play / short-abandon / report-disabled deaths still count) — gated only on worldInfoToRelay.
-        DeathReporter.report(player, packet);
+            // A first-class per-death record so the explorer counts EVERY death, not only the ones that
+            // post a Discord death report below. Fires independent of isDeathReportToDiscord() (Free
+            // Play / short-abandon / report-disabled deaths still count).
+            DeathReporter.report(player, packet);
 
-        // Relay the full paginated narrative + death-screen stats, and the full hotbar/main-inventory
-        // + offhand, so the data explorer's per-death detail view can show everything the death screen
-        // did. Same gate/pattern as the reporters above.
-        DeathDetailReporter.report(player, packet);
-        DeathInventoryReporter.report(player);
+            // The full paginated narrative + death-screen stats, and the full hotbar/main-inventory +
+            // offhand, so the per-death detail view can show everything the death screen did.
+            DeathDetailReporter.report(player, packet);
+            DeathInventoryReporter.report(player);
+        });
 
         // Mirror the death-screen run summary to Discord via the bundled Discord Presence API.
         // Posts even on a Free Play run (the death screen renders for cheated runs too); only the
