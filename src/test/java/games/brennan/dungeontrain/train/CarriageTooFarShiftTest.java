@@ -67,18 +67,18 @@ final class CarriageTooFarShiftTest {
     }
 
     @Test
-    @DisplayName("gap=2.5 (inside dead-band) → no shift, clean tick")
+    @DisplayName("gap=0.5 (inside dead-band) → no shift, clean tick")
     void gapInsideDeadBand_noShift() {
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
-            false, 5, 0, 2.5, false, false);
+            false, 5, 0, 0.5, false, false);
         assertEquals(0.0, dx, EPS);
     }
 
     @Test
-    @DisplayName("gap=3.0 exactly (boundary) → no shift, clean tick")
+    @DisplayName("gap=0.9 exactly (MAX_GAP_BLOCKS boundary) → no shift, clean tick")
     void gapAtBoundary_noShift() {
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
-            false, 5, 0, 3.0, false, false);
+            false, 5, 0, 0.9, false, false);
         assertEquals(0.0, dx, EPS);
     }
 
@@ -142,7 +142,7 @@ final class CarriageTooFarShiftTest {
     @DisplayName("locked, gap inside dead-band → no shift (same as unlocked)")
     void locked_gapInDeadBand_noShift() {
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
-            false, 5, 0, 2.5, false, true);
+            false, 5, 0, 0.5, false, true);
         assertEquals(0.0, dx, EPS);
     }
 

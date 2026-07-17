@@ -194,6 +194,16 @@ public final class TrainTransformProvider implements KinematicDriver {
     private Vector3d spawnWorldPos;
     private long spawnGameTick = -1L;
 
+    // One-shot sub-block world-X nudge applied the instant spawnWorldPos is
+    // captured on the first kinematic tick (see nextTransform). Lets the
+    // bootstrap eager-fill inject a fractional inter-group gap that integer
+    // BlockPos spawn origins cannot express: the blocks land on an integer
+    // grid, this carries the leftover fraction so the visible seam settles at
+    // exactly the target gap. shiftSpawnPosition can't do this at spawn time —
+    // it no-ops while spawnWorldPos is still null. Consumed (reset to 0) on
+    // application so it fires once. See {@link #preSeedSpawnShiftX}.
+    private double pendingSpawnShiftX = 0.0;
+
     // When true, {@link TrainCarriageAppender} skips this carriage's train
     // entirely — no append regardless of player pIdx. Set by debug probes
     // (see {@code /dt debug pair}) so test fixtures stay exactly the size
@@ -347,6 +357,25 @@ public final class TrainTransformProvider implements KinematicDriver {
     public void preSeedSpawnTick(long currentGameTick) {
         if (this.spawnGameTick != -1L) return;
         this.spawnGameTick = currentGameTick;
+    }
+
+    /**
+     * Pre-seed a sub-block world-X offset applied once, the instant
+     * {@code spawnWorldPos} is captured on the first kinematic tick. The
+     * bootstrap eager-fill uses this to realise a fractional inter-group gap:
+     * the group's blocks are placed at an integer {@code BlockPos} origin
+     * (nearest whole block), and {@code dx} carries the leftover fraction
+     * ({@code desiredWorldX − round(desiredWorldX)}, so in {@code [-0.5, 0.5]})
+     * so the visible seam ends up at exactly the target gap instead of being
+     * quantised to a whole block.
+     *
+     * <p>Applied unconditionally at capture — independent of
+     * {@code placedSuccessfully} — so it survives the eager-fill placement
+     * exemption from the per-tick collision tracker. Additive, so multiple
+     * pre-seeds before the first tick accumulate.</p>
+     */
+    public void preSeedSpawnShiftX(double dx) {
+        this.pendingSpawnShiftX += dx;
     }
 
     public ResourceKey<Level> getDimensionKey() {
@@ -689,6 +718,16 @@ public final class TrainTransformProvider implements KinematicDriver {
                 spawnGameTick = currentGameTick;
             }
             canonicalPos = new Vector3d(spawnWorldPos);
+            // Apply any pre-seeded sub-block world-X nudge exactly once, now
+            // that spawnWorldPos exists (shiftSpawnPosition no-ops before this
+            // point). Carries the fractional inter-group gap the integer spawn
+            // origin couldn't express. Both spawnWorldPos and canonicalPos move
+            // so the deterministic formula extrapolates from the nudged origin.
+            if (pendingSpawnShiftX != 0.0) {
+                spawnWorldPos.x += pendingSpawnShiftX;
+                canonicalPos.x += pendingSpawnShiftX;
+                pendingSpawnShiftX = 0.0;
+            }
             lockedPositionInModel = new Vector3d(input.currentPositionInModel());
             JITTER_LOGGER.info(
                 "[baseline] pIdx={} groupSize={} trainId={} forced identity lockedRotation; spawnWorldPos={} spawnGameTick={} lockedPositionInModel={}",

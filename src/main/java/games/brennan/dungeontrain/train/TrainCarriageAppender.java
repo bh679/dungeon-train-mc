@@ -312,21 +312,43 @@ public final class TrainCarriageAppender {
      * as contact and reacts violently — at 0.1 blocks we observed groups
      * that landed near the floor jittering by 10-20 blocks per physics
      * tick, with overlapping blocks getting destroyed (smoke particles)
-     * and the emptied sub-level disposed by Sable. 0.3 leaves enough
-     * slack for the broad-phase even when reference-frame drift produces
-     * sub-1-block stride errors. Visible gap range becomes [0.3, 1.3]
-     * blocks at every group seam — a slight aesthetic cost vs prior 0.1.
+     * and the emptied sub-level disposed by Sable. 0.3 leaves enough slack
+     * for the broad-phase even when reference-frame drift produces sub-1-block
+     * stride errors. An in-game trial at 0.15 reintroduced seam jitter, so
+     * the minimum stays at 0.3 — spawn-time reliability does NOT address the
+     * runtime broad-phase. Visible gap range becomes [0.3, 1.3] blocks at
+     * spawn, pulled into the dead-band [0.3, 0.9] by {@link #MAX_GAP_BLOCKS}.
      */
     private static final double MIN_GAP_BLOCKS = 0.3;
 
     /**
-     * Per-seam visible gap (in blocks, as a bias passed to ceil/floor rounding)
-     * applied by {@link #eagerFillForBootstrap}. Slightly larger than
-     * {@link #MIN_GAP_BLOCKS} so eager-filled seams are visibly separated
-     * (≥1 block visible gap once integer rounding lands), matching what the
-     * normal per-tick appender produces over time.
+     * Chunk pre-warm reach bias (in blocks) used by {@link #eagerFillForBootstrap}
+     * to size how far ahead the eager-fill footprint reaches when pre-generating
+     * chunks. NO LONGER controls the visible seam gap — that is now
+     * {@link #TARGET_EAGER_GAP_BLOCKS}, injected as a fractional world-space
+     * offset. Kept as the reach bias because {@code ceil}-ing it gives a safe
+     * (≥ target) per-group over-estimate for the pre-warm bounds.
      */
     private static final double EAGER_FILL_GAP_BLOCKS = 0.5;
+
+    /**
+     * Target visible gap (in blocks) between adjacent carriage GROUPS produced
+     * by {@link #eagerFillForBootstrap} — the common path most players see.
+     *
+     * <p>Eager-fill commits each group to an integer {@code BlockPos} origin, so
+     * a whole-block gap (≥1) is the finest it can express directly. To get a
+     * sub-block gap the blocks are placed at the nearest integer and the
+     * leftover fraction is carried into the group's world transform via
+     * {@link TrainTransformProvider#preSeedSpawnShiftX} (a double
+     * {@code spawnWorldPos}), chained through true world X so per-group offsets
+     * don't cancel. Result: every seam settles at exactly this value.</p>
+     *
+     * <p>MUST stay ≥ the ~0.3 Sable broad-phase floor documented on
+     * {@link #MIN_GAP_BLOCKS} — below it the runtime broad-phase treats
+     * neighbours as touching and the train jitters. 0.4 is safely above the
+     * floor while ~60% tighter than the previous ~1.0-block eager-fill seam.</p>
+     */
+    private static final double TARGET_EAGER_GAP_BLOCKS = 0.4;
 
     /**
      * Maximum iterations of pre-spawn AABB-vs-AABB collision shifting in
@@ -580,11 +602,14 @@ public final class TrainCarriageAppender {
      * that the carriage must rest inside for {@link #CLEAN_TICKS_FOR_SUCCESS}
      * consecutive ticks before {@code placedSuccessfully} fires.
      *
-     * <p>Closes a 3-block gap in ~6 ticks at 0.5/tick — finishes well inside
-     * the 60-tick clean window so spawn-time placement overshoot never
-     * permanently strands a carriage at the wrong distance.</p>
+     * <p>The dead-band [MIN_GAP_BLOCKS, MAX_GAP_BLOCKS] = [0.3, 0.9] is
+     * 0.6 wide — wider than the 0.5/tick shift — so any spawn overshoot
+     * (natural spawn gap tops out near 1.3) is pulled inside the band in a
+     * single tick, finishing well inside the 60-tick clean window without
+     * oscillating, so placement overshoot never permanently strands a
+     * carriage at the wrong distance.</p>
      */
-    private static final double MAX_GAP_BLOCKS = 3.0;
+    private static final double MAX_GAP_BLOCKS = 0.9;
 
     /** Snapshot of the most recent post-spawn collision check per train. */
     public static Map<UUID, SpawnCollisionCheck> snapshotSpawnCollisionChecks() {
@@ -3114,8 +3139,9 @@ public final class TrainCarriageAppender {
         // grows symmetrically (forward AND backward together) rather than
         // filling one end completely before the other starts. Each iteration
         // is at most two TrainAssembler.spawnGroup calls. The
-        // {@link #EAGER_FILL_GAP_BLOCKS} bias is applied per seam by
-        // walking the rolling forward/backward reference X outward.
+        // {@link #TARGET_EAGER_GAP_BLOCKS} gap is applied per seam by walking
+        // the rolling forward/backward reference X outward (fractional part
+        // carried into the group transform via preSeedGapShift).
         for (int iter = 0; iter < iterCap; iter++) {
             boolean needsForward = trainMax < neededMax;
             boolean needsBackward = trainMin > neededMin;
@@ -3127,10 +3153,18 @@ public final class TrainCarriageAppender {
                     LOGGER.warn("[DungeonTrain] Bootstrap eager fill: refused to re-spawn known forward anchor={} trainId={}", forwardAnchor, trainId);
                     break;
                 }
-                double idealX = forwardRefX + subLevelStride;
-                int placeX = (int) Math.ceil(idealX + EAGER_FILL_GAP_BLOCKS);
+                // Desired world X for the exact TARGET_EAGER_GAP_BLOCKS gap.
+                // Place blocks at the NEAREST integer and carry the leftover
+                // fraction into the group's world transform so the seam lands
+                // at the sub-block target instead of a quantised whole block.
+                // Chain forwardRefX through the true (fractional) desired X, NOT
+                // the rounded placeX, so per-group offsets don't accumulate.
+                double desiredWorldX = forwardRefX + subLevelStride + TARGET_EAGER_GAP_BLOCKS;
+                int placeX = (int) Math.round(desiredWorldX);
+                double remainderX = desiredWorldX - placeX;
                 BlockPos newOrigin = new BlockPos(placeX, placeY, placeZ);
                 ManagedShip newShip = TrainAssembler.spawnGroup(level, newOrigin, velocity, forwardAnchor, groupSize, dims, trainId);
+                preSeedGapShift(newShip, remainderX);
                 markEagerFilledPlaced(newShip);
                 // Keep resident until serialized — bootstrap groups are the
                 // source of the unrecoverable null-pointer ghosts that dead-end
@@ -3138,7 +3172,7 @@ public final class TrainCarriageAppender {
                 // a later cull stays reloadable.
                 holdGroupResident(level, trainId, newShip);
                 BootstrapProgress.advance(groupSize);
-                forwardRefX = placeX;
+                forwardRefX = desiredWorldX;
                 trainMax = forwardAnchor;
                 spawned++;
             }
@@ -3148,14 +3182,19 @@ public final class TrainCarriageAppender {
                     LOGGER.warn("[DungeonTrain] Bootstrap eager fill: refused to re-spawn known backward anchor={} trainId={}", backwardAnchor, trainId);
                     break;
                 }
-                double idealX = backwardRefX - subLevelStride;
-                int placeX = (int) Math.floor(idealX - EAGER_FILL_GAP_BLOCKS);
+                // Mirror of the forward branch (see there): nearest-integer
+                // block origin + fractional remainder carried into the world
+                // transform, chaining backwardRefX through the true desired X.
+                double desiredWorldX = backwardRefX - subLevelStride - TARGET_EAGER_GAP_BLOCKS;
+                int placeX = (int) Math.round(desiredWorldX);
+                double remainderX = desiredWorldX - placeX;
                 BlockPos newOrigin = new BlockPos(placeX, placeY, placeZ);
                 ManagedShip newShip = TrainAssembler.spawnGroup(level, newOrigin, velocity, backwardAnchor, groupSize, dims, trainId);
+                preSeedGapShift(newShip, remainderX);
                 markEagerFilledPlaced(newShip);
                 holdGroupResident(level, trainId, newShip); // keep resident until serialized (see forward branch)
                 BootstrapProgress.advance(groupSize);
-                backwardRefX = placeX;
+                backwardRefX = desiredWorldX;
                 trainMin = backwardAnchor;
                 spawned++;
             }
@@ -3165,7 +3204,7 @@ public final class TrainCarriageAppender {
         // train (seed + just-spawned) is marked placedSuccessfully so the
         // per-tick collision tracker NEVER shifts them via shiftSpawnPosition.
         // The eager-fill guarantees non-overlap by construction (deterministic
-        // stride + EAGER_FILL_GAP_BLOCKS bias), so the tracker's nudge logic
+        // stride + TARGET_EAGER_GAP_BLOCKS gap), so the tracker's nudge logic
         // would only break the carefully-spaced layout. With all carriages
         // exempt, they move in lockstep via their shared targetVelocity and
         // the deterministic canonicalPos = spawnWorldPos + velocity*elapsedTicks
@@ -3255,6 +3294,22 @@ public final class TrainCarriageAppender {
     private static void markEagerFilledPlaced(ManagedShip newShip) {
         if (newShip.getKinematicDriver() instanceof TrainTransformProvider provider) {
             provider.markPlacedSuccessfully();
+        }
+    }
+
+    /**
+     * Pre-seed a just-spawned eager-fill group with a sub-block world-X offset
+     * so its seam lands at exactly {@link #TARGET_EAGER_GAP_BLOCKS} rather than
+     * the whole-block gap forced by the integer {@code BlockPos} spawn origin.
+     * The offset is applied once, when the group's {@code spawnWorldPos} is
+     * captured on its first kinematic tick (see
+     * {@link TrainTransformProvider#preSeedSpawnShiftX}). A zero remainder is a
+     * cheap no-op. Skipped silently if the ship has no transform provider.
+     */
+    private static void preSeedGapShift(ManagedShip newShip, double dx) {
+        if (newShip != null
+            && newShip.getKinematicDriver() instanceof TrainTransformProvider provider) {
+            provider.preSeedSpawnShiftX(dx);
         }
     }
 
