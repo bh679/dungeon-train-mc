@@ -67,19 +67,20 @@ final class CarriageTooFarShiftTest {
     }
 
     @Test
-    @DisplayName("gap=2.5 (inside dead-band) → no shift, clean tick")
+    @DisplayName("gap=0.5 (inside dead-band) → no shift, clean tick")
     void gapInsideDeadBand_noShift() {
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
-            false, 5, 0, 2.5, false, false);
+            false, 5, 0, 0.5, false, false);
         assertEquals(0.0, dx, EPS);
     }
 
     @Test
-    @DisplayName("gap=3.0 exactly (boundary) → no shift, clean tick")
-    void gapAtBoundary_noShift() {
+    @DisplayName("gap=0.6 (just over MAX=0.5) → PROPORTIONAL pull toward target 0.4 (mag 0.2)")
+    void gapJustOverMax_proportionalPull() {
+        // Forward spawn: pull toward train = -X. mag = min(0.5, |0.6-0.4|) = 0.2.
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
-            false, 5, 0, 3.0, false, false);
-        assertEquals(0.0, dx, EPS);
+            false, 5, 0, 0.6, false, false);
+        assertEquals(-0.2, dx, EPS);
     }
 
     @Test
@@ -100,6 +101,59 @@ final class CarriageTooFarShiftTest {
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
             true, 5, 6, 10.0, false, false);
         assertEquals(-SHIFT, dx, EPS);
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    // placementTrackerShiftDx — "too close" branch (enforces MIN_GAP floor)
+    // ───────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("forward spawn, gap=0.1 (below MIN) → PROPORTIONAL push +X away (mag 0.3)")
+    void forwardSpawnTooClose_shiftsForwardAway() {
+        // mag = min(0.5, |0.1-0.4|) = 0.3, away from train = +X.
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            false, 5, 0, 0.1, false, false);
+        assertEquals(+0.3, dx, EPS);
+    }
+
+    @Test
+    @DisplayName("backward spawn, gap=0.1 (below MIN) → PROPORTIONAL push -X away (mag 0.3)")
+    void backwardSpawnTooClose_shiftsBackwardAway() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            false, 5, 0, 0.1, true, false);
+        assertEquals(-0.3, dx, EPS);
+    }
+
+    @Test
+    @DisplayName("gap=0.0 (touching) → push away, mag 0.4 (=|0-target|), never left touching")
+    void gapTouching_shiftsAway() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            false, 5, 0, 0.0, false, false);
+        assertEquals(+0.4, dx, EPS);
+    }
+
+    @Test
+    @DisplayName("gap=0.3 exactly (MIN_GAP_BLOCKS boundary) → no shift, clean tick")
+    void gapAtMinBoundary_noShift() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            false, 5, 0, 0.3, false, false);
+        assertEquals(0.0, dx, EPS);
+    }
+
+    @Test
+    @DisplayName("gap=0.4 (target centre) → no shift, clean tick")
+    void gapAtTarget_noShift() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            false, 5, 0, 0.4, false, false);
+        assertEquals(0.0, dx, EPS);
+    }
+
+    @Test
+    @DisplayName("locked, gap=0.1 (too close) → still pushes away, mag 0.3 (lock does NOT gate separation)")
+    void locked_tooClose_stillShiftsAway() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            false, 5, 0, 0.1, false, true);
+        assertEquals(+0.3, dx, EPS);
     }
 
     // ───────────────────────────────────────────────────────────────
@@ -142,7 +196,7 @@ final class CarriageTooFarShiftTest {
     @DisplayName("locked, gap inside dead-band → no shift (same as unlocked)")
     void locked_gapInDeadBand_noShift() {
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
-            false, 5, 0, 2.5, false, true);
+            false, 5, 0, 0.5, false, true);
         assertEquals(0.0, dx, EPS);
     }
 
