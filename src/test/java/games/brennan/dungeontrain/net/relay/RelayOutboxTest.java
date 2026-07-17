@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.net.relay;
 
+import com.google.gson.JsonParser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -18,15 +19,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Behavioural tests for the durable relay outbox, exercised through its package-private test seams
- * (injected file path, {@link RelayOutbox.Sender transport}, relay base, and clock) — no Minecraft
- * runtime, no real network. Covers the durability contract: persist-before-send, remove-only-on-2xx,
- * hold-and-retry on failure, drop non-retryable poison, in-flight dedup, and both eviction bounds.
+ * (injected file path, single + batch {@link RelayOutbox.Sender transport}, relay base, and clock) —
+ * no Minecraft runtime, no real network. Covers the durability contract: persist-before-send,
+ * remove-only-on-2xx, hold-and-retry, drop non-retryable poison, in-flight dedup, and both eviction
+ * bounds — now delivered through the coalesced {@code /telemetry/batch} path, plus the batch-specific
+ * concerns: coalescing, batchable/non-batchable routing, and the old-relay individual fallback.
  */
 class RelayOutboxTest {
 
     private static final String BASE = "https://relay.test";
 
-    /** Records every send and returns a caller-controlled status synchronously. */
+    /** Records every single-transport send and returns a caller-controlled status synchronously. */
     private static final class RecordingSender implements RelayOutbox.Sender {
         final List<String> urls = new CopyOnWriteArrayList<>();
         volatile int status;
@@ -42,43 +45,92 @@ class RelayOutboxTest {
         }
     }
 
-    /** Hands back futures the test completes by hand — for exercising the in-flight state. */
-    private static final class ManualSender implements RelayOutbox.Sender {
-        final List<CompletableFuture<Integer>> futures = new CopyOnWriteArrayList<>();
+    /**
+     * Records every batch POST and synthesises the relay's per-item {@code {key,status}} response.
+     * {@code batchStatus} is the HTTP status of the POST itself (200 → per-item results echoed with
+     * {@code itemStatus}; anything else → that status with no body, driving hold / fallback paths).
+     */
+    private static final class RecordingBatchSender implements RelayOutbox.BatchSender {
+        final List<String> urls = new CopyOnWriteArrayList<>();
+        final List<String> bodies = new CopyOnWriteArrayList<>();
+        volatile int itemStatus;      // per-item verdict echoed for every batched line
+        volatile int batchStatus = 200; // HTTP status of the batch POST itself
+
+        RecordingBatchSender(int itemStatus) {
+            this.itemStatus = itemStatus;
+        }
+
+        @Override
+        public CompletableFuture<RelayOutbox.BatchResult> send(String url, String ndjson) {
+            urls.add(url);
+            bodies.add(ndjson);
+            if (batchStatus < 200 || batchStatus >= 300) {
+                return CompletableFuture.completedFuture(new RelayOutbox.BatchResult(batchStatus, null));
+            }
+            StringBuilder sb = new StringBuilder("{\"results\":[");
+            boolean first = true;
+            for (String line : ndjson.split("\n")) {
+                if (line.isBlank()) continue;
+                String key = JsonParser.parseString(line).getAsJsonObject().get("key").getAsString();
+                if (!first) sb.append(',');
+                first = false;
+                sb.append("{\"key\":\"").append(key).append("\",\"status\":").append(itemStatus).append('}');
+            }
+            sb.append("]}");
+            return CompletableFuture.completedFuture(new RelayOutbox.BatchResult(200, sb.toString()));
+        }
+
+        int lastBatchLineCount() {
+            if (bodies.isEmpty()) return 0;
+            String last = bodies.get(bodies.size() - 1);
+            return last.isBlank() ? 0 : last.split("\n").length;
+        }
+    }
+
+    /** Hands back batch futures the test completes by hand — for exercising the in-flight state. */
+    private static final class ManualBatchSender implements RelayOutbox.BatchSender {
+        final List<CompletableFuture<RelayOutbox.BatchResult>> futures = new CopyOnWriteArrayList<>();
         int calls;
 
         @Override
-        public CompletableFuture<Integer> send(String url, String body) {
+        public CompletableFuture<RelayOutbox.BatchResult> send(String url, String ndjson) {
             calls++;
-            CompletableFuture<Integer> f = new CompletableFuture<>();
+            CompletableFuture<RelayOutbox.BatchResult> f = new CompletableFuture<>();
             futures.add(f);
             return f;
         }
     }
 
-    private static RelayOutbox outbox(Path file, RelayOutbox.Sender sender, LongSupplier clock) {
+    private static final RelayOutbox.Sender NOOP_SENDER = (url, body) -> CompletableFuture.completedFuture(200);
+    private static final RelayOutbox.BatchSender NOOP_BATCH = (url, ndjson) ->
+            CompletableFuture.completedFuture(new RelayOutbox.BatchResult(200, "{\"results\":[]}"));
+
+    private static RelayOutbox outbox(Path file, RelayOutbox.Sender sender, RelayOutbox.BatchSender batch, LongSupplier clock) {
         Supplier<Path> fileSupplier = () -> file;
-        return new RelayOutbox(fileSupplier, sender, () -> BASE, clock);
+        return new RelayOutbox(fileSupplier, sender, batch, () -> BASE, clock);
     }
 
+    // --- delivery through the batch path -------------------------------------------------------
+
     @Test
-    void deliversAndRemovesOn2xx(@TempDir Path dir) {
+    void batchDeliversAndRemovesOn2xx(@TempDir Path dir) {
         Path file = dir.resolve("outbox.json");
-        RecordingSender sender = new RecordingSender(204);
-        RelayOutbox box = outbox(file, sender, () -> 1_000L);
+        RecordingBatchSender batch = new RecordingBatchSender(200);
+        RelayOutbox box = outbox(file, NOOP_SENDER, batch, () -> 1_000L);
 
         box.enqueue("/telemetry/run-summary", "{\"a\":1}");
 
-        assertEquals(1, sender.urls.size(), "one delivery attempt");
-        assertEquals(BASE + "/telemetry/run-summary", sender.urls.get(0), "path resolved against base at flush");
-        assertEquals(0, box.pendingCount(), "a 2xx removes the item");
+        assertEquals(1, batch.urls.size(), "one batch delivery attempt");
+        assertEquals(BASE + "/telemetry/batch", batch.urls.get(0), "coalesced onto /telemetry/batch");
+        assertEquals(0, box.pendingCount(), "a per-item 2xx removes the item");
     }
 
     @Test
     void heldWhenOfflineAndSurvivesReload(@TempDir Path dir) {
         Path file = dir.resolve("outbox.json");
-        RecordingSender offline = new RecordingSender(-1); // network failure
-        RelayOutbox box = outbox(file, offline, () -> 1_000L);
+        RecordingBatchSender offline = new RecordingBatchSender(200);
+        offline.batchStatus = -1; // network failure of the batch POST
+        RelayOutbox box = outbox(file, NOOP_SENDER, offline, () -> 1_000L);
 
         box.enqueue("/telemetry/world-info", "{\"seed\":42}");
         box.enqueue("/telemetry/death-equipment", "{\"slot\":\"head\"}");
@@ -86,60 +138,125 @@ class RelayOutboxTest {
         assertEquals(2, box.pendingCount(), "offline items stay queued");
         assertTrue(Files.exists(file), "queue persisted to disk before delivery");
 
-        // A fresh instance over the same file loads what the first persisted.
-        RelayOutbox reloaded = outbox(file, offline, () -> 1_000L);
+        RelayOutbox reloaded = outbox(file, NOOP_SENDER, offline, () -> 1_000L);
         assertEquals(2, reloaded.pendingCount(), "queued items survive a restart");
     }
 
     @Test
     void heldItemDeliversOnLaterRetry(@TempDir Path dir) {
         Path file = dir.resolve("outbox.json");
-        RecordingSender sender = new RecordingSender(-1);
-        RelayOutbox box = outbox(file, sender, () -> 1_000L);
+        RecordingBatchSender batch = new RecordingBatchSender(200);
+        batch.batchStatus = -1;
+        RelayOutbox box = outbox(file, NOOP_SENDER, batch, () -> 1_000L);
 
         box.enqueue("/telemetry/book-read", "{\"id\":\"x\"}");
         assertEquals(1, box.pendingCount(), "kept while offline");
 
-        sender.status = 200; // relay back online
+        batch.batchStatus = 200; // relay back online
         box.flush();
         assertEquals(0, box.pendingCount(), "delivered on the retry flush");
     }
 
     @Test
-    void nonRetryableStatusIsDroppedButServerErrorKept(@TempDir Path dir) {
+    void perItemPoisonDroppedButBatchLevelServerErrorKept(@TempDir Path dir) {
         Path file = dir.resolve("outbox.json");
-        RelayOutbox poison = outbox(file, new RecordingSender(400), () -> 1_000L);
+        // Per-item 400 (a poison record the relay rejected) → dropped, not retried forever.
+        RelayOutbox poison = outbox(file, NOOP_SENDER, new RecordingBatchSender(400), () -> 1_000L);
         poison.enqueue("/telemetry/run-summary", "{\"bad\":true}");
-        assertEquals(0, poison.pendingCount(), "a permanent 4xx is dropped, not retried forever");
+        assertEquals(0, poison.pendingCount(), "a per-item 4xx is dropped");
 
+        // Batch-level 503 (whole POST failed) → every item kept for retry.
         Path file2 = dir.resolve("outbox2.json");
-        RelayOutbox transient5xx = outbox(file2, new RecordingSender(503), () -> 1_000L);
-        transient5xx.enqueue("/telemetry/run-summary", "{\"ok\":true}");
-        assertEquals(1, transient5xx.pendingCount(), "a 5xx is kept for retry");
+        RecordingBatchSender transient5xx = new RecordingBatchSender(200);
+        transient5xx.batchStatus = 503;
+        RelayOutbox box2 = outbox(file2, NOOP_SENDER, transient5xx, () -> 1_000L);
+        box2.enqueue("/telemetry/run-summary", "{\"ok\":true}");
+        assertEquals(1, box2.pendingCount(), "a batch-level 5xx keeps the items");
     }
 
     @Test
-    void inFlightItemIsNotDispatchedTwice(@TempDir Path dir) {
+    void inFlightBatchIsNotDispatchedTwice(@TempDir Path dir) {
         Path file = dir.resolve("outbox.json");
-        ManualSender sender = new ManualSender();
-        RelayOutbox box = outbox(file, sender, () -> 1_000L);
+        ManualBatchSender batch = new ManualBatchSender();
+        RelayOutbox box = outbox(file, NOOP_SENDER, batch, () -> 1_000L);
 
         box.enqueue("/telemetry/world-info", "{\"seed\":1}"); // enqueue triggers the first flush
-        assertEquals(1, sender.calls, "dispatched once");
+        assertEquals(1, batch.calls, "dispatched once");
         assertEquals(1, box.pendingCount(), "still pending — delivery not yet confirmed");
 
         box.flush(); // a concurrent flush must not re-dispatch the in-flight key
-        assertEquals(1, sender.calls, "not dispatched again while in flight");
+        assertEquals(1, batch.calls, "not dispatched again while in flight");
 
-        sender.futures.get(0).complete(200); // relay confirms
+        // Complete the held future with a per-item 2xx for the one queued key.
+        String ndjson = "{\"results\":[{\"key\":\"" + queuedKey(file) + "\",\"status\":200}]}";
+        batch.futures.get(0).complete(new RelayOutbox.BatchResult(200, ndjson));
         assertEquals(0, box.pendingCount(), "removed after the 2xx completes");
     }
+
+    // --- coalescing + routing --------------------------------------------------------------------
+
+    @Test
+    void coalescesMultipleQueuedItemsIntoOneBatch(@TempDir Path dir) {
+        Path file = dir.resolve("outbox.json");
+        RecordingBatchSender batch = new RecordingBatchSender(200);
+        batch.batchStatus = -1; // accumulate offline
+        RelayOutbox box = outbox(file, NOOP_SENDER, batch, () -> 1_000L);
+
+        box.enqueue("/telemetry/book-read", "{\"i\":1}");
+        box.enqueue("/telemetry/run-summary", "{\"i\":2}");
+        box.enqueue("/telemetry/death", "{\"i\":3}");
+        assertEquals(3, box.pendingCount(), "three held offline");
+
+        batch.batchStatus = 200;
+        box.flush(); // ONE flush delivers all three in a single batch POST
+        assertEquals(3, batch.lastBatchLineCount(), "all three coalesced into one NDJSON batch");
+        assertEquals(0, box.pendingCount(), "all delivered");
+    }
+
+    @Test
+    void nonBatchablePathsUseTheSingleTransport(@TempDir Path dir) {
+        Path file = dir.resolve("outbox.json");
+        RecordingSender single = new RecordingSender(-1);     // offline to accumulate
+        RecordingBatchSender batch = new RecordingBatchSender(200);
+        batch.batchStatus = -1;
+        RelayOutbox box = outbox(file, single, batch, () -> 1_000L);
+
+        box.enqueue("/telemetry/book-read", "{\"b\":1}");   // batchable
+        box.enqueue("/reincarnations/used", "{\"id\":7}");   // NOT batchable → single transport
+
+        single.status = 200;
+        batch.batchStatus = 200;
+        box.flush();
+
+        assertTrue(single.urls.contains(BASE + "/reincarnations/used"), "stateful path stays one-per-item");
+        assertTrue(batch.urls.contains(BASE + "/telemetry/batch"), "telemetry path is coalesced");
+        assertEquals(0, box.pendingCount(), "both delivered");
+    }
+
+    @Test
+    void fallsBackToIndividualWhenRelayLacksBatchEndpoint(@TempDir Path dir) {
+        Path file = dir.resolve("outbox.json");
+        RecordingSender single = new RecordingSender(200);
+        RecordingBatchSender oldRelay = new RecordingBatchSender(200);
+        oldRelay.batchStatus = 404; // relay predates /telemetry/batch
+        RelayOutbox box = outbox(file, single, oldRelay, () -> 1_000L);
+
+        box.enqueue("/telemetry/book-read", "{\"id\":\"x\"}");
+
+        assertEquals(1, oldRelay.urls.size(), "tried the batch endpoint once");
+        assertTrue(single.urls.contains(BASE + "/telemetry/book-read"), "fell back to the individual endpoint");
+        assertEquals(0, box.pendingCount(), "delivered via the fallback");
+    }
+
+    // --- eviction / robustness (unchanged semantics) ---------------------------------------------
 
     @Test
     void evictsItemsPastMaxAge(@TempDir Path dir) {
         Path file = dir.resolve("outbox.json");
         AtomicLong clock = new AtomicLong(1_000L);
-        RelayOutbox box = outbox(file, new RecordingSender(-1), clock::get);
+        RecordingBatchSender offline = new RecordingBatchSender(200);
+        offline.batchStatus = -1;
+        RelayOutbox box = outbox(file, NOOP_SENDER, offline, clock::get);
 
         box.enqueue("/telemetry/run-summary", "{\"old\":true}");
         assertEquals(1, box.pendingCount());
@@ -152,7 +269,9 @@ class RelayOutboxTest {
     @Test
     void evictsOldestPastMaxItems(@TempDir Path dir) {
         Path file = dir.resolve("outbox.json");
-        RelayOutbox box = outbox(file, new RecordingSender(-1), () -> 1_000L);
+        RecordingBatchSender offline = new RecordingBatchSender(200);
+        offline.batchStatus = -1;
+        RelayOutbox box = outbox(file, NOOP_SENDER, offline, () -> 1_000L);
 
         for (int i = 0; i < RelayOutbox.MAX_ITEMS + 5; i++) {
             box.enqueue("/telemetry/book-read", "{\"i\":" + i + "}");
@@ -164,14 +283,14 @@ class RelayOutboxTest {
     void corruptFileLoadsEmptyAndNeverThrows(@TempDir Path dir) throws Exception {
         Path file = dir.resolve("outbox.json");
         Files.writeString(file, "{ this is not json ]");
-        RelayOutbox box = outbox(file, new RecordingSender(200), () -> 1_000L);
+        RelayOutbox box = outbox(file, NOOP_SENDER, NOOP_BATCH, () -> 1_000L);
         assertEquals(0, box.pendingCount(), "a corrupt file yields an empty queue");
     }
 
     @Test
     void ignoresBlankInput(@TempDir Path dir) {
         Path file = dir.resolve("outbox.json");
-        RelayOutbox box = outbox(file, new RecordingSender(-1), () -> 1_000L);
+        RelayOutbox box = outbox(file, NOOP_SENDER, NOOP_BATCH, () -> 1_000L);
         box.enqueue(null, "{}");
         box.enqueue("/telemetry/run-summary", "");
         box.enqueue("  ", "{}");
@@ -187,5 +306,16 @@ class RelayOutboxTest {
         assertTrue(RelayOutbox.isRetryable(503), "service unavailable");
         assertFalse(RelayOutbox.isRetryable(400), "bad request is permanent");
         assertFalse(RelayOutbox.isRetryable(404), "not found is permanent");
+    }
+
+    /** Read the single queued item's key straight from the persisted outbox file (for the manual-future test). */
+    private static String queuedKey(Path file) {
+        try {
+            String json = Files.readString(file);
+            return JsonParser.parseString(json).getAsJsonObject()
+                    .getAsJsonArray("pending").get(0).getAsJsonObject().get("key").getAsString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

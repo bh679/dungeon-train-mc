@@ -19,9 +19,11 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -67,6 +69,21 @@ public final class RelayOutbox {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     /**
+     * Telemetry paths coalesced into a single {@code POST /telemetry/batch} on each flush instead of one
+     * POST per event — {@code /telemetry/book-read} alone peaked at 1456 hits/5min. These are the pure,
+     * idempotent record ingests the relay's batch endpoint accepts. Moderated / stateful paths
+     * ({@code /books/submit}, {@code /narratives/submit}, {@code /deathnotes/*}, {@code /reincarnations/used})
+     * are intentionally absent — they keep their own one-per-item delivery.
+     */
+    private static final Set<String> BATCHABLE_PATHS = Set.of(
+            "/telemetry/book-read", "/telemetry/run-summary", "/telemetry/death",
+            "/telemetry/world-info", "/telemetry/death-equipment", "/telemetry/death-detail",
+            "/telemetry/death-inventory");
+    private static final String BATCH_PATH = "/telemetry/batch";
+    /** Batch-POST statuses that mean "this relay can't take the batch" → deliver the items individually. */
+    private static final Set<Integer> BATCH_FALLBACK_STATUSES = Set.of(404, 405, 413, 501);
+
+    /**
      * Delivery transport seam. Resolves to the HTTP status code, or a negative value on a network-level
      * failure (connection refused, unknown host, timeout) — both are handled by {@link #onResult}.
      * Injectable so the queue logic can be unit-tested without a network or the game.
@@ -76,8 +93,23 @@ public final class RelayOutbox {
         CompletableFuture<Integer> send(String url, String body);
     }
 
+    /**
+     * Batch transport seam — like {@link Sender} but exposes the response body, since {@code
+     * /telemetry/batch} answers with per-item {@code {key,status}} results the outbox must read to remove
+     * only the confirmed items. {@code status} is the HTTP status of the batch POST itself (negative on a
+     * network failure); {@code body} is the response text (null when there is none).
+     */
+    @FunctionalInterface
+    interface BatchSender {
+        CompletableFuture<BatchResult> send(String url, String ndjson);
+    }
+
+    /** HTTP status + body of a {@code /telemetry/batch} POST. */
+    record BatchResult(int status, String body) {}
+
     private static final RelayOutbox INSTANCE = new RelayOutbox(
-            RelayOutbox::defaultFile, defaultSender(), DungeonTrain::relayBaseUrl, System::currentTimeMillis);
+            RelayOutbox::defaultFile, defaultSender(), defaultBatchSender(), DungeonTrain::relayBaseUrl,
+            System::currentTimeMillis);
 
     public static RelayOutbox get() {
         return INSTANCE;
@@ -87,6 +119,7 @@ public final class RelayOutbox {
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();        // keys with a send in progress
     private final Supplier<Path> fileSupplier;
     private final Sender sender;
+    private final BatchSender batchSender;
     private final Supplier<String> baseUrl;
     private final LongSupplier nowMs;
     private Path file;
@@ -94,10 +127,17 @@ public final class RelayOutbox {
 
     private record Item(String key, String path, String body, long createdAtMs) {}
 
-    /** Package-private for tests — inject the file location, transport, relay base, and clock. */
+    /** Package-private for tests — inject the file location, single transport, relay base, and clock. */
     RelayOutbox(Supplier<Path> fileSupplier, Sender sender, Supplier<String> baseUrl, LongSupplier nowMs) {
+        this(fileSupplier, sender, defaultBatchSender(), baseUrl, nowMs);
+    }
+
+    /** Package-private for tests — additionally inject the batch transport. */
+    RelayOutbox(Supplier<Path> fileSupplier, Sender sender, BatchSender batchSender,
+                Supplier<String> baseUrl, LongSupplier nowMs) {
         this.fileSupplier = fileSupplier;
         this.sender = sender;
+        this.batchSender = batchSender;
         this.baseUrl = baseUrl;
         this.nowMs = nowMs;
     }
@@ -143,24 +183,145 @@ public final class RelayOutbox {
         if (base == null || base.isBlank()) {
             return; // no destination resolved → hold everything for a later flush
         }
+        // Coalesce the batchable telemetry into ONE /telemetry/batch POST; everything else (moderated /
+        // stateful paths) keeps its own one-per-item delivery.
+        List<Item> batch = new ArrayList<>();
         for (Item it : snapshot) {
-            if (!inFlight.add(it.key())) {
-                continue; // a prior flush is still delivering this one
-            }
-            String url = base + it.path();
-            try {
-                sender.send(url, it.body()).whenComplete((status, t) -> {
-                    inFlight.remove(it.key());
-                    if (t == null && status != null) {
-                        onResult(it, status);
-                    }
-                    // else: send future failed unexpectedly → keep for the next flush
-                });
-            } catch (Throwable t) {
-                inFlight.remove(it.key());
-                LOGGER.debug("[DungeonTrain] relay outbox send threw for {}: {}", it.path(), t.toString());
+            if (BATCHABLE_PATHS.contains(it.path())) {
+                batch.add(it);
+            } else {
+                sendOne(base, it);
             }
         }
+        if (!batch.isEmpty()) {
+            sendBatch(base, batch);
+        }
+    }
+
+    /** Deliver one item on the single transport (moderated/stateful paths, and the batch fallback). */
+    private void sendOne(String base, Item it) {
+        if (!inFlight.add(it.key())) {
+            return; // a prior flush is still delivering this one
+        }
+        String url = base + it.path();
+        try {
+            sender.send(url, it.body()).whenComplete((status, t) -> {
+                inFlight.remove(it.key());
+                if (t == null && status != null) {
+                    onResult(it, status);
+                }
+                // else: send future failed unexpectedly → keep for the next flush
+            });
+        } catch (Throwable t) {
+            inFlight.remove(it.key());
+            LOGGER.debug("[DungeonTrain] relay outbox send threw for {}: {}", it.path(), t.toString());
+        }
+    }
+
+    /**
+     * Deliver the batchable items as a single NDJSON {@code POST /telemetry/batch}. Reserves in-flight for
+     * each key (skipping any a prior flush still holds), and on completion applies the relay's per-item
+     * {@code {key,status}} verdicts through {@link #onResult}. A batch-level failure keeps every item for
+     * the next flush; a relay that predates the endpoint (404/405/413/501) transparently falls back to
+     * individual delivery, so an old relay is never wedged.
+     */
+    private void sendBatch(String base, List<Item> batch) {
+        List<Item> toSend = new ArrayList<>();
+        for (Item it : batch) {
+            if (inFlight.add(it.key())) {
+                toSend.add(it);
+            }
+        }
+        if (toSend.isEmpty()) {
+            return;
+        }
+        String url = base + BATCH_PATH;
+        String ndjson = buildNdjson(toSend);
+        try {
+            batchSender.send(url, ndjson).whenComplete((res, t) -> {
+                for (Item it : toSend) {
+                    inFlight.remove(it.key());
+                }
+                if (t != null || res == null) {
+                    return; // transport failed unexpectedly → keep all for the next flush
+                }
+                handleBatchResult(base, toSend, res);
+            });
+        } catch (Throwable t) {
+            for (Item it : toSend) {
+                inFlight.remove(it.key());
+            }
+            LOGGER.debug("[DungeonTrain] relay outbox batch send threw: {}", t.toString());
+        }
+    }
+
+    /** Apply a completed batch POST: per-item verdicts on 2xx, individual fallback on 404/405/413/501, else hold. */
+    private void handleBatchResult(String base, List<Item> sent, BatchResult res) {
+        int status = res.status();
+        if (status >= 200 && status < 300 && res.body() != null) {
+            Map<String, Integer> byKey = parseBatchResults(res.body());
+            for (Item it : sent) {
+                Integer st = byKey.get(it.key());
+                if (st != null) {
+                    onResult(it, st); // reported → remove on 2xx, drop on poison, keep on transient
+                }
+                // an unreported key stays queued (defensive) and retries on the next flush
+            }
+            return;
+        }
+        if (BATCH_FALLBACK_STATUSES.contains(status)) {
+            LOGGER.debug("[DungeonTrain] relay outbox: /telemetry/batch -> HTTP {}; delivering {} item(s) individually.",
+                    status, sent.size());
+            for (Item it : sent) {
+                sendOne(base, it);
+            }
+            return;
+        }
+        // network failure / 5xx / 429 / other → keep everything for the next flush (in-flight already cleared)
+        LOGGER.debug("[DungeonTrain] relay outbox: /telemetry/batch held {} item(s) -> HTTP {} (will retry).",
+                sent.size(), status);
+    }
+
+    /** Build the NDJSON batch body — one {@code {path,key,body}} object per item (body inlined as JSON). */
+    private static String buildNdjson(List<Item> items) {
+        StringBuilder sb = new StringBuilder();
+        for (Item it : items) {
+            JsonObject line = new JsonObject();
+            line.addProperty("path", it.path());
+            line.addProperty("key", it.key());
+            try {
+                line.add("body", JsonParser.parseString(it.body()));
+            } catch (Exception e) {
+                line.addProperty("body", it.body()); // non-JSON body (shouldn't happen) → send as-is; relay 400s it
+            }
+            if (sb.length() > 0) {
+                sb.append('\n');
+            }
+            sb.append(line);
+        }
+        return sb.toString();
+    }
+
+    /** Parse {@code {results:[{key,status}]}} into a key→status map. Malformed → empty (all kept for retry). */
+    private static Map<String, Integer> parseBatchResults(String body) {
+        Map<String, Integer> out = new HashMap<>();
+        try {
+            JsonElement arr = JsonParser.parseString(body).getAsJsonObject().get("results");
+            if (arr != null && arr.isJsonArray()) {
+                for (JsonElement el : arr.getAsJsonArray()) {
+                    if (el == null || !el.isJsonObject()) {
+                        continue;
+                    }
+                    JsonObject o = el.getAsJsonObject();
+                    if (o.has("key") && o.get("key").isJsonPrimitive() && o.has("status") && o.get("status").isJsonPrimitive()) {
+                        out.put(o.get("key").getAsString(), o.get("status").getAsInt());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("[DungeonTrain] relay outbox: unparseable batch results; holding all. {}", e.toString());
+        }
+        return out;
     }
 
     /** Test seam: number of records still awaiting delivery. */
@@ -323,6 +484,28 @@ public final class RelayOutbox {
                     .exceptionally(e -> {
                         LOGGER.debug("[DungeonTrain] relay outbox POST {} failed: {}", url, e.toString());
                         return -1;
+                    });
+        };
+    }
+
+    private static BatchSender defaultBatchSender() {
+        // Same HTTP/1.1 pinning as defaultSender(); NDJSON body, and the response body is kept so the
+        // per-item {key,status} verdicts can be applied. Network failure → status -1, null body.
+        HttpClient http = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(CONNECT_TIMEOUT)
+                .build();
+        return (url, ndjson) -> {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                    .timeout(REQUEST_TIMEOUT)
+                    .header("Content-Type", "application/x-ndjson")
+                    .POST(HttpRequest.BodyPublishers.ofString(ndjson))
+                    .build();
+            return http.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(resp -> new BatchResult(resp.statusCode(), resp.body()))
+                    .exceptionally(e -> {
+                        LOGGER.debug("[DungeonTrain] relay outbox batch POST {} failed: {}", url, e.toString());
+                        return new BatchResult(-1, null);
                     });
         };
     }
