@@ -623,24 +623,30 @@ public final class TrainCarriageAppender {
     private static final double COLLISION_SHIFT_BLOCKS = 0.5;
 
     /**
-     * If a not-yet-placed carriage's X-axis gap to its train-facing neighbour
-     * exceeds this many blocks, the per-tick placement tracker shifts the
-     * carriage TOWARD that neighbour by {@link #COLLISION_SHIFT_BLOCKS} this
-     * tick and resets the clean-tick counter. One of three shift branches:
-     * collisions and sub-{@link #MIN_GAP_BLOCKS} gaps push APART, over-MAX gaps
-     * pull TOGETHER. All three feed the same dead-band
-     * [MIN_GAP_BLOCKS, MAX_GAP_BLOCKS] that the carriage must rest inside for
-     * {@link #CLEAN_TICKS_FOR_SUCCESS} consecutive ticks before
-     * {@code placedSuccessfully} fires.
+     * Upper edge of the placement dead-band. A not-yet-placed carriage whose
+     * real edge gap sits inside [{@link #MIN_GAP_BLOCKS}, {@code MAX_GAP_BLOCKS}]
+     * = [0.3, 0.5] counts as clean; outside it the per-tick tracker shifts the
+     * carriage PROPORTIONALLY toward the band centre {@link #TARGET_GAP_BLOCKS}
+     * (see {@link #placementTrackerShiftDx}) and resets the clean-tick counter.
      *
-     * <p>The dead-band [MIN_GAP_BLOCKS, MAX_GAP_BLOCKS] = [0.3, 0.9] is
-     * 0.6 wide — wider than the 0.5/tick shift — so any spawn overshoot
-     * (natural spawn gap tops out near 1.3) is pulled inside the band in a
-     * single tick, finishing well inside the 60-tick clean window without
-     * oscillating, so placement overshoot never permanently strands a
-     * carriage at the wrong distance.</p>
+     * <p>Tightened from 0.9 to 0.5 so seams settle small and consistent (~0.4)
+     * instead of anywhere in a 0.6-wide band. The band is now NARROWER than the
+     * {@link #COLLISION_SHIFT_BLOCKS} (0.5) step, so a fixed-size shift would
+     * overshoot it and bounce — which is exactly why the shift is now
+     * proportional (magnitude = min(step, |gap − target|)): it lands on the
+     * target in one move and, with the shift cooldown, converges without
+     * oscillating.</p>
      */
-    private static final double MAX_GAP_BLOCKS = 0.9;
+    private static final double MAX_GAP_BLOCKS = 0.5;
+
+    /**
+     * Target seam gap the placement tracker converges every carriage toward —
+     * the centre of the dead-band [{@link #MIN_GAP_BLOCKS}, {@link #MAX_GAP_BLOCKS}].
+     * Proportional shifts aim here so gaps end up small and uniform (~0.4) while
+     * staying above the ~0.3 Sable broad-phase floor (no touching).
+     */
+    private static final double TARGET_GAP_BLOCKS =
+        (MIN_GAP_BLOCKS + MAX_GAP_BLOCKS) / 2.0;
 
     /** Snapshot of the most recent post-spawn collision check per train. */
     public static Map<UUID, SpawnCollisionCheck> snapshotSpawnCollisionChecks() {
@@ -947,31 +953,30 @@ public final class TrainCarriageAppender {
      * Pure decision helper for {@link #runPlacementCollisionTracker}. Package-private
      * for unit tests. Returns the X-axis shift to apply this tick:
      * <ul>
-     *   <li>{@code colliding == true} → push AWAY from offender. Offender at
-     *       higher pIdx (in front of us) → return {@code -COLLISION_SHIFT_BLOCKS};
-     *       offender at lower pIdx (behind us) → return {@code +COLLISION_SHIFT_BLOCKS}.
-     *       Equal pIdx is impossible (the collision check skips self), so the
-     *       ternary is exhaustive. Collision pushback is never gated by
-     *       {@code moveTogetherLocked}.</li>
-     *   <li>{@code colliding == false}, {@code moveTogetherLocked == false},
-     *       {@code gapToFacingSibling} finite and {@code > MAX_GAP_BLOCKS} →
-     *       pull TOWARD the train. Forward-spawn (train at -X) → return
-     *       {@code -COLLISION_SHIFT_BLOCKS}; backward-spawn (train at +X) →
-     *       return {@code +COLLISION_SHIFT_BLOCKS}.</li>
-     *   <li>otherwise → return {@code 0.0} (clean tick; caller increments the
-     *       consecutive-clean counter). Move-together is suppressed when the
-     *       lock has fired so a clean tick still accumulates and the carriage
-     *       can settle.</li>
+     *   <li>{@code colliding == true} → push AWAY from offender by a full
+     *       {@code COLLISION_SHIFT_BLOCKS}. Offender at higher pIdx (in front of
+     *       us) → {@code -COLLISION_SHIFT_BLOCKS}; behind us → {@code +…}. Never
+     *       gated by {@code moveTogetherLocked}.</li>
+     *   <li>gap inside the dead-band [{@link #MIN_GAP_BLOCKS}, {@link #MAX_GAP_BLOCKS}]
+     *       (or no train-facing sibling) → {@code 0.0} (clean tick).</li>
+     *   <li>gap {@code > MAX_GAP_BLOCKS} → pull TOWARD the train (shrink the
+     *       gap), gated by {@code moveTogetherLocked}. Forward-spawn → negative,
+     *       backward-spawn → positive.</li>
+     *   <li>gap {@code < MIN_GAP_BLOCKS} → push AWAY (open the gap), never
+     *       gated. Forward-spawn → positive, backward-spawn → negative.</li>
      * </ul>
-     * {@code gapToFacingSibling} is {@link Double#POSITIVE_INFINITY} when no
-     * sibling is on the train-facing side (e.g. seed carriage of a fresh
-     * train) — falls into the clean branch by the finite-check guard.
+     * Both out-of-band shifts are <b>proportional</b>: magnitude =
+     * {@code min(COLLISION_SHIFT_BLOCKS, |gap − TARGET_GAP_BLOCKS|)}, aiming at
+     * the band centre {@link #TARGET_GAP_BLOCKS} so the carriage lands on target
+     * in one move instead of overshooting the narrow band and bouncing.
      *
-     * <p>{@code moveTogetherLocked} reflects per-carriage state owned by
-     * {@link TrainTransformProvider}. It flips to {@code true} after the
-     * collide → move-together → collide cycle is observed, suppressing further
-     * close-gap shifts so the two systems can't keep fighting on the same
-     * group.</p>
+     * <p>{@code gapToFacingSibling} is {@link Double#POSITIVE_INFINITY} when no
+     * sibling is on the train-facing side (seed carriage) — clean by the
+     * finite-check guard. {@code moveTogetherLocked} (owned by
+     * {@link TrainTransformProvider}) flips true after the
+     * collide → move-together → collide cycle, suppressing the toward-train pull
+     * so the two systems can't fight; the separating (too-close) branch stays
+     * active so a locked carriage is never stranded touching.</p>
      */
     static double placementTrackerShiftDx(
         boolean colliding,
@@ -986,29 +991,34 @@ public final class TrainCarriageAppender {
                 ? -COLLISION_SHIFT_BLOCKS
                 : +COLLISION_SHIFT_BLOCKS;
         }
-        // Too close (but not yet overlapping): the real edge gap has fallen
-        // below the dead-band floor. Push AWAY from the train-facing sibling to
-        // restore MIN_GAP_BLOCKS — the mirror of the too-far pull below. Without
-        // this branch the tracker treated ANY non-overlapping gap as "clean",
-        // so a carriage could accumulate its clean-tick run and permanently
-        // place itself a hair (or a touch) from its neighbour — the ~1-in-8
-        // touching seams. Deliberately NOT gated by moveTogetherLocked:
-        // separating is always safe, and a move-together-locked carriage must
-        // never be stranded touching.
-        if (Double.isFinite(gapToFacingSibling)
-            && gapToFacingSibling < MIN_GAP_BLOCKS) {
-            return spawnedBackward
-                ? -COLLISION_SHIFT_BLOCKS
-                : +COLLISION_SHIFT_BLOCKS;
+        if (!Double.isFinite(gapToFacingSibling)) {
+            return 0.0; // no train-facing sibling (seed carriage) — nothing to settle against
         }
-        if (!moveTogetherLocked
-            && Double.isFinite(gapToFacingSibling)
-            && gapToFacingSibling > MAX_GAP_BLOCKS) {
-            return spawnedBackward
-                ? +COLLISION_SHIFT_BLOCKS
-                : -COLLISION_SHIFT_BLOCKS;
+        // Clean while the real edge gap rests inside the dead-band.
+        if (gapToFacingSibling >= MIN_GAP_BLOCKS && gapToFacingSibling <= MAX_GAP_BLOCKS) {
+            return 0.0;
         }
-        return 0.0;
+        // Outside the band: shift PROPORTIONALLY toward the band centre
+        // (TARGET_GAP_BLOCKS), capped at COLLISION_SHIFT_BLOCKS — never a fixed
+        // step. The band is narrower than the 0.5 step, so a fixed shift would
+        // fly across to the far side and bounce (the old 0.0<->1.0 oscillation);
+        // a proportional shift lands on the target in one move, so every seam
+        // converges to ~TARGET_GAP_BLOCKS — small and consistent.
+        double mag = Math.min(COLLISION_SHIFT_BLOCKS,
+            Math.abs(gapToFacingSibling - TARGET_GAP_BLOCKS));
+        if (gapToFacingSibling > MAX_GAP_BLOCKS) {
+            // Too far → pull TOWARD the train-facing sibling to shrink the gap.
+            // Gated by the move-together lock so the two systems don't fight;
+            // the separating branch below is always allowed.
+            if (moveTogetherLocked) {
+                return 0.0;
+            }
+            return spawnedBackward ? +mag : -mag;
+        }
+        // gap < MIN_GAP_BLOCKS → too close → push AWAY to open the gap. Never
+        // gated by the lock: separating is always safe, and a locked carriage
+        // must never be stranded touching.
+        return spawnedBackward ? -mag : +mag;
     }
 
     /**
