@@ -4930,9 +4930,9 @@
       ],
       "pr": 782,
       "date": "2026-07-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.471.0",
+      "released_at": "2026-07-17T19:41:38Z"
     }
   ]
 }
