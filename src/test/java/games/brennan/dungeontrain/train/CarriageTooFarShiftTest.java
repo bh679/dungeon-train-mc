@@ -103,6 +103,50 @@ final class CarriageTooFarShiftTest {
     }
 
     // ───────────────────────────────────────────────────────────────
+    // placementTrackerShiftDx — "too close" branch (enforces MIN_GAP floor)
+    // ───────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("forward spawn, gap=0.1 (below MIN_GAP) → shift +X away from train")
+    void forwardSpawnTooClose_shiftsForwardAway() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            false, 5, 0, 0.1, false, false);
+        assertEquals(+SHIFT, dx, EPS);
+    }
+
+    @Test
+    @DisplayName("backward spawn, gap=0.1 (below MIN_GAP) → shift -X away from train")
+    void backwardSpawnTooClose_shiftsBackwardAway() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            false, 5, 0, 0.1, true, false);
+        assertEquals(-SHIFT, dx, EPS);
+    }
+
+    @Test
+    @DisplayName("gap=0.0 (touching, not overlapping) → shift away (never left touching)")
+    void gapTouching_shiftsAway() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            false, 5, 0, 0.0, false, false);
+        assertEquals(+SHIFT, dx, EPS);
+    }
+
+    @Test
+    @DisplayName("gap=0.3 exactly (MIN_GAP_BLOCKS boundary) → no shift, clean tick")
+    void gapAtMinBoundary_noShift() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            false, 5, 0, 0.3, false, false);
+        assertEquals(0.0, dx, EPS);
+    }
+
+    @Test
+    @DisplayName("locked, gap=0.1 (too close) → still shifts away (lock does NOT gate separation)")
+    void locked_tooClose_stillShiftsAway() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            false, 5, 0, 0.1, false, true);
+        assertEquals(+SHIFT, dx, EPS);
+    }
+
+    // ───────────────────────────────────────────────────────────────
     // moveTogetherLocked — collide→move-together→collide cycle lock
     // ───────────────────────────────────────────────────────────────
 

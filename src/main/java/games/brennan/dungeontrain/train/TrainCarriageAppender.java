@@ -315,9 +315,17 @@ public final class TrainCarriageAppender {
      * and the emptied sub-level disposed by Sable. 0.3 leaves enough slack
      * for the broad-phase even when reference-frame drift produces sub-1-block
      * stride errors. An in-game trial at 0.15 reintroduced seam jitter, so
-     * the minimum stays at 0.3 — spawn-time reliability does NOT address the
-     * runtime broad-phase. Visible gap range becomes [0.3, 1.3] blocks at
-     * spawn, pulled into the dead-band [0.3, 0.9] by {@link #MAX_GAP_BLOCKS}.
+     * the minimum stays at 0.3. Visible gap range becomes [0.3, 1.3] blocks at
+     * spawn, held inside the dead-band [0.3, 0.9] by the placement tracker.
+     *
+     * <p>This is the LOWER bound the per-tick tracker actively maintains: a
+     * carriage whose real {@code worldAABB} edge gap falls below it is shifted
+     * away from its train-facing sibling ({@link #placementTrackerShiftDx}) and
+     * its clean-tick counter resets, so a carriage can never accumulate its
+     * {@link #CLEAN_TICKS_FOR_SUCCESS} run — and thus never
+     * {@code placedSuccessfully} — while closer than this. Without that floor
+     * the tracker counted any non-overlapping gap as clean, letting carriages
+     * settle and permanently place a hair from their neighbour.</p>
      */
     private static final double MIN_GAP_BLOCKS = 0.3;
 
@@ -582,6 +590,28 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Long> PLACEMENT_TRACKER_FIRST_SEEN = new ConcurrentHashMap<>();
 
     /**
+     * Game tick of the last placement shift applied to a carriage, keyed by
+     * sub-level id. Used to throttle shifts (see {@link #SHIFT_SETTLE_TICKS}).
+     */
+    private static final Map<UUID, Long> PLACEMENT_TRACKER_LAST_SHIFT = new ConcurrentHashMap<>();
+
+    /**
+     * Ticks the tracker must wait after shifting a carriage before it may shift
+     * it again. The gap it reads comes from {@link ManagedShip#worldAABB()},
+     * which lags a shift by a tick or two (Sable applies the new kinematic pose
+     * next tick, and the AABB reflects it after that). Without this throttle the
+     * tracker re-reads a STALE gap and stacks a second shift before the first is
+     * visible, so a single logical 0.5-block correction lands as ~1.0 — clear
+     * across the 0.6-wide dead-band to the far side. The carriage then bounces
+     * 0.0↔1.0 forever, never accumulating {@link #CLEAN_TICKS_FOR_SUCCESS}, and
+     * the safety valve eventually freezes it at whatever (often touching) phase
+     * it is in. Waiting for the AABB to catch up lets each 0.5 shift land inside
+     * the band, so the carriage settles in one or two corrections. Chosen ≥ the
+     * observed AABB lag with margin; still far under the settle budget.
+     */
+    private static final int SHIFT_SETTLE_TICKS = 4;
+
+    /**
      * Per-collision shift distance in the spawn (+X) direction. The
      * carriage's {@code spawnWorldPos} is bumped by this amount each
      * tick it's seen colliding, which the deterministic position
@@ -596,11 +626,12 @@ public final class TrainCarriageAppender {
      * If a not-yet-placed carriage's X-axis gap to its train-facing neighbour
      * exceeds this many blocks, the per-tick placement tracker shifts the
      * carriage TOWARD that neighbour by {@link #COLLISION_SHIFT_BLOCKS} this
-     * tick and resets the clean-tick counter. Symmetric dual of the
-     * collision-pushback branch: collisions push apart, big gaps pull together.
-     * Both branches feed the same dead-band [MIN_GAP_BLOCKS, MAX_GAP_BLOCKS]
-     * that the carriage must rest inside for {@link #CLEAN_TICKS_FOR_SUCCESS}
-     * consecutive ticks before {@code placedSuccessfully} fires.
+     * tick and resets the clean-tick counter. One of three shift branches:
+     * collisions and sub-{@link #MIN_GAP_BLOCKS} gaps push APART, over-MAX gaps
+     * pull TOGETHER. All three feed the same dead-band
+     * [MIN_GAP_BLOCKS, MAX_GAP_BLOCKS] that the carriage must rest inside for
+     * {@link #CLEAN_TICKS_FOR_SUCCESS} consecutive ticks before
+     * {@code placedSuccessfully} fires.
      *
      * <p>The dead-band [MIN_GAP_BLOCKS, MAX_GAP_BLOCKS] = [0.3, 0.9] is
      * 0.6 wide — wider than the 0.5/tick shift — so any spawn overshoot
@@ -676,6 +707,7 @@ public final class TrainCarriageAppender {
                 liveSubLevelIds.add(subLevelId);
                 if (provider.isPlacedSuccessfully()) {
                     PLACEMENT_TRACKER_FIRST_SEEN.remove(subLevelId);
+                    PLACEMENT_TRACKER_LAST_SHIFT.remove(subLevelId);
                     continue;
                 }
 
@@ -731,6 +763,16 @@ public final class TrainCarriageAppender {
                     provider.isMoveTogetherLocked());
 
                 if (dx != 0.0) {
+                    // Throttle: don't stack a second shift before the worldAABB
+                    // reflects the previous one (see SHIFT_SETTLE_TICKS). Reading
+                    // a stale gap and re-shifting is what made carriages
+                    // overshoot the dead-band and bounce 0.0↔1.0 forever. Leave
+                    // the clean-tick counter untouched while waiting.
+                    long lastShift = PLACEMENT_TRACKER_LAST_SHIFT.getOrDefault(subLevelId, Long.MIN_VALUE);
+                    if (lastShift != Long.MIN_VALUE && now - lastShift < SHIFT_SETTLE_TICKS) {
+                        continue;
+                    }
+                    PLACEMENT_TRACKER_LAST_SHIFT.put(subLevelId, now);
                     provider.shiftSpawnPosition(dx, 0.0, 0.0);
                     provider.resetConsecutiveCleanTicks();
                     if (check.colliding()) {
@@ -741,6 +783,16 @@ public final class TrainCarriageAppender {
                             LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} move-together LOCKED (collide→move-together→collide cycle observed)",
                                 provider.getPIdx());
                         }
+                    } else if (Double.isFinite(gap) && gap < MIN_GAP_BLOCKS) {
+                        // Too-close pushback: separating from the train-facing
+                        // sibling to restore the floor. Like a collision
+                        // pushback, NOT a move-together — do not mark the
+                        // move-together cycle here.
+                        LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} too-close (gap={} blocks < {}) — shifted {} X, timer reset",
+                            provider.getPIdx(),
+                            String.format("%.2f", gap),
+                            MIN_GAP_BLOCKS,
+                            String.format("%+.1f", dx));
                     } else {
                         // Move-together fired. Mark "after-collision" if a
                         // collision has already been observed during placement —
@@ -774,6 +826,7 @@ public final class TrainCarriageAppender {
         // Handles rolling-window cleanup so the map can't accumulate
         // entries for despawned groups.
         PLACEMENT_TRACKER_FIRST_SEEN.keySet().retainAll(liveSubLevelIds);
+        PLACEMENT_TRACKER_LAST_SHIFT.keySet().retainAll(liveSubLevelIds);
     }
 
     /**
@@ -930,6 +983,21 @@ public final class TrainCarriageAppender {
     ) {
         if (colliding) {
             return (collidingPIdx > selfPIdx)
+                ? -COLLISION_SHIFT_BLOCKS
+                : +COLLISION_SHIFT_BLOCKS;
+        }
+        // Too close (but not yet overlapping): the real edge gap has fallen
+        // below the dead-band floor. Push AWAY from the train-facing sibling to
+        // restore MIN_GAP_BLOCKS — the mirror of the too-far pull below. Without
+        // this branch the tracker treated ANY non-overlapping gap as "clean",
+        // so a carriage could accumulate its clean-tick run and permanently
+        // place itself a hair (or a touch) from its neighbour — the ~1-in-8
+        // touching seams. Deliberately NOT gated by moveTogetherLocked:
+        // separating is always safe, and a move-together-locked carriage must
+        // never be stranded touching.
+        if (Double.isFinite(gapToFacingSibling)
+            && gapToFacingSibling < MIN_GAP_BLOCKS) {
+            return spawnedBackward
                 ? -COLLISION_SHIFT_BLOCKS
                 : +COLLISION_SHIFT_BLOCKS;
         }
