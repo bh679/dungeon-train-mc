@@ -152,6 +152,11 @@
       "id": "witherreal",
       "weight": 1,
       "minLevel": 81
+    },
+    {
+      "id": "creeper",
+      "weight": 1,
+      "minLevel": 8
     }
   ]
 }
