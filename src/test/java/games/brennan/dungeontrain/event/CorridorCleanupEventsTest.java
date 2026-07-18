@@ -15,11 +15,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Coverage for the two corridor-sweep block predicates:
+ * Coverage for the three corridor-sweep block predicates:
  * {@link CorridorCleanupEvents#isNetherClutter} (Nether band core — cross-chunk basalt-deltas /
- * crimson / warped / soul-sand decoration spillover) and {@link CorridorCleanupEvents#isFoliage}
- * (all-dimension foliage + End-core chorus spillover). This pins the accepted terrain/decoration
- * sets and the rejected sets (tunnel-template blocks, track, fluids, End islands, plain terrain).
+ * crimson / warped / soul-sand decoration spillover), {@link CorridorCleanupEvents#isFoliage}
+ * (all-dimension foliage + End-core chorus spillover), and {@link CorridorCleanupEvents#isCorridorWood}
+ * (tree-variation branch logs spilled into the collision envelope). This pins the accepted
+ * terrain/decoration sets and the rejected sets (tunnel-template blocks, track, fluids, End islands, plain terrain).
  *
  * <p>Requires {@code unitTest.enable()} in build.gradle so the NeoForge moddev runtime bootstraps
  * {@code Blocks.*} registry singletons before the test class loads — mirrors {@code TunnelPaletteTest}.</p>
@@ -121,6 +122,34 @@ final class CorridorCleanupEventsTest {
         );
     }
 
+    /**
+     * Wood the corridor sweep must strip from the collision envelope — the branch-log spillover from
+     * tree variations (fancy/large oak, dark oak) rooted in a neighbouring chunk. Direct {@code Blocks.X}
+     * matches only; the {@code BlockTags.LOGS} fallback relies on datapack tags the moddev unit runtime
+     * does not bootstrap (same caveat as {@code isNetherClutter}) and is verified in-game at Gate 2.
+     */
+    static Stream<Block> corridorWood() {
+        return Stream.of(
+            Blocks.OAK_LOG,               // the reported offender — fancy/large oak branch logs
+            Blocks.DARK_OAK_LOG,
+            Blocks.OAK_WOOD,
+            Blocks.STRIPPED_OAK_LOG
+        );
+    }
+
+    /**
+     * Blocks the wood sweep must leave alone — track/tunnel template, plain terrain, End islands, air.
+     */
+    static Stream<Block> woodPreserved() {
+        return Stream.of(
+            Blocks.STONE_BRICKS,   // tunnel/bed template
+            Blocks.RAIL,           // track
+            Blocks.DIRT,           // plain terrain
+            Blocks.END_STONE,
+            Blocks.AIR
+        );
+    }
+
     @ParameterizedTest
     @MethodSource("netherClutter")
     @DisplayName("nether terrain/decoration — removed from the band tunnel")
@@ -158,6 +187,26 @@ final class CorridorCleanupEventsTest {
         assertFalse(
             CorridorCleanupEvents.isFoliage(block.defaultBlockState()),
             () -> block + " must NOT be treated as corridor foliage"
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("corridorWood")
+    @DisplayName("tree-variation logs/wood — stripped from the collision envelope")
+    void corridorWoodStripped(Block block) {
+        assertTrue(
+            CorridorCleanupEvents.isCorridorWood(block.defaultBlockState()),
+            () -> block + " must be treated as corridor wood and swept from the collision path"
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("woodPreserved")
+    @DisplayName("track / tunnel / terrain / air — NOT stripped as wood")
+    void woodPreservedKept(Block block) {
+        assertFalse(
+            CorridorCleanupEvents.isCorridorWood(block.defaultBlockState()),
+            () -> block + " must NOT be treated as corridor wood"
         );
     }
 
