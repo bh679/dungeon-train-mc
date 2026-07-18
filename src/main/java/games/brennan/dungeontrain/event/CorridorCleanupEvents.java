@@ -61,13 +61,15 @@ import java.util.function.Predicate;
  * horizontal branch logs that reach up to ~16 blocks sideways, so a tree rooted in a
  * neighbouring chunk can drop a log directly into the collision path of this chunk's already
  * carved corridor (the same late cross-chunk spillover foliage takes). {@link #isCorridorWood}
- * strips logs/wood, but only within the <b>carriage collision envelope</b>
- * ({@code trainY..trainY+height}) — starting at the deck so the bed/rail rows are never touched,
- * and capped at the carriage roof so tree trunks that legitimately stand inside the corridor's
- * horizontal footprint <em>above</em> the roof stay put. Solid blocks don't cascade, so this
- * rides the same section-local no-relight write path as the foliage sweep. <b>Overworld-only</b>
- * (unlike the all-dimension foliage sweep): vanilla trees are the only source of this spillover
- * and only decorate the Overworld — see the gate in {@code cleanCorridorChunk}.</p>
+ * strips logs/wood and rides the SAME {@link #FOLIAGE_OR_WOOD} sweep as foliage — one section
+ * scan instead of two — rather than a separately-gated pass: solid blocks don't cascade, so
+ * matching wood is safe on the same no-relight write path, and the bed/rail rows and other
+ * dimensions are protected by physical impossibility rather than a runtime gate. Vanilla tree
+ * generation can never place a log on the bed/rail row (already solid stone-brick/rail by the
+ * time a neighbour's tree decorates), and vanilla trees never decorate the End or the true
+ * Nether — so scanning those cells/dimensions for wood is a correctness no-op, not a hazard,
+ * and skipping the check there wouldn't be worth a second sweep's worth of duplicated
+ * {@code isAir()} checks over the same overlapping cells.</p>
  *
  * <p><b>Nether-band clutter sweep.</b> Inside the overworld Nether transition band's core
  * ({@link NetherBand#isInNetherBiome}) the corridor additionally collects basalt / blackstone /
@@ -114,10 +116,17 @@ public final class CorridorCleanupEvents {
      */
     private static final long DRAIN_BUDGET_NANOS = 3_000_000L; // ~3 ms
 
-    /** Foliage (incl. End-core chorus) / wood / Nether-clutter strip predicates, pre-resolved so the per-cell sweep allocates nothing. */
+    /** Foliage (incl. End-core chorus) / Nether-clutter strip predicates, pre-resolved so the per-cell sweep allocates nothing. */
     private static final Predicate<BlockState> FOLIAGE = CorridorCleanupEvents::isFoliage;
-    private static final Predicate<BlockState> WOOD = CorridorCleanupEvents::isCorridorWood;
     private static final Predicate<BlockState> CLUTTER = CorridorCleanupEvents::isNetherClutter;
+
+    /**
+     * Combined foliage + wood strip predicate for the single all-dimension corridor sweep — see the
+     * "Wood sweep" javadoc above for why merging these into one pass (rather than one sweep gated to
+     * all dimensions plus a second gated to the Overworld) is both simpler and cheaper.
+     */
+    private static final Predicate<BlockState> FOLIAGE_OR_WOOD =
+        state -> isFoliage(state) || isCorridorWood(state);
 
     /** ChunkPos longs that have been queued by {@link #onChunkLoad}, awaiting drain. */
     private static final Deque<Long> PENDING = new ConcurrentLinkedDeque<>();
@@ -260,38 +269,25 @@ public final class CorridorCleanupEvents {
         int chunkMinZ = cz << 4;
         int chunkMaxZ = chunkMinZ + 15;
 
-        // Foliage sweep across the track Z-span + carriage envelope (all dimensions). The Y range
-        // covers the bed + rail rows AND the carriage envelope, so cross-chunk foliage spillover into
-        // template-authored air gaps in those rows also gets cleaned; the predicate is narrow enough
-        // that the bed and rail blocks themselves stay intact.
+        // Foliage + wood sweep across the track Z-span + carriage envelope (all dimensions, one
+        // pass). The Y range covers the bed + rail rows AND the carriage envelope, so cross-chunk
+        // foliage spillover into template-authored air gaps in those rows also gets cleaned. Wood
+        // (tree-variation branch logs, e.g. fancy/large/dark oak, reaching up to ~16 blocks
+        // sideways into the collision path) rides the SAME predicate/pass rather than a second
+        // section walk: the bed/rail rows are already solid stone-brick/rail by the time a
+        // neighbour's tree decorates (this chunk's own track_bed carve ran first), so vanilla tree
+        // generation can never place a log there — scanning that row for wood is a correctness
+        // no-op, not a hazard. Likewise wood can only ever occur in the Overworld (vanilla trees
+        // don't decorate the End or the true Nether), so checking for it unconditionally is also a
+        // no-op elsewhere, and a single combined predicate avoids running two full section scans
+        // (each independently paying the isAir() check) over the same overlapping cells.
         int zLoF = Math.max(g.trackZMin(), chunkMinZ);
         int zHiF = Math.min(g.trackZMax(), chunkMaxZ);
         int trainY = g.bedY() + 2;
         int minYF = Math.max(level.getMinBuildHeight(), g.bedY());
         int maxYF = Math.min(level.getMaxBuildHeight() - 1, trainY + dims.height());
         if (zLoF <= zHiF && maxYF >= minYF) {
-            sweepSection(chunk, level, chunkMinX, zLoF, zHiF, minYF, maxYF, null, FOLIAGE, g, null);
-        }
-
-        // Wood sweep across the track Z-span, but only within the CARRIAGE COLLISION ENVELOPE
-        // (trainY..trainY+height). Cross-chunk tree variations (fancy/large/dark oak) drop branch
-        // logs into the ride path after this chunk's carve already ran; foliage cleanup strips the
-        // leaves but not the wood. Y starts at the deck (trainY = bedY+2), so the bed/rail rows are
-        // never touched — no track re-stamp needed — and caps at the carriage roof, so trunks that
-        // legitimately stand above the corridor stay put.
-        //
-        // OVERWORLD-only: vanilla trees are the only source of this spillover, and they only
-        // decorate the Overworld. End corridors get chorus (handled by the foliage sweep) but no
-        // logs; the true Nether dimension gets neither sweep today (mirrors isNetherClutter's own
-        // OVERWORLD gate below, which exists for the simulated Nether-band embedded IN the overworld
-        // dimension, not the real Nether). Skipping here avoids scanning for wood that can never
-        // appear in those dimensions.
-        if (level.dimension().equals(Level.OVERWORLD)) {
-            int minYW = Math.max(level.getMinBuildHeight(), trainY);
-            int maxYW = Math.min(level.getMaxBuildHeight() - 1, trainY + dims.height());
-            if (zLoF <= zHiF && maxYW >= minYW) {
-                sweepSection(chunk, level, chunkMinX, zLoF, zHiF, minYW, maxYW, null, WOOD, g, null);
-            }
+            sweepSection(chunk, level, chunkMinX, zLoF, zHiF, minYF, maxYF, null, FOLIAGE_OR_WOOD, g, null);
         }
 
         // Nether-band core only: also clear cross-chunk Nether-decoration spillover (basalt etc.) from
