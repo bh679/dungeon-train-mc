@@ -4961,9 +4961,9 @@
         "Disconnected blocks stay attached to the carriage group instead of spawning a separate physics object"
       ],
       "date": "2026-07-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.473.0",
+      "released_at": "2026-07-18T12:29:36Z"
     },
     {
       "id": "tunnel-loot-variants",
