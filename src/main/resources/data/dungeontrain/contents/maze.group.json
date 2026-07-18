@@ -77,6 +77,11 @@
       "id": "desert2",
       "weight": 6,
       "stage": "desert"
+    },
+    {
+      "id": "bamboo",
+      "weight": 1,
+      "minLevel": 10
     }
   ]
 }

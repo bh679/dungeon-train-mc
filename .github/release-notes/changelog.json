@@ -4980,6 +4980,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "new-container-loot-content",
+      "version": "0.475.0",
+      "type": "content",
+      "title": "New loot containers and variants",
+      "summary": "Added new loot content: creeperdrop, bamboo, crystal, endtower, tnt, enderbooks, and craftcraft variants, plus an updated default tunnel section.",
+      "highlights": [],
+      "pr": 785,
+      "date": "2026-07-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
