@@ -65,7 +65,9 @@ import java.util.function.Predicate;
  * ({@code trainY..trainY+height}) — starting at the deck so the bed/rail rows are never touched,
  * and capped at the carriage roof so tree trunks that legitimately stand inside the corridor's
  * horizontal footprint <em>above</em> the roof stay put. Solid blocks don't cascade, so this
- * rides the same section-local no-relight write path as the foliage sweep.</p>
+ * rides the same section-local no-relight write path as the foliage sweep. <b>Overworld-only</b>
+ * (unlike the all-dimension foliage sweep): vanilla trees are the only source of this spillover
+ * and only decorate the Overworld — see the gate in {@code cleanCorridorChunk}.</p>
  *
  * <p><b>Nether-band clutter sweep.</b> Inside the overworld Nether transition band's core
  * ({@link NetherBand#isInNetherBiome}) the corridor additionally collects basalt / blackstone /
@@ -277,10 +279,19 @@ public final class CorridorCleanupEvents {
         // leaves but not the wood. Y starts at the deck (trainY = bedY+2), so the bed/rail rows are
         // never touched — no track re-stamp needed — and caps at the carriage roof, so trunks that
         // legitimately stand above the corridor stay put.
-        int minYW = Math.max(level.getMinBuildHeight(), trainY);
-        int maxYW = Math.min(level.getMaxBuildHeight() - 1, trainY + dims.height());
-        if (zLoF <= zHiF && maxYW >= minYW) {
-            sweepSection(chunk, level, chunkMinX, zLoF, zHiF, minYW, maxYW, null, WOOD, g, null);
+        //
+        // OVERWORLD-only: vanilla trees are the only source of this spillover, and they only
+        // decorate the Overworld. End corridors get chorus (handled by the foliage sweep) but no
+        // logs; the true Nether dimension gets neither sweep today (mirrors isNetherClutter's own
+        // OVERWORLD gate below, which exists for the simulated Nether-band embedded IN the overworld
+        // dimension, not the real Nether). Skipping here avoids scanning for wood that can never
+        // appear in those dimensions.
+        if (level.dimension().equals(Level.OVERWORLD)) {
+            int minYW = Math.max(level.getMinBuildHeight(), trainY);
+            int maxYW = Math.min(level.getMaxBuildHeight() - 1, trainY + dims.height());
+            if (zLoF <= zHiF && maxYW >= minYW) {
+                sweepSection(chunk, level, chunkMinX, zLoF, zHiF, minYW, maxYW, null, WOOD, g, null);
+            }
         }
 
         // Nether-band core only: also clear cross-chunk Nether-decoration spillover (basalt etc.) from
