@@ -103,6 +103,15 @@ public final class NarrativeProgressData extends SavedData {
      * recently started last). World-local and never fed into {@code GlobalNarrativeProgress}/advancements.
      */
     private static final String TAG_PLAYER_LETTERS_EVER_READ = "player_letters_ever_read";
+    /**
+     * Root-level list of per-player community-book read-sets: each entry {@code {uuid, ids:int[]}} of the
+     * relay pool ids that player has read. Distinct from {@link #TAG_SHARED_BOOKS_EVER_READ} (world-scoped,
+     * monotonic, feeds the loot taper) — this is PER-PLAYER, so the shared-book loot selector can prefer
+     * books a specific player hasn't read yet. Persists across lives (a book stays "read" after respawn).
+     */
+    private static final String TAG_SHARED_BOOKS_READ_BY_PLAYER = "shared_books_read_by_player";
+    /** Key for a per-entry int-array of read relay ids inside {@link #TAG_SHARED_BOOKS_READ_BY_PLAYER}. */
+    private static final String TAG_SHARED_READ_IDS = "ids";
 
     private final Map<String, NarrativeProgress> byStory;
     /** World-wide seen-variant tracking for the random-book pool. */
@@ -154,13 +163,19 @@ public final class NarrativeProgressData extends SavedData {
      * progress or advancements. See {@link #TAG_PLAYER_LETTERS_EVER_READ}.
      */
     private final Set<String> playerLettersEverRead;
+    /**
+     * Per-player relay pool ids of community books that player has EVER read (across lives). Lets the
+     * shared-book loot selector prefer books this specific player hasn't seen yet. Persistent, so a book
+     * stays "read" after respawn — the per-life dedup lives separately on {@code PlayerRunState}.
+     */
+    private final Map<UUID, Set<Integer>> sharedBooksReadByPlayer;
 
     /** Stored letter-series cursor for one player: which life ({@code seriesDeaths}), the series id, and the highest index signed. */
     private record LetterSeriesState(long seriesDeaths, String seriesId, int letterIndex) {}
 
     private NarrativeProgressData() {
         this(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>(),
-                new HashMap<>(), new HashSet<>(), new HashMap<>(), new LinkedHashSet<>());
+                new HashMap<>(), new HashSet<>(), new HashMap<>(), new LinkedHashSet<>(), new HashMap<>());
     }
 
     private NarrativeProgressData(Map<String, NarrativeProgress> byStory,
@@ -171,7 +186,8 @@ public final class NarrativeProgressData extends SavedData {
                                   Map<String, NarrativeProgress> randomBookVariantsEverRead,
                                   Set<Integer> sharedBooksEverRead,
                                   Map<UUID, LetterSeriesState> letterSeries,
-                                  Set<String> playerLettersEverRead) {
+                                  Set<String> playerLettersEverRead,
+                                  Map<UUID, Set<Integer>> sharedBooksReadByPlayer) {
         this.byStory = byStory;
         this.randomBooksSeen = randomBooksSeen;
         this.startingBooksSeen = startingBooksSeen;
@@ -181,6 +197,7 @@ public final class NarrativeProgressData extends SavedData {
         this.sharedBooksEverRead = sharedBooksEverRead;
         this.letterSeries = letterSeries;
         this.playerLettersEverRead = playerLettersEverRead;
+        this.sharedBooksReadByPlayer = sharedBooksReadByPlayer;
     }
 
     public static NarrativeProgressData get(ServerLevel overworld) {
@@ -302,6 +319,23 @@ public final class NarrativeProgressData extends SavedData {
      */
     public int distinctSharedBooksEverRead() {
         return sharedBooksEverRead.size();
+    }
+
+    /**
+     * Record that {@code playerUuid} has read the community book with relay pool {@code id}. Per-player and
+     * persistent (survives respawn), so the shared-book loot selector can deprioritise books this player
+     * has already read. Returns {@code true} on this player's first read of the id.
+     */
+    public boolean markPlayerReadShared(UUID playerUuid, int id) {
+        boolean added = sharedBooksReadByPlayer.computeIfAbsent(playerUuid, k -> new HashSet<>()).add(id);
+        if (added) setDirty();
+        return added;
+    }
+
+    /** Whether {@code playerUuid} has ever read the community book with relay pool {@code id}. */
+    public boolean hasPlayerReadShared(UUID playerUuid, int id) {
+        Set<Integer> read = sharedBooksReadByPlayer.get(playerUuid);
+        return read != null && read.contains(id);
     }
 
     // ---------------- Player-narrative discovery tracking ----------------
@@ -662,6 +696,21 @@ public final class NarrativeProgressData extends SavedData {
         ListTag playerLetters = new ListTag();
         for (String key : playerLettersEverRead) playerLetters.add(StringTag.valueOf(key));
         tag.put(TAG_PLAYER_LETTERS_EVER_READ, playerLetters);
+
+        // Per-player community-book read-sets — flat list of {uuid, ids:int[]}.
+        ListTag sharedByPlayer = new ListTag();
+        for (var entry : sharedBooksReadByPlayer.entrySet()) {
+            Set<Integer> ids = entry.getValue();
+            if (ids.isEmpty()) continue;
+            CompoundTag e = new CompoundTag();
+            e.putUUID(TAG_UUID, entry.getKey());
+            int[] arr = new int[ids.size()];
+            int i = 0;
+            for (Integer id : ids) arr[i++] = id;
+            e.putIntArray(TAG_SHARED_READ_IDS, arr);
+            sharedByPlayer.add(e);
+        }
+        tag.put(TAG_SHARED_BOOKS_READ_BY_PLAYER, sharedByPlayer);
         return tag;
     }
 
@@ -747,9 +796,22 @@ public final class NarrativeProgressData extends SavedData {
                 if (!s.isEmpty()) playerLettersEverRead.add(s);
             }
         }
+        // Missing tag → empty map (worlds saved before per-player read tracking landed start empty, so
+        // every book reads as unread for existing players until they read it under the new code).
+        Map<UUID, Set<Integer>> sharedBooksReadByPlayer = new HashMap<>();
+        if (tag.contains(TAG_SHARED_BOOKS_READ_BY_PLAYER, Tag.TAG_LIST)) {
+            ListTag list = tag.getList(TAG_SHARED_BOOKS_READ_BY_PLAYER, Tag.TAG_COMPOUND);
+            for (int i = 0; i < list.size(); i++) {
+                CompoundTag e = list.getCompound(i);
+                if (!e.hasUUID(TAG_UUID)) continue;
+                Set<Integer> ids = new HashSet<>();
+                for (int id : e.getIntArray(TAG_SHARED_READ_IDS)) ids.add(id);
+                sharedBooksReadByPlayer.put(e.getUUID(TAG_UUID), ids);
+            }
+        }
         return new NarrativeProgressData(stories, randomBooks, startingBooksSeen, storyVariants,
                 startingBookReceived, randomBookVariantsEverRead, sharedBooksEverRead, letterSeries,
-                playerLettersEverRead);
+                playerLettersEverRead, sharedBooksReadByPlayer);
     }
 
     /** Inverse of {@link #encodeStoryProgress}; tolerates missing tag (returns empty). */

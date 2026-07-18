@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.player.PlayerRunState;
@@ -171,10 +172,14 @@ public final class NarrativeBookEvents {
         SharedBookReadTag.readId(stack).ifPresent(id -> {
             ServerLevel overworld = overworldOf(player);
             if (overworld == null) return;
-            if (NarrativeProgressData.get(overworld).markSharedBookEverRead(id)) {
+            NarrativeProgressData data = NarrativeProgressData.get(overworld);
+            if (data.markSharedBookEverRead(id)) {
                 LOGGER.info("[DungeonTrain] SharedBook: world marked community book id {} read (by {})",
                     id, player.getName().getString());
             }
+            // Per-player read record (persists across lives) so the shared-book loot selector can
+            // deprioritise books THIS player has already read, independent of the world-scoped taper above.
+            data.markPlayerReadShared(player.getUUID(), id);
         });
     }
 
@@ -290,24 +295,38 @@ public final class NarrativeBookEvents {
         ItemStack stack = event.getTo();
         if (stack.isEmpty()) return;
 
-        // random_playerbook cold-pool fallback: a local book baked before the shared pool warmed,
-        // marked pending. Upgrade it in place to a real community book now that a hand is holding it
-        // (and the pool is warm), then fall through to the shared-found branch so it gets the same
-        // held-marker + author greeting as a natively-rolled discovered book. If the pool is still
-        // cold/disabled, leave the marker and return — the next hold retries.
+        // Pending community-book placeholder (baked by ContainerContentsRoller for random_playerbook and
+        // for random_book's taper-hit slots). Resolve it PER-PLAYER now that a hand is holding it, running
+        // the SharedBookSelector priority chain against THIS player's read/served state, then fall through
+        // to the shared-found branch for the same held-marker + author greeting as a natively-discovered
+        // book. If the pool is still cold/disabled, leave the marker and return — the next hold retries.
         if (PlayerBookPendingTag.isPending(stack)) {
             if (!SharedBookGate.canDiscover() || SharedBookPool.isEmpty()) return;
-            long seed = player.level().getGameTime() ^ player.getUUID().getLeastSignificantBits();
-            ItemStack shared = SharedBookPool.rollShared(seed);
-            if (shared.isEmpty()) return;
+            ServerLevel ow = overworldOf(player);
+            if (ow == null) return;
+            NarrativeProgressData data = NarrativeProgressData.get(ow);
+            PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+            java.util.UUID uuid = player.getUUID();
+            SharedBookSelector.PlayerContext ctx = new SharedBookSelector.PlayerContext(
+                id -> data.hasPlayerReadShared(uuid, id),
+                run::wasServed,
+                id -> { Integer c = run.servedCarriage(id); return c == null ? 0 : c; },
+                run.travelledCarriageIndex(),
+                DungeonTrainConfig.getSharedBookRepeatCarriages());
+            long seed = ow.getGameTime() ^ uuid.getLeastSignificantBits();
+            Optional<SharedBookPool.PoolBook> chosen = SharedBookSelector.select(SharedBookPool.snapshot(), ctx, seed);
+            if (chosen.isEmpty()) return; // nothing eligible for this player right now — retry on next hold
+            SharedBookPool.PoolBook book = chosen.get();
+            ItemStack shared = SharedBookPool.buildStack(book);
             stack.set(DataComponents.WRITTEN_BOOK_CONTENT,
                 shared.get(DataComponents.WRITTEN_BOOK_CONTENT));
             RandomBookTag.clearIdentity(stack);   // drop stale dt_random_book* keys
-            PlayerBookPendingTag.clear(stack);    // upgraded — no longer pending
+            PlayerBookPendingTag.clear(stack);    // resolved — no longer pending
             SharedBookFoundTag.stamp(stack);      // it's now a discovered player book
-            SharedBookReadTag.readId(shared).ifPresent(id -> SharedBookReadTag.stampId(stack, id));
-            LOGGER.info("[DungeonTrain] PlayerBook: upgraded cold-pool fallback to a community book (held by {})",
-                player.getName().getString());
+            SharedBookReadTag.stampId(stack, book.id());
+            run.markServed(book.id(), run.travelledCarriageIndex()); // per-life dedup + far-behind escape
+            LOGGER.info("[DungeonTrain] PlayerBook: resolved pending placeholder to community book {} (held by {})",
+                book.id(), player.getName().getString());
             // fall through — the shared-found branch below marks held + greets the author.
         }
 

@@ -62,8 +62,40 @@ public final class SharedBookPool {
 
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
-    /** One approved community book, materialised from the relay's pool response. */
-    public record PoolBook(int id, String title, String author, List<String> pages) {}
+    /**
+     * A community book's language relationship to the requesting player, decided by the relay relative to
+     * the {@code &lang=} locale and returned as the per-book {@code origin} field. Drives the language
+     * bucket + weight edge in {@link SharedBookSelector}. An older relay that omits the field degrades to
+     * {@link #OTHER} (see {@link #parseBook}).
+     */
+    public enum Origin {
+        /** Authored in the requesting player's language. */
+        MINE,
+        /** Authored in another language, but the relay supplies a translation into the player's. */
+        TRANSLATED,
+        /** Neither authored in nor translated into the player's language — last-resort fallback. */
+        OTHER;
+
+        /** Parse the relay's lowercase {@code origin} string; anything unknown/absent → {@link #OTHER}. */
+        static Origin fromString(String s) {
+            if (s == null) return OTHER;
+            return switch (s.toLowerCase(java.util.Locale.ROOT)) {
+                case "mine" -> MINE;
+                case "translated" -> TRANSLATED;
+                default -> OTHER;
+            };
+        }
+    }
+
+    /**
+     * One approved community book, materialised from the relay's pool response.
+     *
+     * <p>{@code weight} is the moderator-assigned priority stored on the relay (higher = surfaced first);
+     * {@code origin} is the book's language relationship to the requesting player. Both default gracefully
+     * ({@code weight=1}, {@code origin=OTHER}) against a relay too old to send them, so selection degrades
+     * to unread-first + dedup without tiering rather than breaking.</p>
+     */
+    public record PoolBook(int id, String title, String author, List<String> pages, int weight, Origin origin) {}
 
     /** Current immutable snapshot. Replaced wholesale by {@link #refreshAsync}; read by {@link #rollShared}. */
     private static volatile List<PoolBook> snapshot = List.of();
@@ -99,7 +131,24 @@ public final class SharedBookPool {
         List<PoolBook> pool = snapshot; // single volatile read → consistent snapshot
         if (pool.isEmpty()) return ItemStack.EMPTY;
         int index = (int) (Long.remainderUnsigned(mix(rollSeed), pool.size()));
-        PoolBook book = pool.get(index);
+        return buildStack(pool.get(index));
+    }
+
+    /**
+     * The current immutable pool snapshot (a single volatile read → consistent view). Used by
+     * {@link SharedBookSelector} to run the per-player priority chain over the full window rather than the
+     * uniform pick {@link #rollShared} makes. Never mutate the returned list.
+     */
+    public static List<PoolBook> snapshot() {
+        return snapshot;
+    }
+
+    /**
+     * Build a plain written book for a specific pool entry and stamp the same discovery/telemetry markers
+     * {@link #rollShared} applies. Used by {@link SharedBookSelector} once it has picked a book per-player,
+     * so both the uniform and the curated paths produce identically-tagged stacks.
+     */
+    public static ItemStack buildStack(PoolBook book) {
         ItemStack stack = BookFactory.buildPlainBook(book.title(), book.author(), book.pages());
         SharedBookFoundTag.stamp(stack);               // "read a stranger's book" advancement marker
         SharedBookReadTag.stampId(stack, book.id());   // read-telemetry identity only
@@ -228,7 +277,19 @@ public final class SharedBookPool {
                 pages.add(p.isJsonNull() ? "" : p.getAsString());
             }
         }
-        return new PoolBook(id, title, author, pages);
+        // weight/origin are optional — a relay too old to send them degrades to weight=1, OTHER, so the
+        // selector still runs (unread-first + dedup) without true language/weight tiering.
+        int weight = 1;
+        if (o.has("weight") && o.get("weight").isJsonPrimitive()) {
+            try {
+                weight = Math.max(0, o.get("weight").getAsInt());
+            } catch (RuntimeException ignored) {
+                // non-numeric weight — keep the default
+            }
+        }
+        Origin origin = Origin.fromString(
+                o.has("origin") && !o.get("origin").isJsonNull() ? o.get("origin").getAsString() : null);
+        return new PoolBook(id, title, author, pages, weight, origin);
     }
 
     /** The {@code &lang=<locale>} query fragment for language-matched delivery, or {@code ""} when blank. */
