@@ -4950,6 +4950,20 @@
       "released": true,
       "released_in": "v0.472.0",
       "released_at": "2026-07-18T09:40:35Z"
+    },
+    {
+      "id": "carriage-group-block-no-split",
+      "version": "0.473.0",
+      "type": "fix",
+      "title": "Loose carriage blocks stay part of the train",
+      "summary": "Mining part of a carriage no longer breaks a disconnected chunk off into its own drifting mini-ship. Any blocks left floating inside a carriage group now stay welded to the train and ride along with it.",
+      "highlights": [
+        "Disconnected blocks stay attached to the carriage group instead of spawning a separate physics object"
+      ],
+      "date": "2026-07-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
