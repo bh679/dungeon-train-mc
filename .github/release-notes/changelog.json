@@ -4964,6 +4964,22 @@
       "released": true,
       "released_in": "v0.473.0",
       "released_at": "2026-07-18T12:29:36Z"
+    },
+    {
+      "id": "tunnel-loot-variants",
+      "version": "0.474.0",
+      "type": "fix",
+      "title": "Loot chests in tunnels now spawn with loot",
+      "summary": "Loot-linked chests (and other containers) placed inside tunnels were always empty \u2014 they now roll their loot when the tunnel generates, just like chests in the train carriages. Each chest rolls its own contents.",
+      "highlights": [
+        "Tunnel loot chests now contain items instead of being empty",
+        "Works for both freshly-generated and editor-placed tunnels"
+      ],
+      "pr": 787,
+      "date": "2026-07-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

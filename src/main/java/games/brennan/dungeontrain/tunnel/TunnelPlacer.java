@@ -302,11 +302,13 @@ public final class TunnelPlacer {
     }
 
     /**
-     * Worldgen variant of {@link #applyTunnelSidecar}. Direct
+     * Worldgen variant of {@link #applyTunnelSidecar}. Writes through
      * {@link WorldGenLevel#setBlock} with {@link Block#UPDATE_CLIENTS}; no
-     * {@link Shipyards} guard (no ships at chunkgen); no block-entity NBT
-     * stamping (BE wiring through WorldGenLevel is awkward and tunnel sidecars
-     * rarely carry BE data).
+     * {@link Shipyards} guard (no ships at chunkgen). Container/BE cells are
+     * routed through
+     * {@link games.brennan.dungeontrain.editor.ContainerContentsPlacement#placeWorldgen}
+     * which rolls any linked loot pool and stamps the block-entity NBT onto the
+     * freshly-placed BE (so worldgen tunnel chests populate, matching runtime).
      */
     private static void applyTunnelSidecarWorldgen(
         WorldGenLevel level, BlockPos origin, boolean mirrorX,
@@ -352,11 +354,17 @@ public final class TunnelPlacer {
                 level.setBlock(wpos, AIR, Block.UPDATE_CLIENTS);
                 continue;
             }
-            BlockState toPlace =
-                games.brennan.dungeontrain.editor.CarriageVariantBlocks.isEmptyPlaceholder(picked.state())
-                    ? AIR
-                    : picked.state();
-            level.setBlock(wpos, toPlace, Block.UPDATE_CLIENTS);
+            if (games.brennan.dungeontrain.editor.CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
+                level.setBlock(wpos, AIR, Block.UPDATE_CLIENTS);
+            } else {
+                // Roll loot + stamp BE NBT through the WorldGenLevel so tunnel
+                // chests generated at chunkgen populate (and signs/banners keep
+                // their authored NBT), matching the runtime sidecar path.
+                games.brennan.dungeontrain.editor.ContainerContentsPlacement.placeWorldgen(
+                    level, wpos, picked.state(), picked.blockEntityNbt(),
+                    "tunnel:" + kind.id() + ":" + name, entry.localPos(), worldSeed, tileIndex,
+                    picked.linkedLootPrefabId());
+            }
         }
     }
 
@@ -432,7 +440,13 @@ public final class TunnelPlacer {
             if (games.brennan.dungeontrain.editor.CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
                 SilentBlockOps.setBlockSilent(level, wpos, AIR);
             } else {
-                SilentBlockOps.setBlockSilent(level, wpos, picked.state(), picked.blockEntityNbt());
+                // Route through ContainerContentsPlacement so a loot-linked
+                // chest rolls its pool into the BE NBT (mirrors CarriagePartPlacer).
+                // Non-container blocks fall through to a plain silent set.
+                games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
+                    level, wpos, picked.state(), picked.blockEntityNbt(),
+                    "tunnel:" + kind.id() + ":" + name, entry.localPos(), worldSeed, tileIndex,
+                    picked.linkedLootPrefabId());
             }
         }
     }
