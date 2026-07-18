@@ -90,6 +90,18 @@ public final class LootPrefabStore {
 
     private static final TreeSet<String> IDS = new TreeSet<>();
 
+    /**
+     * Session cache for {@link #load} keyed by lowercased id. Without it every
+     * chest placement (carriage and — since the tunnel loot fix — worldgen
+     * tunnel) re-reads and re-parses the prefab JSON from disk inside the
+     * {@code synchronized} load. Caches misses too (as {@code Optional.empty()}).
+     * Invalidated by {@link #save}/{@link #delete} (per key) and
+     * {@link #reload}/{@link #clear} (whole cache). {@link Data} and its pool
+     * are immutable records, so a cached instance is safe to share across
+     * placements and worldgen worker threads.
+     */
+    private static final java.util.Map<String, Optional<Data>> LOAD_CACHE = new java.util.HashMap<>();
+
     private LootPrefabStore() {}
 
     /**
@@ -141,9 +153,12 @@ public final class LootPrefabStore {
 
     public static synchronized Optional<Data> load(String id) {
         String key = id.toLowerCase(Locale.ROOT);
+        Optional<Data> cached = LOAD_CACHE.get(key);
+        if (cached != null) return cached;
         Optional<Data> fromConfig = loadFromConfig(key);
-        if (fromConfig.isPresent()) return fromConfig;
-        return loadFromResource(key);
+        Optional<Data> result = fromConfig.isPresent() ? fromConfig : loadFromResource(key);
+        LOAD_CACHE.put(key, result);
+        return result;
     }
 
     public static synchronized boolean save(String id, ContainerContentsPool pool, ResourceLocation sourceBlock,
@@ -164,6 +179,7 @@ public final class LootPrefabStore {
             w.write(toJsonText(pool, sourceBlock, category));
         }
         boolean isNew = IDS.add(key);
+        LOAD_CACHE.remove(key); // next load re-reads the just-written file
         LOGGER.info("[DungeonTrain] {} loot prefab '{}' (block={}, category={}, {} entries) at {}",
             isNew ? "Saved new" : "Overwrote", key, sourceBlock, category, pool.entries().size(), file);
 
@@ -234,6 +250,7 @@ public final class LootPrefabStore {
         String key = id.toLowerCase(Locale.ROOT);
         Path file = fileFor(key);
         boolean fileExisted = Files.deleteIfExists(file);
+        LOAD_CACHE.remove(key); // config copy gone — next load falls back to bundled (if any)
         if (!hasBundled(key)) {
             IDS.remove(key);
         }
@@ -269,6 +286,7 @@ public final class LootPrefabStore {
 
     public static synchronized void reload() {
         IDS.clear();
+        LOAD_CACHE.clear(); // config/imported files may have changed on disk
         // Bundled (classpath) tier
         Set<String> bundled = BundledNbtScanner.scanBasenames(
             LootPrefabStore.class, BUNDLED_RESOURCE_PREFIX, LOGGER, EXT);
@@ -293,6 +311,7 @@ public final class LootPrefabStore {
 
     public static synchronized void clear() {
         IDS.clear();
+        LOAD_CACHE.clear();
     }
 
     @SubscribeEvent
