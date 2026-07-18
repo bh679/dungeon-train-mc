@@ -53,23 +53,23 @@ import java.util.function.Predicate;
  * setBlock happens after every chunk-load callback in flight has
  * returned.</p>
  *
- * <p>Foliage predicate is intentionally narrow: leaves, vines, saplings, small
+ * <p>Bed/rail row predicate is intentionally narrow: leaves, vines, saplings, small
  * + tall flowers. Explicitly NOT water, lava, fire, snow, bubble columns,
- * or any other replaceable block — those would cascade.</p>
+ * or any other replaceable block — those would cascade. This row must stay narrow because it is
+ * otherwise intentionally solid (stone-brick bed + rails); a blanket clear there would delete the
+ * track itself.</p>
  *
- * <p><b>Wood sweep.</b> Tree <em>variations</em> — fancy/large oak and dark oak — grow
- * horizontal branch logs that reach up to ~16 blocks sideways, so a tree rooted in a
- * neighbouring chunk can drop a log directly into the collision path of this chunk's already
- * carved corridor (the same late cross-chunk spillover foliage takes). {@link #isCorridorWood}
- * strips logs/wood and rides the SAME {@link #FOLIAGE_OR_WOOD} sweep as foliage — one section
- * scan instead of two — rather than a separately-gated pass: solid blocks don't cascade, so
- * matching wood is safe on the same no-relight write path, and the bed/rail rows and other
- * dimensions are protected by physical impossibility rather than a runtime gate. Vanilla tree
- * generation can never place a log on the bed/rail row (already solid stone-brick/rail by the
- * time a neighbour's tree decorates), and vanilla trees never decorate the End or the true
- * Nether — so scanning those cells/dimensions for wood is a correctness no-op, not a hazard,
- * and skipping the check there wouldn't be worth a second sweep's worth of duplicated
- * {@code isAir()} checks over the same overlapping cells.</p>
+ * <p><b>Collision-envelope sweep.</b> Above the bed/rail row — {@code trainY..trainY+height}, the
+ * space the carriage body actually occupies — the sweep strips <em>any non-air block</em>, full
+ * stop. This mirrors the same "not air → clear" rule {@code TrackGenerator.placeTracksForChunk}
+ * already applies during the original one-shot worldgen carve; re-running that exact rule here on
+ * every chunk load/reload closes the cross-chunk spillover gap for every possible offender — tree
+ * branch logs (fancy/large/dark oak reach ~16 blocks sideways), structures, modded blocks, or
+ * anything else a curated per-species predicate could miss — rather than maintaining an
+ * enumerated list that only covers known cases. {@code sweepSection}'s own {@code isAir()} check
+ * already does the real filtering; the envelope predicate is a constant {@code true} matching
+ * everything that reaches it. Solid blocks don't cascade, so this is safe on the same
+ * section-local no-relight write path as the foliage sweep.</p>
  *
  * <p><b>Nether-band clutter sweep.</b> Inside the overworld Nether transition band's core
  * ({@link NetherBand#isInNetherBiome}) the corridor additionally collects basalt / blackstone /
@@ -121,12 +121,12 @@ public final class CorridorCleanupEvents {
     private static final Predicate<BlockState> CLUTTER = CorridorCleanupEvents::isNetherClutter;
 
     /**
-     * Combined foliage + wood strip predicate for the single all-dimension corridor sweep — see the
-     * "Wood sweep" javadoc above for why merging these into one pass (rather than one sweep gated to
-     * all dimensions plus a second gated to the Overworld) is both simpler and cheaper.
+     * Matches every non-air block. {@link #sweepSection} already filters air via
+     * {@code state.isAir()} before testing the predicate, so this constant means "clear anything
+     * that reaches here" — used only for the carriage collision envelope, where nothing should
+     * ever be present regardless of what put it there.
      */
-    private static final Predicate<BlockState> FOLIAGE_OR_WOOD =
-        state -> isFoliage(state) || isCorridorWood(state);
+    private static final Predicate<BlockState> ANY_NON_AIR = state -> true;
 
     /** ChunkPos longs that have been queued by {@link #onChunkLoad}, awaiting drain. */
     private static final Deque<Long> PENDING = new ConcurrentLinkedDeque<>();
@@ -269,25 +269,31 @@ public final class CorridorCleanupEvents {
         int chunkMinZ = cz << 4;
         int chunkMaxZ = chunkMinZ + 15;
 
-        // Foliage + wood sweep across the track Z-span + carriage envelope (all dimensions, one
-        // pass). The Y range covers the bed + rail rows AND the carriage envelope, so cross-chunk
-        // foliage spillover into template-authored air gaps in those rows also gets cleaned. Wood
-        // (tree-variation branch logs, e.g. fancy/large/dark oak, reaching up to ~16 blocks
-        // sideways into the collision path) rides the SAME predicate/pass rather than a second
-        // section walk: the bed/rail rows are already solid stone-brick/rail by the time a
-        // neighbour's tree decorates (this chunk's own track_bed carve ran first), so vanilla tree
-        // generation can never place a log there — scanning that row for wood is a correctness
-        // no-op, not a hazard. Likewise wood can only ever occur in the Overworld (vanilla trees
-        // don't decorate the End or the true Nether), so checking for it unconditionally is also a
-        // no-op elsewhere, and a single combined predicate avoids running two full section scans
-        // (each independently paying the isAir() check) over the same overlapping cells.
-        int zLoF = Math.max(g.trackZMin(), chunkMinZ);
-        int zHiF = Math.min(g.trackZMax(), chunkMaxZ);
+        int zLo = Math.max(g.trackZMin(), chunkMinZ);
+        int zHi = Math.min(g.trackZMax(), chunkMaxZ);
         int trainY = g.bedY() + 2;
-        int minYF = Math.max(level.getMinBuildHeight(), g.bedY());
-        int maxYF = Math.min(level.getMaxBuildHeight() - 1, trainY + dims.height());
-        if (zLoF <= zHiF && maxYF >= minYF) {
-            sweepSection(chunk, level, chunkMinX, zLoF, zHiF, minYF, maxYF, null, FOLIAGE_OR_WOOD, g, null);
+
+        // Bed/rail row sweep (all dimensions): strip ONLY foliage spillover from the
+        // template-authored air gaps in the bed/rail rows. These two rows (bedY, railY) are
+        // otherwise intentionally solid — stone-brick bed + rails — so this predicate must stay
+        // narrow; a blanket "any non-air" clear here would delete the track itself.
+        int minYRow = Math.max(level.getMinBuildHeight(), g.bedY());
+        int maxYRow = Math.min(trainY - 1, level.getMaxBuildHeight() - 1);
+        if (zLo <= zHi && maxYRow >= minYRow) {
+            sweepSection(chunk, level, chunkMinX, zLo, zHi, minYRow, maxYRow, null, FOLIAGE, g, null);
+        }
+
+        // Carriage COLLISION ENVELOPE sweep (all dimensions): strip ANY non-air block, full stop —
+        // guaranteeing nothing can ever occupy the space the train's body passes through,
+        // regardless of what put it there (tree branch logs, structures, modded blocks, anything).
+        // This reruns the exact "not air -> clear" rule TrackGenerator.placeTracksForChunk already
+        // applies during the original one-shot worldgen carve, closing the cross-chunk spillover
+        // gap instead of maintaining a curated per-block-type predicate that could always miss the
+        // next offender.
+        int minYEnv = Math.max(level.getMinBuildHeight(), trainY);
+        int maxYEnv = Math.min(level.getMaxBuildHeight() - 1, trainY + dims.height());
+        if (zLo <= zHi && maxYEnv >= minYEnv) {
+            sweepSection(chunk, level, chunkMinX, zLo, zHi, minYEnv, maxYEnv, null, ANY_NON_AIR, g, null);
         }
 
         // Nether-band core only: also clear cross-chunk Nether-decoration spillover (basalt etc.) from
@@ -472,42 +478,6 @@ public final class CorridorCleanupEvents {
         if (state.is(BlockTags.SMALL_FLOWERS)) return true;
         if (state.is(BlockTags.TALL_FLOWERS)) return true;
         if (state.is(Blocks.CHORUS_PLANT) || state.is(Blocks.CHORUS_FLOWER)) return true;
-        return false;
-    }
-
-    /**
-     * Logs / wood the corridor sweep strips from the collision envelope — the branch-log spillover
-     * from tree variations (fancy/large oak, dark oak) rooted in a neighbouring chunk that lands in
-     * this chunk's already-carved ride path. Direct {@code Blocks.X} checks for the common overworld
-     * species (log, wood, and stripped variants) come first so this is unit-testable in the moddev
-     * runtime — which does NOT bootstrap datapack tags — exactly like {@link #isNetherClutter}. The
-     * trailing {@link BlockTags#LOGS} check is a defensive fallback that also catches modded trees.
-     *
-     * <p>Solid blocks don't cascade neighbour updates, so removing them is safe on the section-local
-     * no-relight write path. This predicate is deliberately scoped by its caller to the carriage
-     * collision envelope only (never the bed/rail row, never above the roof), so it strips wood that
-     * fouls the train without disturbing scenery trunks that stand clear of the ride space.
-     * Package-private for unit tests.</p>
-     */
-    static boolean isCorridorWood(BlockState state) {
-        if (state.is(Blocks.OAK_LOG) || state.is(Blocks.OAK_WOOD)) return true;
-        if (state.is(Blocks.STRIPPED_OAK_LOG) || state.is(Blocks.STRIPPED_OAK_WOOD)) return true;
-        if (state.is(Blocks.DARK_OAK_LOG) || state.is(Blocks.DARK_OAK_WOOD)) return true;
-        if (state.is(Blocks.STRIPPED_DARK_OAK_LOG) || state.is(Blocks.STRIPPED_DARK_OAK_WOOD)) return true;
-        if (state.is(Blocks.BIRCH_LOG) || state.is(Blocks.BIRCH_WOOD)) return true;
-        if (state.is(Blocks.STRIPPED_BIRCH_LOG) || state.is(Blocks.STRIPPED_BIRCH_WOOD)) return true;
-        if (state.is(Blocks.SPRUCE_LOG) || state.is(Blocks.SPRUCE_WOOD)) return true;
-        if (state.is(Blocks.STRIPPED_SPRUCE_LOG) || state.is(Blocks.STRIPPED_SPRUCE_WOOD)) return true;
-        if (state.is(Blocks.JUNGLE_LOG) || state.is(Blocks.JUNGLE_WOOD)) return true;
-        if (state.is(Blocks.STRIPPED_JUNGLE_LOG) || state.is(Blocks.STRIPPED_JUNGLE_WOOD)) return true;
-        if (state.is(Blocks.ACACIA_LOG) || state.is(Blocks.ACACIA_WOOD)) return true;
-        if (state.is(Blocks.STRIPPED_ACACIA_LOG) || state.is(Blocks.STRIPPED_ACACIA_WOOD)) return true;
-        if (state.is(Blocks.MANGROVE_LOG) || state.is(Blocks.MANGROVE_WOOD)) return true;
-        if (state.is(Blocks.STRIPPED_MANGROVE_LOG) || state.is(Blocks.STRIPPED_MANGROVE_WOOD)) return true;
-        if (state.is(Blocks.CHERRY_LOG) || state.is(Blocks.CHERRY_WOOD)) return true;
-        if (state.is(Blocks.STRIPPED_CHERRY_LOG) || state.is(Blocks.STRIPPED_CHERRY_WOOD)) return true;
-        // Defensive tag fallback — also catches modded logs/wood the moddev runtime doesn't resolve.
-        if (state.is(BlockTags.LOGS)) return true;
         return false;
     }
 }
