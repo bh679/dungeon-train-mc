@@ -20,6 +20,7 @@
   "links": {
     "6,0,2": "meats",
     "5,0,2": "fruit_veg",
-    "0,0,2": "meals"
+    "0,0,2": "meals",
+    "3,2,0": "potionbarrel"
   }
 }
