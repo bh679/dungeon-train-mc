@@ -78,6 +78,14 @@
     {
       "id": "bookslevel2",
       "weight": 1
+    },
+    {
+      "id": "enderbooks",
+      "weight": 4,
+      "phases": [
+        "END",
+        "UPSIDE_DOWN"
+      ]
     }
   ]
 }
