@@ -4977,9 +4977,9 @@
       ],
       "pr": 787,
       "date": "2026-07-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.475.0",
+      "released_at": "2026-07-18T13:04:59Z"
     },
     {
       "id": "new-container-loot-content",
@@ -4990,9 +4990,9 @@
       "highlights": [],
       "pr": 785,
       "date": "2026-07-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.475.0",
+      "released_at": "2026-07-18T13:04:59Z"
     },
     {
       "id": "track-collision-wood-cleanup",
@@ -5003,9 +5003,9 @@
       "highlights": [],
       "pr": 788,
       "date": "2026-07-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.475.0",
+      "released_at": "2026-07-18T13:04:59Z"
     }
   ]
 }
