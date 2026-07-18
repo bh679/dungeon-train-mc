@@ -149,6 +149,31 @@ public final class SableManagedShip implements ManagedShip {
         return d;
     }
 
+    /**
+     * True if {@code subLevel} (or the sub-level it was split from) is a
+     * DT-driven carriage group — i.e. DT has registered a {@link KinematicDriver}
+     * for it. Every group gets a driver at assembly ({@code TrainAssembler}), and a
+     * sub-level reloaded from holding keeps the same {@link SubLevel#getUniqueId()}
+     * key, so this stays true across culls within a server session.
+     *
+     * <p>Used by {@link games.brennan.dungeontrain.mixin.SubLevelHeatMapSplitMixin}
+     * to suppress Sable's connectivity splitter for DT trains: a disconnected block
+     * island inside a carriage group must stay welded to the group's block grid and
+     * keep being teleported with the train, not spin off into its own sub-level.
+     * Safe because DT trains are kinematic (per-tick teleport), not force-simulated,
+     * so internal block connectivity does not affect how they move.</p>
+     */
+    public static boolean isDungeonTrainManaged(ServerSubLevel subLevel) {
+        if (subLevel == null) {
+            return false;
+        }
+        if (DRIVERS_BY_UUID.containsKey(subLevel.getUniqueId())) {
+            return true;
+        }
+        UUID origin = subLevel.getSplitFromSubLevel();
+        return origin != null && DRIVERS_BY_UUID.containsKey(origin);
+    }
+
     @Override
     public void setKinematicDriver(KinematicDriver driver) {
         UUID id = subLevel.getUniqueId();

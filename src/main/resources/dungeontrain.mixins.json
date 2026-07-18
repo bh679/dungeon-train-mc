@@ -26,6 +26,7 @@
     "FlowingFluidUpsideDownMixin",
     "ServerSubLevelFreezeMixin",
     "SubLevelPhysicsSystemFreezeMixin",
+    "SubLevelHeatMapSplitMixin",
     "RapierPipelineFreezeMixin"
   ],
   "client": [
