@@ -4933,6 +4933,23 @@
       "released": true,
       "released_in": "v0.471.0",
       "released_at": "2026-07-17T19:41:38Z"
+    },
+    {
+      "id": "creeper-potionbarrel-content",
+      "version": "0.472.0",
+      "type": "content",
+      "title": "New creeper encounter and potion barrel loot",
+      "summary": "Added a new creeper enemy variant and potion barrel loot to spice up dungeon carriages, along with refreshed barrel layout variants.",
+      "highlights": [
+        "New creeper enemy variant",
+        "New potion barrel loot prefab",
+        "Updated barrel container variants"
+      ],
+      "pr": 783,
+      "date": "2026-07-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
