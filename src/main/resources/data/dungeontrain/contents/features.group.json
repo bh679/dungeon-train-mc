@@ -98,6 +98,34 @@
     {
       "id": "lamppost",
       "weight": 1
+    },
+    {
+      "id": "crystal",
+      "weight": 1,
+      "phases": [
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "id": "endtower",
+      "weight": 1,
+      "phases": [
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "id": "tnt",
+      "weight": 1,
+      "phases": [
+        "VOID",
+        "UPSIDE_DOWN"
+      ]
+    },
+    {
+      "id": "craftcraft",
+      "weight": 1
     }
   ]
 }

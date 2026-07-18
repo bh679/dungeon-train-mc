@@ -4950,6 +4950,49 @@
       "released": true,
       "released_in": "v0.472.0",
       "released_at": "2026-07-18T09:40:35Z"
+    },
+    {
+      "id": "carriage-group-block-no-split",
+      "version": "0.473.0",
+      "type": "fix",
+      "title": "Loose carriage blocks stay part of the train",
+      "summary": "Mining part of a carriage no longer breaks a disconnected chunk off into its own drifting mini-ship. Any blocks left floating inside a carriage group now stay welded to the train and ride along with it.",
+      "highlights": [
+        "Disconnected blocks stay attached to the carriage group instead of spawning a separate physics object"
+      ],
+      "date": "2026-07-18",
+      "released": true,
+      "released_in": "v0.473.0",
+      "released_at": "2026-07-18T12:29:36Z"
+    },
+    {
+      "id": "tunnel-loot-variants",
+      "version": "0.474.0",
+      "type": "fix",
+      "title": "Loot chests in tunnels now spawn with loot",
+      "summary": "Loot-linked chests (and other containers) placed inside tunnels were always empty \u2014 they now roll their loot when the tunnel generates, just like chests in the train carriages. Each chest rolls its own contents.",
+      "highlights": [
+        "Tunnel loot chests now contain items instead of being empty",
+        "Works for both freshly-generated and editor-placed tunnels"
+      ],
+      "pr": 787,
+      "date": "2026-07-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "new-container-loot-content",
+      "version": "0.475.0",
+      "type": "content",
+      "title": "New loot containers and variants",
+      "summary": "Added new loot content: creeperdrop, bamboo, crystal, endtower, tnt, enderbooks, and craftcraft variants, plus an updated default tunnel section.",
+      "highlights": [],
+      "pr": 785,
+      "date": "2026-07-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
