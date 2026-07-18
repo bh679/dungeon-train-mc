@@ -53,13 +53,23 @@ import java.util.function.Predicate;
  * setBlock happens after every chunk-load callback in flight has
  * returned.</p>
  *
- * <p>Predicate is intentionally narrow: leaves, vines, saplings, small
+ * <p>Bed/rail row predicate is intentionally narrow: leaves, vines, saplings, small
  * + tall flowers. Explicitly NOT water, lava, fire, snow, bubble columns,
- * or any other replaceable block — those would cascade. Solid blocks
- * (logs, stone, dirt) above the carriage envelope are out of scope; they
- * are tree trunks that legitimately stand inside the corridor's
- * horizontal footprint above the carriage roof, and the train doesn't
- * physically interact with them anyway.</p>
+ * or any other replaceable block — those would cascade. This row must stay narrow because it is
+ * otherwise intentionally solid (stone-brick bed + rails); a blanket clear there would delete the
+ * track itself.</p>
+ *
+ * <p><b>Collision-envelope sweep.</b> Above the bed/rail row — {@code trainY..trainY+height}, the
+ * space the carriage body actually occupies — the sweep strips <em>any non-air block</em>, full
+ * stop. This mirrors the same "not air → clear" rule {@code TrackGenerator.placeTracksForChunk}
+ * already applies during the original one-shot worldgen carve; re-running that exact rule here on
+ * every chunk load/reload closes the cross-chunk spillover gap for every possible offender — tree
+ * branch logs (fancy/large/dark oak reach ~16 blocks sideways), structures, modded blocks, or
+ * anything else a curated per-species predicate could miss — rather than maintaining an
+ * enumerated list that only covers known cases. {@code sweepSection}'s own {@code isAir()} check
+ * already does the real filtering; the envelope predicate is a constant {@code true} matching
+ * everything that reaches it. Solid blocks don't cascade, so this is safe on the same
+ * section-local no-relight write path as the foliage sweep.</p>
  *
  * <p><b>Nether-band clutter sweep.</b> Inside the overworld Nether transition band's core
  * ({@link NetherBand#isInNetherBiome}) the corridor additionally collects basalt / blackstone /
@@ -109,6 +119,14 @@ public final class CorridorCleanupEvents {
     /** Foliage (incl. End-core chorus) / Nether-clutter strip predicates, pre-resolved so the per-cell sweep allocates nothing. */
     private static final Predicate<BlockState> FOLIAGE = CorridorCleanupEvents::isFoliage;
     private static final Predicate<BlockState> CLUTTER = CorridorCleanupEvents::isNetherClutter;
+
+    /**
+     * Matches every non-air block. {@link #sweepSection} already filters air via
+     * {@code state.isAir()} before testing the predicate, so this constant means "clear anything
+     * that reaches here" — used only for the carriage collision envelope, where nothing should
+     * ever be present regardless of what put it there.
+     */
+    private static final Predicate<BlockState> ANY_NON_AIR = state -> true;
 
     /** ChunkPos longs that have been queued by {@link #onChunkLoad}, awaiting drain. */
     private static final Deque<Long> PENDING = new ConcurrentLinkedDeque<>();
@@ -251,17 +269,31 @@ public final class CorridorCleanupEvents {
         int chunkMinZ = cz << 4;
         int chunkMaxZ = chunkMinZ + 15;
 
-        // Foliage sweep across the track Z-span + carriage envelope (all dimensions). The Y range
-        // covers the bed + rail rows AND the carriage envelope, so cross-chunk foliage spillover into
-        // template-authored air gaps in those rows also gets cleaned; the predicate is narrow enough
-        // that the bed and rail blocks themselves stay intact.
-        int zLoF = Math.max(g.trackZMin(), chunkMinZ);
-        int zHiF = Math.min(g.trackZMax(), chunkMaxZ);
+        int zLo = Math.max(g.trackZMin(), chunkMinZ);
+        int zHi = Math.min(g.trackZMax(), chunkMaxZ);
         int trainY = g.bedY() + 2;
-        int minYF = Math.max(level.getMinBuildHeight(), g.bedY());
-        int maxYF = Math.min(level.getMaxBuildHeight() - 1, trainY + dims.height());
-        if (zLoF <= zHiF && maxYF >= minYF) {
-            sweepSection(chunk, level, chunkMinX, zLoF, zHiF, minYF, maxYF, null, FOLIAGE, g, null);
+
+        // Bed/rail row sweep (all dimensions): strip ONLY foliage spillover from the
+        // template-authored air gaps in the bed/rail rows. These two rows (bedY, railY) are
+        // otherwise intentionally solid — stone-brick bed + rails — so this predicate must stay
+        // narrow; a blanket "any non-air" clear here would delete the track itself.
+        int minYRow = Math.max(level.getMinBuildHeight(), g.bedY());
+        int maxYRow = Math.min(trainY - 1, level.getMaxBuildHeight() - 1);
+        if (zLo <= zHi && maxYRow >= minYRow) {
+            sweepSection(chunk, level, chunkMinX, zLo, zHi, minYRow, maxYRow, null, FOLIAGE, g, null);
+        }
+
+        // Carriage COLLISION ENVELOPE sweep (all dimensions): strip ANY non-air block, full stop —
+        // guaranteeing nothing can ever occupy the space the train's body passes through,
+        // regardless of what put it there (tree branch logs, structures, modded blocks, anything).
+        // This reruns the exact "not air -> clear" rule TrackGenerator.placeTracksForChunk already
+        // applies during the original one-shot worldgen carve, closing the cross-chunk spillover
+        // gap instead of maintaining a curated per-block-type predicate that could always miss the
+        // next offender.
+        int minYEnv = Math.max(level.getMinBuildHeight(), trainY);
+        int maxYEnv = Math.min(level.getMaxBuildHeight() - 1, trainY + dims.height());
+        if (zLo <= zHi && maxYEnv >= minYEnv) {
+            sweepSection(chunk, level, chunkMinX, zLo, zHi, minYEnv, maxYEnv, null, ANY_NON_AIR, g, null);
         }
 
         // Nether-band core only: also clear cross-chunk Nether-decoration spillover (basalt etc.) from

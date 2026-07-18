@@ -4993,6 +4993,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "track-collision-wood-cleanup",
+      "version": "0.474.0",
+      "type": "fix",
+      "title": "Clear stray blocks from the train's path",
+      "summary": "Fixed rare cases where trees (especially large/dark oak) could leave wood blocking the tracks in the train's path. The corridor now clears anything that strays into the train's collision path, not just leaves.",
+      "highlights": [],
+      "pr": 788,
+      "date": "2026-07-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

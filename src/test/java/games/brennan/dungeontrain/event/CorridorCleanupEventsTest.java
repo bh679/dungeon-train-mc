@@ -15,11 +15,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Coverage for the two corridor-sweep block predicates:
+ * Coverage for the two curated corridor-sweep block predicates:
  * {@link CorridorCleanupEvents#isNetherClutter} (Nether band core — cross-chunk basalt-deltas /
  * crimson / warped / soul-sand decoration spillover) and {@link CorridorCleanupEvents#isFoliage}
- * (all-dimension foliage + End-core chorus spillover). This pins the accepted terrain/decoration
- * sets and the rejected sets (tunnel-template blocks, track, fluids, End islands, plain terrain).
+ * (bed/rail row + all-dimension foliage + End-core chorus spillover). This pins the accepted
+ * terrain/decoration sets and the rejected sets (tunnel-template blocks, track, fluids, End islands, plain terrain).
+ *
+ * <p>The carriage collision-envelope sweep is <b>not</b> a curated predicate — it strips any
+ * non-air block unconditionally (see {@code CorridorCleanupEvents.ANY_NON_AIR}), so there is no
+ * per-block-type table to pin here; its guarantee follows directly from
+ * {@code sweepSection}'s own {@code isAir()} filtering and is exercised end-to-end in-game.</p>
  *
  * <p>Requires {@code unitTest.enable()} in build.gradle so the NeoForge moddev runtime bootstraps
  * {@code Blocks.*} registry singletons before the test class loads — mirrors {@code TunnelPaletteTest}.</p>
