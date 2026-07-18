@@ -122,6 +122,10 @@
         "VOID",
         "UPSIDE_DOWN"
       ]
+    },
+    {
+      "id": "craftcraft",
+      "weight": 1
     }
   ]
 }
