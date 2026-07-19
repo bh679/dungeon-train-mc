@@ -194,6 +194,25 @@ version DT declares it needs, which would make the pack fail to load.
 Raising a floor in `gradle.properties` therefore obliges you to refresh that mod's
 `version` + `file_id` + `modrinth_version` here, or CI fails.
 
+### Lag warning (advisory)
+
+The same script also **warns** — without failing — when a modpack pin is behind the version DT
+builds against:
+
+| Condition | Meaning | Severity |
+|---|---|---|
+| pin < `<mod>_min_version` | the pack ships a build DT refuses to load | **error** |
+| pin < `<mod>_version` | the pack ships older than DT builds against, so modpack players miss whatever changed | **warning** |
+
+It exists because un-bundling changed what a sibling version bump means. While the siblings were
+jarJar'd, bumping `<mod>_version` shipped that build to *everyone*. Now modpack players get exactly
+the pinned build, so a bump can be announced as shipped while the pack still serves the old one —
+which is what happened when AdventureItemStats went to 0.7.0 for an armor-cap fix.
+
+It is a warning rather than an error on purpose: the auto-release cascade bumps `<mod>_version`
+~22 times per release cycle, and a guard that failed on each of those would be noise everyone
+learns to ignore. Act on it when the bump carried something players were told about.
+
 ## Companion-mod pins
 
 Every `optional_mods` entry is pinned for both platforms (`file_id` for CurseForge,

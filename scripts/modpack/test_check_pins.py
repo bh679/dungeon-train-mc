@@ -217,6 +217,54 @@ def test_third_party_entry_without_gradle_property_is_skipped():
     assert proc.returncode == 0, proc.stderr
 
 
+# ── modpack-lag warning (advisory, must never fail CI) ───────────────────────────────
+
+def test_modpack_behind_build_version_warns_but_passes():
+    """The PR #796 case: a sibling bumped, but the pack still pins the old build.
+
+    Must warn — modpack players won't get the change — but must NOT fail, because the
+    cascade creates this gap ~22 times per release and a failing guard would be ignored.
+    """
+    proc = run(
+        gradle_props(
+            "2.0.2+mc1.21.1", "2.0.2",
+            playermob_version="0.90.0",
+            playermob_min_version="0.82.0",
+        ),
+        _sibling_config("0.82.0"),
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "WARNING" in proc.stderr
+    assert "0.90.0" in proc.stderr
+
+
+def test_modpack_level_with_build_version_is_silent():
+    proc = run(
+        gradle_props(
+            "2.0.2+mc1.21.1", "2.0.2",
+            playermob_version="0.82.0",
+            playermob_min_version="0.82.0",
+        ),
+        _sibling_config("0.82.0"),
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "WARNING" not in proc.stderr
+
+
+def test_floor_violation_still_fails_even_though_lag_is_only_a_warning():
+    """The new advisory check must not soften the hard error it sits beside."""
+    proc = run(
+        gradle_props(
+            "2.0.2+mc1.21.1", "2.0.2",
+            playermob_version="0.90.0",
+            playermob_min_version="0.85.0",
+        ),
+        _sibling_config("0.50.0"),   # below the floor AND behind the build version
+    )
+    assert proc.returncode != 0
+    assert "at least 0.85.0" in proc.stderr
+
+
 def test_real_repo_pins_are_consistent():
     """The shipped repo must satisfy both invariants — Sable chain and sibling floors."""
     proc = subprocess.run(
