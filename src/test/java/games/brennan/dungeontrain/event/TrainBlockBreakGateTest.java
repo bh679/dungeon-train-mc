@@ -79,6 +79,24 @@ class TrainBlockBreakGateTest {
     }
 
     @Test
+    @DisplayName("canBreakAt decides the cheap half alone, so collide is never computed needlessly")
+    void cheapGateStandsAlone() {
+        int floor = TrainTickEvents.breakFloorY(geometry());
+
+        // Each of the three cheap refusals must be decidable WITHOUT collide — that is the whole
+        // point of the split: establishing collide costs a collision-shape query plus a Sable
+        // sub-level lookup, and must not be paid for a cell that can never break.
+        assertFalse(TrainTickEvents.canBreakAt(false, TRAIN_Y, floor, 0, 256), "feature off");
+        assertFalse(TrainTickEvents.canBreakAt(true, TRAIN_Y - 1, floor, 0, 256), "below rail floor");
+        assertFalse(TrainTickEvents.canBreakAt(true, TRAIN_Y, floor, 256, 256), "budget spent");
+        assertTrue(TrainTickEvents.canBreakAt(true, TRAIN_Y, floor, 0, 256), "breakable candidate");
+
+        // shouldBreak stays exactly canBreakAt AND collide, so the reorder changed no behaviour.
+        assertFalse(TrainTickEvents.shouldBreak(true, false, TRAIN_Y, floor, 0, 256), "no collision");
+        assertTrue(TrainTickEvents.shouldBreak(true, true, TRAIN_Y, floor, 0, 256), "collision");
+    }
+
+    @Test
     @DisplayName("a fully-spent shared budget (zero remaining) refuses immediately")
     void exhaustedSharedBudgetRefuses() {
         // The call site passes MAX - alreadyBroken as the budget, so a later train in the same tick

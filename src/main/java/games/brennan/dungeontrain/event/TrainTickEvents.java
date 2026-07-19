@@ -157,6 +157,20 @@ public final class TrainTickEvents {
     /** Game time of the last emitted sweep-diagnostic line; see {@link #logSweepDiag}. TEMP. */
     private static long lastSweepDiagTick = Long.MIN_VALUE;
 
+    // ---- [sweep.perf] accumulators (TEMP — remove with the diagnostics) -------------------------
+    // Server-thread only, so plain fields are safe. Reset each report window by logSweepPerf.
+    // These answer ONE question: is the per-cell Sable sub-level lookup in the footprint sweep
+    // expensive enough to justify hoisting the pose transform + plot chunk map per carriage?
+    // perfLookups is the load-bearing number — it counts actual CarriageDeck.blockAt calls, the
+    // only genuinely costly operation the block-breaking pass added.
+    private static long perfNanos;
+    private static long perfMaxNanos;
+    private static long perfCells;
+    private static long perfNonAir;
+    private static long perfLookups;
+    private static long perfBreaks;
+    private static int perfTicks;
+
     private TrainTickEvents() {}
 
     @SubscribeEvent
@@ -277,6 +291,8 @@ public final class TrainTickEvents {
             // period regardless of log level — the count is computed unconditionally.
             PhysicsSubstepTuner.reconcile(level, carriages);
 
+            logSweepPerf(level);   // TEMP profiling — same 2s window as [mspt]
+
             double avgTickMs = level.getServer().getAverageTickTimeNanos() / 1_000_000.0;
             JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={}",
                 level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
@@ -313,6 +329,7 @@ public final class TrainTickEvents {
             blocksBroken += sweepFootprint(level, train, MAX_BLOCK_BREAKS_PER_TICK - blocksBroken);
         }
         long tAfterFluid = System.nanoTime();
+        recordSweepPerf(tAfterFluid - tAfterKill, blocksBroken);   // TEMP profiling
 
         // ShipyardShifter intentionally NOT invoked on the per-carriage
         // architecture: it would shift each carriage's pivot independently
@@ -619,13 +636,20 @@ public final class TrainTickEvents {
                         // inside its own bounding box — so without this a block drifting through
                         // that empty space would break with nothing having touched it.
                         //
-                        // Ordered cheap-first: the sub-level lookup only runs for a world block that
-                        // is already non-air AND solid, which in a cleared corridor is ~never.
-                        boolean solidWorld = !state.getCollisionShape(level, cursor).isEmpty();
-                        if (solidWorld) diagSolid++;
-                        boolean collide = solidWorld && !CarriageDeck.blockAt(ship, cursor).isAir();
-                        if (collide) diagTrainSolid++;
+                        // Ordered cheap-first, twice over. canBreakAt settles the int-only questions
+                        // (enabled / above rails / budget left) so a switched-off feature, a spent
+                        // budget or a below-floor cell costs nothing beyond the air test. Only then
+                        // the world-side shape query, and only then the sub-level lookup — which in
+                        // a cleared corridor therefore runs ~never.
                         if (y < hardFloorY) diagBelowFloor++;
+                        boolean collide = false;
+                        if (canBreakAt(breakBlocks, y, hardFloorY, broke, breakBudget)
+                            && !state.getCollisionShape(level, cursor).isEmpty()) {
+                            diagSolid++;
+                            perfLookups++;
+                            collide = !CarriageDeck.blockAt(ship, cursor).isAir();
+                            if (collide) diagTrainSolid++;
+                        }
 
                         if (shouldBreak(breakBlocks, collide, y, hardFloorY, broke, breakBudget)) {
                             // Breaking leaves air (or the legacy fluid of a submerged block), so this
@@ -642,6 +666,8 @@ public final class TrainTickEvents {
                 }
             }
         }
+        perfCells += diagCells;          // TEMP profiling
+        perfNonAir += diagNonAir;        // TEMP profiling
         if (broke > 0) logBreaks(level, broke, firstBreak);
         logSweepDiag(level, breakBlocks, hardFloorY, train.size(), diagResident,
             diagCells, diagNonAir, diagSolid, diagTrainSolid, diagBelowFloor, broke,
@@ -649,6 +675,54 @@ public final class TrainTickEvents {
                 diagFirstBox.minX(), diagFirstBox.minY(), diagFirstBox.minZ(),
                 diagFirstBox.maxX(), diagFirstBox.maxY(), diagFirstBox.maxZ()));
         return broke;
+    }
+
+    /** TEMP profiling — fold one tick's footprint-sweep cost into the {@code [sweep.perf]} window. */
+    private static void recordSweepPerf(long nanos, int broke) {
+        perfNanos += nanos;
+        if (nanos > perfMaxNanos) perfMaxNanos = nanos;
+        perfBreaks += broke;
+        perfTicks++;
+    }
+
+    /**
+     * TEMP PROFILING — emit and reset the {@code [sweep.perf]} window.
+     *
+     * <p>Exists to decide, from data rather than argument, whether the footprint sweep needs the
+     * "deeper" optimisation: hoisting the {@code worldToShip} pose transform and the plot chunk map
+     * to once-per-carriage instead of once-per-lookup.</p>
+     *
+     * <p>How to read it. {@code avgMs}/{@code maxMs} are the whole sweep (block-breaking AND the
+     * pre-existing fluid displacement) against a 50 ms tick budget. {@code lookups} is the count of
+     * {@link games.brennan.dungeontrain.ship.CarriageDeck#blockAt} calls — the only expensive thing
+     * block-breaking added, and the number the deeper fix would attack.</p>
+     *
+     * <ul>
+     *   <li>{@code lookups/tick ~0} — the expected steady state. The deeper fix would optimise work
+     *       that isn't happening; don't bother.</li>
+     *   <li>{@code lookups/tick} in the hundreds while {@code avgMs} stays well under ~1 ms — still
+     *       not worth it.</li>
+     *   <li>{@code avgMs} climbing with {@code lookups} — that is the case the deeper fix targets.</li>
+     * </ul>
+     *
+     * <p>{@code cells} is the baseline traversal (unchanged by this feature) and is the control: if
+     * {@code avgMs} is high while {@code lookups} is ~0, the cost is the pre-existing per-cell walk,
+     * not the collision check, and hoisting the pose transform would fix nothing.</p>
+     */
+    private static void logSweepPerf(ServerLevel level) {
+        if (perfTicks == 0) return;
+        LOGGER.info("[DungeonTrain] [sweep.perf] dim={} ticks={} avgMs={} maxMs={} cells/tick={} nonAir/tick={} lookups/tick={} breaks={}",
+            level.dimension().location(), perfTicks,
+            String.format("%.3f", perfNanos / 1_000_000.0 / perfTicks),
+            String.format("%.3f", perfMaxNanos / 1_000_000.0),
+            perfCells / perfTicks, perfNonAir / perfTicks, perfLookups / perfTicks, perfBreaks);
+        perfNanos = 0;
+        perfMaxNanos = 0;
+        perfCells = 0;
+        perfNonAir = 0;
+        perfLookups = 0;
+        perfBreaks = 0;
+        perfTicks = 0;
     }
 
     /**
@@ -724,8 +798,23 @@ public final class TrainTickEvents {
      * and the like have an empty collision shape and are brushed past untouched, as is water (which
      * falls through to the fluid-displacement path instead).</p>
      */
+    /**
+     * The CHEAP half of {@link #shouldBreak}: everything decidable from ints and a flag, with no
+     * block or sub-level lookup — feature enabled, cell at or above {@code hardFloorY}, budget left.
+     *
+     * <p>Split out so the sweep can gate the EXPENSIVE half on it. Establishing {@code collide}
+     * costs a collision-shape query plus a Sable sub-level lookup
+     * ({@link games.brennan.dungeontrain.ship.CarriageDeck#blockAt}); doing that before these three
+     * ints meant paying full price per non-air cell even when the feature was switched off, the
+     * per-tick budget was already spent, or the cell was below the rails and could never break.
+     * Pure function — unit-tested.</p>
+     */
+    static boolean canBreakAt(boolean enabled, int y, int hardFloorY, int broke, int budget) {
+        return enabled && y >= hardFloorY && broke < budget;
+    }
+
     static boolean shouldBreak(boolean enabled, boolean collide, int y, int hardFloorY, int broke, int budget) {
-        return enabled && collide && y >= hardFloorY && broke < budget;
+        return canBreakAt(enabled, y, hardFloorY, broke, budget) && collide;
     }
 
     /**
