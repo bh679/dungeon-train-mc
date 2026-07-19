@@ -5040,6 +5040,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "playermobs-0-83-upgrade",
+      "version": "0.478.0",
+      "type": "fix",
+      "title": "Player Mobs move around the train better",
+      "summary": "Two fixes to how the bundled Player Mobs get around. Crossing between carriages, they now take a hop sized to the actual gap \u2014 the seams between carriages were tightened a while back, but Player Mobs kept using the big leap they needed for the old wider gaps, so they'd sail across a hand's-width seam. And a Player Mob that falls onto the tracks now works its way back aboard instead of being stranded: it bridges off the rails, builds a pillar up beside the passing carriages, and waits for a clear opening before jumping in.",
+      "highlights": [
+        "Cross-carriage hops are sized to the real gap instead of always being a full sprint leap",
+        "Player Mobs that fall onto the track bed climb back aboard instead of getting stuck",
+        "Boarding waits for a real opening, so mobs stop leaping into carriage walls"
+      ],
+      "date": "2026-07-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
