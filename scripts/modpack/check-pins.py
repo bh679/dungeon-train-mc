@@ -87,6 +87,51 @@ def parse_semver(value: str) -> tuple[int, ...] | None:
         return None
 
 
+def check_modpack_lag(gradle_props: dict[str, str], config: dict) -> list[str]:
+    """Return WARNINGS where the modpacks pin a sibling older than DT builds against.
+
+    This is not an error and must never fail CI. The gap is legitimate and usually temporary:
+    the auto-release cascade bumps ``<mod>_version`` ~22 times per release cycle while the
+    modpack pin moves on a human cadence, and failing on each of those would make the guard
+    noise everyone learns to ignore.
+
+    What it catches is the assumption that bumping a sibling's version ships it to everyone.
+    That was true while the siblings were jarJar'd into DT's jar; now that they are external
+    downloads, modpack players get exactly the pinned build. PR #796 bumped AdventureItemStats
+    to 0.7.0 for an armor-cap fix and announced it as shipped, while both modpacks still pinned
+    0.6.0 — this is the check that surfaces that at PR time.
+
+    Contrast with ``check_sibling_floors``, which IS an error: a pin below the floor ships a
+    build the mod refuses to load against.
+    """
+    warnings: list[str] = []
+    for i, opt in enumerate(config.get("optional_mods", [])):
+        prop_key = opt.get("gradle_property")
+        if not prop_key:
+            continue
+        # "playermob_min_version" -> "playermob_version": the build-against counterpart.
+        build_key = prop_key.replace("_min_version", "_version")
+        build_raw = gradle_props.get(build_key)
+        pinned_raw = opt.get("version")
+        if not build_raw or not pinned_raw:
+            continue  # missing data is the floor check's job to report
+
+        build = parse_semver(build_raw)
+        pinned = parse_semver(pinned_raw)
+        if build is None or pinned is None:
+            continue
+
+        if pinned < build:
+            name = opt.get("name", f"optional_mods[{i}]")
+            warnings.append(
+                f"{name}: the modpacks pin {pinned_raw} but DT builds against {build_raw} "
+                f"({build_key}). Modpack players will NOT get anything added since {pinned_raw}. "
+                f"Refresh this entry's version + file_id + modrinth_version if that change was "
+                f"meant to reach them."
+            )
+    return warnings
+
+
 def check_sibling_floors(gradle_props: dict[str, str], config: dict) -> list[str]:
     """Return errors where a modpack-pinned sibling is OLDER than the floor DT declares.
 
@@ -192,6 +237,10 @@ def main(argv: list[str] | None = None) -> int:
         for err in errors:
             print(f"  - {err}", file=sys.stderr)
         return 1
+
+    # Advisory only — deliberately does not affect the exit code. See check_modpack_lag.
+    for warn in check_modpack_lag(gradle_props, config):
+        print(f"WARNING: {warn}", file=sys.stderr)
 
     siblings = [o for o in config.get("optional_mods", []) if o.get("gradle_property")]
     print(
