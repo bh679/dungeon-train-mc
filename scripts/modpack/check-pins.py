@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
-"""Guard the Sable version chain: gradle.properties <-> mod dependency <-> modpack pins.
+"""Guard the dependency version pins: gradle.properties <-> mod dependency <-> modpack pins.
 
+Two different contracts are checked here, because Sable and the sibling mods are pinned for
+different reasons.
+
+SABLE — exact equality.
 Dungeon Train is compiled and tested against exactly one Sable build. Three places must agree
 on that version, or a modpack ships (or the loader accepts) an untested Sable:
 
@@ -15,19 +19,33 @@ on that version, or a modpack ships (or the loader accepts) an untested Sable:
     it can't be derived from a version string, so they stay human-maintained — this guard just
     stops the *version* fields from drifting, which is the mistake that ships an old Sable).
 
+SIBLING MODS — a floor, not equality.
+AIN / AIS / PlayerMob / EnderChestPersistence are un-bundled required downloads. DT declares a
+MINIMUM version for each (``<mod>_min_version`` in gradle.properties, rendered into
+neoforge.mods.toml as ``[x,)``), and each modpack pins one specific build of it. The condition
+for "the pack actually loads" is therefore:
+
+    modpack.config.json optional_mods[].version  >=  gradle.properties <gradle_property>
+
+Equality would be wrong here and would fail constantly: the auto-release cascade bumps the
+sibling ``<mod>_version`` values every tick, and the modpack's pin is refreshed on a slower,
+human cadence. The floor is what must hold. Entries opt in by carrying a ``gradle_property``
+field naming the floor they answer to; entries without one (third-party companions like
+AppleSkin) are skipped.
+
 This is a stdlib-only CI guard (mirrors ``check-relations.py``). Read-only; on any mismatch it
 prints a clear message and exits non-zero.
 
 Usage:
-  python3 scripts/modpack/check-sable-pin.py
-  python3 scripts/modpack/check-sable-pin.py --gradle-properties path --config path
+  python3 scripts/modpack/check-pins.py
+  python3 scripts/modpack/check-pins.py --gradle-properties path --config path
 """
 import argparse
 import json
 import sys
 from pathlib import Path
 
-# scripts/modpack/check-sable-pin.py -> repo root is two levels up.
+# scripts/modpack/check-pins.py -> repo root is two levels up.
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_GRADLE_PROPERTIES = REPO_ROOT / "gradle.properties"
 DEFAULT_CONFIG = REPO_ROOT / "modpack" / "modpack.config.json"
@@ -50,6 +68,72 @@ def parse_gradle_properties(path: Path) -> dict[str, str]:
 def semver_of(sable_version: str) -> str:
     """The leading semver of a Modrinth coordinate: strip the first ``+…`` build suffix."""
     return sable_version.split("+", 1)[0]
+
+
+def parse_semver(value: str) -> tuple[int, ...] | None:
+    """Parse ``X.Y.Z`` into a comparable tuple, or None if it isn't strict semver.
+
+    Mirrors ``scripts/auto-release/siblings.py:parse_semver`` — the sibling versions this
+    compares are written by that module, so the two must agree on what parses.
+    """
+    if not isinstance(value, str):
+        return None
+    parts = semver_of(value).split(".")
+    if len(parts) != 3:
+        return None
+    try:
+        return tuple(int(p) for p in parts)
+    except ValueError:
+        return None
+
+
+def check_sibling_floors(gradle_props: dict[str, str], config: dict) -> list[str]:
+    """Return errors where a modpack-pinned sibling is OLDER than the floor DT declares.
+
+    Only ``optional_mods`` entries carrying a ``gradle_property`` field participate; that
+    field names the ``<mod>_min_version`` key in gradle.properties the pin must clear.
+    """
+    errors: list[str] = []
+    for i, opt in enumerate(config.get("optional_mods", [])):
+        prop_key = opt.get("gradle_property")
+        if not prop_key:
+            continue  # third-party companion — no DT-declared floor to answer to
+        name = opt.get("name", f"optional_mods[{i}]")
+
+        floor_raw = gradle_props.get(prop_key)
+        if not floor_raw:
+            errors.append(
+                f"{name}: modpack entry references gradle_property {prop_key!r}, but "
+                f"gradle.properties has no such key."
+            )
+            continue
+
+        pinned_raw = opt.get("version")
+        if not pinned_raw:
+            errors.append(
+                f"{name}: modpack entry has a gradle_property but no 'version' field, so its "
+                f"pin can't be checked against the {prop_key} floor."
+            )
+            continue
+
+        floor = parse_semver(floor_raw)
+        pinned = parse_semver(pinned_raw)
+        if floor is None or pinned is None:
+            errors.append(
+                f"{name}: cannot compare versions — {prop_key}={floor_raw!r}, modpack "
+                f"version={pinned_raw!r}; both must be strict X.Y.Z."
+            )
+            continue
+
+        if pinned < floor:
+            errors.append(
+                f"{name}: the modpack pins {pinned_raw} but DT requires at least {floor_raw} "
+                f"({prop_key}). The pack would install a sibling too old for the mod and fail "
+                f"to load. Refresh this entry's version + file_id + modrinth_version, or lower "
+                f"the floor."
+            )
+
+    return errors
 
 
 def check_sable_pin(gradle_props: dict[str, str], config: dict) -> list[str]:
@@ -102,18 +186,24 @@ def main(argv: list[str] | None = None) -> int:
     gradle_props = parse_gradle_properties(args.gradle_properties)
     config = json.loads(args.config.read_text(encoding="utf-8"))
 
-    errors = check_sable_pin(gradle_props, config)
+    errors = check_sable_pin(gradle_props, config) + check_sibling_floors(gradle_props, config)
     if errors:
-        print("Sable version pin check FAILED:", file=sys.stderr)
+        print("Dependency pin check FAILED:", file=sys.stderr)
         for err in errors:
             print(f"  - {err}", file=sys.stderr)
         return 1
 
+    siblings = [o for o in config.get("optional_mods", []) if o.get("gradle_property")]
     print(
         f"OK: Sable pinned consistently — sable_version={gradle_props['sable_version']}, "
         f"sable_mod_version={gradle_props['sable_mod_version']}, "
         f"modpack sable.version={config['sable']['version']}."
     )
+    for opt in siblings:
+        print(
+            f"OK: {opt['name']} modpack pin {opt['version']} >= floor "
+            f"{gradle_props[opt['gradle_property']]} ({opt['gradle_property']})."
+        )
     return 0
 
 

@@ -17,14 +17,21 @@ file (CurseForge by `project_id` + `file_id`; Modrinth by `modrinth_project` + `
 
 A CurseForge modpack is a `.zip` of a `manifest.json` (Minecraft version + modloader +
 an explicit list of CurseForge mod files) plus an `overrides/` folder. Dungeon Train
-bundles **AIN, AIS, PlayerMob, Discord Presence, ender-chest-persistence and joml-primitives
-inside its own jar** via NeoForge jarJar, so those never appear as pack entries. Everything
-else is a manifest file with a `required` flag (see "Enabled vs disabled by default" below):
+bundles only **Discord Presence and joml-primitives inside its own jar** via NeoForge jarJar,
+so those never appear as pack entries. The sibling mods **AIN, AIS, PlayerMob and
+EnderChestPersistence are un-bundled required downloads** — DT declares them as hard
+dependencies so each mod's own project page gets credited for the install — which means the
+pack must list them explicitly. Everything else is a manifest file with a `required` flag
+(see "Enabled vs disabled by default" below):
 
 | Mod | CF project | In pack | Notes |
 |---|---|---|---|
 | Dungeon Train | `1527512` | **required** | The file ID changes every release — injected at build time. |
-| Sable | `1312371` | **required** | The only un-bundled runtime dep (PolyForm Shield forbids redistribution). **Pinned** — see below. |
+| Sable | `1312371` | **required** | Un-bundled runtime dep (PolyForm Shield forbids redistribution). **Pinned** — see below. |
+| Adventure Item Names | `1546573` | **enabled** | Sibling mod, un-bundled hard dep. **Pinned**; floor `adventureitemnames_min_version`. |
+| Adventure Item Stats | `1554362` | **enabled** | Sibling mod, un-bundled hard dep. **Pinned**; floor `adventureitemstats_min_version`. |
+| Interactive Player Mobs | `1559379` | **enabled** | Sibling mod, un-bundled hard dep. **Pinned**; floor `playermob_min_version`. |
+| Ender Chest Persistence | `1579341` | **enabled** | Sibling mod, un-bundled hard dep. **Pinned**; floor `enderchestpersistence_min_version`. |
 | AppleSkin | `248787` | **enabled** | Food saturation / hunger overlay. **Pinned** file ID. |
 | FerriteCore | `429235` | **enabled** | Memory-usage reducer (data-structure dedup) — no render/physics/chunk hooks, safe with Sable. **Pinned**. |
 | ModernFix | `790626` | **enabled** | Launch-time / world-load / memory optimiser. **Pinned**. |
@@ -60,6 +67,11 @@ Each non-core mod is an entry in `modpack.config.json` → `optional_mods[]` car
 `"required"` boolean. [`build-manifest.py`](../scripts/modpack/build-manifest.py) copies that
 flag straight into the manifest:
 
+- **Enabled by default, and mandatory (`required:true`)** — the four sibling mods **Adventure
+  Item Names**, **Adventure Item Stats**, **Interactive Player Mobs** and **Ender Chest
+  Persistence**. These are not companions: DT declares them as hard dependencies and will not
+  load without them, so shipping any of them `required:false` (i.e. switched OFF) would break
+  the pack outright.
 - **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, AmbientSounds,
   Advancement Plaques (QoL / perf / cosmetic companions the pack turns on for everyone), **Kinetic
   Hosting Integration** (partner banner on the multiplayer menu), plus their inert library deps
@@ -73,16 +85,17 @@ flag straight into the manifest:
 
 ## Declared dependencies (CurseForge "Relations")
 
-The jarJar'd siblings are bundled inside DT, so they must **not** be separate `files` entries
-(that would double-load them and break NeoForge). Instead the upload declares them as CurseForge
-**relations** — sourced from `curseforge_relations` in `modpack.config.json`:
+Mods jarJar'd inside DT must **not** be separate `files` entries (that would double-load them
+and break NeoForge). Discord Presence is the only remaining such mod, and it needs no relation
+at all. The upload declares relations from `curseforge_relations` in `modpack.config.json`:
 
 | Slug | Relation | Why |
 |---|---|---|
 | `sable` | `requiredDependency` | Un-bundled runtime dep (also a `files` entry). |
-| `adventure-item-names` | `embeddedLibrary` | jarJar'd inside DT. |
-| `adventure-item-stats` | `embeddedLibrary` | jarJar'd inside DT. |
-| `interactive-player-mobs` | `embeddedLibrary` | jarJar'd inside DT. |
+
+The sibling mods used to appear here as `embeddedLibrary`. They no longer do: now that they are
+un-bundled, each is a manifest `files` entry, and CurseForge auto-creates the relation from the
+manifest — so listing them here too would duplicate it (see the rule in the paragraph below).
 
 Everything in `optional_mods[]` (AppleSkin, FerriteCore, ModernFix, Advancement Plaques, Iceberg,
 Lithostitched, Mouse Tweaks, Jade, Distant Horizons, Tectonic) is a manifest **file**, so
@@ -93,11 +106,27 @@ Lithostitched as Tectonic's.)
 ### Bundled mods must be mod dependencies
 
 **Invariant:** every mod the pack bundles (`modpack.config.json` → `optional_mods`) must **also**
-be declared as an `<slug>(optional)` dependency of the *mod* in `release.yml` →
-`curseforge-dependencies`. The pack is "the mod plus its recommended companions", so anything it
-bundles is advertised as an optional dependency on the mod's own page too — regardless of whether
-the pack ships it enabled (`required:true`) or off (`required:false`); the mod's relationship to
-the companion is "optional" either way.
+be declared as a dependency of the *mod* in `release.yml` → `curseforge-dependencies`. The pack
+is "the mod plus its recommended companions", so anything it bundles is advertised on the mod's
+own page too.
+
+The declared type is **`optional` by default** — regardless of whether the pack ships the mod
+enabled (`required:true`) or off (`required:false`), the mod's relationship to a companion is
+"optional" either way, because DT runs fine without it.
+
+The exception is the four sibling mods, which DT genuinely cannot run without. They carry
+`"dependency_type": "required"` in `modpack.config.json` and are declared `<slug>(required)` in
+`release.yml`. That `required` declaration is what makes the CurseForge and Modrinth apps
+auto-install them — the whole point of un-bundling.
+
+Note the two flags mean different things and must not be conflated:
+
+| Field | Question it answers |
+|---|---|
+| `required` | Does the **pack** ship this mod switched on? (AppleSkin: yes) |
+| `dependency_type` | Does the **mod** refuse to load without it? (AppleSkin: no) |
+
+[`check-relations.py`](../scripts/modpack/check-relations.py) enforces this per-entry.
 
 This is enforced in CI by **`scripts/modpack/check-relations.py`** (the `modpack-checks` job in
 [`build.yml`](../.github/workflows/build.yml), on every PR). It cross-references each
@@ -145,16 +174,31 @@ When you bump `sable_version`, **update all four** version fields:
 4. Set `sable.version` (in `modpack.config.json`) to the new `sable_version`.
 
 If these drift, a pack ships an old Sable against a newer DT — or DT refuses to load. CI's
-`scripts/modpack/check-sable-pin.py` (in the `modpack-checks` job) enforces the version chain:
+`scripts/modpack/check-pins.py` (in the `modpack-checks` job) enforces the version chain:
 `sable_mod_version` must equal `sable_version`'s leading semver, and `modpack.config.json` →
 `sable.version` must equal `sable_version`. (It can't derive the CurseForge `file_id` /
 Modrinth `modrinth_version` from a version string, so those stay human-maintained.)
 
+## Sibling-mod floors
+
+The same script also guards the four un-bundled siblings, but with a **minimum**, not equality:
+
+    modpack.config.json optional_mods[].version  >=  gradle.properties <gradle_property>
+
+Each sibling entry names the floor it answers to via `gradle_property` (e.g.
+`playermob_min_version`). Equality would be wrong here — the auto-release cascade rewrites the
+sibling `<mod>_version` values every tick, while the modpack pin and the floor move on a slower,
+human cadence. What must hold is simply that the pack never ships a sibling *older* than the
+version DT declares it needs, which would make the pack fail to load.
+
+Raising a floor in `gradle.properties` therefore obliges you to refresh that mod's
+`version` + `file_id` + `modrinth_version` here, or CI fails.
+
 ## Companion-mod pins
 
 Every `optional_mods` entry is pinned for both platforms (`file_id` for CurseForge,
-`modrinth_version` for Modrinth). Unlike Sable none of them have a DT-version coupling, so a pin
-only needs a refresh when you want to ship a newer build:
+`modrinth_version` for Modrinth). Apart from the siblings above, none have a DT-version coupling,
+so a pin only needs a refresh when you want to ship a newer build:
 
 1. CurseForge: open `https://www.curseforge.com/minecraft/mc-mods/<slug>/files/all`, filter to the
    **NeoForge 1.21.1** build, copy its numeric file ID from the URL, set the entry's `file_id`.
@@ -178,7 +222,7 @@ Keep the two in sync so both packs ship the same build. A stale pin just ships a
 
 | File | Purpose |
 |---|---|
-| `modpack.config.json` | Editable config (drives **both** packs): pack name/author, DT project IDs, the pinned Sable project/file/version + `modrinth_project`/`modrinth_version`, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard, a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in — and a `modrinth_project`/`modrinth_version` pin), and `curseforge_relations` (sable + the jarJar'd siblings). |
+| `modpack.config.json` | Editable config (drives **both** packs): pack name/author, DT project IDs, the pinned Sable project/file/version + `modrinth_project`/`modrinth_version`, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard, a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in — and a `modrinth_project`/`modrinth_version` pin; the four sibling mods additionally carry `dependency_type: required` plus `version` + `gradle_property` for the floor guard), and `curseforge_relations` (sable only). |
 | `overrides/` | Config files copied verbatim into the player's instance on install (shared by both packs). Currently ships `config/smoothswapping.json` (tuned Smooth Swapping) and `config/khi.toml` (the Kinetic Hosting affiliate URL + banner text, so every install gets the partner link pre-filled), plus the localization compat packs — see below. |
 | `overrides/resourcepacks/DungeonTrain-zh_cn-compat.zip` | zh_cn translations for the bundled **companion** mods (Jade, Tectonic, Distant Horizons, Controlling, ModernFix, CreativeCore, Sable). Dungeon Train's own namespaces (+ AIN/PlayerMob/DiscordPresence) ship their zh_cn `lang/` inside the mod jar, so they're not in here. **Auto-enabled by a client-side one-shot** in the mod (`CompanionResourcePackAutoEnabler`) — it selects this pack the first time it's found and writes a marker so it never fights a player who later disables it. This replaces a shipped `options.txt` (which a launcher would copy wholesale and reset the player's other options); the hook only ever touches the resource-pack selection. |
 | `../scripts/modpack/build-manifest.py` | CurseForge: renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |

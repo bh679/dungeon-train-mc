@@ -217,18 +217,26 @@ jobs:
           curseforge-changelog-file: curseforge-notes.md
           loaders: neoforge
           game-versions: 1.21.1
+          # Sibling mods are external required downloads (no longer jarJar'd), so each
+          # is declared `required` — that is what makes the Modrinth/CurseForge apps
+          # fetch them and credit the download to their own project pages.
+          # discordpresence is absent from both lists: it is still embedded in the jar.
+          # NOTE: AIN's Modrinth slug is `adventureitemnames` (no hyphens) while its
+          # CurseForge slug is `adventure-item-names`; AIS is `adventure-items-stats` on
+          # Modrinth vs `adventure-item-stats` on CurseForge. The spellings differ per
+          # platform on purpose — don't "fix" one to match the other.
           dependencies: |
             sable(required)
-            adventure-item-names(embedded)
-            adventure-items-stats(embedded)
-            interactive-player-mobs(embedded)
-            ender-chest-persistence(embedded)
+            adventureitemnames(required)
+            adventure-items-stats(required)
+            interactive-player-mobs(required)
+            ender-chest-persistence(required)
           curseforge-dependencies: |
             sable(required)
-            adventure-item-names(embedded)
-            adventure-item-stats(embedded)
-            interactive-player-mobs(embedded)
-            ender-chest-persistence(embedded)
+            adventure-item-names(required)
+            adventure-item-stats(required)
+            interactive-player-mobs(required)
+            ender-chest-persistence(required)
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)
