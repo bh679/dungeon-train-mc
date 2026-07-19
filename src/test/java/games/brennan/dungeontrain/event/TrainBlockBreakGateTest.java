@@ -79,6 +79,23 @@ class TrainBlockBreakGateTest {
     }
 
     @Test
+    @DisplayName("throttle fires on the very first call — no Long.MIN_VALUE overflow")
+    void throttleFiresFirstTime() {
+        // The regression this pins: `now - Long.MIN_VALUE` overflows to a large NEGATIVE value,
+        // which is always below the threshold, so the naive arithmetic suppressed the line forever.
+        // 36 blocks were broken in-game with zero log lines emitted before this was caught.
+        assertFalse(TrainTickEvents.throttled(Long.MIN_VALUE, 0L), "first call at game time 0");
+        assertFalse(TrainTickEvents.throttled(Long.MIN_VALUE, 12_345L), "first call mid-session");
+
+        assertTrue(TrainTickEvents.throttled(100L, 100L), "same tick");
+        assertTrue(TrainTickEvents.throttled(100L, 119L), "one tick under the window");
+        assertFalse(TrainTickEvents.throttled(100L, 120L), "window elapsed");
+        assertFalse(TrainTickEvents.throttled(100L, 5_000L), "long since");
+        // Game time running backwards (world reload) must not wedge the throttle shut.
+        assertFalse(TrainTickEvents.throttled(5_000L, 10L), "clock went backwards");
+    }
+
+    @Test
     @DisplayName("canBreakAt decides the cheap half alone, so collide is never computed needlessly")
     void cheapGateStandsAlone() {
         int floor = TrainTickEvents.breakFloorY(geometry());

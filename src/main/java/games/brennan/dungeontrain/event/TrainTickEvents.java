@@ -151,11 +151,14 @@ public final class TrainTickEvents {
     /** Min ticks between two {@link #logBreaks} lines, so ploughing a wall can't flood the log. 20t = 1s. */
     private static final int BREAK_LOG_THROTTLE_TICKS = 20;
 
+    /** Sentinel for "this line has never been emitted" — see {@link #throttled}. */
+    private static final long NEVER_LOGGED = Long.MIN_VALUE;
+
     /** Game time of the last emitted break line; see {@link #logBreaks}. */
-    private static long lastBreakLogTick = Long.MIN_VALUE;
+    private static long lastBreakLogTick = NEVER_LOGGED;
 
     /** Game time of the last emitted sweep-diagnostic line; see {@link #logSweepDiag}. TEMP. */
-    private static long lastSweepDiagTick = Long.MIN_VALUE;
+    private static long lastSweepDiagTick = NEVER_LOGGED;
 
     // ---- [sweep.perf] accumulators (TEMP — remove with the diagnostics) -------------------------
     // Server-thread only, so plain fields are safe. Reset each report window by logSweepPerf.
@@ -677,6 +680,22 @@ public final class TrainTickEvents {
         return broke;
     }
 
+    /**
+     * Whether a once-per-{@link #BREAK_LOG_THROTTLE_TICKS} log line should be suppressed, given when
+     * it last fired and the current game time.
+     *
+     * <p>{@code last == NEVER_LOGGED} must be handled explicitly rather than by arithmetic: the
+     * obvious {@code now - last < THROTTLE} <b>overflows</b> for {@code last = Long.MIN_VALUE},
+     * wrapping to a large negative value that is always under the threshold — so the line is
+     * suppressed forever and never fires even once. That silently disabled both the break log and
+     * {@code [sweep.diag]} (36 blocks broken, zero lines emitted) until {@code [sweep.perf]}, which
+     * does not use this path, exposed it. Pure function — unit-tested.</p>
+     */
+    static boolean throttled(long last, long now) {
+        if (last == NEVER_LOGGED) return false;
+        return now >= last && now - last < BREAK_LOG_THROTTLE_TICKS;
+    }
+
     /** TEMP profiling — fold one tick's footprint-sweep cost into the {@code [sweep.perf]} window. */
     private static void recordSweepPerf(long nanos, int broke) {
         perfNanos += nanos;
@@ -751,7 +770,7 @@ public final class TrainTickEvents {
                                      int resident, int cells, int nonAir, int solid, int trainSolid,
                                      int belowFloor, int broke, String box) {
         long now = level.getGameTime();
-        if (now - lastSweepDiagTick < BREAK_LOG_THROTTLE_TICKS && now >= lastSweepDiagTick) return;
+        if (throttled(lastSweepDiagTick, now)) return;
         lastSweepDiagTick = now;
         LOGGER.info("[DungeonTrain] [sweep.diag] enabled={} floorY={} carriages={} resident={} cells={} nonAir={} solid={} trainSolid={} belowFloor={} broke={} box={}",
             enabled, floorY, carriages, resident, cells, nonAir, solid, trainSolid, belowFloor, broke, box);
@@ -769,7 +788,7 @@ public final class TrainTickEvents {
      */
     private static void logBreaks(ServerLevel level, int broke, BlockPos firstBreak) {
         long now = level.getGameTime();
-        if (now - lastBreakLogTick < BREAK_LOG_THROTTLE_TICKS && now >= lastBreakLogTick) return;
+        if (throttled(lastBreakLogTick, now)) return;
         lastBreakLogTick = now;
         LOGGER.info("[DungeonTrain] Train broke {} block(s) on contact, first at {}", broke, firstBreak);
     }
