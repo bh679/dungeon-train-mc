@@ -69,6 +69,7 @@ import java.util.UUID;
 public final class TrainTickEvents {
 
     private static final Logger JITTER_LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
+    private static final Logger LOGGER = LoggerFactory.getLogger(TrainTickEvents.class);
     /** Per-tick budget threshold above which a sub-task breakdown logs at DEBUG. */
     private static final long STUCK_TIMING_THRESHOLD_MS = 5;
 
@@ -145,6 +146,12 @@ public final class TrainTickEvents {
     private static final int MIRROR_BACKSTOP_AHEAD_BLOCKS = 48;
 
     private static int tickCounter = 0;
+
+    /** Min ticks between two {@link #logBreaks} lines, so ploughing a wall can't flood the log. 20t = 1s. */
+    private static final int BREAK_LOG_THROTTLE_TICKS = 20;
+
+    /** Game time of the last emitted break line; see {@link #logBreaks}. */
+    private static long lastBreakLogTick = Long.MIN_VALUE;
 
     private TrainTickEvents() {}
 
@@ -548,14 +555,21 @@ public final class TrainTickEvents {
      * AABB behind the train; fluids drop nothing, so drop-suppression is moot.</p>
      */
     private static int sweepFootprint(ServerLevel level, List<Trains.Carriage> train, int breakBudget) {
-        boolean breakBlocks = DungeonTrainWorldData.get(level).getEffectiveBreakBlocksOnContact();
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        boolean breakBlocks = data.getEffectiveBreakBlocksOnContact();
+        // Rail floor comes from WORLD DATA, not from provider.getTrackGeometry(): that field is only
+        // ever set on the SEED carriage (TrainAssembler.spawnTrain), while every group the appender
+        // adds leaves it null — so deriving the floor per-carriage disabled breaking on all of them.
+        // TrackGeometry.from(dims, trainY) is the canonical derivation the worldgen corridor carve
+        // and ~15 other call sites already use, so this floor agrees with the geometry that cleared
+        // the corridor in the first place. Level-wide, so it is computed once per sweep.
+        int hardFloorY = breakFloorY(TrackGeometry.from(data.dims(), data.getTrainY()));
         int broke = 0;
+        BlockPos firstBreak = null;
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (Trains.Carriage carriage : train) {
             ManagedShip ship = carriage.ship();
             if (!ship.isResident()) continue;
-
-            int hardFloorY = breakFloorY(carriage.provider().getTrackGeometry());
 
             AABBdc box = ship.worldAABB();
             int minX = Mth.floor(box.minX());
@@ -581,7 +595,10 @@ public final class TrainTickEvents {
                         if (shouldBreak(breakBlocks, y, hardFloorY, broke, breakBudget)) {
                             // Breaking leaves air (or the legacy fluid of a submerged block), so this
                             // cell needs no fluid displacement afterwards.
-                            if (breakBlock(level, cursor)) broke++;
+                            if (breakBlock(level, cursor)) {
+                                if (broke == 0) firstBreak = cursor.immutable();
+                                broke++;
+                            }
                             continue;
                         }
                         if (state.getFluidState().isEmpty()) continue;
@@ -590,7 +607,25 @@ public final class TrainTickEvents {
                 }
             }
         }
+        if (broke > 0) logBreaks(level, broke, firstBreak);
         return broke;
+    }
+
+    /**
+     * Throttled visible record that the train broke something. Fires at INFO at most once per
+     * {@link #BREAK_LOG_THROTTLE_TICKS} per level, and only on a tick that actually broke a block, so
+     * a healthy ride stays silent while a contact is verifiable straight from {@code latest.log}.
+     *
+     * <p>Exists because the block-break count also rides on {@code [stuck.timing]}, which is
+     * debug-level AND gated on slow ticks — silent in a healthy session, so its absence could not
+     * distinguish "nothing was in the way" from "the feature is broken". It could not, in fact: the
+     * feature shipped inert behind a null-geometry floor and this line is what makes that visible.</p>
+     */
+    private static void logBreaks(ServerLevel level, int broke, BlockPos firstBreak) {
+        long now = level.getGameTime();
+        if (now - lastBreakLogTick < BREAK_LOG_THROTTLE_TICKS && now >= lastBreakLogTick) return;
+        lastBreakLogTick = now;
+        LOGGER.info("[DungeonTrain] Train broke {} block(s) on contact, first at {}", broke, firstBreak);
     }
 
     /**
