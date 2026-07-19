@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.train.Trains;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import org.joml.Vector3d;
 import org.joml.primitives.AABBdc;
@@ -90,13 +92,49 @@ public final class CarriageDeck {
      * coords). Checking feet and feet-1 covers both top-slab walkways and full-block floors.
      */
     private static boolean isSupportedByCarriage(LevelPlot plot, BlockPos feet) {
-        long chunkKey = ChunkPos.asLong(feet.getX() >> 4, feet.getZ() >> 4);
+        return !blockInPlot(plot, feet.below()).isAir() || !blockInPlot(plot, feet).isAir();
+    }
+
+    /**
+     * The carriage's OWN block at a <b>world</b> position — air when the carriage has nothing there.
+     *
+     * <p>The block-position counterpart of {@link #isOnCarriageDeck}, and the precise test a
+     * {@code worldAABB} overlap cannot make: a carriage is not a solid box. A flatbed is mostly open
+     * air inside its own bounding box, so "inside the AABB" and "actually touching the train" are
+     * different questions. Used by {@code TrainTickEvents.sweepFootprint} so the train only breaks
+     * world blocks it genuinely collides with, not ones drifting through its empty interior.</p>
+     *
+     * <p><b>Do not reach for {@code level.getBlockState(worldPos)} here.</b> It returns AIR for
+     * carriage blocks: DT plot chunks are loaded from NBT into {@code PlotChunkHolder}s that never
+     * enter the host level's chunk source (see {@code TrainCinematographerEvents}), and Sable's
+     * {@code EmbeddedPlotLevelAccessor} just offsets and delegates to the host level, so it fails the
+     * same way. The plot is the only place these voxels exist — and the failure is silent (everything
+     * reads as air), so it presents as "the feature does nothing" rather than as an error.</p>
+     */
+    public static BlockState blockAt(ManagedShip ship, BlockPos worldPos) {
+        if (!(ship instanceof SableManagedShip sableShip)) return Blocks.AIR.defaultBlockState();
+        Vector3d local = new Vector3d(worldPos.getX() + 0.5, worldPos.getY() + 0.5, worldPos.getZ() + 0.5);
+        ship.worldToShip(local);
+        return blockInPlot(sableShip.subLevel().getPlot(), BlockPos.containing(local.x, local.y, local.z));
+    }
+
+    /**
+     * Block at a <b>ship-local</b> position within {@code plot}, or air when that chunk isn't loaded.
+     *
+     * <p>Scans {@link LevelPlot#getLoadedChunks()} for the matching chunk key rather than using
+     * {@code plot.getChunk(plot.toLocal(pos))}: a plot holds only a handful of chunks (a carriage is
+     * ~9x7x7) so the scan is trivial, and it is the idiom already proven in shipped code here and in
+     * {@code VillagerJobSiteAssigner} / {@code SoulCampfireHealEvents}. The O(1) path depends on
+     * whether {@code getChunk} bounds-checks plot-local or global coords; guessing wrong there
+     * returns null, which reads as air and silently disables every caller.</p>
+     */
+    private static BlockState blockInPlot(LevelPlot plot, BlockPos shipLocal) {
+        long chunkKey = ChunkPos.asLong(shipLocal.getX() >> 4, shipLocal.getZ() >> 4);
         for (PlotChunkHolder holder : plot.getLoadedChunks()) {
             LevelChunk chunk = holder.getChunk();
             if (chunk == null || chunk.getPos().toLong() != chunkKey) continue;
-            return !chunk.getBlockState(feet.below()).isAir()
-                || !chunk.getBlockState(feet).isAir();
+            return chunk.getBlockState(shipLocal);
         }
-        return false;
+        return Blocks.AIR.defaultBlockState();
     }
 }

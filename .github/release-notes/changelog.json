@@ -5023,6 +5023,39 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "train-breaks-blocks-on-contact",
+      "version": "0.477.0",
+      "type": "feat",
+      "title": "The train smashes through blocks in its path",
+      "summary": "Build across the tracks and the train no longer glides through your wall like a ghost \u2014 it breaks it, with the sound, the particles and the dropped items you would expect. Blocks that appear after the corridor was carved (a wall you built, a tree that grew, a structure the tunnelling missed) used to be passed through invisibly.",
+      "highlights": [
+        "Blocks in the train's path break on contact and drop their items; chests spill their contents.",
+        "Only real collisions count \u2014 a block drifting through the open deck of a flatbed is left alone, and flowers and grass are brushed past.",
+        "The track under the train is never damaged.",
+        "Server owners can turn it off per world with /dungeontrain breakblocks off, or globally in the config."
+      ],
+      "date": "2026-07-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "playermobs-0-83-upgrade",
+      "version": "0.478.0",
+      "type": "fix",
+      "title": "Player Mobs move around the train better",
+      "summary": "Two fixes to how the bundled Player Mobs get around. Crossing between carriages, they now take a hop sized to the actual gap \u2014 the seams between carriages were tightened a while back, but Player Mobs kept using the big leap they needed for the old wider gaps, so they'd sail across a hand's-width seam. And a Player Mob that falls onto the tracks now works its way back aboard instead of being stranded: it bridges off the rails, builds a pillar up beside the passing carriages, and waits for a clear opening before jumping in.",
+      "highlights": [
+        "Cross-carriage hops are sized to the real gap instead of always being a full sprint leap",
+        "Player Mobs that fall onto the track bed climb back aboard instead of getting stuck",
+        "Boarding waits for a real opening, so mobs stop leaping into carriage walls"
+      ],
+      "date": "2026-07-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
