@@ -730,11 +730,24 @@ public final class TrainTickEvents {
      */
     private static void logSweepPerf(ServerLevel level) {
         if (perfTicks == 0) return;
-        LOGGER.info("[DungeonTrain] [sweep.perf] dim={} ticks={} avgMs={} maxMs={} cells/tick={} nonAir/tick={} lookups/tick={} breaks={}",
-            level.dimension().location(), perfTicks,
+        LOGGER.info("[DungeonTrain] [sweep.perf] dim={} breaking={} ticks={} avgMs={} maxMs={} cells/tick={} nonAir/tick={} lookups/tick={} breaks={}",
+            level.dimension().location(),
+            DungeonTrainWorldData.get(level).getEffectiveBreakBlocksOnContact() ? "ON" : "OFF",
+            perfTicks,
             String.format("%.3f", perfNanos / 1_000_000.0 / perfTicks),
             String.format("%.3f", perfMaxNanos / 1_000_000.0),
             perfCells / perfTicks, perfNonAir / perfTicks, perfLookups / perfTicks, perfBreaks);
+        resetSweepPerfWindow();
+    }
+
+    /**
+     * Discard the current {@code [sweep.perf]} accumulator window.
+     *
+     * <p>Called after each report, and by {@code /dungeontrain breakblocks} when the feature is
+     * toggled — otherwise the window straddling the flip would average ON and OFF ticks together and
+     * quietly understate the difference, which is the one thing an A/B must not do.</p>
+     */
+    public static void resetSweepPerfWindow() {
         perfNanos = 0;
         perfMaxNanos = 0;
         perfCells = 0;
