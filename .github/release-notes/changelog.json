@@ -5006,6 +5006,23 @@
       "released": true,
       "released_in": "v0.475.0",
       "released_at": "2026-07-18T13:04:59Z"
+    },
+    {
+      "id": "playermobs-0-82-upgrade",
+      "version": "0.476.0",
+      "type": "feat",
+      "title": "Player Mobs can be told to stay put",
+      "summary": "The bundled Player Mobs got another upgrade. You can now tether one to a spot or to a companion \u2014 give it an anchor and a radius and it stays in that area, wandering and doing its own thing inside the ring, walking back whenever it drifts out or gets dragged away by a fight. Tethers can be set the moment you summon a mob, including anchoring it to a player by name. Hunting animals for food is now an admin toggle, and spawn eggs carrying a specific player's skin now apply it reliably.",
+      "highlights": [
+        "Tether a Player Mob to a position or a companion with a stay radius",
+        "Summon one already tethered, and anchor it to a player by name",
+        "Animal hunting is now an on/off setting for admins",
+        "Spawn eggs with a named player's skin now apply it every time"
+      ],
+      "date": "2026-07-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
