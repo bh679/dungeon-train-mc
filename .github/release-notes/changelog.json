@@ -5012,7 +5012,7 @@
       "version": "0.476.0",
       "type": "feat",
       "title": "Player Mobs can be told to stay put",
-      "summary": "The bundled Player Mobs got another upgrade. You can now tether one to a spot or to a companion \u2014 give it an anchor and a radius and it stays in that area, wandering and doing its own thing inside the ring, walking back whenever it drifts out or gets dragged away by a fight. Tethers can be set the moment you summon a mob, including anchoring it to a player by name. Hunting animals for food is now an admin toggle, and spawn eggs carrying a specific player's skin now apply it reliably.",
+      "summary": "Player Mobs got another upgrade. You can now tether one to a spot or to a companion \u2014 give it an anchor and a radius and it stays in that area, wandering and doing its own thing inside the ring, walking back whenever it drifts out or gets dragged away by a fight. Tethers can be set the moment you summon a mob, including anchoring it to a player by name. Hunting animals for food is now an admin toggle, and spawn eggs carrying a specific player's skin now apply it reliably.",
       "highlights": [
         "Tether a Player Mob to a position or a companion with a stay radius",
         "Summon one already tethered, and anchor it to a player by name",
@@ -5046,7 +5046,7 @@
       "version": "0.478.0",
       "type": "fix",
       "title": "Player Mobs move around the train better",
-      "summary": "Two fixes to how the bundled Player Mobs get around. Crossing between carriages, they now take a hop sized to the actual gap \u2014 the seams between carriages were tightened a while back, but Player Mobs kept using the big leap they needed for the old wider gaps, so they'd sail across a hand's-width seam. And a Player Mob that falls onto the tracks now works its way back aboard instead of being stranded: it bridges off the rails, builds a pillar up beside the passing carriages, and waits for a clear opening before jumping in.",
+      "summary": "Two fixes to how Player Mobs get around. Crossing between carriages, they now take a hop sized to the actual gap \u2014 the seams between carriages were tightened a while back, but Player Mobs kept using the big leap they needed for the old wider gaps, so they'd sail across a hand's-width seam. And a Player Mob that falls onto the tracks now works its way back aboard instead of being stranded: it bridges off the rails, builds a pillar up beside the passing carriages, and waits for a clear opening before jumping in.",
       "highlights": [
         "Cross-carriage hops are sized to the real gap instead of always being a full sprint leap",
         "Player Mobs that fall onto the track bed climb back aboard instead of getting stuck",
