@@ -214,6 +214,14 @@ public final class DungeonTrainCommonConfig {
      */
     public static final boolean DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE = true;
 
+    /**
+     * Whether a moving carriage breaks the world blocks its footprint passes through (drops included).
+     * The corridor is normally pre-cleared at worldgen and re-swept at chunk load, so this only bites on
+     * blocks that appear afterwards — player-placed walls, grown trees, structures outside the swept Z
+     * corridor. false = the train phases through them silently, as it did before. Default true.
+     */
+    public static final boolean DEFAULT_BREAK_BLOCKS_ON_CONTACT = true;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_BEHIND_SPAWN;
@@ -247,6 +255,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.DoubleValue UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_MAX_CEILING_HEIGHT;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_MIRROR_PRECOMPUTE;
+    public static final ModConfigSpec.BooleanValue BREAK_BLOCKS_ON_CONTACT;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -284,6 +293,7 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON = pair.getLeft().upsideDownExitNoiseSkipEpsilon;
         UPSIDE_DOWN_MAX_CEILING_HEIGHT = pair.getLeft().upsideDownMaxCeilingHeight;
         UPSIDE_DOWN_MIRROR_PRECOMPUTE = pair.getLeft().upsideDownMirrorPrecompute;
+        BREAK_BLOCKS_ON_CONTACT = pair.getLeft().breakBlocksOnContact;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -302,6 +312,17 @@ public final class DungeonTrainCommonConfig {
                         + "from the rear). Used by any world that has not set a per-world override. Default 15; 0 disables; 100 = always.")
                 .defineInRange("defaultPlayerMobBehindSpawnPercent", DEFAULT_PLAYER_MOB_BEHIND_SPAWN_PERCENT,
                         MIN_PLAYER_MOB_BEHIND_SPAWN_PERCENT, MAX_PLAYER_MOB_BEHIND_SPAWN_PERCENT);
+        b.pop();
+
+        b.push("train");
+        ModConfigSpec.BooleanValue breakBlocksOnContact = b
+                .comment("Global DEFAULT for whether a moving carriage BREAKS the world blocks its footprint passes",
+                        "through, dropping their items (containers spill their contents). The track corridor is already",
+                        "cleared at worldgen and re-swept at chunk load, so this only applies to blocks that appear",
+                        "afterwards — a player-built wall across the tracks, a grown tree, a structure outside the swept",
+                        "corridor. false = the train phases through them silently. Used by any world that has not set a",
+                        "per-world override in-game (Mods -> Dungeon Train -> Config while in a world). Default true.")
+                .define("defaultBreakBlocksOnContact", DEFAULT_BREAK_BLOCKS_ON_CONTACT);
         b.pop();
 
         b.push("worldgen");
@@ -507,7 +528,7 @@ public final class DungeonTrainCommonConfig {
                 upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks, upsideDownExitGapBlocks,
                 upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
                 upsideDownBedrockRoof, upsideDownCloudY, upsideDownExitNoiseSkipEpsilon,
-                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute);
+                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute, breakBlocksOnContact);
     }
 
     /**
@@ -542,6 +563,17 @@ public final class DungeonTrainCommonConfig {
         int clamped = Math.max(MIN_PLAYER_MOB_BEHIND_SPAWN_PERCENT, Math.min(MAX_PLAYER_MOB_BEHIND_SPAWN_PERCENT, value));
         DEFAULT_PLAYER_MOB_BEHIND_SPAWN.set(clamped);
         DEFAULT_PLAYER_MOB_BEHIND_SPAWN.save();
+    }
+
+    /** Global default for train-on-contact block breaking; falls back to the hardcoded default pre-load. */
+    public static boolean getDefaultBreakBlocksOnContact() {
+        return isLoaded() ? BREAK_BLOCKS_ON_CONTACT.get() : DEFAULT_BREAK_BLOCKS_ON_CONTACT;
+    }
+
+    public static void setDefaultBreakBlocksOnContact(boolean value) {
+        if (!isLoaded()) return;
+        BREAK_BLOCKS_ON_CONTACT.set(value);
+        BREAK_BLOCKS_ON_CONTACT.save();
     }
 
     /** Global default Compatible Terrain mode for new worlds; falls back to the hardcoded default pre-load. */
@@ -763,5 +795,6 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue upsideDownCloudY,
                           ModConfigSpec.DoubleValue upsideDownExitNoiseSkipEpsilon,
                           ModConfigSpec.IntValue upsideDownMaxCeilingHeight,
-                          ModConfigSpec.BooleanValue upsideDownMirrorPrecompute) {}
+                          ModConfigSpec.BooleanValue upsideDownMirrorPrecompute,
+                          ModConfigSpec.BooleanValue breakBlocksOnContact) {}
 }

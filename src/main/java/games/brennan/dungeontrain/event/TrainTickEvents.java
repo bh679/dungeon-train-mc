@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
 import games.brennan.dungeontrain.ship.sable.PhysicsSubstepTuner;
 import games.brennan.dungeontrain.track.TrackGenerator;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageFootprint;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
@@ -20,6 +21,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -52,10 +54,12 @@ import java.util.UUID;
  * tunnel-fill) onto a designated lead or tail carriage rather than running
  * heavy operations once per carriage.
  *
- * <p>Block clearance is handled at world-gen time
- * ({@code TrackGenerator.placeTracksForChunk}) — by the time a chunk loads
- * its corridor envelope is already air, so the train never has to carve
- * through terrain at runtime.</p>
+ * <p>Block clearance is primarily pre-emptive: the corridor envelope is carved at world-gen time
+ * ({@code TrackGenerator.placeTracksForChunk}) and re-swept when a chunk loads
+ * ({@code CorridorCleanupEvents}), so in the normal case the train rides into air it never had to
+ * carve. {@link #sweepFootprint} is the runtime backstop for what those two cannot cover — blocks
+ * that appear after a chunk was swept (player-built, grown, or outside the swept corridor) — and it
+ * breaks them properly, with drops, particles and sound, rather than phasing through them.</p>
  *
  * <p>Entities INSIDE the train's current AABB (e.g. dropped items in carriage
  * interiors, like vase loot) are spared — only the runway in front of the
@@ -91,6 +95,25 @@ public final class TrainTickEvents {
      * block/tick gives ~80 ticks (4 s) of advance notice to evict mobs.
      */
     private static final int LOOKAHEAD_BLOCKS = 8;
+
+    /**
+     * Max world blocks {@link #sweepFootprint} may destroy per level tick, summed across ALL trains in
+     * the level (not per carriage — a 30-carriage train would otherwise multiply the worst case by 30).
+     *
+     * <p>Steady-state hits are ~0: worldgen and {@code CorridorCleanupEvents} pre-clear the collision
+     * envelope, so the sweep finds nothing but air. The cap only bites when a train enters an un-swept
+     * region, a player walls the corridor, or a gravity-block column keeps collapsing into the envelope.
+     * Cells left unbroken are simply retried next tick, so a wall erodes over a few ticks instead of
+     * spiking one.</p>
+     */
+    private static final int MAX_BLOCK_BREAKS_PER_TICK = 256;
+
+    /**
+     * Blocks by which {@link #killEntitiesAhead} inflates the spared train AABB for {@link ItemEntity}
+     * only, so drops produced by {@link #sweepFootprint} at the train's leading face aren't discarded
+     * as runway clutter before they fall behind the train.
+     */
+    private static final double ITEM_SPARE_INFLATE = 1.5;
 
     /**
      * Entity-type namespaces whose entities ride the train and must survive
@@ -257,17 +280,26 @@ public final class TrainTickEvents {
         }
         long tAfterKill = System.nanoTime();
 
-        // Displace external fluid from inside each carriage's footprint. The
-        // FlowingFluidExternalWaterMixin veto blocks fluid from *flowing into*
-        // a carriage AABB, but it cannot remove fluid already in a cell — and
-        // a moving train sweeps forward over world cells that may hold water
-        // (a track corridor flooded from an adjacent ocean/river, or a water
-        // crossing). Clearing those cells each tick keeps the train dry, like
-        // a hull pushing water aside; the veto then holds the cell against
-        // re-inflow. Together: no fluid into/through the train, water flows
-        // around it (see TrainFluidBarrier / plans/snazzy-churning-snowglobe.md).
+        // One pass over each carriage's footprint doing both block-breaking and fluid displacement.
+        //
+        // BREAK: the train is kinematic, so it phases through anything the pre-emptive corridor clears
+        // (worldgen + CorridorCleanupEvents) missed — a player's wall, a grown tree, a structure
+        // outside the swept corridor. Breaking here is what makes contact visible: particles, sound
+        // and drops. Runs AFTER killEntitiesAhead so this tick's drops aren't seen by the kill sweep;
+        // by the next tick the train has advanced and they sit safely behind it.
+        //
+        // FLUID: the FlowingFluidExternalWaterMixin veto blocks fluid from *flowing into* a carriage
+        // AABB, but it cannot remove fluid already in a cell — and a moving train sweeps forward over
+        // world cells that may hold water (a track corridor flooded from an adjacent ocean/river, or a
+        // water crossing). Clearing those cells each tick keeps the train dry, like a hull pushing
+        // water aside; the veto then holds the cell against re-inflow. Together: no fluid into/through
+        // the train, water flows around it (see TrainFluidBarrier / plans/snazzy-churning-snowglobe.md).
+        //
+        // The break budget is shared across every train in the level, so one long train (or several)
+        // can't multiply the worst-case cost.
+        int blocksBroken = 0;
         for (List<Trains.Carriage> train : trainsById.values()) {
-            displaceFluidInFootprint(level, train);
+            blocksBroken += sweepFootprint(level, train, MAX_BLOCK_BREAKS_PER_TICK - blocksBroken);
         }
         long tAfterFluid = System.nanoTime();
 
@@ -310,7 +342,7 @@ public final class TrainTickEvents {
             for (List<Trains.Carriage> train : trainsById.values()) totalCarriages += train.size();
             int nearCarriages = countNearCarriages(level, trainsById);
             JITTER_LOGGER.debug(
-                "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms fluid={}ms tracks={}ms mirror={}ms tunnels={}ms trains={} carriages={} near={}",
+                "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms sweep={}ms tracks={}ms mirror={}ms tunnels={}ms trains={} carriages={} near={} broke={}",
                 level.getGameTime(), totalMs,
                 (tAfterAppender - t0) / 1_000_000,
                 (tAfterOverlay - tAfterAppender) / 1_000_000,
@@ -320,7 +352,7 @@ public final class TrainTickEvents {
                 (tAfterTracks - tAfterFluid) / 1_000_000,
                 (tAfterMirror - tAfterTracks) / 1_000_000,
                 (tAfterTunnels - tAfterMirror) / 1_000_000,
-                trainsById.size(), totalCarriages, nearCarriages);
+                trainsById.size(), totalCarriages, nearCarriages, blocksBroken);
         }
         tickCounter++;
     }
@@ -471,10 +503,35 @@ public final class TrainTickEvents {
     }
 
     /**
-     * Clear external world fluid from inside every resident carriage's
-     * footprint, so a moving train stays dry instead of dragging the water it
-     * sweeps over (see {@code TrainTickEvents#onLevelTick} call site and
-     * {@link games.brennan.dungeontrain.ship.TrainFluidBarrier}).
+     * Single per-cell pass over every resident carriage's footprint, doing two things with one
+     * traversal and one {@link ServerLevel#getBlockState} read per cell:
+     *
+     * <ol>
+     *   <li><b>Break</b> any world block the carriage body is passing through — with drops, break
+     *       particles and break sound ({@link #breakBlock}). The train is kinematic (it teleports
+     *       rather than colliding), and the corridor is normally pre-cleared at worldgen and re-swept
+     *       at chunk load, so this only finds blocks that appeared afterwards: a player-built wall
+     *       across the tracks, a grown tree, a structure outside the swept corridor. Without this they
+     *       were silently phased through. Gated on {@link DungeonTrainWorldData#getEffectiveBreakBlocksOnContact()}
+     *       (read once here, never per cell) and budgeted by {@link #MAX_BLOCK_BREAKS_PER_TICK}.</li>
+     *   <li><b>Displace fluid</b> from cells the break pass left alone, so a moving train stays dry
+     *       instead of dragging the water it sweeps over (see
+     *       {@link games.brennan.dungeontrain.ship.TrainFluidBarrier}).</li>
+     * </ol>
+     *
+     * <p>The two share byte-identical geometry — same AABB, same centre test, same chunk guard — so
+     * running them as one pass halves the traversal cost versus a second sweep.</p>
+     *
+     * <p><b>The train never eats its own rails.</b> Carriage voxels occupy {@code trainY ..
+     * trainY+height-1} while the rails sit at {@code railY = trainY-1} and the bed at {@code trainY-2}
+     * ({@link games.brennan.dungeontrain.track.TrackGeometry}), and rotation is forced to identity
+     * every tick, so the AABB's {@code minY} is exactly {@code trainY} and the centre test already
+     * rejects the rail row ({@code trainY-0.5} is below the box). {@code hardFloorY} re-states that
+     * invariant as an explicit guard rather than leaving it resting on a float landing precisely on an
+     * integer — any future Y-offset, bounding-box pad or derailment rotation would otherwise silently
+     * turn "safe" into "the train destroys the track it is riding on".</p>
+     *
+     * <p>Returns the number of blocks broken, for the {@code [stuck.timing]} {@code broke=} field.</p>
      *
      * <p>Uses each carriage's own {@link ManagedShip#worldAABB()} (not the
      * train union) so the kept-dry region matches the
@@ -490,11 +547,15 @@ public final class TrainTickEvents {
      * neighbour updates) so the wake refills with water once a cell exits the
      * AABB behind the train; fluids drop nothing, so drop-suppression is moot.</p>
      */
-    private static void displaceFluidInFootprint(ServerLevel level, List<Trains.Carriage> train) {
+    private static int sweepFootprint(ServerLevel level, List<Trains.Carriage> train, int breakBudget) {
+        boolean breakBlocks = DungeonTrainWorldData.get(level).getEffectiveBreakBlocksOnContact();
+        int broke = 0;
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (Trains.Carriage carriage : train) {
             ManagedShip ship = carriage.ship();
             if (!ship.isResident()) continue;
+
+            int hardFloorY = breakFloorY(carriage.provider().getTrackGeometry());
 
             AABBdc box = ship.worldAABB();
             int minX = Mth.floor(box.minX());
@@ -513,12 +574,66 @@ public final class TrainTickEvents {
                         cursor.set(x, y, z);
                         if (!level.hasChunkAt(cursor)) continue; // never force-load
                         BlockState state = level.getBlockState(cursor);
+                        // Fast-out on air: the overwhelming majority of cells in a cleared corridor,
+                        // and cheaper than the getFluidState() the fluid pass used to do on each.
+                        if (state.isAir()) continue;
+
+                        if (shouldBreak(breakBlocks, y, hardFloorY, broke, breakBudget)) {
+                            // Breaking leaves air (or the legacy fluid of a submerged block), so this
+                            // cell needs no fluid displacement afterwards.
+                            if (breakBlock(level, cursor)) broke++;
+                            continue;
+                        }
                         if (state.getFluidState().isEmpty()) continue;
                         clearFluid(level, cursor, state);
                     }
                 }
             }
         }
+        return broke;
+    }
+
+    /**
+     * Lowest Y {@link #sweepFootprint} may break at, for a carriage riding {@code geometry}: one above
+     * the rail row, so the train can never destroy the track it is riding on (nor the bed below it).
+     *
+     * <p>Null geometry — a carriage whose track geometry has not been assigned yet — returns
+     * {@link Integer#MAX_VALUE}, disabling breaking for that carriage entirely. Failing closed is the
+     * right default here: guessing a floor risks eating the track, while skipping a tick or two of
+     * breaking costs nothing (the cell is retried next tick). Pure function — unit-tested.</p>
+     */
+    static int breakFloorY(TrackGeometry geometry) {
+        return geometry != null ? geometry.railY() + 1 : Integer.MAX_VALUE;
+    }
+
+    /**
+     * Whether {@link #sweepFootprint} should break the (already known non-air) block at height
+     * {@code y}: the feature must be enabled for this world, the cell must sit at or above
+     * {@code hardFloorY} ({@link #breakFloorY}), and the level-wide per-tick budget must not be spent.
+     * Pure function — unit-tested.
+     */
+    static boolean shouldBreak(boolean enabled, int y, int hardFloorY, int broke, int budget) {
+        return enabled && y >= hardFloorY && broke < budget;
+    }
+
+    /**
+     * Destroy the world block at {@code pos} the way a player would see it break: break particles and
+     * break sound (vanilla's {@code LevelEvent} 2001) plus full drops, including a container's
+     * contents. Returns whether a block was actually destroyed.
+     *
+     * <p>{@link ServerLevel#destroyBlock(BlockPos, boolean)} is deliberately chosen over
+     * {@code Block.dropResources} + {@code setBlock}: it is the single call that fires the effect
+     * event, captures the block entity for the drop, and replaces the block with
+     * {@code fluidState.createLegacyBlock()} so a submerged block leaves water behind rather than a
+     * vacuum. It is equally deliberately NOT {@code SilentBlockOps}, whose whole purpose is to
+     * suppress the drops and updates this path wants.</p>
+     *
+     * <p>Note it does not fire {@code BlockEvent.BreakEvent} (that comes from
+     * {@code ServerPlayerGameMode}), so the mod's own break listeners are not spuriously triggered by
+     * the train.</p>
+     */
+    private static boolean breakBlock(ServerLevel level, BlockPos pos) {
+        return level.destroyBlock(pos.immutable(), true);
     }
 
     /**
@@ -590,7 +705,14 @@ public final class TrainTickEvents {
             // {@code Entity.RemovalReason} and is the most reliable identity
             // for "this is one of ours; do not kill."
             e -> !(e instanceof Player) && e.isAlive()
-                && !train_aabb.contains(e.getX(), e.getY(), e.getZ())
+                // Items get a wider spare box than everything else. sweepFootprint breaks blocks
+                // strictly inside train_aabb, so its drops start inside the sparing region — but a
+                // drop from the frontmost cell column pops with a small outward velocity and can
+                // cross maxX into this slab before the train catches up. Inflating for items only
+                // keeps train-broken drops collectable without sparing mobs on the runway.
+                && !(e instanceof ItemEntity
+                    ? train_aabb.inflate(ITEM_SPARE_INFLATE).contains(e.getX(), e.getY(), e.getZ())
+                    : train_aabb.contains(e.getX(), e.getY(), e.getZ()))
                 && !isCarriageContentsEntity(e)
                 // Spare train passengers (e.g. PlayerMob): they fall off
                 // carriages by design and recover, so kill-ahead must not
