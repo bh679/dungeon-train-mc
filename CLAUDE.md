@@ -151,6 +151,34 @@ Not every Gate 3 merge ships a public release. Tags exist only for releases — 
 no `push: tags` trigger on `release.yml`; the workflow is dispatch-only and creates the
 tag itself.
 
+### Test releases (`-f test_release=true`)
+
+Some things can only be verified against a *published* listing — most notably whether the
+CurseForge and Modrinth apps auto-install DT's required dependencies, which they resolve from
+the platform, not from the jar's `mods.toml`. For those, dispatch a test build:
+
+```bash
+gh workflow run release.yml -f tag=v<version> -f test_release=true -f notify_discord=false \
+  -f changelog="$(python3 scripts/release-notes/render-unreleased.py)"
+```
+
+`test_release=true` publishes to the **alpha** channel and leaves `changelog.json` untouched —
+the curated entries stay unreleased for the real release that follows. Pair it with
+`notify_discord=false` so the test doesn't ping the community.
+
+⚠️ **Neither platform has a private channel.** Alpha is publicly visible; it is simply below
+CurseForge's default Release filter, so ordinary users aren't offered it. Treat a test release as
+quiet, not hidden.
+
+Not suppressed, and worth deciding on each time:
+- **Both modpacks still publish** a version bundling the test build. Pass nothing to stop it —
+  there is no skip input. Delete those versions afterwards if unwanted.
+- **The tag and GitHub Release are permanent** and the version number is burned; the next release
+  needs a new one. If the test passes, prefer **promoting** the file's channel (alpha → beta) in
+  each platform's UI over re-releasing — that ships the exact artifact you verified.
+- Check the cascade kill switch (`AUTO_RELEASE_ENABLED`) before dispatching; if the cascade is
+  live it will re-anchor on this release and fire ~22 micro-releases off a test build.
+
 ### Before releasing a dependency change
 
 If the release changes dependency declarations — a new or removed sibling mod, a raised
