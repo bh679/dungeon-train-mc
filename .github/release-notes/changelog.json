@@ -5039,6 +5039,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "overloaded-armor-bar-modpack",
+      "version": "0.478.0",
+      "type": "feat",
+      "title": "Armor bar shows your full protection",
+      "summary": "The modpacks now bundle Overloaded Armor Bar, on by default. Once your armor climbs past a full bar, the extra protection is drawn as stacked coloured icons instead of quietly running out of room to display.",
+      "highlights": [
+        "Overloaded Armor Bar ships enabled by default in the CurseForge and Modrinth modpacks"
+      ],
+      "date": "2026-07-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
