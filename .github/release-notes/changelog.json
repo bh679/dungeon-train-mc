@@ -5029,12 +5029,29 @@
       "version": "0.478.0",
       "type": "fix",
       "title": "Player Mobs move around the train better",
-      "summary": "Two fixes to how the bundled Player Mobs get around. Crossing between carriages, they now take a hop sized to the actual gap \u2014 the seams between carriages were tightened a while back, but Player Mobs kept using the big leap they needed for the old wider gaps, so they'd sail across a hand's-width seam. And a Player Mob that falls onto the tracks now works its way back aboard instead of being stranded: it bridges off the rails, builds a pillar up beside the passing carriages, and waits for a clear opening before jumping in.",
+      "summary": "Two fixes to how Player Mobs get around. Crossing between carriages, they now take a hop sized to the actual gap \u2014 the seams between carriages were tightened a while back, but Player Mobs kept using the big leap they needed for the old wider gaps, so they'd sail across a hand's-width seam. And a Player Mob that falls onto the tracks now works its way back aboard instead of being stranded: it bridges off the rails, builds a pillar up beside the passing carriages, and waits for a clear opening before jumping in.",
       "highlights": [
         "Cross-carriage hops are sized to the real gap instead of always being a full sprint leap",
         "Player Mobs that fall onto the track bed climb back aboard instead of getting stuck",
         "Boarding waits for a real opening, so mobs stop leaping into carriage walls"
       ],
+      "date": "2026-07-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "unbundle-sibling-mods",
+      "version": "0.478.0",
+      "type": "chore",
+      "title": "Adventure Item Names, Adventure Item Stats, Interactive Player Mobs and Ender Chest Persistence are now separate downloads",
+      "summary": "These four mods used to be bundled invisibly inside Dungeon Train. They are now normal required dependencies you install alongside it, so each one gets credit on its own mod page. If you use the CurseForge or Modrinth app, or the Dungeon Train modpack, they are fetched automatically and nothing changes for you. If you install the jar by hand, you will be prompted for the four missing mods on first launch and will need to download them too. Discord Presence is still bundled.",
+      "highlights": [
+        "Four bundled mods are now separate required downloads \u2014 installed automatically by the CurseForge/Modrinth apps and the modpack",
+        "Manual jar installers will be prompted to add the four mods on first launch",
+        "Dungeon Train's own jar is about 1.3 MB smaller"
+      ],
+      "pr": 792,
       "date": "2026-07-19",
       "released": false,
       "released_in": null,

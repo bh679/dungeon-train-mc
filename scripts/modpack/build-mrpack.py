@@ -8,12 +8,13 @@ which references mods by ``projectID`` + ``fileID`` — Modrinth references each
 at build time from the *pinned Modrinth version id* of each mod (``modpack.config.json``),
 exactly mirroring the builds the CurseForge pack ships.
 
-Dungeon Train jarJars AIN/AIS/PlayerMob/DiscordPresence/joml-primitives *inside* its own jar,
-so the pack needs only:
+Dungeon Train jarJars only DiscordPresence + joml-primitives *inside* its own jar; the sibling
+mods AIN/AIS/PlayerMob/EnderChestPersistence are un-bundled required downloads (so their own
+project pages get credited), so the pack lists:
 
   * Dungeon Train — Modrinth version id passed in per release (``--dt-version``); the freshly
     uploaded Modrinth version, surfaced by mc-publish (``modrinth-version``) in ``release.yml``.
-  * Sable — the one un-bundled runtime dep, *pinned* in ``modpack.config.json`` to the exact
+  * Sable — an un-bundled runtime dep, *pinned* in ``modpack.config.json`` to the exact
     version DT is built against. Sable is on Modrinth so it is referenced by URL (no bundling,
     so its PolyForm-Shield no-redistribution clause is not engaged).
   * Each ``optional_mods`` entry — pinned by ``modrinth_version``.

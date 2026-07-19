@@ -151,6 +151,17 @@ Not every Gate 3 merge ships a public release. Tags exist only for releases — 
 no `push: tags` trigger on `release.yml`; the workflow is dispatch-only and creates the
 tag itself.
 
+### Before releasing a dependency change
+
+If the release changes dependency declarations — a new or removed sibling mod, a raised
+`<mod>_min_version` floor, a Sable bump, a NeoForge bump — run
+`scripts/deptest/run-all.sh` first. It boots a real NeoForge server against real jars in
+`mods/`, which is the only way to test the missing-dependency path: `./gradlew runServer`
+puts the siblings on the dev classpath, so a declared-but-absent dependency can never
+actually go missing there. `scripts/deptest/README.md` also carries the **post-release
+launcher checklist** — the CurseForge/Modrinth auto-install behaviour reads the published
+listing rather than the jar, so it can only be verified once the release is live.
+
 ### When to suggest releasing
 
 At Gate 3, after the merge lands, suggest "tag for release" if the change is
@@ -217,9 +228,13 @@ After every successful mod upload (real releases AND the ~22 auto-release cascad
 `release.yml` dispatches **`release-modpack.yml`** (CurseForge — waits ~15 min for CurseForge to
 approve the new DT file) and **`release-modpack-modrinth.yml`** (Modrinth — no wait), each
 gated on that platform's mod upload having produced a file/version id. Both bundle that release's
-DT file + Sable + the pinned companion mods. Core entries are
-**Dungeon Train + Sable** (DT jarJars AIN/AIS/PMOB/DiscordPresence/ECP); on top of those,
-`modpack.config.json` → `optional_mods[]` bundles companions each with a `required` flag.
+DT file + Sable + the pinned sibling and companion mods. Core entries are
+**Dungeon Train + Sable** (DT jarJars only DiscordPresence + joml-primitives); the sibling mods
+**AIN/AIS/PMOB/ECP are un-bundled required downloads**, declared `<slug>(required)` so the
+CurseForge/Modrinth apps auto-install them and each sibling's own page gets the download credit.
+On top of those, `modpack.config.json` → `optional_mods[]` bundles the siblings (each carrying
+`dependency_type: required` + a `gradle_property` floor) and the companions, each with a
+`required` flag.
 ⚠️ In the CurseForge app `required:false` ships a mod **OFF** (opt-in), not on — a companion
 that should be **on by default must be `required:true`**. See `modpack/README.md` §"Enabled vs
 disabled by default" for the two-tier roster (enabled: AppleSkin/FerriteCore/ModernFix/
@@ -232,11 +247,23 @@ loads (Advancement Plaques needs Iceberg; Tectonic needs Lithostitched).
 - **Sable-pin coupling:** when you bump `sable_version` in `gradle.properties`, also update
   `modpack/modpack.config.json` → `sable.file_id` (CurseForge) **and** `sable.modrinth_version`
   (Modrinth) — both modpacks pin Sable to the tested version. Flagged in `gradle.properties`.
+- **Sibling-mod floors:** AIN/AIS/PMOB/ECP each have TWO versions in `gradle.properties`.
+  `<mod>_version` is what DT compiles/dev-runs against and the auto-release cascade bumps it every
+  tick; `<mod>_min_version` is the floor end users must clear, rendered into `neoforge.mods.toml`
+  as `[x,)`. They are separate on purpose — if mods.toml tracked `<mod>_version`, every cascade
+  tick would silently raise the bar on players and invalidate the modpack's pinned sibling build.
+  **Raise a floor only deliberately** (when DT starts calling a newer seam), and when you do, also
+  refresh that mod's `version` + `file_id` + `modrinth_version` in `modpack.config.json`.
+  Enforced by `check-pins.py`, which asserts modpack pin ≥ floor.
 - **New companion ⇒ add both pins + mod dependency:** when you add an `optional_mods` entry to
   `modpack/modpack.config.json`, give it a `slug` + `required` flag + `modrinth_project` +
   `modrinth_version`, and add `<slug>(optional)` to `release.yml` `curseforge-dependencies`.
+  For a hard dependency (a sibling mod) use `dependency_type: required` in the config and
+  `<slug>(required)` in release.yml instead. Note `required` (pack ships it ON) and
+  `dependency_type` (mod won't load without it) answer different questions — don't conflate them.
   Enforced in CI (`modpack-checks` job in `build.yml`): `check-relations.py` (CurseForge dep) +
-  `build-mrpack.py --check-config` (Modrinth pins present).
+  `build-mrpack.py --check-config` (Modrinth pins present) + `check-pins.py` (Sable chain +
+  sibling floors).
 - Manual test: `gh workflow run release-modpack.yml --ref <branch> -f tag=v<ver>
   -f dt_file_id=<id> -f dry_run=true` (CurseForge); `gh workflow run
   release-modpack-modrinth.yml --ref <branch> -f tag=v<ver> -f dt_modrinth_version=<id>

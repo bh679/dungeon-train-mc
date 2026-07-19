@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-"""Guard: every modpack Include must be declared as an optional dependency of the mod.
+"""Guard: every modpack Include must be declared as a dependency of the mod.
 
 Dungeon Train ships a CurseForge *modpack* (``modpack/modpack.config.json``) and a *mod*
-(``.github/workflows/release.yml``). Any mod the pack bundles as an on-by-default
-**Include** (``optional_mods`` -> ``required:false`` manifest file) must ALSO be declared
-as an ``<slug>(optional)`` entry in the mod's own CurseForge relations
-(``release.yml`` -> ``curseforge-dependencies``), so the mod page advertises the very
-companion the pack installs. PR #390 added AppleSkin as an Include but forgot the mod
-relation — this guard makes that class of drift fail in CI instead of shipping silently.
+(``.github/workflows/release.yml``). Any mod the pack bundles as an
+**Include** (an ``optional_mods`` manifest file entry) must ALSO be declared in the mod's
+own CurseForge relations (``release.yml`` -> ``curseforge-dependencies``), so the mod page
+advertises the very companion the pack installs. PR #390 added AppleSkin as an Include but
+forgot the mod relation — this guard makes that class of drift fail in CI instead of
+shipping silently.
+
+The expected relation type is per-entry: ``optional`` by default (a recommended companion),
+or ``required`` for entries carrying ``"dependency_type": "required"`` — the un-bundled
+sibling mods AIN/AIS/PlayerMob/EnderChestPersistence, which DT hard-depends on. See
+``expected_dependency_type``.
 
 This is intentionally one-directional: an Include implies a mod optional dependency, but a
 mod optional dependency need NOT be a pack Include (e.g. mouse-tweaks / jade are declared
@@ -76,8 +81,23 @@ def parse_relations(content_lines: list[str]) -> dict[str, str]:
     return relations
 
 
+def expected_dependency_type(opt: dict) -> str:
+    """Return the relation type ``opt`` must have in ``curseforge-dependencies``.
+
+    Defaults to ``optional`` — a bundled companion the mod merely recommends. Sibling mods
+    that DT genuinely hard-depends on (the un-bundled AIN/AIS/PlayerMob/EnderChestPersistence)
+    carry ``"dependency_type": "required"`` instead.
+
+    This deliberately does NOT key off the entry's ``required`` flag: that flag means
+    "enabled by default in the pack", which is a different question. AppleSkin is
+    ``required: true`` (ships switched on) yet is correctly only an *optional* dependency
+    of the mod, because DT runs fine without it.
+    """
+    return opt.get("dependency_type", "optional")
+
+
 def find_drift(config: dict, relations: dict[str, str]) -> list[str]:
-    """Return human-readable errors for Includes not declared as mod optional deps."""
+    """Return human-readable errors for Includes not declared as mod dependencies."""
     errors: list[str] = []
     for i, opt in enumerate(config.get("optional_mods", [])):
         name = opt.get("name", f"optional_mods[{i}]")
@@ -88,15 +108,16 @@ def find_drift(config: dict, relations: dict[str, str]) -> list[str]:
                 f"Include can be checked against the mod's curseforge-dependencies."
             )
             continue
+        expected = expected_dependency_type(opt)
         dep_type = relations.get(slug)
         if dep_type is None:
             errors.append(
                 f"{name} ({slug}): shipped as a modpack Include but NOT declared in release.yml "
-                f"curseforge-dependencies. Add '{slug}(optional)'."
+                f"curseforge-dependencies. Add '{slug}({expected})'."
             )
-        elif dep_type != "optional":
+        elif dep_type != expected:
             errors.append(
-                f"{name} ({slug}): a shipped Include must be declared 'optional', but "
+                f"{name} ({slug}): a shipped Include must be declared '{expected}', but "
                 f"curseforge-dependencies has '{slug}({dep_type})'."
             )
     return errors
@@ -124,8 +145,12 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  x {e}", file=sys.stderr)
         return 1
 
-    n = len(config.get("optional_mods", []))
-    print(f"OK: all {n} modpack Include(s) are declared as optional mod dependencies.")
+    mods = config.get("optional_mods", [])
+    n_required = sum(1 for o in mods if expected_dependency_type(o) == "required")
+    print(
+        f"OK: all {len(mods)} modpack Include(s) are declared as mod dependencies "
+        f"({n_required} required, {len(mods) - n_required} optional)."
+    )
     return 0
 
 

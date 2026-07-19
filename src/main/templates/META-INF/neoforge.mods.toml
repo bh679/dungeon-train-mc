@@ -23,27 +23,38 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Sibling mods (same author). These are NOT bundled — each is a separate required
+# download, so its own Modrinth/CurseForge page gets credited for the install.
+#
+# The range renders from <mod>_min_version, NOT <mod>_version. Those are different
+# values on purpose: _version is what DT compiles against and the auto-release cascade
+# bumps it every tick, whereas _min_version is the floor end users must clear and moves
+# only when a human raises it. See the block comment in gradle.properties.
+#
+# Minimums, not Sable-style exact pins — these mods are additive to DT's compat surface.
 [[dependencies.${mod_id}]]
     modId="adventureitemnames"
     type="required"
-    versionRange="[${adventureitemnames_version},)"
+    versionRange="[${adventureitemnames_min_version},)"
     ordering="AFTER"
     side="BOTH"
 
 [[dependencies.${mod_id}]]
     modId="adventureitemstats"
     type="required"
-    versionRange="[${adventureitemstats_version},)"
+    versionRange="[${adventureitemstats_min_version},)"
     ordering="AFTER"
     side="BOTH"
 
 [[dependencies.${mod_id}]]
     modId="playermob"
     type="required"
-    versionRange="[${playermob_version},)"
+    versionRange="[${playermob_min_version},)"
     ordering="AFTER"
     side="BOTH"
 
+# Discord Presence is still jarJar'd INSIDE this jar, so the shipped version is always
+# exactly discordpresence_version — no floor indirection needed.
 [[dependencies.${mod_id}]]
     modId="discordpresence"
     type="required"
@@ -54,7 +65,7 @@ logoFile="logo.png"
 [[dependencies.${mod_id}]]
     modId="enderchestpersistence"
     type="required"
-    versionRange="[${enderchestpersistence_version},)"
+    versionRange="[${enderchestpersistence_min_version},)"
     ordering="AFTER"
     side="BOTH"
 
