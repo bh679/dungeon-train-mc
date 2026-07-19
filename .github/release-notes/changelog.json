@@ -5020,9 +5020,9 @@
         "Server owners can turn it off per world with /dungeontrain breakblocks off, or globally in the config."
       ],
       "date": "2026-07-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.479.0",
+      "released_at": "2026-07-19T17:03:20Z"
     },
     {
       "id": "playermobs-0-83-upgrade",
@@ -5036,9 +5036,9 @@
         "Boarding waits for a real opening, so mobs stop leaping into carriage walls"
       ],
       "date": "2026-07-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.479.0",
+      "released_at": "2026-07-19T17:03:20Z"
     },
     {
       "id": "unbundle-sibling-mods",
@@ -5053,9 +5053,9 @@
       ],
       "pr": 792,
       "date": "2026-07-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.479.0",
+      "released_at": "2026-07-19T17:03:20Z"
     },
     {
       "id": "overloaded-armor-bar-modpack",
@@ -5067,9 +5067,9 @@
         "Overloaded Armor Bar ships enabled by default in the CurseForge and Modrinth modpacks"
       ],
       "date": "2026-07-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.479.0",
+      "released_at": "2026-07-19T17:03:20Z"
     },
     {
       "id": "ais-armor-cap-bundled",
@@ -5082,9 +5082,9 @@
         "Pairs with the Overloaded Armor Bar display so the extra protection is visible too"
       ],
       "date": "2026-07-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.479.0",
+      "released_at": "2026-07-19T17:03:20Z"
     }
   ]
 }
