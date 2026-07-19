@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Coverage for the two pure decisions behind {@code TrainTickEvents.sweepFootprint}'s block-breaking
  * pass: {@link TrainTickEvents#breakFloorY} (the rail-protection floor) and
- * {@link TrainTickEvents#shouldBreak} (enabled + above-floor + within-budget).
+ * {@link TrainTickEvents#shouldBreak} (enabled + collides + above-floor + within-budget).
  *
  * <p>The rail-floor case is the load-bearing one. Carriage voxels occupy {@code trainY ..
  * trainY+height-1} while {@link TrackGeometry} puts the rails at {@code trainY-1} and the bed at
@@ -44,7 +44,7 @@ class TrainBlockBreakGateTest {
     void nullGeometryDisablesBreaking() {
         assertEquals(Integer.MAX_VALUE, TrainTickEvents.breakFloorY(null));
         // No reachable Y can clear a MAX_VALUE floor, so the gate is shut for such a carriage.
-        assertFalse(TrainTickEvents.shouldBreak(true, 320, TrainTickEvents.breakFloorY(null), 0, 256));
+        assertFalse(TrainTickEvents.shouldBreak(true, true, 320, TrainTickEvents.breakFloorY(null), 0, 256));
     }
 
     @Test
@@ -52,10 +52,10 @@ class TrainBlockBreakGateTest {
     void railAndBedRowsAreRefused() {
         int floor = TrainTickEvents.breakFloorY(geometry());
 
-        assertFalse(TrainTickEvents.shouldBreak(true, TRAIN_Y - 2, floor, 0, 256), "bed row");
-        assertFalse(TrainTickEvents.shouldBreak(true, TRAIN_Y - 1, floor, 0, 256), "rail row");
-        assertTrue(TrainTickEvents.shouldBreak(true, TRAIN_Y, floor, 0, 256), "carriage floor row");
-        assertTrue(TrainTickEvents.shouldBreak(true, TRAIN_Y + 3, floor, 0, 256), "carriage interior");
+        assertFalse(TrainTickEvents.shouldBreak(true, true, TRAIN_Y - 2, floor, 0, 256), "bed row");
+        assertFalse(TrainTickEvents.shouldBreak(true, true, TRAIN_Y - 1, floor, 0, 256), "rail row");
+        assertTrue(TrainTickEvents.shouldBreak(true, true, TRAIN_Y, floor, 0, 256), "carriage floor row");
+        assertTrue(TrainTickEvents.shouldBreak(true, true, TRAIN_Y + 3, floor, 0, 256), "carriage interior");
     }
 
     @Test
@@ -63,8 +63,8 @@ class TrainBlockBreakGateTest {
     void disabledRefusesEverything() {
         int floor = TrainTickEvents.breakFloorY(geometry());
 
-        assertFalse(TrainTickEvents.shouldBreak(false, TRAIN_Y, floor, 0, 256));
-        assertFalse(TrainTickEvents.shouldBreak(false, TRAIN_Y + 3, floor, 0, 256));
+        assertFalse(TrainTickEvents.shouldBreak(false, true, TRAIN_Y, floor, 0, 256));
+        assertFalse(TrainTickEvents.shouldBreak(false, true, TRAIN_Y + 3, floor, 0, 256));
     }
 
     @Test
@@ -72,10 +72,10 @@ class TrainBlockBreakGateTest {
     void budgetIsExclusiveUpperBound() {
         int floor = TrainTickEvents.breakFloorY(geometry());
 
-        assertTrue(TrainTickEvents.shouldBreak(true, TRAIN_Y, floor, 0, 256), "first break");
-        assertTrue(TrainTickEvents.shouldBreak(true, TRAIN_Y, floor, 255, 256), "last break under cap");
-        assertFalse(TrainTickEvents.shouldBreak(true, TRAIN_Y, floor, 256, 256), "cap reached");
-        assertFalse(TrainTickEvents.shouldBreak(true, TRAIN_Y, floor, 999, 256), "cap overshot");
+        assertTrue(TrainTickEvents.shouldBreak(true, true, TRAIN_Y, floor, 0, 256), "first break");
+        assertTrue(TrainTickEvents.shouldBreak(true, true, TRAIN_Y, floor, 255, 256), "last break under cap");
+        assertFalse(TrainTickEvents.shouldBreak(true, true, TRAIN_Y, floor, 256, 256), "cap reached");
+        assertFalse(TrainTickEvents.shouldBreak(true, true, TRAIN_Y, floor, 999, 256), "cap overshot");
     }
 
     @Test
@@ -85,7 +85,7 @@ class TrainBlockBreakGateTest {
         // can legitimately receive 0 (or, if a train overshot, a negative remainder).
         int floor = TrainTickEvents.breakFloorY(geometry());
 
-        assertFalse(TrainTickEvents.shouldBreak(true, TRAIN_Y, floor, 0, 0));
-        assertFalse(TrainTickEvents.shouldBreak(true, TRAIN_Y, floor, 0, -5));
+        assertFalse(TrainTickEvents.shouldBreak(true, true, TRAIN_Y, floor, 0, 0));
+        assertFalse(TrainTickEvents.shouldBreak(true, true, TRAIN_Y, floor, 0, -5));
     }
 }

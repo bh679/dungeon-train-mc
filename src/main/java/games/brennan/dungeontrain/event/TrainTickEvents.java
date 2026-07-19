@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
 import games.brennan.dungeontrain.ship.sable.PhysicsSubstepTuner;
@@ -152,6 +153,9 @@ public final class TrainTickEvents {
 
     /** Game time of the last emitted break line; see {@link #logBreaks}. */
     private static long lastBreakLogTick = Long.MIN_VALUE;
+
+    /** Game time of the last emitted sweep-diagnostic line; see {@link #logSweepDiag}. TEMP. */
+    private static long lastSweepDiagTick = Long.MIN_VALUE;
 
     private TrainTickEvents() {}
 
@@ -566,12 +570,22 @@ public final class TrainTickEvents {
         int hardFloorY = breakFloorY(TrackGeometry.from(data.dims(), data.getTrainY()));
         int broke = 0;
         BlockPos firstBreak = null;
+        // TEMP DIAGNOSTIC (remove once contact-breaking is confirmed in-game) — see logSweepDiag.
+        int diagResident = 0;
+        int diagCells = 0;
+        int diagNonAir = 0;
+        int diagSolid = 0;
+        int diagTrainSolid = 0;
+        int diagBelowFloor = 0;
+        AABBdc diagFirstBox = null;
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (Trains.Carriage carriage : train) {
             ManagedShip ship = carriage.ship();
             if (!ship.isResident()) continue;
+            diagResident++;
 
             AABBdc box = ship.worldAABB();
+            if (diagFirstBox == null) diagFirstBox = box;
             int minX = Mth.floor(box.minX());
             int minY = Mth.floor(box.minY());
             int minZ = Mth.floor(box.minZ());
@@ -587,12 +601,33 @@ public final class TrainTickEvents {
                         if (!box.containsPoint(x + 0.5, y + 0.5, z + 0.5)) continue;
                         cursor.set(x, y, z);
                         if (!level.hasChunkAt(cursor)) continue; // never force-load
+                        diagCells++;
                         BlockState state = level.getBlockState(cursor);
                         // Fast-out on air: the overwhelming majority of cells in a cleared corridor,
                         // and cheaper than the getFluidState() the fluid pass used to do on each.
                         if (state.isAir()) continue;
+                        diagNonAir++;
+                        // A collision needs a solid thing on BOTH sides.
+                        //
+                        // World side: only a block with a real collision shape is something the train
+                        // can hit. Flowers, grass, torches and the like are brushed past untouched;
+                        // water's shape is empty too, so it falls through to the fluid path below
+                        // exactly as before.
+                        //
+                        // Train side: the carriage must actually HAVE a block here. worldAABB is a
+                        // coarse box and a carriage is not solid — a flatbed is mostly open air
+                        // inside its own bounding box — so without this a block drifting through
+                        // that empty space would break with nothing having touched it.
+                        //
+                        // Ordered cheap-first: the sub-level lookup only runs for a world block that
+                        // is already non-air AND solid, which in a cleared corridor is ~never.
+                        boolean solidWorld = !state.getCollisionShape(level, cursor).isEmpty();
+                        if (solidWorld) diagSolid++;
+                        boolean collide = solidWorld && !CarriageDeck.blockAt(ship, cursor).isAir();
+                        if (collide) diagTrainSolid++;
+                        if (y < hardFloorY) diagBelowFloor++;
 
-                        if (shouldBreak(breakBlocks, y, hardFloorY, broke, breakBudget)) {
+                        if (shouldBreak(breakBlocks, collide, y, hardFloorY, broke, breakBudget)) {
                             // Breaking leaves air (or the legacy fluid of a submerged block), so this
                             // cell needs no fluid displacement afterwards.
                             if (breakBlock(level, cursor)) {
@@ -608,7 +643,44 @@ public final class TrainTickEvents {
             }
         }
         if (broke > 0) logBreaks(level, broke, firstBreak);
+        logSweepDiag(level, breakBlocks, hardFloorY, train.size(), diagResident,
+            diagCells, diagNonAir, diagSolid, diagTrainSolid, diagBelowFloor, broke,
+            diagFirstBox == null ? "none" : String.format("[%.1f,%.1f,%.1f .. %.1f,%.1f,%.1f]",
+                diagFirstBox.minX(), diagFirstBox.minY(), diagFirstBox.minZ(),
+                diagFirstBox.maxX(), diagFirstBox.maxY(), diagFirstBox.maxZ()));
         return broke;
+    }
+
+    /**
+     * TEMP DIAGNOSTIC — remove once contact-breaking is confirmed working in-game.
+     *
+     * <p>Reports, once per second per level, every stage the sweep passes through, so a "nothing
+     * broke" observation can be attributed to a specific cause instead of guessed at:
+     * {@code enabled} (config off?), {@code floorY} vs the carriage box (floor above the whole
+     * train?), {@code resident} (carriages skipped as non-resident?), {@code cells} (is the AABB
+     * enclosing any loaded world cell at all?), {@code nonAir} (does the sweep ever SEE a placed
+     * block?), {@code solid} (does that block have a collision shape, or is it just foliage?),
+     * {@code trainSolid} (does the CARRIAGE have a block there too, or is it drifting through a
+     * flatbed's open interior?), {@code belowFloor} (are the blocks it sees being rejected by the
+     * rail guard?), and {@code box} (is the AABB in the coordinate space we think it is?).</p>
+     *
+     * <p>{@code trainSolid} specifically separates "correctly skipped a block in open space" from
+     * "the sub-level lookup is silently returning air for everything" — see
+     * {@link games.brennan.dungeontrain.ship.CarriageDeck#blockAt}, whose failure mode is invisible.</p>
+     *
+     * <p>NOTE: {@code box} arrives pre-formatted as a String rather than as an {@code AABBdc}. JOML is
+     * absent from the unit-test runtime, and a JOML type in a method SIGNATURE (unlike a local
+     * variable) has to be resolved when the test bootstrap scans this class's declared methods —
+     * which killed the test executor outright with {@code ClassNotFoundException}.</p>
+     */
+    private static void logSweepDiag(ServerLevel level, boolean enabled, int floorY, int carriages,
+                                     int resident, int cells, int nonAir, int solid, int trainSolid,
+                                     int belowFloor, int broke, String box) {
+        long now = level.getGameTime();
+        if (now - lastSweepDiagTick < BREAK_LOG_THROTTLE_TICKS && now >= lastSweepDiagTick) return;
+        lastSweepDiagTick = now;
+        LOGGER.info("[DungeonTrain] [sweep.diag] enabled={} floorY={} carriages={} resident={} cells={} nonAir={} solid={} trainSolid={} belowFloor={} broke={} box={}",
+            enabled, floorY, carriages, resident, cells, nonAir, solid, trainSolid, belowFloor, broke, box);
     }
 
     /**
@@ -643,12 +715,17 @@ public final class TrainTickEvents {
 
     /**
      * Whether {@link #sweepFootprint} should break the (already known non-air) block at height
-     * {@code y}: the feature must be enabled for this world, the cell must sit at or above
-     * {@code hardFloorY} ({@link #breakFloorY}), and the level-wide per-tick budget must not be spent.
-     * Pure function — unit-tested.
+     * {@code y}: the feature must be enabled for this world, the block must actually {@code collide}
+     * with the carriage, the cell must sit at or above {@code hardFloorY} ({@link #breakFloorY}), and
+     * the level-wide per-tick budget must not be spent. Pure function — unit-tested.
+     *
+     * <p>{@code collide} is what makes this a <em>collision</em> rather than a blanket sweep: only a
+     * block with a real collision shape is something the train could hit. Flowers, tall grass, torches
+     * and the like have an empty collision shape and are brushed past untouched, as is water (which
+     * falls through to the fluid-displacement path instead).</p>
      */
-    static boolean shouldBreak(boolean enabled, int y, int hardFloorY, int broke, int budget) {
-        return enabled && y >= hardFloorY && broke < budget;
+    static boolean shouldBreak(boolean enabled, boolean collide, int y, int hardFloorY, int broke, int budget) {
+        return enabled && collide && y >= hardFloorY && broke < budget;
     }
 
     /**
