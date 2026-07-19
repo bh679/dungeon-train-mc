@@ -5056,6 +5056,35 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "overloaded-armor-bar-modpack",
+      "version": "0.478.0",
+      "type": "feat",
+      "title": "Armor bar shows your full protection",
+      "summary": "The modpacks now bundle Overloaded Armor Bar, on by default. Once your armor climbs past a full bar, the extra protection is drawn as stacked coloured icons instead of quietly running out of room to display.",
+      "highlights": [
+        "Overloaded Armor Bar ships enabled by default in the CurseForge and Modrinth modpacks"
+      ],
+      "date": "2026-07-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "ais-armor-cap-bundled",
+      "version": "0.478.0",
+      "type": "fix",
+      "title": "Armor keeps improving past 1.5 bars",
+      "summary": "Minecraft quietly caps a player's armor at 30 points \u2014 one and a half full armor bars \u2014 and throws away anything above it. Deep-run gear could promise more armor in its tooltip than the game would ever grant, so late-run armor stopped improving while weapons kept scaling. That ceiling is now raised, and armor toughness along with it.",
+      "highlights": [
+        "Armor above 30 points now actually protects you instead of being silently discarded",
+        "Pairs with the Overloaded Armor Bar display so the extra protection is visible too"
+      ],
+      "date": "2026-07-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
