@@ -157,15 +157,12 @@ public final class TrainTickEvents {
     /** Game time of the last emitted break line; see {@link #logBreaks}. */
     private static long lastBreakLogTick = NEVER_LOGGED;
 
-    /** Game time of the last emitted sweep-diagnostic line; see {@link #logSweepDiag}. TEMP. */
-    private static long lastSweepDiagTick = NEVER_LOGGED;
-
-    // ---- [sweep.perf] accumulators (TEMP — remove with the diagnostics) -------------------------
+    // ---- [sweep.perf] accumulators --------------------------------------------------------------
     // Server-thread only, so plain fields are safe. Reset each report window by logSweepPerf.
-    // These answer ONE question: is the per-cell Sable sub-level lookup in the footprint sweep
-    // expensive enough to justify hoisting the pose transform + plot chunk map per carriage?
-    // perfLookups is the load-bearing number — it counts actual CarriageDeck.blockAt calls, the
-    // only genuinely costly operation the block-breaking pass added.
+    // Kept (at DEBUG) rather than deleted with the rest of the scaffolding: this is what measured the
+    // feature's cost as unattributable above noise, and it is the standing instrument for re-checking
+    // that if the sweep ever changes. perfLookups counts CarriageDeck.blockAt calls — the only
+    // genuinely costly operation block-breaking added.
     private static long perfNanos;
     private static long perfMaxNanos;
     private static long perfCells;
@@ -294,7 +291,7 @@ public final class TrainTickEvents {
             // period regardless of log level — the count is computed unconditionally.
             PhysicsSubstepTuner.reconcile(level, carriages);
 
-            logSweepPerf(level);   // TEMP profiling — same 2s window as [mspt]
+            logSweepPerf(level);
 
             double avgTickMs = level.getServer().getAverageTickTimeNanos() / 1_000_000.0;
             JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={}",
@@ -332,7 +329,7 @@ public final class TrainTickEvents {
             blocksBroken += sweepFootprint(level, train, MAX_BLOCK_BREAKS_PER_TICK - blocksBroken);
         }
         long tAfterFluid = System.nanoTime();
-        recordSweepPerf(tAfterFluid - tAfterKill, blocksBroken);   // TEMP profiling
+        recordSweepPerf(tAfterFluid - tAfterKill, blocksBroken);
 
         // ShipyardShifter intentionally NOT invoked on the per-carriage
         // architecture: it would shift each carriage's pivot independently
@@ -589,23 +586,15 @@ public final class TrainTickEvents {
         // the corridor in the first place. Level-wide, so it is computed once per sweep.
         int hardFloorY = breakFloorY(TrackGeometry.from(data.dims(), data.getTrainY()));
         int broke = 0;
+        int cells = 0;
+        int nonAir = 0;
         BlockPos firstBreak = null;
-        // TEMP DIAGNOSTIC (remove once contact-breaking is confirmed in-game) — see logSweepDiag.
-        int diagResident = 0;
-        int diagCells = 0;
-        int diagNonAir = 0;
-        int diagSolid = 0;
-        int diagTrainSolid = 0;
-        int diagBelowFloor = 0;
-        AABBdc diagFirstBox = null;
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (Trains.Carriage carriage : train) {
             ManagedShip ship = carriage.ship();
             if (!ship.isResident()) continue;
-            diagResident++;
 
             AABBdc box = ship.worldAABB();
-            if (diagFirstBox == null) diagFirstBox = box;
             int minX = Mth.floor(box.minX());
             int minY = Mth.floor(box.minY());
             int minZ = Mth.floor(box.minZ());
@@ -621,12 +610,12 @@ public final class TrainTickEvents {
                         if (!box.containsPoint(x + 0.5, y + 0.5, z + 0.5)) continue;
                         cursor.set(x, y, z);
                         if (!level.hasChunkAt(cursor)) continue; // never force-load
-                        diagCells++;
+                        cells++;
                         BlockState state = level.getBlockState(cursor);
                         // Fast-out on air: the overwhelming majority of cells in a cleared corridor,
                         // and cheaper than the getFluidState() the fluid pass used to do on each.
                         if (state.isAir()) continue;
-                        diagNonAir++;
+                        nonAir++;
                         // A collision needs a solid thing on BOTH sides.
                         //
                         // World side: only a block with a real collision shape is something the train
@@ -644,14 +633,11 @@ public final class TrainTickEvents {
                         // budget or a below-floor cell costs nothing beyond the air test. Only then
                         // the world-side shape query, and only then the sub-level lookup — which in
                         // a cleared corridor therefore runs ~never.
-                        if (y < hardFloorY) diagBelowFloor++;
                         boolean collide = false;
                         if (canBreakAt(breakBlocks, y, hardFloorY, broke, breakBudget)
                             && !state.getCollisionShape(level, cursor).isEmpty()) {
-                            diagSolid++;
                             perfLookups++;
                             collide = !CarriageDeck.blockAt(ship, cursor).isAir();
-                            if (collide) diagTrainSolid++;
                         }
 
                         if (shouldBreak(breakBlocks, collide, y, hardFloorY, broke, breakBudget)) {
@@ -669,14 +655,9 @@ public final class TrainTickEvents {
                 }
             }
         }
-        perfCells += diagCells;          // TEMP profiling
-        perfNonAir += diagNonAir;        // TEMP profiling
+        perfCells += cells;
+        perfNonAir += nonAir;
         if (broke > 0) logBreaks(level, broke, firstBreak);
-        logSweepDiag(level, breakBlocks, hardFloorY, train.size(), diagResident,
-            diagCells, diagNonAir, diagSolid, diagTrainSolid, diagBelowFloor, broke,
-            diagFirstBox == null ? "none" : String.format("[%.1f,%.1f,%.1f .. %.1f,%.1f,%.1f]",
-                diagFirstBox.minX(), diagFirstBox.minY(), diagFirstBox.minZ(),
-                diagFirstBox.maxX(), diagFirstBox.maxY(), diagFirstBox.maxZ()));
         return broke;
     }
 
@@ -696,7 +677,7 @@ public final class TrainTickEvents {
         return now >= last && now - last < BREAK_LOG_THROTTLE_TICKS;
     }
 
-    /** TEMP profiling — fold one tick's footprint-sweep cost into the {@code [sweep.perf]} window. */
+    /** Fold one tick's footprint-sweep cost into the {@code [sweep.perf]} window. */
     private static void recordSweepPerf(long nanos, int broke) {
         perfNanos += nanos;
         if (nanos > perfMaxNanos) perfMaxNanos = nanos;
@@ -705,7 +686,7 @@ public final class TrainTickEvents {
     }
 
     /**
-     * TEMP PROFILING — emit and reset the {@code [sweep.perf]} window.
+     * Emit and reset the {@code [sweep.perf]} window (DEBUG, same 2s cadence as {@code [mspt]}).
      *
      * <p>Exists to decide, from data rather than argument, whether the footprint sweep needs the
      * "deeper" optimisation: hoisting the {@code worldToShip} pose transform and the plot chunk map
@@ -730,7 +711,7 @@ public final class TrainTickEvents {
      */
     private static void logSweepPerf(ServerLevel level) {
         if (perfTicks == 0) return;
-        LOGGER.info("[DungeonTrain] [sweep.perf] dim={} breaking={} ticks={} avgMs={} maxMs={} cells/tick={} nonAir/tick={} lookups/tick={} breaks={}",
+        JITTER_LOGGER.debug("[sweep.perf] dim={} breaking={} ticks={} avgMs={} maxMs={} cells/tick={} nonAir/tick={} lookups/tick={} breaks={}",
             level.dimension().location(),
             DungeonTrainWorldData.get(level).getEffectiveBreakBlocksOnContact() ? "ON" : "OFF",
             perfTicks,
@@ -758,38 +739,6 @@ public final class TrainTickEvents {
     }
 
     /**
-     * TEMP DIAGNOSTIC — remove once contact-breaking is confirmed working in-game.
-     *
-     * <p>Reports, once per second per level, every stage the sweep passes through, so a "nothing
-     * broke" observation can be attributed to a specific cause instead of guessed at:
-     * {@code enabled} (config off?), {@code floorY} vs the carriage box (floor above the whole
-     * train?), {@code resident} (carriages skipped as non-resident?), {@code cells} (is the AABB
-     * enclosing any loaded world cell at all?), {@code nonAir} (does the sweep ever SEE a placed
-     * block?), {@code solid} (does that block have a collision shape, or is it just foliage?),
-     * {@code trainSolid} (does the CARRIAGE have a block there too, or is it drifting through a
-     * flatbed's open interior?), {@code belowFloor} (are the blocks it sees being rejected by the
-     * rail guard?), and {@code box} (is the AABB in the coordinate space we think it is?).</p>
-     *
-     * <p>{@code trainSolid} specifically separates "correctly skipped a block in open space" from
-     * "the sub-level lookup is silently returning air for everything" — see
-     * {@link games.brennan.dungeontrain.ship.CarriageDeck#blockAt}, whose failure mode is invisible.</p>
-     *
-     * <p>NOTE: {@code box} arrives pre-formatted as a String rather than as an {@code AABBdc}. JOML is
-     * absent from the unit-test runtime, and a JOML type in a method SIGNATURE (unlike a local
-     * variable) has to be resolved when the test bootstrap scans this class's declared methods —
-     * which killed the test executor outright with {@code ClassNotFoundException}.</p>
-     */
-    private static void logSweepDiag(ServerLevel level, boolean enabled, int floorY, int carriages,
-                                     int resident, int cells, int nonAir, int solid, int trainSolid,
-                                     int belowFloor, int broke, String box) {
-        long now = level.getGameTime();
-        if (throttled(lastSweepDiagTick, now)) return;
-        lastSweepDiagTick = now;
-        LOGGER.info("[DungeonTrain] [sweep.diag] enabled={} floorY={} carriages={} resident={} cells={} nonAir={} solid={} trainSolid={} belowFloor={} broke={} box={}",
-            enabled, floorY, carriages, resident, cells, nonAir, solid, trainSolid, belowFloor, broke, box);
-    }
-
-    /**
      * Throttled visible record that the train broke something. Fires at INFO at most once per
      * {@link #BREAK_LOG_THROTTLE_TICKS} per level, and only on a tick that actually broke a block, so
      * a healthy ride stays silent while a contact is verifiable straight from {@code latest.log}.
@@ -803,7 +752,7 @@ public final class TrainTickEvents {
         long now = level.getGameTime();
         if (throttled(lastBreakLogTick, now)) return;
         lastBreakLogTick = now;
-        LOGGER.info("[DungeonTrain] Train broke {} block(s) on contact, first at {}", broke, firstBreak);
+        JITTER_LOGGER.debug("[sweep.break] broke={} first={}", broke, firstBreak);
     }
 
     /**

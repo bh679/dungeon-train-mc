@@ -5023,6 +5023,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "train-breaks-blocks-on-contact",
+      "version": "0.477.0",
+      "type": "feat",
+      "title": "The train smashes through blocks in its path",
+      "summary": "Build across the tracks and the train no longer glides through your wall like a ghost \u2014 it breaks it, with the sound, the particles and the dropped items you would expect. Blocks that appear after the corridor was carved (a wall you built, a tree that grew, a structure the tunnelling missed) used to be passed through invisibly.",
+      "highlights": [
+        "Blocks in the train's path break on contact and drop their items; chests spill their contents.",
+        "Only real collisions count \u2014 a block drifting through the open deck of a flatbed is left alone, and flowers and grass are brushed past.",
+        "The track under the train is never damaged.",
+        "Server owners can turn it off per world with /dungeontrain breakblocks off, or globally in the config."
+      ],
+      "date": "2026-07-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
