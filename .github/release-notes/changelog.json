@@ -5056,6 +5056,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "unbundle-sibling-mods",
+      "version": "0.478.0",
+      "type": "chore",
+      "title": "Adventure Item Names, Adventure Item Stats, Interactive Player Mobs and Ender Chest Persistence are now separate downloads",
+      "summary": "These four mods used to be bundled invisibly inside Dungeon Train. They are now normal required dependencies you install alongside it, so each one gets credit on its own mod page. If you use the CurseForge or Modrinth app, or the Dungeon Train modpack, they are fetched automatically and nothing changes for you. If you install the jar by hand, you will be prompted for the four missing mods on first launch and will need to download them too. Discord Presence is still bundled.",
+      "highlights": [
+        "Four bundled mods are now separate required downloads \u2014 installed automatically by the CurseForge/Modrinth apps and the modpack",
+        "Manual jar installers will be prompted to add the four mods on first launch",
+        "Dungeon Train's own jar is about 1.3 MB smaller"
+      ],
+      "pr": 792,
+      "date": "2026-07-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
