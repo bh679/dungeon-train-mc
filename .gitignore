@@ -41,6 +41,11 @@ __pycache__/
 # Gate 2 testing artifacts (screenshots, previews)
 test-results/
 
+# Dependency-contract harness (scripts/deptest) — downloaded server install + fixtures
+scripts/deptest/server/
+scripts/deptest/neoforge-installer.jar
+scripts/deptest/playermob-old.jar
+
 # Local Claude state
 .claude/settings.local.json
 .claude/hook-versions.json

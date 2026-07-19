@@ -151,6 +151,17 @@ Not every Gate 3 merge ships a public release. Tags exist only for releases — 
 no `push: tags` trigger on `release.yml`; the workflow is dispatch-only and creates the
 tag itself.
 
+### Before releasing a dependency change
+
+If the release changes dependency declarations — a new or removed sibling mod, a raised
+`<mod>_min_version` floor, a Sable bump, a NeoForge bump — run
+`scripts/deptest/run-all.sh` first. It boots a real NeoForge server against real jars in
+`mods/`, which is the only way to test the missing-dependency path: `./gradlew runServer`
+puts the siblings on the dev classpath, so a declared-but-absent dependency can never
+actually go missing there. `scripts/deptest/README.md` also carries the **post-release
+launcher checklist** — the CurseForge/Modrinth auto-install behaviour reads the published
+listing rather than the jar, so it can only be verified once the release is live.
+
 ### When to suggest releasing
 
 At Gate 3, after the merge lands, suggest "tag for release" if the change is
