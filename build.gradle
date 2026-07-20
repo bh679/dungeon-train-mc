@@ -93,6 +93,15 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Local-relay testing seam: point the dev client at a locally-run dp-relay instead of the
+            // branch-routed dev/live cap, e.g.
+            //   ./gradlew runClient -PrelayBaseUrl=http://127.0.0.1:3005/<CAP>
+            // Injected here rather than inherited from the shell because a forked run inherits the
+            // long-lived Gradle DAEMON's environment, not the invoking shell's. Unset → normal routing.
+            def localRelay = project.findProperty('relayBaseUrl') ?: System.getenv('DUNGEONTRAIN_RELAY_BASE_URL')
+            if (localRelay) {
+                environment.put('DUNGEONTRAIN_RELAY_BASE_URL', localRelay.toString())
+            }
         }
 
         server {

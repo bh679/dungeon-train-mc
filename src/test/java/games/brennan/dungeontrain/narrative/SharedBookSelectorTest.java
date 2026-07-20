@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.narrative;
 
-import games.brennan.dungeontrain.narrative.SharedBookPool.Origin;
 import games.brennan.dungeontrain.narrative.SharedBookPool.PoolBook;
+import games.brennan.dungeontrain.narrative.SharedBookSelector.Origin;
+import games.brennan.dungeontrain.narrative.SharedBookSelector.PlayerContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -11,28 +12,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.IntPredicate;
-import java.util.function.IntUnaryOperator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Exercises {@link SharedBookSelector}'s priority chain (design model A):
  * eligible → language bucket → unread-first → effectiveWeight tier → seeded random. The selector is pure,
- * so each case supplies the player state as predicates and asserts which book(s) can survive.
+ * so each case supplies the player state directly and asserts which book survives.
+ *
+ * <p>Origin is DERIVED per-player from the book's {@code lang} vs the player's locale (the relay sends
+ * {@code lang}; it does not send a per-player origin), so the language cases here vary {@code lang}.</p>
  */
 final class SharedBookSelectorTest {
 
-    /** Convenience factory — pages are irrelevant to selection. */
-    private static PoolBook book(int id, int weight, Origin origin) {
-        return new PoolBook(id, "title" + id, "author", List.of("p"), weight, origin);
+    private static final String EN = "en_us";
+
+    /** Convenience factory — pages/title are irrelevant to selection. */
+    private static PoolBook book(int id, String lang, int weight) {
+        return new PoolBook(id, "title" + id, "author", List.of("p"), lang, weight);
     }
 
-    /** A player who has read nothing and been served nothing; current carriage 0, repeat threshold 10. */
-    private static SharedBookSelector.PlayerContext freshPlayer() {
-        return new SharedBookSelector.PlayerContext(id -> false, id -> false, id -> 0, 0, 10);
+    /** An en_us player who has read nothing and been served nothing; carriage 0, repeat threshold 10. */
+    private static PlayerContext freshPlayer() {
+        return new PlayerContext(EN, id -> false, id -> false, id -> 0, 0, 10);
     }
 
     @Test
@@ -43,52 +46,48 @@ final class SharedBookSelectorTest {
     }
 
     @Test
-    @DisplayName("language bucket dominates weight: a heavy OTHER loses to a light MINE")
+    @DisplayName("origin is derived per-player: same family → MINE, different → OTHER")
+    void originDerivation() {
+        PlayerContext en = freshPlayer();
+        assertEquals(Origin.MINE, SharedBookSelector.originOf(book(1, "en_us", 1), en));
+        assertEquals(Origin.MINE, SharedBookSelector.originOf(book(1, "en_gb", 1), en), "en_gb same family as en_us");
+        assertEquals(Origin.MINE, SharedBookSelector.originOf(book(1, null, 1), en), "untagged → English default");
+        assertEquals(Origin.OTHER, SharedBookSelector.originOf(book(1, "es_es", 1), en));
+        // Same pool book, different player → different origin (proves it is not a stored field).
+        PlayerContext es = new PlayerContext("es_es", id -> false, id -> false, id -> 0, 0, 10);
+        assertEquals(Origin.MINE, SharedBookSelector.originOf(book(1, "es_es", 1), es));
+        assertEquals(Origin.OTHER, SharedBookSelector.originOf(book(1, "en_us", 1), es));
+    }
+
+    @Test
+    @DisplayName("language bucket dominates weight: a heavy foreign book loses to a light in-language one")
     void languageDominatesWeight() {
         List<PoolBook> pool = List.of(
-            book(1, 1, Origin.MINE),
-            book(2, 99, Origin.OTHER));
-        // Try many seeds — OTHER must NEVER be chosen while an in-language book exists.
+            book(1, EN, 1),
+            book(2, "es_es", 99));
         for (long seed = 0; seed < 200; seed++) {
             Optional<PoolBook> pick = SharedBookSelector.select(pool, freshPlayer(), seed);
-            assertTrue(pick.isPresent());
-            assertEquals(1, pick.get().id(), "in-language book must win regardless of OTHER's weight (seed " + seed + ")");
+            assertEquals(1, pick.orElseThrow().id(),
+                "in-language book must win regardless of the foreign book's weight (seed " + seed + ")");
         }
     }
 
     @Test
-    @DisplayName("TRANSLATED -1: a native book edges out a translated book of equal raw weight")
-    void translatedMinusOne() {
-        List<PoolBook> pool = List.of(
-            book(1, 5, Origin.MINE),
-            book(2, 5, Origin.TRANSLATED)); // effective 4
-        for (long seed = 0; seed < 200; seed++) {
-            Optional<PoolBook> pick = SharedBookSelector.select(pool, freshPlayer(), seed);
-            assertEquals(1, pick.orElseThrow().id(), "native (eff 5) must beat translated (eff 4)");
-        }
+    @DisplayName("OTHER is a real fallback: with no in-language book, a foreign one is served")
+    void foreignFallback() {
+        List<PoolBook> pool = List.of(book(7, "fr_fr", 1), book(8, "ja_jp", 1));
+        Optional<PoolBook> pick = SharedBookSelector.select(pool, freshPlayer(), 3L);
+        assertTrue(pick.isPresent(), "no in-language book → fall back to OTHER rather than serving nothing");
     }
 
     @Test
-    @DisplayName("TRANSLATED -1 is only -1: a raw-weight-5 translated book still beats a raw-weight-3 native")
-    void translatedStillWinsWhenHeavier() {
-        List<PoolBook> pool = List.of(
-            book(1, 3, Origin.MINE),        // effective 3
-            book(2, 5, Origin.TRANSLATED)); // effective 4
-        for (long seed = 0; seed < 200; seed++) {
-            assertEquals(2, SharedBookSelector.select(pool, freshPlayer(), seed).orElseThrow().id(),
-                "translated eff 4 beats native eff 3 (model A: -1 is a soft nudge)");
-        }
-    }
-
-    @Test
-    @DisplayName("unread-first: within the top language bucket an unread book beats a read one of higher weight")
+    @DisplayName("unread-first: within the language bucket an unread book beats a read one of higher weight")
     void unreadFirst() {
         List<PoolBook> pool = List.of(
-            book(1, 9, Origin.MINE),   // read
-            book(2, 1, Origin.MINE));  // unread
+            book(1, EN, 9),   // read
+            book(2, EN, 1));  // unread
         Set<Integer> read = new HashSet<>(Set.of(1));
-        SharedBookSelector.PlayerContext ctx = new SharedBookSelector.PlayerContext(
-            read::contains, id -> false, id -> 0, 0, 10);
+        PlayerContext ctx = new PlayerContext(EN, read::contains, id -> false, id -> 0, 0, 10);
         for (long seed = 0; seed < 200; seed++) {
             assertEquals(2, SharedBookSelector.select(pool, ctx, seed).orElseThrow().id(),
                 "unread book wins even though the read one is heavier");
@@ -96,13 +95,10 @@ final class SharedBookSelectorTest {
     }
 
     @Test
-    @DisplayName("unread-first is soft: all-read tier still returns the heaviest read book")
+    @DisplayName("unread-first is soft: an all-read tier still returns the heaviest read book")
     void allReadFallsBack() {
-        List<PoolBook> pool = List.of(
-            book(1, 9, Origin.MINE),
-            book(2, 1, Origin.MINE));
-        SharedBookSelector.PlayerContext ctx = new SharedBookSelector.PlayerContext(
-            id -> true /* all read */, id -> false, id -> 0, 0, 10);
+        List<PoolBook> pool = List.of(book(1, EN, 9), book(2, EN, 1));
+        PlayerContext ctx = new PlayerContext(EN, id -> true, id -> false, id -> 0, 0, 10);
         for (long seed = 0; seed < 50; seed++) {
             assertEquals(1, SharedBookSelector.select(pool, ctx, seed).orElseThrow().id(),
                 "all read → fall back to the tier, top weight wins");
@@ -110,18 +106,23 @@ final class SharedBookSelectorTest {
     }
 
     @Test
-    @DisplayName("dedup: a book served this life is not eligible (near the serve carriage)")
+    @DisplayName("weight tier: within one language bucket the heavier book wins")
+    void weightTier() {
+        List<PoolBook> pool = List.of(book(1, EN, 5), book(2, EN, 3));
+        for (long seed = 0; seed < 100; seed++) {
+            assertEquals(1, SharedBookSelector.select(pool, freshPlayer(), seed).orElseThrow().id());
+        }
+    }
+
+    @Test
+    @DisplayName("dedup: a book served this life is not eligible while near its serve carriage")
     void dedupWithinLife() {
-        List<PoolBook> pool = List.of(
-            book(1, 9, Origin.MINE),   // served this life, at carriage 0
-            book(2, 1, Origin.MINE));  // not served
+        List<PoolBook> pool = List.of(book(1, EN, 9), book(2, EN, 1));
         Set<Integer> served = new HashSet<>(Set.of(1));
         Map<Integer, Integer> servedAt = new HashMap<>(Map.of(1, 0));
-        IntPredicate wasServed = served::contains;
-        IntUnaryOperator servedCarriage = id -> servedAt.getOrDefault(id, 0);
-        // current carriage 5, threshold 10 → book 1's carriage is only 5 behind → still ineligible.
-        SharedBookSelector.PlayerContext ctx = new SharedBookSelector.PlayerContext(
-            id -> false, wasServed, servedCarriage, 5, 10);
+        // current carriage 5, threshold 10 → book 1 is only 5 behind → still ineligible.
+        PlayerContext ctx = new PlayerContext(EN, id -> false, served::contains,
+            id -> servedAt.getOrDefault(id, 0), 5, 10);
         for (long seed = 0; seed < 200; seed++) {
             assertEquals(2, SharedBookSelector.select(pool, ctx, seed).orElseThrow().id(),
                 "served-this-life book stays out until its carriage scrolls far behind");
@@ -129,49 +130,34 @@ final class SharedBookSelectorTest {
     }
 
     @Test
-    @DisplayName("far-behind escape: an unread served book becomes eligible once its carriage is >= threshold behind")
+    @DisplayName("far-behind escape: an unread served book is eligible once its carriage is >= threshold behind")
     void farBehindEscape() {
-        List<PoolBook> pool = List.of(book(1, 5, Origin.MINE)); // the only book, served at carriage 0, unread
+        List<PoolBook> pool = List.of(book(1, EN, 5));
         Set<Integer> served = new HashSet<>(Set.of(1));
         // current carriage 10, threshold 10 → 10 >= 10 → eligible again.
-        SharedBookSelector.PlayerContext ctx = new SharedBookSelector.PlayerContext(
-            id -> false /* unread */, served::contains, id -> 0, 10, 10);
+        PlayerContext ctx = new PlayerContext(EN, id -> false, served::contains, id -> 0, 10, 10);
         Optional<PoolBook> pick = SharedBookSelector.select(pool, ctx, 1L);
         assertTrue(pick.isPresent(), "unread + carriage 10 behind (>=10) → re-eligible");
         assertEquals(1, pick.get().id());
     }
 
     @Test
-    @DisplayName("far-behind escape does NOT apply to a read book: served + read stays out even far behind")
+    @DisplayName("far-behind escape does NOT apply to a read book: served + read never repeats in a life")
     void readBookNeverRepeats() {
-        List<PoolBook> pool = List.of(book(1, 5, Origin.MINE)); // served + READ
+        List<PoolBook> pool = List.of(book(1, EN, 5));
         Set<Integer> served = new HashSet<>(Set.of(1));
-        SharedBookSelector.PlayerContext ctx = new SharedBookSelector.PlayerContext(
-            id -> true /* read */, served::contains, id -> 0, 999 /* very far */, 10);
+        PlayerContext ctx = new PlayerContext(EN, id -> true, served::contains, id -> 0, 999, 10);
         assertTrue(SharedBookSelector.select(pool, ctx, 1L).isEmpty(),
             "a served+read book never repeats within a life, however far behind");
     }
 
     @Test
-    @DisplayName("effectiveWeight helper: translated docked exactly 1")
-    void effectiveWeightHelper() {
-        assertEquals(5, SharedBookSelector.effectiveWeight(book(1, 5, Origin.MINE)));
-        assertEquals(5, SharedBookSelector.effectiveWeight(book(1, 5, Origin.OTHER)));
-        assertEquals(4, SharedBookSelector.effectiveWeight(book(1, 5, Origin.TRANSLATED)));
-    }
-
-    @Test
     @DisplayName("determinism: same (pool, ctx, seed) always yields the same pick")
     void deterministic() {
-        List<PoolBook> pool = List.of(
-            book(1, 5, Origin.MINE),
-            book(2, 5, Origin.MINE),
-            book(3, 5, Origin.MINE));
-        Optional<PoolBook> first = SharedBookSelector.select(pool, freshPlayer(), 42L);
-        assertNotNull(first);
+        List<PoolBook> pool = List.of(book(1, EN, 5), book(2, EN, 5), book(3, EN, 5));
+        int first = SharedBookSelector.select(pool, freshPlayer(), 42L).orElseThrow().id();
         for (int i = 0; i < 20; i++) {
-            assertEquals(first.orElseThrow().id(),
-                SharedBookSelector.select(pool, freshPlayer(), 42L).orElseThrow().id());
+            assertEquals(first, SharedBookSelector.select(pool, freshPlayer(), 42L).orElseThrow().id());
         }
     }
 }

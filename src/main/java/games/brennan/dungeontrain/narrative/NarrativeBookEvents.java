@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.player.PlayerRunState;
@@ -308,6 +309,9 @@ public final class NarrativeBookEvents {
             PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
             java.util.UUID uuid = player.getUUID();
             SharedBookSelector.PlayerContext ctx = new SharedBookSelector.PlayerContext(
+                // THIS holder's locale, not the world/host language: the pool is host-scoped at fetch
+                // time, but which of those books count as "my language" is per-player.
+                WorldInfoReporter.clientLanguage(player),
                 id -> data.hasPlayerReadShared(uuid, id),
                 run::wasServed,
                 id -> { Integer c = run.servedCarriage(id); return c == null ? 0 : c; },

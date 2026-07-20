@@ -63,39 +63,19 @@ public final class SharedBookPool {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     /**
-     * A community book's language relationship to the requesting player, decided by the relay relative to
-     * the {@code &lang=} locale and returned as the per-book {@code origin} field. Drives the language
-     * bucket + weight edge in {@link SharedBookSelector}. An older relay that omits the field degrades to
-     * {@link #OTHER} (see {@link #parseBook}).
-     */
-    public enum Origin {
-        /** Authored in the requesting player's language. */
-        MINE,
-        /** Authored in another language, but the relay supplies a translation into the player's. */
-        TRANSLATED,
-        /** Neither authored in nor translated into the player's language — last-resort fallback. */
-        OTHER;
-
-        /** Parse the relay's lowercase {@code origin} string; anything unknown/absent → {@link #OTHER}. */
-        static Origin fromString(String s) {
-            if (s == null) return OTHER;
-            return switch (s.toLowerCase(java.util.Locale.ROOT)) {
-                case "mine" -> MINE;
-                case "translated" -> TRANSLATED;
-                default -> OTHER;
-            };
-        }
-    }
-
-    /**
      * One approved community book, materialised from the relay's pool response.
      *
-     * <p>{@code weight} is the moderator-assigned priority stored on the relay (higher = surfaced first);
-     * {@code origin} is the book's language relationship to the requesting player. Both default gracefully
-     * ({@code weight=1}, {@code origin=OTHER}) against a relay too old to send them, so selection degrades
-     * to unread-first + dedup without tiering rather than breaking.</p>
+     * <p>{@code lang} is the AUTHOR's raw client locale as stored by the relay (e.g. {@code "en_us"}), or
+     * {@code null} for legacy untagged books. It is player-independent, so it is parsed once here; the
+     * per-player language relationship (is this MY language?) is derived at selection time by
+     * {@link SharedBookSelector}, because one shared snapshot serves every player.</p>
+     *
+     * <p>{@code weight} is the moderator-assigned curation weight. The relay ALREADY restricts a pool
+     * response to its single highest weight tier, so within one snapshot this is usually uniform; it is
+     * carried anyway so the selector's translated-penalty comparison has a base value. Absent from the
+     * relay payload today → defaults to 1 (see {@link #parseBook}).</p>
      */
-    public record PoolBook(int id, String title, String author, List<String> pages, int weight, Origin origin) {}
+    public record PoolBook(int id, String title, String author, List<String> pages, String lang, int weight) {}
 
     /** Current immutable snapshot. Replaced wholesale by {@link #refreshAsync}; read by {@link #rollShared}. */
     private static volatile List<PoolBook> snapshot = List.of();
@@ -277,8 +257,11 @@ public final class SharedBookPool {
                 pages.add(p.isJsonNull() ? "" : p.getAsString());
             }
         }
-        // weight/origin are optional — a relay too old to send them degrades to weight=1, OTHER, so the
-        // selector still runs (unread-first + dedup) without true language/weight tiering.
+        // The relay sends `lang` today (the author's locale); `weight` it does not (it tiers by weight
+        // server-side instead). Both are optional here: a missing lang means "untagged", which
+        // LanguageFamily treats as English, and a missing weight defaults to 1 so every book compares
+        // equally and only the translated penalty separates them.
+        String lang = o.has("lang") && !o.get("lang").isJsonNull() ? o.get("lang").getAsString() : null;
         int weight = 1;
         if (o.has("weight") && o.get("weight").isJsonPrimitive()) {
             try {
@@ -287,9 +270,7 @@ public final class SharedBookPool {
                 // non-numeric weight — keep the default
             }
         }
-        Origin origin = Origin.fromString(
-                o.has("origin") && !o.get("origin").isJsonNull() ? o.get("origin").getAsString() : null);
-        return new PoolBook(id, title, author, pages, weight, origin);
+        return new PoolBook(id, title, author, pages, lang, weight);
     }
 
     /** The {@code &lang=<locale>} query fragment for language-matched delivery, or {@code ""} when blank. */
