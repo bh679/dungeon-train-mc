@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.snapshot;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.CinematicCameraController;
+import games.brennan.dungeontrain.client.FramerateThrottle;
 import games.brennan.dungeontrain.client.NarrativeDeathScreen;
 import games.brennan.dungeontrain.client.VersionHudOverlay;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -136,6 +137,17 @@ public final class RideSnapshotDirector {
         if (mc.screen instanceof NarrativeDeathScreen) return;
         if (CinematicCameraController.isActive()) return;
         if (RideSnapshotCapture.hasPending()) return;
+        // Idle (unfocused/minimised) → sit out entirely. Client ticks keep running while the window
+        // is unfocused, but FramerateThrottle has capped rendering, so mc.getFps() now reports the
+        // CAP rather than real headroom: it would sit exactly on the default minFps (30) and make
+        // capture flap, and would never clear flushMinFps (50), silently disabling disk offload for
+        // as long as the player is alt-tabbed. A photo taken while they can't see the game is
+        // worthless anyway, and skipping avoids spending a GPU read-back hitch on it.
+        // (Paused needs no check here — ClientTickEvent doesn't fire while paused.)
+        if (FramerateThrottle.shouldThrottle(
+                mc.isPaused(), mc.isWindowActive(), ClientDisplayConfig.isFramerateThrottleEnabled())) {
+            return;
+        }
 
         Screen screen = mc.screen;
         boolean book = screen instanceof BookViewScreen || screen instanceof LecternScreen;
