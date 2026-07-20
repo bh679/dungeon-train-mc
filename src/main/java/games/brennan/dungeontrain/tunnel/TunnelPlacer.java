@@ -157,6 +157,7 @@ public final class TunnelPlacer {
                                                TunnelVariant variant, TrackKind kind, boolean mirrorX) {
         long worldSeed = serverLevel.getSeed();
         int tileIndex = origin.getX();
+        int diffIndex = diffIndexForTile(serverLevel, tileIndex);
         ServerLevel overworld = serverLevel.getServer().overworld();
         BlockPos stampOrigin = mirrorX ? origin.offset(LENGTH - 1, 0, 0) : origin;
         GateContext baseCtx = GateContext.atWorldX(serverLevel, tileIndex);
@@ -168,7 +169,7 @@ public final class TunnelPlacer {
             if (stored.isEmpty()) return false;
             eraseInteriorAirspaceWorldgen(level, origin);
             stampTemplateWorldgen(level, stampOrigin, stored.get(), mirrorX);
-            applyTunnelSidecarWorldgen(level, origin, mirrorX, kind, name, worldSeed, tileIndex);
+            applyTunnelSidecarWorldgen(level, origin, mirrorX, kind, name, worldSeed, tileIndex, diffIndex);
             return true;
         }
 
@@ -179,7 +180,7 @@ public final class TunnelPlacer {
         if (owTemplate.isEmpty()) return false;
         eraseInteriorAirspaceWorldgen(level, origin);
         stampTemplateWorldgen(level, stampOrigin, owTemplate.get(), mirrorX);
-        applyTunnelSidecarWorldgen(level, origin, mirrorX, kind, owName, worldSeed, tileIndex);
+        applyTunnelSidecarWorldgen(level, origin, mirrorX, kind, owName, worldSeed, tileIndex, diffIndex);
 
         long genSeed = DungeonTrainWorldData.get(overworld).getGenerationSeed();
         String netherName = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex,
@@ -188,7 +189,7 @@ public final class TunnelPlacer {
         if (netherTemplate.isPresent()) {
             stampTemplateWorldgen(level, stampOrigin, netherTemplate.get(), mirrorX,
                 new NetherFadeMaskProcessor(overworld, genSeed));
-            applyTunnelSidecarWorldgen(level, origin, mirrorX, kind, netherName, worldSeed, tileIndex,
+            applyTunnelSidecarWorldgen(level, origin, mirrorX, kind, netherName, worldSeed, tileIndex, diffIndex,
                 overworld, genSeed);
         }
         return true;
@@ -302,6 +303,25 @@ public final class TunnelPlacer {
     }
 
     /**
+     * The <b>carriage-equivalent</b> position index for the tunnel tile at world-X
+     * {@code tileIndex} — {@code floorDiv(worldX, carriageLength)}, the same mapping
+     * {@link games.brennan.dungeontrain.difficulty.DifficultyProgression#levelAtWorldX}
+     * applies before taking a tier.
+     *
+     * <p>Tunnels key their deterministic rolls on the raw world-X (so neighbouring tiles
+     * stay distinct), but loot <em>stat scaling</em> is defined in carriage units. Feeding
+     * the raw world-X to the difficulty tier inflated tunnel-chest stats by roughly the
+     * carriage length; this converts to the frame the tier expects. Resolves the carriage
+     * length exactly as {@link games.brennan.dungeontrain.template.GateContext#atWorldX}
+     * does.</p>
+     */
+    private static int diffIndexForTile(ServerLevel serverLevel, int tileIndex) {
+        int carriageLength = DungeonTrainWorldData.get(
+            serverLevel.getServer().overworld()).dims().length();
+        return Math.floorDiv(tileIndex, Math.max(1, carriageLength));
+    }
+
+    /**
      * Worldgen variant of {@link #applyTunnelSidecar}. Writes through
      * {@link WorldGenLevel#setBlock} with {@link Block#UPDATE_CLIENTS}; no
      * {@link Shipyards} guard (no ships at chunkgen). Container/BE cells are
@@ -312,9 +332,10 @@ public final class TunnelPlacer {
      */
     private static void applyTunnelSidecarWorldgen(
         WorldGenLevel level, BlockPos origin, boolean mirrorX,
-        TrackKind kind, String name, long worldSeed, int tileIndex
+        TrackKind kind, String name, long worldSeed, int tileIndex, int diffIndex
     ) {
-        applyTunnelSidecarWorldgen(level, origin, mirrorX, kind, name, worldSeed, tileIndex, null, 0L);
+        applyTunnelSidecarWorldgen(level, origin, mirrorX, kind, name, worldSeed, tileIndex,
+            diffIndex, null, 0L);
     }
 
     /**
@@ -325,7 +346,7 @@ public final class TunnelPlacer {
      */
     private static void applyTunnelSidecarWorldgen(
         WorldGenLevel level, BlockPos origin, boolean mirrorX,
-        TrackKind kind, String name, long worldSeed, int tileIndex,
+        TrackKind kind, String name, long worldSeed, int tileIndex, int diffIndex,
         @Nullable ServerLevel fadeOverworld, long genSeed
     ) {
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
@@ -363,7 +384,7 @@ public final class TunnelPlacer {
                 games.brennan.dungeontrain.editor.ContainerContentsPlacement.placeWorldgen(
                     level, wpos, picked.state(), picked.blockEntityNbt(),
                     "tunnel:" + kind.id() + ":" + name, entry.localPos(), worldSeed, tileIndex,
-                    picked.linkedLootPrefabId());
+                    diffIndex, picked.linkedLootPrefabId());
             }
         }
     }
@@ -416,6 +437,7 @@ public final class TunnelPlacer {
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
             kind, name, new Vec3i(LENGTH, HEIGHT, WIDTH));
         if (sidecar.isEmpty()) return;
+        int diffIndex = diffIndexForTile(level, tileIndex);
         for (var entry : sidecar.entries()) {
             int lx = entry.localPos().getX();
             int ly = entry.localPos().getY();
@@ -446,7 +468,7 @@ public final class TunnelPlacer {
                 games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                     level, wpos, picked.state(), picked.blockEntityNbt(),
                     "tunnel:" + kind.id() + ":" + name, entry.localPos(), worldSeed, tileIndex,
-                    picked.linkedLootPrefabId());
+                    diffIndex, picked.linkedLootPrefabId());
             }
         }
     }
