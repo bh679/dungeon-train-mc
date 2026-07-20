@@ -19,7 +19,8 @@ import java.util.function.Predicate;
  * <ol>
  *   <li><b>Eligible</b> — a book already served this life is skipped, UNLESS it is still unread AND its
  *       serve-carriage has scrolled at least {@code repeatCarriages} behind the player (the "unloaded"
- *       escape).</li>
+ *       escape). If that leaves NOTHING, the dedup is relaxed and the whole pool is reconsidered — see
+ *       "Exhaustion" below.</li>
  *   <li><b>Language bucket</b> (hard) — books available in the player's language ({@link Origin#MINE} +
  *       {@link Origin#TRANSLATED}) are fully drained before any {@link Origin#OTHER} book.</li>
  *   <li><b>Unread-first</b> (soft) — within the chosen bucket, prefer books the player hasn't read.</li>
@@ -35,6 +36,15 @@ import java.util.function.Predicate;
  * relay also family-scopes the pool, so {@link Origin#OTHER} books normally only appear via its English
  * fallback. What the relay cannot do is the PER-PLAYER part — dedup, unread, and the far-behind escape —
  * which is why those live here.</p>
+ *
+ * <h3>Exhaustion — when a life has seen everything</h3>
+ * <p>The no-duplicates-per-life rule is a PREFERENCE, not a hard gate. When every servable book has
+ * already been served this life, the dedup is relaxed and the full pool is reconsidered rather than
+ * returning nothing. This matters because the caller bakes a built-in mod book as the placeholder: a
+ * "no pick" answer does not mean "no book", it means the player silently gets MOD content out of a slot
+ * whose contract is PLAYER writing. Repeating a community book is the better failure. Consequently
+ * {@link #select} returns empty only for a genuinely empty pool — i.e. the relay is unreachable or has
+ * no approved books, the two cases where a built-in fallback is actually correct.</p>
  *
  * <p>Pure and side-effect-free: the caller supplies the player's state, so this is unit-testable without
  * a live server. Recording a pick as "served" is the caller's job.</p>
@@ -93,7 +103,14 @@ public final class SharedBookSelector {
 
         // 1. Eligibility — drop books already served this life unless the unread + far-behind escape applies.
         List<PoolBook> eligible = filter(pool, b -> isEligible(b, ctx));
-        if (eligible.isEmpty()) return Optional.empty();
+        // RELAXATION: no-duplicates-per-life is a PREFERENCE, not a hard gate. Once a life has seen the
+        // whole servable pool, honouring it strictly would leave the caller with nothing and a
+        // random_playerbook slot would silently degrade to a built-in book — but that slot's contract is
+        // to serve PLAYER writing. Re-showing a community book the player already got beats handing them
+        // mod content, so on exhaustion we reconsider the entire pool. The built-in fallback is then
+        // reserved for the only cases that truly warrant it: the relay being unreachable or having no
+        // books at all, which the caller checks before ever getting here.
+        if (eligible.isEmpty()) eligible = pool;
 
         // 2. Language bucket (hard) — {MINE, TRANSLATED} drained before OTHER.
         List<PoolBook> inLanguage = filter(eligible, b -> originOf(b, ctx) != Origin.OTHER);

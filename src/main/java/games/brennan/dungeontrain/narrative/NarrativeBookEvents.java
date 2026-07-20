@@ -319,7 +319,11 @@ public final class NarrativeBookEvents {
                 DungeonTrainConfig.getSharedBookRepeatCarriages());
             long seed = ow.getGameTime() ^ uuid.getLeastSignificantBits();
             Optional<SharedBookPool.PoolBook> chosen = SharedBookSelector.select(SharedBookPool.snapshot(), ctx, seed);
-            if (chosen.isEmpty()) return; // nothing eligible for this player right now — retry on next hold
+            // Defensive only. The selector relaxes its per-life dedup on exhaustion, so it yields a book
+            // whenever the pool has one — the built-in placeholder therefore survives ONLY when the relay
+            // is unreachable / has no approved books (the isEmpty guard above), never merely because this
+            // player has already seen everything.
+            if (chosen.isEmpty()) return;
             SharedBookPool.PoolBook book = chosen.get();
             ItemStack shared = SharedBookPool.buildStack(book);
             stack.set(DataComponents.WRITTEN_BOOK_CONTENT,

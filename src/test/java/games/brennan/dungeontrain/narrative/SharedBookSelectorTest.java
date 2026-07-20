@@ -142,13 +142,38 @@ final class SharedBookSelectorTest {
     }
 
     @Test
-    @DisplayName("far-behind escape does NOT apply to a read book: served + read never repeats in a life")
-    void readBookNeverRepeats() {
+    @DisplayName("exhaustion relaxes dedup: a served+read book repeats rather than yielding no pick")
+    void exhaustionRelaxesDedup() {
+        // Served AND read, so neither plain eligibility nor the far-behind escape admits it. Returning
+        // empty here would make the caller keep its built-in placeholder — mod content out of a
+        // player-book slot — so the dedup is relaxed instead.
         List<PoolBook> pool = List.of(book(1, EN, 5));
         Set<Integer> served = new HashSet<>(Set.of(1));
-        PlayerContext ctx = new PlayerContext(EN, id -> true, served::contains, id -> 0, 999, 10);
-        assertTrue(SharedBookSelector.select(pool, ctx, 1L).isEmpty(),
-            "a served+read book never repeats within a life, however far behind");
+        PlayerContext ctx = new PlayerContext(EN, id -> true, served::contains, id -> 0, 0, 10);
+        Optional<PoolBook> pick = SharedBookSelector.select(pool, ctx, 1L);
+        assertTrue(pick.isPresent(), "a repeated community book beats falling back to a built-in");
+        assertEquals(1, pick.get().id());
+    }
+
+    @Test
+    @DisplayName("exhaustion still respects the rest of the chain: relaxed pick prefers in-language")
+    void exhaustionKeepsLanguagePriority() {
+        // Everything served+read → relaxed, but the language bucket must still win.
+        List<PoolBook> pool = List.of(book(1, "ja_jp", 9), book(2, EN, 1));
+        PlayerContext ctx = new PlayerContext(EN, id -> true, id -> true, id -> 0, 0, 10);
+        for (long seed = 0; seed < 100; seed++) {
+            assertEquals(2, SharedBookSelector.select(pool, ctx, seed).orElseThrow().id(),
+                "relaxation reconsiders the pool, it does not bypass the language bucket");
+        }
+    }
+
+    @Test
+    @DisplayName("empty pool is the ONLY no-pick case — that is what reserves the built-in fallback")
+    void onlyEmptyPoolYieldsNoPick() {
+        PlayerContext everythingSeen = new PlayerContext(EN, id -> true, id -> true, id -> 0, 0, 10);
+        assertTrue(SharedBookSelector.select(List.of(), everythingSeen, 1L).isEmpty());
+        // ...but any non-empty pool always yields something, however thoroughly seen.
+        assertTrue(SharedBookSelector.select(List.of(book(1, "fr_fr", 0)), everythingSeen, 1L).isPresent());
     }
 
     @Test
