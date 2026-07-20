@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client;
 
 import com.mojang.blaze3d.platform.Window;
 import games.brennan.dungeontrain.client.FramerateThrottle;
+import games.brennan.dungeontrain.client.VrCompat;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
@@ -48,6 +49,7 @@ public abstract class MinecraftFramerateThrottleMixin {
                 isPaused(),
                 isWindowActive(),
                 ClientDisplayConfig.isFramerateThrottleEnabled(),
+                VrCompat.isVivecraftPresent(),
                 ClientDisplayConfig.getFramerateThrottleFps(),
                 vanillaLimit);
 

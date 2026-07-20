@@ -41,11 +41,19 @@ public final class FramerateThrottle {
      * Is the throttle active right now? True while the game is paused, or whenever the window is
      * not focused (which covers alt-tabbed and minimised alike — GLFW reports both as inactive).
      *
+     * <p><b>Never throttles in VR.</b> Vivecraft renders to the headset while the desktop mirror
+     * window is routinely unfocused, so the {@code !windowActive} branch would otherwise cap the
+     * headset to {@code throttleFps}. At VR frame rates that is not a cosmetic issue — it induces
+     * motion sickness. The pause branch is suppressed too: the VR pause menu is still drawn
+     * in-headset, so the compositor still needs full-rate frames. See {@link VrCompat}.</p>
+     *
      * <p>Callers pass raw booleans rather than a {@code Minecraft} handle so this class stays free
      * of client types and can be unit-tested on a bare JVM.</p>
      */
-    public static boolean shouldThrottle(boolean paused, boolean windowActive, boolean enabled) {
-        return enabled && (paused || !windowActive);
+    public static boolean shouldThrottle(boolean paused, boolean windowActive,
+                                         boolean enabled, boolean vrActive) {
+        if (!enabled || vrActive) return false;
+        return paused || !windowActive;
     }
 
     /**
@@ -58,8 +66,8 @@ public final class FramerateThrottle {
      * <em>raised</em> to 30 while paused. The throttle may only ever lower the rate.</p>
      */
     public static int decide(boolean paused, boolean windowActive, boolean enabled,
-                             int throttleFps, int vanillaLimit) {
-        if (!shouldThrottle(paused, windowActive, enabled)) return vanillaLimit;
+                             boolean vrActive, int throttleFps, int vanillaLimit) {
+        if (!shouldThrottle(paused, windowActive, enabled, vrActive)) return vanillaLimit;
         return Math.min(vanillaLimit, throttleFps);
     }
 }

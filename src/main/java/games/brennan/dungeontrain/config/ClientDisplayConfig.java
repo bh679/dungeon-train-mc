@@ -429,9 +429,30 @@ public final class ClientDisplayConfig {
         return isLoaded() && FRAMERATE_THROTTLE_ENABLED.get();
     }
 
+    /**
+     * Persist the idle-throttle toggle. Idempotent: skips the {@code .save()} (a TOML write) when
+     * the value is unchanged. Driven by {@code /framerate-throttle on|off}.
+     */
+    public static void setFramerateThrottleEnabled(boolean value) {
+        if (!isLoaded()) return;
+        if (FRAMERATE_THROTTLE_ENABLED.get() == value) return;
+        FRAMERATE_THROTTLE_ENABLED.set(value);
+        FRAMERATE_THROTTLE_ENABLED.save();
+    }
+
     /** Framerate to cap to while idle. Only ever lowers the rate — see {@link FramerateThrottle#decide}. */
     public static int getFramerateThrottleFps() {
         return isLoaded() ? FRAMERATE_THROTTLE_FPS.get() : FramerateThrottle.DEFAULT_THROTTLE_FPS;
+    }
+
+    /** Persist the idle-throttle cap. Clamped to {@link FramerateThrottle}'s configurable range. */
+    public static void setFramerateThrottleFps(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(FramerateThrottle.MIN_THROTTLE_FPS,
+                Math.min(FramerateThrottle.MAX_THROTTLE_FPS, value));
+        if (FRAMERATE_THROTTLE_FPS.get() == clamped) return;
+        FRAMERATE_THROTTLE_FPS.set(clamped);
+        FRAMERATE_THROTTLE_FPS.save();
     }
 
     private record Holder(

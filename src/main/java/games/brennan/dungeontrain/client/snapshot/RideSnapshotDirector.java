@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.client.CinematicCameraController;
 import games.brennan.dungeontrain.client.FramerateThrottle;
 import games.brennan.dungeontrain.client.NarrativeDeathScreen;
 import games.brennan.dungeontrain.client.VersionHudOverlay;
+import games.brennan.dungeontrain.client.VrCompat;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.ChatFormatting;
@@ -145,7 +146,8 @@ public final class RideSnapshotDirector {
         // worthless anyway, and skipping avoids spending a GPU read-back hitch on it.
         // (Paused needs no check here — ClientTickEvent doesn't fire while paused.)
         if (FramerateThrottle.shouldThrottle(
-                mc.isPaused(), mc.isWindowActive(), ClientDisplayConfig.isFramerateThrottleEnabled())) {
+                mc.isPaused(), mc.isWindowActive(),
+                ClientDisplayConfig.isFramerateThrottleEnabled(), VrCompat.isVivecraftPresent())) {
             return;
         }
 
