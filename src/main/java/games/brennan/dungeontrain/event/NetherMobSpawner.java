@@ -12,6 +12,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.monster.Ghast;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
@@ -36,6 +37,10 @@ import java.util.List;
  * <p>Regular piglins are deliberately omitted (they zombify in the overworld dimension);
  * zombified piglins, magma cubes and ghasts all behave correctly outside the Nether.</p>
  *
+ * <p>Ghasts are deliberately sparse — a low per-attempt chance ({@link #ghastChanceDenom}) plus their
+ * own {@link #GHAST_NEARBY_CAP} ceiling, so they read as an occasional threat rather than swarming and
+ * consuming the shared {@link #NEARBY_CAP}.</p>
+ *
  * <p>The ground roster + ghast frequency follow the <b>biome</b> at the spawn column (the core now
  * cycles through all five Nether biomes), so each biome reads right: skeletons in soul sand valleys,
  * endermen in warped forests, magma cubes in basalt deltas, piglins + hoglins in crimson forests.
@@ -58,6 +63,8 @@ public final class NetherMobSpawner {
     private static final int MIN_SPAWN_DIST = 16;
     /** Max nether-band mobs near a player before the spawner backs off. */
     private static final int NEARBY_CAP = 10;
+    /** Max nether-band ghasts near a player before ghast rolls are skipped (they'd otherwise fill NEARBY_CAP). */
+    private static final int GHAST_NEARBY_CAP = 2;
     /** Spawn attempts per player per tick. */
     private static final int TRIES = 4;
     /** Vertical search window around the player for a valid floor. */
@@ -103,9 +110,14 @@ public final class NetherMobSpawner {
         return GROUND_MOBS; // nether_wastes / anything else
     }
 
-    /** Ghast spawn odds (1-in-N) — denser in the biomes vanilla fills with ghasts. */
+    /**
+     * Ghast spawn odds (1-in-N) — denser in the biomes vanilla fills with ghasts. Deliberately
+     * sparse: the spawner makes {@link #TRIES} attempts every {@link #SPAWN_PERIOD_TICKS} ticks per
+     * player, so even 1-in-8 still works out to a ghast attempt every few seconds. {@link
+     * #GHAST_NEARBY_CAP} bounds how many can accumulate regardless.
+     */
     private static int ghastChanceDenom(Holder<Biome> biome) {
-        return (biome.is(Biomes.SOUL_SAND_VALLEY) || biome.is(Biomes.BASALT_DELTAS)) ? 3 : 6;
+        return (biome.is(Biomes.SOUL_SAND_VALLEY) || biome.is(Biomes.BASALT_DELTAS)) ? 8 : 16;
     }
 
     @SubscribeEvent
@@ -126,8 +138,12 @@ public final class NetherMobSpawner {
                     m -> m.getTags().contains(NETHER_MOB_TAG));
             if (nearby.size() >= NEARBY_CAP) continue;
 
+            // Ghasts get their own ceiling on top of NEARBY_CAP — reuse the list already fetched above.
+            long ghastsNearby = nearby.stream().filter(m -> m instanceof Ghast).count();
+            boolean ghastsAllowed = ghastsNearby < GHAST_NEARBY_CAP;
+
             for (int i = 0; i < TRIES; i++) {
-                trySpawnNear(level, player, rng);
+                trySpawnNear(level, player, rng, ghastsAllowed);
             }
         }
     }
@@ -145,7 +161,8 @@ public final class NetherMobSpawner {
         }
     }
 
-    private static void trySpawnNear(ServerLevel level, ServerPlayer player, RandomSource rng) {
+    private static void trySpawnNear(ServerLevel level, ServerPlayer player, RandomSource rng,
+                                     boolean ghastsAllowed) {
         int dx = rng.nextInt(2 * SPAWN_RADIUS + 1) - SPAWN_RADIUS;
         int dz = rng.nextInt(2 * SPAWN_RADIUS + 1) - SPAWN_RADIUS;
         if (dx * dx + dz * dz < MIN_SPAWN_DIST * MIN_SPAWN_DIST) return;
@@ -162,7 +179,9 @@ public final class NetherMobSpawner {
         // Biome at the spawn column drives the roster + ghast frequency (the core cycles all 5 Nether biomes).
         Holder<Biome> biome = level.getBiome(probe);
 
-        boolean ghast = rng.nextInt(ghastChanceDenom(biome)) == 0;
+        // Capped-out ghast rolls fall through to the ground path rather than wasting the attempt,
+        // so the band's overall density is unchanged — only the ghast share drops.
+        boolean ghast = ghastsAllowed && rng.nextInt(ghastChanceDenom(biome)) == 0;
         if (ghast) {
             // A ghast is 4×4×4 — scan up from the (randomised) start height for the first pocket
             // its whole body actually fits in, so it never materialises inside terrain and suffocates.
