@@ -67,8 +67,25 @@ public final class ContainerContentsPlacement {
                              @Nullable CompoundTag baseBeNbt, String plotKey,
                              BlockPos localPos, long worldSeed, int carriageIndex,
                              @Nullable String variantLinkedLootPrefabId) {
+        place(level, worldPos, state, baseBeNbt, plotKey, localPos, worldSeed,
+            carriageIndex, carriageIndex, variantLinkedLootPrefabId);
+    }
+
+    /**
+     * {@link #place(ServerLevel, BlockPos, BlockState, CompoundTag, String, BlockPos, long, int, String)}
+     * with the loot <em>difficulty</em> frame split out from the RNG <em>seed</em> frame.
+     *
+     * <p>{@code carriageIndex} keys the deterministic roll; {@code diffIndex} is the
+     * carriage-equivalent position index driving stat scaling. Callers keyed on a raw
+     * world-X (tunnels) must pass {@code floorDiv(worldX, carriageLength)} as
+     * {@code diffIndex} — passing the world-X would inflate the tier by ~carriageLength.</p>
+     */
+    public static void place(ServerLevel level, BlockPos worldPos, BlockState state,
+                             @Nullable CompoundTag baseBeNbt, String plotKey,
+                             BlockPos localPos, long worldSeed, int carriageIndex, int diffIndex,
+                             @Nullable String variantLinkedLootPrefabId) {
         CompoundTag finalNbt = rollForPlacement(level, state, baseBeNbt, plotKey,
-            localPos, worldSeed, carriageIndex, variantLinkedLootPrefabId, level);
+            localPos, worldSeed, carriageIndex, diffIndex, variantLinkedLootPrefabId, level);
         SilentBlockOps.setBlockSilent(level, worldPos, state, finalNbt);
     }
 
@@ -89,10 +106,23 @@ public final class ContainerContentsPlacement {
                                      @Nullable CompoundTag baseBeNbt, String plotKey,
                                      BlockPos localPos, long worldSeed, int carriageIndex,
                                      @Nullable String variantLinkedLootPrefabId) {
+        placeWorldgen(level, worldPos, state, baseBeNbt, plotKey, localPos, worldSeed,
+            carriageIndex, carriageIndex, variantLinkedLootPrefabId);
+    }
+
+    /**
+     * {@link #placeWorldgen(WorldGenLevel, BlockPos, BlockState, CompoundTag, String, BlockPos, long, int, String)}
+     * with the difficulty frame split out from the seed frame — see the {@code diffIndex}
+     * overload of {@link #place}.
+     */
+    public static void placeWorldgen(WorldGenLevel level, BlockPos worldPos, BlockState state,
+                                     @Nullable CompoundTag baseBeNbt, String plotKey,
+                                     BlockPos localPos, long worldSeed, int carriageIndex, int diffIndex,
+                                     @Nullable String variantLinkedLootPrefabId) {
         // WorldGenLevel is not a Level, so pass null for the optional roll
         // context (used only by the furnace-slot path for recipe lookups).
         CompoundTag finalNbt = rollForPlacement(level, state, baseBeNbt, plotKey,
-            localPos, worldSeed, carriageIndex, variantLinkedLootPrefabId, null);
+            localPos, worldSeed, carriageIndex, diffIndex, variantLinkedLootPrefabId, null);
         level.setBlock(worldPos, state, Block.UPDATE_CLIENTS);
         if (finalNbt == null || !state.hasBlockEntity()) return;
         BlockEntity be = level.getBlockEntity(worldPos);
@@ -126,6 +156,21 @@ public final class ContainerContentsPlacement {
                                                BlockPos localPos, long worldSeed, int carriageIndex,
                                                @Nullable String variantLinkedLootPrefabId,
                                                @Nullable Level rollLevel) {
+        return rollForPlacement(registryLevel, state, baseBeNbt, plotKey, localPos, worldSeed,
+            carriageIndex, carriageIndex, variantLinkedLootPrefabId, rollLevel);
+    }
+
+    /**
+     * {@link #rollForPlacement(LevelReader, BlockState, CompoundTag, String, BlockPos, long, int, String, Level)}
+     * with the difficulty frame split out from the seed frame.
+     */
+    @Nullable
+    public static CompoundTag rollForPlacement(LevelReader registryLevel, BlockState state,
+                                               @Nullable CompoundTag baseBeNbt, String plotKey,
+                                               BlockPos localPos, long worldSeed, int carriageIndex,
+                                               int diffIndex,
+                                               @Nullable String variantLinkedLootPrefabId,
+                                               @Nullable Level rollLevel) {
         if (!(state.hasBlockEntity() && ContainerContentsRoller.isContainerState(state))) {
             return baseBeNbt;
         }
@@ -143,6 +188,6 @@ public final class ContainerContentsPlacement {
         }
         if (pool.isEmpty()) return baseBeNbt;
         return ContainerContentsRoller.roll(pool, state, localPos, worldSeed, carriageIndex,
-            baseBeNbt, registryLevel.registryAccess(), rollLevel);
+            diffIndex, baseBeNbt, registryLevel.registryAccess(), rollLevel);
     }
 }
