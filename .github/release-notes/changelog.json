@@ -5099,9 +5099,9 @@
       ],
       "pr": 798,
       "date": "2026-07-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.480.0",
+      "released_at": "2026-07-20T03:56:04Z"
     },
     {
       "id": "ais-armor-cap-floor",
