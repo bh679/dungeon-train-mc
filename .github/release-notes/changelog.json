@@ -5102,6 +5102,21 @@
       "released": true,
       "released_in": "v0.480.0",
       "released_at": "2026-07-20T03:56:04Z"
+    },
+    {
+      "id": "ais-armor-cap-floor",
+      "version": "0.481.0",
+      "type": "fix",
+      "title": "Armor above 30 now requires Adventure Item Stats 0.7.0",
+      "summary": "Minecraft caps armor at 30 points, and past difficulty tier ~25 that ceiling was silently swallowing the armor your gear said it was giving you. Adventure Item Stats 0.7.0 lifts the cap; Dungeon Train now requires that version rather than accepting older builds, so the clamp cannot come back on a stale install. If you are still on 0.6.0 the game will tell you to update on launch.",
+      "highlights": [
+        "Dungeon Train now requires Adventure Item Stats 0.7.0 or newer",
+        "Fixes armor silently capping at 30 past difficulty tier ~25"
+      ],
+      "date": "2026-07-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
