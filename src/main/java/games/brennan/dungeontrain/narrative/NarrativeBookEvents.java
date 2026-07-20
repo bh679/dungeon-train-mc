@@ -18,8 +18,10 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -29,6 +31,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
 import java.util.Optional;
@@ -296,45 +299,12 @@ public final class NarrativeBookEvents {
         ItemStack stack = event.getTo();
         if (stack.isEmpty()) return;
 
-        // Pending community-book placeholder (baked by ContainerContentsRoller for random_playerbook and
-        // for random_book's taper-hit slots). Resolve it PER-PLAYER now that a hand is holding it, running
-        // the SharedBookSelector priority chain against THIS player's read/served state, then fall through
-        // to the shared-found branch for the same held-marker + author greeting as a natively-discovered
-        // book. If the pool is still cold/disabled, leave the marker and return — the next hold retries.
+        // Pending community-book placeholder — resolve it PER-PLAYER now that a hand is holding it, then
+        // fall through to the shared-found branch for the same held-marker + author greeting a natively
+        // discovered book gets. This is the IMMEDIATE path; the throttled inventory sweep in
+        // {@link #onPlayerTick} is the safety net for every other way a book can be acquired.
         if (PlayerBookPendingTag.isPending(stack)) {
-            if (!SharedBookGate.canDiscover() || SharedBookPool.isEmpty()) return;
-            ServerLevel ow = overworldOf(player);
-            if (ow == null) return;
-            NarrativeProgressData data = NarrativeProgressData.get(ow);
-            PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-            java.util.UUID uuid = player.getUUID();
-            SharedBookSelector.PlayerContext ctx = new SharedBookSelector.PlayerContext(
-                // THIS holder's locale, not the world/host language: the pool is host-scoped at fetch
-                // time, but which of those books count as "my language" is per-player.
-                WorldInfoReporter.clientLanguage(player),
-                id -> data.hasPlayerReadShared(uuid, id),
-                run::wasServed,
-                id -> { Integer c = run.servedCarriage(id); return c == null ? 0 : c; },
-                run.travelledCarriageIndex(),
-                DungeonTrainConfig.getSharedBookRepeatCarriages());
-            long seed = ow.getGameTime() ^ uuid.getLeastSignificantBits();
-            Optional<SharedBookPool.PoolBook> chosen = SharedBookSelector.select(SharedBookPool.snapshot(), ctx, seed);
-            // Defensive only. The selector relaxes its per-life dedup on exhaustion, so it yields a book
-            // whenever the pool has one — the built-in placeholder therefore survives ONLY when the relay
-            // is unreachable / has no approved books (the isEmpty guard above), never merely because this
-            // player has already seen everything.
-            if (chosen.isEmpty()) return;
-            SharedBookPool.PoolBook book = chosen.get();
-            ItemStack shared = SharedBookPool.buildStack(book);
-            stack.set(DataComponents.WRITTEN_BOOK_CONTENT,
-                shared.get(DataComponents.WRITTEN_BOOK_CONTENT));
-            RandomBookTag.clearIdentity(stack);   // drop stale dt_random_book* keys
-            PlayerBookPendingTag.clear(stack);    // resolved — no longer pending
-            SharedBookFoundTag.stamp(stack);      // it's now a discovered player book
-            SharedBookReadTag.stampId(stack, book.id());
-            run.markServed(book.id(), run.travelledCarriageIndex()); // per-life dedup + far-behind escape
-            LOGGER.info("[DungeonTrain] PlayerBook: resolved pending placeholder to community book {} (held by {})",
-                book.id(), player.getName().getString());
+            if (!resolvePending(player, stack)) return; // pool cold/disabled — retry on a later hold or sweep
             // fall through — the shared-found branch below marks held + greets the author.
         }
 
@@ -392,6 +362,85 @@ public final class NarrativeBookEvents {
         // Stamp held even when the pool is empty and we left the stack as-is
         // — the player still held it; subsequent drops should burn.
         RandomBookTag.markHeld(stack);
+    }
+
+    /**
+     * How often (in ticks) {@link #onPlayerTick} sweeps a player's inventory for unresolved community-book
+     * placeholders. 20 ticks = once per second: fast enough that a book is a real player book by the time
+     * anyone reads it, cheap enough to be invisible (a written-book item check over ~37 slots).
+     */
+    private static final int PENDING_SWEEP_INTERVAL_TICKS = 20;
+
+    /**
+     * Safety net for the pending-placeholder resolution.
+     *
+     * <p>{@link #onEquipmentChange} only fires for the MAINHAND / OFFHAND slots, but that is NOT how
+     * players usually acquire these books: taking one out of a chiseled bookshelf hands it to
+     * {@code Inventory#add} (never a hand slot), and the same is true of shift-clicking out of a chest,
+     * hopper transfers, and item pickups. Those books would otherwise sit unresolved and be SEEN as
+     * built-in mod books — which is exactly the slot's contract being broken, since
+     * {@code ContainerContentsRoller} bakes a built-in book as the placeholder.</p>
+     *
+     * <p>So sweep the whole inventory on a throttled tick and resolve anything still pending. Cheap by
+     * construction: the written-book item test rejects every non-book slot before any NBT is touched.</p>
+     */
+    @SubscribeEvent
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (player.tickCount % PENDING_SWEEP_INTERVAL_TICKS != 0) return;
+        // Cheap pre-checks before walking 37 slots: the feature must be on and the pool warm, or every
+        // resolve would fail anyway.
+        if (!SharedBookGate.canDiscover() || SharedBookPool.isEmpty()) return;
+        Inventory inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack stack = inv.getItem(i);
+            if (stack.isEmpty() || !stack.is(Items.WRITTEN_BOOK)) continue; // item check first — no NBT cost
+            if (!PlayerBookPendingTag.isPending(stack)) continue;
+            resolvePending(player, stack);
+        }
+    }
+
+    /**
+     * Turn a pending placeholder into a real community book chosen for {@code player} by
+     * {@link SharedBookSelector}, mutating {@code stack} in place. Returns {@code false} (leaving the
+     * marker for a later retry) when discovery is off or the relay pool is empty/unreachable — the only
+     * cases where keeping the built-in fallback is correct.
+     */
+    private static boolean resolvePending(ServerPlayer player, ItemStack stack) {
+        if (!SharedBookGate.canDiscover() || SharedBookPool.isEmpty()) return false;
+        ServerLevel ow = overworldOf(player);
+        if (ow == null) return false;
+        NarrativeProgressData data = NarrativeProgressData.get(ow);
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        java.util.UUID uuid = player.getUUID();
+        SharedBookSelector.PlayerContext ctx = new SharedBookSelector.PlayerContext(
+            // THIS holder's locale, not the world/host language: the pool is host-scoped at fetch time,
+            // but which of those books count as "my language" is per-player.
+            WorldInfoReporter.clientLanguage(player),
+            id -> data.hasPlayerReadShared(uuid, id),
+            run::wasServed,
+            id -> { Integer c = run.servedCarriage(id); return c == null ? 0 : c; },
+            run.travelledCarriageIndex(),
+            DungeonTrainConfig.getSharedBookRepeatCarriages());
+        // Vary the seed per stack as well as per tick: a sweep resolving several placeholders in the SAME
+        // tick would otherwise feed the selector an identical seed and hand out the same book for each.
+        long seed = ow.getGameTime() ^ uuid.getLeastSignificantBits() ^ (System.identityHashCode(stack) * 0x9E3779B9L);
+        Optional<SharedBookPool.PoolBook> chosen = SharedBookSelector.select(SharedBookPool.snapshot(), ctx, seed);
+        // Defensive only. The selector relaxes its per-life dedup on exhaustion, so it yields a book
+        // whenever the pool has one — the built-in placeholder therefore survives ONLY when the relay is
+        // unreachable / has no approved books, never merely because this player has already seen everything.
+        if (chosen.isEmpty()) return false;
+        SharedBookPool.PoolBook book = chosen.get();
+        ItemStack shared = SharedBookPool.buildStack(book);
+        stack.set(DataComponents.WRITTEN_BOOK_CONTENT, shared.get(DataComponents.WRITTEN_BOOK_CONTENT));
+        RandomBookTag.clearIdentity(stack);   // drop stale dt_random_book* keys
+        PlayerBookPendingTag.clear(stack);    // resolved — no longer pending
+        SharedBookFoundTag.stamp(stack);      // it's now a discovered player book
+        SharedBookReadTag.stampId(stack, book.id());
+        run.markServed(book.id(), run.travelledCarriageIndex()); // per-life dedup + far-behind escape
+        LOGGER.info("[DungeonTrain] PlayerBook: resolved pending placeholder to community book {} (for {})",
+            book.id(), player.getName().getString());
+        return true;
     }
 
     private static ServerLevel overworldOf(Player player) {
