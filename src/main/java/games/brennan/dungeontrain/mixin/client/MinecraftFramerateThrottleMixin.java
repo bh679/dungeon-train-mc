@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client;
 
 import com.mojang.blaze3d.platform.Window;
 import games.brennan.dungeontrain.client.FramerateThrottle;
+import games.brennan.dungeontrain.client.FramerateThrottleLog;
 import games.brennan.dungeontrain.client.VrCompat;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.Minecraft;
@@ -33,6 +34,8 @@ public abstract class MinecraftFramerateThrottleMixin {
 
     @Shadow public abstract Window getWindow();
 
+    @Shadow public abstract int getFps();
+
     /**
      * Only overrides the return value when the throttle actually lowers it. That guard also keeps
      * vanilla's main-menu behaviour intact: when idle we must not return the window limit in place
@@ -44,14 +47,21 @@ public abstract class MinecraftFramerateThrottleMixin {
         // (see ClientDisplayConfig#isLoaded) — stay out of the way until it is.
         if (!ClientDisplayConfig.isLoaded()) return;
 
+        boolean paused = isPaused();
+        boolean focused = isWindowActive();
+        boolean enabled = ClientDisplayConfig.isFramerateThrottleEnabled();
+        boolean vr = VrCompat.isVivecraftPresent();
+        int cap = ClientDisplayConfig.getFramerateThrottleFps();
+
         int vanillaLimit = getWindow().getFramerateLimit();
-        int limit = FramerateThrottle.decide(
-                isPaused(),
-                isWindowActive(),
-                ClientDisplayConfig.isFramerateThrottleEnabled(),
-                VrCompat.isVivecraftPresent(),
-                ClientDisplayConfig.getFramerateThrottleFps(),
-                vanillaLimit);
+        int limit = FramerateThrottle.decide(paused, focused, enabled, vr, cap, vanillaLimit);
+
+        // Vanilla calls this exactly once per runTick, so this is a natural once-per-frame sample
+        // point. Reports the MEASURED fps, which is the only way to tell from a log whether the cap
+        // actually took effect rather than merely that this code ran.
+        FramerateThrottleLog.sample(
+                FramerateThrottle.shouldThrottle(paused, focused, enabled, vr),
+                getFps(), cap, vanillaLimit, paused, focused, vr);
 
         if (limit != vanillaLimit) {
             cir.setReturnValue(limit);
