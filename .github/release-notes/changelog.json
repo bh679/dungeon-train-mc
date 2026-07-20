@@ -5117,6 +5117,23 @@
       "released": true,
       "released_in": "v0.481.0",
       "released_at": "2026-07-20T06:46:13Z"
+    },
+    {
+      "id": "idle-framerate-throttle",
+      "version": "0.482.0",
+      "type": "perf",
+      "title": "Pausing or minimising the game now lets your computer rest",
+      "summary": "Pausing Minecraft never actually stopped it drawing \u2014 it kept rendering the world as fast as your graphics card could manage, so fans stayed loud and laptops kept draining even while you were away from the keyboard. Dungeon Train now caps the frame rate while the game is paused, unfocused, or minimised, and restores it the instant you come back.",
+      "highlights": [
+        "Measured ~105 fps down to 30 while paused, with no delay on un-pause.",
+        "Only ever lowers your frame rate \u2014 if your Max Framerate is already below the cap, your setting wins.",
+        "Adjust or disable with /framerate-throttle, or in the client config.",
+        "Automatically off in VR, where a capped frame rate causes motion sickness."
+      ],
+      "date": "2026-07-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
