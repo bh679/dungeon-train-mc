@@ -440,6 +440,24 @@ public final class NarrativeBookEvents {
         run.markServed(book.id(), run.travelledCarriageIndex()); // per-life dedup + far-behind escape
         LOGGER.info("[DungeonTrain] PlayerBook: resolved pending placeholder to community book {} (for {})",
             book.id(), player.getName().getString());
+
+        // The relay answers with ONE weight tier at a time (a curated top tier can be only a handful of
+        // books), and the mod holds that window as its whole snapshot. Once this player has been served
+        // every book in it, further pickups can do nothing but repeat — the dedup relaxes and re-offers
+        // what they just had. Waiting out the ~30s refresh timer is what made rapid pickups hand out the
+        // same book several times running, so pull the next tier NOW. The relay walks its own tiers via
+        // the session token, and refreshAsync self-guards against overlapping fetches.
+        if (windowExhaustedFor(run)) {
+            SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()));
+        }
+        return true;
+    }
+
+    /** True when {@code run} has been served every book in the current pool window — nothing new is left to offer. */
+    private static boolean windowExhaustedFor(PlayerRunState run) {
+        for (SharedBookPool.PoolBook b : SharedBookPool.snapshot()) {
+            if (!run.wasServed(b.id())) return false;
+        }
         return true;
     }
 
