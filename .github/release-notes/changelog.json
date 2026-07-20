@@ -5114,9 +5114,9 @@
         "Fixes armor silently capping at 30 past difficulty tier ~25"
       ],
       "date": "2026-07-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.481.0",
+      "released_at": "2026-07-20T06:46:13Z"
     }
   ]
 }
