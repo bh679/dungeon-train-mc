@@ -5085,6 +5085,23 @@
       "released": true,
       "released_in": "v0.479.0",
       "released_at": "2026-07-19T17:03:20Z"
+    },
+    {
+      "id": "tunnel-chest-loot-stat-scaling",
+      "version": "0.480.0",
+      "type": "fix",
+      "title": "Tunnel chest loot no longer over-powered",
+      "summary": "Chests found in tunnels were rolling item stats far higher than they should \u2014 gear pulled from a tunnel near the start of a run could carry bonuses meant for the deepest part of the line. Tunnel loot now scales from the train's position the same way carriage loot always has.",
+      "highlights": [
+        "Tunnel chests near the start of a run now roll ordinary stats instead of end-game ones",
+        "Tunnel and carriage loot at the same point on the line are now on the same power scale",
+        "Tunnels already generated in an existing world keep their old loot \u2014 only newly generated tunnels are affected"
+      ],
+      "pr": 798,
+      "date": "2026-07-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
