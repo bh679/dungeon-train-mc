@@ -413,6 +413,17 @@ public final class NarrativeBookEvents {
         NarrativeProgressData data = NarrativeProgressData.get(ow);
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         java.util.UUID uuid = player.getUUID();
+
+        // Window exhausted for this player? Pull the relay's next weight tier BEFORE selecting, and if
+        // that fetch is in flight, defer rather than resolving — otherwise the selector can only relax
+        // and re-serve a book they just had, which is precisely the repeat we are trying to avoid. The
+        // 1s inventory sweep retries, so the book resolves a moment later out of the FRESH window.
+        // A failed/unreachable fetch clears the in-flight flag, so this can never wedge: the next sweep
+        // falls through and serves a repeat rather than leaving a built-in book forever.
+        if (windowExhaustedFor(run)) {
+            SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()));
+            if (SharedBookPool.isRefreshInFlight()) return false;
+        }
         SharedBookSelector.PlayerContext ctx = new SharedBookSelector.PlayerContext(
             // THIS holder's locale, not the world/host language: the pool is host-scoped at fetch time,
             // but which of those books count as "my language" is per-player.
@@ -441,12 +452,8 @@ public final class NarrativeBookEvents {
         LOGGER.info("[DungeonTrain] PlayerBook: resolved pending placeholder to community book {} (for {})",
             book.id(), player.getName().getString());
 
-        // The relay answers with ONE weight tier at a time (a curated top tier can be only a handful of
-        // books), and the mod holds that window as its whole snapshot. Once this player has been served
-        // every book in it, further pickups can do nothing but repeat — the dedup relaxes and re-offers
-        // what they just had. Waiting out the ~30s refresh timer is what made rapid pickups hand out the
-        // same book several times running, so pull the next tier NOW. The relay walks its own tiers via
-        // the session token, and refreshAsync self-guards against overlapping fetches.
+        // Serving that book may have just drained the window — pull the next tier now so the NEXT pickup
+        // already has fresh content waiting (the pre-select guard above then has nothing to wait for).
         if (windowExhaustedFor(run)) {
             SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()));
         }

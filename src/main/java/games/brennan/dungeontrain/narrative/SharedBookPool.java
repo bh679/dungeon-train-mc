@@ -141,6 +141,16 @@ public final class SharedBookPool {
     }
 
     /**
+     * Whether a pool fetch is currently in flight — i.e. a NEW window (the relay's next weight tier) is
+     * on its way. Callers that have exhausted the current window use this to wait for it rather than
+     * re-serving a book the player just had. Clears on failure too, so a dead relay can't wedge a caller
+     * into waiting forever.
+     */
+    public static boolean isRefreshInFlight() {
+        return fetchInFlight;
+    }
+
+    /**
      * Total approved community books in the relay pool as of the last successful fetch, or 0 when the
      * relay is unreachable / has never replied / is too old to report it. The shared-book loot taper
      * treats 0 as "unknown" and skips the taper (flat config max), so this is safe to read from the
