@@ -93,6 +93,12 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Forward the relay override into the client JVM so a dev run can be pointed at the
+            // live cap for testing (see DungeonTrain.relayBaseUrl()). Inert unless set on the host
+            // — deliberately NOT hardcoded, since this base also routes the Discord relay.
+            if (System.getenv('DUNGEONTRAIN_RELAY_BASE_URL')) {
+                environment 'DUNGEONTRAIN_RELAY_BASE_URL', System.getenv('DUNGEONTRAIN_RELAY_BASE_URL')
+            }
         }
 
         server {
