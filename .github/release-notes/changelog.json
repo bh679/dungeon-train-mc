@@ -5131,9 +5131,9 @@
         "Automatically off in VR, where a capped frame rate causes motion sickness."
       ],
       "date": "2026-07-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.483.0",
+      "released_at": "2026-07-20T11:50:58Z"
     },
     {
       "id": "ghast-lap-escalation",
@@ -5147,9 +5147,9 @@
         "Ghasts can no longer fill the band on their own \u2014 ground mobs keep their share"
       ],
       "date": "2026-07-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.483.0",
+      "released_at": "2026-07-20T11:50:58Z"
     }
   ]
 }
