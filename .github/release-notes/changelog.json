@@ -5134,6 +5134,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ghast-lap-escalation",
+      "version": "0.483.0",
+      "type": "feat",
+      "title": "Ghasts grow bolder each time you return to the Nether",
+      "summary": "The Nether band's ghasts have been retuned. Your first trip through is calmer than before \u2014 ghasts are an occasional threat instead of a constant swarm, leaving room for the piglins, skeletons and magma cubes that share the band. But every full lap back around to the Nether makes them denser, and lets more of them hover over you at once.",
+      "highlights": [
+        "First Nether: noticeably fewer ghasts than before",
+        "Each lap back to the Nether raises how often ghasts appear and how many can crowd you",
+        "Ghasts can no longer fill the band on their own \u2014 ground mobs keep their share"
+      ],
+      "date": "2026-07-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
