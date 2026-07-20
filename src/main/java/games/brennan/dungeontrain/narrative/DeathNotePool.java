@@ -39,6 +39,7 @@ public final class DeathNotePool {
     static final int POOL_LIMIT = 50;
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1) // relay is HTTP/1.1; avoids h2c against a bare-Node relay (matches NarrativePool/SharedBookPool/DeathReporter/BookStatsClient)
             .connectTimeout(Duration.ofSeconds(8))
             .build();
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);

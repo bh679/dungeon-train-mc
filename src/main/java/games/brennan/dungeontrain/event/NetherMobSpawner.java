@@ -12,6 +12,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.monster.Ghast;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
@@ -36,6 +37,15 @@ import java.util.List;
  * <p>Regular piglins are deliberately omitted (they zombify in the overworld dimension);
  * zombified piglins, magma cubes and ghasts all behave correctly outside the Nether.</p>
  *
+ * <p>Ghast density <b>escalates per lap</b>. Both the per-attempt odds ({@link #ghastDenomFor}) and the
+ * ghast-specific ceiling ({@link #ghastCapFor}) key off {@link NetherBand#netherPassIndex} — the 0-based
+ * world-gen cycle repeat, which doubles as the Nether pass index because the Nether band is the first
+ * special band of every period. The first Nether reads as an occasional threat; each full lap back
+ * around makes it denser, up to a floor of 1-in-2 odds and the top of the {@link #GHAST_NEARBY_CAPS}
+ * table. The pass index is positional (derived from world-X), so this needs no saved state and is
+ * reproducible across reloads. Ghasts keep their own cap on top of the shared {@link #NEARBY_CAP} so
+ * they can't crowd the ground rosters out entirely.</p>
+ *
  * <p>The ground roster + ghast frequency follow the <b>biome</b> at the spawn column (the core now
  * cycles through all five Nether biomes), so each biome reads right: skeletons in soul sand valleys,
  * endermen in warped forests, magma cubes in basalt deltas, piglins + hoglins in crimson forests.
@@ -58,6 +68,23 @@ public final class NetherMobSpawner {
     private static final int MIN_SPAWN_DIST = 16;
     /** Max nether-band mobs near a player before the spawner backs off. */
     private static final int NEARBY_CAP = 10;
+    /** Ghast odds (1-in-N) on the FIRST Nether pass, in the biomes vanilla fills with ghasts. */
+    private static final int GHAST_DENOM_DENSE_BIOMES = 4;
+    /** Ghast odds (1-in-N) on the first pass everywhere else in the core. */
+    private static final int GHAST_DENOM_OTHER_BIOMES = 8;
+    /** Densest the odds ever get, however many laps deep — 1-in-2 is already a coin flip. */
+    private static final int GHAST_DENOM_FLOOR = 2;
+    /**
+     * Max nether-band ghasts near a player, indexed by Nether pass; laps past the end hold the last
+     * value. Escalates faster than linearly so late laps feel qualitatively different, not just denser.
+     *
+     * <p><b>Note the interaction with {@link #NEARBY_CAP}</b> (10, checked first and deliberately left
+     * alone): the spawner stops entirely once 10 band mobs are near a player, so entries above 10 never
+     * bind. In practice pass 2 (8) already leaves only ~2 slots for ground mobs, and passes 3+ mean
+     * "every one of the 10 slots may be a ghast" — so laps 3 and 4 behave identically. The 15s are the
+     * intended ceiling should {@code NEARBY_CAP} ever rise, not a live difference today.</p>
+     */
+    private static final int[] GHAST_NEARBY_CAPS = {3, 5, 8, 15, 15};
     /** Spawn attempts per player per tick. */
     private static final int TRIES = 4;
     /** Vertical search window around the player for a valid floor. */
@@ -103,9 +130,40 @@ public final class NetherMobSpawner {
         return GROUND_MOBS; // nether_wastes / anything else
     }
 
-    /** Ghast spawn odds (1-in-N) — denser in the biomes vanilla fills with ghasts. */
-    private static int ghastChanceDenom(Holder<Biome> biome) {
-        return (biome.is(Biomes.SOUL_SAND_VALLEY) || biome.is(Biomes.BASALT_DELTAS)) ? 3 : 6;
+    /**
+     * Ghast spawn odds (1-in-N) at the biome and Nether pass of a spawn attempt — denser in the
+     * biomes vanilla fills with ghasts, and one step denser per completed lap.
+     */
+    private static int ghastChanceDenom(Holder<Biome> biome, long pass) {
+        boolean dense = biome.is(Biomes.SOUL_SAND_VALLEY) || biome.is(Biomes.BASALT_DELTAS);
+        return ghastDenomFor(dense, pass);
+    }
+
+    /**
+     * Ghast odds (1-in-N) at a given Nether pass — one step denser per completed lap, floored at
+     * {@link #GHAST_DENOM_FLOOR}. Package-private and param-in (no biome holder, no config read) so
+     * the ramp unit-tests without a NeoForge bootstrap, mirroring {@code DifficultyProgression.rawTier}.
+     *
+     * <p>{@code pass} is clamped at 0, which absorbs the {@code -1} "band off / before the cycle"
+     * sentinel {@link NetherBand#netherPassIndex} returns — a disabled band reads as the first pass
+     * rather than one step sparser than it.</p>
+     */
+    static int ghastDenomFor(boolean denseBiome, long pass) {
+        int base = denseBiome ? GHAST_DENOM_DENSE_BIOMES : GHAST_DENOM_OTHER_BIOMES;
+        return (int) Math.max(GHAST_DENOM_FLOOR, base - Math.max(0L, pass));
+    }
+
+    /**
+     * Max ghasts near a player at a given Nether pass — a {@link #GHAST_NEARBY_CAPS} lookup, holding
+     * the last entry for every lap beyond the table. This escalates alongside {@link #ghastDenomFor}
+     * on purpose: with a fixed cap the odds barely matter, since the cap fills within seconds and
+     * becomes the real ceiling, so raising the odds alone would change respawn latency rather than
+     * felt difficulty.
+     */
+    static int ghastCapFor(long pass) {
+        // Clamp into the table BEFORE indexing, so a huge or negative pass can't run off either end.
+        long lap = Math.min(Math.max(0L, pass), GHAST_NEARBY_CAPS.length - 1L);
+        return GHAST_NEARBY_CAPS[(int) lap];
     }
 
     @SubscribeEvent
@@ -126,8 +184,16 @@ public final class NetherMobSpawner {
                     m -> m.getTags().contains(NETHER_MOB_TAG));
             if (nearby.size() >= NEARBY_CAP) continue;
 
+            // Which lap this is. Read at the PLAYER's column so every attempt this tick shares one
+            // value; spawn columns are within SPAWN_RADIUS, so they only differ right at a band edge.
+            long pass = NetherBand.netherPassIndex(level, px);
+
+            // Ghasts get their own ceiling on top of NEARBY_CAP — reuse the list already fetched above.
+            long ghastsNearby = nearby.stream().filter(m -> m instanceof Ghast).count();
+            boolean ghastsAllowed = ghastsNearby < ghastCapFor(pass);
+
             for (int i = 0; i < TRIES; i++) {
-                trySpawnNear(level, player, rng);
+                trySpawnNear(level, player, rng, ghastsAllowed, pass);
             }
         }
     }
@@ -145,7 +211,8 @@ public final class NetherMobSpawner {
         }
     }
 
-    private static void trySpawnNear(ServerLevel level, ServerPlayer player, RandomSource rng) {
+    private static void trySpawnNear(ServerLevel level, ServerPlayer player, RandomSource rng,
+                                     boolean ghastsAllowed, long pass) {
         int dx = rng.nextInt(2 * SPAWN_RADIUS + 1) - SPAWN_RADIUS;
         int dz = rng.nextInt(2 * SPAWN_RADIUS + 1) - SPAWN_RADIUS;
         if (dx * dx + dz * dz < MIN_SPAWN_DIST * MIN_SPAWN_DIST) return;
@@ -162,7 +229,9 @@ public final class NetherMobSpawner {
         // Biome at the spawn column drives the roster + ghast frequency (the core cycles all 5 Nether biomes).
         Holder<Biome> biome = level.getBiome(probe);
 
-        boolean ghast = rng.nextInt(ghastChanceDenom(biome)) == 0;
+        // Capped-out ghast rolls fall through to the ground path rather than wasting the attempt,
+        // so the band's overall density is unchanged — only the ghast share drops.
+        boolean ghast = ghastsAllowed && rng.nextInt(ghastChanceDenom(biome, pass)) == 0;
         if (ghast) {
             // A ghast is 4×4×4 — scan up from the (randomised) start height for the first pocket
             // its whole body actually fits in, so it never materialises inside terrain and suffocates.

@@ -193,10 +193,11 @@ dependencies {
     // neoforge.mods.toml so the loader prompts the user.
     implementation "maven.modrinth:sable:${sable_version}"
 
-    // AdventureItemNames — sibling mod by the same author, bundled via jarJar
-    // until it lands on Modrinth/CurseForge (PolyForm Shield 1.0.0 applies but
-    // we own the copyright, so bundling is unrestricted — distinct from Sable
-    // above).
+    // AdventureItemNames — sibling mod by the same author. NOT bundled: it is a
+    // separate required download, the same distribution contract as Sable above,
+    // so that AIN's own Modrinth/CurseForge pages get credited for the install.
+    // (Bundling would be legally fine — we own the copyright — but it made those
+    // pages invisible to every DT player.)
     //
     // `implementation` (not `additionalRuntimeClasspath` like joml-primitives)
     // because AIN ships its own `META-INF/neoforge.mods.toml` and must be
@@ -207,30 +208,30 @@ dependencies {
     // pattern for the same reason; joml-primitives is a plain library (no
     // mods.toml) so `additionalRuntimeClasspath` suffices for it.
     //
-    // jarJar embeds the jar at `META-INF/jarjar/` in the shipped mod jar so
-    // end users get AIN automatically. Version range cannot be used here
-    // because Ivy with `metadataSources { artifact() }` has nothing to
-    // enumerate — pin the exact version, bump via gradle.properties.
+    // This dep supplies the dev-run + compile version. The version END USERS must
+    // have is the separate `adventureitemnames_min_version` floor rendered into
+    // neoforge.mods.toml — see gradle.properties for why the two are split.
     implementation "bh679:adventureitemnames:${adventureitemnames_version}"
-    jarJar(group: 'bh679', name: 'adventureitemnames', version: adventureitemnames_version)
 
-    // AdventureItemStats — same bundling contract as AIN above (sibling mod,
-    // same author, same Ivy repo via the bh679 group). See gradle.properties
-    // for the version + Modrinth/CurseForge status comment.
-    implementation "bh679:adventureitemstats:${adventureitemstats_version}"
-    jarJar(group: 'bh679', name: 'adventureitemstats', version: adventureitemstats_version)
-
-    // PlayerMob (Interactive Player Mobs) — same bundling contract as AIN/AIS
-    // above (sibling mod, same author, same Ivy repo via the bh679 group). See
+    // AdventureItemStats — same external-required-dep contract as AIN above
+    // (sibling mod, same author, same Ivy repo via the bh679 group). See
     // gradle.properties for the version + Modrinth/CurseForge status comment.
+    implementation "bh679:adventureitemstats:${adventureitemstats_version}"
+
+    // PlayerMob (Interactive Player Mobs) — same external-required-dep contract as
+    // AIN/AIS above (sibling mod, same author, same Ivy repo via the bh679 group).
+    // See gradle.properties for the version + Modrinth/CurseForge status comment.
     implementation "bh679:playermob:${playermob_version}"
-    jarJar(group: 'bh679', name: 'playermob', version: playermob_version)
     // playermob 0.33.0+ ships games.brennan.playermob.compat.PlayerMobSocialHooks
     // (the gift seam). The implementation dep above puts it on the compile classpath,
     // so compat.PlayerMobSocialBridge references it directly — no extra dep needed.
 
     // Discord Presence (Discord join/online/death notifications + reactions) —
-    // same bundling contract as AIN/AIS/PMOB above. DT compiles against its public
+    // the ONE sibling still bundled via jarJar. Its Modrinth project is not public
+    // yet (the `discordpresence` slug there belongs to an unrelated third-party
+    // mod), so making it an external required dep would leave Modrinth users with
+    // no way to obtain it. Unbundle once that listing goes live — at which point
+    // this matches AIN/AIS/PMOB/ECP above. DT compiles against its public
     // API: DiscordCredentials/DiscordCredentialsProvider (relay-mode + chat-tag ping
     // triggers + presence tracking) and DiscordService (death reports, and the
     // editor-welcome "last seen online" presence query). `implementation` puts it on
@@ -240,9 +241,8 @@ dependencies {
     jarJar(group: 'bh679', name: 'discordpresence', version: discordpresence_version)
 
     // EnderChestPersistence — global Ender Chest persistence across worlds + per-game-mode
-    // isolation. Extracted from DT; bundled here so players get it without a separate install.
+    // isolation. Extracted from DT; same external-required-dep contract as AIN/AIS/PMOB above.
     implementation "bh679:enderchestpersistence:${enderchestpersistence_version}"
-    jarJar(group: 'bh679', name: 'enderchestpersistence', version: enderchestpersistence_version)
 
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is
@@ -314,6 +314,13 @@ tasks.register('generateModMetadata', ProcessResources) {
         playermob_version          : playermob_version,
         discordpresence_version          : discordpresence_version,
         enderchestpersistence_version    : enderchestpersistence_version,
+        // Declared-minimum floors for the four EXTERNAL sibling deps. Deliberately
+        // separate from the *_version values above (which the auto-release cascade
+        // bumps freely) — see gradle.properties for the rationale.
+        adventureitemnames_min_version    : adventureitemnames_min_version,
+        adventureitemstats_min_version    : adventureitemstats_min_version,
+        playermob_min_version             : playermob_min_version,
+        enderchestpersistence_min_version : enderchestpersistence_min_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

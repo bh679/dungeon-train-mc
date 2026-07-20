@@ -40,11 +40,12 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  # Stdlib-only Python guards for the CurseForge modpack config. No Java/Gradle —
-  # python3 is preinstalled on ubuntu-latest — so this runs fast, in parallel with
-  # `build`. check-relations.py enforces the invariant that every modpack Include
-  # (optional_mods) is also declared as an <slug>(optional) dependency of the mod in
-  # release.yml (the bug that shipped AppleSkin un-declared in PR #390).
+  # Stdlib-only Python guards for the CurseForge + Modrinth modpack configs. No
+  # Java/Gradle — python3 is preinstalled on ubuntu-latest — so this runs fast, in
+  # parallel with `build`. check-relations.py enforces the invariant that every modpack
+  # Include (optional_mods) is also declared as a dependency of the mod in release.yml
+  # (the bug that shipped AppleSkin un-declared in PR #390); check-pins.py guards both
+  # the exact Sable chain and the un-bundled sibling mods' minimum-version floors.
   modpack-checks:
     runs-on: ubuntu-latest
     permissions:
@@ -60,14 +61,17 @@ jobs:
         # project+version pin (which would silently drop it from the .mrpack). No network.
         run: python3 scripts/modpack/build-mrpack.py --check-config
 
-      - name: Sable version pin chain (gradle <-> mods.toml lock <-> modpack)
-        # Fails CI if sable_mod_version (DT's exact mods.toml lock) or the modpack's
-        # sable.version drift from gradle.properties sable_version. No network.
-        run: python3 scripts/modpack/check-sable-pin.py
+      - name: Dependency version pins (Sable chain + sibling floors)
+        # Two checks. (1) Sable: fails if sable_mod_version (DT's exact mods.toml lock) or
+        # the modpack's sable.version drift from gradle.properties sable_version.
+        # (2) Siblings: fails if a modpack-pinned AIN/AIS/PMOB/ECP build is OLDER than the
+        # <mod>_min_version floor DT declares — i.e. the pack would ship a sibling the mod
+        # refuses to load against. No network.
+        run: python3 scripts/modpack/check-pins.py
 
       - name: Modpack manifest + relation tests
         run: |
           python3 scripts/modpack/test_build_manifest.py
           python3 scripts/modpack/test_check_relations.py
           python3 scripts/modpack/test_build_mrpack.py
-          python3 scripts/modpack/test_check_sable_pin.py
+          python3 scripts/modpack/test_check_pins.py

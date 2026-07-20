@@ -56,6 +56,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_PLAYER_MOB_SPAWN_OVERRIDE = "playerMobSpawnOneInOverride";
     private static final String TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE = "playerMobBehindSpawnPercentOverride";
     private static final String TAG_JOIN_REPORT_POSTED = "joinReportPosted";
+    private static final String TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE = "breakBlocksOnContactOverride";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -66,6 +67,8 @@ public final class DungeonTrainWorldData extends SavedData {
     private Integer playerMobSpawnOneInOverride;
     /** Per-world override of the behind-the-player PlayerMob spawn percent chance; null = global COMMON default. */
     private Integer playerMobBehindSpawnPercentOverride;
+    /** Per-world override of train-on-contact block breaking; null = use the global COMMON default. */
+    private Boolean breakBlocksOnContactOverride;
     /** Per-world one-shot: true once the join-info report (DT version + train seed + mods) has been posted to Discord. */
     private boolean joinReportPosted;
 
@@ -153,6 +156,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE)) {
             data.playerMobBehindSpawnPercentOverride = tag.getInt(TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE);
         }
+        if (tag.contains(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE)) {
+            data.breakBlocksOnContactOverride = tag.getBoolean(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE);
+        }
         // Absent on legacy worlds → false → the join-info report fires once on the next join.
         if (tag.contains(TAG_JOIN_REPORT_POSTED)) {
             data.joinReportPosted = tag.getBoolean(TAG_JOIN_REPORT_POSTED);
@@ -175,6 +181,9 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         if (playerMobBehindSpawnPercentOverride != null) {
             tag.putInt(TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE, playerMobBehindSpawnPercentOverride);
+        }
+        if (breakBlocksOnContactOverride != null) {
+            tag.putBoolean(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE, breakBlocksOnContactOverride);
         }
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
         return tag;
@@ -233,6 +242,30 @@ public final class DungeonTrainWorldData extends SavedData {
                 Math.min(DungeonTrainCommonConfig.MAX_PLAYER_MOB_SPAWN_ONE_IN, value));
         if (Objects.equals(next, playerMobSpawnOneInOverride)) return;
         playerMobSpawnOneInOverride = next;
+        setDirty();
+    }
+
+    /** This world's block-breaking override, or null when the world follows the global default. */
+    public Boolean getBreakBlocksOnContactOverride() {
+        return breakBlocksOnContactOverride;
+    }
+
+    /**
+     * Whether a moving carriage breaks the world blocks it passes through in this world: the per-world
+     * override if one has been set in-game, otherwise the global default from
+     * {@link DungeonTrainCommonConfig}. Read live (once per sweep, never per cell) by
+     * {@link games.brennan.dungeontrain.event.TrainTickEvents}.
+     */
+    public boolean getEffectiveBreakBlocksOnContact() {
+        return breakBlocksOnContactOverride != null
+                ? breakBlocksOnContactOverride
+                : DungeonTrainCommonConfig.getDefaultBreakBlocksOnContact();
+    }
+
+    /** Set (non-null) or clear (null) this world's block-breaking override. */
+    public void setBreakBlocksOnContactOverride(Boolean value) {
+        if (Objects.equals(value, breakBlocksOnContactOverride)) return;
+        breakBlocksOnContactOverride = value;
         setDirty();
     }
 

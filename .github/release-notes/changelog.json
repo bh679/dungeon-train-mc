@@ -4933,6 +4933,223 @@
       "released": true,
       "released_in": "v0.471.0",
       "released_at": "2026-07-17T19:41:38Z"
+    },
+    {
+      "id": "creeper-potionbarrel-content",
+      "version": "0.472.0",
+      "type": "content",
+      "title": "New creeper encounter and potion barrel loot",
+      "summary": "Added a new creeper enemy variant and potion barrel loot to spice up dungeon carriages, along with refreshed barrel layout variants.",
+      "highlights": [
+        "New creeper enemy variant",
+        "New potion barrel loot prefab",
+        "Updated barrel container variants"
+      ],
+      "pr": 783,
+      "date": "2026-07-18",
+      "released": true,
+      "released_in": "v0.472.0",
+      "released_at": "2026-07-18T09:40:35Z"
+    },
+    {
+      "id": "carriage-group-block-no-split",
+      "version": "0.473.0",
+      "type": "fix",
+      "title": "Loose carriage blocks stay part of the train",
+      "summary": "Mining part of a carriage no longer breaks a disconnected chunk off into its own drifting mini-ship. Any blocks left floating inside a carriage group now stay welded to the train and ride along with it.",
+      "highlights": [
+        "Disconnected blocks stay attached to the carriage group instead of spawning a separate physics object"
+      ],
+      "date": "2026-07-18",
+      "released": true,
+      "released_in": "v0.473.0",
+      "released_at": "2026-07-18T12:29:36Z"
+    },
+    {
+      "id": "tunnel-loot-variants",
+      "version": "0.474.0",
+      "type": "fix",
+      "title": "Loot chests in tunnels now spawn with loot",
+      "summary": "Loot-linked chests (and other containers) placed inside tunnels were always empty \u2014 they now roll their loot when the tunnel generates, just like chests in the train carriages. Each chest rolls its own contents.",
+      "highlights": [
+        "Tunnel loot chests now contain items instead of being empty",
+        "Works for both freshly-generated and editor-placed tunnels"
+      ],
+      "pr": 787,
+      "date": "2026-07-18",
+      "released": true,
+      "released_in": "v0.475.0",
+      "released_at": "2026-07-18T13:04:59Z"
+    },
+    {
+      "id": "new-container-loot-content",
+      "version": "0.475.0",
+      "type": "content",
+      "title": "New loot containers and variants",
+      "summary": "Added new loot content: creeperdrop, bamboo, crystal, endtower, tnt, enderbooks, and craftcraft variants, plus an updated default tunnel section.",
+      "highlights": [],
+      "pr": 785,
+      "date": "2026-07-18",
+      "released": true,
+      "released_in": "v0.475.0",
+      "released_at": "2026-07-18T13:04:59Z"
+    },
+    {
+      "id": "track-collision-wood-cleanup",
+      "version": "0.474.0",
+      "type": "fix",
+      "title": "Clear stray blocks from the train's path",
+      "summary": "Fixed rare cases where trees (especially large/dark oak) could leave wood blocking the tracks in the train's path. The corridor now clears anything that strays into the train's collision path, not just leaves.",
+      "highlights": [],
+      "pr": 788,
+      "date": "2026-07-18",
+      "released": true,
+      "released_in": "v0.475.0",
+      "released_at": "2026-07-18T13:04:59Z"
+    },
+    {
+      "id": "train-breaks-blocks-on-contact",
+      "version": "0.477.0",
+      "type": "feat",
+      "title": "The train smashes through blocks in its path",
+      "summary": "Build across the tracks and the train no longer glides through your wall like a ghost \u2014 it breaks it, with the sound, the particles and the dropped items you would expect. Blocks that appear after the corridor was carved (a wall you built, a tree that grew, a structure the tunnelling missed) used to be passed through invisibly.",
+      "highlights": [
+        "Blocks in the train's path break on contact and drop their items; chests spill their contents.",
+        "Only real collisions count \u2014 a block drifting through the open deck of a flatbed is left alone, and flowers and grass are brushed past.",
+        "The track under the train is never damaged.",
+        "Server owners can turn it off per world with /dungeontrain breakblocks off, or globally in the config."
+      ],
+      "date": "2026-07-19",
+      "released": true,
+      "released_in": "v0.479.0",
+      "released_at": "2026-07-19T17:03:20Z"
+    },
+    {
+      "id": "playermobs-0-83-upgrade",
+      "version": "0.478.0",
+      "type": "fix",
+      "title": "Player Mobs move around the train better",
+      "summary": "Two fixes to how Player Mobs get around. Crossing between carriages, they now take a hop sized to the actual gap \u2014 the seams between carriages were tightened a while back, but Player Mobs kept using the big leap they needed for the old wider gaps, so they'd sail across a hand's-width seam. And a Player Mob that falls onto the tracks now works its way back aboard instead of being stranded: it bridges off the rails, builds a pillar up beside the passing carriages, and waits for a clear opening before jumping in.",
+      "highlights": [
+        "Cross-carriage hops are sized to the real gap instead of always being a full sprint leap",
+        "Player Mobs that fall onto the track bed climb back aboard instead of getting stuck",
+        "Boarding waits for a real opening, so mobs stop leaping into carriage walls"
+      ],
+      "date": "2026-07-19",
+      "released": true,
+      "released_in": "v0.479.0",
+      "released_at": "2026-07-19T17:03:20Z"
+    },
+    {
+      "id": "unbundle-sibling-mods",
+      "version": "0.478.0",
+      "type": "chore",
+      "title": "Adventure Item Names, Adventure Item Stats, Interactive Player Mobs and Ender Chest Persistence are now separate downloads",
+      "summary": "These four mods used to be bundled invisibly inside Dungeon Train. They are now normal required dependencies you install alongside it, so each one gets credit on its own mod page. If you use the CurseForge or Modrinth app, or the Dungeon Train modpack, they are fetched automatically and nothing changes for you. If you install the jar by hand, you will be prompted for the four missing mods on first launch and will need to download them too. Discord Presence is still bundled.",
+      "highlights": [
+        "Four bundled mods are now separate required downloads \u2014 installed automatically by the CurseForge/Modrinth apps and the modpack",
+        "Manual jar installers will be prompted to add the four mods on first launch",
+        "Dungeon Train's own jar is about 1.3 MB smaller"
+      ],
+      "pr": 792,
+      "date": "2026-07-19",
+      "released": true,
+      "released_in": "v0.479.0",
+      "released_at": "2026-07-19T17:03:20Z"
+    },
+    {
+      "id": "overloaded-armor-bar-modpack",
+      "version": "0.478.0",
+      "type": "feat",
+      "title": "Armor bar shows your full protection",
+      "summary": "The modpacks now bundle Overloaded Armor Bar, on by default. Once your armor climbs past a full bar, the extra protection is drawn as stacked coloured icons instead of quietly running out of room to display.",
+      "highlights": [
+        "Overloaded Armor Bar ships enabled by default in the CurseForge and Modrinth modpacks"
+      ],
+      "date": "2026-07-19",
+      "released": true,
+      "released_in": "v0.479.0",
+      "released_at": "2026-07-19T17:03:20Z"
+    },
+    {
+      "id": "ais-armor-cap-bundled",
+      "version": "0.478.0",
+      "type": "fix",
+      "title": "Armor keeps improving past 1.5 bars",
+      "summary": "Minecraft quietly caps a player's armor at 30 points \u2014 one and a half full armor bars \u2014 and throws away anything above it. Deep-run gear could promise more armor in its tooltip than the game would ever grant, so late-run armor stopped improving while weapons kept scaling. That ceiling is now raised, and armor toughness along with it.",
+      "highlights": [
+        "Armor above 30 points now actually protects you instead of being silently discarded",
+        "Pairs with the Overloaded Armor Bar display so the extra protection is visible too"
+      ],
+      "date": "2026-07-19",
+      "released": true,
+      "released_in": "v0.479.0",
+      "released_at": "2026-07-19T17:03:20Z"
+    },
+    {
+      "id": "tunnel-chest-loot-stat-scaling",
+      "version": "0.480.0",
+      "type": "fix",
+      "title": "Tunnel chest loot no longer over-powered",
+      "summary": "Chests found in tunnels were rolling item stats far higher than they should \u2014 gear pulled from a tunnel near the start of a run could carry bonuses meant for the deepest part of the line. Tunnel loot now scales from the train's position the same way carriage loot always has.",
+      "highlights": [
+        "Tunnel chests near the start of a run now roll ordinary stats instead of end-game ones",
+        "Tunnel and carriage loot at the same point on the line are now on the same power scale",
+        "Tunnels already generated in an existing world keep their old loot \u2014 only newly generated tunnels are affected"
+      ],
+      "pr": 798,
+      "date": "2026-07-20",
+      "released": true,
+      "released_in": "v0.480.0",
+      "released_at": "2026-07-20T03:56:04Z"
+    },
+    {
+      "id": "ais-armor-cap-floor",
+      "version": "0.481.0",
+      "type": "fix",
+      "title": "Armor above 30 now requires Adventure Item Stats 0.7.0",
+      "summary": "Minecraft caps armor at 30 points, and past difficulty tier ~25 that ceiling was silently swallowing the armor your gear said it was giving you. Adventure Item Stats 0.7.0 lifts the cap; Dungeon Train now requires that version rather than accepting older builds, so the clamp cannot come back on a stale install. If you are still on 0.6.0 the game will tell you to update on launch.",
+      "highlights": [
+        "Dungeon Train now requires Adventure Item Stats 0.7.0 or newer",
+        "Fixes armor silently capping at 30 past difficulty tier ~25"
+      ],
+      "date": "2026-07-20",
+      "released": true,
+      "released_in": "v0.481.0",
+      "released_at": "2026-07-20T06:46:13Z"
+    },
+    {
+      "id": "idle-framerate-throttle",
+      "version": "0.482.0",
+      "type": "perf",
+      "title": "Pausing or minimising the game now lets your computer rest",
+      "summary": "Pausing Minecraft never actually stopped it drawing \u2014 it kept rendering the world as fast as your graphics card could manage, so fans stayed loud and laptops kept draining even while you were away from the keyboard. Dungeon Train now caps the frame rate while the game is paused, unfocused, or minimised, and restores it the instant you come back.",
+      "highlights": [
+        "Measured ~105 fps down to 30 while paused, with no delay on un-pause.",
+        "Only ever lowers your frame rate \u2014 if your Max Framerate is already below the cap, your setting wins.",
+        "Adjust or disable with /framerate-throttle, or in the client config.",
+        "Automatically off in VR, where a capped frame rate causes motion sickness."
+      ],
+      "date": "2026-07-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "ghast-lap-escalation",
+      "version": "0.483.0",
+      "type": "feat",
+      "title": "Ghasts grow bolder each time you return to the Nether",
+      "summary": "The Nether band's ghasts have been retuned. Your first trip through is calmer than before \u2014 ghasts are an occasional threat instead of a constant swarm, leaving room for the piglins, skeletons and magma cubes that share the band. But every full lap back around to the Nether makes them denser, and lets more of them hover over you at once.",
+      "highlights": [
+        "First Nether: noticeably fewer ghasts than before",
+        "Each lap back to the Nether raises how often ghasts appear and how many can crowd you",
+        "Ghasts can no longer fill the band on their own \u2014 ground mobs keep their share"
+      ],
+      "date": "2026-07-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

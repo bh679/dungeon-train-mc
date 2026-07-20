@@ -4,6 +4,11 @@ import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nullable;
@@ -62,24 +67,127 @@ public final class ContainerContentsPlacement {
                              @Nullable CompoundTag baseBeNbt, String plotKey,
                              BlockPos localPos, long worldSeed, int carriageIndex,
                              @Nullable String variantLinkedLootPrefabId) {
-        CompoundTag finalNbt = baseBeNbt;
-        if (state.hasBlockEntity() && ContainerContentsRoller.isContainerState(state)) {
-            ContainerContentsPool pool;
-            if (variantLinkedLootPrefabId != null) {
-                pool = LootPrefabStore.load(variantLinkedLootPrefabId)
-                    .map(LootPrefabStore.Data::pool)
-                    .orElse(ContainerContentsPool.empty());
-            } else {
-                pool = ContainerContentsStore.loadFor(plotKey).poolAt(localPos);
-            }
-            if (pool.isEmpty()) {
-                pool = BlockLootDefaults.resolveDefaultPool(state, localPos, worldSeed, carriageIndex)
-                    .orElse(ContainerContentsPool.empty());
-            }
-            if (!pool.isEmpty()) {
-                finalNbt = ContainerContentsRoller.roll(pool, state, localPos, worldSeed, carriageIndex, baseBeNbt, level.registryAccess(), level);
-            }
-        }
+        place(level, worldPos, state, baseBeNbt, plotKey, localPos, worldSeed,
+            carriageIndex, carriageIndex, variantLinkedLootPrefabId);
+    }
+
+    /**
+     * {@link #place(ServerLevel, BlockPos, BlockState, CompoundTag, String, BlockPos, long, int, String)}
+     * with the loot <em>difficulty</em> frame split out from the RNG <em>seed</em> frame.
+     *
+     * <p>{@code carriageIndex} keys the deterministic roll; {@code diffIndex} is the
+     * carriage-equivalent position index driving stat scaling. Callers keyed on a raw
+     * world-X (tunnels) must pass {@code floorDiv(worldX, carriageLength)} as
+     * {@code diffIndex} — passing the world-X would inflate the tier by ~carriageLength.</p>
+     */
+    public static void place(ServerLevel level, BlockPos worldPos, BlockState state,
+                             @Nullable CompoundTag baseBeNbt, String plotKey,
+                             BlockPos localPos, long worldSeed, int carriageIndex, int diffIndex,
+                             @Nullable String variantLinkedLootPrefabId) {
+        CompoundTag finalNbt = rollForPlacement(level, state, baseBeNbt, plotKey,
+            localPos, worldSeed, carriageIndex, diffIndex, variantLinkedLootPrefabId, level);
         SilentBlockOps.setBlockSilent(level, worldPos, state, finalNbt);
+    }
+
+    /**
+     * Worldgen-time twin of {@link #place}. Rolls loot with the same
+     * precedence, then writes {@code state} through {@link WorldGenLevel}
+     * with {@link Block#UPDATE_CLIENTS} (neighbour-update cascades are unsafe
+     * inside the chunkgen decoration window) and stamps the resulting NBT
+     * onto the freshly-placed block entity.
+     *
+     * <p>BE stamping applies to <em>every</em> block entity, not just
+     * containers (signs, banners, …), so worldgen placement matches the
+     * runtime path. The BE-load-after-setBlock pattern mirrors vanilla
+     * {@code StructureTemplate.placeInWorld} and
+     * {@link SilentBlockOps#setBlockSilent(ServerLevel, BlockPos, BlockState, CompoundTag)}.</p>
+     */
+    public static void placeWorldgen(WorldGenLevel level, BlockPos worldPos, BlockState state,
+                                     @Nullable CompoundTag baseBeNbt, String plotKey,
+                                     BlockPos localPos, long worldSeed, int carriageIndex,
+                                     @Nullable String variantLinkedLootPrefabId) {
+        placeWorldgen(level, worldPos, state, baseBeNbt, plotKey, localPos, worldSeed,
+            carriageIndex, carriageIndex, variantLinkedLootPrefabId);
+    }
+
+    /**
+     * {@link #placeWorldgen(WorldGenLevel, BlockPos, BlockState, CompoundTag, String, BlockPos, long, int, String)}
+     * with the difficulty frame split out from the seed frame — see the {@code diffIndex}
+     * overload of {@link #place}.
+     */
+    public static void placeWorldgen(WorldGenLevel level, BlockPos worldPos, BlockState state,
+                                     @Nullable CompoundTag baseBeNbt, String plotKey,
+                                     BlockPos localPos, long worldSeed, int carriageIndex, int diffIndex,
+                                     @Nullable String variantLinkedLootPrefabId) {
+        // WorldGenLevel is not a Level, so pass null for the optional roll
+        // context (used only by the furnace-slot path for recipe lookups).
+        CompoundTag finalNbt = rollForPlacement(level, state, baseBeNbt, plotKey,
+            localPos, worldSeed, carriageIndex, diffIndex, variantLinkedLootPrefabId, null);
+        level.setBlock(worldPos, state, Block.UPDATE_CLIENTS);
+        if (finalNbt == null || !state.hasBlockEntity()) return;
+        BlockEntity be = level.getBlockEntity(worldPos);
+        if (be == null) return;
+        // Stamp the BE's coordinate fields so load() doesn't overwrite the
+        // freshly-placed position (vanilla BlockEntity.load reads x/y/z).
+        CompoundTag positioned = finalNbt.copy();
+        positioned.putInt("x", worldPos.getX());
+        positioned.putInt("y", worldPos.getY());
+        positioned.putInt("z", worldPos.getZ());
+        be.loadWithComponents(positioned, level.registryAccess());
+        be.setChanged();
+    }
+
+    /**
+     * Resolve the container-contents pool for {@code (plotKey, localPos)} (or
+     * the per-variant loot link) and roll it into {@code baseBeNbt}, returning
+     * the merged NBT. Returns {@code baseBeNbt} unchanged when {@code state}
+     * is not a container BE or no pool resolves. Performs no world writes.
+     *
+     * @param registryLevel level supplying {@code registryAccess()} for item
+     *                       (de)serialisation — {@link ServerLevel} at runtime,
+     *                       {@link WorldGenLevel} at chunkgen.
+     * @param rollLevel      optional {@link Level} passed through to
+     *                       {@link ContainerContentsRoller#roll} for the
+     *                       furnace-slot path; {@code null} at worldgen.
+     */
+    @Nullable
+    public static CompoundTag rollForPlacement(LevelReader registryLevel, BlockState state,
+                                               @Nullable CompoundTag baseBeNbt, String plotKey,
+                                               BlockPos localPos, long worldSeed, int carriageIndex,
+                                               @Nullable String variantLinkedLootPrefabId,
+                                               @Nullable Level rollLevel) {
+        return rollForPlacement(registryLevel, state, baseBeNbt, plotKey, localPos, worldSeed,
+            carriageIndex, carriageIndex, variantLinkedLootPrefabId, rollLevel);
+    }
+
+    /**
+     * {@link #rollForPlacement(LevelReader, BlockState, CompoundTag, String, BlockPos, long, int, String, Level)}
+     * with the difficulty frame split out from the seed frame.
+     */
+    @Nullable
+    public static CompoundTag rollForPlacement(LevelReader registryLevel, BlockState state,
+                                               @Nullable CompoundTag baseBeNbt, String plotKey,
+                                               BlockPos localPos, long worldSeed, int carriageIndex,
+                                               int diffIndex,
+                                               @Nullable String variantLinkedLootPrefabId,
+                                               @Nullable Level rollLevel) {
+        if (!(state.hasBlockEntity() && ContainerContentsRoller.isContainerState(state))) {
+            return baseBeNbt;
+        }
+        ContainerContentsPool pool;
+        if (variantLinkedLootPrefabId != null) {
+            pool = LootPrefabStore.load(variantLinkedLootPrefabId)
+                .map(LootPrefabStore.Data::pool)
+                .orElse(ContainerContentsPool.empty());
+        } else {
+            pool = ContainerContentsStore.loadFor(plotKey).poolAt(localPos);
+        }
+        if (pool.isEmpty()) {
+            pool = BlockLootDefaults.resolveDefaultPool(state, localPos, worldSeed, carriageIndex)
+                .orElse(ContainerContentsPool.empty());
+        }
+        if (pool.isEmpty()) return baseBeNbt;
+        return ContainerContentsRoller.roll(pool, state, localPos, worldSeed, carriageIndex,
+            diffIndex, baseBeNbt, registryLevel.registryAccess(), rollLevel);
     }
 }

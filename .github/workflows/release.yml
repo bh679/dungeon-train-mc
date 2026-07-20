@@ -28,6 +28,11 @@ on:
         required: false
         type: string
         default: ""
+      test_release:
+        description: "Test build: publish to the ALPHA channel and leave the changelog ledger untouched. Use to verify platform behaviour (e.g. that required dependencies auto-install) before a real release. Note neither platform has a private channel — alpha is publicly visible, just off CurseForge's default Release filter."
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   release:
@@ -68,12 +73,22 @@ jobs:
             exit 1
           fi
 
+      # Feeds both mc-publish's `version-type:` and the GitHub Release `prerelease:` flag.
       - name: Compute release type from tag
         id: release_type
+        env:
+          IS_TEST: ${{ inputs.test_release }}
         run: |
           TAG_NUMERIC="${RELEASE_TAG#v}"
           MAJOR="${TAG_NUMERIC%%.*}"
-          if [ "$MAJOR" -gt 0 ] 2>/dev/null; then
+          # A test build goes to the alpha channel regardless of version. CurseForge instances
+          # default to the Release channel, so an alpha file isn't offered to ordinary users —
+          # the quietest either platform allows (neither has a private published file).
+          if [ "$IS_TEST" = "true" ]; then
+            echo "type=alpha" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "Release type: alpha (test_release=true, tag $RELEASE_TAG)"
+          elif [ "$MAJOR" -gt 0 ] 2>/dev/null; then
             echo "type=release" >> "$GITHUB_OUTPUT"
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
             echo "Release type: release (tag $RELEASE_TAG, MAJOR=$MAJOR > 0)"
@@ -217,18 +232,26 @@ jobs:
           curseforge-changelog-file: curseforge-notes.md
           loaders: neoforge
           game-versions: 1.21.1
+          # Sibling mods are external required downloads (no longer jarJar'd), so each
+          # is declared `required` — that is what makes the Modrinth/CurseForge apps
+          # fetch them and credit the download to their own project pages.
+          # discordpresence is absent from both lists: it is still embedded in the jar.
+          # NOTE: AIN's Modrinth slug is `adventureitemnames` (no hyphens) while its
+          # CurseForge slug is `adventure-item-names`; AIS is `adventure-items-stats` on
+          # Modrinth vs `adventure-item-stats` on CurseForge. The spellings differ per
+          # platform on purpose — don't "fix" one to match the other.
           dependencies: |
             sable(required)
-            adventure-item-names(embedded)
-            adventure-items-stats(embedded)
-            interactive-player-mobs(embedded)
-            ender-chest-persistence(embedded)
+            adventureitemnames(required)
+            adventure-items-stats(required)
+            interactive-player-mobs(required)
+            ender-chest-persistence(required)
           curseforge-dependencies: |
             sable(required)
-            adventure-item-names(embedded)
-            adventure-item-stats(embedded)
-            interactive-player-mobs(embedded)
-            ender-chest-persistence(embedded)
+            adventure-item-names(required)
+            adventure-item-stats(required)
+            interactive-player-mobs(required)
+            ender-chest-persistence(required)
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)
@@ -248,6 +271,7 @@ jobs:
             pick-up-notifier(optional)
             puzzles-lib(optional)
             smooth-swapping(optional)
+            overloaded-armor-bar(optional)
             kinetic-hosting-integration(optional)
           java: 21
           retry-attempts: 2
@@ -306,8 +330,13 @@ jobs:
       # GitHub Release having been created (mc-publish uses fail-mode: warn so a
       # Modrinth/CurseForge hiccup won't block this). Commits to main with
       # [skip ci] so it triggers neither version-bump.yml nor build.yml.
+      #
+      # test_release also skips this. A test build must NOT consume the curated
+      # entries — they describe features that haven't reached players yet, and
+      # marking them shipped would leave the following real release with empty
+      # notes and no obvious cause.
       - name: Mark changelog entries released
-        if: ${{ success() && inputs.auto == false }}
+        if: ${{ success() && inputs.auto == false && inputs.test_release == false }}
         env:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |

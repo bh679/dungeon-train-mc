@@ -265,6 +265,23 @@ public final class ContainerContentsRoller {
                                    @Nullable CompoundTag baseNbt,
                                    HolderLookup.Provider registries,
                                    @Nullable Level level) {
+        return roll(pool, state, localPos, worldSeed, carriageIndex, carriageIndex,
+            baseNbt, registries, level);
+    }
+
+    /**
+     * {@link #roll(ContainerContentsPool, BlockState, BlockPos, long, int, CompoundTag, HolderLookup.Provider, Level)}
+     * with the difficulty frame split out from the seed frame — see
+     * {@link #rollItemStack(ContainerContentsEntry, int, BlockPos, long, int, int, int, HolderLookup.Provider)}
+     * for why world-X-keyed callers (tunnels) must pass a distinct {@code diffIndex}.
+     */
+    @Nullable
+    public static CompoundTag roll(ContainerContentsPool pool, BlockState state,
+                                   BlockPos localPos, long worldSeed, int carriageIndex,
+                                   int diffIndex,
+                                   @Nullable CompoundTag baseNbt,
+                                   HolderLookup.Provider registries,
+                                   @Nullable Level level) {
         if (pool == null || pool.isEmpty()) return baseNbt;
         if (!state.hasBlockEntity()) return baseNbt;
         int totalWeight = pool.totalWeight();
@@ -276,7 +293,7 @@ public final class ContainerContentsRoller {
         // chest-style branch below would silently drop the rolled stack on
         // load. Route it to rollDecoratedPot before the generic path runs.
         if (isDecoratedPot(state)) {
-            return rollDecoratedPot(pool, totalWeight, localPos, worldSeed, carriageIndex, baseNbt, registries);
+            return rollDecoratedPot(pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
         }
         int slots = nativeContainerSlots(state);
         if (slots <= 0) return baseNbt;
@@ -285,7 +302,7 @@ public final class ContainerContentsRoller {
         // a slot-aware path so the input slot gets a cookable item, the fuel
         // slot gets a burnable item, and the output slot gets anything.
         if (isFurnaceLike(state)) {
-            return rollFurnace(pool, state, localPos, worldSeed, carriageIndex, baseNbt, registries, level);
+            return rollFurnace(pool, state, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries, level);
         }
 
         // Roll K = uniform random in [fillMin, effectiveMax] (inclusive).
@@ -302,7 +319,7 @@ public final class ContainerContentsRoller {
             // Per-entry count is treated as a max — roll the actual stack
             // count uniformly in [1, picked.count()] for variety per slot.
             int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slot);
-            ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, slot, registries);
+            ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries);
             if (stack.isEmpty()) continue;
             CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
             stackTag.putByte("Slot", (byte) slot);
@@ -335,6 +352,17 @@ public final class ContainerContentsRoller {
     public static List<ItemStack> rollStacks(ContainerContentsPool pool, int slotCount,
                                               BlockPos localPos, long worldSeed, int carriageIndex,
                                               HolderLookup.Provider registries) {
+        return rollStacks(pool, slotCount, localPos, worldSeed, carriageIndex, carriageIndex, registries);
+    }
+
+    /**
+     * {@link #rollStacks(ContainerContentsPool, int, BlockPos, long, int, HolderLookup.Provider)}
+     * with the difficulty frame split out from the seed frame.
+     */
+    public static List<ItemStack> rollStacks(ContainerContentsPool pool, int slotCount,
+                                              BlockPos localPos, long worldSeed, int carriageIndex,
+                                              int diffIndex,
+                                              HolderLookup.Provider registries) {
         if (pool == null || pool.isEmpty()) return List.of();
         if (slotCount <= 0) return List.of();
         int totalWeight = pool.totalWeight();
@@ -352,7 +380,7 @@ public final class ContainerContentsRoller {
             ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, slot);
             if (picked == null || picked.isAir()) continue;
             int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slot);
-            ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, slot, registries);
+            ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries);
             if (stack.isEmpty()) continue;
             out.add(stack);
         }
@@ -482,6 +510,7 @@ public final class ContainerContentsRoller {
      */
     private static CompoundTag rollDecoratedPot(ContainerContentsPool pool, int totalWeight,
                                                 BlockPos localPos, long worldSeed, int carriageIndex,
+                                                int diffIndex,
                                                 @Nullable CompoundTag baseNbt,
                                                 HolderLookup.Provider registries) {
         int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
@@ -497,7 +526,7 @@ public final class ContainerContentsRoller {
         if (picked == null || picked.isAir()) return out;
 
         int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, /*slot*/ 0);
-        ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, /*slot*/ 0, registries);
+        ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, /*slot*/ 0, registries);
         if (stack.isEmpty()) return out;
         CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
         out.put(NBT_POT_ITEM, stackTag);
@@ -538,6 +567,7 @@ public final class ContainerContentsRoller {
      */
     private static CompoundTag rollFurnace(ContainerContentsPool pool, BlockState state,
                                            BlockPos localPos, long worldSeed, int carriageIndex,
+                                           int diffIndex,
                                            @Nullable CompoundTag baseNbt,
                                            HolderLookup.Provider registries,
                                            @Nullable Level level) {
@@ -576,7 +606,7 @@ public final class ContainerContentsRoller {
                 e -> isCookable(e, rt, level) && e.slotOverride() == ContainerContentsEntry.SLOT_AUTO,
                 localPos, worldSeed, carriageIndex);
             boolean wrote = appendRolled(items, ContainerContentsEntry.SLOT_INPUT, input,
-                localPos, worldSeed, carriageIndex, registries);
+                localPos, worldSeed, carriageIndex, diffIndex, registries);
             if (DebugFlags.logLootRolls()) {
                 LOGGER.info("[DT-furnace] slot0 picked={} wrote={}",
                     input == null ? "null" : input.itemId(), wrote);
@@ -589,7 +619,7 @@ public final class ContainerContentsRoller {
                 e -> isFuel(e, rt) && !isCookable(e, rt, level) && e.slotOverride() == ContainerContentsEntry.SLOT_AUTO,
                 localPos, worldSeed, carriageIndex);
             boolean wrote = appendRolled(items, ContainerContentsEntry.SLOT_FUEL, fuel,
-                localPos, worldSeed, carriageIndex, registries);
+                localPos, worldSeed, carriageIndex, diffIndex, registries);
             if (DebugFlags.logLootRolls()) {
                 LOGGER.info("[DT-furnace] slot1 picked={} wrote={}",
                     fuel == null ? "null" : fuel.itemId(), wrote);
@@ -602,7 +632,7 @@ public final class ContainerContentsRoller {
                 e -> !isCookable(e, rt, level) && !isFuel(e, rt) && e.slotOverride() == ContainerContentsEntry.SLOT_AUTO,
                 localPos, worldSeed, carriageIndex);
             boolean wrote = appendRolled(items, ContainerContentsEntry.SLOT_OUTPUT, out2,
-                localPos, worldSeed, carriageIndex, registries);
+                localPos, worldSeed, carriageIndex, diffIndex, registries);
             if (DebugFlags.logLootRolls()) {
                 LOGGER.info("[DT-furnace] slot2 picked={} wrote={}",
                     out2 == null ? "null" : out2.itemId(), wrote);
@@ -703,11 +733,11 @@ public final class ContainerContentsRoller {
      * this to decide whether the slot "consumed" a fill count.
      */
     private static boolean appendRolled(ListTag items, int slot, @Nullable ContainerContentsEntry picked,
-                                        BlockPos localPos, long worldSeed, int carriageIndex,
+                                        BlockPos localPos, long worldSeed, int carriageIndex, int diffIndex,
                                         HolderLookup.Provider registries) {
         if (picked == null || picked.isAir()) return false;
         int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slot);
-        ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, slot, registries);
+        ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, diffIndex, slot, registries);
         if (stack.isEmpty()) return false;
         CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
         stackTag.putByte("Slot", (byte) slot);
@@ -730,6 +760,26 @@ public final class ContainerContentsRoller {
     static ItemStack rollItemStack(ContainerContentsEntry picked, int rolledCount,
                                            BlockPos localPos, long worldSeed,
                                            int carriageIndex, int slot,
+                                           HolderLookup.Provider registries) {
+        return rollItemStack(picked, rolledCount, localPos, worldSeed,
+            carriageIndex, carriageIndex, slot, registries);
+    }
+
+    /**
+     * {@link #rollItemStack(ContainerContentsEntry, int, BlockPos, long, int, int, HolderLookup.Provider)}
+     * with the difficulty frame split out from the seed frame.
+     *
+     * <p>{@code carriageIndex} is purely an RNG seed input; {@code diffIndex} is the
+     * <em>carriage-equivalent position index</em> fed to
+     * {@link DifficultyProgression#positionTier} for stat scaling. For carriages the two
+     * are the same value (a carriage's pIdx is both its seed key and its position). For
+     * world-X-keyed placements such as tunnels they are not: the seed wants the raw
+     * world-X so neighbouring tiles stay distinct, while the tier wants
+     * {@code floorDiv(worldX, carriageLength)} — see {@code TunnelPlacer}.</p>
+     */
+    static ItemStack rollItemStack(ContainerContentsEntry picked, int rolledCount,
+                                           BlockPos localPos, long worldSeed,
+                                           int carriageIndex, int diffIndex, int slot,
                                            HolderLookup.Provider registries) {
         Item item = resolveItem(picked.itemId());
         if (item == null) return ItemStack.EMPTY;
@@ -852,11 +902,13 @@ public final class ContainerContentsRoller {
 
         long statsSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_STATS);
         RandomSource statsRng = RandomSource.create(statsSeed);
-        // Scale the stat roll by the carriage's difficulty tier (deterministic
-        // from carriageIndex for a given difficulty offset, so the same chest rolls
+        // Scale the stat roll by the difficulty tier at this position (deterministic
+        // from diffIndex for a given difficulty offset, so the same chest rolls
         // identical stats; an admin /dungeontrain difficulty shifts the tier so loot
         // power tracks the carriage stage). Editor preview uses pIdx -1 → tier 0 → no bonus.
-        int diffTier = DifficultyProgression.positionTier(carriageIndex);
+        // diffIndex is the carriage-equivalent position index, NOT the seed key — a
+        // raw world-X here would inflate the tier by ~carriageLength.
+        int diffTier = DifficultyProgression.positionTier(diffIndex);
         StatsModifier.applyStats(stack, statsRng,
             ItemStatLevelScaling.primaryStatBonus(stack, diffTier));
 

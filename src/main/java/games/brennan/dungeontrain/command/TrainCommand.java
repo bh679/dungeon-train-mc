@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.event.CinematicIntroService;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.event.TrainTickEvents;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
@@ -75,6 +76,10 @@ public final class TrainCommand {
             .then(Commands.literal("tracks")
                 .then(Commands.literal("on").executes(ctx -> runTracks(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runTracks(ctx.getSource(), false))))
+            .then(Commands.literal("breakblocks")
+                .executes(ctx -> runBreakBlocksStatus(ctx.getSource()))
+                .then(Commands.literal("on").executes(ctx -> runBreakBlocks(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runBreakBlocks(ctx.getSource(), false))))
             .then(Commands.literal("difficulty")
                 .executes(ctx -> runDifficultyStatus(ctx.getSource()))
                 .then(Commands.argument("tier",
@@ -183,6 +188,44 @@ public final class TrainCommand {
                 + ". The appender will extend or trim its needed window on the next tick "
                 + "as the player crosses pIdx boundaries."
         ), true);
+        return 1;
+    }
+
+    /**
+     * Flip train-on-contact block breaking for THIS world, live, with no restart — the A/B switch
+     * for measuring the feature's performance cost against {@code [sweep.perf]}.
+     *
+     * <p>Writes the per-world override ({@code DungeonTrainWorldData}), which
+     * {@code TrainTickEvents.sweepFootprint} re-reads once per sweep, so the next tick already
+     * reflects the change. Turning it OFF is a genuine zero-cost baseline: the sweep's cheap gate
+     * ({@code TrainTickEvents.canBreakAt}) short-circuits before the collision-shape query and the
+     * Sable sub-level lookup, so an OFF window measures the pre-existing footprint traversal alone.
+     * The {@code [sweep.perf]} accumulator window is reset on the flip so the two halves of an A/B
+     * never share a window.</p>
+     */
+    private static int runBreakBlocks(CommandSourceStack source, boolean enabled) {
+        ServerLevel level = source.getLevel();
+        DungeonTrainWorldData.get(level).setBreakBlocksOnContactOverride(enabled);
+        TrainTickEvents.resetSweepPerfWindow();
+        LOGGER.info("[DungeonTrain] /dungeontrain breakblocks {} — per-world override set, [sweep.perf] window reset",
+            enabled ? "on" : "off");
+        source.sendSuccess(() -> Component.literal(
+            "Train contact block-breaking is now " + (enabled ? "ON" : "OFF")
+                + " for this world (takes effect next tick). [sweep.perf] window reset — compare avgMs"
+                + " between an ON and an OFF window to attribute the cost."
+        ), true);
+        return 1;
+    }
+
+    /** Report the effective block-breaking state and whether it comes from a per-world override. */
+    private static int runBreakBlocksStatus(CommandSourceStack source) {
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(source.getLevel());
+        Boolean override = data.getBreakBlocksOnContactOverride();
+        boolean effective = data.getEffectiveBreakBlocksOnContact();
+        source.sendSuccess(() -> Component.literal(
+            "Train contact block-breaking: " + (effective ? "ON" : "OFF")
+                + (override == null ? " (following the global config default)" : " (per-world override)")
+        ), false);
         return 1;
     }
 

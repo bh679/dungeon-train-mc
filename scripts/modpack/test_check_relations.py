@@ -58,7 +58,50 @@ def test_missing_relation_fails():
     config = {"optional_mods": [{"name": "AppleSkin", "slug": "appleskin", "project_id": 1, "file_id": 2}]}
     proc = run(config, release_yml("sable(required)", "jade(optional)"))
     assert proc.returncode != 0
-    assert "appleskin" in proc.stderr.lower()
+
+
+def _sibling(**overrides):
+    """An un-bundled sibling mod entry: DT hard-depends on it, so it must be `required`."""
+    return {
+        "name": "Interactive Player Mobs",
+        "slug": "interactive-player-mobs",
+        "project_id": 1559379,
+        "file_id": 8452691,
+        "required": True,
+        "dependency_type": "required",
+        **overrides,
+    }
+
+
+def test_sibling_declared_required_passes():
+    proc = run(
+        {"optional_mods": [_sibling()]},
+        release_yml("sable(required)", "interactive-player-mobs(required)"),
+    )
+    assert proc.returncode == 0, proc.stderr
+
+
+def test_sibling_declared_optional_fails():
+    """A hard dependency declared merely `optional` wouldn't be auto-installed by the apps."""
+    proc = run(
+        {"optional_mods": [_sibling()]},
+        release_yml("sable(required)", "interactive-player-mobs(optional)"),
+    )
+    assert proc.returncode != 0
+    assert "required" in proc.stderr
+
+
+def test_required_pack_flag_alone_does_not_imply_required_dependency():
+    """`required: true` means 'enabled by default in the pack', NOT 'the mod needs it'.
+
+    AppleSkin ships switched on yet DT runs fine without it, so it stays an optional
+    dependency. Guards against re-deriving the relation type from the wrong flag.
+    """
+    config = {"optional_mods": [
+        {"name": "AppleSkin", "slug": "appleskin", "project_id": 1, "file_id": 2, "required": True}
+    ]}
+    proc = run(config, release_yml("appleskin(optional)"))
+    assert proc.returncode == 0, proc.stderr
 
 
 def test_wrong_relation_type_fails():
