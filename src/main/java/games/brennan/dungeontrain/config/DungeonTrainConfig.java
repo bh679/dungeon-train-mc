@@ -118,11 +118,15 @@ public final class DungeonTrainConfig {
      *
      * <p>Expressed in groups rather than raw carriages so the rule tracks the train's real structure —
      * a group is {@link #getGroupSize()} carriages, the run between flatbed separators — instead of an
-     * arbitrary carriage count that means different things at different group sizes. Default 1: leaving
-     * one whole group behind is enough. Resolved to carriages by
-     * {@link #getSharedBookRepeatCarriages()}.</p>
+     * arbitrary carriage count that means different things at different group sizes. Resolved to
+     * carriages by {@link #getSharedBookRepeatCarriages()}.</p>
+     *
+     * <p>Default 2. One group was tried first and proved too permissive at the boundary: a player riding
+     * a moving train can clear a single group BETWEEN two pickups, so once the servable pool was nearly
+     * exhausted the escape would re-admit a book they had just been handed (observed as back-to-back
+     * repeats in play). Two groups keeps the escape generous without allowing that.</p>
      */
-    public static final int DEFAULT_SHARED_BOOK_REPEAT_GROUPS = 1;
+    public static final int DEFAULT_SHARED_BOOK_REPEAT_GROUPS = 2;
     public static final int MIN_SHARED_BOOK_REPEAT_GROUPS = 1;
     public static final int MAX_SHARED_BOOK_REPEAT_GROUPS = 64;
 
@@ -346,8 +350,9 @@ public final class DungeonTrainConfig {
                         "hands a player a book it already gave them this life UNLESS the book is still unread AND its",
                         "carriage is at least this many groups behind their current position. A group is `groupSize`",
                         "carriages (the run between flatbed separators), so this tracks the train's real structure rather",
-                        "than a fixed carriage count. Higher = books repeat less often within a life. Default 1 — leaving",
-                        "one whole group behind is enough.")
+                        "than a fixed carriage count. Higher = books repeat less often within a life. Default 2 — 1 was",
+                        "tried and proved too permissive: a player on a moving train can clear a single group between two",
+                        "pickups, so a nearly-exhausted pool could hand back a book they had just received.")
                 .defineInRange("sharedBookRepeatGroups", DEFAULT_SHARED_BOOK_REPEAT_GROUPS,
                         MIN_SHARED_BOOK_REPEAT_GROUPS, MAX_SHARED_BOOK_REPEAT_GROUPS);
         ModConfigSpec.BooleanValue discoverNarrativesEnabled = b
