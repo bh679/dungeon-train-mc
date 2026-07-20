@@ -41,8 +41,8 @@ import java.util.List;
  * ghast-specific ceiling ({@link #ghastCapFor}) key off {@link NetherBand#netherPassIndex} — the 0-based
  * world-gen cycle repeat, which doubles as the Nether pass index because the Nether band is the first
  * special band of every period. The first Nether reads as an occasional threat; each full lap back
- * around makes it denser, up to a floor of 1-in-2 and a ceiling of {@link #GHAST_NEARBY_CAP_MAX} alive
- * at once. The pass index is positional (derived from world-X), so this needs no saved state and is
+ * around makes it denser, up to a floor of 1-in-2 odds and the top of the {@link #GHAST_NEARBY_CAPS}
+ * table. The pass index is positional (derived from world-X), so this needs no saved state and is
  * reproducible across reloads. Ghasts keep their own cap on top of the shared {@link #NEARBY_CAP} so
  * they can't crowd the ground rosters out entirely.</p>
  *
@@ -74,10 +74,17 @@ public final class NetherMobSpawner {
     private static final int GHAST_DENOM_OTHER_BIOMES = 8;
     /** Densest the odds ever get, however many laps deep — 1-in-2 is already a coin flip. */
     private static final int GHAST_DENOM_FLOOR = 2;
-    /** Max nether-band ghasts near a player on the first pass (they'd otherwise fill NEARBY_CAP). */
-    private static final int GHAST_NEARBY_CAP_BASE = 2;
-    /** Ceiling the ghast cap escalates to, however many laps deep. */
-    private static final int GHAST_NEARBY_CAP_MAX = 6;
+    /**
+     * Max nether-band ghasts near a player, indexed by Nether pass; laps past the end hold the last
+     * value. Escalates faster than linearly so late laps feel qualitatively different, not just denser.
+     *
+     * <p><b>Note the interaction with {@link #NEARBY_CAP}</b> (10, checked first and deliberately left
+     * alone): the spawner stops entirely once 10 band mobs are near a player, so entries above 10 never
+     * bind. In practice pass 2 (8) already leaves only ~2 slots for ground mobs, and passes 3+ mean
+     * "every one of the 10 slots may be a ghast" — so laps 3 and 4 behave identically. The 15s are the
+     * intended ceiling should {@code NEARBY_CAP} ever rise, not a live difference today.</p>
+     */
+    private static final int[] GHAST_NEARBY_CAPS = {3, 5, 8, 15, 15};
     /** Spawn attempts per player per tick. */
     private static final int TRIES = 4;
     /** Vertical search window around the player for a valid floor. */
@@ -147,15 +154,16 @@ public final class NetherMobSpawner {
     }
 
     /**
-     * Max ghasts near a player at a given Nether pass — one more per completed lap, capped at
-     * {@link #GHAST_NEARBY_CAP_MAX}. This escalates alongside {@link #ghastDenomFor} on purpose: with
-     * a fixed cap the odds barely matter, since the cap fills within seconds and becomes the real
-     * ceiling, so raising the odds alone would change respawn latency rather than felt difficulty.
+     * Max ghasts near a player at a given Nether pass — a {@link #GHAST_NEARBY_CAPS} lookup, holding
+     * the last entry for every lap beyond the table. This escalates alongside {@link #ghastDenomFor}
+     * on purpose: with a fixed cap the odds barely matter, since the cap fills within seconds and
+     * becomes the real ceiling, so raising the odds alone would change respawn latency rather than
+     * felt difficulty.
      */
     static int ghastCapFor(long pass) {
-        // Clamp the lap BEFORE adding — GHAST_NEARBY_CAP_BASE + Long.MAX_VALUE would wrap negative.
-        long lap = Math.min(Math.max(0L, pass), GHAST_NEARBY_CAP_MAX);
-        return (int) Math.min(GHAST_NEARBY_CAP_MAX, GHAST_NEARBY_CAP_BASE + lap);
+        // Clamp into the table BEFORE indexing, so a huge or negative pass can't run off either end.
+        long lap = Math.min(Math.max(0L, pass), GHAST_NEARBY_CAPS.length - 1L);
+        return GHAST_NEARBY_CAPS[(int) lap];
     }
 
     @SubscribeEvent
