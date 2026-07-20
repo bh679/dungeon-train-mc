@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.config;
 
+import games.brennan.dungeontrain.client.FramerateThrottle;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -63,6 +64,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_FLUSH_MIN_FPS;
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_FLUSH_MIN_TPS;
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_ON_DISK;
+    public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
+    public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -88,6 +91,8 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_FLUSH_MIN_FPS = pair.getLeft().rideSnapshotFlushMinFps;
         RIDE_SNAPSHOT_FLUSH_MIN_TPS = pair.getLeft().rideSnapshotFlushMinTps;
         RIDE_SNAPSHOT_MAX_ON_DISK = pair.getLeft().rideSnapshotMaxOnDisk;
+        FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
+        FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
     }
 
     private ClientDisplayConfig() {}
@@ -171,11 +176,22 @@ public final class ClientDisplayConfig {
                 .defineInRange("maxOnDisk", 64, 8, 256);
         b.pop();
 
+        b.push("framerateThrottle");
+        ModConfigSpec.BooleanValue framerateThrottleEnabled = b
+                .comment("Cap the render framerate while the game is paused, or while its window is unfocused or minimised. Minecraft 1.21.1 does not throttle rendering behind the pause screen (and has no AFK limiter — that arrived in 1.21.2), so an idle game keeps re-rendering an unchanging frame at full speed, spinning up fans for nothing. Set false to render idle frames at full speed.")
+                .define("enabled", true);
+        ModConfigSpec.IntValue framerateThrottleFps = b
+                .comment("Framerate to cap to while paused / unfocused / minimised. This can only ever LOWER your framerate — if your Max Framerate video setting is already below this, that lower value is kept. Lower saves more power; the pause menu still feels responsive well below 30.")
+                .defineInRange("fps", FramerateThrottle.DEFAULT_THROTTLE_FPS,
+                        FramerateThrottle.MIN_THROTTLE_FPS, FramerateThrottle.MAX_THROTTLE_FPS);
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps,
-                rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk);
+                rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
+                framerateThrottleEnabled, framerateThrottleFps);
     }
 
     /**
@@ -402,6 +418,43 @@ public final class ClientDisplayConfig {
         return Math.max(floor, isLoaded() ? RIDE_SNAPSHOT_MAX_ON_DISK.get() : 64);
     }
 
+    // ----- Idle framerate throttle (paused / unfocused / minimised) -----
+
+    /**
+     * Throttle the render framerate while idle? Defaults to {@code true}, but deliberately
+     * {@code false} pre-load: {@link #isLoaded()} is already checked by the mixin, and defaulting
+     * off here means a config that never loads simply leaves vanilla's behaviour alone.
+     */
+    public static boolean isFramerateThrottleEnabled() {
+        return isLoaded() && FRAMERATE_THROTTLE_ENABLED.get();
+    }
+
+    /**
+     * Persist the idle-throttle toggle. Idempotent: skips the {@code .save()} (a TOML write) when
+     * the value is unchanged. Driven by {@code /framerate-throttle on|off}.
+     */
+    public static void setFramerateThrottleEnabled(boolean value) {
+        if (!isLoaded()) return;
+        if (FRAMERATE_THROTTLE_ENABLED.get() == value) return;
+        FRAMERATE_THROTTLE_ENABLED.set(value);
+        FRAMERATE_THROTTLE_ENABLED.save();
+    }
+
+    /** Framerate to cap to while idle. Only ever lowers the rate — see {@link FramerateThrottle#decide}. */
+    public static int getFramerateThrottleFps() {
+        return isLoaded() ? FRAMERATE_THROTTLE_FPS.get() : FramerateThrottle.DEFAULT_THROTTLE_FPS;
+    }
+
+    /** Persist the idle-throttle cap. Clamped to {@link FramerateThrottle}'s configurable range. */
+    public static void setFramerateThrottleFps(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(FramerateThrottle.MIN_THROTTLE_FPS,
+                Math.min(FramerateThrottle.MAX_THROTTLE_FPS, value));
+        if (FRAMERATE_THROTTLE_FPS.get() == clamped) return;
+        FRAMERATE_THROTTLE_FPS.set(clamped);
+        FRAMERATE_THROTTLE_FPS.save();
+    }
+
     private record Holder(
             ModConfigSpec.DoubleValue allScale,
             ModConfigSpec.DoubleValue worldspaceChannel,
@@ -422,6 +475,8 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue rideSnapshotDiskOffload,
             ModConfigSpec.IntValue rideSnapshotFlushMinFps,
             ModConfigSpec.IntValue rideSnapshotFlushMinTps,
-            ModConfigSpec.IntValue rideSnapshotMaxOnDisk
+            ModConfigSpec.IntValue rideSnapshotMaxOnDisk,
+            ModConfigSpec.BooleanValue framerateThrottleEnabled,
+            ModConfigSpec.IntValue framerateThrottleFps
     ) {}
 }
