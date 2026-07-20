@@ -84,7 +84,10 @@ public final class SharedBookSelector {
      * @param servedCarriage  for an already-served id, the signed carriage index it was served at
      * @param currentCarriage the player's current signed travelled-carriage index
      * @param repeatCarriages how far behind {@code servedCarriage} must be for a served-but-unread book to
-     *                        become eligible again (config {@code sharedBookRepeatCarriages})
+     *                        become eligible again, in CARRIAGES. Resolved by
+     *                        {@code DungeonTrainConfig.getSharedBookRepeatCarriages()} from the
+     *                        group-based {@code sharedBookRepeatGroups} setting (groups × groupSize), so
+     *                        the threshold is "one whole carriage group behind" by default.
      */
     public record PlayerContext(String playerLang,
                                 IntPredicate hasRead,

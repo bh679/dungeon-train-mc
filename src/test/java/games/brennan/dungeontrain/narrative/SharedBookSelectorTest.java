@@ -134,11 +134,33 @@ final class SharedBookSelectorTest {
     void farBehindEscape() {
         List<PoolBook> pool = List.of(book(1, EN, 5));
         Set<Integer> served = new HashSet<>(Set.of(1));
-        // current carriage 10, threshold 10 → 10 >= 10 → eligible again.
-        PlayerContext ctx = new PlayerContext(EN, id -> false, served::contains, id -> 0, 10, 10);
+        // Threshold 3 (= one default carriage group). At carriage 3, the book served at 0 is exactly one
+        // group behind → re-eligible.
+        PlayerContext ctx = new PlayerContext(EN, id -> false, served::contains, id -> 0, 3, 3);
         Optional<PoolBook> pick = SharedBookSelector.select(pool, ctx, 1L);
-        assertTrue(pick.isPresent(), "unread + carriage 10 behind (>=10) → re-eligible");
+        assertTrue(pick.isPresent(), "unread + one whole group behind → re-eligible");
         assertEquals(1, pick.get().id());
+    }
+
+    @Test
+    @DisplayName("far-behind escape prefers the book a whole group back over one served just now")
+    void escapePrefersTheFurtherBookOverARecentOne() {
+        // THE case that distinguishes the escape from plain relaxation: both books are served+unread, but
+        // only #1 has cleared the threshold. Without the escape both would be relaxed-in and #2 could be
+        // handed straight back to a player who just received it.
+        List<PoolBook> pool = List.of(book(1, EN, 5), book(2, EN, 5));
+        java.util.Map<Integer, Integer> servedAt = new HashMap<>(Map.of(1, 0, 2, 3));
+        PlayerContext ctx = new PlayerContext(EN,
+            id -> false,                       // neither read
+            id -> true,                        // both served this life
+            servedAt::get,
+            4,                                 // current carriage
+            3);                                // threshold = one group
+        // #1 is 4 behind (>=3 → eligible); #2 is only 1 behind (<3 → still excluded).
+        for (long seed = 0; seed < 100; seed++) {
+            assertEquals(1, SharedBookSelector.select(pool, ctx, seed).orElseThrow().id(),
+                "only the book a full group back may repeat; the just-served one stays out");
+        }
     }
 
     @Test
