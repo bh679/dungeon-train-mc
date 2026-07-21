@@ -146,7 +146,10 @@ public final class SupportScreen extends Screen {
             // Text-only section — no button row to reserve.
             return y + SECTION_GAP;
         }
-        int each = n == 1 ? colW : (colW - (n - 1) * BUTTON_GAP) / n;
+        // Single-button sections use the same half-column width as a paired
+        // button (left-aligned) so a lone Discord button doesn't stretch the
+        // full width and dominate the panel.
+        int each = n == 1 ? (colW - BUTTON_GAP) / 2 : (colW - (n - 1) * BUTTON_GAP) / n;
         for (int i = 0; i < n; i++) {
             LinkButton lb = links[i];
             int bx = colX + i * (each + BUTTON_GAP);
