@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.support;
 
+import games.brennan.dungeontrain.client.menu.ColorTintedButton;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -62,6 +63,10 @@ public final class SupportScreen extends Screen {
     private static final int COLOUR_HEADER = 0xFFFFFFFF;
     private static final int COLOUR_DESC   = 0xFFCACACA;
 
+    /** Sprite tints (multiplied over the grey button sprite). */
+    private static final float[] TINT_GREEN = {0.30F, 0.80F, 0.35F}; // Patreon
+    private static final float[] TINT_BLUE  = {0.35F, 0.55F, 1.00F}; // Kinetic Hosting
+
     private final Screen parent;
 
     // Computed in init(), consumed in render().
@@ -76,8 +81,12 @@ public final class SupportScreen extends Screen {
     /** A section's non-widget text: header line + wrapped description, with their Y positions. */
     private record TextBlock(Component header, int headerY, List<FormattedCharSequence> descLines, int descY) {}
 
-    /** One link button in a section: label key + target URL. */
-    private record LinkButton(String labelKey, String url) {}
+    /** One link button in a section: label key + target URL + optional sprite tint (null = default grey). */
+    private record LinkButton(String labelKey, String url, float[] tint) {
+        LinkButton(String labelKey, String url) {
+            this(labelKey, url, null);
+        }
+    }
 
     public SupportScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.support.title"));
@@ -104,8 +113,8 @@ public final class SupportScreen extends Screen {
         y = addSection(y, lh,
                 "gui.dungeontrain.support.financial.header",
                 "gui.dungeontrain.support.financial.desc",
-                new LinkButton("gui.dungeontrain.support.financial.patreon", PATREON_URL),
-                new LinkButton("gui.dungeontrain.support.financial.affiliate", AFFILIATE_URL));
+                new LinkButton("gui.dungeontrain.support.financial.patreon", PATREON_URL, TINT_GREEN),
+                new LinkButton("gui.dungeontrain.support.financial.affiliate", AFFILIATE_URL, TINT_BLUE));
 
         // Share the Mod — text only; the encouragement to send it to creators
         // and post videos/streams in Discord is the ask, no link button needed.
@@ -155,10 +164,8 @@ public final class SupportScreen extends Screen {
         // full width and dominate the panel.
         int each = n == 1 ? (colW - BUTTON_GAP) / 2 : (colW - (n - 1) * BUTTON_GAP) / n;
         for (int i = 0; i < n; i++) {
-            LinkButton lb = links[i];
             int bx = colX + i * (each + BUTTON_GAP);
-            addRenderableWidget(new DarkTintedButton(bx, y, each, BUTTON_H,
-                    Component.translatable(lb.labelKey()), b -> openLink(lb.url())));
+            addRenderableWidget(makeLinkButton(bx, y, each, BUTTON_H, links[i]));
         }
         return y + BUTTON_H + SECTION_GAP;
     }
@@ -182,10 +189,20 @@ public final class SupportScreen extends Screen {
 
         int buttonX = colX + textColW + BUTTON_GAP;
         int buttonY = descY + Math.max(0, (descBlockH - BUTTON_H) / 2);
-        addRenderableWidget(new DarkTintedButton(buttonX, buttonY, SIDE_BUTTON_W, BUTTON_H,
-                Component.translatable(link.labelKey()), b -> openLink(link.url())));
+        addRenderableWidget(makeLinkButton(buttonX, buttonY, SIDE_BUTTON_W, BUTTON_H, link));
 
         return y + Math.max(descBlockH, BUTTON_H) + SECTION_GAP;
+    }
+
+    /** Build a link button, tinted to {@link LinkButton#tint()} when set, else the default grey. */
+    private Button makeLinkButton(int x, int y, int w, int h, LinkButton lb) {
+        Component label = Component.translatable(lb.labelKey());
+        Button.OnPress onPress = b -> openLink(lb.url());
+        float[] t = lb.tint();
+        if (t == null) {
+            return new DarkTintedButton(x, y, w, h, label, onPress);
+        }
+        return new ColorTintedButton(x, y, w, h, label, t[0], t[1], t[2], onPress);
     }
 
     private void openLink(String url) {
