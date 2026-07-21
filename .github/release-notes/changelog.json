@@ -5165,6 +5165,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "suspicious-sand-archaeology-loot",
+      "version": "0.484.0",
+      "type": "feat",
+      "title": "Suspicious sand on the train digs up real loot",
+      "summary": "Brushing suspicious sand or gravel found on the train now uncovers a random archaeology find \u2014 pottery sherds, gems, and more \u2014 just like suspicious sand out in the world. Before, train-placed suspicious blocks brushed up empty.",
+      "highlights": [
+        "Suspicious sand/gravel on carriages now yields archaeology loot when brushed",
+        "Same loot resolves every time for a given block (deterministic per carriage)"
+      ],
+      "pr": 804,
+      "date": "2026-07-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
