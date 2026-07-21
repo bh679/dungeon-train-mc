@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.menu.PatreonIconButton;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -41,6 +42,7 @@ public final class MenuPatreonButtonHandler {
     private static final int GAP = 4;
     private static final Component ACCESSIBILITY_KEY = Component.translatable("options.accessibility");
     private static final Component NARRATION = Component.translatable("gui.dungeontrain.support.patreon_icon");
+    private static final Component TOOLTIP = Component.translatable("gui.dungeontrain.support.patreon_icon.tooltip");
 
     private MenuPatreonButtonHandler() {}
 
@@ -59,7 +61,9 @@ public final class MenuPatreonButtonHandler {
         int slots = MenuChatButtonHandler.isChatButtonVisible() ? 2 : 1;
         int x = accessibility.getX();
         int y = accessibility.getY() - slots * (BUTTON_SIZE + GAP);
-        event.addListener(new PatreonIconButton(x, y, BUTTON_SIZE, NARRATION, b -> openPatreon(titleScreen)));
+        PatreonIconButton button = new PatreonIconButton(x, y, BUTTON_SIZE, NARRATION, b -> openPatreon(titleScreen));
+        button.setTooltip(Tooltip.create(TOOLTIP));
+        event.addListener(button);
     }
 
     private static void openPatreon(Screen parent) {

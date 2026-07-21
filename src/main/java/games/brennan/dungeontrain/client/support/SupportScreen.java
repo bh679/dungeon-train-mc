@@ -6,6 +6,7 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.ClickEvent;
@@ -15,6 +16,8 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,7 +49,9 @@ import java.util.List;
  */
 public final class SupportScreen extends Screen {
 
-    private static final String REVOLUT_URL   = "https://revolut.me/brennacg7";
+    /** Revolut direct-donation base; the player's name is URL-encoded onto the note. */
+    private static final String REVOLUT_BASE  =
+            "https://revolut.me/brennacg7?currency=AUD&amount=4500&note=Dungeon%20Train%20";
     private static final String PATREON_URL   = "https://www.patreon.com/brennanhatton";
     private static final String AFFILIATE_URL = "https://billing.kinetichosting.com/aff.php?aff=1461";
     private static final String DISCORD_URL   = "https://discord.gg/jdKAwb6rbW";
@@ -67,8 +72,9 @@ public final class SupportScreen extends Screen {
     /** Blue used for the inline "Discord" links (RGB, no alpha). */
     private static final int COLOUR_LINK   = 0x5B9BFF;
 
-    /** Patreon brand-orange sprite tint (multiplied over the grey button sprite). */
-    private static final float[] TINT_ORANGE = {1.00F, 0.47F, 0.38F};
+    /** Sprite tints (multiplied over the grey button sprite). */
+    private static final float[] TINT_ORANGE = {1.00F, 0.47F, 0.38F}; // Patreon
+    private static final float[] TINT_GREEN  = {0.30F, 0.80F, 0.35F}; // Direct donation
 
     private final Screen parent;
 
@@ -84,8 +90,11 @@ public final class SupportScreen extends Screen {
     /** A section's non-widget text: header line + wrapped description, with their Y positions. */
     private record TextBlock(Component header, int headerY, List<FormattedCharSequence> descLines, int descY) {}
 
-    /** One link button in a section: label key + target URL + optional sprite tint (null = default grey). */
-    private record LinkButton(String labelKey, String url, float[] tint) {}
+    /**
+     * One link button in a section: label key + target URL + optional sprite tint
+     * (null = default grey) + optional hover-tooltip key (null = none).
+     */
+    private record LinkButton(String labelKey, String url, float[] tint, String tooltipKey) {}
 
     public SupportScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.support.title"));
@@ -114,8 +123,9 @@ public final class SupportScreen extends Screen {
         y = addSection(y, lh,
                 Component.translatable("gui.dungeontrain.support.financial.header"),
                 Component.translatable("gui.dungeontrain.support.financial.desc", affiliateLink()),
-                new LinkButton("gui.dungeontrain.support.financial.donate", REVOLUT_URL, null),
-                new LinkButton("gui.dungeontrain.support.financial.patreon", PATREON_URL, TINT_ORANGE));
+                new LinkButton("gui.dungeontrain.support.financial.donate", revolutUrl(), TINT_GREEN,
+                        "gui.dungeontrain.support.donate_tooltip"),
+                new LinkButton("gui.dungeontrain.support.financial.patreon", PATREON_URL, TINT_ORANGE, null));
 
         // Share — text only, no link.
         y = addSection(y, lh,
@@ -169,10 +179,24 @@ public final class SupportScreen extends Screen {
         Component label = Component.translatable(lb.labelKey());
         Button.OnPress onPress = b -> openLink(lb.url());
         float[] t = lb.tint();
-        if (t == null) {
-            return new DarkTintedButton(x, y, w, h, label, onPress);
+        Button button = (t == null)
+                ? new DarkTintedButton(x, y, w, h, label, onPress)
+                : new ColorTintedButton(x, y, w, h, label, t[0], t[1], t[2], onPress);
+        if (lb.tooltipKey() != null) {
+            button.setTooltip(Tooltip.create(Component.translatable(lb.tooltipKey())));
         }
-        return new ColorTintedButton(x, y, w, h, label, t[0], t[1], t[2], onPress);
+        return button;
+    }
+
+    /** The Revolut donation URL with the player's name URL-encoded onto the note field. */
+    private String revolutUrl() {
+        String encoded = URLEncoder.encode(playerName(), StandardCharsets.UTF_8).replace("+", "%20");
+        return REVOLUT_BASE + encoded;
+    }
+
+    private static String playerName() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.getUser() != null ? mc.getUser().getName() : "Player";
     }
 
     /** A clickable, blue, underlined "Discord" word for splicing into description copy. */
