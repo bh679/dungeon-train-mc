@@ -171,6 +171,11 @@ public final class ContainerContentsPlacement {
                                                int diffIndex,
                                                @Nullable String variantLinkedLootPrefabId,
                                                @Nullable Level rollLevel) {
+        // Brushable blocks (suspicious sand/gravel) aren't Containers — give them
+        // a vanilla archaeology loot table so brushing yields loot like world gen.
+        if (state.hasBlockEntity() && ContainerContentsRoller.isBrushable(state)) {
+            return ContainerContentsRoller.stampArchaeologyLoot(state, baseBeNbt, localPos, worldSeed, carriageIndex);
+        }
         if (!(state.hasBlockEntity() && ContainerContentsRoller.isContainerState(state))) {
             return baseBeNbt;
         }
