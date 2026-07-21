@@ -35,7 +35,8 @@
     { "name": "Puzzles Lib", "slug": "puzzles-lib", "project_id": 495476, "file_id": 8251525, "required": true, "modrinth_project": "puzzles-lib", "modrinth_version": "5A6wiMVf" },
     { "name": "Smooth Swapping", "slug": "smooth-swapping", "project_id": 513689, "file_id": 7274625, "required": false, "modrinth_project": "smooth-swapping", "modrinth_version": "tnvwgXE6" },
     { "name": "Kinetic Hosting Integration", "slug": "kinetic-hosting-integration", "project_id": 1048150, "file_id": 8188461, "required": true, "modrinth_project": "kinetic-hosting-integration", "modrinth_version": "MU40ZSjV" },
-    { "name": "Overloaded Armor Bar", "slug": "overloaded-armor-bar", "project_id": 314002, "file_id": 5537850, "required": true, "modrinth_project": "overloaded-armor-bar", "modrinth_version": "ioPwPPpS" }
+    { "name": "Overloaded Armor Bar", "slug": "overloaded-armor-bar", "project_id": 314002, "file_id": 5537850, "required": true, "modrinth_project": "overloaded-armor-bar", "modrinth_version": "ioPwPPpS" },
+    { "name": "Sit", "slug": "sit", "project_id": 278717, "file_id": 6776225, "required": true, "modrinth_project": "bl4cks-sit", "modrinth_version": "DpfxOIrO" }
   ],
   "curseforge_relations": [
     { "slug": "sable", "type": "requiredDependency" }

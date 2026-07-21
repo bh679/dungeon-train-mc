@@ -273,6 +273,7 @@ jobs:
             smooth-swapping(optional)
             overloaded-armor-bar(optional)
             kinetic-hosting-integration(optional)
+            sit(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
