@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.mixin.client.BookViewScreenAccessor;
 import games.brennan.dungeontrain.narrative.NarrativeBookTag;
 import games.brennan.dungeontrain.narrative.RandomBookTag;
@@ -8,6 +10,7 @@ import games.brennan.dungeontrain.narrative.SharedBookReadTag;
 import games.brennan.dungeontrain.narrative.StartingBookTag;
 import games.brennan.dungeontrain.net.BookReadClosedPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.SharedBookReadSyncPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.BookViewScreen;
@@ -44,6 +47,8 @@ import java.util.OptionalInt;
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class BookReadClientEvents {
+
+    private static final org.slf4j.Logger LOGGER = LogUtils.getLogger();
 
     /** Vanilla book & quill / written book page cap; bounds the dwell array. */
     private static final int MAX_PAGES = 100;
@@ -114,7 +119,32 @@ public final class BookReadClientEvents {
         DungeonTrainNet.sendToServer(new BookReadClosedPacket(
             bookType, bookId, title, author, pageCount, pagesViewed, maxPage, completed,
             Math.max(0, durationMs), dwell, story, letter, variantIndex));
+        recordSharedReadGlobally();
         reset();
+    }
+
+    /**
+     * Persist a community (player-written) book read into the GLOBAL client-side read history and top up
+     * the server mirror, so the shared-book loot selector prefers books this player hasn't read — across
+     * worlds and servers, and independent of the relay / network consent (the fallback path). Only fires
+     * for {@code bookType == "shared"}; the relay-backed {@link BookReadClosedPacket} above (consent-gated)
+     * remains the cross-machine source of truth. No-throw: a persistence/sync hiccup must not disturb the
+     * read flow.
+     */
+    private static void recordSharedReadGlobally() {
+        try {
+            if (!"shared".equals(bookType) || bookId == null) return;
+            int id = Integer.parseInt(bookId);
+            if (id <= 0) return;
+            // Persist to dungeontrain-client.toml (idempotent). Push the single id to the server so the
+            // mirror stays current mid-session (e.g. read in world A then hop to world B this session).
+            ClientDisplayConfig.markSharedRead(id);
+            if (Minecraft.getInstance().getConnection() != null) {
+                DungeonTrainNet.sendToServer(new SharedBookReadSyncPacket(java.util.List.of(id)));
+            }
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] shared-book read persist/sync failed: {}", t.toString());
+        }
     }
 
     /** Attribute the elapsed time since the last sample to the page currently shown. */

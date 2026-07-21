@@ -17,6 +17,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -62,11 +63,38 @@ public final class SharedBookPool {
 
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
-    /** One approved community book, materialised from the relay's pool response. */
-    public record PoolBook(int id, String title, String author, List<String> pages) {}
+    /**
+     * One approved community book, materialised from the relay's pool response.
+     *
+     * <p>{@code lang} is the AUTHOR's raw client locale as stored by the relay (e.g. {@code "en_us"}), or
+     * {@code null} for legacy untagged books. It is player-independent, so it is parsed once here; the
+     * per-player language relationship (is this MY language?) is derived at selection time by
+     * {@link SharedBookSelector}, because one shared snapshot serves every player.</p>
+     *
+     * <p>{@code weight} is the moderator-assigned curation weight. The relay ALREADY restricts a pool
+     * response to its single highest weight tier, so within one snapshot this is usually uniform; it is
+     * carried anyway so the selector's translated-penalty comparison has a base value. Absent from the
+     * relay payload today → defaults to 1 (see {@link #parseBook}).</p>
+     */
+    public record PoolBook(int id, String title, String author, List<String> pages, String lang, int weight) {}
 
-    /** Current immutable snapshot. Replaced wholesale by {@link #refreshAsync}; read by {@link #rollShared}. */
+    /**
+     * Upper bound on the accumulated snapshot. Fetches MERGE into it (see {@link #applyResponse}) so a
+     * long session would otherwise grow it without limit; past this the oldest entries are evicted.
+     */
+    static final int MAX_SNAPSHOT = 200;
+
+    /**
+     * Current immutable snapshot. Fetches merge into it rather than replacing it (see
+     * {@link #applyResponse}); read by {@link #rollShared} and {@link SharedBookSelector}.
+     */
     private static volatile List<PoolBook> snapshot = List.of();
+
+    /**
+     * The locale {@link #snapshot} was accumulated for. When a fetch comes back for a DIFFERENT locale the
+     * accumulated books are wrong-language and are replaced wholesale rather than merged.
+     */
+    private static volatile String snapshotLang = null;
 
     /**
      * Total count of APPROVED community books in the relay pool (the whole loot-eligible universe, NOT
@@ -99,7 +127,24 @@ public final class SharedBookPool {
         List<PoolBook> pool = snapshot; // single volatile read → consistent snapshot
         if (pool.isEmpty()) return ItemStack.EMPTY;
         int index = (int) (Long.remainderUnsigned(mix(rollSeed), pool.size()));
-        PoolBook book = pool.get(index);
+        return buildStack(pool.get(index));
+    }
+
+    /**
+     * The current immutable pool snapshot (a single volatile read → consistent view). Used by
+     * {@link SharedBookSelector} to run the per-player priority chain over the full window rather than the
+     * uniform pick {@link #rollShared} makes. Never mutate the returned list.
+     */
+    public static List<PoolBook> snapshot() {
+        return snapshot;
+    }
+
+    /**
+     * Build a plain written book for a specific pool entry and stamp the same discovery/telemetry markers
+     * {@link #rollShared} applies. Used by {@link SharedBookSelector} once it has picked a book per-player,
+     * so both the uniform and the curated paths produce identically-tagged stacks.
+     */
+    public static ItemStack buildStack(PoolBook book) {
         ItemStack stack = BookFactory.buildPlainBook(book.title(), book.author(), book.pages());
         SharedBookFoundTag.stamp(stack);               // "read a stranger's book" advancement marker
         SharedBookReadTag.stampId(stack, book.id());   // read-telemetry identity only
@@ -109,6 +154,16 @@ public final class SharedBookPool {
     /** Whether the pool currently holds any books (cheap volatile read). */
     public static boolean isEmpty() {
         return snapshot.isEmpty();
+    }
+
+    /**
+     * Whether a pool fetch is currently in flight — i.e. a NEW window (the relay's next weight tier) is
+     * on its way. Callers that have exhausted the current window use this to wait for it rather than
+     * re-serving a book the player just had. Clears on failure too, so a dead relay can't wedge a caller
+     * into waiting forever.
+     */
+    public static boolean isRefreshInFlight() {
+        return fetchInFlight;
     }
 
     /**
@@ -128,13 +183,19 @@ public final class SharedBookPool {
      * @param hostLang the host player's raw client locale (e.g. {@code "en_us"}) for language-matched
      *                 delivery, or {@code ""}/{@code null} to leave the pool unfiltered. See
      *                 {@link WorldLanguage#hostLocale}.
+     * @param hostUuid the host player's dash-stripped UUID for per-player, globally-unread-biased delivery
+     *                 (dp-relay {@code &uuid=}: the relay soft-deprioritises books this player has already
+     *                 read, cross-world), or {@code ""}/{@code null} to leave the pool unpersonalised. Only
+     *                 sent when the host consented — see {@link WorldLanguage#hostUuidConsented}. An older
+     *                 relay ignores it, so the response is byte-identical to the no-uuid case.
      */
-    public static void refreshAsync(String hostLang) {
+    public static void refreshAsync(String hostLang, String hostUuid) {
         if (fetchInFlight) return;
         fetchInFlight = true;
         try {
             String url = DungeonTrain.relayBaseUrl()
-                    + "/books/pool?session=" + SESSION + "&limit=" + POOL_LIMIT + langParam(hostLang);
+                    + "/books/pool?session=" + SESSION + "&limit=" + POOL_LIMIT
+                    + langParam(hostLang) + uuidParam(hostUuid);
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Accept", "application/json")
@@ -151,7 +212,7 @@ public final class SharedBookPool {
                                 LOGGER.debug("[DungeonTrain] shared-book pool fetch -> HTTP {}", resp.statusCode());
                                 return;
                             }
-                            applyResponse(resp.body());
+                            applyResponse(resp.body(), hostLang);
                         } catch (Throwable t) {
                             LOGGER.debug("[DungeonTrain] shared-book pool parse failed: {}", t.toString());
                         } finally {
@@ -166,15 +227,37 @@ public final class SharedBookPool {
     }
 
     /**
-     * Parse the relay JSON body and swap in the new snapshot.
+     * Parse the relay JSON body and merge it into the snapshot.
      *
-     * <p>With server-side session state the relay now owns de-duplication and starvation-recycle, so a
-     * zero-book reply is unambiguous: the relay genuinely has no approved book to serve this world right
-     * now (an exhausted session is recycled server-side and comes back full, never empty). An empty
-     * {@code books} array therefore clears the snapshot; a malformed reply (missing array) keeps the last
-     * good snapshot rather than wiping loot over a transient blip.</p>
+     * <h3>Why this ACCUMULATES rather than replaces</h3>
+     * <p>The relay answers with ONE weight tier at a time and marks those ids "offered" for the session
+     * as it hands them over — it will not offer them again until the session recycles. The refresh timer,
+     * however, fires on a fixed ~30s cadence regardless of whether the game consumed that window. Replacing
+     * the snapshot wholesale therefore STRANDED books: a curated top-weight book that arrived but wasn't
+     * picked up before the next tick vanished from the snapshot and, because the relay considered it
+     * already offered, did not come back until the whole session recycled — by which point selection had
+     * walked down to the lowest tier. Observed in play as a weight-4 book arriving after the weight-0
+     * floor had started.
+     *
+     * <p>Merging instead means a book stays a candidate until it is actually served. It also makes the
+     * selector's own weight tier meaningful: with several tiers resident at once,
+     * {@link SharedBookSelector} enforces "highest weight first" PER PLAYER rather than depending on the
+     * timing of relay windows. Bounded by {@link #MAX_SNAPSHOT} (oldest evicted first) so a long session
+     * can't grow it without limit.</p>
+     *
+     * <p>Read books are deliberately NOT pruned here: "read" is per-player but this snapshot is shared by
+     * everyone on the server, so dropping a book because one player read it would deny it to the others.
+     * Per-player read preference is applied at selection time instead (unread-first).</p>
+     *
+     * <p>A language change DOES replace wholesale — accumulated books are in the wrong language and must
+     * not linger. A malformed reply keeps the last good snapshot rather than wiping loot over a blip.</p>
      */
     static void applyResponse(String body) {
+        applyResponse(body, snapshotLang);
+    }
+
+    /** @param fetchLang the locale this response was fetched for; a change from {@link #snapshotLang} replaces. */
+    static void applyResponse(String body, String fetchLang) {
         JsonElement root = JsonParser.parseString(body);
         if (!root.isJsonObject()) return;
         JsonObject obj = root.getAsJsonObject();
@@ -203,16 +286,39 @@ public final class SharedBookPool {
             PoolBook book = parseBook(el.getAsJsonObject());
             if (book != null) parsed.add(book);
         }
+        boolean langChanged = !java.util.Objects.equals(fetchLang, snapshotLang);
         if (parsed.isEmpty()) {
-            // Relay has no approved book to serve this world (the session recycles server-side, so this is
-            // a genuinely empty pool, not exclude-starvation). Clear the snapshot.
-            snapshot = List.of();
-            LOGGER.debug("[DungeonTrain] shared-book pool is empty");
+            // Nothing to add. Only wipe when the LANGUAGE changed — then the accumulated books are all
+            // wrong-language and must go. Otherwise keep what we have: an empty window mid-session is not
+            // evidence that the previously-served books stopped existing.
+            if (langChanged) {
+                snapshot = List.of();
+                snapshotLang = fetchLang;
+                LOGGER.debug("[DungeonTrain] shared-book pool cleared (language changed, no books for it)");
+            } else {
+                LOGGER.debug("[DungeonTrain] shared-book pool: empty window, keeping {} accumulated", snapshot.size());
+            }
             return;
         }
-        // Publish an immutable snapshot (copy so no external ref can mutate it).
-        snapshot = List.copyOf(parsed);
-        LOGGER.debug("[DungeonTrain] shared-book pool refreshed: {} book(s)", parsed.size());
+
+        List<PoolBook> merged;
+        if (langChanged) {
+            merged = List.copyOf(parsed);
+        } else {
+            // Keep existing entries (and their order) and append genuinely new ids.
+            LinkedHashMap<Integer, PoolBook> byId = new LinkedHashMap<>();
+            for (PoolBook b : snapshot) byId.put(b.id(), b);
+            for (PoolBook b : parsed) byId.putIfAbsent(b.id(), b);
+            List<PoolBook> all = new ArrayList<>(byId.values());
+            // Bound: drop the OLDEST accumulated entries, keeping the freshest window intact.
+            if (all.size() > MAX_SNAPSHOT) all = all.subList(all.size() - MAX_SNAPSHOT, all.size());
+            merged = List.copyOf(all);
+        }
+        int added = merged.size() - snapshot.size();
+        snapshot = merged;
+        snapshotLang = fetchLang;
+        LOGGER.debug("[DungeonTrain] shared-book pool refreshed: {} book(s) ({} new this fetch)",
+                merged.size(), Math.max(0, added));
     }
 
     /** Materialise one pool entry; returns {@code null} if it lacks the required fields. */
@@ -228,13 +334,36 @@ public final class SharedBookPool {
                 pages.add(p.isJsonNull() ? "" : p.getAsString());
             }
         }
-        return new PoolBook(id, title, author, pages);
+        // The relay sends `lang` today (the author's locale); `weight` it does not (it tiers by weight
+        // server-side instead). Both are optional here: a missing lang means "untagged", which
+        // LanguageFamily treats as English, and a missing weight defaults to 1 so every book compares
+        // equally and only the translated penalty separates them.
+        String lang = o.has("lang") && !o.get("lang").isJsonNull() ? o.get("lang").getAsString() : null;
+        int weight = 1;
+        if (o.has("weight") && o.get("weight").isJsonPrimitive()) {
+            try {
+                weight = Math.max(0, o.get("weight").getAsInt());
+            } catch (RuntimeException ignored) {
+                // non-numeric weight — keep the default
+            }
+        }
+        return new PoolBook(id, title, author, pages, lang, weight);
     }
 
     /** The {@code &lang=<locale>} query fragment for language-matched delivery, or {@code ""} when blank. */
     static String langParam(String hostLang) {
         if (hostLang == null || hostLang.isBlank()) return "";
         return "&lang=" + URLEncoder.encode(hostLang, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * The {@code &uuid=<player>} query fragment for per-player, globally-unread-biased delivery, or
+     * {@code ""} when blank. Mirrors {@link #langParam}: optional end to end, so a blank uuid leaves the
+     * relay window unpersonalised (and an older relay ignores it entirely).
+     */
+    static String uuidParam(String hostUuid) {
+        if (hostUuid == null || hostUuid.isBlank()) return "";
+        return "&uuid=" + URLEncoder.encode(hostUuid, StandardCharsets.UTF_8);
     }
 
     /** Splittable-mix so a raw roll seed spreads uniformly across the pool index. */
@@ -249,6 +378,7 @@ public final class SharedBookPool {
     /** Test/reset hook: drop the snapshot (used by unit tests and on server stop). */
     static synchronized void clear() {
         snapshot = List.of();
+        snapshotLang = null;
         fetchInFlight = false;
         approvedTotal = 0;
     }

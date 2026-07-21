@@ -5183,6 +5183,24 @@
       "released_at": null
     },
     {
+      "id": "player-book-loot-selection",
+      "version": "0.485.0",
+      "type": "feat",
+      "title": "Player-written loot books are now chosen for you",
+      "summary": "Community books found in chests are now picked per player instead of at random. You'll be handed books you haven't read yet, and the same one won't turn up twice in a life \u2014 unless it's still unread and you've left it two whole carriage groups behind. And once you've read a community book, it stays read in every new world you start.",
+      "highlights": [
+        "Prefers books you haven't read yet",
+        "Books you've read stay read across brand-new worlds, not just the one you read them in",
+        "No repeats within a life, until you've travelled two full carriage groups past where you found one",
+        "A slot meant for a player's book now reliably serves one, instead of sometimes falling back to a built-in book",
+        "On multiplayer worlds each player gets their own selection, matched to their own language"
+      ],
+      "date": "2026-07-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "stage-phase-coverage-upside-down",
       "version": "0.485.0",
       "type": "fix",
@@ -5205,6 +5223,23 @@
       "title": "Truer distance stats behind the scenes",
       "summary": "Death and run reports now record how far down the line you actually reached \u2014 measured from where you spawned \u2014 plus which world band you died in. This sharpens the private stats dashboard only; there is no in-game change.",
       "highlights": [],
+      "date": "2026-07-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "ways-to-help-menu",
+      "version": "0.485.0",
+      "type": "feat",
+      "title": "New 'Ways to Help' menu",
+      "summary": "The title screen now has a Support the Mod button (where Minecraft Realms used to be) plus a Patreon shortcut. It opens a page gathering every way you can help build out Dungeon Train: donate directly, back it on Patreon, use the server-hosting affiliate link when you rent a server, share the mod with content creators, and give feedback or join the Discord.",
+      "highlights": [
+        "Support the Mod + Patreon buttons on the title screen (replacing the Realms button)",
+        "Direct donation, Patreon, and a server-hosting affiliate link in one place",
+        "Prompts to share the mod with creators and to give feedback / join the Discord"
+      ],
+      "pr": 808,
       "date": "2026-07-21",
       "released": false,
       "released_in": null,

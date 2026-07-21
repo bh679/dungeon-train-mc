@@ -111,6 +111,25 @@ public final class DungeonTrainConfig {
     public static final double MIN_SHARED_BOOK_LOOT_CHANCE = 0.0;
     public static final double MAX_SHARED_BOOK_LOOT_CHANCE = 1.0;
 
+    /**
+     * How many whole CARRIAGE GROUPS a book's loot carriage must scroll behind before the shared-book
+     * loot selector treats it as "unloaded" and may serve an already-served-but-unread community book
+     * again in the same life. Below that distance a book served this life is never repeated.
+     *
+     * <p>Expressed in groups rather than raw carriages so the rule tracks the train's real structure —
+     * a group is {@link #getGroupSize()} carriages, the run between flatbed separators — instead of an
+     * arbitrary carriage count that means different things at different group sizes. Resolved to
+     * carriages by {@link #getSharedBookRepeatCarriages()}.</p>
+     *
+     * <p>Default 2. One group was tried first and proved too permissive at the boundary: a player riding
+     * a moving train can clear a single group BETWEEN two pickups, so once the servable pool was nearly
+     * exhausted the escape would re-admit a book they had just been handed (observed as back-to-back
+     * repeats in play). Two groups keeps the escape generous without allowing that.</p>
+     */
+    public static final int DEFAULT_SHARED_BOOK_REPEAT_GROUPS = 2;
+    public static final int MIN_SHARED_BOOK_REPEAT_GROUPS = 1;
+    public static final int MAX_SHARED_BOOK_REPEAT_GROUPS = 64;
+
     /** Default master for serving approved player-written narrative series back on narrative lecterns. */
     public static final boolean DEFAULT_DISCOVER_NARRATIVES_ENABLED = true;
 
@@ -166,6 +185,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue DEATH_NOTES_ENABLED;
     public static final ModConfigSpec.BooleanValue LETTERS_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_BOOK_LOOT_MAX_CHANCE;
+    public static final ModConfigSpec.IntValue SHARED_BOOK_REPEAT_GROUPS;
     public static final ModConfigSpec.BooleanValue DISCOVER_NARRATIVES_ENABLED;
     public static final ModConfigSpec.DoubleValue NARRATIVE_DISCOVERY_RAMP_THRESHOLD;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
@@ -207,6 +227,7 @@ public final class DungeonTrainConfig {
         DEATH_NOTES_ENABLED = pair.getLeft().deathNotesEnabled;
         LETTERS_ENABLED = pair.getLeft().lettersEnabled;
         SHARED_BOOK_LOOT_MAX_CHANCE = pair.getLeft().sharedBookLootMaxChance;
+        SHARED_BOOK_REPEAT_GROUPS = pair.getLeft().sharedBookRepeatGroups;
         DISCOVER_NARRATIVES_ENABLED = pair.getLeft().discoverNarrativesEnabled;
         NARRATIVE_DISCOVERY_RAMP_THRESHOLD = pair.getLeft().narrativeDiscoveryRampThreshold;
         DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = pair.getLeft().difficultyLevelNoticeToDiscord;
@@ -323,6 +344,17 @@ public final class DungeonTrainConfig {
                         "is empty or the relay is unreachable, the roll silently falls back to the local pool regardless.")
                 .defineInRange("sharedBookLootMaxChance", DEFAULT_SHARED_BOOK_LOOT_MAX_CHANCE,
                         MIN_SHARED_BOOK_LOOT_CHANCE, MAX_SHARED_BOOK_LOOT_CHANCE);
+        ModConfigSpec.IntValue sharedBookRepeatGroups = b
+                .comment("How far behind (in whole CARRIAGE GROUPS) a community book's loot carriage must scroll before",
+                        "the same book can appear again for a player in the same life. The shared-book loot selector never",
+                        "hands a player a book it already gave them this life UNLESS the book is still unread AND its",
+                        "carriage is at least this many groups behind their current position. A group is `groupSize`",
+                        "carriages (the run between flatbed separators), so this tracks the train's real structure rather",
+                        "than a fixed carriage count. Higher = books repeat less often within a life. Default 2 — 1 was",
+                        "tried and proved too permissive: a player on a moving train can clear a single group between two",
+                        "pickups, so a nearly-exhausted pool could hand back a book they had just received.")
+                .defineInRange("sharedBookRepeatGroups", DEFAULT_SHARED_BOOK_REPEAT_GROUPS,
+                        MIN_SHARED_BOOK_REPEAT_GROUPS, MAX_SHARED_BOOK_REPEAT_GROUPS);
         ModConfigSpec.BooleanValue discoverNarrativesEnabled = b
                 .comment("Serve approved player-written narrative series back on narrative lecterns. When true, a lectern",
                         "may (weighted + tapered like shared-book loot, at LETTER granularity) lock to a player's narrative",
@@ -414,7 +446,7 @@ public final class DungeonTrainConfig {
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
                 worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled, lettersEnabled,
-                sharedBookLootMaxChance, discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
+                sharedBookLootMaxChance, sharedBookRepeatGroups, discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled);
     }
@@ -576,6 +608,21 @@ public final class DungeonTrainConfig {
         return Math.max(MIN_SHARED_BOOK_LOOT_CHANCE, Math.min(MAX_SHARED_BOOK_LOOT_CHANCE, v));
     }
 
+    /** Whole carriage-GROUPS a book's carriage must scroll behind before it may repeat (while unread) this life. */
+    public static int getSharedBookRepeatGroups() {
+        int v = isLoaded() ? SHARED_BOOK_REPEAT_GROUPS.get() : DEFAULT_SHARED_BOOK_REPEAT_GROUPS;
+        return Math.max(MIN_SHARED_BOOK_REPEAT_GROUPS, Math.min(MAX_SHARED_BOOK_REPEAT_GROUPS, v));
+    }
+
+    /**
+     * The repeat threshold in CARRIAGES — {@link #getSharedBookRepeatGroups()} × {@link #getGroupSize()}.
+     * The selector compares raw carriage indices, so the group-based setting is resolved here rather than
+     * teaching the selector about train structure. Floored at 1 so the escape always requires SOME travel.
+     */
+    public static int getSharedBookRepeatCarriages() {
+        return Math.max(1, getSharedBookRepeatGroups() * getGroupSize());
+    }
+
     /** Master for serving approved player-written narrative series back on narrative lecterns. */
     public static boolean isDiscoverNarrativesEnabled() {
         return isLoaded() ? DISCOVER_NARRATIVES_ENABLED.get() : DEFAULT_DISCOVER_NARRATIVES_ENABLED;
@@ -712,6 +759,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue deathNotesEnabled,
             ModConfigSpec.BooleanValue lettersEnabled,
             ModConfigSpec.DoubleValue sharedBookLootMaxChance,
+            ModConfigSpec.IntValue sharedBookRepeatGroups,
             ModConfigSpec.BooleanValue discoverNarrativesEnabled,
             ModConfigSpec.DoubleValue narrativeDiscoveryRampThreshold,
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,

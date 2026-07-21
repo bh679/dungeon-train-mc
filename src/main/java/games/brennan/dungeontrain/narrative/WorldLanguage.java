@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.narrative;
 
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
+import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -40,6 +41,33 @@ public final class WorldLanguage {
             ServerPlayer host = resolveHost(server);
             if (host == null) return "";
             return WorldInfoReporter.clientLanguage(host); // "" when unavailable — never throws
+        } catch (Throwable t) {
+            return "";
+        }
+    }
+
+    /**
+     * The host / primary player's dash-stripped UUID (e.g. {@code "0123abcd…"}) for personalising the
+     * relay pool fetch to that player's global read history (dp-relay {@code &uuid=}), or {@code ""} when
+     * it must not be sent.
+     *
+     * <p>Gated on the host having granted network consent ({@link NetworkConsentMirror#isGranted}): a
+     * player who declined telemetry has no reads recorded on the relay (so personalisation is moot anyway),
+     * and their UUID must not be sent. {@code ""} when nobody is online or consent is absent — the caller
+     * then omits the param and the relay serves an unpersonalised window, exactly as before. Never throws;
+     * any failure yields {@code ""}.</p>
+     *
+     * <p>Same host as {@link #hostLocale}, so the pool is scoped to one consistent primary player.
+     * Multiplayer non-goal: the pool is a single shared fetch, so it personalises to the host only; other
+     * players fall back to their own client-side read set (see {@code SharedBookReadMirror}).</p>
+     */
+    public static String hostUuidConsented(MinecraftServer server) {
+        if (server == null) return "";
+        try {
+            ServerPlayer host = resolveHost(server);
+            if (host == null) return "";
+            if (!NetworkConsentMirror.isGranted(host)) return "";
+            return host.getUUID().toString().replace("-", "");
         } catch (Throwable t) {
             return "";
         }

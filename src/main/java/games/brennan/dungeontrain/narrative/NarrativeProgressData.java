@@ -747,6 +747,10 @@ public final class NarrativeProgressData extends SavedData {
                 if (!s.isEmpty()) playerLettersEverRead.add(s);
             }
         }
+        // Legacy per-player community-book read-set (TAG "shared_books_read_by_player") is intentionally
+        // NOT loaded: read history is now GLOBAL + client-side (dungeontrain-client.toml, mirrored via
+        // SharedBookReadSyncPacket), so a per-world set would defeat the point. An old world carrying the
+        // tag simply drops it on load — no migration, no crash.
         return new NarrativeProgressData(stories, randomBooks, startingBooksSeen, storyVariants,
                 startingBookReceived, randomBookVariantsEverRead, sharedBooksEverRead, letterSeries,
                 playerLettersEverRead);
