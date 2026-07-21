@@ -52,6 +52,18 @@ final class SharedBookPoolTest {
     }
 
     @Test
+    @DisplayName("uuidParam: emits &uuid= for a real player, nothing for blank/null (optional end-to-end)")
+    void uuidParam() {
+        assertEquals("&uuid=0123abcd", SharedBookPool.uuidParam("0123abcd"));
+        // Dash-stripped 32-hex is the shape WorldLanguage.hostUuidConsented produces.
+        assertEquals("&uuid=00112233445566778899aabbccddeeff",
+                SharedBookPool.uuidParam("00112233445566778899aabbccddeeff"));
+        assertEquals("", SharedBookPool.uuidParam(""), "blank → no param (relay window stays unpersonalised)");
+        assertEquals("", SharedBookPool.uuidParam("   "));
+        assertEquals("", SharedBookPool.uuidParam(null));
+    }
+
+    @Test
     @DisplayName("successive fetches ACCUMULATE — a window that arrived is never stranded by the next one")
     void accumulatesAcrossFetches() {
         SharedBookPool.applyResponse(body(1, 2, 3), "en_us");   // weight-5 tier

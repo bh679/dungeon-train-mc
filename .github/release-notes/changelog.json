@@ -5184,12 +5184,13 @@
     },
     {
       "id": "player-book-loot-selection",
-      "version": "0.484.0",
+      "version": "0.485.0",
       "type": "feat",
       "title": "Player-written loot books are now chosen for you",
-      "summary": "Community books found in chests are now picked per player instead of at random. You'll be handed books you haven't read yet, and the same one won't turn up twice in a life \u2014 unless it's still unread and you've left it two whole carriage groups behind.",
+      "summary": "Community books found in chests are now picked per player instead of at random. You'll be handed books you haven't read yet, and the same one won't turn up twice in a life \u2014 unless it's still unread and you've left it two whole carriage groups behind. And once you've read a community book, it stays read in every new world you start.",
       "highlights": [
         "Prefers books you haven't read yet",
+        "Books you've read stay read across brand-new worlds, not just the one you read them in",
         "No repeats within a life, until you've travelled two full carriage groups past where you found one",
         "A slot meant for a player's book now reliably serves one, instead of sometimes falling back to a built-in book",
         "On multiplayer worlds each player gets their own selection, matched to their own language"

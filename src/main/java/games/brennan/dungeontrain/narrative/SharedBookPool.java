@@ -183,13 +183,19 @@ public final class SharedBookPool {
      * @param hostLang the host player's raw client locale (e.g. {@code "en_us"}) for language-matched
      *                 delivery, or {@code ""}/{@code null} to leave the pool unfiltered. See
      *                 {@link WorldLanguage#hostLocale}.
+     * @param hostUuid the host player's dash-stripped UUID for per-player, globally-unread-biased delivery
+     *                 (dp-relay {@code &uuid=}: the relay soft-deprioritises books this player has already
+     *                 read, cross-world), or {@code ""}/{@code null} to leave the pool unpersonalised. Only
+     *                 sent when the host consented — see {@link WorldLanguage#hostUuidConsented}. An older
+     *                 relay ignores it, so the response is byte-identical to the no-uuid case.
      */
-    public static void refreshAsync(String hostLang) {
+    public static void refreshAsync(String hostLang, String hostUuid) {
         if (fetchInFlight) return;
         fetchInFlight = true;
         try {
             String url = DungeonTrain.relayBaseUrl()
-                    + "/books/pool?session=" + SESSION + "&limit=" + POOL_LIMIT + langParam(hostLang);
+                    + "/books/pool?session=" + SESSION + "&limit=" + POOL_LIMIT
+                    + langParam(hostLang) + uuidParam(hostUuid);
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Accept", "application/json")
@@ -348,6 +354,16 @@ public final class SharedBookPool {
     static String langParam(String hostLang) {
         if (hostLang == null || hostLang.isBlank()) return "";
         return "&lang=" + URLEncoder.encode(hostLang, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * The {@code &uuid=<player>} query fragment for per-player, globally-unread-biased delivery, or
+     * {@code ""} when blank. Mirrors {@link #langParam}: optional end to end, so a blank uuid leaves the
+     * relay window unpersonalised (and an older relay ignores it entirely).
+     */
+    static String uuidParam(String hostUuid) {
+        if (hostUuid == null || hostUuid.isBlank()) return "";
+        return "&uuid=" + URLEncoder.encode(hostUuid, StandardCharsets.UTF_8);
     }
 
     /** Splittable-mix so a raw roll seed spreads uniformly across the pool index. */

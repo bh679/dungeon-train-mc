@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.event.SharedBookGate;
+import games.brennan.dungeontrain.event.SharedBookReadMirror;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.core.BlockPos;
@@ -181,9 +182,11 @@ public final class NarrativeBookEvents {
                 LOGGER.info("[DungeonTrain] SharedBook: world marked community book id {} read (by {})",
                     id, player.getName().getString());
             }
-            // Per-player read record (persists across lives) so the shared-book loot selector can
-            // deprioritise books THIS player has already read, independent of the world-scoped taper above.
-            data.markPlayerReadShared(player.getUUID(), id);
+            // The PER-PLAYER read record is no longer world-scoped: it lives in the player's GLOBAL
+            // client-side history (dungeontrain-client.toml, recorded on read-close in BookReadClientEvents)
+            // and is mirrored to the server via SharedBookReadSyncPacket, so "read once = read everywhere"
+            // survives a brand-new world. The relay's &uuid= pool personalisation is the primary source; the
+            // client mirror is the fallback. Only the world-scoped loot taper above stays here.
         });
     }
 
@@ -410,7 +413,6 @@ public final class NarrativeBookEvents {
         if (!SharedBookGate.canDiscover() || SharedBookPool.isEmpty()) return false;
         ServerLevel ow = overworldOf(player);
         if (ow == null) return false;
-        NarrativeProgressData data = NarrativeProgressData.get(ow);
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         java.util.UUID uuid = player.getUUID();
 
@@ -421,14 +423,19 @@ public final class NarrativeBookEvents {
         // A failed/unreachable fetch clears the in-flight flag, so this can never wedge: the next sweep
         // falls through and serves a repeat rather than leaving a built-in book forever.
         if (windowExhaustedFor(run)) {
-            SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()));
+            SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()),
+                    WorldLanguage.hostUuidConsented(player.getServer()));
             if (SharedBookPool.isRefreshInFlight()) return false;
         }
         SharedBookSelector.PlayerContext ctx = new SharedBookSelector.PlayerContext(
             // THIS holder's locale, not the world/host language: the pool is host-scoped at fetch time,
             // but which of those books count as "my language" is per-player.
             WorldInfoReporter.clientLanguage(player),
-            id -> data.hasPlayerReadShared(uuid, id),
+            // GLOBAL read history: the client's cross-world read set, login-synced into the per-player
+            // server mirror (SharedBookReadMirror). Replaces the retired per-world NarrativeProgressData
+            // set, so a book read in another world still reads as "read" here. This is the fallback for
+            // unread-first; the relay's &uuid= pool personalisation is the primary global signal.
+            id -> SharedBookReadMirror.has(player, id),
             run::wasServed,
             id -> { Integer c = run.servedCarriage(id); return c == null ? 0 : c; },
             run.travelledCarriageIndex(),
@@ -455,7 +462,8 @@ public final class NarrativeBookEvents {
         // Serving that book may have just drained the window — pull the next tier now so the NEXT pickup
         // already has fresh content waiting (the pre-select guard above then has nothing to wait for).
         if (windowExhaustedFor(run)) {
-            SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()));
+            SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()),
+                    WorldLanguage.hostUuidConsented(player.getServer()));
         }
         return true;
     }
