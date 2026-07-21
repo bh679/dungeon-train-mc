@@ -1348,7 +1348,8 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private void boardAnew() {
-        DeathScreenLayoutHandler.launchWorld(this, false);
+        boolean keepMode = Screen.hasShiftDown();
+        DeathScreenLayoutHandler.launchWorld(this, false, !keepMode);
     }
 
     private void leave() {
