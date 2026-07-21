@@ -42,11 +42,9 @@ import java.util.List;
  */
 public final class SupportScreen extends Screen {
 
-    private static final String PATREON_URL    = "https://www.patreon.com/brennanhatton";
-    private static final String AFFILIATE_URL  = "https://billing.kinetichosting.com/aff.php?aff=1461";
-    private static final String MODRINTH_URL   = "https://modrinth.com/mod/dungeon-train";
-    private static final String CURSEFORGE_URL = "https://www.curseforge.com/minecraft/mc-mods/dungeon-train";
-    private static final String DISCORD_URL    = "https://discord.gg/jdKAwb6rbW";
+    private static final String PATREON_URL   = "https://www.patreon.com/brennanhatton";
+    private static final String AFFILIATE_URL = "https://billing.kinetichosting.com/aff.php?aff=1461";
+    private static final String DISCORD_URL   = "https://discord.gg/jdKAwb6rbW";
 
     private static final int MAX_COL_W  = 360;
     private static final int SIDE_MARGIN = 40;
@@ -107,11 +105,11 @@ public final class SupportScreen extends Screen {
                 new LinkButton("gui.dungeontrain.support.financial.patreon", PATREON_URL),
                 new LinkButton("gui.dungeontrain.support.financial.affiliate", AFFILIATE_URL));
 
+        // Share the Mod — text only; the encouragement to send it to creators
+        // and post videos/streams in Discord is the ask, no link button needed.
         y = addSection(y, lh,
                 "gui.dungeontrain.support.share.header",
-                "gui.dungeontrain.support.share.desc",
-                new LinkButton("gui.dungeontrain.support.share.modrinth", MODRINTH_URL),
-                new LinkButton("gui.dungeontrain.support.share.curseforge", CURSEFORGE_URL));
+                "gui.dungeontrain.support.share.desc");
 
         y = addSection(y, lh,
                 "gui.dungeontrain.support.feedback.header",
@@ -120,8 +118,10 @@ public final class SupportScreen extends Screen {
 
         panelBottom = y + (PANEL_PAD - SECTION_GAP);
 
+        // Done flows just below the content panel so it can never collide with a
+        // section's link button, regardless of screen height / GUI scale.
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-                .bounds(this.width / 2 - 100, this.height - 28, 200, 20)
+                .bounds(this.width / 2 - 100, panelBottom + 8, 200, 20)
                 .build());
     }
 
@@ -142,6 +142,10 @@ public final class SupportScreen extends Screen {
         textBlocks.add(new TextBlock(Component.translatable(headerKey), headerY, descLines, descY));
 
         int n = links.length;
+        if (n == 0) {
+            // Text-only section — no button row to reserve.
+            return y + SECTION_GAP;
+        }
         int each = n == 1 ? colW : (colW - (n - 1) * BUTTON_GAP) / n;
         for (int i = 0; i < n; i++) {
             LinkButton lb = links[i];
