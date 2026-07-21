@@ -1,31 +1,24 @@
 package games.brennan.dungeontrain.client.menu;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 /**
- * A small square title-screen icon button carrying the current Patreon
- * logomark — a single solid circle (Patreon's post-2023 mark) rendered in the
- * Patreon brand orange — over a vanilla button face, so it sits consistently in
- * the bottom-left icon stack next to the menu-chat envelope. Drawn
- * programmatically, so no texture asset needs shipping.
+ * A square title-screen icon button carrying the Patreon logomark — the coral
+ * circle with a navy vertical bar and a white circle — drawn programmatically
+ * (scaled to the button size) so no texture asset needs shipping. Sits beside
+ * the "Support the Mod" button on the title screen.
  */
 @OnlyIn(Dist.CLIENT)
 public final class PatreonIconButton extends Button {
 
-    private static final WidgetSprites SPRITES = new WidgetSprites(
-            ResourceLocation.withDefaultNamespace("widget/button"),
-            ResourceLocation.withDefaultNamespace("widget/button_disabled"),
-            ResourceLocation.withDefaultNamespace("widget/button_highlighted")
-    );
-
-    private static final int PATREON_ORANGE = 0xFFF96854;
+    private static final int CORAL       = 0xFFEA5F4A; // Patreon coral
+    private static final int CORAL_HOVER = 0xFFF57A66;
+    private static final int NAVY        = 0xFF052A3E; // logomark bar
+    private static final int WHITE       = 0xFFFFFFFF;
 
     public PatreonIconButton(int x, int y, int size, Component narration, OnPress onPress) {
         super(x, y, size, size, narration, onPress, DEFAULT_NARRATION);
@@ -33,14 +26,26 @@ public final class PatreonIconButton extends Button {
 
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        RenderSystem.enableBlend();
-        RenderSystem.enableDepthTest();
-        // Vanilla button face, matching the accessibility / chat icon buttons.
-        g.blitSprite(SPRITES.get(this.active, this.isHoveredOrFocused()),
-                getX(), getY(), getWidth(), getHeight());
-        // Patreon logomark (current): one solid orange circle, centred.
-        int r = Math.max(3, Math.min(getWidth(), getHeight()) / 2 - 4);
-        fillCircle(g, getX() + getWidth() / 2, getY() + getHeight() / 2, r, PATREON_ORANGE);
+        int x = getX();
+        int y = getY();
+        int s = Math.min(getWidth(), getHeight());
+        int cx = x + getWidth() / 2;
+        int cy = y + getHeight() / 2;
+
+        // Coral disc (fills the icon; corners stay transparent, matching the logo).
+        int r = s / 2;
+        fillCircle(g, cx, cy, r - 1, isHoveredOrFocused() ? CORAL_HOVER : CORAL);
+
+        // Navy vertical bar on the left of the mark.
+        int barW = Math.max(2, Math.round(s * 0.13F));
+        int barX = x + Math.round(s * 0.27F);
+        int barTop = y + Math.round(s * 0.26F);
+        int barBottom = y + getHeight() - Math.round(s * 0.26F);
+        g.fill(barX, barTop, barX + barW, barBottom, NAVY);
+
+        // White circle to the right of the bar.
+        int wr = Math.max(2, Math.round(s * 0.19F));
+        fillCircle(g, x + Math.round(s * 0.62F), cy, wr, WHITE);
     }
 
     private static void fillCircle(GuiGraphics g, int cx, int cy, int r, int color) {

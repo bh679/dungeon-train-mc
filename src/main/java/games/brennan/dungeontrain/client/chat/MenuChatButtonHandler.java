@@ -166,15 +166,6 @@ public final class MenuChatButtonHandler {
         return button != null && button.visible && unread > 0;
     }
 
-    /**
-     * Whether the menu chat envelope is currently revealed this session (the dev has messaged the
-     * player). Other title-screen affordances stack above the envelope when it's showing, or take its
-     * slot above the accessibility button when it isn't.
-     */
-    public static boolean isChatButtonVisible() {
-        return knownDevHistory;
-    }
-
     /** The same sine-pulsing 1-pixel border as {@code PulsingDiscordButton}, hugging the envelope. */
     private static void drawPulse(GuiGraphics g, SpriteIconButton button) {
         long now = net.minecraft.Util.getMillis();
