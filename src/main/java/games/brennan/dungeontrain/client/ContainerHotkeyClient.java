@@ -70,6 +70,7 @@ public final class ContainerHotkeyClient {
         public static void onClientTick(ClientTickEvent.Post event) {
             tick++;
             if (Minecraft.getInstance().getConnection() == null
+                    || TemplateBlocksHotkeyClient.inSurvival()
                     || !EditorStatusHudOverlay.isActive()) {
                 if (lastSentHeld) {
                     DungeonTrainNet.sendToServer(new ContainerHotkeyPacket(false));
