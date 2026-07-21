@@ -5150,6 +5150,21 @@
       "released": true,
       "released_in": "v0.483.0",
       "released_at": "2026-07-20T11:50:58Z"
+    },
+    {
+      "id": "survival-editor-hotkey-silence",
+      "version": "0.484.0",
+      "type": "fix",
+      "title": "Editor hotkeys stay silent in survival",
+      "summary": "Pressing the editor menu keys (block-variant, container-contents, template-blocks) while in survival no longer flashes editor status messages on your action bar.",
+      "highlights": [
+        "No more spurious 'requires OP' / 'Not in an editor plot' flashes in survival"
+      ],
+      "pr": 803,
+      "date": "2026-07-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
