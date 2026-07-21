@@ -92,8 +92,6 @@ public final class ContainerContentsRoller {
     private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
     /** Salt for the "shared vs local pool" coin-flip on a placeholder book roll. */
     private static final long SALT_SHARED_BOOK_CHANCE = 0x5A1EDB00C0FFEE12L;
-    /** Salt for picking which shared-pool book to substitute (decorrelated from the coin-flip). */
-    private static final long SALT_SHARED_BOOK_PICK   = 0x5A1EDB00DEC0DE34L;
     /** Salt for the procedural name composer (naturally-spawned items). */
     private static final long SALT_NAME        = 0x4E414D4544585742L;
     /** Salt for the AIS Gaussian stat roller (naturally-spawned items). */
@@ -865,9 +863,13 @@ public final class ContainerContentsRoller {
             if (SharedBookGate.canDiscover()) {
                 double chance = sharedBookLootChanceForWorld();
                 if (chance > 0.0 && rollSharedBookChance(chance, localPos, worldSeed, carriageIndex, slot)) {
-                    long sharedSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_SHARED_BOOK_PICK);
-                    ItemStack shared = SharedBookPool.rollShared(sharedSeed);
-                    if (!shared.isEmpty()) return shared;
+                    // Taper hit → this slot should become a community book. WHICH book is chosen per-player
+                    // when the stack first reaches a hand (SharedBookSelector via NarrativeBookEvents), so
+                    // bake a local placeholder now and mark it pending rather than resolving world-wide here.
+                    long pendingSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
+                    ItemStack local = RandomBookFactory.rollFromPool(pendingSeed).orElse(ItemStack.EMPTY);
+                    if (!local.isEmpty()) PlayerBookPendingTag.markPending(local);
+                    return local;
                 }
             }
             long bookSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
@@ -882,13 +884,11 @@ public final class ContainerContentsRoller {
         // local random book so the slot is never wasted.
         if (item == ModItems.RANDOM_PLAYERBOOK.get()) {
             if (SharedBookGate.canDiscover()) {
-                long sharedSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_SHARED_BOOK_PICK);
-                ItemStack shared = SharedBookPool.rollShared(sharedSeed);
-                if (!shared.isEmpty()) return shared;
-                // Discovery is on but the pool is still cold (not yet warmed after
-                // world load). Bake a local fallback so the slot isn't wasted, but
-                // mark it pending so it upgrades to a real player book the next time
-                // it reaches a player's hand (NarrativeBookEvents.onEquipmentChange).
+                // Always defer to per-player selection at hand-time. Bake a local placeholder so the slot
+                // isn't wasted and mark it pending; when it first reaches a player's hand,
+                // NarrativeBookEvents.onEquipmentChange resolves it through SharedBookSelector against THAT
+                // player's read/served state (community-book selection is per-player, so it can't be
+                // resolved world-wide at container-load like it was before).
                 long pendingSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
                 ItemStack local = RandomBookFactory.rollFromPool(pendingSeed).orElse(ItemStack.EMPTY);
                 if (!local.isEmpty()) PlayerBookPendingTag.markPending(local);

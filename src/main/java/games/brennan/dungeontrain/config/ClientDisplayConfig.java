@@ -4,6 +4,11 @@ import games.brennan.dungeontrain.client.FramerateThrottle;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
 /**
  * Client-scoped Forge config for purely cosmetic per-player display
  * preferences. Persists at {@code <minecraft>/config/dungeontrain-client.toml}
@@ -66,6 +71,13 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_ON_DISK;
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
+    /**
+     * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
+     * GLOBAL client-side read history — persists across worlds and servers (unlike the retired per-world
+     * server set), so "read once = read everywhere" survives even when the relay can't personalise the
+     * pool (older relay, no network consent, or offline). See {@link games.brennan.dungeontrain.event.SharedBookReadMirror}.
+     */
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> SHARED_BOOKS_READ;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -93,6 +105,7 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_MAX_ON_DISK = pair.getLeft().rideSnapshotMaxOnDisk;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
+        SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
     }
 
     private ClientDisplayConfig() {}
@@ -186,12 +199,22 @@ public final class ClientDisplayConfig {
                         FramerateThrottle.MIN_THROTTLE_FPS, FramerateThrottle.MAX_THROTTLE_FPS);
         b.pop();
 
+        b.push("sharedBooks");
+        ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead = b
+                .comment("Relay pool ids (as strings) of community player-written books you've read. GLOBAL read",
+                         "history that follows you across worlds and servers, so a book read in one world stays",
+                         "read in a brand-new one even when the server can't personalise your loot. Managed",
+                         "automatically — you can clear it by emptying this list.")
+                .defineListAllowEmpty("read", () -> List.<String>of(), () -> "0",
+                        o -> o instanceof String);
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
-                framerateThrottleEnabled, framerateThrottleFps);
+                framerateThrottleEnabled, framerateThrottleFps, sharedBooksRead);
     }
 
     /**
@@ -455,6 +478,44 @@ public final class ClientDisplayConfig {
         FRAMERATE_THROTTLE_FPS.save();
     }
 
+    // ----- Global client-side community-book read history (see SharedBookReadSyncClient / SharedBookReadMirror) -----
+
+    /**
+     * The relay pool ids of community books this player has read, parsed from the persisted string list.
+     * Empty (never null) before the config loads or when nothing has been read. Non-numeric or non-positive
+     * stored entries are skipped defensively (a hand-edited file can't crash the read path).
+     */
+    public static Set<Integer> readSharedIds() {
+        Set<Integer> out = new LinkedHashSet<>();
+        if (!isLoaded()) return out;
+        for (String s : SHARED_BOOKS_READ.get()) {
+            if (s == null) continue;
+            try {
+                int id = Integer.parseInt(s.trim());
+                if (id > 0) out.add(id);
+            } catch (NumberFormatException ignored) {
+                // hand-edited / stale entry — skip, don't crash
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Record that this player has read the community book with relay pool {@code id}, persisting it to
+     * {@code dungeontrain-client.toml}. Idempotent — skips the TOML write when the id is already present.
+     * No-op pre-load or for a non-positive id. Returns {@code true} when it was newly added.
+     */
+    public static boolean markSharedRead(int id) {
+        if (!isLoaded() || id <= 0) return false;
+        Set<Integer> ids = readSharedIds();
+        if (!ids.add(id)) return false; // already recorded — no write
+        List<String> stored = new ArrayList<>(ids.size());
+        for (int v : ids) stored.add(Integer.toString(v));
+        SHARED_BOOKS_READ.set(stored);
+        SHARED_BOOKS_READ.save();
+        return true;
+    }
+
     private record Holder(
             ModConfigSpec.DoubleValue allScale,
             ModConfigSpec.DoubleValue worldspaceChannel,
@@ -477,6 +538,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue rideSnapshotFlushMinTps,
             ModConfigSpec.IntValue rideSnapshotMaxOnDisk,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
-            ModConfigSpec.IntValue framerateThrottleFps
+            ModConfigSpec.IntValue framerateThrottleFps,
+            ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead
     ) {}
 }

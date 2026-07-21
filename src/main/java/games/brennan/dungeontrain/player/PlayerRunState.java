@@ -168,6 +168,18 @@ public final class PlayerRunState {
      * {@link #friendAppearance}).</p>
      */
     private final Set<ResourceLocation> earnedAdvancements;
+    /**
+     * Community shared-books already SERVED (resolved into the player's hand) this life, mapped to the
+     * signed carriage index the player was at when served. Drives the shared-book loot selector's
+     * no-duplicate-per-life rule and the "carriage scrolled far behind" re-serve escape (a served book
+     * becomes eligible again only while unread AND its serve-carriage is {@code >= FAR_THRESHOLD} behind
+     * the player's current {@link #travelledCarriageIndex}). See {@code SharedBookSelector}.
+     *
+     * <p><b>In-memory only — deliberately NOT in {@link #CODEC}</b> (the 16-field cap, see
+     * {@link #narrativeLetters}). Per-life dedup is a soft nicety; a relog mid-run at worst lets one
+     * already-served book be offered again, which is harmless.</p>
+     */
+    private final Map<Integer, Integer> servedBookToCarriage;
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
@@ -188,6 +200,7 @@ public final class PlayerRunState {
         this.trainTimeTicks = 0L;
         this.narrativeLetters = new HashSet<>();
         this.earnedAdvancements = new LinkedHashSet<>();
+        this.servedBookToCarriage = new HashMap<>();
     }
 
     public PlayerRunState(List<BlockPos> uniqueChests,
@@ -224,6 +237,7 @@ public final class PlayerRunState {
         this.trainTimeTicks = trainTimeTicks;
         this.narrativeLetters = new HashSet<>();
         this.earnedAdvancements = new LinkedHashSet<>();
+        this.servedBookToCarriage = new HashMap<>();
     }
 
     public Set<BlockPos> uniqueChests() {
@@ -425,6 +439,28 @@ public final class PlayerRunState {
     }
 
     /**
+     * Record that community shared-book {@code bookId} was served to this player this life, at signed
+     * carriage index {@code carriageIndex}. Last-serve wins (a later re-serve after the far-behind escape
+     * updates the recorded carriage). See {@code SharedBookSelector}.
+     */
+    public void markServed(int bookId, int carriageIndex) {
+        servedBookToCarriage.put(bookId, carriageIndex);
+    }
+
+    /** Whether community shared-book {@code bookId} has been served to this player this life. */
+    public boolean wasServed(int bookId) {
+        return servedBookToCarriage.containsKey(bookId);
+    }
+
+    /**
+     * The signed carriage index at which {@code bookId} was served this life, or {@code null} if it has
+     * not been served. Used by the far-behind re-serve escape.
+     */
+    public Integer servedCarriage(int bookId) {
+        return servedBookToCarriage.get(bookId);
+    }
+
+    /**
      * Record a Dungeon Train advancement (id) earned this life for the
      * death-screen accolades row. Earn order preserved; duplicates ignored.
      *
@@ -557,6 +593,7 @@ public final class PlayerRunState {
         booksWrittenCount = 0;
         narrativeLetters.clear();
         earnedAdvancements.clear();
+        servedBookToCarriage.clear();
         weaponKills.clear();
         playerKills = 0;
         damageDealt = 0.0;
