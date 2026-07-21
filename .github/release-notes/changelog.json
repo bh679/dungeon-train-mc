@@ -5209,6 +5209,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ways-to-help-menu",
+      "version": "0.485.0",
+      "type": "feat",
+      "title": "New 'Ways to Help' menu",
+      "summary": "The title screen now has a Support the Mod button (where Minecraft Realms used to be) plus a Patreon shortcut. It opens a page gathering every way you can help build out Dungeon Train: donate directly, back it on Patreon, use the server-hosting affiliate link when you rent a server, share the mod with content creators, and give feedback or join the Discord.",
+      "highlights": [
+        "Support the Mod + Patreon buttons on the title screen (replacing the Realms button)",
+        "Direct donation, Patreon, and a server-hosting affiliate link in one place",
+        "Prompts to share the mod with creators and to give feedback / join the Discord"
+      ],
+      "pr": 808,
+      "date": "2026-07-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
