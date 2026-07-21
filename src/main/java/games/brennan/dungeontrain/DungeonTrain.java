@@ -256,7 +256,6 @@ public class DungeonTrain {
             if (event.getConfig().getSpec() == DungeonTrainCommonConfig.SPEC) {
                 games.brennan.dungeontrain.worldgen.WorldGenCycle.invalidateCache();
                 games.brennan.dungeontrain.worldgen.ChuncksBand.invalidateCache();
-                games.brennan.dungeontrain.worldgen.OceanBand.invalidateCache();
             }
         });
 

@@ -425,10 +425,9 @@ final class WorldGenCycleTest {
         // ocean core at offset 2490..2890; chuncks fade then follows. World-X (phaseShift 0, startX 1000):
         // ocean lead gap [3390,3490), ocean core [3490,3890), chuncks fade [3890,4090), chuncks core [4090,4590).
         WorldGenCycle o = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
-                100, 40, 200, 50, 200, 150, 0, 500, 200, 0, 0.12, 0.5, 400, 100, 0.08, 0);
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 0, 0.12, 0.5, 400, 100, 0);
         assertEquals(400L, o.oceanLen());
         assertEquals(100L, o.oceanLeadGapLen());
-        assertEquals(0.08, o.oceanIslandDensity(), EPS);
         assertEquals(3590L, o.period());   // 1940 + ud 300 + udExit 150 + ocean(100+400) + chuncks(200+500)
 
         // isInOceanBand is the CORE only; the lead gap before it is plain overworld.

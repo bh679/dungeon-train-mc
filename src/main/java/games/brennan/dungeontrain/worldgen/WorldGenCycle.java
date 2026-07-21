@@ -68,8 +68,6 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  *                   0 disables the band (period byte-identical to the pre-ocean cycle)
  * @param oceanLeadGap plain-overworld gap inserted before the ocean band (after the upside-down band's own
  *                   exit gap), between the upside-down exit fade and the ocean band core. 0 = none
- * @param oceanIslandDensity fraction {@code 0..1} of in-band chunks that carry a small island (the rest are
- *                   open water); a per-chunk seed-stable noise gate. 0 = all open ocean
  * @param phaseShift blocks the whole cycle is shifted at {@code startX} so the FIRST overworld gap
  *                   (to the nether band) is shorter than the recurring {@code owGap}; {@code
  *                   max(0, owGap − firstOverworld)}, 0 = no shift. Shared with the End band's
@@ -82,7 +80,7 @@ public record WorldGenCycle(long startX, int owGap,
                             int udFade, int udHold, int udExit, int udExitFade,
                             int chuncksHold, int chuncksFade, int chuncksLeadGap,
                             double chuncksKeepDensity, double chuncksSliceRatio,
-                            int oceanHold, int oceanLeadGap, double oceanIslandDensity,
+                            int oceanHold, int oceanLeadGap,
                             int phaseShift) {
 
     /**
@@ -101,7 +99,7 @@ public record WorldGenCycle(long startX, int owGap,
         this(startX, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold, coreFade, coreHold,
                 eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade,
                 chuncksHold, chuncksFade, chuncksLeadGap, chuncksKeepDensity, chuncksSliceRatio,
-                0, 0, 0.0, phaseShift);
+                0, 0, phaseShift);
     }
 
     /**
@@ -116,7 +114,7 @@ public record WorldGenCycle(long startX, int owGap,
                          int udFade, int udHold, int udExit, int udExitFade, int phaseShift) {
         this(startX, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold, coreFade, coreHold,
                 eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade, 0, 0, 0, 0.0, 0.0,
-                0, 0, 0.0, phaseShift);
+                0, 0, phaseShift);
     }
 
     /**
@@ -201,7 +199,6 @@ public record WorldGenCycle(long startX, int owGap,
                 chuncks ? DungeonTrainCommonConfig.getChuncksSliceRatio() : 0.0,
                 ocean ? DungeonTrainCommonConfig.getOceanHoldBlocks() : 0,
                 ocean ? DungeonTrainCommonConfig.getOceanLeadGapBlocks() : 0,
-                ocean ? DungeonTrainCommonConfig.getOceanIslandDensity() : 0.0,
                 DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks());
     }
 

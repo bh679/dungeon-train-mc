@@ -259,10 +259,6 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_OCEAN_LEAD_GAP_BLOCKS = 0;
     public static final int MAX_OCEAN_LEAD_GAP_BLOCKS = 100_000_000;
     public static final int DEFAULT_OCEAN_LEAD_GAP_BLOCKS = 5000;
-    /** Fraction 0..1 of in-band chunks that carry a small island (the rest are open water). */
-    public static final double MIN_OCEAN_ISLAND_DENSITY = 0.0;
-    public static final double MAX_OCEAN_ISLAND_DENSITY = 1.0;
-    public static final double DEFAULT_OCEAN_ISLAND_DENSITY = 0.08;
 
     /**
      * Whether a moving carriage breaks the world blocks its footprint passes through (drops included).
@@ -314,7 +310,6 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.BooleanValue OCEAN_ENABLED;
     public static final ModConfigSpec.IntValue OCEAN_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue OCEAN_LEAD_GAP_BLOCKS;
-    public static final ModConfigSpec.DoubleValue OCEAN_ISLAND_DENSITY;
     public static final ModConfigSpec.BooleanValue BREAK_BLOCKS_ON_CONTACT;
 
     static {
@@ -362,7 +357,6 @@ public final class DungeonTrainCommonConfig {
         OCEAN_ENABLED = pair.getLeft().oceanEnabled;
         OCEAN_HOLD_BLOCKS = pair.getLeft().oceanHoldBlocks;
         OCEAN_LEAD_GAP_BLOCKS = pair.getLeft().oceanLeadGapBlocks;
-        OCEAN_ISLAND_DENSITY = pair.getLeft().oceanIslandDensity;
         BREAK_BLOCKS_ON_CONTACT = pair.getLeft().breakBlocksOnContact;
     }
 
@@ -641,12 +635,6 @@ public final class DungeonTrainCommonConfig {
                         "don't run together. Default 5000.")
                 .defineInRange("oceanLeadGapBlocks", DEFAULT_OCEAN_LEAD_GAP_BLOCKS,
                         MIN_OCEAN_LEAD_GAP_BLOCKS, MAX_OCEAN_LEAD_GAP_BLOCKS);
-        ModConfigSpec.DoubleValue oceanIslandDensity = b
-                .comment("Fraction 0..1 of in-band chunks that carry a small island (the rest are open water). A",
-                        "per-chunk, seed-stable noise gate. Default 0.08 (~8% of chunks) — sparse, so the band reads",
-                        "as predominantly open ocean.")
-                .defineInRange("oceanIslandDensity", DEFAULT_OCEAN_ISLAND_DENSITY,
-                        MIN_OCEAN_ISLAND_DENSITY, MAX_OCEAN_ISLAND_DENSITY);
         b.pop();
 
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
@@ -661,7 +649,7 @@ public final class DungeonTrainCommonConfig {
                 upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute,
                 chuncksEnabled, chuncksHoldBlocks, chuncksFadeBlocks, chuncksLeadGapBlocks,
                 chuncksKeepDensity, chuncksSliceRatio,
-                oceanEnabled, oceanHoldBlocks, oceanLeadGapBlocks, oceanIslandDensity,
+                oceanEnabled, oceanHoldBlocks, oceanLeadGapBlocks,
                 breakBlocksOnContact);
     }
 
@@ -943,11 +931,6 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? OCEAN_LEAD_GAP_BLOCKS.get() : DEFAULT_OCEAN_LEAD_GAP_BLOCKS;
     }
 
-    /** Fraction 0..1 of ocean-band chunks that carry an island; falls back to the hardcoded default pre-load. */
-    public static double getOceanIslandDensity() {
-        return isLoaded() ? OCEAN_ISLAND_DENSITY.get() : DEFAULT_OCEAN_ISLAND_DENSITY;
-    }
-
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain,
@@ -989,6 +972,5 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.BooleanValue oceanEnabled,
                           ModConfigSpec.IntValue oceanHoldBlocks,
                           ModConfigSpec.IntValue oceanLeadGapBlocks,
-                          ModConfigSpec.DoubleValue oceanIslandDensity,
                           ModConfigSpec.BooleanValue breakBlocksOnContact) {}
 }

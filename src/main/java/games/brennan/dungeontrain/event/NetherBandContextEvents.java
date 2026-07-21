@@ -81,18 +81,16 @@ public final class NetherBandContextEvents {
                     .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.THE_END);
             EndCoreBiomes endCoreBiomes = EndCoreBiomes.resolve(event.getServer(), endFallback);
 
-            // Ocean band: force minecraft:ocean on open water and minecraft:beach on the sparse islands,
-            // across the whole band (gated independently of the Nether band's own enable flag).
+            // Ocean band: force minecraft:ocean across the whole band (gated independently of the Nether
+            // band's own enable flag).
             boolean oceanEnabled = OceanBand.startX(overworld) != OceanBand.OFF;
             Holder<Biome> oceanBiome = overworld.registryAccess()
                     .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.OCEAN);
-            Holder<Biome> islandBiome = overworld.registryAccess()
-                    .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.BEACH);
 
             NetherBandContext.publish(new NetherBandContext(
                     enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
                     overworldBiomeSource, highlandBiomes, netherCoreBiomes, endCoreBiomes,
-                    oceanEnabled, oceanBiome, islandBiome));
+                    oceanEnabled, oceanBiome));
             LOGGER.info("[DungeonTrain] Nether-band terrain context published: enabled={} oceanEnabled={} seaLevel={} worldCeiling={} netherTop={} baseRelief={}",
                     enabled, oceanEnabled, seaLevel, worldCeiling, netherTop, baseRelief);
         } catch (Throwable t) {

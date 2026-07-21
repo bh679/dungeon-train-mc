@@ -67,8 +67,8 @@ public final class GenProfiler {
          *  {@link #EROSION}; excluded from {@link Sample#dtTotalMs}). The band's only real gen cost — void
          *  chunks skip fill + decoration, so this bucket staying ~0 confirms the band is near-free at gen. */
         CHUNCKS_SLICE,
-        /** {@code WorldOceanEvents.onChunkLoad} — ocean-band raised-water fill + island stamping (MAIN-thread,
-         *  like {@link #EROSION}; excluded from {@link Sample#dtTotalMs}). */
+        /** {@code NoiseBasedChunkGeneratorMixin} ocean-band sea build — raised-water + seabed fill on the
+         *  worldgen WORKER thread (replaces the noise fill, so it is part of the parallel gen cost). */
         OCEAN_FILL
     }
 
