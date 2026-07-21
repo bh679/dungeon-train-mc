@@ -32,6 +32,7 @@
     { "id": "minecraft:gold_nugget", "count": 4, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:raw_gold", "count": 3, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:raw_iron", "count": 3, "weight": 30, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "dungeontrain:random_book", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+    { "id": "dungeontrain:random_book", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:ender_chest", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
   ]
 }

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 8,
+  "variants": {
+    "3,1,2": ["minecraft:potted_torchflower", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "4,1,3": ["minecraft:lantern[hanging=true,waterlogged=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}]
+  }
+}
