@@ -1,9 +1,13 @@
 package games.brennan.dungeontrain.template;
 
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumSet;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -86,6 +90,25 @@ final class GateContextTest {
         // By ~group 270 (≈ Nether at default owHold) the lead is ≈ 2700 - but even at group 100 it is sizable:
         assertEquals(100 * 10, GateContext.groupRealStartX(100 * 3, 3, 9)
             - GateContext.groupAnchorPIdx(100 * 3, 3) * 9, "≈1000-block class drift by deep groups");
+    }
+
+    // ---- levelAllows: phase-agnostic relaxation used by the empty-pool fallback ----
+
+    @Test
+    @DisplayName("levelAllows ignores phase: a quartz-band gate admits level 67 even in the UPSIDE_DOWN phase it doesn't list")
+    void levelAllowsIgnoresPhase() {
+        // A gate like the pre-fix quartz stage: level band 51..70, OVERWORLD/VOID phases only.
+        TemplateGate quartzish = new TemplateGate(51, 70, EnumSet.of(TrainPhase.OVERWORLD, TrainPhase.VOID));
+        GateContext upsideDownInBand = new GateContext(67, TrainPhase.UPSIDE_DOWN);
+
+        // Strict allows() rejects the uncovered phase — this is what empties the pool...
+        assertFalse(upsideDownInBand.allows(quartzish), "phase gate excludes UPSIDE_DOWN");
+        // ...but the level-only relaxation keeps the level-appropriate stage (quartz), not all stages.
+        assertTrue(upsideDownInBand.levelAllows(quartzish), "level 67 is inside the 51..70 band regardless of phase");
+
+        // Out of the level band, the relaxation still rejects (it never widens to all stages).
+        assertFalse(new GateContext(80, TrainPhase.UPSIDE_DOWN).levelAllows(quartzish), "level 80 is outside 51..70");
+        assertFalse(new GateContext(50, TrainPhase.UPSIDE_DOWN).levelAllows(quartzish), "level 50 is below 51");
     }
 
     @Test

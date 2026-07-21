@@ -230,8 +230,10 @@ public final class CarriageContentsRegistry {
         CarriageContentsWeights weights = CarriageContentsWeights.current();
 
         // Per-template spawn gate (min/max Diff-Level + phase). Drop out-of-band / out-of-phase
-        // contents before the weighted draw; if that empties the pool, fall back to the ungated pool
-        // so the carriage still gets an interior (a content slot must never be left unfillable).
+        // contents before the weighted draw. If the phase gate empties the pool, relax to the
+        // level-appropriate pool (same Diff-Level tier, any phase) so the interior stays themed to the
+        // correct stage instead of collapsing to all stages for a phase no stage covers; only if that
+        // is also empty fall back to the full ungated pool (a content slot must never be unfillable).
         List<CarriageContents> effective = pool;
         if (gateCtx != null) {
             List<CarriageContents> gated = new ArrayList<>(pool.size());
@@ -241,7 +243,16 @@ public final class CarriageContentsRegistry {
             if (!gated.isEmpty()) {
                 effective = gated;
             } else {
-                warnGateEmptyOnce();
+                List<CarriageContents> levelOnly = new ArrayList<>(pool.size());
+                for (CarriageContents c : pool) {
+                    if (gateCtx.levelAllows(weights.gateFor(c.id()))) levelOnly.add(c);
+                }
+                if (!levelOnly.isEmpty()) {
+                    effective = levelOnly;
+                    warnGateEmptyOnce();
+                } else {
+                    warnGateEmptyAllStagesOnce();
+                }
             }
         }
 
@@ -413,15 +424,27 @@ public final class CarriageContentsRegistry {
         }
     }
 
-    /** One-shot warning when min/max-level + phase gates empty the contents pool — once per session. */
+    /** One-shot warning when the phase gate empties the contents pool (level fallback used) — once per session. */
     private static volatile boolean GATE_EMPTY_WARNED = false;
     private static void warnGateEmptyOnce() {
         if (GATE_EMPTY_WARNED) return;
         synchronized (CarriageContentsRegistry.class) {
             if (GATE_EMPTY_WARNED) return;
             GATE_EMPTY_WARNED = true;
-            LOGGER.warn("[DungeonTrain] Min/max-level + phase gates emptied the carriage contents pool — "
-                + "falling back to the ungated pool. Check the contents' level bands and phases.");
+            LOGGER.warn("[DungeonTrain] The phase gate emptied the carriage contents pool — "
+                + "falling back to the level-appropriate (any-phase) pool. Check the stages' phase coverage for this Diff-Level.");
+        }
+    }
+
+    /** One-shot warning for the last-resort all-stages contents fallback — once per session. */
+    private static volatile boolean GATE_EMPTY_ALL_STAGES_WARNED = false;
+    private static void warnGateEmptyAllStagesOnce() {
+        if (GATE_EMPTY_ALL_STAGES_WARNED) return;
+        synchronized (CarriageContentsRegistry.class) {
+            if (GATE_EMPTY_ALL_STAGES_WARNED) return;
+            GATE_EMPTY_ALL_STAGES_WARNED = true;
+            LOGGER.warn("[DungeonTrain] Level + phase gates emptied the carriage contents pool with no level-appropriate "
+                + "fallback — falling back to the full ungated pool (all stages). Check the contents' level bands and phases.");
         }
     }
 
@@ -579,6 +602,7 @@ public final class CarriageContentsRegistry {
         CarriageContentsGroupStore.clearCache();
         ZERO_WARNED = false;
         GATE_EMPTY_WARNED = false;
+        GATE_EMPTY_ALL_STAGES_WARNED = false;
         MISSING_CHILD_WARNED.clear();
         NESTED_GROUP_WARNED.clear();
     }

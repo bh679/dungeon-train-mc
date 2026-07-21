@@ -1043,9 +1043,11 @@ public final class CarriagePlacer {
     /**
      * Drop variants whose per-template gate excludes {@code gateCtx}'s Diff-Level / phase. A
      * {@code null} context (editor preview / tests) or a fully-default gate set leaves the pool
-     * unchanged, so the pre-feature pick is reproduced bit-for-bit. If gating empties the pool the
-     * <em>ungated</em> pool is returned (the carriage slot must never be left unfillable), warned
-     * once per server session.
+     * unchanged, so the pre-feature pick is reproduced bit-for-bit. If gating empties the pool it
+     * relaxes to a <em>level-only</em> pool (same Diff-Level tier, any phase) so the carriage stays
+     * themed to the correct stage instead of collapsing to all stages for a phase no stage covers;
+     * only if that is also empty does it return the full ungated pool (the slot must never be left
+     * unfillable). Each fallback tier is warned once per server session.
      */
     private static List<CarriageVariant> gateFilter(List<CarriageVariant> pool, CarriageWeights weights, GateContext gateCtx) {
         if (gateCtx == null) return pool;
@@ -1053,11 +1055,20 @@ public final class CarriagePlacer {
         for (CarriageVariant v : pool) {
             if (gateCtx.allows(weights.gateFor(v.id()))) gated.add(v);
         }
-        if (gated.isEmpty()) {
-            warnGateEmptyOnce();
-            return pool;
+        if (!gated.isEmpty()) return gated;
+
+        // Phase gate emptied the pool — relax to the level-appropriate stage (any phase) before
+        // falling all the way back to the whole pool.
+        List<CarriageVariant> levelOnly = new ArrayList<>(pool.size());
+        for (CarriageVariant v : pool) {
+            if (gateCtx.levelAllows(weights.gateFor(v.id()))) levelOnly.add(v);
         }
-        return gated;
+        if (!levelOnly.isEmpty()) {
+            warnGateEmptyOnce();
+            return levelOnly;
+        }
+        warnGateEmptyAllStagesOnce();
+        return pool;
     }
 
     /** Throttle for the all-zero-weights fallback warning — one log line per server session. */
@@ -1075,7 +1086,16 @@ public final class CarriagePlacer {
     private static void warnGateEmptyOnce() {
         if (GATE_EMPTY_WARNED) return;
         GATE_EMPTY_WARNED = true;
-        LOGGER.warn("[DungeonTrain] A carriage variant pool was emptied by min/max-level + phase gates — falling back to the ungated pool. Check the templates' level bands and phases.");
+        LOGGER.warn("[DungeonTrain] A carriage variant pool was emptied by the phase gate — falling back to the level-appropriate (any-phase) pool. Check the stages' phase coverage for this Diff-Level.");
+    }
+
+    /** Throttle for the last-resort all-stages fallback warning — one log line per server session. */
+    private static volatile boolean GATE_EMPTY_ALL_STAGES_WARNED = false;
+
+    private static void warnGateEmptyAllStagesOnce() {
+        if (GATE_EMPTY_ALL_STAGES_WARNED) return;
+        GATE_EMPTY_ALL_STAGES_WARNED = true;
+        LOGGER.warn("[DungeonTrain] A carriage variant pool was emptied by the level + phase gates with no level-appropriate fallback — falling back to the full ungated pool (all stages). Check the templates' level bands and phases.");
     }
 
     /**
