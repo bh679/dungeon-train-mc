@@ -28,6 +28,18 @@ public record GateContext(int level, TrainPhase phase) {
     }
 
     /**
+     * True iff {@code gate} admits this context's Diff-Level, <b>ignoring the phase</b>. The
+     * level-appropriate relaxation used by the carriage / contents / part selectors when a strict
+     * {@link #allows} filter empties the pool: it keeps the pool themed to the correct stage tier
+     * (e.g. quartz at level 67-69) rather than collapsing to the full ungated pool (all stages) for a
+     * phase no stage covers — see the empty-pool fallbacks in {@code CarriagePlacer.gateFilter},
+     * {@code CarriageContentsRegistry.buildPickContext}, {@code CarriagePartAssignment.applyGate}.
+     */
+    public boolean levelAllows(TemplateGate gate) {
+        return gate.levelEligible(level);
+    }
+
+    /**
      * Resolve the context for the column at {@code worldX}. {@code carriageLength} maps the world-X
      * to the carriage-equivalent index for the Diff-Level (see
      * {@link DifficultyProgression#levelAtWorldX}); the phase is taken straight from the world-X

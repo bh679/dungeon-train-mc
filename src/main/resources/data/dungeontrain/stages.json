@@ -5,7 +5,9 @@
     "maxLevel": 50,
     "phases": [
       "OVERWORLD",
-      "VOID"
+      "VOID",
+      "END",
+      "UPSIDE_DOWN"
     ]
   },
   "deepdark": {
@@ -14,7 +16,9 @@
     "maxLevel": 120,
     "phases": [
       "OVERWORLD",
-      "VOID"
+      "VOID",
+      "END",
+      "UPSIDE_DOWN"
     ]
   },
   "desert": {
@@ -23,7 +27,9 @@
     "maxLevel": 35,
     "phases": [
       "OVERWORLD",
-      "VOID"
+      "VOID",
+      "END",
+      "UPSIDE_DOWN"
     ]
   },
   "mud": {
@@ -32,7 +38,9 @@
     "maxLevel": 130,
     "phases": [
       "OVERWORLD",
-      "VOID"
+      "VOID",
+      "END",
+      "UPSIDE_DOWN"
     ]
   },
   "nether": {
@@ -48,7 +56,9 @@
     "maxLevel": 86,
     "phases": [
       "OVERWORLD",
-      "VOID"
+      "VOID",
+      "END",
+      "UPSIDE_DOWN"
     ]
   },
   "quartz": {
@@ -57,7 +67,9 @@
     "maxLevel": 70,
     "phases": [
       "OVERWORLD",
-      "VOID"
+      "VOID",
+      "END",
+      "UPSIDE_DOWN"
     ]
   },
   "stone": {
@@ -65,16 +77,20 @@
     "maxLevel": 10,
     "phases": [
       "OVERWORLD",
-      "VOID"
+      "VOID",
+      "END",
+      "UPSIDE_DOWN"
     ]
   },
   "wood_oak": {
     "name": "wood_oak",
-    "minLevel": 132,
+    "minLevel": 131,
     "maxLevel": 200,
     "phases": [
       "OVERWORLD",
-      "VOID"
+      "VOID",
+      "END",
+      "UPSIDE_DOWN"
     ]
   }
 }

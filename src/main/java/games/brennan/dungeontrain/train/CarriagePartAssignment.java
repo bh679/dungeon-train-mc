@@ -533,9 +533,12 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
      * Drop entries whose {@link TemplateGate} excludes {@code gateCtx} (the carriage's Diff-Level +
      * dimension), mirroring the per-template gate filter on the carriage / contents / track pools
      * ({@code CarriageContentsRegistry.pick}, {@code CarriagePlacer.gateFilter}). A {@code null}
-     * context returns the list unchanged (no gating); an empty result falls back to the full list so
-     * a slot is never left unfillable. The {@link CarriagePartKind#NONE} sentinel carries the default
-     * gate, so the FLATBED {@code walls=[{none,1}]} case always survives the filter.
+     * context returns the list unchanged (no gating). If the phase gate empties the list it relaxes to
+     * a <em>level-only</em> list (same Diff-Level tier, any phase) so the part stays themed to the
+     * correct stage instead of collapsing to all stages for a phase no stage covers; only if that is
+     * also empty does it fall back to the full list (a slot is never left unfillable). The
+     * {@link CarriagePartKind#NONE} sentinel carries the default gate, so the FLATBED
+     * {@code walls=[{none,1}]} case always survives the filter.
      */
     private static List<WeightedName> applyGate(List<WeightedName> list, GateContext gateCtx) {
         if (gateCtx == null) return list;
@@ -543,7 +546,12 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
         for (WeightedName e : list) {
             if (gateCtx.allows(e.effectiveGate())) gated.add(e);
         }
-        return gated.isEmpty() ? list : gated;
+        if (!gated.isEmpty()) return gated;
+        List<WeightedName> levelOnly = new ArrayList<>(list.size());
+        for (WeightedName e : list) {
+            if (gateCtx.levelAllows(e.effectiveGate())) levelOnly.add(e);
+        }
+        return levelOnly.isEmpty() ? list : levelOnly;
     }
 
     /**
