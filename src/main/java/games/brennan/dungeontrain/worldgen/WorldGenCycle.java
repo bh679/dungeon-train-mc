@@ -7,10 +7,10 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * phases in one fixed order along +X from a shared anchor:
  *
  * <pre>
- *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → Upside-down → exit-fade → OW → Chuncks → OW (repeat)
+ *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → Upside-down → exit-fade → OW → Ocean → OW → Chuncks → OW (repeat)
  * </pre>
  *
- * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [upside-down band] [udExitFade] [udExitGap] [chuncks band]}. The
+ * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [upside-down band] [udExitFade] [udExitGap] [oceanLeadGap] [ocean band] [chuncks band]}. The
  * nether/End sub-bands reuse the existing ramp math ({@link NetherTransition} and
  * {@link Disintegration}) evaluated at a <em>local</em> offset with {@code owHold = 0}; the
  * upside-down band uses a simple trapezoid ({@link #upsideDownRamp}) and is realised as a
@@ -62,6 +62,14 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  *                   (the rest are void); a per-chunk seed-stable noise gate. 0 = all void
  * @param chuncksSliceRatio fraction {@code 0..1} of the KEPT chunks that are a top-down slice (surface
  *                   kept, flat bottom cut) rather than vertically complete
+ * @param oceanHold length of the "ocean" band — an open sea of only ocean + island biomes whose water
+ *                   surface is raised to the train track bed height. Inserted in the overworld stretch
+ *                   after the upside-down band's trailing {@code udExit} gap and before the chuncks band.
+ *                   0 disables the band (period byte-identical to the pre-ocean cycle)
+ * @param oceanLeadGap plain-overworld gap inserted before the ocean band (after the upside-down band's own
+ *                   exit gap), between the upside-down exit fade and the ocean band core. 0 = none
+ * @param oceanIslandDensity fraction {@code 0..1} of in-band chunks that carry a small island (the rest are
+ *                   open water); a per-chunk seed-stable noise gate. 0 = all open ocean
  * @param phaseShift blocks the whole cycle is shifted at {@code startX} so the FIRST overworld gap
  *                   (to the nether band) is shorter than the recurring {@code owGap}; {@code
  *                   max(0, owGap − firstOverworld)}, 0 = no shift. Shared with the End band's
@@ -74,7 +82,27 @@ public record WorldGenCycle(long startX, int owGap,
                             int udFade, int udHold, int udExit, int udExitFade,
                             int chuncksHold, int chuncksFade, int chuncksLeadGap,
                             double chuncksKeepDensity, double chuncksSliceRatio,
+                            int oceanHold, int oceanLeadGap, double oceanIslandDensity,
                             int phaseShift) {
+
+    /**
+     * Back-compat constructor for the pre-ocean 21-arg shape (chuncks band, no ocean band). Passes
+     * {@code oceanHold = 0} so {@link #period()} is byte-identical to the pre-ocean cycle — existing
+     * callers and unit tests keep the old layout unchanged.
+     */
+    public WorldGenCycle(long startX, int owGap,
+                         int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
+                         int coreFade, int coreHold,
+                         int eFade, int eVoid, int eEnd,
+                         int udFade, int udHold, int udExit, int udExitFade,
+                         int chuncksHold, int chuncksFade, int chuncksLeadGap,
+                         double chuncksKeepDensity, double chuncksSliceRatio,
+                         int phaseShift) {
+        this(startX, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold, coreFade, coreHold,
+                eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade,
+                chuncksHold, chuncksFade, chuncksLeadGap, chuncksKeepDensity, chuncksSliceRatio,
+                0, 0, 0.0, phaseShift);
+    }
 
     /**
      * Back-compat constructor for the pre-chuncks 16-arg shape (with {@code udExitFade}, no chuncks
@@ -87,7 +115,8 @@ public record WorldGenCycle(long startX, int owGap,
                          int eFade, int eVoid, int eEnd,
                          int udFade, int udHold, int udExit, int udExitFade, int phaseShift) {
         this(startX, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold, coreFade, coreHold,
-                eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade, 0, 0, 0, 0.0, 0.0, phaseShift);
+                eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade, 0, 0, 0, 0.0, 0.0,
+                0, 0, 0.0, phaseShift);
     }
 
     /**
@@ -148,6 +177,7 @@ public record WorldGenCycle(long startX, int owGap,
         boolean end = DungeonTrainCommonConfig.isDisintegrationEnabled();
         boolean ud = DungeonTrainCommonConfig.isUpsideDownEnabled();
         boolean chuncks = DungeonTrainCommonConfig.isChuncksEnabled();
+        boolean ocean = DungeonTrainCommonConfig.isOceanEnabled();
         return new WorldGenCycle(
                 DungeonTrainCommonConfig.getDisintegrationStartBlocks(),
                 DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks(),
@@ -169,6 +199,9 @@ public record WorldGenCycle(long startX, int owGap,
                 chuncks ? DungeonTrainCommonConfig.getChuncksLeadGapBlocks() : 0,
                 chuncks ? DungeonTrainCommonConfig.getChuncksKeepDensity() : 0.0,
                 chuncks ? DungeonTrainCommonConfig.getChuncksSliceRatio() : 0.0,
+                ocean ? DungeonTrainCommonConfig.getOceanHoldBlocks() : 0,
+                ocean ? DungeonTrainCommonConfig.getOceanLeadGapBlocks() : 0,
+                ocean ? DungeonTrainCommonConfig.getOceanIslandDensity() : 0.0,
                 DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks());
     }
 
@@ -219,6 +252,47 @@ public record WorldGenCycle(long startX, int owGap,
         return upsideDownLen() > 0L ? Math.max(0, udExit) : 0L;
     }
 
+    /** Length of the ocean band core (the raised-sea {@code oceanHold}); 0 when disabled. */
+    public long oceanLen() {
+        return Math.max(0, oceanHold);
+    }
+
+    /**
+     * Plain-overworld gap before the ocean band (after the upside-down exit gap); gated on
+     * {@code oceanLen > 0} so it collapses to 0 — and keeps {@link #period()} byte-identical — when the
+     * band is disabled.
+     */
+    public long oceanLeadGapLen() {
+        return oceanLen() > 0L ? Math.max(0, oceanLeadGap) : 0L;
+    }
+
+    /**
+     * Offset (into the cycle) where the ocean band core begins — after the upside-down band's exit fade,
+     * its own trailing gap, and the ocean lead-in gap. When the upside-down band is disabled all its
+     * spans are 0, so this collapses to right after the End band (plus the lead gap); the ocean band's
+     * placement is independent of whether upside-down is present.
+     */
+    private long oceanStart() {
+        return udStart() + upsideDownLen() + udExitFadeLen() + udExitGap() + oceanLeadGapLen();
+    }
+
+    /** Offset into the ocean band core at a world-X, or {@code -1} outside it. */
+    private long oceanOffset(int worldX) {
+        long o = offset(worldX);
+        if (o < 0L) return -1L;
+        long lo = o - oceanStart();
+        return (lo < 0L || lo >= oceanLen()) ? -1L : lo;
+    }
+
+    /**
+     * True if {@code worldX} lies in the ocean band. Membership is binary (per-column) like
+     * {@link #isInChuncksBand}; the per-<em>chunk</em> island/open-water decision is a seed-stable noise
+     * gate applied on top (see {@code OceanBand}), not part of the pure layout.
+     */
+    public boolean isInOceanBand(int worldX) {
+        return oceanOffset(worldX) >= 0L;
+    }
+
     /** Length of the chuncks band core (the full-density {@code chuncksHold}); 0 when disabled. */
     public long chuncksLen() {
         return Math.max(0, chuncksHold);
@@ -241,10 +315,11 @@ public record WorldGenCycle(long startX, int owGap,
         return chuncksLen() > 0L ? Math.max(0, chuncksLeadGap) : 0L;
     }
 
-    /** {@code 2·owGap + netherLen + endLen + udLen + udExitFade + udExitGap + chuncksLeadGap + chuncksFade + chuncksLen}. */
+    /** {@code 2·owGap + netherLen + endLen + udLen + udExitFade + udExitGap + oceanLeadGap + oceanLen + chuncksLeadGap + chuncksFade + chuncksLen}. */
     public long period() {
         return 2L * Math.max(0, owGap) + netherLen() + endLen()
                 + upsideDownLen() + udExitFadeLen() + udExitGap()
+                + oceanLeadGapLen() + oceanLen()
                 + chuncksLeadGapLen() + chuncksFadeLen() + chuncksLen();
     }
 
@@ -613,17 +688,43 @@ public record WorldGenCycle(long startX, int owGap,
 
     /**
      * Offset (into the cycle) where the chuncks entry fade zone begins — after the upside-down band's
-     * trailing overworld gap ({@code udExitGap}) and the chuncks lead-in gap ({@code chuncksLeadGap}).
-     * When the upside-down band is disabled all its spans are 0, so this collapses to right after the End
-     * band (plus the lead gap); the chuncks band's placement is independent of whether upside-down is present.
+     * trailing overworld gap ({@code udExitGap}), the ocean band ({@code oceanLeadGap + oceanHold}), and
+     * the chuncks lead-in gap ({@code chuncksLeadGap}). When the upside-down / ocean bands are disabled
+     * their spans are 0, so this collapses toward the End band; the chuncks band's placement is
+     * independent of whether the upside-down and ocean bands are present.
      */
     private long chuncksFadeStart() {
-        return udStart() + upsideDownLen() + udExitFadeLen() + udExitGap() + chuncksLeadGapLen();
+        return udStart() + upsideDownLen() + udExitFadeLen() + udExitGap()
+                + oceanLeadGapLen() + oceanLen() + chuncksLeadGapLen();
     }
 
     /** Offset where the full-density chuncks core begins — after the entry fade zone. */
     private long chuncksStart() {
         return chuncksFadeStart() + chuncksFadeLen();
+    }
+
+    /**
+     * Smallest world-X {@code ≥ startX} that lands in the core of the given special band (a representative
+     * in-band column), or {@code -1} if that band is disabled / has no length. Debug helper backing
+     * {@code /dungeontrain tpband <phase>} — computed purely from the live layout so it always matches the
+     * generator. {@link TrainPhase#OVERWORLD} returns {@code startX} (the anchor).
+     */
+    public long firstWorldXInPhase(TrainPhase phase) {
+        long p = period();
+        if (p <= 0L) return -1L;
+        long off = switch (phase) {
+            case OVERWORLD -> 0L;
+            case NETHER -> netherLen() > 0L ? netherStart() + netherLen() / 2L : -1L;
+            case VOID -> endLen() > 0L ? endStart() + eFade + Math.max(1, eVoid) / 2L : -1L;
+            case END -> endLen() > 0L ? endStart() + eFade + eVoid + eEnd / 2L : -1L;
+            case UPSIDE_DOWN -> upsideDownLen() > 0L ? udStart() + upsideDownLen() / 2L : -1L;
+            case OCEAN -> oceanLen() > 0L ? oceanStart() + oceanLen() / 2L : -1L;
+            case CHUNCKS -> chuncksLen() > 0L ? chuncksStart() + chuncksLen() / 2L : -1L;
+        };
+        if (off < 0L) return -1L;
+        long base = startX - phaseShift + Math.floorMod(off, p);
+        while (base < startX) base += p;
+        return base;
     }
 
     /** Offset into the chuncks band core at a world-X, or {@code -1} outside it. */

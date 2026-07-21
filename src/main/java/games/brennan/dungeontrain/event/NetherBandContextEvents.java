@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.OceanBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.EndCoreBiomes;
 import games.brennan.dungeontrain.worldgen.density.NetherBandBiomeSet;
@@ -80,11 +81,20 @@ public final class NetherBandContextEvents {
                     .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.THE_END);
             EndCoreBiomes endCoreBiomes = EndCoreBiomes.resolve(event.getServer(), endFallback);
 
+            // Ocean band: force minecraft:ocean on open water and minecraft:beach on the sparse islands,
+            // across the whole band (gated independently of the Nether band's own enable flag).
+            boolean oceanEnabled = OceanBand.startX(overworld) != OceanBand.OFF;
+            Holder<Biome> oceanBiome = overworld.registryAccess()
+                    .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.OCEAN);
+            Holder<Biome> islandBiome = overworld.registryAccess()
+                    .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.BEACH);
+
             NetherBandContext.publish(new NetherBandContext(
                     enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
-                    overworldBiomeSource, highlandBiomes, netherCoreBiomes, endCoreBiomes));
-            LOGGER.info("[DungeonTrain] Nether-band terrain context published: enabled={} seaLevel={} worldCeiling={} netherTop={} baseRelief={}",
-                    enabled, seaLevel, worldCeiling, netherTop, baseRelief);
+                    overworldBiomeSource, highlandBiomes, netherCoreBiomes, endCoreBiomes,
+                    oceanEnabled, oceanBiome, islandBiome));
+            LOGGER.info("[DungeonTrain] Nether-band terrain context published: enabled={} oceanEnabled={} seaLevel={} worldCeiling={} netherTop={} baseRelief={}",
+                    enabled, oceanEnabled, seaLevel, worldCeiling, netherTop, baseRelief);
         } catch (Throwable t) {
             // Never block server start on the band snapshot — a missing context just leaves terrain vanilla.
             NetherBandContext.clear();

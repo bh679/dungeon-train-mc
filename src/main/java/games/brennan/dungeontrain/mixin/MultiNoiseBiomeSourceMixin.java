@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
+import games.brennan.dungeontrain.worldgen.OceanBand;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.biome.Biome;
@@ -16,7 +17,9 @@ import org.spongepowered.asm.mixin.injection.At;
  * (trees, flowers, snow caps) and structures populate the noise-raised terrain — which otherwise
  * inherits the original low terrain's (often tree-less) biome and reads as bare mountains. Also tags
  * Nether-band and End-band <b>core</b> columns with a real Nether/End biome (see
- * {@link NetherBandContext#netherCoreBiomes()} / {@link NetherBandContext#endCoreBiomes()}).
+ * {@link NetherBandContext#netherCoreBiomes()} / {@link NetherBandContext#endCoreBiomes()}). Also forces
+ * {@code minecraft:ocean} / {@code minecraft:beach} across the whole ocean band (see {@link OceanBand}),
+ * gated on its own {@code oceanEnabled} flag independent of the Nether band.
  *
  * <p>Wraps {@code getNoiseBiome(x,y,z,sampler)} — the per-quart biome assignment, also consulted
  * during structure placement, so structures follow the forced biome. Gated to be a pure pass-through
@@ -35,13 +38,27 @@ public abstract class MultiNoiseBiomeSourceMixin {
         long genT0 = GenProfiler.t0();
         try {
             NetherBandContext ctx = NetherBandContext.current();
-            if (ctx == null || !ctx.enabled() || ctx.highlandBiomes() == null) return original;
+            if (ctx == null) return original;
             // Overworld-only: the Nether also uses a MultiNoiseBiomeSource, so gate on the instance.
             if ((Object) this != ctx.overworldBiomeSource()) return original;
 
             int blockX = x << 2;
             int blockY = y << 2;
             int blockZ = z << 2;
+
+            // Ocean band: force minecraft:ocean on open water and minecraft:beach on the sparse islands,
+            // across the WHOLE band (all Y, so deep-ocean quarts share the same water colour/fog). Gated on
+            // its own oceanEnabled flag, independent of the Nether band's enabled() — so the ocean forces
+            // even when the Nether band is off.
+            if (ctx.oceanEnabled() && ctx.oceanBiome() != null && ctx.cycle() != null
+                    && ctx.cycle().isInOceanBand(blockX)) {
+                double islandDensity = ctx.cycle().oceanIslandDensity();
+                return OceanBand.isIslandColumn(ctx.generationSeed(), blockX, blockZ, islandDensity)
+                        ? ctx.islandBiome() : ctx.oceanBiome();
+            }
+
+            // Nether/End highland forcing runs only when the Nether band context is enabled.
+            if (!ctx.enabled() || ctx.highlandBiomes() == null) return original;
             if (blockY < ctx.seaLevel()) return original;                 // natural cave biomes below sea
             // Match the density router's edge-waved front so the forced-biome boundary undulates with the
             // terrain (the whole band — core included — is evaluated at the same waved X).

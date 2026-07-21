@@ -244,6 +244,27 @@ public final class DungeonTrainCommonConfig {
     public static final double DEFAULT_CHUNCKS_SLICE_RATIO = 0.5;
 
     /**
+     * Ocean band — a looping phase of ONLY ocean + island biomes, inserted in the overworld stretch
+     * AFTER the upside-down band's trailing gap and BEFORE the chuncks band. Its water surface is raised
+     * to the train track bed height ({@code TrackGeometry.bedY()}, not vanilla sea level 63), so the train
+     * skims an open sea; the carved corridor stays dry. Islands are sparse. The special bands occupy
+     * disjoint cycle sub-ranges, so they never overlap.
+     */
+    public static final boolean DEFAULT_OCEAN_ENABLED = true;
+    /** Blocks of ocean-band world-gen (the whole raised-sea stretch). 0 drops the band from the cycle. */
+    public static final int MIN_OCEAN_HOLD_BLOCKS = 0;
+    public static final int MAX_OCEAN_HOLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_OCEAN_HOLD_BLOCKS = 2000;
+    /** Plain-overworld gap before the ocean band (after the upside-down exit gap), before the band core. */
+    public static final int MIN_OCEAN_LEAD_GAP_BLOCKS = 0;
+    public static final int MAX_OCEAN_LEAD_GAP_BLOCKS = 100_000_000;
+    public static final int DEFAULT_OCEAN_LEAD_GAP_BLOCKS = 5000;
+    /** Fraction 0..1 of in-band chunks that carry a small island (the rest are open water). */
+    public static final double MIN_OCEAN_ISLAND_DENSITY = 0.0;
+    public static final double MAX_OCEAN_ISLAND_DENSITY = 1.0;
+    public static final double DEFAULT_OCEAN_ISLAND_DENSITY = 0.08;
+
+    /**
      * Whether a moving carriage breaks the world blocks its footprint passes through (drops included).
      * The corridor is normally pre-cleared at worldgen and re-swept at chunk load, so this only bites on
      * blocks that appear afterwards — player-placed walls, grown trees, structures outside the swept Z
@@ -290,6 +311,10 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue CHUNCKS_LEAD_GAP_BLOCKS;
     public static final ModConfigSpec.DoubleValue CHUNCKS_KEEP_DENSITY;
     public static final ModConfigSpec.DoubleValue CHUNCKS_SLICE_RATIO;
+    public static final ModConfigSpec.BooleanValue OCEAN_ENABLED;
+    public static final ModConfigSpec.IntValue OCEAN_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue OCEAN_LEAD_GAP_BLOCKS;
+    public static final ModConfigSpec.DoubleValue OCEAN_ISLAND_DENSITY;
     public static final ModConfigSpec.BooleanValue BREAK_BLOCKS_ON_CONTACT;
 
     static {
@@ -334,6 +359,10 @@ public final class DungeonTrainCommonConfig {
         CHUNCKS_LEAD_GAP_BLOCKS = pair.getLeft().chuncksLeadGapBlocks;
         CHUNCKS_KEEP_DENSITY = pair.getLeft().chuncksKeepDensity;
         CHUNCKS_SLICE_RATIO = pair.getLeft().chuncksSliceRatio;
+        OCEAN_ENABLED = pair.getLeft().oceanEnabled;
+        OCEAN_HOLD_BLOCKS = pair.getLeft().oceanHoldBlocks;
+        OCEAN_LEAD_GAP_BLOCKS = pair.getLeft().oceanLeadGapBlocks;
+        OCEAN_ISLAND_DENSITY = pair.getLeft().oceanIslandDensity;
         BREAK_BLOCKS_ON_CONTACT = pair.getLeft().breakBlocksOnContact;
     }
 
@@ -593,6 +622,31 @@ public final class DungeonTrainCommonConfig {
                         "cut-off bottom) rather than vertically complete. Default 0.5.")
                 .defineInRange("chuncksSliceRatio", DEFAULT_CHUNCKS_SLICE_RATIO,
                         MIN_CHUNCKS_SLICE_RATIO, MAX_CHUNCKS_SLICE_RATIO);
+
+        ModConfigSpec.BooleanValue oceanEnabled = b
+                .comment("Ocean phase — part of the single repeating world-gen cycle, inserted in the overworld stretch",
+                        "AFTER the upside-down band's trailing gap and BEFORE the chuncks band. Along +X it is an open",
+                        "sea of ONLY ocean + island biomes whose water surface is raised to the train track bed height",
+                        "(not vanilla sea level 63); the train skims the surface and the carved corridor stays dry. The",
+                        "full cycle is: OW → Nether → OW → Void → End → Void → Upside-down → OW → Ocean → OW → Chuncks →",
+                        "(repeat). Set false to drop the ocean phase from the cycle.")
+                .define("oceanEnabled", DEFAULT_OCEAN_ENABLED);
+        ModConfigSpec.IntValue oceanHoldBlocks = b
+                .comment("Blocks of ocean-band world-gen (the whole raised-sea stretch). Default 2000.")
+                .defineInRange("oceanHoldBlocks", DEFAULT_OCEAN_HOLD_BLOCKS,
+                        MIN_OCEAN_HOLD_BLOCKS, MAX_OCEAN_HOLD_BLOCKS);
+        ModConfigSpec.IntValue oceanLeadGapBlocks = b
+                .comment("Plain-overworld gap inserted before the ocean band — between the upside-down band's exit",
+                        "(its exit fade + its own exit gap) and the ocean band. Breathing room so the two special zones",
+                        "don't run together. Default 5000.")
+                .defineInRange("oceanLeadGapBlocks", DEFAULT_OCEAN_LEAD_GAP_BLOCKS,
+                        MIN_OCEAN_LEAD_GAP_BLOCKS, MAX_OCEAN_LEAD_GAP_BLOCKS);
+        ModConfigSpec.DoubleValue oceanIslandDensity = b
+                .comment("Fraction 0..1 of in-band chunks that carry a small island (the rest are open water). A",
+                        "per-chunk, seed-stable noise gate. Default 0.08 (~8% of chunks) — sparse, so the band reads",
+                        "as predominantly open ocean.")
+                .defineInRange("oceanIslandDensity", DEFAULT_OCEAN_ISLAND_DENSITY,
+                        MIN_OCEAN_ISLAND_DENSITY, MAX_OCEAN_ISLAND_DENSITY);
         b.pop();
 
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
@@ -607,6 +661,7 @@ public final class DungeonTrainCommonConfig {
                 upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute,
                 chuncksEnabled, chuncksHoldBlocks, chuncksFadeBlocks, chuncksLeadGapBlocks,
                 chuncksKeepDensity, chuncksSliceRatio,
+                oceanEnabled, oceanHoldBlocks, oceanLeadGapBlocks, oceanIslandDensity,
                 breakBlocksOnContact);
     }
 
@@ -873,6 +928,26 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? CHUNCKS_SLICE_RATIO.get() : DEFAULT_CHUNCKS_SLICE_RATIO;
     }
 
+    /** Whether the ocean band is active; falls back to the hardcoded default pre-load. */
+    public static boolean isOceanEnabled() {
+        return isLoaded() ? OCEAN_ENABLED.get() : DEFAULT_OCEAN_ENABLED;
+    }
+
+    /** Ocean band span (blocks); falls back to the hardcoded default pre-load. */
+    public static int getOceanHoldBlocks() {
+        return isLoaded() ? OCEAN_HOLD_BLOCKS.get() : DEFAULT_OCEAN_HOLD_BLOCKS;
+    }
+
+    /** Overworld lead-in gap (blocks) before the ocean band; falls back to the hardcoded default pre-load. */
+    public static int getOceanLeadGapBlocks() {
+        return isLoaded() ? OCEAN_LEAD_GAP_BLOCKS.get() : DEFAULT_OCEAN_LEAD_GAP_BLOCKS;
+    }
+
+    /** Fraction 0..1 of ocean-band chunks that carry an island; falls back to the hardcoded default pre-load. */
+    public static double getOceanIslandDensity() {
+        return isLoaded() ? OCEAN_ISLAND_DENSITY.get() : DEFAULT_OCEAN_ISLAND_DENSITY;
+    }
+
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain,
@@ -911,5 +986,9 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue chuncksLeadGapBlocks,
                           ModConfigSpec.DoubleValue chuncksKeepDensity,
                           ModConfigSpec.DoubleValue chuncksSliceRatio,
+                          ModConfigSpec.BooleanValue oceanEnabled,
+                          ModConfigSpec.IntValue oceanHoldBlocks,
+                          ModConfigSpec.IntValue oceanLeadGapBlocks,
+                          ModConfigSpec.DoubleValue oceanIslandDensity,
                           ModConfigSpec.BooleanValue breakBlocksOnContact) {}
 }

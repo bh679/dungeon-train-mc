@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.worldgen.density;
 
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import net.minecraft.core.Holder;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 
 /**
@@ -32,11 +34,28 @@ import net.minecraft.world.level.biome.BiomeSource;
  *                       makes the vanilla Nether decoration's biome filter pass
  * @param endCoreBiomes  samples the real End biome (all five, swept across End-band passes) for End-core
  *                       columns the way the End itself does — see {@link EndCoreBiomes}
+ * @param oceanEnabled   ocean band active for this world ({@code OceanBand.startX != OFF}); gated
+ *                       independently of {@code enabled} (which means the <em>Nether</em> band is active)
+ * @param oceanBiome     biome forced onto open-water columns of the ocean band ({@code minecraft:ocean})
+ * @param islandBiome    biome forced onto island columns of the ocean band ({@code minecraft:beach})
  */
 public record NetherBandContext(boolean enabled, long generationSeed, int seaLevel, int worldCeiling,
                                 int netherTop, int baseRelief, WorldGenCycle cycle,
                                 BiomeSource overworldBiomeSource, NetherBandBiomeSet highlandBiomes,
-                                NetherCoreBiomes netherCoreBiomes, EndCoreBiomes endCoreBiomes) {
+                                NetherCoreBiomes netherCoreBiomes, EndCoreBiomes endCoreBiomes,
+                                boolean oceanEnabled, Holder<Biome> oceanBiome, Holder<Biome> islandBiome) {
+
+    /**
+     * Back-compat constructor without the ocean fields — leaves the ocean band disabled
+     * ({@code oceanEnabled = false}, null biomes). Used by unit tests that predate the ocean band.
+     */
+    public NetherBandContext(boolean enabled, long generationSeed, int seaLevel, int worldCeiling,
+                             int netherTop, int baseRelief, WorldGenCycle cycle,
+                             BiomeSource overworldBiomeSource, NetherBandBiomeSet highlandBiomes,
+                             NetherCoreBiomes netherCoreBiomes, EndCoreBiomes endCoreBiomes) {
+        this(enabled, generationSeed, seaLevel, worldCeiling, netherTop, baseRelief, cycle,
+                overworldBiomeSource, highlandBiomes, netherCoreBiomes, endCoreBiomes, false, null, null);
+    }
 
     private static volatile NetherBandContext current;
 

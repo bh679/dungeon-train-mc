@@ -411,6 +411,49 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("ocean band: disabled is byte-identical; enabled sits after the upside-down exit gap and BEFORE the chuncks band")
+    void oceanBand() {
+        // Disabled (C has oceanHold=0): zero length, period unchanged, never in-band.
+        assertEquals(0L, C.oceanLen());
+        assertEquals(0L, C.oceanLeadGapLen());
+        assertEquals(PERIOD, C.period());
+        org.junit.jupiter.api.Assertions.assertFalse(C.isInOceanBand(3490));
+
+        // Same base as chuncksBand()'s `c` (ud + chuncks), plus an ocean band of 400 core + 100 lead gap
+        // inserted between the upside-down exit gap and the chuncks lead gap (24-arg canonical ctor).
+        // Offsets: udStart 1940 + udLen 300 + udExitFade 0 + udExit 150 = 2390 (ocean lead-gap start);
+        // ocean core at offset 2490..2890; chuncks fade then follows. World-X (phaseShift 0, startX 1000):
+        // ocean lead gap [3390,3490), ocean core [3490,3890), chuncks fade [3890,4090), chuncks core [4090,4590).
+        WorldGenCycle o = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 0, 0.12, 0.5, 400, 100, 0.08, 0);
+        assertEquals(400L, o.oceanLen());
+        assertEquals(100L, o.oceanLeadGapLen());
+        assertEquals(0.08, o.oceanIslandDensity(), EPS);
+        assertEquals(3590L, o.period());   // 1940 + ud 300 + udExit 150 + ocean(100+400) + chuncks(200+500)
+
+        // isInOceanBand is the CORE only; the lead gap before it is plain overworld.
+        org.junit.jupiter.api.Assertions.assertFalse(o.isInOceanBand(3489)); // ocean lead gap (OW)
+        org.junit.jupiter.api.Assertions.assertTrue(o.isInOceanBand(3490));  // core entry
+        org.junit.jupiter.api.Assertions.assertTrue(o.isInOceanBand(3889));  // core end
+        org.junit.jupiter.api.Assertions.assertFalse(o.isInOceanBand(3890)); // chuncks entry fade begins
+
+        // Ocean sits BEFORE chuncks and is disjoint from it and every other segment.
+        org.junit.jupiter.api.Assertions.assertFalse(o.isInChuncksBand(3490)); // this X is ocean, not chuncks
+        org.junit.jupiter.api.Assertions.assertTrue(o.isInChuncksBand(4090));  // chuncks core now sits after ocean
+        org.junit.jupiter.api.Assertions.assertFalse(o.isInOceanBand(1530));   // nether core
+        org.junit.jupiter.api.Assertions.assertFalse(o.isInOceanBand(2500));   // End core
+        org.junit.jupiter.api.Assertions.assertFalse(o.isInOceanBand(3090));   // upside-down core
+
+        // firstWorldXInPhase(OCEAN) lands a representative in-band column (the core centre).
+        long ox = o.firstWorldXInPhase(TrainPhase.OCEAN);
+        assertEquals(3690L, ox);
+        org.junit.jupiter.api.Assertions.assertTrue(o.isInOceanBand((int) ox));
+
+        // Repeats forever with the new period.
+        org.junit.jupiter.api.Assertions.assertTrue(o.isInOceanBand(3490 + 3590));
+    }
+
+    @Test
     @DisplayName("a disabled phase collapses to zero length")
     void disabledCollapse() {
         WorldGenCycle endOnly = new WorldGenCycle(0L, 300, 0, new int[] {1, 5, 20}, 0, 0, 0, 0, 100, 40, 200, 0, 0, 0, 0);

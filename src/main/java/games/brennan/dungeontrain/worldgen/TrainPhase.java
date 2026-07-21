@@ -29,7 +29,9 @@ public enum TrainPhase {
     END,
     UPSIDE_DOWN,
     /** Mostly-void band of scattered overworld chunks (some full, some top-down slices); see {@link ChuncksBand}. */
-    CHUNCKS;
+    CHUNCKS,
+    /** Open-sea band of ocean + sparse island biomes with the waterline raised to the track bed; see {@link OceanBand}. */
+    OCEAN;
 
     /** Bitmask with every phase set ({@code 1<<ordinal} per value) — the "all phases" wire value. */
     public static final int ALL_MASK = (1 << values().length) - 1;
@@ -60,7 +62,7 @@ public enum TrainPhase {
         return name().toLowerCase(java.util.Locale.ROOT);
     }
 
-    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}); null if unknown. */
+    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}/{@code ocean}); null if unknown. */
     public static TrainPhase byToken(String token) {
         if (token == null) return null;
         String t = token.trim().toLowerCase(java.util.Locale.ROOT);
@@ -84,6 +86,9 @@ public enum TrainPhase {
         // about; chuncks sits after the upside-down exit gap, where the End classifier reads OVERWORLD).
         if (ChuncksBand.isInBand(overworld, worldX)) {
             return CHUNCKS;
+        }
+        if (OceanBand.isInBand(overworld, worldX)) {
+            return OCEAN;
         }
         if (UpsideDownBand.isInBand(overworld, worldX)) {
             return UPSIDE_DOWN;

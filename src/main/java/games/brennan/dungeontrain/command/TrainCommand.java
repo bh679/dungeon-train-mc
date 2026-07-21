@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.mojang.logging.LogUtils;
@@ -13,7 +14,10 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.event.TrainTickEvents;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -87,6 +91,9 @@ public final class TrainCommand {
                     .executes(ctx -> runDifficulty(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "tier"))))
                 .then(Commands.literal("auto")
                     .executes(ctx -> runDifficultyAuto(ctx.getSource()))))
+            .then(Commands.literal("tpband")
+                .then(Commands.argument("phase", StringArgumentType.word())
+                    .executes(ctx -> runTpBand(ctx.getSource(), StringArgumentType.getString(ctx, "phase")))))
             .then(Commands.literal("cinematic")
                 .executes(ctx -> runCinematic(ctx.getSource(), CinematicIntroService.StartMode.SPAWN))
                 .then(Commands.literal("spawn")
@@ -151,6 +158,61 @@ public final class TrainCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /**
+     * Debug teleport to a special worldgen band. Computes the band's first in-band world-X purely from the
+     * live {@link WorldGenCycle} layout (so it always matches the generator) and drops the player onto the
+     * dry track corridor there, printing the exact coordinates. The bands sit tens of thousands of blocks
+     * from spawn, so this is the practical way to reach and verify one (especially the ocean band).
+     */
+    private static int runTpBand(CommandSourceStack source, String phaseToken) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("This command must be run by a player."));
+            return 0;
+        }
+
+        TrainPhase phase = TrainPhase.byToken(phaseToken);
+        if (phase == null) {
+            source.sendFailure(Component.literal(
+                "Unknown phase '" + phaseToken + "'. Try: overworld, nether, void, end, upside_down, ocean, chuncks."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        ServerLevel overworld = source.getServer().overworld();
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        if (!data.startsWithTrain()) {
+            source.sendFailure(Component.literal("This world has no train, so it has no worldgen bands.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        long worldX = cycle.firstWorldXInPhase(phase);
+        if (worldX < 0L) {
+            source.sendFailure(Component.literal(
+                "The " + phase.token() + " band is disabled or empty in the current config."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        TrackGeometry g = TrackGeometry.from(data.dims(), data.getTrainY());
+        int z = g.trackCenterZ();
+        int y = g.bedY() + 3;                     // just above the track bed / waterline
+        final double tx = worldX + 0.5;
+        final double tz = z + 0.5;
+        player.teleportTo(overworld, tx, y, tz, player.getYRot(), player.getXRot());
+
+        LOGGER.info("[DungeonTrain] /dungeontrain tpband {} -> ({}, {}, {})", phase.token(), worldX, y, z);
+        source.sendSuccess(() -> Component.literal(
+            "Teleported to the " + phase.token() + " band at X=" + worldX + " (Y=" + y + ", Z=" + z
+                + "). Use F3 to confirm the biome."
+        ), true);
+        return 1;
     }
 
     private static int runSpeed(CommandSourceStack source, double value) {
