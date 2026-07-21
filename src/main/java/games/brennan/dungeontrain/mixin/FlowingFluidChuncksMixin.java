@@ -17,12 +17,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Stops water and lava from flowing into the chuncks band's <b>empty (void) chunks</b>. The band is
- * mostly void, so every kept chunk that exposes worldgen water/lava (ocean/lake/aquifer edges) sits
- * against void neighbours on most sides. Without this, that liquid pours across the chunk boundary and
- * cascades down into the bottomless void — an ever-spreading sheet of flowing fluid that never settles,
- * scheduling a flood of fluid ticks every server tick. That is the dominant cost that made the band feel
- * far heavier than normal terrain (fewer chunks to <em>render</em>, but a runaway <em>tick</em> load).
+ * Stops water and lava from flowing into the chuncks band's <b>empty void space</b> — both a whole
+ * {@link games.brennan.dungeontrain.worldgen.ChuncksBand.Kind#VOID void chunk} and the erased underside
+ * of a {@link games.brennan.dungeontrain.worldgen.ChuncksBand.Kind#SLICE slice} chunk (below its flat cut
+ * Y). The band is mostly void, so every kept chunk that exposes worldgen water/lava (ocean/lake/aquifer
+ * edges) sits against void on most sides, and a slice's surface water would pour straight out its flat
+ * bottom. Without this, that liquid cascades into the bottomless void — an ever-spreading sheet of
+ * flowing fluid that never settles, scheduling a flood of fluid ticks every server tick. That is the
+ * dominant cost that made the band feel far heavier than normal terrain (fewer chunks to <em>render</em>,
+ * but a runaway <em>tick</em> load).
  *
  * <p>Direct sibling of {@link FlowingFluidUpsideDownMixin} / {@link FlowingFluidExternalWaterMixin}: the
  * same {@code HEAD}-cancellable hook on {@link FlowingFluid#canSpreadTo}, cancel-only so injection order
@@ -56,10 +59,11 @@ public class FlowingFluidChuncksMixin {
         if (!server.dimension().equals(Level.OVERWORLD)) return;
         if (fluid != Fluids.WATER && fluid != Fluids.FLOWING_WATER
                 && fluid != Fluids.LAVA && fluid != Fluids.FLOWING_LAVA) return; // water + lava only
-        // isVoidChunk takes any block coord in the destination chunk (it floors to chunk coords), so pass
-        // toPos directly. Fast-outs internally when the band is off or the chunk is kept (FULL/SLICE).
-        if (ChuncksBand.isVoidChunk(server, toPos.getX(), toPos.getZ())) {
-            cir.setReturnValue(false); // no liquid may flow into an empty chuncks chunk
+        // Per-BLOCK void test: a whole void chunk, OR the erased underside of a slice chunk (below its cut
+        // Y) — so liquid can't pour down out of a slice's flat bottom, not just across a void boundary.
+        // Fast-outs internally when the band is off or the destination is kept terrain.
+        if (ChuncksBand.isVoidSpace(server, toPos.getX(), toPos.getY(), toPos.getZ())) {
+            cir.setReturnValue(false); // no liquid may flow into empty chuncks space
         }
     }
 }

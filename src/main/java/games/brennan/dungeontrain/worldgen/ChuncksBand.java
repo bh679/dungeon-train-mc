@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -140,6 +141,25 @@ public final class ChuncksBand {
      */
     public static boolean isVoidChunk(ServerLevel overworld, int chunkMinX, int chunkMinZ) {
         return kindOf(overworld, chunkMinX >> 4, chunkMinZ >> 4) == Kind.VOID;
+    }
+
+    /**
+     * True if the world position {@code (blockX, blockY, blockZ)} is <b>void space</b> in the chuncks band
+     * — either a {@link Kind#VOID} chunk (empty everywhere) or the erased underside of a {@link Kind#SLICE}
+     * chunk ({@code blockY < } the slice's flat {@linkplain #sliceCutY cut Y}). Unlike {@link #isVoidChunk}
+     * (a whole-chunk test used at gen), this is per-<em>block</em>: the fluid veto uses it so liquid can't
+     * pour down out of a slice's flat bottom, not just across a void chunk's boundary. Fast-outs via
+     * {@link #kindOf} when out-of-band; only slice chunks pay the cut-Y resolution.
+     */
+    public static boolean isVoidSpace(ServerLevel overworld, int blockX, int blockY, int blockZ) {
+        int chunkX = blockX >> 4;
+        int chunkZ = blockZ >> 4;
+        Kind kind = kindOf(overworld, chunkX, chunkZ);
+        if (kind == Kind.VOID) return true;
+        if (kind != Kind.SLICE) return false;
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();
+        return blockY < cutY(data.getGenerationSeed(), chunkX, chunkZ, bedY);
     }
 
     /**
