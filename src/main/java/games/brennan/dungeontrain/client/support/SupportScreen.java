@@ -50,6 +50,8 @@ public final class SupportScreen extends Screen {
     private static final int SIDE_MARGIN = 40;
     private static final int BUTTON_H   = 20;
     private static final int BUTTON_GAP = 6;
+    /** Width of the compact side button (e.g. Discord) in a text + button row. */
+    private static final int SIDE_BUTTON_W = 100;
     private static final int SECTION_GAP = 8;
     private static final int HEADER_GAP = 3;
     private static final int DESC_GAP   = 4;
@@ -111,7 +113,9 @@ public final class SupportScreen extends Screen {
                 "gui.dungeontrain.support.share.header",
                 "gui.dungeontrain.support.share.desc");
 
-        y = addSection(y, lh,
+        // Feedback — two columns: description on the left, a small Discord
+        // button on the right, so the lone link stays compact.
+        y = addSideButtonSection(y, lh,
                 "gui.dungeontrain.support.feedback.header",
                 "gui.dungeontrain.support.feedback.desc",
                 new LinkButton("gui.dungeontrain.support.feedback.discord", DISCORD_URL));
@@ -157,6 +161,31 @@ public final class SupportScreen extends Screen {
                     Component.translatable(lb.labelKey()), b -> openLink(lb.url())));
         }
         return y + BUTTON_H + SECTION_GAP;
+    }
+
+    /**
+     * A section laid out as two columns: the wrapped description on the left and
+     * a single compact link button on the right, vertically centred against the
+     * text. Used for Feedback so the lone Discord button stays small.
+     */
+    private int addSideButtonSection(int y, int lh, String headerKey, String descKey, LinkButton link) {
+        int headerY = y;
+        y += lh + HEADER_GAP;
+
+        int textColW = Math.max(80, colW - SIDE_BUTTON_W - BUTTON_GAP);
+        List<FormattedCharSequence> descLines =
+                this.font.split(Component.translatable(descKey), textColW);
+        int descY = y;
+        int descBlockH = descLines.size() * lh;
+
+        textBlocks.add(new TextBlock(Component.translatable(headerKey), headerY, descLines, descY));
+
+        int buttonX = colX + textColW + BUTTON_GAP;
+        int buttonY = descY + Math.max(0, (descBlockH - BUTTON_H) / 2);
+        addRenderableWidget(new DarkTintedButton(buttonX, buttonY, SIDE_BUTTON_W, BUTTON_H,
+                Component.translatable(link.labelKey()), b -> openLink(link.url())));
+
+        return y + Math.max(descBlockH, BUTTON_H) + SECTION_GAP;
     }
 
     private void openLink(String url) {
