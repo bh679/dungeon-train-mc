@@ -82,6 +82,19 @@ public final class DungeonTrainWorldData extends SavedData {
      */
     private final java.util.Set<Long> pendingMirrorChunks = new java.util.LinkedHashSet<>();
 
+    /**
+     * Transient READY subset of {@link #pendingMirrorChunks}: chunks whose full 3×3 neighbourhood is
+     * loaded, so their deferred mirror can actually be applied this tick. The per-tick drain iterates
+     * ONLY this set, so it never re-scans the un-appliable frontier ring (chunks whose outer neighbours
+     * are beyond sim-distance) that otherwise pegs the pending backlog and wastes ~1–3 ms/tick. A chunk
+     * is promoted here from a {@code ChunkEvent.Load} that completes its neighbourhood (see
+     * {@code WorldUpsideDownEvents.promoteNeighbourhood}) or by the low-frequency reconcile in the drain;
+     * it is demoted back if the final apply-time {@code neighboursFull} guard fails (a neighbour unloaded
+     * since promotion). NOT serialized — derived from {@link #pendingMirrorChunks} + the durable marker.
+     * {@link LinkedHashSet} for dedup + stable insertion-order tiebreak. Main-thread only.
+     */
+    private final java.util.Set<Long> readyMirrorChunks = new java.util.LinkedHashSet<>();
+
     private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed, StartingDimension startingDimension) {
         this.trainY = trainY;
         this.startsWithTrain = startsWithTrain;
@@ -103,18 +116,45 @@ public final class DungeonTrainWorldData extends SavedData {
         return data;
     }
 
-    /** Enqueue a chunk key for the deferred upside-down mirror drain (dedup; main-thread only). */
+    /** Enqueue a chunk key for the deferred upside-down mirror drain (dedup; main-thread only). New keys
+     *  start in WAITING (pending only) — they are promoted to READY once their neighbourhood is loaded. */
     public void enqueueMirrorChunk(long chunkKey) {
         pendingMirrorChunks.add(chunkKey);
     }
 
     /**
-     * The live pending-mirror work set (chunk keys). The drain in {@code TrainTickEvents} reads it,
-     * orders nearest-first by train position, applies under a per-tick budget, and removes the keys it
-     * processes. Mutable + main-thread only; not persisted (the chunk attachment is the durable marker).
+     * The live pending-mirror work set (chunk keys) — the full backlog (WAITING ∪ READY), mirroring the
+     * durable marker. Drives the {@code [ud-drain] backlog=} count and the reconcile scan. Mutable +
+     * main-thread only; not persisted (the chunk attachment is the durable marker).
      */
     public java.util.Set<Long> pendingMirrorChunks() {
         return pendingMirrorChunks;
+    }
+
+    /**
+     * The READY subset the drain iterates (chunks whose 3×3 neighbourhood is loaded). Mutable +
+     * main-thread only. See {@link #readyMirrorChunks} field doc.
+     */
+    public java.util.Set<Long> readyMirrorChunks() {
+        return readyMirrorChunks;
+    }
+
+    /** Mark a pending chunk READY (its neighbourhood is now loaded). Idempotent; no-op if not pending. */
+    public void promoteMirrorChunk(long chunkKey) {
+        if (pendingMirrorChunks.contains(chunkKey)) {
+            readyMirrorChunks.add(chunkKey);
+        }
+    }
+
+    /** Return a pending chunk to WAITING (a neighbour unloaded before it could apply). Keeps it pending. */
+    public void demoteMirrorChunk(long chunkKey) {
+        readyMirrorChunks.remove(chunkKey);
+    }
+
+    /** Remove a chunk from the mirror work list entirely (applied, unloaded, or marker already cleared). */
+    public void removeMirrorChunk(long chunkKey) {
+        pendingMirrorChunks.remove(chunkKey);
+        readyMirrorChunks.remove(chunkKey);
     }
 
     private static DungeonTrainWorldData createDefault() {

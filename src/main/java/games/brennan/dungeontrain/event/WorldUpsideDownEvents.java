@@ -70,13 +70,60 @@ public final class WorldUpsideDownEvents {
         if (!level.dimension().equals(Level.OVERWORLD)) return;
         ChunkAccess chunk = event.getChunk();
 
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         if (event.isNewChunk()) {
-            if (!isInAnyUpsideDownZone(level, chunk)) return;
-            chunk.setData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get(), Boolean.TRUE);
-            DungeonTrainWorldData.get(level).enqueueMirrorChunk(chunk.getPos().toLong());
+            if (isInAnyUpsideDownZone(level, chunk)) {
+                chunk.setData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get(), Boolean.TRUE);
+                data.enqueueMirrorChunk(chunk.getPos().toLong());
+            }
         } else if (chunk.hasData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get())) {
-            DungeonTrainWorldData.get(level).enqueueMirrorChunk(chunk.getPos().toLong());
+            data.enqueueMirrorChunk(chunk.getPos().toLong());
         }
+
+        // Promote any pending chunk whose 3×3 is now complete. Runs on EVERY overworld load — NOT just
+        // band chunks — because a band's X-frontier chunk is completed by its non-band neighbour, so
+        // gating on band membership would strand it in WAITING forever. Guarded so it costs ~0 when the
+        // backlog is empty (the common case, band inactive).
+        if (!data.pendingMirrorChunks().isEmpty()) {
+            promoteNeighbourhood(level, data, chunk.getPos().x, chunk.getPos().z);
+        }
+    }
+
+    /**
+     * Promote every pending mirror chunk in the 3×3 centred on {@code (cx,cz)} whose full 3×3
+     * neighbourhood is now loaded (so its deferred write can pass the {@link #neighboursFull} guard).
+     * Called from {@link #onChunkLoad} for every overworld load: the newly-loaded chunk may be the last
+     * neighbour any of its 8 surrounding pending chunks (or itself) was waiting on.
+     */
+    public static void promoteNeighbourhood(ServerLevel level, DungeonTrainWorldData data, int cx, int cz) {
+        for (long key : promotableKeys(cx, cz,
+                data.pendingMirrorChunks()::contains,
+                data.readyMirrorChunks()::contains,
+                k -> neighboursFull(level, ChunkPos.getX(k), ChunkPos.getZ(k)))) {
+            data.promoteMirrorChunk(key);
+        }
+    }
+
+    /**
+     * Pure readiness decision (no live server) for {@link #promoteNeighbourhood}, unit-testable in the
+     * codebase's {@code canBreakAt}/{@code breakFloorY} static-helper style. Returns the chunk keys in the
+     * 3×3 centred on {@code (cx,cz)} that should be newly promoted to READY: pending, not-already-ready,
+     * and neighbourhood-full per the supplied predicate.
+     */
+    public static java.util.List<Long> promotableKeys(int cx, int cz,
+            java.util.function.LongPredicate isPending,
+            java.util.function.LongPredicate isReady,
+            java.util.function.LongPredicate neighbourhoodFull) {
+        java.util.List<Long> out = new java.util.ArrayList<>();
+        for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                long key = ChunkPos.asLong(cx + dx, cz + dz);
+                if (isPending.test(key) && !isReady.test(key) && neighbourhoodFull.test(key)) {
+                    out.add(key);
+                }
+            }
+        }
+        return out;
     }
 
     /**
