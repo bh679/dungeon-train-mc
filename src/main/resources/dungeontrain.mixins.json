@@ -25,6 +25,7 @@
     "SnowLayerBlockUpsideDownMixin",
     "FlowingFluidUpsideDownMixin",
     "FlowingFluidChuncksMixin",
+    "FlowingFluidDisintegrationMixin",
     "ServerSubLevelFreezeMixin",
     "SubLevelPhysicsSystemFreezeMixin",
     "SubLevelHeatMapSplitMixin",
