@@ -471,6 +471,19 @@ public final class CarriageContentsPlacer {
                     BlockPos worldPos = origin.offset(localPos);
                     net.minecraft.world.level.block.state.BlockState state = level.getBlockState(worldPos);
                     if (!state.hasBlockEntity()) continue;
+                    // Suspicious sand/gravel baked into a content .nbt: stamp a vanilla
+                    // archaeology loot table so brushing yields loot like world gen.
+                    if (games.brennan.dungeontrain.editor.ContainerContentsRoller.isBrushable(state)) {
+                        net.minecraft.world.level.block.entity.BlockEntity brushBe = level.getBlockEntity(worldPos);
+                        if (brushBe == null) continue;
+                        net.minecraft.nbt.CompoundTag base = brushBe.saveWithFullMetadata(level.registryAccess());
+                        net.minecraft.nbt.CompoundTag stamped =
+                            games.brennan.dungeontrain.editor.ContainerContentsRoller.stampArchaeologyLoot(
+                                state, base, localPos, seed, carriageIndex);
+                        brushBe.loadCustomOnly(stamped, level.registryAccess());
+                        brushBe.setChanged();
+                        continue;
+                    }
                     if (!games.brennan.dungeontrain.editor.ContainerContentsRoller.isContainerState(state)
                         && !games.brennan.dungeontrain.editor.ContainerContentsRoller.isDecoratedPot(state)) continue;
                     java.util.Optional<games.brennan.dungeontrain.editor.ContainerContentsPool> defaultPool =

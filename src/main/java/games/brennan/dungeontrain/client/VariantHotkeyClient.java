@@ -81,6 +81,7 @@ public final class VariantHotkeyClient {
         public static void onClientTick(ClientTickEvent.Post event) {
             tick++;
             if (Minecraft.getInstance().getConnection() == null
+                    || TemplateBlocksHotkeyClient.inSurvival()
                     || !EditorStatusHudOverlay.isActive()) {
                 if (lastSentHeld) {
                     // Walked out of an editor plot mid-hold — release on the

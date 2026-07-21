@@ -5131,9 +5131,9 @@
         "Automatically off in VR, where a capped frame rate causes motion sickness."
       ],
       "date": "2026-07-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.483.0",
+      "released_at": "2026-07-20T11:50:58Z"
     },
     {
       "id": "ghast-lap-escalation",
@@ -5147,6 +5147,49 @@
         "Ghasts can no longer fill the band on their own \u2014 ground mobs keep their share"
       ],
       "date": "2026-07-20",
+      "released": true,
+      "released_in": "v0.483.0",
+      "released_at": "2026-07-20T11:50:58Z"
+    },
+    {
+      "id": "survival-editor-hotkey-silence",
+      "version": "0.484.0",
+      "type": "fix",
+      "title": "Editor hotkeys stay silent in survival",
+      "summary": "Pressing the editor menu keys (block-variant, container-contents, template-blocks) while in survival no longer flashes editor status messages on your action bar.",
+      "highlights": [
+        "No more spurious 'requires OP' / 'Not in an editor plot' flashes in survival"
+      ],
+      "pr": 803,
+      "date": "2026-07-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "suspicious-sand-archaeology-loot",
+      "version": "0.484.0",
+      "type": "feat",
+      "title": "Suspicious sand on the train digs up real loot",
+      "summary": "Brushing suspicious sand or gravel found on the train now uncovers a random archaeology find \u2014 pottery sherds, gems, and more \u2014 just like suspicious sand out in the world. Before, train-placed suspicious blocks brushed up empty.",
+      "highlights": [
+        "Suspicious sand/gravel on carriages now yields archaeology loot when brushed",
+        "Same loot resolves every time for a given block (deterministic per carriage)"
+      ],
+      "pr": 804,
+      "date": "2026-07-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "death-distance-travelled-telemetry",
+      "version": "0.484.0",
+      "type": "chore",
+      "title": "Truer distance stats behind the scenes",
+      "summary": "Death and run reports now record how far down the line you actually reached \u2014 measured from where you spawned \u2014 plus which world band you died in. This sharpens the private stats dashboard only; there is no in-game change.",
+      "highlights": [],
+      "date": "2026-07-21",
       "released": false,
       "released_in": null,
       "released_at": null
