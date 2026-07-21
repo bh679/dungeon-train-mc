@@ -28,6 +28,7 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.BrushableBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -114,6 +115,9 @@ public final class ContainerContentsRoller {
 
     /** Salt for the per-50-carriage suspicious-stew effect roll (decorrelated from potions/arrows). */
     private static final long SALT_STEW_EPOCH_EFFECT = 0x57EDEFEC70FFEE55L;
+
+    /** Salt for the brushable-block (suspicious sand/gravel) archaeology LootTableSeed. */
+    private static final long SALT_BRUSHABLE_SEED = 0x5A5DB00C0FFEE123L;
 
     /**
      * BE NBT key on {@code decorated_pot} that holds the single contained
@@ -530,6 +534,65 @@ public final class ContainerContentsRoller {
         if (stack.isEmpty()) return out;
         CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
         out.put(NBT_POT_ITEM, stackTag);
+        return out;
+    }
+
+    // ------------------------------------------------------------------
+    //  Brushable blocks (suspicious sand / gravel) — archaeology loot
+    // ------------------------------------------------------------------
+
+    /** Vanilla {@code BrushableBlockEntity} loot-table NBT keys (1.21.1). */
+    private static final String NBT_BRUSHABLE_LOOT_TABLE = "LootTable";
+    private static final String NBT_BRUSHABLE_LOOT_SEED  = "LootTableSeed";
+
+    /** Loot table stamped onto suspicious gravel (its natural world-gen home). */
+    private static final ResourceLocation BRUSHABLE_GRAVEL_TABLE =
+        ResourceLocation.withDefaultNamespace("archaeology/trail_ruins_common");
+    /** Loot table stamped onto suspicious sand (the iconic desert-pyramid dig). */
+    private static final ResourceLocation BRUSHABLE_SAND_TABLE =
+        ResourceLocation.withDefaultNamespace("archaeology/desert_pyramid");
+
+    /**
+     * True for any {@link BrushableBlock} — suspicious sand and suspicious
+     * gravel. Their {@code BrushableBlockEntity} is not a {@link Container}, so
+     * it never reaches the chest/pot roll paths; it takes the dedicated
+     * {@link #stampArchaeologyLoot} path instead.
+     */
+    public static boolean isBrushable(BlockState state) {
+        return state.getBlock() instanceof BrushableBlock;
+    }
+
+    /**
+     * Stamp a vanilla archaeology loot table + a deterministic seed onto a
+     * brushable block's BE NBT so brushing it on the train yields a random
+     * item, exactly like world-gen suspicious sand. Vanilla
+     * {@code BrushableBlockEntity.loadAdditional} prefers a stored
+     * {@code LootTable} over any pre-set {@code item} and resolves it lazily on
+     * brush ({@code unpackLootTable}) — so we only need to write the two keys.
+     *
+     * <p>Deterministic per carriage cell: the {@code LootTableSeed} is derived
+     * from {@code (worldSeed, carriageIndex, localPos)} with the same mixer the
+     * chest path uses, so the same sand block at the same seed always digs up
+     * the same loot.</p>
+     *
+     * <p>Idempotent / author-respecting: if {@code baseNbt} already carries a
+     * {@code LootTable} or a non-empty {@code item} (an author baked loot in),
+     * it is returned unchanged.</p>
+     */
+    public static CompoundTag stampArchaeologyLoot(BlockState state, @Nullable CompoundTag baseNbt,
+                                                   BlockPos localPos, long worldSeed, int carriageIndex) {
+        if (baseNbt != null
+            && (baseNbt.contains(NBT_BRUSHABLE_LOOT_TABLE) || baseNbt.contains(NBT_POT_ITEM))) {
+            return baseNbt;
+        }
+        ResourceLocation table = state.is(Blocks.SUSPICIOUS_GRAVEL)
+            ? BRUSHABLE_GRAVEL_TABLE
+            : BRUSHABLE_SAND_TABLE;
+        long seed = mix(localPos, worldSeed, carriageIndex, /*slot*/ 0, SALT_BRUSHABLE_SEED);
+
+        CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
+        out.putString(NBT_BRUSHABLE_LOOT_TABLE, table.toString());
+        out.putLong(NBT_BRUSHABLE_LOOT_SEED, seed);
         return out;
     }
 

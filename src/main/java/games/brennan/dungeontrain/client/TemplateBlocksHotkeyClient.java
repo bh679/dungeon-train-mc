@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.TemplateBlocksMenuTogglePacket;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.level.GameType;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -36,6 +37,12 @@ public final class TemplateBlocksHotkeyClient {
 
     private TemplateBlocksHotkeyClient() {}
 
+    /** True when the local player is in survival mode — editor hotkeys stay silent there. */
+    static boolean inSurvival() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.gameMode != null && mc.gameMode.getPlayerMode() == GameType.SURVIVAL;
+    }
+
     @SubscribeEvent
     public static void onRegister(RegisterKeyMappingsEvent event) {
         event.register(KEY);
@@ -48,7 +55,7 @@ public final class TemplateBlocksHotkeyClient {
 
         @SubscribeEvent
         public static void onClientTick(ClientTickEvent.Post event) {
-            if (Minecraft.getInstance().getConnection() == null) {
+            if (Minecraft.getInstance().getConnection() == null || inSurvival()) {
                 lastDown = false;
                 return;
             }
