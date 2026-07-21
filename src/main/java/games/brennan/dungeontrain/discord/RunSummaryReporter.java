@@ -43,7 +43,8 @@ public final class RunSummaryReporter {
             long runSec = Math.max(0L, packet.runTicks() / TICKS_PER_SECOND);
             int carriage = packet.cartsTravelled();
             int distanceBlocks = (int) Math.round(packet.distanceBlocks());
-            JsonObject payload = buildPayload(uuid, name, runSec, carriage, distanceBlocks);
+            RunPosition pos = RunPosition.of(player);
+            JsonObject payload = buildPayload(uuid, name, runSec, carriage, distanceBlocks, pos);
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] run-summary relay report failed: {}", t.toString());
@@ -54,8 +55,13 @@ public final class RunSummaryReporter {
      * Pure payload assembly over plain data (no Minecraft types) — package-private so the shape can
      * be unit-tested without bootstrapping the game. {@code runSec} is the life's elapsed seconds
      * ({@code runTicks / 20}); {@code carriage} + {@code distanceBlocks} are cheap extras.
+     *
+     * <p>{@code distanceBlocks} keeps its long-standing meaning — the 3D path-length odometer. The
+     * {@link RunPosition} fields are the newer positional metric and are independent of it; both
+     * ship so the relay can fall back to the odometer for lives predating the origin capture.</p>
      */
-    static JsonObject buildPayload(String uuid, String player, long runSec, int carriage, int distanceBlocks) {
+    static JsonObject buildPayload(String uuid, String player, long runSec, int carriage, int distanceBlocks,
+                                   RunPosition pos) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         if (player != null && !player.isEmpty()) {
@@ -64,6 +70,7 @@ public final class RunSummaryReporter {
         body.addProperty("runSec", runSec);
         body.addProperty("carriage", carriage);
         body.addProperty("distanceBlocks", distanceBlocks);
+        DeathReporter.addPosition(body, pos);
         return body;
     }
 

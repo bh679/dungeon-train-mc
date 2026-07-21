@@ -5197,6 +5197,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "death-distance-travelled-telemetry",
+      "version": "0.485.0",
+      "type": "chore",
+      "title": "Truer distance stats behind the scenes",
+      "summary": "Death and run reports now record how far down the line you actually reached \u2014 measured from where you spawned \u2014 plus which world band you died in. This sharpens the private stats dashboard only; there is no in-game change.",
+      "highlights": [],
+      "date": "2026-07-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

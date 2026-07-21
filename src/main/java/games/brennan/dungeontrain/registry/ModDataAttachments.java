@@ -91,6 +91,30 @@ public final class ModDataAttachments {
         );
 
     /**
+     * World-X where this player's current life began — the origin the relay's per-death
+     * {@code distanceTravelled} (signed X displacement, {@code deathX - spawnX}) is measured from.
+     *
+     * <p>Deliberately its own attachment rather than a {@link PlayerRunState} field: that codec's
+     * {@code RecordCodecBuilder.group(...)} is already at its 16-field cap (see
+     * {@code PlayerRunState.narrativeLetters}), and unlike the other overflow fields this one must
+     * survive a mid-run logout — recapturing it further down the line would silently understate every
+     * subsequent death's displacement.</p>
+     *
+     * <p>Serialized, and <b>no</b> {@code copyOnDeath}: the respawn clone starts with no value, which
+     * is exactly the per-life reset this needs. <b>Presence is the "captured yet?" flag</b> (same
+     * idiom as {@link #NEEDS_UPSIDE_DOWN_MIRROR}) — always test {@code hasData} before
+     * {@code getData}, since {@code getData} materialises the default. Written on respawn and, for a
+     * world's first life (no respawn event), lazily on the first boarded distance sample — both in
+     * {@code BoardingProgressEvents}.</p>
+     */
+    public static final Supplier<AttachmentType<Integer>> RUN_SPAWN_X =
+        TYPES.register("run_spawn_x",
+            () -> AttachmentType.<Integer>builder(() -> 0)
+                .serialize(Codec.INT)
+                .build()
+        );
+
+    /**
      * Per-chunk flag: this in-band overworld chunk still needs the upside-down mirror post-process
      * applied. The mirror is no longer run synchronously at {@code ChunkEvent.Load}; it is deferred and
      * re-applied over later ticks under a per-tick budget (see {@code WorldUpsideDownEvents} +

@@ -49,7 +49,8 @@ public final class DeathReporter {
             String name = player.getGameProfile().getName();
             long runSec = Math.max(0L, packet.runTicks() / TICKS_PER_SECOND);
             int carriage = packet.cartsTravelled();
-            JsonObject payload = buildPayload(uuid, name, packet.deathCause(), runSec, carriage);
+            RunPosition pos = RunPosition.of(player);
+            JsonObject payload = buildPayload(uuid, name, packet.deathCause(), runSec, carriage, pos);
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] death relay report failed: {}", t.toString());
@@ -60,9 +61,12 @@ public final class DeathReporter {
      * Pure payload assembly over plain data (no Minecraft types) — package-private so the shape can
      * be unit-tested without bootstrapping the game. {@code cause} is the second-person death message
      * ({@code packet.deathCause()}); {@code runSec} is the life's elapsed seconds ({@code runTicks /
-     * 20}); {@code carriage} is the carriage reached. {@code player} + {@code cause} are optional.
+     * 20}); {@code carriage} is the carriage reached. {@code player} + {@code cause} are optional,
+     * as is every {@link RunPosition} field (a life whose origin was never captured sends neither
+     * {@code spawnX} nor {@code distanceTravelled} rather than a misleading zero).
      */
-    static JsonObject buildPayload(String uuid, String player, String cause, long runSec, int carriage) {
+    static JsonObject buildPayload(String uuid, String player, String cause, long runSec, int carriage,
+                                   RunPosition pos) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         if (player != null && !player.isEmpty()) {
@@ -73,7 +77,25 @@ public final class DeathReporter {
         }
         body.addProperty("runSec", runSec);
         body.addProperty("carriage", carriage);
+        addPosition(body, pos);
         return body;
+    }
+
+    /**
+     * Append the optional position fields. Shared shape with {@code RunSummaryReporter} — the relay
+     * whitelists the same three names on both endpoints.
+     */
+    static void addPosition(JsonObject body, RunPosition pos) {
+        if (pos == null) return;
+        if (pos.spawnX() != null) {
+            body.addProperty("spawnX", pos.spawnX());
+        }
+        if (pos.distanceTravelled() != null) {
+            body.addProperty("distanceTravelled", pos.distanceTravelled());
+        }
+        if (pos.band() != null && !pos.band().isEmpty()) {
+            body.addProperty("band", pos.band());
+        }
     }
 
     private static void post(String uuid, String json) {
