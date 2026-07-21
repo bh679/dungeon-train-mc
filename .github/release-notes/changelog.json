@@ -5184,7 +5184,7 @@
     },
     {
       "id": "player-book-loot-selection",
-      "version": "0.483.0",
+      "version": "0.484.0",
       "type": "feat",
       "title": "Player-written loot books are now chosen for you",
       "summary": "Community books found in chests are now picked per player instead of at random. You'll be handed books you haven't read yet, and the same one won't turn up twice in a life \u2014 unless it's still unread and you've left it two whole carriage groups behind.",
