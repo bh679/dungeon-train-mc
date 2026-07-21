@@ -111,6 +111,10 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int SLOT_DARK      = 0xFF100E0B;
     private static final int CHIP_RB_BORDER = 0xFF34503A;
     private static final int CHIP_RB_TEXT   = 0xFF7FAE84;
+    // Shift held on reboard preserves the current game mode instead of forcing
+    // Survival — blue instead of green signals "mode carries over".
+    private static final int CHIP_RB_SHIFT_BORDER = 0xFF343A50;
+    private static final int CHIP_RB_SHIFT_TEXT   = 0xFF7F84AE;
     private static final int CHIP_LV_BORDER = 0xFF2A2D33;
     private static final int CHIP_LV_TEXT   = 0xFF8A909A;
     // Shift-held "Quit Game" variant of the leave chip: darker bg, lighter border + text.
@@ -130,6 +134,10 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int BTN_QUIT_TEXT  = 0xFFFFFFFF;
     private static final int BTN_PRI_BG     = 0xFF3C6B41;
     private static final int BTN_PRI_LIGHT  = 0xFF5C9162;
+    // Shift held on "Board anew" preserves the current game mode instead of
+    // forcing Survival — blue instead of green signals "mode carries over".
+    private static final int BTN_PRI_SHIFT_BG    = 0xFF3C416B;
+    private static final int BTN_PRI_SHIFT_LIGHT = 0xFF5C6291;
     // Red "Submit Bug" shortcut button (start page, beside Next Screen).
     private static final int BTN_BUG_BG     = 0xFF8B3A3A;
     private static final int BTN_BUG_LIGHT  = 0xFFB45C5C;
@@ -1119,15 +1127,20 @@ public final class NarrativeDeathScreen extends Screen {
             y = drawCentered(g, styled(n.platformEpitaph()), cx, w, y, SUBLINE);
         }
         y += 14;
-        // Board anew — the prominent action, front and centre under the epitaph.
+        // Board anew — the prominent action, front and centre under the epitaph. Hold
+        // Shift to preserve the current game mode instead of forcing Survival — the
+        // button turns blue to signal that.
+        boolean shiftHeld = Screen.hasShiftDown();
         int baW = 180, baH = 22;
         boardAnewRect = drawBevel(g, cx - baW / 2, y, baW, baH,
                 Component.translatable("gui.dungeontrain.death.board_anew"),
-                BTN_PRI_BG, BTN_PRI_LIGHT, BTN_DARK, 0xFFFFFFFF);
+                shiftHeld ? BTN_PRI_SHIFT_BG : BTN_PRI_BG,
+                shiftHeld ? BTN_PRI_SHIFT_LIGHT : BTN_PRI_LIGHT,
+                BTN_DARK, 0xFFFFFFFF);
         y += baH + 8;
         // Leave the line — smaller, secondary, beneath it. Hold Shift to convert it
         // into a "Quit Game" button (darker, lighter text + bevel) that quits to desktop.
-        boolean quit = Screen.hasShiftDown();
+        boolean quit = shiftHeld;
         int lvW = 116, lvH = 15;
         platformLeaveRect = drawBevel(g, cx - lvW / 2, y, lvW, lvH,
                 Component.translatable(quit ? "menu.quit" : "gui.dungeontrain.death.leave_line"),
@@ -1144,18 +1157,22 @@ public final class NarrativeDeathScreen extends Screen {
         g.drawString(this.font, Component.translatable("gui.dungeontrain.death.narr.brand"),
                 12, 10, fade(0xFF7A828C), false);
         // Right-aligned: [photos] [reboard] [leave]. leave on the far right. Holding
-        // Shift turns the leave chip into a "Quit Game" chip (darker, lighter border + text).
-        boolean quit = Screen.hasShiftDown();
-        Component leave = Component.translatable(quit ? "menu.quit" : "gui.dungeontrain.death.leave");
+        // Shift turns the leave chip into a "Quit Game" chip (darker, lighter border + text)
+        // and turns the reboard chip blue — signalling reboard will preserve the current
+        // game mode instead of forcing Survival.
+        boolean shiftHeld = Screen.hasShiftDown();
+        Component leave = Component.translatable(shiftHeld ? "menu.quit" : "gui.dungeontrain.death.leave");
         Component reboard = Component.translatable("gui.dungeontrain.death.reboard");
         int leaveW = this.font.width(leave) + 16;
         int reboardW = this.font.width(reboard) + 16;
         int leaveX = this.width - 10 - leaveW;
         int reboardX = leaveX - 6 - reboardW;
-        leaveRect = quit
+        leaveRect = shiftHeld
                 ? drawChip(g, leaveX, 8, leave, CHIP_LV_QUIT_BG, CHIP_LV_QUIT_BORDER, CHIP_LV_QUIT_TEXT)
                 : drawChip(g, leaveX, 8, leave, CHIP_LV_BORDER, CHIP_LV_TEXT);
-        reboardRect = drawChip(g, reboardX, 8, reboard, CHIP_RB_BORDER, CHIP_RB_TEXT);
+        reboardRect = shiftHeld
+                ? drawChip(g, reboardX, 8, reboard, CHIP_RB_SHIFT_BORDER, CHIP_RB_SHIFT_TEXT)
+                : drawChip(g, reboardX, 8, reboard, CHIP_RB_BORDER, CHIP_RB_TEXT);
 
         // "photos" → ride-photo gallery. Only on the final platform page, and only
         // when this run actually captured photos to browse.
