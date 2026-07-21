@@ -331,9 +331,10 @@ final class WorldGenCycleTest {
         // after the upside-down exit gap: fadeStart offset = udStart 1940 + udLen 300 + udExitFade 0 +
         // udExit 150 = 2390; core begins at offset 2590. World-X: fade [3390,3590), core [3590,4090).
         WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
-                100, 40, 200, 50, 200, 150, 0, 500, 200, 0.12, 0.5, 0);
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 0, 0.12, 0.5, 0);
         assertEquals(500L, c.chuncksLen());
         assertEquals(200L, c.chuncksFadeLen());
+        assertEquals(0L, c.chuncksLeadGapLen());                         // no lead gap in this case
         assertEquals(3090L, c.period());                                 // 2390 (u's period) + fade 200 + core 500
         assertEquals(0.12, c.chuncksKeepDensity(), EPS);                 // record accessors carry the knobs
         assertEquals(0.5, c.chuncksSliceRatio(), EPS);
@@ -371,7 +372,7 @@ final class WorldGenCycleTest {
         // All upside-down spans collapse, so the core = udStart = 2·owGap + netherLen + endLen = 1940 →
         // world-X 2940.
         WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
-                100, 40, 200, 0, 0, 0, 0, 500, 0, 0.12, 0.5, 0);
+                100, 40, 200, 0, 0, 0, 0, 500, 0, 0, 0.12, 0.5, 0);
         assertEquals(0L, c.upsideDownLen());
         assertEquals(500L, c.chuncksLen());
         assertEquals(0L, c.chuncksFadeLen());
@@ -382,6 +383,31 @@ final class WorldGenCycleTest {
         assertEquals(0.12, c.chuncksKeepDensityAt(2940), EPS);
         org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksBand(3439));  // band end (2940+500-1)
         org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksBand(3440)); // wraps
+    }
+
+    @Test
+    @DisplayName("chuncks lead gap: overworld inserted before the entry fade, shifting the band and growing the period")
+    void chuncksLeadGap() {
+        // Same base as chuncksBand()'s `c` (fade 200, core 500) plus a 300-block overworld lead-in gap
+        // before the fade. fadeStart offset = 2390 (chuncksBand's fadeStart) + leadGap 300 = 2690; core at
+        // 2890. World-X (phaseShift 0): lead gap [3390,3690), fade [3690,3890), core [3890,4390).
+        WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 300, 0.12, 0.5, 0);
+        assertEquals(300L, c.chuncksLeadGapLen());
+        assertEquals(3390L, c.period());                                 // 3090 (chuncksBand) + leadGap 300
+
+        // The lead gap is plain overworld — not in the band, keep-density 1.0 (no void), before the fade.
+        assertEquals(1.0, c.chuncksKeepDensityAt(3390), EPS);            // lead gap start
+        assertEquals(1.0, c.chuncksKeepDensityAt(3689), EPS);            // lead gap end
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksBand(3689));
+
+        // Fade then core sit AFTER the lead gap (shifted +300 vs the no-lead case).
+        assertEquals(1.0, c.chuncksKeepDensityAt(3690), EPS);            // fade start (t=0)
+        assertEquals(0.12, c.chuncksKeepDensityAt(3890), EPS);           // core start
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksBand(3889)); // still fade
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksBand(3890));  // core start
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksBand(4389));  // core end
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksBand(4390)); // wraps
     }
 
     @Test

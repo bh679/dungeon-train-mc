@@ -55,6 +55,9 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * @param chuncksFade length of the entry fade zone before the band: the keep-density ramps from 1
  *                   (all real terrain, no void) down to {@code chuncksKeepDensity} across it, so void
  *                   chunks become progressively more common on approach. 0 = hard edge
+ * @param chuncksLeadGap plain-overworld gap inserted before the chuncks band (after the upside-down
+ *                   band's own exit gap), between the upside-down exit fade and the chuncks entry fade.
+ *                   Breathing room so the two special zones don't run together. 0 = none
  * @param chuncksKeepDensity fraction {@code 0..1} of chunks in the chuncks band that keep real terrain
  *                   (the rest are void); a per-chunk seed-stable noise gate. 0 = all void
  * @param chuncksSliceRatio fraction {@code 0..1} of the KEPT chunks that are a top-down slice (surface
@@ -69,7 +72,8 @@ public record WorldGenCycle(long startX, int owGap,
                             int coreFade, int coreHold,
                             int eFade, int eVoid, int eEnd,
                             int udFade, int udHold, int udExit, int udExitFade,
-                            int chuncksHold, int chuncksFade, double chuncksKeepDensity, double chuncksSliceRatio,
+                            int chuncksHold, int chuncksFade, int chuncksLeadGap,
+                            double chuncksKeepDensity, double chuncksSliceRatio,
                             int phaseShift) {
 
     /**
@@ -83,7 +87,7 @@ public record WorldGenCycle(long startX, int owGap,
                          int eFade, int eVoid, int eEnd,
                          int udFade, int udHold, int udExit, int udExitFade, int phaseShift) {
         this(startX, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold, coreFade, coreHold,
-                eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade, 0, 0, 0.0, 0.0, phaseShift);
+                eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade, 0, 0, 0, 0.0, 0.0, phaseShift);
     }
 
     /**
@@ -162,6 +166,7 @@ public record WorldGenCycle(long startX, int owGap,
                 ud ? DungeonTrainCommonConfig.getUpsideDownExitFadeBlocks() : 0,
                 chuncks ? DungeonTrainCommonConfig.getChuncksHoldBlocks() : 0,
                 chuncks ? DungeonTrainCommonConfig.getChuncksFadeBlocks() : 0,
+                chuncks ? DungeonTrainCommonConfig.getChuncksLeadGapBlocks() : 0,
                 chuncks ? DungeonTrainCommonConfig.getChuncksKeepDensity() : 0.0,
                 chuncks ? DungeonTrainCommonConfig.getChuncksSliceRatio() : 0.0,
                 DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks());
@@ -227,11 +232,20 @@ public record WorldGenCycle(long startX, int owGap,
         return chuncksLen() > 0L ? Math.max(0, chuncksFade) : 0L;
     }
 
-    /** {@code 2·owGap + netherLen + endLen + udLen + udExitFade + udExitGap + chuncksFade + chuncksLen}. */
+    /**
+     * Plain-overworld gap before the chuncks band (after the upside-down exit gap); gated on
+     * {@code chuncksLen > 0} so it collapses to 0 — and keeps {@link #period()} byte-identical — when
+     * the band is disabled.
+     */
+    public long chuncksLeadGapLen() {
+        return chuncksLen() > 0L ? Math.max(0, chuncksLeadGap) : 0L;
+    }
+
+    /** {@code 2·owGap + netherLen + endLen + udLen + udExitFade + udExitGap + chuncksLeadGap + chuncksFade + chuncksLen}. */
     public long period() {
         return 2L * Math.max(0, owGap) + netherLen() + endLen()
                 + upsideDownLen() + udExitFadeLen() + udExitGap()
-                + chuncksFadeLen() + chuncksLen();
+                + chuncksLeadGapLen() + chuncksFadeLen() + chuncksLen();
     }
 
     /**
@@ -598,13 +612,13 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
-     * Offset (into the cycle) where the chuncks entry fade zone begins — immediately after the
-     * upside-down band's trailing overworld gap ({@code udExitGap}). When the upside-down band is
-     * disabled all its spans are 0, so this collapses to right after the End band; the chuncks band's
-     * placement is independent of whether upside-down is present.
+     * Offset (into the cycle) where the chuncks entry fade zone begins — after the upside-down band's
+     * trailing overworld gap ({@code udExitGap}) and the chuncks lead-in gap ({@code chuncksLeadGap}).
+     * When the upside-down band is disabled all its spans are 0, so this collapses to right after the End
+     * band (plus the lead gap); the chuncks band's placement is independent of whether upside-down is present.
      */
     private long chuncksFadeStart() {
-        return udStart() + upsideDownLen() + udExitFadeLen() + udExitGap();
+        return udStart() + upsideDownLen() + udExitFadeLen() + udExitGap() + chuncksLeadGapLen();
     }
 
     /** Offset where the full-density chuncks core begins — after the entry fade zone. */
