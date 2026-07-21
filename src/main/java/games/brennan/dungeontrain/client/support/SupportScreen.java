@@ -24,13 +24,12 @@ import java.util.List;
  * three ways a player can support Dungeon Train:
  *
  * <ol>
- *   <li><b>Financial Support</b> — Patreon (green) + the Kinetic Hosting
- *       affiliate (blue), the same referral shipped in the modpack's
- *       {@code khi.toml}. Rendered as colour-coded buttons.</li>
- *   <li><b>Share the Mod</b> — text only, with an inline clickable "Discord"
- *       link to post videos in.</li>
- *   <li><b>Feedback &amp; Testing</b> — text only, with inline clickable
- *       "Discord" links to share ideas and get involved.</li>
+ *   <li><b>Financial Support</b> — a Direct Donation button (Revolut) + the
+ *       orange Patreon button, with the Kinetic Hosting affiliate (the referral
+ *       shipped in the modpack's {@code khi.toml}) as an inline link.</li>
+ *   <li><b>Share the Mod</b> — text only.</li>
+ *   <li><b>Feedback &amp; Testing</b> — text only, with an inline clickable
+ *       "Discord" link ("Join the Discord") to get involved.</li>
  * </ol>
  *
  * <p>Both the coloured buttons and the inline "Discord" links open their URL
@@ -47,6 +46,7 @@ import java.util.List;
  */
 public final class SupportScreen extends Screen {
 
+    private static final String REVOLUT_URL   = "https://revolut.me/brennacg7";
     private static final String PATREON_URL   = "https://www.patreon.com/brennanhatton";
     private static final String AFFILIATE_URL = "https://billing.kinetichosting.com/aff.php?aff=1461";
     private static final String DISCORD_URL   = "https://discord.gg/jdKAwb6rbW";
@@ -67,9 +67,8 @@ public final class SupportScreen extends Screen {
     /** Blue used for the inline "Discord" links (RGB, no alpha). */
     private static final int COLOUR_LINK   = 0x5B9BFF;
 
-    /** Sprite tints (multiplied over the grey button sprite). */
-    private static final float[] TINT_GREEN = {0.30F, 0.80F, 0.35F}; // Patreon
-    private static final float[] TINT_BLUE  = {0.35F, 0.55F, 1.00F}; // Kinetic Hosting
+    /** Patreon brand-orange sprite tint (multiplied over the grey button sprite). */
+    private static final float[] TINT_ORANGE = {1.00F, 0.47F, 0.38F};
 
     private final Screen parent;
 
@@ -110,21 +109,23 @@ public final class SupportScreen extends Screen {
         subtitleY = y;
         y += subtitleLines.size() * lh + 8;
 
+        // Financial — a Direct Donation button (Revolut) then the orange Patreon
+        // button; the affiliate is an inline link spliced into the copy.
         y = addSection(y, lh,
                 Component.translatable("gui.dungeontrain.support.financial.header"),
-                Component.translatable("gui.dungeontrain.support.financial.desc"),
-                new LinkButton("gui.dungeontrain.support.financial.patreon", PATREON_URL, TINT_GREEN),
-                new LinkButton("gui.dungeontrain.support.financial.affiliate", AFFILIATE_URL, TINT_BLUE));
+                Component.translatable("gui.dungeontrain.support.financial.desc", affiliateLink()),
+                new LinkButton("gui.dungeontrain.support.financial.donate", REVOLUT_URL, null),
+                new LinkButton("gui.dungeontrain.support.financial.patreon", PATREON_URL, TINT_ORANGE));
 
-        // Share / Feedback — text only, with inline clickable "Discord" links
-        // spliced into the copy (see discordLink()).
+        // Share — text only, no link.
         y = addSection(y, lh,
                 Component.translatable("gui.dungeontrain.support.share.header"),
-                Component.translatable("gui.dungeontrain.support.share.desc", discordLink()));
+                Component.translatable("gui.dungeontrain.support.share.desc"));
 
+        // Feedback — only the final "Discord" (Join the Discord) is a clickable link.
         y = addSection(y, lh,
                 Component.translatable("gui.dungeontrain.support.feedback.header"),
-                Component.translatable("gui.dungeontrain.support.feedback.desc", discordLink(), discordLink()));
+                Component.translatable("gui.dungeontrain.support.feedback.desc", discordLink()));
 
         panelBottom = y + (PANEL_PAD - SECTION_GAP);
 
@@ -176,10 +177,20 @@ public final class SupportScreen extends Screen {
 
     /** A clickable, blue, underlined "Discord" word for splicing into description copy. */
     private Component discordLink() {
-        return Component.literal("Discord").withStyle(s -> s
+        return link(Component.literal("Discord"), DISCORD_URL);
+    }
+
+    /** A clickable, blue, underlined "affiliate link" phrase for the Financial copy. */
+    private Component affiliateLink() {
+        return link(Component.translatable("gui.dungeontrain.support.financial.affiliate_link"), AFFILIATE_URL);
+    }
+
+    /** Style {@code label} as a blue, underlined, click-to-open-URL inline link. */
+    private static Component link(net.minecraft.network.chat.MutableComponent label, String url) {
+        return label.withStyle(s -> s
                 .withColor(COLOUR_LINK)
                 .withUnderlined(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, DISCORD_URL)));
+                .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url)));
     }
 
     private void openLink(String url) {
