@@ -367,6 +367,46 @@ jobs:
             git rebase origin/main
           done
 
+      # Repoint the NeoForge in-game update notifier at this release. Unlike the
+      # changelog-mark step above, this runs on EVERY release — manual AND the ~22
+      # cascade micro-releases (auto=true) — because update.json must always name
+      # the newest published build or the notifier silently lags behind. It is
+      # anchored to RELEASE_TAG, not mod_version (which is always bumped past the
+      # release). test_release is excluded: an alpha test build must not advertise
+      # itself as the latest to every player. success() gates on the GitHub Release
+      # having been created. Commits to main with [skip ci]; same rebase-retry as
+      # the changelog-mark step since a cascade tick could push in between.
+      - name: Update NeoForge version notifier (update.json)
+        if: ${{ success() && inputs.test_release == false }}
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+        run: |
+          set -euo pipefail
+          MC_VERSION=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2)
+          python3 scripts/release-notes/build-update-json.py \
+            --version "${RELEASE_TAG#v}" --mc "$MC_VERSION"
+          if git diff --quiet -- update.json; then
+            echo "update.json already current — nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add update.json
+          git commit -m "chore(release): point update notifier at $RELEASE_TAG [skip ci]"
+          for attempt in 1 2; do
+            if git push origin HEAD:main; then
+              echo "Pushed update.json on attempt $attempt."
+              exit 0
+            fi
+            if [ "$attempt" = "2" ]; then
+              echo "::error::Failed to push update.json after rebase retry."
+              exit 1
+            fi
+            echo "Push rejected — fetching and rebasing before retry."
+            git fetch origin main
+            git rebase origin/main
+          done
+
       - name: Check Discord webhook prerequisites
         id: discord_check
         env:
