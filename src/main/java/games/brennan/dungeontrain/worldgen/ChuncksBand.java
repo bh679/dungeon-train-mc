@@ -63,19 +63,19 @@ public final class ChuncksBand {
     }
 
     /**
-     * Classify the chunk at {@code (chunkX, chunkZ)}. Chunks not fully inside the band — including every
-     * chunk when the band is off — return {@link Kind#FULL} (the "generate normal terrain" default), so
-     * the hard band edge falls on a chunk boundary and never bites a void hole into adjacent overworld.
+     * Classify the chunk at {@code (chunkX, chunkZ)}. Uses the position-driven keep-density
+     * ({@link WorldGenCycle#chuncksKeepDensityAt}) so the entry fade zone naturally produces sparse void
+     * that thickens toward the core. A density {@code ≥ 1.0} — outside the band + fade, or when the band
+     * is off — always returns {@link Kind#FULL} (normal terrain, never void). Sampled at the chunk's
+     * min-X, which varies slowly across the multi-thousand-block fade.
      */
     public static Kind kindOf(ServerLevel overworld, int chunkX, int chunkZ) {
         if (startX(overworld) == OFF) return Kind.FULL;
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
-        int chunkMinX = chunkX << 4;
-        for (int dx = 0; dx < 16; dx++) {
-            if (!cycle.isInChuncksBand(chunkMinX + dx)) return Kind.FULL; // edge/out-of-band → normal terrain
-        }
+        double density = cycle.chuncksKeepDensityAt(chunkX << 4);
+        if (density >= 1.0) return Kind.FULL;                        // outside the band + fade → normal terrain
         long seed = DungeonTrainWorldData.get(overworld).getGenerationSeed();
-        return classify(seed, chunkX, chunkZ, cycle.chuncksKeepDensity(), cycle.chuncksSliceRatio());
+        return classify(seed, chunkX, chunkZ, density, cycle.chuncksSliceRatio());
     }
 
     /**

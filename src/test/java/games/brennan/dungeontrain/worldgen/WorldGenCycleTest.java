@@ -317,29 +317,42 @@ final class WorldGenCycleTest {
     }
 
     @Test
-    @DisplayName("chuncks band: disabled is byte-identical; enabled sits after the upside-down exit gap and adds its length to the period")
+    @DisplayName("chuncks band: disabled is byte-identical; enabled sits after the upside-down exit gap with an entry fade then a full-density core")
     void chuncksBand() {
-        // Disabled (C has chuncksHold=0): zero length, period unchanged, never in-band, and the two
-        // convenience constructors used by every other test leave it off.
+        // Disabled (C has chuncksHold=0): zero length, period unchanged, never in-band, density 1.0.
         assertEquals(0L, C.chuncksLen());
+        assertEquals(0L, C.chuncksFadeLen());
         assertEquals(PERIOD, C.period());
         org.junit.jupiter.api.Assertions.assertFalse(C.isInChuncksBand(3390));
+        assertEquals(1.0, C.chuncksKeepDensityAt(3390), EPS);
 
         // Same base as upsideDownBand()'s `u` (udFade 50, udHold 200 → udLen 300; udExit 150), plus a
-        // 500-block chuncks band (19-arg canonical ctor). Chuncks starts right after the upside-down
-        // trailing exit gap: chuncksStart offset = udStart 1940 + udLen 300 + udExitFade 0 + udExit 150
-        // = 2390, so the band is cycle offset [2390, 2890) → world-X [3390, 3890).
+        // 200-block entry fade + a 500-block full-density core (20-arg canonical ctor). Fade begins right
+        // after the upside-down exit gap: fadeStart offset = udStart 1940 + udLen 300 + udExitFade 0 +
+        // udExit 150 = 2390; core begins at offset 2590. World-X: fade [3390,3590), core [3590,4090).
         WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
-                100, 40, 200, 50, 200, 150, 0, 500, 0.12, 0.5, 0);
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 0.12, 0.5, 0);
         assertEquals(500L, c.chuncksLen());
-        assertEquals(2890L, c.period());                                 // 2390 (u's period) + 500
+        assertEquals(200L, c.chuncksFadeLen());
+        assertEquals(3090L, c.period());                                 // 2390 (u's period) + fade 200 + core 500
         assertEquals(0.12, c.chuncksKeepDensity(), EPS);                 // record accessors carry the knobs
         assertEquals(0.5, c.chuncksSliceRatio(), EPS);
 
-        org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksBand(3389)); // still the upside-down exit gap (OW)
-        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksBand(3390));  // band entry
-        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksBand(3889));  // band end
-        org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksBand(3890)); // wraps into the next period's leading owGap
+        // isInChuncksBand is the CORE only (not the fade).
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksBand(3389)); // upside-down exit gap (OW)
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksBand(3400)); // in the entry fade, not the core
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksBand(3590));  // core entry
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksBand(4089));  // core end
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksBand(4090)); // wraps into the next period's leading owGap
+
+        // Entry transition: keep-density is 1.0 before the fade, ramps 1→0.12 across it, holds 0.12 in
+        // the core, and returns to 1.0 after (hard far edge).
+        assertEquals(1.0, c.chuncksKeepDensityAt(3389), EPS);            // before the fade
+        assertEquals(1.0, c.chuncksKeepDensityAt(3390), EPS);            // fade start (t=0)
+        assertEquals(1.0 + (0.12 - 1.0) * 0.5, c.chuncksKeepDensityAt(3490), EPS); // fade midpoint (100/200)
+        assertEquals(0.12, c.chuncksKeepDensityAt(3590), EPS);           // core start (full density)
+        assertEquals(0.12, c.chuncksKeepDensityAt(3800), EPS);           // deep in the core
+        assertEquals(1.0, c.chuncksKeepDensityAt(4090), EPS);            // past the core — hard far edge
 
         // Disjoint from the other segments.
         org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksBand(1530)); // nether core
@@ -347,21 +360,26 @@ final class WorldGenCycleTest {
         org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksBand(3090)); // upside-down core
 
         // Repeats forever with the new period.
-        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksBand(3390 + 2890));
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksBand(3590 + 3090));
+        assertEquals(c.chuncksKeepDensityAt(3490), c.chuncksKeepDensityAt(3490 + 3090), EPS);
     }
 
     @Test
-    @DisplayName("chuncks band sits after the End even when the upside-down band is disabled")
+    @DisplayName("chuncks band sits after the End even when the upside-down band is disabled; zero fade is a hard edge")
     void chuncksWithoutUpsideDown() {
-        // No upside-down (udFade/udHold/udExit/udExitFade all 0); chuncks 500. All upside-down spans
-        // collapse, so chuncksStart = udStart = 2·owGap + netherLen + endLen = 1940 → world-X 2940.
+        // No upside-down (udFade/udHold/udExit/udExitFade all 0); chuncks core 500, fade 0 (hard edge).
+        // All upside-down spans collapse, so the core = udStart = 2·owGap + netherLen + endLen = 1940 →
+        // world-X 2940.
         WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
-                100, 40, 200, 0, 0, 0, 0, 500, 0.12, 0.5, 0);
+                100, 40, 200, 0, 0, 0, 0, 500, 0, 0.12, 0.5, 0);
         assertEquals(0L, c.upsideDownLen());
         assertEquals(500L, c.chuncksLen());
+        assertEquals(0L, c.chuncksFadeLen());
         assertEquals(PERIOD + 500L, c.period());
         org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksBand(2939)); // End band proper
+        assertEquals(1.0, c.chuncksKeepDensityAt(2939), EPS);                  // hard edge — no fade before the core
         org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksBand(2940));  // chuncks starts right after End
+        assertEquals(0.12, c.chuncksKeepDensityAt(2940), EPS);
         org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksBand(3439));  // band end (2940+500-1)
         org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksBand(3440)); // wraps
     }

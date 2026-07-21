@@ -226,6 +226,10 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_CHUNCKS_HOLD_BLOCKS = 0;
     public static final int MAX_CHUNCKS_HOLD_BLOCKS = 100_000_000;
     public static final int DEFAULT_CHUNCKS_HOLD_BLOCKS = 5000;
+    /** Entry fade before the band: void chunks ramp in (keep-density 1 → keepDensity) across this span. */
+    public static final int MIN_CHUNCKS_FADE_BLOCKS = 0;
+    public static final int MAX_CHUNCKS_FADE_BLOCKS = 100_000_000;
+    public static final int DEFAULT_CHUNCKS_FADE_BLOCKS = 1500;
     /** Fraction 0..1 of chunks in the band that keep real terrain (the rest are void). */
     public static final double MIN_CHUNCKS_KEEP_DENSITY = 0.0;
     public static final double MAX_CHUNCKS_KEEP_DENSITY = 1.0;
@@ -278,6 +282,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_MIRROR_PRECOMPUTE;
     public static final ModConfigSpec.BooleanValue CHUNCKS_ENABLED;
     public static final ModConfigSpec.IntValue CHUNCKS_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue CHUNCKS_FADE_BLOCKS;
     public static final ModConfigSpec.DoubleValue CHUNCKS_KEEP_DENSITY;
     public static final ModConfigSpec.DoubleValue CHUNCKS_SLICE_RATIO;
     public static final ModConfigSpec.BooleanValue BREAK_BLOCKS_ON_CONTACT;
@@ -320,6 +325,7 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_MIRROR_PRECOMPUTE = pair.getLeft().upsideDownMirrorPrecompute;
         CHUNCKS_ENABLED = pair.getLeft().chuncksEnabled;
         CHUNCKS_HOLD_BLOCKS = pair.getLeft().chuncksHoldBlocks;
+        CHUNCKS_FADE_BLOCKS = pair.getLeft().chuncksFadeBlocks;
         CHUNCKS_KEEP_DENSITY = pair.getLeft().chuncksKeepDensity;
         CHUNCKS_SLICE_RATIO = pair.getLeft().chuncksSliceRatio;
         BREAK_BLOCKS_ON_CONTACT = pair.getLeft().breakBlocksOnContact;
@@ -559,6 +565,12 @@ public final class DungeonTrainCommonConfig {
                 .comment("Blocks of chuncks-band world-gen (the whole mostly-void stretch). Default 5000.")
                 .defineInRange("chuncksHoldBlocks", DEFAULT_CHUNCKS_HOLD_BLOCKS,
                         MIN_CHUNCKS_HOLD_BLOCKS, MAX_CHUNCKS_HOLD_BLOCKS);
+        ModConfigSpec.IntValue chuncksFadeBlocks = b
+                .comment("Entry fade before the chuncks band: void chunks ramp in across this span (the keep-density",
+                        "eases from 1 = all real terrain down to chuncksKeepDensity at the band edge), so the void",
+                        "arrives gradually instead of at a hard wall. 0 = hard edge. Default 1500.")
+                .defineInRange("chuncksFadeBlocks", DEFAULT_CHUNCKS_FADE_BLOCKS,
+                        MIN_CHUNCKS_FADE_BLOCKS, MAX_CHUNCKS_FADE_BLOCKS);
         ModConfigSpec.DoubleValue chuncksKeepDensity = b
                 .comment("Fraction 0..1 of chunks in the band that keep real terrain (the rest are void). A per-chunk,",
                         "seed-stable noise gate. Default 0.12 (~12% of chunks are kept).")
@@ -581,7 +593,7 @@ public final class DungeonTrainCommonConfig {
                 upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
                 upsideDownBedrockRoof, upsideDownCloudY, upsideDownExitNoiseSkipEpsilon,
                 upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute,
-                chuncksEnabled, chuncksHoldBlocks, chuncksKeepDensity, chuncksSliceRatio,
+                chuncksEnabled, chuncksHoldBlocks, chuncksFadeBlocks, chuncksKeepDensity, chuncksSliceRatio,
                 breakBlocksOnContact);
     }
 
@@ -828,6 +840,11 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? CHUNCKS_HOLD_BLOCKS.get() : DEFAULT_CHUNCKS_HOLD_BLOCKS;
     }
 
+    /** Chuncks entry-fade span (blocks) where void ramps in; falls back to the hardcoded default pre-load. */
+    public static int getChuncksFadeBlocks() {
+        return isLoaded() ? CHUNCKS_FADE_BLOCKS.get() : DEFAULT_CHUNCKS_FADE_BLOCKS;
+    }
+
     /** Fraction 0..1 of chuncks-band chunks that keep real terrain; falls back to the hardcoded default pre-load. */
     public static double getChuncksKeepDensity() {
         return isLoaded() ? CHUNCKS_KEEP_DENSITY.get() : DEFAULT_CHUNCKS_KEEP_DENSITY;
@@ -872,6 +889,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.BooleanValue upsideDownMirrorPrecompute,
                           ModConfigSpec.BooleanValue chuncksEnabled,
                           ModConfigSpec.IntValue chuncksHoldBlocks,
+                          ModConfigSpec.IntValue chuncksFadeBlocks,
                           ModConfigSpec.DoubleValue chuncksKeepDensity,
                           ModConfigSpec.DoubleValue chuncksSliceRatio,
                           ModConfigSpec.BooleanValue breakBlocksOnContact) {}
