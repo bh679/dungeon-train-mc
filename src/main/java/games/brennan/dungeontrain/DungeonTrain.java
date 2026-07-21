@@ -255,6 +255,7 @@ public class DungeonTrain {
         modBus.addListener((net.neoforged.fml.event.config.ModConfigEvent event) -> {
             if (event.getConfig().getSpec() == DungeonTrainCommonConfig.SPEC) {
                 games.brennan.dungeontrain.worldgen.WorldGenCycle.invalidateCache();
+                games.brennan.dungeontrain.worldgen.ChuncksBand.invalidateCache();
             }
         });
 

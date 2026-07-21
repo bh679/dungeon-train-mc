@@ -5244,6 +5244,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "chuncks-world-gen-band",
+      "version": "0.485.0",
+      "type": "feat",
+      "title": "Chuncks \u2014 a mostly-void band of scattered floating chunks",
+      "summary": "The train now crosses a new Chuncks region: mostly open void, sprinkled with the occasional real overworld chunk. Some are full-height islands; others are just a floating slab of the surface with a flat cut-off bottom. The void thickens gradually as you approach, and the train keeps rolling across on its floating track. It sits late in the world-gen cycle, after the upside-down band.",
+      "highlights": [
+        "New Chuncks band \u2014 mostly void with occasional floating overworld chunks (full-height or top-down slices)",
+        "Void ramps in gradually on approach, with an overworld buffer before the band",
+        "Fully configurable: band length, void density, slice ratio, entry fade, and lead-in gap"
+      ],
+      "date": "2026-07-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

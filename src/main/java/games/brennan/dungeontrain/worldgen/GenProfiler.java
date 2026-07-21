@@ -62,7 +62,11 @@ public final class GenProfiler {
         DISINTEGRATION,
         /** {@code WorldDisintegrationEvents.onChunkLoad} — void erosion of the fade band (MAIN-thread; reported
          *  separately, not in {@link Sample#dtTotalMs} which is a worker-thread parallel sum). */
-        EROSION
+        EROSION,
+        /** {@code WorldChuncksEvents.onChunkLoad} — chuncks-band top-down slice erosion (MAIN-thread, like
+         *  {@link #EROSION}; excluded from {@link Sample#dtTotalMs}). The band's only real gen cost — void
+         *  chunks skip fill + decoration, so this bucket staying ~0 confirms the band is near-free at gen. */
+        CHUNCKS_SLICE
     }
 
     private static final int N = Bucket.values().length;

@@ -27,7 +27,9 @@ public enum TrainPhase {
     NETHER,
     VOID,
     END,
-    UPSIDE_DOWN;
+    UPSIDE_DOWN,
+    /** Mostly-void band of scattered overworld chunks (some full, some top-down slices); see {@link ChuncksBand}. */
+    CHUNCKS;
 
     /** Bitmask with every phase set ({@code 1<<ordinal} per value) — the "all phases" wire value. */
     public static final int ALL_MASK = (1 << values().length) - 1;
@@ -58,7 +60,7 @@ public enum TrainPhase {
         return name().toLowerCase(java.util.Locale.ROOT);
     }
 
-    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}); null if unknown. */
+    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}); null if unknown. */
     public static TrainPhase byToken(String token) {
         if (token == null) return null;
         String t = token.trim().toLowerCase(java.util.Locale.ROOT);
@@ -77,8 +79,12 @@ public enum TrainPhase {
      * carriage-selection time. Returns {@link #OVERWORLD} when the bands are off.
      */
     public static TrainPhase phaseAt(ServerLevel overworld, int worldX) {
-        // The three special bands occupy disjoint cycle sub-ranges, so a column is in at most one.
-        // Test upside-down first (it is the only band the nether/End classifiers don't know about).
+        // The special bands occupy disjoint cycle sub-ranges, so a column is in at most one. Test the
+        // chuncks and upside-down bands first (they are the bands the nether/End classifiers don't know
+        // about; chuncks sits after the upside-down exit gap, where the End classifier reads OVERWORLD).
+        if (ChuncksBand.isInBand(overworld, worldX)) {
+            return CHUNCKS;
+        }
         if (UpsideDownBand.isInBand(overworld, worldX)) {
             return UPSIDE_DOWN;
         }

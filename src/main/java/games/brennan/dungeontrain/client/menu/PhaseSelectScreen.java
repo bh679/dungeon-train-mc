@@ -79,6 +79,7 @@ public final class PhaseSelectScreen implements MenuScreen {
             case VOID -> "Void";
             case END -> "End";
             case UPSIDE_DOWN -> "Upside Down";
+            case CHUNCKS -> "Chuncks";
         };
     }
 

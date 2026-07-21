@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import net.minecraft.core.BlockPos;
@@ -22,11 +23,12 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Skips the vanilla decoration + structure pass on disintegration-band chunks that the post-process
- * erosion deletes in full. {@link NoiseBasedChunkGeneratorMixin} already short-circuits the noise
- * terrain for these fully-eroded chunks; this drops the remaining generate-then-erase waste — every
- * vanilla biome feature (trees/ores/lakes/…) and structure piece that would be placed (some at
- * {@code minY} on the now-empty terrain) and then wiped by {@code WorldDisintegrationEvents}.
+ * Skips the vanilla decoration + structure pass on chunks that generate as pure void — the
+ * disintegration band's fully-eroded core AND the chuncks band's void chunks.
+ * {@link NoiseBasedChunkGeneratorMixin} already short-circuits the noise terrain for these chunks; this
+ * drops the remaining generate-then-erase waste — every vanilla biome feature (trees/ores/lakes/…) and
+ * structure piece that would be placed at {@code minY} on the now-empty terrain (and, for lakes/springs,
+ * would even seed fresh water/lava sources into the void).
  *
  * <p>The DT features {@code track_bed} + {@code disintegration} run in the <b>same</b> monolithic
  * {@link ChunkGenerator#applyBiomeDecoration} (both at {@code top_layer_modification}), so there is
@@ -87,17 +89,25 @@ public abstract class ChunkGeneratorDecorationMixin {
         return structureManager.shouldGenerateStructures();
     }
 
-    /** True iff this is an OVERWORLD chunk fully inside the band's eroded core (mirrors the fill mixin's gate). */
+    /**
+     * True iff this is an OVERWORLD chunk that generates as pure void — either the disintegration band's
+     * eroded core (mirrors the fill mixin's gate) or a chuncks-band <b>void</b> chunk. Vanilla decoration
+     * on such a chunk is pure waste: features place at {@code minY} on the empty terrain and spring/lake
+     * features would even seed fresh water/lava sources into the void (feeding the flow problem). Only the
+     * DT features are kept, so the floating track bed still generates.
+     */
     @Unique
     private static boolean dungeontrain$isFullyErodedBandChunk(WorldGenLevel level, ChunkAccess chunk) {
         try {
             ServerLevel serverLevel = level.getLevel();
             if (!serverLevel.dimension().equals(Level.OVERWORLD)) return false;
-            long startX = DisintegrationBand.startX(serverLevel);
-            if (startX == DisintegrationBand.OFF) return false;
             int chunkMinX = chunk.getPos().getMinBlockX();
-            if (chunkMinX + 15 < startX) return false;
-            return DisintegrationBand.isChunkFullyEroded(serverLevel, chunkMinX);
+            long startX = DisintegrationBand.startX(serverLevel);
+            if (startX != DisintegrationBand.OFF && chunkMinX + 15 >= startX
+                    && DisintegrationBand.isChunkFullyEroded(serverLevel, chunkMinX)) {
+                return true;
+            }
+            return ChuncksBand.isVoidChunk(serverLevel, chunkMinX, chunk.getPos().getMinBlockZ());
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] decoration-skip resolve failed at {}; running vanilla decoration",
                     chunk.getPos(), t);

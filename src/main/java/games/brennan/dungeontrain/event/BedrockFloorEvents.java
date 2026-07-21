@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.core.SectionPos;
@@ -61,6 +62,15 @@ public final class BedrockFloorEvents {
 
         ChunkAccess chunk = event.getChunk();
         int chunkMinX = chunk.getPos().getMinBlockX();
+
+        // Chuncks band: a VOID chunk is pure void and a SLICE chunk is a floating slab (flat cut-off
+        // bottom) — neither gets a bedrock floor at minY. A FULL (vertically complete) chuncks chunk
+        // keeps its floor like normal overworld. Per-chunk + deterministic, so this stays independent of
+        // event ordering vs the slice-erosion handler. Chunks outside the chuncks band read FULL.
+        ChuncksBand.Kind chuncksKind = ChuncksBand.kindOf(level, chunk.getPos().x, chunk.getPos().z);
+        if (chuncksKind == ChuncksBand.Kind.VOID || chuncksKind == ChuncksBand.Kind.SLICE) {
+            return;
+        }
 
         // The disintegration band's void has no floor — skip bedrock in columns whose band
         // phase is void/End (middleRamp > 0). Computed per column so a chunk straddling a
