@@ -3,6 +3,9 @@ package games.brennan.dungeontrain.worldgen;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Server-side helper for the <b>chuncks</b> band — the fourth looping phase of the {@link WorldGenCycle},
@@ -66,16 +69,23 @@ public final class ChuncksBand {
      * Classify the chunk at {@code (chunkX, chunkZ)}. Uses the position-driven keep-density
      * ({@link WorldGenCycle#chuncksKeepDensityAt}) so the entry fade zone naturally produces sparse void
      * that thickens toward the core. A density {@code ≥ 1.0} — outside the band + fade, or when the band
-     * is off — always returns {@link Kind#FULL} (normal terrain, never void). Sampled at the chunk's
-     * min-X, which varies slowly across the multi-thousand-block fade.
+     * is off — always returns {@link Kind#FULL} (normal terrain, never void).
+     *
+     * <p>Ordering is deliberate for the runtime hot path (the fluid veto queries this on every water/lava
+     * spread in the overworld): the cheap gate — config flag + memoised cycle + pure offset math — runs
+     * <b>before</b> any {@code DungeonTrainWorldData} data-storage lookup or noise hash, so out-of-band
+     * spreads (the overwhelming majority) fold to a few comparisons and touch neither. Only genuinely
+     * in-band chunks reach the per-world seed lookup, and those are memoised (see {@link #cachedKind}).</p>
      */
     public static Kind kindOf(ServerLevel overworld, int chunkX, int chunkZ) {
-        if (startX(overworld) == OFF) return Kind.FULL;
+        if (!DungeonTrainCommonConfig.isChuncksEnabled()) return Kind.FULL;
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        if (cycle.chuncksLen() <= 0L) return Kind.FULL;
         double density = cycle.chuncksKeepDensityAt(chunkX << 4);
         if (density >= 1.0) return Kind.FULL;                        // outside the band + fade → normal terrain
-        long seed = DungeonTrainWorldData.get(overworld).getGenerationSeed();
-        return classify(seed, chunkX, chunkZ, density, cycle.chuncksSliceRatio());
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        if (!data.startsWithTrain()) return Kind.FULL;               // no train → no bands
+        return cachedKind(data.getGenerationSeed(), chunkX, chunkZ, density, cycle.chuncksSliceRatio());
     }
 
     /**
@@ -89,9 +99,46 @@ public final class ChuncksBand {
         return hash01(seed, chunkX, chunkZ, SLICE_SALT) < sliceRatio ? Kind.SLICE : Kind.FULL;
     }
 
-    /** True if the chunk at {@code (chunkMinX, chunkMinZ)} is a void chunk (fully in-band, not kept). */
+    // ---- per-chunk classification cache -------------------------------------
+    // In-band kinds are stable within a (seed, config) epoch, so memoise them by chunk key: the fluid
+    // veto queries the same boundary chunks every fluid tick, and the fill / decoration / bedrock gen
+    // passes each re-derive the kind per chunk. ConcurrentHashMap: worldgen workers + the server thread
+    // both hit it. Seed-keyed (a fresh world clears it) and cleared on COMMON config reload via
+    // #invalidateCache (wired next to WorldGenCycle#invalidateCache). Only in-band chunks are cached
+    // (kindOf's density gate returns FULL before reaching here), so no out-of-band entries accumulate.
+    private static final ConcurrentHashMap<Long, Kind> KIND_CACHE = new ConcurrentHashMap<>();
+    private static volatile long cacheSeed = Long.MIN_VALUE;
+    private static final int MAX_CACHE = 1 << 18;                     // ~262k chunks — crude memory bound
+
+    private static Kind cachedKind(long seed, int chunkX, int chunkZ, double density, double sliceRatio) {
+        if (seed != cacheSeed) {                                      // new world (or first use) → drop stale kinds
+            KIND_CACHE.clear();
+            cacheSeed = seed;
+        }
+        long key = ChunkPos.asLong(chunkX, chunkZ);
+        Kind hit = KIND_CACHE.get(key);
+        if (hit != null) return hit;
+        Kind k = classify(seed, chunkX, chunkZ, density, sliceRatio);
+        if (KIND_CACHE.size() >= MAX_CACHE) KIND_CACHE.clear();       // bound memory; recompute is cheap
+        KIND_CACHE.put(key, k);
+        return k;
+    }
+
+    /**
+     * Drop the memoised per-chunk kinds. Called on COMMON {@code ModConfigEvent} (the band's position,
+     * density, or slice ratio may have changed), alongside {@link WorldGenCycle#invalidateCache()}.
+     */
+    public static void invalidateCache() {
+        KIND_CACHE.clear();
+        cacheSeed = Long.MIN_VALUE;
+    }
+
+    /**
+     * True if the chunk at {@code (chunkMinX, chunkMinZ)} is a void chunk (in-band, not kept). Takes any
+     * block coordinate in the chunk (floored to chunk coords). Routes through {@link #kindOf}, which
+     * gates and fast-outs internally — no redundant band/data-storage lookup here.
+     */
     public static boolean isVoidChunk(ServerLevel overworld, int chunkMinX, int chunkMinZ) {
-        if (startX(overworld) == OFF) return false;
         return kindOf(overworld, chunkMinX >> 4, chunkMinZ >> 4) == Kind.VOID;
     }
 

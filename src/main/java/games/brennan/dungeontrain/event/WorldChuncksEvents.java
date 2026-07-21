@@ -92,7 +92,7 @@ public final class WorldChuncksEvents {
                 }
             }
         }
-        GenProfiler.add(GenProfiler.Bucket.EROSION, genT0);
+        GenProfiler.add(GenProfiler.Bucket.CHUNCKS_SLICE, genT0);
         if (changed) chunk.setUnsaved(true);
     }
 }
