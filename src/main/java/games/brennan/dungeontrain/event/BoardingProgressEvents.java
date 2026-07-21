@@ -263,12 +263,31 @@ public final class BoardingProgressEvents {
 
     /**
      * Reset the notified-tier baseline on respawn so the player gets fresh
-     * Discord tier notifications in their new life (tier resets to 0 on death).
+     * Discord tier notifications in their new life (tier resets to 0 on death),
+     * and stamp the new life's distance origin.
      */
     @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         LAST_NOTIFIED_TIER.put(player.getUUID(), 0);
+        // The respawn clone carries no RUN_SPAWN_X (not copyOnDeath), and the player has already been
+        // placed at their respawn position here — so this is the exact origin for the new life.
+        // Overwrite unconditionally: this is authoritative, the lazy capture below is only a fallback.
+        player.setData(ModDataAttachments.RUN_SPAWN_X.get(), player.blockPosition().getX());
+    }
+
+    /**
+     * World-X this player's current life started from, or {@code null} if it was never captured
+     * (a life already in progress when this feature shipped, or one that never boarded).
+     *
+     * <p>Tests {@code hasData} first — {@code getData} would materialise the default {@code 0} and
+     * make an uncaptured life indistinguishable from one that genuinely began at X=0.</p>
+     */
+    @Nullable
+    public static Integer runSpawnX(ServerPlayer player) {
+        return player.hasData(ModDataAttachments.RUN_SPAWN_X.get())
+                ? player.getData(ModDataAttachments.RUN_SPAWN_X.get())
+                : null;
     }
 
     /**
@@ -280,6 +299,12 @@ public final class BoardingProgressEvents {
      */
     private static void accumulateBoardedDistance(ServerPlayer player) {
         Vec3 current = new Vec3(player.getX(), player.getY(), player.getZ());
+        // Fallback origin capture for a world's FIRST life, which never fires PlayerRespawnEvent.
+        // Only when absent — a captured origin must never drift forward, or every later death in this
+        // life would under-report its displacement.
+        if (!player.hasData(ModDataAttachments.RUN_SPAWN_X.get())) {
+            player.setData(ModDataAttachments.RUN_SPAWN_X.get(), player.blockPosition().getX());
+        }
         Vec3 last = LAST_BOARDED_POS.put(player.getUUID(), current);
         if (last == null) return;
         double dx = current.x - last.x;
