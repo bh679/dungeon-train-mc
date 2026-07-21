@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import net.minecraft.Util;
 import net.minecraft.server.level.ServerLevel;
@@ -21,21 +22,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Skips the overworld noise fill for disintegration-band chunks that the post-process erosion would
- * delete in full. Across the void holds, the End core, and the void↔End transitions every column is
- * held at {@code middleRamp == 1}, so the generated overworld terrain is 100% removed by
- * {@code WorldDisintegrationEvents} anyway — generating it (≈74k density samples + surface + carver
- * passes) and then erasing it block-by-block is pure waste. This injects at the head of
- * {@link NoiseBasedChunkGenerator#fillFromNoise} and, for a fully-eroded chunk, returns an empty
- * (all-air) chunk directly instead of running {@code doFill}.
+ * Skips the overworld noise fill for chunks that are meant to be void, across the two void-producing
+ * bands:
  *
- * <p>Scope: only the overworld dimension (the band's home — same gate as
- * {@code WorldDisintegrationEvents}), only when the band is enabled and the chunk lies entirely in a
- * fully-eroded stretch ({@link Disintegration#isChunkFullyEroded}). Fade-zone / straddle chunks fall
- * through to vanilla so the erosion gradient is byte-identical to before. The floating track bed +
- * rails are still painted by {@code TrackBedFeature} (pillars are skipped there for these chunks);
- * the End islands + chorus are still stamped by {@code DisintegrationFeature} in the FEATURES stage.
- * Any failure falls through to vanilla generation — worldgen is never broken by this hook.</p>
+ * <ul>
+ *   <li><b>Disintegration/End band</b> — the void holds, End core, and void↔End transitions all hold
+ *       {@code middleRamp == 1}, so the generated overworld terrain is 100% removed by
+ *       {@code WorldDisintegrationEvents} anyway. Gated on {@link DisintegrationBand#isChunkFullyEroded}.</li>
+ *   <li><b>Chuncks band</b> — mostly void, sprinkled with occasional real chunks; the void chunks are
+ *       classified by {@link ChuncksBand#isVoidChunk}.</li>
+ * </ul>
+ *
+ * <p>Generating a chunk's terrain (≈74k density samples + surface + carver passes) only to erase it is
+ * pure waste, so this injects at the head of {@link NoiseBasedChunkGenerator#fillFromNoise} and returns
+ * an empty (all-air) chunk directly instead of running {@code doFill}. The two bands are evaluated
+ * independently, so either works with the other disabled.</p>
+ *
+ * <p>Scope: only the overworld dimension (both bands' home). Fade-zone / straddle / kept chunks fall
+ * through to vanilla so their terrain is byte-identical to before. The floating track bed + rails are
+ * still painted by {@code TrackBedFeature} (pillars are skipped over void by a probe sentinel); the End
+ * islands + chorus are still stamped by {@code DisintegrationFeature} in the FEATURES stage. Any failure
+ * falls through to vanilla generation — worldgen is never broken by this hook.</p>
  */
 @Mixin(NoiseBasedChunkGenerator.class)
 public abstract class NoiseBasedChunkGeneratorMixin {
@@ -50,20 +57,29 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             // During fresh generation the chunk's raw levelHeightAccessor IS the owning ServerLevel.
             LevelHeightAccessor lha = ((ChunkAccessAccessor) centerChunk).dungeontrain$getLevelHeightAccessor();
             if (!(lha instanceof ServerLevel level)) return;
-            // The band lives only in the overworld dimension.
+            // Both bands live only in the overworld dimension.
             if (!level.dimension().equals(Level.OVERWORLD)) return;
 
-            long startX = DisintegrationBand.startX(level);
-            if (startX == DisintegrationBand.OFF) return; // disabled / no train
-
             int chunkMinX = centerChunk.getPos().getMinBlockX();
-            if (chunkMinX + 15 < startX) return; // entirely before the first band
+            int chunkMinZ = centerChunk.getPos().getMinBlockZ();
 
-            if (!DisintegrationBand.isChunkFullyEroded(level, chunkMinX)) {
-                return; // any fade/overworld/nether column → keep real terrain, let vanilla run
+            // Evaluate the two void-producing bands independently — chuncks must void even when the
+            // disintegration/End band is disabled, and vice-versa.
+            boolean voidChunk = false;
+
+            long disStartX = DisintegrationBand.startX(level);
+            if (disStartX != DisintegrationBand.OFF && chunkMinX + 15 >= disStartX
+                    && DisintegrationBand.isChunkFullyEroded(level, chunkMinX)) {
+                voidChunk = true; // End void/core: post-erosion would delete 100% of the terrain anyway
+            }
+            if (!voidChunk && ChuncksBand.isVoidChunk(level, chunkMinX, chunkMinZ)) {
+                voidChunk = true; // chuncks band: this chunk is one of the mostly-void gaps
+            }
+            if (!voidChunk) {
+                return; // any real-terrain column → keep it, let vanilla run
             }
 
-            // Fully eroded: hand back an empty chunk. Sections are already air (pre-allocated by the
+            // Void chunk: hand back an empty chunk. Sections are already air (pre-allocated by the
             // ProtoChunk ctor); we only prime the two worldgen heightmaps that doFill would have
             // created (empty, anchored at minY) so the downstream surface/heightmap reads are
             // satisfied. Run on the wgen worker — mirroring vanilla's own fillFromNoise hand-off — so

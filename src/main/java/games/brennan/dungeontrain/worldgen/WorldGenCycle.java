@@ -7,10 +7,10 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * phases in one fixed order along +X from a shared anchor:
  *
  * <pre>
- *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → Upside-down → exit-fade → Void → OW (repeat)
+ *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → Upside-down → exit-fade → OW → Chuncks → OW (repeat)
  * </pre>
  *
- * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [upside-down band] [udExitFade] [udExitGap]}. The
+ * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [upside-down band] [udExitFade] [udExitGap] [chuncks band]}. The
  * nether/End sub-bands reuse the existing ramp math ({@link NetherTransition} and
  * {@link Disintegration}) evaluated at a <em>local</em> offset with {@code owHold = 0}; the
  * upside-down band uses a simple trapezoid ({@link #upsideDownRamp}) and is realised as a
@@ -48,6 +48,14 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * @param udExitFade upside-down → overworld exit crossfade span, inserted between the band and the
  *                   trailing {@code udExit} gap: the mirror disperses into shrinking floating islands
  *                   while overworld islands fade in over the void. 0 = hard edge (period unchanged)
+ * @param chuncksHold length of the "chuncks" band — a mostly-void stretch, sprinkled with occasional
+ *                   real overworld chunks (some vertically complete, some a top-down slice). Appended
+ *                   after the upside-down band's trailing {@code udExit} gap. 0 disables the band
+ *                   (period byte-identical to the pre-chuncks cycle)
+ * @param chuncksKeepDensity fraction {@code 0..1} of chunks in the chuncks band that keep real terrain
+ *                   (the rest are void); a per-chunk seed-stable noise gate. 0 = all void
+ * @param chuncksSliceRatio fraction {@code 0..1} of the KEPT chunks that are a top-down slice (surface
+ *                   kept, flat bottom cut) rather than vertically complete
  * @param phaseShift blocks the whole cycle is shifted at {@code startX} so the FIRST overworld gap
  *                   (to the nether band) is shorter than the recurring {@code owGap}; {@code
  *                   max(0, owGap − firstOverworld)}, 0 = no shift. Shared with the End band's
@@ -57,12 +65,28 @@ public record WorldGenCycle(long startX, int owGap,
                             int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
                             int coreFade, int coreHold,
                             int eFade, int eVoid, int eEnd,
-                            int udFade, int udHold, int udExit, int udExitFade, int phaseShift) {
+                            int udFade, int udHold, int udExit, int udExitFade,
+                            int chuncksHold, double chuncksKeepDensity, double chuncksSliceRatio,
+                            int phaseShift) {
+
+    /**
+     * Back-compat constructor for the pre-chuncks 16-arg shape (with {@code udExitFade}, no chuncks
+     * band). Passes {@code chuncksHold = 0} so {@link #period()} is byte-identical to the pre-chuncks
+     * cycle — existing callers and unit tests keep the old layout unchanged.
+     */
+    public WorldGenCycle(long startX, int owGap,
+                         int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
+                         int coreFade, int coreHold,
+                         int eFade, int eVoid, int eEnd,
+                         int udFade, int udHold, int udExit, int udExitFade, int phaseShift) {
+        this(startX, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold, coreFade, coreHold,
+                eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade, 0, 0.0, 0.0, phaseShift);
+    }
 
     /**
      * Back-compat constructor defaulting {@code udExitFade} (the upside-down → overworld exit crossfade)
-     * to 0 — the pre-exit-fade 15-arg shape. A zero exit fade is byte-identical to the previous cycle, so
-     * existing callers and unit tests keep the old layout unchanged.
+     * to 0 — the pre-exit-fade 15-arg shape (also chuncks-free). A zero exit fade is byte-identical to
+     * the previous cycle, so existing callers and unit tests keep the old layout unchanged.
      */
     public WorldGenCycle(long startX, int owGap,
                          int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
@@ -116,6 +140,7 @@ public record WorldGenCycle(long startX, int owGap,
         boolean nether = DungeonTrainCommonConfig.isNetherTransitionEnabled();
         boolean end = DungeonTrainCommonConfig.isDisintegrationEnabled();
         boolean ud = DungeonTrainCommonConfig.isUpsideDownEnabled();
+        boolean chuncks = DungeonTrainCommonConfig.isChuncksEnabled();
         return new WorldGenCycle(
                 DungeonTrainCommonConfig.getDisintegrationStartBlocks(),
                 DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks(),
@@ -132,6 +157,9 @@ public record WorldGenCycle(long startX, int owGap,
                 ud ? DungeonTrainCommonConfig.getUpsideDownHoldBlocks() : 0,
                 ud ? DungeonTrainCommonConfig.getUpsideDownExitGapBlocks() : 0,
                 ud ? DungeonTrainCommonConfig.getUpsideDownExitFadeBlocks() : 0,
+                chuncks ? DungeonTrainCommonConfig.getChuncksHoldBlocks() : 0,
+                chuncks ? DungeonTrainCommonConfig.getChuncksKeepDensity() : 0.0,
+                chuncks ? DungeonTrainCommonConfig.getChuncksSliceRatio() : 0.0,
                 DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks());
     }
 
@@ -182,10 +210,15 @@ public record WorldGenCycle(long startX, int owGap,
         return upsideDownLen() > 0L ? Math.max(0, udExit) : 0L;
     }
 
-    /** {@code 2·owGap + netherLen + endLen + udLen + udExitFade + udExitGap}; 0 if everything collapses. */
+    /** Length of the chuncks band ({@code chuncksHold}); 0 when the band is disabled. */
+    public long chuncksLen() {
+        return Math.max(0, chuncksHold);
+    }
+
+    /** {@code 2·owGap + netherLen + endLen + udLen + udExitFade + udExitGap + chuncksLen}; 0 if everything collapses. */
     public long period() {
         return 2L * Math.max(0, owGap) + netherLen() + endLen()
-                + upsideDownLen() + udExitFadeLen() + udExitGap();
+                + upsideDownLen() + udExitFadeLen() + udExitGap() + chuncksLen();
     }
 
     /**
@@ -549,5 +582,32 @@ public record WorldGenCycle(long startX, int owGap,
         if (l < 0L) return 0.0;
         long len = udExitFadeLen();
         return len > 0L ? (double) (len - l) / len : 0.0;
+    }
+
+    /**
+     * Offset (into the cycle) where the chuncks band begins — immediately after the upside-down band's
+     * trailing overworld gap ({@code udExitGap}). When the upside-down band is disabled all its spans are
+     * 0, so this collapses to right after the End band; the chuncks band's placement is independent of
+     * whether upside-down is present.
+     */
+    private long chuncksStart() {
+        return udStart() + upsideDownLen() + udExitFadeLen() + udExitGap();
+    }
+
+    /** Offset into the chuncks band at a world-X, or {@code -1} outside it. */
+    private long chuncksOffset(int worldX) {
+        long o = offset(worldX);
+        if (o < 0L) return -1L;
+        long lc = o - chuncksStart();
+        return (lc < 0L || lc >= chuncksLen()) ? -1L : lc;
+    }
+
+    /**
+     * True if {@code worldX} lies anywhere in the chuncks band. Membership is binary (per-column) like
+     * {@link #isInUpsideDownBand}; the per-<em>chunk</em> void/keep/slice decision is a seed-stable noise
+     * gate applied on top of this (see {@code ChuncksBand}), not part of the pure layout.
+     */
+    public boolean isInChuncksBand(int worldX) {
+        return chuncksOffset(worldX) >= 0L;
     }
 }

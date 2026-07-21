@@ -215,6 +215,27 @@ public final class DungeonTrainCommonConfig {
     public static final boolean DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE = true;
 
     /**
+     * Chuncks band — a fourth looping phase, appended after the upside-down band's trailing overworld
+     * gap. Along +X it is mostly void, sprinkled with occasional real overworld chunks: some vertically
+     * complete, some a top-down slice (natural surface kept, flat cut-off bottom — a floating island of
+     * the chunk's upper terrain). The train crosses it on the floating track bed. The four special bands
+     * occupy disjoint cycle sub-ranges, so they never overlap.
+     */
+    public static final boolean DEFAULT_CHUNCKS_ENABLED = true;
+    /** Blocks of chuncks-band world-gen (the whole mostly-void stretch). 0 drops the band from the cycle. */
+    public static final int MIN_CHUNCKS_HOLD_BLOCKS = 0;
+    public static final int MAX_CHUNCKS_HOLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_CHUNCKS_HOLD_BLOCKS = 5000;
+    /** Fraction 0..1 of chunks in the band that keep real terrain (the rest are void). */
+    public static final double MIN_CHUNCKS_KEEP_DENSITY = 0.0;
+    public static final double MAX_CHUNCKS_KEEP_DENSITY = 1.0;
+    public static final double DEFAULT_CHUNCKS_KEEP_DENSITY = 0.12;
+    /** Fraction 0..1 of the KEPT chunks that are a top-down slice rather than vertically complete. */
+    public static final double MIN_CHUNCKS_SLICE_RATIO = 0.0;
+    public static final double MAX_CHUNCKS_SLICE_RATIO = 1.0;
+    public static final double DEFAULT_CHUNCKS_SLICE_RATIO = 0.5;
+
+    /**
      * Whether a moving carriage breaks the world blocks its footprint passes through (drops included).
      * The corridor is normally pre-cleared at worldgen and re-swept at chunk load, so this only bites on
      * blocks that appear afterwards — player-placed walls, grown trees, structures outside the swept Z
@@ -255,6 +276,10 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.DoubleValue UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_MAX_CEILING_HEIGHT;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_MIRROR_PRECOMPUTE;
+    public static final ModConfigSpec.BooleanValue CHUNCKS_ENABLED;
+    public static final ModConfigSpec.IntValue CHUNCKS_HOLD_BLOCKS;
+    public static final ModConfigSpec.DoubleValue CHUNCKS_KEEP_DENSITY;
+    public static final ModConfigSpec.DoubleValue CHUNCKS_SLICE_RATIO;
     public static final ModConfigSpec.BooleanValue BREAK_BLOCKS_ON_CONTACT;
 
     static {
@@ -293,6 +318,10 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON = pair.getLeft().upsideDownExitNoiseSkipEpsilon;
         UPSIDE_DOWN_MAX_CEILING_HEIGHT = pair.getLeft().upsideDownMaxCeilingHeight;
         UPSIDE_DOWN_MIRROR_PRECOMPUTE = pair.getLeft().upsideDownMirrorPrecompute;
+        CHUNCKS_ENABLED = pair.getLeft().chuncksEnabled;
+        CHUNCKS_HOLD_BLOCKS = pair.getLeft().chuncksHoldBlocks;
+        CHUNCKS_KEEP_DENSITY = pair.getLeft().chuncksKeepDensity;
+        CHUNCKS_SLICE_RATIO = pair.getLeft().chuncksSliceRatio;
         BREAK_BLOCKS_ON_CONTACT = pair.getLeft().breakBlocksOnContact;
     }
 
@@ -517,6 +546,29 @@ public final class DungeonTrainCommonConfig {
                         "byte-identical terrain. Set false to compute and apply everything at load (original behaviour).",
                         "Default true.")
                 .define("upsideDownMirrorPrecompute", DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE);
+
+        ModConfigSpec.BooleanValue chuncksEnabled = b
+                .comment("Chuncks phase — part of the single repeating world-gen cycle, appended after the upside-down",
+                        "band's trailing overworld gap. Along +X it is mostly void, sprinkled with occasional real",
+                        "overworld chunks: some vertically complete, some a top-down slice (natural surface kept, flat",
+                        "cut-off bottom). The train crosses on the floating track bed. The full cycle is:",
+                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → (repeat).",
+                        "Set false to drop the chuncks phase from the cycle.")
+                .define("chuncksEnabled", DEFAULT_CHUNCKS_ENABLED);
+        ModConfigSpec.IntValue chuncksHoldBlocks = b
+                .comment("Blocks of chuncks-band world-gen (the whole mostly-void stretch). Default 5000.")
+                .defineInRange("chuncksHoldBlocks", DEFAULT_CHUNCKS_HOLD_BLOCKS,
+                        MIN_CHUNCKS_HOLD_BLOCKS, MAX_CHUNCKS_HOLD_BLOCKS);
+        ModConfigSpec.DoubleValue chuncksKeepDensity = b
+                .comment("Fraction 0..1 of chunks in the band that keep real terrain (the rest are void). A per-chunk,",
+                        "seed-stable noise gate. Default 0.12 (~12% of chunks are kept).")
+                .defineInRange("chuncksKeepDensity", DEFAULT_CHUNCKS_KEEP_DENSITY,
+                        MIN_CHUNCKS_KEEP_DENSITY, MAX_CHUNCKS_KEEP_DENSITY);
+        ModConfigSpec.DoubleValue chuncksSliceRatio = b
+                .comment("Fraction 0..1 of the KEPT chunks that are a top-down slice (natural surface kept, flat",
+                        "cut-off bottom) rather than vertically complete. Default 0.5.")
+                .defineInRange("chuncksSliceRatio", DEFAULT_CHUNCKS_SLICE_RATIO,
+                        MIN_CHUNCKS_SLICE_RATIO, MAX_CHUNCKS_SLICE_RATIO);
         b.pop();
 
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
@@ -528,7 +580,9 @@ public final class DungeonTrainCommonConfig {
                 upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks, upsideDownExitGapBlocks,
                 upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
                 upsideDownBedrockRoof, upsideDownCloudY, upsideDownExitNoiseSkipEpsilon,
-                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute, breakBlocksOnContact);
+                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute,
+                chuncksEnabled, chuncksHoldBlocks, chuncksKeepDensity, chuncksSliceRatio,
+                breakBlocksOnContact);
     }
 
     /**
@@ -764,6 +818,26 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? UPSIDE_DOWN_MIRROR_PRECOMPUTE.get() : DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE;
     }
 
+    /** Whether the chuncks band is active; falls back to the hardcoded default pre-load. */
+    public static boolean isChuncksEnabled() {
+        return isLoaded() ? CHUNCKS_ENABLED.get() : DEFAULT_CHUNCKS_ENABLED;
+    }
+
+    /** Chuncks band span (blocks); falls back to the hardcoded default pre-load. */
+    public static int getChuncksHoldBlocks() {
+        return isLoaded() ? CHUNCKS_HOLD_BLOCKS.get() : DEFAULT_CHUNCKS_HOLD_BLOCKS;
+    }
+
+    /** Fraction 0..1 of chuncks-band chunks that keep real terrain; falls back to the hardcoded default pre-load. */
+    public static double getChuncksKeepDensity() {
+        return isLoaded() ? CHUNCKS_KEEP_DENSITY.get() : DEFAULT_CHUNCKS_KEEP_DENSITY;
+    }
+
+    /** Fraction 0..1 of kept chuncks that are a top-down slice; falls back to the hardcoded default pre-load. */
+    public static double getChuncksSliceRatio() {
+        return isLoaded() ? CHUNCKS_SLICE_RATIO.get() : DEFAULT_CHUNCKS_SLICE_RATIO;
+    }
+
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain,
@@ -796,5 +870,9 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.DoubleValue upsideDownExitNoiseSkipEpsilon,
                           ModConfigSpec.IntValue upsideDownMaxCeilingHeight,
                           ModConfigSpec.BooleanValue upsideDownMirrorPrecompute,
+                          ModConfigSpec.BooleanValue chuncksEnabled,
+                          ModConfigSpec.IntValue chuncksHoldBlocks,
+                          ModConfigSpec.DoubleValue chuncksKeepDensity,
+                          ModConfigSpec.DoubleValue chuncksSliceRatio,
                           ModConfigSpec.BooleanValue breakBlocksOnContact) {}
 }
