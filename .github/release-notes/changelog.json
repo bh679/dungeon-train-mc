@@ -5260,6 +5260,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "well-content-loot-tuning",
+      "version": "0.485.0",
+      "type": "content",
+      "title": "New well loot content, plus leatherworker & prefab loot tuning",
+      "summary": "A new well content piece can now appear aboard the train, and the leatherworker's stock and several loot prefabs (enchant barrel, horse, iron/gold, villager) have been rebalanced.",
+      "highlights": [
+        "New well content set",
+        "Leatherworker loot/variant tuning",
+        "Rebalanced enchant barrel, horse, iron/gold, and villager loot prefabs"
+      ],
+      "pr": 811,
+      "date": "2026-07-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
