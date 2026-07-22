@@ -67,16 +67,23 @@ public final class StairsRegistryData extends SavedData {
     }
 
     /**
-     * Whether any recorded stairs lies within {@code radius} blocks of {@code worldX} along X.
-     * Used as a compat/no-double-placement guard by the deterministic anchor-grid placement in
-     * {@code TrackGenerator}: in fresh worlds anchor-chosen positions are always ≥ 60 apart so
-     * this never blocks; in pre-anchor worlds it defers to the racing-era entries persisted in
-     * the save, so frontier chunks never place stairs next to legacy ones.
+     * Whether any recorded stairs OTHER than one at {@code worldX} itself lies within
+     * {@code radius} blocks along X. Used as a compat/no-double-placement guard by the
+     * deterministic anchor-grid placement in {@code TrackGenerator}: in fresh worlds
+     * anchor-chosen positions are always ≥ 60 apart so this never blocks; in pre-anchor worlds
+     * it defers to the racing-era entries persisted in the save, so frontier chunks never place
+     * stairs next to legacy ones.
+     *
+     * <p>An entry exactly at {@code worldX} is ignored on purpose: the anchor rule re-derives
+     * the same X every time, so an exact match means "this placement, already recorded" — e.g.
+     * regions regenerated against a kept {@code world/data} (the twin-run pinned control, or a
+     * player deleting region files). Blocking on it would delete the stairs on regen instead of
+     * reproducing them.</p>
      */
-    public synchronized boolean hasStairsWithin(int worldX, int radius) {
-        Integer prev = stairs.floorKey(worldX);
+    public synchronized boolean hasOtherStairsWithin(int worldX, int radius) {
+        Integer prev = stairs.lowerKey(worldX);
         if (prev != null && worldX - prev < radius) return true;
-        Integer next = stairs.ceilingKey(worldX);
+        Integer next = stairs.higherKey(worldX);
         return next != null && next - worldX < radius;
     }
 

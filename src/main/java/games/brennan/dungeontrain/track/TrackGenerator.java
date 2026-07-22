@@ -1033,7 +1033,7 @@ public final class TrackGenerator {
                 GenDeterminismLog.log("stairs", "anchor=%d result=no_candidate", anchorX);
             } else if (nearbyPillars.get(chosenX).height() < SHORT_PILLAR_THRESHOLD) {
                 GenDeterminismLog.log("stairs", "anchor=%d worldX=%d result=short", anchorX, chosenX);
-            } else if (registry.hasStairsWithin(chosenX, STAIRS_COMPAT_GUARD_RADIUS)) {
+            } else if (registry.hasOtherStairsWithin(chosenX, STAIRS_COMPAT_GUARD_RADIUS)) {
                 // Never fires in fresh anchor-grid worlds (spacing ≥ 60 by construction); defers
                 // to racing-era stairs persisted in pre-anchor saves at the generation frontier.
                 LOGGER.debug("[stairs.elig] worldX={} reject=legacy_registry_conflict", chosenX);
@@ -1052,7 +1052,7 @@ public final class TrackGenerator {
     }
 
     /**
-     * Guard radius for {@link StairsRegistryData#hasStairsWithin}: the original aesthetic
+     * Guard radius for {@link StairsRegistryData#hasOtherStairsWithin}: the original aesthetic
      * floor ("never closer than 60"). Anchor-grid placements are ≥ 60 apart by construction,
      * so in fresh worlds this guard is inert; it only defers to legacy racing-era entries.
      */
@@ -1640,7 +1640,7 @@ public final class TrackGenerator {
         }
         if (chosenX == null) return targets;
 
-        if (registry.hasStairsWithin(chosenX, STAIRS_COMPAT_GUARD_RADIUS)) {
+        if (registry.hasOtherStairsWithin(chosenX, STAIRS_COMPAT_GUARD_RADIUS)) {
             // Up-stairs claimed this anchor, or a legacy racing-era entry sits nearby.
             LOGGER.debug("[downstairs.elig] worldX={} reject=registry_conflict", chosenX);
             GenDeterminismLog.log("downstairs", "anchor=%d worldX=%d result=conflict", anchorX, chosenX);
