@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "46";
+    public static final String PROTOCOL_VERSION = "47";
 
     private DungeonTrainNet() {}
 
@@ -80,6 +80,11 @@ public final class DungeonTrainNet {
         // Book-read telemetry: client measures a book read (open→close, per-page timing) and sends it on
         // close; server consent-gates + enriches narrative fields + reports to the relay's Books explorer.
         registrar.playToServer(BookReadClosedPacket.TYPE, BookReadClosedPacket.STREAM_CODEC, BookReadClosedPacket::handle);
+
+        // Book vote: client casts 👍/👎 from the virtual vote page (buttons or Y/N hotkeys); server
+        // re-validates the held stack's identity, stamps dt_book_vote (offline burn color), and
+        // consent-gates the relay POST.
+        registrar.playToServer(BookVotePacket.TYPE, BookVotePacket.STREAM_CODEC, BookVotePacket::handle);
 
         // Lectern letters: server → client to open the book sign screen when a book & quill is
         // right-clicked onto a lectern and the feature is active; client → server when that screen is
