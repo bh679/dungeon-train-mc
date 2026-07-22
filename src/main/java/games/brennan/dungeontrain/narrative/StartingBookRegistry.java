@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.narrative;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.net.relay.BookVoteScores;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -297,15 +298,22 @@ public final class StartingBookRegistry {
     private static Optional<RandomBookFile> pickFrom(StartingBookContext context, long seed) {
         Map<ResourceLocation, RandomBookFile> pool = POOLS.get(context);
         if (pool.isEmpty()) return Optional.empty();
-        int total = totalWeightFor(context);
+        // Community-vote factor applied AFTER the datapack weight (BookVoteScores.effectiveWeight —
+        // uniform ×100 scale cancels between total and walk; factor 1 without a relay/votes).
+        // totalWeightFor() itself is deliberately untouched.
+        List<ResourceLocation> ordered = idsFor(context);
+        long total = 0;
+        for (ResourceLocation id : ordered) {
+            RandomBookFile book = pool.get(id);
+            if (book != null) total += BookVoteScores.effectiveWeight("starting", book.basename(), book.weight());
+        }
         if (total <= 0) return Optional.empty();
         long unsigned = seed & 0x7FFFFFFFFFFFFFFFL;
-        int target = (int) (unsigned % total);
-        List<ResourceLocation> ordered = idsFor(context);
+        long target = unsigned % total;
         for (ResourceLocation id : ordered) {
             RandomBookFile book = pool.get(id);
             if (book == null) continue;
-            target -= book.weight();
+            target -= BookVoteScores.effectiveWeight("starting", book.basename(), book.weight());
             if (target < 0) return Optional.of(book);
         }
         // Rounding edge — return the last book.
