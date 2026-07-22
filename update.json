@@ -1,10 +1,11 @@
 {
   "homepage": "https://github.com/bh679/dungeon-train-mc",
   "1.21.1": {
+    "0.487.0": "### 0.487.0\n\n**In-game update notifications**\n\nDungeon Train now tells you inside the game when a newer version is available \u2014 an \"Update available\" badge appears next to the mod on the Mods screen. It only notifies; it never downloads or changes anything on its own, so you stay in control and update through your launcher as usual.\n\n- \"Update available\" badge on the Mods screen when you're behind the latest release\n- Notification only \u2014 no auto-download; update via CurseForge / Modrinth / your launcher",
     "0.485.0": "https://github.com/bh679/dungeon-train-mc/releases/tag/v0.485.0"
   },
   "promos": {
-    "1.21.1-latest": "0.485.0",
-    "1.21.1-recommended": "0.485.0"
+    "1.21.1-latest": "0.487.0",
+    "1.21.1-recommended": "0.487.0"
   }
 }
