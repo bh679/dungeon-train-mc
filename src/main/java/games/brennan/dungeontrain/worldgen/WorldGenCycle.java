@@ -399,6 +399,96 @@ public record WorldGenCycle(long startX, int owGap,
         return (long) worldX - o + netherStart();
     }
 
+    /**
+     * True iff ANY x′ in the inclusive window {@code [worldX − margin, worldX + margin]} falls inside
+     * the nether segment of some cycle repeat — i.e. {@code netherHeightRamp}/{@code netherRamp} could
+     * be non-zero there. The margin absorbs the {@link NetherMountainTerrain#wavyX} edge wave (pass
+     * {@link NetherMountainTerrain#maxEdgeShift()}), so a {@code false} here guarantees every waved
+     * lookup a caller could make at {@code worldX} lands in plain overworld.
+     *
+     * <p>An O(1) circular-interval intersection — no per-x′ sweep — so hot worldgen paths (the density
+     * raise, the biome-forcing mixin) can early-out for the ride's majority off-band columns.
+     * <b>Conservative by construction</b>: window endpoints only ever widen (the window is clamped to
+     * the anchor, a window ≥ one period is always {@code true}), so false positives merely skip the
+     * optimisation; a false negative is impossible — the seam-safety property the stride-1 unit sweep
+     * pins.</p>
+     */
+    public boolean netherInfluence(long worldX, int margin) {
+        return influence().nether(worldX, margin);
+    }
+
+    /**
+     * True iff {@code worldX} falls inside the End segment of some cycle repeat — plain membership, no
+     * margin (the End band is evaluated at the un-waved X everywhere: {@code endMiddleRamp},
+     * {@code endIslandRamp}, {@code isEndCore}). A {@code false} guarantees all End ramps are 0 at
+     * {@code worldX}, letting hot paths skip them entirely. Same conservative O(1) contract as
+     * {@link #netherInfluence}.
+     */
+    public boolean endSegmentInfluence(long worldX) {
+        return influence().end(worldX);
+    }
+
+    /**
+     * Precomputed influence geometry for the per-sample hot loops: {@link #netherInfluence}/
+     * {@link #endSegmentInfluence} are O(1), but deriving their inputs ({@code period()},
+     * {@code netherLen()}, {@code netherStart()}, …) walks a chain of sum/clamp methods — measured
+     * as the dominant predicate cost at ~37k calls per chunk cell in {@code fillArray}. This record
+     * snapshots those five longs once so the hot predicates are a handful of compares + two
+     * {@code floorMod}s. Immutable, derived purely from the (immutable) cycle → safe to share
+     * across worldgen threads.
+     */
+    public record Influence(WorldGenCycle owner, long period,
+                            long netherStart, long netherLen, long endStart, long endLen) {
+
+        /** {@link WorldGenCycle#netherInfluence} evaluated against the snapshot — byte-identical. */
+        public boolean nether(long worldX, int margin) {
+            return contains(worldX, margin, netherStart, netherLen);
+        }
+
+        /** {@link WorldGenCycle#endSegmentInfluence} evaluated against the snapshot — byte-identical. */
+        public boolean end(long worldX) {
+            return contains(worldX, 0, endStart, endLen);
+        }
+
+        /**
+         * The circular-window intersection: does the inclusive window {@code [worldX − margin,
+         * worldX + margin]}, clamped to the anchor and folded into cycle offsets, intersect the
+         * segment {@code [segStart, segStart + segLen)}? Two circular arcs intersect iff either
+         * contains the other's start point — both checks via {@code floorMod} forward distances,
+         * exact for any window/segment phase including period wrap.
+         */
+        private boolean contains(long worldX, int margin, long segStart, long segLen) {
+            if (segLen <= 0L || period <= 0L) return false;
+            long m = Math.max(0, margin);
+            long b = worldX + m;
+            if (b < owner.startX) return false;
+            long a = Math.max(worldX - m, owner.startX);
+            long w = b - a;
+            if (w >= period) return true;
+            long oa = Math.floorMod(a - owner.startX + owner.phaseShift, period);
+            if (Math.floorMod(segStart - oa, period) <= w) return true;
+            return Math.floorMod(oa - segStart, period) < segLen;
+        }
+    }
+
+    /**
+     * Single-slot identity cache for {@link #influence()} — in practice one cycle instance is live
+     * (the {@link #fromConfig} memo), so one slot suffices; a different instance (unit tests, a
+     * config reload) just recomputes and replaces. The whole pair is one volatile reference, so a
+     * racing thread can never observe a snapshot paired with the wrong owner.
+     */
+    private static volatile Influence influenceCache;
+
+    /** The precomputed {@link Influence} snapshot for this cycle (identity-cached, thread-safe). */
+    public Influence influence() {
+        Influence inf = influenceCache;
+        if (inf == null || inf.owner() != this) {
+            inf = new Influence(this, period(), netherStart(), netherLen(), endStart(), endLen());
+            influenceCache = inf;                             // benign race — same-value replace
+        }
+        return inf;
+    }
+
     /** End erosion / sky ramp at a world-X (0 outside the End segment). */
     public double endMiddleRamp(int worldX) {
         long o = offset(worldX);

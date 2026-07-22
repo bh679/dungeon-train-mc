@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen.density;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.util.LogFirstN;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.server.MinecraftServer;
@@ -32,6 +33,7 @@ import org.slf4j.Logger;
 public final class NetherCoreBiomes {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final LogFirstN SAMPLE_ERRORS = new LogFirstN(5);
 
     /** X offset into the Nether climate field — MUST match {@code NetherTransitionFeature}'s terrain offset. */
     public static final int SAMPLE_OFFSET_X = 12_000;
@@ -57,6 +59,8 @@ public final class NetherCoreBiomes {
                     QuartPos.fromBlock(worldX + SAMPLE_OFFSET_X), SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ),
                     netherSampler);
         } catch (Throwable t) {
+            SAMPLE_ERRORS.error(LOGGER,
+                    "[DungeonTrain] Nether core biome sample failed; baking nether_wastes fallback instead", t);
             return fallback;
         }
     }
@@ -74,7 +78,9 @@ public final class NetherCoreBiomes {
         try {
             ServerLevel nether = server.getLevel(Level.NETHER);
             if (nether == null) {
-                LOGGER.info("[DungeonTrain] No Nether dimension — Nether core stays single-biome (nether_wastes)");
+                // debug: legitimately fires during the overworld's own Load (Nether not yet
+                // created) before the Nether-Load republish upgrades the snapshot.
+                LOGGER.debug("[DungeonTrain] No Nether dimension — Nether core stays single-biome (nether_wastes)");
                 return new NetherCoreBiomes(null, null, fallback);
             }
             ChunkGenerator gen = nether.getChunkSource().getGenerator();
