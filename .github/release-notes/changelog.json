@@ -5408,6 +5408,7 @@
       "title": "Book voting in your language",
       "summary": "The train's vote page now speaks all 19 supported languages \u2014 its questions, the (Y)es/(N)o labels, and every chat reply it gives after you vote. Until now the vote page always appeared in English, whatever language you play in.",
       "highlights": [],
+      "pr": 821,
       "date": "2026-07-22",
       "released": false,
       "released_in": null,
