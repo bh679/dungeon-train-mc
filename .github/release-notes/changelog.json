@@ -5277,6 +5277,22 @@
       "released": true,
       "released_in": "v0.485.0",
       "released_at": "2026-07-21T13:41:17Z"
+    },
+    {
+      "id": "reboard-force-survival",
+      "version": "0.486.0",
+      "type": "fix",
+      "title": "Reboard now defaults to Survival",
+      "summary": "Reboarding from the death screen now always drops you into Survival mode, so a Creative or Spectator run (like Free Play) doesn't silently carry over. Hold Shift while clicking Reboard or Board Anew to keep your current game mode instead \u2014 the button turns blue to remind you.",
+      "highlights": [
+        "Reboard forces Survival by default",
+        "Hold Shift to preserve your current game mode (button turns blue)"
+      ],
+      "pr": 813,
+      "date": "2026-07-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
