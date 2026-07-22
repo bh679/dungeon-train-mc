@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PatreonIconButton;
 import games.brennan.dungeontrain.client.support.SupportScreen;
@@ -45,7 +46,6 @@ import java.net.URI;
 public final class TitleScreenSupportButton {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String PATREON_URL = "https://www.patreon.com/brennanhatton";
 
     /** The vanilla Realms button label — "Minecraft Realms". */
     private static final Component REALMS_KEY = Component.translatable("menu.online");
@@ -92,12 +92,14 @@ public final class TitleScreenSupportButton {
     }
 
     private static void openPatreon(Screen parent) {
+        // Read at click time so a relay-served rotation still applies after the menu was built.
+        String patreonUrl = OfficialLinks.patreon();
         Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
             if (yes) {
-                Util.getPlatform().openUri(URI.create(PATREON_URL));
+                Util.getPlatform().openUri(URI.create(patreonUrl));
             }
             Minecraft.getInstance().setScreen(parent);
-        }, PATREON_URL, true));
+        }, patreonUrl, true));
     }
 
     private static Button findButton(ScreenEvent.Init.Post event, Component message) {

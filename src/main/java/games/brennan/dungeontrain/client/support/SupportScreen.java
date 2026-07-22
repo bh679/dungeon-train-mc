@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.support;
 
+import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.ColorTintedButton;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import net.minecraft.Util;
@@ -49,12 +50,9 @@ import java.util.List;
  */
 public final class SupportScreen extends Screen {
 
-    /** Revolut direct-donation base; the player's name is URL-encoded onto the note. */
-    private static final String REVOLUT_BASE  =
-            "https://revolut.me/brennacg7?currency=AUD&amount=4500&note=Dungeon%20Train%20";
-    private static final String PATREON_URL   = "https://www.patreon.com/brennanhatton";
-    private static final String AFFILIATE_URL = "https://billing.kinetichosting.com/aff.php?aff=1461";
-    private static final String DISCORD_URL   = "https://discord.gg/jdKAwb6rbW";
+    // All four outbound links come from OfficialLinks — relay-served when reachable, baked
+    // fallbacks offline. Read in init(), which reruns on every open, so a fetch that lands
+    // after the title screen built still applies here.
 
     private static final int MAX_COL_W  = 360;
     private static final int SIDE_MARGIN = 40;
@@ -125,7 +123,7 @@ public final class SupportScreen extends Screen {
                 Component.translatable("gui.dungeontrain.support.financial.desc", affiliateLink()),
                 new LinkButton("gui.dungeontrain.support.financial.donate", revolutUrl(), TINT_GREEN,
                         "gui.dungeontrain.support.donate_tooltip"),
-                new LinkButton("gui.dungeontrain.support.financial.patreon", PATREON_URL, TINT_ORANGE, null));
+                new LinkButton("gui.dungeontrain.support.financial.patreon", OfficialLinks.patreon(), TINT_ORANGE, null));
 
         // Share — text only, no link.
         y = addSection(y, lh,
@@ -188,10 +186,17 @@ public final class SupportScreen extends Screen {
         return button;
     }
 
-    /** The Revolut donation URL with the player's name URL-encoded onto the note field. */
+    /**
+     * The direct-donation URL. When the base (relay-served or baked Revolut link) carries a
+     * {@code note=} field the player's name is URL-encoded onto it, matching the historical
+     * Revolut behaviour; a relay-rotated provider without a note field is used verbatim so the
+     * suffix can't corrupt an unknown URL shape.
+     */
     private String revolutUrl() {
+        String base = OfficialLinks.payment();
+        if (!base.contains("note=")) return base;
         String encoded = URLEncoder.encode(playerName(), StandardCharsets.UTF_8).replace("+", "%20");
-        return REVOLUT_BASE + encoded;
+        return base + encoded;
     }
 
     private static String playerName() {
@@ -201,12 +206,12 @@ public final class SupportScreen extends Screen {
 
     /** A clickable, blue, underlined "Discord" word for splicing into description copy. */
     private Component discordLink() {
-        return link(Component.literal("Discord"), DISCORD_URL);
+        return link(Component.literal("Discord"), OfficialLinks.discord());
     }
 
     /** A clickable, blue, underlined "affiliate link" phrase for the Financial copy. */
     private Component affiliateLink() {
-        return link(Component.translatable("gui.dungeontrain.support.financial.affiliate_link"), AFFILIATE_URL);
+        return link(Component.translatable("gui.dungeontrain.support.financial.affiliate_link"), OfficialLinks.affiliate());
     }
 
     /** Style {@code label} as a blue, underlined, click-to-open-URL inline link. */

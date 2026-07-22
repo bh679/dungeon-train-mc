@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PulsingDiscordButton;
 import games.brennan.dungeontrain.client.localization.LocalizationCredit;
@@ -51,7 +52,6 @@ import java.util.List;
 public final class TitleScreenLayoutHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String DISCORD_URL = "https://discord.gg/jdKAwb6rbW";
 
     private static final Component DISCORD_LABEL = Component.translatable("gui.dungeontrain.discord_button");
     private static final Component EDITOR_LABEL = Component.translatable("gui.dungeontrain.editor_button");
@@ -80,6 +80,10 @@ public final class TitleScreenLayoutHandler {
         // LauncherDetector touch warms its cache so the detected source is
         // logged early for diagnostics, not lazily on first click.
         VersionCheckState.ensureChecked();
+        // Same session-memoized title-screen trigger for the official-links overlay: one
+        // anonymous relay GET so Discord/Patreon/payment/affiliate links stay current on
+        // shipped jars, baked fallbacks when offline.
+        OfficialLinks.ensureFetched();
         LauncherDetector.source();
         event.addListener(new VersionStatusButton(4, 4));
 
@@ -171,12 +175,14 @@ public final class TitleScreenLayoutHandler {
     }
 
     private static void openDiscord(Screen parent) {
+        // Read at click time so a relay-served rotation still applies after the menu was built.
+        String discordUrl = OfficialLinks.discord();
         Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
             if (yes) {
-                Util.getPlatform().openUri(URI.create(DISCORD_URL));
+                Util.getPlatform().openUri(URI.create(discordUrl));
             }
             Minecraft.getInstance().setScreen(parent);
-        }, DISCORD_URL, true));
+        }, discordUrl, true));
     }
 
     private static void openEditor(Screen parent) {
