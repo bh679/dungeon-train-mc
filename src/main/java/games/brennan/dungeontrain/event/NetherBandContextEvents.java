@@ -13,6 +13,7 @@ import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import games.brennan.dungeontrain.worldgen.density.NetherCoreBiomes;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
@@ -20,6 +21,7 @@ import net.minecraft.world.level.biome.BiomeSource;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import org.slf4j.Logger;
@@ -29,13 +31,18 @@ import org.slf4j.Logger;
  * lazily, and clears it on shutdown. Common-scope (not {@code Dist.CLIENT}) so dedicated servers
  * publish it too — unlike {@code WorldLifecycleEvents}, which is client-only.
  *
- * <p>Runs at {@link EventPriority#LOW} so {@code WorldLifecycleEvents.onServerStarted} (NORMAL,
- * client-only) has already committed pending world-creation choices into
- * {@link DungeonTrainWorldData} (train geometry, {@code startsWithTrain}). The router/DF were
- * already built during level construction; the DF no-ops until this snapshot lands — and the first
- * nether band sits thousands of blocks from spawn, so it is always published before any band chunk
- * generates. Cleared on stop so a singleplayer world-switch in the same JVM never reuses a stale
- * seed/layout.</p>
+ * <p>Published (and re-published) on every server-side {@link LevelEvent.Load}: the overworld's
+ * Load fires first inside {@code MinecraftServer.createLevels} — before spawn-region chunk
+ * generation in {@code prepareLevels} — publishing with fallback Nether/End core biomes; the
+ * Nether's and End's own Load events then republish with their real climate samplers captured.
+ * All of this completes before the first chunk bakes, so no chunk ever generates against a null
+ * context (the old {@code ServerStartedEvent}-only publish lost that race for spawn-region and
+ * pregen chunks). A {@link ServerStartedEvent} refresh is kept as an idempotent last word for
+ * dimensions registered late by other mods. Runs at {@link EventPriority#LOW} so
+ * {@code WorldLifecycleEvents.onOverworldLoad} (HIGH, client-only) has already committed pending
+ * world-creation choices into {@link DungeonTrainWorldData} (train geometry,
+ * {@code startsWithTrain}) on the same event. Cleared on stop so a singleplayer world-switch in
+ * the same JVM never reuses a stale seed/layout.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NetherBandContextEvents {
@@ -49,9 +56,24 @@ public final class NetherBandContextEvents {
     private NetherBandContextEvents() {}
 
     @SubscribeEvent(priority = EventPriority.LOW)
+    public static void onLevelLoad(LevelEvent.Load event) {
+        // Fires per dimension during createLevels (and for ClientLevel — gate it out).
+        // Republishing on each server-side Load upgrades the snapshot as the Nether/End
+        // samplers become available, all before any chunk bakes.
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        publish(level.getServer(), false);
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOW)
     public static void onServerStarted(ServerStartedEvent event) {
+        // Idempotent final refresh (deterministic inputs → value-identical republish);
+        // covers dimensions registered after createLevels by other mods.
+        publish(event.getServer(), true);
+    }
+
+    private static void publish(MinecraftServer server, boolean logInfo) {
         try {
-            ServerLevel overworld = event.getServer().overworld();
+            ServerLevel overworld = server.overworld();
             DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
 
             boolean enabled = NetherBand.startX(overworld) != NetherBand.OFF;
@@ -72,19 +94,25 @@ public final class NetherBandContextEvents {
             // nether_wastes if this world has no Nether.
             Holder<Biome> netherFallback = overworld.registryAccess()
                     .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.NETHER_WASTES);
-            NetherCoreBiomes netherCoreBiomes = NetherCoreBiomes.resolve(event.getServer(), netherFallback);
+            NetherCoreBiomes netherCoreBiomes = NetherCoreBiomes.resolve(server, netherFallback);
 
             // Same idea for the End band's core columns — samples the real End's biome source, swept
             // from the main island out into the outer noise field across successive End-band passes.
             Holder<Biome> endFallback = overworld.registryAccess()
                     .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.THE_END);
-            EndCoreBiomes endCoreBiomes = EndCoreBiomes.resolve(event.getServer(), endFallback);
+            EndCoreBiomes endCoreBiomes = EndCoreBiomes.resolve(server, endFallback);
 
             NetherBandContext.publish(new NetherBandContext(
                     enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
                     overworldBiomeSource, highlandBiomes, netherCoreBiomes, endCoreBiomes));
-            LOGGER.info("[DungeonTrain] Nether-band terrain context published: enabled={} seaLevel={} worldCeiling={} netherTop={} baseRelief={}",
-                    enabled, seaLevel, worldCeiling, netherTop, baseRelief);
+            // Intermediate per-dimension-load republishes log at debug to avoid 3+ identical
+            // info lines per start; the ServerStarted refresh logs the final snapshot at info.
+            if (logInfo) {
+                LOGGER.info("[DungeonTrain] Nether-band terrain context published: enabled={} seaLevel={} worldCeiling={} netherTop={} baseRelief={}",
+                        enabled, seaLevel, worldCeiling, netherTop, baseRelief);
+            } else {
+                LOGGER.debug("[DungeonTrain] Nether-band terrain context (re)published on level load: enabled={}", enabled);
+            }
         } catch (Throwable t) {
             // Never block server start on the band snapshot — a missing context just leaves terrain vanilla.
             NetherBandContext.clear();

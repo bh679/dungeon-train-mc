@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
@@ -27,6 +29,9 @@ import org.spongepowered.asm.mixin.injection.At;
  */
 @Mixin(MultiNoiseBiomeSource.class)
 public abstract class MultiNoiseBiomeSourceMixin {
+
+    private static final org.slf4j.Logger dungeontrain$LOGGER = LogUtils.getLogger();
+    private static final LogFirstN dungeontrain$FORCE_ERRORS = new LogFirstN(5);
 
     @ModifyReturnValue(
         method = "getNoiseBiome(IIILnet/minecraft/world/level/biome/Climate$Sampler;)Lnet/minecraft/core/Holder;",
@@ -64,6 +69,8 @@ public abstract class MultiNoiseBiomeSourceMixin {
             if (!NetherMountainTerrain.raises(ctx.cycle(), wx)) return original; // not a band mountain column
             return ctx.highlandBiomes().biomeFor(blockX, blockY, blockZ);
         } catch (Throwable t) {
+            dungeontrain$FORCE_ERRORS.error(dungeontrain$LOGGER,
+                    "[DungeonTrain] Highland/core biome override failed; baking vanilla biome instead", t);
             return original;
         } finally {
             GenProfiler.add(GenProfiler.Bucket.BIOME_FORCE, genT0);
