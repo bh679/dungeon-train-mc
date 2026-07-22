@@ -31,9 +31,9 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 /**
- * The 👍/👎 vote page — a VIRTUAL page appended after the last real page of every votable DT book
- * (the four identities {@link BookIdentity} resolves; deathnotes / letters / player-written books
- * have none of those tags and are untouched). Zero mixins and zero stack mutation: on
+ * The 👍/👎 vote page — a VIRTUAL page appended after the last real page of every PLAYER-WRITTEN
+ * community book the player reads ({@code shared} identity only — dev-authored random/starting/
+ * narrative content, deathnotes and letters are untouched). Zero mixins and zero stack mutation: on
  * {@code Init.Post} the screen's public {@link BookViewScreen#setBookAccess} is handed a copy of the
  * real pages plus one EMPTY page, so the vanilla forward PageButton, page indicator and page-turn
  * flow all "discover" the extra page on their own — and everything on it (warm dim, the train's
@@ -68,7 +68,8 @@ public final class BookVoteClientEvents {
 
     // Warm leather dim over the whole page (approved variant A) + the train's rust-orange voice.
     private static final int DIM_COLOR = 0x5A48220A;     // ARGB (72,34,10) @ alpha 90
-    private static final int DIM_X1 = 29, DIM_Y1 = 12, DIM_X2 = 163, DIM_Y2 = 181; // book-local
+    // Exact paper bounds of book.png (sampled: x 26-157, y 8-172) so the dim covers the whole page.
+    private static final int DIM_X1 = 26, DIM_Y1 = 8, DIM_X2 = 158, DIM_Y2 = 173; // book-local
     private static final int COLOR_PREFIX = 0x5C2C0E;    // rust-orange "The train asks,"
     private static final int COLOR_TEXT = 0x0C0602;      // ink black
     private static final int PROMPT_COUNT = 10;
@@ -254,10 +255,14 @@ public final class BookVoteClientEvents {
         return ((BookViewScreenAccessor) (Object) screen).dungeontrain$getCurrentPage() >= realPages.size();
     }
 
-    /** {@code stack} when it resolves to a votable DT book (sets the identity fields), else null. */
+    /**
+     * {@code stack} when it is a votable book (sets the identity fields), else null. Only
+     * PLAYER-WRITTEN community books ({@code shared} — discovered submissions from other players)
+     * are votable; dev-authored content (random/starting/narrative) and everything untagged is not.
+     */
     private static ItemStack votable(ItemStack stack) {
         Optional<BookIdentity> id = BookIdentity.resolve(stack);
-        if (id.isEmpty()) return null;
+        if (id.isEmpty() || !"shared".equals(id.get().bookType())) return null;
         bookType = id.get().bookType();
         bookId = id.get().bookId();
         variantIndex = id.get().variantIndex();

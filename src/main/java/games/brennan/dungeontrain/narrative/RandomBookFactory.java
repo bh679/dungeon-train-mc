@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.narrative;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.net.relay.BookVoteScores;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -99,11 +98,8 @@ public final class RandomBookFactory {
 
     private static Optional<PickedBook> tryPickUnseen(NarrativeProgressData data,
                                                       long bookSeed, long variantSeed) {
-        // Community-vote factor applied AFTER the datapack weight (BookVoteScores.effectiveWeight —
-        // uniform ×100 scale cancels between total and walk; factor 1 without a relay/votes). The
-        // weight()<=0 exclusion stays on the RAW weight — a vote can never resurrect a disabled book.
         List<RandomBookFile> candidates = new ArrayList<>();
-        long totalWeight = 0;
+        int totalWeight = 0;
         for (ResourceLocation id : RandomBookRegistry.ids()) {
             Optional<RandomBookFile> bookOpt = RandomBookRegistry.get(id);
             if (bookOpt.isEmpty()) continue;
@@ -111,17 +107,17 @@ public final class RandomBookFactory {
             if (book.weight() <= 0) continue;
             if (hasAnyUnseenVariant(data, book)) {
                 candidates.add(book);
-                totalWeight += BookVoteScores.effectiveWeight("random", book.basename(), book.weight());
+                totalWeight += book.weight();
             }
         }
         if (candidates.isEmpty() || totalWeight <= 0) return Optional.empty();
 
         // Weighted pick across candidates.
         long unsignedBook = bookSeed & 0x7FFFFFFFFFFFFFFFL;
-        long target = unsignedBook % totalWeight;
+        int target = (int) (unsignedBook % totalWeight);
         RandomBookFile picked = candidates.get(candidates.size() - 1);
         for (RandomBookFile c : candidates) {
-            target -= BookVoteScores.effectiveWeight("random", c.basename(), c.weight());
+            target -= c.weight();
             if (target < 0) { picked = c; break; }
         }
 

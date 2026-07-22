@@ -67,8 +67,10 @@ public record BookVotePacket(String bookType, String bookId, int vote, int varia
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             if (packet.vote != 1 && packet.vote != -1) return;
-            if (packet.bookType == null || packet.bookType.isEmpty()
-                || packet.bookId == null || packet.bookId.isEmpty()) return;
+            // Only PLAYER-WRITTEN community books are votable — mirror of the client gate, enforced
+            // server-side so a modified client can't vote on dev-authored content.
+            if (!"shared".equals(packet.bookType)) return;
+            if (packet.bookId == null || packet.bookId.isEmpty()) return;
 
             ItemStack stack = matching(player.getMainHandItem(), packet);
             if (stack == null) stack = matching(player.getOffhandItem(), packet);

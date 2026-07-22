@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.narrative;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.net.relay.BookVoteScores;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -159,22 +158,15 @@ public final class RandomBookRegistry {
      */
     public static synchronized Optional<RandomBookFile> pickWeighted(long seed) {
         if (BOOKS.isEmpty()) return Optional.empty();
-        // Community-vote factor applied AFTER the datapack weight (BookVoteScores.effectiveWeight —
-        // a uniform ×100 scale that cancels between total and walk; factor 1 when relay-less/unvoted,
-        // reproducing the original odds exactly). totalWeight() itself is deliberately untouched.
-        long total = 0;
-        for (ResourceLocation id : ids()) {
-            RandomBookFile book = BOOKS.get(id);
-            if (book != null) total += BookVoteScores.effectiveWeight("random", book.basename(), book.weight());
-        }
+        int total = totalWeight();
         if (total <= 0) return Optional.empty();
         long unsigned = seed & 0x7FFFFFFFFFFFFFFFL;
-        long target = unsigned % total;
+        int target = (int) (unsigned % total);
         // Iterate in the deterministic order returned by ids().
         for (ResourceLocation id : ids()) {
             RandomBookFile book = BOOKS.get(id);
             if (book == null) continue;
-            target -= BookVoteScores.effectiveWeight("random", book.basename(), book.weight());
+            target -= book.weight();
             if (target < 0) return Optional.of(book);
         }
         // Fallback for floating-point-style edge case — return the last book.

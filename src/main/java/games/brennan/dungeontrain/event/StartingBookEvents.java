@@ -312,9 +312,20 @@ public final class StartingBookEvents {
             // other tick so we don't flood the particle queue at long
             // distances when several books are burning simultaneously.
             if (itemEntity.tickCount % 2 == 0) {
-                itemLevel.sendParticles(flameParticle(state.variant),
-                    itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
-                    3, 0.12, 0.08, 0.12, 0.02);
+                if (state.variant == FlameVariant.APPROVED || state.variant == FlameVariant.REJECTED) {
+                    // Voted burns: colored dust mixed 50:50 with the vanilla orange flame, so the
+                    // fire still reads as FIRE — just tinted by the verdict.
+                    itemLevel.sendParticles(flameParticle(state.variant),
+                        itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
+                        2, 0.12, 0.08, 0.12, 0.02);
+                    itemLevel.sendParticles(ParticleTypes.FLAME,
+                        itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
+                        2, 0.12, 0.08, 0.12, 0.02);
+                } else {
+                    itemLevel.sendParticles(flameParticle(state.variant),
+                        itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
+                        3, 0.12, 0.08, 0.12, 0.02);
+                }
                 itemLevel.sendParticles(state.soul() ? ParticleTypes.SOUL : ParticleTypes.SMOKE,
                     itemEntity.getX(), itemEntity.getY() + 0.3, itemEntity.getZ(),
                     1, 0.08, 0.05, 0.08, 0.01);
