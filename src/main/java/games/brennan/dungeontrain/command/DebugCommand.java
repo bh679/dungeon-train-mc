@@ -73,6 +73,13 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setGenTiming(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setGenTiming(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> genTimingStatus(ctx.getSource()))))
+            // /dungeontrain debug mirror-drain <ready|legacy|status> — A/B the upside-down mirror drain.
+            // `ready` (default) drains only the neighbour-complete READY set; `legacy` reverts to the
+            // pre-fix full-pending re-scan every tick. Flip live in the band and compare [ud-drain] ms=.
+            .then(Commands.literal("mirror-drain")
+                .then(Commands.literal("ready").executes(ctx -> setMirrorDrainLegacy(ctx.getSource(), false)))
+                .then(Commands.literal("legacy").executes(ctx -> setMirrorDrainLegacy(ctx.getSource(), true)))
+                .then(Commands.literal("status").executes(ctx -> mirrorDrainStatus(ctx.getSource()))))
             // /dungeontrain debug band-earlyout <on|off|status> — toggles the worldgen band
             // early-outs (off-band skips in the density raise, biome forcing, track-bed reject).
             // OFF = pre-change code paths, byte-identical output — drives the Gate 2 matched-toggle
@@ -182,6 +189,22 @@ public final class DebugCommand {
             PhysicsFreezeController.ENABLED ? "ON" : "OFF",
             PhysicsFreezeController.lastResident(), PhysicsFreezeController.lastActive(),
             PhysicsFreezeController.lastFrozen())), false);
+        return 1;
+    }
+
+    private static int setMirrorDrainLegacy(CommandSourceStack source, boolean legacy) {
+        games.brennan.dungeontrain.event.TrainTickEvents.mirrorDrainLegacy = legacy;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Upside-down mirror drain: " + (legacy
+                ? "LEGACY (pre-fix — re-scans full pending set every tick; watch [ud-drain] ms=)"
+                : "READY (fix — drains only neighbour-complete chunks)")
+        ).withStyle(legacy ? ChatFormatting.YELLOW : ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private static int mirrorDrainStatus(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal("[DungeonTrain] Upside-down mirror drain: "
+            + (games.brennan.dungeontrain.event.TrainTickEvents.mirrorDrainLegacy ? "LEGACY" : "READY (fix)")), false);
         return 1;
     }
 

@@ -5402,8 +5402,34 @@
       "released_at": "2026-07-22T14:34:05Z"
     },
     {
-      "id": "worldgen-block-determinism",
+      "id": "upside-down-mirror-drain-partition",
       "version": "0.493.0",
+      "type": "perf",
+      "title": "Smoother ticks in the upside-down region",
+      "summary": "Removed a hidden per-tick cost in the upside-down region: the server was repeatedly re-checking mirrored-terrain chunks that couldn't be processed yet. Those chunks now wait quietly until they're actually ready, cutting that background overhead roughly five-fold.",
+      "highlights": [],
+      "pr": 820,
+      "date": "2026-07-22",
+      "released": true,
+      "released_in": "v0.494.0",
+      "released_at": "2026-07-22T15:19:42Z"
+    },
+    {
+      "id": "book-voting-i18n",
+      "version": "0.494.0",
+      "type": "feat",
+      "title": "Book voting in your language",
+      "summary": "The train's vote page now speaks all 19 supported languages \u2014 its questions, the (Y)es/(N)o labels, and every chat reply it gives after you vote. Until now the vote page always appeared in English, whatever language you play in.",
+      "highlights": [],
+      "pr": 821,
+      "date": "2026-07-22",
+      "released": true,
+      "released_in": "v0.494.0",
+      "released_at": "2026-07-22T15:19:42Z"
+    },
+    {
+      "id": "worldgen-block-determinism",
+      "version": "0.495.0",
       "type": "fix",
       "title": "Same seed, same world \u2014 for real this time",
       "summary": "A follow-up to the seed fix: the last places the mod itself made same-seed worlds differ are now deterministic. Trackside stairs land in the same spots with the same left/right rhythm every time, corridor cleanup always finishes before your world saves, and dungeon chest loot rolls identically for identical seeds.",
