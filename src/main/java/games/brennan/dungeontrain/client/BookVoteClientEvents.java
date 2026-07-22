@@ -220,9 +220,9 @@ public final class BookVoteClientEvents {
             String key = pick < RESPONSE_COUNT
                 ? "gui.dungeontrain.book_vote.response." + (vote == 1 ? "yes." : "no.") + (pick + 1)
                 : "gui.dungeontrain.book_vote.response.general." + (pick - RESPONSE_COUNT + 1);
-            ChatFormatting color = vote == 1 ? ChatFormatting.GREEN : ChatFormatting.RED;
+            // Same styling as every other DT flavor chat line (e.g. AdvancementsHintClient).
             player.displayClientMessage(
-                Component.translatable(key).withStyle(ChatFormatting.ITALIC, color), false);
+                Component.translatable(key).withStyle(ChatFormatting.GRAY), false);
         }
     }
 
