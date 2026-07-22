@@ -28,7 +28,6 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalInt;
 
 /**
  * Client-side measurement of how Dungeon Train books are READ, for the data-explorer's Books page.
@@ -147,52 +146,36 @@ public final class BookReadClientEvents {
         }
     }
 
-    /** Attribute the elapsed time since the last sample to the page currently shown. */
+    /**
+     * Attribute the elapsed time since the last sample to the page currently shown. Range check, NOT
+     * a clamp: the virtual vote page (index == pageCount, appended by {@code BookVoteClientEvents})
+     * sits past the real pages — its dwell must be dropped, not attributed to the last real page,
+     * and visiting it (e.g. a Y/N hotkey jump from page 0) must never fake {@code completed=true}.
+     */
     private static void accumulate() {
-        int cur = clamp(((BookViewScreenAccessor) (Object) tracked).dungeontrain$getCurrentPage(),
-            0, dwellMs.length - 1);
+        int cur = ((BookViewScreenAccessor) (Object) tracked).dungeontrain$getCurrentPage();
         long now = System.nanoTime();
-        dwellMs[cur] += (now - lastNanos) / 1_000_000L;
+        if (cur >= 0 && cur < dwellMs.length) {
+            dwellMs[cur] += (now - lastNanos) / 1_000_000L;
+            if (cur > maxPage) maxPage = cur;
+        }
         lastNanos = now;
-        if (cur > maxPage) maxPage = cur;
     }
 
     /**
      * If {@code stack} is a DT book, set the identity fields ({@code bookType}/{@code bookId} and, for a
      * narrative, {@code story}/{@code letter}) and return the stack; otherwise return {@code null}.
-     * Precedence random → narrative → shared → starting is arbitrary but the four tag sets never co-occur.
+     * Resolution (precedence + id shapes) is shared via {@link BookIdentity}.
      */
     private static ItemStack resolveIdentity(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return null;
-        Optional<RandomBookTag.RandomBookIdentity> rnd = RandomBookTag.read(stack);
-        if (rnd.isPresent()) {
-            bookType = "random";
-            bookId = rnd.get().basename();
-            variantIndex = rnd.get().variantIndex();
-            return stack;
-        }
-        Optional<NarrativeBookTag.NarrativeIdentity> nar = NarrativeBookTag.read(stack);
-        if (nar.isPresent()) {
-            bookType = "narrative";
-            story = nar.get().storyBasename();
-            letter = nar.get().letterIndex();
-            bookId = story + "#" + letter;
-            return stack;
-        }
-        OptionalInt shared = SharedBookReadTag.readId(stack);
-        if (shared.isPresent()) {
-            bookType = "shared";
-            bookId = Integer.toString(shared.getAsInt());
-            return stack;
-        }
-        Optional<StartingBookTag.StartingBookIdentity> starting = StartingBookTag.read(stack);
-        if (starting.isPresent()) {
-            bookType = "starting";
-            bookId = starting.get().basename();
-            variantIndex = starting.get().variantIndex();
-            return stack;
-        }
-        return null;
+        Optional<BookIdentity> id = BookIdentity.resolve(stack);
+        if (id.isEmpty()) return null;
+        bookType = id.get().bookType();
+        bookId = id.get().bookId();
+        story = id.get().story();
+        letter = id.get().letter();
+        variantIndex = id.get().variantIndex();
+        return stack;
     }
 
     /** Read display title/author + page count from the stack's written-book content (no page text kept). */
@@ -202,10 +185,6 @@ public final class BookReadClientEvents {
         title = content.title().raw();
         author = content.author();
         pageCount = content.pages().size();
-    }
-
-    private static int clamp(int v, int lo, int hi) {
-        return v < lo ? lo : (v > hi ? hi : v);
     }
 
     private static void reset() {
