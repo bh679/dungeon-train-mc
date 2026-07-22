@@ -40,7 +40,7 @@ public abstract class LanguageSelectEntryLogoMixin {
     /** Gap in px between the icon and the "AI" label. */
     private static final int AI_LABEL_GAP = 2;
     /** Text scale for the "AI" label — smaller than the row's language name. */
-    private static final float AI_LABEL_SCALE = 0.75F;
+    private static final float AI_LABEL_SCALE = 0.6F;
 
     @Inject(
         method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIIIIIIZF)V",
