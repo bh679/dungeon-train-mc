@@ -20,6 +20,8 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StairsLocationData;
 import games.brennan.dungeontrain.world.StairsRegistryData;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
+import games.brennan.dungeontrain.worldgen.GenDeterminismLog;
+import games.brennan.dungeontrain.worldgen.StampRandom;
 import games.brennan.dungeontrain.worldgen.NetherFade;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
@@ -961,6 +963,17 @@ public final class TrackGenerator {
             nearbyPillars.put(x, new PillarInfo(gy, h));
         }
 
+        if (GenDeterminismLog.ENABLED) {
+            StringBuilder cands = new StringBuilder();
+            for (var e : nearbyPillars.entrySet()) {
+                if (cands.length() > 0) cands.append(',');
+                cands.append(e.getKey()).append(':').append(e.getValue().groundY())
+                     .append(':').append(e.getValue().height());
+            }
+            GenDeterminismLog.log("pillars", "chunk=(%d,%d) probeZ=%d candidates=%s",
+                    chunkX, chunkZ, probeZ, cands.length() == 0 ? "-" : cands);
+        }
+
         for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
             PillarInfo info = nearbyPillars.get(worldX);
             if (info == null) continue;
@@ -984,42 +997,105 @@ public final class TrackGenerator {
             placeArchTaperWorldgen(level, serverLevel, worldX + minDx, worldX + maxDx,
                 height, g, dims, worldSeed, worldX);
 
-            // Stairs eligibility — three independent gates, all must pass:
-            //   (1) Don't put stairs on a short pillar itself — they'd sit
-            //       barely above ground and look pointless.
-            //   (2) First pillar in this MIN_STAIRS_SPACING-aligned slot.
-            //       The lowerKey check + the boundary check together ensure
-            //       no two stairs are placed within MIN_STAIRS_SPACING of
-            //       each other (matches "never closer than 60").
-            //   (3) ≥ MIN_STAIRS_SPACING away from the nearest prior short
-            //       pillar (height < SHORT_PILLAR_THRESHOLD). Stops stairs
-            //       from being plopped right next to a 1-2 block stub.
-            // Stairs eligibility — Option C: cross-chunk registry. The
-            // SavedData-backed StairsRegistryData persists pillar-side
-            // stairs and short-pillar markers, so chunks beyond the ±1
-            // chunk worldgen read window still see each other's commits.
-            // tryReserveStairs is atomic: a parallel-thread chunk that
-            // wants the same slot will lose the race and skip.
+            if (height < SHORT_PILLAR_THRESHOLD) {
+                // Record the short pillar (registry data continuity — the anchor rule below
+                // rejects shorts directly, but old saves and runtime queries still read the set).
+                StairsRegistryData.get(serverLevel.getServer().overworld()).recordShortPillar(worldX);
+            }
+        }
+
+        // Stairs — deterministic anchor grid (replaces the racing tryReserveStairs arbitration,
+        // which was chunk-generation-order dependent: twin same-seed runs placed stairs at
+        // different pillars and cascaded side flips down the line).
+        //
+        // Rule: stairs may exist only at seed-phased anchors, one every MIN_STAIRS_SPACING
+        // blocks of X (anchor = k * MIN_STAIRS_SPACING + phase(worldSeed)). Only the chunk
+        // CONTAINING an anchor decides — and only from candidates inside its own chunk, whose
+        // ground probes read finished own-chunk terrain (the ±MIN_STAIRS_SPACING window probes
+        // were shown to read neighbours' unfinished terrain and vary per run). The choice is
+        // therefore a pure function of (worldSeed, own-chunk terrain): order-independent by
+        // construction, no cross-thread arbitration needed. Positions deviate ≤ 15 from their
+        // anchor, so neighbours are ≥ MIN_STAIRS_SPACING - 30 ≥ 60 apart — the original
+        // "never closer than 60" invariant, now enforced without racing.
+        int anchorX = stairsAnchorInRange(worldSeed, chunkMinX, chunkMaxX);
+        if (anchorX != Integer.MIN_VALUE) {
+            // Nearest own-chunk pillar to the anchor (ties break toward -X via headMap order).
+            Integer chosenX = null;
+            for (var e : nearbyPillars.subMap(chunkMinX, true, chunkMaxX, true).entrySet()) {
+                if (chosenX == null
+                        || Math.abs(e.getKey() - anchorX) < Math.abs(chosenX - anchorX)) {
+                    chosenX = e.getKey();
+                }
+            }
             ServerLevel ow = serverLevel.getServer().overworld();
             StairsRegistryData registry = StairsRegistryData.get(ow);
-
-            if (height < SHORT_PILLAR_THRESHOLD) {
-                // Record the short pillar so future stairs candidates honour
-                // the MIN_STAIRS_SPACING exclusion against it across chunks.
-                registry.recordShortPillar(worldX);
-                continue;
+            if (chosenX == null) {
+                GenDeterminismLog.log("stairs", "anchor=%d result=no_candidate", anchorX);
+            } else if (nearbyPillars.get(chosenX).height() < SHORT_PILLAR_THRESHOLD) {
+                GenDeterminismLog.log("stairs", "anchor=%d worldX=%d result=short", anchorX, chosenX);
+            } else if (registry.hasOtherStairsWithin(chosenX, STAIRS_COMPAT_GUARD_RADIUS)) {
+                // Never fires in fresh anchor-grid worlds (spacing ≥ 60 by construction); defers
+                // to racing-era stairs persisted in pre-anchor saves at the generation frontier.
+                LOGGER.debug("[stairs.elig] worldX={} reject=legacy_registry_conflict", chosenX);
+                GenDeterminismLog.log("stairs", "anchor=%d worldX=%d result=legacy_conflict", anchorX, chosenX);
+            } else {
+                boolean side = stairsSideForAnchor(worldSeed, anchorX);
+                registry.recordStairs(chosenX, side);
+                GenDeterminismLog.log("stairs", "anchor=%d worldX=%d result=placed:%s",
+                    anchorX, chosenX, side ? "-Z" : "+Z");
+                LOGGER.info("[stairs.elig] worldX={} chunk=({},{}) PASS anchor={} side={} → calling placeStairs",
+                    chosenX, chunkX, chunkZ, anchorX, side ? "-Z" : "+Z");
+                placeStairsBesidePillarWorldgen(level, serverLevel, chosenX,
+                    nearbyPillars.get(chosenX).groundY(), g, worldSeed, side);
             }
-
-            Boolean reservedSide = registry.tryReserveStairs(worldX, MIN_STAIRS_SPACING);
-            if (reservedSide == null) {
-                LOGGER.debug("[stairs.elig] worldX={} reject=registry_conflict", worldX);
-                continue;
-            }
-
-            LOGGER.info("[stairs.elig] worldX={} chunk=({},{}) PASS height={} side={} → calling placeStairs",
-                worldX, chunkX, chunkZ, height, reservedSide ? "-Z" : "+Z");
-            placeStairsBesidePillarWorldgen(level, serverLevel, worldX, groundY, g, worldSeed, reservedSide);
         }
+    }
+
+    /**
+     * Guard radius for {@link StairsRegistryData#hasOtherStairsWithin}: the original aesthetic
+     * floor ("never closer than 60"). Anchor-grid placements are ≥ 60 apart by construction,
+     * so in fresh worlds this guard is inert; it only defers to legacy racing-era entries.
+     */
+    private static final int STAIRS_COMPAT_GUARD_RADIUS = 60;
+
+    /**
+     * The seed-derived anchor-grid phase in {@code [0, MIN_STAIRS_SPACING)}: anchors sit at
+     * {@code k * MIN_STAIRS_SPACING + phase}. One shared phase (rather than per-slot jitter)
+     * keeps consecutive anchors exactly MIN_STAIRS_SPACING apart, which is what lets the ≤15
+     * in-chunk deviation preserve the ≥60 spacing floor. Splitmix64 finalizer, same constants
+     * as {@code DungeonTrainWorldData.deriveGenerationSeed}.
+     */
+    static int stairsAnchorPhase(long worldSeed) {
+        long h = worldSeed ^ 0x5741A1525354A952L; // "STAIRS" salt
+        h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
+        h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
+        h ^= (h >>> 31);
+        return (int) Math.floorMod(h, MIN_STAIRS_SPACING);
+    }
+
+    /**
+     * The single anchor X inside {@code [minX, maxX]}, or {@link Integer#MIN_VALUE} when the
+     * range contains none. Ranges narrower than MIN_STAIRS_SPACING (a 16-wide chunk) contain
+     * at most one anchor. Pure function of (worldSeed, range) — every run agrees.
+     */
+    static int stairsAnchorInRange(long worldSeed, int minX, int maxX) {
+        int phase = stairsAnchorPhase(worldSeed);
+        int k = Math.floorDiv(minX - phase + MIN_STAIRS_SPACING - 1, MIN_STAIRS_SPACING);
+        int anchor = k * MIN_STAIRS_SPACING + phase;
+        return anchor <= maxX ? anchor : Integer.MIN_VALUE;
+    }
+
+    /**
+     * Deterministic side for the stairs at an anchor: strict slot alternation (+Z / -Z along
+     * the line, preserving the pre-determinism aesthetic) XOR one seed-derived world bit so
+     * different worlds don't all start on the same side. {@code true} = -Z.
+     */
+    static boolean stairsSideForAnchor(long worldSeed, int anchorX) {
+        int slot = Math.floorDiv(anchorX - stairsAnchorPhase(worldSeed), MIN_STAIRS_SPACING);
+        long h = worldSeed ^ 0x53494445B17L; // "SIDE" salt
+        h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
+        boolean seedBit = ((h ^ (h >>> 27)) & 1L) != 0L;
+        return ((slot & 1) == 0) ^ seedBit;
     }
 
     /**
@@ -1420,7 +1496,9 @@ public final class TrackGenerator {
             // No ShipFilterProcessor — no ships at chunkgen.
             if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
 
-            template.placeInWorld(level, copyOrigin, copyOrigin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+            // Position-pure random — only consumed for container LootTableSeeds (see StampRandom).
+            template.placeInWorld(level, copyOrigin, copyOrigin, settings,
+                StampRandom.at(level.getSeed(), copyOrigin), Block.UPDATE_CLIENTS);
 
             // Sidecar pass — overwrite flagged template-local positions
             // with the deterministic per-block pick. Mirror semantics
@@ -1535,63 +1613,71 @@ public final class TrackGenerator {
         List<DownStairsTarget> targets = new ArrayList<>();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
+        // Deterministic anchor grid — same rule as the up-stairs pass in
+        // placePillarsAtWorldgen (see the comment there): down-stairs may exist only at the
+        // seed-phased anchor this chunk contains, decided purely from own-chunk probes, so
+        // twin same-seed runs always agree. The shared anchor also gives up-stairs and
+        // down-stairs mutual exclusion without racing: the up-stairs pass runs first in the
+        // same Feature.place() invocation, and its registry record trips the guard below
+        // (both candidates sit within ±15 of the same anchor, well inside the guard radius).
+        int anchorX = stairsAnchorInRange(level.getSeed(), chunkMinX, chunkMaxX);
+        if (anchorX == Integer.MIN_VALUE) return targets;
+
+        // Nearest qualifying candidate to the anchor within this chunk. Candidates snap to
+        // tunnel section X edges (multiples of {@link TunnelPlacer#LENGTH} — the shaft lines
+        // up with section boundaries visually) and must be underground with a 5-block buffer
+        // on each side (keeps the shaft away from tunnel portals, whose ±~5-block pyramid
+        // would clip it). All probes read own-chunk / ±16-window terrain — run-stable.
+        Integer chosenX = null;
         for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
-            // Snap to tunnel section X edges — stairs land at the seam
-            // between tunnel sections rather than mid-section. Tunnel
-            // sections tile {@link TunnelPlacer#LENGTH}-cols flush along
-            // X; pinning stair candidates to multiples of LENGTH makes the
-            // shaft line up with section boundaries visually.
             if (Math.floorMod(worldX, TunnelPlacer.LENGTH) != 0) continue;
-            // Center column must be underground. Cheap fast-reject for
-            // most above-ground chunks (no further reads if false).
             if (!TunnelGenerator.isColumnUndergroundWorldgen(level, worldX, tg, false)) continue;
-            // 5-block buffer on each side keeps the stair shaft away from
-            // tunnel portals (which are stamped at run boundaries with a
-            // ±~5-block pyramid that would clip the stair shaft). Reads
-            // at worldX±5 stay well inside the ±16 worldgen 3×3 window.
             if (!TunnelGenerator.isColumnUndergroundWorldgen(level, worldX - 5, tg, false)) continue;
             if (!TunnelGenerator.isColumnUndergroundWorldgen(level, worldX + 5, tg, false)) continue;
-
-            // Reserve first to determine the side. Surface Y depends on
-            // {@code flipped} (we probe at the stair's actual centerZ on
-            // the assigned side, not at the corridor center), so we need
-            // the side before probing. Slot is consumed even if the probe
-            // ultimately rejects — acceptable trade-off, see method
-            // javadoc.
-            Boolean reservedSide = registry.tryReserveStairs(worldX, MIN_STAIRS_SPACING);
-            if (reservedSide == null) {
-                LOGGER.debug("[downstairs.elig] worldX={} reject=registry_conflict", worldX);
-                continue;
+            if (chosenX == null || Math.abs(worldX - anchorX) < Math.abs(chosenX - anchorX)) {
+                chosenX = worldX;
             }
-            int centerStairsZ = downStairsCenterZ(reservedSide, g);
-
-            // Probe surface Y at the stair's center XZ. Strict air check
-            // (not isPassable) — skip past tree leaves, vines, and other
-            // passable-but-solid-looking blocks so the shaft opens at
-            // actual sky.
-            int surfaceY = -1;
-            for (int y = tg.ceilingY() + 1; y <= surfaceProbeCap; y++) {
-                pos.set(worldX, y, centerStairsZ);
-                if (level.getBlockState(pos).isAir()) { surfaceY = y; break; }
-            }
-            if (surfaceY < 0) {
-                LOGGER.debug("[downstairs.elig] worldX={} reject=no_air_below_cap cap={}",
-                    worldX, surfaceProbeCap);
-                continue;
-            }
-            // Shaft must be at least SHORT_PILLAR_THRESHOLD + 2 tall to be
-            // worth carving. Below that the staircase is shorter than the
-            // template's one stamp and looks pointless.
-            if (surfaceY - floorY < SHORT_PILLAR_THRESHOLD + 2) {
-                LOGGER.debug("[downstairs.elig] worldX={} reject=shaft_too_short surfaceY={} floorY={}",
-                    worldX, surfaceY, floorY);
-                continue;
-            }
-
-            LOGGER.info("[downstairs.elig] worldX={} chunk=({},{}) PASS surfaceY={} side={}",
-                worldX, chunkX, chunkZ, surfaceY, reservedSide ? "-Z" : "+Z");
-            targets.add(new DownStairsTarget(worldX, reservedSide, surfaceY));
         }
+        if (chosenX == null) return targets;
+
+        if (registry.hasOtherStairsWithin(chosenX, STAIRS_COMPAT_GUARD_RADIUS)) {
+            // Up-stairs claimed this anchor, or a legacy racing-era entry sits nearby.
+            LOGGER.debug("[downstairs.elig] worldX={} reject=registry_conflict", chosenX);
+            GenDeterminismLog.log("downstairs", "anchor=%d worldX=%d result=conflict", anchorX, chosenX);
+            return targets;
+        }
+
+        boolean side = stairsSideForAnchor(level.getSeed(), anchorX);
+        int centerStairsZ = downStairsCenterZ(side, g);
+
+        // Probe surface Y at the stair's center XZ. Strict air check (not isPassable) —
+        // skip past tree leaves, vines, and other passable-but-solid-looking blocks so the
+        // shaft opens at actual sky. A failed probe means no down-stairs for this anchor
+        // (no fallback to the next candidate — keeps the decision a pure function).
+        int surfaceY = -1;
+        for (int y = tg.ceilingY() + 1; y <= surfaceProbeCap; y++) {
+            pos.set(chosenX, y, centerStairsZ);
+            if (level.getBlockState(pos).isAir()) { surfaceY = y; break; }
+        }
+        if (surfaceY < 0) {
+            LOGGER.debug("[downstairs.elig] worldX={} reject=no_air_below_cap cap={}",
+                chosenX, surfaceProbeCap);
+            return targets;
+        }
+        // Shaft must be at least SHORT_PILLAR_THRESHOLD + 2 tall to be worth carving.
+        // Below that the staircase is shorter than the template's one stamp.
+        if (surfaceY - floorY < SHORT_PILLAR_THRESHOLD + 2) {
+            LOGGER.debug("[downstairs.elig] worldX={} reject=shaft_too_short surfaceY={} floorY={}",
+                chosenX, surfaceY, floorY);
+            return targets;
+        }
+
+        registry.recordStairs(chosenX, side);
+        GenDeterminismLog.log("downstairs", "anchor=%d worldX=%d result=placed:%s",
+            anchorX, chosenX, side ? "-Z" : "+Z");
+        LOGGER.info("[downstairs.elig] worldX={} chunk=({},{}) PASS surfaceY={} side={}",
+            chosenX, chunkX, chunkZ, surfaceY, side ? "-Z" : "+Z");
+        targets.add(new DownStairsTarget(chosenX, side, surfaceY));
 
         return targets;
     }
@@ -1819,7 +1905,9 @@ public final class TrackGenerator {
                 // blocks (see TunnelPlacer.stampTemplateWorldgen for the full rationale).
                 .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
             if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
-            template.placeInWorld(level, stampOrigin, stampOrigin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+            // Position-pure random — only consumed for container LootTableSeeds (see StampRandom).
+            template.placeInWorld(level, stampOrigin, stampOrigin, settings,
+                StampRandom.at(level.getSeed(), stampOrigin), Block.UPDATE_CLIENTS);
             // Sidecar pass — same shape as stairs stamp.
             if (!sidecar.isEmpty()) {
                 for (var entry : sidecar.entries()) {

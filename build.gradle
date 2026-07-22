@@ -108,6 +108,13 @@ neoForge {
             server()
             programArgument '--nogui'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Determinism-harness seam: ./gradlew runServer -PgenDetLog enables the flag-gated
+            // [gen.det] worldgen diagnostics (GenDeterminismLog). A project property rather than an
+            // env var because the forked server inherits the Gradle DAEMON's environment, not the
+            // invoking shell's (same reason as relayBaseUrl above).
+            if (project.hasProperty('genDetLog')) {
+                systemProperty 'dungeontrain.genDeterminismLog', 'true'
+            }
         }
 
         gameTestServer {
