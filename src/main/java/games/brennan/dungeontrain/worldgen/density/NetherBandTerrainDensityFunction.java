@@ -45,6 +45,14 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
     private static final double MAX_TARGET_TOP_BOUND = 512.0;
     private static final double MIN_Y_BOUND = -64.0;
 
+    /**
+     * Extra X-window slack (each side) for the whole-batch reject in {@link #fillArray}, on top of the
+     * probed first/last-sample bounds and the edge-wave margin. A NoiseChunk batch spans at most one
+     * chunk + one interpolation cell (16 + cellWidth ≤ 16 → 32 blocks); 64 is a 2× safety factor over
+     * that worst case. Oversizing only costs skipped optimisation near band edges — never correctness.
+     */
+    private static final int BATCH_X_SLACK = 64;
+
     private final DensityFunction wrapped;
 
     public NetherBandTerrainDensityFunction(DensityFunction wrapped) {
@@ -112,6 +120,19 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
         if (memo.present[idx] && memo.key[idx] == ckey) {
             skip = memo.skip[idx];
             t = memo.target[idx];
+        } else if (games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED
+                && !cycle.netherInfluence(worldX, NetherMountainTerrain.maxEdgeShift())) {
+            // Off-band early-out: no x′ within the edge-wave margin can be in the nether segment, so
+            // raises(wavyX(x)) is provably false — skip without paying the 4-octave wavyX noise.
+            // Byte-identical to the full evaluation below (the predicate is a conservative superset,
+            // proven by the stride-1 sweep in WorldGenCycleTest); still memoised so repeat samples of
+            // this column take the fast present-hit path.
+            skip = true;
+            t = 0.0;
+            memo.key[idx] = ckey;
+            memo.skip[idx] = true;
+            memo.target[idx] = 0.0;
+            memo.present[idx] = true;
         } else {
             // Evaluate the band at the edge-waved X so the leading/trailing front undulates across Z rather
             // than starting at one straight X (matched in the biome source + post-process feature).
@@ -165,10 +186,59 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
             long seed = ctx.generationSeed();
             int seaLevel = ctx.seaLevel(), ceiling = ctx.worldCeiling();
             int netherTop = ctx.netherTop(), baseRelief = ctx.baseRelief();
+            // Per-X off-band memo — method-local ONLY (this instance is shared across worker threads
+            // and chunks; latching per-instance chunk state would race). Cell iteration is Y-outer /
+            // X-mid / Z-inner, so the few distinct X of a cell recur thousands of times: a small
+            // direct-mapped table (x & mask; collisions just recompute) answers all repeats, and the
+            // hoisted Influence snapshot makes the misses a handful of compares. When an X plane is
+            // provably off-band we skip the per-sample key build + memo probes entirely (the ride's
+            // overworld-gap majority). Byte-identical: skipping leaves the child's value in place,
+            // exactly what raise() returns for an off-band column.
+            WorldGenCycle.Influence inf = cycle.influence();
+            int margin = NetherMountainTerrain.maxEdgeShift();
+            // Whole-batch O(1) reject — the load-bearing early-out. Measured floor of the per-sample
+            // loop below is ~2 ms/chunk of pure forIndex()/blockX() virtual-call overhead even when
+            // every sample skips, so off-band chunks (the ride's majority) must skip the LOOP, not the
+            // samples. This DF is installed at runtime on the noise router and only ever driven by
+            // NoiseChunk during chunk gen, whose batches span one chunk plus at most one interpolation
+            // cell in X (16 + cellWidth ≤ 16 → ≤ 32 blocks); the first and last sample bound the
+            // per-layer X range under its Y-outer/X-mid/Z-inner order. Both endpoints are probed and
+            // BATCH_X_SLACK doubles the worst-case span on top of the edge-wave margin, so the reject
+            // window is a strict superset of every X the batch can contain — false positives only ever
+            // fall through to the exact per-sample path (never a wrong skip). Seam-safety is pinned by
+            // the fillArray byte-identity test and the pre/post region-palette diff.
+            // A/B kill-switch: with early-outs OFF this whole method degrades to the pre-change
+            // per-sample raise loop below (byte-identical output either way; only timing differs).
+            boolean earlyOuts = games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED;
+            if (earlyOuts && values.length > 0) {
+                int xFirst = contextProvider.forIndex(0).blockX();
+                int xLast = contextProvider.forIndex(values.length - 1).blockX();
+                int lo = Math.min(xFirst, xLast), hi = Math.max(xFirst, xLast);
+                int center = lo + (hi - lo) / 2;
+                int half = (hi - lo + 1) / 2;
+                if (!inf.nether(center, half + margin + BATCH_X_SLACK)) {
+                    GenProfiler.add(GenProfiler.Bucket.DF, t0);
+                    return;                                   // whole batch provably off-band
+                }
+            }
+            final int xMask = 63;
+            int[] memoX = new int[xMask + 1];
+            byte[] memoSkip = new byte[xMask + 1];            // 0 = empty, 1 = skip, 2 = evaluate
             for (int i = 0; i < values.length; i++) {
                 FunctionContext fc = contextProvider.forIndex(i);
+                int bx = fc.blockX();
+                if (earlyOuts) {
+                    int xi = bx & xMask;
+                    byte state = (memoX[xi] == bx) ? memoSkip[xi] : 0;
+                    if (state == 0) {
+                        state = inf.nether(bx, margin) ? (byte) 2 : (byte) 1;
+                        memoX[xi] = bx;
+                        memoSkip[xi] = state;
+                    }
+                    if (state == 1) continue;
+                }
                 values[i] = raise(memo, cycle, seed, seaLevel, ceiling, netherTop, baseRelief,
-                        fc.blockX(), fc.blockZ(), fc.blockY(), values[i]);
+                        bx, fc.blockZ(), fc.blockY(), values[i]);
             }
         }
         GenProfiler.add(GenProfiler.Bucket.DF, t0);

@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.narrative.BookReadMarkerTag;
+import games.brennan.dungeontrain.narrative.BookVoteTag;
 import games.brennan.dungeontrain.narrative.BurnableBookTag;
 import games.brennan.dungeontrain.narrative.DeathNoteBookTag;
 import games.brennan.dungeontrain.narrative.LetterBookTag;
@@ -22,6 +23,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -55,6 +57,7 @@ import org.slf4j.Logger;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -142,21 +145,38 @@ public final class StartingBookEvents {
      */
     private static final int BURN_DURATION_TICKS = 60;
 
+    /**
+     * Which flame a burning book renders. {@link #SOUL} (a Death Note curse) takes precedence over
+     * any vote; a book the player voted on burns {@link #APPROVED} green or {@link #REJECTED} red
+     * (flame-dust tint only — the client-only ghost fire block stays the vanilla orange, since no
+     * green/red fire block exists); everything else is the {@link #DEFAULT} orange burn.
+     */
+    enum FlameVariant { DEFAULT, SOUL, APPROVED, REJECTED }
+
+    /** Flame dust tints for voted burns (approved green / rejected red). */
+    private static final Vector3f APPROVED_FLAME_COLOR = new Vector3f(0.30f, 0.78f, 0.30f);
+    private static final Vector3f REJECTED_FLAME_COLOR = new Vector3f(0.86f, 0.22f, 0.18f);
+
     /** Tracking entry for one in-progress book burn. */
     private static final class BurnState {
         int ticksRemaining;
-        /** Death Note curse → soul-fire particles + a soul sound instead of the normal fire. */
-        final boolean soul;
+        /** Flame flavor — Death Note soul burn wins, then the player's stamped vote tint. */
+        final FlameVariant variant;
         /** Render anchor for the client-only fire block, or {@code null} until the item settles. */
         BlockPos flameRenderPos;
         /** Dimension containing {@link #flameRenderPos} — needed to clear the visual after the entity is gone. */
         ResourceKey<Level> flameRenderLevelKey;
 
-        BurnState(int ticks, boolean soul) {
+        BurnState(int ticks, FlameVariant variant) {
             this.ticksRemaining = ticks;
-            this.soul = soul;
+            this.variant = variant;
             this.flameRenderPos = null;
             this.flameRenderLevelKey = null;
+        }
+
+        /** Soul-only conditions (ghost soul-fire block, soul sounds) — vote tints don't change these. */
+        boolean soul() {
+            return variant == FlameVariant.SOUL;
         }
     }
 
@@ -292,10 +312,21 @@ public final class StartingBookEvents {
             // other tick so we don't flood the particle queue at long
             // distances when several books are burning simultaneously.
             if (itemEntity.tickCount % 2 == 0) {
-                itemLevel.sendParticles(state.soul ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.FLAME,
-                    itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
-                    3, 0.12, 0.08, 0.12, 0.02);
-                itemLevel.sendParticles(state.soul ? ParticleTypes.SOUL : ParticleTypes.SMOKE,
+                if (state.variant == FlameVariant.APPROVED || state.variant == FlameVariant.REJECTED) {
+                    // Voted burns: colored dust mixed 50:50 with the vanilla orange flame, so the
+                    // fire still reads as FIRE — just tinted by the verdict.
+                    itemLevel.sendParticles(flameParticle(state.variant),
+                        itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
+                        2, 0.12, 0.08, 0.12, 0.02);
+                    itemLevel.sendParticles(ParticleTypes.FLAME,
+                        itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
+                        2, 0.12, 0.08, 0.12, 0.02);
+                } else {
+                    itemLevel.sendParticles(flameParticle(state.variant),
+                        itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
+                        3, 0.12, 0.08, 0.12, 0.02);
+                }
+                itemLevel.sendParticles(state.soul() ? ParticleTypes.SOUL : ParticleTypes.SMOKE,
                     itemEntity.getX(), itemEntity.getY() + 0.3, itemEntity.getZ(),
                     1, 0.08, 0.05, 0.08, 0.01);
             }
@@ -320,27 +351,50 @@ public final class StartingBookEvents {
             if (state.flameRenderPos != null
                 && itemLevel.getBlockState(state.flameRenderPos).isAir()) {
                 sendClientFireUpdate(itemLevel, state.flameRenderPos,
-                    (state.soul ? Blocks.SOUL_FIRE : Blocks.FIRE).defaultBlockState());
+                    (state.soul() ? Blocks.SOUL_FIRE : Blocks.FIRE).defaultBlockState());
             }
 
             // Tick down. When zero: book is "consumed", clean up.
             state.ticksRemaining--;
             if (state.ticksRemaining <= 0) {
                 clearClientFireVisual(server, state);
-                if (state.soul) {
+                if (state.soul()) {
                     itemLevel.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
                         SoundEvents.SOUL_ESCAPE, SoundSource.BLOCKS, 0.6f, 1.2f);
                 } else {
                     itemLevel.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
                         SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.6f, 1.2f);
                 }
-                itemLevel.sendParticles(state.soul ? ParticleTypes.SOUL : ParticleTypes.LARGE_SMOKE,
+                itemLevel.sendParticles(state.soul() ? ParticleTypes.SOUL : ParticleTypes.LARGE_SMOKE,
                     itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
                     8, 0.2, 0.1, 0.2, 0.02);
                 itemEntity.discard();
                 it.remove();
             }
         }
+    }
+
+    /**
+     * The burn flame for {@code stack}: Death Note soul burn takes precedence, then the player's
+     * stamped 👍/👎 vote ({@link BookVoteTag}, green/red), else the default orange.
+     */
+    private static FlameVariant flameVariantOf(ItemStack stack) {
+        if (DeathNoteBookTag.isDeathNote(stack)) return FlameVariant.SOUL;
+        OptionalInt vote = BookVoteTag.read(stack);
+        if (vote.isPresent()) {
+            return vote.getAsInt() == 1 ? FlameVariant.APPROVED : FlameVariant.REJECTED;
+        }
+        return FlameVariant.DEFAULT;
+    }
+
+    /** The per-flavor ambient flame particle — vote tints ride colored dust (no green/red flame exists). */
+    private static ParticleOptions flameParticle(FlameVariant variant) {
+        return switch (variant) {
+            case SOUL -> ParticleTypes.SOUL_FIRE_FLAME;
+            case APPROVED -> new DustParticleOptions(APPROVED_FLAME_COLOR, 1.0F);
+            case REJECTED -> new DustParticleOptions(REJECTED_FLAME_COLOR, 1.0F);
+            case DEFAULT -> ParticleTypes.FLAME;
+        };
     }
 
     /**
@@ -505,16 +559,17 @@ public final class StartingBookEvents {
         // burning book mid-burn and stash it. Matches the close-handler
         // behaviour from the earlier inline-registration code path.
         // A signed "Death Note" curse book burns with the SOUL variant (ghostly soul-fire + a soul
-        // sound) instead of the normal fire — see DeathNoteBookTag.
-        boolean soul = DeathNoteBookTag.isDeathNote(stack);
+        // sound) instead of the normal fire — see DeathNoteBookTag; otherwise a book the player
+        // voted on burns with a green (approved) or red (rejected) flame tint. Soul wins.
+        FlameVariant variant = flameVariantOf(stack);
         item.setPickUpDelay(BURN_DURATION_TICKS);
-        BURN_ENTITIES.put(item.getUUID(), new BurnState(BURN_DURATION_TICKS, soul));
+        BURN_ENTITIES.put(item.getUUID(), new BurnState(BURN_DURATION_TICKS, variant));
 
         // Ignition atmosphere — a quiet "whoosh" (a soul escape for a Death Note) at the drop point.
         // SOUL_ESCAPE is a Holder<SoundEvent> and FIRE_AMBIENT a plain SoundEvent, so branch rather
         // than mix them in one conditional (no single playSound-compatible type).
         ServerLevel level = (ServerLevel) item.level();
-        if (soul) {
+        if (variant == FlameVariant.SOUL) {
             level.playSound(null, item.getX(), item.getY(), item.getZ(),
                 SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 0.6f, 1.5f);
         } else {

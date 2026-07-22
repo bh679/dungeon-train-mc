@@ -1,0 +1,12 @@
+{
+  "homepage": "https://github.com/bh679/dungeon-train-mc",
+  "1.21.1": {
+    "0.488.0": "### 0.488.0\n\n**Official links now stay up to date**\n\nThe Discord invite, Patreon, donation and hosting-affiliate links now update themselves from the Dungeon Train server whenever you're online, so buttons in the menus always point at the current official destinations \u2014 even on older versions of the mod. Offline, the built-in links still work as before.\n\n- Links refresh once per session from the title screen; no account data is sent\n- Default donation amount is now $25 AUD (was $45)",
+    "0.487.0": "### 0.487.0\n\n**In-game update notifications**\n\nDungeon Train now tells you inside the game when a newer version is available \u2014 an \"Update available\" badge appears next to the mod on the Mods screen. It only notifies; it never downloads or changes anything on its own, so you stay in control and update through your launcher as usual.\n\n- \"Update available\" badge on the Mods screen when you're behind the latest release\n- Notification only \u2014 no auto-download; update via CurseForge / Modrinth / your launcher",
+    "0.485.0": "https://github.com/bh679/dungeon-train-mc/releases/tag/v0.485.0"
+  },
+  "promos": {
+    "1.21.1-latest": "0.488.0",
+    "1.21.1-recommended": "0.488.0"
+  }
+}

@@ -5162,9 +5162,9 @@
       ],
       "pr": 803,
       "date": "2026-07-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
     },
     {
       "id": "suspicious-sand-archaeology-loot",
@@ -5178,9 +5178,9 @@
       ],
       "pr": 804,
       "date": "2026-07-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
     },
     {
       "id": "player-book-loot-selection",
@@ -5196,9 +5196,9 @@
         "On multiplayer worlds each player gets their own selection, matched to their own language"
       ],
       "date": "2026-07-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
     },
     {
       "id": "stage-phase-coverage-upside-down",
@@ -5212,9 +5212,9 @@
       ],
       "pr": 805,
       "date": "2026-07-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
     },
     {
       "id": "death-distance-travelled-telemetry",
@@ -5224,9 +5224,9 @@
       "summary": "Death and run reports now record how far down the line you actually reached \u2014 measured from where you spawned \u2014 plus which world band you died in. This sharpens the private stats dashboard only; there is no in-game change.",
       "highlights": [],
       "date": "2026-07-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
     },
     {
       "id": "ways-to-help-menu",
@@ -5241,6 +5241,162 @@
       ],
       "pr": 808,
       "date": "2026-07-21",
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
+    },
+    {
+      "id": "chuncks-world-gen-band",
+      "version": "0.485.0",
+      "type": "feat",
+      "title": "Chuncks \u2014 a mostly-void band of scattered floating chunks",
+      "summary": "The train now crosses a new Chuncks region: mostly open void, sprinkled with the occasional real overworld chunk. Some are full-height islands; others are just a floating slab of the surface with a flat cut-off bottom. The void thickens gradually as you approach, and the train keeps rolling across on its floating track. It sits late in the world-gen cycle, after the upside-down band.",
+      "highlights": [
+        "New Chuncks band \u2014 mostly void with occasional floating overworld chunks (full-height or top-down slices)",
+        "Void ramps in gradually on approach, with an overworld buffer before the band",
+        "Fully configurable: band length, void density, slice ratio, entry fade, and lead-in gap"
+      ],
+      "date": "2026-07-21",
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
+    },
+    {
+      "id": "well-content-loot-tuning",
+      "version": "0.485.0",
+      "type": "content",
+      "title": "New well loot content, plus leatherworker & prefab loot tuning",
+      "summary": "A new well content piece can now appear aboard the train, and the leatherworker's stock and several loot prefabs (enchant barrel, horse, iron/gold, villager) have been rebalanced.",
+      "highlights": [
+        "New well content set",
+        "Leatherworker loot/variant tuning",
+        "Rebalanced enchant barrel, horse, iron/gold, and villager loot prefabs"
+      ],
+      "pr": 811,
+      "date": "2026-07-21",
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
+    },
+    {
+      "id": "reboard-force-survival",
+      "version": "0.486.0",
+      "type": "fix",
+      "title": "Reboard now defaults to Survival",
+      "summary": "Reboarding from the death screen now always drops you into Survival mode, so a Creative or Spectator run (like Free Play) doesn't silently carry over. Hold Shift while clicking Reboard or Board Anew to keep your current game mode instead \u2014 the button turns blue to remind you.",
+      "highlights": [
+        "Reboard forces Survival by default",
+        "Hold Shift to preserve your current game mode (button turns blue)"
+      ],
+      "pr": 813,
+      "date": "2026-07-21",
+      "released": true,
+      "released_in": "v0.486.0",
+      "released_at": "2026-07-22T01:36:19Z"
+    },
+    {
+      "id": "neoforge-update-notifier",
+      "version": "0.487.0",
+      "type": "feat",
+      "title": "In-game update notifications",
+      "summary": "Dungeon Train now tells you inside the game when a newer version is available \u2014 an \"Update available\" badge appears next to the mod on the Mods screen. It only notifies; it never downloads or changes anything on its own, so you stay in control and update through your launcher as usual.",
+      "highlights": [
+        "\"Update available\" badge on the Mods screen when you're behind the latest release",
+        "Notification only \u2014 no auto-download; update via CurseForge / Modrinth / your launcher"
+      ],
+      "pr": 814,
+      "date": "2026-07-22",
+      "released": true,
+      "released_in": "v0.487.0",
+      "released_at": "2026-07-22T04:44:28Z"
+    },
+    {
+      "id": "official-links-relay-updates",
+      "version": "0.488.0",
+      "type": "feat",
+      "title": "Official links now stay up to date",
+      "summary": "The Discord invite, Patreon, donation and hosting-affiliate links now update themselves from the Dungeon Train server whenever you're online, so buttons in the menus always point at the current official destinations \u2014 even on older versions of the mod. Offline, the built-in links still work as before.",
+      "highlights": [
+        "Links refresh once per session from the title screen; no account data is sent",
+        "Default donation amount is now $25 AUD (was $45)"
+      ],
+      "pr": 815,
+      "date": "2026-07-22",
+      "released": true,
+      "released_in": "v0.488.0",
+      "released_at": "2026-07-22T06:12:19Z"
+    },
+    {
+      "id": "book-voting",
+      "version": "0.489.0",
+      "type": "feat",
+      "title": "Vote on the books other players wrote",
+      "summary": "Community books now end with a page from the train itself: it asks whether you enjoyed the book, with thumbs up / thumbs down (or just press Y / N from any page). Voting closes the book, the train answers in chat, and the burn takes your side \u2014 green flames for a yes, red for a no, with the usual orange still flickering through. Votes travel back to the rails and quietly shape how often that book is found by other travellers.",
+      "highlights": [
+        "A dimmed, train-voiced vote page appears after the last page of player-written books",
+        "Y / N hotkeys vote instantly from any page",
+        "Green / red tinted burns for voted books \u2014 Death Notes keep their soul burn",
+        "Popular books surface more often in loot, panned ones ride quieter"
+      ],
+      "date": "2026-07-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "placeholder-burn-wedge",
+      "version": "0.489.0",
+      "type": "fix",
+      "title": "Found books always burn again",
+      "summary": "Fixed a wedge where chest books could get stuck as their built-in stand-in when the community pool had nothing new to offer \u2014 they now resolve properly (repeats allowed) and always burn after reading, like any other book of the train.",
+      "highlights": [],
+      "date": "2026-07-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "ai-language-label",
+      "version": "0.490.0",
+      "type": "feat",
+      "title": "AI label on machine-translated languages",
+      "summary": "The language-selection list now marks Dungeon Train translations that have not been human-reviewed with a small faded blue AI label next to the Dungeon Train logo, so you can tell at a glance which translations are machine-generated.",
+      "highlights": [
+        "Human-reviewed languages keep the solid logo with no label"
+      ],
+      "date": "2026-07-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "worldgen-deterministic-seed",
+      "version": "0.491.0",
+      "type": "fix",
+      "title": "Same seed, same world: band layout is now seed-deterministic",
+      "summary": "Creating a world with a fixed seed now always produces the same nether-band mountains, biome front, and band layout \u2014 previously each fresh world rolled its own internal layout seed even with the seed box filled in. The band terrain system also now activates before the very first spawn chunks generate, so early chunks can no longer miss band biomes, and any biome-override error is now logged instead of silently baking the wrong biome. Existing worlds are unaffected.",
+      "highlights": [
+        "Fixed-seed worlds now reproduce the same band terrain and biome front",
+        "Band biomes can no longer be missing from the first-generated spawn chunks",
+        "Silent biome-fallback errors are now logged"
+      ],
+      "date": "2026-07-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "worldgen-band-early-outs",
+      "version": "0.492.0",
+      "type": "perf",
+      "title": "Faster world generation between special zones",
+      "summary": "The train's world generator now skips its special-zone terrain work (nether mountains, biome forcing, track-bed checks) on chunks that are provably outside those zones \u2014 most of the ride. Chunk streaming in the overworld stretches costs roughly a third less server time, so long rides stay smoother, with terrain byte-identical to before.",
+      "highlights": [
+        "Overworld gaps between zones generate ~25-40% faster; upside-down band ~38% faster",
+        "Terrain and biomes are unchanged everywhere \u2014 existing worlds continue seamlessly"
+      ],
+      "pr": 819,
+      "date": "2026-07-22",
       "released": false,
       "released_in": null,
       "released_at": null

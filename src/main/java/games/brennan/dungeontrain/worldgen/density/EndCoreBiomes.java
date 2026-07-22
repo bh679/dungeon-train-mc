@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen.density;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.util.LogFirstN;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.server.MinecraftServer;
@@ -33,6 +34,7 @@ import org.slf4j.Logger;
 public final class EndCoreBiomes {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final LogFirstN SAMPLE_ERRORS = new LogFirstN(5);
 
     /** X offset into the outer End noise field — matches {@code DisintegrationFeature.ISLAND_SAMPLE_OFFSET_X}. */
     private static final int OUTER_SAMPLE_OFFSET_X = 16_000;
@@ -71,6 +73,8 @@ public final class EndCoreBiomes {
             return endBiomeSource.getNoiseBiome(
                     QuartPos.fromBlock(sampleX), SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ), endSampler);
         } catch (Throwable t) {
+            SAMPLE_ERRORS.error(LOGGER,
+                    "[DungeonTrain] End core biome sample failed; baking the_end fallback instead", t);
             return fallback;
         }
     }
@@ -88,7 +92,9 @@ public final class EndCoreBiomes {
         try {
             ServerLevel end = server.getLevel(Level.END);
             if (end == null) {
-                LOGGER.info("[DungeonTrain] No End dimension — End core stays single-biome (the_end)");
+                // debug: legitimately fires during earlier dimensions' Load events (End not yet
+                // created) before the End-Load republish upgrades the snapshot.
+                LOGGER.debug("[DungeonTrain] No End dimension — End core stays single-biome (the_end)");
                 return new EndCoreBiomes(null, null, fallback);
             }
             ChunkGenerator gen = end.getChunkSource().getGenerator();

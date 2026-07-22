@@ -104,7 +104,7 @@ final class TemplateGateTest {
         // mixed: the kept dimension stays, every other flips
         TemplateGate mixed = new TemplateGate(0, TemplateGate.ALL,
             EnumSet.of(TrainPhase.OVERWORLD, TrainPhase.NETHER));
-        assertEquals(EnumSet.of(TrainPhase.NETHER, TrainPhase.VOID, TrainPhase.END, TrainPhase.UPSIDE_DOWN),
+        assertEquals(EnumSet.of(TrainPhase.NETHER, TrainPhase.VOID, TrainPhase.END, TrainPhase.UPSIDE_DOWN, TrainPhase.CHUNCKS),
             mixed.toggleOtherPhases(TrainPhase.NETHER).phases());
         // the Diff-Level band is untouched
         TemplateGate banded = new TemplateGate(3, 9, EnumSet.of(TrainPhase.OVERWORLD));

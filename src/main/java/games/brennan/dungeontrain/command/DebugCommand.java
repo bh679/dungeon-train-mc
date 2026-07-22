@@ -80,6 +80,14 @@ public final class DebugCommand {
                 .then(Commands.literal("ready").executes(ctx -> setMirrorDrainLegacy(ctx.getSource(), false)))
                 .then(Commands.literal("legacy").executes(ctx -> setMirrorDrainLegacy(ctx.getSource(), true)))
                 .then(Commands.literal("status").executes(ctx -> mirrorDrainStatus(ctx.getSource()))))
+            // /dungeontrain debug band-earlyout <on|off|status> — toggles the worldgen band
+            // early-outs (off-band skips in the density raise, biome forcing, track-bed reject).
+            // OFF = pre-change code paths, byte-identical output — drives the Gate 2 matched-toggle
+            // A/B: same seed/ride, compare [gen.timing] with the optimisation on vs off.
+            .then(Commands.literal("band-earlyout")
+                .then(Commands.literal("on").executes(ctx -> setBandEarlyOuts(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setBandEarlyOuts(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> bandEarlyOutsStatus(ctx.getSource()))))
             .then(Commands.literal("pair")
                 .executes(ctx -> runPair(ctx.getSource(), 0.0))
                 .then(Commands.argument("velocity", DoubleArgumentType.doubleArg())
@@ -207,6 +215,24 @@ public final class DebugCommand {
                 ? "ON — grep [gen.timing] in latest.log while riding forward"
                 : "OFF")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setBandEarlyOuts(CommandSourceStack source, boolean on) {
+        games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Worldgen band early-outs " + (on
+                ? "ON (optimised skip paths)"
+                : "OFF (pre-change baseline paths — A/B mode)")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), true);
+        return 1;
+    }
+
+    private static int bandEarlyOutsStatus(CommandSourceStack source) {
+        boolean on = games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Worldgen band early-outs " + (on ? "ON" : "OFF")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
         return 1;
     }
 

@@ -126,6 +126,10 @@
     {
       "id": "craftcraft",
       "weight": 1
+    },
+    {
+      "id": "well",
+      "weight": 1
     }
   ]
 }

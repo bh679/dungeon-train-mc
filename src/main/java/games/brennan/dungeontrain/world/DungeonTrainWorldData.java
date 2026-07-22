@@ -105,16 +105,35 @@ public final class DungeonTrainWorldData extends SavedData {
 
     public static DungeonTrainWorldData get(ServerLevel overworld) {
         DungeonTrainWorldData data = overworld.getDataStorage().computeIfAbsent(FACTORY, NAME);
-        // Legacy upgrade path: missing NBT tag loaded as seed=0. Replace with
-        // a real per-world seed drawn from the overworld's random so the
-        // Random/RandomGrouped modes produce the same layout on future
-        // loads. Mark dirty so the fresh seed persists.
+        // Fresh world (or legacy save whose NBT tag is missing → loaded as seed=0):
+        // derive the per-world seed deterministically from the level seed so two
+        // worlds created with the same seed bake identical band terrain/biomes.
+        // Existing saves keep their persisted (nonzero) seed. Mark dirty so the
+        // derived seed persists.
         if (data.generationSeed == 0L) {
-            data.generationSeed = overworld.random.nextLong();
+            data.generationSeed = deriveGenerationSeed(overworld.getSeed());
             data.setDirty();
         }
         return data;
     }
+
+    /**
+     * Deterministic per-world generation seed: splitmix64 finalizer (same constants as
+     * {@code MountainNoise.hash01}) over the level seed mixed with a mod-specific salt.
+     * Pure function of the world seed — same seed, same band layout — while staying
+     * decorrelated from vanilla's own seed-derived streams. Never returns {@code 0}
+     * (the "unseeded" NBT sentinel).
+     */
+    private static long deriveGenerationSeed(long worldSeed) {
+        long h = worldSeed ^ GENERATION_SEED_SALT;
+        h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
+        h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
+        h ^= (h >>> 31);
+        return h != 0L ? h : GENERATION_SEED_SALT;
+    }
+
+    /** "DTrGenS1" — salt decorrelating the generation seed from the raw level seed. */
+    private static final long GENERATION_SEED_SALT = 0x44547247656E5331L;
 
     /** Enqueue a chunk key for the deferred upside-down mirror drain (dedup; main-thread only). New keys
      *  start in WAITING (pending only) — they are promoted to READY once their neighbourhood is loaded. */
@@ -355,16 +374,6 @@ public final class DungeonTrainWorldData extends SavedData {
         this.trainY = clampY(trainY);
         this.startsWithTrain = startsWithTrain;
         this.dims = dims;
-        setDirty();
-    }
-
-    /**
-     * Explicitly set the per-world generation seed — used by
-     * {@code WorldLifecycleEvents} at integrated-server start to lock in a
-     * value derived from the overworld's random.
-     */
-    public void setGenerationSeed(long seed) {
-        this.generationSeed = seed;
         setDirty();
     }
 

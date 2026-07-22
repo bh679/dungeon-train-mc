@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.Util;
@@ -47,7 +48,6 @@ import org.slf4j.Logger;
 public final class DeveloperWelcomePopupScreen extends Screen {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String DISCORD_URL = "https://discord.gg/jdKAwb6rbW";
 
     private static final ResourceLocation AVATAR_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "textures/gui/developer_avatar.png");
@@ -281,14 +281,17 @@ public final class DeveloperWelcomePopupScreen extends Screen {
 
     private void openDiscord() {
         LOGGER.info("DeveloperWelcomePopup: Discord button clicked — opening ConfirmLinkScreen");
+        // Read the invite at click time so a relay-served rotation that lands after the popup
+        // was built still takes effect (baked fallback when offline — see OfficialLinks).
+        String discordUrl = OfficialLinks.discord();
         // Return to the title screen after the link confirmation, not back
         // into the popup. Clicking Discord means "I'm done with the message".
         Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
             if (yes) {
-                Util.getPlatform().openUri(URI.create(DISCORD_URL));
+                Util.getPlatform().openUri(URI.create(discordUrl));
             }
             Minecraft.getInstance().setScreen(parent);
-        }, DISCORD_URL, true));
+        }, discordUrl, true));
     }
 
     private void dontAskAgain() {

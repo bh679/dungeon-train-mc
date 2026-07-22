@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
-import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
+import games.brennan.dungeontrain.worldgen.density.BandBiomeDecision;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.biome.Biome;
@@ -28,6 +30,9 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(MultiNoiseBiomeSource.class)
 public abstract class MultiNoiseBiomeSourceMixin {
 
+    private static final org.slf4j.Logger dungeontrain$LOGGER = LogUtils.getLogger();
+    private static final LogFirstN dungeontrain$FORCE_ERRORS = new LogFirstN(5);
+
     @ModifyReturnValue(
         method = "getNoiseBiome(IIILnet/minecraft/world/level/biome/Climate$Sampler;)Lnet/minecraft/core/Holder;",
         at = @At("RETURN"))
@@ -42,28 +47,28 @@ public abstract class MultiNoiseBiomeSourceMixin {
             int blockX = x << 2;
             int blockY = y << 2;
             int blockZ = z << 2;
-            if (blockY < ctx.seaLevel()) return original;                 // natural cave biomes below sea
-            // Match the density router's edge-waved front so the forced-biome boundary undulates with the
-            // terrain (the whole band — core included — is evaluated at the same waved X).
-            int wx = NetherMountainTerrain.wavyX(ctx.generationSeed(), blockX, blockZ);
-            // Real-Nether core columns sample ALL five real Nether biomes the way the Nether does (checked
-            // before the highland pick — the core is also a "raising" mountain column): per-biome
-            // fog/ambient/music, and the vanilla Nether decoration features' own biome filter passes so they
-            // place in NetherTransitionFeature. Sampled at the un-waved block X so the world label, the
-            // surface skin and the decoration (which sample the same way) always agree.
-            if (ctx.netherCoreBiomes() != null && ctx.cycle() != null && ctx.cycle().isNetherCore(wx)) {
-                return ctx.netherCoreBiomes().biomeAt(blockX, blockZ);
+            // The whole per-quart decision — sea-level gate, off-band early-out, waved Nether-core /
+            // un-waved End-core / highland ordering — lives in the pure, unit-tested
+            // BandBiomeDecision.decide; this shell only maps the result onto the live providers.
+            switch (BandBiomeDecision.decide(ctx.cycle(), ctx.generationSeed(), ctx.seaLevel(),
+                    ctx.netherCoreBiomes() != null, ctx.endCoreBiomes() != null,
+                    blockX, blockY, blockZ)) {
+                case NETHER_CORE:
+                    // Per-biome fog/ambient/music + the vanilla Nether decoration features' own biome
+                    // filter pass so they place in NetherTransitionFeature.
+                    return ctx.netherCoreBiomes().biomeAt(blockX, blockZ);
+                case END_CORE:
+                    // Sample the real End's biome source (all five End biomes, swept across successive
+                    // End-band passes — see EndCoreBiomes) so world label, surface skin and decoration agree.
+                    return ctx.endCoreBiomes().biomeAt(blockX, blockZ, ctx.cycle().endPassIndex(blockX));
+                case HIGHLAND:
+                    return ctx.highlandBiomes().biomeFor(blockX, blockY, blockZ);
+                default:
+                    return original;
             }
-            // End-core columns: sample the real End's biome source (all five End biomes, swept across
-            // successive End-band passes — see EndCoreBiomes) so the world label, surface skin, and
-            // decoration agree the same way the Nether core does. Un-waved block X (no mountain edge to
-            // match here — the End band isn't a NetherMountainTerrain feature).
-            if (ctx.endCoreBiomes() != null && ctx.cycle() != null && ctx.cycle().isEndCore(blockX)) {
-                return ctx.endCoreBiomes().biomeAt(blockX, blockZ, ctx.cycle().endPassIndex(blockX));
-            }
-            if (!NetherMountainTerrain.raises(ctx.cycle(), wx)) return original; // not a band mountain column
-            return ctx.highlandBiomes().biomeFor(blockX, blockY, blockZ);
         } catch (Throwable t) {
+            dungeontrain$FORCE_ERRORS.error(dungeontrain$LOGGER,
+                    "[DungeonTrain] Highland/core biome override failed; baking vanilla biome instead", t);
             return original;
         } finally {
             GenProfiler.add(GenProfiler.Bucket.BIOME_FORCE, genT0);
