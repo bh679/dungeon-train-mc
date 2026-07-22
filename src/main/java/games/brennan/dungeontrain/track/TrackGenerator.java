@@ -20,6 +20,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StairsLocationData;
 import games.brennan.dungeontrain.world.StairsRegistryData;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
+import games.brennan.dungeontrain.worldgen.GenDeterminismLog;
 import games.brennan.dungeontrain.worldgen.NetherFade;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
@@ -961,6 +962,17 @@ public final class TrackGenerator {
             nearbyPillars.put(x, new PillarInfo(gy, h));
         }
 
+        if (GenDeterminismLog.ENABLED) {
+            StringBuilder cands = new StringBuilder();
+            for (var e : nearbyPillars.entrySet()) {
+                if (cands.length() > 0) cands.append(',');
+                cands.append(e.getKey()).append(':').append(e.getValue().groundY())
+                     .append(':').append(e.getValue().height());
+            }
+            GenDeterminismLog.log("pillars", "chunk=(%d,%d) probeZ=%d candidates=%s",
+                    chunkX, chunkZ, probeZ, cands.length() == 0 ? "-" : cands);
+        }
+
         for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
             PillarInfo info = nearbyPillars.get(worldX);
             if (info == null) continue;
@@ -1007,14 +1019,17 @@ public final class TrackGenerator {
                 // Record the short pillar so future stairs candidates honour
                 // the MIN_STAIRS_SPACING exclusion against it across chunks.
                 registry.recordShortPillar(worldX);
+                GenDeterminismLog.log("stairs", "worldX=%d result=short", worldX);
                 continue;
             }
 
             Boolean reservedSide = registry.tryReserveStairs(worldX, MIN_STAIRS_SPACING);
             if (reservedSide == null) {
                 LOGGER.debug("[stairs.elig] worldX={} reject=registry_conflict", worldX);
+                GenDeterminismLog.log("stairs", "worldX=%d result=conflict", worldX);
                 continue;
             }
+            GenDeterminismLog.log("stairs", "worldX=%d result=placed:%s", worldX, reservedSide ? "-Z" : "+Z");
 
             LOGGER.info("[stairs.elig] worldX={} chunk=({},{}) PASS height={} side={} → calling placeStairs",
                 worldX, chunkX, chunkZ, height, reservedSide ? "-Z" : "+Z");

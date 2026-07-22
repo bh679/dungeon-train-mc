@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.GenDeterminismLog;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
@@ -306,6 +307,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             // (so the features land correctly).
             boolean fullCore = isFullCoreChunk(cycle, netherDensity, chunkMinX, endBandActive);
 
+            if (GenDeterminismLog.ENABLED) {
+                GenDeterminismLog.log("core", "chunk=(%d,%d) bandCtxNull=%b ncbNull=%b netherLvlNull=%b fullCore=%b bedY=%d genSeed=%016x",
+                        cp.x, cp.z, bandCtx == null, bandCtx == null || bandCtx.netherCoreBiomes() == null,
+                        nether == null, fullCore, bedY, seed);
+            }
+
             // Prime heightmaps before decoration so the vanilla nether features see the real surface.
             // Only needed to feed decoration; on non-core chunks (no decoration) the terminal
             // primeHeightmaps below already produces the final heightmaps, so skip this pass there.
@@ -457,6 +464,15 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         }
         LOGGER.debug("[DungeonTrain] Decorated Nether core chunk {} with {} biome(s) ({}/{} features placed, band y{}..{})",
                 cp, biomes.size(), placed, featureIndex, coreBottom, coreTop);
+        if (GenDeterminismLog.ENABLED) {
+            StringBuilder biomeKeys = new StringBuilder();
+            for (Holder<Biome> b : biomes) {
+                if (biomeKeys.length() > 0) biomeKeys.append('+');
+                biomeKeys.append(b.unwrapKey().map(k -> k.location().getPath()).orElse("?"));
+            }
+            GenDeterminismLog.log("deco", "chunk=(%d,%d) biomes=%s decoSeed=%016x featureCount=%d placed=%d bedY=%d",
+                    cp.x, cp.z, biomeKeys, decoSeed, featureIndex, placed, bedY);
+        }
     }
 
     /**

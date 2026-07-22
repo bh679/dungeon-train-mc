@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
+import games.brennan.dungeontrain.worldgen.GenDeterminismLog;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
@@ -24,6 +25,7 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.ChunkEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 import java.util.Deque;
@@ -225,11 +227,22 @@ public final class CorridorCleanupEvents {
             if (chunk == null) continue;
             cleanCorridorChunk(chunk, level, cx, cz, dims, g, cycle, bandStartX);
             CLEANED.add(key);
+            GenDeterminismLog.log("sweep", "chunk=(%d,%d)", cx, cz);
             budget--;
             // Wall-clock cap (only after >=1 chunk, so forward progress is guaranteed): keep a single
             // tick from freezing on a burst of expensive fresh chunks. The rest stay queued.
             if (shouldStopDraining(System.nanoTime() - drainStartNanos)) break;
         }
+    }
+
+    /**
+     * Determinism diagnostics: how much of the sweep queue was left un-drained at shutdown.
+     * A non-zero count means the saved world contains un-swept corridor chunks whose spillover
+     * state is timing-dependent — the evidence the twin-run harness looks for.
+     */
+    @SubscribeEvent
+    public static void onServerStopping(ServerStoppingEvent event) {
+        GenDeterminismLog.log("sweep-final", "pending=%d cleaned=%d", PENDING.size(), CLEANED.size());
     }
 
     /**
