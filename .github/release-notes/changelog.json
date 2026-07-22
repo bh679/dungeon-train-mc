@@ -5339,9 +5339,9 @@
         "Popular books surface more often in loot, panned ones ride quieter"
       ],
       "date": "2026-07-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.492.0",
+      "released_at": "2026-07-22T14:34:05Z"
     },
     {
       "id": "placeholder-burn-wedge",
@@ -5351,9 +5351,9 @@
       "summary": "Fixed a wedge where chest books could get stuck as their built-in stand-in when the community pool had nothing new to offer \u2014 they now resolve properly (repeats allowed) and always burn after reading, like any other book of the train.",
       "highlights": [],
       "date": "2026-07-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.492.0",
+      "released_at": "2026-07-22T14:34:05Z"
     },
     {
       "id": "ai-language-label",
@@ -5365,9 +5365,9 @@
         "Human-reviewed languages keep the solid logo with no label"
       ],
       "date": "2026-07-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.492.0",
+      "released_at": "2026-07-22T14:34:05Z"
     },
     {
       "id": "worldgen-deterministic-seed",
@@ -5381,9 +5381,9 @@
         "Silent biome-fallback errors are now logged"
       ],
       "date": "2026-07-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.492.0",
+      "released_at": "2026-07-22T14:34:05Z"
     },
     {
       "id": "worldgen-band-early-outs",
@@ -5397,9 +5397,9 @@
       ],
       "pr": 819,
       "date": "2026-07-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.492.0",
+      "released_at": "2026-07-22T14:34:05Z"
     }
   ]
 }
