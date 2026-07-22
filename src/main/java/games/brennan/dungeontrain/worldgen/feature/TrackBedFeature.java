@@ -114,7 +114,8 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
             // side-stairs is written INTO neighbours by the overlapping chunk's decoration window, never
             // generated FROM an outside chunk), so rejecting here is behaviour-identical — it just skips
             // those no-op calls AND the UpsideDownBand SavedData lookups below.
-            if (chunkPos.getMinBlockZ() > g.trackZMax()) return false;
+            if (games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED
+                    && chunkPos.getMinBlockZ() > g.trackZMax()) return false;
 
             // Inside the upside-down band, its entry lead-in AND its exit crossfade the corridor is laid
             // AFTER the mirror/exit composition flips the column (WorldUpsideDownEvents →

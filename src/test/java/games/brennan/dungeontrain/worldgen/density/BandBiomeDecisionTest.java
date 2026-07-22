@@ -108,6 +108,22 @@ final class BandBiomeDecisionTest {
     }
 
     @Test
+    @DisplayName("A/B kill-switch OFF (baseline path) matches the reference too")
+    void killSwitchOffMatches() {
+        long seed = 0x1234_5678L;
+        games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED = false;
+        try {
+            for (int x = 960; x <= 2980; x += 8) {
+                assertEquals(reference(CYCLE, seed, 63, true, true, x, 150, 4),
+                        BandBiomeDecision.decide(CYCLE, seed, 63, true, true, x, 150, 4),
+                        "OFF-path mismatch at x=" + x);
+            }
+        } finally {
+            games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED = true;
+        }
+    }
+
+    @Test
     @DisplayName("null cycle → ORIGINAL (mixin's catch-all previously swallowed the NPE to original)")
     void nullCycleIsOriginal() {
         assertEquals(Result.ORIGINAL, BandBiomeDecision.decide(null, 1L, 63, true, true, 1500, 150, 0));

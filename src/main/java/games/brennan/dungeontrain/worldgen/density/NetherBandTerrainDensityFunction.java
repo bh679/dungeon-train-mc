@@ -120,7 +120,8 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
         if (memo.present[idx] && memo.key[idx] == ckey) {
             skip = memo.skip[idx];
             t = memo.target[idx];
-        } else if (!cycle.netherInfluence(worldX, NetherMountainTerrain.maxEdgeShift())) {
+        } else if (games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED
+                && !cycle.netherInfluence(worldX, NetherMountainTerrain.maxEdgeShift())) {
             // Off-band early-out: no x′ within the edge-wave margin can be in the nether segment, so
             // raises(wavyX(x)) is provably false — skip without paying the 4-octave wavyX noise.
             // Byte-identical to the full evaluation below (the predicate is a conservative superset,
@@ -206,7 +207,10 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
             // window is a strict superset of every X the batch can contain — false positives only ever
             // fall through to the exact per-sample path (never a wrong skip). Seam-safety is pinned by
             // the fillArray byte-identity test and the pre/post region-palette diff.
-            if (values.length > 0) {
+            // A/B kill-switch: with early-outs OFF this whole method degrades to the pre-change
+            // per-sample raise loop below (byte-identical output either way; only timing differs).
+            boolean earlyOuts = games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED;
+            if (earlyOuts && values.length > 0) {
                 int xFirst = contextProvider.forIndex(0).blockX();
                 int xLast = contextProvider.forIndex(values.length - 1).blockX();
                 int lo = Math.min(xFirst, xLast), hi = Math.max(xFirst, xLast);
@@ -223,14 +227,16 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
             for (int i = 0; i < values.length; i++) {
                 FunctionContext fc = contextProvider.forIndex(i);
                 int bx = fc.blockX();
-                int xi = bx & xMask;
-                byte state = (memoX[xi] == bx) ? memoSkip[xi] : 0;
-                if (state == 0) {
-                    state = inf.nether(bx, margin) ? (byte) 2 : (byte) 1;
-                    memoX[xi] = bx;
-                    memoSkip[xi] = state;
+                if (earlyOuts) {
+                    int xi = bx & xMask;
+                    byte state = (memoX[xi] == bx) ? memoSkip[xi] : 0;
+                    if (state == 0) {
+                        state = inf.nether(bx, margin) ? (byte) 2 : (byte) 1;
+                        memoX[xi] = bx;
+                        memoSkip[xi] = state;
+                    }
+                    if (state == 1) continue;
                 }
-                if (state == 1) continue;
                 values[i] = raise(memo, cycle, seed, seaLevel, ceiling, netherTop, baseRelief,
                         bx, fc.blockZ(), fc.blockY(), values[i]);
             }

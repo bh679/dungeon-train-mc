@@ -165,6 +165,28 @@ final class NetherBandTerrainDensityFunctionTest {
         }
     }
 
+    @Test
+    @DisplayName("A/B kill-switch OFF (baseline paths) is byte-identical too — the toggle changes timing only")
+    void killSwitchOffIsByteIdentical() {
+        long seed = 0x1234_5678L;
+        int seaLevel = 63, ceiling = 320, netherTop = 40, baseRelief = 100;
+        NetherBandContext.publish(new NetherBandContext(
+                true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null));
+        NetherBandTerrainDensityFunction df = new NetherBandTerrainDensityFunction(null);
+        games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED = false;
+        try {
+            for (int x = 1250; x <= 2000; x += 11) {
+                for (int y = 50; y <= 240; y += 30) {
+                    double base = (x * 7 + y) % 19 - 9;
+                    assertEquals(reference(CYCLE, seed, seaLevel, ceiling, netherTop, baseRelief, x, 3, y, base),
+                            df.raisedOrBase(x, 3, y, base), 0.0, "OFF-path mismatch at x=" + x + " y=" + y);
+                }
+            }
+        } finally {
+            games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED = true;
+        }
+    }
+
     // ---- fillArray path (the batch-invariant-hoisting refactor) ----------------------------------
 
     /** Deterministic per-sample child base, varied above/below the raise target so both {@code max} branches fire. */

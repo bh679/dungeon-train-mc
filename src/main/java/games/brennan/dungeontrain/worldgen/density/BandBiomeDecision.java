@@ -44,7 +44,9 @@ public final class BandBiomeDecision {
         if (cycle == null) return Result.ORIGINAL;
         if (blockY < seaLevel) return Result.ORIGINAL;                // natural cave biomes below sea
         // Off-band early-out — no waved or un-waved lookup at this X can land in either band.
-        if (!cycle.netherInfluence(blockX, NetherMountainTerrain.maxEdgeShift())
+        // Gated on the A/B kill-switch (/dungeontrain debug band-earlyout): OFF = pre-change path.
+        if (games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED
+                && !cycle.netherInfluence(blockX, NetherMountainTerrain.maxEdgeShift())
                 && !cycle.endSegmentInfluence(blockX)) {
             return Result.ORIGINAL;
         }
