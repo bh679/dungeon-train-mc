@@ -35,10 +35,12 @@ public abstract class LanguageSelectEntryLogoMixin {
     private static final int TEX = 64;
     /** Opacity for languages whose translation has not been human-reviewed. */
     private static final float UNREVIEWED_ALPHA = 0.35F;
-    /** Colour of the "AI" label drawn beside the icon for non-human-reviewed translations. */
-    private static final int AI_LABEL_COLOR = 0xFF55AAFF;
+    /** Colour of the "AI" label — blue, faded to the same ~35% alpha as the unreviewed logo. */
+    private static final int AI_LABEL_COLOR = 0x5955AAFF;
     /** Gap in px between the icon and the "AI" label. */
     private static final int AI_LABEL_GAP = 2;
+    /** Text scale for the "AI" label — smaller than the row's language name. */
+    private static final float AI_LABEL_SCALE = 0.75F;
 
     @Inject(
         method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIIIIIIZF)V",
@@ -66,9 +68,13 @@ public abstract class LanguageSelectEntryLogoMixin {
 
         if (!humanReviewed) {
             Font font = Minecraft.getInstance().font;
-            int labelX = x + size + AI_LABEL_GAP;
-            int labelY = top + (height - font.lineHeight) / 2 + 1;
-            g.drawString(font, "AI", labelX, labelY, AI_LABEL_COLOR, true);
+            float labelX = x + size + AI_LABEL_GAP;
+            float labelY = top + (height - font.lineHeight * AI_LABEL_SCALE) / 2.0F + 1.0F;
+            g.pose().pushPose();
+            g.pose().translate(labelX, labelY, 0.0F);
+            g.pose().scale(AI_LABEL_SCALE, AI_LABEL_SCALE, 1.0F);
+            g.drawString(font, "AI", 0, 0, AI_LABEL_COLOR, true);
+            g.pose().popPose();
         }
     }
 }
