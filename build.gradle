@@ -307,6 +307,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         mod_version                : mod_version,
         mod_authors                : mod_authors,
         mod_description            : mod_description,
+        update_json_url            : update_json_url,
         git_branch                 : gitBranch,
         sable_mod_version          : sable_mod_version,
         adventureitemnames_version : adventureitemnames_version,

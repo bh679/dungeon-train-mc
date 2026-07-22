@@ -1,0 +1,10 @@
+{
+  "homepage": "https://github.com/bh679/dungeon-train-mc",
+  "1.21.1": {
+    "0.485.0": "https://github.com/bh679/dungeon-train-mc/releases/tag/v0.485.0"
+  },
+  "promos": {
+    "1.21.1-latest": "0.485.0",
+    "1.21.1-recommended": "0.485.0"
+  }
+}
