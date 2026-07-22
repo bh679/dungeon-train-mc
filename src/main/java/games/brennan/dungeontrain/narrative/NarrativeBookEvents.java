@@ -306,9 +306,13 @@ public final class NarrativeBookEvents {
         // fall through to the shared-found branch for the same held-marker + author greeting a natively
         // discovered book gets. This is the IMMEDIATE path; the throttled inventory sweep in
         // {@link #onPlayerTick} is the safety net for every other way a book can be acquired.
+        // On FAILURE (relay cold / window refresh pending / pool empty) don't bail: the player is still
+        // holding a real, readable built-in book, so fall through and let the random-book branch below
+        // give it the normal seen-tracking + held marker — it must burn like any random book. The sweep
+        // keeps retrying the upgrade; a later successful resolve swaps identity to shared-found anyway.
+        // (Previously an unresolved placeholder returned here unmarked and could never burn.)
         if (PlayerBookPendingTag.isPending(stack)) {
-            if (!resolvePending(player, stack)) return; // pool cold/disabled — retry on a later hold or sweep
-            // fall through — the shared-found branch below marks held + greets the author.
+            resolvePending(player, stack);
         }
 
         // Discovered community books: no content-swap needed (unlike random books below) — just
@@ -409,6 +413,16 @@ public final class NarrativeBookEvents {
      * marker for a later retry) when discovery is off or the relay pool is empty/unreachable — the only
      * cases where keeping the built-in fallback is correct.
      */
+    /**
+     * Minimum gap between exhausted-window pool refreshes fired from {@link #resolvePending}. Long
+     * enough that a completed nothing-new refresh stops blocking resolution (the selector relaxes to
+     * a repeat instead), short enough that a genuinely fresh relay tier is picked up promptly.
+     */
+    private static final long EXHAUSTED_REFRESH_RETRY_MS = 10_000;
+
+    /** Last time an exhausted-window refresh was fired (server thread only). */
+    private static long lastExhaustedRefreshMs = 0;
+
     private static boolean resolvePending(ServerPlayer player, ItemStack stack) {
         if (!SharedBookGate.canDiscover() || SharedBookPool.isEmpty()) return false;
         ServerLevel ow = overworldOf(player);
@@ -423,9 +437,21 @@ public final class NarrativeBookEvents {
         // A failed/unreachable fetch clears the in-flight flag, so this can never wedge: the next sweep
         // falls through and serves a repeat rather than leaving a built-in book forever.
         if (windowExhaustedFor(run)) {
-            SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()),
-                    WorldLanguage.hostUuidConsented(player.getServer()));
+            // Defer only while a fresh window is genuinely on its way. Refresh at most once per
+            // EXHAUSTED_REFRESH_RETRY_MS: when a COMPLETED refresh brought nothing new (a small or
+            // fully-served pool — the relay has no fresh tier to give), fall through so the selector
+            // can relax to a repeat. Previously this re-fired a fetch and deferred on EVERY sweep,
+            // wedging pending placeholders forever as unburnable built-in books once the whole pool
+            // had been served (observed against a 3-book test pool).
             if (SharedBookPool.isRefreshInFlight()) return false;
+            long now = System.currentTimeMillis();
+            if (now - lastExhaustedRefreshMs > EXHAUSTED_REFRESH_RETRY_MS) {
+                lastExhaustedRefreshMs = now;
+                SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()),
+                        WorldLanguage.hostUuidConsented(player.getServer()));
+                if (SharedBookPool.isRefreshInFlight()) return false;
+            }
+            // Recent refresh already completed with nothing new — fall through; selector relaxes.
         }
         SharedBookSelector.PlayerContext ctx = new SharedBookSelector.PlayerContext(
             // THIS holder's locale, not the world/host language: the pool is host-scoped at fetch time,
@@ -451,10 +477,16 @@ public final class NarrativeBookEvents {
         SharedBookPool.PoolBook book = chosen.get();
         ItemStack shared = SharedBookPool.buildStack(book);
         stack.set(DataComponents.WRITTEN_BOOK_CONTENT, shared.get(DataComponents.WRITTEN_BOOK_CONTENT));
-        RandomBookTag.clearIdentity(stack);   // drop stale dt_random_book* keys
+        RandomBookTag.clearIdentity(stack);   // drop stale dt_random_book* keys (incl. any held marker)
         PlayerBookPendingTag.clear(stack);    // resolved — no longer pending
         SharedBookFoundTag.stamp(stack);      // it's now a discovered player book
         SharedBookReadTag.stampId(stack, book.id());
+        // If this stack is being resolved while ALREADY in a hand slot (equipment-change path, or the
+        // sweep catching a held book), no further equipment change will fire to stamp the shared-found
+        // held marker — stamp it now so the burn-after-reading flow works on this very hold.
+        if (stack == player.getMainHandItem() || stack == player.getOffhandItem()) {
+            SharedBookFoundTag.markHeld(stack);
+        }
         run.markServed(book.id(), run.travelledCarriageIndex()); // per-life dedup + far-behind escape
         LOGGER.info("[DungeonTrain] PlayerBook: resolved pending placeholder to community book {} (for {})",
             book.id(), player.getName().getString());
