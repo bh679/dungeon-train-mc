@@ -67,7 +67,9 @@ public final class OfficialLinksFetcher {
                             Map<String, String> links = parse(resp.body());
                             if (links != null) {
                                 OfficialLinks.accept(links);
-                                LOGGER.debug("[DungeonTrain] official links updated from relay ({} keys)", links.size());
+                                // INFO on purpose: one line per session, and the overlay silently changes
+                                // where outbound buttons point — worth being able to see in a player log.
+                                LOGGER.info("[DungeonTrain] official links updated from relay ({} keys)", links.size());
                             } else {
                                 OfficialLinks.markFailed();
                             }
