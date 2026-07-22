@@ -223,7 +223,11 @@ public final class TunnelPlacer {
         // No ShipFilterProcessor — no ships at chunkgen.
         if (extraProcessor != null) settings.addProcessor(extraProcessor);
         if (mirrorX) settings.setMirror(Mirror.FRONT_BACK);
-        template.placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+        // Position-pure random: only consumed for container LootTableSeeds (see StampRandom) —
+        // the shared level random made twin same-seed runs roll different chest loot.
+        template.placeInWorld(level, origin, origin, settings,
+            games.brennan.dungeontrain.worldgen.StampRandom.at(level.getSeed(), origin),
+            Block.UPDATE_CLIENTS);
         anchorAboveFootprintWorldgen(level, origin);
     }
 

@@ -67,34 +67,29 @@ public final class StairsRegistryData extends SavedData {
     }
 
     /**
-     * Atomic reserve + side assignment. Checks that no prior stairs AND no
-     * recorded short pillar lies within {@code minSpacing} X of
-     * {@code worldX}. If clear, records {@code worldX} with an alternated
-     * side and returns it; otherwise returns {@code null} and the caller
-     * skips placement.
+     * Whether any recorded stairs lies within {@code radius} blocks of {@code worldX} along X.
+     * Used as a compat/no-double-placement guard by the deterministic anchor-grid placement in
+     * {@code TrackGenerator}: in fresh worlds anchor-chosen positions are always ≥ 60 apart so
+     * this never blocks; in pre-anchor worlds it defers to the racing-era entries persisted in
+     * the save, so frontier chunks never place stairs next to legacy ones.
      */
-    public synchronized Boolean tryReserveStairs(int worldX, int minSpacing) {
-        Integer prevStairsX = stairs.floorKey(worldX);
-        if (prevStairsX != null && worldX - prevStairsX < minSpacing) return null;
-        Integer nextStairsX = stairs.ceilingKey(worldX);
-        if (nextStairsX != null && nextStairsX - worldX < minSpacing) return null;
+    public synchronized boolean hasStairsWithin(int worldX, int radius) {
+        Integer prev = stairs.floorKey(worldX);
+        if (prev != null && worldX - prev < radius) return true;
+        Integer next = stairs.ceilingKey(worldX);
+        return next != null && next - worldX < radius;
+    }
 
-        Integer prevShortX = shortPillars.floor(worldX);
-        if (prevShortX != null && worldX - prevShortX < minSpacing) return null;
-        Integer nextShortX = shortPillars.ceiling(worldX);
-        if (nextShortX != null && nextShortX - worldX < minSpacing) return null;
-
-        // Side alternation — pick side opposite the closest prior stairs.
-        // Falls back to ceiling, then to false (= +Z) for the very first
-        // stairs in a fresh world.
-        boolean newSide;
-        if (prevStairsX != null) newSide = !stairs.get(prevStairsX);
-        else if (nextStairsX != null) newSide = !stairs.get(nextStairsX);
-        else newSide = false;
-
-        stairs.put(worldX, newSide);
-        setDirty();
-        return newSide;
+    /**
+     * Record placed stairs at {@code worldX} with the given side ({@code true} = -Z). Unlike the
+     * pre-determinism {@code tryReserveStairs}, this is a pure record — NOT an arbiter. Placement
+     * decisions are made chunk-locally from the seed-phased anchor grid (order-independent by
+     * construction); the registry persists what WAS placed for the compat guard above and any
+     * runtime queries. Idempotent for the same X.
+     */
+    public synchronized void recordStairs(int worldX, boolean side) {
+        Boolean prev = stairs.put(worldX, side);
+        if (prev == null || prev != side) setDirty();
     }
 
     /**

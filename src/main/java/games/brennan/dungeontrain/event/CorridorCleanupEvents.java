@@ -97,6 +97,8 @@ import java.util.function.Predicate;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CorridorCleanupEvents {
 
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
     /**
      * Upper bound on corridor chunks cleaned per server tick. The actual budget is
      * {@link #drainBudget(int)} of the pending-queue depth, so a burst of freshly generated corridor
@@ -236,13 +238,52 @@ public final class CorridorCleanupEvents {
     }
 
     /**
-     * Determinism diagnostics: how much of the sweep queue was left un-drained at shutdown.
-     * A non-zero count means the saved world contains un-swept corridor chunks whose spillover
-     * state is timing-dependent — the evidence the twin-run harness looks for.
+     * Drain the sweep queue FULLY at shutdown — no per-tick cap, no wall-clock budget. The
+     * per-tick drain is time-budgeted to protect frame pacing, which means a server that stops
+     * shortly after loading chunks can save un-swept corridor chunks; whether a given chunk got
+     * swept before the stop is wall-clock dependent, i.e. per-run nondeterministic on twin
+     * same-seed runs. Draining here makes the SAVED world a fixed point for cleanly-stopped
+     * servers: every enqueued corridor chunk is swept exactly once before regions flush. (The
+     * sweep stays <em>convergent</em>, not generation-deterministic — a crash / kill -9 can
+     * still persist transient spillover, which the next load's re-enqueue repairs.)
+     *
+     * <p>Bounded work: the queue only ever holds corridor-overlapping loaded chunks (a few
+     * hundred at worst), each a narrow bounded region scan — well under a second total.
+     * {@code getChunkNow} still null-skips anything already unloaded; those chunks were never
+     * swept-marked, so their next load re-enqueues them.</p>
      */
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
         GenDeterminismLog.log("sweep-final", "pending=%d cleaned=%d", PENDING.size(), CLEANED.size());
+        if (PENDING.isEmpty()) return;
+
+        ServerLevel overworld = event.getServer().overworld();
+        if (overworld == null) return;
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        ServerLevel level = event.getServer().getLevel(data.startingDimension().levelKey());
+        if (level == null) return;
+
+        CarriageDims dims = data.dims();
+        TrackGeometry g = TrackGeometry.from(dims, data.getTrainY());
+        long bandStartX = NetherBand.startX(overworld);
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+
+        int drained = 0;
+        Long key;
+        while ((key = PENDING.poll()) != null) {
+            if (CLEANED.contains(key)) continue;
+            int cx = ChunkPos.getX(key);
+            int cz = ChunkPos.getZ(key);
+            LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
+            if (chunk == null) continue;
+            cleanCorridorChunk(chunk, level, cx, cz, dims, g, cycle, bandStartX);
+            CLEANED.add(key);
+            GenDeterminismLog.log("sweep", "chunk=(%d,%d)", cx, cz);
+            drained++;
+        }
+        if (drained > 0) {
+            LOGGER.info("[DungeonTrain] corridor sweep drained {} pending chunk(s) at shutdown", drained);
+        }
     }
 
     /**

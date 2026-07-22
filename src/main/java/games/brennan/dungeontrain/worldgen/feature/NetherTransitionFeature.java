@@ -94,6 +94,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /** First-5 reporter for the decoration-context tripwire (should never fire post-#818). */
+    private static final games.brennan.dungeontrain.util.LogFirstN CONTEXT_TRIPWIRE =
+        new games.brennan.dungeontrain.util.LogFirstN(5);
+
     /** Nether-space Y mapped onto the track bed (the open Nether layer sits around here). */
     private static final int NETHER_CENTER_Y = 40;
     /** Nether-space Y rows to sample for the core terrain. */
@@ -307,6 +311,21 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             // (so the features land correctly).
             boolean fullCore = isFullCoreChunk(cycle, netherDensity, chunkMinX, endBandActive);
 
+            // Determinism tripwire — should be unreachable since #818 publishes the band context on
+            // LevelEvent.Load (before any chunk gen). If a band chunk ever generates while the
+            // snapshot or the Nether level is unavailable, decorating it would use a
+            // timing-dependent fallback biome list, i.e. NON-deterministic decoration. A
+            // reproducibly bald core chunk beats a randomly decorated one, so skip decoration and
+            // shout: the log line, not the skip, is the point.
+            if (fullCore && (bandCtx == null || bandCtx.netherCoreBiomes() == null)) {
+                CONTEXT_TRIPWIRE.error(LOGGER,
+                    "[DungeonTrain] band chunk " + cp + " reached decoration with no NetherBandContext"
+                        + " snapshot (bandCtxNull=" + (bandCtx == null) + ") — skipping core decoration"
+                        + " for determinism; indicates a context-publish regression (see #818)",
+                    null);
+                fullCore = false;
+            }
+
             if (GenDeterminismLog.ENABLED) {
                 GenDeterminismLog.log("core", "chunk=(%d,%d) bandCtxNull=%b ncbNull=%b netherLvlNull=%b fullCore=%b bedY=%d genSeed=%016x",
                         cp.x, cp.z, bandCtx == null, bandCtx == null || bandCtx.netherCoreBiomes() == null,
@@ -492,6 +511,13 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             }
         }
         if (out.isEmpty()) {
+            // Loud, not silent: post-#818 the caller's tripwire guarantees a live snapshot here, so an
+            // empty sample means the sampler itself returned null biomes — worth 5 log lines, because a
+            // run-varying fallback list would shift every feature seed in the chunk (determinism bug).
+            CONTEXT_TRIPWIRE.error(LOGGER,
+                "[DungeonTrain] coreChunkBiomes at " + cp + " resolved no biomes from the band snapshot"
+                    + " — falling back to nether_wastes-only decoration",
+                null);
             try {
                 out.add(server.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.NETHER_WASTES));
             } catch (Throwable ignored) {
