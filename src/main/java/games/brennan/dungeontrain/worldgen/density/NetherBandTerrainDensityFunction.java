@@ -45,6 +45,14 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
     private static final double MAX_TARGET_TOP_BOUND = 512.0;
     private static final double MIN_Y_BOUND = -64.0;
 
+    /**
+     * Extra X-window slack (each side) for the whole-batch reject in {@link #fillArray}, on top of the
+     * probed first/last-sample bounds and the edge-wave margin. A NoiseChunk batch spans at most one
+     * chunk + one interpolation cell (16 + cellWidth ≤ 16 → 32 blocks); 64 is a 2× safety factor over
+     * that worst case. Oversizing only costs skipped optimisation near band edges — never correctness.
+     */
+    private static final int BATCH_X_SLACK = 64;
+
     private final DensityFunction wrapped;
 
     public NetherBandTerrainDensityFunction(DensityFunction wrapped) {
@@ -187,6 +195,28 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
             // exactly what raise() returns for an off-band column.
             WorldGenCycle.Influence inf = cycle.influence();
             int margin = NetherMountainTerrain.maxEdgeShift();
+            // Whole-batch O(1) reject — the load-bearing early-out. Measured floor of the per-sample
+            // loop below is ~2 ms/chunk of pure forIndex()/blockX() virtual-call overhead even when
+            // every sample skips, so off-band chunks (the ride's majority) must skip the LOOP, not the
+            // samples. This DF is installed at runtime on the noise router and only ever driven by
+            // NoiseChunk during chunk gen, whose batches span one chunk plus at most one interpolation
+            // cell in X (16 + cellWidth ≤ 16 → ≤ 32 blocks); the first and last sample bound the
+            // per-layer X range under its Y-outer/X-mid/Z-inner order. Both endpoints are probed and
+            // BATCH_X_SLACK doubles the worst-case span on top of the edge-wave margin, so the reject
+            // window is a strict superset of every X the batch can contain — false positives only ever
+            // fall through to the exact per-sample path (never a wrong skip). Seam-safety is pinned by
+            // the fillArray byte-identity test and the pre/post region-palette diff.
+            if (values.length > 0) {
+                int xFirst = contextProvider.forIndex(0).blockX();
+                int xLast = contextProvider.forIndex(values.length - 1).blockX();
+                int lo = Math.min(xFirst, xLast), hi = Math.max(xFirst, xLast);
+                int center = lo + (hi - lo) / 2;
+                int half = (hi - lo + 1) / 2;
+                if (!inf.nether(center, half + margin + BATCH_X_SLACK)) {
+                    GenProfiler.add(GenProfiler.Bucket.DF, t0);
+                    return;                                   // whole batch provably off-band
+                }
+            }
             final int xMask = 63;
             int[] memoX = new int[xMask + 1];
             byte[] memoSkip = new byte[xMask + 1];            // 0 = empty, 1 = skip, 2 = evaluate

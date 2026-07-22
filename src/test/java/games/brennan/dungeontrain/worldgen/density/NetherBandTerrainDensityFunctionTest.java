@@ -219,13 +219,15 @@ final class NetherBandTerrainDensityFunctionTest {
         NetherBandContext.publish(new NetherBandContext(
                 true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null));
 
-        // Build full-cell batches (4×4 columns × several Y layers, Y-outer/X-mid/Z-inner) at cell origins that
-        // span leading OW → nether band → trailing OW, so batches are fully-off-band, straddling, and fully-in-band.
-        List<Sample> samples = new ArrayList<>();
-        // band ≈ world-X [1300,1960); 1100/2400 are deep off-band (whole-cell curXSkip fast path),
-        // 1296/1952 straddle an edge (per-X mix of skip and raise inside one cell).
+        // One fillArray call PER cell (matching the real caller: a NoiseChunk batch never spans more
+        // than one chunk), each 4×4 columns × several Y layers in Y-outer/X-mid/Z-inner order. Origins
+        // span leading OW → nether band → trailing OW: 1100/2400 are deep off-band (the whole-batch
+        // O(1) reject fires — child values must come through untouched), 1264/1296/1952 sit near or on
+        // an edge (reject must NOT fire; per-X mix of skip and raise inside one cell), 1600/1900 are
+        // fully in-band.
         int[] cellOriginX = {1100, 1264, 1296, 1328, 1600, 1900, 1952, 2400};
         for (int ox : cellOriginX) {
+            List<Sample> samples = new ArrayList<>();
             for (int y = 200; y >= 40; y -= 8) {                     // Y-outer, descending (matches fillAllDirectly)
                 for (int dx = 0; dx < 4; dx++) {                     // X-mid
                     for (int dz = 0; dz < 4; dz++) {                 // Z-inner
@@ -233,18 +235,17 @@ final class NetherBandTerrainDensityFunctionTest {
                     }
                 }
             }
-        }
+            NetherBandTerrainDensityFunction df = new NetherBandTerrainDensityFunction(new BaseChild(samples));
+            double[] values = new double[samples.size()];
+            df.fillArray(values, new CellProvider(samples));
 
-        NetherBandTerrainDensityFunction df = new NetherBandTerrainDensityFunction(new BaseChild(samples));
-        double[] values = new double[samples.size()];
-        df.fillArray(values, new CellProvider(samples));
-
-        for (int i = 0; i < samples.size(); i++) {
-            Sample s = samples.get(i);
-            double expected = reference(CYCLE, seed, seaLevel, ceiling, netherTop, baseRelief,
-                    s.x(), s.z(), s.y(), childBase(s.x(), s.y(), s.z()));
-            assertEquals(expected, values[i], 0.0,
-                    "fillArray mismatch at x=" + s.x() + " z=" + s.z() + " y=" + s.y());
+            for (int i = 0; i < samples.size(); i++) {
+                Sample s = samples.get(i);
+                double expected = reference(CYCLE, seed, seaLevel, ceiling, netherTop, baseRelief,
+                        s.x(), s.z(), s.y(), childBase(s.x(), s.y(), s.z()));
+                assertEquals(expected, values[i], 0.0,
+                        "fillArray mismatch at ox=" + ox + " x=" + s.x() + " z=" + s.z() + " y=" + s.y());
+            }
         }
     }
 
