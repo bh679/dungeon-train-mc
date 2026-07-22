@@ -5354,6 +5354,36 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ai-language-label",
+      "version": "0.490.0",
+      "type": "feat",
+      "title": "AI label on machine-translated languages",
+      "summary": "The language-selection list now marks Dungeon Train translations that have not been human-reviewed with a small faded blue AI label next to the Dungeon Train logo, so you can tell at a glance which translations are machine-generated.",
+      "highlights": [
+        "Human-reviewed languages keep the solid logo with no label"
+      ],
+      "date": "2026-07-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "worldgen-deterministic-seed",
+      "version": "0.491.0",
+      "type": "fix",
+      "title": "Same seed, same world: band layout is now seed-deterministic",
+      "summary": "Creating a world with a fixed seed now always produces the same nether-band mountains, biome front, and band layout \u2014 previously each fresh world rolled its own internal layout seed even with the seed box filled in. The band terrain system also now activates before the very first spawn chunks generate, so early chunks can no longer miss band biomes, and any biome-override error is now logged instead of silently baking the wrong biome. Existing worlds are unaffected.",
+      "highlights": [
+        "Fixed-seed worlds now reproduce the same band terrain and biome front",
+        "Band biomes can no longer be missing from the first-generated spawn chunks",
+        "Silent biome-fallback errors are now logged"
+      ],
+      "date": "2026-07-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
