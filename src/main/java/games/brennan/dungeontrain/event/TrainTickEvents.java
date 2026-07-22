@@ -152,6 +152,15 @@ public final class TrainTickEvents {
      */
     private static final int MIRROR_RECONCILE_PERIOD_TICKS = 100;
 
+    /**
+     * Debug A/B switch (default {@code false} = the ready-set drain). When {@code true}, the drain reverts
+     * to the pre-fix behaviour — sort + scan the ENTIRE pending set every tick, leaving neighbour-incomplete
+     * frontier chunks in the queue to be re-checked forever. Flip live with
+     * {@code /dungeontrain debug mirror-drain legacy|ready|status} to compare {@code [ud-drain] ms=} in the
+     * same world/spot (like {@code physicsfreeze}). Not persisted; testing aid only.
+     */
+    public static volatile boolean mirrorDrainLegacy = false;
+
     private static int tickCounter = 0;
 
     /** Min ticks between two {@link #logBreaks} lines, so ploughing a wall can't flood the log. 20t = 1s. */
@@ -418,21 +427,27 @@ public final class TrainTickEvents {
         }
         if (pending.isEmpty()) { logDrain(level, applied, pending, ready, t0); return applied; }
 
-        // (1b) MANDATORY reconcile (insurance): if the READY set has drained empty but pending chunks
-        // remain, re-scan pending once for any now-appliable chunk the Load-driven promotion may have
-        // missed (defensive against a chunk that is loaded but whose ChunkEvent.Load we didn't observe).
-        // Rare + only-when-idle → ~1% of the old every-tick full scan. This is why the frontier ring no
-        // longer costs per-tick CPU yet can never be permanently stranded.
-        if (ready.isEmpty() && level.getGameTime() % MIRROR_RECONCILE_PERIOD_TICKS == 0) {
-            for (Long key : pending) {
-                if (WorldUpsideDownEvents.neighboursFull(level, ChunkPos.getX(key), ChunkPos.getZ(key))) {
-                    data.promoteMirrorChunk(key);
+        // Debug A/B: legacy mode drains the full pending set (pre-fix behaviour) for direct comparison.
+        boolean legacy = mirrorDrainLegacy;
+
+        if (!legacy) {
+            // (1b) MANDATORY reconcile (insurance): if the READY set has drained empty but pending chunks
+            // remain, re-scan pending once for any now-appliable chunk the Load-driven promotion may have
+            // missed (defensive against a chunk that is loaded but whose ChunkEvent.Load we didn't observe).
+            // Rare + only-when-idle → ~1% of the old every-tick full scan. This is why the frontier ring no
+            // longer costs per-tick CPU yet can never be permanently stranded.
+            if (ready.isEmpty() && level.getGameTime() % MIRROR_RECONCILE_PERIOD_TICKS == 0) {
+                for (Long key : pending) {
+                    if (WorldUpsideDownEvents.neighboursFull(level, ChunkPos.getX(key), ChunkPos.getZ(key))) {
+                        data.promoteMirrorChunk(key);
+                    }
                 }
             }
+            if (ready.isEmpty()) { logDrain(level, applied, pending, ready, t0); return applied; }
         }
-        if (ready.isEmpty()) { logDrain(level, applied, pending, ready, t0); return applied; }
 
-        // (2) Budgeted drain of the READY set only (never the un-appliable frontier), nearest-first by the
+        // (2) Budgeted drain — the READY set (fast path) or the full pending set (legacy A/B) — nearest-first
+        // by the
         // first train's footprint centre (typically one train; the backstop already covers every train's
         // own path, so ordering only affects scenery smoothness).
         double refX = 0, refZ = 0;
@@ -454,7 +469,7 @@ public final class TrainTickEvents {
                 haveRef = true;
             }
         }
-        Long[] keys = ready.toArray(new Long[0]);
+        Long[] keys = (legacy ? pending : ready).toArray(new Long[0]);
         if (haveRef) {
             final double fx = refX, fz = refZ;
             java.util.Arrays.sort(keys, java.util.Comparator.comparingDouble(k -> {
@@ -472,7 +487,10 @@ public final class TrainTickEvents {
             LevelChunk chunk = cache.getChunkNow(cx, cz);
             if (chunk == null) { data.removeMirrorChunk(key); continue; }                 // unloaded → reload re-enqueues
             if (!chunk.hasData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get())) { data.removeMirrorChunk(key); continue; } // already applied (e.g. backstop)
-            if (!WorldUpsideDownEvents.neighboursFull(level, cx, cz)) { data.demoteMirrorChunk(key); continue; } // neighbour unloaded since promotion → wait
+            if (!WorldUpsideDownEvents.neighboursFull(level, cx, cz)) {
+                if (!legacy) data.demoteMirrorChunk(key);  // ready path: neighbour unloaded since promotion → wait
+                continue;                                  // legacy path: leave in pending, re-check next tick (the pre-fix waste)
+            }
             WorldUpsideDownEvents.applyMirrorAndResend(level, chunk);
             data.removeMirrorChunk(key);
             applied++;
