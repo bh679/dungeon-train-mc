@@ -5384,6 +5384,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "worldgen-band-early-outs",
+      "version": "0.492.0",
+      "type": "perf",
+      "title": "Faster world generation between special zones",
+      "summary": "The train's world generator now skips its special-zone terrain work (nether mountains, biome forcing, track-bed checks) on chunks that are provably outside those zones \u2014 most of the ride. Chunk streaming in the overworld stretches costs roughly a third less server time, so long rides stay smoother, with terrain byte-identical to before.",
+      "highlights": [
+        "Overworld gaps between zones generate ~25-40% faster; upside-down band ~38% faster",
+        "Terrain and biomes are unchanged everywhere \u2014 existing worlds continue seamlessly"
+      ],
+      "pr": 819,
+      "date": "2026-07-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
