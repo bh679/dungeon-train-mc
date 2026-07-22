@@ -115,6 +115,78 @@ final class NetherBandTerrainDensityFunctionTest {
         assertEquals(-3.25, df.raisedOrBase(1500, 0, 100, -3.25), 0.0);
     }
 
+    @Test
+    @DisplayName("early-out predicate: byte-identical across the WHOLE period + stride-1 band edges, multiple z and seeds")
+    void earlyOutIsByteIdenticalAcrossPeriodAndEdges() {
+        // Guards the netherInfluence fast path added to raise()/fillArray: a non-conservative window
+        // would seam terrain exactly at a band edge, so the edges get stride-1 coverage over
+        // ±(maxEdgeShift + 2) while the rest of the period is swept coarser. Two seeds so the edge
+        // wave (seed-dependent) can't accidentally align with the window on one lucky seed.
+        int seaLevel = 63, ceiling = 320, netherTop = 40, baseRelief = 100;
+        int margin = NetherMountainTerrain.maxEdgeShift();
+        long period = CYCLE.period();                                   // 1940 for this geometry
+        long anchor = 1000L;
+        // Nether band world-X [1300, 1960): stride-1 windows around both edges, ±(margin+2).
+        int[][] denseEdges = {
+                {1300 - (margin + 2), 1300 + (margin + 2)},
+                {1960 - (margin + 2), 1960 + (margin + 2)},
+        };
+        for (long seed : new long[] {0x1234_5678L, 0xDEAD_BEEFL}) {
+            NetherBandContext.publish(new NetherBandContext(
+                    true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null));
+            NetherBandTerrainDensityFunction df = new NetherBandTerrainDensityFunction(null);
+            // Whole-period sweep (coarse stride, prime so it doesn't sync with chunk/quart alignment).
+            for (long lx = anchor - 40; lx <= anchor + period + 40; lx += 3) {
+                int x = (int) lx;
+                for (int z = -12; z <= 12; z += 6) {
+                    for (int y = 50; y <= 240; y += 38) {
+                        double base = ((x * 31 + z) * 7 + y) % 23 - 11;
+                        assertEquals(
+                                reference(CYCLE, seed, seaLevel, ceiling, netherTop, baseRelief, x, z, y, base),
+                                df.raisedOrBase(x, z, y, base), 0.0,
+                                "period sweep mismatch at x=" + x + " z=" + z + " y=" + y + " seed=" + seed);
+                    }
+                }
+            }
+            // Stride-1 edge windows — the exact stretch where a bad predicate would seam.
+            for (int[] edge : denseEdges) {
+                for (int x = edge[0]; x <= edge[1]; x++) {
+                    for (int z = -16; z <= 16; z += 4) {
+                        for (int y = 40; y <= 250; y += 10) {
+                            double base = ((x * 31 + z) * 7 + y) % 23 - 11;
+                            assertEquals(
+                                    reference(CYCLE, seed, seaLevel, ceiling, netherTop, baseRelief, x, z, y, base),
+                                    df.raisedOrBase(x, z, y, base), 0.0,
+                                    "edge mismatch at x=" + x + " z=" + z + " y=" + y + " seed=" + seed);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("A/B kill-switch OFF (baseline paths) is byte-identical too — the toggle changes timing only")
+    void killSwitchOffIsByteIdentical() {
+        long seed = 0x1234_5678L;
+        int seaLevel = 63, ceiling = 320, netherTop = 40, baseRelief = 100;
+        NetherBandContext.publish(new NetherBandContext(
+                true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null));
+        NetherBandTerrainDensityFunction df = new NetherBandTerrainDensityFunction(null);
+        games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED = false;
+        try {
+            for (int x = 1250; x <= 2000; x += 11) {
+                for (int y = 50; y <= 240; y += 30) {
+                    double base = (x * 7 + y) % 19 - 9;
+                    assertEquals(reference(CYCLE, seed, seaLevel, ceiling, netherTop, baseRelief, x, 3, y, base),
+                            df.raisedOrBase(x, 3, y, base), 0.0, "OFF-path mismatch at x=" + x + " y=" + y);
+                }
+            }
+        } finally {
+            games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED = true;
+        }
+    }
+
     // ---- fillArray path (the batch-invariant-hoisting refactor) ----------------------------------
 
     /** Deterministic per-sample child base, varied above/below the raise target so both {@code max} branches fire. */
@@ -169,11 +241,15 @@ final class NetherBandTerrainDensityFunctionTest {
         NetherBandContext.publish(new NetherBandContext(
                 true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null));
 
-        // Build full-cell batches (4×4 columns × several Y layers, Y-outer/X-mid/Z-inner) at cell origins that
-        // span leading OW → nether band → trailing OW, so batches are fully-off-band, straddling, and fully-in-band.
-        List<Sample> samples = new ArrayList<>();
-        int[] cellOriginX = {1264, 1296, 1328, 1600, 1900, 1952};   // band ≈ world-X [1300,1960)
+        // One fillArray call PER cell (matching the real caller: a NoiseChunk batch never spans more
+        // than one chunk), each 4×4 columns × several Y layers in Y-outer/X-mid/Z-inner order. Origins
+        // span leading OW → nether band → trailing OW: 1100/2400 are deep off-band (the whole-batch
+        // O(1) reject fires — child values must come through untouched), 1264/1296/1952 sit near or on
+        // an edge (reject must NOT fire; per-X mix of skip and raise inside one cell), 1600/1900 are
+        // fully in-band.
+        int[] cellOriginX = {1100, 1264, 1296, 1328, 1600, 1900, 1952, 2400};
         for (int ox : cellOriginX) {
+            List<Sample> samples = new ArrayList<>();
             for (int y = 200; y >= 40; y -= 8) {                     // Y-outer, descending (matches fillAllDirectly)
                 for (int dx = 0; dx < 4; dx++) {                     // X-mid
                     for (int dz = 0; dz < 4; dz++) {                 // Z-inner
@@ -181,18 +257,17 @@ final class NetherBandTerrainDensityFunctionTest {
                     }
                 }
             }
-        }
+            NetherBandTerrainDensityFunction df = new NetherBandTerrainDensityFunction(new BaseChild(samples));
+            double[] values = new double[samples.size()];
+            df.fillArray(values, new CellProvider(samples));
 
-        NetherBandTerrainDensityFunction df = new NetherBandTerrainDensityFunction(new BaseChild(samples));
-        double[] values = new double[samples.size()];
-        df.fillArray(values, new CellProvider(samples));
-
-        for (int i = 0; i < samples.size(); i++) {
-            Sample s = samples.get(i);
-            double expected = reference(CYCLE, seed, seaLevel, ceiling, netherTop, baseRelief,
-                    s.x(), s.z(), s.y(), childBase(s.x(), s.y(), s.z()));
-            assertEquals(expected, values[i], 0.0,
-                    "fillArray mismatch at x=" + s.x() + " z=" + s.z() + " y=" + s.y());
+            for (int i = 0; i < samples.size(); i++) {
+                Sample s = samples.get(i);
+                double expected = reference(CYCLE, seed, seaLevel, ceiling, netherTop, baseRelief,
+                        s.x(), s.z(), s.y(), childBase(s.x(), s.y(), s.z()));
+                assertEquals(expected, values[i], 0.0,
+                        "fillArray mismatch at ox=" + ox + " x=" + s.x() + " z=" + s.z() + " y=" + s.y());
+            }
         }
     }
 
