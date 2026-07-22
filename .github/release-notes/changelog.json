@@ -5354,6 +5354,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ai-language-label",
+      "version": "0.490.0",
+      "type": "feat",
+      "title": "AI label on machine-translated languages",
+      "summary": "The language-selection list now marks Dungeon Train translations that have not been human-reviewed with a small faded blue AI label next to the Dungeon Train logo, so you can tell at a glance which translations are machine-generated.",
+      "highlights": [
+        "Human-reviewed languages keep the solid logo with no label"
+      ],
+      "date": "2026-07-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
