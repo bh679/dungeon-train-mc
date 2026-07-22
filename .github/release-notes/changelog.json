@@ -5290,13 +5290,13 @@
       ],
       "pr": 813,
       "date": "2026-07-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.486.0",
+      "released_at": "2026-07-22T01:36:19Z"
     },
     {
       "id": "neoforge-update-notifier",
-      "version": "0.486.0",
+      "version": "0.487.0",
       "type": "feat",
       "title": "In-game update notifications",
       "summary": "Dungeon Train now tells you inside the game when a newer version is available \u2014 an \"Update available\" badge appears next to the mod on the Mods screen. It only notifies; it never downloads or changes anything on its own, so you stay in control and update through your launcher as usual.",
