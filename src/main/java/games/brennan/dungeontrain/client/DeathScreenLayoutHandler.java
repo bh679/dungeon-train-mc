@@ -31,6 +31,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.levelgen.WorldDimensions;
 import net.minecraft.world.level.levelgen.WorldOptions;
@@ -93,6 +94,10 @@ public final class DeathScreenLayoutHandler {
     }
 
     public static void launchWorld(Screen lastScreen, boolean sameSeed) {
+        launchWorld(lastScreen, sameSeed, false);
+    }
+
+    public static void launchWorld(Screen lastScreen, boolean sameSeed, boolean forceSurvival) {
         Minecraft mc = Minecraft.getInstance();
         MinecraftServer server = mc.getSingleplayerServer();
         if (server == null) {
@@ -137,9 +142,10 @@ public final class DeathScreenLayoutHandler {
         if (keepInventory) {
             gameRules.getRule(GameRules.RULE_KEEPINVENTORY).set(true, null);
         }
+        GameType gameType = forceSurvival ? GameType.SURVIVAL : cur.gameType();
         LevelSettings settings = new LevelSettings(
                 name,
-                cur.gameType(),
+                gameType,
                 cur.hardcore(),
                 cur.difficulty(),
                 cur.allowCommands(),
