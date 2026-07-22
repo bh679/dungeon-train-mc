@@ -501,11 +501,33 @@ public final class TrainTickEvents {
         return applied;
     }
 
-    /** Periodic DEBUG line for the deferred-mirror drain (fires from either call site — train-present or not). */
+    /** Accumulated drain cost (ns) over the current {@code [ud-drain.win]} window. */
+    private static long winDrainNanos = 0L;
+    /** Chunks applied over the current {@code [ud-drain.win]} window. */
+    private static int winApplied = 0;
+
+    /**
+     * Periodic DEBUG lines for the deferred-mirror drain (fires from either call site — train-present or
+     * not). {@code [ud-drain]} keeps the original applied-gated per-second shape; {@code [ud-drain.win]}
+     * reports the drain's TOTAL cost per 40-tick window even when nothing applies — the steady-state
+     * frontier-ring waste is exactly the applied==0 case, so a window line is the only way to A/B it
+     * (drives the {@code mirror-drain legacy|ready} comparison).
+     */
     private static void logDrain(ServerLevel level, int applied, java.util.Set<Long> pending, java.util.Set<Long> ready, long t0) {
+        long elapsed = System.nanoTime() - t0;
+        winDrainNanos += elapsed;
+        winApplied += applied;
         if (applied > 0 && level.getGameTime() % 20 == 0) {
             JITTER_LOGGER.debug("[ud-drain] mirrored={} backlog={} ready={} ms={}",
-                applied, pending.size(), ready.size(), String.format("%.2f", (System.nanoTime() - t0) / 1_000_000.0));
+                applied, pending.size(), ready.size(), String.format("%.2f", elapsed / 1_000_000.0));
+        }
+        if (level.getGameTime() % MSPT_LOG_PERIOD_TICKS == 0) {
+            JITTER_LOGGER.debug("[ud-drain.win] mode={} totalMs={} applied={} backlog={} ready={}",
+                mirrorDrainLegacy ? "legacy" : "ready",
+                String.format("%.2f", winDrainNanos / 1_000_000.0),
+                winApplied, pending.size(), ready.size());
+            winDrainNanos = 0L;
+            winApplied = 0;
         }
     }
 
