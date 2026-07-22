@@ -376,6 +376,14 @@ jobs:
       # itself as the latest to every player. success() gates on the GitHub Release
       # having been created. Commits to main with [skip ci]; same rebase-retry as
       # the changelog-mark step since a cascade tick could push in between.
+      #
+      # The per-version changelog text is taken from curseforge-notes.md — the SAME
+      # notes composed above for this published file (operator changelog input, or
+      # the carried-forward last-released curated notes, or the generated notes).
+      # Feeding update.json from that one source keeps the in-game notifier's notes
+      # in lockstep with the CurseForge/GitHub changelog: they cannot drift because
+      # they are written from the same file in the same release run. If it is empty
+      # the generator falls back to this release's GitHub notes URL.
       - name: Update NeoForge version notifier (update.json)
         if: ${{ success() && inputs.test_release == false }}
         env:
@@ -383,8 +391,11 @@ jobs:
         run: |
           set -euo pipefail
           MC_VERSION=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2)
-          python3 scripts/release-notes/build-update-json.py \
-            --version "${RELEASE_TAG#v}" --mc "$MC_VERSION"
+          ARGS=(--version "${RELEASE_TAG#v}" --mc "$MC_VERSION")
+          if [ -s curseforge-notes.md ]; then
+            ARGS+=(--changelog "$(cat curseforge-notes.md)")
+          fi
+          python3 scripts/release-notes/build-update-json.py "${ARGS[@]}"
           if git diff --quiet -- update.json; then
             echo "update.json already current — nothing to commit."
             exit 0
