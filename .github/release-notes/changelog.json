@@ -5162,9 +5162,9 @@
       ],
       "pr": 803,
       "date": "2026-07-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
     },
     {
       "id": "suspicious-sand-archaeology-loot",
@@ -5178,9 +5178,9 @@
       ],
       "pr": 804,
       "date": "2026-07-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
     },
     {
       "id": "player-book-loot-selection",
@@ -5196,9 +5196,9 @@
         "On multiplayer worlds each player gets their own selection, matched to their own language"
       ],
       "date": "2026-07-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
     },
     {
       "id": "stage-phase-coverage-upside-down",
@@ -5212,9 +5212,9 @@
       ],
       "pr": 805,
       "date": "2026-07-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
     },
     {
       "id": "death-distance-travelled-telemetry",
@@ -5224,9 +5224,9 @@
       "summary": "Death and run reports now record how far down the line you actually reached \u2014 measured from where you spawned \u2014 plus which world band you died in. This sharpens the private stats dashboard only; there is no in-game change.",
       "highlights": [],
       "date": "2026-07-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
     },
     {
       "id": "ways-to-help-menu",
@@ -5241,9 +5241,9 @@
       ],
       "pr": 808,
       "date": "2026-07-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
     },
     {
       "id": "chuncks-world-gen-band",
@@ -5257,9 +5257,9 @@
         "Fully configurable: band length, void density, slice ratio, entry fade, and lead-in gap"
       ],
       "date": "2026-07-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
     },
     {
       "id": "well-content-loot-tuning",
@@ -5274,9 +5274,9 @@
       ],
       "pr": 811,
       "date": "2026-07-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.485.0",
+      "released_at": "2026-07-21T13:41:17Z"
     },
     {
       "id": "reboard-force-survival",
