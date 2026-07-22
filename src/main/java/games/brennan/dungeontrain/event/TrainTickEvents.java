@@ -145,6 +145,21 @@ public final class TrainTickEvents {
      * spawn reach so a just-spawned front carriage lands on already-mirrored terrain.
      */
     private static final int MIRROR_BACKSTOP_AHEAD_BLOCKS = 48;
+    /**
+     * Period (ticks) of the mirror-drain reconcile safety scan: when the READY set has drained empty but
+     * pending chunks remain, re-scan pending once for any now-appliable chunk that the {@code ChunkEvent.Load}
+     * promotion may have missed. Rare + only-when-idle, so it costs ~1% of the old every-tick full scan.
+     */
+    private static final int MIRROR_RECONCILE_PERIOD_TICKS = 100;
+
+    /**
+     * Debug A/B switch (default {@code false} = the ready-set drain). When {@code true}, the drain reverts
+     * to the pre-fix behaviour — sort + scan the ENTIRE pending set every tick, leaving neighbour-incomplete
+     * frontier chunks in the queue to be re-checked forever. Flip live with
+     * {@code /dungeontrain debug mirror-drain legacy|ready|status} to compare {@code [ud-drain] ms=} in the
+     * same world/spot (like {@code physicsfreeze}). Not persisted; testing aid only.
+     */
+    public static volatile boolean mirrorDrainLegacy = false;
 
     private static int tickCounter = 0;
 
@@ -400,18 +415,43 @@ public final class TrainTickEvents {
      */
     private static int drainPendingMirrors(ServerLevel level, Map<UUID, List<Trains.Carriage>> trainsById) {
         long t0 = System.nanoTime();
-        java.util.Set<Long> pending = DungeonTrainWorldData.get(level).pendingMirrorChunks();
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        java.util.Set<Long> pending = data.pendingMirrorChunks();
+        java.util.Set<Long> ready = data.readyMirrorChunks();
         int applied = 0;
 
         // (1) Backstop: checks the marker directly (not queue membership) so it is robust even right after
-        // a server restart, before the chunk's reload re-enqueue has fired.
+        // a server restart, before the chunk's reload re-enqueue/promotion has fired — hence it stays
+        // fully independent of the READY set (the safety guarantee that a promotion bug can never drop the
+        // train into the void).
         for (List<Trains.Carriage> train : trainsById.values()) {
-            applied += forceApplyMirrorAroundTrain(level, train, pending);
+            applied += forceApplyMirrorAroundTrain(level, train, data);
         }
-        if (pending.isEmpty()) { logDrain(level, applied, pending, t0); return applied; }
+        if (pending.isEmpty()) { logDrain(level, applied, pending, ready, t0); return applied; }
 
-        // (2) Budgeted drain, nearest-first by the first train's footprint centre (typically one train;
-        // the backstop already covers every train's own path, so ordering only affects scenery smoothness).
+        // Debug A/B: legacy mode drains the full pending set (pre-fix behaviour) for direct comparison.
+        boolean legacy = mirrorDrainLegacy;
+
+        if (!legacy) {
+            // (1b) MANDATORY reconcile (insurance): if the READY set has drained empty but pending chunks
+            // remain, re-scan pending once for any now-appliable chunk the Load-driven promotion may have
+            // missed (defensive against a chunk that is loaded but whose ChunkEvent.Load we didn't observe).
+            // Rare + only-when-idle → ~1% of the old every-tick full scan. This is why the frontier ring no
+            // longer costs per-tick CPU yet can never be permanently stranded.
+            if (ready.isEmpty() && level.getGameTime() % MIRROR_RECONCILE_PERIOD_TICKS == 0) {
+                for (Long key : pending) {
+                    if (WorldUpsideDownEvents.neighboursFull(level, ChunkPos.getX(key), ChunkPos.getZ(key))) {
+                        data.promoteMirrorChunk(key);
+                    }
+                }
+            }
+            if (ready.isEmpty()) { logDrain(level, applied, pending, ready, t0); return applied; }
+        }
+
+        // (2) Budgeted drain — the READY set (fast path) or the full pending set (legacy A/B) — nearest-first
+        // by the
+        // first train's footprint centre (typically one train; the backstop already covers every train's
+        // own path, so ordering only affects scenery smoothness).
         double refX = 0, refZ = 0;
         boolean haveRef = false;
         for (List<Trains.Carriage> train : trainsById.values()) {
@@ -431,7 +471,7 @@ public final class TrainTickEvents {
                 haveRef = true;
             }
         }
-        Long[] keys = pending.toArray(new Long[0]);
+        Long[] keys = (legacy ? pending : ready).toArray(new Long[0]);
         if (haveRef) {
             final double fx = refX, fz = refZ;
             java.util.Arrays.sort(keys, java.util.Comparator.comparingDouble(k -> {
@@ -447,22 +487,47 @@ public final class TrainTickEvents {
             int cx = ChunkPos.getX(key);
             int cz = ChunkPos.getZ(key);
             LevelChunk chunk = cache.getChunkNow(cx, cz);
-            if (chunk == null) { pending.remove(key); continue; }                 // unloaded → reload re-enqueues
-            if (!chunk.hasData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get())) { pending.remove(key); continue; } // already applied
-            if (!WorldUpsideDownEvents.neighboursFull(level, cx, cz)) continue;   // palette-race guard → retry next tick
+            if (chunk == null) { data.removeMirrorChunk(key); continue; }                 // unloaded → reload re-enqueues
+            if (!chunk.hasData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get())) { data.removeMirrorChunk(key); continue; } // already applied (e.g. backstop)
+            if (!WorldUpsideDownEvents.neighboursFull(level, cx, cz)) {
+                if (!legacy) data.demoteMirrorChunk(key);  // ready path: neighbour unloaded since promotion → wait
+                continue;                                  // legacy path: leave in pending, re-check next tick (the pre-fix waste)
+            }
             WorldUpsideDownEvents.applyMirrorAndResend(level, chunk);
-            pending.remove(key);
+            data.removeMirrorChunk(key);
             applied++;
         }
-        logDrain(level, applied, pending, t0);
+        logDrain(level, applied, pending, ready, t0);
         return applied;
     }
 
-    /** Periodic DEBUG line for the deferred-mirror drain (fires from either call site — train-present or not). */
-    private static void logDrain(ServerLevel level, int applied, java.util.Set<Long> pending, long t0) {
+    /** Accumulated drain cost (ns) over the current {@code [ud-drain.win]} window. */
+    private static long winDrainNanos = 0L;
+    /** Chunks applied over the current {@code [ud-drain.win]} window. */
+    private static int winApplied = 0;
+
+    /**
+     * Periodic DEBUG lines for the deferred-mirror drain (fires from either call site — train-present or
+     * not). {@code [ud-drain]} keeps the original applied-gated per-second shape; {@code [ud-drain.win]}
+     * reports the drain's TOTAL cost per 40-tick window even when nothing applies — the steady-state
+     * frontier-ring waste is exactly the applied==0 case, so a window line is the only way to A/B it
+     * (drives the {@code mirror-drain legacy|ready} comparison).
+     */
+    private static void logDrain(ServerLevel level, int applied, java.util.Set<Long> pending, java.util.Set<Long> ready, long t0) {
+        long elapsed = System.nanoTime() - t0;
+        winDrainNanos += elapsed;
+        winApplied += applied;
         if (applied > 0 && level.getGameTime() % 20 == 0) {
-            JITTER_LOGGER.debug("[ud-drain] mirrored={} backlog={} ms={}",
-                applied, pending.size(), String.format("%.2f", (System.nanoTime() - t0) / 1_000_000.0));
+            JITTER_LOGGER.debug("[ud-drain] mirrored={} backlog={} ready={} ms={}",
+                applied, pending.size(), ready.size(), String.format("%.2f", elapsed / 1_000_000.0));
+        }
+        if (level.getGameTime() % MSPT_LOG_PERIOD_TICKS == 0) {
+            JITTER_LOGGER.debug("[ud-drain.win] mode={} totalMs={} applied={} backlog={} ready={}",
+                mirrorDrainLegacy ? "legacy" : "ready",
+                String.format("%.2f", winDrainNanos / 1_000_000.0),
+                winApplied, pending.size(), ready.size());
+            winDrainNanos = 0L;
+            winApplied = 0;
         }
     }
 
@@ -473,7 +538,7 @@ public final class TrainTickEvents {
      * drop it into the void; this closes that window. Bounded to the few chunks actually under/ahead of
      * the train, never the whole generation burst.
      */
-    private static int forceApplyMirrorAroundTrain(ServerLevel level, List<Trains.Carriage> train, java.util.Set<Long> pending) {
+    private static int forceApplyMirrorAroundTrain(ServerLevel level, List<Trains.Carriage> train, DungeonTrainWorldData data) {
         if (train.isEmpty()) return 0;
         AABB aabb = CarriageFootprint.activeWorldAABB(train);
         if (aabb.getXsize() <= 0 || aabb.getYsize() <= 0 || aabb.getZsize() <= 0) return 0;
@@ -493,7 +558,7 @@ public final class TrainTickEvents {
                 if (chunk == null || !chunk.hasData(ModDataAttachments.NEEDS_UPSIDE_DOWN_MIRROR.get())) continue;
                 if (!WorldUpsideDownEvents.neighboursFull(level, cx, cz)) continue;
                 WorldUpsideDownEvents.applyMirrorAndResend(level, chunk);
-                pending.remove(ChunkPos.asLong(cx, cz));
+                data.removeMirrorChunk(ChunkPos.asLong(cx, cz));
                 applied++;
             }
         }
