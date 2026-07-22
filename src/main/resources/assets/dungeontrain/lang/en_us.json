@@ -1,5 +1,11 @@
 {
   "echo.dungeontrain.mob_name": "Echo of %s",
+  "gui.dungeontrain.book_vote.page_heading": "Did you enjoy this book?\n\nYour vote quietly nudges how often it turns up on the train.",
+  "gui.dungeontrain.book_vote.approve": "Liked it",
+  "gui.dungeontrain.book_vote.reject": "Not for me",
+  "gui.dungeontrain.book_vote.hint": "Press Y or N on any page",
+  "gui.dungeontrain.book_vote.approve.narration": "Vote thumbs up — I liked this book",
+  "gui.dungeontrain.book_vote.reject.narration": "Vote thumbs down — not for me",
   "chat.dungeontrain.free_play.title": "Free Play.",
   "chat.dungeontrain.free_play.cause.gamemode": "You switched to %s.",
   "chat.dungeontrain.free_play.cause.command": "You used %s.",
