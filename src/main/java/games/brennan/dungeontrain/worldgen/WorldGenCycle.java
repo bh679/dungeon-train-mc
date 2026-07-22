@@ -399,6 +399,57 @@ public record WorldGenCycle(long startX, int owGap,
         return (long) worldX - o + netherStart();
     }
 
+    /**
+     * True iff ANY x′ in the inclusive window {@code [worldX − margin, worldX + margin]} falls inside
+     * the nether segment of some cycle repeat — i.e. {@code netherHeightRamp}/{@code netherRamp} could
+     * be non-zero there. The margin absorbs the {@link NetherMountainTerrain#wavyX} edge wave (pass
+     * {@link NetherMountainTerrain#maxEdgeShift()}), so a {@code false} here guarantees every waved
+     * lookup a caller could make at {@code worldX} lands in plain overworld.
+     *
+     * <p>An O(1) circular-interval intersection — no per-x′ sweep — so hot worldgen paths (the density
+     * raise, the biome-forcing mixin) can early-out for the ride's majority off-band columns.
+     * <b>Conservative by construction</b>: window endpoints only ever widen (the window is clamped to
+     * the anchor, a window ≥ one period is always {@code true}), so false positives merely skip the
+     * optimisation; a false negative is impossible — the seam-safety property the stride-1 unit sweep
+     * pins.</p>
+     */
+    public boolean netherInfluence(long worldX, int margin) {
+        return segmentInfluence(worldX, margin, netherStart(), netherLen());
+    }
+
+    /**
+     * True iff {@code worldX} falls inside the End segment of some cycle repeat — plain membership, no
+     * margin (the End band is evaluated at the un-waved X everywhere: {@code endMiddleRamp},
+     * {@code endIslandRamp}, {@code isEndCore}). A {@code false} guarantees all End ramps are 0 at
+     * {@code worldX}, letting hot paths skip them entirely. Same conservative O(1) contract as
+     * {@link #netherInfluence}.
+     */
+    public boolean endSegmentInfluence(long worldX) {
+        return segmentInfluence(worldX, 0, endStart(), endLen());
+    }
+
+    /**
+     * Shared circular-window intersection behind {@link #netherInfluence}/{@link #endSegmentInfluence}:
+     * does the inclusive window {@code [worldX − margin, worldX + margin]}, clamped to the anchor and
+     * folded into cycle offsets, intersect the segment {@code [segStart, segStart + segLen)}? Two
+     * circular arcs intersect iff either contains the other's start point — both checks below via
+     * {@code floorMod} forward distances, exact for any window/segment phase including period wrap.
+     */
+    private boolean segmentInfluence(long worldX, int margin, long segStart, long segLen) {
+        if (segLen <= 0L) return false;                       // segment disabled → never influences
+        long p = period();
+        if (p <= 0L) return false;
+        long m = Math.max(0, margin);
+        long b = worldX + m;                                  // inclusive window [a, b]
+        if (b < startX) return false;                         // wholly before the anchor → plain overworld
+        long a = Math.max(worldX - m, startX);                // clamp: offsets are undefined pre-anchor
+        long w = b - a;                                       // inclusive window span
+        if (w >= p) return true;                              // covers a full period → hits every segment
+        long oa = Math.floorMod(a - startX + phaseShift, p);  // window start as a cycle offset
+        if (Math.floorMod(segStart - oa, p) <= w) return true; // segment start inside the window
+        return Math.floorMod(oa - segStart, p) < segLen;      // window start inside the segment
+    }
+
     /** End erosion / sky ramp at a world-X (0 outside the End segment). */
     public double endMiddleRamp(int worldX) {
         long o = offset(worldX);

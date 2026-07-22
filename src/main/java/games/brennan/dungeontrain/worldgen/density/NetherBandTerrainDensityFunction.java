@@ -112,6 +112,18 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
         if (memo.present[idx] && memo.key[idx] == ckey) {
             skip = memo.skip[idx];
             t = memo.target[idx];
+        } else if (!cycle.netherInfluence(worldX, NetherMountainTerrain.maxEdgeShift())) {
+            // Off-band early-out: no x′ within the edge-wave margin can be in the nether segment, so
+            // raises(wavyX(x)) is provably false — skip without paying the 4-octave wavyX noise.
+            // Byte-identical to the full evaluation below (the predicate is a conservative superset,
+            // proven by the stride-1 sweep in WorldGenCycleTest); still memoised so repeat samples of
+            // this column take the fast present-hit path.
+            skip = true;
+            t = 0.0;
+            memo.key[idx] = ckey;
+            memo.skip[idx] = true;
+            memo.target[idx] = 0.0;
+            memo.present[idx] = true;
         } else {
             // Evaluate the band at the edge-waved X so the leading/trailing front undulates across Z rather
             // than starting at one straight X (matched in the biome source + post-process feature).
@@ -165,10 +177,26 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
             long seed = ctx.generationSeed();
             int seaLevel = ctx.seaLevel(), ceiling = ctx.worldCeiling();
             int netherTop = ctx.netherTop(), baseRelief = ctx.baseRelief();
+            // Single-entry per-X off-band cache — method-local ONLY (this instance is shared across
+            // worker threads and chunks; latching per-instance chunk state would race). Cell iteration
+            // is x-coherent, so the O(1) netherInfluence window check runs ~once per distinct X; when
+            // the whole X column-plane is provably off-band we skip the per-sample key build + memo
+            // probes entirely (the ride's overworld-gap majority). Byte-identical: skipping leaves the
+            // child's value in place, exactly what raise() returns for an off-band column.
+            int margin = NetherMountainTerrain.maxEdgeShift();
+            int curX = 0;
+            boolean curXValid = false, curXSkip = false;
             for (int i = 0; i < values.length; i++) {
                 FunctionContext fc = contextProvider.forIndex(i);
+                int bx = fc.blockX();
+                if (!curXValid || bx != curX) {
+                    curX = bx;
+                    curXValid = true;
+                    curXSkip = !cycle.netherInfluence(bx, margin);
+                }
+                if (curXSkip) continue;
                 values[i] = raise(memo, cycle, seed, seaLevel, ceiling, netherTop, baseRelief,
-                        fc.blockX(), fc.blockZ(), fc.blockY(), values[i]);
+                        bx, fc.blockZ(), fc.blockY(), values[i]);
             }
         }
         GenProfiler.add(GenProfiler.Bucket.DF, t0);

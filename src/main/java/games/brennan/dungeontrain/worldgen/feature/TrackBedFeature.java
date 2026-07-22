@@ -104,6 +104,18 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
             // corridor has to exist there for the player to walk onto.
             if (!data.startsWithTrain()) return false;
 
+            CarriageDims dims = data.dims();
+            TrackGeometry g = TrackGeometry.from(dims, data.getTrainY());
+
+            // Width-accurate Z reject — the coarse MAX_CORRIDOR_CZ prefilter above assumes the maxed-out
+            // 32-wide corridor, so with the common width ≤ 16 the whole cz=1 strip still fell through to
+            // the full pipeline. Every sub-generator below already no-ops for chunks that don't overlap
+            // [trackZMin, trackZMax] (their own chunkMinZ/chunkMaxZ gates; overflow like pillar slices and
+            // side-stairs is written INTO neighbours by the overlapping chunk's decoration window, never
+            // generated FROM an outside chunk), so rejecting here is behaviour-identical — it just skips
+            // those no-op calls AND the UpsideDownBand SavedData lookups below.
+            if (chunkPos.getMinBlockZ() > g.trackZMax()) return false;
+
             // Inside the upside-down band, its entry lead-in AND its exit crossfade the corridor is laid
             // AFTER the mirror/exit composition flips the column (WorldUpsideDownEvents →
             // TrackGenerator.layFlippedCorridor), so skip during-gen track laying for those chunks — the
@@ -117,8 +129,6 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
                 return false;
             }
 
-            CarriageDims dims = data.dims();
-            TrackGeometry g = TrackGeometry.from(dims, data.getTrainY());
             // Pillars first — the ground probe reads raw terrain at probeZ,
             // which becomes opaque (bed/rail) as soon as placeTracksForChunk
             // runs. Order matters.
