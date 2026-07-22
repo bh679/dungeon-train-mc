@@ -177,24 +177,30 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
             long seed = ctx.generationSeed();
             int seaLevel = ctx.seaLevel(), ceiling = ctx.worldCeiling();
             int netherTop = ctx.netherTop(), baseRelief = ctx.baseRelief();
-            // Single-entry per-X off-band cache — method-local ONLY (this instance is shared across
-            // worker threads and chunks; latching per-instance chunk state would race). Cell iteration
-            // is x-coherent, so the O(1) netherInfluence window check runs ~once per distinct X; when
-            // the whole X column-plane is provably off-band we skip the per-sample key build + memo
-            // probes entirely (the ride's overworld-gap majority). Byte-identical: skipping leaves the
-            // child's value in place, exactly what raise() returns for an off-band column.
+            // Per-X off-band memo — method-local ONLY (this instance is shared across worker threads
+            // and chunks; latching per-instance chunk state would race). Cell iteration is Y-outer /
+            // X-mid / Z-inner, so the few distinct X of a cell recur thousands of times: a small
+            // direct-mapped table (x & mask; collisions just recompute) answers all repeats, and the
+            // hoisted Influence snapshot makes the misses a handful of compares. When an X plane is
+            // provably off-band we skip the per-sample key build + memo probes entirely (the ride's
+            // overworld-gap majority). Byte-identical: skipping leaves the child's value in place,
+            // exactly what raise() returns for an off-band column.
+            WorldGenCycle.Influence inf = cycle.influence();
             int margin = NetherMountainTerrain.maxEdgeShift();
-            int curX = 0;
-            boolean curXValid = false, curXSkip = false;
+            final int xMask = 63;
+            int[] memoX = new int[xMask + 1];
+            byte[] memoSkip = new byte[xMask + 1];            // 0 = empty, 1 = skip, 2 = evaluate
             for (int i = 0; i < values.length; i++) {
                 FunctionContext fc = contextProvider.forIndex(i);
                 int bx = fc.blockX();
-                if (!curXValid || bx != curX) {
-                    curX = bx;
-                    curXValid = true;
-                    curXSkip = !cycle.netherInfluence(bx, margin);
+                int xi = bx & xMask;
+                byte state = (memoX[xi] == bx) ? memoSkip[xi] : 0;
+                if (state == 0) {
+                    state = inf.nether(bx, margin) ? (byte) 2 : (byte) 1;
+                    memoX[xi] = bx;
+                    memoSkip[xi] = state;
                 }
-                if (curXSkip) continue;
+                if (state == 1) continue;
                 values[i] = raise(memo, cycle, seed, seaLevel, ceiling, netherTop, baseRelief,
                         bx, fc.blockZ(), fc.blockY(), values[i]);
             }
