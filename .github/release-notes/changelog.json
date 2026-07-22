@@ -5309,6 +5309,22 @@
       "released": true,
       "released_in": "v0.487.0",
       "released_at": "2026-07-22T04:44:28Z"
+    },
+    {
+      "id": "official-links-relay-updates",
+      "version": "0.488.0",
+      "type": "feat",
+      "title": "Official links now stay up to date",
+      "summary": "The Discord invite, Patreon, donation and hosting-affiliate links now update themselves from the Dungeon Train server whenever you're online, so buttons in the menus always point at the current official destinations \u2014 even on older versions of the mod. Offline, the built-in links still work as before.",
+      "highlights": [
+        "Links refresh once per session from the title screen; no account data is sent",
+        "Default donation amount is now $25 AUD (was $45)"
+      ],
+      "pr": 815,
+      "date": "2026-07-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
