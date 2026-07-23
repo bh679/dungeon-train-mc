@@ -165,7 +165,10 @@ public final class VillagerTrainSpawnEvents {
 
         int newLevel;
         if (DungeonTrainConfig.getDifficultyEnabled()) {
-            newLevel = cappedLevel(villager.getRandom(), DifficultyProgression.currentTier(serverLevel));
+            // Weighted roll paused (2026-07): every train villager spawns AT the
+            // tier cap, so trader quality tracks train progression deterministically.
+            // To restore the weighted spread, swap back to cappedLevel(rng, tier).
+            newLevel = maxLevelForTier(DifficultyProgression.currentTier(serverLevel));
         } else {
             newLevel = pickLevel(villager.getRandom());
         }
