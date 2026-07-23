@@ -29,7 +29,9 @@
     "ServerSubLevelFreezeMixin",
     "SubLevelPhysicsSystemFreezeMixin",
     "SubLevelHeatMapSplitMixin",
-    "RapierPipelineFreezeMixin"
+    "RapierPipelineFreezeMixin",
+    "LevelAcceleratorNoSyncLoadMixin",
+    "SubLevelEntityCollisionNoLoadMixin"
   ],
   "client": [
     "client.BookViewScreenAccessor",
