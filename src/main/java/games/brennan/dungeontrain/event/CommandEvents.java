@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.command.BugCommand;
 import games.brennan.dungeontrain.command.DtpCommand;
 import games.brennan.dungeontrain.command.EchoEncounterTestCommand;
+import games.brennan.dungeontrain.command.FixAisConfigCommand;
 import games.brennan.dungeontrain.command.TrainCommand;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -28,6 +29,8 @@ public final class CommandEvents {
         BugCommand.register(event.getDispatcher());
         // /dtp <x> — teleport to world-X and guarantee a train is there to land on.
         DtpCommand.register(event.getDispatcher());
+        // /fixaisconfig — restores AIS config defaults (the AIS-data Free Play fix action).
+        FixAisConfigCommand.register(event.getDispatcher());
         // Dev-only: a relay-free way to drive the remote-echo encounter journal end-to-end.
         // Never registered in production, and only when PlayerMob (whose types the command
         // references) is present.
