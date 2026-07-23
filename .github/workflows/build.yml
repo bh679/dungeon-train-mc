@@ -75,3 +75,25 @@ jobs:
           python3 scripts/modpack/test_check_relations.py
           python3 scripts/modpack/test_build_mrpack.py
           python3 scripts/modpack/test_check_pins.py
+
+  # Stdlib-only Python guard for the per-line translation provenance sidecars
+  # (localization/provenance/<locale>.json — who translated / who human-reviewed each
+  # line). Fails when a translation wave lands lang keys without provenance entries,
+  # when entries drift out of key set/order lockstep with their lang file, or when an
+  # entry is malformed. The failure message carries the fix command
+  # (stamp-provenance.py --sync). Runs fast and in parallel with `build`, same as
+  # modpack-checks.
+  localization-checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Per-line translation provenance aligned with lang files
+        run: python3 scripts/localization/check-provenance.py
+
+      - name: Provenance script tests
+        run: |
+          python3 scripts/localization/test_check_provenance.py
+          python3 scripts/localization/test_stamp_provenance.py
