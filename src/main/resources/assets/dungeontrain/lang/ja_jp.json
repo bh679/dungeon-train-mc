@@ -480,6 +480,8 @@
   "gui.dungeontrain.death.narr.tip_life_adv": "獲得した進捗",
   "gui.dungeontrain.death.narr.see_all_adv": "すべての進捗を見る",
   "gui.dungeontrain.death.reboard": "再乗車",
+  "gui.dungeontrain.death.delete_world.on": "再乗車するとこのワールドは削除されます",
+  "gui.dungeontrain.death.delete_world.off": "再乗車してもこのワールドは保持されます",
   "gui.dungeontrain.death.leave": "路線を去る",
   "gui.dungeontrain.death.continue": "次の画面",
   "gui.dungeontrain.death.board_anew": "新たに乗車",

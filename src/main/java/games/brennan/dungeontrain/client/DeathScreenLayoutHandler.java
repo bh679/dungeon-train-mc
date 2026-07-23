@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.player.PendingInventory;
@@ -37,6 +38,8 @@ import net.minecraft.world.level.levelgen.WorldDimensions;
 import net.minecraft.world.level.levelgen.WorldOptions;
 import net.minecraft.world.level.levelgen.presets.WorldPreset;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.level.storage.LevelResource;
+import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.WorldData;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -72,6 +75,13 @@ import java.util.function.Function;
 public final class DeathScreenLayoutHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    /**
+     * Name prefix stamped on every auto-generated run world. Doubles as the
+     * safety gate for reboard deletion — only folders carrying it are ever
+     * auto-deleted (see {@link #deletableLevelId}).
+     */
+    private static final String WORLD_NAME_PREFIX = "Dungeon Train ";
 
     private static final ResourceKey<WorldPreset> DT_OVERWORLD = preset("dungeon_train");
     private static final ResourceKey<WorldPreset> DT_OVERWORLD_COMPAT = preset("dungeon_train_compat");
@@ -137,7 +147,7 @@ public final class DeathScreenLayoutHandler {
         // on too.
         boolean keepInventory = captureKeepInventory(server);
 
-        String name = "Dungeon Train " + System.currentTimeMillis();
+        String name = WORLD_NAME_PREFIX + System.currentTimeMillis();
         GameRules gameRules = new GameRules();
         if (keepInventory) {
             gameRules.getRule(GameRules.RULE_KEEPINVENTORY).set(true, null);
@@ -172,6 +182,16 @@ public final class DeathScreenLayoutHandler {
         LOGGER.info("DeathScreenLayout: launching {} world (seed={}, dim={}, preset={})",
                 sameSeed ? "same-seed" : "fresh-seed", seed, startingDim, targetPreset.location());
 
+        // Dungeon Train is a new-world-per-run game, so by default the dying
+        // world's save is not worth keeping: skip its chunk save and delete the
+        // folder after teardown. Double-gated — the client toggle (trash chip on
+        // the death screen) AND the auto-generated name prefix; a renamed or
+        // hand-made world is never auto-deleted.
+        String oldLevelId = deletableLevelId(server);
+        if (oldLevelId != null) {
+            suppressLevelSaving(server);
+        }
+
         // Pre-drain Sable sub-levels on the server thread before disconnect, so
         // ChunkMap.hasWork() doesn't spin vanilla's stopServer() wait loop
         // forever on the "freshly-created world → immediate disconnect" path.
@@ -185,8 +205,78 @@ public final class DeathScreenLayoutHandler {
         }
         mc.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
 
+        // disconnect() has fully halted the integrated server and released its
+        // session lock, so the old save folder can be deleted before the new
+        // world spins up. A failed delete only logs — never blocks the reboard.
+        if (oldLevelId != null) {
+            deleteOldWorld(mc, oldLevelId);
+        }
+
         WorldOpenFlows flows = mc.createWorldOpenFlows();
         flows.createFreshLevel(name, settings, options, dims, new TitleScreen());
+    }
+
+    /**
+     * The save-folder name of the current singleplayer world if — and only if —
+     * it is safe to auto-delete on reboard: the client toggle is on AND the
+     * folder carries the auto-generated {@code "Dungeon Train "} prefix that
+     * {@link #launchWorld} itself stamps on every fresh run. Returns {@code null}
+     * when the world must be kept (toggle off, renamed/hand-made world, or the
+     * folder name couldn't be read), in which case the normal save path runs.
+     */
+    private static String deletableLevelId(MinecraftServer server) {
+        if (!ClientDisplayConfig.isDeleteWorldOnReboard()) return null;
+        try {
+            String levelId = server.getWorldPath(LevelResource.ROOT)
+                    .normalize().getFileName().toString();
+            if (!levelId.startsWith(WORLD_NAME_PREFIX)) {
+                LOGGER.info("DeathScreenLayout: world '{}' is not an auto-generated Dungeon Train save; keeping it.", levelId);
+                return null;
+            }
+            return levelId;
+        } catch (Exception e) {
+            LOGGER.warn("DeathScreenLayout: could not resolve current save folder; world will be kept.", e);
+            return null;
+        }
+    }
+
+    /**
+     * Flip {@code noSave} on every {@link ServerLevel} (on the server thread) so
+     * the imminent shutdown skips the chunk save — pure teardown cost saved on a
+     * world whose folder is deleted right after. Metadata (level.dat, playerdata)
+     * still writes; harmless, the whole folder goes next. Best-effort: on timeout
+     * the world simply saves normally before deletion.
+     */
+    private static void suppressLevelSaving(MinecraftServer server) {
+        CompletableFuture<Void> done = new CompletableFuture<>();
+        server.execute(() -> {
+            try {
+                for (ServerLevel level : server.getAllLevels()) {
+                    level.noSave = true;
+                }
+            } finally {
+                done.complete(null);
+            }
+        });
+        try {
+            done.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            LOGGER.warn("DeathScreenLayout: noSave flag wait timed out; old world will save before deletion", e);
+        }
+    }
+
+    /**
+     * Delete the old (already shut down) world's save folder via the vanilla
+     * world-list deletion path. Any failure — lingering session lock, IO error,
+     * content validation — is logged and swallowed so world creation proceeds.
+     */
+    private static void deleteOldWorld(Minecraft mc, String levelId) {
+        try (LevelStorageSource.LevelStorageAccess access = mc.getLevelSource().createAccess(levelId)) {
+            access.deleteLevel();
+            LOGGER.info("DeathScreenLayout: deleted old world save '{}'", levelId);
+        } catch (Exception e) {
+            LOGGER.warn("DeathScreenLayout: failed to delete old world save '{}'; it will remain in the world list.", levelId, e);
+        }
     }
 
     /**

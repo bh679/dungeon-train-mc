@@ -490,6 +490,8 @@
   "gui.dungeontrain.death.narr.tip_life_adv": "Zdobyte osiągnięcia",
   "gui.dungeontrain.death.narr.see_all_adv": "zobacz wszystkie osiągnięcia",
   "gui.dungeontrain.death.reboard": "wsiądź ponownie",
+  "gui.dungeontrain.death.delete_world.on": "Ten świat zostanie usunięty, gdy wsiądziesz ponownie",
+  "gui.dungeontrain.death.delete_world.off": "Ten świat zostanie zachowany, gdy wsiądziesz ponownie",
   "gui.dungeontrain.death.leave": "opuść linię",
   "gui.dungeontrain.death.continue": "Następny ekran",
   "gui.dungeontrain.death.board_anew": "Wsiądź na nowo",

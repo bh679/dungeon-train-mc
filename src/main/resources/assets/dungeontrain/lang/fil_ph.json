@@ -480,6 +480,8 @@
   "gui.dungeontrain.death.narr.tip_life_adv": "Nakamit na advancement",
   "gui.dungeontrain.death.narr.see_all_adv": "tingnan lahat ng advancement",
   "gui.dungeontrain.death.reboard": "muling sumakay",
+  "gui.dungeontrain.death.delete_world.on": "Buburahin ang mundong ito kapag muling sumakay ka",
+  "gui.dungeontrain.death.delete_world.off": "Pananatilihin ang mundong ito kapag muling sumakay ka",
   "gui.dungeontrain.death.leave": "iwan ang linya",
   "gui.dungeontrain.death.continue": "Susunod na Screen",
   "gui.dungeontrain.death.board_anew": "Sumakay muli",

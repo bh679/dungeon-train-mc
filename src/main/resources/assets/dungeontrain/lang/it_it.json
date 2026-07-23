@@ -490,6 +490,8 @@
   "gui.dungeontrain.death.narr.tip_life_adv": "Progressi ottenuti",
   "gui.dungeontrain.death.narr.see_all_adv": "vedi tutti i progressi",
   "gui.dungeontrain.death.reboard": "risali a bordo",
+  "gui.dungeontrain.death.delete_world.on": "Questo mondo verrà eliminato quando risali a bordo",
+  "gui.dungeontrain.death.delete_world.off": "Questo mondo verrà conservato quando risali a bordo",
   "gui.dungeontrain.death.leave": "abbandona la linea",
   "gui.dungeontrain.death.continue": "Schermata successiva",
   "gui.dungeontrain.death.board_anew": "Sali di nuovo",

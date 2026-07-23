@@ -490,6 +490,8 @@
   "gui.dungeontrain.death.narr.tip_life_adv": "Advancements earned",
   "gui.dungeontrain.death.narr.see_all_adv": "see all advancements",
   "gui.dungeontrain.death.reboard": "reboard",
+  "gui.dungeontrain.death.delete_world.on": "This world will be deleted when you reboard",
+  "gui.dungeontrain.death.delete_world.off": "This world will be kept when you reboard",
   "gui.dungeontrain.death.leave": "leave the line",
   "gui.dungeontrain.death.continue": "Next Screen",
   "gui.dungeontrain.death.board_anew": "Board anew",

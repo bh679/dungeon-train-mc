@@ -490,6 +490,8 @@
   "gui.dungeontrain.death.narr.tip_life_adv": "Tiến triển đã đạt",
   "gui.dungeontrain.death.narr.see_all_adv": "xem tất cả tiến triển",
   "gui.dungeontrain.death.reboard": "lên tàu lại",
+  "gui.dungeontrain.death.delete_world.on": "Thế giới này sẽ bị xóa khi lên tàu lại",
+  "gui.dungeontrain.death.delete_world.off": "Thế giới này sẽ được giữ lại khi lên tàu lại",
   "gui.dungeontrain.death.leave": "rời tuyến đường",
   "gui.dungeontrain.death.continue": "Màn Hình Tiếp Theo",
   "gui.dungeontrain.death.board_anew": "Lên tàu lại từ đầu",

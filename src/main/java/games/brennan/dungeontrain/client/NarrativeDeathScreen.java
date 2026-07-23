@@ -5,6 +5,7 @@ import games.brennan.discordpresence.network.DPNetwork;
 import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.survey.SurveyKeys;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathPhotoPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -243,6 +244,8 @@ public final class NarrativeDeathScreen extends Screen {
     // Clickable regions, recomputed each render() and read by mouseClicked().
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
     private Rect photosRect;
+    // Trash toggle left of the reboard chip: delete the old world's save on reboard?
+    private Rect deleteWorldRect;
     // Red "Submit Bug" shortcut (start page only); null when absent or shown as the
     // non-clickable green "Bug Submitted" status.
     private Rect bugReportRect;
@@ -419,6 +422,7 @@ public final class NarrativeDeathScreen extends Screen {
         // any from last frame so a page that doesn't draw one can't be clicked.
         boardAnewRect = null;
         platformLeaveRect = null;
+        deleteWorldRect = null;
         continueRect = null;
         backRect = null;
         bugReportRect = null;
@@ -467,6 +471,15 @@ public final class NarrativeDeathScreen extends Screen {
             // All-lives icon-row hover tooltips (same "settled" gate as the cargo row).
             if (page.kind() == Kind.LIVES && stats != null && settled()) {
                 drawLivesTooltips(g, mouseX, mouseY);
+            }
+            // Trash-toggle hover tooltip (same "settled" gate) — states what will
+            // happen to this world's save on reboard.
+            if (settled() && deleteWorldRect != null && deleteWorldRect.has(mouseX, mouseY)) {
+                g.renderTooltip(this.font, Component.translatable(
+                        ClientDisplayConfig.isDeleteWorldOnReboard()
+                                ? "gui.dungeontrain.death.delete_world.on"
+                                : "gui.dungeontrain.death.delete_world.off"),
+                        mouseX, mouseY);
             }
         }
     }
@@ -1174,6 +1187,14 @@ public final class NarrativeDeathScreen extends Screen {
                 ? drawChip(g, reboardX, 8, reboard, CHIP_RB_SHIFT_BORDER, CHIP_RB_SHIFT_TEXT)
                 : drawChip(g, reboardX, 8, reboard, CHIP_RB_BORDER, CHIP_RB_TEXT);
 
+        // Trash toggle immediately left of reboard: delete the old world's save
+        // when reboarding? On (default) draws in the reboard accent; off draws
+        // muted with a strike. Persists to the client config on click.
+        boolean deleteOn = ClientDisplayConfig.isDeleteWorldOnReboard();
+        int trashW = 14;
+        int trashX = reboardX - 6 - trashW;
+        deleteWorldRect = drawTrashChip(g, trashX, 8, deleteOn);
+
         // "photos" → ride-photo gallery. Only on the final platform page, and only
         // when this run actually captured photos to browse.
         photosRect = null;
@@ -1181,9 +1202,38 @@ public final class NarrativeDeathScreen extends Screen {
         if (onPlatform && !RideSnapshotGallery.isEmpty()) {
             Component photos = Component.translatable("gui.dungeontrain.death.narr.photos", RideSnapshotGallery.size());
             int photosW = this.font.width(photos) + 16;
-            int photosX = reboardX - 6 - photosW;
+            int photosX = trashX - 6 - photosW;
             photosRect = drawChip(g, photosX, 8, photos, CHIP_PH_BORDER, CHIP_PH_TEXT);
         }
+    }
+
+    /**
+     * Square 14×14 chip with a pixel-art trash can drawn in {@code fill}s (no
+     * sprite — fills honour the {@link #fade} alpha where {@code blitSprite}
+     * can't). On-state uses the reboard green accent; off-state is muted with a
+     * diagonal strike, mirroring "this world will be kept".
+     */
+    private Rect drawTrashChip(GuiGraphics g, int x, int y, boolean on) {
+        int w = 14, h = 14;
+        int border = on ? CHIP_RB_BORDER : CHIP_LV_BORDER;
+        int icon = on ? CHIP_RB_TEXT : CHIP_LV_TEXT;
+        g.fill(x, y, x + w, y + h, fade(0x66000000));
+        drawBorder(g, x, y, w, h, border);
+        int c = fade(icon);
+        // Trash can: handle, lid, body with two slat gaps.
+        g.fill(x + 6, y + 2, x + 8, y + 3, c);          // handle
+        g.fill(x + 3, y + 3, x + 11, y + 4, c);         // lid
+        g.fill(x + 4, y + 5, x + 10, y + 12, c);        // body
+        int gap = fade(0x66000000);
+        g.fill(x + 6, y + 6, x + 7, y + 11, gap);       // slat gap (leaves 3 slats)
+        if (!on) {
+            // Diagonal strike, bottom-left → top-right, over the icon.
+            int s = fade(0xFFB05A5A);
+            for (int i = 0; i < 10; i++) {
+                g.fill(x + 2 + i, y + 11 - i, x + 3 + i, y + 12 - i, s);
+            }
+        }
+        return new Rect(x, y, w, h);
     }
 
     /** Index of the data-driven bug-report survey page, or -1 if it isn't in this run's set. */
@@ -1265,6 +1315,10 @@ public final class NarrativeDeathScreen extends Screen {
         if (button == 0 && uiBusy) { skipTransition(); return true; }
         if (button == 0) {
             if (photosRect != null && photosRect.has(mx, my)) { openGallery(); return true; }
+            if (deleteWorldRect != null && deleteWorldRect.has(mx, my)) {
+                ClientDisplayConfig.setDeleteWorldOnReboard(!ClientDisplayConfig.isDeleteWorldOnReboard());
+                return true;
+            }
             if (reboardRect != null && reboardRect.has(mx, my)) { boardAnew(); return true; }
             if (leaveRect != null && leaveRect.has(mx, my)) { leaveOrQuit(); return true; }
             Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);

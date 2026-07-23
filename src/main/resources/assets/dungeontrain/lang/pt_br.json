@@ -490,6 +490,8 @@
   "gui.dungeontrain.death.narr.tip_life_adv": "Progressos obtidos",
   "gui.dungeontrain.death.narr.see_all_adv": "ver todos os progressos",
   "gui.dungeontrain.death.reboard": "reembarcar",
+  "gui.dungeontrain.death.delete_world.on": "Este mundo será excluído ao reembarcar",
+  "gui.dungeontrain.death.delete_world.off": "Este mundo será mantido ao reembarcar",
   "gui.dungeontrain.death.leave": "deixar a linha",
   "gui.dungeontrain.death.continue": "Próxima Tela",
   "gui.dungeontrain.death.board_anew": "Embarcar de novo",
