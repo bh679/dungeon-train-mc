@@ -52,6 +52,7 @@
   "chat.dungeontrain.free_play.ais_fix": "Klicke hier, um die Standardeinstellungen wiederherzustellen, und starte dann das Spiel neu, um normal zu spielen.",
   "command.dungeontrain.fix_ais.success": "Standardeinstellungen von Adventure Item Stats wiederhergestellt. Starte das Spiel (oder den Server) neu, um normal weiterzuspielen.",
   "command.dungeontrain.fix_ais.already_default": "Die Adventure-Item-Stats-Einstellungen waren bereits auf den Standardwerten — starte das Spiel neu, falls du weiterhin Free Play siehst.",
+  "command.dungeontrain.fix_ais.backup": "Deine vorherigen Einstellungen wurden als %s im Konfigurationsordner gesichert.",
   "command.dungeontrain.fix_ais.fail": "Die Adventure-Item-Stats-Einstellungsdatei konnte nicht geschrieben werden — siehe Spielprotokoll.",
   "effect.dungeontrain.free_play": "Freies Spiel",
   "effect.dungeontrain.free_play.desc.1": "Hier verdiente Fortschritte werden nicht in deinem Profil gespeichert.",

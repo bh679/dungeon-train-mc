@@ -52,6 +52,7 @@
   "chat.dungeontrain.free_play.ais_fix": "Clique ici pour rétablir les réglages par défaut, puis redémarre le jeu pour jouer normalement.",
   "command.dungeontrain.fix_ais.success": "Réglages par défaut d'Adventure Item Stats rétablis. Redémarre le jeu (ou le serveur) pour reprendre une partie normale.",
   "command.dungeontrain.fix_ais.already_default": "Les réglages d'Adventure Item Stats étaient déjà aux valeurs par défaut — redémarre le jeu si tu vois toujours le mode Libre.",
+  "command.dungeontrain.fix_ais.backup": "Tes réglages précédents ont été sauvegardés sous %s dans le dossier de configuration.",
   "command.dungeontrain.fix_ais.fail": "Impossible d'écrire le fichier de réglages d'Adventure Item Stats — consulte le journal du jeu.",
   "effect.dungeontrain.free_play": "Jeu Libre",
   "effect.dungeontrain.free_play.desc.1": "Les progrès obtenus ici ne seront pas enregistrés dans ton profil.",

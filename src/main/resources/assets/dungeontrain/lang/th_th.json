@@ -52,6 +52,7 @@
   "chat.dungeontrain.free_play.ais_fix": "คลิกที่นี่เพื่อคืนค่าการตั้งค่าเริ่มต้น จากนั้นรีสตาร์ตเกมเพื่อเล่นตามปกติ",
   "command.dungeontrain.fix_ais.success": "คืนค่าการตั้งค่าเริ่มต้นของ Adventure Item Stats แล้ว รีสตาร์ตเกม (หรือเซิร์ฟเวอร์) เพื่อกลับไปเล่นตามปกติ",
   "command.dungeontrain.fix_ais.already_default": "การตั้งค่า Adventure Item Stats เป็นค่าเริ่มต้นอยู่แล้ว — รีสตาร์ตเกมหากยังเห็นโหมดเล่นอิสระ",
+  "command.dungeontrain.fix_ais.backup": "การตั้งค่าเดิมของคุณถูกสำรองไว้เป็น %s ในโฟลเดอร์ config",
   "command.dungeontrain.fix_ais.fail": "ไม่สามารถเขียนไฟล์การตั้งค่า Adventure Item Stats ได้ — ดูบันทึกของเกม",
   "effect.dungeontrain.free_play": "โหมดเล่นอิสระ",
   "effect.dungeontrain.free_play.desc.1": "ความสำเร็จที่ได้ที่นี่จะไม่ถูกบันทึกลงโปรไฟล์ของคุณ",

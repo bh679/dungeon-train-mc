@@ -52,6 +52,7 @@
   "chat.dungeontrain.free_play.ais_fix": "I-click ito para ibalik ang mga default na setting, pagkatapos ay i-restart ang laro para makapaglaro nang normal.",
   "command.dungeontrain.fix_ais.success": "Naibalik ang mga default na setting ng Adventure Item Stats. I-restart ang laro (o server) para makapaglaro ulit nang normal.",
   "command.dungeontrain.fix_ais.already_default": "Nasa default na ang mga setting ng Adventure Item Stats — i-restart ang laro kung nakikita mo pa rin ang Free Play.",
+  "command.dungeontrain.fix_ais.backup": "Na-back up ang dati mong mga setting bilang %s sa config folder.",
   "command.dungeontrain.fix_ais.fail": "Hindi maisulat ang settings file ng Adventure Item Stats — tingnan ang log ng laro.",
   "effect.dungeontrain.free_play": "Malayang Paglalaro",
   "effect.dungeontrain.free_play.desc.1": "Ang mga advancement na makakamit dito ay hindi mase-save sa iyong profile.",

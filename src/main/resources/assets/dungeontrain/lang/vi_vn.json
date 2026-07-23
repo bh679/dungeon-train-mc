@@ -52,6 +52,7 @@
   "chat.dungeontrain.free_play.ais_fix": "Nhấp vào đây để khôi phục cài đặt mặc định, sau đó khởi động lại trò chơi để chơi bình thường.",
   "command.dungeontrain.fix_ais.success": "Đã khôi phục cài đặt mặc định của Adventure Item Stats. Khởi động lại trò chơi (hoặc máy chủ) để chơi bình thường trở lại.",
   "command.dungeontrain.fix_ais.already_default": "Cài đặt Adventure Item Stats vốn đã ở mặc định — khởi động lại trò chơi nếu vẫn thấy Chơi Tự Do.",
+  "command.dungeontrain.fix_ais.backup": "Cài đặt trước đó của bạn đã được sao lưu thành %s trong thư mục config.",
   "command.dungeontrain.fix_ais.fail": "Không thể ghi tệp cài đặt Adventure Item Stats — xem nhật ký trò chơi.",
   "effect.dungeontrain.free_play": "Chơi Tự do",
   "effect.dungeontrain.free_play.desc.1": "Tiến triển đạt được ở đây sẽ không được lưu vào hồ sơ.",

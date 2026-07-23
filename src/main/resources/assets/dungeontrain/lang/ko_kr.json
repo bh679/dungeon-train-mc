@@ -52,6 +52,7 @@
   "chat.dungeontrain.free_play.ais_fix": "여기를 클릭해 기본 설정을 복원한 뒤 게임을 재시작하면 정상적으로 플레이할 수 있습니다.",
   "command.dungeontrain.fix_ais.success": "Adventure Item Stats 기본 설정을 복원했습니다. 게임(또는 서버)을 재시작하면 정상 플레이로 돌아갑니다.",
   "command.dungeontrain.fix_ais.already_default": "Adventure Item Stats 설정이 이미 기본값이었습니다 — 여전히 자유 플레이가 표시되면 게임을 재시작하세요.",
+  "command.dungeontrain.fix_ais.backup": "이전 설정은 config 폴더의 %s(으)로 백업되었습니다.",
   "command.dungeontrain.fix_ais.fail": "Adventure Item Stats 설정 파일을 쓸 수 없습니다 — 게임 로그를 확인하세요.",
   "effect.dungeontrain.free_play": "자유 플레이",
   "effect.dungeontrain.free_play.desc.1": "여기서 얻는 발전 과제는 프로필에 저장되지 않습니다.",

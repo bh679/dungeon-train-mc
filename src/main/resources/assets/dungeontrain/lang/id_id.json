@@ -52,6 +52,7 @@
   "chat.dungeontrain.free_play.ais_fix": "Klik di sini untuk mengembalikan pengaturan bawaan, lalu mulai ulang game untuk bermain seperti biasa.",
   "command.dungeontrain.fix_ais.success": "Pengaturan bawaan Adventure Item Stats dipulihkan. Mulai ulang game (atau server) untuk bermain seperti biasa.",
   "command.dungeontrain.fix_ais.already_default": "Pengaturan Adventure Item Stats sudah pada nilai bawaan — mulai ulang game jika masih melihat Free Play.",
+  "command.dungeontrain.fix_ais.backup": "Pengaturan sebelumnya dicadangkan sebagai %s di folder config.",
   "command.dungeontrain.fix_ais.fail": "Tidak dapat menulis berkas pengaturan Adventure Item Stats — lihat log game.",
   "effect.dungeontrain.free_play": "Main Bebas",
   "effect.dungeontrain.free_play.desc.1": "Kemajuan yang diraih di sini tidak akan disimpan ke profilmu.",

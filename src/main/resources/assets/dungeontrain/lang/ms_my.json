@@ -52,6 +52,7 @@
   "chat.dungeontrain.free_play.ais_fix": "Klik di sini untuk memulihkan tetapan lalai, kemudian mulakan semula permainan untuk bermain seperti biasa.",
   "command.dungeontrain.fix_ais.success": "Tetapan lalai Adventure Item Stats dipulihkan. Mulakan semula permainan (atau pelayan) untuk bermain seperti biasa.",
   "command.dungeontrain.fix_ais.already_default": "Tetapan Adventure Item Stats sudah pada nilai lalai — mulakan semula permainan jika masih melihat Main Bebas.",
+  "command.dungeontrain.fix_ais.backup": "Tetapan anda sebelum ini telah disandarkan sebagai %s dalam folder config.",
   "command.dungeontrain.fix_ais.fail": "Tidak dapat menulis fail tetapan Adventure Item Stats — lihat log permainan.",
   "effect.dungeontrain.free_play": "Main Bebas",
   "effect.dungeontrain.free_play.desc.1": "Pencapaian yang diperoleh di sini tidak akan disimpan ke profil anda.",

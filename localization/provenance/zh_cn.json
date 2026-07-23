@@ -52,6 +52,7 @@
   "chat.dungeontrain.free_play.ais_fix": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "command.dungeontrain.fix_ais.success": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "command.dungeontrain.fix_ais.already_default": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "command.dungeontrain.fix_ais.backup": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "command.dungeontrain.fix_ais.fail": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "effect.dungeontrain.free_play": {"author": "老本願", "reviewer": "老本願"},
   "effect.dungeontrain.free_play.desc.1": {"author": "老本願", "reviewer": "老本願"},

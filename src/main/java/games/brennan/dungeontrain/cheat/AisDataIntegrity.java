@@ -87,31 +87,53 @@ public final class AisDataIntegrity {
     }
 
     /**
-     * Rewrite {@code configDir/adventureitemstats.properties} with the AIS
-     * defaults — the "fix it" action behind {@code /fixaisconfig}. Only ever
-     * writes the known-good defaults, never caller input. Note AIS reads its
-     * config once at game launch, so the fix takes effect on the next game
-     * (or dedicated-server) restart — the session Free Play flag deliberately
-     * stays set until then.
-     *
-     * @return true when the file was written; false on I/O failure (logged).
+     * Outcome of {@link #restoreDefaults}: whether the defaults were written,
+     * and where the replaced file was backed up ({@code null} when there was
+     * nothing to back up — no prior file — or on failure).
      */
-    public static boolean restoreDefaults(Path configDir) {
+    public record RestoreResult(boolean success, Path backup) {}
+
+    /**
+     * Rewrite {@code configDir/adventureitemstats.properties} with the AIS
+     * defaults — the "fix it" action behind {@code /fixaisconfig}. The existing
+     * file is first backed up to a timestamped sibling
+     * ({@code adventureitemstats.properties.bak-<stamp>}) so the player's own
+     * values are never destroyed; if the backup cannot be written the restore
+     * is aborted. Only ever writes the known-good defaults, never caller input.
+     * Note AIS reads its config once at game launch, so the fix takes effect on
+     * the next game (or dedicated-server) restart — the session Free Play flag
+     * deliberately stays set until then.
+     */
+    public static RestoreResult restoreDefaults(Path configDir) {
         Path file = configDir.resolve(FILE_NAME);
+        Path backup = null;
+        try {
+            Files.createDirectories(file.getParent());
+            if (Files.exists(file)) {
+                String stamp = java.time.LocalDateTime.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+                backup = configDir.resolve(FILE_NAME + ".bak-" + stamp);
+                Files.copy(file, backup, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                LOGGER.info("[DungeonTrain] Backed up AIS config to {}", backup);
+            }
+        } catch (IOException e) {
+            // Never destroy the player's data: no backup ⇒ no restore.
+            LOGGER.warn("[DungeonTrain] Could not back up AIS config {} — restore aborted", file, e);
+            return new RestoreResult(false, null);
+        }
         Properties properties = new Properties();
         properties.setProperty(KEY_RAISE_CAPS, String.valueOf(DEFAULT_RAISE_CAPS));
         properties.setProperty(KEY_ARMOR_MAX, String.valueOf(DEFAULT_ARMOR_MAX));
         properties.setProperty(KEY_TOUGHNESS_MAX, String.valueOf(DEFAULT_TOUGHNESS_MAX));
         try {
-            Files.createDirectories(file.getParent());
             try (OutputStream out = Files.newOutputStream(file)) {
                 properties.store(out, "Restored to Adventure Item Stats defaults by Dungeon Train (/fixaisconfig).");
             }
             LOGGER.info("[DungeonTrain] Restored AIS defaults to {}", file);
-            return true;
+            return new RestoreResult(true, backup);
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Could not restore AIS defaults to {}", file, e);
-            return false;
+            return new RestoreResult(false, backup);
         }
     }
 

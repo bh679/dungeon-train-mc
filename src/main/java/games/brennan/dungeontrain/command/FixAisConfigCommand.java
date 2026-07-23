@@ -36,7 +36,8 @@ public final class FixAisConfigCommand {
     private static int run(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
         boolean hadDeviations = AisDataIntegrity.isSessionFreePlay();
-        if (!AisDataIntegrity.restoreDefaults(FMLPaths.CONFIGDIR.get())) {
+        AisDataIntegrity.RestoreResult result = AisDataIntegrity.restoreDefaults(FMLPaths.CONFIGDIR.get());
+        if (!result.success()) {
             source.sendFailure(Component.translatable("command.dungeontrain.fix_ais.fail"));
             return 0;
         }
@@ -44,6 +45,12 @@ public final class FixAisConfigCommand {
             ? "command.dungeontrain.fix_ais.success"
             : "command.dungeontrain.fix_ais.already_default";
         source.sendSuccess(() -> Component.translatable(key).withStyle(ChatFormatting.GREEN), false);
+        if (result.backup() != null) {
+            String backupName = result.backup().getFileName().toString();
+            source.sendSuccess(() -> Component.translatable(
+                "command.dungeontrain.fix_ais.backup", backupName)
+                .withStyle(ChatFormatting.GRAY), false);
+        }
         return 1;
     }
 }

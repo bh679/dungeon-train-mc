@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -129,19 +131,27 @@ class AisDataIntegrityTest {
     }
 
     @Test
-    @DisplayName("restoreDefaults rewrites a tampered file back to clean")
+    @DisplayName("restoreDefaults rewrites a tampered file back to clean, backing up the original")
     void restoreDefaultsRoundTrip(@TempDir Path dir) throws IOException {
-        Files.writeString(dir.resolve(AisDataIntegrity.FILE_NAME),
-            "raiseAttributeCaps=false\narmorCapMax=99999\n");
+        String tampered = "raiseAttributeCaps=false\narmorCapMax=99999\n";
+        Files.writeString(dir.resolve(AisDataIntegrity.FILE_NAME), tampered);
         assertEquals(2, AisDataIntegrity.check(dir).size());
-        assertTrue(AisDataIntegrity.restoreDefaults(dir));
+        AisDataIntegrity.RestoreResult result = AisDataIntegrity.restoreDefaults(dir);
+        assertTrue(result.success());
         assertTrue(AisDataIntegrity.check(dir).isEmpty());
+        // The replaced file's exact content is preserved in the backup.
+        assertNotNull(result.backup());
+        assertTrue(result.backup().getFileName().toString()
+            .startsWith(AisDataIntegrity.FILE_NAME + ".bak-"));
+        assertEquals(tampered, Files.readString(result.backup()));
     }
 
     @Test
-    @DisplayName("restoreDefaults creates the file when absent, still clean")
+    @DisplayName("restoreDefaults creates the file when absent — clean, no backup")
     void restoreDefaultsCreatesFile(@TempDir Path dir) {
-        assertTrue(AisDataIntegrity.restoreDefaults(dir));
+        AisDataIntegrity.RestoreResult result = AisDataIntegrity.restoreDefaults(dir);
+        assertTrue(result.success());
+        assertNull(result.backup());
         assertTrue(Files.exists(dir.resolve(AisDataIntegrity.FILE_NAME)));
         assertTrue(AisDataIntegrity.check(dir).isEmpty());
     }

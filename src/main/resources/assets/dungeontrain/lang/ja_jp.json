@@ -52,6 +52,7 @@
   "chat.dungeontrain.free_play.ais_fix": "ここをクリックしてデフォルト設定に戻し、その後ゲームを再起動すれば通常プレイに戻れる。",
   "command.dungeontrain.fix_ais.success": "Adventure Item Statsのデフォルト設定を復元した。ゲーム(またはサーバー)を再起動すれば通常プレイに戻る。",
   "command.dungeontrain.fix_ais.already_default": "Adventure Item Statsの設定はすでにデフォルトだった。まだフリープレイと表示される場合はゲームを再起動すること。",
+  "command.dungeontrain.fix_ais.backup": "以前の設定はconfigフォルダの%sにバックアップされた。",
   "command.dungeontrain.fix_ais.fail": "Adventure Item Statsの設定ファイルを書き込めなかった。ゲームログを確認すること。",
   "effect.dungeontrain.free_play": "フリープレイ",
   "effect.dungeontrain.free_play.desc.1": "ここで獲得した進捗はプロフィールに保存されません。",

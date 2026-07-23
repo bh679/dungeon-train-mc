@@ -52,6 +52,7 @@
   "chat.dungeontrain.free_play.ais_fix": "Haz clic aquí para restaurar los ajustes por defecto y luego reinicia el juego para jugar con normalidad.",
   "command.dungeontrain.fix_ais.success": "Ajustes por defecto de Adventure Item Stats restaurados. Reinicia el juego (o el servidor) para volver a jugar con normalidad.",
   "command.dungeontrain.fix_ais.already_default": "Los ajustes de Adventure Item Stats ya estaban en sus valores por defecto — reinicia el juego si sigues viendo Juego Libre.",
+  "command.dungeontrain.fix_ais.backup": "Tus ajustes anteriores se han guardado como %s en la carpeta de configuración.",
   "command.dungeontrain.fix_ais.fail": "No se pudo escribir el archivo de ajustes de Adventure Item Stats — consulta el registro del juego.",
   "effect.dungeontrain.free_play": "Juego Libre",
   "effect.dungeontrain.free_play.desc.1": "Los progresos conseguidos aquí no se guardarán en tu perfil.",

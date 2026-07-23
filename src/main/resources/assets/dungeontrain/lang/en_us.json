@@ -52,6 +52,7 @@
   "chat.dungeontrain.free_play.ais_fix": "Click here to restore the default settings, then restart the game to play normally.",
   "command.dungeontrain.fix_ais.success": "Default Adventure Item Stats settings restored. Restart the game (or server) to resume normal play.",
   "command.dungeontrain.fix_ais.already_default": "Adventure Item Stats settings were already at their defaults — restart the game if you still see Free Play.",
+  "command.dungeontrain.fix_ais.backup": "Your previous settings were backed up to %s in the config folder.",
   "command.dungeontrain.fix_ais.fail": "Couldn't write the Adventure Item Stats settings file — see the game log.",
   "effect.dungeontrain.free_play": "Free Play",
   "effect.dungeontrain.free_play.desc.1": "Advancements earned here won't be saved to your profile.",

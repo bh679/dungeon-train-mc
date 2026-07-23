@@ -52,6 +52,7 @@
   "chat.dungeontrain.free_play.ais_fix": "点击此处恢复默认设置,然后重启游戏即可正常游玩。",
   "command.dungeontrain.fix_ais.success": "已恢复 Adventure Item Stats 的默认设置。重启游戏(或服务器)即可恢复正常游玩。",
   "command.dungeontrain.fix_ais.already_default": "Adventure Item Stats 的设置本来就是默认值——如果仍显示自由模式,请重启游戏。",
+  "command.dungeontrain.fix_ais.backup": "你之前的设置已备份为 config 文件夹中的 %s。",
   "command.dungeontrain.fix_ais.fail": "无法写入 Adventure Item Stats 设置文件——请查看游戏日志。",
   "effect.dungeontrain.free_play": "自由模式",
   "effect.dungeontrain.free_play.desc.1": "在这里获得的进度不会保存到你的个人档案。",
