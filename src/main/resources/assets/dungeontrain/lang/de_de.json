@@ -492,6 +492,7 @@
   "gui.dungeontrain.death.reboard": "wieder einsteigen",
   "gui.dungeontrain.death.delete_world.on": "Diese Welt wird beim Wiedereinsteigen gelöscht",
   "gui.dungeontrain.death.delete_world.off": "Diese Welt bleibt beim Wiedereinsteigen erhalten",
+  "gui.dungeontrain.death.discarding_world": "Die Welt wird zurückgelassen…",
   "gui.dungeontrain.death.leave": "die strecke verlassen",
   "gui.dungeontrain.death.continue": "Nächster Bildschirm",
   "gui.dungeontrain.death.board_anew": "Neu einsteigen",

@@ -482,6 +482,7 @@
   "gui.dungeontrain.death.reboard": "opnieuw instappen",
   "gui.dungeontrain.death.delete_world.on": "Deze wereld wordt verwijderd bij opnieuw instappen",
   "gui.dungeontrain.death.delete_world.off": "Deze wereld blijft behouden bij opnieuw instappen",
+  "gui.dungeontrain.death.discarding_world": "De wereld wordt achtergelaten…",
   "gui.dungeontrain.death.leave": "de lijn verlaten",
   "gui.dungeontrain.death.continue": "Volgend scherm",
   "gui.dungeontrain.death.board_anew": "Opnieuw instappen",

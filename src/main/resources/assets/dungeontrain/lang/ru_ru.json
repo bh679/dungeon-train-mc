@@ -492,6 +492,7 @@
   "gui.dungeontrain.death.reboard": "снова на борт",
   "gui.dungeontrain.death.delete_world.on": "Этот мир будет удалён, когда вы снова сядете на борт",
   "gui.dungeontrain.death.delete_world.off": "Этот мир будет сохранён, когда вы снова сядете на борт",
+  "gui.dungeontrain.death.discarding_world": "Оставляем мир позади…",
   "gui.dungeontrain.death.leave": "покинуть линию",
   "gui.dungeontrain.death.continue": "Следующий экран",
   "gui.dungeontrain.death.board_anew": "Сесть заново",

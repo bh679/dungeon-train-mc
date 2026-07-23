@@ -482,6 +482,7 @@
   "gui.dungeontrain.death.reboard": "naik semula",
   "gui.dungeontrain.death.delete_world.on": "Dunia ini akan dipadam apabila naik semula",
   "gui.dungeontrain.death.delete_world.off": "Dunia ini akan dikekalkan apabila naik semula",
+  "gui.dungeontrain.death.discarding_world": "Meninggalkan dunia…",
   "gui.dungeontrain.death.leave": "tinggalkan landasan",
   "gui.dungeontrain.death.continue": "Skrin Seterusnya",
   "gui.dungeontrain.death.board_anew": "Naik semula",

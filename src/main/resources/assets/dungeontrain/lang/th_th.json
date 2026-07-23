@@ -482,6 +482,7 @@
   "gui.dungeontrain.death.reboard": "ขึ้นรถอีกครั้ง",
   "gui.dungeontrain.death.delete_world.on": "โลกนี้จะถูกลบเมื่อขึ้นรถอีกครั้ง",
   "gui.dungeontrain.death.delete_world.off": "โลกนี้จะถูกเก็บไว้เมื่อขึ้นรถอีกครั้ง",
+  "gui.dungeontrain.death.discarding_world": "กำลังทิ้งโลกไว้เบื้องหลัง…",
   "gui.dungeontrain.death.leave": "ออกจากเส้นทาง",
   "gui.dungeontrain.death.continue": "หน้าจอถัดไป",
   "gui.dungeontrain.death.board_anew": "ขึ้นรถใหม่",

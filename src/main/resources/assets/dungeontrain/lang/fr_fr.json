@@ -482,6 +482,7 @@
   "gui.dungeontrain.death.reboard": "remonter à bord",
   "gui.dungeontrain.death.delete_world.on": "Ce monde sera supprimé quand vous remonterez à bord",
   "gui.dungeontrain.death.delete_world.off": "Ce monde sera conservé quand vous remonterez à bord",
+  "gui.dungeontrain.death.discarding_world": "On laisse le monde derrière…",
   "gui.dungeontrain.death.leave": "quitter la ligne",
   "gui.dungeontrain.death.continue": "Écran suivant",
   "gui.dungeontrain.death.board_anew": "Remonter à bord",

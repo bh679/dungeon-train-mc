@@ -482,6 +482,7 @@
   "gui.dungeontrain.death.reboard": "다시 탑승",
   "gui.dungeontrain.death.delete_world.on": "다시 탑승하면 이 월드가 삭제됩니다",
   "gui.dungeontrain.death.delete_world.off": "다시 탑승해도 이 월드가 유지됩니다",
+  "gui.dungeontrain.death.discarding_world": "월드를 뒤로하는 중…",
   "gui.dungeontrain.death.leave": "노선을 떠나기",
   "gui.dungeontrain.death.continue": "다음 화면",
   "gui.dungeontrain.death.board_anew": "새로 탑승",

@@ -492,6 +492,7 @@
   "gui.dungeontrain.death.reboard": "lên tàu lại",
   "gui.dungeontrain.death.delete_world.on": "Thế giới này sẽ bị xóa khi lên tàu lại",
   "gui.dungeontrain.death.delete_world.off": "Thế giới này sẽ được giữ lại khi lên tàu lại",
+  "gui.dungeontrain.death.discarding_world": "Đang bỏ lại thế giới phía sau…",
   "gui.dungeontrain.death.leave": "rời tuyến đường",
   "gui.dungeontrain.death.continue": "Màn Hình Tiếp Theo",
   "gui.dungeontrain.death.board_anew": "Lên tàu lại từ đầu",

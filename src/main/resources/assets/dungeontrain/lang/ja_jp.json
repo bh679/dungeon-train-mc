@@ -482,6 +482,7 @@
   "gui.dungeontrain.death.reboard": "再乗車",
   "gui.dungeontrain.death.delete_world.on": "再乗車するとこのワールドは削除されます",
   "gui.dungeontrain.death.delete_world.off": "再乗車してもこのワールドは保持されます",
+  "gui.dungeontrain.death.discarding_world": "ワールドを後にしています…",
   "gui.dungeontrain.death.leave": "路線を去る",
   "gui.dungeontrain.death.continue": "次の画面",
   "gui.dungeontrain.death.board_anew": "新たに乗車",

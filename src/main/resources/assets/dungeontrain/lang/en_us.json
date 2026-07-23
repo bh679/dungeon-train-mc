@@ -492,6 +492,7 @@
   "gui.dungeontrain.death.reboard": "reboard",
   "gui.dungeontrain.death.delete_world.on": "This world will be deleted when you reboard",
   "gui.dungeontrain.death.delete_world.off": "This world will be kept when you reboard",
+  "gui.dungeontrain.death.discarding_world": "Leaving the world behind…",
   "gui.dungeontrain.death.leave": "leave the line",
   "gui.dungeontrain.death.continue": "Next Screen",
   "gui.dungeontrain.death.board_anew": "Board anew",

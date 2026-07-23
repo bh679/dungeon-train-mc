@@ -203,7 +203,10 @@ public final class DeathScreenLayoutHandler {
         if (mc.level != null) {
             mc.level.disconnect();
         }
-        mc.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
+        // When the old world is being discarded the vanilla "Saving world" label
+        // would be a lie — show the discard message instead.
+        mc.disconnect(new GenericMessageScreen(Component.translatable(
+                oldLevelId != null ? "gui.dungeontrain.death.discarding_world" : "menu.savingLevel")));
 
         // disconnect() has fully halted the integrated server and released its
         // session lock, so the old save folder can be deleted before the new

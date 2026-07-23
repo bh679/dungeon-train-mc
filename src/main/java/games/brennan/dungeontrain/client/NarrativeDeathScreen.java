@@ -1210,16 +1210,19 @@ public final class NarrativeDeathScreen extends Screen {
     /**
      * Square 14×14 chip with a pixel-art trash can drawn in {@code fill}s (no
      * sprite — fills honour the {@link #fade} alpha where {@code blitSprite}
-     * can't). On-state uses the reboard green accent; off-state is muted with a
-     * diagonal strike, mirroring "this world will be kept".
+     * can't). Always grey: 20% faded when on, 60% faded when off — with a
+     * diagonal strike added when off, mirroring "this world will be kept".
+     * {@link #fade} multiplies the baked-in alpha, so these compose with the
+     * chrome fade.
      */
     private Rect drawTrashChip(GuiGraphics g, int x, int y, boolean on) {
         int w = 14, h = 14;
-        int border = on ? CHIP_RB_BORDER : CHIP_LV_BORDER;
-        int icon = on ? CHIP_RB_TEXT : CHIP_LV_TEXT;
+        int alpha = on ? 0xCC : 0x66;                   // 80% vs 40% opacity
+        int grey = (alpha << 24) | 0x00A8AEB8;
+        int borderGrey = (alpha << 24) | 0x002A2D33;
         g.fill(x, y, x + w, y + h, fade(0x66000000));
-        drawBorder(g, x, y, w, h, border);
-        int c = fade(icon);
+        drawBorder(g, x, y, w, h, borderGrey);
+        int c = fade(grey);
         // Trash can: handle, lid, body with two slat gaps.
         g.fill(x + 6, y + 2, x + 8, y + 3, c);          // handle
         g.fill(x + 3, y + 3, x + 11, y + 4, c);         // lid
@@ -1227,8 +1230,8 @@ public final class NarrativeDeathScreen extends Screen {
         int gap = fade(0x66000000);
         g.fill(x + 6, y + 6, x + 7, y + 11, gap);       // slat gap (leaves 3 slats)
         if (!on) {
-            // Diagonal strike, bottom-left → top-right, over the icon.
-            int s = fade(0xFFB05A5A);
+            // Diagonal strike, bottom-left → top-right, over the icon (same 60% fade).
+            int s = fade((alpha << 24) | 0x00B05A5A);
             for (int i = 0; i < 10; i++) {
                 g.fill(x + 2 + i, y + 11 - i, x + 3 + i, y + 12 - i, s);
             }
