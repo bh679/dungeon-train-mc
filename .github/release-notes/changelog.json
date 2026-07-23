@@ -5440,9 +5440,9 @@
       ],
       "pr": 822,
       "date": "2026-07-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.496.0",
+      "released_at": "2026-07-23T03:17:59Z"
     },
     {
       "id": "support-page-zh-revision",
@@ -5455,9 +5455,9 @@
         "Copy adapts automatically between mod and modpack installs"
       ],
       "date": "2026-07-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.496.0",
+      "released_at": "2026-07-23T03:17:59Z"
     }
   ]
 }
