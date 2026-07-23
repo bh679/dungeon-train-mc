@@ -70,7 +70,6 @@
   "gui.dungeontrain.loading.phase.spawning_train": "正在生成地牢列車……",
   "gui.dungeontrain.loading.phase.spawning_seed": "正在生成初始列車……",
   "gui.dungeontrain.loading.phase.anchoring_spawn": "正在錨定世界出生點……",
-
   "gui.dungeontrain.loading.story.1.line.1": "地牢列車是什麼？",
   "gui.dungeontrain.loading.story.1.line.2": "這列車是個奇怪的東西。",
   "gui.dungeontrain.loading.story.1.line.3": "有人說它是多維的。",
@@ -82,7 +81,6 @@
   "gui.dungeontrain.loading.story.1.line.9": "源自一雙獲獎之手的奇想。",
   "gui.dungeontrain.loading.story.1.line.10": "答案會改變這趟旅程嗎？",
   "gui.dungeontrain.loading.story.1.line.11": "你會有時間思考。路還很長。",
-
   "gui.dungeontrain.loading.story.2.line.1": "列車想從我這裡得到什麼？",
   "gui.dungeontrain.loading.story.2.line.2": "我想，它確實有所求。",
   "gui.dungeontrain.loading.story.2.line.3": "有人說，它要的是戰利品——",
@@ -95,7 +93,6 @@
   "gui.dungeontrain.loading.story.2.line.10": "我呢？",
   "gui.dungeontrain.loading.story.2.line.11": "我想它只想要",
   "gui.dungeontrain.loading.story.2.line.12": "正確的問題。",
-
   "gui.dungeontrain.loading.story.3.line.1": "還有誰乘坐這趟列車？",
   "gui.dungeontrain.loading.story.3.line.2": "其他人。",
   "gui.dungeontrain.loading.story.3.line.3": "或者形似他們的東西。",
@@ -112,7 +109,6 @@
   "gui.dungeontrain.loading.story.3.line.14": "而有時候——",
   "gui.dungeontrain.loading.story.3.line.15": "是你自己的回聲。",
   "gui.dungeontrain.loading.story.3.line.16": "我盡量不看得太仔細。",
-
   "gui.dungeontrain.loading.story.4.line.1": "列車要去哪裡？",
   "gui.dungeontrain.loading.story.4.line.2": "取決於你問誰。",
   "gui.dungeontrain.loading.story.4.line.3": "有人說，它駛向所愛之人。",
@@ -148,7 +144,6 @@
   "gui.dungeontrain.loading.story.4.line.33": "我已經不再相信目的地。",
   "gui.dungeontrain.loading.story.4.line.34": "只剩旅途本身。",
   "gui.dungeontrain.loading.story.4.line.35": "也許這正是意義所在。",
-
   "gui.dungeontrain.loading.story.5.line.1": "是誰造出了列車？",
   "gui.dungeontrain.loading.story.5.line.2": "他們說是一個人造的。",
   "gui.dungeontrain.loading.story.5.line.3": "一個人，",
@@ -179,7 +174,6 @@
   "gui.dungeontrain.loading.story.5.line.28": "它們究竟意味著什麼。",
   "gui.dungeontrain.loading.story.5.line.29": "也許造物主就是這樣。",
   "gui.dungeontrain.loading.story.5.line.30": "一個永遠決定不完的人。",
-
   "gui.dungeontrain.loading.story.6.line.1": "列車從哪裡來？",
   "gui.dungeontrain.loading.story.6.line.2": "有人聲稱它一直都在，",
   "gui.dungeontrain.loading.story.6.line.3": "在世界之間循環往復，",
@@ -205,7 +199,6 @@
   "gui.dungeontrain.loading.story.6.line.23": "渴望沒有車站。",
   "gui.dungeontrain.loading.story.6.line.24": "它只會離開，",
   "gui.dungeontrain.loading.story.6.line.25": "並希望你已經在車上。",
-
   "gui.dungeontrain.loading.story.7.line.1": "列車會夢見什麼？",
   "gui.dungeontrain.loading.story.7.line.2": "我原以為它不會睡。",
   "gui.dungeontrain.loading.story.7.line.3": "直到有一次，我發現一節車廂，",
@@ -235,7 +228,6 @@
   "gui.dungeontrain.loading.story.7.line.27": "正在翻身，",
   "gui.dungeontrain.loading.story.7.line.28": "極其緩慢地，",
   "gui.dungeontrain.loading.story.7.line.29": "在睡夢之中。",
-
   "gui.dungeontrain.loading.story.8.line.1": "列車會挑選誰登車嗎？",
   "gui.dungeontrain.loading.story.8.line.2": "所有人都希望那是一種選擇。",
   "gui.dungeontrain.loading.story.8.line.3": "那樣比較容易理解——",
@@ -262,7 +254,6 @@
   "gui.dungeontrain.loading.story.8.line.24": "「問題問錯了。",
   "gui.dungeontrain.loading.story.8.line.25": "等你靠得夠近、能開口發問時，",
   "gui.dungeontrain.loading.story.8.line.26": "你早就上車了。」",
-
   "gui.dungeontrain.loading.story.9.line.1": "是誰造出了列車？",
   "gui.dungeontrain.loading.story.9.line.2": "這個問題問得夠久，",
   "gui.dungeontrain.loading.story.9.line.3": "你就不再聽見造物主的故事。",
@@ -310,7 +301,6 @@
   "gui.dungeontrain.loading.story.9.line.45": "被記住的方式。",
   "gui.dungeontrain.loading.story.9.line.46": "這並不是一種糟糕的",
   "gui.dungeontrain.loading.story.9.line.47": "成為創造者的方式。",
-
   "gui.dungeontrain.death.narr.platform_fallback": "月台靜靜等待。你準備好時，線路便會載你繼續前行。",
   "chat.dungeontrain.bed.no_respawn.1": "重生點已設定——就在列車上。無論線路將它載往何方，你都會在那裡醒來。",
   "chat.dungeontrain.bed.no_respawn.2": "軌道如今承載著你的錨點。睡吧，由列車決定你在何處醒來。",
@@ -504,21 +494,24 @@
   "death.attack.dungeontrain.walked_away.player": "%1$s 走離了線路",
   "gui.dungeontrain.death.leave_line": "離開線路",
   "gui.dungeontrain.discord_button": "Discord",
-  "gui.dungeontrain.support.button": "支持作者",
-  "gui.dungeontrain.support.title": "幫忙的方式",
-  "gui.dungeontrain.support.subtitle": "Dungeon Train 由一個人製作。你可以這樣幫忙！",
-  "gui.dungeontrain.support.financial.header": "1. 資金支持",
-  "gui.dungeontrain.support.financial.desc": "在 Patreon 上支持我，或進行一次性捐款。\n租用多人伺服器時，也可以使用我的%s。",
-  "gui.dungeontrain.support.financial.donate": "直接捐款",
-  "gui.dungeontrain.support.donate_tooltip": "無手續費 · 金額自訂 · 全部直接匯入我的銀行帳戶",
+  "gui.dungeontrain.support.button": "支持模組作者",
+  "gui.dungeontrain.support.title": "支持方式",
+  "gui.dungeontrain.support.subtitle": "Dungeon Train目前僅由一位作者開發，如果力所能及的話，通過以下方式便可協助到我的開發工作",
+  "gui.dungeontrain.support.financial.header": "1.贊助",
+  "gui.dungeontrain.support.financial.desc": "你可以前往Patreon上支持我，或者直接進行打賞，另外如果你需要使用此模組開設私人伺服器，也可以選擇前往並使用我的%s",
+  "gui.dungeontrain.support.financial.desc.modpack": "你可以前往Patreon上支持我，或者直接進行打賞，另外如果你需要使用此整合包開設私人伺服器，也可以選擇前往並使用我的%s",
+  "gui.dungeontrain.support.financial.donate": "直接贊助",
+  "gui.dungeontrain.support.donate_tooltip": "無手續費-自訂贊助金額-直接匯入作者帳號",
   "gui.dungeontrain.support.financial.patreon": "在 Patreon 上支持",
-  "gui.dungeontrain.support.financial.affiliate_link": "聯盟推廣連結",
+  "gui.dungeontrain.support.financial.affiliate_link": "合作推廣連結",
   "gui.dungeontrain.support.patreon_icon": "在 Patreon 上支持",
   "gui.dungeontrain.support.patreon_icon.tooltip": "Patreon",
-  "gui.dungeontrain.support.share.header": "2. 分享這個模組",
-  "gui.dungeontrain.support.share.desc": "把它推薦給內容創作者，在他們的影片下留言。\n製作你自己的影片！\n在 Discord 裡分享任何 Dungeon Train 影片。",
-  "gui.dungeontrain.support.feedback.header": "3. 意見回饋與測試",
-  "gui.dungeontrain.support.feedback.desc": "在 Discord 分享你的意見與想法。\n測試你想加入整合包的模組，然後告訴我。\n如果你直播 Dungeon Train，也告訴我。\n加入 %s 一起參與。",
+  "gui.dungeontrain.support.share.header": "2.分享它！",
+  "gui.dungeontrain.support.share.desc": "譬如將此模組推薦給你喜歡的影片作者、或是製作你自己的影片之類的，你能用不同的方法分享這個模組\n當然，在QQ、微信、YouTube、Discord、WhatsApp、LINE等社交媒體分享有關咱們Dungeon Train的內容也是不錯的想法",
+  "gui.dungeontrain.support.share.desc.modpack": "譬如將此模組推薦給你喜歡的影片作者、或是製作你自己的影片之類的，你能用不同的方法分享這個整合包\n當然，在QQ、微信、YouTube、Discord、WhatsApp、LINE等社交媒體分享有關咱們Dungeon Train的內容也是不錯的想法",
+  "gui.dungeontrain.support.feedback.header": "3.玩法反饋與內容測試",
+  "gui.dungeontrain.support.feedback.desc": "若是在遊玩過程中有想法建議亦或是發現了遊戲問題，前來Discord頻道踴躍提出即可\n要是你有什麼想集合進Dungeon Train整合包的模組，自行測試完了也沒問題的情況下，那就不妨來直接私訊我一起討論看看\n如果你是個影片作者並且樂意遊玩、直播Dungeon Train，我也隨時歡迎你聯絡我\n加入 %s 共同參與模組的建設",
+  "gui.dungeontrain.support.feedback.desc.modpack": "若是在遊玩過程中有想法建議亦或是發現了遊戲問題，前來Discord頻道踴躍提出即可\n要是你有什麼想集合進Dungeon Train整合包的模組，自行測試完了也沒問題的情況下，那就不妨來直接私訊我一起討論看看\n如果你是個影片作者並且樂意遊玩、直播Dungeon Train，我也隨時歡迎你聯絡我\n加入 %s 共同參與整合包的建設",
   "gui.dungeontrain.exit_to_title": "退出至標題畫面",
   "gui.dungeontrain.editor_button": "列車編輯器",
   "gui.dungeontrain.new_world": "發車",
@@ -550,7 +543,6 @@
   "gui.dungeontrain.options.carriage_height": "高度",
   "gui.dungeontrain.options.preview": "預覽：%s × %s × %s（長 × 寬 × 高）",
   "gui.dungeontrain.options.range_hint": "列車 Y %s–%s · 長 %s–%s · 寬 %s–%s · 高 %s–%s · 群組 %s–%s",
-
   "gui.dungeontrain.settings.title": "地牢列車設定",
   "gui.dungeontrain.settings.narrate.carriages": "車廂",
   "gui.dungeontrain.settings.narrate.speed": "速度",
@@ -594,14 +586,12 @@
   "gui.dungeontrain.prefab_save.cancel": "取消",
   "subtitles.dungeontrain.train_engine": "列車引擎轟隆作響",
   "block.dungeontrain.narrative_lectern": "敘事講台",
-
   "gui.dungeontrain.developer_popup.title": "來自開發者的訊息",
   "gui.dungeontrain.developer_popup.author": "Brennan — 開發者",
   "gui.dungeontrain.developer_popup.message": "嗨！你覺得這個遊戲如何？我很想在 Discord 上跟你聊聊，聽聽你認為它還需要什麼 :)",
   "gui.dungeontrain.developer_popup.discord": "在 Discord 上聊天",
   "gui.dungeontrain.developer_popup.close": "也許之後再說",
   "gui.dungeontrain.developer_popup.dont_ask_again": "不要再問",
-
   "chat.dungeontrain.dev_message.consent_prompt": "開發者想傳一則訊息給你，輸入 %s 以接受。",
   "chat.dungeontrain.dev_message.prefix": "[開發者] ",
   "chat.dungeontrain.presence.online_now": "Brennan 此刻正在 Discord 上線！",
@@ -615,9 +605,7 @@
   "chat.dungeontrain.time.hours": "%s 小時",
   "chat.dungeontrain.time.day": "%s 天",
   "chat.dungeontrain.time.days": "%s 天",
-
   "advancements.dungeontrain.hidden_description": "？？？",
-
   "advancements.dungeontrain.dungeon_train.landed_on_tracks.hint": "它不在列車上。",
   "advancements.dungeontrain.dungeon_train.left_train.hint": "想逃離列車嗎？",
   "advancements.dungeontrain.dungeon_train.used_tunnel_stairs.hint": "沿著樓梯深入地底。",
@@ -677,7 +665,6 @@
   "advancements.dungeontrain.dungeon_train.cross_country.hint": "那可是一段不曾死亡的漫長旅程。",
   "advancements.dungeontrain.dungeon_train.the_long_run.hint": "哇。在一條命內完成？",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.hint": "回頭這件事，是不是沉沒成本謬誤？",
-
   "advancements.dungeontrain.dungeon_train.root.title": "地牢列車",
   "advancements.dungeontrain.dungeon_train.root.description": "全員上車。",
   "advancements.dungeontrain.dungeon_train.completionist.title": "全包捲餅",
@@ -849,7 +836,6 @@
   "advancements.dungeontrain.dungeon_train.the_creator_answers.description": "收到開發者傳來的訊息",
   "advancements.dungeontrain.dungeon_train.the_great_beyond.title": "偉大的彼岸",
   "advancements.dungeontrain.dungeon_train.the_great_beyond.description": "在死亡後完成意見回饋問卷。",
-
   "advancements.dungeontrain.editor.root.title": "編輯器",
   "advancements.dungeontrain.editor.root.description": "打造你所乘坐的列車。",
   "advancements.dungeontrain.editor.made_carriage.title": "建築師",

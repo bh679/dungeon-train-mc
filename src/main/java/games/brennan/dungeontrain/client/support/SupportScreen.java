@@ -14,7 +14,9 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.util.FormattedCharSequence;
+import net.neoforged.fml.ModList;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -99,6 +101,34 @@ public final class SupportScreen extends Screen {
         this.parent = parent;
     }
 
+    /**
+     * Companion mods that ship via the Dungeon Train modpack but are not DT
+     * dependencies (the sibling mods always load, so they can't discriminate).
+     * Two or more of these present is read as "the player is running the
+     * modpack" and switches the copy from mod- to modpack-wording.
+     */
+    private static final String[] MODPACK_COMPANIONS =
+            {"appleskin", "ferritecore", "modernfix", "advancementplaques"};
+
+    /** Heuristic: is this a modpack install rather than the bare mod? */
+    private static boolean isModpackInstall() {
+        int found = 0;
+        for (String id : MODPACK_COMPANIONS) {
+            if (ModList.get().isLoaded(id) && ++found >= 2) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Resolve a copy key to its {@code .modpack} variant when this looks like a
+     * modpack install and the current language actually has that variant —
+     * otherwise the base key, so untranslated languages fall back cleanly.
+     */
+    private static String copyKey(String baseKey) {
+        String modpackKey = baseKey + ".modpack";
+        return isModpackInstall() && I18n.exists(modpackKey) ? modpackKey : baseKey;
+    }
+
     @Override
     protected void init() {
         textBlocks.clear();
@@ -120,7 +150,7 @@ public final class SupportScreen extends Screen {
         // button; the affiliate is an inline link spliced into the copy.
         y = addSection(y, lh,
                 Component.translatable("gui.dungeontrain.support.financial.header"),
-                Component.translatable("gui.dungeontrain.support.financial.desc", affiliateLink()),
+                Component.translatable(copyKey("gui.dungeontrain.support.financial.desc"), affiliateLink()),
                 new LinkButton("gui.dungeontrain.support.financial.donate", revolutUrl(), TINT_GREEN,
                         "gui.dungeontrain.support.donate_tooltip"),
                 new LinkButton("gui.dungeontrain.support.financial.patreon", OfficialLinks.patreon(), TINT_ORANGE, null));
@@ -128,12 +158,12 @@ public final class SupportScreen extends Screen {
         // Share — text only, no link.
         y = addSection(y, lh,
                 Component.translatable("gui.dungeontrain.support.share.header"),
-                Component.translatable("gui.dungeontrain.support.share.desc"));
+                Component.translatable(copyKey("gui.dungeontrain.support.share.desc")));
 
         // Feedback — only the final "Discord" (Join the Discord) is a clickable link.
         y = addSection(y, lh,
                 Component.translatable("gui.dungeontrain.support.feedback.header"),
-                Component.translatable("gui.dungeontrain.support.feedback.desc", discordLink()));
+                Component.translatable(copyKey("gui.dungeontrain.support.feedback.desc"), discordLink()));
 
         panelBottom = y + (PANEL_PAD - SECTION_GAP);
 
