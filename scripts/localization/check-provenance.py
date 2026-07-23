@@ -23,6 +23,13 @@ legitimately ships ``human_reviewed: true`` with partial line coverage (the #770
 review predates the Opus-added keys), and failing on it would train everyone to
 ignore the guard.
 
+The GENERATED count fields in those same credit files (total_keys / ai_authored /
+ai_unreviewed — the data behind the in-game AI-fraction ring) are held to a HARDER
+standard: missing, malformed, or drifted counts are errors. Unlike the judgment-call
+flag, the counts are machine-derived from the sidecars, so any mismatch means someone
+forgot to run stamp-provenance.py (or hand-edited a generated field) and the jar
+would ship a player-visible lie.
+
 Usage:
   python3 scripts/localization/check-provenance.py
   python3 scripts/localization/check-provenance.py --report
@@ -36,6 +43,7 @@ from pathlib import Path
 import provenance_io
 
 FIX_HINT = "fix: python3 scripts/localization/stamp-provenance.py --sync --author '<who translated>'"
+FIX_HINT_COUNTS = "fix: python3 scripts/localization/stamp-provenance.py --sync"
 
 
 def check_file_coverage(lang_dir: Path, prov_dir: Path, targets: list[str]) -> list[str]:
@@ -119,12 +127,51 @@ def check_registry(locale: str, prov: dict, authors: dict[str, str]) -> list[str
     return errors
 
 
-def ai_unreviewed(prov: dict, authors: dict[str, str]) -> tuple[int, int]:
-    """(AI-authored count, AI-authored-and-unreviewed count) for one sidecar."""
-    ai = sum(1 for e in prov.values() if authors.get(e["author"]) == "ai")
-    unrev = sum(1 for e in prov.values()
-                if authors.get(e["author"]) == "ai" and not e["reviewer"])
-    return ai, unrev
+def check_credit_counts(locale: str, prov: dict, authors: dict[str, str],
+                        credits_dir: Path) -> list[str]:
+    """Hard lockstep between the shipped generated count fields and the sidecar.
+
+    Unlike cross_check_credits (advisory), these are ERRORS: the counts drive the
+    AI-fraction ring in the language list, so stale shipped numbers mislead players.
+    Every credit file matching the locale must carry all three fields, exactly.
+    """
+    fields = provenance_io.CREDIT_COUNT_FIELDS
+    expected = dict(zip(fields, provenance_io.ai_counts(prov, authors)))
+
+    def fmt(counts: dict) -> str:
+        return ", ".join(f"{f}={counts[f]}" for f in fields)
+
+    errors: list[str] = []
+    for path in provenance_io.credit_paths_for_locale(credits_dir, locale):
+        credit = provenance_io.load_credit(path)
+        missing = [f for f in fields if f not in credit]
+        if missing:
+            errors.append(
+                f"{locale}: {path.name}: missing generated count field(s) "
+                f"{', '.join(missing)} — {FIX_HINT_COUNTS}"
+            )
+            continue
+        values = {f: credit[f] for f in fields}
+        bad = [f for f, v in values.items()
+               if not isinstance(v, int) or isinstance(v, bool) or v < 0]
+        if bad:
+            errors.append(
+                f"{locale}: {path.name}: count field(s) {', '.join(bad)} must be "
+                f"non-negative integers — {FIX_HINT_COUNTS}"
+            )
+            continue
+        if not values["ai_unreviewed"] <= values["ai_authored"] <= values["total_keys"]:
+            errors.append(
+                f"{locale}: {path.name}: inconsistent counts ({fmt(values)}) — need "
+                f"ai_unreviewed <= ai_authored <= total_keys — {FIX_HINT_COUNTS}"
+            )
+            continue
+        if values != expected:
+            errors.append(
+                f"{locale}: {path.name}: shipped counts ({fmt(values)}) don't match "
+                f"provenance ({fmt(expected)}) — {FIX_HINT_COUNTS}"
+            )
+    return errors
 
 
 def credits_human_reviewed(credits_dir: Path, locale: str) -> bool:
@@ -180,7 +227,7 @@ def print_report(targets: list[str], prov_dir: Path, authors: dict[str, str]) ->
         buckets: dict[str, int] = {}
         for entry in prov.values():
             buckets[entry["author"]] = buckets.get(entry["author"], 0) + 1
-        ai, unrev = ai_unreviewed(prov, authors)
+        _, ai, unrev = provenance_io.ai_counts(prov, authors)
         reviewed = sum(1 for e in prov.values() if e["reviewer"])
         tot = {"keys": tot["keys"] + len(prov), "ai": tot["ai"] + ai,
                "unrev": tot["unrev"] + unrev, "reviewed": tot["reviewed"] + reviewed}
@@ -229,12 +276,18 @@ def main(argv: list[str] | None = None) -> int:
     checkable = [loc for loc in targets
                  if (args.provenance_dir / f"{loc}.json").is_file()]
     for locale in checkable:
-        errors.extend(check_locale(locale, args.lang_dir, args.provenance_dir))
+        locale_errors = check_locale(locale, args.lang_dir, args.provenance_dir)
         try:
             prov = provenance_io.load_provenance(args.provenance_dir / f"{locale}.json")
         except (json.JSONDecodeError, ValueError):
+            errors.extend(locale_errors)
             continue  # already reported by check_locale
-        errors.extend(check_registry(locale, prov, authors))
+        registry_errors = check_registry(locale, prov, authors)
+        errors.extend(locale_errors)
+        errors.extend(registry_errors)
+        if not locale_errors and not registry_errors:
+            # Counts computed from a structurally-broken sidecar would be noise.
+            errors.extend(check_credit_counts(locale, prov, authors, args.credits_dir))
 
     if errors:
         print("Provenance check FAILED:", file=sys.stderr)
@@ -254,7 +307,7 @@ def main(argv: list[str] | None = None) -> int:
         for locale in targets:
             prov = provenance_io.load_provenance(args.provenance_dir / f"{locale}.json")
             reviewed = sum(1 for e in prov.values() if e["reviewer"])
-            _, unrev = ai_unreviewed(prov, authors)
+            _, _, unrev = provenance_io.ai_counts(prov, authors)
             print(f"OK: {locale} — {len(prov)} keys aligned, {reviewed} human-reviewed, "
                   f"{unrev} AI-unreviewed.")
     return 0

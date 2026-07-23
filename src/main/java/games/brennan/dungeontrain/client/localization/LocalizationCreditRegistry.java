@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalDouble;
 
 /**
  * In-memory registry of every {@link LocalizationCredit} at
@@ -90,6 +91,49 @@ public final class LocalizationCreditRegistry {
         return out;
     }
 
+    /** Which generated count feeds {@link #aiFraction} — a one-line switch. */
+    private enum Metric { AI_UNREVIEWED, AI_AUTHORED }
+
+    private static final Metric RING_METRIC = Metric.AI_UNREVIEWED;
+
+    /**
+     * The locale's AI-translation fraction per {@link #RING_METRIC}, in {@code [0, 1]} — empty
+     * when no loaded credit for that locale carries the generated count fields (older packs,
+     * hand-made overrides). Drives the blue AI-fraction ring around the Dungeon Train logo in
+     * the language-selection list.
+     *
+     * <p>When several credit files match the locale (one per contributor is legal), the counts
+     * with the greatest {@code totalKeys} win, tie-broken by the greatest numerator — so the most
+     * complete data survives a stale third-party file coexisting with the shipped one.</p>
+     */
+    public static synchronized OptionalDouble aiFraction(String localeCode) {
+        if (localeCode == null || localeCode.isEmpty()) {
+            return OptionalDouble.empty();
+        }
+        LocalizationCredit.AiCounts best = null;
+        for (LocalizationCredit credit : CREDITS.values()) {
+            if (!credit.locale().equalsIgnoreCase(localeCode) || credit.aiCounts().isEmpty()) {
+                continue;
+            }
+            LocalizationCredit.AiCounts counts = credit.aiCounts().get();
+            if (best == null
+                || counts.totalKeys() > best.totalKeys()
+                || (counts.totalKeys() == best.totalKeys()
+                    && numerator(counts) > numerator(best))) {
+                best = counts;
+            }
+        }
+        if (best == null) {
+            return OptionalDouble.empty();
+        }
+        return OptionalDouble.of(RING_METRIC == Metric.AI_UNREVIEWED
+            ? best.unreviewedFraction() : best.authoredFraction());
+    }
+
+    private static int numerator(LocalizationCredit.AiCounts counts) {
+        return RING_METRIC == Metric.AI_UNREVIEWED ? counts.aiUnreviewed() : counts.aiAuthored();
+    }
+
     /**
      * Whether {@code localeCode}'s translation is human-reviewed — {@code true} if any loaded
      * credit for that locale carries {@code "human_reviewed": true}. Used to render the language's
@@ -123,8 +167,40 @@ public final class LocalizationCreditRegistry {
         String name = requiredString(root, "name");
         Optional<String> url = optionalString(root, "url");
         boolean humanReviewed = optionalBoolean(root, "human_reviewed");
+        Optional<LocalizationCredit.AiCounts> aiCounts = optionalAiCounts(root);
 
-        return new LocalizationCredit(id, locale, name, url, humanReviewed);
+        return new LocalizationCredit(id, locale, name, url, humanReviewed, aiCounts);
+    }
+
+    /**
+     * The generated AI-count triple, or empty unless all three fields are present as consistent
+     * non-negative integers ({@code ai_unreviewed <= ai_authored <= total_keys}, positive total).
+     * Never fails the file — a credit without (valid) counts simply renders no ring, keeping old
+     * packs and hand-made overrides loading exactly as before.
+     */
+    private static Optional<LocalizationCredit.AiCounts> optionalAiCounts(JsonObject obj) {
+        Integer total = optionalInt(obj, "total_keys");
+        Integer authored = optionalInt(obj, "ai_authored");
+        Integer unreviewed = optionalInt(obj, "ai_unreviewed");
+        if (total == null || authored == null || unreviewed == null) {
+            return Optional.empty();
+        }
+        if (total <= 0 || unreviewed < 0 || unreviewed > authored || authored > total) {
+            return Optional.empty();
+        }
+        return Optional.of(new LocalizationCredit.AiCounts(total, authored, unreviewed));
+    }
+
+    /** Integral number field, or {@code null} when absent, non-numeric, or not a whole number. */
+    private static Integer optionalInt(JsonObject obj, String key) {
+        if (!obj.has(key) || !obj.get(key).isJsonPrimitive() || !obj.get(key).getAsJsonPrimitive().isNumber()) {
+            return null;
+        }
+        double v = obj.get(key).getAsDouble();
+        if (v != Math.floor(v) || Double.isInfinite(v) || v < Integer.MIN_VALUE || v > Integer.MAX_VALUE) {
+            return null; // reject 3.5, NaN handled by the != check, and out-of-range values
+        }
+        return (int) v;
     }
 
     private static String requiredString(JsonObject obj, String key) throws ParseException {

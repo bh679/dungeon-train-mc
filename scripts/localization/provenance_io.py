@@ -22,6 +22,12 @@ Format contract (enforced by check-provenance.py, produced by write_provenance):
 The one-entry-per-line shape is why this module has its own serializer instead of
 reusing ``scripts/release-notes/changelog_io.write_json`` (which ASCII-escapes and
 nests objects across lines).
+
+The shipped ``localization_credits/<locale>.json`` assets additionally carry three
+GENERATED integer fields (``total_keys``, ``ai_authored``, ``ai_unreviewed``)
+summarizing each sidecar — stamped by stamp-provenance.py, hard-checked by
+check-provenance.py, and rendered in-game as the blue AI-fraction ring around the
+DT logo in the language-selection list.
 """
 import json
 from pathlib import Path
@@ -36,6 +42,9 @@ DEFAULT_CREDITS_DIR = (
 )
 
 AUTHOR_KINDS = ("ai", "human")
+
+# Generated summary fields stamped into each shipped localization credit file.
+CREDIT_COUNT_FIELDS = ("total_keys", "ai_authored", "ai_unreviewed")
 
 # The source language — dev-authored English, not a translation. Never gets a sidecar.
 SOURCE_LOCALE = "en_us"
@@ -114,6 +123,62 @@ def validate_entries(prov: dict) -> list[str]:
         if isinstance(entry.get("author"), str) and not entry["author"].strip():
             errors.append(f"{key}: author must be non-empty (reviewer may be \"\", author may not)")
     return errors
+
+
+def ai_counts(prov: dict, authors: dict[str, str]) -> tuple[int, int, int]:
+    """(total keys, AI-authored, AI-authored-and-unreviewed) for one sidecar.
+
+    The (total, ai, unrev) triple behind both check-provenance.py's report and the
+    generated credit-file fields. Tolerant of shape errors (skips non-dict entries)
+    so callers can compute it before structural validation has run.
+    """
+    ai = unrev = 0
+    for entry in prov.values():
+        if not isinstance(entry, dict):
+            continue
+        if authors.get(entry.get("author")) == "ai":
+            ai += 1
+            if not entry.get("reviewer"):
+                unrev += 1
+    return len(prov), ai, unrev
+
+
+def load_credit(path: Path) -> dict:
+    """Parse a shipped localization credit file. Raises ValueError on a non-object root."""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: expected a JSON object")
+    return data
+
+
+def credit_paths_for_locale(credits_dir: Path, locale: str) -> list[Path]:
+    """Sorted credit files whose ``locale`` field is ``locale``.
+
+    Matches by field, not filename, mirroring LocalizationCreditRegistry (a
+    localization pack ships one file per contributor). Malformed files are
+    skipped, same as the runtime loader.
+    """
+    if not credits_dir.is_dir():
+        return []
+    out: list[Path] = []
+    for path in sorted(credits_dir.glob("*.json")):
+        try:
+            data = load_credit(path)
+        except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+            continue
+        if data.get("locale") == locale:
+            out.append(path)
+    return out
+
+
+def write_credit(path: Path, credit: dict) -> None:
+    """Write a credit file in the shipped format: indent-2, raw UTF-8, trailing newline.
+
+    All 19 bundled files already match ``json.dumps(..., indent=2) + "\\n"`` byte-for-
+    byte, so a load-modify-write round trip diffs only the changed fields.
+    """
+    path.write_text(json.dumps(credit, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def write_provenance(path: Path, prov: dict) -> None:

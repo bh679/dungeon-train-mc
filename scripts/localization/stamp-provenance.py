@@ -20,6 +20,11 @@ Names passed to --author / --reviewer must exist in ``localization/authors.json`
 (reviewers must be registered as human) — register a new model or translator there
 first, so the AI-vs-human measurement in check-provenance.py stays computable.
 
+Every run also refreshes the GENERATED count fields (total_keys / ai_authored /
+ai_unreviewed) in the shipped ``localization_credits/<locale>.json`` assets — the
+data behind the AI-fraction ring in the language list. check-provenance.py fails
+hard when those counts drift from the sidecars, so never hand-edit them.
+
 There is no --dry-run: sidecars are git-tracked, so ``git diff`` is the dry run.
 
 Usage:
@@ -83,6 +88,26 @@ def stamp_locale(prov: dict, targets: list[str], author: str | None,
     return stamped
 
 
+def refresh_credit_counts(locale: str, prov: dict, authors: dict[str, str],
+                          credits_dir: Path) -> list[Path]:
+    """Stamp the generated AI-count fields into every credit file for ``locale``.
+
+    Writes only when a file's counts would actually change (so untouched files stay
+    byte-identical); returns the written paths. A locale with no credit file is a
+    silent no-op — the ring is simply absent in game.
+    """
+    counts = dict(zip(provenance_io.CREDIT_COUNT_FIELDS, provenance_io.ai_counts(prov, authors)))
+    written: list[Path] = []
+    for path in provenance_io.credit_paths_for_locale(credits_dir, locale):
+        credit = provenance_io.load_credit(path)
+        if all(credit.get(field) == value for field, value in counts.items()):
+            continue
+        # New fields append after the hand-edited ones; existing counts update in place.
+        provenance_io.write_credit(path, {**credit, **counts})
+        written.append(path)
+    return written
+
+
 def process_locale(locale: str, lang_dir: Path, prov_dir: Path,
                    args: argparse.Namespace) -> tuple[dict, str]:
     """Compute one locale's updated sidecar; returns (new sidecar, summary line).
@@ -121,6 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--provenance-dir", type=Path,
                         default=provenance_io.DEFAULT_PROVENANCE_DIR)
     parser.add_argument("--authors-file", type=Path, default=provenance_io.DEFAULT_AUTHORS_FILE)
+    parser.add_argument("--credits-dir", type=Path, default=provenance_io.DEFAULT_CREDITS_DIR)
     parser.add_argument("--locale", action="append",
                         help="restrict to specific locale(s); default all non-en_us")
     parser.add_argument("--sync", action="store_true",
@@ -190,6 +216,10 @@ def main(argv: list[str] | None = None) -> int:
             return 1
     for locale, prov, summary in results:
         provenance_io.write_provenance(args.provenance_dir / f"{locale}.json", prov)
+        stamped = refresh_credit_counts(locale, prov, authors, args.credits_dir)
+        if stamped:
+            names = ", ".join(p.name for p in stamped)
+            summary = f"{summary[:-1]}; counts refreshed in {names}."
         print(summary)
     return 0
 

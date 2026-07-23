@@ -5490,8 +5490,24 @@
       "released_at": null
     },
     {
+      "id": "language-ai-fraction-ring",
+      "version": "0.499.0",
+      "type": "feat",
+      "title": "AI-translation ring in the language list",
+      "summary": "Each Dungeon Train-translated language in the language menu now wears a blue ring around the DT logo: the filled part of the circle shows how much of that translation is AI-generated without human review. A full ring is pure machine translation; it empties as human translators review lines \u2014 Simplified Chinese, the most human-reviewed locale, shows only a thin sliver.",
+      "highlights": [
+        "Blue arc = AI-unreviewed share, drawn clockwise from 12 o'clock over a faint full-circle track",
+        "Same 35% blue as the existing AI label; human-reviewed locales keep their solid logo"
+      ],
+      "pr": 826,
+      "date": "2026-07-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "support-funnel-analytics",
-      "version": "0.498.0",
+      "version": "0.499.0",
       "type": "feat",
       "title": "Support-funnel usage telemetry + Finances dashboard",
       "summary": "The title screen's Support the Mod, Discord and Patreon buttons — and every link on the Support page — now report anonymous usage counts (clicks, whether the external link was actually opened, and time spent on the page) when network features are consented to. Nothing new is shown in game; the data feeds a new Revenue section on the dt-data explorer's Finances page.",
@@ -5500,6 +5516,7 @@
         "Tracks clicks, confirm-screen follow-through and time on the Support page",
         "Data explorer Costs page relabelled Finances with a Revenue funnel"
       ],
+      "pr": 827,
       "date": "2026-07-23",
       "released": false,
       "released_in": null,
