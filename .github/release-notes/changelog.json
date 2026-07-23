@@ -5510,13 +5510,30 @@
       "version": "0.500.0",
       "type": "feat",
       "title": "Support-funnel usage telemetry + Finances dashboard",
-      "summary": "The title screen's Support the Mod, Discord and Patreon buttons — and every link on the Support page — now report anonymous usage counts (clicks, whether the external link was actually opened, and time spent on the page) when network features are consented to. Nothing new is shown in game; the data feeds a new Revenue section on the dt-data explorer's Finances page.",
+      "summary": "The title screen's Support the Mod, Discord and Patreon buttons \u2014 and every link on the Support page \u2014 now report anonymous usage counts (clicks, whether the external link was actually opened, and time spent on the page) when network features are consented to. Nothing new is shown in game; the data feeds a new Revenue section on the dt-data explorer's Finances page.",
       "highlights": [
         "Consent-gated: no network consent, no telemetry",
         "Tracks clicks, confirm-screen follow-through and time on the Support page",
         "Data explorer Costs page relabelled Finances with a Revenue funnel"
       ],
       "pr": 827,
+      "date": "2026-07-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "ais-data-integrity-free-play",
+      "version": "0.501.0",
+      "type": "feat",
+      "title": "Changed Adventure Item Stats settings now switch the world to Free Play",
+      "summary": "Dungeon Train's balance is tuned against Adventure Item Stats' standard settings. If those settings have been changed, the world now runs in Free Play for the session \u2014 advancements and stats don't count toward your profile while the change is in place, and everything returns to normal once the standard settings are back. On joining you're told exactly which settings differ, and one click on the chat notice restores the defaults for you, backing up your old settings file first.",
+      "highlights": [
+        "Worlds with modified Adventure Item Stats settings run in Free Play (session-only \u2014 restoring the settings restores normal play)",
+        "The join notice lists exactly which settings were changed",
+        "One-click /fixaisconfig restores the standard settings, backing up your old file first"
+      ],
+      "pr": 829,
       "date": "2026-07-23",
       "released": false,
       "released_in": null,
