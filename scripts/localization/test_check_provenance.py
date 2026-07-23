@@ -23,15 +23,19 @@ PROV = {
     "b.key": {"author": "老本願", "reviewer": "老本願"},
     "c.key": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
 }
+AUTHORS = {"Opus 4.8 (Claude)": "ai", "老本願": "human", "X": "human", "H": "human"}
 
 
-def workspace(lang_files=None, prov_files=None, credit_files=None):
-    """An isolated lang/provenance/credits directory triple."""
+def workspace(lang_files=None, prov_files=None, credit_files=None, authors=AUTHORS):
+    """An isolated lang/provenance/credits/registry workspace."""
     ws = tempfile.mkdtemp(prefix="provenance-check-test-")
     dirs = {}
     for name in ("lang", "prov", "credits"):
         dirs[name] = os.path.join(ws, name)
         os.makedirs(dirs[name])
+    dirs["authors"] = os.path.join(ws, "authors.json")
+    with open(dirs["authors"], "w", encoding="utf-8") as f:
+        json.dump(authors, f, ensure_ascii=False)
     for locale, data in (lang_files or {}).items():
         with open(os.path.join(dirs["lang"], f"{locale}.json"), "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False)
@@ -52,7 +56,8 @@ def run(dirs, *extra):
         [sys.executable, SCRIPT,
          "--lang-dir", dirs["lang"],
          "--provenance-dir", dirs["prov"],
-         "--credits-dir", dirs["credits"], *extra],
+         "--credits-dir", dirs["credits"],
+         "--authors-file", dirs["authors"], *extra],
         capture_output=True, text=True,
     )
 
@@ -195,14 +200,70 @@ def test_flag_false_with_full_coverage_suggests_flipping():
 
 
 def test_report_counts():
+    """2 of 3 lines are AI-authored and unreviewed -> ai=2, ai-unrev=2, 66.7%."""
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": PROV})
     proc = run(dirs, "--report")
     assert proc.returncode == 0, proc.stderr
     assert "Opus 4.8 (Claude)=2" in proc.stdout
     assert "老本願=1" in proc.stdout
     row = next(l for l in proc.stdout.splitlines() if l.startswith("xx_yy"))
-    assert " 3 " in f" {row} " or "    3" in row  # 3 keys
-    assert "33.3" in row  # 1/3 reviewed
+    cols = row.split()
+    assert cols[1:4] == ["3", "2", "2"], row  # keys, ai, ai-unrev
+    assert cols[4] == "66.7", row             # %ai-unrev
+    assert cols[5] == "1", row                # reviewed
+
+
+def test_ai_reviewed_line_leaves_the_unreviewed_bucket():
+    """An AI-authored line WITH a human reviewer must not count as AI-unreviewed."""
+    prov = dict(PROV, **{"a.key": {"author": "Opus 4.8 (Claude)", "reviewer": "老本願"}})
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov})
+    proc = run(dirs, "--report")
+    assert proc.returncode == 0, proc.stderr
+    row = next(l for l in proc.stdout.splitlines() if l.startswith("xx_yy"))
+    cols = row.split()
+    assert cols[1:4] == ["3", "2", "1"], row  # still 2 AI-authored, only 1 unreviewed
+
+
+def test_unregistered_author_fails():
+    prov = dict(PROV, **{"a.key": {"author": "Opus 4.9 (Claude)", "reviewer": ""}})
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov})
+    proc = run(dirs)
+    assert proc.returncode == 1
+    assert "not in localization/authors.json" in proc.stderr
+
+
+def test_unregistered_reviewer_fails():
+    prov = dict(PROV, **{"a.key": {"author": "Opus 4.8 (Claude)", "reviewer": "Nobody"}})
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov})
+    proc = run(dirs)
+    assert proc.returncode == 1
+    assert "reviewer 'Nobody'" in proc.stderr
+
+
+def test_ai_reviewer_fails():
+    """An AI cannot human-review — reviewer registered as ai is an error."""
+    prov = dict(PROV, **{"a.key": {"author": "Opus 4.8 (Claude)",
+                                   "reviewer": "Opus 4.8 (Claude)"}})
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov})
+    proc = run(dirs)
+    assert proc.returncode == 1
+    assert "only a human can human-review" in proc.stderr
+
+
+def test_missing_registry_is_environment_error():
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": PROV})
+    os.remove(dirs["authors"])
+    proc = run(dirs)
+    assert proc.returncode == 2
+    assert "author registry not found" in proc.stderr
+
+
+def test_bad_registry_kind_is_environment_error():
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": PROV},
+                     authors={"Opus 4.8 (Claude)": "robot"})
+    proc = run(dirs)
+    assert proc.returncode == 2
+    assert "bad author registry" in proc.stderr
 
 
 def test_unknown_locale_flag_is_usage_error():

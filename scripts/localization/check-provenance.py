@@ -11,6 +11,12 @@ without provenance and this check fails at PR time with the fix command.
 
 en_us is the source language, not a translation — a sidecar for it is an error.
 
+Every author name must be registered in ``localization/authors.json`` (name → "ai" |
+"human"), and every non-empty reviewer must be a registered HUMAN — an AI cannot
+human-review. The registry is what makes the headline metric computable: a line is
+"AI-unreviewed" iff its author is registered as ai AND its reviewer is empty, and
+``--report`` shows that count and percentage per locale.
+
 Also cross-checks the shipped ``localization_credits/<locale>.json`` ``human_reviewed``
 flag against per-line reviewer coverage. That is a WARNING, never an error: zh_cn
 legitimately ships ``human_reviewed: true`` with partial line coverage (the #770
@@ -86,6 +92,41 @@ def check_locale(locale: str, lang_dir: Path, prov_dir: Path) -> list[str]:
     return errors
 
 
+def check_registry(locale: str, prov: dict, authors: dict[str, str]) -> list[str]:
+    """Errors for unregistered authors and non-human (or unregistered) reviewers."""
+    errors: list[str] = []
+    for key, entry in prov.items():
+        if not isinstance(entry, dict):
+            continue  # shape errors already reported by check_locale
+        author = entry.get("author")
+        if isinstance(author, str) and author.strip() and author not in authors:
+            errors.append(
+                f"{locale}: {key}: author {author!r} is not in localization/authors.json — "
+                f"register the name (as \"ai\" or \"human\") first"
+            )
+        reviewer = entry.get("reviewer")
+        if isinstance(reviewer, str) and reviewer:
+            if reviewer not in authors:
+                errors.append(
+                    f"{locale}: {key}: reviewer {reviewer!r} is not in "
+                    f"localization/authors.json — register the name first"
+                )
+            elif authors[reviewer] != "human":
+                errors.append(
+                    f"{locale}: {key}: reviewer {reviewer!r} is registered as "
+                    f"{authors[reviewer]!r} — only a human can human-review"
+                )
+    return errors
+
+
+def ai_unreviewed(prov: dict, authors: dict[str, str]) -> tuple[int, int]:
+    """(AI-authored count, AI-authored-and-unreviewed count) for one sidecar."""
+    ai = sum(1 for e in prov.values() if authors.get(e["author"]) == "ai")
+    unrev = sum(1 for e in prov.values()
+                if authors.get(e["author"]) == "ai" and not e["reviewer"])
+    return ai, unrev
+
+
 def credits_human_reviewed(credits_dir: Path, locale: str) -> bool:
     """Whether any shipped localization credit marks ``locale`` human-reviewed.
 
@@ -125,26 +166,32 @@ def cross_check_credits(locale: str, prov: dict, credits_dir: Path) -> list[str]
     return []
 
 
-def print_report(targets: list[str], lang_dir: Path, prov_dir: Path) -> None:
-    """The at-a-glance per-locale coverage table (validated data only)."""
-    print(f"{'locale':<8} {'keys':>5} {'reviewed':>8} {'%rev':>6}  authors")
-    total_keys = total_reviewed = 0
+def print_report(targets: list[str], prov_dir: Path, authors: dict[str, str]) -> None:
+    """The at-a-glance per-locale table (validated data only).
+
+    The headline column is %ai-unrev — how much of the locale is AI-generated text
+    no human has reviewed.
+    """
+    print(f"{'locale':<8} {'keys':>5} {'ai':>5} {'ai-unrev':>8} {'%ai-unrev':>9} "
+          f"{'reviewed':>8}  authors")
+    tot = {"keys": 0, "ai": 0, "unrev": 0, "reviewed": 0}
     for locale in targets:
         prov = provenance_io.load_provenance(prov_dir / f"{locale}.json")
         buckets: dict[str, int] = {}
-        reviewed = 0
         for entry in prov.values():
             buckets[entry["author"]] = buckets.get(entry["author"], 0) + 1
-            if entry["reviewer"]:
-                reviewed += 1
-        total_keys += len(prov)
-        total_reviewed += reviewed
-        pct = 100.0 * reviewed / len(prov) if prov else 0.0
-        authors = ", ".join(f"{name}={n}"
-                            for name, n in sorted(buckets.items(), key=lambda kv: -kv[1]))
-        print(f"{locale:<8} {len(prov):>5} {reviewed:>8} {pct:>6.1f}  {authors}")
-    pct = 100.0 * total_reviewed / total_keys if total_keys else 0.0
-    print(f"{'TOTAL':<8} {total_keys:>5} {total_reviewed:>8} {pct:>6.1f}")
+        ai, unrev = ai_unreviewed(prov, authors)
+        reviewed = sum(1 for e in prov.values() if e["reviewer"])
+        tot = {"keys": tot["keys"] + len(prov), "ai": tot["ai"] + ai,
+               "unrev": tot["unrev"] + unrev, "reviewed": tot["reviewed"] + reviewed}
+        pct = 100.0 * unrev / len(prov) if prov else 0.0
+        names = ", ".join(f"{name}={n}"
+                          for name, n in sorted(buckets.items(), key=lambda kv: -kv[1]))
+        print(f"{locale:<8} {len(prov):>5} {ai:>5} {unrev:>8} {pct:>9.1f} "
+              f"{reviewed:>8}  {names}")
+    pct = 100.0 * tot["unrev"] / tot["keys"] if tot["keys"] else 0.0
+    print(f"{'TOTAL':<8} {tot['keys']:>5} {tot['ai']:>5} {tot['unrev']:>8} {pct:>9.1f} "
+          f"{tot['reviewed']:>8}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -153,6 +200,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--provenance-dir", type=Path,
                         default=provenance_io.DEFAULT_PROVENANCE_DIR)
     parser.add_argument("--credits-dir", type=Path, default=provenance_io.DEFAULT_CREDITS_DIR)
+    parser.add_argument("--authors-file", type=Path, default=provenance_io.DEFAULT_AUTHORS_FILE)
     parser.add_argument("--locale", action="append",
                         help="restrict to specific locale(s); default all non-en_us")
     parser.add_argument("--report", action="store_true",
@@ -161,6 +209,14 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.lang_dir.is_dir():
         print(f"ERROR: lang dir not found at {args.lang_dir}", file=sys.stderr)
+        return 2
+    if not args.authors_file.is_file():
+        print(f"ERROR: author registry not found at {args.authors_file}", file=sys.stderr)
+        return 2
+    try:
+        authors = provenance_io.load_authors(args.authors_file)
+    except (json.JSONDecodeError, ValueError) as exc:
+        print(f"ERROR: bad author registry — {exc}", file=sys.stderr)
         return 2
     all_locales = provenance_io.locales(args.lang_dir)
     targets = args.locale or all_locales
@@ -174,6 +230,11 @@ def main(argv: list[str] | None = None) -> int:
                  if (args.provenance_dir / f"{loc}.json").is_file()]
     for locale in checkable:
         errors.extend(check_locale(locale, args.lang_dir, args.provenance_dir))
+        try:
+            prov = provenance_io.load_provenance(args.provenance_dir / f"{locale}.json")
+        except (json.JSONDecodeError, ValueError):
+            continue  # already reported by check_locale
+        errors.extend(check_registry(locale, prov, authors))
 
     if errors:
         print("Provenance check FAILED:", file=sys.stderr)
@@ -188,12 +249,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"WARNING: {warn}", file=sys.stderr)
 
     if args.report:
-        print_report(targets, args.lang_dir, args.provenance_dir)
+        print_report(targets, args.provenance_dir, authors)
     else:
         for locale in targets:
             prov = provenance_io.load_provenance(args.provenance_dir / f"{locale}.json")
             reviewed = sum(1 for e in prov.values() if e["reviewer"])
-            print(f"OK: {locale} — {len(prov)} keys aligned, {reviewed} human-reviewed.")
+            _, unrev = ai_unreviewed(prov, authors)
+            print(f"OK: {locale} — {len(prov)} keys aligned, {reviewed} human-reviewed, "
+                  f"{unrev} AI-unreviewed.")
     return 0
 
 

@@ -24,7 +24,17 @@ PROV = {
 }
 
 
-def workspace(lang=LANG, prov=PROV, locale="xx_yy"):
+AUTHORS = {
+    "Opus 4.8 (Claude)": "ai",
+    "New Model (Claude)": "ai",
+    "老本願": "human",
+    "阿世xAsh": "human",
+    "unused": "human",
+    "R": "human",
+}
+
+
+def workspace(lang=LANG, prov=PROV, locale="xx_yy", authors=AUTHORS):
     ws = tempfile.mkdtemp(prefix="provenance-stamp-test-")
     lang_dir = os.path.join(ws, "lang")
     prov_dir = os.path.join(ws, "prov")
@@ -37,12 +47,16 @@ def workspace(lang=LANG, prov=PROV, locale="xx_yy"):
     if prov is not None:
         with open(os.path.join(prov_dir, f"{locale}.json"), "w", encoding="utf-8") as f:
             json.dump(prov, f, ensure_ascii=False)
+    with open(os.path.join(ws, "authors.json"), "w", encoding="utf-8") as f:
+        json.dump(authors, f, ensure_ascii=False)
     return lang_dir, prov_dir
 
 
 def run(lang_dir, prov_dir, *extra):
+    authors_file = os.path.join(os.path.dirname(lang_dir), "authors.json")
     return subprocess.run(
-        [sys.executable, SCRIPT, "--lang-dir", lang_dir, "--provenance-dir", prov_dir, *extra],
+        [sys.executable, SCRIPT, "--lang-dir", lang_dir, "--provenance-dir", prov_dir,
+         "--authors-file", authors_file, *extra],
         capture_output=True, text=True,
     )
 
@@ -175,6 +189,24 @@ def test_no_operation_is_usage_error():
     proc = run(lang_dir, prov_dir)
     assert proc.returncode == 2
     assert "nothing to do" in proc.stderr
+
+
+def test_unregistered_author_rejected_without_writing():
+    """A name not in authors.json must be registered first — nothing written."""
+    lang_dir, prov_dir = workspace()
+    proc = run(lang_dir, prov_dir, "--author", "Mystery Model", "--all")
+    assert proc.returncode == 1
+    assert "authors.json" in proc.stderr
+    assert read(prov_dir) == PROV
+
+
+def test_ai_reviewer_rejected():
+    """Only a registered human can be stamped as reviewer."""
+    lang_dir, prov_dir = workspace()
+    proc = run(lang_dir, prov_dir, "--reviewer", "Opus 4.8 (Claude)", "--all")
+    assert proc.returncode == 1
+    assert "only a human can human-review" in proc.stderr
+    assert read(prov_dir) == PROV
 
 
 def test_exclusive_selection_flags():

@@ -16,6 +16,10 @@ The two recipes (composable in one run — sync happens first, then stamps):
     of --keys / --prefix / --all. Restamping --author WITHOUT --reviewer resets
     reviewer to "" — a re-translated line invalidates its previous review.
 
+Names passed to --author / --reviewer must exist in ``localization/authors.json``
+(reviewers must be registered as human) — register a new model or translator there
+first, so the AI-vs-human measurement in check-provenance.py stays computable.
+
 There is no --dry-run: sidecars are git-tracked, so ``git diff`` is the dry run.
 
 Usage:
@@ -24,6 +28,7 @@ Usage:
       [--author NAME] [--reviewer NAME] (--keys K ... | --prefix P | --all)
 """
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -115,6 +120,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--lang-dir", type=Path, default=provenance_io.DEFAULT_LANG_DIR)
     parser.add_argument("--provenance-dir", type=Path,
                         default=provenance_io.DEFAULT_PROVENANCE_DIR)
+    parser.add_argument("--authors-file", type=Path, default=provenance_io.DEFAULT_AUTHORS_FILE)
     parser.add_argument("--locale", action="append",
                         help="restrict to specific locale(s); default all non-en_us")
     parser.add_argument("--sync", action="store_true",
@@ -145,6 +151,28 @@ def main(argv: list[str] | None = None) -> int:
     if not args.lang_dir.is_dir():
         print(f"ERROR: lang dir not found at {args.lang_dir}", file=sys.stderr)
         return 2
+    if not args.authors_file.is_file():
+        print(f"ERROR: author registry not found at {args.authors_file}", file=sys.stderr)
+        return 2
+    try:
+        authors = provenance_io.load_authors(args.authors_file)
+    except (json.JSONDecodeError, ValueError) as exc:
+        print(f"ERROR: bad author registry — {exc}", file=sys.stderr)
+        return 2
+    if args.author is not None and args.author not in authors:
+        print(f"ERROR: author {args.author!r} is not in {args.authors_file} — register "
+              f"the name (as \"ai\" or \"human\") first", file=sys.stderr)
+        return 1
+    if args.reviewer is not None:
+        if args.reviewer not in authors:
+            print(f"ERROR: reviewer {args.reviewer!r} is not in {args.authors_file} — "
+                  f"register the name first", file=sys.stderr)
+            return 1
+        if authors[args.reviewer] != "human":
+            print(f"ERROR: reviewer {args.reviewer!r} is registered as "
+                  f"{authors[args.reviewer]!r} — only a human can human-review",
+                  file=sys.stderr)
+            return 1
     all_locales = provenance_io.locales(args.lang_dir)
     targets = args.locale or all_locales
     unknown = sorted(set(targets) - set(all_locales))

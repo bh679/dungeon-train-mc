@@ -32,19 +32,25 @@ file** (so provenance diffs align line-for-line with lang-file diffs), raw UTF-8
 - `en_us` is the source language, not a translation — it has no sidecar, and CI
   rejects one.
 
-## Author vocabulary
+## Author registry — `authors.json`
 
-Keep names consistent — the coverage report buckets by exact string:
+Every name used in a sidecar must be registered in [`authors.json`](authors.json) as
+`"ai"` or `"human"` (enforced by CI, including that a **reviewer must be a registered
+human** — an AI cannot human-review). The registry is what makes the headline metric
+computable: a line is **AI-unreviewed** iff its author is registered `ai` and its
+reviewer is empty; `check-provenance.py --report` shows the count and percentage per
+locale.
 
-| Name | Meaning |
-|---|---|
-| `Opus 4.8 (Claude)` | Machine translation by Claude Opus 4.8 (waves #768, #776, #809, #821) |
-| `Claude (pre-provenance, model unrecorded)` | Early Claude translations whose PR didn't record the model |
-| `老本願` | Community translator — original zh_cn tree (#754 seed, #759 v0.458.0 drop) and its review (#770) |
-| `阿世xAsh` | Community translator — the #823 zh_cn/zh_tw Support-page revision pass |
+| Name | Kind | Meaning |
+|---|---|---|
+| `Opus 4.8 (Claude)` | ai | Machine translation by Claude Opus 4.8 (waves #768, #776, #809, #821; the early zh_cn commits #754/#755/#763 didn't record their model and are **assumed Opus 4.8** per operator decision, 2026-07-23) |
+| `老本願` | human | Community translator — original zh_cn tree (#754 seed, #759 v0.458.0 drop) and its review (#770) |
+| `阿世xAsh` | human | Community translator — the #823 zh_cn/zh_tw Support-page revision pass |
 
-Add future models as `<Model> (Claude)` etc., and future humans by their preferred
-credited name.
+To use a new model or translator name, add it to `authors.json` first —
+`stamp-provenance.py` refuses unregistered names, so the registry can't drift behind
+the sidecars. Name future models `<Model> (Claude)` etc., and humans by their
+preferred credited name.
 
 ## Workflows
 
@@ -68,7 +74,7 @@ python3 scripts/localization/stamp-provenance.py --locale zh_cn \
     --reviewer 阿世xAsh --prefix gui.dungeontrain.support.
 ```
 
-**Coverage report:**
+**Coverage report** (how much of each locale is AI-generated without human review):
 
 ```bash
 python3 scripts/localization/check-provenance.py --report

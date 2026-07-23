@@ -30,9 +30,12 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_LANG_DIR = REPO_ROOT / "src" / "main" / "resources" / "assets" / "dungeontrain" / "lang"
 DEFAULT_PROVENANCE_DIR = REPO_ROOT / "localization" / "provenance"
+DEFAULT_AUTHORS_FILE = REPO_ROOT / "localization" / "authors.json"
 DEFAULT_CREDITS_DIR = (
     REPO_ROOT / "src" / "main" / "resources" / "assets" / "dungeontrain" / "localization_credits"
 )
+
+AUTHOR_KINDS = ("ai", "human")
 
 # The source language — dev-authored English, not a translation. Never gets a sidecar.
 SOURCE_LOCALE = "en_us"
@@ -53,6 +56,25 @@ def load_lang(path: Path) -> dict[str, str]:
         data = json.load(f)
     if not isinstance(data, dict):
         raise ValueError(f"{path}: expected a flat JSON object")
+    return data
+
+
+def load_authors(path: Path) -> dict[str, str]:
+    """The author registry: credited name → "ai" | "human".
+
+    This is what makes "how much of this locale is AI-generated without human
+    review" computable — the sidecars store names, the registry classifies them
+    once, and check-provenance.py enforces that every name used is registered.
+    """
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: expected a flat JSON object of name -> kind")
+    for name, kind in data.items():
+        if kind not in AUTHOR_KINDS:
+            raise ValueError(
+                f"{path}: {name!r} has kind {kind!r} — must be one of {AUTHOR_KINDS}"
+            )
     return data
 
 

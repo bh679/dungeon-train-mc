@@ -28,9 +28,9 @@ Wave → author map (the complete history — exactly 9 commits ever touched the
 
   #754 c1a43f78  zh_cn created: 748 keys seeded from 老本願's community translation
                  + 13 Claude draft keys (the keys added to en_us in the same commit)
-  #755 01e4ad2a  zh_cn parity fills                          → Claude (pre-provenance)
+  #755 01e4ad2a  zh_cn parity fills                          → Opus 4.8 (assumed)
   #759 d229aa73  老本願's v0.458.0 translation drop           → 老本願
-  #763 d9e24a00  one zh_cn value tweak                       → Claude (pre-provenance)
+  #763 d9e24a00  one zh_cn value tweak                       → Opus 4.8 (assumed)
   #768 9e658fba  8 locales, "Machine-translated with Claude Opus 4.8"   → Opus 4.8
   #776 b8dc06a4  10 locales, "machine-translated (Opus 4.8, high effort)" → Opus 4.8
   #809 819aa678  +15 Ways-to-Help keys × 19, Opus 4.8        → Opus 4.8
@@ -53,7 +53,10 @@ REPO_ROOT = provenance_io.REPO_ROOT
 LANG_REL = "src/main/resources/assets/dungeontrain/lang"
 
 AUTHOR_OPUS = "Opus 4.8 (Claude)"
-AUTHOR_PRE = "Claude (pre-provenance, model unrecorded)"
+# The early zh_cn Claude commits (#754 drafts, #755 fills, #763 tweak) never recorded
+# which model ran them. Per the operator's call (2026-07-23) they are assumed Opus 4.8
+# rather than carrying a separate "model unrecorded" label.
+AUTHOR_PRE = AUTHOR_OPUS
 AUTHOR_LBY = "老本願"
 AUTHOR_ASH = "阿世xAsh"
 
