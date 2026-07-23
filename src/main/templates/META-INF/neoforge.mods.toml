@@ -75,7 +75,7 @@ logoFile="logo.png"
 [[dependencies.${mod_id}]]
     modId="tradeeverything"
     type="required"
-    versionRange="[${tradeeverything_min_version},)"
+    versionRange="[${tradeeverything_version},)"
     ordering="AFTER"
     side="BOTH"
 
