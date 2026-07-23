@@ -5460,8 +5460,25 @@
       "released_at": "2026-07-23T03:17:59Z"
     },
     {
-      "id": "translation-provenance",
+      "id": "delete-world-on-reboard",
       "version": "0.497.0",
+      "type": "feat",
+      "title": "Old worlds clean themselves up when you reboard",
+      "summary": "Dungeon Train has always been one world per ride \u2014 now your save folder agrees. Reboarding after death discards the old world instead of saving it: the run's world is deleted and a fresh one takes its place, so your world list and disk stay clean. A little trash icon next to the reboard button lets you turn this off if you'd rather keep your fallen worlds, and renamed or hand-made worlds are never touched. As the old world slips away, the train sees you off with a rotating farewell line \u2014 Chinese players get a few classical sayings of their own.",
+      "highlights": [
+        "Reboarding deletes the old run's world (on by default) \u2014 toggle it with the trash icon on the death screen",
+        "Only auto-generated run worlds are cleaned up; renamed, hand-made and editor worlds are always kept",
+        "New 'Leaving the world behind\u2026' farewell lines during the switch, with classical sayings for Chinese players"
+      ],
+      "pr": 824,
+      "date": "2026-07-23",
+      "released": true,
+      "released_in": "v0.497.0",
+      "released_at": "2026-07-23T05:31:38Z"
+    },
+    {
+      "id": "translation-provenance",
+      "version": "0.498.0",
       "type": "chore",
       "title": "Per-line translation credits, behind the scenes",
       "summary": "Every translated line in all 19 languages now records who produced it \u2014 which AI model, or which community translator \u2014 and who has human-reviewed it. This is repo-side bookkeeping (nothing changes in-game): it makes unreviewed machine translation easy to find for review passes, and properly credits \u8001\u672c\u9858's Chinese translation work and \u963f\u4e16xAsh's Support-page revisions line by line.",
