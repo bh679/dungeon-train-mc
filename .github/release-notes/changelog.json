@@ -5538,6 +5538,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "leather-over-diamond-advancement",
+      "version": "0.502.0",
+      "type": "content",
+      "title": "New advancement: Cover me in ...leather?",
+      "summary": "Wear a full set of leather armor whose rolled stats beat a full vanilla diamond set. Deep-train leather can out-roll diamond \u2014 this challenge advancement rewards finding out.",
+      "highlights": [
+        "New challenge advancement in the Dungeon Train tab, under Dungeon Train Explorer",
+        "Earnable once loot rolls scale up \u2014 realistically around the first Nether band"
+      ],
+      "date": "2026-07-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

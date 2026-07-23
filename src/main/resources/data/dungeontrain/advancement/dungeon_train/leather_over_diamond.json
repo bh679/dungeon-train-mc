@@ -1,0 +1,18 @@
+{
+  "parent": "dungeontrain:dungeon_train/carts_100",
+  "display": {
+    "icon": { "id": "minecraft:leather_chestplate" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.leather_over_diamond.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.leather_over_diamond.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "worn": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [["worn"]]
+}
