@@ -33,6 +33,24 @@ only resource packs (the same channel your lang-file override already uses) are 
   human-reviewed languages show the logo solid, everything else shows it faded to 35% opacity
   with a blue "AI" label beside it (see `LanguageSelectEntryLogoMixin`).
 
+### Generated fields (bundled files only — do not hand-edit)
+
+The files bundled in the mod jar additionally carry three GENERATED integer fields:
+
+```json
+  "total_keys": 890,
+  "ai_authored": 77,
+  "ai_unreviewed": 69
+```
+
+They summarize the repo-side provenance sidecars (`localization/provenance/<locale>.json`) and
+drive the **blue AI-fraction ring** around the logo in the language-selection list — the filled
+fraction of the ring's circumference is `ai_unreviewed / total_keys`. Refreshed by every
+`scripts/localization/stamp-provenance.py` run and hard-validated by
+`scripts/localization/check-provenance.py` (CI fails when they drift), so never edit them by
+hand. Third-party packs may omit them — a credit without valid counts simply renders no ring.
+When several credits carry counts for one locale, the set with the greatest `total_keys` wins.
+
 ## Where it shows up
 
 Nothing shows on the main menu unless a player has `locale` selected as their current game

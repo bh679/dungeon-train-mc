@@ -7,9 +7,16 @@ machine-translated and which a human has checked.
 
 Nothing in this directory ships in the jar (only `src/main/resources` and
 `src/main/templates` enter the build). This is repo-side bookkeeping; the shipped,
-player-visible counterpart is the locale-LEVEL `human_reviewed` flag in
-`src/main/resources/assets/dungeontrain/localization_credits/` that drives the faded
-"AI" logo in the language list.
+player-visible counterparts live in
+`src/main/resources/assets/dungeontrain/localization_credits/<locale>.json`:
+
+- the locale-LEVEL `human_reviewed` flag (hand-maintained judgment call) that drives
+  the faded "AI" logo in the language list, and
+- three GENERATED count fields — `total_keys` / `ai_authored` / `ai_unreviewed` —
+  summarizing this directory's sidecars, which drive the **blue AI-fraction ring**
+  around that logo (filled circumference = `ai_unreviewed / total_keys`). Every
+  `stamp-provenance.py` run refreshes them, and `check-provenance.py` **hard-fails**
+  (exit 1, in CI) when they drift from the sidecars — never hand-edit them.
 
 ## Schema
 
