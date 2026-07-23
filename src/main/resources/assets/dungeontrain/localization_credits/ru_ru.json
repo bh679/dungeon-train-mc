@@ -1,5 +1,8 @@
 {
   "locale": "ru_ru",
   "name": "ИИ без проверки человеком",
-  "human_reviewed": false
+  "human_reviewed": false,
+  "total_keys": 877,
+  "ai_authored": 877,
+  "ai_unreviewed": 877
 }

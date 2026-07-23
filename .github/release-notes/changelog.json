@@ -5488,6 +5488,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "language-ai-fraction-ring",
+      "version": "0.499.0",
+      "type": "feat",
+      "title": "AI-translation ring in the language list",
+      "summary": "Each Dungeon Train-translated language in the language menu now wears a blue ring around the DT logo: the filled part of the circle shows how much of that translation is AI-generated without human review. A full ring is pure machine translation; it empties as human translators review lines \u2014 Simplified Chinese, the most human-reviewed locale, shows only a thin sliver.",
+      "highlights": [
+        "Blue arc = AI-unreviewed share, drawn clockwise from 12 o'clock over a faint full-circle track",
+        "Same 35% blue as the existing AI label; human-reviewed locales keep their solid logo"
+      ],
+      "pr": 826,
+      "date": "2026-07-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
