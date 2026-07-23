@@ -71,6 +71,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_ON_DISK;
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
+    public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
      * GLOBAL client-side read history — persists across worlds and servers (unlike the retired per-world
@@ -105,6 +106,7 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_MAX_ON_DISK = pair.getLeft().rideSnapshotMaxOnDisk;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
+        DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
     }
 
@@ -199,6 +201,12 @@ public final class ClientDisplayConfig {
                         FramerateThrottle.MIN_THROTTLE_FPS, FramerateThrottle.MAX_THROTTLE_FPS);
         b.pop();
 
+        b.push("world");
+        ModConfigSpec.BooleanValue deleteWorldOnReboard = b
+                .comment("Delete the old world's save folder when reboarding (creating a fresh world) from the death screen. Dungeon Train is designed around a new world per run, so this defaults on to keep the world list and disk clean. Only auto-generated \"<prefix> <timestamp>\" saves (Dungeon Train / Dev World / World) are ever deleted — renamed or hand-made worlds and editor worlds are always kept. Toggleable in-game via the trash icon next to the reboard button.")
+                .define("deleteOnReboard", true);
+        b.pop();
+
         b.push("sharedBooks");
         ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead = b
                 .comment("Relay pool ids (as strings) of community player-written books you've read. GLOBAL read",
@@ -214,7 +222,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
-                framerateThrottleEnabled, framerateThrottleFps, sharedBooksRead);
+                framerateThrottleEnabled, framerateThrottleFps, deleteWorldOnReboard, sharedBooksRead);
     }
 
     /**
@@ -478,6 +486,29 @@ public final class ClientDisplayConfig {
         FRAMERATE_THROTTLE_FPS.save();
     }
 
+    // ----- Delete old world on reboard (death-screen trash toggle) -----
+
+    /**
+     * Delete the old world's save when reboarding? Defaults to {@code true} (also pre-load) —
+     * Dungeon Train is a new-world-per-run game, so abandoned run saves are cleaned up unless
+     * the player opts out via the death screen's trash toggle. The delete path itself carries
+     * a second guard: only auto-generated {@code "Dungeon Train <timestamp>"} saves are removed.
+     */
+    public static boolean isDeleteWorldOnReboard() {
+        return !isLoaded() || DELETE_WORLD_ON_REBOARD.get();
+    }
+
+    /**
+     * Persist the reboard-delete toggle. Idempotent: skips the {@code .save()} (a TOML write)
+     * when the value is unchanged. Driven by the death screen's trash chip.
+     */
+    public static void setDeleteWorldOnReboard(boolean value) {
+        if (!isLoaded()) return;
+        if (DELETE_WORLD_ON_REBOARD.get() == value) return;
+        DELETE_WORLD_ON_REBOARD.set(value);
+        DELETE_WORLD_ON_REBOARD.save();
+    }
+
     // ----- Global client-side community-book read history (see SharedBookReadSyncClient / SharedBookReadMirror) -----
 
     /**
@@ -539,6 +570,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue rideSnapshotMaxOnDisk,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
+            ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead
     ) {}
 }
