@@ -204,9 +204,11 @@ public final class DeathScreenLayoutHandler {
             mc.level.disconnect();
         }
         // When the old world is being discarded the vanilla "Saving world" label
-        // would be a lie — show the discard message instead.
-        mc.disconnect(new GenericMessageScreen(Component.translatable(
-                oldLevelId != null ? "gui.dungeontrain.death.discarding_world" : "menu.savingLevel")));
+        // would be a lie — show one of the discard messages instead (picked at
+        // random per reboard, same flavour-variant pattern as the death screen's
+        // survey intros).
+        mc.disconnect(new GenericMessageScreen(
+                oldLevelId != null ? randomDiscardMessage() : Component.translatable("menu.savingLevel")));
 
         // disconnect() has fully halted the integrated server and released its
         // session lock, so the old save folder can be deleted before the new
@@ -266,6 +268,19 @@ public final class DeathScreenLayoutHandler {
         } catch (Exception e) {
             LOGGER.warn("DeathScreenLayout: noSave flag wait timed out; old world will save before deletion", e);
         }
+    }
+
+    /**
+     * Number of discard-message flavour variants: the base
+     * {@code gui.dungeontrain.death.discarding_world} key plus {@code _2}…{@code _11}.
+     */
+    private static final int DISCARD_MESSAGE_VARIANTS = 11;
+
+    /** One of the {@value #DISCARD_MESSAGE_VARIANTS} discard flavour lines, at random. */
+    private static Component randomDiscardMessage() {
+        int pick = java.util.concurrent.ThreadLocalRandom.current().nextInt(DISCARD_MESSAGE_VARIANTS) + 1;
+        String key = "gui.dungeontrain.death.discarding_world" + (pick == 1 ? "" : "_" + pick);
+        return Component.translatable(key);
     }
 
     /**
