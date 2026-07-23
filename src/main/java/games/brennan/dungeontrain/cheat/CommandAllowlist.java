@@ -58,7 +58,7 @@ public final class CommandAllowlist {
      */
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
-        "feedback", "bug", "new-world", "playanimation", "stopsound");
+        "feedback", "bug", "fixaisconfig", "new-world", "playanimation", "stopsound");
 
     private CommandAllowlist() {}
 

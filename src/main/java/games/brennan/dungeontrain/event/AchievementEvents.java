@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
+import games.brennan.dungeontrain.advancement.LeatherOverDiamondAdvancement;
 import games.brennan.dungeontrain.advancement.NothingButBooksAdvancement;
 import games.brennan.dungeontrain.advancement.PacifistAdvancement;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
@@ -898,12 +899,16 @@ public final class AchievementEvents {
      * complete or break it), so a cheap periodic scan is the simplest correct
      * trigger. Once-per-second per player; {@link NothingButBooksAdvancement
      * #checkAndGrant} itself early-returns once already earned.
+     * "Cover me in ...leather?" ({@link LeatherOverDiamondAdvancement}) rides
+     * the same throttled scan — worn-equipment stats have the same
+     * many-signals-could-change-it shape.
      */
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.tickCount % 20 != 0) return;
         NothingButBooksAdvancement.checkAndGrant(player);
+        LeatherOverDiamondAdvancement.checkAndGrant(player);
     }
 
     @SubscribeEvent

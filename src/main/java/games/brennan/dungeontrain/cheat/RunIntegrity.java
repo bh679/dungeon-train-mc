@@ -38,8 +38,24 @@ public final class RunIntegrity {
 
     private RunIntegrity() {}
 
-    /** Has this player's current world/run been cheated? */
+    /**
+     * Is this player's current run Free Play? True when the run is permanently
+     * cheated ({@link #isPermanentlyCheated}), OR when the whole server session
+     * is Free Play because AIS data was changed
+     * ({@link AisDataIntegrity#isSessionFreePlay}). Every persistence gate keys
+     * off this, so the session taint inherits all Free Play behaviour.
+     */
     public static boolean isCheated(ServerPlayer player) {
+        return AisDataIntegrity.isSessionFreePlay() || isPermanentlyCheated(player);
+    }
+
+    /**
+     * Has this player's current world/run been permanently cheated (the sticky
+     * {@code RUN_CHEATED} attachment)? Unlike {@link #isCheated} this ignores the
+     * session-only AIS taint — use it where the <em>permanent</em> state matters,
+     * e.g. deciding whether a tainting action still needs recording.
+     */
+    public static boolean isPermanentlyCheated(ServerPlayer player) {
         return Boolean.TRUE.equals(player.getData(ModDataAttachments.RUN_CHEATED.get()));
     }
 
@@ -54,11 +70,30 @@ public final class RunIntegrity {
      *              "You switched to Creative.") — shown after the title.
      */
     public static void markCheated(ServerPlayer player, Component cause) {
-        if (isCheated(player)) return;
+        // Idempotence keys off the permanent attachment, NOT isCheated(): during
+        // a session-only AIS taint a tainting action must still be recorded
+        // permanently, or restoring the AIS config would forget it.
+        if (isPermanentlyCheated(player)) return;
         player.setData(ModDataAttachments.RUN_CHEATED.get(), Boolean.TRUE);
         applyFreePlayEffect(player);
         LOGGER.info("[DungeonTrain] Run is now Free Play for {} — {}",
             player.getName().getString(), cause.getString());
+        if (AisDataIntegrity.isSessionFreePlay()) {
+            // Already visibly in Free Play this session (AIS notice on join) —
+            // record the permanent taint quietly, no second chat line / Discord post.
+            return;
+        }
+        sendFreePlayNotice(player, cause);
+        // Mirror the transition to Discord (best-effort; never disrupts the run state above).
+        FreePlayReport.post(player, cause);
+    }
+
+    /**
+     * The standard Free Play chat notice: bold title, grey cause, grey
+     * consequence line. Shared by {@link #markCheated} and the session-only AIS
+     * taint's login notice ({@code CheatDetectionEvents.onLogin}).
+     */
+    public static void sendFreePlayNotice(ServerPlayer player, Component cause) {
         MutableComponent msg = Component.translatable("chat.dungeontrain.free_play.title")
             .withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)
             .append(CommonComponents.SPACE)
@@ -67,8 +102,6 @@ public final class RunIntegrity {
             .append(Component.translatable("chat.dungeontrain.free_play.consequence")
                 .withStyle(ChatFormatting.GRAY));
         player.sendSystemMessage(msg);
-        // Mirror the transition to Discord (best-effort; never disrupts the run state above).
-        FreePlayReport.post(player, cause);
     }
 
     /**
