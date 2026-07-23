@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.support;
 
+import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.ColorTintedButton;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
@@ -92,13 +93,20 @@ public final class SupportScreen extends Screen {
 
     /**
      * One link button in a section: label key + target URL + optional sprite tint
-     * (null = default grey) + optional hover-tooltip key (null = none).
+     * (null = default grey) + optional hover-tooltip key (null = none) + the
+     * analytics target name ({@link UiAnalytics} enum) for click/confirm events.
      */
-    private record LinkButton(String labelKey, String url, float[] tint, String tooltipKey) {}
+    private record LinkButton(String labelKey, String url, float[] tint, String tooltipKey, String analyticsTarget) {}
+
+    /** When this visit started — set once in the constructor (init() reruns on every resize). */
+    private final long openedAtMs = System.currentTimeMillis();
+    /** One-shot latch so Esc + Done + any future double-close report a single page_time. */
+    private boolean timeReported;
 
     public SupportScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.support.title"));
         this.parent = parent;
+        UiAnalytics.pageOpen(UiAnalytics.SURFACE_SUPPORT_PAGE);
     }
 
     /**
@@ -152,8 +160,9 @@ public final class SupportScreen extends Screen {
                 Component.translatable("gui.dungeontrain.support.financial.header"),
                 Component.translatable(copyKey("gui.dungeontrain.support.financial.desc"), affiliateLink()),
                 new LinkButton("gui.dungeontrain.support.financial.donate", revolutUrl(), TINT_GREEN,
-                        "gui.dungeontrain.support.donate_tooltip"),
-                new LinkButton("gui.dungeontrain.support.financial.patreon", OfficialLinks.patreon(), TINT_ORANGE, null));
+                        "gui.dungeontrain.support.donate_tooltip", UiAnalytics.TARGET_DONATE),
+                new LinkButton("gui.dungeontrain.support.financial.patreon", OfficialLinks.patreon(), TINT_ORANGE, null,
+                        UiAnalytics.TARGET_PATREON));
 
         // Share — text only, no link.
         y = addSection(y, lh,
@@ -205,7 +214,7 @@ public final class SupportScreen extends Screen {
     /** Build a link button, tinted to {@link LinkButton#tint()} when set, else the default grey. */
     private Button makeLinkButton(int x, int y, int w, int h, LinkButton lb) {
         Component label = Component.translatable(lb.labelKey());
-        Button.OnPress onPress = b -> openLink(lb.url());
+        Button.OnPress onPress = b -> openLink(lb.url(), lb.analyticsTarget());
         float[] t = lb.tint();
         Button button = (t == null)
                 ? new DarkTintedButton(x, y, w, h, label, onPress)
@@ -252,14 +261,36 @@ public final class SupportScreen extends Screen {
                 .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url)));
     }
 
-    private void openLink(String url) {
+    /**
+     * Open {@code url} through the vanilla confirm screen, recording the click and whether the
+     * player followed through. {@code analyticsTarget} is one of the {@link UiAnalytics} target
+     * names, or null to open untracked (an inline URL we don't recognise).
+     */
+    private void openLink(String url, String analyticsTarget) {
+        if (analyticsTarget != null) {
+            UiAnalytics.click(UiAnalytics.SURFACE_SUPPORT_PAGE, analyticsTarget);
+        }
         Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
+            if (analyticsTarget != null) {
+                UiAnalytics.confirm(UiAnalytics.SURFACE_SUPPORT_PAGE, analyticsTarget, yes);
+            }
             if (yes) {
                 Util.getPlatform().openUri(URI.create(url));
             }
             // Return to the hub so the player can follow more than one link.
             Minecraft.getInstance().setScreen(this);
         }, url, true));
+    }
+
+    /**
+     * Analytics target name for an inline link's URL — the two inline links are built from
+     * {@link OfficialLinks}, so an exact match identifies them; anything else is untracked.
+     */
+    private static String inlineTarget(String url) {
+        if (url == null) return null;
+        if (url.equals(OfficialLinks.discord())) return UiAnalytics.TARGET_DISCORD;
+        if (url.equals(OfficialLinks.affiliate())) return UiAnalytics.TARGET_AFFILIATE;
+        return null;
     }
 
     /** The clickable {@link Style} under the given mouse position, or null — used for inline links. */
@@ -283,7 +314,8 @@ public final class SupportScreen extends Screen {
             Style style = styleAt(mouseX, mouseY);
             if (style != null && style.getClickEvent() != null
                     && style.getClickEvent().getAction() == ClickEvent.Action.OPEN_URL) {
-                openLink(style.getClickEvent().getValue());
+                String url = style.getClickEvent().getValue();
+                openLink(url, inlineTarget(url));
                 return true;
             }
         }
@@ -322,6 +354,10 @@ public final class SupportScreen extends Screen {
 
     @Override
     public void onClose() {
+        if (!timeReported) {
+            timeReported = true;
+            UiAnalytics.pageTime(UiAnalytics.SURFACE_SUPPORT_PAGE, System.currentTimeMillis() - openedAtMs);
+        }
         Minecraft.getInstance().setScreen(parent);
     }
 }

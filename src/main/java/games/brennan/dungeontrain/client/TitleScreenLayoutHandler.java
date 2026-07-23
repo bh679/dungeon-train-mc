@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PulsingDiscordButton;
@@ -175,9 +176,11 @@ public final class TitleScreenLayoutHandler {
     }
 
     private static void openDiscord(Screen parent) {
+        UiAnalytics.click(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_DISCORD);
         // Read at click time so a relay-served rotation still applies after the menu was built.
         String discordUrl = OfficialLinks.discord();
         Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
+            UiAnalytics.confirm(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_DISCORD, yes);
             if (yes) {
                 Util.getPlatform().openUri(URI.create(discordUrl));
             }

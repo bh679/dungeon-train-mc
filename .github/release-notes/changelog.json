@@ -5504,6 +5504,23 @@
       "released": true,
       "released_in": "v0.499.0",
       "released_at": "2026-07-23T07:06:07Z"
+    },
+    {
+      "id": "support-funnel-analytics",
+      "version": "0.500.0",
+      "type": "feat",
+      "title": "Support-funnel usage telemetry + Finances dashboard",
+      "summary": "The title screen's Support the Mod, Discord and Patreon buttons — and every link on the Support page — now report anonymous usage counts (clicks, whether the external link was actually opened, and time spent on the page) when network features are consented to. Nothing new is shown in game; the data feeds a new Revenue section on the dt-data explorer's Finances page.",
+      "highlights": [
+        "Consent-gated: no network consent, no telemetry",
+        "Tracks clicks, confirm-screen follow-through and time on the Support page",
+        "Data explorer Costs page relabelled Finances with a Revenue funnel"
+      ],
+      "pr": 827,
+      "date": "2026-07-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

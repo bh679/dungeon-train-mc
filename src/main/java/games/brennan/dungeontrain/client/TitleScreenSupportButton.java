@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PatreonIconButton;
@@ -80,8 +81,11 @@ public final class TitleScreenSupportButton {
         int iconW = h;
         int supportW = w - iconW - GAP;
 
-        event.addListener(new DarkTintedButton(x, y, supportW, h, SUPPORT_LABEL,
-                b -> Minecraft.getInstance().setScreen(new SupportScreen(titleScreen))));
+        event.addListener(new DarkTintedButton(x, y, supportW, h, SUPPORT_LABEL, b -> {
+            // The headline funnel metric: how many players tap "Support the Mod" at all.
+            UiAnalytics.click(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_SUPPORT);
+            Minecraft.getInstance().setScreen(new SupportScreen(titleScreen));
+        }));
 
         PatreonIconButton patreon = new PatreonIconButton(x + supportW + GAP, y, iconW,
                 PATREON_NARRATION, b -> openPatreon(titleScreen));
@@ -92,9 +96,11 @@ public final class TitleScreenSupportButton {
     }
 
     private static void openPatreon(Screen parent) {
+        UiAnalytics.click(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_PATREON);
         // Read at click time so a relay-served rotation still applies after the menu was built.
         String patreonUrl = OfficialLinks.patreon();
         Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
+            UiAnalytics.confirm(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_PATREON, yes);
             if (yes) {
                 Util.getPlatform().openUri(URI.create(patreonUrl));
             }
