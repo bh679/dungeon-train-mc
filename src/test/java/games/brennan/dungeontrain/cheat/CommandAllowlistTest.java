@@ -129,6 +129,13 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("/fixaisconfig (AIS-data Free Play fix action) is allowed")
+    void fixAisConfigAllowed() {
+        assertFalse(CommandAllowlist.taints("fixaisconfig"));
+        assertFalse(CommandAllowlist.taints("/fixaisconfig"));
+    }
+
+    @Test
     @DisplayName("/playanimation (cosmetic entity animation) is allowed")
     void playAnimationAllowed() {
         assertFalse(CommandAllowlist.taints("playanimation @s minecraft:humanoid.emote sneeze"));

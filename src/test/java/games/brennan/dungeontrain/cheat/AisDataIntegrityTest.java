@@ -129,6 +129,24 @@ class AisDataIntegrityTest {
     }
 
     @Test
+    @DisplayName("restoreDefaults rewrites a tampered file back to clean")
+    void restoreDefaultsRoundTrip(@TempDir Path dir) throws IOException {
+        Files.writeString(dir.resolve(AisDataIntegrity.FILE_NAME),
+            "raiseAttributeCaps=false\narmorCapMax=99999\n");
+        assertEquals(2, AisDataIntegrity.check(dir).size());
+        assertTrue(AisDataIntegrity.restoreDefaults(dir));
+        assertTrue(AisDataIntegrity.check(dir).isEmpty());
+    }
+
+    @Test
+    @DisplayName("restoreDefaults creates the file when absent, still clean")
+    void restoreDefaultsCreatesFile(@TempDir Path dir) {
+        assertTrue(AisDataIntegrity.restoreDefaults(dir));
+        assertTrue(Files.exists(dir.resolve(AisDataIntegrity.FILE_NAME)));
+        assertTrue(AisDataIntegrity.check(dir).isEmpty());
+    }
+
+    @Test
     @DisplayName("Default-content file on disk ⇒ clean")
     void defaultFileIsClean(@TempDir Path dir) throws IOException {
         Files.writeString(dir.resolve(AisDataIntegrity.FILE_NAME),

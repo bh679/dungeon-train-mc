@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -73,6 +74,45 @@ public final class AisDataIntegrity {
     /** Is the current server session Free Play because AIS data was changed? */
     public static boolean isSessionFreePlay() {
         return !deviations.isEmpty();
+    }
+
+    /**
+     * The deviations found at this session's boot, e.g.
+     * {@code raiseAttributeCaps=false (expected true)} — shown to the player in
+     * the login notice so they can see exactly WHAT was changed. Empty when the
+     * session is clean.
+     */
+    public static List<String> deviations() {
+        return deviations;
+    }
+
+    /**
+     * Rewrite {@code configDir/adventureitemstats.properties} with the AIS
+     * defaults — the "fix it" action behind {@code /fixaisconfig}. Only ever
+     * writes the known-good defaults, never caller input. Note AIS reads its
+     * config once at game launch, so the fix takes effect on the next game
+     * (or dedicated-server) restart — the session Free Play flag deliberately
+     * stays set until then.
+     *
+     * @return true when the file was written; false on I/O failure (logged).
+     */
+    public static boolean restoreDefaults(Path configDir) {
+        Path file = configDir.resolve(FILE_NAME);
+        Properties properties = new Properties();
+        properties.setProperty(KEY_RAISE_CAPS, String.valueOf(DEFAULT_RAISE_CAPS));
+        properties.setProperty(KEY_ARMOR_MAX, String.valueOf(DEFAULT_ARMOR_MAX));
+        properties.setProperty(KEY_TOUGHNESS_MAX, String.valueOf(DEFAULT_TOUGHNESS_MAX));
+        try {
+            Files.createDirectories(file.getParent());
+            try (OutputStream out = Files.newOutputStream(file)) {
+                properties.store(out, "Restored to Adventure Item Stats defaults by Dungeon Train (/fixaisconfig).");
+            }
+            LOGGER.info("[DungeonTrain] Restored AIS defaults to {}", file);
+            return true;
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Could not restore AIS defaults to {}", file, e);
+            return false;
+        }
     }
 
     @SubscribeEvent

@@ -8,8 +8,11 @@ import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.ShowFreePlayConfirmPacket;
 import games.brennan.dungeontrain.registry.ModMobEffects;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameType;
@@ -125,10 +128,22 @@ public final class CheatDetectionEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (AisDataIntegrity.isSessionFreePlay()) {
             // Session-only AIS taint: markCheated never runs in this path, so
-            // apply the effect and explain WHY here, once per login.
+            // apply the effect and explain WHY here, once per login — with the
+            // exact changed settings and a one-click fix action.
             RunIntegrity.applyFreePlayEffect(player);
             RunIntegrity.sendFreePlayNotice(player,
                 Component.translatable("chat.dungeontrain.free_play.cause.ais_data"));
+            player.sendSystemMessage(Component.translatable(
+                    "chat.dungeontrain.free_play.ais_changed",
+                    String.join(", ", AisDataIntegrity.deviations()))
+                .withStyle(ChatFormatting.GRAY));
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.ais_fix")
+                .withStyle(style -> style
+                    .withColor(ChatFormatting.AQUA)
+                    .withUnderlined(true)
+                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/fixaisconfig"))
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                        Component.literal("/fixaisconfig")))));
         }
         if (RunIntegrity.isPermanentlyCheated(player)) {
             RunIntegrity.applyFreePlayEffect(player); // re-apply across relog
