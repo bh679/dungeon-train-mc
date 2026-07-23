@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": "Cada leitor orienta um pouco as prateleiras.",
   "chat.dungeontrain.free_play.title": "Jogo Livre.",
   "chat.dungeontrain.free_play.cause.gamemode": "Mudaste para %s.",
+  "chat.dungeontrain.free_play.cause.ais_data": "As definições do Adventure Item Stats foram alteradas — repõe as predefinições para jogares normalmente.",
   "chat.dungeontrain.free_play.cause.command": "Usaste %s.",
   "chat.dungeontrain.free_play.consequence": "Os progressos que obtiveres aqui não serão guardados no teu perfil, as estatísticas não contarão para os teus totais globais, e o teu Baú de Ender passa a ser um de Criativo à parte, para que os teus objetos guardados fiquem em segurança.",
   "effect.dungeontrain.free_play": "Jogo Livre",

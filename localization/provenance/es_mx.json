@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "chat.dungeontrain.free_play.title": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "chat.dungeontrain.free_play.cause.gamemode": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "chat.dungeontrain.free_play.cause.ais_data": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "chat.dungeontrain.free_play.cause.command": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "chat.dungeontrain.free_play.consequence": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "effect.dungeontrain.free_play": {"author": "Opus 4.8 (Claude)", "reviewer": ""},

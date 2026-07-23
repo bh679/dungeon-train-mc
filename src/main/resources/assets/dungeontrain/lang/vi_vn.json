@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": "Mỗi độc giả đều lái những kệ sách đi một chút.",
   "chat.dungeontrain.free_play.title": "Chơi Tự do.",
   "chat.dungeontrain.free_play.cause.gamemode": "Bạn đã chuyển sang %s.",
+  "chat.dungeontrain.free_play.cause.ais_data": "Cài đặt Adventure Item Stats đã bị thay đổi — khôi phục mặc định để chơi bình thường.",
   "chat.dungeontrain.free_play.cause.command": "Bạn đã dùng %s.",
   "chat.dungeontrain.free_play.consequence": "Những tiến triển bạn đạt được ở đây sẽ không được lưu vào hồ sơ, thống kê sẽ không tính vào tổng số toàn cục, và Rương Ẩn Giới của bạn chuyển sang một chiếc Sáng tạo riêng để các vật phẩm đã lưu được an toàn.",
   "effect.dungeontrain.free_play": "Chơi Tự do",

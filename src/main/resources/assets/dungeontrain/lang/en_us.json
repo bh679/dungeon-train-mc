@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": "Every reader steers the shelves a little.",
   "chat.dungeontrain.free_play.title": "Free Play.",
   "chat.dungeontrain.free_play.cause.gamemode": "You switched to %s.",
+  "chat.dungeontrain.free_play.cause.ais_data": "The Adventure Item Stats settings have been changed — restore the defaults to play normally.",
   "chat.dungeontrain.free_play.cause.command": "You used %s.",
   "chat.dungeontrain.free_play.consequence": "Advancements you earn here won't be saved to your profile, stats won't count toward your global totals, and your Ender Chest swaps to a separate Creative one so your saved items stay safe.",
   "effect.dungeontrain.free_play": "Free Play",

@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": "Setiap pembaca ikut sedikit mengarahkan isi rak.",
   "chat.dungeontrain.free_play.title": "Main Bebas.",
   "chat.dungeontrain.free_play.cause.gamemode": "Kamu beralih ke %s.",
+  "chat.dungeontrain.free_play.cause.ais_data": "Pengaturan Adventure Item Stats telah diubah — kembalikan ke bawaan untuk bermain seperti biasa.",
   "chat.dungeontrain.free_play.cause.command": "Kamu menggunakan %s.",
   "chat.dungeontrain.free_play.consequence": "Kemajuan yang kamu raih di sini tidak akan disimpan ke profilmu, statistik tidak dihitung ke total globalmu, dan Peti Ender-mu berpindah ke Peti Kreatif terpisah agar barang tersimpanmu tetap aman.",
   "effect.dungeontrain.free_play": "Main Bebas",

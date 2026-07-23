@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": "Ogni lettore orienta un po' gli scaffali.",
   "chat.dungeontrain.free_play.title": "Gioco Libero.",
   "chat.dungeontrain.free_play.cause.gamemode": "Sei passato a %s.",
+  "chat.dungeontrain.free_play.cause.ais_data": "Le impostazioni di Adventure Item Stats sono state modificate — ripristina i valori predefiniti per giocare normalmente.",
   "chat.dungeontrain.free_play.cause.command": "Hai usato %s.",
   "chat.dungeontrain.free_play.consequence": "I progressi che ottieni qui non verranno salvati nel tuo profilo, le statistiche non conteranno per i tuoi totali globali e il tuo Baule dell'End viene sostituito da uno della Creativa a parte, così i tuoi oggetti salvati restano al sicuro.",
   "effect.dungeontrain.free_play": "Gioco Libero",

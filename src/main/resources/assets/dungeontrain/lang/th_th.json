@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": "ผู้อ่านทุกคนช่วยกำหนดทิศทางของชั้นหนังสือทีละน้อย",
   "chat.dungeontrain.free_play.title": "โหมดเล่นอิสระ",
   "chat.dungeontrain.free_play.cause.gamemode": "คุณเปลี่ยนไปเป็น %s",
+  "chat.dungeontrain.free_play.cause.ais_data": "การตั้งค่า Adventure Item Stats ถูกเปลี่ยนแปลง — คืนค่าเริ่มต้นเพื่อเล่นตามปกติ",
   "chat.dungeontrain.free_play.cause.command": "คุณใช้ %s",
   "chat.dungeontrain.free_play.consequence": "ความสำเร็จที่คุณได้ที่นี่จะไม่ถูกบันทึกลงโปรไฟล์ สถิติจะไม่นับรวมยอดรวมทั่วโลกของคุณ และหีบเอนเดอร์ของคุณจะสลับไปเป็นหีบครีเอทีฟแยกต่างหาก เพื่อให้ไอเทมที่บันทึกไว้ปลอดภัย",
   "effect.dungeontrain.free_play": "โหมดเล่นอิสระ",

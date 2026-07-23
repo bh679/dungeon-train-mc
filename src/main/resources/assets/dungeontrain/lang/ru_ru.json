@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": "Каждый читатель понемногу направляет полки.",
   "chat.dungeontrain.free_play.title": "Свободная игра.",
   "chat.dungeontrain.free_play.cause.gamemode": "Вы переключились на %s.",
+  "chat.dungeontrain.free_play.cause.ais_data": "Настройки Adventure Item Stats были изменены — восстановите значения по умолчанию, чтобы играть как обычно.",
   "chat.dungeontrain.free_play.cause.command": "Вы использовали %s.",
   "chat.dungeontrain.free_play.consequence": "Достижения, полученные здесь, не сохранятся в вашем профиле, статистика не будет учитываться в общих итогах, а ваш сундук Края сменится на отдельный творческий, чтобы сохранённые предметы остались в безопасности.",
   "effect.dungeontrain.free_play": "Свободная игра",

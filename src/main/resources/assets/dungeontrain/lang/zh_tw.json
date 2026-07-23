@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": "每位讀者都在悄悄撥動書架的方向。",
   "chat.dungeontrain.free_play.title": "自由模式。",
   "chat.dungeontrain.free_play.cause.gamemode": "你切換到了%s。",
+  "chat.dungeontrain.free_play.cause.ais_data": "Adventure Item Stats 的設定已被更改——恢復預設設定即可正常遊玩。",
   "chat.dungeontrain.free_play.cause.command": "你使用了%s。",
   "chat.dungeontrain.free_play.consequence": "在這裡獲得的進度不會儲存到你的個人檔案，統計數據不會計入你的全域統計總數，而你的終界箱會換成一個獨立的創造模式終界箱，好讓你儲存的物品安然無恙。",
   "effect.dungeontrain.free_play": "自由模式",

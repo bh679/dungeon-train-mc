@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": "Każdy czytelnik odrobinę kieruje półkami.",
   "chat.dungeontrain.free_play.title": "Swobodna Gra.",
   "chat.dungeontrain.free_play.cause.gamemode": "Przełączyłeś się na %s.",
+  "chat.dungeontrain.free_play.cause.ais_data": "Ustawienia Adventure Item Stats zostały zmienione — przywróć domyślne, aby grać normalnie.",
   "chat.dungeontrain.free_play.cause.command": "Użyłeś %s.",
   "chat.dungeontrain.free_play.consequence": "Osiągnięcia zdobyte tutaj nie zostaną zapisane w twoim profilu, statystyki nie doliczą się do globalnych sum, a twoja skrzynia Kresu zmieni się w osobną, kreatywną, by zapisane przedmioty pozostały bezpieczne.",
   "effect.dungeontrain.free_play": "Swobodna Gra",

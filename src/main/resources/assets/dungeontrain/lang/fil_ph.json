@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": "Bawat mambabasa ay bahagyang gumagabay sa mga istante.",
   "chat.dungeontrain.free_play.title": "Malayang Paglalaro.",
   "chat.dungeontrain.free_play.cause.gamemode": "Lumipat ka sa %s.",
+  "chat.dungeontrain.free_play.cause.ais_data": "Binago ang mga setting ng Adventure Item Stats — ibalik ang mga default para makapaglaro nang normal.",
   "chat.dungeontrain.free_play.cause.command": "Ginamit mo ang %s.",
   "chat.dungeontrain.free_play.consequence": "Ang mga advancement na makakamit mo rito ay hindi mase-save sa iyong profile, hindi bibilang ang mga stat sa iyong pandaigdigang kabuuan, at magpapalit ang iyong Ender Chest sa hiwalay na Creative para manatiling ligtas ang mga naka-save mong item.",
   "effect.dungeontrain.free_play": "Malayang Paglalaro",

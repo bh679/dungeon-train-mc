@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.AisDataIntegrity;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
@@ -67,8 +68,19 @@ public final class CheatDetectionEvents {
         CommandSourceStack source = event.getParseResults().getContext().getSource();
         ServerPlayer player = source.getPlayer();
         if (player == null) return;                 // console / command block / function
-        if (RunIntegrity.isCheated(player)) return; // already Free Play — let it run (incl. re-dispatch)
+        if (RunIntegrity.isPermanentlyCheated(player)) return; // already recorded — let it run (incl. re-dispatch)
         if (!CommandAllowlist.taints(event.getParseResults())) return;
+
+        if (AisDataIntegrity.isSessionFreePlay()) {
+            // The session is already Free Play (AIS data changed) — there is
+            // nothing to confirm or back out of. Just record the permanent taint
+            // (quiet — markCheated skips the notice during a session taint) and
+            // let the command run.
+            RunIntegrity.markCheated(player, Component.translatable(
+                "chat.dungeontrain.free_play.cause.command",
+                CommandAllowlist.label(event.getParseResults())));
+            return;
+        }
 
         // Hold the command, ask the player to confirm Free Play first.
         event.setCanceled(true);
@@ -98,7 +110,9 @@ public final class CheatDetectionEvents {
     @SubscribeEvent
     public static void onChangeGameMode(PlayerEvent.PlayerChangeGameModeEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (RunIntegrity.isCheated(player)) return;
+        // Gate on the PERMANENT taint: during a session-only AIS taint a
+        // creative/spectator switch must still be recorded permanently.
+        if (RunIntegrity.isPermanentlyCheated(player)) return;
         markGameModeFreePlay(player, event.getNewGameMode());
         // If that just tripped Free Play (creative/spectator), lock the Ender Chest.
         // Runs before ECP's LOW-priority game-mode swap, while the old mode is still
@@ -109,13 +123,21 @@ public final class CheatDetectionEvents {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (RunIntegrity.isCheated(player)) {
+        if (AisDataIntegrity.isSessionFreePlay()) {
+            // Session-only AIS taint: markCheated never runs in this path, so
+            // apply the effect and explain WHY here, once per login.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player,
+                Component.translatable("chat.dungeontrain.free_play.cause.ais_data"));
+        }
+        if (RunIntegrity.isPermanentlyCheated(player)) {
             RunIntegrity.applyFreePlayEffect(player); // re-apply across relog
             return;
         }
         // A world created/entered directly in creative/spectator — nothing to back
         // out of, so mark immediately (HIGHEST so the flag is set before
         // AchievementEvents' default-priority sidecar absorb/replay reads it).
+        // During a session taint this still records the permanent flag, quietly.
         markGameModeFreePlay(player, player.gameMode.getGameModeForPlayer());
     }
 

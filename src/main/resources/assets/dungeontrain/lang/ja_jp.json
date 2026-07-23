@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": "読み手ひとりひとりが、棚を少しずつ導いている。",
   "chat.dungeontrain.free_play.title": "フリープレイ。",
   "chat.dungeontrain.free_play.cause.gamemode": "%sに切り替えた。",
+  "chat.dungeontrain.free_play.cause.ais_data": "Adventure Item Statsの設定が変更されている。通常プレイに戻すにはデフォルト設定に戻すこと。",
   "chat.dungeontrain.free_play.cause.command": "%sを使った。",
   "chat.dungeontrain.free_play.consequence": "ここで獲得した進捗はプロフィールに保存されず、統計はグローバルの累計に加算されない。エンダーチェストは別のクリエイティブ用に切り替わるので、保存した所持品は安全なままだ。",
   "effect.dungeontrain.free_play": "フリープレイ",

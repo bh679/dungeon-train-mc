@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": "Jeder Leser lenkt die Regale ein kleines Stück.",
   "chat.dungeontrain.free_play.title": "Freies Spiel.",
   "chat.dungeontrain.free_play.cause.gamemode": "Du hast zu %s gewechselt.",
+  "chat.dungeontrain.free_play.cause.ais_data": "Die Adventure-Item-Stats-Einstellungen wurden geändert — stelle die Standardwerte wieder her, um normal zu spielen.",
   "chat.dungeontrain.free_play.cause.command": "Du hast %s benutzt.",
   "chat.dungeontrain.free_play.consequence": "Fortschritte, die du hier verdienst, werden nicht in deinem Profil gespeichert, Statistiken zählen nicht zu deinen globalen Gesamtwerten, und deine Endertruhe wird gegen eine separate Kreativ-Truhe getauscht, damit deine gespeicherten Gegenstände sicher bleiben.",
   "effect.dungeontrain.free_play": "Freies Spiel",

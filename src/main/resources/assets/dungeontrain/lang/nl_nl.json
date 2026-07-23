@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": "Elke lezer stuurt de boekenplanken een beetje.",
   "chat.dungeontrain.free_play.title": "Vrij Spel.",
   "chat.dungeontrain.free_play.cause.gamemode": "Je bent overgeschakeld naar %s.",
+  "chat.dungeontrain.free_play.cause.ais_data": "De instellingen van Adventure Item Stats zijn gewijzigd — herstel de standaardwaarden om normaal te spelen.",
   "chat.dungeontrain.free_play.cause.command": "Je hebt %s gebruikt.",
   "chat.dungeontrain.free_play.consequence": "Prestaties die je hier behaalt worden niet in je profiel opgeslagen, statistieken tellen niet mee voor je globale totalen, en je Enderkist wordt vervangen door een aparte Creatief-versie zodat je opgeslagen voorwerpen veilig blijven.",
   "effect.dungeontrain.free_play": "Vrij Spel",

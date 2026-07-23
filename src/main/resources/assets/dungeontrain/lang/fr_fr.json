@@ -45,6 +45,7 @@
   "gui.dungeontrain.book_vote.response.general.10": "Chaque lecteur oriente un peu les étagères.",
   "chat.dungeontrain.free_play.title": "Jeu Libre.",
   "chat.dungeontrain.free_play.cause.gamemode": "Tu es passé en %s.",
+  "chat.dungeontrain.free_play.cause.ais_data": "Les réglages d'Adventure Item Stats ont été modifiés — rétablis les valeurs par défaut pour jouer normalement.",
   "chat.dungeontrain.free_play.cause.command": "Tu as utilisé %s.",
   "chat.dungeontrain.free_play.consequence": "Les progrès que tu obtiens ici ne seront pas enregistrés dans ton profil, les statistiques ne compteront pas dans tes totaux globaux, et ton coffre de l'Ender est remplacé par un coffre Créatif distinct pour que tes objets sauvegardés restent en sécurité.",
   "effect.dungeontrain.free_play": "Jeu Libre",
