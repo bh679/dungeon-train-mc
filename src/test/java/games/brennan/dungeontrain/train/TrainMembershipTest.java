@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,5 +56,23 @@ final class TrainMembershipTest {
     @Test
     void nullTagsAreSafe() {
         assertFalse(TrainMembership.hasContentsTag(null));
+    }
+
+    @Test
+    void carriageIndexParsesFromTag() {
+        assertEquals(java.util.OptionalInt.of(42),
+            TrainMembership.carriageIndexOf(List.of("zzz", PREFIX + "42")));
+        assertEquals(java.util.OptionalInt.of(-7),
+            TrainMembership.carriageIndexOf(List.of(PREFIX + "-7")));
+    }
+
+    @Test
+    void carriageIndexMalformedOrAbsentIsEmpty() {
+        assertEquals(java.util.OptionalInt.empty(),
+            TrainMembership.carriageIndexOf(List.of(PREFIX + "abc")));
+        assertEquals(java.util.OptionalInt.empty(),
+            TrainMembership.carriageIndexOf(java.util.Set.of("unrelated")));
+        assertEquals(java.util.OptionalInt.empty(),
+            TrainMembership.carriageIndexOf((java.util.Collection<String>) null));
     }
 }

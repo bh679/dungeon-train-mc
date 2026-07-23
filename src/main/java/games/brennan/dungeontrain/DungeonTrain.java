@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.advancement.SurveyAdvancement;
 import games.brennan.dungeontrain.compat.DiscordAdvancementSuffix;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
+import games.brennan.dungeontrain.compat.TradeEverythingBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
@@ -431,6 +432,18 @@ public class DungeonTrain {
             } catch (Throwable t) {
                 LOGGER.warn("EnderChestPersistence present but slot-lock seam unavailable ({}); "
                         + "Free Play Ender Chest lock disabled.", t.toString());
+            }
+        }
+
+        // Value DT narrative books in Trade Everything's villager "Trade Anything"
+        // slot (flat 6-payout-items-per-book). TE is bundled (jarJar), but tolerate
+        // a build predating the valuation API: degrade to default valuation.
+        if (ModList.get().isLoaded("tradeeverything")) {
+            try {
+                TradeEverythingBridge.install();
+            } catch (Throwable t) {
+                LOGGER.warn("TradeEverything present but valuation API unavailable ({}); "
+                        + "narrative-book trade value defaults apply.", t.toString());
             }
         }
 

@@ -5569,6 +5569,40 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "trade-everything-sibling",
+      "version": "0.504.0",
+      "type": "feat",
+      "title": "Villagers trade anything \u2014 new required mod: Trade Everything",
+      "summary": "Every villager now has a Trade Anything slot at the top of its trade list. Put any item in and the villager exchanges it for goods it buys, priced by real material worth \u2014 crafting and smithing recipes, durability, and enchantments all count. Valuable items pay out emeralds or emerald blocks, and emerald blocks break into emeralds automatically when you buy things, with change returned. Powered by a new companion mod, Trade Everything, bundled inside Dungeon Train.",
+      "highlights": [
+        "Sell junk or treasure to any villager \u2014 prices follow material value (16 common items \u2248 1 emerald)",
+        "Enchantments and durability change what your gear is worth",
+        "Emerald blocks work as big currency: broken only when needed, change given in emeralds",
+        "Fully configurable in config/tradeeverything.json"
+      ],
+      "date": "2026-07-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "villager-trade-progression",
+      "version": "0.504.0",
+      "type": "feat",
+      "title": "Villager trades scale with the train \u2014 beyond Master",
+      "summary": "Train villagers now key entirely off their own carriage: deeper carriages host higher-level traders (Novice near spawn, Master from ~carriage 520), and from carriage 30 the gear they sell keeps growing past vanilla \u2014 better enchants every ~100 carriages, stats slightly ahead of the local difficulty, and prices that scale with the enchants (big-ticket items charge emerald blocks). Villagers also buy their own stock back at 10% under their sell price. NOTE: the exchange rates and scaling curves are first-pass and still under balancing review \u2014 expect tuning in upcoming releases, and please report trades that feel off.",
+      "highlights": [
+        "Deeper carriages = better traders: levels, enchants, stats and prices all follow the carriage",
+        "Enchants keep improving past vanilla Master (every ~100 carriages from carriage 30)",
+        "Sell items back to their seller at a 10% margin",
+        "Balancing is under active review \u2014 feedback welcome"
+      ],
+      "date": "2026-07-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

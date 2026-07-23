@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.train;
 import net.minecraft.world.entity.Entity;
 
 import java.util.Collection;
+import java.util.OptionalInt;
 
 /**
  * Single source of truth for "is this entity on the train?".
@@ -41,5 +42,31 @@ public final class TrainMembership {
             if (tag != null && tag.startsWith(CarriageContentsPlacer.DT_CONTENTS_TAG_PREFIX)) return true;
         }
         return false;
+    }
+
+    /**
+     * The carriage position index (pIdx) baked into the entity's contents tag
+     * at spawn, or empty for entities without one (or with a malformed tag).
+     * This is the entity's own spatial frame — deliberately independent of any
+     * player's travelled progress.
+     */
+    public static OptionalInt carriageIndexOf(Entity entity) {
+        if (entity == null) return OptionalInt.empty();
+        return carriageIndexOf(entity.getTags());
+    }
+
+    /** Pure tag-parsing core, package-private for unit tests. */
+    static OptionalInt carriageIndexOf(Collection<String> tags) {
+        if (tags == null) return OptionalInt.empty();
+        for (String tag : tags) {
+            if (tag == null || !tag.startsWith(CarriageContentsPlacer.DT_CONTENTS_TAG_PREFIX)) continue;
+            try {
+                return OptionalInt.of(Integer.parseInt(
+                    tag.substring(CarriageContentsPlacer.DT_CONTENTS_TAG_PREFIX.length())));
+            } catch (NumberFormatException ignored) {
+                // malformed suffix — keep scanning; another tag may parse
+            }
+        }
+        return OptionalInt.empty();
     }
 }
