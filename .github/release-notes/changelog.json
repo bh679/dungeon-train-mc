@@ -5553,6 +5553,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sable-collision-chunkload-stall",
+      "version": "0.503.0",
+      "type": "fix",
+      "title": "Fixed multi-second freezes caused by dropped items near the train",
+      "summary": "Items and mobs colliding with parts of the train whose terrain hadn't generated yet could lock the whole game up for many seconds (frozen trading, unresponsive menus, hanging quit). Collision checks no longer force that terrain to generate on the spot.",
+      "highlights": [
+        "No more total freezes when items pile up on or fall off a moving train",
+        "Rare cosmetic side effect: an item dropped onto a not-yet-generated part of the train may fall through instead of landing"
+      ],
+      "pr": 831,
+      "date": "2026-07-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
