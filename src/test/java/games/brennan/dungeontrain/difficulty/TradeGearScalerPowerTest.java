@@ -36,4 +36,14 @@ final class TradeGearScalerPowerTest {
     void tiersPerStepClamped() {
         assertEquals(TradeGearScaler.enchantPower(7, 1), TradeGearScaler.enchantPower(7, 0));
     }
+
+    @Test
+    @DisplayName("stat look-ahead max is ~20% of tier, floored at 1")
+    void statLookahead() {
+        assertEquals(1, TradeGearScaler.statLookaheadMax(1));
+        assertEquals(1, TradeGearScaler.statLookaheadMax(4));
+        assertEquals(2, TradeGearScaler.statLookaheadMax(10));
+        assertEquals(4, TradeGearScaler.statLookaheadMax(20));
+        assertEquals(8, TradeGearScaler.statLookaheadMax(40));
+    }
 }

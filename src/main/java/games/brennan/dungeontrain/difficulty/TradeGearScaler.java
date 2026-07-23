@@ -64,10 +64,13 @@ public final class TradeGearScaler {
         }
 
         // AIS stats + AIN name mirror mob gear / chest loot; both no-op on
-        // items they don't apply to (food, maps, ...).
+        // items they don't apply to (food, maps, ...). Stats roll for a tier
+        // slightly AHEAD of the villager's own — shop gear is aspirational:
+        // +rand(0..max(1, tier/5)) tiers (1 → +0-1, 10 → +0-2, 20 → +0-4, 40 → +0-8).
         NameComposer.applyName(result, rng);
+        int statTier = posTier + rng.nextInt(statLookaheadMax(posTier) + 1);
         StatsModifier.applyStats(result, rng,
-            ItemStatLevelScaling.primaryStatBonus(result, posTier));
+            ItemStatLevelScaling.primaryStatBonus(result, statTier));
 
         ItemCost costA = offer.getItemCostA();
         if (enchantScaled) {
@@ -76,6 +79,14 @@ public final class TradeGearScaler {
 
         return new MerchantOffer(costA, offer.getItemCostB(), result,
             0, offer.getMaxUses(), offer.getXp(), offer.getPriceMultiplier());
+    }
+
+    /**
+     * Max tiers of stat look-ahead: ~20% of the current tier, floored at 1 —
+     * 1 → 1, 10 → 2, 20 → 4, 40 → 8. Package-private for unit tests.
+     */
+    static int statLookaheadMax(int posTier) {
+        return Math.max(1, posTier / 5);
     }
 
     /**
