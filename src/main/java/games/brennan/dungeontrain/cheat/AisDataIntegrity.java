@@ -39,10 +39,11 @@ import java.util.Properties;
  * unknown keys are ignored (a future AIS may add keys). Config is player-editable
  * data — bad input must never take the game down or false-positive.</p>
  *
- * <p>⚠️ The defaults table below is pinned to AIS 0.7.0
- * ({@code adventureitemstats_min_version} in {@code gradle.properties}).
- * <b>Refresh it whenever the AIS floor is raised</b> — flagged in the
- * gradle.properties AIS comment block.</p>
+ * <p>The expected values are read from the <b>installed AIS build itself</b>
+ * ({@code AisConfig.defaults()} — see {@link #expected()}), so the expectation
+ * is always consistent with whatever AIS version ships with a given release;
+ * no table to refresh on AIS bumps. A built-in AIS 0.7.0 table remains only as
+ * a fallback should a future AIS relocate that class.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class AisDataIntegrity {
@@ -52,14 +53,42 @@ public final class AisDataIntegrity {
     /** AIS's config file name, under the loader config dir. */
     static final String FILE_NAME = "adventureitemstats.properties";
 
-    // ---- AIS 0.7.0 defaults (keep in lock-step with adventureitemstats_min_version) ----
     static final String KEY_RAISE_CAPS = "raiseAttributeCaps";
     static final String KEY_ARMOR_MAX = "armorCapMax";
     static final String KEY_TOUGHNESS_MAX = "armorToughnessCapMax";
 
-    static final boolean DEFAULT_RAISE_CAPS = true;
-    static final double DEFAULT_ARMOR_MAX = 1024.0;
-    static final double DEFAULT_TOUGHNESS_MAX = 1024.0;
+    // Fallback expectation ONLY — see expected(). Pinned to AIS 0.7.0
+    // (adventureitemstats_min_version); used solely if a future AIS moves
+    // AisConfig and the live read below breaks.
+    static final boolean FALLBACK_RAISE_CAPS = true;
+    static final double FALLBACK_ARMOR_MAX = 1024.0;
+    static final double FALLBACK_TOUGHNESS_MAX = 1024.0;
+
+    /** The expected AIS config values — what "unchanged data" means. */
+    record Expected(boolean raiseCaps, double armorMax, double toughnessMax) {}
+
+    /**
+     * The expectation comes from the <b>installed AIS build itself</b>
+     * ({@code AisConfig.defaults()}), so it is always consistent with whatever
+     * AIS version this release runs against: the modpack's pinned build, or a
+     * newer platform-served build whose defaults legitimately changed — neither
+     * needs a DT update, and an official AIS balance change is never mistaken
+     * for tampering. The hard reference is confined to this method and guarded
+     * like {@code EnderChestLockBridge}: if a future AIS relocates the class,
+     * we log once and fall back to the built-in 0.7.0 table instead of crashing.
+     */
+    private static Expected expected() {
+        try {
+            games.brennan.adventureitemstats.internal.AisConfig defaults =
+                games.brennan.adventureitemstats.internal.AisConfig.defaults();
+            return new Expected(defaults.raiseAttributeCaps(), defaults.armorCapMax(),
+                defaults.armorToughnessCapMax());
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Could not read AIS's own config defaults ({}) — "
+                + "using the built-in AIS 0.7.0 table", t.toString());
+            return new Expected(FALLBACK_RAISE_CAPS, FALLBACK_ARMOR_MAX, FALLBACK_TOUGHNESS_MAX);
+        }
+    }
 
     /**
      * Deviations found at the current server session's boot; empty when the AIS
@@ -121,10 +150,11 @@ public final class AisDataIntegrity {
             LOGGER.warn("[DungeonTrain] Could not back up AIS config {} — restore aborted", file, e);
             return new RestoreResult(false, null);
         }
+        Expected expected = expected();
         Properties properties = new Properties();
-        properties.setProperty(KEY_RAISE_CAPS, String.valueOf(DEFAULT_RAISE_CAPS));
-        properties.setProperty(KEY_ARMOR_MAX, String.valueOf(DEFAULT_ARMOR_MAX));
-        properties.setProperty(KEY_TOUGHNESS_MAX, String.valueOf(DEFAULT_TOUGHNESS_MAX));
+        properties.setProperty(KEY_RAISE_CAPS, String.valueOf(expected.raiseCaps()));
+        properties.setProperty(KEY_ARMOR_MAX, String.valueOf(expected.armorMax()));
+        properties.setProperty(KEY_TOUGHNESS_MAX, String.valueOf(expected.toughnessMax()));
         try {
             try (OutputStream out = Files.newOutputStream(file)) {
                 properties.store(out, "Restored to Adventure Item Stats defaults by Dungeon Train (/fixaisconfig).");
@@ -176,18 +206,19 @@ public final class AisDataIntegrity {
      * unit tests.
      */
     static List<String> deviationsOf(Properties properties) {
+        Expected expected = expected();
         List<String> found = new ArrayList<>(3);
-        boolean raiseCaps = parseBoolean(properties.getProperty(KEY_RAISE_CAPS), DEFAULT_RAISE_CAPS);
-        if (raiseCaps != DEFAULT_RAISE_CAPS) {
-            found.add(KEY_RAISE_CAPS + "=" + raiseCaps + " (expected " + DEFAULT_RAISE_CAPS + ")");
+        boolean raiseCaps = parseBoolean(properties.getProperty(KEY_RAISE_CAPS), expected.raiseCaps());
+        if (raiseCaps != expected.raiseCaps()) {
+            found.add(KEY_RAISE_CAPS + "=" + raiseCaps + " (expected " + expected.raiseCaps() + ")");
         }
-        double armorMax = parsePositiveDouble(properties.getProperty(KEY_ARMOR_MAX), DEFAULT_ARMOR_MAX);
-        if (armorMax != DEFAULT_ARMOR_MAX) {
-            found.add(KEY_ARMOR_MAX + "=" + armorMax + " (expected " + DEFAULT_ARMOR_MAX + ")");
+        double armorMax = parsePositiveDouble(properties.getProperty(KEY_ARMOR_MAX), expected.armorMax());
+        if (armorMax != expected.armorMax()) {
+            found.add(KEY_ARMOR_MAX + "=" + armorMax + " (expected " + expected.armorMax() + ")");
         }
-        double toughnessMax = parsePositiveDouble(properties.getProperty(KEY_TOUGHNESS_MAX), DEFAULT_TOUGHNESS_MAX);
-        if (toughnessMax != DEFAULT_TOUGHNESS_MAX) {
-            found.add(KEY_TOUGHNESS_MAX + "=" + toughnessMax + " (expected " + DEFAULT_TOUGHNESS_MAX + ")");
+        double toughnessMax = parsePositiveDouble(properties.getProperty(KEY_TOUGHNESS_MAX), expected.toughnessMax());
+        if (toughnessMax != expected.toughnessMax()) {
+            found.add(KEY_TOUGHNESS_MAX + "=" + toughnessMax + " (expected " + expected.toughnessMax() + ")");
         }
         return List.copyOf(found);
     }

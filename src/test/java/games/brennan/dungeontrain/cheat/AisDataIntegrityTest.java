@@ -76,6 +76,17 @@ class AisDataIntegrityTest {
             "raiseAttributeCaps", "true")).isEmpty());
     }
 
+    @Test
+    @DisplayName("Expectation is read from the installed AIS build itself — its own defaults are always clean")
+    void expectationMatchesInstalledAis() {
+        games.brennan.adventureitemstats.internal.AisConfig defaults =
+            games.brennan.adventureitemstats.internal.AisConfig.defaults();
+        assertTrue(AisDataIntegrity.deviationsOf(props(
+            "raiseAttributeCaps", String.valueOf(defaults.raiseAttributeCaps()),
+            "armorCapMax", String.valueOf(defaults.armorCapMax()),
+            "armorToughnessCapMax", String.valueOf(defaults.armorToughnessCapMax()))).isEmpty());
+    }
+
     // ---- Deviations ------------------------------------------------------
 
     @Test
