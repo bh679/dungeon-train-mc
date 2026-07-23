@@ -276,9 +276,20 @@ public final class DeathScreenLayoutHandler {
      */
     private static final int DISCARD_MESSAGE_VARIANTS = 11;
 
-    /** One of the {@value #DISCARD_MESSAGE_VARIANTS} discard flavour lines, at random. */
+    /**
+     * Chinese clients draw from a larger pool: {@code _12}…{@code _21} are classical
+     * sayings (impermanence / journeys / letting go) present ONLY in the zh_cn and
+     * zh_tw lang files, so the pool is gated on the selected language — other
+     * languages would render raw keys.
+     */
+    private static final int DISCARD_MESSAGE_VARIANTS_ZH = 21;
+
+    /** One random discard flavour line from the selected language's pool. */
     private static Component randomDiscardMessage() {
-        int pick = java.util.concurrent.ThreadLocalRandom.current().nextInt(DISCARD_MESSAGE_VARIANTS) + 1;
+        String lang = Minecraft.getInstance().getLanguageManager().getSelected();
+        int pool = lang != null && lang.startsWith("zh")
+                ? DISCARD_MESSAGE_VARIANTS_ZH : DISCARD_MESSAGE_VARIANTS;
+        int pick = java.util.concurrent.ThreadLocalRandom.current().nextInt(pool) + 1;
         String key = "gui.dungeontrain.death.discarding_world" + (pick == 1 ? "" : "_" + pick);
         return Component.translatable(key);
     }
