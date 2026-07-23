@@ -697,6 +697,7 @@
   "advancements.dungeontrain.dungeon_train.cross_country.hint": "Đó là một chuyến đi dài mà không chết.",
   "advancements.dungeontrain.dungeon_train.the_long_run.hint": "Chà. Trong một kiếp sống?",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.hint": "Ngụy biện chi phí chìm về việc quay lại?",
+  "advancements.dungeontrain.dungeon_train.leather_over_diamond.hint": "Có món đồ rơi ra chỉ số tốt hơn vẻ ngoài.",
 
   "advancements.dungeontrain.dungeon_train.root.title": "Dungeon Train",
   "advancements.dungeontrain.dungeon_train.root.description": "Lên tàu nào.",
@@ -801,6 +802,8 @@
   "advancements.dungeontrain.dungeon_train.read_all_story_variants.description": "Đọc mọi biến thể của mọi lá thư của mọi câu chuyện cốt truyện.",
   "advancements.dungeontrain.dungeon_train.carts_100.title": "Nhà Thám Hiểm Dungeon Train",
   "advancements.dungeontrain.dungeon_train.carts_100.description": "Đi qua 100 toa tàu trong một kiếp sống.",
+  "advancements.dungeontrain.dungeon_train.leather_over_diamond.title": "Phủ tôi bằng ...da ư?",
+  "advancements.dungeontrain.dungeon_train.leather_over_diamond.description": "Mặc trọn bộ giáp da có tổng chỉ số tốt hơn trọn bộ giáp kim cương.",
   "advancements.dungeontrain.dungeon_train.the_far_start.title": "Khởi Đầu Xa Xôi",
   "advancements.dungeontrain.dungeon_train.the_far_start.description": "Mang cuốn sách khởi đầu của bạn vượt quá 150 toa tàu.",
   "advancements.dungeontrain.dungeon_train.pacifist_100.title": "Người Yêu Hòa Bình",

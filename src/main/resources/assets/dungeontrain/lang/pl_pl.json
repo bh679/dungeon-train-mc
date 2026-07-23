@@ -697,6 +697,7 @@
   "advancements.dungeontrain.dungeon_train.cross_country.hint": "To długa jazda bez śmierci.",
   "advancements.dungeontrain.dungeon_train.the_long_run.hint": "Wow. W jednym życiu?",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.hint": "Efekt utopionych kosztów w powrocie?",
+  "advancements.dungeontrain.dungeon_train.leather_over_diamond.hint": "Część łupów losuje się lepiej, niż wygląda.",
 
   "advancements.dungeontrain.dungeon_train.root.title": "Dungeon Train",
   "advancements.dungeontrain.dungeon_train.root.description": "Wszyscy na pokład.",
@@ -801,6 +802,8 @@
   "advancements.dungeontrain.dungeon_train.read_all_story_variants.description": "Przeczytaj każdy wariant każdego listu każdej narracyjnej historii.",
   "advancements.dungeontrain.dungeon_train.carts_100.title": "Odkrywca Dungeon Train",
   "advancements.dungeontrain.dungeon_train.carts_100.description": "Przejedź 100 wagonów w jednym życiu.",
+  "advancements.dungeontrain.dungeon_train.leather_over_diamond.title": "Okryj mnie ...skórą?",
+  "advancements.dungeontrain.dungeon_train.leather_over_diamond.description": "Załóż pełny zestaw skórzanej zbroi o lepszych łącznych statystykach niż pełna diamentowa.",
   "advancements.dungeontrain.dungeon_train.the_far_start.title": "Daleki start",
   "advancements.dungeontrain.dungeon_train.the_far_start.description": "Zanieś swoją początkową książkę za 150 wagon.",
   "advancements.dungeontrain.dungeon_train.pacifist_100.title": "Pacyfista",
