@@ -60,10 +60,10 @@ public abstract class LanguageSelectEntryLogoMixin {
     private static final int RING_SEGMENTS = 40;
     /** Radial width of the ring band, in GUI px. */
     private static final float RING_THICKNESS = 1.5F;
-    /** Filled-arc colour — the "AI" blue at full opacity. */
-    private static final int RING_FILL_COLOR = 0xFF55AAFF;
-    /** Full-circle track behind the arc — same blue, faint. */
-    private static final int RING_TRACK_COLOR = 0x3355AAFF;
+    /** Filled-arc colour — the "AI" blue at the same ~35% alpha as the AI label. */
+    private static final int RING_FILL_COLOR = 0x5955AAFF;
+    /** Full-circle track behind the arc — same blue, much fainter (~10%). */
+    private static final int RING_TRACK_COLOR = 0x1A55AAFF;
 
     @Inject(
         method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIIIIIIZF)V",
