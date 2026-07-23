@@ -697,6 +697,7 @@
   "advancements.dungeontrain.dungeon_train.cross_country.hint": "Das ist eine lange Fahrt ohne zu sterben.",
   "advancements.dungeontrain.dungeon_train.the_long_run.hint": "Wow. In einem einzigen Leben?",
   "advancements.dungeontrain.dungeon_train.the_long_way_back.hint": "Versunkene-Kosten-Fehlschluss beim Zurückgehen?",
+  "advancements.dungeontrain.dungeon_train.leather_over_diamond.hint": "Manche Beute würfelt besser, als sie aussieht.",
 
   "advancements.dungeontrain.dungeon_train.root.title": "Dungeon Train",
   "advancements.dungeontrain.dungeon_train.root.description": "Alles einsteigen.",
@@ -801,6 +802,8 @@
   "advancements.dungeontrain.dungeon_train.read_all_story_variants.description": "Lies jede Variante jedes Briefs jeder erzählten Geschichte.",
   "advancements.dungeontrain.dungeon_train.carts_100.title": "Dungeon-Train-Entdecker",
   "advancements.dungeontrain.dungeon_train.carts_100.description": "Durchquere 100 Waggons in einem einzigen Leben.",
+  "advancements.dungeontrain.dungeon_train.leather_over_diamond.title": "Hüll mich in ...Leder?",
+  "advancements.dungeontrain.dungeon_train.leather_over_diamond.description": "Trage ein komplettes Lederrüstungsset mit besseren Gesamtwerten als volle Diamantrüstung.",
   "advancements.dungeontrain.dungeon_train.the_far_start.title": "Der weite Start",
   "advancements.dungeontrain.dungeon_train.the_far_start.description": "Trage dein Startbuch über 150 Waggons hinaus.",
   "advancements.dungeontrain.dungeon_train.pacifist_100.title": "Pazifist",
