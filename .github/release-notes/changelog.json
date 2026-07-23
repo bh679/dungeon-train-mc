@@ -5443,6 +5443,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "support-page-zh-revision",
+      "version": "0.496.0",
+      "type": "feat",
+      "title": "Chinese Support-page copy, revised by a community translator",
+      "summary": "The 'Support the Mod' page's Simplified and Traditional Chinese text has been rewritten by a community translator for a much more natural read. The page also now words itself correctly for your install: modpack players see modpack wording, mod-only players see mod wording.",
+      "highlights": [
+        "All 15 Support-page strings revised in both \u7b80\u4f53\u4e2d\u6587 and \u7e41\u9ad4\u4e2d\u6587",
+        "Copy adapts automatically between mod and modpack installs"
+      ],
+      "date": "2026-07-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
