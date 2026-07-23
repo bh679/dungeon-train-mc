@@ -5485,9 +5485,9 @@
       "highlights": [],
       "pr": 825,
       "date": "2026-07-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.499.0",
+      "released_at": "2026-07-23T07:06:07Z"
     },
     {
       "id": "language-ai-fraction-ring",
@@ -5501,9 +5501,9 @@
       ],
       "pr": 826,
       "date": "2026-07-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.499.0",
+      "released_at": "2026-07-23T07:06:07Z"
     }
   ]
 }
