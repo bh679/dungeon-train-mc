@@ -5510,13 +5510,30 @@
       "version": "0.500.0",
       "type": "feat",
       "title": "Support-funnel usage telemetry + Finances dashboard",
-      "summary": "The title screen's Support the Mod, Discord and Patreon buttons — and every link on the Support page — now report anonymous usage counts (clicks, whether the external link was actually opened, and time spent on the page) when network features are consented to. Nothing new is shown in game; the data feeds a new Revenue section on the dt-data explorer's Finances page.",
+      "summary": "The title screen's Support the Mod, Discord and Patreon buttons \u2014 and every link on the Support page \u2014 now report anonymous usage counts (clicks, whether the external link was actually opened, and time spent on the page) when network features are consented to. Nothing new is shown in game; the data feeds a new Revenue section on the dt-data explorer's Finances page.",
       "highlights": [
         "Consent-gated: no network consent, no telemetry",
         "Tracks clicks, confirm-screen follow-through and time on the Support page",
         "Data explorer Costs page relabelled Finances with a Revenue funnel"
       ],
       "pr": 827,
+      "date": "2026-07-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "trade-everything-sibling",
+      "version": "0.500.0",
+      "type": "feat",
+      "title": "Villagers trade anything \u2014 new required mod: Trade Everything",
+      "summary": "Every villager now has a Trade Anything slot at the top of its trade list. Put any item in and the villager exchanges it for goods it buys, priced by real material worth \u2014 crafting and smithing recipes, durability, and enchantments all count. Valuable items pay out emeralds or emerald blocks, and emerald blocks break into emeralds automatically when you buy things, with change returned. Ships as a new required companion mod, Trade Everything.",
+      "highlights": [
+        "Sell junk or treasure to any villager \u2014 prices follow material value (16 common items \u2248 1 emerald)",
+        "Enchantments and durability change what your gear is worth",
+        "Emerald blocks work as big currency: broken only when needed, change given in emeralds",
+        "Fully configurable in config/tradeeverything.json"
+      ],
       "date": "2026-07-23",
       "released": false,
       "released_in": null,

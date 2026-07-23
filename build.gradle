@@ -251,6 +251,11 @@ dependencies {
     // isolation. Extracted from DT; same external-required-dep contract as AIN/AIS/PMOB above.
     implementation "bh679:enderchestpersistence:${enderchestpersistence_version}"
 
+    // TradeEverything — the villager "Trade Anything" slot. Same external-required-dep
+    // contract as AIN/AIS/PMOB/ECP above; fetched via the shared bh679 Ivy repo
+    // (flat asset tradeeverything-neoforge-<v>.jar).
+    implementation "bh679:tradeeverything:${tradeeverything_version}"
+
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is
     // loaded by NeoForge from Sable's own jarJar — we don't ship it.
@@ -322,13 +327,15 @@ tasks.register('generateModMetadata', ProcessResources) {
         playermob_version          : playermob_version,
         discordpresence_version          : discordpresence_version,
         enderchestpersistence_version    : enderchestpersistence_version,
-        // Declared-minimum floors for the four EXTERNAL sibling deps. Deliberately
+        tradeeverything_version          : tradeeverything_version,
+        // Declared-minimum floors for the five EXTERNAL sibling deps. Deliberately
         // separate from the *_version values above (which the auto-release cascade
         // bumps freely) — see gradle.properties for the rationale.
         adventureitemnames_min_version    : adventureitemnames_min_version,
         adventureitemstats_min_version    : adventureitemstats_min_version,
         playermob_min_version             : playermob_min_version,
         enderchestpersistence_min_version : enderchestpersistence_min_version,
+        tradeeverything_min_version       : tradeeverything_min_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties
