@@ -60,6 +60,13 @@ public final class DungeonTrainConfig {
     public static final int MAX_PROGRESSION_LEVEL_DELAY = 100;
     public static final int DEFAULT_PROGRESSION_LEVEL_DELAY = 1;
     public static final boolean DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP = true;
+    public static final boolean DEFAULT_VILLAGER_TRADE_SCALING_ENABLED = true;
+    public static final int MIN_VILLAGER_TRADE_SCALING_MIN_CARRIAGE = 0;
+    public static final int MAX_VILLAGER_TRADE_SCALING_MIN_CARRIAGE = 10_000;
+    public static final int DEFAULT_VILLAGER_TRADE_SCALING_MIN_CARRIAGE = 30;
+    public static final int MIN_VILLAGER_TRADE_SCALING_TIERS_PER_STEP = 1;
+    public static final int MAX_VILLAGER_TRADE_SCALING_TIERS_PER_STEP = 100;
+    public static final int DEFAULT_VILLAGER_TRADE_SCALING_TIERS_PER_STEP = 5;
     public static final boolean DEFAULT_FIRST_LEVEL_NO_HOSTILES = true;
     public static final boolean DEFAULT_FIRST_LEVEL_EASY_MOBS = true;
     public static final boolean DEFAULT_FIRST_LEVEL_STARTER_LOOT = true;
@@ -168,6 +175,9 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue DIFFICULTY_AFFECTS_BABY_MOBS;
     public static final ModConfigSpec.IntValue PROGRESSION_LEVEL_DELAY;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP;
+    public static final ModConfigSpec.BooleanValue VILLAGER_TRADE_SCALING_ENABLED;
+    public static final ModConfigSpec.IntValue VILLAGER_TRADE_SCALING_MIN_CARRIAGE;
+    public static final ModConfigSpec.IntValue VILLAGER_TRADE_SCALING_TIERS_PER_STEP;
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_NO_HOSTILES;
     public static final ModConfigSpec.IntValue FIRST_LEVEL_NO_HOSTILES_CARRIAGES;
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_EASY_MOBS;
@@ -210,6 +220,9 @@ public final class DungeonTrainConfig {
         DIFFICULTY_AFFECTS_BABY_MOBS = pair.getLeft().difficultyAffectsBabyMobs;
         PROGRESSION_LEVEL_DELAY = pair.getLeft().progressionLevelDelay;
         DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP = pair.getLeft().difficultyScaleHostileGearPastCap;
+        VILLAGER_TRADE_SCALING_ENABLED = pair.getLeft().villagerTradeScalingEnabled;
+        VILLAGER_TRADE_SCALING_MIN_CARRIAGE = pair.getLeft().villagerTradeScalingMinCarriage;
+        VILLAGER_TRADE_SCALING_TIERS_PER_STEP = pair.getLeft().villagerTradeScalingTiersPerStep;
         FIRST_LEVEL_NO_HOSTILES = pair.getLeft().firstLevelNoHostiles;
         FIRST_LEVEL_NO_HOSTILES_CARRIAGES = pair.getLeft().firstLevelNoHostilesCarriages;
         FIRST_LEVEL_EASY_MOBS = pair.getLeft().firstLevelEasyMobs;
@@ -283,6 +296,15 @@ public final class DungeonTrainConfig {
         ModConfigSpec.BooleanValue difficultyScaleHostileGearPastCap = b
                 .comment("When true, hostile carriage mobs keep gaining gear strength after their armor/weapon material caps at netherite (difficulty level 50): each rolled equipment piece gets a flat per-tier primary-stat bonus (attack damage on weapons, armor on armor) scaled by how far the tier is past the cap, so difficulty keeps climbing beyond ~level 50 instead of plateauing. Tiers 50 and below are unchanged. Reuses the same AIS stat-scaling PlayerMobs already receive. Default true; set false to restore the original behavior where hostile gear stops improving at netherite.")
                 .define("difficultyScaleHostileGearPastCap", DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP);
+        ModConfigSpec.BooleanValue villagerTradeScalingEnabled = b
+                .comment("When true, items SOLD by train villagers scale with the villager's own carriage position: sold gear is (re-)enchanted with power that steps up every villagerTradeScalingTiersPerStep difficulty tiers once the carriage is at least villagerTradeScalingMinCarriage from spawn, receives AIS stat bonuses matching the carriage's difficulty tier (same scaling as mob gear and chest loot), and emerald costs grow with the enchant value (2^(level-1) emeralds per enchant, paid in emerald blocks past 64). Trades bought FROM players and non-emerald costs are unaffected.")
+                .define("villagerTradeScalingEnabled", DEFAULT_VILLAGER_TRADE_SCALING_ENABLED);
+        ModConfigSpec.IntValue villagerTradeScalingMinCarriage = b
+                .comment("Minimum absolute carriage index before villager-sold gear starts getting scaled enchants. Below this, sold items keep their vanilla listing enchants (AIS stats still apply from tier 1). Default 30.")
+                .defineInRange("villagerTradeScalingMinCarriage", DEFAULT_VILLAGER_TRADE_SCALING_MIN_CARRIAGE, MIN_VILLAGER_TRADE_SCALING_MIN_CARRIAGE, MAX_VILLAGER_TRADE_SCALING_MIN_CARRIAGE);
+        ModConfigSpec.IntValue villagerTradeScalingTiersPerStep = b
+                .comment("Difficulty tiers per enchant-power step for villager-sold gear. Enchant power = min(60, 5 + 10 * (1 + positionTier / this)). Default 5 (one step per 5 tiers = every ~100 carriages at default carriagesPerTier).")
+                .defineInRange("villagerTradeScalingTiersPerStep", DEFAULT_VILLAGER_TRADE_SCALING_TIERS_PER_STEP, MIN_VILLAGER_TRADE_SCALING_TIERS_PER_STEP, MAX_VILLAGER_TRADE_SCALING_TIERS_PER_STEP);
         ModConfigSpec.BooleanValue firstLevelNoHostiles = b
                 .comment("First onboarding stage. When true, hostile (Enemy) mobs authored into carriage interiors do not spawn at all while the lead player is within the first firstLevelNoHostilesCarriages carriages of progress, for a combat-free opening stretch. Passive/neutral carriage mobs (villagers, traders, animals, PlayerMobs) are unaffected. Keys off raw travelled carriages (independent of progressionLevelDelay).")
                 .define("firstLevelNoHostiles", DEFAULT_FIRST_LEVEL_NO_HOSTILES);
@@ -442,6 +464,7 @@ public final class DungeonTrainConfig {
         return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
                 difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
                 difficultyScaleHostileGearPastCap,
+                villagerTradeScalingEnabled, villagerTradeScalingMinCarriage, villagerTradeScalingTiersPerStep,
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
@@ -518,6 +541,18 @@ public final class DungeonTrainConfig {
     }
 
     /** When true, hostile carriage mob gear keeps gaining per-tier stat bonuses past the netherite material cap (difficulty level 50). */
+    public static boolean getVillagerTradeScalingEnabled() {
+        return isLoaded() ? VILLAGER_TRADE_SCALING_ENABLED.get() : DEFAULT_VILLAGER_TRADE_SCALING_ENABLED;
+    }
+
+    public static int getVillagerTradeScalingMinCarriage() {
+        return isLoaded() ? VILLAGER_TRADE_SCALING_MIN_CARRIAGE.get() : DEFAULT_VILLAGER_TRADE_SCALING_MIN_CARRIAGE;
+    }
+
+    public static int getVillagerTradeScalingTiersPerStep() {
+        return isLoaded() ? VILLAGER_TRADE_SCALING_TIERS_PER_STEP.get() : DEFAULT_VILLAGER_TRADE_SCALING_TIERS_PER_STEP;
+    }
+
     public static boolean getDifficultyScaleHostileGearPastCap() {
         return isLoaded() ? DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP.get() : DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP;
     }
@@ -742,6 +777,9 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue difficultyAffectsBabyMobs,
             ModConfigSpec.IntValue progressionLevelDelay,
             ModConfigSpec.BooleanValue difficultyScaleHostileGearPastCap,
+            ModConfigSpec.BooleanValue villagerTradeScalingEnabled,
+            ModConfigSpec.IntValue villagerTradeScalingMinCarriage,
+            ModConfigSpec.IntValue villagerTradeScalingTiersPerStep,
             ModConfigSpec.BooleanValue firstLevelNoHostiles,
             ModConfigSpec.IntValue firstLevelNoHostilesCarriages,
             ModConfigSpec.BooleanValue firstLevelEasyMobs,

@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.difficulty.ProceduralTiers;
+import games.brennan.dungeontrain.difficulty.TradeGearScaler;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.TrainMembership;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -163,19 +164,33 @@ public final class VillagerTrainSpawnEvents {
         Int2ObjectMap<VillagerTrades.ItemListing[]> tradeMap = VillagerTrades.TRADES.get(profession);
         if (tradeMap == null) return;
 
+        // The villager's own carriage is its difficulty frame — deeper carriages
+        // host stronger traders, independent of any player's travelled progress.
+        int carriageIndex = TrainMembership.carriageIndexOf(villager).orElse(0);
+        int posTier = DifficultyProgression.positionTier(carriageIndex);
+
         int newLevel;
         if (DungeonTrainConfig.getDifficultyEnabled()) {
             // Weighted roll paused (2026-07): train villagers spawn at the tier cap,
             // with a 50% chance of one level below it (floored at 1) — trader quality
             // tracks train progression with a little texture. To restore the full
             // weighted spread, swap back to cappedLevel(rng, tier).
-            int cap = maxLevelForTier(DifficultyProgression.currentTier(serverLevel));
+            int cap = maxLevelForTier(posTier);
             newLevel = villager.getRandom().nextBoolean() ? cap : Math.max(1, cap - 1);
         } else {
             newLevel = pickLevel(villager.getRandom());
         }
         villager.setVillagerData(data.setLevel(newLevel));
-        villager.setOffers(generateOffersFor(villager, tradeMap, newLevel));
+
+        // Beyond-Master progression: scale each SOLD item (enchants + AIS stats
+        // + AIN name + enchant-value pricing) to the carriage's difficulty tier.
+        MerchantOffers offers = generateOffersFor(villager, tradeMap, newLevel);
+        MerchantOffers scaled = new MerchantOffers();
+        for (MerchantOffer offer : offers) {
+            scaled.add(TradeGearScaler.scale(offer, carriageIndex, posTier,
+                villager.getRandom(), serverLevel.registryAccess()));
+        }
+        villager.setOffers(scaled);
         villager.addTag(REROLLED_TAG);
 
         LOGGER.info("[DungeonTrain] Rerolled train villager: uuid={} profession={} level={}",
