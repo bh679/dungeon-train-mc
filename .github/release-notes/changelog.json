@@ -5460,18 +5460,6 @@
       "released_at": "2026-07-23T03:17:59Z"
     },
     {
-<<<<<<< HEAD
-      "id": "support-funnel-analytics",
-      "version": "0.497.0",
-      "type": "feat",
-      "title": "Support-funnel usage telemetry + Finances dashboard",
-      "summary": "The title screen's Support the Mod, Discord and Patreon buttons \u2014 and every link on the Support page \u2014 now report anonymous usage counts (clicks, whether the external link was actually opened, and time spent on the page) when network features are consented to. Nothing new is shown in game; the data feeds a new Revenue section on the dt-data explorer's Finances page.",
-      "highlights": [
-        "Consent-gated: no network consent, no telemetry",
-        "Tracks clicks, confirm-screen follow-through and time on the Support page",
-        "Data explorer Costs page relabelled Finances with a Revenue funnel"
-      ],
-=======
       "id": "delete-world-on-reboard",
       "version": "0.497.0",
       "type": "feat",
@@ -5496,7 +5484,22 @@
       "summary": "Every translated line in all 19 languages now records who produced it \u2014 which AI model, or which community translator \u2014 and who has human-reviewed it. This is repo-side bookkeeping (nothing changes in-game): it makes unreviewed machine translation easy to find for review passes, and properly credits \u8001\u672c\u9858's Chinese translation work and \u963f\u4e16xAsh's Support-page revisions line by line.",
       "highlights": [],
       "pr": 825,
->>>>>>> origin/main
+      "date": "2026-07-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "support-funnel-analytics",
+      "version": "0.498.0",
+      "type": "feat",
+      "title": "Support-funnel usage telemetry + Finances dashboard",
+      "summary": "The title screen's Support the Mod, Discord and Patreon buttons — and every link on the Support page — now report anonymous usage counts (clicks, whether the external link was actually opened, and time spent on the page) when network features are consented to. Nothing new is shown in game; the data feeds a new Revenue section on the dt-data explorer's Finances page.",
+      "highlights": [
+        "Consent-gated: no network consent, no telemetry",
+        "Tracks clicks, confirm-screen follow-through and time on the Support page",
+        "Data explorer Costs page relabelled Finances with a Revenue funnel"
+      ],
       "date": "2026-07-23",
       "released": false,
       "released_in": null,
