@@ -34,12 +34,17 @@ AUTHORS = {
 }
 
 
-def workspace(lang=LANG, prov=PROV, locale="xx_yy", authors=AUTHORS):
+def workspace(lang=LANG, prov=PROV, locale="xx_yy", authors=AUTHORS, credits=None):
     ws = tempfile.mkdtemp(prefix="provenance-stamp-test-")
     lang_dir = os.path.join(ws, "lang")
     prov_dir = os.path.join(ws, "prov")
+    credits_dir = os.path.join(ws, "credits")
     os.makedirs(lang_dir)
     os.makedirs(prov_dir)
+    os.makedirs(credits_dir)
+    for slug, data in (credits or {}).items():
+        with open(os.path.join(credits_dir, f"{slug}.json"), "w", encoding="utf-8") as f:
+            f.write(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
     with open(os.path.join(lang_dir, "en_us.json"), "w", encoding="utf-8") as f:
         json.dump(lang, f, ensure_ascii=False)
     with open(os.path.join(lang_dir, f"{locale}.json"), "w", encoding="utf-8") as f:
@@ -53,10 +58,11 @@ def workspace(lang=LANG, prov=PROV, locale="xx_yy", authors=AUTHORS):
 
 
 def run(lang_dir, prov_dir, *extra):
-    authors_file = os.path.join(os.path.dirname(lang_dir), "authors.json")
+    ws = os.path.dirname(lang_dir)
     return subprocess.run(
         [sys.executable, SCRIPT, "--lang-dir", lang_dir, "--provenance-dir", prov_dir,
-         "--authors-file", authors_file, *extra],
+         "--authors-file", os.path.join(ws, "authors.json"),
+         "--credits-dir", os.path.join(ws, "credits"), *extra],
         capture_output=True, text=True,
     )
 
@@ -214,6 +220,93 @@ def test_exclusive_selection_flags():
     proc = run(lang_dir, prov_dir, "--reviewer", "R", "--all", "--prefix", "x.")
     assert proc.returncode == 2
     assert "mutually exclusive" in proc.stderr
+
+
+# PROV yields (total=3, ai_authored=2, ai_unreviewed=2) against AUTHORS.
+CREDIT = {"locale": "xx_yy", "name": "老本願",
+          "url": "https://example.com", "human_reviewed": True}
+
+
+def credit_path(lang_dir, slug="xx_yy"):
+    return os.path.join(os.path.dirname(lang_dir), "credits", f"{slug}.json")
+
+
+def read_credit(lang_dir, slug="xx_yy"):
+    with open(credit_path(lang_dir, slug), encoding="utf-8") as f:
+        return json.load(f)
+
+
+def test_sync_writes_credit_counts():
+    lang_dir, prov_dir = workspace(credits={"xx_yy": CREDIT})
+    proc = run(lang_dir, prov_dir, "--sync", "--author", "unused")
+    assert proc.returncode == 0, proc.stderr
+    credit = read_credit(lang_dir)
+    assert (credit["total_keys"], credit["ai_authored"], credit["ai_unreviewed"]) == (3, 2, 2)
+    # hand-edited fields preserved in order, generated fields appended after them
+    assert list(credit) == ["locale", "name", "url", "human_reviewed",
+                            "total_keys", "ai_authored", "ai_unreviewed"]
+    text = open(credit_path(lang_dir), encoding="utf-8").read()
+    assert "老本願" in text and "\\u" not in text
+    assert text.endswith("}\n")
+    assert "counts refreshed in xx_yy.json" in proc.stdout
+
+
+def test_credit_counts_idempotent():
+    lang_dir, prov_dir = workspace(credits={"xx_yy": CREDIT})
+    assert run(lang_dir, prov_dir, "--sync", "--author", "unused").returncode == 0
+    first = open(credit_path(lang_dir), "rb").read()
+    proc = run(lang_dir, prov_dir, "--sync", "--author", "unused")
+    assert proc.returncode == 0, proc.stderr
+    assert "counts refreshed" not in proc.stdout  # unchanged file is not rewritten
+    assert open(credit_path(lang_dir), "rb").read() == first
+
+
+def test_stale_credit_counts_corrected_in_place():
+    stale = dict(CREDIT, total_keys=99, ai_authored=98, ai_unreviewed=97)
+    lang_dir, prov_dir = workspace(credits={"xx_yy": stale})
+    proc = run(lang_dir, prov_dir, "--sync", "--author", "unused")
+    assert proc.returncode == 0, proc.stderr
+    credit = read_credit(lang_dir)
+    assert (credit["total_keys"], credit["ai_authored"], credit["ai_unreviewed"]) == (3, 2, 2)
+    assert list(credit) == ["locale", "name", "url", "human_reviewed",
+                            "total_keys", "ai_authored", "ai_unreviewed"]
+
+
+def test_counts_stamped_into_every_matching_credit_file():
+    lang_dir, prov_dir = workspace(credits={
+        "xx_yy": CREDIT,
+        "second-contributor": {"locale": "xx_yy", "name": "Second"},
+    })
+    proc = run(lang_dir, prov_dir, "--sync", "--author", "unused")
+    assert proc.returncode == 0, proc.stderr
+    for slug in ("xx_yy", "second-contributor"):
+        assert read_credit(lang_dir, slug)["total_keys"] == 3, slug
+
+
+def test_credit_file_for_other_locale_untouched():
+    lang_dir, prov_dir = workspace(credits={"zz_zz": {"locale": "zz_zz", "name": "Someone"}})
+    before = open(credit_path(lang_dir, "zz_zz"), "rb").read()
+    proc = run(lang_dir, prov_dir, "--sync", "--author", "unused")
+    assert proc.returncode == 0, proc.stderr
+    assert open(credit_path(lang_dir, "zz_zz"), "rb").read() == before
+
+
+def test_sync_without_credit_file_still_writes_sidecar():
+    lang_dir, prov_dir = workspace()  # empty credits dir
+    proc = run(lang_dir, prov_dir, "--sync", "--author", "unused")
+    assert proc.returncode == 0, proc.stderr
+    assert read(prov_dir) == PROV
+    assert "counts refreshed" not in proc.stdout
+
+
+def test_reviewer_stamp_refreshes_counts():
+    """A review pass empties the unreviewed bucket without touching ai_authored."""
+    lang_dir, prov_dir = workspace(credits={"xx_yy": CREDIT})
+    proc = run(lang_dir, prov_dir, "--reviewer", "阿世xAsh", "--all")
+    assert proc.returncode == 0, proc.stderr
+    credit = read_credit(lang_dir)
+    assert credit["ai_unreviewed"] == 0
+    assert credit["ai_authored"] == 2
 
 
 def test_output_format_lock():

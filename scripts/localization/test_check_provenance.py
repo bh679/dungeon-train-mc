@@ -173,7 +173,8 @@ def test_flag_true_with_partial_coverage_warns_but_passes():
     Opus-added lines after it stay unreviewed; failing here would train everyone to
     ignore the guard.
     """
-    credits = {"xx_yy": {"locale": "xx_yy", "name": "Human", "human_reviewed": True}}
+    credits = {"xx_yy": {"locale": "xx_yy", "name": "Human", "human_reviewed": True,
+                         "total_keys": 3, "ai_authored": 2, "ai_unreviewed": 2}}
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": PROV}, credits)
     proc = run(dirs)
     assert proc.returncode == 0, proc.stderr
@@ -183,7 +184,8 @@ def test_flag_true_with_partial_coverage_warns_but_passes():
 
 def test_flag_true_with_full_coverage_is_silent():
     prov = {k: {"author": "H", "reviewer": "H"} for k in LANG}
-    credits = {"xx_yy": {"locale": "xx_yy", "name": "Human", "human_reviewed": True}}
+    credits = {"xx_yy": {"locale": "xx_yy", "name": "Human", "human_reviewed": True,
+                         "total_keys": 3, "ai_authored": 0, "ai_unreviewed": 0}}
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov}, credits)
     proc = run(dirs)
     assert proc.returncode == 0, proc.stderr
@@ -192,11 +194,76 @@ def test_flag_true_with_full_coverage_is_silent():
 
 def test_flag_false_with_full_coverage_suggests_flipping():
     prov = {k: {"author": "H", "reviewer": "H"} for k in LANG}
-    credits = {"xx_yy": {"locale": "xx_yy", "name": "AI", "human_reviewed": False}}
+    credits = {"xx_yy": {"locale": "xx_yy", "name": "AI", "human_reviewed": False,
+                         "total_keys": 3, "ai_authored": 0, "ai_unreviewed": 0}}
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov}, credits)
     proc = run(dirs)
     assert proc.returncode == 0, proc.stderr
     assert "consider flipping" in proc.stderr
+
+
+# PROV yields (total=3, ai_authored=2, ai_unreviewed=2) against AUTHORS.
+CREDIT_OK = {"locale": "xx_yy", "name": "Human",
+             "total_keys": 3, "ai_authored": 2, "ai_unreviewed": 2}
+
+
+def test_matching_credit_counts_pass():
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": PROV}, {"xx_yy": CREDIT_OK})
+    proc = run(dirs)
+    assert proc.returncode == 0, proc.stderr
+
+
+def test_drifted_credit_counts_fail_with_fix_hint():
+    stale = dict(CREDIT_OK, ai_unreviewed=1)
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": PROV}, {"xx_yy": stale})
+    proc = run(dirs)
+    assert proc.returncode == 1
+    assert "don't match provenance" in proc.stderr
+    assert "xx_yy.json" in proc.stderr
+    assert "stamp-provenance.py --sync" in proc.stderr
+
+
+def test_missing_credit_count_fields_fail():
+    bare = {"locale": "xx_yy", "name": "Human"}
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": PROV}, {"xx_yy": bare})
+    proc = run(dirs)
+    assert proc.returncode == 1
+    assert "missing generated count field(s)" in proc.stderr
+
+
+def test_non_integer_credit_counts_fail():
+    """Floats (and bools) are rejected even when numerically equal."""
+    bad = dict(CREDIT_OK, total_keys=3.0)
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": PROV}, {"xx_yy": bad})
+    proc = run(dirs)
+    assert proc.returncode == 1
+    assert "non-negative integers" in proc.stderr
+
+
+def test_inconsistent_credit_counts_fail():
+    bad = dict(CREDIT_OK, ai_authored=5)  # ai_authored > total_keys
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": PROV}, {"xx_yy": bad})
+    proc = run(dirs)
+    assert proc.returncode == 1
+    assert "inconsistent counts" in proc.stderr
+
+
+def test_every_matching_credit_file_needs_counts():
+    """Two contributor files for one locale — both must carry the generated fields."""
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": PROV},
+                     {"xx_yy": CREDIT_OK, "second": {"locale": "xx_yy", "name": "Second"}})
+    proc = run(dirs)
+    assert proc.returncode == 1
+    assert "second.json" in proc.stderr
+    assert "missing generated count field(s)" in proc.stderr
+
+
+def test_credit_for_unrelated_locale_ignored_by_count_check():
+    """A credit whose locale has no lang file is outside the count check's scope."""
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": PROV},
+                     {"xx_yy": CREDIT_OK, "other": {"locale": "zz_zz", "name": "X"}})
+    proc = run(dirs)
+    assert proc.returncode == 0, proc.stderr
 
 
 def test_report_counts():
