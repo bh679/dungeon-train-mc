@@ -17,7 +17,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
 
@@ -26,9 +26,13 @@ import org.slf4j.Logger;
  * persistence, and handles session cleanup that would otherwise pollute a
  * subsequent world.
  *
- * On {@link ServerStartedEvent} for the integrated server: if the player just
- * made choices on the world-creation sub-screen, commit them into
- * {@link DungeonTrainWorldData} for the overworld and clear the holder.
+ * On the overworld's {@link LevelEvent.Load} for the integrated server: if the
+ * player just made choices on the world-creation sub-screen, commit them into
+ * {@link DungeonTrainWorldData} for the overworld and clear the holder. This
+ * fires inside {@code MinecraftServer.createLevels} — before spawn-region chunk
+ * generation in {@code prepareLevels} — so the very first chunks already bake
+ * with the chosen trainY/dims rather than defaults (the old
+ * {@code ServerStartedEvent} hook lost that race).
  *
  * On {@link ServerStoppedEvent}: invalidate the global template cache in
  * {@link CarriageTemplateStore} so the next world's carriage size check runs
@@ -53,9 +57,13 @@ public final class WorldLifecycleEvents {
 
     private WorldLifecycleEvents() {}
 
-    @SubscribeEvent(priority = EventPriority.NORMAL)
-    public static void onServerStarted(ServerStartedEvent event) {
-        ServerLevel overworld = event.getServer().overworld();
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onOverworldLoad(LevelEvent.Load event) {
+        // Load also fires for ClientLevel and every server dimension — commit only
+        // once, on the server-side overworld (HIGH so NetherBandContextEvents' LOW
+        // publish on the same event sees the committed choices).
+        if (!(event.getLevel() instanceof ServerLevel overworld)) return;
+        if (!overworld.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return;
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
 
         // Starting dimension is published unconditionally by the World-Type
@@ -76,10 +84,9 @@ public final class WorldLifecycleEvents {
             int groupSize = PendingWorldChoices.groupSize();
 
             data.apply(trainY, startsWithTrain, dims);
-            // Seed is generated from the overworld's random at world creation
-            // and stays fixed for the world's lifetime so random-mode
-            // carriages are reproducible across reloads.
-            data.setGenerationSeed(overworld.random.nextLong());
+            // Generation seed: installed by DungeonTrainWorldData.get() above,
+            // derived deterministically from the level seed — no per-session
+            // entropy, so same-seed worlds reproduce the same band layout.
 
             // Mode + groupSize are runtime-editable via the settings screen,
             // so they live in the per-save Forge TOML rather than SavedData.

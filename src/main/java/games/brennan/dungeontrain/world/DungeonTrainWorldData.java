@@ -82,6 +82,19 @@ public final class DungeonTrainWorldData extends SavedData {
      */
     private final java.util.Set<Long> pendingMirrorChunks = new java.util.LinkedHashSet<>();
 
+    /**
+     * Transient READY subset of {@link #pendingMirrorChunks}: chunks whose full 3×3 neighbourhood is
+     * loaded, so their deferred mirror can actually be applied this tick. The per-tick drain iterates
+     * ONLY this set, so it never re-scans the un-appliable frontier ring (chunks whose outer neighbours
+     * are beyond sim-distance) that otherwise pegs the pending backlog and wastes ~1–3 ms/tick. A chunk
+     * is promoted here from a {@code ChunkEvent.Load} that completes its neighbourhood (see
+     * {@code WorldUpsideDownEvents.promoteNeighbourhood}) or by the low-frequency reconcile in the drain;
+     * it is demoted back if the final apply-time {@code neighboursFull} guard fails (a neighbour unloaded
+     * since promotion). NOT serialized — derived from {@link #pendingMirrorChunks} + the durable marker.
+     * {@link LinkedHashSet} for dedup + stable insertion-order tiebreak. Main-thread only.
+     */
+    private final java.util.Set<Long> readyMirrorChunks = new java.util.LinkedHashSet<>();
+
     private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed, StartingDimension startingDimension) {
         this.trainY = trainY;
         this.startsWithTrain = startsWithTrain;
@@ -92,29 +105,75 @@ public final class DungeonTrainWorldData extends SavedData {
 
     public static DungeonTrainWorldData get(ServerLevel overworld) {
         DungeonTrainWorldData data = overworld.getDataStorage().computeIfAbsent(FACTORY, NAME);
-        // Legacy upgrade path: missing NBT tag loaded as seed=0. Replace with
-        // a real per-world seed drawn from the overworld's random so the
-        // Random/RandomGrouped modes produce the same layout on future
-        // loads. Mark dirty so the fresh seed persists.
+        // Fresh world (or legacy save whose NBT tag is missing → loaded as seed=0):
+        // derive the per-world seed deterministically from the level seed so two
+        // worlds created with the same seed bake identical band terrain/biomes.
+        // Existing saves keep their persisted (nonzero) seed. Mark dirty so the
+        // derived seed persists.
         if (data.generationSeed == 0L) {
-            data.generationSeed = overworld.random.nextLong();
+            data.generationSeed = deriveGenerationSeed(overworld.getSeed());
             data.setDirty();
         }
         return data;
     }
 
-    /** Enqueue a chunk key for the deferred upside-down mirror drain (dedup; main-thread only). */
+    /**
+     * Deterministic per-world generation seed: splitmix64 finalizer (same constants as
+     * {@code MountainNoise.hash01}) over the level seed mixed with a mod-specific salt.
+     * Pure function of the world seed — same seed, same band layout — while staying
+     * decorrelated from vanilla's own seed-derived streams. Never returns {@code 0}
+     * (the "unseeded" NBT sentinel).
+     */
+    private static long deriveGenerationSeed(long worldSeed) {
+        long h = worldSeed ^ GENERATION_SEED_SALT;
+        h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
+        h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
+        h ^= (h >>> 31);
+        return h != 0L ? h : GENERATION_SEED_SALT;
+    }
+
+    /** "DTrGenS1" — salt decorrelating the generation seed from the raw level seed. */
+    private static final long GENERATION_SEED_SALT = 0x44547247656E5331L;
+
+    /** Enqueue a chunk key for the deferred upside-down mirror drain (dedup; main-thread only). New keys
+     *  start in WAITING (pending only) — they are promoted to READY once their neighbourhood is loaded. */
     public void enqueueMirrorChunk(long chunkKey) {
         pendingMirrorChunks.add(chunkKey);
     }
 
     /**
-     * The live pending-mirror work set (chunk keys). The drain in {@code TrainTickEvents} reads it,
-     * orders nearest-first by train position, applies under a per-tick budget, and removes the keys it
-     * processes. Mutable + main-thread only; not persisted (the chunk attachment is the durable marker).
+     * The live pending-mirror work set (chunk keys) — the full backlog (WAITING ∪ READY), mirroring the
+     * durable marker. Drives the {@code [ud-drain] backlog=} count and the reconcile scan. Mutable +
+     * main-thread only; not persisted (the chunk attachment is the durable marker).
      */
     public java.util.Set<Long> pendingMirrorChunks() {
         return pendingMirrorChunks;
+    }
+
+    /**
+     * The READY subset the drain iterates (chunks whose 3×3 neighbourhood is loaded). Mutable +
+     * main-thread only. See {@link #readyMirrorChunks} field doc.
+     */
+    public java.util.Set<Long> readyMirrorChunks() {
+        return readyMirrorChunks;
+    }
+
+    /** Mark a pending chunk READY (its neighbourhood is now loaded). Idempotent; no-op if not pending. */
+    public void promoteMirrorChunk(long chunkKey) {
+        if (pendingMirrorChunks.contains(chunkKey)) {
+            readyMirrorChunks.add(chunkKey);
+        }
+    }
+
+    /** Return a pending chunk to WAITING (a neighbour unloaded before it could apply). Keeps it pending. */
+    public void demoteMirrorChunk(long chunkKey) {
+        readyMirrorChunks.remove(chunkKey);
+    }
+
+    /** Remove a chunk from the mirror work list entirely (applied, unloaded, or marker already cleared). */
+    public void removeMirrorChunk(long chunkKey) {
+        pendingMirrorChunks.remove(chunkKey);
+        readyMirrorChunks.remove(chunkKey);
     }
 
     private static DungeonTrainWorldData createDefault() {
@@ -315,16 +374,6 @@ public final class DungeonTrainWorldData extends SavedData {
         this.trainY = clampY(trainY);
         this.startsWithTrain = startsWithTrain;
         this.dims = dims;
-        setDirty();
-    }
-
-    /**
-     * Explicitly set the per-world generation seed — used by
-     * {@code WorldLifecycleEvents} at integrated-server start to lock in a
-     * value derived from the overworld's random.
-     */
-    public void setGenerationSeed(long seed) {
-        this.generationSeed = seed;
         setDirty();
     }
 

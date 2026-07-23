@@ -5339,9 +5339,9 @@
         "Popular books surface more often in loot, panned ones ride quieter"
       ],
       "date": "2026-07-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.492.0",
+      "released_at": "2026-07-22T14:34:05Z"
     },
     {
       "id": "placeholder-burn-wedge",
@@ -5350,6 +5350,95 @@
       "title": "Found books always burn again",
       "summary": "Fixed a wedge where chest books could get stuck as their built-in stand-in when the community pool had nothing new to offer \u2014 they now resolve properly (repeats allowed) and always burn after reading, like any other book of the train.",
       "highlights": [],
+      "date": "2026-07-22",
+      "released": true,
+      "released_in": "v0.492.0",
+      "released_at": "2026-07-22T14:34:05Z"
+    },
+    {
+      "id": "ai-language-label",
+      "version": "0.490.0",
+      "type": "feat",
+      "title": "AI label on machine-translated languages",
+      "summary": "The language-selection list now marks Dungeon Train translations that have not been human-reviewed with a small faded blue AI label next to the Dungeon Train logo, so you can tell at a glance which translations are machine-generated.",
+      "highlights": [
+        "Human-reviewed languages keep the solid logo with no label"
+      ],
+      "date": "2026-07-22",
+      "released": true,
+      "released_in": "v0.492.0",
+      "released_at": "2026-07-22T14:34:05Z"
+    },
+    {
+      "id": "worldgen-deterministic-seed",
+      "version": "0.491.0",
+      "type": "fix",
+      "title": "Same seed, same world: band layout is now seed-deterministic",
+      "summary": "Creating a world with a fixed seed now always produces the same nether-band mountains, biome front, and band layout \u2014 previously each fresh world rolled its own internal layout seed even with the seed box filled in. The band terrain system also now activates before the very first spawn chunks generate, so early chunks can no longer miss band biomes, and any biome-override error is now logged instead of silently baking the wrong biome. Existing worlds are unaffected.",
+      "highlights": [
+        "Fixed-seed worlds now reproduce the same band terrain and biome front",
+        "Band biomes can no longer be missing from the first-generated spawn chunks",
+        "Silent biome-fallback errors are now logged"
+      ],
+      "date": "2026-07-22",
+      "released": true,
+      "released_in": "v0.492.0",
+      "released_at": "2026-07-22T14:34:05Z"
+    },
+    {
+      "id": "worldgen-band-early-outs",
+      "version": "0.492.0",
+      "type": "perf",
+      "title": "Faster world generation between special zones",
+      "summary": "The train's world generator now skips its special-zone terrain work (nether mountains, biome forcing, track-bed checks) on chunks that are provably outside those zones \u2014 most of the ride. Chunk streaming in the overworld stretches costs roughly a third less server time, so long rides stay smoother, with terrain byte-identical to before.",
+      "highlights": [
+        "Overworld gaps between zones generate ~25-40% faster; upside-down band ~38% faster",
+        "Terrain and biomes are unchanged everywhere \u2014 existing worlds continue seamlessly"
+      ],
+      "pr": 819,
+      "date": "2026-07-22",
+      "released": true,
+      "released_in": "v0.492.0",
+      "released_at": "2026-07-22T14:34:05Z"
+    },
+    {
+      "id": "upside-down-mirror-drain-partition",
+      "version": "0.493.0",
+      "type": "perf",
+      "title": "Smoother ticks in the upside-down region",
+      "summary": "Removed a hidden per-tick cost in the upside-down region: the server was repeatedly re-checking mirrored-terrain chunks that couldn't be processed yet. Those chunks now wait quietly until they're actually ready, cutting that background overhead roughly five-fold.",
+      "highlights": [],
+      "pr": 820,
+      "date": "2026-07-22",
+      "released": true,
+      "released_in": "v0.494.0",
+      "released_at": "2026-07-22T15:19:42Z"
+    },
+    {
+      "id": "book-voting-i18n",
+      "version": "0.494.0",
+      "type": "feat",
+      "title": "Book voting in your language",
+      "summary": "The train's vote page now speaks all 19 supported languages \u2014 its questions, the (Y)es/(N)o labels, and every chat reply it gives after you vote. Until now the vote page always appeared in English, whatever language you play in.",
+      "highlights": [],
+      "pr": 821,
+      "date": "2026-07-22",
+      "released": true,
+      "released_in": "v0.494.0",
+      "released_at": "2026-07-22T15:19:42Z"
+    },
+    {
+      "id": "worldgen-block-determinism",
+      "version": "0.495.0",
+      "type": "fix",
+      "title": "Same seed, same world \u2014 for real this time",
+      "summary": "A follow-up to the seed fix: the last places the mod itself made same-seed worlds differ are now deterministic. Trackside stairs land in the same spots with the same left/right rhythm every time, corridor cleanup always finishes before your world saves, and dungeon chest loot rolls identically for identical seeds.",
+      "highlights": [
+        "Trackside stairs and underground stair shafts now place deterministically (roughly every 100 blocks, alternating sides)",
+        "Corridor cleanup finishes at shutdown, so saved worlds are always fully swept",
+        "Chest loot in track and tunnel structures is now seed-reproducible"
+      ],
+      "pr": 822,
       "date": "2026-07-22",
       "released": false,
       "released_in": null,
