@@ -914,5 +914,7 @@
   "gui.dungeontrain.credits.translations.header": "Tłumaczenia",
   "gui.dungeontrain.credits.translations.desc": "Podziękowania dla wszystkich, którzy przetłumaczyli Dungeon Train:",
   "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
-  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)"
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "Brennan to wielokrotnie nagradzany deweloper VR, którego umiejętności i doświadczenie pozwalają oddać Dungeon Train sprawiedliwość jako jego projektant i deweloper. Dungeon Train to jego pierwszy mod i modpack.",
+  "gui.dungeontrain.credits.team.wilson.bio": "Scenarzysta gier wideo, którego pomysłowe narracje przyniosły milionom śmiech, romans i łzy — od gier i książek po komiksy i powieści wizualne."
 }

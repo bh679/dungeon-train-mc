@@ -897,5 +897,7 @@
   "gui.dungeontrain.credits.translations.header": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.credits.translations.desc": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.credits.translations.person_line": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
-  "gui.dungeontrain.credits.translations.lang_percent": {"author": "Opus 4.8 (Claude)", "reviewer": ""}
+  "gui.dungeontrain.credits.translations.lang_percent": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.team.brennan.bio": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.team.wilson.bio": {"author": "Opus 4.8 (Claude)", "reviewer": ""}
 }

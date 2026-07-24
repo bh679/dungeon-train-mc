@@ -914,5 +914,7 @@
   "gui.dungeontrain.credits.translations.header": "Bản dịch",
   "gui.dungeontrain.credits.translations.desc": "Cảm ơn tất cả những người đã dịch Dungeon Train:",
   "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
-  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)"
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "Brennan là một nhà phát triển VR từng đoạt nhiều giải thưởng, mang đến kỹ năng và kinh nghiệm để làm nên một Dungeon Train xứng tầm với vai trò Nhà thiết kế & Phát triển của trò chơi. Dungeon Train là mod và modpack đầu tiên của anh.",
+  "gui.dungeontrain.credits.team.wilson.bio": "Một nhà biên kịch trò chơi điện tử đã mang lại tiếng cười, tình yêu và những giọt nước mắt cho hàng triệu người bằng những câu chuyện đầy sáng tạo — trải rộng khắp trò chơi, sách, truyện tranh và tiểu thuyết hình ảnh."
 }

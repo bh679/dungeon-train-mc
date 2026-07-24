@@ -897,5 +897,7 @@
   "gui.dungeontrain.credits.translations.header": "Terjemahan",
   "gui.dungeontrain.credits.translations.desc": "Terima kasih kepada semua yang menerjemahkan Dungeon Train:",
   "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
-  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)"
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "Brennan adalah pengembang VR peraih banyak penghargaan, membawa keahlian dan pengalaman untuk mewujudkan Dungeon Train sebagaimana mestinya sebagai Perancang & Pengembangnya. Dungeon Train adalah mod dan modpack pertamanya.",
+  "gui.dungeontrain.credits.team.wilson.bio": "Seorang penulis video game yang telah menghadirkan tawa, kisah cinta, dan air mata bagi jutaan orang melalui narasinya yang penuh imajinasi — mencakup permainan, buku, komik, dan novel visual."
 }

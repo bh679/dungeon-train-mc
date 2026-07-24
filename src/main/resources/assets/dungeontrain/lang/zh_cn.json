@@ -910,5 +910,7 @@
   "gui.dungeontrain.credits.translations.header": "翻译",
   "gui.dungeontrain.credits.translations.desc": "感谢每一位翻译地牢列车的人：",
   "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
-  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)"
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "Brennan是一位屡获殊荣的VR开发者，凭借这份实力与经验，作为设计师兼开发者，让地牢列车不负众望。地牢列车是他的第一个模组，也是他的第一个整合包。",
+  "gui.dungeontrain.credits.team.wilson.bio": "一位电子游戏编剧，以横跨游戏、书籍、漫画与视觉小说的奇思妙想的叙事，为数百万人带来了欢笑、浪漫与泪水。"
 }
