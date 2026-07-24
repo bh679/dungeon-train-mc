@@ -59,6 +59,13 @@ public final class CheatModList {
         "xray", "xraymod", "advancedxray", "xrayultimate",
         // automation / pathfinding
         "baritone",
+        // enchantment cap-removers — pure cheat tools that raise/remove the vanilla enchant level
+        // cap (they add no new enchantments). DT's EnchantLevelCap already keeps *natural* loot in
+        // check, but these still let a player anvil/command themselves absurd gear, so treat their
+        // mere presence as Free Play. (Command-driven /ec-style enchanting is already caught by the
+        // command allowlist.)
+        "enchantmentlevelbreak", "betterenchants", "limitlessenchantments",
+        "noenchantmentcaplevel", "noenchantcap",
         // generic cheat utilities
         "meteor-client", "wurst", "aristois", "impact"
     );
