@@ -115,11 +115,6 @@ public final class CreditsScreen extends Screen {
                 Component.translatable("gui.dungeontrain.credits.team.narrative")), y, lh, COLOUR_DESC);
         y += SECTION_GAP;
 
-        // Built with — static copy.
-        y = addSection(y, lh,
-                Component.translatable("gui.dungeontrain.credits.built_with.header"),
-                Component.translatable("gui.dungeontrain.credits.built_with.desc"));
-
         // Translations — the generated, human-grouped translator list (one line per person,
         // listing every language they worked on with a %). Fully derived from the provenance
         // data at build time, so it never needs a hand-authored credit file. Skipped when empty.
@@ -166,14 +161,6 @@ public final class CreditsScreen extends Screen {
     /** "&lt;name&gt; — &lt;role&gt;" for the Made-by list; the name may be an inline link. */
     private static Component person(Component name, Component role) {
         return Component.translatable("gui.dungeontrain.credits.team.person", name, role);
-    }
-
-    /** Header text + wrapped description, returning the canvas Y just below the section. */
-    private int addSection(int y, int lh, Component header, Component desc) {
-        y = addLeft(header, y, lh, COLOUR_HEADER);
-        y += HEADER_GAP;
-        y = addLeftWrapped(desc, y, lh, COLOUR_DESC);
-        return y + SECTION_GAP;
     }
 
     private int addCentered(Component text, int y, int lh, int colour) {
