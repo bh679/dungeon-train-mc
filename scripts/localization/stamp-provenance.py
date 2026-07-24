@@ -108,6 +108,25 @@ def refresh_credit_counts(locale: str, prov: dict, authors: dict[str, str],
     return written
 
 
+def refresh_contributors(lang_dir: Path, prov_dir: Path, authors: dict[str, str],
+                         urls: dict[str, str], contributors_file: Path) -> bool:
+    """Regenerate the shipped translator-credits file from ALL locales; True if it changed.
+
+    Global (not per-locale), so it is rebuilt from every sidecar regardless of any
+    ``--locale`` filter — the file must reflect the whole picture. Byte-identical writes
+    are skipped so an unchanged file never churns.
+    """
+    built = provenance_io.build_contributors(lang_dir, prov_dir, authors, urls)
+    if contributors_file.is_file():
+        try:
+            if provenance_io.load_contributors(contributors_file) == built:
+                return False
+        except (json.JSONDecodeError, ValueError):
+            pass  # unparseable/absent -> rewrite
+    provenance_io.write_contributors(contributors_file, built)
+    return True
+
+
 def process_locale(locale: str, lang_dir: Path, prov_dir: Path,
                    args: argparse.Namespace) -> tuple[dict, str]:
     """Compute one locale's updated sidecar; returns (new sidecar, summary line).
@@ -147,6 +166,8 @@ def main(argv: list[str] | None = None) -> int:
                         default=provenance_io.DEFAULT_PROVENANCE_DIR)
     parser.add_argument("--authors-file", type=Path, default=provenance_io.DEFAULT_AUTHORS_FILE)
     parser.add_argument("--credits-dir", type=Path, default=provenance_io.DEFAULT_CREDITS_DIR)
+    parser.add_argument("--contributors-file", type=Path,
+                        default=provenance_io.DEFAULT_CONTRIBUTORS_FILE)
     parser.add_argument("--locale", action="append",
                         help="restrict to specific locale(s); default all non-en_us")
     parser.add_argument("--sync", action="store_true",
@@ -221,6 +242,13 @@ def main(argv: list[str] | None = None) -> int:
             names = ", ".join(p.name for p in stamped)
             summary = f"{summary[:-1]}; counts refreshed in {names}."
         print(summary)
+
+    # The translator-credits file is global — always rebuilt from every sidecar, whatever
+    # the --locale filter, so it never goes stale relative to a review pass elsewhere.
+    urls = provenance_io.load_author_urls(args.authors_file)
+    if refresh_contributors(args.lang_dir, args.provenance_dir, authors, urls,
+                            args.contributors_file):
+        print(f"OK: regenerated {args.contributors_file.name}.")
     return 0
 
 

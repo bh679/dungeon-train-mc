@@ -898,5 +898,19 @@
   "advancements.dungeontrain.editor.made_pillar.title": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "advancements.dungeontrain.editor.made_pillar.description": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "advancements.dungeontrain.editor.made_stair.title": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
-  "advancements.dungeontrain.editor.made_stair.description": {"author": "Opus 4.8 (Claude)", "reviewer": ""}
+  "advancements.dungeontrain.editor.made_stair.description": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.title": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.support_button": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.button.tooltip": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.subtitle": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.team.header": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.team.person": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.team.designer": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.team.narrative": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.translations.header": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.translations.desc": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.translations.person_line": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.translations.lang_percent": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.team.brennan.bio": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.credits.team.wilson.bio": {"author": "Opus 4.8 (Claude)", "reviewer": ""}
 }

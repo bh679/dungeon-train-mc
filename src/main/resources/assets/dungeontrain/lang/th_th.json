@@ -885,5 +885,19 @@
   "advancements.dungeontrain.editor.made_pillar.title": "เสาหลักของชุมชน",
   "advancements.dungeontrain.editor.made_pillar.description": "บันทึกแบบส่วนเสาใหม่",
   "advancements.dungeontrain.editor.made_stair.title": "ทีละขั้น",
-  "advancements.dungeontrain.editor.made_stair.description": "บันทึกแบบบันได (ส่วนต่อขยายเสา) ใหม่"
+  "advancements.dungeontrain.editor.made_stair.description": "บันทึกแบบบันได (ส่วนต่อขยายเสา) ใหม่",
+  "gui.dungeontrain.credits.title": "เครดิต",
+  "gui.dungeontrain.credits.support_button": "สนับสนุนนักพัฒนา",
+  "gui.dungeontrain.credits.button.tooltip": "เครดิต",
+  "gui.dungeontrain.credits.subtitle": "ผู้คนเบื้องหลัง Dungeon Train",
+  "gui.dungeontrain.credits.team.header": "สร้างโดย",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "ผู้ออกแบบและนักพัฒนา",
+  "gui.dungeontrain.credits.team.narrative": "ผู้กำกับเนื้อเรื่อง",
+  "gui.dungeontrain.credits.translations.header": "การแปล",
+  "gui.dungeontrain.credits.translations.desc": "ขอบคุณทุกคนที่ช่วยแปล Dungeon Train:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "Brennan คือนักพัฒนา VR ผู้คว้ารางวัลมากมาย ผู้นำทักษะและประสบการณ์มาสร้างสรรค์ Dungeon Train ให้สมค่าในฐานะผู้ออกแบบและนักพัฒนาของเกม Dungeon Train คือ mod และ modpack แรกของเขา",
+  "gui.dungeontrain.credits.team.wilson.bio": "นักเขียนเกมผู้มอบเสียงหัวเราะ ความรัก และน้ำตาให้ผู้คนนับล้านผ่านเรื่องราวอันเปี่ยมจินตนาการ — ครอบคลุมทั้งเกม หนังสือ การ์ตูน และนิยายภาพ"
 }

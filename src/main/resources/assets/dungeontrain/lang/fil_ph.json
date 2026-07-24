@@ -885,5 +885,19 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Haligi ng Komunidad",
   "advancements.dungeontrain.editor.made_pillar.description": "I-save ang bagong pillar section variant.",
   "advancements.dungeontrain.editor.made_stair.title": "Hakbang-Hakbang",
-  "advancements.dungeontrain.editor.made_stair.description": "I-save ang bagong stair (pillar adjunct) variant."
+  "advancements.dungeontrain.editor.made_stair.description": "I-save ang bagong stair (pillar adjunct) variant.",
+  "gui.dungeontrain.credits.title": "Mga Kredito",
+  "gui.dungeontrain.credits.support_button": "Suportahan ang Developer",
+  "gui.dungeontrain.credits.button.tooltip": "Mga Kredito",
+  "gui.dungeontrain.credits.subtitle": "Ang mga taong bumubuo sa Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Gawa ni",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Designer at Developer",
+  "gui.dungeontrain.credits.team.narrative": "Direktor ng Salaysay",
+  "gui.dungeontrain.credits.translations.header": "Mga Salin",
+  "gui.dungeontrain.credits.translations.desc": "Salamat sa lahat ng nagsalin ng Dungeon Train:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "Si Brennan ay isang multi-award-winning na VR developer, dala ang husay at karanasan upang bigyang-katarungan ang Dungeon Train bilang Designer at Developer nito. Ang Dungeon Train ang kauna-unahan niyang mod at modpack.",
+  "gui.dungeontrain.credits.team.wilson.bio": "Isang manunulat ng video game na nagdala ng tawa, pag-ibig, at luha sa milyon-milyong tao sa pamamagitan ng kanyang mapanlikhang mga salaysay — mula sa mga laro, aklat, komiks, hanggang visual novel."
 }

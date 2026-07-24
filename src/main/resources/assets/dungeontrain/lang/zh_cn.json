@@ -898,5 +898,19 @@
   "advancements.dungeontrain.editor.made_pillar.title": "社区支柱",
   "advancements.dungeontrain.editor.made_pillar.description": "保存一个新的柱子部分变种。",
   "advancements.dungeontrain.editor.made_stair.title": "一步一步来",
-  "advancements.dungeontrain.editor.made_stair.description": "保存一个新的楼梯(柱子附属物)变种。"
+  "advancements.dungeontrain.editor.made_stair.description": "保存一个新的楼梯(柱子附属物)变种。",
+  "gui.dungeontrain.credits.title": "制作人员",
+  "gui.dungeontrain.credits.support_button": "支持开发者",
+  "gui.dungeontrain.credits.button.tooltip": "制作人员",
+  "gui.dungeontrain.credits.subtitle": "地牢列车背后的人。",
+  "gui.dungeontrain.credits.team.header": "制作",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "设计与开发",
+  "gui.dungeontrain.credits.team.narrative": "叙事总监",
+  "gui.dungeontrain.credits.translations.header": "翻译",
+  "gui.dungeontrain.credits.translations.desc": "感谢每一位翻译地牢列车的人：",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "Brennan是一位屡获殊荣的VR开发者，凭借这份实力与经验，作为设计师兼开发者，让地牢列车不负众望。地牢列车是他的第一个模组，也是他的第一个整合包。",
+  "gui.dungeontrain.credits.team.wilson.bio": "一位电子游戏编剧，以横跨游戏、书籍、漫画与视觉小说的奇思妙想的叙事，为数百万人带来了欢笑、浪漫与泪水。"
 }

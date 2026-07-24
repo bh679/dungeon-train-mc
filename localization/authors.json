@@ -1,5 +1,5 @@
 {
   "Opus 4.8 (Claude)": "ai",
-  "老本願": "human",
+  "老本願": { "kind": "human", "url": "https://space.bilibili.com/296088227" },
   "阿世xAsh": "human"
 }

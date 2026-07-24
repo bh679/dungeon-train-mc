@@ -174,6 +174,28 @@ def check_credit_counts(locale: str, prov: dict, authors: dict[str, str],
     return errors
 
 
+def check_contributors(lang_dir: Path, prov_dir: Path, authors: dict[str, str],
+                       urls: dict[str, str], contributors_file: Path) -> list[str]:
+    """Hard lockstep between the shipped translator-credits file and the sidecars.
+
+    The Credits page reads this file, so drift ships a player-visible lie (wrong names,
+    languages, or %). Rebuilt from provenance + authors.json and compared exactly; a
+    missing, unparseable, or drifted file is an error with the fix command.
+    """
+    built = provenance_io.build_contributors(lang_dir, prov_dir, authors, urls)
+    if not contributors_file.is_file():
+        return [f"{contributors_file.name}: missing generated translator-credits file — "
+                f"{FIX_HINT_COUNTS}"]
+    try:
+        shipped = provenance_io.load_contributors(contributors_file)
+    except (json.JSONDecodeError, ValueError) as exc:
+        return [f"{contributors_file.name}: unparseable — {exc} — {FIX_HINT_COUNTS}"]
+    if shipped != built:
+        return [f"{contributors_file.name}: shipped translator credits are out of date with "
+                f"the provenance data — {FIX_HINT_COUNTS}"]
+    return []
+
+
 def credits_human_reviewed(credits_dir: Path, locale: str) -> bool:
     """Whether any shipped localization credit marks ``locale`` human-reviewed.
 
@@ -247,6 +269,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--provenance-dir", type=Path,
                         default=provenance_io.DEFAULT_PROVENANCE_DIR)
     parser.add_argument("--credits-dir", type=Path, default=provenance_io.DEFAULT_CREDITS_DIR)
+    parser.add_argument("--contributors-file", type=Path,
+                        default=provenance_io.DEFAULT_CONTRIBUTORS_FILE)
     parser.add_argument("--authors-file", type=Path, default=provenance_io.DEFAULT_AUTHORS_FILE)
     parser.add_argument("--locale", action="append",
                         help="restrict to specific locale(s); default all non-en_us")
@@ -288,6 +312,13 @@ def main(argv: list[str] | None = None) -> int:
         if not locale_errors and not registry_errors:
             # Counts computed from a structurally-broken sidecar would be noise.
             errors.extend(check_credit_counts(locale, prov, authors, args.credits_dir))
+
+    # The translator-credits file is global; only meaningful once every sidecar parses cleanly
+    # (build_contributors reads them all), so gate it on a clean run so far.
+    if not errors:
+        urls = provenance_io.load_author_urls(args.authors_file)
+        errors.extend(check_contributors(args.lang_dir, args.provenance_dir, authors, urls,
+                                         args.contributors_file))
 
     if errors:
         print("Provenance check FAILED:", file=sys.stderr)

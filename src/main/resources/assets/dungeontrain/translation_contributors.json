@@ -1,0 +1,31 @@
+{
+  "_note": "Generated from localization/provenance + authors.json by scripts/localization/stamp-provenance.py — do not hand-edit.",
+  "contributors": [
+    {
+      "name": "老本願",
+      "url": "https://space.bilibili.com/296088227",
+      "languages": [
+        {
+          "locale": "zh_cn",
+          "contributed": 806,
+          "total": 914
+        }
+      ]
+    },
+    {
+      "name": "阿世xAsh",
+      "languages": [
+        {
+          "locale": "zh_cn",
+          "contributed": 15,
+          "total": 914
+        },
+        {
+          "locale": "zh_tw",
+          "contributed": 15,
+          "total": 914
+        }
+      ]
+    }
+  ]
+}
