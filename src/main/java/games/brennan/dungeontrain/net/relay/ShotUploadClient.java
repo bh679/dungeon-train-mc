@@ -86,6 +86,9 @@ public final class ShotUploadClient {
         field(out, boundary, "band", p.band());
         field(out, boundary, "difficulty", Integer.toString(p.difficulty()));
         field(out, boundary, "cart", Integer.toString(p.cart()));
+        field(out, boundary, "gfx", p.gfx()); // graphics-stack tag (dh/shaders/mode) → relay 'gfx' facet
+        field(out, boundary, "shaderpack", p.shaderpack()); // active Iris/Oculus pack name → relay 'shaderpack' facet
+        field(out, boundary, "photoid", p.photoId()); // client-generated id → keys the later 'user-saved' mark
         // File part.
         ascii(out, "--" + boundary + "\r\n");
         ascii(out, "Content-Disposition: form-data; name=\"image\"; filename=\"ride.jpg\"\r\n");

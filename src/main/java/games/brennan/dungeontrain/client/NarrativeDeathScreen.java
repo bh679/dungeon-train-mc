@@ -362,7 +362,8 @@ public final class NarrativeDeathScreen extends Screen {
         if (photoSent) return;
         photoSent = true;
         RideSnapshot fall = bgFor(0); // page 0 is FALL, assigned a SCENIC shot
-        byte[] jpeg = fall != null ? fall.photoBytes() : null;
+        // Kept safely under DeathPhotoPacket's 1 MB codec cap — a hi-res (DH+shaders) shot is shrunk to fit.
+        byte[] jpeg = fall != null ? fall.photoBytes(1_000_000) : null;
         DungeonTrainNet.sendToServer(new DeathPhotoPacket(jpeg != null ? jpeg : new byte[0]));
     }
 
@@ -382,11 +383,12 @@ public final class NarrativeDeathScreen extends Screen {
         List<RideGalleryPacket.Photo> photos = new ArrayList<>();
         for (RideSnapshot s : pageBackgrounds) {
             if (s == null || !seen.add(s)) continue; // skip nulls + reused-across-pages duplicates
-            byte[] jpeg = s.photoBytes();
+            // Kept safely under RideGalleryPacket's 2 MB per-photo codec cap (hi-res shots may ride the top of this range).
+            byte[] jpeg = s.photoBytes(1_950_000);
             if (jpeg == null || jpeg.length == 0) continue;
             SnapshotMeta m = s.meta();
             String tag = s.tag() != null ? s.tag().name() : "";
-            photos.add(new RideGalleryPacket.Photo(tag, m.biome(), m.band(), m.difficulty(), m.cart(), jpeg));
+            photos.add(new RideGalleryPacket.Photo(tag, m.biome(), m.band(), m.difficulty(), m.cart(), m.gfx(), m.shaderpack(), s.photoId(), jpeg));
         }
         if (!photos.isEmpty()) DungeonTrainNet.sendToServer(new RideGalleryPacket(photos));
     }

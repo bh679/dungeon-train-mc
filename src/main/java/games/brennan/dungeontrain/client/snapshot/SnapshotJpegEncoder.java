@@ -27,11 +27,53 @@ final class SnapshotJpegEncoder {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final float QUALITY = 0.85f;
+    /** Quality ladder the size-bounded encode steps down before it resorts to shrinking the image. */
+    private static final float[] QUALITY_LADDER = {0.85f, 0.70f, 0.55f};
+    /** Never shrink a bounded shot below this long edge chasing a byte budget — keep it recognisable. */
+    private static final int MIN_BOUNDED_EDGE = 480;
 
     private SnapshotJpegEncoder() {}
 
     /** JPEG-encode {@code img} at {@link #QUALITY}. Returns {@code null} on encode failure. */
     static byte[] encode(NativeImage img) {
+        return encodeAt(img, QUALITY);
+    }
+
+    /**
+     * JPEG-encode {@code img} so the result fits within {@code maxBytes}: step the quality down
+     * {@link #QUALITY_LADDER}, then (if a hi-res shot is still over budget) shrink the image ~30% at a
+     * time and retry, down to {@link #MIN_BOUNDED_EDGE}. Returns the smallest encoding produced — always
+     * under budget in practice — or {@code null} on encode failure. Base-1080 shots clear the first rung
+     * immediately, so their behaviour is unchanged.
+     */
+    static byte[] encode(NativeImage img, int maxBytes) {
+        byte[] smallest = null;
+        NativeImage work = img;
+        boolean ownsWork = false;
+        try {
+            for (int shrink = 0; shrink < 6; shrink++) {
+                for (float q : QUALITY_LADDER) {
+                    byte[] out = encodeAt(work, q);
+                    if (out == null) return smallest;
+                    if (out.length <= maxBytes) return out;
+                    if (smallest == null || out.length < smallest.length) smallest = out;
+                }
+                int longEdge = Math.max(work.getWidth(), work.getHeight());
+                int next = (int) Math.floor(longEdge * 0.7);
+                if (next < MIN_BOUNDED_EDGE || next >= longEdge) break; // can't (or shouldn't) shrink further
+                NativeImage smaller = downscaleLongEdge(work, next);
+                if (ownsWork) work.close();
+                work = smaller;
+                ownsWork = true;
+            }
+            return smallest; // best effort; the quality/shrink ladder keeps this well under real budgets
+        } finally {
+            if (ownsWork && work != img) work.close();
+        }
+    }
+
+    /** Encode {@code img} at an explicit JPEG quality. Returns {@code null} on failure. */
+    private static byte[] encodeAt(NativeImage img, float quality) {
         try {
             int w = img.getWidth();
             int h = img.getHeight();
@@ -52,7 +94,7 @@ final class SnapshotJpegEncoder {
             try {
                 ImageWriteParam params = writer.getDefaultWriteParam();
                 params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-                params.setCompressionQuality(QUALITY);
+                params.setCompressionQuality(quality);
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 try (MemoryCacheImageOutputStream ios = new MemoryCacheImageOutputStream(baos)) {
@@ -67,5 +109,27 @@ final class SnapshotJpegEncoder {
             LOGGER.warn("[DungeonTrain] Ride snapshot JPEG encode failed", e);
             return null;
         }
+    }
+
+    /** Nearest-neighbour copy of {@code src} scaled so its long edge is {@code maxEdge} (caller owns the result). */
+    private static NativeImage downscaleLongEdge(NativeImage src, int maxEdge) {
+        int sw = src.getWidth();
+        int sh = src.getHeight();
+        int dw, dh;
+        if (sw >= sh) {
+            dw = Math.min(maxEdge, sw);
+            dh = Math.max(1, Math.round(dw * (float) sh / sw));
+        } else {
+            dh = Math.min(maxEdge, sh);
+            dw = Math.max(1, Math.round(dh * (float) sw / sh));
+        }
+        NativeImage dst = new NativeImage(dw, dh, false);
+        for (int y = 0; y < dh; y++) {
+            int sy = y * sh / dh;
+            for (int x = 0; x < dw; x++) {
+                dst.setPixelRGBA(x, y, src.getPixelRGBA(x * sw / dw, sy));
+            }
+        }
+        return dst;
     }
 }

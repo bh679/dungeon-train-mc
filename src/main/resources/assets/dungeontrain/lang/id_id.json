@@ -885,5 +885,19 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Pilar Komunitas",
   "advancements.dungeontrain.editor.made_pillar.description": "Simpan sebuah varian bagian pilar baru.",
   "advancements.dungeontrain.editor.made_stair.title": "Selangkah Demi Selangkah",
-  "advancements.dungeontrain.editor.made_stair.description": "Simpan sebuah varian tangga (pelengkap pilar) baru."
+  "advancements.dungeontrain.editor.made_stair.description": "Simpan sebuah varian tangga (pelengkap pilar) baru.",
+  "gui.dungeontrain.credits.title": "Kredit",
+  "gui.dungeontrain.credits.support_button": "Dukung Pengembang",
+  "gui.dungeontrain.credits.button.tooltip": "Kredit",
+  "gui.dungeontrain.credits.subtitle": "Orang-orang di balik Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Dibuat oleh",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Perancang & Pengembang",
+  "gui.dungeontrain.credits.team.narrative": "Direktur Naratif",
+  "gui.dungeontrain.credits.translations.header": "Terjemahan",
+  "gui.dungeontrain.credits.translations.desc": "Terima kasih kepada semua yang menerjemahkan Dungeon Train:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "Merancang dan membangun Dungeon Train — sistemnya, dunia proseduralnya, kereta yang bergerak, editor, konten kereta, dan sebagian besar lorenya. Mod dan modpack pertamanya, meski ia telah bermain Minecraft sejak 2009. Ia sangat bersemangat terhadap mod ini. Jika kau pernah berbicara dengan sang pengembang, itulah dia. Hubungi dia kapan saja dengan @dev di dalam game.",
+  "gui.dungeontrain.credits.team.wilson.bio": "Menulis & Menyutradarai narasi dan lore Dungeon Train — sebagian besar karakter dan kisah bawaan yang ditemukan di atas kereta."
 }

@@ -44,8 +44,35 @@ public final class OptionsMenuScreen implements MenuScreen {
                 () -> ClientDisplayConfig.setHudChannel(ClientDisplayConfig.getHudChannel() - ClientDisplayConfig.STEP),
                 () -> ClientDisplayConfig.setHudChannel(ClientDisplayConfig.getHudChannel() + ClientDisplayConfig.STEP)),
             snapshotChatLogRow(),
+            snapshotMaxResolutionRow(),
             new CommandMenuEntry.Back("< Back")
         );
+    }
+
+    /** Ceiling ladder the resolution row cycles through: 0 = AUTO (adaptive), then fixed long-edge caps. */
+    private static final int[] RESOLUTION_LADDER = {0, 1080, 1440, 2160};
+
+    /**
+     * Cycles the ride-photo resolution ceiling AUTO → 1080p → 1440p → 2160p → AUTO. Like
+     * {@link #snapshotChatLogRow()} it's a {@link CommandMenuEntry.ClientAction} that mutates client
+     * config and stays open; the per-tick rebuild refreshes the label. AUTO keeps the adaptive
+     * DH+shaders/Fabulous behaviour; a cap only ever lowers the captured resolution.
+     */
+    private static CommandMenuEntry snapshotMaxResolutionRow() {
+        int current = ClientDisplayConfig.getRideSnapshotMaxResolution();
+        String label = "Snapshot Max Resolution: " + (current <= 0 ? "AUTO" : current + "p");
+        return new CommandMenuEntry.ClientAction(label,
+            () -> ClientDisplayConfig.setRideSnapshotMaxResolution(nextResolution(
+                ClientDisplayConfig.getRideSnapshotMaxResolution())));
+    }
+
+    /** Next rung after {@code current} in {@link #RESOLUTION_LADDER}, wrapping; an off-ladder value
+     *  (hand-edited toml) advances to the first larger rung, else wraps to AUTO. */
+    private static int nextResolution(int current) {
+        for (int v : RESOLUTION_LADDER) {
+            if (v > current) return v;
+        }
+        return RESOLUTION_LADDER[0];
     }
 
     /**

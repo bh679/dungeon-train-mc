@@ -17,6 +17,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.join(HERE, "check-provenance.py")
 REPO_ROOT = os.path.dirname(os.path.dirname(HERE))
 
+sys.path.insert(0, HERE)
+from pathlib import Path  # noqa: E402
+import provenance_io  # noqa: E402
+
 LANG = {"a.key": "Alpha", "b.key": "Beta", "c.key": "Gamma"}
 PROV = {
     "a.key": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
@@ -48,6 +52,19 @@ def workspace(lang_files=None, prov_files=None, credit_files=None, authors=AUTHO
     for slug, data in (credit_files or {}).items():
         with open(os.path.join(dirs["credits"], f"{slug}.json"), "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False)
+    dirs["contributors"] = os.path.join(ws, "translation_contributors.json")
+    # Best-effort generate the matching translator-credits file so an otherwise-clean
+    # workspace passes the (global) contributors check. Malformed-sidecar workspaces raise
+    # here and skip it — those tests fail earlier on the structural error, before the
+    # contributors check (which is gated on a clean run) is even reached.
+    try:
+        built = provenance_io.build_contributors(
+            Path(dirs["lang"]), Path(dirs["prov"]),
+            provenance_io.load_authors(Path(dirs["authors"])),
+            provenance_io.load_author_urls(Path(dirs["authors"])))
+        provenance_io.write_contributors(Path(dirs["contributors"]), built)
+    except Exception:
+        pass
     return dirs
 
 
@@ -57,6 +74,7 @@ def run(dirs, *extra):
          "--lang-dir", dirs["lang"],
          "--provenance-dir", dirs["prov"],
          "--credits-dir", dirs["credits"],
+         "--contributors-file", dirs["contributors"],
          "--authors-file", dirs["authors"], *extra],
         capture_output=True, text=True,
     )
@@ -348,6 +366,24 @@ def test_real_repo_sidecars_are_aligned():
     assert proc.returncode == 0, proc.stderr
     # exactly the one known advisory (zh_cn flag vs partial coverage) — no errors
     assert "FAILED" not in proc.stderr
+
+
+def test_contributors_drift_fails():
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": PROV})
+    # Corrupt the (auto-generated) contributors file so it no longer matches provenance.
+    with open(dirs["contributors"], "w", encoding="utf-8") as f:
+        json.dump({"contributors": [{"name": "Nobody", "languages": []}]}, f, ensure_ascii=False)
+    proc = run(dirs)
+    assert proc.returncode == 1
+    assert "translation_contributors.json" in proc.stderr and "out of date" in proc.stderr
+
+
+def test_contributors_missing_fails():
+    dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": PROV})
+    os.remove(dirs["contributors"])
+    proc = run(dirs)
+    assert proc.returncode == 1
+    assert "missing generated translator-credits file" in proc.stderr
 
 
 def _main():

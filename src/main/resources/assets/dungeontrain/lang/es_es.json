@@ -902,5 +902,19 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Pilar de la comunidad",
   "advancements.dungeontrain.editor.made_pillar.description": "Guarda una nueva variante de sección de pilar.",
   "advancements.dungeontrain.editor.made_stair.title": "Paso a paso",
-  "advancements.dungeontrain.editor.made_stair.description": "Guarda una nueva variante de escalera (adjunta al pilar)."
+  "advancements.dungeontrain.editor.made_stair.description": "Guarda una nueva variante de escalera (adjunta al pilar).",
+  "gui.dungeontrain.credits.title": "Créditos",
+  "gui.dungeontrain.credits.support_button": "Apoya al desarrollador",
+  "gui.dungeontrain.credits.button.tooltip": "Créditos",
+  "gui.dungeontrain.credits.subtitle": "Las personas detrás de Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Creado por",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Diseñador y desarrollador",
+  "gui.dungeontrain.credits.team.narrative": "Director narrativo",
+  "gui.dungeontrain.credits.translations.header": "Traducciones",
+  "gui.dungeontrain.credits.translations.desc": "Gracias a todos los que tradujeron Dungeon Train:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "Diseñó y creó Dungeon Train: sus sistemas, el mundo procedural, el tren en movimiento, el editor, el contenido del tren y buena parte del lore. Su primer mod y modpack, aunque juega a Minecraft desde 2009. Le apasiona profundamente este mod. Si has hablado con el desarrollador, era él. Contáctalo cuando quieras con @dev dentro del juego.",
+  "gui.dungeontrain.credits.team.wilson.bio": "Escribió y dirigió la narrativa y la historia de Dungeon Train — la mayoría de los personajes y relatos que encontrarás a bordo del tren."
 }
