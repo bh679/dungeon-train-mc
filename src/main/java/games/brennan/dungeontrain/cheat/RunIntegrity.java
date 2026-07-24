@@ -42,11 +42,14 @@ public final class RunIntegrity {
      * Is this player's current run Free Play? True when the run is permanently
      * cheated ({@link #isPermanentlyCheated}), OR when the whole server session
      * is Free Play because AIS data was changed
-     * ({@link AisDataIntegrity#isSessionFreePlay}). Every persistence gate keys
-     * off this, so the session taint inherits all Free Play behaviour.
+     * ({@link AisDataIntegrity#isSessionFreePlay}) or a known cheat mod is
+     * installed ({@link CheatModIntegrity#isSessionFreePlay}). Every persistence
+     * gate keys off this, so the session taints inherit all Free Play behaviour.
      */
     public static boolean isCheated(ServerPlayer player) {
-        return AisDataIntegrity.isSessionFreePlay() || isPermanentlyCheated(player);
+        return AisDataIntegrity.isSessionFreePlay()
+            || CheatModIntegrity.isSessionFreePlay()
+            || isPermanentlyCheated(player);
     }
 
     /**
