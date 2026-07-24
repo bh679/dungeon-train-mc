@@ -57,10 +57,6 @@ public final class CheatModList {
     static final Set<String> BAKED = Set.of(
         // x-ray
         "xray", "xraymod", "advancedxray", "xrayultimate",
-        // fullbright / night-vision
-        "fullbright", "fullbrightmod", "fullbrightnesstoggle",
-        // freecam
-        "freecam", "freelook",
         // automation / pathfinding
         "baritone",
         // generic cheat utilities
