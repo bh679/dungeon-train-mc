@@ -236,6 +236,13 @@ jobs:
           # is declared `required` — that is what makes the Modrinth/CurseForge apps
           # fetch them and credit the download to their own project pages.
           # discordpresence is absent from both lists: it is still embedded in the jar.
+          # tradeeverything is ALSO embedded (jarJar), so it is declared `embedded` — not
+          # `required` — on CurseForge, which credits/links its project page without telling
+          # the app to fetch a separate download. It stays OFF the Modrinth `dependencies`
+          # list until its Modrinth listing clears review (referencing a not-yet-live project
+          # fails the publish); add `trade-everything(embedded)` there once it is approved.
+          # When TE is later un-bundled to an external required download, flip both to
+          # `(required)` and drop the jarJar (see PR #828 history for the full wiring).
           # NOTE: AIN's Modrinth slug is `adventureitemnames` (no hyphens) while its
           # CurseForge slug is `adventure-item-names`; AIS is `adventure-items-stats` on
           # Modrinth vs `adventure-item-stats` on CurseForge. The spellings differ per
@@ -252,6 +259,7 @@ jobs:
             adventure-item-stats(required)
             interactive-player-mobs(required)
             ender-chest-persistence(required)
+            trade-everything(embedded)
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)
