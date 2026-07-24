@@ -898,5 +898,21 @@
   "advancements.dungeontrain.editor.made_pillar.title": "社区支柱",
   "advancements.dungeontrain.editor.made_pillar.description": "保存一个新的柱子部分变种。",
   "advancements.dungeontrain.editor.made_stair.title": "一步一步来",
-  "advancements.dungeontrain.editor.made_stair.description": "保存一个新的楼梯(柱子附属物)变种。"
+  "advancements.dungeontrain.editor.made_stair.description": "保存一个新的楼梯(柱子附属物)变种。",
+  "gui.dungeontrain.credits.title": "制作人员",
+  "gui.dungeontrain.credits.support_button": "支持开发者",
+  "gui.dungeontrain.credits.button.tooltip": "制作人员",
+  "gui.dungeontrain.credits.subtitle": "地牢列车背后的人与技术。",
+  "gui.dungeontrain.credits.team.header": "制作",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "设计与开发",
+  "gui.dungeontrain.credits.team.narrative": "叙事总监",
+  "gui.dungeontrain.credits.team.based_on": "基于原作游戏《%s》。",
+  "gui.dungeontrain.credits.team.original_link": "itch.io 上的地牢列车",
+  "gui.dungeontrain.credits.built_with.header": "构建技术",
+  "gui.dungeontrain.credits.built_with.desc": "Minecraft 与 NeoForge。\nSable——移动列车与船只的物理引擎。\n以及众多开源库。",
+  "gui.dungeontrain.credits.translations.header": "翻译",
+  "gui.dungeontrain.credits.translations.desc": "感谢每一位翻译地牢列车的人：",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)"
 }

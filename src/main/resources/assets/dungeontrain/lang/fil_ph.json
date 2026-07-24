@@ -885,5 +885,21 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Haligi ng Komunidad",
   "advancements.dungeontrain.editor.made_pillar.description": "I-save ang bagong pillar section variant.",
   "advancements.dungeontrain.editor.made_stair.title": "Hakbang-Hakbang",
-  "advancements.dungeontrain.editor.made_stair.description": "I-save ang bagong stair (pillar adjunct) variant."
+  "advancements.dungeontrain.editor.made_stair.description": "I-save ang bagong stair (pillar adjunct) variant.",
+  "gui.dungeontrain.credits.title": "Mga Kredito",
+  "gui.dungeontrain.credits.support_button": "Suportahan ang Developer",
+  "gui.dungeontrain.credits.button.tooltip": "Mga Kredito",
+  "gui.dungeontrain.credits.subtitle": "Ang mga tao at teknolohiyang bumubuo sa Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Gawa ni",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Designer at Developer",
+  "gui.dungeontrain.credits.team.narrative": "Direktor ng Salaysay",
+  "gui.dungeontrain.credits.team.based_on": "Batay sa orihinal na laro, %s.",
+  "gui.dungeontrain.credits.team.original_link": "Dungeon Train sa itch.io",
+  "gui.dungeontrain.credits.built_with.header": "Ginawa gamit ang",
+  "gui.dungeontrain.credits.built_with.desc": "Minecraft at NeoForge.\nSable — ang physics ng gumagalaw na tren at barko.\nAt maraming open-source na library.",
+  "gui.dungeontrain.credits.translations.header": "Mga Salin",
+  "gui.dungeontrain.credits.translations.desc": "Salamat sa lahat ng nagsalin ng Dungeon Train:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)"
 }

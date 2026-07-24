@@ -902,5 +902,21 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Trụ Cột Cộng Đồng",
   "advancements.dungeontrain.editor.made_pillar.description": "Lưu một biến thể đoạn trụ mới.",
   "advancements.dungeontrain.editor.made_stair.title": "Từng Bước Một",
-  "advancements.dungeontrain.editor.made_stair.description": "Lưu một biến thể cầu thang (phụ trợ trụ) mới."
+  "advancements.dungeontrain.editor.made_stair.description": "Lưu một biến thể cầu thang (phụ trợ trụ) mới.",
+  "gui.dungeontrain.credits.title": "Ghi công",
+  "gui.dungeontrain.credits.support_button": "Ủng hộ Nhà phát triển",
+  "gui.dungeontrain.credits.button.tooltip": "Ghi công",
+  "gui.dungeontrain.credits.subtitle": "Những con người và công nghệ đằng sau Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Thực hiện bởi",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Thiết kế & Phát triển",
+  "gui.dungeontrain.credits.team.narrative": "Giám đốc Cốt truyện",
+  "gui.dungeontrain.credits.team.based_on": "Dựa trên trò chơi gốc, %s.",
+  "gui.dungeontrain.credits.team.original_link": "Dungeon Train trên itch.io",
+  "gui.dungeontrain.credits.built_with.header": "Xây dựng với",
+  "gui.dungeontrain.credits.built_with.desc": "Minecraft & NeoForge.\nSable — hệ thống vật lý cho tàu hỏa và tàu thủy chuyển động.\nVà nhiều thư viện mã nguồn mở.",
+  "gui.dungeontrain.credits.translations.header": "Bản dịch",
+  "gui.dungeontrain.credits.translations.desc": "Cảm ơn tất cả những người đã dịch Dungeon Train:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)"
 }

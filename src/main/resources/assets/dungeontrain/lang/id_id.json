@@ -885,5 +885,21 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Pilar Komunitas",
   "advancements.dungeontrain.editor.made_pillar.description": "Simpan sebuah varian bagian pilar baru.",
   "advancements.dungeontrain.editor.made_stair.title": "Selangkah Demi Selangkah",
-  "advancements.dungeontrain.editor.made_stair.description": "Simpan sebuah varian tangga (pelengkap pilar) baru."
+  "advancements.dungeontrain.editor.made_stair.description": "Simpan sebuah varian tangga (pelengkap pilar) baru.",
+  "gui.dungeontrain.credits.title": "Kredit",
+  "gui.dungeontrain.credits.support_button": "Dukung Pengembang",
+  "gui.dungeontrain.credits.button.tooltip": "Kredit",
+  "gui.dungeontrain.credits.subtitle": "Orang-orang dan teknologi di balik Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Dibuat oleh",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Perancang & Pengembang",
+  "gui.dungeontrain.credits.team.narrative": "Direktur Naratif",
+  "gui.dungeontrain.credits.team.based_on": "Berdasarkan gim asli, %s.",
+  "gui.dungeontrain.credits.team.original_link": "Dungeon Train di itch.io",
+  "gui.dungeontrain.credits.built_with.header": "Dibangun dengan",
+  "gui.dungeontrain.credits.built_with.desc": "Minecraft & NeoForge.\nSable — fisika kereta dan kapal yang bergerak.\nDan banyak pustaka sumber terbuka.",
+  "gui.dungeontrain.credits.translations.header": "Terjemahan",
+  "gui.dungeontrain.credits.translations.desc": "Terima kasih kepada semua yang menerjemahkan Dungeon Train:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)"
 }

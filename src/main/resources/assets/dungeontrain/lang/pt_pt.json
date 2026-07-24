@@ -902,5 +902,21 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Pilar da Comunidade",
   "advancements.dungeontrain.editor.made_pillar.description": "Guarda uma nova variante de secção de pilar.",
   "advancements.dungeontrain.editor.made_stair.title": "Passo a Passo",
-  "advancements.dungeontrain.editor.made_stair.description": "Guarda uma nova variante de escada (adjunta ao pilar)."
+  "advancements.dungeontrain.editor.made_stair.description": "Guarda uma nova variante de escada (adjunta ao pilar).",
+  "gui.dungeontrain.credits.title": "Créditos",
+  "gui.dungeontrain.credits.support_button": "Apoia o Programador",
+  "gui.dungeontrain.credits.button.tooltip": "Créditos",
+  "gui.dungeontrain.credits.subtitle": "As pessoas e a tecnologia por trás do Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Feito por",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Designer e Programador",
+  "gui.dungeontrain.credits.team.narrative": "Diretor Narrativo",
+  "gui.dungeontrain.credits.team.based_on": "Baseado no jogo original, %s.",
+  "gui.dungeontrain.credits.team.original_link": "Dungeon Train no itch.io",
+  "gui.dungeontrain.credits.built_with.header": "Feito com",
+  "gui.dungeontrain.credits.built_with.desc": "Minecraft e NeoForge.\nSable — a física do comboio e do navio em movimento.\nE muitas bibliotecas de código aberto.",
+  "gui.dungeontrain.credits.translations.header": "Traduções",
+  "gui.dungeontrain.credits.translations.desc": "Obrigado a todos os que traduziram o Dungeon Train:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)"
 }

@@ -902,5 +902,21 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Столп общества",
   "advancements.dungeontrain.editor.made_pillar.description": "Сохраните новый вариант секции опоры.",
   "advancements.dungeontrain.editor.made_stair.title": "Шаг за шагом",
-  "advancements.dungeontrain.editor.made_stair.description": "Сохраните новый вариант лестницы (пристройки опоры)."
+  "advancements.dungeontrain.editor.made_stair.description": "Сохраните новый вариант лестницы (пристройки опоры).",
+  "gui.dungeontrain.credits.title": "Титры",
+  "gui.dungeontrain.credits.support_button": "Поддержать разработчика",
+  "gui.dungeontrain.credits.button.tooltip": "Титры",
+  "gui.dungeontrain.credits.subtitle": "Люди и технологии, стоящие за Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Создано",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Дизайнер и разработчик",
+  "gui.dungeontrain.credits.team.narrative": "Нарративный директор",
+  "gui.dungeontrain.credits.team.based_on": "По мотивам оригинальной игры, %s.",
+  "gui.dungeontrain.credits.team.original_link": "Dungeon Train на itch.io",
+  "gui.dungeontrain.credits.built_with.header": "Создано с помощью",
+  "gui.dungeontrain.credits.built_with.desc": "Minecraft и NeoForge.\nSable — физика движущегося поезда и корабля.\nИ множество библиотек с открытым исходным кодом.",
+  "gui.dungeontrain.credits.translations.header": "Переводы",
+  "gui.dungeontrain.credits.translations.desc": "Спасибо всем, кто переводил Dungeon Train:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)"
 }

@@ -885,5 +885,21 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Steunpilaar van de gemeenschap",
   "advancements.dungeontrain.editor.made_pillar.description": "Sla een nieuwe pijlersectievariant op.",
   "advancements.dungeontrain.editor.made_stair.title": "Stap voor stap",
-  "advancements.dungeontrain.editor.made_stair.description": "Sla een nieuwe trapvariant (pijleraanhangsel) op."
+  "advancements.dungeontrain.editor.made_stair.description": "Sla een nieuwe trapvariant (pijleraanhangsel) op.",
+  "gui.dungeontrain.credits.title": "Credits",
+  "gui.dungeontrain.credits.support_button": "Steun de ontwikkelaar",
+  "gui.dungeontrain.credits.button.tooltip": "Credits",
+  "gui.dungeontrain.credits.subtitle": "De mensen en techniek achter Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Gemaakt door",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Ontwerper & ontwikkelaar",
+  "gui.dungeontrain.credits.team.narrative": "Verhaalregisseur",
+  "gui.dungeontrain.credits.team.based_on": "Gebaseerd op het originele spel, %s.",
+  "gui.dungeontrain.credits.team.original_link": "Dungeon Train op itch.io",
+  "gui.dungeontrain.credits.built_with.header": "Gebouwd met",
+  "gui.dungeontrain.credits.built_with.desc": "Minecraft & NeoForge.\nSable — de fysica voor de rijdende trein en varende schepen.\nEn vele opensourcebibliotheken.",
+  "gui.dungeontrain.credits.translations.header": "Vertalingen",
+  "gui.dungeontrain.credits.translations.desc": "Dank aan iedereen die Dungeon Train heeft vertaald:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)"
 }

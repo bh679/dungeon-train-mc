@@ -902,5 +902,21 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Stütze der Gemeinschaft",
   "advancements.dungeontrain.editor.made_pillar.description": "Speichere eine neue Pfeilerabschnitt-Variante.",
   "advancements.dungeontrain.editor.made_stair.title": "Schritt für Schritt",
-  "advancements.dungeontrain.editor.made_stair.description": "Speichere eine neue Treppen-Variante (Pfeiler-Ergänzung)."
+  "advancements.dungeontrain.editor.made_stair.description": "Speichere eine neue Treppen-Variante (Pfeiler-Ergänzung).",
+  "gui.dungeontrain.credits.title": "Mitwirkende",
+  "gui.dungeontrain.credits.support_button": "Unterstütze den Entwickler",
+  "gui.dungeontrain.credits.button.tooltip": "Mitwirkende",
+  "gui.dungeontrain.credits.subtitle": "Die Menschen und die Technik hinter Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Erstellt von",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Designer & Entwickler",
+  "gui.dungeontrain.credits.team.narrative": "Narrativer Leiter",
+  "gui.dungeontrain.credits.team.based_on": "Basiert auf dem Originalspiel, %s.",
+  "gui.dungeontrain.credits.team.original_link": "Dungeon Train auf itch.io",
+  "gui.dungeontrain.credits.built_with.header": "Gebaut mit",
+  "gui.dungeontrain.credits.built_with.desc": "Minecraft & NeoForge.\nSable — die Physik für fahrende Züge und Schiffe.\nUnd viele Open-Source-Bibliotheken.",
+  "gui.dungeontrain.credits.translations.header": "Übersetzungen",
+  "gui.dungeontrain.credits.translations.desc": "Danke an alle, die Dungeon Train übersetzt haben:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)"
 }

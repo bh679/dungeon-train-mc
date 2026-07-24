@@ -885,5 +885,21 @@
   "advancements.dungeontrain.editor.made_pillar.title": "コミュニティの柱",
   "advancements.dungeontrain.editor.made_pillar.description": "新しい柱セクションのバリアントを保存する。",
   "advancements.dungeontrain.editor.made_stair.title": "一歩ずつ",
-  "advancements.dungeontrain.editor.made_stair.description": "新しい階段（柱の付属物）のバリアントを保存する。"
+  "advancements.dungeontrain.editor.made_stair.description": "新しい階段（柱の付属物）のバリアントを保存する。",
+  "gui.dungeontrain.credits.title": "クレジット",
+  "gui.dungeontrain.credits.support_button": "開発者を支援する",
+  "gui.dungeontrain.credits.button.tooltip": "クレジット",
+  "gui.dungeontrain.credits.subtitle": "Dungeon Trainを支える人々と技術。",
+  "gui.dungeontrain.credits.team.header": "制作",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "デザイナー兼開発者",
+  "gui.dungeontrain.credits.team.narrative": "ナラティブディレクター",
+  "gui.dungeontrain.credits.team.based_on": "原作ゲーム「%s」に基づく。",
+  "gui.dungeontrain.credits.team.original_link": "itch.ioのDungeon Train",
+  "gui.dungeontrain.credits.built_with.header": "使用技術",
+  "gui.dungeontrain.credits.built_with.desc": "Minecraft と NeoForge。\nSable — 動く列車と船の物理演算。\nそして多くのオープンソースライブラリ。",
+  "gui.dungeontrain.credits.translations.header": "翻訳",
+  "gui.dungeontrain.credits.translations.desc": "Dungeon Trainを翻訳してくれた皆さんに感謝します：",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)"
 }
