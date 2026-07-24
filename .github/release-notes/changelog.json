@@ -5683,6 +5683,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ride-photo-user-saved",
+      "version": "0.510.0",
+      "type": "feat",
+      "title": "Saved ride photos are tagged for the gallery",
+      "summary": "When you press Save on a ride photo from the death screen, that photo is now flagged as one you chose to keep, so it stands out in the online photo gallery. Only applies when online features are enabled.",
+      "highlights": [
+        "Death-screen 'Save' now marks that photo as user-saved online",
+        "A new Saved filter surfaces the photos players kept"
+      ],
+      "date": "2026-07-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
