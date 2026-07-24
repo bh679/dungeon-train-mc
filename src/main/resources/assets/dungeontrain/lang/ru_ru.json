@@ -915,6 +915,6 @@
   "gui.dungeontrain.credits.translations.desc": "Спасибо всем, кто переводил Dungeon Train:",
   "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
   "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
-  "gui.dungeontrain.credits.team.brennan.bio": "Спроектировал и построил Dungeon Train — его системы, процедурный мир, движущийся поезд и большую часть лора. Это его первый mod и modpack, хотя в Minecraft он играет с 2009 года. Он глубоко увлечён игрой, и если вы говорили с разработчиком — это он. Пишите ему в любое время через @dev в игре.",
+  "gui.dungeontrain.credits.team.brennan.bio": "Придумал и построил Dungeon Train — его системы, процедурный мир, движущийся поезд, редактор, содержимое поезда и большую часть лора. Его первый мод и модпак, хотя в Minecraft он играет с 2009 года. Он всей душой предан этому моду. Если вы говорили с разработчиком — это был он. Свяжитесь с ним в любое время через @dev в игре.",
   "gui.dungeontrain.credits.team.wilson.bio": "Написал и поставил повествование и лор Dungeon Train — большинство встроенных персонажей и историй, что найдутся на борту поезда."
 }

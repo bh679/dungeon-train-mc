@@ -898,6 +898,6 @@
   "gui.dungeontrain.credits.translations.desc": "Dungeon Trainを翻訳してくれた皆さんに感謝します：",
   "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
   "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
-  "gui.dungeontrain.credits.team.brennan.bio": "Dungeon Train を設計し、作り上げた——そのシステム、プロシージャル生成の世界、走る列車、そして物語の多くを。2009年からMinecraftを遊んできたが、これが彼の初めてのMODでありMODパックだ。彼はこのゲームに深く情熱を注いでおり、開発者と話したなら、それは彼自身だ。ゲーム内でいつでも @dev で連絡できる。",
+  "gui.dungeontrain.credits.team.brennan.bio": "Dungeon Train を設計し作り上げた——そのシステム、手続き生成される世界、走る列車、レベルエディター、列車内のコンテンツ、そして物語の多くを。2009年から Minecraft を遊んできたが、これが初めて手がけた Mod でありモッドパックだ。この Mod に深い情熱を注いでいる。開発者と話したなら、それは彼だ。ゲーム内でいつでも @dev で連絡できる。",
   "gui.dungeontrain.credits.team.wilson.bio": "Dungeon Trainの物語とロアを執筆・監督した——列車に乗って出会う内蔵キャラクターや物語の多くは彼の手によるものだ。"
 }
