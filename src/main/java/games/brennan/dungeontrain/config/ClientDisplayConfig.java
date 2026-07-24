@@ -69,6 +69,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_FLUSH_MIN_FPS;
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_FLUSH_MIN_TPS;
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_ON_DISK;
+    public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_RESOLUTION;
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
@@ -104,6 +105,7 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_FLUSH_MIN_FPS = pair.getLeft().rideSnapshotFlushMinFps;
         RIDE_SNAPSHOT_FLUSH_MIN_TPS = pair.getLeft().rideSnapshotFlushMinTps;
         RIDE_SNAPSHOT_MAX_ON_DISK = pair.getLeft().rideSnapshotMaxOnDisk;
+        RIDE_SNAPSHOT_MAX_RESOLUTION = pair.getLeft().rideSnapshotMaxResolution;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
@@ -189,6 +191,9 @@ public final class ClientDisplayConfig {
         ModConfigSpec.IntValue rideSnapshotMaxOnDisk = b
                 .comment("Maximum ride photos retained per run across memory + disk (oldest dropped first). Each is a small (<=640px) PNG, so a full run is only a few MB; set above maxStored so offloading keeps more variety than memory alone. Clamped to at least maxStored.")
                 .defineInRange("maxOnDisk", 64, 8, 256);
+        ModConfigSpec.IntValue rideSnapshotMaxResolution = b
+                .comment("Ceiling (long-edge pixels) for ride-photo capture. 0 = AUTO: the standard 1080, rising to 1440/2160 only when Distant Horizons is active together with shaders or Fabulous graphics (picked by frame rate). A positive value CAPS that result — e.g. 1440 clamps to <=1440, 1080 disables the higher-resolution tiers entirely. It never raises resolution above what the auto logic and your real window size already allow. Values below 1080 will shrink normal photos too. Also settable in-game via the X menu -> Options -> Snapshot Max Resolution.")
+                .defineInRange("maxResolution", 0, 0, 4320);
         b.pop();
 
         b.push("framerateThrottle");
@@ -222,6 +227,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
+                rideSnapshotMaxResolution,
                 framerateThrottleEnabled, framerateThrottleFps, deleteWorldOnReboard, sharedBooksRead);
     }
 
@@ -449,6 +455,22 @@ public final class ClientDisplayConfig {
         return Math.max(floor, isLoaded() ? RIDE_SNAPSHOT_MAX_ON_DISK.get() : 64);
     }
 
+    /**
+     * Ceiling (long-edge px) for ride-photo capture; {@code 0} = AUTO (the adaptive
+     * DH+shaders/Fabulous logic in {@code RideSnapshotCapture}). A positive value caps the chosen edge.
+     * Defaults to {@code 0} (AUTO) pre-load so behaviour matches the shipped adaptive default.
+     */
+    public static int getRideSnapshotMaxResolution() {
+        return isLoaded() ? RIDE_SNAPSHOT_MAX_RESOLUTION.get() : 0;
+    }
+
+    /** Set the ride-photo resolution ceiling ({@code 0} = AUTO). Toggled from the X menu → Options; no-op pre-load. */
+    public static void setRideSnapshotMaxResolution(int value) {
+        if (!isLoaded()) return;
+        RIDE_SNAPSHOT_MAX_RESOLUTION.set(value);
+        RIDE_SNAPSHOT_MAX_RESOLUTION.save();
+    }
+
     // ----- Idle framerate throttle (paused / unfocused / minimised) -----
 
     /**
@@ -568,6 +590,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue rideSnapshotFlushMinFps,
             ModConfigSpec.IntValue rideSnapshotFlushMinTps,
             ModConfigSpec.IntValue rideSnapshotMaxOnDisk,
+            ModConfigSpec.IntValue rideSnapshotMaxResolution,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
