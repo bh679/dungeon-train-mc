@@ -894,8 +894,6 @@
   "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
   "gui.dungeontrain.credits.team.designer": "ผู้ออกแบบและนักพัฒนา",
   "gui.dungeontrain.credits.team.narrative": "ผู้กำกับเนื้อเรื่อง",
-  "gui.dungeontrain.credits.team.based_on": "สร้างจากเกมต้นฉบับ %s",
-  "gui.dungeontrain.credits.team.original_link": "Dungeon Train บน itch.io",
   "gui.dungeontrain.credits.built_with.header": "สร้างด้วย",
   "gui.dungeontrain.credits.built_with.desc": "Minecraft และ NeoForge\nSable — ระบบฟิสิกส์ของขบวนรถไฟและเรือที่เคลื่อนที่\nและไลบรารีโอเพนซอร์สอีกมากมาย",
   "gui.dungeontrain.credits.translations.header": "การแปล",

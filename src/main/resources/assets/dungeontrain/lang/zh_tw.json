@@ -907,8 +907,6 @@
   "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
   "gui.dungeontrain.credits.team.designer": "設計與開發",
   "gui.dungeontrain.credits.team.narrative": "敘事總監",
-  "gui.dungeontrain.credits.team.based_on": "改編自原作遊戲《%s》。",
-  "gui.dungeontrain.credits.team.original_link": "itch.io 上的地牢列車",
   "gui.dungeontrain.credits.built_with.header": "建構技術",
   "gui.dungeontrain.credits.built_with.desc": "Minecraft 與 NeoForge。\nSable——移動列車與船隻的物理引擎。\n以及眾多開源函式庫。",
   "gui.dungeontrain.credits.translations.header": "翻譯",

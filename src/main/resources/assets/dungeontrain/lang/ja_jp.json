@@ -894,8 +894,6 @@
   "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
   "gui.dungeontrain.credits.team.designer": "デザイナー兼開発者",
   "gui.dungeontrain.credits.team.narrative": "ナラティブディレクター",
-  "gui.dungeontrain.credits.team.based_on": "原作ゲーム「%s」に基づく。",
-  "gui.dungeontrain.credits.team.original_link": "itch.ioのDungeon Train",
   "gui.dungeontrain.credits.built_with.header": "使用技術",
   "gui.dungeontrain.credits.built_with.desc": "Minecraft と NeoForge。\nSable — 動く列車と船の物理演算。\nそして多くのオープンソースライブラリ。",
   "gui.dungeontrain.credits.translations.header": "翻訳",

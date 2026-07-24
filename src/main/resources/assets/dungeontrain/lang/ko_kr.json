@@ -894,8 +894,6 @@
   "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
   "gui.dungeontrain.credits.team.designer": "디자이너 겸 개발자",
   "gui.dungeontrain.credits.team.narrative": "내러티브 디렉터",
-  "gui.dungeontrain.credits.team.based_on": "원작 게임 %s을(를) 바탕으로.",
-  "gui.dungeontrain.credits.team.original_link": "itch.io의 Dungeon Train",
   "gui.dungeontrain.credits.built_with.header": "사용 기술",
   "gui.dungeontrain.credits.built_with.desc": "Minecraft와 NeoForge.\nSable — 움직이는 기차와 배의 물리.\n그리고 수많은 오픈 소스 라이브러리.",
   "gui.dungeontrain.credits.translations.header": "번역",

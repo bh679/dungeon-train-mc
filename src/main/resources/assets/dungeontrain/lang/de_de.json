@@ -911,8 +911,6 @@
   "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
   "gui.dungeontrain.credits.team.designer": "Designer & Entwickler",
   "gui.dungeontrain.credits.team.narrative": "Narrativer Leiter",
-  "gui.dungeontrain.credits.team.based_on": "Basiert auf dem Originalspiel, %s.",
-  "gui.dungeontrain.credits.team.original_link": "Dungeon Train auf itch.io",
   "gui.dungeontrain.credits.built_with.header": "Gebaut mit",
   "gui.dungeontrain.credits.built_with.desc": "Minecraft & NeoForge.\nSable — die Physik für fahrende Züge und Schiffe.\nUnd viele Open-Source-Bibliotheken.",
   "gui.dungeontrain.credits.translations.header": "Übersetzungen",

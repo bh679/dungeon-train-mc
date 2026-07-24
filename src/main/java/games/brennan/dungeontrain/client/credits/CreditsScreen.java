@@ -48,10 +48,6 @@ import java.util.List;
  */
 public final class CreditsScreen extends Screen {
 
-    /** The original game this mod is a port of — a baked constant, not a rotating link. */
-    private static final String ORIGINAL_GAME_URL = "https://brennanhatton.itch.io/dungeontrain";
-    /** Brennan's itch.io profile, linked from his name in the Made-by list. */
-    private static final String BRENNAN_URL = "https://brennanhatton.itch.io";
 
     private static final int MAX_COL_W  = 360;
     private static final int SIDE_MARGIN = 40;
@@ -108,17 +104,15 @@ public final class CreditsScreen extends Screen {
         y = addCenteredWrapped(Component.translatable("gui.dungeontrain.credits.subtitle"), y, lh, COLOUR_DESC);
         y += SECTION_GAP;
 
-        // Made by — the people credited on the itch.io page, then the original-game link.
+        // Made by — the credited team.
         y = addLeft(Component.translatable("gui.dungeontrain.credits.team.header"), y, lh, COLOUR_HEADER);
         y += HEADER_GAP;
         y = addLeftWrapped(person(
-                link(Component.literal("Brennan Hatton"), BRENNAN_URL),
+                Component.literal("Brennan Hatton"),
                 Component.translatable("gui.dungeontrain.credits.team.designer")), y, lh, COLOUR_DESC);
         y = addLeftWrapped(person(
                 Component.literal("Wilson Taylor"),
                 Component.translatable("gui.dungeontrain.credits.team.narrative")), y, lh, COLOUR_DESC);
-        y = addLeftWrapped(
-                Component.translatable("gui.dungeontrain.credits.team.based_on", originalGameLink()), y, lh, COLOUR_DESC);
         y += SECTION_GAP;
 
         // Built with — static copy.
@@ -239,11 +233,6 @@ public final class CreditsScreen extends Screen {
         int percent = Math.max(1, (int) Math.round(share.fraction() * 100));
         return Component.translatable("gui.dungeontrain.credits.translations.lang_percent",
                 language, Component.literal(percent + "%"));
-    }
-
-    /** A clickable, blue, underlined link to the original itch.io game for the Created-by copy. */
-    private Component originalGameLink() {
-        return link(Component.translatable("gui.dungeontrain.credits.team.original_link"), ORIGINAL_GAME_URL);
     }
 
     /** Style {@code label} as a blue, underlined, click-to-open-URL inline link. */

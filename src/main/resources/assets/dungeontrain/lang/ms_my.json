@@ -894,8 +894,6 @@
   "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
   "gui.dungeontrain.credits.team.designer": "Pereka & Pembangun",
   "gui.dungeontrain.credits.team.narrative": "Pengarah Naratif",
-  "gui.dungeontrain.credits.team.based_on": "Berdasarkan permainan asal, %s.",
-  "gui.dungeontrain.credits.team.original_link": "Dungeon Train di itch.io",
   "gui.dungeontrain.credits.built_with.header": "Dibina dengan",
   "gui.dungeontrain.credits.built_with.desc": "Minecraft & NeoForge.\nSable — fizik kereta api dan kapal yang bergerak.\nDan banyak pustaka sumber terbuka.",
   "gui.dungeontrain.credits.translations.header": "Terjemahan",

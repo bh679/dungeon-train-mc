@@ -911,8 +911,6 @@
   "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
   "gui.dungeontrain.credits.team.designer": "Thiết kế & Phát triển",
   "gui.dungeontrain.credits.team.narrative": "Giám đốc Cốt truyện",
-  "gui.dungeontrain.credits.team.based_on": "Dựa trên trò chơi gốc, %s.",
-  "gui.dungeontrain.credits.team.original_link": "Dungeon Train trên itch.io",
   "gui.dungeontrain.credits.built_with.header": "Xây dựng với",
   "gui.dungeontrain.credits.built_with.desc": "Minecraft & NeoForge.\nSable — hệ thống vật lý cho tàu hỏa và tàu thủy chuyển động.\nVà nhiều thư viện mã nguồn mở.",
   "gui.dungeontrain.credits.translations.header": "Bản dịch",

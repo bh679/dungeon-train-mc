@@ -894,8 +894,6 @@
   "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
   "gui.dungeontrain.credits.team.designer": "Designer at Developer",
   "gui.dungeontrain.credits.team.narrative": "Direktor ng Salaysay",
-  "gui.dungeontrain.credits.team.based_on": "Batay sa orihinal na laro, %s.",
-  "gui.dungeontrain.credits.team.original_link": "Dungeon Train sa itch.io",
   "gui.dungeontrain.credits.built_with.header": "Ginawa gamit ang",
   "gui.dungeontrain.credits.built_with.desc": "Minecraft at NeoForge.\nSable — ang physics ng gumagalaw na tren at barko.\nAt maraming open-source na library.",
   "gui.dungeontrain.credits.translations.header": "Mga Salin",
