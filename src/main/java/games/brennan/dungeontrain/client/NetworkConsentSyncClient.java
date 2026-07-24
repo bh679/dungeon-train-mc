@@ -37,6 +37,15 @@ public final class NetworkConsentSyncClient {
         sendConsentIfConnected();
     }
 
+    /**
+     * Push the current DP network-consent state to the server now (e.g. after the player flips it in a
+     * settings screen mid-world), so the server-side gate updates without waiting for the next login.
+     * No-op when not connected. No-throw.
+     */
+    public static void syncNow() {
+        sendConsentIfConnected();
+    }
+
     /** Read the client's DP network consent and, if connected to a server, sync it. No-throw. */
     private static void sendConsentIfConnected() {
         try {

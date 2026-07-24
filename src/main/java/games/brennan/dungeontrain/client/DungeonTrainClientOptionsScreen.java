@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.discordpresence.client.NetworkConsentScreen;
+import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
@@ -51,6 +53,13 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                 .bounds(left, y, ROW_W, ROW_H).build());
         y += ROW_GAP;
 
+        // Master network / internet-connection switch (DP's one-time "use the internet?" consent). OFF
+        // revokes immediately; turning it ON routes through DP's informed consent screen rather than
+        // silently granting — granting network access gates leaderboard / dev chat / book share / telemetry.
+        addRenderableWidget(Button.builder(internetLabel(), b -> toggleInternet())
+                .bounds(left, y, ROW_W, ROW_H).build());
+        y += ROW_GAP;
+
         // Snapshot chat log ON/OFF.
         addRenderableWidget(CycleButton.onOffBuilder(ClientDisplayConfig.isRideSnapshotChatLogEnabled())
                 .create(left, y, ROW_W, ROW_H, Component.literal("Snapshot Chat Log"),
@@ -72,6 +81,21 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
 
     private static Component resolutionLabel(int value) {
         return Component.literal(value <= 0 ? "AUTO" : value + "p");
+    }
+
+    private static Component internetLabel() {
+        return Component.literal("Internet Connection: " + (DiscordPresenceClientConfig.isGranted() ? "ON" : "OFF"));
+    }
+
+    /** ON→OFF revokes network consent immediately (+ server re-sync); OFF→ON opens DP's informed consent screen. */
+    private void toggleInternet() {
+        if (DiscordPresenceClientConfig.isGranted()) {
+            DiscordPresenceClientConfig.setConsent(DiscordPresenceClientConfig.Consent.DENIED);
+            NetworkConsentSyncClient.syncNow();
+            rebuildWidgets(); // refresh the label to OFF
+        } else {
+            this.minecraft.setScreen(new NetworkConsentScreen(this));
+        }
     }
 
     @Override
