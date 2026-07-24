@@ -94,20 +94,21 @@ public final class RideSnapshot {
 
     /**
      * JPEG-encode this photo for sending off the client (e.g. the Discord death report's ride-photo
-     * image). Local storage (disk/gallery) stays lossless PNG; this re-encodes to JPEG only for the
-     * network hop, since JPEG runs well under the packet's 1&nbsp;MB cap at 1080p where PNG does not.
-     * Lazily reloads a released shot via {@link #texture()}. Returns {@code null} when no pixels are
-     * available or encoding fails — callers fall back to no/other image. Runs on the client thread,
-     * only on the rare "send this run's photo" event (once per death / echo encounter), not per frame.
+     * image), bounded to {@code maxBytes} so it fits the destination packet's cap. Local storage
+     * (disk/gallery) stays lossless PNG; this re-encodes to JPEG only for the network hop. The encoder
+     * steps quality down and, for a hi-res (DH+shaders/Fabulous) shot, shrinks the frame if needed to
+     * land under budget. Lazily reloads a released shot via {@link #texture()}. Returns {@code null}
+     * when no pixels are available or encoding fails — callers fall back to no/other image. Runs on the
+     * client thread, only on the rare "send this run's photo" event (once per death / echo encounter).
      */
-    public byte[] photoBytes() {
+    public byte[] photoBytes(int maxBytes) {
         try {
             NativeImage px;
             if (diskPath != null) {
                 px = RideSnapshotDisk.read(diskPath);
                 if (px == null) return null;
                 try {
-                    return SnapshotJpegEncoder.encode(px);
+                    return SnapshotJpegEncoder.encode(px, maxBytes);
                 } finally {
                     px.close();
                 }
@@ -115,7 +116,7 @@ public final class RideSnapshot {
             if (liveTexture == null) texture(); // lazy reload if the texture was released
             if (liveTexture == null) return null;
             px = liveTexture.getPixels();
-            return px == null ? null : SnapshotJpegEncoder.encode(px);
+            return px == null ? null : SnapshotJpegEncoder.encode(px, maxBytes);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Ride snapshot JPEG encode failed", e);
             return null;

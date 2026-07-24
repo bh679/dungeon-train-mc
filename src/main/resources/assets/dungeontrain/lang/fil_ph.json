@@ -885,5 +885,19 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Haligi ng Komunidad",
   "advancements.dungeontrain.editor.made_pillar.description": "I-save ang bagong pillar section variant.",
   "advancements.dungeontrain.editor.made_stair.title": "Hakbang-Hakbang",
-  "advancements.dungeontrain.editor.made_stair.description": "I-save ang bagong stair (pillar adjunct) variant."
+  "advancements.dungeontrain.editor.made_stair.description": "I-save ang bagong stair (pillar adjunct) variant.",
+  "gui.dungeontrain.credits.title": "Mga Kredito",
+  "gui.dungeontrain.credits.support_button": "Suportahan ang Developer",
+  "gui.dungeontrain.credits.button.tooltip": "Mga Kredito",
+  "gui.dungeontrain.credits.subtitle": "Ang mga taong bumubuo sa Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Gawa ni",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Designer at Developer",
+  "gui.dungeontrain.credits.team.narrative": "Direktor ng Salaysay",
+  "gui.dungeontrain.credits.translations.header": "Mga Salin",
+  "gui.dungeontrain.credits.translations.desc": "Salamat sa lahat ng nagsalin ng Dungeon Train:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "Dinisenyo at binuo ang Dungeon Train — ang mga sistema nito, ang procedural na mundo, ang gumagalaw na tren, ang editor, ang mga nilalaman ng tren, at malaking bahagi ng lore. Ito ang kanyang unang mod at modpack, bagama't naglalaro na siya ng Minecraft mula 2009. Labis siyang mahilig sa mod na ito. Kung nakausap mo ang developer, siya iyon. Abutin siya anumang oras gamit ang @dev sa loob ng laro.",
+  "gui.dungeontrain.credits.team.wilson.bio": "Sumulat at Nagdirihe ng salaysay at lore ng Dungeon Train — karamihan sa mga likas na tauhan at kuwentong matatagpuan sakay ng tren."
 }

@@ -898,5 +898,19 @@
   "advancements.dungeontrain.editor.made_pillar.title": "社群中流砥柱",
   "advancements.dungeontrain.editor.made_pillar.description": "儲存一個新的橋柱段變體。",
   "advancements.dungeontrain.editor.made_stair.title": "循序漸進",
-  "advancements.dungeontrain.editor.made_stair.description": "儲存一個新的樓梯（橋柱附屬）變體。"
+  "advancements.dungeontrain.editor.made_stair.description": "儲存一個新的樓梯（橋柱附屬）變體。",
+  "gui.dungeontrain.credits.title": "製作人員",
+  "gui.dungeontrain.credits.support_button": "支持開發者",
+  "gui.dungeontrain.credits.button.tooltip": "製作人員",
+  "gui.dungeontrain.credits.subtitle": "地牢列車背後的人。",
+  "gui.dungeontrain.credits.team.header": "製作",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "設計與開發",
+  "gui.dungeontrain.credits.team.narrative": "敘事總監",
+  "gui.dungeontrain.credits.translations.header": "翻譯",
+  "gui.dungeontrain.credits.translations.desc": "感謝每一位翻譯地牢列車的人：",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "地牢列車由他設計並打造——它的各項系統、程序生成的世界、行駛的列車、關卡編輯器、車上的內容，以及大部分背景故事。這是他的第一個模組和整合包，儘管他從 2009 年起就在玩 Minecraft。他對這個模組充滿熱情。如果你和開發者聊過，那就是他。在遊戲內隨時用 @dev 聯繫他。",
+  "gui.dungeontrain.credits.team.wilson.bio": "撰寫並執導了地牢列車的敘事與傳說——列車上大多數內建角色與故事皆出自其手。"
 }

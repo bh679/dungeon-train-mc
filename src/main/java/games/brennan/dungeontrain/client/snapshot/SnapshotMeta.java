@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.snapshot;
 import games.brennan.dungeontrain.client.ClientNetherBand;
 import games.brennan.dungeontrain.client.ClientUpsideDownBand;
 import games.brennan.dungeontrain.client.ClientVoidBand;
+import games.brennan.dungeontrain.client.GraphicsCapabilities;
 import games.brennan.dungeontrain.client.VersionHudOverlay;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -17,11 +18,13 @@ import net.minecraft.world.entity.player.Player;
  *
  * <p>Every field is best-effort: {@code biome}/{@code band} are empty strings when unknown (e.g. a
  * non-train world or before the join-time band sync), {@code difficulty}/{@code cart} default to 0
- * before the first {@code BoardingProgressPacket}. The relay treats blanks as "untagged".</p>
+ * before the first {@code BoardingProgressPacket}. The relay treats blanks as "untagged". {@code gfx}
+ * is a compact graphics-stack tag (see {@link GraphicsCapabilities#facet()}), e.g. {@code dh+shaders+fabulous};
+ * {@code shaderpack} is the active Iris/Oculus pack name (blank when none).</p>
  */
-public record SnapshotMeta(String biome, String band, int difficulty, int cart) {
+public record SnapshotMeta(String biome, String band, int difficulty, int cart, String gfx, String shaderpack) {
 
-    public static final SnapshotMeta EMPTY = new SnapshotMeta("", "", 0, 0);
+    public static final SnapshotMeta EMPTY = new SnapshotMeta("", "", 0, 0, "", "");
 
     /** The worldgen band matches the game's own music crossover: intensity ≥ this ⇒ inside the band. */
     private static final double BAND_THRESHOLD = 0.5;
@@ -40,7 +43,8 @@ public record SnapshotMeta(String biome, String band, int difficulty, int cart) 
                 band = bandAt(player.getX());
             }
             return new SnapshotMeta(biome, band,
-                    VersionHudOverlay.difficultyLevel(), VersionHudOverlay.travelledCarriageIndex());
+                    VersionHudOverlay.difficultyLevel(), VersionHudOverlay.travelledCarriageIndex(),
+                    GraphicsCapabilities.facet(), GraphicsCapabilities.shaderPackName());
         } catch (Exception e) {
             return EMPTY;
         }

@@ -885,5 +885,19 @@
   "advancements.dungeontrain.editor.made_pillar.title": "เสาหลักของชุมชน",
   "advancements.dungeontrain.editor.made_pillar.description": "บันทึกแบบส่วนเสาใหม่",
   "advancements.dungeontrain.editor.made_stair.title": "ทีละขั้น",
-  "advancements.dungeontrain.editor.made_stair.description": "บันทึกแบบบันได (ส่วนต่อขยายเสา) ใหม่"
+  "advancements.dungeontrain.editor.made_stair.description": "บันทึกแบบบันได (ส่วนต่อขยายเสา) ใหม่",
+  "gui.dungeontrain.credits.title": "เครดิต",
+  "gui.dungeontrain.credits.support_button": "สนับสนุนนักพัฒนา",
+  "gui.dungeontrain.credits.button.tooltip": "เครดิต",
+  "gui.dungeontrain.credits.subtitle": "ผู้คนเบื้องหลัง Dungeon Train",
+  "gui.dungeontrain.credits.team.header": "สร้างโดย",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "ผู้ออกแบบและนักพัฒนา",
+  "gui.dungeontrain.credits.team.narrative": "ผู้กำกับเนื้อเรื่อง",
+  "gui.dungeontrain.credits.translations.header": "การแปล",
+  "gui.dungeontrain.credits.translations.desc": "ขอบคุณทุกคนที่ช่วยแปล Dungeon Train:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "ออกแบบและสร้าง Dungeon Train — ทั้งระบบต่าง ๆ โลกที่สร้างด้วยกระบวนวิธี ขบวนรถไฟที่เคลื่อนที่ ตัวแก้ไข เนื้อหาภายในขบวนรถไฟ และเรื่องราวเบื้องหลังเป็นส่วนใหญ่ นี่คือม็อดและม็อดแพ็กแรกของเขา แม้เขาจะเล่น Minecraft มาตั้งแต่ปี 2009 เขาหลงใหลในม็อดนี้อย่างลึกซึ้ง หากคุณเคยพูดคุยกับผู้พัฒนา นั่นก็คือเขา ติดต่อเขาได้ทุกเมื่อด้วย @dev ภายในเกม",
+  "gui.dungeontrain.credits.team.wilson.bio": "เขียนและกำกับเรื่องเล่าและตำนานของ Dungeon Train — ตัวละครและเรื่องราวในตัวเกมส่วนใหญ่ที่พบบนขบวนรถไฟ"
 }

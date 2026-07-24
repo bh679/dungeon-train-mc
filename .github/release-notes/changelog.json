@@ -5618,14 +5618,66 @@
       "released_at": "2026-07-24T05:47:12Z"
     },
     {
-      "id": "crystals-ride-the-train",
+      "id": "credits-page",
       "version": "0.507.0",
-      "type": "fix",
-      "title": "End Crystals stay with the train",
-      "summary": "End Crystals placed inside a train carriage used to be left behind the moment the train started moving. They now ride along, locked smoothly to their carriage as it travels \u2014 including through curves and Nether transitions.",
+      "type": "feat",
+      "title": "New Credits page in the main menu",
+      "summary": "A book icon in the top-right of the title screen opens a Credits page \u2014 the people who made Dungeon Train, and everyone who translated it, shown in your language.",
       "highlights": [
-        "End Crystals baked into carriages ride with the train instead of being left at the spawn point",
-        "Smooth, jitter-free: the crystal is drawn from the carriage's own motion, so it stays glued to the deck"
+        "Meet the team: Brennan Hatton (Designer & Developer) and Wilson Taylor (Narrative Director), with photos and bios",
+        "Translation credits list every human translator, the languages they worked on, and how much of each they contributed",
+        "The whole page, bios included, is translated into all 19 supported languages",
+        "A 'Support the Developer' button links to the Ways-to-Help page"
+      ],
+      "pr": 835,
+      "date": "2026-07-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "graphics-aware-ride-photos",
+      "version": "0.507.0",
+      "type": "feat",
+      "title": "Sharper ride photos with shaders or Distant Horizons",
+      "summary": "When you play with Distant Horizons plus a shader pack (or Fabulous graphics), Dungeon Train now captures your death-screen ride photos at a higher resolution \u2014 up to 1440p or 2160p depending on your frame rate \u2014 instead of the standard 1080p, so those far-horizon, shader-lit vistas keep their detail. Without that combination nothing changes: photos stay at the usual resolution. Each photo also records which graphics setup it was taken with.",
+      "highlights": [
+        "Ride photos captured at up to 1440p/2160p when using Distant Horizons + shaders or Fabulous graphics",
+        "Resolution adapts to your frame rate so a busy machine isn't pushed harder",
+        "No change for standard setups \u2014 photos stay at their usual quality"
+      ],
+      "date": "2026-07-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "modpack-sodium-iris",
+      "version": "0.509.0",
+      "type": "feat",
+      "title": "Modpack now includes Sodium + Iris",
+      "summary": "The Dungeon Train modpack now bundles Sodium for a rendering-performance boost and Iris so you can drop in your own shaderpacks. Both are enabled by default; Iris ships with no shaderpack selected, so there's no performance cost until you add one. (Modpack only \u2014 the standalone mod jar is unchanged.)",
+      "highlights": [
+        "Sodium 0.8.12 enabled by default for better FPS",
+        "Iris shader loader included \u2014 add any shaderpack in the shaderpacks folder to turn on shaders",
+        "Perf-neutral out of the box: no shader cost until you enable a pack"
+      ],
+      "date": "2026-07-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dungeon-train-options-menu",
+      "version": "0.509.0",
+      "type": "feat",
+      "title": "Dungeon Train settings in the Options menu",
+      "summary": "Dungeon Train's client settings are now reachable straight from Minecraft's Options screen (both the main menu and the pause menu) via a new 'Dungeon Train\u2026' button under the FOV slider \u2014 no need to know the X-menu keybind. The screen gathers the display-scale controls (on their own Editor Settings page), an Internet Connection on/off switch, the ride-photo chat log, and a new Snapshot Max Resolution setting that caps how large your ride photos are captured (AUTO keeps the automatic 1080p\u20132160p behaviour). Every option has a hover description.",
+      "highlights": [
+        "New 'Dungeon Train\u2026' button in the Options screen (main menu + pause menu)",
+        "Snapshot Max Resolution setting caps ride-photo capture size (AUTO = automatic)",
+        "Internet Connection toggle to turn all online features on or off",
+        "Hover descriptions on every setting"
       ],
       "date": "2026-07-24",
       "released": false,

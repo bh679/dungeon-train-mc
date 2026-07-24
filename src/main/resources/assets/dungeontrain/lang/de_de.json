@@ -902,5 +902,19 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Stütze der Gemeinschaft",
   "advancements.dungeontrain.editor.made_pillar.description": "Speichere eine neue Pfeilerabschnitt-Variante.",
   "advancements.dungeontrain.editor.made_stair.title": "Schritt für Schritt",
-  "advancements.dungeontrain.editor.made_stair.description": "Speichere eine neue Treppen-Variante (Pfeiler-Ergänzung)."
+  "advancements.dungeontrain.editor.made_stair.description": "Speichere eine neue Treppen-Variante (Pfeiler-Ergänzung).",
+  "gui.dungeontrain.credits.title": "Mitwirkende",
+  "gui.dungeontrain.credits.support_button": "Unterstütze den Entwickler",
+  "gui.dungeontrain.credits.button.tooltip": "Mitwirkende",
+  "gui.dungeontrain.credits.subtitle": "Die Menschen hinter Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Erstellt von",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Designer & Entwickler",
+  "gui.dungeontrain.credits.team.narrative": "Narrativer Leiter",
+  "gui.dungeontrain.credits.translations.header": "Übersetzungen",
+  "gui.dungeontrain.credits.translations.desc": "Danke an alle, die Dungeon Train übersetzt haben:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "Hat Dungeon Train entworfen und gebaut — seine Systeme, die prozedurale Welt, den fahrenden Zug, den Editor, die Zug-Inhalte und einen Großteil der Überlieferung. Sein erster Mod und sein erstes Modpack, obwohl er seit 2009 Minecraft spielt. Er brennt zutiefst für diesen Mod. Wenn du mit dem Entwickler gesprochen hast, war er es. Erreiche ihn jederzeit mit @dev im Spiel.",
+  "gui.dungeontrain.credits.team.wilson.bio": "Hat die Erzählung und das Lore von Dungeon Train geschrieben und inszeniert — die meisten der eingebauten Charaktere und Geschichten, die man an Bord des Zuges findet."
 }

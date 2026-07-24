@@ -885,5 +885,19 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Steunpilaar van de gemeenschap",
   "advancements.dungeontrain.editor.made_pillar.description": "Sla een nieuwe pijlersectievariant op.",
   "advancements.dungeontrain.editor.made_stair.title": "Stap voor stap",
-  "advancements.dungeontrain.editor.made_stair.description": "Sla een nieuwe trapvariant (pijleraanhangsel) op."
+  "advancements.dungeontrain.editor.made_stair.description": "Sla een nieuwe trapvariant (pijleraanhangsel) op.",
+  "gui.dungeontrain.credits.title": "Credits",
+  "gui.dungeontrain.credits.support_button": "Steun de ontwikkelaar",
+  "gui.dungeontrain.credits.button.tooltip": "Credits",
+  "gui.dungeontrain.credits.subtitle": "De mensen achter Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Gemaakt door",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Ontwerper & ontwikkelaar",
+  "gui.dungeontrain.credits.team.narrative": "Verhaalregisseur",
+  "gui.dungeontrain.credits.translations.header": "Vertalingen",
+  "gui.dungeontrain.credits.translations.desc": "Dank aan iedereen die Dungeon Train heeft vertaald:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "Ontwierp en bouwde Dungeon Train — de systemen, de procedurele wereld, de rijdende trein, de editor, de treininhoud en een groot deel van de lore. Zijn eerste mod en modpack, al speelt hij Minecraft al sinds 2009. Hij is diep gepassioneerd over deze mod. Als je met de dev hebt gesproken, was hij het. Bereik hem altijd met @dev in het spel.",
+  "gui.dungeontrain.credits.team.wilson.bio": "Schreef en regisseerde het verhaal en de lore van Dungeon Train — de meeste ingebouwde personages en verhalen die je aan boord van de trein vindt."
 }

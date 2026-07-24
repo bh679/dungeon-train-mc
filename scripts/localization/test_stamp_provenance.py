@@ -62,9 +62,17 @@ def run(lang_dir, prov_dir, *extra):
     return subprocess.run(
         [sys.executable, SCRIPT, "--lang-dir", lang_dir, "--provenance-dir", prov_dir,
          "--authors-file", os.path.join(ws, "authors.json"),
-         "--credits-dir", os.path.join(ws, "credits"), *extra],
+         "--credits-dir", os.path.join(ws, "credits"),
+         # Into the temp workspace, never the real shipped file.
+         "--contributors-file", os.path.join(ws, "translation_contributors.json"), *extra],
         capture_output=True, text=True,
     )
+
+
+def read_contributors(lang_dir):
+    ws = os.path.dirname(lang_dir)
+    with open(os.path.join(ws, "translation_contributors.json"), encoding="utf-8") as f:
+        return json.load(f)
 
 
 def read(prov_dir, locale="xx_yy"):
@@ -281,6 +289,35 @@ def test_counts_stamped_into_every_matching_credit_file():
     assert proc.returncode == 0, proc.stderr
     for slug in ("xx_yy", "second-contributor"):
         assert read_credit(lang_dir, slug)["total_keys"] == 3, slug
+
+
+def test_sync_generates_translation_contributors():
+    # 老本願 (human) authored+reviewed b.key in xx_yy; Opus (ai) authored the rest.
+    lang_dir, prov_dir = workspace()
+    proc = run(lang_dir, prov_dir, "--sync", "--author", "unused")
+    assert proc.returncode == 0, proc.stderr
+    assert "regenerated translation_contributors.json" in proc.stdout
+    data = read_contributors(lang_dir)
+    assert data["contributors"] == [
+        {"name": "老本願", "languages": [{"locale": "xx_yy", "contributed": 1, "total": 3}]}
+    ]
+
+
+def test_contributors_pick_up_author_url():
+    authors = dict(AUTHORS)
+    authors["老本願"] = {"kind": "human", "url": "https://example.com/lao"}
+    lang_dir, prov_dir = workspace(authors=authors)
+    proc = run(lang_dir, prov_dir, "--sync", "--author", "unused")
+    assert proc.returncode == 0, proc.stderr
+    assert read_contributors(lang_dir)["contributors"][0]["url"] == "https://example.com/lao"
+
+
+def test_contributors_regenerate_idempotent():
+    lang_dir, prov_dir = workspace()
+    assert run(lang_dir, prov_dir, "--sync", "--author", "unused").returncode == 0
+    proc = run(lang_dir, prov_dir, "--sync", "--author", "unused")
+    assert proc.returncode == 0, proc.stderr
+    assert "regenerated translation_contributors.json" not in proc.stdout  # unchanged, not rewritten
 
 
 def test_credit_file_for_other_locale_untouched():
