@@ -76,6 +76,18 @@ public final class LocalizationCreditRegistry {
         return CREDITS.size();
     }
 
+    /**
+     * Every loaded credit across all locales, sorted by locale then name — a snapshot copy,
+     * safe to iterate off-lock. Empty when no localization resource pack is active. Surfaced
+     * for the Credits screen, which lists translators for every language rather than just the
+     * player's currently-selected one (unlike {@link #creditsFor}).
+     */
+    public static synchronized List<LocalizationCredit> allCredits() {
+        List<LocalizationCredit> out = new ArrayList<>(CREDITS.values());
+        out.sort(Comparator.comparing(LocalizationCredit::locale).thenComparing(LocalizationCredit::name));
+        return out;
+    }
+
     /** Every credit for {@code localeCode} (e.g. {@code "es_es"}), sorted by name. Empty if none. */
     public static synchronized List<LocalizationCredit> creditsFor(String localeCode) {
         if (localeCode == null || localeCode.isEmpty()) {
