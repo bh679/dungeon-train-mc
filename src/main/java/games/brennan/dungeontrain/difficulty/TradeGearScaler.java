@@ -56,7 +56,7 @@ public final class TradeGearScaler {
         boolean enchantScaled = false;
         if (Math.abs(carriageIndex) >= DungeonTrainConfig.getVillagerTradeScalingMinCarriage()) {
             int power = enchantPower(posTier, DungeonTrainConfig.getVillagerTradeScalingTiersPerStep());
-            ItemStack rescaled = rescaleEnchants(result, power, rng, registries);
+            ItemStack rescaled = rescaleEnchants(result, power, posTier, rng, registries);
             if (rescaled != null) {
                 result = rescaled;
                 enchantScaled = true;
@@ -104,7 +104,7 @@ public final class TradeGearScaler {
      * (enchanted) books. Returns the new stack, or null when the item takes no
      * enchants (leave the offer's enchant state alone).
      */
-    private static ItemStack rescaleEnchants(ItemStack result, int power,
+    private static ItemStack rescaleEnchants(ItemStack result, int power, int posTier,
                                              RandomSource rng, HolderLookup.Provider registries) {
         if (registries == null) return null;
         Optional<HolderSet.Named<Enchantment>> pool = registries
@@ -124,7 +124,11 @@ public final class TradeGearScaler {
             return null;
         }
         // enchantItem may return a different stack instance (book case) — capture it.
-        return EnchantmentHelper.enchantItem(rng, base, power, pool.get().stream());
+        ItemStack rolled = EnchantmentHelper.enchantItem(rng, base, power, pool.get().stream());
+        // Clamp to DT's progression cap (vanillaMax + posTier/10) so a cap-remover mod can't push
+        // shop gear past the villager's difficulty tier; inert without such a mod. Runs before
+        // repriceForEnchants, so trade pricing reflects the capped levels.
+        return EnchantLevelCap.clampToProgression(rolled, posTier);
     }
 
     /**

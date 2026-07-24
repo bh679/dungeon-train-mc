@@ -158,11 +158,11 @@ public final class DifficultyApplier {
         HolderLookup.Provider registries = serverLevel != null ? serverLevel.registryAccess() : null;
 
         if (armorOk) {
-            applyArmorSlot(mob, EquipmentSlot.HEAD,  tier.armor().helmet(),     tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier);
-            applyArmorSlot(mob, EquipmentSlot.CHEST, tier.armor().chestplate(), tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier);
-            applyArmorSlot(mob, EquipmentSlot.LEGS,  tier.armor().leggings(),   tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier);
-            applyArmorSlot(mob, EquipmentSlot.FEET,  tier.armor().boots(),      tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier);
-            applyWeaponSlot(mob, tier.weapon().mainhand(), tier.weapon().chance(), tier.enchant(), registries, rng, statScalingTier);
+            applyArmorSlot(mob, EquipmentSlot.HEAD,  tier.armor().helmet(),     tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
+            applyArmorSlot(mob, EquipmentSlot.CHEST, tier.armor().chestplate(), tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
+            applyArmorSlot(mob, EquipmentSlot.LEGS,  tier.armor().leggings(),   tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
+            applyArmorSlot(mob, EquipmentSlot.FEET,  tier.armor().boots(),      tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
+            applyWeaponSlot(mob, tier.weapon().mainhand(), tier.weapon().chance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
         }
 
         if (applyEffects) {
@@ -189,12 +189,13 @@ public final class DifficultyApplier {
                                        DifficultyTier.EnchantSpec enchant,
                                        HolderLookup.Provider registries,
                                        RandomSource rng,
-                                       int statScalingTier) {
+                                       int statScalingTier,
+                                       int tierIndex) {
         if (pool.isEmpty() || slotChance <= 0.0) return;
         if (!mob.getItemBySlot(slot).isEmpty()) return;
         if (rng.nextDouble() >= slotChance) return;
 
-        ItemStack stack = rollEquipment(pool, enchant, registries, rng, statScalingTier);
+        ItemStack stack = rollEquipment(pool, enchant, registries, rng, statScalingTier, tierIndex);
         if (stack == null) return;
         mob.setItemSlot(slot, stack);
         mob.setDropChance(slot, DIFFICULTY_DROP_CHANCE);
@@ -217,11 +218,12 @@ public final class DifficultyApplier {
                                         DifficultyTier.EnchantSpec enchant,
                                         HolderLookup.Provider registries,
                                         RandomSource rng,
-                                        int statScalingTier) {
+                                        int statScalingTier,
+                                        int tierIndex) {
         ItemStack current = mob.getItemBySlot(EquipmentSlot.MAINHAND);
         if (!current.isEmpty()) {
             if (isRangedWeapon(current)) {
-                maybeEnchant(current, enchant, registries, rng);
+                maybeEnchant(current, enchant, registries, rng, tierIndex);
                 mob.setItemSlot(EquipmentSlot.MAINHAND, current);
             }
             return;
@@ -229,7 +231,7 @@ public final class DifficultyApplier {
         if (pool.isEmpty() || chance <= 0.0) return;
         if (rng.nextDouble() >= chance) return;
 
-        ItemStack stack = rollEquipment(pool, enchant, registries, rng, statScalingTier);
+        ItemStack stack = rollEquipment(pool, enchant, registries, rng, statScalingTier, tierIndex);
         if (stack == null) return;
         mob.setItemSlot(EquipmentSlot.MAINHAND, stack);
         mob.setDropChance(EquipmentSlot.MAINHAND, DIFFICULTY_DROP_CHANCE);
@@ -247,7 +249,8 @@ public final class DifficultyApplier {
                                            DifficultyTier.EnchantSpec enchant,
                                            HolderLookup.Provider registries,
                                            RandomSource rng,
-                                           int statScalingTier) {
+                                           int statScalingTier,
+                                           int tierIndex) {
         DifficultyTier.WeightedItem picked = weightedPick(pool, rng);
         if (picked == null) return null;
         Item item = BuiltInRegistries.ITEM.get(picked.item());
@@ -256,7 +259,7 @@ public final class DifficultyApplier {
             return null;
         }
         ItemStack stack = new ItemStack(item);
-        maybeEnchant(stack, enchant, registries, rng);
+        maybeEnchant(stack, enchant, registries, rng, tierIndex);
         NameComposer.applyName(stack, rng);
         StatsModifier.applyStats(stack, rng,
             ItemStatLevelScaling.primaryStatBonus(stack, statScalingTier));
@@ -273,7 +276,8 @@ public final class DifficultyApplier {
     private static void maybeEnchant(ItemStack stack,
                                      DifficultyTier.EnchantSpec enchant,
                                      HolderLookup.Provider registries,
-                                     RandomSource rng) {
+                                     RandomSource rng,
+                                     int tierIndex) {
         if (enchant == null || enchant.maxLevel() <= 0 || enchant.chance() <= 0.0) return;
         if (rng.nextDouble() >= enchant.chance()) return;
         if (!stack.isEnchantable() || registries == null) return;
@@ -282,6 +286,9 @@ public final class DifficultyApplier {
                 .flatMap(reg -> reg.get(EnchantmentTags.IN_ENCHANTING_TABLE));
         if (tag.isPresent()) {
             EnchantmentHelper.enchantItem(rng, stack, enchant.maxLevel(), tag.get().stream());
+            // Clamp to DT's progression cap so a cap-remover mod can't push mob gear past the
+            // carriage's difficulty tier (vanillaMax + tier/10); inert without such a mod.
+            EnchantLevelCap.clampToProgression(stack, tierIndex);
         }
     }
 

@@ -43,6 +43,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.appearance.ArmorAppearanceRoller;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.difficulty.EnchantLevelCap;
 import games.brennan.dungeontrain.difficulty.ItemStatLevelScaling;
 import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.adventureitemstats.api.StatsModifier;
@@ -934,6 +935,11 @@ public final class ContainerContentsRoller {
                 // passed-in stack in place (every other enchantable item IS mutated in
                 // place, so this reassignment is a no-op for them but load-bearing here).
                 stack = EnchantmentHelper.enchantItem(rs, stack, level, nonTreasure.get().stream());
+                // Clamp rolled enchant levels to DT's progression cap (vanillaMax + tier/10) so a
+                // cap-remover mod can't inflate loot beyond the carriage's difficulty — inert
+                // without such a mod, since vanilla never rolls above its own max.
+                stack = EnchantLevelCap.clampToProgression(stack,
+                    DifficultyProgression.positionTier(diffIndex));
                 if (DebugFlags.logLootRolls()) {
                     LOGGER.info("[DT-ench] item={} level={} result={} enchantments={} carriageIdx={} localPos={}",
                         item, level, stack.getItem(),
