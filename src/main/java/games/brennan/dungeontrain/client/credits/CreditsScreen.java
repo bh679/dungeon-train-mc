@@ -68,9 +68,10 @@ public final class CreditsScreen extends Screen {
     /** Team photos (128×128), one card each in the Made-by section. */
     private static final int TEX = 128;
     private static final int PHOTO = 48;
-    private static final int COL_GAP = 10;
-    /** Brennan's card gets the larger share of the row. */
-    private static final int BRENNAN_PCT = 60;
+    /** Gap between a card's photo and the text beside it. */
+    private static final int PHOTO_GAP = 6;
+    /** Vertical gap between the stacked, full-width team cards. */
+    private static final int CARD_GAP = 8;
     private static final ResourceLocation BRENNAN_PHOTO =
             ResourceLocation.fromNamespaceAndPath("dungeontrain", "textures/gui/credits/brennan.png");
     private static final ResourceLocation WILSON_PHOTO =
@@ -122,21 +123,18 @@ public final class CreditsScreen extends Screen {
         y = addCenteredWrapped(Component.translatable("gui.dungeontrain.credits.subtitle"), y, lh, COLOUR_DESC);
         y += SECTION_GAP;
 
-        // Made by — two side-by-side cards: photo, name, role, bio.
+        // Made by — two full-width cards stacked, each photo-left with text beside it.
         y = addLeft(Component.translatable("gui.dungeontrain.credits.team.header"), y, lh, COLOUR_HEADER);
         y += HEADER_GAP;
-        int usableW = colW - COL_GAP;
-        int brennanW = usableW * BRENNAN_PCT / 100;
-        int wilsonW = usableW - brennanW;
-        int photo = Math.min(PHOTO, Math.min(brennanW, wilsonW));
-        int cardTop = y;
-        int brennanBottom = addTeamCard(colX, brennanW, photo, cardTop, lh, BRENNAN_PHOTO,
+        int photo = Math.min(PHOTO, colW);
+        y = addTeamCard(colX, colW, photo, y, lh, BRENNAN_PHOTO,
                 "Brennan Hatton", "gui.dungeontrain.credits.team.designer",
                 "gui.dungeontrain.credits.team.brennan.bio");
-        int wilsonBottom = addTeamCard(colX + brennanW + COL_GAP, wilsonW, photo, cardTop, lh, WILSON_PHOTO,
+        y += CARD_GAP;
+        y = addTeamCard(colX, colW, photo, y, lh, WILSON_PHOTO,
                 "Wilson Taylor", "gui.dungeontrain.credits.team.narrative",
                 "gui.dungeontrain.credits.team.wilson.bio");
-        y = Math.max(brennanBottom, wilsonBottom) + SECTION_GAP;
+        y += SECTION_GAP;
 
         // Translations — the generated, human-grouped translator list (one line per person,
         // listing every language they worked on with a %). Fully derived from the provenance
@@ -182,18 +180,21 @@ public final class CreditsScreen extends Screen {
     }
 
     /**
-     * Lay out one team card in the column at {@code x} (width {@code w}): photo on top,
-     * then name, role, and the wrapped bio. Returns the canvas Y just below the card.
+     * Lay out one full-width team card at {@code x} (width {@code w}): photo on the left,
+     * name / role / wrapped bio in the column beside it. Returns the canvas Y just below
+     * the card — the taller of the photo and the text block.
      */
     private int addTeamCard(int x, int w, int photo, int y, int lh, ResourceLocation tex,
                             String name, String roleKey, String bioKey) {
         imgs.add(new Img(tex, x, y, photo, photo));
-        int ty = y + photo + 4;
-        ty = addLineAt(Component.literal(name).getVisualOrderText(), x, ty, lh, COLOUR_HEADER);
-        ty = addLineAt(Component.translatable(roleKey).getVisualOrderText(), x, ty, lh, COLOUR_DESC);
+        int textX = x + photo + PHOTO_GAP;
+        int textW = Math.max(1, w - photo - PHOTO_GAP);
+        int ty = y;
+        ty = addLineAt(Component.literal(name).getVisualOrderText(), textX, ty, lh, COLOUR_HEADER);
+        ty = addLineAt(Component.translatable(roleKey).getVisualOrderText(), textX, ty, lh, COLOUR_DESC);
         ty += 2;
-        ty = addWrappedAt(Component.translatable(bioKey), x, w, ty, lh, COLOUR_DESC);
-        return ty;
+        ty = addWrappedAt(Component.translatable(bioKey), textX, textW, ty, lh, COLOUR_DESC);
+        return Math.max(y + photo, ty);
     }
 
     private int addCentered(Component text, int y, int lh, int colour) {
