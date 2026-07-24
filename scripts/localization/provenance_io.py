@@ -40,17 +40,21 @@ DEFAULT_AUTHORS_FILE = REPO_ROOT / "localization" / "authors.json"
 DEFAULT_CREDITS_DIR = (
     REPO_ROOT / "src" / "main" / "resources" / "assets" / "dungeontrain" / "localization_credits"
 )
+# The single generated, shipped translator-credits file (human-grouped) the Credits page reads.
+DEFAULT_CONTRIBUTORS_FILE = DEFAULT_CREDITS_DIR.parent / "translation_contributors.json"
 
 AUTHOR_KINDS = ("ai", "human")
 
 # Generated summary fields stamped into each shipped localization credit file.
 CREDIT_COUNT_FIELDS = ("total_keys", "ai_authored", "ai_unreviewed")
 
-# Generated per-contributor field: how many of this locale's keys the credit's
-# named person authored or reviewed. Only stamped when > 0 (an AI-placeholder
-# credit, whose name matches no author, carries no such field). Drives the
-# per-translator contribution % on the in-game Credits page.
-CREDIT_CONTRIB_FIELD = "contributed_keys"
+# Marker written into the generated translation-contributors file so a reader knows
+# not to hand-edit it (see build_contributors). Part of the canonical output, so the
+# shipped file and a fresh build compare equal.
+CONTRIBUTORS_NOTE = (
+    "Generated from localization/provenance + authors.json by "
+    "scripts/localization/stamp-provenance.py — do not hand-edit."
+)
 
 # The source language — dev-authored English, not a translation. Never gets a sidecar.
 SOURCE_LOCALE = "en_us"
@@ -74,23 +78,59 @@ def load_lang(path: Path) -> dict[str, str]:
     return data
 
 
+def _load_authors_raw(path: Path) -> dict:
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: expected a flat JSON object of name -> kind")
+    return data
+
+
+def _author_kind(name: str, value, path: Path) -> str:
+    """A registry entry's kind, accepting either the bare-string or the object form."""
+    if isinstance(value, str):
+        kind = value
+    elif isinstance(value, dict):
+        kind = value.get("kind")
+    else:
+        raise ValueError(
+            f"{path}: {name!r} must be a kind string or an object with a 'kind' field"
+        )
+    if kind not in AUTHOR_KINDS:
+        raise ValueError(f"{path}: {name!r} has kind {kind!r} — must be one of {AUTHOR_KINDS}")
+    return kind
+
+
 def load_authors(path: Path) -> dict[str, str]:
     """The author registry: credited name → "ai" | "human".
 
     This is what makes "how much of this locale is AI-generated without human
     review" computable — the sidecars store names, the registry classifies them
     once, and check-provenance.py enforces that every name used is registered.
+
+    An entry is either the bare kind string (``"ai"``) or an object carrying more
+    metadata (``{"kind": "human", "url": "…"}``); both normalize to name → kind here
+    so every existing caller is unaffected. See load_author_urls for the extra fields.
     """
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-    if not isinstance(data, dict):
-        raise ValueError(f"{path}: expected a flat JSON object of name -> kind")
-    for name, kind in data.items():
-        if kind not in AUTHOR_KINDS:
-            raise ValueError(
-                f"{path}: {name!r} has kind {kind!r} — must be one of {AUTHOR_KINDS}"
-            )
-    return data
+    data = _load_authors_raw(path)
+    return {name: _author_kind(name, value, path) for name, value in data.items()}
+
+
+def load_author_urls(path: Path) -> dict[str, str]:
+    """Credited name → optional profile URL, for the object-form registry entries only.
+
+    Names with no object entry (or no ``url``) are simply absent. This is the source
+    of the clickable translator links on the Credits page — provenance records who
+    translated what, but not who they are, so identity lives here.
+    """
+    urls: dict[str, str] = {}
+    for name, value in _load_authors_raw(path).items():
+        if isinstance(value, dict) and value.get("url"):
+            url = value["url"]
+            if not isinstance(url, str):
+                raise ValueError(f"{path}: {name!r} url must be a string, got {type(url).__name__}")
+            urls[name] = url
+    return urls
 
 
 def load_provenance(path: Path) -> dict:
@@ -204,6 +244,65 @@ def write_credit(path: Path, credit: dict) -> None:
     byte, so a load-modify-write round trip diffs only the changed fields.
     """
     path.write_text(json.dumps(credit, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def build_contributors(lang_dir: Path, prov_dir: Path, authors: dict[str, str],
+                       urls: dict[str, str]) -> dict:
+    """The canonical translator-credits object, derived purely from the sidecars + registry.
+
+    For every human in ``authors`` and every non-en_us locale, counts the keys that
+    human authored or reviewed (contributed_keys); a human is listed once with a
+    ``languages`` array of ``{locale, contributed, total}`` for each locale they touched.
+    Contributors are ordered by their single strongest share (desc, then name); a
+    contributor's languages by share (desc, then locale) — so the output is fully
+    deterministic and the shipped file compares equal to a fresh build.
+    """
+    humans = {name for name, kind in authors.items() if kind == "human"}
+    per_person: dict[str, list[dict]] = {}
+    for locale in locales(lang_dir):
+        prov_path = prov_dir / f"{locale}.json"
+        if not prov_path.is_file():
+            continue
+        prov = load_provenance(prov_path)
+        total = len(prov)
+        if total == 0:
+            continue
+        for name in humans:
+            contributed = contributed_keys(prov, name)
+            if contributed > 0:
+                per_person.setdefault(name, []).append(
+                    {"locale": locale, "contributed": contributed, "total": total}
+                )
+
+    def share(entry: dict) -> float:
+        return entry["contributed"] / entry["total"]
+
+    contributors = []
+    for name, langs in per_person.items():
+        langs = sorted(langs, key=lambda e: (-share(e), e["locale"]))
+        entry: dict = {"name": name}
+        if name in urls:
+            entry["url"] = urls[name]
+        entry["languages"] = langs
+        contributors.append(entry)
+    contributors.sort(key=lambda c: (-max(share(e) for e in c["languages"]), c["name"]))
+
+    return {"_note": CONTRIBUTORS_NOTE, "contributors": contributors}
+
+
+def load_contributors(path: Path) -> dict:
+    """Parse the shipped translator-credits file. Raises ValueError on a non-object root."""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: expected a JSON object")
+    return data
+
+
+def write_contributors(path: Path, data: dict) -> None:
+    """Write the translator-credits file: indent-2, raw UTF-8 (CJK names), trailing newline."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def write_provenance(path: Path, prov: dict) -> None:

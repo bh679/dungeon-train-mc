@@ -171,26 +171,29 @@ def check_credit_counts(locale: str, prov: dict, authors: dict[str, str],
                 f"{locale}: {path.name}: shipped counts ({fmt(values)}) don't match "
                 f"provenance ({fmt(expected)}) — {FIX_HINT_COUNTS}"
             )
-            continue
-
-        # Per-contributor contributed_keys: present-and-equal when the credit's name
-        # touched keys, absent when it touched none. Keeps the Credits-page % honest.
-        contrib_field = provenance_io.CREDIT_CONTRIB_FIELD
-        expected_contrib = provenance_io.contributed_keys(prov, credit.get("name", ""))
-        actual_contrib = credit.get(contrib_field)
-        if expected_contrib > 0:
-            if actual_contrib != expected_contrib:
-                errors.append(
-                    f"{locale}: {path.name}: shipped {contrib_field}={actual_contrib} doesn't "
-                    f"match provenance ({expected_contrib}) for {credit.get('name')!r} — "
-                    f"{FIX_HINT_COUNTS}"
-                )
-        elif actual_contrib is not None:
-            errors.append(
-                f"{locale}: {path.name}: {contrib_field}={actual_contrib} but {credit.get('name')!r} "
-                f"authored/reviewed no keys — remove it ({FIX_HINT_COUNTS})"
-            )
     return errors
+
+
+def check_contributors(lang_dir: Path, prov_dir: Path, authors: dict[str, str],
+                       urls: dict[str, str], contributors_file: Path) -> list[str]:
+    """Hard lockstep between the shipped translator-credits file and the sidecars.
+
+    The Credits page reads this file, so drift ships a player-visible lie (wrong names,
+    languages, or %). Rebuilt from provenance + authors.json and compared exactly; a
+    missing, unparseable, or drifted file is an error with the fix command.
+    """
+    built = provenance_io.build_contributors(lang_dir, prov_dir, authors, urls)
+    if not contributors_file.is_file():
+        return [f"{contributors_file.name}: missing generated translator-credits file — "
+                f"{FIX_HINT_COUNTS}"]
+    try:
+        shipped = provenance_io.load_contributors(contributors_file)
+    except (json.JSONDecodeError, ValueError) as exc:
+        return [f"{contributors_file.name}: unparseable — {exc} — {FIX_HINT_COUNTS}"]
+    if shipped != built:
+        return [f"{contributors_file.name}: shipped translator credits are out of date with "
+                f"the provenance data — {FIX_HINT_COUNTS}"]
+    return []
 
 
 def credits_human_reviewed(credits_dir: Path, locale: str) -> bool:
@@ -266,6 +269,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--provenance-dir", type=Path,
                         default=provenance_io.DEFAULT_PROVENANCE_DIR)
     parser.add_argument("--credits-dir", type=Path, default=provenance_io.DEFAULT_CREDITS_DIR)
+    parser.add_argument("--contributors-file", type=Path,
+                        default=provenance_io.DEFAULT_CONTRIBUTORS_FILE)
     parser.add_argument("--authors-file", type=Path, default=provenance_io.DEFAULT_AUTHORS_FILE)
     parser.add_argument("--locale", action="append",
                         help="restrict to specific locale(s); default all non-en_us")
@@ -307,6 +312,13 @@ def main(argv: list[str] | None = None) -> int:
         if not locale_errors and not registry_errors:
             # Counts computed from a structurally-broken sidecar would be noise.
             errors.extend(check_credit_counts(locale, prov, authors, args.credits_dir))
+
+    # The translator-credits file is global; only meaningful once every sidecar parses cleanly
+    # (build_contributors reads them all), so gate it on a clean run so far.
+    if not errors:
+        urls = provenance_io.load_author_urls(args.authors_file)
+        errors.extend(check_contributors(args.lang_dir, args.provenance_dir, authors, urls,
+                                         args.contributors_file))
 
     if errors:
         print("Provenance check FAILED:", file=sys.stderr)

@@ -76,18 +76,6 @@ public final class LocalizationCreditRegistry {
         return CREDITS.size();
     }
 
-    /**
-     * Every loaded credit across all locales, sorted by locale then name — a snapshot copy,
-     * safe to iterate off-lock. Empty when no localization resource pack is active. Surfaced
-     * for the Credits screen, which lists translators for every language rather than just the
-     * player's currently-selected one (unlike {@link #creditsFor}).
-     */
-    public static synchronized List<LocalizationCredit> allCredits() {
-        List<LocalizationCredit> out = new ArrayList<>(CREDITS.values());
-        out.sort(Comparator.comparing(LocalizationCredit::locale).thenComparing(LocalizationCredit::name));
-        return out;
-    }
-
     /** Every credit for {@code localeCode} (e.g. {@code "es_es"}), sorted by name. Empty if none. */
     public static synchronized List<LocalizationCredit> creditsFor(String localeCode) {
         if (localeCode == null || localeCode.isEmpty()) {
@@ -180,19 +168,8 @@ public final class LocalizationCreditRegistry {
         Optional<String> url = optionalString(root, "url");
         boolean humanReviewed = optionalBoolean(root, "human_reviewed");
         Optional<LocalizationCredit.AiCounts> aiCounts = optionalAiCounts(root);
-        Optional<Integer> contributedKeys = optionalContributedKeys(root);
 
-        return new LocalizationCredit(id, locale, name, url, humanReviewed, aiCounts, contributedKeys);
-    }
-
-    /**
-     * The generated per-contributor {@code contributed_keys} count, or empty unless present as a
-     * positive integer. Stamped only for real contributors (see {@code stamp-provenance.py}), so
-     * its presence marks a human credit; the AI-placeholder credits omit it and render no %.
-     */
-    private static Optional<Integer> optionalContributedKeys(JsonObject obj) {
-        Integer value = optionalInt(obj, "contributed_keys");
-        return (value != null && value > 0) ? Optional.of(value) : Optional.empty();
+        return new LocalizationCredit(id, locale, name, url, humanReviewed, aiCounts);
     }
 
     /**

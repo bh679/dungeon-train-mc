@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client.credits;
 
-import games.brennan.dungeontrain.client.localization.LocalizationCredit;
-import games.brennan.dungeontrain.client.localization.LocalizationCreditRegistry;
+import games.brennan.dungeontrain.client.localization.TranslationContributor;
+import games.brennan.dungeontrain.client.localization.TranslationContributorsRegistry;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.support.SupportScreen;
 import net.minecraft.Util;
@@ -21,11 +21,7 @@ import net.minecraft.util.Mth;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * The <b>Credits</b> page, opened from the title-screen book icon (see
@@ -130,28 +126,17 @@ public final class CreditsScreen extends Screen {
                 Component.translatable("gui.dungeontrain.credits.built_with.header"),
                 Component.translatable("gui.dungeontrain.credits.built_with.desc"));
 
-        // Translations — real HUMAN contributors only. A credit carries contributed_keys only
-        // when its named person authored or reviewed lines (the AI-placeholder credits don't),
-        // so that presence is the human filter. Grouped by PERSON (one line each, listing every
-        // language they worked on with a %), so someone who did two languages appears once.
-        Map<String, List<LocalizationCredit>> byPerson = new LinkedHashMap<>();
-        for (LocalizationCredit credit : LocalizationCreditRegistry.allCredits()) {
-            if (credit.contributedKeys().isPresent()) {
-                byPerson.computeIfAbsent(credit.name(), k -> new ArrayList<>()).add(credit);
-            }
-        }
-        if (!byPerson.isEmpty()) {
-            // People ordered by their single strongest contribution, descending.
-            List<Map.Entry<String, List<LocalizationCredit>>> people = new ArrayList<>(byPerson.entrySet());
-            people.sort(Comparator.comparingDouble(
-                    (Map.Entry<String, List<LocalizationCredit>> e) -> topFraction(e.getValue())).reversed());
-
+        // Translations — the generated, human-grouped translator list (one line per person,
+        // listing every language they worked on with a %). Fully derived from the provenance
+        // data at build time, so it never needs a hand-authored credit file. Skipped when empty.
+        List<TranslationContributor> contributors = TranslationContributorsRegistry.all();
+        if (!contributors.isEmpty()) {
             y = addLeft(Component.translatable("gui.dungeontrain.credits.translations.header"), y, lh, COLOUR_HEADER);
             y += HEADER_GAP;
             y = addLeftWrapped(Component.translatable("gui.dungeontrain.credits.translations.desc"), y, lh, COLOUR_DESC);
             y += DESC_GAP;
-            for (Map.Entry<String, List<LocalizationCredit>> entry : people) {
-                y = addLeftWrapped(personLine(entry.getKey(), entry.getValue()), y, lh, COLOUR_DESC);
+            for (TranslationContributor contributor : contributors) {
+                y = addLeftWrapped(personLine(contributor), y, lh, COLOUR_DESC);
             }
             y += SECTION_GAP;
         }
@@ -223,53 +208,35 @@ public final class CreditsScreen extends Screen {
         return y;
     }
 
-    /** This person's single strongest contribution fraction — orders people in the list. */
-    private static double topFraction(List<LocalizationCredit> credits) {
-        double max = 0;
-        for (LocalizationCredit c : credits) {
-            max = Math.max(max, c.contributionFraction().orElse(0));
-        }
-        return max;
-    }
-
     /**
-     * "&lt;Name&gt; — &lt;Language&gt; (P%), &lt;Language&gt; (P%)": one line per person, their
-     * languages ordered by descending contribution. The name links when any of this person's
-     * credits carries a URL.
+     * "&lt;Name&gt; — &lt;Language&gt; (P%), &lt;Language&gt; (P%)": one line per contributor, their
+     * languages in the generated (strongest-share-first) order. The name links when the
+     * contributor has a URL.
      */
-    private Component personLine(String name, List<LocalizationCredit> credits) {
-        List<LocalizationCredit> ordered = new ArrayList<>(credits);
-        ordered.sort(Comparator.comparingDouble(
-                (LocalizationCredit c) -> c.contributionFraction().orElse(0)).reversed());
-
-        Optional<String> url = ordered.stream()
-                .map(LocalizationCredit::url)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .findFirst();
-        Component nameComp = url
-                .map(u -> link(Component.literal(name), u))
-                .orElseGet(() -> Component.literal(name));
+    private Component personLine(TranslationContributor contributor) {
+        Component nameComp = contributor.url()
+                .map(u -> link(Component.literal(contributor.name()), u))
+                .orElseGet(() -> Component.literal(contributor.name()));
 
         MutableComponent langs = Component.empty();
         boolean first = true;
-        for (LocalizationCredit credit : ordered) {
+        for (TranslationContributor.LanguageShare share : contributor.languages()) {
             if (!first) {
                 langs.append(", ");
             }
-            langs.append(languagePercent(credit));
+            langs.append(languagePercent(share));
             first = false;
         }
         return Component.translatable("gui.dungeontrain.credits.translations.person_line", nameComp, langs);
     }
 
-    /** "&lt;Language&gt; (P%)" for one of a person's credits. */
-    private Component languagePercent(LocalizationCredit credit) {
-        LanguageInfo info = Minecraft.getInstance().getLanguageManager().getLanguage(credit.locale());
-        Component language = info != null ? info.toComponent() : Component.literal(credit.locale());
+    /** "&lt;Language&gt; (P%)" for one of a contributor's languages. */
+    private Component languagePercent(TranslationContributor.LanguageShare share) {
+        LanguageInfo info = Minecraft.getInstance().getLanguageManager().getLanguage(share.locale());
+        Component language = info != null ? info.toComponent() : Component.literal(share.locale());
         // At least 1% so a small-but-real contribution never reads as "0%". The "%" lives in the
         // literal (not the translation format) so no locale has to escape it.
-        int percent = Math.max(1, (int) Math.round(credit.contributionFraction().orElse(0) * 100));
+        int percent = Math.max(1, (int) Math.round(share.fraction() * 100));
         return Component.translatable("gui.dungeontrain.credits.translations.lang_percent",
                 language, Component.literal(percent + "%"));
     }
