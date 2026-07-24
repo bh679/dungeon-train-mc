@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net.relay;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.net.RideGalleryPacket;
 import org.slf4j.Logger;
 
@@ -79,6 +80,7 @@ public final class ShotUploadClient {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         field(out, boundary, "uuid", uuid);
         field(out, boundary, "ts", Long.toString(ts));
+        field(out, boundary, "version", VersionInfo.VERSION); // mod version → relay 'version' facet
         field(out, boundary, "tag", p.tag());
         field(out, boundary, "biome", p.biome());
         field(out, boundary, "band", p.band());
