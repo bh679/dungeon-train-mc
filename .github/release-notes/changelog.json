@@ -5631,9 +5631,9 @@
       ],
       "pr": 835,
       "date": "2026-07-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.512.0",
+      "released_at": "2026-07-24T14:24:19Z"
     },
     {
       "id": "graphics-aware-ride-photos",
@@ -5647,9 +5647,9 @@
         "No change for standard setups \u2014 photos stay at their usual quality"
       ],
       "date": "2026-07-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.512.0",
+      "released_at": "2026-07-24T14:24:19Z"
     },
     {
       "id": "modpack-sodium-iris",
@@ -5663,9 +5663,9 @@
         "Perf-neutral out of the box: no shader cost until you enable a pack"
       ],
       "date": "2026-07-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.512.0",
+      "released_at": "2026-07-24T14:24:19Z"
     },
     {
       "id": "dungeon-train-options-menu",
@@ -5680,9 +5680,9 @@
         "Hover descriptions on every setting"
       ],
       "date": "2026-07-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.512.0",
+      "released_at": "2026-07-24T14:24:19Z"
     },
     {
       "id": "ride-photo-user-saved",
@@ -5695,9 +5695,9 @@
         "A new Saved filter surfaces the photos players kept"
       ],
       "date": "2026-07-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.512.0",
+      "released_at": "2026-07-24T14:24:19Z"
     },
     {
       "id": "crystals-ride-the-train",
@@ -5710,9 +5710,9 @@
         "Smooth, jitter-free: the crystal is drawn from the carriage's own motion, so it stays glued to the deck"
       ],
       "date": "2026-07-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.512.0",
+      "released_at": "2026-07-24T14:24:19Z"
     },
     {
       "id": "freeplay-cheat-mod-detection",
@@ -5726,9 +5726,9 @@
         "Editor and dev commands (editor, save, reset, package, export, import) now switch a normal run to Free Play too"
       ],
       "date": "2026-07-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.512.0",
+      "released_at": "2026-07-24T14:24:19Z"
     },
     {
       "id": "loot-enchant-progression-cap",
@@ -5742,9 +5742,9 @@
         "With an enchant cap-remover mod installed, loot no longer jumps to absurd levels early \u2014 it tracks your depth"
       ],
       "date": "2026-07-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.512.0",
+      "released_at": "2026-07-24T14:24:19Z"
     }
   ]
 }
