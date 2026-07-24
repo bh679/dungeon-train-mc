@@ -540,6 +540,7 @@
   "gui.dungeontrain.support.feedback.header": "3. Feedback & Testing",
   "gui.dungeontrain.support.feedback.desc": "Share your feedback and ideas in Discord.\nTest out a mod you want in the modpack, and tell me about it.\nTell me if you live stream Dungeon Train.\nJoin the %s to get involved.",
   "gui.dungeontrain.credits.title": "Credits",
+  "gui.dungeontrain.credits.support_button": "Support the Developer",
   "gui.dungeontrain.credits.button.tooltip": "Credits",
   "gui.dungeontrain.credits.subtitle": "The people and tech behind Dungeon Train.",
   "gui.dungeontrain.credits.team.header": "Made by",

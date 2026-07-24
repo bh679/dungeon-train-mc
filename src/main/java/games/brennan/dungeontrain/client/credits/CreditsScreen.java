@@ -158,25 +158,29 @@ public final class CreditsScreen extends Screen {
 
         contentHeight = y;
 
-        // Two stacked bottom buttons: Support the Mod above Done. The viewport ends
-        // just above the Support row so scrolling content never overlaps either.
-        int doneY = this.height - 28;
-        int supportY = doneY - 24;
+        // One bottom row: "Support the Developer" beside Done. The viewport ends just
+        // above the row so scrolling content never overlaps the buttons.
+        int rowY = this.height - 28;
         viewportTop = TOP;
-        viewportBottom = supportY - 8;
+        viewportBottom = rowY - 8;
         if (viewportBottom < viewportTop) {
             viewportBottom = viewportTop;
         }
         maxScroll = Math.max(0, contentHeight - (viewportBottom - viewportTop));
         scrollY = Mth.clamp(scrollY, 0, maxScroll);
 
+        int gap = 4;
+        int supportW = 150;
+        int doneW = 100;
+        int rowX = (this.width - (supportW + gap + doneW)) / 2;
+
         // Shortcut to the "Ways to Help" hub; parent is this page so its Done returns here.
-        addRenderableWidget(new DarkTintedButton(this.width / 2 - 100, supportY, 200, 20,
-                Component.translatable("gui.dungeontrain.support.button"),
+        addRenderableWidget(new DarkTintedButton(rowX, rowY, supportW, 20,
+                Component.translatable("gui.dungeontrain.credits.support_button"),
                 b -> Minecraft.getInstance().setScreen(new SupportScreen(this))));
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-                .bounds(this.width / 2 - 100, doneY, 200, 20)
+                .bounds(rowX + supportW + gap, rowY, doneW, 20)
                 .build());
     }
 
