@@ -59,12 +59,6 @@ public final class CheatModList {
         "xray", "xraymod", "advancedxray", "xrayultimate",
         // automation / pathfinding
         "baritone",
-        // enchantment cap-breakers — let gear exceed vanilla limits (e.g. Sharpness 50), often via a
-        // survival anvil or a custom command, so they bypass the /enchant command gate. DT balances
-        // against AdventureItemStats, so this gear wrecks the tuning. (NOT Apotheosis et al. — those
-        // are legit progression content, not cap cheats.)
-        "enchantingcommands", "enchantmentlevelbreak", "betterenchants",
-        "limitlessenchantments", "noenchantmentcaplevel", "noenchantcap",
         // generic cheat utilities
         "meteor-client", "wurst", "aristois", "impact"
     );
