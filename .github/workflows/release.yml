@@ -255,6 +255,8 @@ jobs:
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)
+            sodium(optional)
+            irisshaders(optional)
             ambientsounds(optional)
             creativecore(optional)
             advancement-plaques(optional)

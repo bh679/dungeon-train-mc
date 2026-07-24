@@ -35,6 +35,8 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | AppleSkin | `248787` | **enabled** | Food saturation / hunger overlay. **Pinned** file ID. |
 | FerriteCore | `429235` | **enabled** | Memory-usage reducer (data-structure dedup) — no render/physics/chunk hooks, safe with Sable. **Pinned**. |
 | ModernFix | `790626` | **enabled** | Launch-time / world-load / memory optimiser. **Pinned**. |
+| Sodium | `394468` | **enabled** | Rendering optimiser (FPS). Must be the modern **0.8.x** line — Sable's `neoforge.mods.toml` declares Sodium **incompatible below `0.8.12-alpha.2+mc1.21.1`**; it renders sub-levels through Sodium's modern pipeline. **Pinned** (`0.8.12` stable). |
+| Iris Shaders | `455508` | **enabled** | Shader loader, shipped **on with NO shaderpack** — free until a player drops a pack into `shaderpacks/`. **Beta build** (`1.8.14-beta.1`) — the only Iris compatible with Sodium 0.8.x on 1.21.1. Requires **Sodium** (shipped enabled, above). Shaders-on-train ride on Sable's `compatibility.iris.*` mixins. **Pinned**; Iris↔Sodium version-locked. |
 | AmbientSounds | `254284` | **enabled** | Immersive ambient / environmental sound engine. Client-side audio only — no render/physics/chunk hooks, safe with Sable. Requires **CreativeCore**. **Pinned**. |
 | CreativeCore | `257814` | **enabled** (library) | AmbientSounds' required dependency. Inert library — enabled so AmbientSounds loads on a default install. **Pinned**. |
 | Advancement Plaques | `499826` | **enabled** | Replaces vanilla advancement toasts with fancy plaques. Client-side toast render only — safe with Sable. Requires **Iceberg**. **Pinned**. |
@@ -72,7 +74,9 @@ flag straight into the manifest:
   Persistence**. These are not companions: DT declares them as hard dependencies and will not
   load without them, so shipping any of them `required:false` (i.e. switched OFF) would break
   the pack outright.
-- **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, AmbientSounds,
+- **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, **Sodium**
+  (rendering perf), **Iris** (shader loader, shipped with no shaderpack so it's perf-neutral until a
+  player adds one — Iris requires Sodium, which ships enabled above, CreativeCore-style), AmbientSounds,
   Advancement Plaques (QoL / perf / cosmetic companions the pack turns on for everyone), **Kinetic
   Hosting Integration** (partner banner on the multiplayer menu), plus their inert library deps
   **CreativeCore** (AmbientSounds), **Iceberg** (Advancement Plaques) and **Lithostitched**
