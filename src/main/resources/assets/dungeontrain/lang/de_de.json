@@ -915,6 +915,6 @@
   "gui.dungeontrain.credits.translations.desc": "Danke an alle, die Dungeon Train übersetzt haben:",
   "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
   "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
-  "gui.dungeontrain.credits.team.brennan.bio": "Brennan ist ein mehrfach preisgekrönter VR-Entwickler und bringt die Fähigkeiten und Erfahrung mit, um Dungeon Train als Designer & Entwickler gerecht zu werden. Dungeon Train ist seine erste Mod und sein erstes Modpack.",
-  "gui.dungeontrain.credits.team.wilson.bio": "Ein Videospiel-Autor, der mit seinen einfallsreichen Erzählungen Millionen zum Lachen, zur Liebe und zu Tränen gebracht hat — über Spiele, Bücher, Comics und Visual Novels hinweg."
+  "gui.dungeontrain.credits.team.brennan.bio": "Hat Dungeon Train entworfen und gebaut — seine Systeme, die prozedurale Welt, den fahrenden Zug, den Editor, die Zug-Inhalte und einen Großteil der Überlieferung. Sein erster Mod und sein erstes Modpack, obwohl er seit 2009 Minecraft spielt. Er brennt zutiefst für diesen Mod. Wenn du mit dem Entwickler gesprochen hast, war er es. Erreiche ihn jederzeit mit @dev im Spiel.",
+  "gui.dungeontrain.credits.team.wilson.bio": "Hat die Erzählung und das Lore von Dungeon Train geschrieben und inszeniert — die meisten der eingebauten Charaktere und Geschichten, die man an Bord des Zuges findet."
 }
