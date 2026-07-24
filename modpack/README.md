@@ -36,7 +36,6 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | FerriteCore | `429235` | **enabled** | Memory-usage reducer (data-structure dedup) — no render/physics/chunk hooks, safe with Sable. **Pinned**. |
 | ModernFix | `790626` | **enabled** | Launch-time / world-load / memory optimiser. **Pinned**. |
 | Sodium | `394468` | **enabled** | Rendering optimiser (FPS). Must be the modern **0.8.x** line — Sable's `neoforge.mods.toml` declares Sodium **incompatible below `0.8.12-alpha.2+mc1.21.1`**; it renders sub-levels through Sodium's modern pipeline. **Pinned** (`0.8.12` stable). |
-| Iris Shaders | `455508` | **enabled** | Shader loader, shipped **on with NO shaderpack** — free until a player drops a pack into `shaderpacks/`. **Beta build** (`1.8.14-beta.1`) — the only Iris compatible with Sodium 0.8.x on 1.21.1. Requires **Sodium** (shipped enabled, above). Shaders-on-train ride on Sable's `compatibility.iris.*` mixins. **Pinned**; Iris↔Sodium version-locked. |
 | AmbientSounds | `254284` | **enabled** | Immersive ambient / environmental sound engine. Client-side audio only — no render/physics/chunk hooks, safe with Sable. Requires **CreativeCore**. **Pinned**. |
 | CreativeCore | `257814` | **enabled** (library) | AmbientSounds' required dependency. Inert library — enabled so AmbientSounds loads on a default install. **Pinned**. |
 | Advancement Plaques | `499826` | **enabled** | Replaces vanilla advancement toasts with fancy plaques. Client-side toast render only — safe with Sable. Requires **Iceberg**. **Pinned**. |
@@ -46,6 +45,7 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Jade | `324717` | off (opt-in) | Block/item tooltip HUD. **Known limitation:** tooltips don't render for blocks **on the moving train** (Sable sub-level). **Pinned** (15.10.5 — the build Sable's bundled Jade compat is verified against). |
 | Distant Horizons | `508933` | off (opt-in) | LOD render distance. **Use 2.x** — 3.0.x crashes the JVM on DT world entry. **Pinned** to a 2.x file. |
 | Tectonic | `686836` | off (opt-in) | Terrain generator. Needs **Compatible Terrain** ON in DT settings to take effect; its **Lithostitched** dependency ships enabled (above). **Pinned**. |
+| Iris Shaders | `455508` | off (opt-in) | Shader loader. Ships **off** — a player flips it on and drops a pack into `shaderpacks/`; with no pack it's perf-neutral. **Beta build** (`1.8.14-beta.1`) — the only Iris compatible with Sodium 0.8.x on 1.21.1. Requires **Sodium** (ships enabled, above, so enabling Iris stays one-click). Shaders-on-train ride on Sable's `compatibility.iris.*` mixins. **Pinned**; Iris↔Sodium version-locked. |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -75,8 +75,7 @@ flag straight into the manifest:
   load without them, so shipping any of them `required:false` (i.e. switched OFF) would break
   the pack outright.
 - **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, **Sodium**
-  (rendering perf), **Iris** (shader loader, shipped with no shaderpack so it's perf-neutral until a
-  player adds one — Iris requires Sodium, which ships enabled above, CreativeCore-style), AmbientSounds,
+  (rendering perf, works standalone), AmbientSounds,
   Advancement Plaques (QoL / perf / cosmetic companions the pack turns on for everyone), **Kinetic
   Hosting Integration** (partner banner on the multiplayer menu), plus their inert library deps
   **CreativeCore** (AmbientSounds), **Iceberg** (Advancement Plaques) and **Lithostitched**
@@ -84,7 +83,9 @@ flag straight into the manifest:
   (CreativeCore — AmbientSounds is on; Iceberg — AP is on) and so enabling an opt-in stays
   one-click (Lithostitched — Tectonic is off, but its lib is already present).
 - **Bundled but off by default (`required:false`)** — Mouse Tweaks, Jade, Distant Horizons,
-  Tectonic. Shipped in the pack so a player can flip them on with one click, but inert until they
+  Tectonic, **Iris** (shader loader — shipped so shaders are one flip + one pack drop away, but a
+  beta build, so off by default; Sodium, its dependency, ships enabled so enabling Iris stays
+  one-click). Shipped in the pack so a player can flip them on with one click, but inert until they
   do. (DT itself + Sable are hardcoded `required:true` in the builder.)
 
 ## Declared dependencies (CurseForge "Relations")
