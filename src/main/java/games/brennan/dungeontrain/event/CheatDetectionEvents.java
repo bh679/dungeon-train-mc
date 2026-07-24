@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.AisDataIntegrity;
+import games.brennan.dungeontrain.cheat.CheatModIntegrity;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
@@ -144,6 +145,20 @@ public final class CheatDetectionEvents {
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/fixaisconfig"))
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                         Component.literal("/fixaisconfig")))));
+        }
+        if (CheatModIntegrity.isSessionFreePlay()) {
+            // Session-only cheat-mod taint (parallel to the AIS block above): markCheated never
+            // runs in this path, so apply the effect and explain WHY here, once per login — naming
+            // the detected mod(s). No one-click fix: a mod can't be uninstalled from in-game.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player,
+                Component.translatable("chat.dungeontrain.free_play.cause.cheat_mod"));
+            player.sendSystemMessage(Component.translatable(
+                    "chat.dungeontrain.free_play.cheat_mods",
+                    String.join(", ", CheatModIntegrity.detected()))
+                .withStyle(ChatFormatting.GRAY));
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.cheat_mods_fix")
+                .withStyle(ChatFormatting.GRAY));
         }
         if (RunIntegrity.isPermanentlyCheated(player)) {
             RunIntegrity.applyFreePlayEffect(player); // re-apply across relog

@@ -5713,6 +5713,38 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "freeplay-cheat-mod-detection",
+      "version": "0.512.0",
+      "type": "feat",
+      "title": "Known cheat mods now switch the world to Free Play",
+      "summary": "Dungeon Train's balance and global stats assume a level playing field. Installing a known cheat mod (x-ray, automation/cheat clients, and similar) now runs the world in Free Play for the session \u2014 advancements and stats don't count toward your profile while the mod is present, the same way changed Adventure Item Stats settings already do. Removing the mod and restarting restores normal play. The known-mod list also updates online, so newly-flagged mods are recognised without a mod update.",
+      "highlights": [
+        "Worlds with a known cheat mod installed run in Free Play (session-only \u2014 remove the mod to restore normal play)",
+        "The join notice names exactly which cheat mod was detected",
+        "Editor and dev commands (editor, save, reset, package, export, import) now switch a normal run to Free Play too"
+      ],
+      "date": "2026-07-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "loot-enchant-progression-cap",
+      "version": "0.512.0",
+      "type": "feat",
+      "title": "Loot enchant levels now scale with how far you've travelled",
+      "summary": "Naturally-spawned enchanted gear \u2014 chest loot, mob equipment and villager trades \u2014 is now capped at an enchant level that rises with the carriage difficulty: vanilla levels early on, climbing by one every ten difficulty tiers. This keeps enchant power in line with your progress even when an enchantment cap-remover mod is installed. Without such a mod nothing changes, since loot never rolls above vanilla levels anyway.",
+      "highlights": [
+        "Early-game loot stays at vanilla enchant levels; the ceiling rises the deeper you travel",
+        "Applies to chest loot, mob gear and villager trades alike",
+        "With an enchant cap-remover mod installed, loot no longer jumps to absurd levels early \u2014 it tracks your depth"
+      ],
+      "date": "2026-07-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

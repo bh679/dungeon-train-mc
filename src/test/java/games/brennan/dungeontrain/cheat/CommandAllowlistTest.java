@@ -83,18 +83,24 @@ class CommandAllowlistTest {
     }
 
     @Test
-    @DisplayName("Debug + editor-authoring DT commands are allowed")
-    void debugAndEditorAllowed() {
+    @DisplayName("Debug DT commands are allowed")
+    void debugAllowed() {
         assertFalse(CommandAllowlist.taints("dungeontrain debug scan"));
         assertFalse(CommandAllowlist.taints("dungeontrain debug wireframes all on"));
         assertFalse(CommandAllowlist.taints("dt debug reroll foo"));
-        assertFalse(CommandAllowlist.taints("dungeontrain editor"));
-        assertFalse(CommandAllowlist.taints("dungeontrain editor enter cargo"));
-        assertFalse(CommandAllowlist.taints("dungeontrain save default"));
-        assertFalse(CommandAllowlist.taints("dungeontrain reset"));
-        assertFalse(CommandAllowlist.taints("dungeontrain package list"));
-        assertFalse(CommandAllowlist.taints("dungeontrain export"));
-        assertFalse(CommandAllowlist.taints("dungeontrain import"));
+    }
+
+    @Test
+    @DisplayName("Editor/dev DT commands taint (editor, save, reset, package, editor export/import)")
+    void editorDevSubsTaint() {
+        assertTrue(CommandAllowlist.taints("dungeontrain editor"));
+        assertTrue(CommandAllowlist.taints("dungeontrain editor enter cargo"));
+        assertTrue(CommandAllowlist.taints("dungeontrain save default"));
+        assertTrue(CommandAllowlist.taints("dungeontrain reset"));
+        assertTrue(CommandAllowlist.taints("dungeontrain package list"));
+        assertTrue(CommandAllowlist.taints("dungeontrain editor export"));
+        assertTrue(CommandAllowlist.taints("dungeontrain editor import"));
+        assertTrue(CommandAllowlist.taints("dt save all"));          // alias
     }
 
     @Test

@@ -14,12 +14,12 @@ import java.util.Set;
  *
  * <p>Allowed (clean):
  * <ul>
- *   <li>Dungeon Train: {@code cinematic} (on-rails intro replay), {@code debug},
- *       and the editor-authoring roots ({@code editor}, {@code save},
- *       {@code reset}, {@code package}, {@code export}, {@code import}), plus the
- *       read-only {@code narrative list} / {@code narrative progress}. Note
- *       {@code cinematographer} is a free-fly spectator camera and is
- *       <b>not</b> exempt.</li>
+ *   <li>Dungeon Train: {@code cinematic} (on-rails intro replay) and {@code debug},
+ *       plus the read-only {@code narrative list} / {@code narrative progress}. The
+ *       editor-authoring commands ({@code editor}, {@code save}, {@code reset},
+ *       {@code package}, {@code export}, {@code import}) are dev tools and
+ *       <b>taint</b> — as does {@code cinematographer} (a free-fly spectator
+ *       camera).</li>
  *   <li>Vanilla permission-0 social/info: {@code help}, {@code me},
  *       {@code msg}/{@code tell}/{@code w}, {@code teammsg}/{@code tm},
  *       {@code trigger}, {@code list}.</li>
@@ -36,9 +36,16 @@ public final class CommandAllowlist {
 
     private static final Set<String> DT_ROOTS = Set.of("dungeontrain", "dt");
 
-    /** Dungeon Train subcommands that don't taint a run. */
-    private static final Set<String> DT_ALLOWED_SUBS = Set.of(
-        "cinematic", "debug", "editor", "save", "reset", "package", "export", "import");
+    /**
+     * Dungeon Train subcommands that don't taint a run. Deliberately minimal: only the on-rails
+     * {@code cinematic} intro replay and the read-only {@code debug} tooling. The editor/authoring
+     * commands ({@code editor}, {@code save}, {@code reset}, {@code package}, and the
+     * {@code export}/{@code import} nested under {@code editor}) are <b>not</b> here — they are
+     * dev/authoring tools, so running one taints the run. In practice authoring happens in creative
+     * (already Free Play), so the editor UI's own commands early-return in
+     * {@code CheatDetectionEvents.onCommand}; the taint only bites when one is run from a clean run.
+     */
+    private static final Set<String> DT_ALLOWED_SUBS = Set.of("cinematic", "debug");
 
     /** Read-only {@code narrative} subcommands (the rest of the tree taints). */
     private static final Set<String> NARRATIVE_READONLY = Set.of("list", "progress");
@@ -84,7 +91,7 @@ public final class CommandAllowlist {
                 String n = parts.length > 2 ? parts[2].toLowerCase(Locale.ROOT) : "";
                 return NARRATIVE_READONLY.contains(n);
             }
-            return false; // cinematographer, spawn, speed, carriages, tracks, narrative give/reset/…
+            return false; // editor/save/reset/package, cinematographer, spawn, speed, carriages, tracks, narrative give/reset/…
         }
         if (root.equals("kill")) return sub.isEmpty(); // bare /kill (self) only; /kill @e taints
         return ALLOWED_ROOTS.contains(root);

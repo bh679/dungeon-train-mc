@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.CheatModListFetcher;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
@@ -85,6 +86,10 @@ public final class TitleScreenLayoutHandler {
         // anonymous relay GET so Discord/Patreon/payment/affiliate links stay current on
         // shipped jars, baked fallbacks when offline.
         OfficialLinks.ensureFetched();
+        // Warm the cheat-mod list overlay the same way: one anonymous relay GET so the detection
+        // list stays current on shipped jars, baked ∪ disk-cache when offline. (Also refreshed at
+        // server boot for dedicated servers, which have no title screen.)
+        CheatModListFetcher.ensureFetched();
         LauncherDetector.source();
         event.addListener(new VersionStatusButton(4, 4));
 
