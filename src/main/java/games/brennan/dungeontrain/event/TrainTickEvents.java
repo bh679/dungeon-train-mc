@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageFootprint;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
+import games.brennan.dungeontrain.train.TrainStaticContentsCarrier;
 import games.brennan.dungeontrain.train.Trains;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -289,6 +290,14 @@ public final class TrainTickEvents {
         // so it reacts promptly to players/mobs crossing the freeze boundary. Stacks with the substep
         // tuner above. See PhysicsFreezeController.
         PhysicsFreezeController.reconcile(level, trainsById);
+
+        // Re-anchor static carriage-contents entities (End Crystals, paintings, item frames) that
+        // Sable's move-driven carry never binds, so they ride the train instead of being left at
+        // their spawn coordinate. Runs after the freeze reconcile so a parked carriage's settled
+        // pose is the one we read (a stationary carriage re-anchor is a harmless no-op). Walks its
+        // own small registry — effectively free when no such decor exists. See
+        // TrainStaticContentsCarrier.
+        TrainStaticContentsCarrier.onLevelTick(level);
 
         // Steady-state MSPT sample every MSPT_LOG_PERIOD_TICKS. Unlike the
         // [stuck.timing] line below (which measures only THIS handler's train work
