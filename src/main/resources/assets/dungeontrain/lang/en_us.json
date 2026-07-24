@@ -549,7 +549,7 @@
   "gui.dungeontrain.credits.team.based_on": "Based on the original game, %s.",
   "gui.dungeontrain.credits.team.original_link": "Dungeon Train on itch.io",
   "gui.dungeontrain.credits.built_with.header": "Built with",
-  "gui.dungeontrain.credits.built_with.desc": "Minecraft & NeoForge.\nSable — the moving train and ship physics.\nDiscord Presence and open-source libraries.",
+  "gui.dungeontrain.credits.built_with.desc": "Minecraft & NeoForge.\nSable — the moving train and ship physics.\nAnd many open-source libraries.",
   "gui.dungeontrain.credits.translations.header": "Translations",
   "gui.dungeontrain.credits.translations.desc": "Thank you to everyone who translated Dungeon Train:",
   "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
