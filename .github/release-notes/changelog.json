@@ -5650,6 +5650,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "modpack-sodium-iris",
+      "version": "0.509.0",
+      "type": "feat",
+      "title": "Modpack now includes Sodium + Iris",
+      "summary": "The Dungeon Train modpack now bundles Sodium for a rendering-performance boost and Iris so you can drop in your own shaderpacks. Both are enabled by default; Iris ships with no shaderpack selected, so there's no performance cost until you add one. (Modpack only \u2014 the standalone mod jar is unchanged.)",
+      "highlights": [
+        "Sodium 0.8.12 enabled by default for better FPS",
+        "Iris shader loader included \u2014 add any shaderpack in the shaderpacks folder to turn on shaders",
+        "Perf-neutral out of the box: no shader cost until you enable a pack"
+      ],
+      "date": "2026-07-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
