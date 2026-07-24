@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "47";
+    public static final String PROTOCOL_VERSION = "48";
 
     private DungeonTrainNet() {}
 
@@ -56,6 +56,10 @@ public final class DungeonTrainNet {
         registrar.playToServer(ManualSpawnRequestPacket.TYPE, ManualSpawnRequestPacket.STREAM_CODEC, ManualSpawnRequestPacket::handle);
         registrar.playToClient(DebugFlagsPacket.TYPE, DebugFlagsPacket.STREAM_CODEC, DebugFlagsPacket::handle);
         registrar.playToClient(BoardingProgressPacket.TYPE, BoardingProgressPacket.STREAM_CODEC, BoardingProgressPacket::handle);
+        // Carried static contents entities (End Crystals / paintings / item frames): server → client
+        // hands the entity its constant plot coordinate so the client positions it from the carriage's
+        // own synced sub-level pose (phase-locked, no shimmer). See TrainStaticContentsCarrier.
+        registrar.playToClient(CarriedStaticEntityPacket.TYPE, CarriedStaticEntityPacket.STREAM_CODEC, CarriedStaticEntityPacket::handle);
 
         registrar.playToServer(ContainerHotkeyPacket.TYPE, ContainerHotkeyPacket.STREAM_CODEC, ContainerHotkeyPacket::handle);
         registrar.playToServer(ContainerContentsMenuTogglePacket.TYPE, ContainerContentsMenuTogglePacket.STREAM_CODEC, ContainerContentsMenuTogglePacket::handle);
