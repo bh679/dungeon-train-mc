@@ -898,6 +898,6 @@
   "gui.dungeontrain.credits.translations.desc": "Merci à toutes les personnes qui ont traduit Dungeon Train :",
   "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
   "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
-  "gui.dungeontrain.credits.team.brennan.bio": "A conçu et créé Dungeon Train — ses systèmes, son monde procédural, son train en marche et une grande partie du lore. Son premier mod et son premier modpack. Il est profondément passionné par le jeu, et si tu as parlé au développeur, c'était lui. Contacte-le à tout moment avec @dev en jeu.",
+  "gui.dungeontrain.credits.team.brennan.bio": "A conçu et bâti Dungeon Train — ses systèmes, son monde procédural, son train en marche et une grande partie du lore. Sa première mod et son premier modpack, bien qu'il joue à Minecraft depuis 2009. Il est profondément passionné par le jeu, et si tu as parlé au développeur, c'était lui. Contacte-le à tout moment avec @dev en jeu.",
   "gui.dungeontrain.credits.team.wilson.bio": "A écrit et réalisé la narration et le lore de Dungeon Train — la plupart des personnages et histoires intégrés que l'on trouve à bord du train."
 }

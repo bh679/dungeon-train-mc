@@ -898,6 +898,6 @@
   "gui.dungeontrain.credits.translations.desc": "ขอบคุณทุกคนที่ช่วยแปล Dungeon Train:",
   "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
   "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
-  "gui.dungeontrain.credits.team.brennan.bio": "ออกแบบและสร้าง Dungeon Train — ทั้งระบบ โลกเชิงกระบวนวิธี ขบวนรถไฟที่เคลื่อนที่ และตำนานส่วนใหญ่ของมัน นี่คือ mod และ modpack แรกของเขา เขาหลงใหลในเกมนี้อย่างลึกซึ้ง และหากคุณเคยพูดคุยกับนักพัฒนา นั่นแหละคือเขา ติดต่อเขาได้ทุกเมื่อด้วย @dev ในเกม",
+  "gui.dungeontrain.credits.team.brennan.bio": "ออกแบบและสร้าง Dungeon Train — ทั้งระบบ โลกที่สร้างตามกระบวนวิธี ขบวนรถไฟที่เคลื่อนที่ และตำนานส่วนใหญ่ของมัน นี่คือม็อดและ modpack แรกของเขา แม้ว่าเขาจะเล่น Minecraft มาตั้งแต่ปี 2009 เขาหลงใหลในเกมนี้อย่างลึกซึ้ง และหากคุณเคยพูดคุยกับนักพัฒนา นั่นก็คือเขา ติดต่อเขาได้ทุกเมื่อด้วย @dev ในเกม",
   "gui.dungeontrain.credits.team.wilson.bio": "เขียนและกำกับเรื่องเล่าและตำนานของ Dungeon Train — ตัวละครและเรื่องราวในตัวเกมส่วนใหญ่ที่พบบนขบวนรถไฟ"
 }
