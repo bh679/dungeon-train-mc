@@ -171,6 +171,25 @@ def check_credit_counts(locale: str, prov: dict, authors: dict[str, str],
                 f"{locale}: {path.name}: shipped counts ({fmt(values)}) don't match "
                 f"provenance ({fmt(expected)}) — {FIX_HINT_COUNTS}"
             )
+            continue
+
+        # Per-contributor contributed_keys: present-and-equal when the credit's name
+        # touched keys, absent when it touched none. Keeps the Credits-page % honest.
+        contrib_field = provenance_io.CREDIT_CONTRIB_FIELD
+        expected_contrib = provenance_io.contributed_keys(prov, credit.get("name", ""))
+        actual_contrib = credit.get(contrib_field)
+        if expected_contrib > 0:
+            if actual_contrib != expected_contrib:
+                errors.append(
+                    f"{locale}: {path.name}: shipped {contrib_field}={actual_contrib} doesn't "
+                    f"match provenance ({expected_contrib}) for {credit.get('name')!r} — "
+                    f"{FIX_HINT_COUNTS}"
+                )
+        elif actual_contrib is not None:
+            errors.append(
+                f"{locale}: {path.name}: {contrib_field}={actual_contrib} but {credit.get('name')!r} "
+                f"authored/reviewed no keys — remove it ({FIX_HINT_COUNTS})"
+            )
     return errors
 
 

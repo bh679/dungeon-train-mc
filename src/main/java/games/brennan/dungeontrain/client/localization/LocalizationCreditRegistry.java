@@ -180,8 +180,19 @@ public final class LocalizationCreditRegistry {
         Optional<String> url = optionalString(root, "url");
         boolean humanReviewed = optionalBoolean(root, "human_reviewed");
         Optional<LocalizationCredit.AiCounts> aiCounts = optionalAiCounts(root);
+        Optional<Integer> contributedKeys = optionalContributedKeys(root);
 
-        return new LocalizationCredit(id, locale, name, url, humanReviewed, aiCounts);
+        return new LocalizationCredit(id, locale, name, url, humanReviewed, aiCounts, contributedKeys);
+    }
+
+    /**
+     * The generated per-contributor {@code contributed_keys} count, or empty unless present as a
+     * positive integer. Stamped only for real contributors (see {@code stamp-provenance.py}), so
+     * its presence marks a human credit; the AI-placeholder credits omit it and render no %.
+     */
+    private static Optional<Integer> optionalContributedKeys(JsonObject obj) {
+        Integer value = optionalInt(obj, "contributed_keys");
+        return (value != null && value > 0) ? Optional.of(value) : Optional.empty();
     }
 
     /**

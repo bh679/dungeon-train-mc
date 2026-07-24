@@ -46,6 +46,12 @@ AUTHOR_KINDS = ("ai", "human")
 # Generated summary fields stamped into each shipped localization credit file.
 CREDIT_COUNT_FIELDS = ("total_keys", "ai_authored", "ai_unreviewed")
 
+# Generated per-contributor field: how many of this locale's keys the credit's
+# named person authored or reviewed. Only stamped when > 0 (an AI-placeholder
+# credit, whose name matches no author, carries no such field). Drives the
+# per-translator contribution % on the in-game Credits page.
+CREDIT_CONTRIB_FIELD = "contributed_keys"
+
 # The source language — dev-authored English, not a translation. Never gets a sidecar.
 SOURCE_LOCALE = "en_us"
 
@@ -141,6 +147,25 @@ def ai_counts(prov: dict, authors: dict[str, str]) -> tuple[int, int, int]:
             if not entry.get("reviewer"):
                 unrev += 1
     return len(prov), ai, unrev
+
+
+def contributed_keys(prov: dict, name: str) -> int:
+    """How many of ``prov``'s keys ``name`` authored or reviewed.
+
+    A key counts once whether the person is its author, its reviewer, or both —
+    this is the "how much of the translation did they touch" measure behind the
+    per-translator contribution % on the Credits page. Tolerant of shape errors
+    (skips non-dict entries), like ai_counts.
+    """
+    if not name:
+        return 0
+    n = 0
+    for entry in prov.values():
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("author") == name or entry.get("reviewer") == name:
+            n += 1
+    return n
 
 
 def load_credit(path: Path) -> dict:

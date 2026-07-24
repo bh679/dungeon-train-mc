@@ -21,7 +21,10 @@ import net.minecraft.util.Mth;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The <b>Credits</b> page, opened from the title-screen book icon (see
@@ -126,18 +129,22 @@ public final class CreditsScreen extends Screen {
                 Component.translatable("gui.dungeontrain.credits.built_with.header"),
                 Component.translatable("gui.dungeontrain.credits.built_with.desc"));
 
-        // Translations — HUMAN contributors only (human_reviewed). The AI-placeholder credits
-        // (name = "AI without human review") are filtered out; section skipped when none remain.
-        List<LocalizationCredit> credits = LocalizationCreditRegistry.allCredits().stream()
-                .filter(LocalizationCredit::humanReviewed)
-                .toList();
-        if (!credits.isEmpty()) {
+        // Translations — real HUMAN contributors only. A credit carries contributed_keys only
+        // when its named person authored or reviewed lines (the AI-placeholder credits don't),
+        // so that presence is the human filter. Grouped by language, one line each; skipped when none.
+        Map<String, List<LocalizationCredit>> byLocale = new LinkedHashMap<>();
+        for (LocalizationCredit credit : LocalizationCreditRegistry.allCredits()) {
+            if (credit.contributedKeys().isPresent()) {
+                byLocale.computeIfAbsent(credit.locale(), k -> new ArrayList<>()).add(credit);
+            }
+        }
+        if (!byLocale.isEmpty()) {
             y = addLeft(Component.translatable("gui.dungeontrain.credits.translations.header"), y, lh, COLOUR_HEADER);
             y += HEADER_GAP;
             y = addLeftWrapped(Component.translatable("gui.dungeontrain.credits.translations.desc"), y, lh, COLOUR_DESC);
             y += DESC_GAP;
-            for (LocalizationCredit credit : credits) {
-                y = addLeftWrapped(translationEntry(credit), y, lh, COLOUR_DESC);
+            for (Map.Entry<String, List<LocalizationCredit>> entry : byLocale.entrySet()) {
+                y = addLeftWrapped(languageLine(entry.getKey(), entry.getValue()), y, lh, COLOUR_DESC);
             }
             y += SECTION_GAP;
         }
@@ -205,14 +212,40 @@ public final class CreditsScreen extends Screen {
         return y;
     }
 
-    /** "&lt;Language&gt; — &lt;name&gt;", the name a clickable link when the credit carries a URL. */
-    private Component translationEntry(LocalizationCredit credit) {
-        LanguageInfo info = Minecraft.getInstance().getLanguageManager().getLanguage(credit.locale());
-        Component language = info != null ? info.toComponent() : Component.literal(credit.locale());
+    /**
+     * "&lt;Language&gt; — &lt;Name&gt; (P%), &lt;Name&gt; (P%)": one line per language, contributors
+     * ordered by descending contribution, each name a clickable link when the credit has a URL.
+     */
+    private Component languageLine(String locale, List<LocalizationCredit> credits) {
+        LanguageInfo info = Minecraft.getInstance().getLanguageManager().getLanguage(locale);
+        Component language = info != null ? info.toComponent() : Component.literal(locale);
+
+        List<LocalizationCredit> ordered = new ArrayList<>(credits);
+        ordered.sort(Comparator.comparingDouble(
+                (LocalizationCredit c) -> c.contributionFraction().orElse(0)).reversed());
+
+        MutableComponent people = Component.empty();
+        boolean first = true;
+        for (LocalizationCredit credit : ordered) {
+            if (!first) {
+                people.append(", ");
+            }
+            people.append(contributor(credit));
+            first = false;
+        }
+        return Component.translatable("gui.dungeontrain.credits.translations.lang_line", language, people);
+    }
+
+    /** "&lt;Name&gt; (P%)" for one contributor; the name links when the credit carries a URL. */
+    private Component contributor(LocalizationCredit credit) {
         Component name = credit.url()
                 .map(url -> link(Component.literal(credit.name()), url))
                 .orElseGet(() -> Component.literal(credit.name()));
-        return Component.translatable("gui.dungeontrain.credits.translations.entry", language, name);
+        // At least 1% so a small-but-real contribution never reads as "0%". The "%" lives in the
+        // literal (not the translation format) so no locale has to escape it.
+        int percent = Math.max(1, (int) Math.round(credit.contributionFraction().orElse(0) * 100));
+        return Component.translatable("gui.dungeontrain.credits.translations.contributor",
+                name, Component.literal(percent + "%"));
     }
 
     /** A clickable, blue, underlined link to the original itch.io game for the Created-by copy. */

@@ -90,20 +90,32 @@ def stamp_locale(prov: dict, targets: list[str], author: str | None,
 
 def refresh_credit_counts(locale: str, prov: dict, authors: dict[str, str],
                           credits_dir: Path) -> list[Path]:
-    """Stamp the generated AI-count fields into every credit file for ``locale``.
+    """Stamp the generated count fields into every credit file for ``locale``.
 
-    Writes only when a file's counts would actually change (so untouched files stay
+    The locale-wide AI counts (total_keys / ai_authored / ai_unreviewed) are the
+    same for every file; ``contributed_keys`` is per-file, derived from the credit's
+    own ``name`` — present only when that person touched at least one key (so an
+    AI-placeholder credit, whose name matches no author, carries no such field).
+
+    Writes only when a file's fields would actually change (so untouched files stay
     byte-identical); returns the written paths. A locale with no credit file is a
     silent no-op — the ring is simply absent in game.
     """
+    contrib_field = provenance_io.CREDIT_CONTRIB_FIELD
     counts = dict(zip(provenance_io.CREDIT_COUNT_FIELDS, provenance_io.ai_counts(prov, authors)))
     written: list[Path] = []
     for path in provenance_io.credit_paths_for_locale(credits_dir, locale):
         credit = provenance_io.load_credit(path)
-        if all(credit.get(field) == value for field, value in counts.items()):
-            continue
+        contributed = provenance_io.contributed_keys(prov, credit.get("name", ""))
         # New fields append after the hand-edited ones; existing counts update in place.
-        provenance_io.write_credit(path, {**credit, **counts})
+        updated = {**credit, **counts}
+        if contributed > 0:
+            updated[contrib_field] = contributed
+        else:
+            updated.pop(contrib_field, None)  # never a contributor, or no longer one
+        if updated == credit:
+            continue
+        provenance_io.write_credit(path, updated)
         written.append(path)
     return written
 
