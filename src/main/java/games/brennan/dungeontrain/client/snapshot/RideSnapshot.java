@@ -32,6 +32,7 @@ public final class RideSnapshot {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private final SnapshotTag tag;
+    private final SnapshotMeta meta;
     private final int width;
     private final int height;
     private final long createdTick;
@@ -44,10 +45,11 @@ public final class RideSnapshot {
 
     /** Live (in-memory) capture: keeps the {@link DynamicTexture} so its pixels can be flushed later. */
     public RideSnapshot(DynamicTexture texture, ResourceLocation textureId,
-                        SnapshotTag tag, int width, int height, long createdTick) {
+                        SnapshotTag tag, SnapshotMeta meta, int width, int height, long createdTick) {
         this.liveTexture = texture;
         this.textureId = textureId;
         this.tag = tag;
+        this.meta = meta == null ? SnapshotMeta.EMPTY : meta;
         this.width = width;
         this.height = height;
         this.createdTick = createdTick;
@@ -55,10 +57,13 @@ public final class RideSnapshot {
 
     /** Id-only capture (no live texture handle) — used by tests and any caller that won't flush. */
     public RideSnapshot(ResourceLocation textureId, SnapshotTag tag, int width, int height, long createdTick) {
-        this(null, textureId, tag, width, height, createdTick);
+        this(null, textureId, tag, SnapshotMeta.EMPTY, width, height, createdTick);
     }
 
     public SnapshotTag tag() { return tag; }
+
+    /** Per-photo context (biome/band/difficulty/cart) sampled at capture; never null. */
+    public SnapshotMeta meta() { return meta; }
     public int width() { return width; }
     public int height() { return height; }
     public long createdTick() { return createdTick; }

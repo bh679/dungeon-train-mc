@@ -9,12 +9,14 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathPhotoPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.RideGalleryPacket;
 import games.brennan.dungeontrain.client.sound.TrainEngineSound;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundAssigner;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundPainter;
 import games.brennan.dungeontrain.client.snapshot.RideGalleryScreen;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshot;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshotGallery;
+import games.brennan.dungeontrain.client.snapshot.SnapshotMeta;
 import games.brennan.dungeontrain.client.snapshot.SnapshotTag;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
@@ -43,6 +45,7 @@ import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -212,6 +215,7 @@ public final class NarrativeDeathScreen extends Screen {
     private EditBox commentBox;
     private boolean opened = false;
     private boolean photoSent = false;
+    private boolean gallerySent = false;
 
     // Transition state. transStartMs == 0 means "settled, nothing animating".
     private long transStartMs = 0L;
@@ -296,6 +300,7 @@ public final class NarrativeDeathScreen extends Screen {
         if (currentPage < 0) currentPage = 0;
         assignBackgrounds();
         maybeSendRidePhoto();
+        maybeSendRideGallery();
         lastSurveyCount = SurveyClientState.questions().size();
         gearAdvScroll = 0;
         commentBox = null;
@@ -359,6 +364,31 @@ public final class NarrativeDeathScreen extends Screen {
         RideSnapshot fall = bgFor(0); // page 0 is FALL, assigned a SCENIC shot
         byte[] jpeg = fall != null ? fall.photoBytes() : null;
         DungeonTrainNet.sendToServer(new DeathPhotoPacket(jpeg != null ? jpeg : new byte[0]));
+    }
+
+    /**
+     * Once per death, upload the full tagged death-screen gallery to the relay's Photos page
+     * ({@link RideGalleryPacket} → the server's {@code ShotUploadClient}). This is the whole set of
+     * photos shown across the death pages — deduped by identity, since the assigner reuses a shot when
+     * there are more pages than photos — each carrying its {@code SnapshotTag} and the biome/band/
+     * difficulty/cart sampled at capture. Separate from {@link #maybeSendRidePhoto()} (the single
+     * Discord-embed photo). Inherits the ride-snapshot config gate: {@link #assignBackgrounds()}
+     * leaves {@code pageBackgrounds} empty when snapshots are off, so this sends nothing then.
+     */
+    private void maybeSendRideGallery() {
+        if (gallerySent) return;
+        gallerySent = true;
+        Set<RideSnapshot> seen = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+        List<RideGalleryPacket.Photo> photos = new ArrayList<>();
+        for (RideSnapshot s : pageBackgrounds) {
+            if (s == null || !seen.add(s)) continue; // skip nulls + reused-across-pages duplicates
+            byte[] jpeg = s.photoBytes();
+            if (jpeg == null || jpeg.length == 0) continue;
+            SnapshotMeta m = s.meta();
+            String tag = s.tag() != null ? s.tag().name() : "";
+            photos.add(new RideGalleryPacket.Photo(tag, m.biome(), m.band(), m.difficulty(), m.cart(), jpeg));
+        }
+        if (!photos.isEmpty()) DungeonTrainNet.sendToServer(new RideGalleryPacket(photos));
     }
 
     @Override

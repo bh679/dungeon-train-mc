@@ -96,6 +96,9 @@ public final class DungeonTrainNet {
         registrar.playToClient(DeathStatsPacket.TYPE, DeathStatsPacket.STREAM_CODEC, DeathStatsPacket::handle);
         // Scenic ride photo for the top-level death report, client → server when the death screen opens.
         registrar.playToServer(DeathPhotoPacket.TYPE, DeathPhotoPacket.STREAM_CODEC, DeathPhotoPacket::handle);
+        // Full tagged ride-photo gallery, client → server when the death screen opens; the server
+        // archives every photo (+ its facets) to the relay's Photos page via ShotUploadClient.
+        registrar.playToServer(RideGalleryPacket.TYPE, RideGalleryPacket.STREAM_CODEC, RideGalleryPacket::handle);
         // Bug-report logs: client → server when the player reports a bug on the death-screen survey;
         // archived under logs/<version>/<user>/ and posted as Discord attachments to the feedback feed.
         registrar.playToServer(BugReportLogsPacket.TYPE, BugReportLogsPacket.STREAM_CODEC, BugReportLogsPacket::handle);
