@@ -51,6 +51,17 @@ fraction of the ring's circumference is `ai_unreviewed / total_keys`. Refreshed 
 hand. Third-party packs may omit them — a credit without valid counts simply renders no ring.
 When several credits carry counts for one locale, the set with the greatest `total_keys` wins.
 
+## The Credits page is separate (and fully generated)
+
+The in-game **Credits** page's translator list does **not** read these files. It reads a single
+generated file, `assets/dungeontrain/translation_contributors.json`, built from the repo-side
+provenance sidecars + `localization/authors.json` by `scripts/localization/stamp-provenance.py`
+(hard-validated by `check-provenance.py`). Every human in the provenance data is credited there
+automatically with their languages and contribution %, so **you never hand-author a file for the
+Credits page** — add the translator to `authors.json` (`name → {"kind":"human","url":"…"}`) and it
+appears. These `localization_credits/*.json` files still drive the per-language main-menu
+"Localized by …" label and the AI ring/logo described below.
+
 ## Where it shows up
 
 Nothing shows on the main menu unless a player has `locale` selected as their current game

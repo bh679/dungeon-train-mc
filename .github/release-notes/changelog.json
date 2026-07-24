@@ -5618,6 +5618,24 @@
       "released_at": "2026-07-24T05:47:12Z"
     },
     {
+      "id": "credits-page",
+      "version": "0.507.0",
+      "type": "feat",
+      "title": "New Credits page in the main menu",
+      "summary": "A book icon in the top-right of the title screen opens a Credits page \u2014 the people who made Dungeon Train, and everyone who translated it, shown in your language.",
+      "highlights": [
+        "Meet the team: Brennan Hatton (Designer & Developer) and Wilson Taylor (Narrative Director), with photos and bios",
+        "Translation credits list every human translator, the languages they worked on, and how much of each they contributed",
+        "The whole page, bios included, is translated into all 19 supported languages",
+        "A 'Support the Developer' button links to the Ways-to-Help page"
+      ],
+      "pr": 835,
+      "date": "2026-07-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "graphics-aware-ride-photos",
       "version": "0.507.0",
       "type": "feat",

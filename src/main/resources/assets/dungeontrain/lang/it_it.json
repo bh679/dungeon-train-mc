@@ -902,5 +902,19 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Pilastro della Comunità",
   "advancements.dungeontrain.editor.made_pillar.description": "Salva una nuova variante di sezione di pilastro.",
   "advancements.dungeontrain.editor.made_stair.title": "Passo Dopo Passo",
-  "advancements.dungeontrain.editor.made_stair.description": "Salva una nuova variante di scala (annessa al pilastro)."
+  "advancements.dungeontrain.editor.made_stair.description": "Salva una nuova variante di scala (annessa al pilastro).",
+  "gui.dungeontrain.credits.title": "Crediti",
+  "gui.dungeontrain.credits.support_button": "Sostieni lo sviluppatore",
+  "gui.dungeontrain.credits.button.tooltip": "Crediti",
+  "gui.dungeontrain.credits.subtitle": "Le persone dietro Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Realizzato da",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Designer e sviluppatore",
+  "gui.dungeontrain.credits.team.narrative": "Direttore narrativo",
+  "gui.dungeontrain.credits.translations.header": "Traduzioni",
+  "gui.dungeontrain.credits.translations.desc": "Grazie a tutti coloro che hanno tradotto Dungeon Train:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "Brennan è uno sviluppatore VR pluripremiato, e porta le competenze e l'esperienza per rendere giustizia a Dungeon Train come suo Designer e sviluppatore. Dungeon Train è il suo primo mod e modpack.",
+  "gui.dungeontrain.credits.team.wilson.bio": "Uno sceneggiatore di videogiochi che ha regalato risate, romanticismo e lacrime a milioni di persone con le sue narrazioni inventive, spaziando tra giochi, libri, fumetti e visual novel."
 }

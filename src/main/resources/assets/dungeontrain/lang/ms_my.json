@@ -885,5 +885,19 @@
   "advancements.dungeontrain.editor.made_pillar.title": "Tiang Masyarakat",
   "advancements.dungeontrain.editor.made_pillar.description": "Simpan varian bahagian tiang baharu.",
   "advancements.dungeontrain.editor.made_stair.title": "Selangkah Demi Selangkah",
-  "advancements.dungeontrain.editor.made_stair.description": "Simpan varian tangga (tambahan tiang) baharu."
+  "advancements.dungeontrain.editor.made_stair.description": "Simpan varian tangga (tambahan tiang) baharu.",
+  "gui.dungeontrain.credits.title": "Kredit",
+  "gui.dungeontrain.credits.support_button": "Sokong Pembangun",
+  "gui.dungeontrain.credits.button.tooltip": "Kredit",
+  "gui.dungeontrain.credits.subtitle": "Orang di sebalik Dungeon Train.",
+  "gui.dungeontrain.credits.team.header": "Dibuat oleh",
+  "gui.dungeontrain.credits.team.person": "%1$s — %2$s",
+  "gui.dungeontrain.credits.team.designer": "Pereka & Pembangun",
+  "gui.dungeontrain.credits.team.narrative": "Pengarah Naratif",
+  "gui.dungeontrain.credits.translations.header": "Terjemahan",
+  "gui.dungeontrain.credits.translations.desc": "Terima kasih kepada semua yang menterjemahkan Dungeon Train:",
+  "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
+  "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
+  "gui.dungeontrain.credits.team.brennan.bio": "Brennan ialah pembangun VR pemenang pelbagai anugerah, membawa kemahiran dan pengalaman untuk menjayakan Dungeon Train sebagai Pereka & Pembangunnya. Dungeon Train ialah mod dan modpack pertamanya.",
+  "gui.dungeontrain.credits.team.wilson.bio": "Seorang penulis video game yang telah membawa gelak tawa, kisah cinta, dan air mata kepada jutaan orang menerusi naratifnya yang penuh kreativiti — merangkumi permainan, buku, komik, dan novel visual."
 }
