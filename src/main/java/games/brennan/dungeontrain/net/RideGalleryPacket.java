@@ -23,7 +23,7 @@ import java.util.List;
 public record RideGalleryPacket(List<Photo> photos) implements CustomPacketPayload {
 
     /** One tagged photo: facets (empty strings / 0 when unknown) + JPEG bytes. */
-    public record Photo(String tag, String biome, String band, int difficulty, int cart, String gfx, byte[] jpeg) {}
+    public record Photo(String tag, String biome, String band, int difficulty, int cart, String gfx, String shaderpack, byte[] jpeg) {}
 
     /** Per-photo JPEG cap the codec enforces (RideSnapshot#photoBytes keeps real shots well under). */
     private static final int MAX_JPEG = 2 * 1024 * 1024;
@@ -48,6 +48,7 @@ public record RideGalleryPacket(List<Photo> photos) implements CustomPacketPaylo
             buf.writeVarInt(ph.difficulty());
             buf.writeVarInt(ph.cart());
             buf.writeUtf(ph.gfx() == null ? "" : ph.gfx());
+            buf.writeUtf(ph.shaderpack() == null ? "" : ph.shaderpack());
             buf.writeByteArray(ph.jpeg());
         }
     }
@@ -62,8 +63,9 @@ public record RideGalleryPacket(List<Photo> photos) implements CustomPacketPaylo
             int difficulty = buf.readVarInt();
             int cart = buf.readVarInt();
             String gfx = buf.readUtf(MAX_STR);
+            String shaderpack = buf.readUtf(MAX_STR);
             byte[] jpeg = buf.readByteArray(MAX_JPEG);
-            photos.add(new Photo(tag, biome, band, difficulty, cart, gfx, jpeg));
+            photos.add(new Photo(tag, biome, band, difficulty, cart, gfx, shaderpack, jpeg));
         }
         return new RideGalleryPacket(List.copyOf(photos));
     }

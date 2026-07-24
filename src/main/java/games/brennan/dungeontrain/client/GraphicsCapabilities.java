@@ -44,6 +44,7 @@ public final class GraphicsCapabilities {
     private static volatile boolean irisResolved = false;
     private static Object irisApiInstance;
     private static Method isShaderPackInUse;
+    private static Method getCurrentPackName;
 
     private GraphicsCapabilities() {}
 
@@ -67,6 +68,21 @@ public final class GraphicsCapabilities {
             return v instanceof Boolean b && b;
         } catch (Throwable t) {
             return false;
+        }
+    }
+
+    /**
+     * The active Iris/Oculus shaderpack's name (e.g. {@code "ComplementaryReimagined"}), or {@code ""}
+     * when no pack is active or Iris is absent. Best-effort reflective read of {@code getCurrentPackName()}.
+     */
+    public static String shaderPackName() {
+        try {
+            resolveIris();
+            if (irisApiInstance == null || getCurrentPackName == null || !shaderPackActive()) return "";
+            Object v = getCurrentPackName.invoke(irisApiInstance);
+            return v instanceof String s ? s : "";
+        } catch (Throwable t) {
+            return "";
         }
     }
 
@@ -127,6 +143,11 @@ public final class GraphicsCapabilities {
                 Method inUse = api.getMethod("isShaderPackInUse");
                 irisApiInstance = instance;
                 isShaderPackInUse = inUse;
+                try {
+                    getCurrentPackName = api.getMethod("getCurrentPackName");
+                } catch (NoSuchMethodException noName) {
+                    // Older Iris API without the pack-name getter — pack name simply stays blank.
+                }
             } catch (ClassNotFoundException notLoaded) {
                 // Iris/Oculus not installed — normal; stay silent and treat shaders as inactive.
             } catch (Throwable t) {

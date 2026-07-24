@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.StringWidget;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -41,25 +42,35 @@ public final class DungeonTrainEditorSettingsScreen extends Screen {
         int cx = this.width / 2;
         int y = this.height / 3;
 
-        y = scaleRow(cx, y, "All Displays", ClientDisplayConfig::getAllScale, ClientDisplayConfig::setAllScale);
-        y = scaleRow(cx, y, "Worldspace", ClientDisplayConfig::getWorldspaceChannel, ClientDisplayConfig::setWorldspaceChannel);
-        y = scaleRow(cx, y, "HUD", ClientDisplayConfig::getHudChannel, ClientDisplayConfig::setHudChannel);
+        y = scaleRow(cx, y, "All Displays", "Master multiplier applied on top of both the Worldspace and HUD scales.",
+                ClientDisplayConfig::getAllScale, ClientDisplayConfig::setAllScale);
+        y = scaleRow(cx, y, "Worldspace", "Scale for the X-menu, editor menus and in-world debug labels.",
+                ClientDisplayConfig::getWorldspaceChannel, ClientDisplayConfig::setWorldspaceChannel);
+        y = scaleRow(cx, y, "HUD", "Scale for the top-left version line and the editor status bar.",
+                ClientDisplayConfig::getHudChannel, ClientDisplayConfig::setHudChannel);
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(cx - 100, y + 6, 200, ROW_H).build());
     }
 
     /** A {@code [label: value] [-] [+]} row for one display-scale channel; returns the next row's y. */
-    private int scaleRow(int cx, int y, String name, DoubleSupplier get, DoubleConsumer set) {
+    private int scaleRow(int cx, int y, String name, String description, DoubleSupplier get, DoubleConsumer set) {
         int left = cx - ROW_W / 2;
-        addRenderableWidget(new StringWidget(left, y, ROW_W - 2 * (STEP_W + GAP), ROW_H,
-                scaleLabel(name, get.getAsDouble()), this.font));
-        addRenderableWidget(Button.builder(Component.literal("-"),
+        Tooltip tip = Tooltip.create(Component.literal(description));
+        StringWidget label = new StringWidget(left, y, ROW_W - 2 * (STEP_W + GAP), ROW_H,
+                scaleLabel(name, get.getAsDouble()), this.font);
+        label.setTooltip(tip);
+        addRenderableWidget(label);
+        Button minus = Button.builder(Component.literal("-"),
                         b -> { set.accept(get.getAsDouble() - ClientDisplayConfig.STEP); rebuildWidgets(); })
-                .bounds(left + ROW_W - 2 * STEP_W - GAP, y, STEP_W, ROW_H).build());
-        addRenderableWidget(Button.builder(Component.literal("+"),
+                .bounds(left + ROW_W - 2 * STEP_W - GAP, y, STEP_W, ROW_H).build();
+        minus.setTooltip(tip);
+        addRenderableWidget(minus);
+        Button plus = Button.builder(Component.literal("+"),
                         b -> { set.accept(get.getAsDouble() + ClientDisplayConfig.STEP); rebuildWidgets(); })
-                .bounds(left + ROW_W - STEP_W, y, STEP_W, ROW_H).build());
+                .bounds(left + ROW_W - STEP_W, y, STEP_W, ROW_H).build();
+        plus.setTooltip(tip);
+        addRenderableWidget(plus);
         return y + ROW_GAP;
     }
 

@@ -5,6 +5,7 @@ import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -50,20 +51,23 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
         // Editor / display-scale settings live on their own sub-screen.
         addRenderableWidget(Button.builder(Component.literal("Editor Settings…"),
                         b -> this.minecraft.setScreen(new DungeonTrainEditorSettingsScreen(this)))
-                .bounds(left, y, ROW_W, ROW_H).build());
+                .bounds(left, y, ROW_W, ROW_H).build())
+                .setTooltip(tip("Display scale for Dungeon Train's in-world menus, HUD and debug labels."));
         y += ROW_GAP;
 
         // Master network / internet-connection switch (DP's one-time "use the internet?" consent). OFF
         // revokes immediately; turning it ON routes through DP's informed consent screen rather than
         // silently granting — granting network access gates leaderboard / dev chat / book share / telemetry.
         addRenderableWidget(Button.builder(internetLabel(), b -> toggleInternet())
-                .bounds(left, y, ROW_W, ROW_H).build());
+                .bounds(left, y, ROW_W, ROW_H).build())
+                .setTooltip(tip("Master switch for online features (leaderboard, developer chat, community books, telemetry). OFF disables all network use; ON opens the consent screen."));
         y += ROW_GAP;
 
         // Snapshot chat log ON/OFF.
         addRenderableWidget(CycleButton.onOffBuilder(ClientDisplayConfig.isRideSnapshotChatLogEnabled())
                 .create(left, y, ROW_W, ROW_H, Component.literal("Snapshot Chat Log"),
-                        (btn, on) -> ClientDisplayConfig.setRideSnapshotChatLog(on)));
+                        (btn, on) -> ClientDisplayConfig.setRideSnapshotChatLog(on)))
+                .setTooltip(tip("Print a chat line each time a ride photo is auto-captured, showing its tag and reason. A debug aid; off by default."));
         y += ROW_GAP;
 
         // Snapshot max resolution ceiling (0 = AUTO).
@@ -72,7 +76,8 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                 .withValues(RESOLUTION_VALUES)
                 .withInitialValue(RESOLUTION_VALUES.contains(currentRes) ? currentRes : 0)
                 .create(left, y, ROW_W, ROW_H, Component.literal("Snapshot Max Resolution"),
-                        (btn, value) -> ClientDisplayConfig.setRideSnapshotMaxResolution(value)));
+                        (btn, value) -> ClientDisplayConfig.setRideSnapshotMaxResolution(value)))
+                .setTooltip(tip("Upper limit for ride-photo capture resolution. AUTO uses 1080p, rising to 1440p/2160p with Distant Horizons + shaders or Fabulous graphics."));
         y += ROW_GAP;
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
@@ -81,6 +86,11 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
 
     private static Component resolutionLabel(int value) {
         return Component.literal(value <= 0 ? "AUTO" : value + "p");
+    }
+
+    /** A word-wrapping hover tooltip from plain text. */
+    private static Tooltip tip(String text) {
+        return Tooltip.create(Component.literal(text));
     }
 
     private static Component internetLabel() {

@@ -388,7 +388,7 @@ public final class NarrativeDeathScreen extends Screen {
             if (jpeg == null || jpeg.length == 0) continue;
             SnapshotMeta m = s.meta();
             String tag = s.tag() != null ? s.tag().name() : "";
-            photos.add(new RideGalleryPacket.Photo(tag, m.biome(), m.band(), m.difficulty(), m.cart(), m.gfx(), jpeg));
+            photos.add(new RideGalleryPacket.Photo(tag, m.biome(), m.band(), m.difficulty(), m.cart(), m.gfx(), m.shaderpack(), jpeg));
         }
         if (!photos.isEmpty()) DungeonTrainNet.sendToServer(new RideGalleryPacket(photos));
     }
