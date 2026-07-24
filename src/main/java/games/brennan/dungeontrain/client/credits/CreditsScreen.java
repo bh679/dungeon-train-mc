@@ -67,7 +67,9 @@ public final class CreditsScreen extends Screen {
 
     /** Team photos (128×128), one card each in the Made-by section. */
     private static final int TEX = 128;
-    private static final int PHOTO = 48;
+    /** Lead creator (Brennan) gets a large photo; the secondary credit (Wilson) a small one. */
+    private static final int PHOTO_LEAD = 72;
+    private static final int PHOTO_SUB = 32;
     /** Gap between a card's photo and the text beside it. */
     private static final int PHOTO_GAP = 6;
     /** Vertical gap between the stacked, full-width team cards. */
@@ -123,15 +125,14 @@ public final class CreditsScreen extends Screen {
         y = addCenteredWrapped(Component.translatable("gui.dungeontrain.credits.subtitle"), y, lh, COLOUR_DESC);
         y += SECTION_GAP;
 
-        // Made by — two full-width cards stacked, each photo-left with text beside it.
+        // Made by — Brennan as the large lead card, Wilson as a small secondary credit below.
         y = addLeft(Component.translatable("gui.dungeontrain.credits.team.header"), y, lh, COLOUR_HEADER);
         y += HEADER_GAP;
-        int photo = Math.min(PHOTO, colW);
-        y = addTeamCard(colX, colW, photo, y, lh, BRENNAN_PHOTO,
+        y = addTeamCard(colX, colW, Math.min(PHOTO_LEAD, colW), y, lh, BRENNAN_PHOTO,
                 "Brennan Hatton", "gui.dungeontrain.credits.team.designer",
                 "gui.dungeontrain.credits.team.brennan.bio");
         y += CARD_GAP;
-        y = addTeamCard(colX, colW, photo, y, lh, WILSON_PHOTO,
+        y = addTeamCard(colX, colW, Math.min(PHOTO_SUB, colW), y, lh, WILSON_PHOTO,
                 "Wilson Taylor", "gui.dungeontrain.credits.team.narrative",
                 "gui.dungeontrain.credits.team.wilson.bio");
         y += SECTION_GAP;
