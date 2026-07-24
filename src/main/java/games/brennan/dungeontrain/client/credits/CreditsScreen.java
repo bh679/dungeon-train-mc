@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client.credits;
 
 import games.brennan.dungeontrain.client.localization.LocalizationCredit;
 import games.brennan.dungeontrain.client.localization.LocalizationCreditRegistry;
+import games.brennan.dungeontrain.client.menu.DarkTintedButton;
+import games.brennan.dungeontrain.client.support.SupportScreen;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -48,6 +50,8 @@ public final class CreditsScreen extends Screen {
 
     /** The original game this mod is a port of — a baked constant, not a rotating link. */
     private static final String ORIGINAL_GAME_URL = "https://brennanhatton.itch.io/dungeontrain";
+    /** Brennan's itch.io profile, linked from his name in the Made-by list. */
+    private static final String BRENNAN_URL = "https://brennanhatton.itch.io";
 
     private static final int MAX_COL_W  = 360;
     private static final int SIDE_MARGIN = 40;
@@ -104,18 +108,29 @@ public final class CreditsScreen extends Screen {
         y = addCenteredWrapped(Component.translatable("gui.dungeontrain.credits.subtitle"), y, lh, COLOUR_DESC);
         y += SECTION_GAP;
 
-        // Created by — with the inline itch.io link spliced into the copy.
-        y = addSection(y, lh,
-                Component.translatable("gui.dungeontrain.credits.created_by.header"),
-                Component.translatable("gui.dungeontrain.credits.created_by.desc", originalGameLink()));
+        // Made by — the people credited on the itch.io page, then the original-game link.
+        y = addLeft(Component.translatable("gui.dungeontrain.credits.team.header"), y, lh, COLOUR_HEADER);
+        y += HEADER_GAP;
+        y = addLeftWrapped(person(
+                link(Component.literal("Brennan Hatton"), BRENNAN_URL),
+                Component.translatable("gui.dungeontrain.credits.team.designer")), y, lh, COLOUR_DESC);
+        y = addLeftWrapped(person(
+                Component.literal("Wilson Taylor"),
+                Component.translatable("gui.dungeontrain.credits.team.narrative")), y, lh, COLOUR_DESC);
+        y = addLeftWrapped(
+                Component.translatable("gui.dungeontrain.credits.team.based_on", originalGameLink()), y, lh, COLOUR_DESC);
+        y += SECTION_GAP;
 
         // Built with — static copy.
         y = addSection(y, lh,
                 Component.translatable("gui.dungeontrain.credits.built_with.header"),
                 Component.translatable("gui.dungeontrain.credits.built_with.desc"));
 
-        // Translations — one line per loaded credit; skipped entirely when none.
-        List<LocalizationCredit> credits = LocalizationCreditRegistry.allCredits();
+        // Translations — HUMAN contributors only (human_reviewed). The AI-placeholder credits
+        // (name = "AI without human review") are filtered out; section skipped when none remain.
+        List<LocalizationCredit> credits = LocalizationCreditRegistry.allCredits().stream()
+                .filter(LocalizationCredit::humanReviewed)
+                .toList();
         if (!credits.isEmpty()) {
             y = addLeft(Component.translatable("gui.dungeontrain.credits.translations.header"), y, lh, COLOUR_HEADER);
             y += HEADER_GAP;
@@ -129,19 +144,31 @@ public final class CreditsScreen extends Screen {
 
         contentHeight = y;
 
-        // Viewport spans from TOP down to just above the Done button.
+        // Two stacked bottom buttons: Support the Mod above Done. The viewport ends
+        // just above the Support row so scrolling content never overlaps either.
         int doneY = this.height - 28;
+        int supportY = doneY - 24;
         viewportTop = TOP;
-        viewportBottom = doneY - 8;
+        viewportBottom = supportY - 8;
         if (viewportBottom < viewportTop) {
             viewportBottom = viewportTop;
         }
         maxScroll = Math.max(0, contentHeight - (viewportBottom - viewportTop));
         scrollY = Mth.clamp(scrollY, 0, maxScroll);
 
+        // Shortcut to the "Ways to Help" hub; parent is this page so its Done returns here.
+        addRenderableWidget(new DarkTintedButton(this.width / 2 - 100, supportY, 200, 20,
+                Component.translatable("gui.dungeontrain.support.button"),
+                b -> Minecraft.getInstance().setScreen(new SupportScreen(this))));
+
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(this.width / 2 - 100, doneY, 200, 20)
                 .build());
+    }
+
+    /** "&lt;name&gt; — &lt;role&gt;" for the Made-by list; the name may be an inline link. */
+    private static Component person(Component name, Component role) {
+        return Component.translatable("gui.dungeontrain.credits.team.person", name, role);
     }
 
     /** Header text + wrapped description, returning the canvas Y just below the section. */
@@ -190,7 +217,7 @@ public final class CreditsScreen extends Screen {
 
     /** A clickable, blue, underlined link to the original itch.io game for the Created-by copy. */
     private Component originalGameLink() {
-        return link(Component.translatable("gui.dungeontrain.credits.created_by.original_link"), ORIGINAL_GAME_URL);
+        return link(Component.translatable("gui.dungeontrain.credits.team.original_link"), ORIGINAL_GAME_URL);
     }
 
     /** Style {@code label} as a blue, underlined, click-to-open-URL inline link. */
