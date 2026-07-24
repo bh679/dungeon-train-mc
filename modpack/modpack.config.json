@@ -19,7 +19,7 @@
     { "name": "FerriteCore", "slug": "ferritecore", "project_id": 429235, "file_id": 7524151, "required": true, "modrinth_project": "ferrite-core", "modrinth_version": "x7kQWVju" },
     { "name": "ModernFix", "slug": "modernfix", "project_id": 790626, "file_id": 8255560, "required": true, "modrinth_project": "modernfix", "modrinth_version": "KcU1Mn0I" },
     { "name": "Sodium", "slug": "sodium", "project_id": 394468, "file_id": 8382328, "required": true, "modrinth_project": "sodium", "modrinth_version": "S3DUMfBo" },
-    { "name": "Iris Shaders", "slug": "irisshaders", "project_id": 455508, "file_id": 8242804, "required": false, "modrinth_project": "iris", "modrinth_version": "KduFYu4t" },
+    { "name": "Iris Shaders", "slug": "irisshaders", "project_id": 455508, "file_id": 8242804, "required": true, "modrinth_project": "iris", "modrinth_version": "KduFYu4t" },
     { "name": "AmbientSounds", "slug": "ambientsounds", "project_id": 254284, "file_id": 8043019, "required": true, "modrinth_project": "ambientsounds", "modrinth_version": "RZyxhsqY" },
     { "name": "CreativeCore", "slug": "creativecore", "project_id": 257814, "file_id": 8190065, "required": true, "modrinth_project": "creativecore", "modrinth_version": "nLLornod" },
     { "name": "Advancement Plaques", "slug": "advancement-plaques", "project_id": 499826, "file_id": 5905995, "required": true, "modrinth_project": "advancement-plaques", "modrinth_version": "OWylG33I" },
