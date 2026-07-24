@@ -5603,6 +5603,19 @@
       "released": true,
       "released_in": "v0.504.0",
       "released_at": "2026-07-23T14:27:08Z"
+    },
+    {
+      "id": "death-photo-gallery-archive",
+      "version": "0.505.0",
+      "type": "chore",
+      "title": "Archive tagged death-screen photos to the operator dashboard",
+      "summary": "Behind the scenes: the ride photos already shown on the death screen are now saved to the developers' data dashboard, each tagged with its moment (scenic/combat/gear/lore/social), biome, world band, difficulty, and cart. Operator tooling only \u2014 no in-game change.",
+      "highlights": [],
+      "pr": 832,
+      "date": "2026-07-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
