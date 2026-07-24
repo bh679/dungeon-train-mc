@@ -5634,6 +5634,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "graphics-aware-ride-photos",
+      "version": "0.507.0",
+      "type": "feat",
+      "title": "Sharper ride photos with shaders or Distant Horizons",
+      "summary": "When you play with Distant Horizons plus a shader pack (or Fabulous graphics), Dungeon Train now captures your death-screen ride photos at a higher resolution \u2014 up to 1440p or 2160p depending on your frame rate \u2014 instead of the standard 1080p, so those far-horizon, shader-lit vistas keep their detail. Without that combination nothing changes: photos stay at the usual resolution. Each photo also records which graphics setup it was taken with.",
+      "highlights": [
+        "Ride photos captured at up to 1440p/2160p when using Distant Horizons + shaders or Fabulous graphics",
+        "Resolution adapts to your frame rate so a busy machine isn't pushed harder",
+        "No change for standard setups \u2014 photos stay at their usual quality"
+      ],
+      "date": "2026-07-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

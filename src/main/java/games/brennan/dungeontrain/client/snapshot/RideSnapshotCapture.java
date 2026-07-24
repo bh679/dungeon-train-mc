@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.snapshot;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.CinematicCameraController;
+import games.brennan.dungeontrain.client.GraphicsCapabilities;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.DeltaTracker;
@@ -46,8 +47,14 @@ import java.util.function.Consumer;
 public final class RideSnapshotCapture {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    /** Long-edge resolution stored shots are down-scaled to. */
-    private static final int MAX_EDGE = 1080;
+    /** Long-edge resolution ordinary shots are down-scaled to. */
+    private static final int BASE_EDGE = 1080;
+    /** Long-edge for a hi-res shot on a machine with FPS headroom (clamped to the real framebuffer — never upscaled). */
+    private static final int HIRES_EDGE_HIGH = 2160;
+    /** Long-edge for a hi-res shot when the machine is under FPS pressure at capture time. */
+    private static final int HIRES_EDGE_MID = 1440;
+    /** At/above this FPS the hi-res branch picks {@link #HIRES_EDGE_HIGH}; below it, {@link #HIRES_EDGE_MID}. */
+    private static final int HIRES_FPS_THRESHOLD = 55;
     /** Tag used to frame a targeted echo capture — SOCIAL gives a front/side portrait angle. */
     private static final SnapshotTag SUBJECT_TAG = SnapshotTag.SOCIAL;
     /** Render frames a targeted echo capture keeps retrying a clean angle before giving up (~1.3 s @ 60 fps). */
@@ -168,7 +175,10 @@ public final class RideSnapshotCapture {
     /** Read back the just-rendered snapshot-pose frame and route it to the gallery or echo callback. */
     private static void grab(Minecraft mc, ClientLevel level, Consumer<byte[]> subjectCb) {
         NativeImage full = Screenshot.takeScreenshot(mc.getMainRenderTarget());
-        NativeImage shot = downscale(full, MAX_EDGE);
+        // Echo/portrait captures stay at the base edge (kept small for the packet); gallery shots go
+        // hi-res when Distant Horizons + shaders/Fabulous make the extra pixels worthwhile.
+        int edge = targetEdge(subjectCb != null);
+        NativeImage shot = downscale(full, edge);
         if (shot != full) full.close();   // downscale returns src as-is when already small
 
         if (subjectCb != null) {
@@ -198,9 +208,23 @@ public final class RideSnapshotCapture {
                     ClientDisplayConfig.getRideSnapshotMaxStored(),
                     ClientDisplayConfig.getRideSnapshotMaxOnDisk());
             RideSnapshotDirector.onCaptureCommitted(captureTag);
-            LOGGER.debug("[DungeonTrain] Ride snapshot {} tag={} ({}x{}) gallery={}",
-                    id, captureTag, shot.getWidth(), shot.getHeight(), RideSnapshotGallery.size());
+            LOGGER.debug("[DungeonTrain] Ride snapshot {} tag={} ({}x{}) gfx={} gallery={}",
+                    id, captureTag, shot.getWidth(), shot.getHeight(), meta.gfx(), RideSnapshotGallery.size());
         }
+    }
+
+    /**
+     * The long-edge the stored/uploaded shot is down-scaled to. Echo captures always use {@link #BASE_EDGE}.
+     * A gallery shot goes hi-res only when {@link GraphicsCapabilities#wantsHiRes()} (Distant Horizons + a
+     * shaderpack or Fabulous), choosing {@link #HIRES_EDGE_HIGH} vs {@link #HIRES_EDGE_MID} by live FPS so a
+     * machine already under pressure isn't handed the largest frame. {@code downscale} never upscales, so on
+     * a sub-2160 window the real framebuffer resolution is the true ceiling regardless.
+     */
+    private static int targetEdge(boolean echo) {
+        if (echo || !GraphicsCapabilities.wantsHiRes()) return BASE_EDGE;
+        Minecraft mc = Minecraft.getInstance();
+        int fps = mc != null ? mc.getFps() : 0;
+        return fps >= HIRES_FPS_THRESHOLD ? HIRES_EDGE_HIGH : HIRES_EDGE_MID;
     }
 
     /** Nearest-neighbour down-scale so the long edge is at most {@code maxEdge}. */

@@ -17,7 +17,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * report with the gear-composite fallback instead.
  *
  * <p>A stored ride shot is downscaled to ≤1080px and JPEG-encoded for this send (see
- * {@code RideSnapshot#photoBytes()}) — lossless PNG at that resolution runs close to the cap on
+ * {@code RideSnapshot#photoBytes(int)}) — lossless PNG at that resolution runs close to the cap on
  * busy scenes, so JPEG restores a comfortable margin under the 1&nbsp;MB payload cap the codec
  * also enforces.</p>
  */
