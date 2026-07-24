@@ -5616,6 +5616,21 @@
       "released": true,
       "released_in": "v0.506.0",
       "released_at": "2026-07-24T05:47:12Z"
+    },
+    {
+      "id": "crystals-ride-the-train",
+      "version": "0.507.0",
+      "type": "fix",
+      "title": "End Crystals stay with the train",
+      "summary": "End Crystals placed inside a train carriage used to be left behind the moment the train started moving. They now ride along, locked smoothly to their carriage as it travels \u2014 including through curves and Nether transitions.",
+      "highlights": [
+        "End Crystals baked into carriages ride with the train instead of being left at the spawn point",
+        "Smooth, jitter-free: the crystal is drawn from the carriage's own motion, so it stays glued to the deck"
+      ],
+      "date": "2026-07-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
