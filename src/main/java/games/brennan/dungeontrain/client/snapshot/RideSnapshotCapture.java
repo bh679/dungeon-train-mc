@@ -221,10 +221,18 @@ public final class RideSnapshotCapture {
      * a sub-2160 window the real framebuffer resolution is the true ceiling regardless.
      */
     private static int targetEdge(boolean echo) {
-        if (echo || !GraphicsCapabilities.wantsHiRes()) return BASE_EDGE;
-        Minecraft mc = Minecraft.getInstance();
-        int fps = mc != null ? mc.getFps() : 0;
-        return fps >= HIRES_FPS_THRESHOLD ? HIRES_EDGE_HIGH : HIRES_EDGE_MID;
+        int edge;
+        if (echo || !GraphicsCapabilities.wantsHiRes()) {
+            edge = BASE_EDGE;
+        } else {
+            Minecraft mc = Minecraft.getInstance();
+            int fps = mc != null ? mc.getFps() : 0;
+            edge = fps >= HIRES_FPS_THRESHOLD ? HIRES_EDGE_HIGH : HIRES_EDGE_MID;
+        }
+        // Apply the user's resolution ceiling (0 = AUTO/no cap). A cap only ever lowers the edge —
+        // it never forces resolution up without the graphics conditions above.
+        int cap = ClientDisplayConfig.getRideSnapshotMaxResolution();
+        return cap > 0 ? Math.min(edge, cap) : edge;
     }
 
     /** Nearest-neighbour down-scale so the long edge is at most {@code maxEdge}. */

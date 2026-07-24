@@ -5666,6 +5666,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dungeon-train-options-menu",
+      "version": "0.509.0",
+      "type": "feat",
+      "title": "Dungeon Train settings in the Options menu",
+      "summary": "Dungeon Train's client settings are now reachable straight from Minecraft's Options screen (both the main menu and the pause menu) via a new 'Dungeon Train\u2026' button under the FOV slider \u2014 no need to know the X-menu keybind. The screen gathers the display-scale controls (on their own Editor Settings page), an Internet Connection on/off switch, the ride-photo chat log, and a new Snapshot Max Resolution setting that caps how large your ride photos are captured (AUTO keeps the automatic 1080p\u20132160p behaviour). Every option has a hover description.",
+      "highlights": [
+        "New 'Dungeon Train\u2026' button in the Options screen (main menu + pause menu)",
+        "Snapshot Max Resolution setting caps ride-photo capture size (AUTO = automatic)",
+        "Internet Connection toggle to turn all online features on or off",
+        "Hover descriptions on every setting"
+      ],
+      "date": "2026-07-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
