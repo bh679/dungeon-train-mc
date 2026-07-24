@@ -188,10 +188,13 @@ public final class RideSnapshotCapture {
             DynamicTexture texture = new DynamicTexture(shot);
             ResourceLocation id = mc.getTextureManager().register("dungeontrain_ride", texture);
             long tick = level.getGameTime();
+            // Sample the per-photo facets (biome/band/difficulty/cart) at the moment of capture — the
+            // player is alive and aboard here, so this reflects where/when the shot was actually taken.
+            SnapshotMeta meta = SnapshotMeta.sample(level, mc.player);
             // Keep the DynamicTexture on the snapshot so it can be flushed to disk later (reading
             // its pixels), freeing this texture when the game has headroom and a menu is open.
             RideSnapshotGallery.add(
-                    new RideSnapshot(texture, id, captureTag, shot.getWidth(), shot.getHeight(), tick),
+                    new RideSnapshot(texture, id, captureTag, meta, shot.getWidth(), shot.getHeight(), tick),
                     ClientDisplayConfig.getRideSnapshotMaxStored(),
                     ClientDisplayConfig.getRideSnapshotMaxOnDisk());
             RideSnapshotDirector.onCaptureCommitted(captureTag);

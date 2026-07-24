@@ -75,6 +75,16 @@ public final class VersionHudOverlay {
         return travelledCarriageIndex;
     }
 
+    /**
+     * The live difficulty level (tier) pushed by {@code BoardingProgressPacket} — the server-computed
+     * {@code tierForTravelled(...)} result; {@code 0} before the first update. Read by
+     * {@link games.brennan.dungeontrain.client.snapshot.SnapshotMeta} to stamp each ride photo, since
+     * the tier formula's config is server-only and can't be recomputed client-side.
+     */
+    public static int difficultyLevel() {
+        return difficultyTier;
+    }
+
     @SubscribeEvent
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         LayeredDraw.Layer overlay = (graphics, deltaTracker) -> {
