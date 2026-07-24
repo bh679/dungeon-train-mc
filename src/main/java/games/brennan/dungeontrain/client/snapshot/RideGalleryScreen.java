@@ -225,6 +225,7 @@ public final class RideGalleryScreen extends Screen {
         try {
             Path p = RideSnapshotExporter.save(shots.get(index));
             saved.add(index);
+            ShotSavedClient.markSaved(shots.get(index).photoId()); // tag this shot user-saved on the relay
             setStatus(Component.translatable("gui.dungeontrain.death.gallery.status_saved",
                     p.getFileName().toString()), STATUS_OK);
         } catch (Exception e) {
@@ -241,6 +242,7 @@ public final class RideGalleryScreen extends Screen {
             try {
                 RideSnapshotExporter.save(shots.get(i));
                 saved.add(i);
+                ShotSavedClient.markSaved(shots.get(i).photoId()); // tag this shot user-saved on the relay
                 ok++;
             } catch (Exception e) {
                 LOGGER.warn("[DungeonTrain] Failed to save ride photo {}", i, e);

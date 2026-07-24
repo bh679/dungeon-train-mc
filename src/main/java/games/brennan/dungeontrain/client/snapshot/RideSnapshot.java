@@ -36,6 +36,9 @@ public final class RideSnapshot {
     private final int width;
     private final int height;
     private final long createdTick;
+    /** Stable client-generated id (dashless UUID) that travels with the photo to the relay so a later
+     *  gallery "Save" can address this exact uploaded row (see {@code ShotSavedClient}). */
+    private final String photoId = java.util.UUID.randomUUID().toString().replace("-", "");
 
     // ── mutable backing (single client thread; see RideSnapshotGallery) ──
     private DynamicTexture liveTexture;   // non-null while in memory (or after a lazy disk reload)
@@ -61,6 +64,9 @@ public final class RideSnapshot {
     }
 
     public SnapshotTag tag() { return tag; }
+
+    /** Stable client-generated id (dashless UUID) uploaded with this photo; keys the relay "user-saved" mark. */
+    public String photoId() { return photoId; }
 
     /** Per-photo context (biome/band/difficulty/cart) sampled at capture; never null. */
     public SnapshotMeta meta() { return meta; }
