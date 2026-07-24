@@ -67,8 +67,10 @@ public final class CreditsScreen extends Screen {
 
     /** Team photos (128×128), one card each in the Made-by section. */
     private static final int TEX = 128;
-    private static final int PHOTO = 72;
+    private static final int PHOTO = 48;
     private static final int COL_GAP = 10;
+    /** Brennan's card gets the larger share of the row. */
+    private static final int BRENNAN_PCT = 60;
     private static final ResourceLocation BRENNAN_PHOTO =
             ResourceLocation.fromNamespaceAndPath("dungeontrain", "textures/gui/credits/brennan.png");
     private static final ResourceLocation WILSON_PHOTO =
@@ -123,13 +125,15 @@ public final class CreditsScreen extends Screen {
         // Made by — two side-by-side cards: photo, name, role, bio.
         y = addLeft(Component.translatable("gui.dungeontrain.credits.team.header"), y, lh, COLOUR_HEADER);
         y += HEADER_GAP;
-        int eachW = (colW - COL_GAP) / 2;
-        int photo = Math.min(PHOTO, eachW);
+        int usableW = colW - COL_GAP;
+        int brennanW = usableW * BRENNAN_PCT / 100;
+        int wilsonW = usableW - brennanW;
+        int photo = Math.min(PHOTO, Math.min(brennanW, wilsonW));
         int cardTop = y;
-        int brennanBottom = addTeamCard(colX, eachW, photo, cardTop, lh, BRENNAN_PHOTO,
+        int brennanBottom = addTeamCard(colX, brennanW, photo, cardTop, lh, BRENNAN_PHOTO,
                 "Brennan Hatton", "gui.dungeontrain.credits.team.designer",
                 "gui.dungeontrain.credits.team.brennan.bio");
-        int wilsonBottom = addTeamCard(colX + eachW + COL_GAP, eachW, photo, cardTop, lh, WILSON_PHOTO,
+        int wilsonBottom = addTeamCard(colX + brennanW + COL_GAP, wilsonW, photo, cardTop, lh, WILSON_PHOTO,
                 "Wilson Taylor", "gui.dungeontrain.credits.team.narrative",
                 "gui.dungeontrain.credits.team.wilson.bio");
         y = Math.max(brennanBottom, wilsonBottom) + SECTION_GAP;
