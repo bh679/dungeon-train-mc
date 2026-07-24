@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import net.minecraft.core.BlockPos;
+import games.brennan.dungeontrain.ship.TrainBedBiome;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BiomeTags;
@@ -35,7 +36,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * {@code the_end} and the four outer-island biomes — carries it). We gate on the persisted biome,
  * not a live band-formula recompute, so the explosion follows what the world actually generated
  * and the player sees — the green highland/crossfade approach columns and any config/build-drift
- * columns are neither {@code IS_NETHER} nor {@code IS_END} and sleep normally. Server-side only
+ * columns are neither {@code IS_NETHER} nor {@code IS_END} and sleep normally. The biome is sampled
+ * at the bed's <b>worldspace</b> position via {@link games.brennan.dungeontrain.ship.TrainBedBiome}:
+ * a bed on a Sable train carriage (a sub-level whose blocks live in a far-away plot region) is
+ * resolved to the carriage's rendered world position first, so it only explodes when the train is
+ * actually inside a band — never because the plot's storage coordinates happen to bake a Nether/End
+ * biome. Server-side only
  * (the explosion path is); the {@code bedWorks()} guard means the real Nether/End keep their own
  * handling and we only <i>add</i> behaviour the overworld lacks.</p>
  */
@@ -48,12 +54,16 @@ public abstract class BedBlockMixin {
         if (level.isClientSide) return;
         if (!level.dimensionType().bedWorks()) return;          // real Nether/End: vanilla already explodes
         if (!(level instanceof ServerLevel serverLevel)) return;
-        // Gate on the bed's ACTUAL baked biome — what the world generated and the player sees —
-        // not a live band-formula recompute. Only the real Nether core carries an IS_NETHER biome
-        // (all five via NetherCoreBiomes) and only the real End core carries an IS_END biome (via
-        // EndCoreBiomes); the green highland/crossfade approach and any config/build-drift columns
-        // are neither, so beds sleep there as in vanilla.
-        Holder<Biome> biome = serverLevel.getBiome(pos);
+        // Gate on the bed's ACTUAL baked biome at its WORLDSPACE position — what the player sees —
+        // not a live band-formula recompute. For a bed on a Sable carriage (a sub-level whose blocks
+        // live in a far-away plot region) TrainBedBiome resolves the carriage's rendered world
+        // position and samples the host overworld biome there, so a bed only explodes when the train
+        // is actually inside a Nether/End band — not because the plot's storage coordinates happen to
+        // bake one. Only the real Nether core carries an IS_NETHER biome (all five via
+        // NetherCoreBiomes) and only the real End core carries an IS_END biome (via EndCoreBiomes);
+        // the green highland/crossfade approach and any config/build-drift columns are neither, so
+        // beds sleep there as in vanilla.
+        Holder<Biome> biome = TrainBedBiome.worldspaceBiomeAt(serverLevel, pos);
         if (!biome.is(BiomeTags.IS_NETHER) && !biome.is(BiomeTags.IS_END)) return;
 
         Block self = (Block) (Object) this;
