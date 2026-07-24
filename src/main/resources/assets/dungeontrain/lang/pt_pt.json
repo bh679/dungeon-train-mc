@@ -915,6 +915,6 @@
   "gui.dungeontrain.credits.translations.desc": "Obrigado a todos os que traduziram o Dungeon Train:",
   "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
   "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
-  "gui.dungeontrain.credits.team.brennan.bio": "Brennan é um programador de VR premiado diversas vezes, trazendo as competências e a experiência para fazer justiça ao Dungeon Train como o seu Designer e Programador. Dungeon Train é o seu primeiro mod e modpack.",
-  "gui.dungeontrain.credits.team.wilson.bio": "Um argumentista de videojogos que trouxe risos, romance e lágrimas a milhões de pessoas com as suas narrativas inventivas, abrangendo jogos, livros, banda desenhada e visual novels."
+  "gui.dungeontrain.credits.team.brennan.bio": "Concebeu e construiu o Dungeon Train — os seus sistemas, o mundo procedural, o comboio em movimento e grande parte da história. O seu primeiro mod e modpack. É profundamente apaixonado pelo jogo e, se alguma vez falaste com o programador, era ele. Contacta-o quando quiseres com @dev dentro do jogo.",
+  "gui.dungeontrain.credits.team.wilson.bio": "Escreveu e realizou a narrativa e a história do Dungeon Train — a maioria das personagens e histórias integradas que encontras a bordo do comboio."
 }

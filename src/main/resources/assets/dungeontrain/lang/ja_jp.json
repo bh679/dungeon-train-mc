@@ -898,6 +898,6 @@
   "gui.dungeontrain.credits.translations.desc": "Dungeon Trainを翻訳してくれた皆さんに感謝します：",
   "gui.dungeontrain.credits.translations.person_line": "%1$s — %2$s",
   "gui.dungeontrain.credits.translations.lang_percent": "%1$s (%2$s)",
-  "gui.dungeontrain.credits.team.brennan.bio": "Brennanは数々の賞を受賞したVR開発者であり、その技術と経験でDungeon Trainをデザイナー兼開発者としてかたちにしています。Dungeon Trainは彼にとって初めてのModであり、モッドパックです。",
-  "gui.dungeontrain.credits.team.wilson.bio": "ゲーム、書籍、コミック、ビジュアルノベルにまたがる独創的な物語で、幾百万もの人々に笑いとロマンスと涙をもたらしてきたビデオゲームライター。"
+  "gui.dungeontrain.credits.team.brennan.bio": "Dungeon Trainを設計・構築した——そのシステム、手続き生成の世界、走る列車、そして多くのロアを。彼にとって初めてのMod、そして初めてのモッドパックだ。このゲームに深い情熱を注いでいて、あなたが開発者と話したなら、それは彼だ。ゲーム内で@devを使えば、いつでも彼に連絡できる。",
+  "gui.dungeontrain.credits.team.wilson.bio": "Dungeon Trainの物語とロアを執筆・監督した——列車に乗って出会う内蔵キャラクターや物語の多くは彼の手によるものだ。"
 }
