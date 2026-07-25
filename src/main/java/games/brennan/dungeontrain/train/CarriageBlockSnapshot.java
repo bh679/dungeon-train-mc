@@ -51,16 +51,26 @@ public final class CarriageBlockSnapshot {
 
     private CarriageBlockSnapshot() {}
 
+    /**
+     * A capture's two outputs: the portable {@link #tag} (blocks + block-entities, encoded for the
+     * relay via {@link #encode}) and the {@link #text} — the player-authored, human-readable text
+     * scraped from the block-entities ({@link CarriageTextScan}) for moderation. {@code text} is empty
+     * when the carriage carries no sign/book/named-item text.
+     */
+    public record Captured(CompoundTag tag, String text) {}
+
     // ---- capture (read from a live sub-level's plot) ----
 
     /**
      * Read the carriage footprint {@code [origin, origin+dims)} in shipyard space from {@code ship}'s
-     * sub-level plot into a snapshot tag. {@code origin} is the per-carriage shipyard origin.
+     * sub-level plot into a snapshot tag, and scrape its block-entities' authored text for moderation.
+     * {@code origin} is the per-carriage shipyard origin.
      */
-    public static CompoundTag capture(SableManagedShip ship, BlockPos origin, CarriageDims dims,
-                                      HolderLookup.Provider registries) {
+    public static Captured capture(SableManagedShip ship, BlockPos origin, CarriageDims dims,
+                                   HolderLookup.Provider registries) {
         LevelPlot plot = ship.subLevel().getPlot();
         ListTag cells = new ListTag();
+        StringBuilder text = new StringBuilder();
         for (int dx = 0; dx < dims.length(); dx++) {
             for (int dy = 0; dy < dims.height(); dy++) {
                 for (int dz = 0; dz < dims.width(); dz++) {
@@ -78,6 +88,7 @@ public final class CarriageBlockSnapshot {
                             beTag.remove("y");
                             beTag.remove("z");
                             cell.put("b", beTag);
+                            CarriageTextScan.appendBlockEntity(be, text);
                         }
                     }
                     cells.add(cell);
@@ -90,7 +101,7 @@ public final class CarriageBlockSnapshot {
         root.putInt("h", dims.height());
         root.putInt("w", dims.width());
         root.put("cells", cells);
-        return root;
+        return new Captured(root, text.toString());
     }
 
     // ---- placement (write into a level at world coords — spawn-time, pre-assembly) ----

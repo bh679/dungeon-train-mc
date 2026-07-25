@@ -12,7 +12,6 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.SharedCarriagePool;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -108,18 +107,18 @@ public final class SharedCarriageEvents {
     private static void submitFresh(SharedCarriageRegistry.Instance inst) {
         ServerPlayer contributor = firstConsentingPlayer(inst.level);
         if (contributor == null) return; // no consenting player present → try later, stay dirty
-        String blocks = captureBlob(inst);
-        if (blocks == null) return;
-        if (blocks.length() > MAX_BLOB_CHARS) {
+        CapturedBlob blob = captureBlob(inst);
+        if (blob == null) return;
+        if (blob.base64().length() > MAX_BLOB_CHARS) {
             LOGGER.warn("[DungeonTrain] shared carriage variant={} too large to upload ({} chars) — skipping.",
-                    inst.variantId, blocks.length());
+                    inst.variantId, blob.base64().length());
             inst.clearDirty();
             return;
         }
         String ownerUuid = contributor.getUUID().toString().replace("-", "");
         inst.setCallInFlight(true);
         long now = System.currentTimeMillis();
-        SharedCarriageClient.submit(ownerUuid, blocks, inst.dims.length(), inst.dims.height(), inst.dims.width(), null)
+        SharedCarriageClient.submit(ownerUuid, blob.base64(), inst.dims.length(), inst.dims.height(), inst.dims.width(), blob.text())
                 .whenComplete((result, err) -> {
                     try {
                         if (err == null && result != null && result.isPresent()) {
@@ -142,17 +141,17 @@ public final class SharedCarriageEvents {
 
     /** Save a leased carriage's current blocks back to the relay (doubles as a heartbeat). */
     private static void saveLeased(SharedCarriageRegistry.Instance inst) {
-        String blocks = captureBlob(inst);
-        if (blocks == null) return;
-        if (blocks.length() > MAX_BLOB_CHARS) {
+        CapturedBlob blob = captureBlob(inst);
+        if (blob == null) return;
+        if (blob.base64().length() > MAX_BLOB_CHARS) {
             LOGGER.warn("[DungeonTrain] leased shared carriage id={} too large to save ({} chars) — skipping.",
-                    inst.relayId(), blocks.length());
+                    inst.relayId(), blob.base64().length());
             inst.clearDirty();
             return;
         }
         inst.setCallInFlight(true);
         long now = System.currentTimeMillis();
-        SharedCarriageClient.save(inst.relayId(), inst.leaseToken(), blocks, null)
+        SharedCarriageClient.save(inst.relayId(), inst.leaseToken(), blob.base64(), blob.text())
                 .whenComplete((status, err) -> {
                     try {
                         if (status == CallStatus.OK) {
@@ -183,13 +182,18 @@ public final class SharedCarriageEvents {
                 });
     }
 
-    /** Capture + encode this carriage's live blocks, or null if the sub-level isn't resident / capture fails. */
-    private static String captureBlob(SharedCarriageRegistry.Instance inst) {
+    /** A captured carriage ready for the relay: the base64 blocks blob + its scraped moderation text. */
+    private record CapturedBlob(String base64, String text) {}
+
+    /** Capture + encode this carriage's live blocks (with moderation text), or null if the sub-level
+     *  isn't resident / capture fails. */
+    private static CapturedBlob captureBlob(SharedCarriageRegistry.Instance inst) {
         SableManagedShip ship = liveShip(inst.level, inst);
         if (ship == null) return null;
         try {
-            CompoundTag snap = CarriageBlockSnapshot.capture(ship, inst.shipyardOrigin, inst.dims, inst.level.registryAccess());
-            return CarriageBlockSnapshot.encode(snap);
+            CarriageBlockSnapshot.Captured cap =
+                    CarriageBlockSnapshot.capture(ship, inst.shipyardOrigin, inst.dims, inst.level.registryAccess());
+            return new CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text());
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] shared-carriage capture failed for pIdx={}: {}", inst.pIdx, t.toString());
             return null;

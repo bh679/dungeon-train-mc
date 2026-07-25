@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.command.BugCommand;
 import games.brennan.dungeontrain.command.DtpCommand;
 import games.brennan.dungeontrain.command.EchoEncounterTestCommand;
 import games.brennan.dungeontrain.command.FixAisConfigCommand;
+import games.brennan.dungeontrain.command.ReportCarriageCommand;
 import games.brennan.dungeontrain.command.TrainCommand;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -31,6 +32,9 @@ public final class CommandEvents {
         DtpCommand.register(event.getDispatcher());
         // /fixaisconfig — restores AIS config defaults (the AIS-data Free Play fix action).
         FixAisConfigCommand.register(event.getDispatcher());
+        // /reportcarriage [reason] — player-facing report of the shared carriage underfoot (also a
+        // subcommand of the op-gated /dungeontrain root). Any player, any game mode.
+        ReportCarriageCommand.register(event.getDispatcher());
         // Dev-only: a relay-free way to drive the remote-echo encounter journal end-to-end.
         // Never registered in production, and only when PlayerMob (whose types the command
         // references) is present.
