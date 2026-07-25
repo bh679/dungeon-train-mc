@@ -28,9 +28,16 @@ import java.util.UUID;
  * never throws, no retry — losing an analytics event to a network blip is fine (unlike
  * gameplay telemetry, which rides the durable server-side RelayOutbox).</p>
  *
- * <p>Enum values ({@code surface}/{@code target}/{@code action}) are whitelisted relay-side
- * (dp-relay {@code ui-events.js}) — an unknown value is rejected with a 400, so additions must
- * land on both sides.</p>
+ * <p>Also drives the death-screen donation funnel (dp-relay {@code deathfunnel-report.js}): every
+ * page of {@code NarrativeDeathScreen} reports an {@code open} + a {@code page_time} tagged with a
+ * {@code page} dimension (fall/deeds/gear/lives/survey/donate/platform/contribute), its Contribute /
+ * Board-anew / Leave / "$"-chip buttons report {@code click}s, and each survey answer reports a
+ * {@code survey_answer} carrying the game-defined {@code questionId} + chosen {@code score} (never
+ * the free-text comment).</p>
+ *
+ * <p>Enum values ({@code surface}/{@code target}/{@code action}) — and the {@code page} dimension —
+ * are whitelisted relay-side (dp-relay {@code ui-events.js}) — an unknown value is rejected with a
+ * 400, so additions must land on both sides.</p>
  */
 public final class UiAnalytics {
 
@@ -49,6 +56,23 @@ public final class UiAnalytics {
     public static final String TARGET_PATREON = "patreon";
     public static final String TARGET_AFFILIATE = "affiliate";
     public static final String TARGET_DISCORD = "discord";
+    // Death-screen button targets (see NarrativeDeathScreen). Lock-step with ui-events.js TARGETS.
+    public static final String TARGET_CONTRIBUTE = "contribute"; // "Contribute" opens the donate-options window
+    public static final String TARGET_BOARD_ANEW = "board_anew";  // "Board anew" — start the next run
+    public static final String TARGET_LEAVE = "leave";           // "Leave" — back to title / quit
+    public static final String TARGET_CHIP = "chip";             // the "$" top-bar chip → donate page
+
+    // Death-screen page identities (the {@code page} dimension on open / page_time / survey_answer).
+    // Lock-step with ui-events.js PAGES. The seven paginated death-screen pages, plus the full-screen
+    // Contribute (donate-options) window that layers over the DONATE page.
+    public static final String PAGE_FALL = "fall";
+    public static final String PAGE_DEEDS = "deeds";
+    public static final String PAGE_GEAR = "gear";
+    public static final String PAGE_LIVES = "lives";
+    public static final String PAGE_SURVEY = "survey";
+    public static final String PAGE_DONATE = "donate";
+    public static final String PAGE_PLATFORM = "platform";
+    public static final String PAGE_CONTRIBUTE = "contribute";
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1) // relay is HTTP/1.1; avoids h2c against a bare-Node relay (matches RelayChatClient)
@@ -61,26 +85,50 @@ public final class UiAnalytics {
 
     /** A button/link was pressed (before any confirm screen). */
     public static void click(String surface, String target) {
-        send(surface, target, "click", -1);
+        send(surface, target, "click", -1, null, null, -1, -1);
     }
 
     /** The ConfirmLinkScreen resolved — {@code yes} means the external link actually opened. */
     public static void confirm(String surface, String target, boolean yes) {
-        send(surface, target, yes ? "confirm_yes" : "confirm_no", -1);
+        send(surface, target, yes ? "confirm_yes" : "confirm_no", -1, null, null, -1, -1);
     }
 
     /** A tracked page was opened (fire once per visit — from the screen's constructor, not init()). */
     public static void pageOpen(String surface) {
-        send(surface, TARGET_PAGE, "open", -1);
+        send(surface, TARGET_PAGE, "open", -1, null, null, -1, -1);
     }
 
     /** A tracked page was closed after {@code durationMs} on it (fire once per visit). */
     public static void pageTime(String surface, long durationMs) {
-        send(surface, TARGET_PAGE, "page_time", Math.max(0, durationMs));
+        send(surface, TARGET_PAGE, "page_time", Math.max(0, durationMs), null, null, -1, -1);
+    }
+
+    /**
+     * A tracked page identified by {@code page} was opened. Used by multi-page surfaces (the death
+     * screen) where a bare {@code surface} isn't enough — {@code page} names which of the pages
+     * (fall/deeds/gear/…) was viewed. Lock-step with ui-events.js PAGES.
+     */
+    public static void pageOpen(String surface, String page) {
+        send(surface, TARGET_PAGE, "open", -1, page, null, -1, -1);
+    }
+
+    /** As {@link #pageTime(String, long)} but identifying which multi-page {@code page} was left. */
+    public static void pageTime(String surface, String page, long durationMs) {
+        send(surface, TARGET_PAGE, "page_time", Math.max(0, durationMs), page, null, -1, -1);
+    }
+
+    /**
+     * A death-screen survey answer was submitted: {@code questionId} is the datapack-defined
+     * question id, {@code score} the chosen rating on a 0..{@code scoreMax} scale. Game-defined
+     * enums only — never the free-text comment. Fired once per question (see maybeSubmit).
+     */
+    public static void surveyAnswer(String surface, String questionId, int score, int scoreMax) {
+        send(surface, TARGET_PAGE, "survey_answer", -1, PAGE_SURVEY, questionId, score, scoreMax);
     }
 
     /** Consent-gate, build, and POST one event. Never throws; failures are debug-logged only. */
-    private static void send(String surface, String target, String action, long durationMs) {
+    private static void send(String surface, String target, String action, long durationMs,
+                             String page, String questionId, int score, int scoreMax) {
         try {
             if (!DiscordPresenceClientConfig.isGranted()) {
                 return; // no network consent — no analytics, full stop
@@ -92,7 +140,8 @@ public final class UiAnalytics {
             }
             String player = mc.getUser() != null ? mc.getUser().getName() : null;
             JsonObject payload = buildPayload(
-                    noDashes(uuid), player, VersionInfo.VERSION, surface, target, action, durationMs);
+                    noDashes(uuid), player, VersionInfo.VERSION, surface, target, action, durationMs,
+                    page, questionId, score, scoreMax);
             HttpRequest req = HttpRequest.newBuilder(
                             URI.create(DungeonTrain.relayBaseUrl() + "/telemetry/ui-event"))
                     .timeout(REQUEST_TIMEOUT)
@@ -110,12 +159,26 @@ public final class UiAnalytics {
     }
 
     /**
-     * The {@code /telemetry/ui-event} payload (see dp-relay {@code ui-events.js}). Pure — no
-     * Minecraft bootstrap — so it unit-tests directly. {@code durationMs < 0} omits the field
-     * (it is only valid, and only required, on the {@code page_time} action).
+     * The core {@code /telemetry/ui-event} payload without the death-screen extras — kept as a thin
+     * overload so the existing callers/tests read unchanged. Delegates with no {@code page} and no
+     * survey fields.
      */
     static JsonObject buildPayload(String uuid, String player, String modVersion,
                                    String surface, String target, String action, long durationMs) {
+        return buildPayload(uuid, player, modVersion, surface, target, action, durationMs,
+                null, null, -1, -1);
+    }
+
+    /**
+     * The full {@code /telemetry/ui-event} payload (see dp-relay {@code ui-events.js}). Pure — no
+     * Minecraft bootstrap — so it unit-tests directly. Optional fields are omitted when unset:
+     * {@code durationMs < 0} (only valid on {@code page_time}); {@code page} null/blank; and the
+     * survey fields (only carried on {@code survey_answer}): {@code questionId} null/blank,
+     * {@code score < 0}, {@code scoreMax < 0}.
+     */
+    static JsonObject buildPayload(String uuid, String player, String modVersion,
+                                   String surface, String target, String action, long durationMs,
+                                   String page, String questionId, int score, int scoreMax) {
         JsonObject payload = new JsonObject();
         payload.addProperty("uuid", uuid);
         if (player != null && !player.isBlank()) {
@@ -129,6 +192,18 @@ public final class UiAnalytics {
         payload.addProperty("action", action);
         if (durationMs >= 0) {
             payload.addProperty("durationMs", durationMs);
+        }
+        if (page != null && !page.isBlank()) {
+            payload.addProperty("page", page);
+        }
+        if (questionId != null && !questionId.isBlank()) {
+            payload.addProperty("questionId", questionId);
+        }
+        if (score >= 0) {
+            payload.addProperty("score", score);
+        }
+        if (scoreMax >= 0) {
+            payload.addProperty("scoreMax", scoreMax);
         }
         return payload;
     }

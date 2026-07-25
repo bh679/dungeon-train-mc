@@ -52,7 +52,8 @@ public final class DonationOptionsScreen extends Screen {
     public DonationOptionsScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.death.narr.donate_button"));
         this.parent = parent;
-        UiAnalytics.pageOpen(UiAnalytics.SURFACE_DEATH_SCREEN);
+        // Distinct funnel step from "viewed the DONATE page": the player opened the Contribute window.
+        UiAnalytics.pageOpen(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.PAGE_CONTRIBUTE);
         OfficialLinks.ensureFetched();
     }
 
