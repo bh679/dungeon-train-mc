@@ -102,10 +102,10 @@ public final class NarrativeDeathScreen extends Screen {
     private record AdvIcon(ItemStack icon, Component title, Component description, AdvancementType type, Rect rect) {}
 
     // ---- Palette (ARGB) ----
-    private static final int OVERLAY        = 0xF2070C1E;
-    // The page-transition fade dips toward this dark-blue (not pure black) for a colder,
-    // night-rail mood. RGB only — OR'd with the running dip alpha each frame.
-    private static final int DIP_RGB        = 0x070C1E;
+    private static final int OVERLAY        = 0xF2090A0D;
+    // Dark-blue wash laid over the DONATE page's backdrop ONLY (translucent, so the ride photo
+    // still shows) — a colder mood for the donation page without touching the other pages.
+    private static final int DONATE_WASH    = 0x40081830;
     private static final int TILE_BG        = 0x14FFFFFF;
     private static final int TILE_BORDER    = 0x33D6C496;
     private static final int VALUE          = 0xFFE6D6B0;
@@ -480,13 +480,17 @@ public final class NarrativeDeathScreen extends Screen {
             DeathBackgroundPainter.drawPhoto(g, photo, this.width, this.height);
             if (photoBlack > 0.0f) {
                 int a = Math.min(255, Math.round(photoBlack * 255.0f));
-                g.fill(0, 0, this.width, this.height, (a << 24) | DIP_RGB);
+                g.fill(0, 0, this.width, this.height, a << 24);
             }
             DeathBackgroundPainter.drawVignette(g, this.width, this.height, uiAlpha);
         } else {
             // No photo to reveal — keep the solid overlay fully opaque (don't lay
             // bare the frozen world); the chrome still fades out/in against it.
             g.fill(0, 0, this.width, this.height, OVERLAY);
+        }
+        // The donation page (only) gets a cold dark-blue wash over its backdrop.
+        if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.DONATE) {
+            g.fill(0, 0, this.width, this.height, DONATE_WASH);
         }
 
         // Train engine: full on the first screen (as if aboard), fading evenly to

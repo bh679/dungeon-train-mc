@@ -52,33 +52,35 @@ public final class DonationOptionsScreen extends Screen {
     @Override
     protected void init() {
         int cx = this.width / 2;
-        int bw = Math.min(240, this.width - 80);
-        int bx = cx - bw / 2;
 
         int wrapW = Math.min(360, this.width - 80);
         subtitleLines = this.font.split(
                 Component.translatable("gui.dungeontrain.death.narr.donate_options_sub"), wrapW);
 
-        // Title + subtitle sit above the buttons; the button block is vertically centred.
-        int y = this.height / 2 - 24;
-        subtitleTop = y - 12 - subtitleLines.size() * (this.font.lineHeight + 2);
+        // The two donation options sit side by side on one row, tall for prominence.
+        int rowW = Math.min(320, this.width - 60);
+        int gap = 8;
+        int each = (rowW - gap) / 2;
+        int rowX = cx - rowW / 2;
+        int bh = 30;
+        int y = this.height / 2 - bh / 2;
+        subtitleTop = y - 14 - subtitleLines.size() * (this.font.lineHeight + 2);
 
-        ColorTintedButton revolut = new ColorTintedButton(bx, y, bw, 20,
+        ColorTintedButton revolut = new ColorTintedButton(rowX, y, each, bh,
                 Component.translatable("gui.dungeontrain.death.narr.donate_revolut"),
                 TINT_GREEN[0], TINT_GREEN[1], TINT_GREEN[2],
                 b -> openLink(revolutUrl(), UiAnalytics.TARGET_DONATE));
-        revolut.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.death.narr.donate_revolut_tip")));
+        // Same hover blurb as the title-screen "Ways to Help" donate button.
+        revolut.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.support.donate_tooltip")));
         addRenderableWidget(revolut);
-        y += 26;
 
-        addRenderableWidget(new ColorTintedButton(bx, y, bw, 20,
+        addRenderableWidget(new ColorTintedButton(rowX + each + gap, y, each, bh,
                 Component.translatable("gui.dungeontrain.death.narr.donate_patreon"),
                 TINT_ORANGE[0], TINT_ORANGE[1], TINT_ORANGE[2],
                 b -> openLink(OfficialLinks.patreon(), UiAnalytics.TARGET_PATREON)));
-        y += 34;
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
-                .bounds(cx - 100, y, 200, 20).build());
+                .bounds(cx - 100, y + bh + 12, 200, 20).build());
     }
 
     @Override
