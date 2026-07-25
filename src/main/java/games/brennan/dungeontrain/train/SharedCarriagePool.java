@@ -27,8 +27,13 @@ public final class SharedCarriagePool {
     /** How many leases to keep buffered ahead of demand — bounds speculative locking. */
     static final int TARGET_BUFFER = 2;
 
+    /** After a lease attempt finds nothing, wait this long before hitting the relay again. */
+    private static final long EMPTY_BACKOFF_MS = 60_000L;
+
     private static final Queue<PoolLease> BUFFER = new ConcurrentLinkedQueue<>();
     private static volatile boolean fetchInFlight = false;
+    /** Set when the pool had nothing to lease; suppresses refetches until then so we don't poll every tick. */
+    private static volatile long backoffUntilMs = 0L;
 
     private SharedCarriagePool() {}
 
@@ -54,6 +59,7 @@ public final class SharedCarriagePool {
      */
     public static void refreshAsync(CarriageDims dims, String hostUuid, List<Integer> exclude) {
         if (fetchInFlight || BUFFER.size() >= TARGET_BUFFER) return;
+        if (System.currentTimeMillis() < backoffUntilMs) return; // pool was empty recently → don't hammer it
         fetchInFlight = true;
         try {
             SharedCarriageClient.lease(hostUuid, dims.length(), dims.height(), dims.width(), exclude)
@@ -61,8 +67,12 @@ public final class SharedCarriagePool {
                         try {
                             if (err == null && opt != null && opt.isPresent()) {
                                 BUFFER.offer(opt.get());
+                                backoffUntilMs = 0L; // got one → resume eager refills
                                 LOGGER.debug("[DungeonTrain] shared-carriage pool buffered lease id={} (buffer={}).",
                                         opt.get().id(), BUFFER.size());
+                            } else {
+                                // Nothing available (or a transient failure) → back off before retrying.
+                                backoffUntilMs = System.currentTimeMillis() + EMPTY_BACKOFF_MS;
                             }
                         } finally {
                             fetchInFlight = false;
@@ -93,5 +103,6 @@ public final class SharedCarriagePool {
     public static void clear() {
         BUFFER.clear();
         fetchInFlight = false;
+        backoffUntilMs = 0L;
     }
 }
