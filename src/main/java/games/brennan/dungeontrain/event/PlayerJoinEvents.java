@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import games.brennan.dungeontrain.net.SpawnDeckHoldPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
@@ -30,7 +31,6 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -405,7 +405,7 @@ public final class PlayerJoinEvents {
         int dxStart = (dir > 0) ? 0 : 1;
         for (int dx = dxStart; dx <= MAX_ABOVEGROUND_SCAN; dx++) {
             int x = originX + dir * dx;
-            level.getChunk(x >> 4, tg.centerZ() >> 4, ChunkStatus.FULL, true);
+            WorldgenForceGuard.forceChunk(level, x >> 4, tg.centerZ() >> 4);
             if (!TunnelGenerator.isColumnUnderground(level, x, tg)) {
                 if (consecutive == 0) runStart = x;
                 consecutive++;
@@ -428,16 +428,16 @@ public final class PlayerJoinEvents {
     private static int findAboveGroundReferenceX(
         ServerLevel level, int originX, TunnelGeometry tg
     ) {
-        level.getChunk(originX >> 4, tg.centerZ() >> 4, ChunkStatus.FULL, true);
+        WorldgenForceGuard.forceChunk(level, originX >> 4, tg.centerZ() >> 4);
         if (!TunnelGenerator.isColumnUnderground(level, originX, tg)) return originX;
         for (int dx = 1; dx <= MAX_ABOVEGROUND_SCAN; dx++) {
             int forward = originX + dx;
-            level.getChunk(forward >> 4, tg.centerZ() >> 4, ChunkStatus.FULL, true);
+            WorldgenForceGuard.forceChunk(level, forward >> 4, tg.centerZ() >> 4);
             if (!TunnelGenerator.isColumnUnderground(level, forward, tg)) return forward;
         }
         for (int dx = 1; dx <= MAX_ABOVEGROUND_SCAN; dx++) {
             int backward = originX - dx;
-            level.getChunk(backward >> 4, tg.centerZ() >> 4, ChunkStatus.FULL, true);
+            WorldgenForceGuard.forceChunk(level, backward >> 4, tg.centerZ() >> 4);
             if (!TunnelGenerator.isColumnUnderground(level, backward, tg)) return backward;
         }
         return originX;
@@ -615,7 +615,7 @@ public final class PlayerJoinEvents {
         for (int step = stride; step <= MAX_X_SLIDE; step += stride) {
             for (int dir : new int[] {+1, -1}) {
                 int newAnchor = anchorX + dir * step;
-                level.getChunk(newAnchor >> 4, tg.centerZ() >> 4, ChunkStatus.FULL, true);
+                WorldgenForceGuard.forceChunk(level, newAnchor >> 4, tg.centerZ() >> 4);
                 if (TunnelGenerator.isColumnUnderground(level, newAnchor, tg)) continue;
                 r = tryFindLOSClearSpawn(level, newAnchor, g, trainAim, rand, allowWater);
                 if (r != null) {
@@ -656,7 +656,7 @@ public final class PlayerJoinEvents {
 
             int bx = Mth.floor(anchorX + 0.5 + xOffset);
             int bz = Mth.floor(centerZ + zOffset);
-            level.getChunk(bx >> 4, bz >> 4, ChunkStatus.FULL, true);
+            WorldgenForceGuard.forceChunk(level, bx >> 4, bz >> 4);
 
             int groundY = findGroundY(level, bx, bz, allowWater);
             int playerY = groundY + 1;
@@ -669,7 +669,7 @@ public final class PlayerJoinEvents {
         for (int perpDist = (int) PERP_MIN; perpDist <= MAX_FALLBACK_PERP; perpDist++) {
             for (int sign : new int[] {+1, -1}) {
                 int bz = Mth.floor(centerZ + sign * perpDist);
-                level.getChunk(anchorX >> 4, bz >> 4, ChunkStatus.FULL, true);
+                WorldgenForceGuard.forceChunk(level, anchorX >> 4, bz >> 4);
                 int gy = findGroundY(level, anchorX, bz, allowWater);
                 int py = gy + 1;
                 if (!isSafePlayerPos(level, anchorX, py, bz, allowWater)) continue;
