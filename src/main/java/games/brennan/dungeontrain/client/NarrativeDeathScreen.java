@@ -30,7 +30,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Renderable;
-import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -49,9 +48,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
-import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.HashMap;
@@ -1665,28 +1661,9 @@ public final class NarrativeDeathScreen extends Screen {
                 Minecraft.getInstance().execute(() -> DonationSummaryCache.set(summary)));
     }
 
-    /** Open the Revolut donate link through the vanilla confirm screen, tracking click + follow-through. */
+    /** Open the full-screen Contribute window (Revolut / Patreon options), returning here on close. */
     private void openDonateLink() {
-        String url = revolutUrl();
-        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_DONATE);
-        Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
-            UiAnalytics.confirm(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_DONATE, yes);
-            if (yes) Util.getPlatform().openUri(URI.create(url));
-            Minecraft.getInstance().setScreen(this); // back to the death screen for further pages
-        }, url, true));
-    }
-
-    /** The donate URL with the player's name URL-encoded onto the {@code note=} tag (matches SupportScreen). */
-    private static String revolutUrl() {
-        String base = OfficialLinks.payment();
-        if (!base.contains("note=")) return base;
-        String encoded = URLEncoder.encode(playerName(), StandardCharsets.UTF_8).replace("+", "%20");
-        return base + encoded;
-    }
-
-    private static String playerName() {
-        Minecraft mc = Minecraft.getInstance();
-        return mc.getUser() != null ? mc.getUser().getName() : "Player";
+        Minecraft.getInstance().setScreen(new DonationOptionsScreen(this));
     }
 
     /** Whole-dollar USD for a leaderboard/tile figure, e.g. {@code $1,250}. */
