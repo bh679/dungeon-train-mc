@@ -5755,9 +5755,9 @@
       "highlights": [],
       "pr": 845,
       "date": "2026-07-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.513.0",
+      "released_at": "2026-07-25T07:11:33Z"
     },
     {
       "id": "spawn-deadlock-fluid-fix",
@@ -5771,9 +5771,9 @@
       ],
       "pr": 846,
       "date": "2026-07-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.513.0",
+      "released_at": "2026-07-25T07:11:33Z"
     }
   ]
 }
