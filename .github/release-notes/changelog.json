@@ -5790,6 +5790,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "trade-everything-0-2-8",
+      "version": "0.515.0",
+      "type": "feat",
+      "title": "Trade Everything updated \u2014 craftable-item value cap",
+      "summary": "The bundled Trade Everything mod is updated to 0.2.8. Villager 'Trade Anything' payouts for craftable items are now capped at their component worth, so you can't cheese emeralds by crafting cheap high-value items \u2014 enchanted and custom-stat gear stay exempt. Also includes refreshed default trade values.",
+      "highlights": [
+        "Craftable items pay out no more than their raw material worth",
+        "Enchanted / custom-stat items remain exempt from the cap"
+      ],
+      "date": "2026-07-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
