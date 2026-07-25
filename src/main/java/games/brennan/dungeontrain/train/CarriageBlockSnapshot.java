@@ -97,9 +97,11 @@ public final class CarriageBlockSnapshot {
 
     /**
      * Stamp a snapshot into {@code level} at {@code worldOrigin}: the footprint is cleared to air, then
-     * every stored cell is written (block state + block-entity NBT). Returns true on success.
+     * every stored cell is written (block state + block-entity NBT). Returns the set of NON-AIR world
+     * positions written (the carriage's blocks, to hand to Sable's {@code assemble}), or {@code null}
+     * on failure. Runs at spawn, before assembly, so host-level writes at world coords are correct.
      */
-    public static boolean place(ServerLevel level, BlockPos worldOrigin, CompoundTag snap) {
+    public static java.util.Set<BlockPos> place(ServerLevel level, BlockPos worldOrigin, CompoundTag snap) {
         try {
             int l = snap.getInt("l"), h = snap.getInt("h"), w = snap.getInt("w");
             HolderGetter<Block> blocks = level.holderLookup(Registries.BLOCK);
@@ -112,6 +114,7 @@ public final class CarriageBlockSnapshot {
                     }
                 }
             }
+            java.util.Set<BlockPos> placed = new java.util.HashSet<>();
             ListTag cells = snap.getList("cells", net.minecraft.nbt.Tag.TAG_COMPOUND);
             for (int i = 0; i < cells.size(); i++) {
                 CompoundTag cell = cells.getCompound(i);
@@ -120,6 +123,7 @@ public final class CarriageBlockSnapshot {
                 BlockPos abs = worldOrigin.offset(p[0], p[1], p[2]);
                 BlockState state = NbtUtils.readBlockState(blocks, cell.getCompound("s"));
                 level.setBlock(abs, state, PLACE_FLAGS);
+                placed.add(abs.immutable());
                 if (cell.contains("b", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
                     BlockEntity be = level.getBlockEntity(abs);
                     if (be != null) {
@@ -128,10 +132,10 @@ public final class CarriageBlockSnapshot {
                     }
                 }
             }
-            return true;
+            return placed;
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Failed to place shared-carriage snapshot at {}: {}", worldOrigin, e.toString());
-            return false;
+            return null;
         }
     }
 
