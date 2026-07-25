@@ -109,12 +109,26 @@ public final class UiAnalytics {
      * (fall/deeds/gear/…) was viewed. Lock-step with ui-events.js PAGES.
      */
     public static void pageOpen(String surface, String page) {
-        send(surface, TARGET_PAGE, "open", -1, page, null, -1, -1);
+        pageOpen(surface, page, null);
+    }
+
+    /**
+     * As {@link #pageOpen(String, String)} but carrying the datapack-defined {@code questionId} for
+     * a survey page — the death screen has one survey page per question, so {@code page="survey"}
+     * alone can't tell them apart. Null/blank for non-survey pages. Lock-step with ui-events.js.
+     */
+    public static void pageOpen(String surface, String page, String questionId) {
+        send(surface, TARGET_PAGE, "open", -1, page, questionId, -1, -1);
     }
 
     /** As {@link #pageTime(String, long)} but identifying which multi-page {@code page} was left. */
     public static void pageTime(String surface, String page, long durationMs) {
-        send(surface, TARGET_PAGE, "page_time", Math.max(0, durationMs), page, null, -1, -1);
+        pageTime(surface, page, null, durationMs);
+    }
+
+    /** As {@link #pageTime(String, String, long)} but carrying a survey page's {@code questionId}. */
+    public static void pageTime(String surface, String page, String questionId, long durationMs) {
+        send(surface, TARGET_PAGE, "page_time", Math.max(0, durationMs), page, questionId, -1, -1);
     }
 
     /**

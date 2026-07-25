@@ -206,9 +206,12 @@ public final class NarrativeDeathScreen extends Screen {
     private int currentPage = 0;
     private int lastSurveyCount = -1;
     // Death-screen funnel analytics: the page whose dwell we're currently timing (a UiAnalytics
-    // PAGE_* id, or null when nothing is open) and when it opened. Fed to UiAnalytics on each page
-    // change (startTransition) and on close (removed) — see openPageAnalytics/leavePageAnalytics.
+    // PAGE_* id, or null when nothing is open), its survey questionId (SURVEY pages only — the
+    // screen has one page per question, so page="survey" alone can't tell them apart), and when it
+    // opened. Fed to UiAnalytics on each page change (startTransition) and terminal exit — see
+    // openPageAnalytics/leavePageAnalytics.
     private String openedPage = null;
+    private String openedQuestionId = null;
     private long pageOpenedAtMs = 0L;
     // Plea variants shown above the 2nd (and any later) survey question. The 1st question keeps the
     // calm "ledger" intro; the 2nd swaps to one of these urgent pleas, chosen at random per death
@@ -417,7 +420,7 @@ public final class NarrativeDeathScreen extends Screen {
             // Funnel: the opening page's first view (usually FALL). Fired once — inside !opened —
             // so a later rebuildWidgets/init doesn't re-log it. Page changes go through
             // startTransition; close through removed().
-            openPageAnalytics(pages.get(currentPage).kind());
+            openPageAnalytics(pages.get(currentPage));
         }
     }
 
@@ -674,18 +677,20 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     /** Start timing a newly-shown page and fire its {@code open} funnel event (consent-gated). */
-    private void openPageAnalytics(Kind kind) {
-        openedPage = pageAnalyticsId(kind);
+    private void openPageAnalytics(Page page) {
+        openedPage = pageAnalyticsId(page.kind());
+        openedQuestionId = page.kind() == Kind.SURVEY && page.survey() != null ? page.survey().id() : null;
         pageOpenedAtMs = Util.getMillis();
-        UiAnalytics.pageOpen(UiAnalytics.SURFACE_DEATH_SCREEN, openedPage);
+        UiAnalytics.pageOpen(UiAnalytics.SURFACE_DEATH_SCREEN, openedPage, openedQuestionId);
     }
 
     /** Close the currently-timed page: fire its {@code page_time} with the dwell so far. Idempotent. */
     private void leavePageAnalytics() {
         if (openedPage == null) return;
-        UiAnalytics.pageTime(UiAnalytics.SURFACE_DEATH_SCREEN, openedPage,
+        UiAnalytics.pageTime(UiAnalytics.SURFACE_DEATH_SCREEN, openedPage, openedQuestionId,
                 Util.getMillis() - pageOpenedAtMs);
         openedPage = null;
+        openedQuestionId = null;
     }
 
     private void startTransition(int target) {
@@ -694,7 +699,7 @@ public final class NarrativeDeathScreen extends Screen {
         // the old page's dwell and begin the new page's.
         if (target >= 0 && target < pages.size() && target != currentPage) {
             leavePageAnalytics();
-            openPageAnalytics(pages.get(target).kind());
+            openPageAnalytics(pages.get(target));
         }
         imgFinishMs = 0L;               // cancel any in-flight fast reveal
         dipStartBlack = photoBlack;     // carry current darkness (advancing mid-rise won't snap)

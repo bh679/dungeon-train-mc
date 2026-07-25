@@ -86,6 +86,18 @@ class UiAnalyticsPayloadTest {
     }
 
     @Test
+    @DisplayName("survey page open carries page=survey + questionId, no score")
+    void surveyPageOpen() {
+        JsonObject out = UiAnalytics.buildPayload(UUID, "x", "v",
+                UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_PAGE, "open", -1,
+                UiAnalytics.PAGE_SURVEY, "nps", -1, -1);
+        assertEquals("survey", out.get("page").getAsString());
+        assertEquals("nps", out.get("questionId").getAsString());
+        assertFalse(out.has("score"));
+        assertFalse(out.has("durationMs"));
+    }
+
+    @Test
     @DisplayName("survey_answer carries questionId, score, scoreMax (never a comment)")
     void surveyAnswer() {
         JsonObject out = UiAnalytics.buildPayload(UUID, "x", "v",
