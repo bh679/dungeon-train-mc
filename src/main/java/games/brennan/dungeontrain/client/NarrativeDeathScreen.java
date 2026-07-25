@@ -5,8 +5,11 @@ import games.brennan.discordpresence.network.DPNetwork;
 import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.survey.SurveyKeys;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
+import games.brennan.dungeontrain.client.analytics.UiAnalytics;
+import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathNarrative;
+import games.brennan.dungeontrain.net.relay.DonationSummaryClient;
 import games.brennan.dungeontrain.net.DeathPhotoPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.RideGalleryPacket;
@@ -26,6 +29,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Renderable;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -44,6 +48,9 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.HashMap;
@@ -83,7 +90,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class NarrativeDeathScreen extends Screen {
 
-    private enum Kind { FALL, DEEDS, GEAR, LIVES, SURVEY, PLATFORM }
+    private enum Kind { FALL, DEEDS, GEAR, LIVES, SURVEY, DONATE, PLATFORM }
 
     private record Page(Kind kind, SurveyQuestionPayload.Entry survey) {
         static Page of(Kind k) { return new Page(k, null); }
@@ -247,6 +254,8 @@ public final class NarrativeDeathScreen extends Screen {
 
     // Clickable regions, recomputed each render() and read by mouseClicked().
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
+    // DONATE page: the in-body "Support the line" button (opens the Revolut donate link).
+    private Rect donateRect;
     private Rect photosRect;
     // Trash toggle left of the reboard chip: delete the old world's save on reboard?
     private Rect deleteWorldRect;
@@ -286,6 +295,8 @@ public final class NarrativeDeathScreen extends Screen {
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
             list.add(Page.survey(e));
         }
+        // "Support the line" — the donation ledger, just before the platform send-off.
+        list.add(Page.of(Kind.DONATE));
         list.add(Page.of(Kind.PLATFORM));
         return list;
     }
@@ -301,6 +312,7 @@ public final class NarrativeDeathScreen extends Screen {
         assignBackgrounds();
         maybeSendRidePhoto();
         maybeSendRideGallery();
+        kickDonationFetch();
         lastSurveyCount = SurveyClientState.questions().size();
         gearAdvScroll = 0;
         commentBox = null;
@@ -454,6 +466,7 @@ public final class NarrativeDeathScreen extends Screen {
         // any from last frame so a page that doesn't draw one can't be clicked.
         boardAnewRect = null;
         platformLeaveRect = null;
+        donateRect = null;
         deleteWorldRect = null;
         continueRect = null;
         backRect = null;
@@ -486,6 +499,7 @@ public final class NarrativeDeathScreen extends Screen {
                 case GEAR -> y = drawGear(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
                 case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
                 case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
+                case DONATE -> y = drawDonate(g, left, contentW, cx, y);
                 case PLATFORM -> y = drawPlatform(g, narr, left, contentW, cx, y);
             }
 
@@ -553,7 +567,7 @@ public final class NarrativeDeathScreen extends Screen {
             case DEEDS    -> List.of(SnapshotTag.COMBAT, SnapshotTag.SCENIC);
             case GEAR     -> List.of(SnapshotTag.GEAR, SnapshotTag.SCENIC);
             case LIVES    -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
-            case SURVEY, PLATFORM -> List.of();
+            case SURVEY, DONATE, PLATFORM -> List.of();
         };
     }
 
@@ -1154,6 +1168,79 @@ public final class NarrativeDeathScreen extends Screen {
         return y;
     }
 
+    /**
+     * The "support the line" ledger page — narration plea, then (once the relay summary arrives)
+     * stat tiles for money raised / running cost / the player's own contribution, a monthly donor
+     * leaderboard, and a green Donate button. Reads {@link DonationSummaryCache} live each frame;
+     * a late fetch simply fills in. Kept graceful when the summary is null (loading / offline).
+     */
+    private int drawDonate(GuiGraphics g, int left, int w, int cx, int y) {
+        drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_donate");
+        y += 14;
+        drawTrain(g, left, w, y, currentPage);
+        y += 46;
+        y = drawNarration(g, Component.translatable("gui.dungeontrain.death.narr.donate_intro").getString(), cx, w, y);
+        y += 8;
+
+        DonationSummaryClient.Summary s = DonationSummaryCache.get();
+        if (s == null) {
+            y = drawCentered(g, Component.translatable("gui.dungeontrain.death.narr.donate_loading"), cx, w, y, SUBLINE);
+            y += 10;
+            donateRect = drawDonateButton(g, cx, y);
+            return y + 28;
+        }
+
+        // Three stat tiles: raised this month, monthly running cost, this player's own total.
+        int colW = w / 3;
+        int cellW = colW - 8;
+        int c0 = left + colW / 2;
+        int c1 = left + colW + colW / 2;
+        int c2 = left + 2 * colW + colW / 2;
+        drawCell(g, c0, y, fmtUsd(s.monthlyRaisedUsd()), "gui.dungeontrain.death.narr.lbl_raised_month", cellW);
+        drawCell(g, c1, y, s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—",
+                "gui.dungeontrain.death.narr.lbl_running_cost", cellW);
+        drawCell(g, c2, y, s.hasYou() ? fmtUsd(s.youTotalUsd()) : "—",
+                "gui.dungeontrain.death.narr.lbl_your_contribution", cellW);
+        y += 30;
+
+        // "N% of the line's costs covered this month" — only when the running cost is known.
+        if (s.percentCovered() >= 0) {
+            y = drawCentered(g, Component.translatable(
+                    "gui.dungeontrain.death.narr.donate_covered", s.percentCovered()), cx, w, y, SUBLINE);
+            y += 4;
+        }
+
+        // Monthly donor leaderboard — top few, name left / amount right. Patreon rows are tinted.
+        List<DonationSummaryClient.Entry> board = s.monthly();
+        if (!board.isEmpty()) {
+            drawSecLabel(g, cx, y, "gui.dungeontrain.death.narr.lbl_leaderboard_monthly");
+            y += 12;
+            int rows = Math.min(5, board.size());
+            for (int i = 0; i < rows; i++) {
+                DonationSummaryClient.Entry e = board.get(i);
+                String amt = fmtUsd(e.amountUsd());
+                int amtW = this.font.width(amt);
+                String label = this.font.plainSubstrByWidth((i + 1) + ". " + e.name(), w - 12 - amtW - 6);
+                int color = "patreon".equals(e.source()) ? QUESTION : VALUE;
+                g.drawString(this.font, label, left + 6, y, fade(color), false);
+                g.drawString(this.font, amt, left + w - 6 - amtW, y, fade(color), false);
+                y += this.font.lineHeight + 2;
+            }
+            y += 6;
+        }
+
+        donateRect = drawDonateButton(g, cx, y);
+        return y + 28;
+    }
+
+    /** The green in-body "Support the line" button; returns its clickable rect. */
+    private Rect drawDonateButton(GuiGraphics g, int cx, int y) {
+        int bw = 180, h = 22;
+        return drawBevel(g, cx - bw / 2, y, bw, h,
+                Component.translatable("gui.dungeontrain.death.narr.donate_button"),
+                BTN_PRI_BG, BTN_PRI_LIGHT, BTN_DARK, 0xFFFFFFFF);
+    }
+
     private int drawPlatform(GuiGraphics g, DeathNarrative n, int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_platform");
         y += 14;
@@ -1375,6 +1462,10 @@ public final class NarrativeDeathScreen extends Screen {
                 openAdvancements();
                 return true;
             }
+            if (page.kind() == Kind.DONATE && donateRect != null && donateRect.has(mx, my)) {
+                openDonateLink();
+                return true;
+            }
             if (page.kind() == Kind.SURVEY && page.survey() != null) {
                 String qid = page.survey().id();
                 for (int i = 0; i < scoreRects.size(); i++) {
@@ -1478,6 +1569,48 @@ public final class NarrativeDeathScreen extends Screen {
 
     private void openGallery() {
         Minecraft.getInstance().setScreen(new RideGalleryScreen(this));
+    }
+
+    /**
+     * Kick the one-shot donation-summary fetch when the screen opens. Also nudges the official-links
+     * overlay so the donate URL is live (it falls back to the baked Revolut link otherwise). The
+     * fetch is anonymous unless the player has consented to networking (see {@link DonationSummaryClient}).
+     */
+    private void kickDonationFetch() {
+        OfficialLinks.ensureFetched();
+        Minecraft mc = Minecraft.getInstance();
+        String name = mc.getUser() != null ? mc.getUser().getName() : null;
+        DonationSummaryClient.fetch(name, summary ->
+                Minecraft.getInstance().execute(() -> DonationSummaryCache.set(summary)));
+    }
+
+    /** Open the Revolut donate link through the vanilla confirm screen, tracking click + follow-through. */
+    private void openDonateLink() {
+        String url = revolutUrl();
+        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_DONATE);
+        Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
+            UiAnalytics.confirm(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_DONATE, yes);
+            if (yes) Util.getPlatform().openUri(URI.create(url));
+            Minecraft.getInstance().setScreen(this); // back to the death screen for further pages
+        }, url, true));
+    }
+
+    /** The donate URL with the player's name URL-encoded onto the {@code note=} tag (matches SupportScreen). */
+    private static String revolutUrl() {
+        String base = OfficialLinks.payment();
+        if (!base.contains("note=")) return base;
+        String encoded = URLEncoder.encode(playerName(), StandardCharsets.UTF_8).replace("+", "%20");
+        return base + encoded;
+    }
+
+    private static String playerName() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.getUser() != null ? mc.getUser().getName() : "Player";
+    }
+
+    /** Whole-dollar USD for a leaderboard/tile figure, e.g. {@code $1,250}. */
+    private static String fmtUsd(int usd) {
+        return "$" + String.format(java.util.Locale.ROOT, "%,d", usd);
     }
 
     // ---- Draw helpers ----

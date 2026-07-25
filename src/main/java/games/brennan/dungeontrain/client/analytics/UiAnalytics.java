@@ -39,6 +39,9 @@ public final class UiAnalytics {
     // Surfaces
     public static final String SURFACE_SUPPORT_PAGE = "support_page";
     public static final String SURFACE_TITLE_SCREEN = "title_screen";
+    // The death-screen "support the line" donation page. Must stay in lock-step with the relay's
+    // ui-events.js SURFACES whitelist, or click/confirm events 400 silently.
+    public static final String SURFACE_DEATH_SCREEN = "death_screen";
     // Targets
     public static final String TARGET_PAGE = "page";
     public static final String TARGET_SUPPORT = "support";
