@@ -30,8 +30,15 @@ class FamiliarBookMessageTest {
     private static BookStatsClient.Stats stats(int held, int completers, int opens,
                                                long longestReadMs, long longestPageMs, int longestPageIndex,
                                                int pageTurns, int rereads) {
+        return stats(held, completers, opens, longestReadMs, longestPageMs, longestPageIndex,
+                pageTurns, rereads, 0, 0);
+    }
+
+    private static BookStatsClient.Stats stats(int held, int completers, int opens,
+                                               long longestReadMs, long longestPageMs, int longestPageIndex,
+                                               int pageTurns, int rereads, int votesUp, int votesDown) {
         return new BookStatsClient.Stats(true, held, completers, opens,
-                longestReadMs, longestPageMs, longestPageIndex, pageTurns, rereads);
+                longestReadMs, longestPageMs, longestPageIndex, pageTurns, rereads, votesUp, votesDown);
     }
 
     /** The top-level translatable contents of the built line for {@code s} at {@code seed}. */
@@ -133,5 +140,70 @@ class FamiliarBookMessageTest {
             assertNotEquals(KEY + "1", key, "no completion line when completers=0");
             assertNotEquals(KEY + "2", key, "no completion line when completers=0");
         }
+    }
+
+    @Test
+    void voteStat_zero_neverClaimsVotes() {
+        // A book with no votes must never pick a vote variant (#11/#12/#13), even with rich other stats.
+        BookStatsClient.Stats s = stats(9, 4, 30, 254_000L, 100_000L, 2, 40, 6, 0, 0);
+        for (long seed = 0; seed < 300; seed++) {
+            String key = contents(s, seed).getKey();
+            assertNotEquals(KEY + "11", key, "no vote line when unvoted");
+            assertNotEquals(KEY + "12", key, "no vote line when unvoted");
+            assertNotEquals(KEY + "13", key, "no vote line when unvoted");
+        }
+    }
+
+    @Test
+    void voteVariants_carryTallyWithCorrectGrammar() {
+        // held + votes only (3 up, 1 down) → eligible = the three vote variants (#11/#12/#13) + fallback (#10).
+        BookStatsClient.Stats s = stats(5, 0, 0, 0, 0, 0, 0, 0, 3, 1);
+        boolean sawFull = false, sawShort = false;
+        for (long seed = 0; seed < 300; seed++) {
+            TranslatableContents tc = contents(s, seed);
+            String key = tc.getKey();
+            if (key.equals(KEY + "11") || key.equals(KEY + "12")) {
+                // Full-clause variants: arg[1] = up clause (plural, 3), arg[2] = down clause (singular, 1).
+                TranslatableContents up = subContents(tc.getArgs()[1]);
+                TranslatableContents down = subContents(tc.getArgs()[2]);
+                assertEquals(KEY + "up.other", up.getKey(), "3 up → plural up key");
+                assertEquals("3", argStr(up.getArgs()[0]));
+                assertEquals(KEY + "down.one", down.getKey(), "1 down → singular down key");
+                assertEquals("1", argStr(down.getArgs()[0]));
+                sawFull = true;
+            } else if (key.equals(KEY + "13")) {
+                // Compact scoreboard: arg[1] = up.short(3), arg[2] = down.short(1).
+                TranslatableContents up = subContents(tc.getArgs()[1]);
+                TranslatableContents down = subContents(tc.getArgs()[2]);
+                assertEquals(KEY + "up.short", up.getKey());
+                assertEquals("3", argStr(up.getArgs()[0]));
+                assertEquals(KEY + "down.short", down.getKey());
+                assertEquals("1", argStr(down.getArgs()[0]));
+                sawShort = true;
+            } else {
+                assertEquals(KEY + "10", key, "only vote variants + fallback are eligible here, got: " + key);
+            }
+        }
+        assertTrue(sawFull, "a full-clause vote variant should surface across 300 seeds");
+        assertTrue(sawShort, "the compact vote variant should surface across 300 seeds");
+    }
+
+    @Test
+    void voteVariant_upSingular_selectsSingularKey() {
+        // 1 up, 0 down → up clause must be singular; a one-sided tally still surfaces (sum > 0).
+        BookStatsClient.Stats s = stats(2, 0, 0, 0, 0, 0, 0, 0, 1, 0);
+        boolean sawFull = false;
+        for (long seed = 0; seed < 300; seed++) {
+            TranslatableContents tc = contents(s, seed);
+            if (tc.getKey().equals(KEY + "11") || tc.getKey().equals(KEY + "12")) {
+                TranslatableContents up = subContents(tc.getArgs()[1]);
+                assertEquals(KEY + "up.one", up.getKey(), "1 up → singular up key");
+                assertEquals("1", argStr(up.getArgs()[0]));
+                TranslatableContents down = subContents(tc.getArgs()[2]);
+                assertEquals("0", argStr(down.getArgs()[0]), "0 down is still named");
+                sawFull = true;
+            }
+        }
+        assertTrue(sawFull, "a full-clause vote variant should surface across 300 seeds");
     }
 }

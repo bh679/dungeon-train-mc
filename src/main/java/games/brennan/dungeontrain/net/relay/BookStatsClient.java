@@ -43,11 +43,12 @@ public final class BookStatsClient {
     /**
      * Reception stats for one community book. {@code held} is the count of DISTINCT players who opened
      * it; {@code completers} the distinct players who read it to completion; {@code rereads} the repeat
-     * opens; durations in ms; {@code longestPageIndex} is 0-based.
+     * opens; durations in ms; {@code longestPageIndex} is 0-based. {@code votesUp}/{@code votesDown} are
+     * the book's 👍/👎 tally (0 when unvoted; the relay folds them in additively — see server.js).
      */
     public record Stats(boolean isAuthor, int held, int completers, int opens,
                         long longestReadMs, long longestPageMs, int longestPageIndex,
-                        int pageTurns, int rereads) {}
+                        int pageTurns, int rereads, int votesUp, int votesDown) {}
 
     /**
      * Fetch stats for {@code bookId} off-thread and hand the parsed result to {@code callback} (invoked
@@ -99,7 +100,8 @@ public final class BookStatsClient {
                 isAuthor,
                 optInt(o, "held"), optInt(o, "completers"), optInt(o, "opens"),
                 optLong(o, "longestReadMs"), optLong(o, "longestPageMs"), optInt(o, "longestPageIndex"),
-                optInt(o, "pageTurns"), optInt(o, "rereads"));
+                optInt(o, "pageTurns"), optInt(o, "rereads"),
+                optInt(o, "votesUp"), optInt(o, "votesDown"));
     }
 
     private static int optInt(JsonObject o, String k) {
