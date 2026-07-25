@@ -7,7 +7,6 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
@@ -39,8 +38,16 @@ public final class DonationOptionsScreen extends Screen {
     private static final float[] TINT_ORANGE = {1.00F, 0.47F, 0.38F}; // Patreon
 
     private final Screen parent;
+    // Text positions computed in init(), drawn in render() (title + subtitle + a per-column
+    // description above each button).
+    private int titleY;
     private int subtitleTop;
+    private int descTop;
+    private int leftColCenter;
+    private int rightColCenter;
     private List<FormattedCharSequence> subtitleLines = List.of();
+    private List<FormattedCharSequence> revolutDescLines = List.of();
+    private List<FormattedCharSequence> patreonDescLines = List.of();
 
     public DonationOptionsScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.death.narr.donate_button"));
@@ -52,27 +59,40 @@ public final class DonationOptionsScreen extends Screen {
     @Override
     protected void init() {
         int cx = this.width / 2;
+        int lineH = this.font.lineHeight + 2;
 
         int wrapW = Math.min(360, this.width - 80);
         subtitleLines = this.font.split(
                 Component.translatable("gui.dungeontrain.death.narr.donate_options_sub"), wrapW);
 
-        // The two donation options sit side by side on one row, tall for prominence.
-        int rowW = Math.min(320, this.width - 60);
-        int gap = 8;
+        // Two options side by side on one row, tall for prominence; each has a description above it.
+        int rowW = Math.min(340, this.width - 60);
+        int gap = 10;
         int each = (rowW - gap) / 2;
         int rowX = cx - rowW / 2;
-        int bh = 30;
-        int y = this.height / 2 - bh / 2;
-        subtitleTop = y - 14 - subtitleLines.size() * (this.font.lineHeight + 2);
+        int bh = 32;
+        leftColCenter = rowX + each / 2;
+        rightColCenter = rowX + each + gap + each / 2;
 
-        ColorTintedButton revolut = new ColorTintedButton(rowX, y, each, bh,
+        revolutDescLines = this.font.split(Component.translatable("gui.dungeontrain.support.donate_tooltip"), each - 4);
+        patreonDescLines = this.font.split(Component.translatable("gui.dungeontrain.death.narr.donate_patreon_desc"), each - 4);
+        int descRows = Math.max(revolutDescLines.size(), patreonDescLines.size());
+
+        // Vertically centre the whole title → back block.
+        int subH = subtitleLines.size() * lineH;
+        int descH = descRows * lineH;
+        int blockH = lineH + 6 + subH + 12 + descH + 4 + bh + 12 + 20;
+        int top = Math.max(20, (this.height - blockH) / 2);
+
+        titleY = top;
+        subtitleTop = titleY + lineH + 6;
+        descTop = subtitleTop + subH + 12;
+        int y = descTop + descH + 4;
+
+        addRenderableWidget(new ColorTintedButton(rowX, y, each, bh,
                 Component.translatable("gui.dungeontrain.death.narr.donate_revolut"),
                 TINT_GREEN[0], TINT_GREEN[1], TINT_GREEN[2],
-                b -> openLink(revolutUrl(), UiAnalytics.TARGET_DONATE));
-        // Same hover blurb as the title-screen "Ways to Help" donate button.
-        revolut.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.support.donate_tooltip")));
-        addRenderableWidget(revolut);
+                b -> openLink(revolutUrl(), UiAnalytics.TARGET_DONATE)));
 
         addRenderableWidget(new ColorTintedButton(rowX + each + gap, y, each, bh,
                 Component.translatable("gui.dungeontrain.death.narr.donate_patreon"),
@@ -87,11 +107,24 @@ public final class DonationOptionsScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick); // background + widgets
         int cx = this.width / 2;
-        g.drawCenteredString(this.font, this.title, cx, subtitleTop - this.font.lineHeight - 4, TITLE);
+        int lineH = this.font.lineHeight + 2;
+        g.drawCenteredString(this.font, this.title, cx, titleY, TITLE);
         int y = subtitleTop;
         for (FormattedCharSequence line : subtitleLines) {
             g.drawString(this.font, line, cx - this.font.width(line) / 2, y, NARR, false);
-            y += this.font.lineHeight + 2;
+            y += lineH;
+        }
+        // Per-column descriptions, sitting directly above their button.
+        drawColumnDesc(g, revolutDescLines, leftColCenter, lineH);
+        drawColumnDesc(g, patreonDescLines, rightColCenter, lineH);
+    }
+
+    /** Draw a wrapped description block centred on {@code centerX}, anchored at {@link #descTop}. */
+    private void drawColumnDesc(GuiGraphics g, List<FormattedCharSequence> lines, int centerX, int lineH) {
+        int y = descTop;
+        for (FormattedCharSequence line : lines) {
+            g.drawString(this.font, line, centerX - this.font.width(line) / 2, y, NARR, false);
+            y += lineH;
         }
     }
 
