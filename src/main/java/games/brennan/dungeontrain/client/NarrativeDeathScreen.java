@@ -4,6 +4,7 @@ import games.brennan.discordpresence.client.SurveyClientState;
 import games.brennan.discordpresence.network.DPNetwork;
 import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.survey.SurveyKeys;
+import games.brennan.discordpresence.survey.SurveyRegistry;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
@@ -105,7 +106,10 @@ public final class NarrativeDeathScreen extends Screen {
     private record AdvIcon(ItemStack icon, Component title, Component description, AdvancementType type, Rect rect) {}
 
     // ---- Palette (ARGB) ----
-    private static final int OVERLAY        = 0xF2090A0D;
+    private static final int OVERLAY        = 0xF2070C1E;
+    // The page-transition fade dips toward this dark-blue (not pure black) for a colder,
+    // night-rail mood. RGB only — OR'd with the running dip alpha each frame.
+    private static final int DIP_RGB        = 0x070C1E;
     private static final int TILE_BG        = 0x14FFFFFF;
     private static final int TILE_BORDER    = 0x33D6C496;
     private static final int VALUE          = 0xFFE6D6B0;
@@ -261,7 +265,10 @@ public final class NarrativeDeathScreen extends Screen {
     private Rect donateRect;
     private record TileTip(Rect rect, String tipKey) {}
     private final List<TileTip> donateTips = new ArrayList<>();
-    private int donateListScroll = 0;      // vertical scroll offset (px) of the supporter list
+    // Smooth scroll: the wheel nudges donateScrollTarget; the drawn offset (donateScroll) eases
+    // toward it each frame so the list glides rather than jumping a row per notch.
+    private float donateScroll = 0f;        // current (eased) vertical offset (px) of the supporter list
+    private float donateScrollTarget = 0f;  // where the wheel wants it
     private int donateListMaxScroll = 0;    // scroll clamp bound, set during drawDonate
     private Rect donateListViewport;        // supporter-list scroll viewport (hover / scroll hit-test)
     private Rect photosRect;
@@ -310,19 +317,24 @@ public final class NarrativeDeathScreen extends Screen {
         return list;
     }
 
-    /** How often the donation page appears — every Nth death (by lifetime death count). */
-    private static final int DONATE_EVERY_N_DEATHS = 3;
+    // When the donation page appears: a warm recommender, a long session, or every Nth run.
+    private static final int DONATE_NPS_THRESHOLD = 7;                  // recommend score strictly above this
+    private static final long DONATE_PLAYTIME_TICKS = 40L * 60L * 20L;  // 40 minutes, in ticks
+    private static final int DONATE_EVERY_N_RUNS = 3;                   // a run ends at death
 
     /**
-     * Whether to include the donation page this death. Keyed off the lifetime death count in the
-     * cached stats packet (reliably present by {@code init} — the packet lands with the screen).
-     * When stats are somehow absent we don't hide the ask; on the very first death it always shows.
+     * Whether to include the donation page this death. Shows when ANY of: the player's last NPS
+     * ("recommend") answer is &gt; 7, this run lasted over 40 minutes, or it's every 3rd run
+     * (lifetime death count — a run ends at death). Keyed off the cached stats packet, which lands
+     * with the screen; when stats are somehow absent we don't hide the ask.
      */
     private boolean shouldShowDonate() {
+        if (ClientDisplayConfig.getLastNpsScore() > DONATE_NPS_THRESHOLD) return true;
         DeathStatsPacket s = DeathStatsCache.get();
         if (s == null) return true;
-        long deaths = s.lifeDeaths();
-        return deaths <= 1 || deaths % DONATE_EVERY_N_DEATHS == 0;
+        if (s.runTicks() > DONATE_PLAYTIME_TICKS) return true;
+        long runs = s.lifeDeaths();
+        return runs <= 1 || runs % DONATE_EVERY_N_RUNS == 0;
     }
 
     @Override
@@ -339,7 +351,8 @@ public final class NarrativeDeathScreen extends Screen {
         kickDonationFetch();
         lastSurveyCount = SurveyClientState.questions().size();
         gearAdvScroll = 0;
-        donateListScroll = 0;
+        donateScroll = 0f;
+        donateScrollTarget = 0f;
         commentBox = null;
         LOGGER.info("[DungeonTrain] NarrativeDeathScreen: page {}/{}, surveyQuestions={}, statsCached={}",
                 currentPage, pages.size(), lastSurveyCount, DeathStatsCache.get() != null);
@@ -471,7 +484,7 @@ public final class NarrativeDeathScreen extends Screen {
             DeathBackgroundPainter.drawPhoto(g, photo, this.width, this.height);
             if (photoBlack > 0.0f) {
                 int a = Math.min(255, Math.round(photoBlack * 255.0f));
-                g.fill(0, 0, this.width, this.height, a << 24);
+                g.fill(0, 0, this.width, this.height, (a << 24) | DIP_RGB);
             }
             DeathBackgroundPainter.drawVignette(g, this.width, this.height, uiAlpha);
         } else {
@@ -545,11 +558,14 @@ public final class NarrativeDeathScreen extends Screen {
             if (page.kind() == Kind.LIVES && stats != null && settled()) {
                 drawLivesTooltips(g, mouseX, mouseY);
             }
-            // Per-tile "what is this number?" tooltips on the donation page.
+            // Per-tile "what is this number?" tooltips on the donation page — wrapped to at most
+            // 60% of the screen width so a long description breaks onto new lines.
             if (page.kind() == Kind.DONATE && settled()) {
                 for (TileTip t : donateTips) {
                     if (t.rect().has(mouseX, mouseY)) {
-                        g.renderTooltip(this.font, Component.translatable(t.tipKey()), mouseX, mouseY);
+                        int maxW = (int) (this.width * 0.6);
+                        g.renderTooltip(this.font, this.font.split(Component.translatable(t.tipKey()), maxW),
+                                mouseX, mouseY);
                         break;
                     }
                 }
@@ -1262,10 +1278,13 @@ public final class NarrativeDeathScreen extends Screen {
         int rowH = this.font.lineHeight + 2;
         List<DonationSummaryClient.Entry> board = s.monthly();
         donateListMaxScroll = Math.max(0, board.size() * rowH - listH);
-        donateListScroll = Math.max(0, Math.min(donateListMaxScroll, donateListScroll));
+        // Ease the drawn offset toward the wheel target (clamped) — a smooth glide, not a jump.
+        donateScrollTarget = Math.max(0f, Math.min(donateListMaxScroll, donateScrollTarget));
+        donateScroll += (donateScrollTarget - donateScroll) * 0.4f;
+        if (Math.abs(donateScrollTarget - donateScroll) < 0.5f) donateScroll = donateScrollTarget;
         donateListViewport = new Rect(rightX, listTop, colW, listH);
         g.enableScissor(rightX, listTop, rightX + colW, listTop + listH);
-        int ry = listTop - donateListScroll;
+        int ry = listTop - Math.round(donateScroll);
         for (DonationSummaryClient.Entry e : board) {
             String amt = fmtUsd(e.amountUsd());
             int amtW = this.font.width(amt);
@@ -1277,7 +1296,7 @@ public final class NarrativeDeathScreen extends Screen {
         }
         g.disableScissor();
         // Faint ▾ affordance when more names lie below the fold.
-        if (donateListScroll < donateListMaxScroll) {
+        if (donateScroll < donateListMaxScroll - 0.5f) {
             drawCenteredStr(g, "▾", rightX + colW / 2, listTop + listH - this.font.lineHeight + 1, KICKER);
         }
 
@@ -1542,11 +1561,12 @@ public final class NarrativeDeathScreen extends Screen {
             gearAdvScroll = Math.max(0, Math.min(gearAdvMaxScroll, gearAdvScroll - (int) Math.round(dy) * step));
             return true;
         }
-        // Vertical-scroll the DONATE supporter list when the cursor is over its viewport.
+        // Vertical-scroll the DONATE supporter list when the cursor is over its viewport. The wheel
+        // moves a target; drawDonate eases the drawn offset toward it for a smooth glide.
         if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.DONATE
                 && donateListViewport != null && donateListViewport.has(mx, my) && donateListMaxScroll > 0) {
-            int step = this.font.lineHeight + 2; // one name per notch
-            donateListScroll = Math.max(0, Math.min(donateListMaxScroll, donateListScroll - (int) Math.round(dy) * step));
+            float step = (this.font.lineHeight + 2) * 1.5f; // ~1.5 names per notch
+            donateScrollTarget = Math.max(0f, Math.min(donateListMaxScroll, donateScrollTarget - (float) dy * step));
             return true;
         }
         return super.mouseScrolled(mx, my, dx, dy);
@@ -1594,6 +1614,10 @@ public final class NarrativeDeathScreen extends Screen {
             // Text question: the typed answer IS the submission — send nothing until it's entered.
             if (comment.isEmpty()) return;
             score = 0; // unused server-side (DP omits the Rating field for no-scale questions)
+        }
+        // Remember the NPS ("recommend") score — it gates whether the donation page appears.
+        if (e.scaleMax() >= e.scaleMin() && SurveyRegistry.NPS_ID.equals(e.id())) {
+            ClientDisplayConfig.setLastNpsScore(score);
         }
         DPNetwork.sendToServer(new SurveySubmitPayload(e.id(), score, comment));
         submitted.add(e.id());
