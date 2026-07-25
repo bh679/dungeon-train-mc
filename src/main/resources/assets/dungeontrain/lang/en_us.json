@@ -463,6 +463,7 @@
   "gui.dungeontrain.death.narr.donate_intro": "The rails do not lay themselves. Every mile you rode was paid for — in coin, not blood. First by the creator, and now travellers like you. The creator bore their time, passion and love to bring life to this train. Yet they alone cannot sustain it forever. What can you offer to keep the engines roaring?",
   "gui.dungeontrain.death.narr.donate_loading": "The ledger is still being tallied…",
   "gui.dungeontrain.death.narr.donate_button": "Contribute",
+  "gui.dungeontrain.death.narr.donate_visit": "Support the line",
   "gui.dungeontrain.death.narr.donate_options_sub": "Every contribution keeps the rails lit and the train running. Choose how you'd like to help.",
   "gui.dungeontrain.death.narr.donate_revolut": "Direct Donation",
   "gui.dungeontrain.death.narr.donate_patreon": "Patreon",

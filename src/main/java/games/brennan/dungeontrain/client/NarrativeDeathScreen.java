@@ -259,6 +259,13 @@ public final class NarrativeDeathScreen extends Screen {
     // DONATE page: the in-body Contribute button (opens the Revolut donate link), the per-tile
     // hover-tooltip regions, and the scrollable supporter-name list state.
     private Rect donateRect;
+    // Platform-page "Support the line" button — always present, jumps to the donation page.
+    private Rect supportLineRect;
+    // Whether the donation page appears in the normal Next-Screen flow this death (the gate). When
+    // false it's skipped in-flow but still reachable via the platform button.
+    private boolean donateInFlow;
+    // Set when the donation page was opened via the platform button, so Next/back return there.
+    private boolean returnToPlatformAfterDonate;
     private record TileTip(Rect rect, String tipKey) {}
     private final List<TileTip> donateTips = new ArrayList<>();
     // Smooth scroll: the wheel nudges donateScrollTarget; the drawn offset (donateScroll) eases
@@ -306,11 +313,22 @@ public final class NarrativeDeathScreen extends Screen {
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
             list.add(Page.survey(e));
         }
-        // "Support the line" — the donation ledger, just before the platform send-off. Shown only
-        // every Nth death so the ask stays occasional rather than every-death.
-        if (shouldShowDonate()) list.add(Page.of(Kind.DONATE));
+        // "Support the line" — the donation ledger, just before the platform send-off. Always in
+        // the list (so the platform button can always reach it); whether it appears in the normal
+        // Next-Screen flow is gated by donateInFlow (see shouldShowDonate).
+        list.add(Page.of(Kind.DONATE));
         list.add(Page.of(Kind.PLATFORM));
         return list;
+    }
+
+    private int donatePageIndex() {
+        for (int i = 0; i < pages.size(); i++) if (pages.get(i).kind() == Kind.DONATE) return i;
+        return -1;
+    }
+
+    private int platformPageIndex() {
+        for (int i = 0; i < pages.size(); i++) if (pages.get(i).kind() == Kind.PLATFORM) return i;
+        return pages.size() - 1;
     }
 
     // When the donation page appears: a warm recommender, a long session, or every Nth run.
@@ -339,6 +357,8 @@ public final class NarrativeDeathScreen extends Screen {
         // release may run while we're blitting these photos (a released texture would blank a page).
         RideSnapshotGallery.freeze();
         pages = buildPages();
+        donateInFlow = shouldShowDonate();
+        returnToPlatformAfterDonate = false;
         if (currentPage >= pages.size()) currentPage = pages.size() - 1;
         if (currentPage < 0) currentPage = 0;
         assignBackgrounds();
@@ -505,6 +525,7 @@ public final class NarrativeDeathScreen extends Screen {
         boardAnewRect = null;
         platformLeaveRect = null;
         donateRect = null;
+        supportLineRect = null;
         donateTips.clear();
         donateListViewport = null;
         deleteWorldRect = null;
@@ -1349,7 +1370,14 @@ public final class NarrativeDeathScreen extends Screen {
                 quit ? BTN_QUIT_LIGHT : BTN_LIGHT,
                 quit ? BTN_QUIT_DARK  : BTN_DARK,
                 quit ? BTN_QUIT_TEXT  : BTN_TEXT);
-        return y + lvH + 6;
+        y += lvH + 10;
+        // "Support the line" — always here on the final page, a standing door to the engine room
+        // (the donation page), even on deaths where it didn't appear in the flow.
+        int slW = 116, slH = 15;
+        supportLineRect = drawBevel(g, cx - slW / 2, y, slW, slH,
+                Component.translatable("gui.dungeontrain.death.narr.donate_visit"),
+                BTN_PRI_BG, BTN_PRI_LIGHT, BTN_DARK, 0xFFFFFFFF);
+        return y + slH + 6;
     }
 
     // ---- Chrome ----
@@ -1522,6 +1550,12 @@ public final class NarrativeDeathScreen extends Screen {
             if (page.kind() == Kind.PLATFORM) {
                 if (boardAnewRect != null && boardAnewRect.has(mx, my)) { boardAnew(); return true; }
                 if (platformLeaveRect != null && platformLeaveRect.has(mx, my)) { leaveOrQuit(); return true; }
+                if (supportLineRect != null && supportLineRect.has(mx, my)) {
+                    // Jump to the donation page; Next Screen / back there return here.
+                    returnToPlatformAfterDonate = true;
+                    startTransition(donatePageIndex());
+                    return true;
+                }
             } else if (continueRect != null && continueRect.has(mx, my)) {
                 advance();
                 return true;
@@ -1587,18 +1621,36 @@ public final class NarrativeDeathScreen extends Screen {
                 && page.kind() == Kind.SURVEY && page.survey() != null
                 && BUG_REPORT_ID.equals(page.survey().id());
         returnToStartAfterBug = false;
+        // Donation page opened via the platform button: Next returns to the platform.
+        if (page.kind() == Kind.DONATE && returnToPlatformAfterDonate) {
+            returnToPlatformAfterDonate = false;
+            startTransition(platformPageIndex());
+            return;
+        }
         if (returnToStart) {
             startTransition(0);
         } else if (currentPage < pages.size() - 1) {
-            startTransition(currentPage + 1);
+            int next = currentPage + 1;
+            // Skip the gated-out donation page in the normal forward flow (PLATFORM follows it).
+            if (pages.get(next).kind() == Kind.DONATE && !donateInFlow) next++;
+            if (next < pages.size()) startTransition(next);
         }
     }
 
     private void back() {
         if (uiBusy) return;
         returnToStartAfterBug = false;
+        // Donation page opened via the platform button: back returns to the platform too.
+        if (pages.get(currentPage).kind() == Kind.DONATE && returnToPlatformAfterDonate) {
+            returnToPlatformAfterDonate = false;
+            startTransition(platformPageIndex());
+            return;
+        }
         if (currentPage > 0) {
-            startTransition(currentPage - 1);
+            int prev = currentPage - 1;
+            // Skip the gated-out donation page when stepping back past it.
+            if (pages.get(prev).kind() == Kind.DONATE && !donateInFlow) prev--;
+            if (prev >= 0) startTransition(prev);
         }
     }
 
