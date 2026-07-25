@@ -1410,11 +1410,10 @@ public final class NarrativeDeathScreen extends Screen {
             photosRect = drawChip(g, photosX, 8, photos, CHIP_PH_BORDER, CHIP_PH_TEXT);
         }
 
-        // "$" → the donation page (the engine room). Always present (every page but the donation
-        // page itself), same chip style, immediately left of the photos chip (or the trash chip
-        // when photos isn't shown) so it's always reachable.
+        // "$" → the donation page (the engine room). Final (platform) page only, same chip style,
+        // immediately left of the photos chip (or the trash chip when no photos were captured).
         dollarRect = null;
-        if (pages.isEmpty() || pages.get(currentPage).kind() != Kind.DONATE) {
+        if (onPlatform) {
             int anchorX = photosRect != null ? photosRect.x() : trashX;
             Component dollar = Component.literal("$");
             int dollarW = this.font.width(dollar) + 16;
