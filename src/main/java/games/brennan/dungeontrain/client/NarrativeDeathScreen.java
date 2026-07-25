@@ -4,9 +4,13 @@ import games.brennan.discordpresence.client.SurveyClientState;
 import games.brennan.discordpresence.network.DPNetwork;
 import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.survey.SurveyKeys;
+import games.brennan.discordpresence.survey.SurveyRegistry;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
+import games.brennan.dungeontrain.client.analytics.UiAnalytics;
+import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathNarrative;
+import games.brennan.dungeontrain.net.relay.DonationSummaryClient;
 import games.brennan.dungeontrain.net.DeathPhotoPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.RideGalleryPacket;
@@ -83,7 +87,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class NarrativeDeathScreen extends Screen {
 
-    private enum Kind { FALL, DEEDS, GEAR, LIVES, SURVEY, PLATFORM }
+    private enum Kind { FALL, DEEDS, GEAR, LIVES, SURVEY, DONATE, PLATFORM }
 
     private record Page(Kind kind, SurveyQuestionPayload.Entry survey) {
         static Page of(Kind k) { return new Page(k, null); }
@@ -99,6 +103,9 @@ public final class NarrativeDeathScreen extends Screen {
 
     // ---- Palette (ARGB) ----
     private static final int OVERLAY        = 0xF2090A0D;
+    // Dark-blue wash laid over the DONATE page's backdrop ONLY (translucent, so the ride photo
+    // still shows) — a colder mood for the donation page without touching the other pages.
+    private static final int DONATE_WASH    = 0x40081830;
     private static final int TILE_BG        = 0x14FFFFFF;
     private static final int TILE_BORDER    = 0x33D6C496;
     private static final int VALUE          = 0xFFE6D6B0;
@@ -152,6 +159,8 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int BTN_DONE_LIGHT = 0xCC5C9162;
     private static final int BTN_DONE_DARK  = 0xCC1E1F21;
     private static final int BTN_DONE_TEXT  = 0xCCFFFFFF;
+    // Dark-orange tint for the monthly-cost figure — signals money going OUT (a cost, not raised).
+    private static final int COST           = 0xFFE07B39;
     private static final int SCORE_BG       = 0xFF1A1813;
     private static final int SCORE_BORDER   = 0xFF4A443C;
     private static final int SCORE_TEXT     = 0xFFCDBB95;
@@ -247,6 +256,24 @@ public final class NarrativeDeathScreen extends Screen {
 
     // Clickable regions, recomputed each render() and read by mouseClicked().
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
+    // DONATE page: the in-body Contribute button (opens the Revolut donate link), the per-tile
+    // hover-tooltip regions, and the scrollable supporter-name list state.
+    private Rect donateRect;
+    // Top-bar "$" chip — always present (every page), jumps to the donation page.
+    private Rect dollarRect;
+    // Whether the donation page appears in the normal Next-Screen flow this death (the gate). When
+    // false it's skipped in-flow but still reachable via the top-bar "$" chip.
+    private boolean donateInFlow;
+    // When the donation page was opened via the "$" chip, the page index to return to (-1 = none).
+    private int donateReturnPage = -1;
+    private record TileTip(Rect rect, String tipKey) {}
+    private final List<TileTip> donateTips = new ArrayList<>();
+    // Smooth scroll: the wheel nudges donateScrollTarget; the drawn offset (donateScroll) eases
+    // toward it each frame so the list glides rather than jumping a row per notch.
+    private float donateScroll = 0f;        // current (eased) vertical offset (px) of the supporter list
+    private float donateScrollTarget = 0f;  // where the wheel wants it
+    private int donateListMaxScroll = 0;    // scroll clamp bound, set during drawDonate
+    private Rect donateListViewport;        // supporter-list scroll viewport (hover / scroll hit-test)
     private Rect photosRect;
     // Trash toggle left of the reboard chip: delete the old world's save on reboard?
     private Rect deleteWorldRect;
@@ -286,8 +313,38 @@ public final class NarrativeDeathScreen extends Screen {
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
             list.add(Page.survey(e));
         }
+        // "Support the line" — the donation ledger, just before the platform send-off. Always in
+        // the list (so the platform button can always reach it); whether it appears in the normal
+        // Next-Screen flow is gated by donateInFlow (see shouldShowDonate).
+        list.add(Page.of(Kind.DONATE));
         list.add(Page.of(Kind.PLATFORM));
         return list;
+    }
+
+    private int donatePageIndex() {
+        for (int i = 0; i < pages.size(); i++) if (pages.get(i).kind() == Kind.DONATE) return i;
+        return -1;
+    }
+
+    // When the donation page appears: a warm recommender, a long session, or every Nth run.
+    private static final int DONATE_NPS_THRESHOLD = 7;                  // recommend score strictly above this
+    private static final long DONATE_PLAYTIME_TICKS = 40L * 60L * 20L;  // 40 minutes, in ticks
+    private static final int DONATE_EVERY_N_RUNS = 3;                   // a run ends at death
+
+    /**
+     * Whether the donation page appears in the normal Next-Screen flow this death. Shows when ANY
+     * of: the player's last NPS ("recommend") answer is &gt; 7, this run lasted over 40 minutes, or
+     * it's every 3rd run — but NOT the first run unless one of the other two holds. "Runs" is the
+     * lifetime death count (a run ends at death). Keyed off the cached stats packet, which lands
+     * with the screen; either way it's always reachable via the platform "$" chip.
+     */
+    private boolean shouldShowDonate() {
+        if (ClientDisplayConfig.getLastNpsScore() > DONATE_NPS_THRESHOLD) return true;
+        DeathStatsPacket s = DeathStatsCache.get();
+        if (s == null) return false;
+        if (s.runTicks() > DONATE_PLAYTIME_TICKS) return true;
+        long runs = s.lifeDeaths();
+        return runs >= DONATE_EVERY_N_RUNS && runs % DONATE_EVERY_N_RUNS == 0; // 3rd, 6th… never the first
     }
 
     @Override
@@ -296,13 +353,18 @@ public final class NarrativeDeathScreen extends Screen {
         // release may run while we're blitting these photos (a released texture would blank a page).
         RideSnapshotGallery.freeze();
         pages = buildPages();
+        donateInFlow = shouldShowDonate();
+        donateReturnPage = -1;
         if (currentPage >= pages.size()) currentPage = pages.size() - 1;
         if (currentPage < 0) currentPage = 0;
         assignBackgrounds();
         maybeSendRidePhoto();
         maybeSendRideGallery();
+        kickDonationFetch();
         lastSurveyCount = SurveyClientState.questions().size();
         gearAdvScroll = 0;
+        donateScroll = 0f;
+        donateScrollTarget = 0f;
         commentBox = null;
         LOGGER.info("[DungeonTrain] NarrativeDeathScreen: page {}/{}, surveyQuestions={}, statsCached={}",
                 currentPage, pages.size(), lastSurveyCount, DeathStatsCache.get() != null);
@@ -442,6 +504,10 @@ public final class NarrativeDeathScreen extends Screen {
             // bare the frozen world); the chrome still fades out/in against it.
             g.fill(0, 0, this.width, this.height, OVERLAY);
         }
+        // The donation page (only) gets a cold dark-blue wash over its backdrop.
+        if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.DONATE) {
+            g.fill(0, 0, this.width, this.height, DONATE_WASH);
+        }
 
         // Train engine: full on the first screen (as if aboard), fading evenly to
         // silence by the last screen — and rising again if the player steps back.
@@ -454,6 +520,10 @@ public final class NarrativeDeathScreen extends Screen {
         // any from last frame so a page that doesn't draw one can't be clicked.
         boardAnewRect = null;
         platformLeaveRect = null;
+        donateRect = null;
+        dollarRect = null;
+        donateTips.clear();
+        donateListViewport = null;
         deleteWorldRect = null;
         continueRect = null;
         backRect = null;
@@ -486,6 +556,7 @@ public final class NarrativeDeathScreen extends Screen {
                 case GEAR -> y = drawGear(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
                 case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
                 case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
+                case DONATE -> y = drawDonate(g, left, contentW, cx, y);
                 case PLATFORM -> y = drawPlatform(g, narr, left, contentW, cx, y);
             }
 
@@ -504,6 +575,18 @@ public final class NarrativeDeathScreen extends Screen {
             if (page.kind() == Kind.LIVES && stats != null && settled()) {
                 drawLivesTooltips(g, mouseX, mouseY);
             }
+            // Per-tile "what is this number?" tooltips on the donation page — wrapped to at most
+            // 60% of the screen width so a long description breaks onto new lines.
+            if (page.kind() == Kind.DONATE && settled()) {
+                for (TileTip t : donateTips) {
+                    if (t.rect().has(mouseX, mouseY)) {
+                        int maxW = (int) (this.width * 0.6);
+                        g.renderTooltip(this.font, this.font.split(Component.translatable(t.tipKey()), maxW),
+                                mouseX, mouseY);
+                        break;
+                    }
+                }
+            }
             // Trash-toggle hover tooltip (same "settled" gate) — states what will
             // happen to this world's save on reboard.
             if (settled() && deleteWorldRect != null && deleteWorldRect.has(mouseX, mouseY)) {
@@ -512,6 +595,11 @@ public final class NarrativeDeathScreen extends Screen {
                                 ? "gui.dungeontrain.death.delete_world.on"
                                 : "gui.dungeontrain.death.delete_world.off"),
                         mouseX, mouseY);
+            }
+            // "$" chip hover — what it does.
+            if (settled() && dollarRect != null && dollarRect.has(mouseX, mouseY)) {
+                g.renderTooltip(this.font,
+                        Component.translatable("gui.dungeontrain.death.narr.donate_chip_tip"), mouseX, mouseY);
             }
         }
     }
@@ -553,7 +641,7 @@ public final class NarrativeDeathScreen extends Screen {
             case DEEDS    -> List.of(SnapshotTag.COMBAT, SnapshotTag.SCENIC);
             case GEAR     -> List.of(SnapshotTag.GEAR, SnapshotTag.SCENIC);
             case LIVES    -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
-            case SURVEY, PLATFORM -> List.of();
+            case SURVEY, DONATE, PLATFORM -> List.of();
         };
     }
 
@@ -1154,6 +1242,96 @@ public final class NarrativeDeathScreen extends Screen {
         return y;
     }
 
+    /**
+     * The "support the line" ledger page — narration plea, then (once the relay summary arrives)
+     * stat tiles for money raised / running cost / the player's own contribution, a monthly donor
+     * leaderboard, and a green Donate button. Reads {@link DonationSummaryCache} live each frame;
+     * a late fetch simply fills in. Kept graceful when the summary is null (loading / offline).
+     */
+    private int drawDonate(GuiGraphics g, int left, int w, int cx, int y) {
+        drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_donate");
+        y += 14;
+        drawTrain(g, left, w, y, currentPage);
+        y += 46;
+        y = drawNarration(g, Component.translatable("gui.dungeontrain.death.narr.donate_intro").getString(), cx, w, y);
+        y += 8;
+
+        DonationSummaryClient.Summary s = DonationSummaryCache.get();
+        if (s == null) {
+            y = drawCentered(g, Component.translatable("gui.dungeontrain.death.narr.donate_loading"), cx, w, y, SUBLINE);
+            y += 10;
+            int bw = 180;
+            donateRect = drawBevel(g, cx - bw / 2, y, bw, 22,
+                    Component.translatable("gui.dungeontrain.death.narr.donate_button"),
+                    BTN_PRI_BG, BTN_PRI_LIGHT, BTN_DARK, 0xFFFFFFFF);
+            return y + 28;
+        }
+
+        // Two columns below the narration: the money on the left (explicitly labelled costs, the
+        // cost figure tinted orange), the supporters' names scrolling down the right side. The
+        // Contribute button sits in the fourth (bottom-right) tile slot.
+        int gap = 10;
+        int colW = (w - gap) / 2;
+        int rightX = left + colW + gap;
+
+        // ---- Left block: 2x2 grid — monthly cost / costs covered / raised / [Contribute] ----
+        int cellGap = 4;
+        int cellW = (colW - cellGap) / 2;
+        int lc0 = left + cellW / 2;
+        int lc1 = left + cellW + cellGap + cellW / 2;
+        costTile(g, lc0, y, cellW, s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—",
+                "gui.dungeontrain.death.narr.lbl_running_cost", "gui.dungeontrain.death.narr.tip_monthly_cost", COST);
+        costTile(g, lc1, y, cellW, s.percentCovered() >= 0 ? s.percentCovered() + "%" : "—",
+                "gui.dungeontrain.death.narr.lbl_covered", "gui.dungeontrain.death.narr.tip_covered", VALUE);
+        int ly = y + 30;
+        costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
+                "gui.dungeontrain.death.narr.lbl_raised_month", "gui.dungeontrain.death.narr.tip_raised", VALUE);
+        // Contribute button in place of the old "your total" tile.
+        donateRect = drawBevel(g, lc1 - cellW / 2, ly, cellW, 26,
+                Component.translatable("gui.dungeontrain.death.narr.donate_button"),
+                BTN_PRI_BG, BTN_PRI_LIGHT, BTN_DARK, 0xFFFFFFFF);
+        int leftBottom = ly + 30;
+
+        // ---- Right block: supporter names, scrollable, amount right-aligned. Patreon tinted. ----
+        drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.narr.lbl_leaderboard_monthly"),
+                rightX + colW / 2, y, KICKER);
+        int listTop = y + 12;
+        int listH = Math.max(this.font.lineHeight + 2, leftBottom - listTop); // align to the left block
+        int rowH = this.font.lineHeight + 2;
+        List<DonationSummaryClient.Entry> board = s.monthly();
+        donateListMaxScroll = Math.max(0, board.size() * rowH - listH);
+        // Ease the drawn offset toward the wheel target (clamped) — a smooth glide, not a jump.
+        donateScrollTarget = Math.max(0f, Math.min(donateListMaxScroll, donateScrollTarget));
+        donateScroll += (donateScrollTarget - donateScroll) * 0.4f;
+        if (Math.abs(donateScrollTarget - donateScroll) < 0.5f) donateScroll = donateScrollTarget;
+        donateListViewport = new Rect(rightX, listTop, colW, listH);
+        g.enableScissor(rightX, listTop, rightX + colW, listTop + listH);
+        int ry = listTop - Math.round(donateScroll);
+        for (DonationSummaryClient.Entry e : board) {
+            String amt = fmtUsd(e.amountUsd());
+            int amtW = this.font.width(amt);
+            String name = this.font.plainSubstrByWidth(e.name(), colW - amtW - 8);
+            int color = "patreon".equals(e.source()) ? QUESTION : VALUE;
+            g.drawString(this.font, name, rightX, ry, fade(color), false);
+            g.drawString(this.font, amt, rightX + colW - amtW, ry, fade(color), false);
+            ry += rowH;
+        }
+        g.disableScissor();
+        // Faint ▾ affordance when more names lie below the fold.
+        if (donateScroll < donateListMaxScroll - 0.5f) {
+            drawCenteredStr(g, "▾", rightX + colW / 2, listTop + listH - this.font.lineHeight + 1, KICKER);
+        }
+
+        return Math.max(leftBottom, listTop + listH) + 10;
+    }
+
+    /** A cost/stat tile plus its hover-tooltip region (rendered when the page is settled). */
+    private void costTile(GuiGraphics g, int centerX, int y, int cw, String value,
+                          String labelKey, String tipKey, int valueColor) {
+        drawCell(g, centerX, y, value, labelKey, cw, valueColor);
+        donateTips.add(new TileTip(new Rect(centerX - cw / 2, y, cw, 26), tipKey));
+    }
+
     private int drawPlatform(GuiGraphics g, DeathNarrative n, int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_platform");
         y += 14;
@@ -1236,6 +1414,16 @@ public final class NarrativeDeathScreen extends Screen {
             int photosW = this.font.width(photos) + 16;
             int photosX = trashX - 6 - photosW;
             photosRect = drawChip(g, photosX, 8, photos, CHIP_PH_BORDER, CHIP_PH_TEXT);
+        }
+
+        // "$" → the donation page (the engine room). Final (platform) page only, same chip style,
+        // immediately left of the photos chip (or the trash chip when no photos were captured).
+        dollarRect = null;
+        if (onPlatform) {
+            int anchorX = photosRect != null ? photosRect.x() : trashX;
+            Component dollar = Component.literal("$");
+            int dollarW = this.font.width(dollar) + 16;
+            dollarRect = drawChip(g, anchorX - 6 - dollarW, 8, dollar, CHIP_PH_BORDER, CHIP_PH_TEXT);
         }
     }
 
@@ -1350,6 +1538,14 @@ public final class NarrativeDeathScreen extends Screen {
         if (button == 0 && uiBusy) { skipTransition(); return true; }
         if (button == 0) {
             if (photosRect != null && photosRect.has(mx, my)) { openGallery(); return true; }
+            if (dollarRect != null && dollarRect.has(mx, my)) {
+                // Jump to the donation page from anywhere; Next/back there return to this page.
+                if (!pages.isEmpty() && pages.get(currentPage).kind() != Kind.DONATE) {
+                    donateReturnPage = currentPage;
+                    startTransition(donatePageIndex());
+                }
+                return true;
+            }
             if (deleteWorldRect != null && deleteWorldRect.has(mx, my)) {
                 ClientDisplayConfig.setDeleteWorldOnReboard(!ClientDisplayConfig.isDeleteWorldOnReboard());
                 return true;
@@ -1373,6 +1569,10 @@ public final class NarrativeDeathScreen extends Screen {
             if (backRect != null && backRect.has(mx, my)) { back(); return true; }
             if (page.kind() == Kind.GEAR && seeAllRect != null && seeAllRect.has(mx, my)) {
                 openAdvancements();
+                return true;
+            }
+            if (page.kind() == Kind.DONATE && donateRect != null && donateRect.has(mx, my)) {
+                openDonateLink();
                 return true;
             }
             if (page.kind() == Kind.SURVEY && page.survey() != null) {
@@ -1401,6 +1601,14 @@ public final class NarrativeDeathScreen extends Screen {
             gearAdvScroll = Math.max(0, Math.min(gearAdvMaxScroll, gearAdvScroll - (int) Math.round(dy) * step));
             return true;
         }
+        // Vertical-scroll the DONATE supporter list when the cursor is over its viewport. The wheel
+        // moves a target; drawDonate eases the drawn offset toward it for a smooth glide.
+        if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.DONATE
+                && donateListViewport != null && donateListViewport.has(mx, my) && donateListMaxScroll > 0) {
+            float step = (this.font.lineHeight + 2) * 1.5f; // ~1.5 names per notch
+            donateScrollTarget = Math.max(0f, Math.min(donateListMaxScroll, donateScrollTarget - (float) dy * step));
+            return true;
+        }
         return super.mouseScrolled(mx, my, dx, dy);
     }
 
@@ -1419,18 +1627,38 @@ public final class NarrativeDeathScreen extends Screen {
                 && page.kind() == Kind.SURVEY && page.survey() != null
                 && BUG_REPORT_ID.equals(page.survey().id());
         returnToStartAfterBug = false;
+        // Donation page opened via the "$" chip: Next returns to where it was opened from.
+        if (page.kind() == Kind.DONATE && donateReturnPage >= 0) {
+            int dest = donateReturnPage;
+            donateReturnPage = -1;
+            startTransition(Math.min(dest, pages.size() - 1));
+            return;
+        }
         if (returnToStart) {
             startTransition(0);
         } else if (currentPage < pages.size() - 1) {
-            startTransition(currentPage + 1);
+            int next = currentPage + 1;
+            // Skip the gated-out donation page in the normal forward flow (PLATFORM follows it).
+            if (pages.get(next).kind() == Kind.DONATE && !donateInFlow) next++;
+            if (next < pages.size()) startTransition(next);
         }
     }
 
     private void back() {
         if (uiBusy) return;
         returnToStartAfterBug = false;
+        // Donation page opened via the "$" chip: back returns to where it was opened from too.
+        if (pages.get(currentPage).kind() == Kind.DONATE && donateReturnPage >= 0) {
+            int dest = donateReturnPage;
+            donateReturnPage = -1;
+            startTransition(Math.min(dest, pages.size() - 1));
+            return;
+        }
         if (currentPage > 0) {
-            startTransition(currentPage - 1);
+            int prev = currentPage - 1;
+            // Skip the gated-out donation page when stepping back past it.
+            if (pages.get(prev).kind() == Kind.DONATE && !donateInFlow) prev--;
+            if (prev >= 0) startTransition(prev);
         }
     }
 
@@ -1446,6 +1674,10 @@ public final class NarrativeDeathScreen extends Screen {
             // Text question: the typed answer IS the submission — send nothing until it's entered.
             if (comment.isEmpty()) return;
             score = 0; // unused server-side (DP omits the Rating field for no-scale questions)
+        }
+        // Remember the NPS ("recommend") score — it gates whether the donation page appears.
+        if (e.scaleMax() >= e.scaleMin() && SurveyRegistry.NPS_ID.equals(e.id())) {
+            ClientDisplayConfig.setLastNpsScore(score);
         }
         DPNetwork.sendToServer(new SurveySubmitPayload(e.id(), score, comment));
         submitted.add(e.id());
@@ -1478,6 +1710,29 @@ public final class NarrativeDeathScreen extends Screen {
 
     private void openGallery() {
         Minecraft.getInstance().setScreen(new RideGalleryScreen(this));
+    }
+
+    /**
+     * Kick the one-shot donation-summary fetch when the screen opens. Also nudges the official-links
+     * overlay so the donate URL is live (it falls back to the baked Revolut link otherwise). The
+     * fetch is anonymous unless the player has consented to networking (see {@link DonationSummaryClient}).
+     */
+    private void kickDonationFetch() {
+        OfficialLinks.ensureFetched();
+        Minecraft mc = Minecraft.getInstance();
+        String name = mc.getUser() != null ? mc.getUser().getName() : null;
+        DonationSummaryClient.fetch(name, summary ->
+                Minecraft.getInstance().execute(() -> DonationSummaryCache.set(summary)));
+    }
+
+    /** Open the full-screen Contribute window (Revolut / Patreon options), returning here on close. */
+    private void openDonateLink() {
+        Minecraft.getInstance().setScreen(new DonationOptionsScreen(this));
+    }
+
+    /** Whole-dollar USD for a leaderboard/tile figure, e.g. {@code $1,250}. */
+    private static String fmtUsd(int usd) {
+        return "$" + String.format(java.util.Locale.ROOT, "%,d", usd);
     }
 
     // ---- Draw helpers ----
@@ -1554,11 +1809,15 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private void drawCell(GuiGraphics g, int centerX, int y, String value, String labelKey, int cw) {
+        drawCell(g, centerX, y, value, labelKey, cw, VALUE);
+    }
+
+    private void drawCell(GuiGraphics g, int centerX, int y, String value, String labelKey, int cw, int valueColor) {
         int ch = 26;
         int x = centerX - cw / 2;
         g.fill(x, y, x + cw, y + ch, fade(TILE_BG));
         drawBorder(g, x, y, cw, ch, TILE_BORDER);
-        drawCenteredStr(g, value, centerX, y + 4, VALUE);
+        drawCenteredStr(g, value, centerX, y + 4, valueColor);
         drawCenteredStr(g, Component.translatable(labelKey), centerX, y + 4 + this.font.lineHeight + 1, LABEL);
     }
 

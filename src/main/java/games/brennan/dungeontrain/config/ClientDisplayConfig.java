@@ -80,6 +80,8 @@ public final class ClientDisplayConfig {
      * pool (older relay, no network consent, or offline). See {@link games.brennan.dungeontrain.event.SharedBookReadMirror}.
      */
     public static final ModConfigSpec.ConfigValue<List<? extends String>> SHARED_BOOKS_READ;
+    /** The player's most recent NPS ("recommend") answer (0-10), or -1 if never answered. */
+    public static final ModConfigSpec.IntValue DEATH_SCREEN_LAST_NPS;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -110,6 +112,7 @@ public final class ClientDisplayConfig {
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
+        DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
     }
 
     private ClientDisplayConfig() {}
@@ -222,13 +225,20 @@ public final class ClientDisplayConfig {
                         o -> o instanceof String);
         b.pop();
 
+        b.push("deathScreen");
+        ModConfigSpec.IntValue deathScreenLastNps = b
+                .comment("Internal: the player's most recent NPS (\"how likely to recommend\") answer, 0-10, or -1 if never answered. Used to decide when the death-screen donation page appears. Managed automatically.")
+                .defineInRange("lastNpsScore", -1, -1, 10);
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, deleteWorldOnReboard, sharedBooksRead);
+                framerateThrottleEnabled, framerateThrottleFps, deleteWorldOnReboard, sharedBooksRead,
+                deathScreenLastNps);
     }
 
     /**
@@ -385,6 +395,20 @@ public final class ClientDisplayConfig {
      * {@code .save()} (a TOML write) when the value is unchanged, because this
      * is called on every advancements-screen close, not just the first.
      */
+    /** The player's most recent NPS ("recommend") answer (0-10), or -1 if never answered. */
+    public static int getLastNpsScore() {
+        return isLoaded() ? DEATH_SCREEN_LAST_NPS.get() : -1;
+    }
+
+    /** Persist the player's latest NPS answer. Idempotent — skips the TOML write when unchanged. */
+    public static void setLastNpsScore(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(-1, Math.min(10, value));
+        if (DEATH_SCREEN_LAST_NPS.get() == clamped) return;
+        DEATH_SCREEN_LAST_NPS.set(clamped);
+        DEATH_SCREEN_LAST_NPS.save();
+    }
+
     public static void setOpenedAdvancementsBefore(boolean value) {
         if (!isLoaded()) return;
         if (OPENED_ADVANCEMENTS_BEFORE.get() == value) return;
@@ -594,6 +618,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
-            ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead
+            ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
+            ModConfigSpec.IntValue deathScreenLastNps
     ) {}
 }
