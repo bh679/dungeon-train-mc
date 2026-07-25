@@ -5745,6 +5745,23 @@
       "released": true,
       "released_in": "v0.512.0",
       "released_at": "2026-07-24T14:24:19Z"
+    },
+    {
+      "id": "death-screen-donation-page",
+      "version": "0.513.0",
+      "type": "feat",
+      "title": "Support the creator from the death screen \u2014 the engine room",
+      "summary": "The death screen now has a page called 'the engine room' where you can help keep the game running. It shows the travellers who fund the line, the project's monthly running costs and how much of them is covered, and lets you give directly \u2014 a one-off donation or Patreon. It appears now and then as you play, and is always one click away via a 'Support the creator' button on the final screen.",
+      "highlights": [
+        "New death-screen donation page with a live supporter leaderboard and a running-cost breakdown",
+        "Give via a one-off Direct Donation or Patreon, without leaving the death screen",
+        "Always reachable from the final screen via a 'Support the creator' button"
+      ],
+      "pr": 845,
+      "date": "2026-07-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
