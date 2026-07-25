@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
@@ -3352,7 +3353,7 @@ public final class TrainCarriageAppender {
         int loaded = 0;
         for (int cx = cxMin; cx <= cxMax; cx++) {
             for (int cz = czMin; cz <= czMax; cz++) {
-                level.getChunk(cx, cz, ChunkStatus.FULL, true);
+                WorldgenForceGuard.forceChunk(level, cx, cz);
                 loaded++;
             }
         }
@@ -3614,7 +3615,7 @@ public final class TrainCarriageAppender {
         int loaded = 0;
         for (int cx = cxMin; cx <= cxMax; cx++) {
             for (int cz = czMin; cz <= czMax; cz++) {
-                level.getChunk(cx, cz, ChunkStatus.FULL, true);
+                WorldgenForceGuard.forceChunk(level, cx, cz);
                 loaded++;
             }
         }

@@ -31,7 +31,8 @@
     "SubLevelHeatMapSplitMixin",
     "RapierPipelineFreezeMixin",
     "LevelAcceleratorNoSyncLoadMixin",
-    "SubLevelEntityCollisionNoLoadMixin"
+    "SubLevelEntityCollisionNoLoadMixin",
+    "SableBlockChangeGuardMixin"
   ],
   "client": [
     "client.BookViewScreenAccessor",

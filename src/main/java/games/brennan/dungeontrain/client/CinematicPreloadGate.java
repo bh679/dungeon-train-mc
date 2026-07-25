@@ -60,6 +60,16 @@ public final class CinematicPreloadGate {
     /** Display progress reserved for the placing phase; chunk load fills the rest. */
     private static final double PLACING_FRACTION = 0.15;
 
+    /**
+     * Absolute cap on the placing hold, as a multiple of the packet's {@code placeTimeout}.
+     * On reaching {@code placeTimeout} the gate does NOT free-fall the player (that dropped
+     * them into the void whenever the server stalled at spawn — the "fall forever, never board
+     * the train" bug); it keeps pinning their position and waits for placement. Only at this
+     * far larger cap does it give up, and even then it releases them <em>standing at their
+     * entry pose</em> (zeroed velocity, on-ground) rather than dropping them.
+     */
+    private static final int PLACE_HARD_CAP_MULT = 8;
+
     private enum Phase { IDLE, PLACING, CHUNKS }
 
     private static Phase phase = Phase.IDLE;
@@ -69,6 +79,8 @@ public final class CinematicPreloadGate {
     private static int placeElapsed;
     private static int placeTimeout;
     private static Vec3 freezePos;
+    /** One-shot: log the "placement overran the soft timeout, still holding" warning once. */
+    private static boolean placeOvertimeLogged;
 
     // CHUNKS state.
     private static CinematicIntroPacket pending;
@@ -93,6 +105,7 @@ public final class CinematicPreloadGate {
         placeTimeout = Math.max(1, placeTimeoutTicks);
         placeElapsed = 0;
         freezePos = null;
+        placeOvertimeLogged = false;
         localFraction = 0.0;
         LOGGER.info("[DungeonTrain] Cinematic preload gate armed (placing): timeout={}t", placeTimeout);
     }
@@ -230,8 +243,30 @@ public final class CinematicPreloadGate {
 
         placeElapsed++;
         localFraction = PLACING_FRACTION * Math.min(1.0, placeElapsed / (double) placeTimeout);
-        if (placeElapsed >= placeTimeout) {
-            LOGGER.warn("[DungeonTrain] Cinematic preload gate: placing timed out after {}t — releasing player", placeElapsed);
+
+        if (placeElapsed < placeTimeout) {
+            return; // still within the normal placing window
+        }
+
+        // Past the soft timeout: the train placement hasn't arrived (server stalled at spawn).
+        // Do NOT release the player — releasing stops the per-tick pin above and lets client
+        // gravity free-fall them through not-yet-collided terrain into the void (the "fall
+        // forever, never board the train" bug). Keep pinning and keep waiting; begin() resumes
+        // the normal flow the instant the placement packet lands.
+        if (!placeOvertimeLogged) {
+            placeOvertimeLogged = true;
+            LOGGER.warn("[DungeonTrain] Cinematic preload gate: placing overran soft timeout ({}t) — holding player in place (no free-fall) until placement arrives", placeElapsed);
+        }
+
+        // Absolute backstop: after a far larger cap, give up waiting — but release the player
+        // STANDING at their entry pose (the pinned freezePos, a valid ground spawn), velocity
+        // zeroed and on-ground, so they never drop into the void.
+        if (placeElapsed >= placeTimeout * PLACE_HARD_CAP_MULT) {
+            LOGGER.warn("[DungeonTrain] Cinematic preload gate: placing hard cap reached ({}t) — releasing player pinned at entry pose", placeElapsed);
+            p.setDeltaMovement(Vec3.ZERO);
+            p.setPos(freezePos.x, freezePos.y, freezePos.z);
+            p.setOnGround(true);
+            p.fallDistance = 0.0f;
             release(mc);
         }
     }
@@ -313,6 +348,7 @@ public final class CinematicPreloadGate {
         phase = Phase.IDLE;
         pending = null;
         freezePos = null;
+        placeOvertimeLogged = false;
         readyStreak = 0;
         localFraction = 0.0;
         loadingReady = false;
