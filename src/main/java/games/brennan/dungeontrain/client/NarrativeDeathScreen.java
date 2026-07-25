@@ -295,10 +295,26 @@ public final class NarrativeDeathScreen extends Screen {
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
             list.add(Page.survey(e));
         }
-        // "Support the line" — the donation ledger, just before the platform send-off.
-        list.add(Page.of(Kind.DONATE));
+        // "Support the line" — the donation ledger, just before the platform send-off. Shown only
+        // every Nth death so the ask stays occasional rather than every-death.
+        if (shouldShowDonate()) list.add(Page.of(Kind.DONATE));
         list.add(Page.of(Kind.PLATFORM));
         return list;
+    }
+
+    /** How often the donation page appears — every Nth death (by lifetime death count). */
+    private static final int DONATE_EVERY_N_DEATHS = 3;
+
+    /**
+     * Whether to include the donation page this death. Keyed off the lifetime death count in the
+     * cached stats packet (reliably present by {@code init} — the packet lands with the screen).
+     * When stats are somehow absent we don't hide the ask; on the very first death it always shows.
+     */
+    private boolean shouldShowDonate() {
+        DeathStatsPacket s = DeathStatsCache.get();
+        if (s == null) return true;
+        long deaths = s.lifeDeaths();
+        return deaths <= 1 || deaths % DONATE_EVERY_N_DEATHS == 0;
     }
 
     @Override
@@ -1190,45 +1206,47 @@ public final class NarrativeDeathScreen extends Screen {
             return y + 28;
         }
 
-        // Three stat tiles: raised this month, monthly running cost, this player's own total.
-        int colW = w / 3;
-        int cellW = colW - 8;
-        int c0 = left + colW / 2;
-        int c1 = left + colW + colW / 2;
-        int c2 = left + 2 * colW + colW / 2;
-        drawCell(g, c0, y, fmtUsd(s.monthlyRaisedUsd()), "gui.dungeontrain.death.narr.lbl_raised_month", cellW);
-        drawCell(g, c1, y, s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—",
+        // Two columns below the narration: the money on the left (explicitly labelled costs),
+        // the supporters' names down the right side. The Contribute button is centered beneath both.
+        int gap = 10;
+        int colW = (w - gap) / 2;
+        int rightX = left + colW + gap;
+
+        // ---- Left column: 2x2 cost tiles ----
+        int cellGap = 4;
+        int cellW = (colW - cellGap) / 2;
+        int lc0 = left + cellW / 2;
+        int lc1 = left + cellW + cellGap + cellW / 2;
+        drawCell(g, lc0, y, s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—",
                 "gui.dungeontrain.death.narr.lbl_running_cost", cellW);
-        drawCell(g, c2, y, s.hasYou() ? fmtUsd(s.youTotalUsd()) : "—",
+        drawCell(g, lc1, y, s.percentCovered() >= 0 ? s.percentCovered() + "%" : "—",
+                "gui.dungeontrain.death.narr.lbl_covered", cellW);
+        int ly = y + 30;
+        drawCell(g, lc0, ly, fmtUsd(s.monthlyRaisedUsd()),
+                "gui.dungeontrain.death.narr.lbl_raised_month", cellW);
+        drawCell(g, lc1, ly, s.hasYou() ? fmtUsd(s.youTotalUsd()) : "—",
                 "gui.dungeontrain.death.narr.lbl_your_contribution", cellW);
-        y += 30;
+        int leftBottom = ly + 30;
 
-        // "N% of the line's costs covered this month" — only when the running cost is known.
-        if (s.percentCovered() >= 0) {
-            y = drawCentered(g, Component.translatable(
-                    "gui.dungeontrain.death.narr.donate_covered", s.percentCovered()), cx, w, y, SUBLINE);
-            y += 4;
-        }
-
-        // Monthly donor leaderboard — top few, name left / amount right. Patreon rows are tinted.
+        // ---- Right column: supporter names, one per line, amount right-aligned. Patreon tinted. ----
+        int ry = y;
+        drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.narr.lbl_leaderboard_monthly"),
+                rightX + colW / 2, ry, KICKER);
+        ry += 12;
         List<DonationSummaryClient.Entry> board = s.monthly();
-        if (!board.isEmpty()) {
-            drawSecLabel(g, cx, y, "gui.dungeontrain.death.narr.lbl_leaderboard_monthly");
-            y += 12;
-            int rows = Math.min(5, board.size());
-            for (int i = 0; i < rows; i++) {
-                DonationSummaryClient.Entry e = board.get(i);
-                String amt = fmtUsd(e.amountUsd());
-                int amtW = this.font.width(amt);
-                String label = this.font.plainSubstrByWidth((i + 1) + ". " + e.name(), w - 12 - amtW - 6);
-                int color = "patreon".equals(e.source()) ? QUESTION : VALUE;
-                g.drawString(this.font, label, left + 6, y, fade(color), false);
-                g.drawString(this.font, amt, left + w - 6 - amtW, y, fade(color), false);
-                y += this.font.lineHeight + 2;
-            }
-            y += 6;
+        int rows = Math.min(6, board.size());
+        for (int i = 0; i < rows; i++) {
+            DonationSummaryClient.Entry e = board.get(i);
+            String amt = fmtUsd(e.amountUsd());
+            int amtW = this.font.width(amt);
+            String name = this.font.plainSubstrByWidth(e.name(), colW - amtW - 8);
+            int color = "patreon".equals(e.source()) ? QUESTION : VALUE;
+            g.drawString(this.font, name, rightX, ry, fade(color), false);
+            g.drawString(this.font, amt, rightX + colW - amtW, ry, fade(color), false);
+            ry += this.font.lineHeight + 2;
         }
 
+        y = Math.max(leftBottom, ry) + 10;
         donateRect = drawDonateButton(g, cx, y);
         return y + 28;
     }
