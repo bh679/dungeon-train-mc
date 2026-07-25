@@ -332,18 +332,19 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int DONATE_EVERY_N_RUNS = 3;                   // a run ends at death
 
     /**
-     * Whether to include the donation page this death. Shows when ANY of: the player's last NPS
-     * ("recommend") answer is &gt; 7, this run lasted over 40 minutes, or it's every 3rd run
-     * (lifetime death count — a run ends at death). Keyed off the cached stats packet, which lands
-     * with the screen; when stats are somehow absent we don't hide the ask.
+     * Whether the donation page appears in the normal Next-Screen flow this death. Shows when ANY
+     * of: the player's last NPS ("recommend") answer is &gt; 7, this run lasted over 40 minutes, or
+     * it's every 3rd run — but NOT the first run unless one of the other two holds. "Runs" is the
+     * lifetime death count (a run ends at death). Keyed off the cached stats packet, which lands
+     * with the screen; either way it's always reachable via the platform "$" chip.
      */
     private boolean shouldShowDonate() {
         if (ClientDisplayConfig.getLastNpsScore() > DONATE_NPS_THRESHOLD) return true;
         DeathStatsPacket s = DeathStatsCache.get();
-        if (s == null) return true;
+        if (s == null) return false;
         if (s.runTicks() > DONATE_PLAYTIME_TICKS) return true;
         long runs = s.lifeDeaths();
-        return runs <= 1 || runs % DONATE_EVERY_N_RUNS == 0;
+        return runs >= DONATE_EVERY_N_RUNS && runs % DONATE_EVERY_N_RUNS == 0; // 3rd, 6th… never the first
     }
 
     @Override
@@ -594,6 +595,11 @@ public final class NarrativeDeathScreen extends Screen {
                                 ? "gui.dungeontrain.death.delete_world.on"
                                 : "gui.dungeontrain.death.delete_world.off"),
                         mouseX, mouseY);
+            }
+            // "$" chip hover — what it does.
+            if (settled() && dollarRect != null && dollarRect.has(mouseX, mouseY)) {
+                g.renderTooltip(this.font,
+                        Component.translatable("gui.dungeontrain.death.narr.donate_chip_tip"), mouseX, mouseY);
             }
         }
     }
