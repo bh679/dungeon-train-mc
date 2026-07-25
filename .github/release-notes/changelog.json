@@ -5745,6 +5745,19 @@
       "released": true,
       "released_in": "v0.512.0",
       "released_at": "2026-07-24T14:24:19Z"
+    },
+    {
+      "id": "death-screen-donation-page",
+      "version": "0.513.0",
+      "type": "feat",
+      "title": "Support the creator from the death screen",
+      "summary": "A new death-screen page, 'the engine room', shows who funds the game and lets you give via a one-off donation or Patreon.",
+      "highlights": [],
+      "pr": 845,
+      "date": "2026-07-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
