@@ -259,13 +259,13 @@ public final class NarrativeDeathScreen extends Screen {
     // DONATE page: the in-body Contribute button (opens the Revolut donate link), the per-tile
     // hover-tooltip regions, and the scrollable supporter-name list state.
     private Rect donateRect;
-    // Platform-page "Support the line" button — always present, jumps to the donation page.
-    private Rect supportLineRect;
+    // Top-bar "$" chip — always present (every page), jumps to the donation page.
+    private Rect dollarRect;
     // Whether the donation page appears in the normal Next-Screen flow this death (the gate). When
-    // false it's skipped in-flow but still reachable via the platform button.
+    // false it's skipped in-flow but still reachable via the top-bar "$" chip.
     private boolean donateInFlow;
-    // Set when the donation page was opened via the platform button, so Next/back return there.
-    private boolean returnToPlatformAfterDonate;
+    // When the donation page was opened via the "$" chip, the page index to return to (-1 = none).
+    private int donateReturnPage = -1;
     private record TileTip(Rect rect, String tipKey) {}
     private final List<TileTip> donateTips = new ArrayList<>();
     // Smooth scroll: the wheel nudges donateScrollTarget; the drawn offset (donateScroll) eases
@@ -326,11 +326,6 @@ public final class NarrativeDeathScreen extends Screen {
         return -1;
     }
 
-    private int platformPageIndex() {
-        for (int i = 0; i < pages.size(); i++) if (pages.get(i).kind() == Kind.PLATFORM) return i;
-        return pages.size() - 1;
-    }
-
     // When the donation page appears: a warm recommender, a long session, or every Nth run.
     private static final int DONATE_NPS_THRESHOLD = 7;                  // recommend score strictly above this
     private static final long DONATE_PLAYTIME_TICKS = 40L * 60L * 20L;  // 40 minutes, in ticks
@@ -358,7 +353,7 @@ public final class NarrativeDeathScreen extends Screen {
         RideSnapshotGallery.freeze();
         pages = buildPages();
         donateInFlow = shouldShowDonate();
-        returnToPlatformAfterDonate = false;
+        donateReturnPage = -1;
         if (currentPage >= pages.size()) currentPage = pages.size() - 1;
         if (currentPage < 0) currentPage = 0;
         assignBackgrounds();
@@ -525,7 +520,7 @@ public final class NarrativeDeathScreen extends Screen {
         boardAnewRect = null;
         platformLeaveRect = null;
         donateRect = null;
-        supportLineRect = null;
+        dollarRect = null;
         donateTips.clear();
         donateListViewport = null;
         deleteWorldRect = null;
@@ -1370,14 +1365,7 @@ public final class NarrativeDeathScreen extends Screen {
                 quit ? BTN_QUIT_LIGHT : BTN_LIGHT,
                 quit ? BTN_QUIT_DARK  : BTN_DARK,
                 quit ? BTN_QUIT_TEXT  : BTN_TEXT);
-        y += lvH + 10;
-        // "Support the line" — always here on the final page, a standing door to the engine room
-        // (the donation page), even on deaths where it didn't appear in the flow.
-        int slW = 116, slH = 15;
-        supportLineRect = drawBevel(g, cx - slW / 2, y, slW, slH,
-                Component.translatable("gui.dungeontrain.death.narr.donate_visit"),
-                BTN_PRI_BG, BTN_PRI_LIGHT, BTN_DARK, 0xFFFFFFFF);
-        return y + slH + 6;
+        return y + lvH + 6;
     }
 
     // ---- Chrome ----
@@ -1420,6 +1408,17 @@ public final class NarrativeDeathScreen extends Screen {
             int photosW = this.font.width(photos) + 16;
             int photosX = trashX - 6 - photosW;
             photosRect = drawChip(g, photosX, 8, photos, CHIP_PH_BORDER, CHIP_PH_TEXT);
+        }
+
+        // "$" → the donation page (the engine room). Always present (every page but the donation
+        // page itself), same chip style, immediately left of the photos chip (or the trash chip
+        // when photos isn't shown) so it's always reachable.
+        dollarRect = null;
+        if (pages.isEmpty() || pages.get(currentPage).kind() != Kind.DONATE) {
+            int anchorX = photosRect != null ? photosRect.x() : trashX;
+            Component dollar = Component.literal("$");
+            int dollarW = this.font.width(dollar) + 16;
+            dollarRect = drawChip(g, anchorX - 6 - dollarW, 8, dollar, CHIP_PH_BORDER, CHIP_PH_TEXT);
         }
     }
 
@@ -1534,6 +1533,14 @@ public final class NarrativeDeathScreen extends Screen {
         if (button == 0 && uiBusy) { skipTransition(); return true; }
         if (button == 0) {
             if (photosRect != null && photosRect.has(mx, my)) { openGallery(); return true; }
+            if (dollarRect != null && dollarRect.has(mx, my)) {
+                // Jump to the donation page from anywhere; Next/back there return to this page.
+                if (!pages.isEmpty() && pages.get(currentPage).kind() != Kind.DONATE) {
+                    donateReturnPage = currentPage;
+                    startTransition(donatePageIndex());
+                }
+                return true;
+            }
             if (deleteWorldRect != null && deleteWorldRect.has(mx, my)) {
                 ClientDisplayConfig.setDeleteWorldOnReboard(!ClientDisplayConfig.isDeleteWorldOnReboard());
                 return true;
@@ -1550,12 +1557,6 @@ public final class NarrativeDeathScreen extends Screen {
             if (page.kind() == Kind.PLATFORM) {
                 if (boardAnewRect != null && boardAnewRect.has(mx, my)) { boardAnew(); return true; }
                 if (platformLeaveRect != null && platformLeaveRect.has(mx, my)) { leaveOrQuit(); return true; }
-                if (supportLineRect != null && supportLineRect.has(mx, my)) {
-                    // Jump to the donation page; Next Screen / back there return here.
-                    returnToPlatformAfterDonate = true;
-                    startTransition(donatePageIndex());
-                    return true;
-                }
             } else if (continueRect != null && continueRect.has(mx, my)) {
                 advance();
                 return true;
@@ -1621,10 +1622,11 @@ public final class NarrativeDeathScreen extends Screen {
                 && page.kind() == Kind.SURVEY && page.survey() != null
                 && BUG_REPORT_ID.equals(page.survey().id());
         returnToStartAfterBug = false;
-        // Donation page opened via the platform button: Next returns to the platform.
-        if (page.kind() == Kind.DONATE && returnToPlatformAfterDonate) {
-            returnToPlatformAfterDonate = false;
-            startTransition(platformPageIndex());
+        // Donation page opened via the "$" chip: Next returns to where it was opened from.
+        if (page.kind() == Kind.DONATE && donateReturnPage >= 0) {
+            int dest = donateReturnPage;
+            donateReturnPage = -1;
+            startTransition(Math.min(dest, pages.size() - 1));
             return;
         }
         if (returnToStart) {
@@ -1640,10 +1642,11 @@ public final class NarrativeDeathScreen extends Screen {
     private void back() {
         if (uiBusy) return;
         returnToStartAfterBug = false;
-        // Donation page opened via the platform button: back returns to the platform too.
-        if (pages.get(currentPage).kind() == Kind.DONATE && returnToPlatformAfterDonate) {
-            returnToPlatformAfterDonate = false;
-            startTransition(platformPageIndex());
+        // Donation page opened via the "$" chip: back returns to where it was opened from too.
+        if (pages.get(currentPage).kind() == Kind.DONATE && donateReturnPage >= 0) {
+            int dest = donateReturnPage;
+            donateReturnPage = -1;
+            startTransition(Math.min(dest, pages.size() - 1));
             return;
         }
         if (currentPage > 0) {
