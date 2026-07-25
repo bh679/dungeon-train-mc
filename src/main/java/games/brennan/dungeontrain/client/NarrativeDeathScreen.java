@@ -159,6 +159,8 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int BTN_DONE_LIGHT = 0xCC5C9162;
     private static final int BTN_DONE_DARK  = 0xCC1E1F21;
     private static final int BTN_DONE_TEXT  = 0xCCFFFFFF;
+    // Dark-orange tint for the monthly-cost figure — signals money going OUT (a cost, not raised).
+    private static final int COST           = 0xFFE07B39;
     private static final int SCORE_BG       = 0xFF1A1813;
     private static final int SCORE_BORDER   = 0xFF4A443C;
     private static final int SCORE_TEXT     = 0xFFCDBB95;
@@ -254,8 +256,14 @@ public final class NarrativeDeathScreen extends Screen {
 
     // Clickable regions, recomputed each render() and read by mouseClicked().
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
-    // DONATE page: the in-body "Support the line" button (opens the Revolut donate link).
+    // DONATE page: the in-body Contribute button (opens the Revolut donate link), the per-tile
+    // hover-tooltip regions, and the scrollable supporter-name list state.
     private Rect donateRect;
+    private record TileTip(Rect rect, String tipKey) {}
+    private final List<TileTip> donateTips = new ArrayList<>();
+    private int donateListScroll = 0;      // vertical scroll offset (px) of the supporter list
+    private int donateListMaxScroll = 0;    // scroll clamp bound, set during drawDonate
+    private Rect donateListViewport;        // supporter-list scroll viewport (hover / scroll hit-test)
     private Rect photosRect;
     // Trash toggle left of the reboard chip: delete the old world's save on reboard?
     private Rect deleteWorldRect;
@@ -331,6 +339,7 @@ public final class NarrativeDeathScreen extends Screen {
         kickDonationFetch();
         lastSurveyCount = SurveyClientState.questions().size();
         gearAdvScroll = 0;
+        donateListScroll = 0;
         commentBox = null;
         LOGGER.info("[DungeonTrain] NarrativeDeathScreen: page {}/{}, surveyQuestions={}, statsCached={}",
                 currentPage, pages.size(), lastSurveyCount, DeathStatsCache.get() != null);
@@ -483,6 +492,8 @@ public final class NarrativeDeathScreen extends Screen {
         boardAnewRect = null;
         platformLeaveRect = null;
         donateRect = null;
+        donateTips.clear();
+        donateListViewport = null;
         deleteWorldRect = null;
         continueRect = null;
         backRect = null;
@@ -533,6 +544,15 @@ public final class NarrativeDeathScreen extends Screen {
             // All-lives icon-row hover tooltips (same "settled" gate as the cargo row).
             if (page.kind() == Kind.LIVES && stats != null && settled()) {
                 drawLivesTooltips(g, mouseX, mouseY);
+            }
+            // Per-tile "what is this number?" tooltips on the donation page.
+            if (page.kind() == Kind.DONATE && settled()) {
+                for (TileTip t : donateTips) {
+                    if (t.rect().has(mouseX, mouseY)) {
+                        g.renderTooltip(this.font, Component.translatable(t.tipKey()), mouseX, mouseY);
+                        break;
+                    }
+                }
             }
             // Trash-toggle hover tooltip (same "settled" gate) — states what will
             // happen to this world's save on reboard.
@@ -1202,61 +1222,73 @@ public final class NarrativeDeathScreen extends Screen {
         if (s == null) {
             y = drawCentered(g, Component.translatable("gui.dungeontrain.death.narr.donate_loading"), cx, w, y, SUBLINE);
             y += 10;
-            donateRect = drawDonateButton(g, cx, y);
+            int bw = 180;
+            donateRect = drawBevel(g, cx - bw / 2, y, bw, 22,
+                    Component.translatable("gui.dungeontrain.death.narr.donate_button"),
+                    BTN_PRI_BG, BTN_PRI_LIGHT, BTN_DARK, 0xFFFFFFFF);
             return y + 28;
         }
 
-        // Two columns below the narration: the money on the left (explicitly labelled costs),
-        // the supporters' names down the right side. The Contribute button is centered beneath both.
+        // Two columns below the narration: the money on the left (explicitly labelled costs, the
+        // cost figure tinted orange), the supporters' names scrolling down the right side. The
+        // Contribute button sits in the fourth (bottom-right) tile slot.
         int gap = 10;
         int colW = (w - gap) / 2;
         int rightX = left + colW + gap;
 
-        // ---- Left column: 2x2 cost tiles ----
+        // ---- Left block: 2x2 grid — monthly cost / costs covered / raised / [Contribute] ----
         int cellGap = 4;
         int cellW = (colW - cellGap) / 2;
         int lc0 = left + cellW / 2;
         int lc1 = left + cellW + cellGap + cellW / 2;
-        drawCell(g, lc0, y, s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—",
-                "gui.dungeontrain.death.narr.lbl_running_cost", cellW);
-        drawCell(g, lc1, y, s.percentCovered() >= 0 ? s.percentCovered() + "%" : "—",
-                "gui.dungeontrain.death.narr.lbl_covered", cellW);
+        costTile(g, lc0, y, cellW, s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—",
+                "gui.dungeontrain.death.narr.lbl_running_cost", "gui.dungeontrain.death.narr.tip_monthly_cost", COST);
+        costTile(g, lc1, y, cellW, s.percentCovered() >= 0 ? s.percentCovered() + "%" : "—",
+                "gui.dungeontrain.death.narr.lbl_covered", "gui.dungeontrain.death.narr.tip_covered", VALUE);
         int ly = y + 30;
-        drawCell(g, lc0, ly, fmtUsd(s.monthlyRaisedUsd()),
-                "gui.dungeontrain.death.narr.lbl_raised_month", cellW);
-        drawCell(g, lc1, ly, s.hasYou() ? fmtUsd(s.youTotalUsd()) : "—",
-                "gui.dungeontrain.death.narr.lbl_your_contribution", cellW);
+        costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
+                "gui.dungeontrain.death.narr.lbl_raised_month", "gui.dungeontrain.death.narr.tip_raised", VALUE);
+        // Contribute button in place of the old "your total" tile.
+        donateRect = drawBevel(g, lc1 - cellW / 2, ly, cellW, 26,
+                Component.translatable("gui.dungeontrain.death.narr.donate_button"),
+                BTN_PRI_BG, BTN_PRI_LIGHT, BTN_DARK, 0xFFFFFFFF);
         int leftBottom = ly + 30;
 
-        // ---- Right column: supporter names, one per line, amount right-aligned. Patreon tinted. ----
-        int ry = y;
+        // ---- Right block: supporter names, scrollable, amount right-aligned. Patreon tinted. ----
         drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.narr.lbl_leaderboard_monthly"),
-                rightX + colW / 2, ry, KICKER);
-        ry += 12;
+                rightX + colW / 2, y, KICKER);
+        int listTop = y + 12;
+        int listH = Math.max(this.font.lineHeight + 2, leftBottom - listTop); // align to the left block
+        int rowH = this.font.lineHeight + 2;
         List<DonationSummaryClient.Entry> board = s.monthly();
-        int rows = Math.min(6, board.size());
-        for (int i = 0; i < rows; i++) {
-            DonationSummaryClient.Entry e = board.get(i);
+        donateListMaxScroll = Math.max(0, board.size() * rowH - listH);
+        donateListScroll = Math.max(0, Math.min(donateListMaxScroll, donateListScroll));
+        donateListViewport = new Rect(rightX, listTop, colW, listH);
+        g.enableScissor(rightX, listTop, rightX + colW, listTop + listH);
+        int ry = listTop - donateListScroll;
+        for (DonationSummaryClient.Entry e : board) {
             String amt = fmtUsd(e.amountUsd());
             int amtW = this.font.width(amt);
             String name = this.font.plainSubstrByWidth(e.name(), colW - amtW - 8);
             int color = "patreon".equals(e.source()) ? QUESTION : VALUE;
             g.drawString(this.font, name, rightX, ry, fade(color), false);
             g.drawString(this.font, amt, rightX + colW - amtW, ry, fade(color), false);
-            ry += this.font.lineHeight + 2;
+            ry += rowH;
+        }
+        g.disableScissor();
+        // Faint ▾ affordance when more names lie below the fold.
+        if (donateListScroll < donateListMaxScroll) {
+            drawCenteredStr(g, "▾", rightX + colW / 2, listTop + listH - this.font.lineHeight + 1, KICKER);
         }
 
-        y = Math.max(leftBottom, ry) + 10;
-        donateRect = drawDonateButton(g, cx, y);
-        return y + 28;
+        return Math.max(leftBottom, listTop + listH) + 10;
     }
 
-    /** The green in-body "Support the line" button; returns its clickable rect. */
-    private Rect drawDonateButton(GuiGraphics g, int cx, int y) {
-        int bw = 180, h = 22;
-        return drawBevel(g, cx - bw / 2, y, bw, h,
-                Component.translatable("gui.dungeontrain.death.narr.donate_button"),
-                BTN_PRI_BG, BTN_PRI_LIGHT, BTN_DARK, 0xFFFFFFFF);
+    /** A cost/stat tile plus its hover-tooltip region (rendered when the page is settled). */
+    private void costTile(GuiGraphics g, int centerX, int y, int cw, String value,
+                          String labelKey, String tipKey, int valueColor) {
+        drawCell(g, centerX, y, value, labelKey, cw, valueColor);
+        donateTips.add(new TileTip(new Rect(centerX - cw / 2, y, cw, 26), tipKey));
     }
 
     private int drawPlatform(GuiGraphics g, DeathNarrative n, int left, int w, int cx, int y) {
@@ -1510,6 +1542,13 @@ public final class NarrativeDeathScreen extends Screen {
             gearAdvScroll = Math.max(0, Math.min(gearAdvMaxScroll, gearAdvScroll - (int) Math.round(dy) * step));
             return true;
         }
+        // Vertical-scroll the DONATE supporter list when the cursor is over its viewport.
+        if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.DONATE
+                && donateListViewport != null && donateListViewport.has(mx, my) && donateListMaxScroll > 0) {
+            int step = this.font.lineHeight + 2; // one name per notch
+            donateListScroll = Math.max(0, Math.min(donateListMaxScroll, donateListScroll - (int) Math.round(dy) * step));
+            return true;
+        }
         return super.mouseScrolled(mx, my, dx, dy);
     }
 
@@ -1705,11 +1744,15 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private void drawCell(GuiGraphics g, int centerX, int y, String value, String labelKey, int cw) {
+        drawCell(g, centerX, y, value, labelKey, cw, VALUE);
+    }
+
+    private void drawCell(GuiGraphics g, int centerX, int y, String value, String labelKey, int cw, int valueColor) {
         int ch = 26;
         int x = centerX - cw / 2;
         g.fill(x, y, x + cw, y + ch, fade(TILE_BG));
         drawBorder(g, x, y, cw, ch, TILE_BORDER);
-        drawCenteredStr(g, value, centerX, y + 4, VALUE);
+        drawCenteredStr(g, value, centerX, y + 4, valueColor);
         drawCenteredStr(g, Component.translatable(labelKey), centerX, y + 4 + this.font.lineHeight + 1, LABEL);
     }
 
