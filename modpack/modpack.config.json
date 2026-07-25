@@ -37,7 +37,11 @@
     { "name": "Puzzles Lib", "slug": "puzzles-lib", "project_id": 495476, "file_id": 8251525, "required": true, "modrinth_project": "puzzles-lib", "modrinth_version": "5A6wiMVf" },
     { "name": "Smooth Swapping", "slug": "smooth-swapping", "project_id": 513689, "file_id": 7274625, "required": false, "modrinth_project": "smooth-swapping", "modrinth_version": "tnvwgXE6" },
     { "name": "Kinetic Hosting Integration", "slug": "kinetic-hosting-integration", "project_id": 1048150, "file_id": 8188461, "required": true, "modrinth_project": "kinetic-hosting-integration", "modrinth_version": "MU40ZSjV" },
-    { "name": "Overloaded Armor Bar", "slug": "overloaded-armor-bar", "project_id": 314002, "file_id": 5537850, "required": true, "modrinth_project": "overloaded-armor-bar", "modrinth_version": "ioPwPPpS" }
+    { "name": "Overloaded Armor Bar", "slug": "overloaded-armor-bar", "project_id": 314002, "file_id": 5537850, "required": true, "modrinth_project": "overloaded-armor-bar", "modrinth_version": "ioPwPPpS" },
+    { "name": "Architectury API", "slug": "architectury-api", "project_id": 419699, "file_id": 8492726, "required": true, "modrinth_project": "architectury-api", "modrinth_version": "1IiqEQGl" },
+    { "name": "Curios API", "slug": "curios", "project_id": 309927, "file_id": 6529130, "required": true, "modrinth_project": "curios", "modrinth_version": "yohfFbgD" },
+    { "name": "ShatterLib", "slug": "shatterbyte-lib", "project_id": 916747, "file_id": 8040848, "required": true, "modrinth_project": "shatterbyte-lib", "modrinth_version": "yVCCi6TK" },
+    { "name": "Relics", "slug": "relics-mod", "project_id": 445274, "file_id": 8158315, "required": true, "modrinth_project": "relics-mod", "modrinth_version": "WKEe9sPL" }
   ],
   "curseforge_relations": [
     { "slug": "sable", "type": "requiredDependency" }
