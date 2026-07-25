@@ -30,18 +30,26 @@ check-provenance.py, and rendered in-game as the blue AI-fraction ring around th
 DT logo in the language-selection list.
 """
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 # scripts/localization/provenance_io.py -> repo root is two levels up.
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_LANG_DIR = REPO_ROOT / "src" / "main" / "resources" / "assets" / "dungeontrain" / "lang"
+ASSETS_DIR = REPO_ROOT / "src" / "main" / "resources" / "assets"
+DEFAULT_LANG_DIR = ASSETS_DIR / "dungeontrain" / "lang"
 DEFAULT_PROVENANCE_DIR = REPO_ROOT / "localization" / "provenance"
 DEFAULT_AUTHORS_FILE = REPO_ROOT / "localization" / "authors.json"
-DEFAULT_CREDITS_DIR = (
-    REPO_ROOT / "src" / "main" / "resources" / "assets" / "dungeontrain" / "localization_credits"
-)
+DEFAULT_CREDITS_DIR = ASSETS_DIR / "dungeontrain" / "localization_credits"
 # The single generated, shipped translator-credits file (human-grouped) the Credits page reads.
 DEFAULT_CONTRIBUTORS_FILE = DEFAULT_CREDITS_DIR.parent / "translation_contributors.json"
+
+# Long-form narrative book translations (data/, not assets/) — one JSON per book per
+# locale under a locale dir. Tracked per-book, so their sidecars are keyed by the book's
+# path relative to the locale dir (see narrative_books). Repo-side only; never ships.
+DEFAULT_NARRATIVE_DIR = (
+    REPO_ROOT / "src" / "main" / "resources" / "data" / "dungeontrain" / "narrative_localizations"
+)
+DEFAULT_NARRATIVE_PROVENANCE_DIR = REPO_ROOT / "localization" / "narrative_provenance"
 
 AUTHOR_KINDS = ("ai", "human")
 
@@ -60,6 +68,63 @@ CONTRIBUTORS_NOTE = (
 SOURCE_LOCALE = "en_us"
 
 ENTRY_FIELDS = ("author", "reviewer")
+
+# Sibling mods whose (community-contributed) translations are committed here in DT rather
+# than in their English-only source repos — so their provenance is tracked here too. Their
+# lang files are the same flat-key shape as dungeontrain's, so they reuse the whole per-line
+# system; they only differ in having no shipped credit files / AI-ring (bookkeeping only).
+SIBLING_NAMESPACES = ("adventureitemnames", "playermob", "discordpresence")
+
+
+@dataclass(frozen=True)
+class Namespace:
+    """One lang-file namespace tracked by the per-line provenance system.
+
+    ``credits_dir``/``contributors_file`` are None for namespaces that carry
+    author/reviewer bookkeeping only (the siblings) — no shipped AI-fraction ring or
+    translator-credits file. Callers skip those steps when the field is None.
+    """
+    name: str
+    lang_dir: Path
+    prov_dir: Path
+    credits_dir: Path | None
+    contributors_file: Path | None
+
+
+def namespaces() -> list[Namespace]:
+    """Every namespace whose committed translations carry provenance, in check order.
+
+    dungeontrain keeps its flat ``localization/provenance/<locale>.json`` layout (and its
+    shipped credits); each sibling gets a ``localization/provenance/<name>/`` subdir and no
+    shipped credits. The sibling subdirs are directories, so dungeontrain's ``*.json`` orphan
+    glob never sees them.
+    """
+    out = [Namespace("dungeontrain", DEFAULT_LANG_DIR, DEFAULT_PROVENANCE_DIR,
+                     DEFAULT_CREDITS_DIR, DEFAULT_CONTRIBUTORS_FILE)]
+    for name in SIBLING_NAMESPACES:
+        out.append(Namespace(name, ASSETS_DIR / name / "lang",
+                             DEFAULT_PROVENANCE_DIR / name, None, None))
+    return out
+
+
+def narrative_locales(narrative_dir: Path) -> list[str]:
+    """The locale codes present under ``narrative_dir`` (one subdir per locale), sorted.
+
+    Unlike lang locales there is no en_us here — the English books live in a separate
+    ``narratives/`` tree, not as a locale under narrative_localizations.
+    """
+    if not narrative_dir.is_dir():
+        return []
+    return sorted(p.name for p in narrative_dir.iterdir() if p.is_dir())
+
+
+def narrative_books(locale_dir: Path) -> list[str]:
+    """Provenance keys for one locale: each book's path relative to ``locale_dir``, sans
+    ``.json`` suffix, POSIX-style and sorted (e.g. ``random_books/deathnote``)."""
+    return sorted(
+        p.relative_to(locale_dir).with_suffix("").as_posix()
+        for p in locale_dir.rglob("*.json")
+    )
 
 
 def locales(lang_dir: Path) -> list[str]:
