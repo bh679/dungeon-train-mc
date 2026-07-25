@@ -5758,6 +5758,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "spawn-deadlock-fluid-fix",
+      "version": "0.513.0",
+      "type": "fix",
+      "title": "Fixed a rare spawn hang when starting a new world",
+      "summary": "New worlds could occasionally freeze at the loading screen and drop you into the void instead of onto the train, when water or lava sat near the spawn. The spawn now generates safely and always places you on the train.",
+      "highlights": [
+        "No more falling forever at spawn on a fresh world",
+        "Spawns next to water or lava no longer hang the game"
+      ],
+      "pr": 846,
+      "date": "2026-07-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
