@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "excluded": [
+    "chest",
+    "cows",
+    "craft",
+    "default",
+    "ender",
+    "features",
+    "fire",
+    "nature",
+    "pigs",
+    "sheep",
+    "shop"
+  ]
+}

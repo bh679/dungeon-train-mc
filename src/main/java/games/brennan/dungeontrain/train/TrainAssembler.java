@@ -315,6 +315,14 @@ public final class TrainAssembler {
             // groupSize ever moves to mixed-variant groups.
             pendingEntities[slot] = new PendingContentsEntitySpawn(
                 carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx, groupAnchorWorldX);
+            // Shared carriages: if this slot's variant is relay-sourced and the feature is enabled,
+            // register it so a real edit later marks it dirty and uploads the build to the pool. PR B
+            // always places fresh (NEW path); PR C adds the lease-from-pool branch before placement.
+            if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
+                    && SharedCarriageFlags.isSharedVariant(variant.id())) {
+                SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
+                        carriageShipyardOrigin, dims, variant.id(), false, null, null);
+            }
         }
         long tAfterContents = System.nanoTime();
 
