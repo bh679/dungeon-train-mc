@@ -14,7 +14,7 @@ class DeathNoteReporterTest {
     @Test
     void payloadMatchesTheRelayContract() {
         JsonObject body = DeathNoteReporter.buildPayload(
-                "aaaa", "Author", "Victim", "bbbb", 7, "seed-123", "skin:x");
+                "aaaa", "Author", "Victim", "bbbb", 7, "seed-123", "skin:x", true);
         assertEquals("aaaa", body.get("authorUuid").getAsString());
         assertEquals("Author", body.get("authorName").getAsString());
         assertEquals("Victim", body.get("targetName").getAsString());
@@ -22,11 +22,12 @@ class DeathNoteReporterTest {
         assertEquals(7, body.get("deathCarriage").getAsInt());
         assertEquals("seed-123", body.get("worldKey").getAsString());
         assertEquals("skin:x", body.get("authorSkinRef").getAsString());
+        assertEquals(true, body.get("freePlay").getAsBoolean());
     }
 
     @Test
     void nullStringsBecomeEmptyAndNegativeCarriageIsKept() {
-        JsonObject body = DeathNoteReporter.buildPayload(null, null, null, null, -3, null, null);
+        JsonObject body = DeathNoteReporter.buildPayload(null, null, null, null, -3, null, null, false);
         assertEquals("", body.get("authorUuid").getAsString());
         assertEquals("", body.get("authorName").getAsString());
         assertEquals("", body.get("targetName").getAsString());
@@ -34,5 +35,6 @@ class DeathNoteReporterTest {
         assertEquals(-3, body.get("deathCarriage").getAsInt()); // carriage index is signed
         assertEquals("", body.get("worldKey").getAsString());
         assertEquals("", body.get("authorSkinRef").getAsString());
+        assertEquals(false, body.get("freePlay").getAsBoolean());
     }
 }

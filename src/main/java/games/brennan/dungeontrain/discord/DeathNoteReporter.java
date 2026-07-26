@@ -33,14 +33,16 @@ public final class DeathNoteReporter {
      * @param deathCarriage  the carriage index the author died at (where the echo will lie in wait)
      * @param worldKey       this world's key (train generation seed) — scopes the curse to one world
      * @param authorSkinRef  optional pre-encoded skin ref for the echo, or "" (spawner encodes from uuid+name)
+     * @param freePlay       whether the author died on a Free Play (cheated) run — the curse then only
+     *                       spawns for a target who is also in Free Play (provenance match)
      */
     public static void submit(UUID authorId, String authorName, String targetName, String targetUuid,
-                              int deathCarriage, String worldKey, String authorSkinRef) {
+                              int deathCarriage, String worldKey, String authorSkinRef, boolean freePlay) {
         try {
             if (authorId == null) return;
             String uuid = authorId.toString().replace("-", "");
             JsonObject payload = buildPayload(uuid, authorName, targetName, targetUuid,
-                    deathCarriage, worldKey, authorSkinRef);
+                    deathCarriage, worldKey, authorSkinRef, freePlay);
             RelayOutbox.get().enqueue("/deathnotes/submit", payload.toString());
             LOGGER.debug("[DungeonTrain] DeathNote submit (target {}, carriage {}) queued to the relay outbox.",
                     targetName, deathCarriage);
@@ -69,7 +71,7 @@ public final class DeathNoteReporter {
      * unit-tested without a running server. Matches the relay contract exactly. Null strings emit as "".
      */
     static JsonObject buildPayload(String authorUuid, String authorName, String targetName, String targetUuid,
-                                   int deathCarriage, String worldKey, String authorSkinRef) {
+                                   int deathCarriage, String worldKey, String authorSkinRef, boolean freePlay) {
         JsonObject body = new JsonObject();
         body.addProperty("authorUuid", authorUuid == null ? "" : authorUuid);
         body.addProperty("authorName", authorName == null ? "" : authorName);
@@ -78,6 +80,7 @@ public final class DeathNoteReporter {
         body.addProperty("deathCarriage", deathCarriage);
         body.addProperty("worldKey", worldKey == null ? "" : worldKey);
         body.addProperty("authorSkinRef", authorSkinRef == null ? "" : authorSkinRef);
+        body.addProperty("freePlay", freePlay);
         return body;
     }
 }
