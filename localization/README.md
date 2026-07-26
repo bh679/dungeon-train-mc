@@ -175,9 +175,27 @@ lang commits). Judgment calls baked into that backfill:
 ### Sibling namespaces + narrative books (July 2026)
 
 The sibling-namespace sidecars (`provenance/{adventureitemnames,playermob,discordpresence}/`)
-and the narrative sidecars (`narrative_provenance/`) were backfilled with a plain
-`stamp-*-provenance.py --sync --author 'Opus 4.8 (Claude)'` — every entry credited to Opus
-and **unreviewed** (`reviewer: ""`), the conservative default. No per-book review history was
-reconstructed; real human reviews get stamped going forward via the review pass. These
-bodies have no earlier waves to attribute, so there is no closed commit-map backfill script
-for them — a fresh `--sync` is the correct way to pick up new siblings/books.
+and the narrative sidecars (`narrative_provenance/`) were first backfilled with a plain
+`stamp-*-provenance.py --sync --author 'Opus 4.8 (Claude)'` — every entry credited to Opus and
+unreviewed, the conservative default. These bodies have no closed commit-map backfill script —
+a fresh `--sync` is the correct way to pick up new siblings/books.
+
+**`zh_cn` correction (2026-07-26).** That blanket default was wrong for Chinese. Revision
+history shows the `zh_cn` **sibling UI** (AdventureItemNames, PlayerMob) and **narrative books**
+are 老本願's community translation, not machine output:
+
+- Both sibling `zh_cn` lang files were introduced solely by **#755** (`01e4ad2a`, "auto-load
+  Chinese"), bundled from 老本願's `dev/chinese-localization-autoload` branch under the
+  "Localized by 老本願" credit — genuine human translation, not en_us copies.
+- The 45 `zh_cn` narrative books trace to **#759** (`d229aa73`, 老本願's v0.458.0 drop, 43
+  books) and #755 (2 books). `random_books/deathnote`'s prose is 老本願's; its one-line title
+  field (死亡笔记) was appended by #766 — a trivial term, so the book is credited 老本願.
+- The earlier "#755 = assumed Opus" call applied only to the scattered **dungeontrain UI draft
+  keys** ("draft — confirm with 老本願"), never to this sibling/narrative bundle.
+  DiscordPresence's `zh_cn` was *removed* at #755 (DP self-localizes), so it has no sidecar.
+
+Operator decision (confirmed 2026-07-26): those `zh_cn` entries are **author 老本願, reviewer
+老本願** (translated and reviewed by 老本願). Re-stamped with
+`stamp-*-provenance.py --namespace … --locale zh_cn --author 老本願 --reviewer 老本願 --all`.
+All **other** locales (de/fr/ja/zh_tw/…) came from the Opus AI waves (#768/#776/#766) and
+correctly remain `Opus / unreviewed`.

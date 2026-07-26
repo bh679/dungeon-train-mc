@@ -1,10 +1,10 @@
 {
-  "entity.playermob.player_mob": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
-  "item.playermob.player_mob_spawn_egg": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
-  "item.playermob.player_mob_aggressive_spawn_egg": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
-  "item.playermob.player_mob_friendly_spawn_egg": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
-  "item.playermob.player_mob_passive_spawn_egg": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
-  "item.playermob.player_mob_skeptical_spawn_egg": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
-  "item.playermob.player_mob_shy_spawn_egg": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
-  "container.playermob.player_mob": {"author": "Opus 4.8 (Claude)", "reviewer": ""}
+  "entity.playermob.player_mob": {"author": "老本願", "reviewer": "老本願"},
+  "item.playermob.player_mob_spawn_egg": {"author": "老本願", "reviewer": "老本願"},
+  "item.playermob.player_mob_aggressive_spawn_egg": {"author": "老本願", "reviewer": "老本願"},
+  "item.playermob.player_mob_friendly_spawn_egg": {"author": "老本願", "reviewer": "老本願"},
+  "item.playermob.player_mob_passive_spawn_egg": {"author": "老本願", "reviewer": "老本願"},
+  "item.playermob.player_mob_skeptical_spawn_egg": {"author": "老本願", "reviewer": "老本願"},
+  "item.playermob.player_mob_shy_spawn_egg": {"author": "老本願", "reviewer": "老本願"},
+  "container.playermob.player_mob": {"author": "老本願", "reviewer": "老本願"}
 }
