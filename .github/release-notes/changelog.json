@@ -5805,6 +5805,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "modpack-jade-sable-compat",
+      "version": "0.517.0",
+      "type": "feat",
+      "title": "Modpack: Jade block tooltips now work on the moving train",
+      "summary": "The Dungeon Train modpack now enables Jade (the block/item tooltip HUD) by default and bundles Jade Sable Compat, a small client-only mod that fixes Jade's tooltips on the moving train. Jade used to ship off because its tooltips read the wrong block when you looked at anything riding a Sable carriage; with the compat mod they now resolve the correct block on the train deck, so Jade is on out of the box. (Modpack only \u2014 the standalone mod jar is unchanged.)",
+      "highlights": [
+        "Jade enabled by default in the modpack",
+        "Block/item tooltips now read correctly for blocks on the moving train",
+        "Bundled Jade Sable Compat (client-only; auto-skipped on dedicated servers)"
+      ],
+      "date": "2026-07-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
