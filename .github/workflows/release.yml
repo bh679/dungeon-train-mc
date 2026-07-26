@@ -265,6 +265,7 @@ jobs:
             tectonic(optional)
             mouse-tweaks(optional)
             jade(optional)
+            jade-sable-compat(optional)
             lithostitched(optional)
             controlling(optional)
             searchables(optional)
