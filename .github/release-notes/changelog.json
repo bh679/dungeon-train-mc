@@ -5787,9 +5787,9 @@
       ],
       "pr": 847,
       "date": "2026-07-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.517.0",
+      "released_at": "2026-07-26T12:16:27Z"
     },
     {
       "id": "trade-everything-0-2-8",
@@ -5802,9 +5802,9 @@
         "Enchanted / custom-stat items remain exempt from the cap"
       ],
       "date": "2026-07-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.517.0",
+      "released_at": "2026-07-26T12:16:27Z"
     },
     {
       "id": "modpack-jade-sable-compat",
@@ -5818,9 +5818,9 @@
         "Bundled Jade Sable Compat (client-only; auto-skipped on dedicated servers)"
       ],
       "date": "2026-07-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.517.0",
+      "released_at": "2026-07-26T12:16:27Z"
     }
   ]
 }
