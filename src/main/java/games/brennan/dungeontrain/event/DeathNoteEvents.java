@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -51,6 +52,15 @@ public final class DeathNoteEvents {
         List<PendingDeathNotes.PendingDeathNote> pending =
                 PendingDeathNotes.get(level).takeForAuthor(player.getUUID());
         if (pending.isEmpty()) return;
+
+        // A Free Play (cheated / sandbox) death casts no echo: drop the taken curses instead of
+        // arming them. Dev builds still curse, matching the reincarnation-capture gate and the
+        // death-feed idiom in RunStatsEvents.
+        if (RunIntegrity.isCheated(player) && !DungeonTrain.isDevBuild()) {
+            LOGGER.debug("[DungeonTrain] DeathNote: {} died in Free Play — {} pending curse(s) dropped.",
+                    player.getGameProfile().getName(), pending.size());
+            return;
+        }
 
         boolean canSync = DeathNoteGate.canSync(player);
         Integer deathCarriage = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
