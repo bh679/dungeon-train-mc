@@ -20,9 +20,10 @@ import java.util.function.Predicate;
  * {@link ChatFormatting#GRAY} to match {@link SharedBookMessage} (the burn line) — the quiet, "your
  * words are out there somewhere" voice the shared-book feature speaks in.</p>
  *
- * <p>Ten variants. A variant is only eligible when the stat it names is meaningful (&gt; 0), so a book
- * no one has finished never shows "0 read it to completion"; variant #10 (held-count only) is always
- * eligible, so there is always a line to show.</p>
+ * <p>Thirteen variants. A variant is only eligible when the stat it names is meaningful (&gt; 0), so a
+ * book no one has finished never shows "0 read it to completion"; variant #10 (held-count only) is always
+ * eligible, so there is always a line to show. Variants #11–#13 name the book's 👍/👎 vote tally (the
+ * relay returns it in the same author-gated stats payload), eligible once the book has any vote.</p>
  *
  * <p><b>Localization.</b> Each variant, and the count-driven sub-phrases it embeds, is a
  * {@link Component#translatable} key under {@code chat.dungeontrain.familiar_book.*}. The line is built
@@ -71,7 +72,19 @@ public final class FamiliarBookMessage {
             s -> Component.translatable(KEY + "9", heldClause(s.held()), timesClause(s.rereads()))),
         // held-count only — always eligible, the fallback
         new Variant(s -> true,
-            s -> Component.translatable(KEY + "10", heldClause(s.held())))
+            s -> Component.translatable(KEY + "10", heldClause(s.held()))),
+        // up/down votes — eligible once the book has ANY vote; the sum gate means a book voted only one
+        // way still surfaces ("…5 up, 0 down"), which is real information to the author.
+        new Variant(s -> s.votesUp() + s.votesDown() > 0,
+            s -> Component.translatable(KEY + "11", heldClause(s.held()),
+                upClause(s.votesUp()), downClause(s.votesDown()))),
+        new Variant(s -> s.votesUp() + s.votesDown() > 0,
+            s -> Component.translatable(KEY + "12", heldClause(s.held()),
+                upClause(s.votesUp()), downClause(s.votesDown()))),
+        // compact scoreboard voice — bare "N up, N down".
+        new Variant(s -> s.votesUp() + s.votesDown() > 0,
+            s -> Component.translatable(KEY + "13", heldClause(s.held()),
+                upShort(s.votesUp()), downShort(s.votesDown())))
     );
 
     /**
@@ -98,6 +111,26 @@ public final class FamiliarBookMessage {
     /** "1 time" / "N times". */
     private static MutableComponent timesClause(int n) {
         return Component.translatable(KEY + (n == 1 ? "times.one" : "times.other"), n);
+    }
+
+    /** "1 reader thumbed it up" / "N readers thumbed it up". */
+    private static MutableComponent upClause(int n) {
+        return Component.translatable(KEY + (n == 1 ? "up.one" : "up.other"), n);
+    }
+
+    /** "1 thumbed it down" / "N thumbed it down". */
+    private static MutableComponent downClause(int n) {
+        return Component.translatable(KEY + (n == 1 ? "down.one" : "down.other"), n);
+    }
+
+    /** Compact scoreboard form: "N up" (no singular/plural — one key). */
+    private static MutableComponent upShort(int n) {
+        return Component.translatable(KEY + "up.short", n);
+    }
+
+    /** Compact scoreboard form: "N down" (no singular/plural — one key). */
+    private static MutableComponent downShort(int n) {
+        return Component.translatable(KEY + "down.short", n);
     }
 
     /** Human duration: "45s", "3m 12s", "1h 4m". Sub-second rounds down to "0s". */

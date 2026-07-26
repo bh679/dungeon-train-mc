@@ -205,6 +205,14 @@ public final class NarrativeDeathScreen extends Screen {
     private List<Page> pages = List.of();
     private int currentPage = 0;
     private int lastSurveyCount = -1;
+    // Death-screen funnel analytics: the page whose dwell we're currently timing (a UiAnalytics
+    // PAGE_* id, or null when nothing is open), its survey questionId (SURVEY pages only — the
+    // screen has one page per question, so page="survey" alone can't tell them apart), and when it
+    // opened. Fed to UiAnalytics on each page change (startTransition) and terminal exit — see
+    // openPageAnalytics/leavePageAnalytics.
+    private String openedPage = null;
+    private String openedQuestionId = null;
+    private long pageOpenedAtMs = 0L;
     // Plea variants shown above the 2nd (and any later) survey question. The 1st question keeps the
     // calm "ledger" intro; the 2nd swaps to one of these urgent pleas, chosen at random per death
     // (see surveyIntro2Choice).
@@ -409,6 +417,10 @@ public final class NarrativeDeathScreen extends Screen {
             pendingPage = -1;
             fromShot = bgFor(currentPage);
             toShot = null;
+            // Funnel: the opening page's first view (usually FALL). Fired once — inside !opened —
+            // so a later rebuildWidgets/init doesn't re-log it. Page changes go through
+            // startTransition; close through removed().
+            openPageAnalytics(pages.get(currentPage));
         }
     }
 
@@ -651,7 +663,44 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     /** Begin a transition toward {@code target}; the page swaps when its fade-out ends. */
+    /** The UiAnalytics {@code page} id for a page kind (funnel dimension), or null if untracked. */
+    private static String pageAnalyticsId(Kind kind) {
+        return switch (kind) {
+            case FALL -> UiAnalytics.PAGE_FALL;
+            case DEEDS -> UiAnalytics.PAGE_DEEDS;
+            case GEAR -> UiAnalytics.PAGE_GEAR;
+            case LIVES -> UiAnalytics.PAGE_LIVES;
+            case SURVEY -> UiAnalytics.PAGE_SURVEY;
+            case DONATE -> UiAnalytics.PAGE_DONATE;
+            case PLATFORM -> UiAnalytics.PAGE_PLATFORM;
+        };
+    }
+
+    /** Start timing a newly-shown page and fire its {@code open} funnel event (consent-gated). */
+    private void openPageAnalytics(Page page) {
+        openedPage = pageAnalyticsId(page.kind());
+        openedQuestionId = page.kind() == Kind.SURVEY && page.survey() != null ? page.survey().id() : null;
+        pageOpenedAtMs = Util.getMillis();
+        UiAnalytics.pageOpen(UiAnalytics.SURFACE_DEATH_SCREEN, openedPage, openedQuestionId);
+    }
+
+    /** Close the currently-timed page: fire its {@code page_time} with the dwell so far. Idempotent. */
+    private void leavePageAnalytics() {
+        if (openedPage == null) return;
+        UiAnalytics.pageTime(UiAnalytics.SURFACE_DEATH_SCREEN, openedPage, openedQuestionId,
+                Util.getMillis() - pageOpenedAtMs);
+        openedPage = null;
+        openedQuestionId = null;
+    }
+
     private void startTransition(int target) {
+        // Funnel: close the page being left and open the one being entered. The visual swap is
+        // deferred (updateTransition), but the navigation intent is now — the right moment to end
+        // the old page's dwell and begin the new page's.
+        if (target >= 0 && target < pages.size() && target != currentPage) {
+            leavePageAnalytics();
+            openPageAnalytics(pages.get(target));
+        }
         imgFinishMs = 0L;               // cancel any in-flight fast reveal
         dipStartBlack = photoBlack;     // carry current darkness (advancing mid-rise won't snap)
         fromShot = bgFor(currentPage);
@@ -1541,6 +1590,7 @@ public final class NarrativeDeathScreen extends Screen {
             if (dollarRect != null && dollarRect.has(mx, my)) {
                 // Jump to the donation page from anywhere; Next/back there return to this page.
                 if (!pages.isEmpty() && pages.get(currentPage).kind() != Kind.DONATE) {
+                    UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CHIP);
                     donateReturnPage = currentPage;
                     startTransition(donatePageIndex());
                 }
@@ -1681,11 +1731,19 @@ public final class NarrativeDeathScreen extends Screen {
         }
         DPNetwork.sendToServer(new SurveySubmitPayload(e.id(), score, comment));
         submitted.add(e.id());
+        // Funnel: record the chosen rating for scale questions (the score drives the death-screen
+        // survey-response distribution). Text-only questions have no meaningful score, so they're
+        // left out — never the free-text comment either way.
+        if (e.scaleMax() >= e.scaleMin()) {
+            UiAnalytics.surveyAnswer(UiAnalytics.SURFACE_DEATH_SCREEN, e.id(), score, e.scaleMax());
+        }
         // For a real-bug answer, collect + ship logs (shared with the /bug + /feedback path).
         BugLogReporter.maybeReport(e, score);
     }
 
     private void boardAnew() {
+        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_BOARD_ANEW);
+        leavePageAnalytics(); // terminal exit — close the current page's dwell
         boolean keepMode = Screen.hasShiftDown();
         DeathScreenLayoutHandler.launchWorld(this, false, !keepMode);
     }
@@ -1701,6 +1759,8 @@ public final class NarrativeDeathScreen extends Screen {
      * {@link Screen#hasShiftDown()}, so the action matches the drawn label.
      */
     private void leaveOrQuit() {
+        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_LEAVE);
+        leavePageAnalytics(); // terminal exit — close the current page's dwell
         if (Screen.hasShiftDown()) {
             DeathScreenLayoutHandler.quitToDesktop();
         } else {
@@ -1727,6 +1787,7 @@ public final class NarrativeDeathScreen extends Screen {
 
     /** Open the full-screen Contribute window (Revolut / Patreon options), returning here on close. */
     private void openDonateLink() {
+        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CONTRIBUTE);
         Minecraft.getInstance().setScreen(new DonationOptionsScreen(this));
     }
 
@@ -2029,6 +2090,9 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public void removed() {
+        // NB: the last page's page_time is closed in the terminal actions (boardAnew / leaveOrQuit),
+        // NOT here — removed() also fires when a child screen is pushed (Contribute window, gallery,
+        // advancements), which must not end the current page's dwell.
         // Screen going away (Board anew / Leave / replaced) — hand the train back
         // to its normal world-driven volume.
         TrainEngineSound.deathScreenActive = false;

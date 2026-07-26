@@ -5774,6 +5774,37 @@
       "released": true,
       "released_in": "v0.513.0",
       "released_at": "2026-07-25T07:11:33Z"
+    },
+    {
+      "id": "author-book-vote-tally",
+      "version": "0.514.0",
+      "type": "feat",
+      "title": "Your own community books tell you their vote tally",
+      "summary": "When you come across one of your own player-written books out in the world and pick it up, the train's quiet 'a familiar book\u2026' note can now tell you how it's being received \u2014 how many readers gave it a thumbs up, and how many thumbed it down. Only you, the author, ever sees those numbers.",
+      "highlights": [
+        "Hold one of your own community books found in loot: the familiar-book line may now report its \ud83d\udc4d/\ud83d\udc4e vote tally",
+        "Author-only \u2014 vote counts are never shown to anyone else holding the same book"
+      ],
+      "pr": 847,
+      "date": "2026-07-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "trade-everything-0-2-8",
+      "version": "0.515.0",
+      "type": "feat",
+      "title": "Trade Everything updated \u2014 craftable-item value cap",
+      "summary": "The bundled Trade Everything mod is updated to 0.2.8. Villager 'Trade Anything' payouts for craftable items are now capped at their component worth, so you can't cheese emeralds by crafting cheap high-value items \u2014 enchanted and custom-stat gear stay exempt. Also includes refreshed default trade values.",
+      "highlights": [
+        "Craftable items pay out no more than their raw material worth",
+        "Enchanted / custom-stat items remain exempt from the cap"
+      ],
+      "date": "2026-07-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

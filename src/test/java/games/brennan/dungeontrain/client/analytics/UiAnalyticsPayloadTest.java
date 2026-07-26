@@ -61,4 +61,74 @@ class UiAnalyticsPayloadTest {
         assertFalse(out.has("modVersion"));
         assertEquals("confirm_yes", out.get("action").getAsString());
     }
+
+    @Test
+    @DisplayName("death-screen page open carries the page dimension, no survey fields")
+    void deathPageOpen() {
+        JsonObject out = UiAnalytics.buildPayload(UUID, "NyoomBomb", "0.512.0",
+                UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_PAGE, "open", -1,
+                UiAnalytics.PAGE_DONATE, null, -1, -1);
+        assertEquals("death_screen", out.get("surface").getAsString());
+        assertEquals("donate", out.get("page").getAsString());
+        assertFalse(out.has("durationMs"));
+        assertFalse(out.has("questionId"));
+        assertFalse(out.has("score"));
+    }
+
+    @Test
+    @DisplayName("death-screen page_time carries both page and durationMs")
+    void deathPageTime() {
+        JsonObject out = UiAnalytics.buildPayload(UUID, "x", "v",
+                UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_PAGE, "page_time", 4200L,
+                UiAnalytics.PAGE_GEAR, null, -1, -1);
+        assertEquals("gear", out.get("page").getAsString());
+        assertEquals(4200L, out.get("durationMs").getAsLong());
+    }
+
+    @Test
+    @DisplayName("survey page open carries page=survey + questionId, no score")
+    void surveyPageOpen() {
+        JsonObject out = UiAnalytics.buildPayload(UUID, "x", "v",
+                UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_PAGE, "open", -1,
+                UiAnalytics.PAGE_SURVEY, "nps", -1, -1);
+        assertEquals("survey", out.get("page").getAsString());
+        assertEquals("nps", out.get("questionId").getAsString());
+        assertFalse(out.has("score"));
+        assertFalse(out.has("durationMs"));
+    }
+
+    @Test
+    @DisplayName("survey_answer carries questionId, score, scoreMax (never a comment)")
+    void surveyAnswer() {
+        JsonObject out = UiAnalytics.buildPayload(UUID, "x", "v",
+                UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_PAGE, "survey_answer", -1,
+                UiAnalytics.PAGE_SURVEY, "nps", 9, 10);
+        assertEquals("survey_answer", out.get("action").getAsString());
+        assertEquals("nps", out.get("questionId").getAsString());
+        assertEquals(9, out.get("score").getAsInt());
+        assertEquals(10, out.get("scoreMax").getAsInt());
+        assertFalse(out.has("comment"));
+    }
+
+    @Test
+    @DisplayName("a zero survey score is kept; blank page/questionId are omitted")
+    void surveyScoreZeroAndBlanks() {
+        JsonObject out = UiAnalytics.buildPayload(UUID, "x", "v",
+                UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_PAGE, "survey_answer", -1,
+                "  ", "  ", 0, 5);
+        assertEquals(0, out.get("score").getAsInt());
+        assertFalse(out.has("page"));
+        assertFalse(out.has("questionId"));
+    }
+
+    @Test
+    @DisplayName("death-screen button click: page and survey fields all omitted")
+    void buttonClick() {
+        JsonObject out = UiAnalytics.buildPayload(UUID, "x", "v",
+                UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CONTRIBUTE, "click", -1,
+                null, null, -1, -1);
+        assertEquals("contribute", out.get("target").getAsString());
+        assertFalse(out.has("page"));
+        assertFalse(out.has("scoreMax"));
+    }
 }

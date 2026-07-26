@@ -76,13 +76,19 @@ jobs:
           python3 scripts/modpack/test_build_mrpack.py
           python3 scripts/modpack/test_check_pins.py
 
-  # Stdlib-only Python guard for the per-line translation provenance sidecars
-  # (localization/provenance/<locale>.json — who translated / who human-reviewed each
-  # line). Fails when a translation wave lands lang keys without provenance entries,
-  # when entries drift out of key set/order lockstep with their lang file, or when an
-  # entry is malformed. The failure message carries the fix command
-  # (stamp-provenance.py --sync). Runs fast and in parallel with `build`, same as
-  # modpack-checks.
+  # Stdlib-only Python guard for the translation provenance sidecars (who translated / who
+  # human-reviewed each string). Two flavours, both under localization/ and both repo-side
+  # only (never shipped):
+  #   * per-LINE, for the flat-key UI lang files — dungeontrain at
+  #     localization/provenance/<locale>.json plus each sibling mod (AIN/PlayerMob/
+  #     DiscordPresence, whose translations are committed here) at
+  #     localization/provenance/<namespace>/<locale>.json; and
+  #   * per-BOOK, for the long-form narrative books at
+  #     localization/narrative_provenance/<locale>.json.
+  # Each fails when a translation wave lands strings/books without provenance, when entries
+  # drift out of set/order lockstep with their source, or when an entry is malformed — the
+  # message carries the fix command (stamp-*-provenance.py --sync). Runs fast and in parallel
+  # with `build`, same as modpack-checks.
   localization-checks:
     runs-on: ubuntu-latest
     permissions:
@@ -90,10 +96,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Per-line translation provenance aligned with lang files
+      - name: Per-line translation provenance aligned with lang files (all namespaces)
         run: python3 scripts/localization/check-provenance.py
+
+      - name: Per-book narrative provenance aligned with book files
+        run: python3 scripts/localization/check-narrative-provenance.py
 
       - name: Provenance script tests
         run: |
           python3 scripts/localization/test_check_provenance.py
           python3 scripts/localization/test_stamp_provenance.py
+          python3 scripts/localization/test_check_narrative_provenance.py
+          python3 scripts/localization/test_stamp_narrative_provenance.py

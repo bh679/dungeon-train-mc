@@ -159,15 +159,90 @@ def process_locale(locale: str, lang_dir: Path, prov_dir: Path,
     return prov, f"OK: {locale} — {'; '.join(parts)}."
 
 
+def run_namespace(ns: provenance_io.Namespace, args: argparse.Namespace,
+                  authors: dict[str, str], urls: dict[str, str]) -> int:
+    """Stamp one namespace's sidecars. Prints per-locale summaries; returns an exit code.
+
+    Computes every target locale before writing any, so a bad --keys selection can't leave
+    a namespace half-stamped. Credit/contributor refresh is skipped for namespaces that carry
+    none (siblings: ``credits_dir``/``contributors_file`` are None).
+    """
+    if not ns.lang_dir.is_dir():
+        print(f"ERROR: lang dir not found at {ns.lang_dir}", file=sys.stderr)
+        return 2
+    all_locales = provenance_io.locales(ns.lang_dir)
+    if args.locale:
+        unknown = sorted(set(args.locale) - set(all_locales))
+        # In single-namespace mode an unknown locale is a usage error; across the namespace
+        # table it just means "not present here" (e.g. zh_cn isn't in discordpresence).
+        if unknown and args.single_namespace:
+            print(f"ERROR: unknown locale(s): {', '.join(unknown)}", file=sys.stderr)
+            return 2
+        targets = [loc for loc in args.locale if loc in all_locales]
+    else:
+        targets = all_locales
+
+    results: list[tuple[str, dict, str]] = []
+    for locale in targets:
+        try:
+            prov, summary = process_locale(locale, ns.lang_dir, ns.prov_dir, args)
+            results.append((locale, prov, summary))
+        except ValueError as exc:
+            label = locale if args.single_namespace else f"{ns.name}/{locale}"
+            print(f"Provenance stamp FAILED:\n  - {label}: {exc}", file=sys.stderr)
+            return 1
+    for locale, prov, summary in results:
+        provenance_io.write_provenance(ns.prov_dir / f"{locale}.json", prov)
+        if ns.credits_dir is not None:
+            stamped = refresh_credit_counts(locale, prov, authors, ns.credits_dir)
+            if stamped:
+                names = ", ".join(p.name for p in stamped)
+                summary = f"{summary[:-1]}; counts refreshed in {names}."
+        print(summary)
+
+    # The translator-credits file is global — always rebuilt from every sidecar, whatever
+    # the --locale filter, so it never goes stale relative to a review pass elsewhere.
+    if ns.contributors_file is not None:
+        if refresh_contributors(ns.lang_dir, ns.prov_dir, authors, urls, ns.contributors_file):
+            print(f"OK: regenerated {ns.contributors_file.name}.")
+    return 0
+
+
+def resolve_namespaces(args: argparse.Namespace) -> list[provenance_io.Namespace] | int:
+    """The namespaces to operate on, or an error code. Sets ``args.single_namespace``.
+
+    Explicit --lang-dir/--provenance-dir → one ad-hoc namespace (used by the tests and for
+    one-off runs). Otherwise the full namespace table, optionally filtered by --namespace.
+    """
+    if args.lang_dir is not None or args.provenance_dir is not None:
+        args.single_namespace = True
+        return [provenance_io.Namespace(
+            "(explicit)",
+            args.lang_dir or provenance_io.DEFAULT_LANG_DIR,
+            args.provenance_dir or provenance_io.DEFAULT_PROVENANCE_DIR,
+            args.credits_dir, args.contributors_file)]
+    args.single_namespace = False
+    table = provenance_io.namespaces()
+    if args.namespace:
+        unknown = sorted(set(args.namespace) - {n.name for n in table})
+        if unknown:
+            print(f"ERROR: unknown namespace(s): {', '.join(unknown)}", file=sys.stderr)
+            return 2
+        return [n for n in table if n.name in args.namespace]
+    return table
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--lang-dir", type=Path, default=provenance_io.DEFAULT_LANG_DIR)
-    parser.add_argument("--provenance-dir", type=Path,
-                        default=provenance_io.DEFAULT_PROVENANCE_DIR)
+    parser.add_argument("--lang-dir", type=Path, default=None,
+                        help="operate on one explicit lang dir (default: the namespace table)")
+    parser.add_argument("--provenance-dir", type=Path, default=None)
     parser.add_argument("--authors-file", type=Path, default=provenance_io.DEFAULT_AUTHORS_FILE)
-    parser.add_argument("--credits-dir", type=Path, default=provenance_io.DEFAULT_CREDITS_DIR)
-    parser.add_argument("--contributors-file", type=Path,
-                        default=provenance_io.DEFAULT_CONTRIBUTORS_FILE)
+    parser.add_argument("--credits-dir", type=Path, default=None)
+    parser.add_argument("--contributors-file", type=Path, default=None)
+    parser.add_argument("--namespace", action="append",
+                        help="restrict to namespace(s); default all "
+                             "(dungeontrain + siblings)")
     parser.add_argument("--locale", action="append",
                         help="restrict to specific locale(s); default all non-en_us")
     parser.add_argument("--sync", action="store_true",
@@ -195,9 +270,6 @@ def main(argv: list[str] | None = None) -> int:
         print("ERROR: nothing to do — pass --sync and/or a stamp selection", file=sys.stderr)
         return 2
 
-    if not args.lang_dir.is_dir():
-        print(f"ERROR: lang dir not found at {args.lang_dir}", file=sys.stderr)
-        return 2
     if not args.authors_file.is_file():
         print(f"ERROR: author registry not found at {args.authors_file}", file=sys.stderr)
         return 2
@@ -220,36 +292,16 @@ def main(argv: list[str] | None = None) -> int:
                   f"{authors[args.reviewer]!r} — only a human can human-review",
                   file=sys.stderr)
             return 1
-    all_locales = provenance_io.locales(args.lang_dir)
-    targets = args.locale or all_locales
-    unknown = sorted(set(targets) - set(all_locales))
-    if unknown:
-        print(f"ERROR: unknown locale(s): {', '.join(unknown)}", file=sys.stderr)
-        return 2
 
-    results: list[tuple[str, dict, str]] = []
-    for locale in targets:
-        try:
-            prov, summary = process_locale(locale, args.lang_dir, args.provenance_dir, args)
-            results.append((locale, prov, summary))
-        except ValueError as exc:
-            print(f"Provenance stamp FAILED:\n  - {locale}: {exc}", file=sys.stderr)
-            return 1
-    for locale, prov, summary in results:
-        provenance_io.write_provenance(args.provenance_dir / f"{locale}.json", prov)
-        stamped = refresh_credit_counts(locale, prov, authors, args.credits_dir)
-        if stamped:
-            names = ", ".join(p.name for p in stamped)
-            summary = f"{summary[:-1]}; counts refreshed in {names}."
-        print(summary)
+    ns_list = resolve_namespaces(args)
+    if isinstance(ns_list, int):
+        return ns_list
 
-    # The translator-credits file is global — always rebuilt from every sidecar, whatever
-    # the --locale filter, so it never goes stale relative to a review pass elsewhere.
     urls = provenance_io.load_author_urls(args.authors_file)
-    if refresh_contributors(args.lang_dir, args.provenance_dir, authors, urls,
-                            args.contributors_file):
-        print(f"OK: regenerated {args.contributors_file.name}.")
-    return 0
+    rc = 0
+    for ns in ns_list:
+        rc = run_namespace(ns, args, authors, urls) or rc
+    return rc
 
 
 if __name__ == "__main__":
