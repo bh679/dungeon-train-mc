@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.compat.TradeEverythingBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
+import games.brennan.dungeontrain.compat.PlayerMobCaptureBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -419,6 +420,17 @@ public class DungeonTrain {
             } catch (Throwable t) {
                 LOGGER.warn("PlayerMob present but echo-spawn seam unavailable ({}); "
                         + "remote-echo encounter stories disabled.", t.toString());
+            }
+            // Free Play (cheated) deaths are excluded from the reincarnation pool via PlayerMob's
+            // capture-gate seam (ReincarnationCaptureGate), so a consequence-free run never spawns
+            // local echoes of itself — except on dev builds. Independent try so a build predating
+            // the seam degrades to "Free Play deaths still captured" rather than disabling the
+            // bridges above.
+            try {
+                PlayerMobCaptureBridge.install();
+            } catch (Throwable t) {
+                LOGGER.warn("PlayerMob present but reincarnation-capture seam unavailable ({}); "
+                        + "Free Play deaths will still create echoes.", t.toString());
             }
         }
 
