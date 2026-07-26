@@ -42,8 +42,9 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Advancement Plaques | `499826` | **enabled** | Replaces vanilla advancement toasts with fancy plaques. Client-side toast render only — safe with Sable. Requires **Iceberg**. **Pinned**. |
 | Iceberg | `520110` | **enabled** (library) | Advancement Plaques' required dependency (`[1.2.2,)`). Inert UI library — enabled so AP loads on a default install. **Pinned**. |
 | Lithostitched | `936015` | **enabled** (library) | Tectonic's required dependency (`[1.6.0,)`). Inert worldgen library — enabled so enabling Tectonic stays one-click (no separate lib to toggle). **Pinned**. |
+| Jade | `324717` | **enabled** | Block/item tooltip HUD. Formerly opt-in because tooltips didn't render for blocks **on the moving train** (Sable sub-level) — that limitation is now **resolved** by the bundled **Jade Sable Compat** (below), so Jade ships on by default. **Pinned** (15.10.5 — the build Sable's bundled Jade compat is verified against). |
+| Jade Sable Compat | `1530988` | **enabled** | Client-only compat mod (`sablejade`, MIT). Gives Jade a Sable-aware retrace path so tooltips resolve the **correct** block on Sable sub-levels / moving trains. Requires **Jade** (shipped enabled, above). `server_side=unsupported` — auto-skipped on dedicated servers. **Pinned** (1.2.1). |
 | Mouse Tweaks | `60089` | off (opt-in) | Inventory QoL (shift-drag / scroll-to-move). **Pinned**. |
-| Jade | `324717` | off (opt-in) | Block/item tooltip HUD. **Known limitation:** tooltips don't render for blocks **on the moving train** (Sable sub-level). **Pinned** (15.10.5 — the build Sable's bundled Jade compat is verified against). |
 | Distant Horizons | `508933` | off (opt-in) | LOD render distance. **Use 2.x** — 3.0.x crashes the JVM on DT world entry. **Pinned** to a 2.x file. |
 | Tectonic | `686836` | off (opt-in) | Terrain generator. Needs **Compatible Terrain** ON in DT settings to take effect; its **Lithostitched** dependency ships enabled (above). **Pinned**. |
 
@@ -78,13 +79,15 @@ flag straight into the manifest:
   (rendering perf, works standalone), **Iris** (shader loader, shipped with no shaderpack so it's
   perf-neutral until a player adds one — Iris requires Sodium, which ships enabled above,
   CreativeCore-style; DT never bundles/requires it, modpack-only), AmbientSounds,
-  Advancement Plaques (QoL / perf / cosmetic companions the pack turns on for everyone), **Kinetic
+  Advancement Plaques (QoL / perf / cosmetic companions the pack turns on for everyone), **Jade**
+  (block/item tooltip HUD) paired with **Jade Sable Compat** (the client-only mod that fixes Jade's
+  tooltips on the moving train — the reason Jade is no longer opt-in), **Kinetic
   Hosting Integration** (partner banner on the multiplayer menu), plus their inert library deps
   **CreativeCore** (AmbientSounds), **Iceberg** (Advancement Plaques) and **Lithostitched**
   (Tectonic). The libraries ship enabled so their dependent loads on a default install
   (CreativeCore — AmbientSounds is on; Iceberg — AP is on) and so enabling an opt-in stays
   one-click (Lithostitched — Tectonic is off, but its lib is already present).
-- **Bundled but off by default (`required:false`)** — Mouse Tweaks, Jade, Distant Horizons,
+- **Bundled but off by default (`required:false`)** — Mouse Tweaks, Distant Horizons,
   Tectonic. Shipped in the pack so a player can flip them on with one click, but inert until they
   do. (DT itself + Sable are hardcoded `required:true` in the builder.)
 
@@ -103,7 +106,7 @@ un-bundled, each is a manifest `files` entry, and CurseForge auto-creates the re
 manifest — so listing them here too would duplicate it (see the rule in the paragraph below).
 
 Everything in `optional_mods[]` (AppleSkin, FerriteCore, ModernFix, Advancement Plaques, Iceberg,
-Lithostitched, Mouse Tweaks, Jade, Distant Horizons, Tectonic) is a manifest **file**, so
+Lithostitched, Mouse Tweaks, Jade, Jade Sable Compat, Distant Horizons, Tectonic) is a manifest **file**, so
 CurseForge auto-creates its relation from the manifest — these must therefore **not** be repeated
 in `curseforge_relations`. (Iceberg is bundled as Advancement Plaques' library dependency;
 Lithostitched as Tectonic's.)
