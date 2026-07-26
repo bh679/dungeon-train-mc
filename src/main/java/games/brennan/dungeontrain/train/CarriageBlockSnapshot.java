@@ -104,6 +104,97 @@ public final class CarriageBlockSnapshot {
         return new Captured(root, text.toString());
     }
 
+    // ---- delta capture (only the changed cells — the per-change upload path) ----
+
+    /**
+     * Capture ONLY the given shipyard-space {@code positions} from {@code ship}'s plot into a compact
+     * delta tag {@code { v, set:[{p,s,b?}], del:[[dx,dy,dz]] } }, plus the authored text those cells
+     * carry (for moderation). A position whose block is now air becomes a {@code del} entry (removal);
+     * anything else becomes a {@code set} cell (same shape as a full-capture cell). Positions outside the
+     * footprint are ignored. Encode with {@link #encode} and fold onto a base tag with
+     * {@link #applyDeltaCells}. {@code origin} is the per-carriage shipyard origin, matching {@link #capture}.
+     */
+    public static Captured captureCells(SableManagedShip ship, BlockPos origin, CarriageDims dims,
+                                        java.util.Collection<BlockPos> positions, HolderLookup.Provider registries) {
+        LevelPlot plot = ship.subLevel().getPlot();
+        ListTag set = new ListTag();
+        ListTag del = new ListTag();
+        StringBuilder text = new StringBuilder();
+        for (BlockPos abs : positions) {
+            int dx = abs.getX() - origin.getX();
+            int dy = abs.getY() - origin.getY();
+            int dz = abs.getZ() - origin.getZ();
+            if (dx < 0 || dy < 0 || dz < 0
+                    || dx >= dims.length() || dy >= dims.height() || dz >= dims.width()) continue; // outside footprint
+            BlockState state = blockInPlot(plot, abs);
+            if (state.isAir()) {
+                del.add(new net.minecraft.nbt.IntArrayTag(new int[]{dx, dy, dz}));
+                continue;
+            }
+            CompoundTag cell = new CompoundTag();
+            cell.put("p", new net.minecraft.nbt.IntArrayTag(new int[]{dx, dy, dz}));
+            cell.put("s", NbtUtils.writeBlockState(state));
+            if (state.hasBlockEntity()) {
+                BlockEntity be = beInPlot(plot, abs);
+                if (be != null) {
+                    CompoundTag beTag = be.saveWithFullMetadata(registries);
+                    beTag.remove("x");
+                    beTag.remove("y");
+                    beTag.remove("z");
+                    cell.put("b", beTag);
+                    CarriageTextScan.appendBlockEntity(be, text);
+                }
+            }
+            set.add(cell);
+        }
+        CompoundTag root = new CompoundTag();
+        root.putInt("v", FORMAT_VERSION);
+        root.put("set", set);
+        root.put("del", del);
+        return new Captured(root, text.toString());
+    }
+
+    /**
+     * Fold a delta tag (from {@link #captureCells}) onto a decoded base snapshot, returning a NEW base
+     * tag (the input is not mutated). {@code set} cells replace/add by their {@code p} offset; {@code
+     * del} offsets are removed. Dimensions/version carry over from {@code baseTag}. Applying deltas in
+     * ascending {@code seq} order (the caller's responsibility) makes reconstruction deterministic.
+     */
+    public static CompoundTag applyDeltaCells(CompoundTag baseTag, CompoundTag deltaTag) {
+        java.util.LinkedHashMap<Long, CompoundTag> byPos = new java.util.LinkedHashMap<>();
+        ListTag baseCells = baseTag.getList("cells", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        for (int i = 0; i < baseCells.size(); i++) {
+            CompoundTag cell = baseCells.getCompound(i);
+            int[] p = cell.getIntArray("p");
+            if (p.length == 3) byPos.put(packOffset(p[0], p[1], p[2]), cell.copy());
+        }
+        ListTag set = deltaTag.getList("set", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        for (int i = 0; i < set.size(); i++) {
+            CompoundTag cell = set.getCompound(i);
+            int[] p = cell.getIntArray("p");
+            if (p.length == 3) byPos.put(packOffset(p[0], p[1], p[2]), cell.copy());
+        }
+        ListTag del = deltaTag.getList("del", net.minecraft.nbt.Tag.TAG_INT_ARRAY);
+        for (int i = 0; i < del.size(); i++) {
+            int[] p = del.getIntArray(i);
+            if (p.length == 3) byPos.remove(packOffset(p[0], p[1], p[2]));
+        }
+        CompoundTag out = new CompoundTag();
+        out.putInt("v", baseTag.getInt("v"));
+        out.putInt("l", baseTag.getInt("l"));
+        out.putInt("h", baseTag.getInt("h"));
+        out.putInt("w", baseTag.getInt("w"));
+        ListTag cells = new ListTag();
+        for (CompoundTag cell : byPos.values()) cells.add(cell);
+        out.put("cells", cells);
+        return out;
+    }
+
+    /** Pack a per-carriage cell offset (each 0..{@code MAX_DIM}) into a long map key. */
+    private static long packOffset(int dx, int dy, int dz) {
+        return ((long) (dx & 0x3FF) << 20) | ((long) (dy & 0x3FF) << 10) | (dz & 0x3FF);
+    }
+
     // ---- placement (write into a level at world coords — spawn-time, pre-assembly) ----
 
     /**

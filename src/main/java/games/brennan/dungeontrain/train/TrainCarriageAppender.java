@@ -306,6 +306,15 @@ public final class TrainCarriageAppender {
      */
     private static final int SEAMGAP_SAMPLE_PERIOD_TICKS = 20;
 
+    /**
+     * Max synchronous full shared-carriage captures per ghost-anchor cull pass. A full capture (up to
+     * ~700 KB voxel read) runs on the server thread; capping it bounds a whole-rake cull's tick hitch.
+     * Overflow carriages get a bare lease-return instead — at most the last sub-second of un-flushed
+     * edits is left to the deltas already streamed to the relay. Only carriages with un-flushed edits
+     * ever capture at all (a streamed carriage needs none), so this cap is rarely reached.
+     */
+    private static final int MAX_SHARED_CAPTURES_PER_CULL = 8;
+
 
     /**
      * Minimum visible gap (in blocks) between a freshly-spawned group and
@@ -2828,6 +2837,8 @@ public final class TrainCarriageAppender {
         java.util.List<Integer> removedAnchors = new java.util.ArrayList<>();
         int deletedSableShips = 0;
         int skippedHeld = 0;
+        int sharedCaptured = 0; // full shared-carriage captures taken this pass (capped)
+        int sharedDeferred = 0; // shared carriages whose final capture was skipped past the cap
         for (int a : toRemove) {
             ManagedShip registryShip = Trains.knownGroups(trainId).get(a);
             UUID subId = (registryShip != null) ? registryShip.subLevelId() : null;
@@ -2841,6 +2852,22 @@ public final class TrainCarriageAppender {
             ManagedShip ship = Trains.unregisterGroup(trainId, a);
             if (ship != null) {
                 UUID shipId = ship.subLevelId();
+                // Hand any shared carriages in this sub-level back to the relay (final flush + lease
+                // return) and drop them from the registry BEFORE the plot is destroyed. The capture is
+                // synchronous on the server thread (reading the still-live plot); only the return POST is
+                // async. This plugs the SharedCarriageRegistry leak (removeSubLevel finally has a caller)
+                // and frees the lease promptly instead of at the ~1h TTL.
+                if (SharedCarriageRegistry.hasSubLevel(shipId)) {
+                    for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.bySubLevel(shipId)) {
+                        boolean allowCapture = sharedCaptured < MAX_SHARED_CAPTURES_PER_CULL;
+                        if (games.brennan.dungeontrain.event.SharedCarriageEvents.finalFlushAndReturn(inst, allowCapture)) {
+                            sharedCaptured++;
+                        } else if (!allowCapture && inst.hasPending()) {
+                            sharedDeferred++;
+                        }
+                    }
+                    SharedCarriageRegistry.removeSubLevel(shipId);
+                }
                 // Tear down any force-load ticket on this anchor (mirror + Sable
                 // ticket together) before deleting it.
                 if (forceLoaded != null && forceLoaded.remove(shipId)) {
@@ -2850,6 +2877,10 @@ public final class TrainCarriageAppender {
                 deletedSableShips++;
                 removedAnchors.add(a);
             }
+        }
+        if (sharedDeferred > 0) {
+            LOGGER.info("[DungeonTrain] cull: {} shared carriage(s) bare-returned past the per-pass capture cap "
+                + "(last un-flushed edits left to streamed deltas + TTL); trainId={}", sharedDeferred, trainId);
         }
         if (forceLoaded != null && forceLoaded.isEmpty()) FORCELOADED_BY_TRAIN.remove(trainId);
         if (removedAnchors.isEmpty()) {

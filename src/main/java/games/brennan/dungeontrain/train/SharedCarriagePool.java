@@ -84,9 +84,9 @@ public final class SharedCarriagePool {
         }
     }
 
-    /** Return one unused lease to the relay (best-effort). */
+    /** Return one unused lease to the relay (best-effort). Never placed → no blocks/baseSeq to send. */
     public static void returnLease(PoolLease l) {
-        if (l != null) SharedCarriageClient.returnLease(l.id(), l.token(), null, null);
+        if (l != null) SharedCarriageClient.returnLease(l.id(), l.token(), null, null, 0);
     }
 
     /** Return every buffered-but-unplaced lease (world unload / server stop). */

@@ -70,12 +70,14 @@ public final class TrainAssembler {
 
     /**
      * Stamp a leased carriage's relay snapshot at {@code carriageOrigin} (world coords, pre-assembly).
-     * Returns the placed block positions, or null on decode/dims/place failure (caller falls back to NEW).
+     * The relay hands back a base blob PLUS an opaque delta log; we fold the deltas (those with
+     * {@code seq > baseSeq}, in seq order) onto the base before placing. Returns the placed block
+     * positions, or null on decode/dims/place failure (caller falls back to NEW).
      */
     private static Set<BlockPos> placeRelayLease(ServerLevel level, BlockPos carriageOrigin,
                                                  SharedCarriageClient.PoolLease lease, CarriageDims dims) {
         try {
-            net.minecraft.nbt.CompoundTag snap = CarriageBlockSnapshot.decode(lease.blocks());
+            net.minecraft.nbt.CompoundTag snap = foldLeaseDeltas(CarriageBlockSnapshot.decode(lease.blocks()), lease);
             if (snap.getInt("l") != dims.length() || snap.getInt("h") != dims.height() || snap.getInt("w") != dims.width()) {
                 LOGGER.warn("[DungeonTrain] leased carriage id={} dims mismatch — falling back to fresh.", lease.id());
                 return null;
@@ -85,6 +87,34 @@ public final class TrainAssembler {
             LOGGER.warn("[DungeonTrain] Failed to place leased carriage id={}: {}", lease.id(), e.toString());
             return null;
         }
+    }
+
+    /** Fold a lease's opaque delta log (seq &gt; baseSeq, ascending seq) onto its decoded base snapshot. */
+    private static net.minecraft.nbt.CompoundTag foldLeaseDeltas(net.minecraft.nbt.CompoundTag base,
+                                                                 SharedCarriageClient.PoolLease lease) {
+        List<SharedCarriageClient.DeltaRec> deltas = lease.deltas();
+        if (deltas == null || deltas.isEmpty()) return base;
+        List<SharedCarriageClient.DeltaRec> sorted = new java.util.ArrayList<>(deltas);
+        sorted.sort(java.util.Comparator.comparingInt(SharedCarriageClient.DeltaRec::seq));
+        net.minecraft.nbt.CompoundTag folded = base;
+        for (SharedCarriageClient.DeltaRec d : sorted) {
+            if (d.seq() <= lease.baseSeq()) continue; // already folded into the base blob
+            try {
+                folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(d.cells()));
+            } catch (Exception e) {
+                LOGGER.warn("[DungeonTrain] leased carriage id={} delta seq={} decode failed: {}", lease.id(), d.seq(), e.toString());
+            }
+        }
+        return folded;
+    }
+
+    /** The delta-sequence floor to seed a leased carriage's Instance with (max of baseSeq + any delta seq). */
+    private static int leaseSeqSeed(SharedCarriageClient.PoolLease lease) {
+        int seed = lease.baseSeq();
+        if (lease.deltas() != null) {
+            for (SharedCarriageClient.DeltaRec d : lease.deltas()) if (d.seq() > seed) seed = d.seq();
+        }
+        return seed;
     }
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
@@ -371,7 +401,8 @@ public final class TrainAssembler {
                 pendingEntities[slot] = null;
                 SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
                     level, ship.subLevelId(), trainId, carriagePIdx,
-                    carriageShipyardOrigin, dims, variant.id(), true, lease.id(), lease.token());
+                    carriageShipyardOrigin, dims, variant.id(), true, lease.id(), lease.token(),
+                    leaseSeqSeed(lease)); // seq floor = max(baseSeq, delta seqs) so our edits clear the relay watermark
                 inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
                 continue;
             }
@@ -384,12 +415,12 @@ public final class TrainAssembler {
             // groupSize ever moves to mixed-variant groups.
             pendingEntities[slot] = new PendingContentsEntitySpawn(
                 carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx, groupAnchorWorldX);
-            // Fresh shared carriage (NEW path): register it so a real edit later marks it dirty and
-            // uploads the build to the pool for the first time.
+            // Fresh shared carriage (NEW path): register it so a real edit later queues a delta and
+            // uploads the build to the pool for the first time. seqSeed=0 (a brand-new relay row is baseSeq=0).
             if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
                     && SharedCarriageFlags.isSharedVariant(variant.id())) {
                 SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
-                        carriageShipyardOrigin, dims, variant.id(), false, null, null);
+                        carriageShipyardOrigin, dims, variant.id(), false, null, null, 0);
             }
         }
         long tAfterContents = System.nanoTime();

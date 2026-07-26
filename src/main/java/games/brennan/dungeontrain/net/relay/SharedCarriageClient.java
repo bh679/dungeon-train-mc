@@ -50,8 +50,19 @@ public final class SharedCarriageClient {
     /** A relay lease handle: the row id + lease token (token may be null on a dedupe we couldn't claim). */
     public record LeaseResult(int id, String token, boolean deduped) {}
 
-    /** A leased pooled carriage: id + token + its blocks blob and dims. */
-    public record PoolLease(int id, String token, String blocks, int l, int h, int w) {}
+    /** One opaque delta from a lease: its {@code seq} + the base64 {@code cells} blob to fold. */
+    public record DeltaRec(int seq, String cells) {}
+
+    /**
+     * A leased pooled carriage: id + token + its base blocks blob + dims, plus the delta log to fold on
+     * top ({@code baseSeq} is the relay drop-watermark; the mod applies deltas with {@code seq > baseSeq}
+     * in seq order). See {@code CarriageBlockSnapshot.applyDeltaCells}.
+     */
+    public record PoolLease(int id, String token, String blocks, int l, int h, int w,
+                            int baseSeq, List<DeltaRec> deltas) {}
+
+    /** Outcome of a delta POST: transport status + whether the holder should re-baseline (soft/hard). */
+    public record DeltaResult(CallStatus status, boolean compactNeeded, boolean mustCompact) {}
 
     // ---- submit (upload a fresh build; auto-leased back to us) ----
 
@@ -93,18 +104,71 @@ public final class SharedCarriageClient {
             int dl = d != null && d.has("l") ? d.get("l").getAsInt() : l;
             int dh = d != null && d.has("h") ? d.get("h").getAsInt() : h;
             int dw = d != null && d.has("w") ? d.get("w").getAsInt() : w;
+            int baseSeq = o.has("baseSeq") && !o.get("baseSeq").isJsonNull() ? o.get("baseSeq").getAsInt() : 0;
             return Optional.of(new PoolLease(o.get("id").getAsInt(), o.get("token").getAsString(),
-                    o.get("blocks").getAsString(), dl, dh, dw));
+                    o.get("blocks").getAsString(), dl, dh, dw, baseSeq, parseDeltas(o)));
+        });
+    }
+
+    /** Parse the {@code deltas:[{seq,cells}]} array off a lease response (empty on absence/garbage). */
+    private static List<DeltaRec> parseDeltas(JsonObject o) {
+        List<DeltaRec> out = new java.util.ArrayList<>();
+        if (o.has("deltas") && o.get("deltas").isJsonArray()) {
+            JsonArray arr = o.getAsJsonArray("deltas");
+            for (JsonElement el : arr) {
+                if (!el.isJsonObject()) continue;
+                JsonObject d = el.getAsJsonObject();
+                if (d.has("seq") && d.has("cells") && !d.get("cells").isJsonNull()) {
+                    out.add(new DeltaRec(d.get("seq").getAsInt(), d.get("cells").getAsString()));
+                }
+            }
+        }
+        return out;
+    }
+
+    // ---- delta (one per-change upload on a leased carriage) ----
+
+    /**
+     * Upload one per-change delta ({@code seq} + opaque base64 {@code cells}) to a leased carriage. The
+     * delta doubles as a heartbeat. Resolves to a {@link DeltaResult}: {@code OK} (with {@code
+     * compactNeeded} advising a proactive re-baseline), {@code FORBIDDEN}/{@code UNKNOWN} (lost/gone
+     * lease), or {@code ERROR} with {@code mustCompact} set when the relay's delta log is full (409).
+     */
+    public static CompletableFuture<DeltaResult> delta(int id, String token, int seq, String cellsBase64, String text) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("token", token);
+        body.addProperty("seq", seq);
+        body.addProperty("cells", cellsBase64);
+        if (text != null && !text.isEmpty()) body.addProperty("text", text);
+        return post("/carriages/delta", body).thenApply(resp -> {
+            if (resp == null) return new DeltaResult(CallStatus.ERROR, false, false);
+            int sc = resp.statusCode();
+            if (sc == 409) return new DeltaResult(CallStatus.ERROR, false, true); // log full → re-baseline
+            if (sc == 403) return new DeltaResult(CallStatus.FORBIDDEN, false, false);
+            if (sc == 404) return new DeltaResult(CallStatus.UNKNOWN, false, false);
+            if (sc / 100 != 2) return new DeltaResult(CallStatus.ERROR, false, false);
+            boolean compactNeeded = false;
+            try {
+                JsonElement root = JsonParser.parseString(resp.body());
+                if (root.isJsonObject()) {
+                    JsonObject o = root.getAsJsonObject();
+                    compactNeeded = o.has("compactNeeded") && o.get("compactNeeded").getAsBoolean();
+                }
+            } catch (Throwable ignored) { /* best-effort flag */ }
+            return new DeltaResult(CallStatus.OK, compactNeeded, false);
         });
     }
 
     // ---- save / heartbeat / return ----
 
-    public static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text) {
+    /** Full save (also a compaction on the relay: clears the delta log, advances {@code baseSeq}). */
+    public static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text, int baseSeq) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("token", token);
         body.addProperty("blocks", blocksBase64);
+        body.addProperty("baseSeq", baseSeq);
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
         return statusPost("/carriages/save", body);
     }
@@ -116,12 +180,14 @@ public final class SharedCarriageClient {
         return statusPost("/carriages/heartbeat", body);
     }
 
-    public static CompletableFuture<CallStatus> returnLease(int id, String token, String blocksBase64, String text) {
+    /** Return the lease. A non-empty {@code blocksBase64} does a final compacting save (advances {@code baseSeq}). */
+    public static CompletableFuture<CallStatus> returnLease(int id, String token, String blocksBase64, String text, int baseSeq) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("token", token);
         if (blocksBase64 != null && !blocksBase64.isEmpty()) {
             body.addProperty("blocks", blocksBase64);
+            body.addProperty("baseSeq", baseSeq);
             if (text != null && !text.isEmpty()) body.addProperty("text", text);
         }
         return statusPost("/carriages/return", body);

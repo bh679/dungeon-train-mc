@@ -6,11 +6,15 @@ import net.minecraft.server.level.ServerLevel;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * In-memory registry of the shared (relay-sourced) carriages currently resident in the world, keyed by
@@ -53,16 +57,30 @@ public final class SharedCarriageRegistry {
         private volatile Integer relayId;
         /** Active lease token for save/heartbeat/return; null until submitted/leased. */
         private volatile String leaseToken;
-        /** Set when a real (non-loot) change is observed; cleared once a save/submit lands. */
-        private volatile boolean dirty;
-        /** Guards against overlapping submit/save calls for this carriage. */
+        /**
+         * Pending changed shipyard-space positions awaiting upload — deduped by pos (last-write-wins, since
+         * the flush re-captures current state) and drained at flush. Replaces the old single dirty bit so
+         * the flusher can send only the changed cells as a delta.
+         */
+        private final Set<BlockPos> outbox = ConcurrentHashMap.newKeySet();
+        /**
+         * Monotonic per-carriage delta sequence, tied to the RELAY carriage identity — seeded from
+         * {@code max(baseSeq, maxDeltaSeq)} on a pooled lease and NEVER reset to 0 across the cull→
+         * re-register churn, so a relay drop-watermark ({@code seq <= baseSeq}) stays meaningful.
+         */
+        private final AtomicInteger seq;
+        /** Set once this carriage is being culled — the flusher stops issuing new POSTs for it. */
+        private volatile boolean culled;
+        /** Set when the relay asked for a re-baseline (delta log near/at full) — flusher does a full save. */
+        private volatile boolean rebaseline;
+        /** Guards against overlapping submit/save/delta calls for this carriage. */
         private volatile boolean callInFlight;
-        /** Last successful save/heartbeat wall-clock ms (for throttling). */
+        /** Last successful save/heartbeat/delta wall-clock ms (for throttling). */
         private volatile long lastContactMs;
 
         Instance(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx, BlockPos shipyardOrigin,
                  CarriageDims dims, String variantId, boolean leasedFromPool,
-                 Integer relayId, String leaseToken) {
+                 Integer relayId, String leaseToken, int seqSeed) {
             this.level = level;
             this.subLevelId = subLevelId;
             this.trainId = trainId;
@@ -73,6 +91,7 @@ public final class SharedCarriageRegistry {
             this.leasedFromPool = leasedFromPool;
             this.relayId = relayId;
             this.leaseToken = leaseToken;
+            this.seq = new AtomicInteger(Math.max(0, seqSeed));
         }
 
         /** Whether shipyard-space (x,y,z) falls inside this carriage's footprint. */
@@ -85,15 +104,43 @@ public final class SharedCarriageRegistry {
 
         public Integer relayId() { return relayId; }
         public String leaseToken() { return leaseToken; }
-        public boolean isDirty() { return dirty; }
         public boolean isOnRelay() { return relayId != null && leaseToken != null; }
         public boolean isCallInFlight() { return callInFlight; }
         public long lastContactMs() { return lastContactMs; }
+        public boolean isCulled() { return culled; }
+        public boolean hasPending() { return !outbox.isEmpty(); }
 
-        public void markDirty() { this.dirty = true; }
-        public void clearDirty() { this.dirty = false; }
+        /** Record a changed shipyard-space position for the next delta flush (no-op once culled). */
+        public void enqueue(BlockPos pos) { if (!culled) outbox.add(pos.immutable()); }
+
+        /**
+         * Snapshot the pending positions and remove exactly those (positions enqueued concurrently
+         * remain queued). The caller re-captures current block state at each; on a failed upload it
+         * {@link #reenqueue}s them so nothing is lost.
+         */
+        public Set<BlockPos> drainPending() {
+            Set<BlockPos> snap = new HashSet<>(outbox);
+            outbox.removeAll(snap);
+            return snap;
+        }
+
+        /** Re-queue positions whose upload failed so the next flush re-captures them. */
+        public void reenqueue(Collection<BlockPos> positions) { outbox.addAll(positions); }
+
+        /** Allocate the next strictly-increasing delta sequence (tied to the relay carriage). */
+        public int nextSeq() { return seq.incrementAndGet(); }
+        /** The max seq allocated so far — the {@code baseSeq} to stamp on a compacting save/return. */
+        public int currentSeq() { return seq.get(); }
+
         public void setCallInFlight(boolean v) { this.callInFlight = v; }
         public void stampContact(long ms) { this.lastContactMs = ms; }
+        /** Mark this carriage as culling — stops further enqueue + flusher POSTs (belt for the cull hook). */
+        public void markCulled() { this.culled = true; }
+
+        public boolean needsRebaseline() { return rebaseline; }
+        /** Ask the flusher to re-baseline (full save) — the relay's delta log is near/at full. */
+        public void markRebaseline() { this.rebaseline = true; }
+        public void clearRebaseline() { this.rebaseline = false; }
 
         /** Record that this carriage now lives on the relay under {@code id} with lease {@code token}. */
         public void onRelayLease(int id, String token) {
@@ -108,12 +155,16 @@ public final class SharedCarriageRegistry {
         }
     }
 
-    /** Register a freshly-placed shared carriage. */
+    /**
+     * Register a freshly-placed shared carriage. {@code seqSeed} is the delta-sequence floor tied to the
+     * relay carriage — 0 for a fresh local build, or {@code max(baseSeq, maxDeltaSeq)} for one leased from
+     * the pool (so its first upload's seq clears the relay's drop-watermark).
+     */
     public static Instance register(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx,
                                     BlockPos shipyardOrigin, CarriageDims dims, String variantId,
-                                    boolean leasedFromPool, Integer relayId, String leaseToken) {
+                                    boolean leasedFromPool, Integer relayId, String leaseToken, int seqSeed) {
         Instance inst = new Instance(level, subLevelId, trainId, pIdx, shipyardOrigin, dims, variantId,
-                leasedFromPool, relayId, leaseToken);
+                leasedFromPool, relayId, leaseToken, seqSeed);
         BY_SUBLEVEL.computeIfAbsent(subLevelId, k -> new CopyOnWriteArrayList<>()).add(inst);
         LOGGER.debug("[DungeonTrain] Registered shared carriage variant={} pIdx={} subLevel={} leased={}.",
                 variantId, pIdx, subLevelId, leasedFromPool);
@@ -138,6 +189,12 @@ public final class SharedCarriageRegistry {
     public static boolean hasSubLevel(UUID subLevelId) {
         List<Instance> list = BY_SUBLEVEL.get(subLevelId);
         return list != null && !list.isEmpty();
+    }
+
+    /** A snapshot of the shared carriages hosted in {@code subLevelId} (empty if none) — for the cull hook. */
+    public static List<Instance> bySubLevel(UUID subLevelId) {
+        CopyOnWriteArrayList<Instance> list = BY_SUBLEVEL.get(subLevelId);
+        return list == null ? java.util.Collections.emptyList() : new ArrayList<>(list);
     }
 
     /** Snapshot of every registered instance (for the events tick). */

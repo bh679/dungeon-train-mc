@@ -8,6 +8,7 @@ import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.editor.ContainerContentsRoller;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -73,8 +74,10 @@ public abstract class SableBlockChangeGuardMixin {
         // Breaking a loot container (chest/barrel/pot/brushable → air) does NOT count as a build change.
         if (newState.isAir() && isLootContainer(oldState)) return;
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.resolve(subLevelId, x, y, z);
-        if (inst != null && !inst.isDirty()) {
-            inst.markDirty();
+        // Queue the changed cell for the next delta flush (deduped by pos; drained off-thread). Cheap +
+        // non-blocking — safe on the server thread inside setBlock. Skipped once the carriage is culling.
+        if (inst != null && !inst.isCulled()) {
+            inst.enqueue(new BlockPos(x, y, z));
         }
     }
 
