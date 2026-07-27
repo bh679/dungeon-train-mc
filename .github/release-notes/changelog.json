@@ -5821,6 +5821,18 @@
       "released": true,
       "released_in": "v0.517.0",
       "released_at": "2026-07-26T12:16:27Z"
+    },
+    {
+      "id": "creeper-no-explosion-cloud",
+      "version": "0.518.0",
+      "type": "fix",
+      "title": "Creepers no longer leave a potion cloud when they explode",
+      "summary": "Train creepers were picking up the difficulty system's potion buffs, and vanilla turns a creeper's active effects into a lingering potion cloud when it blows up. Creepers now explode cleanly again.",
+      "highlights": [],
+      "date": "2026-07-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

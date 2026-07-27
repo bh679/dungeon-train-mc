@@ -19,6 +19,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
+import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Ghast;
 import net.minecraft.world.entity.monster.MagmaCube;
 import net.minecraft.world.entity.monster.Phantom;
@@ -165,7 +166,10 @@ public final class DifficultyApplier {
             applyWeaponSlot(mob, tier.weapon().mainhand(), tier.weapon().chance(), tier.enchant(), registries, rng, statScalingTier, tierIndex);
         }
 
-        if (applyEffects) {
+        // Creepers convert their active effects into a lingering AreaEffectCloud on
+        // explosion (vanilla Creeper#explodeCreeper), so never give them difficulty
+        // potion effects — otherwise every train creeper leaves a potion cloud behind.
+        if (applyEffects && !(mob instanceof Creeper)) {
             for (DifficultyTier.EffectSpec spec : tier.effects()) {
                 if (rng.nextDouble() >= spec.chance()) continue;
                 Holder<MobEffect> holder = lookupEffect(spec.id());
