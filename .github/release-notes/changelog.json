@@ -5833,6 +5833,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "freeplay-echo-quarantine",
+      "version": "0.519.0",
+      "type": "feat",
+      "title": "Free Play echoes stay in Free Play",
+      "summary": "Deaths on a Free Play (creative/cheated) run are now sealed off from normal play. An echo of someone who died in Free Play \u2014 and a Death Note curse written in Free Play \u2014 will only ever appear to other players who are themselves in Free Play; a legit run only meets echoes and curses from other legit runs. No more sandbox deaths leaking into real games, or vice versa.",
+      "highlights": [
+        "Reincarnated echoes are tagged with the run they came from and only spawn in a matching run.",
+        "Death Note curses match the same way: a curse authored in Free Play only hunts Free Play targets."
+      ],
+      "date": "2026-07-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
