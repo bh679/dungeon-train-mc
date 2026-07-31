@@ -54,6 +54,10 @@ public final class UiAnalytics {
     public static final String TARGET_SUPPORT = "support";
     public static final String TARGET_DONATE = "donate";
     public static final String TARGET_PATREON = "patreon";
+    // The China payment button (Stripe / Alipay / WeChat Pay) shown to Chinese-locale clients in
+    // Patreon's slot — see PaymentLinks. Separate from TARGET_DONATE so the funnel can show whether
+    // the China route converts. Lock-step with ui-events.js TARGETS.
+    public static final String TARGET_DONATE_CN = "donate_cn";
     public static final String TARGET_AFFILIATE = "affiliate";
     public static final String TARGET_DISCORD = "discord";
     // Death-screen button targets (see NarrativeDeathScreen). Lock-step with ui-events.js TARGETS.

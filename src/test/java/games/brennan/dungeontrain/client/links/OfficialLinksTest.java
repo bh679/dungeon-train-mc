@@ -8,6 +8,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Pure-logic tests for the official-links overlay: validation, sanitize, fallback resolution. */
@@ -50,6 +51,30 @@ class OfficialLinksTest {
         OfficialLinks.accept(raw);
         assertEquals(OfficialLinks.FALLBACK_DISCORD, OfficialLinks.discord());
         assertEquals("https://www.patreon.com/other", OfficialLinks.patreon());
+    }
+
+    // --- payment_cn: relay-only, no baked fallback ---------------------------------------------
+
+    @Test
+    void paymentCnIsNullUntilTheRelayServesIt() {
+        assertNull(OfficialLinks.paymentCn(),
+                "no baked fallback — a jar built before the link existed must see null");
+    }
+
+    @Test
+    void paymentCnServedFromRelay() {
+        OfficialLinks.accept(Map.of("payment_cn", "https://buy.stripe.com/test_abc123"));
+        assertEquals("https://buy.stripe.com/test_abc123", OfficialLinks.paymentCn());
+    }
+
+    @Test
+    void invalidPaymentCnDegradesToNullNotToTheRevolutLink() {
+        Map<String, String> raw = new HashMap<>();
+        raw.put("payment_cn", "notaurl");
+        OfficialLinks.accept(raw);
+        assertNull(OfficialLinks.paymentCn());
+        assertEquals(OfficialLinks.FALLBACK_PAYMENT, OfficialLinks.payment(),
+                "a bad payment_cn must not disturb the ordinary payment key");
     }
 
     @Test

@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PatreonIconButton;
+import games.brennan.dungeontrain.client.support.PaymentLinks;
 import games.brennan.dungeontrain.client.support.SupportScreen;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -42,6 +43,13 @@ import java.net.URI;
  * Mods/Options/Quit row and never touches Realms). If the Realms button can't be
  * found (Realms disabled, or another mod already rewrote the menu) this logs a
  * warning and leaves the menu untouched rather than inventing a slot.</p>
+ *
+ * <p>On Chinese-locale clients the Patreon icon is dropped entirely — see
+ * {@link PaymentLinks}. That decision needs the relay's {@code payment_cn} value,
+ * which is fetched asynchronously, so the very first title screen of a session can
+ * still show the icon and lose it on the next re-init (resize, or returning from a
+ * world). Self-correcting and cosmetic; the Support screen behind the button is
+ * always evaluated after the fetch has had time to land.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class TitleScreenSupportButton {
@@ -78,8 +86,12 @@ public final class TitleScreenSupportButton {
 
         // Split the Realms slot: Support the Mod fills the row, a square Patreon
         // icon (row-height) sits at the right — together exactly the old bounds.
+        // Where Patreon is unreachable (see PaymentLinks) the icon would be a dead
+        // shortcut, so it is dropped and Support takes the whole slot; the China
+        // payment route lives one click deeper, on the Support screen itself.
+        boolean showPatreon = !PaymentLinks.useChinaPayment();
         int iconW = h;
-        int supportW = w - iconW - GAP;
+        int supportW = showPatreon ? w - iconW - GAP : w;
 
         event.addListener(new DarkTintedButton(x, y, supportW, h, SUPPORT_LABEL, b -> {
             // The headline funnel metric: how many players tap "Support the Mod" at all.
@@ -87,12 +99,15 @@ public final class TitleScreenSupportButton {
             Minecraft.getInstance().setScreen(new SupportScreen(titleScreen));
         }));
 
-        PatreonIconButton patreon = new PatreonIconButton(x + supportW + GAP, y, iconW,
-                PATREON_NARRATION, b -> openPatreon(titleScreen));
-        patreon.setTooltip(Tooltip.create(PATREON_TOOLTIP));
-        event.addListener(patreon);
+        if (showPatreon) {
+            PatreonIconButton patreon = new PatreonIconButton(x + supportW + GAP, y, iconW,
+                    PATREON_NARRATION, b -> openPatreon(titleScreen));
+            patreon.setTooltip(Tooltip.create(PATREON_TOOLTIP));
+            event.addListener(patreon);
+        }
 
-        LOGGER.info("TitleScreenSupportButton: replaced Realms button with Support + Patreon.");
+        LOGGER.info("TitleScreenSupportButton: replaced Realms button with Support{}.",
+                showPatreon ? " + Patreon" : " (Patreon icon hidden)");
     }
 
     private static void openPatreon(Screen parent) {
