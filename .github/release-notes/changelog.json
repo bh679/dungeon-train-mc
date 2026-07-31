@@ -5835,6 +5835,39 @@
       "released_at": null
     },
     {
+      "id": "zh-cn-translator-revision-pass",
+      "version": "0.518.0",
+      "type": "chore",
+      "title": "Simplified Chinese revision pass",
+      "summary": "Community translator \u8001\u672c\u9858 has revised the Simplified Chinese translation, reworking 84 lines across the credits, support, book-voting and death screens for a more natural voice. Every line of Simplified Chinese is now human-translated or human-reviewed \u2014 the faded AI marker beside \u7b80\u4f53\u4e2d\u6587 in the language list is gone.",
+      "highlights": [
+        "84 machine-translated lines rewritten by hand, and the rest checked over",
+        "No unreviewed machine translation left in Simplified Chinese"
+      ],
+      "pr": 856,
+      "date": "2026-07-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "china-alipay-wechat",
+      "version": "0.519.0",
+      "type": "feat",
+      "title": "Alipay and WeChat Pay for players in China",
+      "summary": "Chinese players had no working way to chip in: Patreon is blocked in mainland China, and the direct-donation link needs an overseas card. If your game is set to Chinese, the Ways to Help page and the death-screen Contribute window now offer Alipay and WeChat Pay instead of Patreon, and the payment page opens in your own language.",
+      "highlights": [
+        "Alipay / WeChat Pay on the Ways to Help page and the death-screen Contribute window, for clients set to Chinese",
+        "The payment page opens in your language instead of guessing from your browser",
+        "Your name travels with the donation, so contributions can show on the in-game supporter list",
+        "The Patreon shortcut is hidden on those clients rather than leading somewhere unreachable"
+      ],
+      "date": "2026-07-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "freeplay-echo-quarantine",
       "version": "0.519.0",
       "type": "feat",
@@ -5844,7 +5877,8 @@
         "Reincarnated echoes are tagged with the run they came from and only spawn in a matching run.",
         "Death Note curses match the same way: a curse authored in Free Play only hunts Free Play targets."
       ],
-      "date": "2026-07-27",
+      "pr": 855,
+      "date": "2026-07-31",
       "released": false,
       "released_in": null,
       "released_at": null

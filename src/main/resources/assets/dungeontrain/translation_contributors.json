@@ -7,8 +7,8 @@
       "languages": [
         {
           "locale": "zh_cn",
-          "contributed": 806,
-          "total": 930
+          "contributed": 916,
+          "total": 936
         }
       ]
     },
@@ -18,12 +18,12 @@
         {
           "locale": "zh_cn",
           "contributed": 14,
-          "total": 930
+          "total": 936
         },
         {
           "locale": "zh_tw",
           "contributed": 14,
-          "total": 930
+          "total": 936
         }
       ]
     }
