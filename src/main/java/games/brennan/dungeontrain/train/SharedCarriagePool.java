@@ -25,7 +25,7 @@ public final class SharedCarriagePool {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /** How many leases to keep buffered ahead of demand — bounds speculative locking. */
-    static final int TARGET_BUFFER = 2;
+    static final int TARGET_BUFFER = 10; // TEMP Gate-2 test crank (was 2) — REVERT before commit
 
     /** After a lease attempt finds nothing, wait this long before hitting the relay again. */
     private static final long EMPTY_BACKOFF_MS = 60_000L;
@@ -82,6 +82,38 @@ public final class SharedCarriagePool {
             fetchInFlight = false;
             LOGGER.debug("[DungeonTrain] shared-carriage pool refresh failed to start: {}", t.toString());
         }
+    }
+
+    /**
+     * TEMP Gate-2 test — REVERT before commit. Synchronous lease on the spawn thread so a shared slot is
+     * filled from the relay whenever the relay has ANYTHING available, only falling back to the local
+     * template when the pool is truly empty ("100% from relay unless relay is empty"). Blocks briefly on
+     * HTTP — NOT for production; the ship path relies on the async prefetch buffer + a &lt;1.0 poolChance
+     * (e.g. 0.95) so the 5% template variety is intentional, not a starvation artifact.
+     */
+    public static PoolLease leaseNowBlocking(CarriageDims dims) {
+        // Respect the shared empty-pool backoff: when the relay was just seen empty, don't fire a blocking
+        // lease per spawning carriage (a whole-rake spawn would otherwise storm the relay + hitch the
+        // server thread) — fall straight to template until the async prefetch re-confirms availability.
+        if (System.currentTimeMillis() < backoffUntilMs) return null;
+        try {
+            java.util.Optional<PoolLease> opt = SharedCarriageClient
+                    .lease("", dims.length(), dims.height(), dims.width(), java.util.Collections.emptyList())
+                    .get(2, java.util.concurrent.TimeUnit.SECONDS);
+            if (opt != null && opt.isPresent()) {
+                PoolLease l = opt.get();
+                if (l.l() == dims.length() && l.h() == dims.height() && l.w() == dims.width()) {
+                    backoffUntilMs = 0L; // got one → relay has content, keep probing eagerly
+                    return l;
+                }
+                returnLease(l); // dims mismatch (shouldn't happen — relay filters) → hand it back
+            } else {
+                backoffUntilMs = System.currentTimeMillis() + EMPTY_BACKOFF_MS; // relay empty → back off the storm
+            }
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] blocking lease failed: {}", t.toString());
+        }
+        return null; // relay genuinely had nothing available → NEW/template fallback
     }
 
     /** Return one unused lease to the relay (best-effort). Never placed → no blocks/baseSeq to send. */

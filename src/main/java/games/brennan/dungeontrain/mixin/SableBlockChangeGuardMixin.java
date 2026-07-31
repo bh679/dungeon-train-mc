@@ -74,6 +74,12 @@ public abstract class SableBlockChangeGuardMixin {
         // Breaking a loot container (chest/barrel/pot/brushable → air) does NOT count as a build change.
         if (newState.isAir() && isLootContainer(oldState)) return;
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.resolve(subLevelId, x, y, z);
+        // TEMP Gate-2 DEBUG — REVERT: what block change reached the hook on a shared cart, and did it resolve?
+        org.slf4j.LoggerFactory.getLogger("DungeonTrain").info(
+                "[DBG capture] shared-cart change subLevel={} pos=({},{},{}) new={} resolved={}",
+                subLevelId, x, y, z,
+                net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(newState.getBlock()),
+                inst != null);
         // Queue the changed cell for the next delta flush (deduped by pos; drained off-thread). Cheap +
         // non-blocking — safe on the server thread inside setBlock. Skipped once the carriage is culling.
         if (inst != null && !inst.isCulled()) {

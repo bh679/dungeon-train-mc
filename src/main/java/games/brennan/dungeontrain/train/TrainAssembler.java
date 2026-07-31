@@ -65,7 +65,12 @@ public final class TrainAssembler {
         if (roll >= games.brennan.dungeontrain.config.DungeonTrainConfig.getSharedCarriagePoolChance()) {
             return null; // rolled NEW
         }
-        return SharedCarriagePool.poll(dims); // null when the buffer is empty → NEW fallback
+        SharedCarriageClient.PoolLease buffered = SharedCarriagePool.poll(dims);
+        if (buffered != null) return buffered;
+        // TEMP Gate-2 test — REVERT before commit: "100% from relay unless relay is empty". When the
+        // async buffer is momentarily empty, block on a live lease so a template is used ONLY when the
+        // relay itself has nothing available (ship path drops this and relies on the buffer + poolChance).
+        return SharedCarriagePool.leaseNowBlocking(dims);
     }
 
     /**
@@ -82,6 +87,15 @@ public final class TrainAssembler {
                 LOGGER.warn("[DungeonTrain] leased carriage id={} dims mismatch — falling back to fresh.", lease.id());
                 return null;
             }
+            // TEMP Gate-2 DEBUG — REVERT: report exactly which cart + how many wool cells the fold produced.
+            net.minecraft.nbt.ListTag dbgCells = snap.getList("cells", net.minecraft.nbt.Tag.TAG_COMPOUND);
+            int dbgWool = 0;
+            for (int i = 0; i < dbgCells.size(); i++) {
+                if (dbgCells.getCompound(i).getCompound("s").getString("Name").contains("yellow_wool")) dbgWool++;
+            }
+            LOGGER.info("[DungeonTrain][DBG] placeRelayLease id={} origin={} cells={} woolCells={} baseSeq={} deltas={}",
+                    lease.id(), carriageOrigin, dbgCells.size(), dbgWool, lease.baseSeq(),
+                    lease.deltas() == null ? 0 : lease.deltas().size());
             return CarriageBlockSnapshot.place(level, carriageOrigin, snap);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Failed to place leased carriage id={}: {}", lease.id(), e.toString());

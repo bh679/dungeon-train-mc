@@ -55,7 +55,7 @@ public final class SharedCarriageEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int PREFETCH_INTERVAL_TICKS = 100; // ~5 s
+    private static final int PREFETCH_INTERVAL_TICKS = 10; // TEMP Gate-2 test crank (was 100/~5s) — REVERT before commit
     private static final int FLUSH_INTERVAL_TICKS = 10;     // ~0.5 s — coalescing delta flush cadence
     /** Re-heartbeat a leased carriage this long after the last contact (well under the relay's ~1h TTL). */
     private static final long HEARTBEAT_INTERVAL_MS = 300_000L; // 5 min

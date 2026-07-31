@@ -151,6 +151,13 @@ public final class CarriageBlockSnapshot {
         root.putInt("v", FORMAT_VERSION);
         root.put("set", set);
         root.put("del", del);
+        // TEMP Gate-2 DEBUG — REVERT: show exactly what a delta captured (the player's edited cells).
+        StringBuilder dbgNames = new StringBuilder();
+        for (int i = 0; i < set.size() && i < 8; i++) {
+            dbgNames.append(set.getCompound(i).getCompound("s").getString("Name")).append(' ');
+        }
+        LOGGER.info("[DBG capture] captureCells asked={} → set={} del={} names=[{}]",
+                positions.size(), set.size(), del.size(), dbgNames.toString().trim());
         return new Captured(root, text.toString());
     }
 
