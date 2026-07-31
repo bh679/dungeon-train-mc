@@ -30,6 +30,9 @@ import java.nio.charset.StandardCharsets;
  */
 public final class PaymentLinks {
 
+    /** Stripe's length cap for {@code client_reference_id}. */
+    private static final int MAX_CLIENT_REF = 200;
+
     private PaymentLinks() {}
 
     /** True when this client should be offered the China payment route instead of Patreon. */
@@ -37,9 +40,12 @@ public final class PaymentLinks {
         return useChinaPayment(selectedLocale(), OfficialLinks.paymentCn());
     }
 
-    /** The China payment URL, or null when {@link #useChinaPayment()} is false. */
+    /**
+     * The China payment URL with the player's name attached, or null when
+     * {@link #useChinaPayment()} is false.
+     */
     public static String chinaUrl() {
-        return useChinaPayment() ? OfficialLinks.paymentCn() : null;
+        return useChinaPayment() ? withClientReference(OfficialLinks.paymentCn(), playerName()) : null;
     }
 
     /**
@@ -72,6 +78,39 @@ public final class PaymentLinks {
         if (base == null || !base.contains("note=")) return base;
         String encoded = URLEncoder.encode(playerName, StandardCharsets.UTF_8).replace("+", "%20");
         return base + encoded;
+    }
+
+    /**
+     * Attach the player's name to a Stripe payment link as {@code client_reference_id} — the
+     * Revolut {@code note=} field's counterpart, and the only way to carry an identity through
+     * Checkout (Stripe has no name-prefill parameter). It is <b>not</b> shown to the player; it
+     * surfaces on the payment in the Stripe Dashboard and in the {@code checkout.session.completed}
+     * webhook, which is what lets a donation be matched back to a player.
+     *
+     * <p>Stripe accepts {@code [A-Za-z0-9_-]} up to {@value #MAX_CLIENT_REF} characters and
+     * <b>silently drops</b> anything else, so the name is sanitised rather than trusted — and when
+     * nothing survives, the parameter is left off entirely instead of sending a value Stripe would
+     * discard. Minecraft usernames pass through untouched.</p>
+     */
+    static String withClientReference(String base, String playerName) {
+        if (base == null) return null;
+        String ref = sanitizeClientReference(playerName);
+        if (ref.isEmpty()) return base;
+        return base + (base.indexOf('?') >= 0 ? '&' : '?') + "client_reference_id=" + ref;
+    }
+
+    /** Strip {@code playerName} to the characters Stripe accepts, capped at {@value #MAX_CLIENT_REF}. */
+    static String sanitizeClientReference(String playerName) {
+        if (playerName == null) return "";
+        StringBuilder out = new StringBuilder(Math.min(playerName.length(), MAX_CLIENT_REF));
+        for (int i = 0; i < playerName.length() && out.length() < MAX_CLIENT_REF; i++) {
+            char c = playerName.charAt(i);
+            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+                    || c == '_' || c == '-') {
+                out.append(c);
+            }
+        }
+        return out.toString();
     }
 
     // --- Minecraft-facing accessors ----------------------------------------------------------

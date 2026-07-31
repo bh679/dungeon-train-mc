@@ -83,4 +83,47 @@ class PaymentLinksTest {
     void nullBaseSurvives() {
         assertNull(PaymentLinks.withPlayerNote(null, "Steve"));
     }
+
+    // --- client_reference_id (the Stripe counterpart of the Revolut note) ---------------------
+
+    @Test
+    void playerNameRidesAlongAsClientReferenceId() {
+        assertEquals(CN + "?client_reference_id=Steve",
+                PaymentLinks.withClientReference(CN, "Steve"));
+    }
+
+    @Test
+    void anExistingQueryStringIsExtendedNotRestarted() {
+        assertEquals("https://donate.stripe.com/abc?locale=zh&client_reference_id=Steve",
+                PaymentLinks.withClientReference("https://donate.stripe.com/abc?locale=zh", "Steve"));
+    }
+
+    @Test
+    void charactersStripeWouldRejectAreStripped() {
+        // Stripe silently drops the whole value if it contains anything outside [A-Za-z0-9_-],
+        // so the name is cleaned rather than trusted.
+        assertEquals(CN + "?client_reference_id=Steve_1-2",
+                PaymentLinks.withClientReference(CN, "Steve_1-2"));
+        assertEquals(CN + "?client_reference_id=Steve", PaymentLinks.withClientReference(CN, "Ste ve!"));
+        assertEquals(CN + "?client_reference_id=abc", PaymentLinks.withClientReference(CN, "@abc#"));
+    }
+
+    @Test
+    void aNameWithNothingUsableLeavesTheParameterOff() {
+        // Better no parameter than one Stripe discards.
+        assertEquals(CN, PaymentLinks.withClientReference(CN, "玩家"));
+        assertEquals(CN, PaymentLinks.withClientReference(CN, ""));
+        assertEquals(CN, PaymentLinks.withClientReference(CN, null));
+    }
+
+    @Test
+    void overlongNamesAreTruncatedToStripesCap() {
+        String ref = PaymentLinks.sanitizeClientReference("a".repeat(500));
+        assertEquals(200, ref.length());
+    }
+
+    @Test
+    void nullBaseSurvivesClientReference() {
+        assertNull(PaymentLinks.withClientReference(null, "Steve"));
+    }
 }
