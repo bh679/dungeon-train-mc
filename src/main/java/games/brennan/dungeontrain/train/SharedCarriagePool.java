@@ -34,8 +34,19 @@ public final class SharedCarriagePool {
     private static volatile boolean fetchInFlight = false;
     /** Set when the pool had nothing to lease; suppresses refetches until then so we don't poll every tick. */
     private static volatile long backoffUntilMs = 0L;
+    /**
+     * Last host uuid seen by the prefetch tick, so a lease taken off the spawn thread (which has no
+     * player handy) still records a real holder on the relay. An empty holder leaves the relay's admin
+     * view unable to say WHO has a carriage locked.
+     */
+    private static volatile String hostUuid = "";
 
     private SharedCarriagePool() {}
+
+    /** Remember the world's host player uuid for leases taken outside the prefetch tick. */
+    public static void setHostUuid(String uuid) {
+        if (uuid != null && !uuid.isEmpty()) hostUuid = uuid;
+    }
 
     /**
      * Pop a buffered lease matching {@code dims} for the spawn path, or null when none is ready (the
@@ -46,6 +57,8 @@ public final class SharedCarriagePool {
         PoolLease l = BUFFER.poll();
         if (l == null) return null;
         if (l.l() != dims.length() || l.h() != dims.height() || l.w() != dims.width()) {
+            LOGGER.warn("[DungeonTrain] buffered lease id={} dims {}x{}x{} != requested {}x{}x{} — returning it unused.",
+                    l.id(), l.l(), l.h(), l.w(), dims.length(), dims.height(), dims.width());
             returnLease(l);
             return null;
         }
@@ -98,7 +111,7 @@ public final class SharedCarriagePool {
         if (System.currentTimeMillis() < backoffUntilMs) return null;
         try {
             java.util.Optional<PoolLease> opt = SharedCarriageClient
-                    .lease("", dims.length(), dims.height(), dims.width(), java.util.Collections.emptyList())
+                    .lease(hostUuid, dims.length(), dims.height(), dims.width(), java.util.Collections.emptyList())
                     .get(2, java.util.concurrent.TimeUnit.SECONDS);
             if (opt != null && opt.isPresent()) {
                 PoolLease l = opt.get();
@@ -106,12 +119,14 @@ public final class SharedCarriagePool {
                     backoffUntilMs = 0L; // got one → relay has content, keep probing eagerly
                     return l;
                 }
+                LOGGER.warn("[DungeonTrain] blocking lease id={} dims {}x{}x{} != requested {}x{}x{} — returning it unused.",
+                        l.id(), l.l(), l.h(), l.w(), dims.length(), dims.height(), dims.width());
                 returnLease(l); // dims mismatch (shouldn't happen — relay filters) → hand it back
             } else {
                 backoffUntilMs = System.currentTimeMillis() + EMPTY_BACKOFF_MS; // relay empty → back off the storm
             }
         } catch (Throwable t) {
-            LOGGER.debug("[DungeonTrain] blocking lease failed: {}", t.toString());
+            LOGGER.warn("[DungeonTrain] blocking lease failed: {}", t.toString());
         }
         return null; // relay genuinely had nothing available → NEW/template fallback
     }
@@ -129,6 +144,14 @@ public final class SharedCarriagePool {
 
     public static int buffered() {
         return BUFFER.size();
+    }
+
+    /**
+     * Whether the empty-pool back-off is currently suppressing lease attempts. Lets the spawn path
+     * report "we didn't even ask the relay" distinctly from "the relay had nothing".
+     */
+    public static boolean isBackedOff() {
+        return System.currentTimeMillis() < backoffUntilMs;
     }
 
     /** Test/reset seam. Does NOT return leases (tests don't hold real ones). */

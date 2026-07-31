@@ -205,10 +205,25 @@ public final class CarriageBlockSnapshot {
     // ---- placement (write into a level at world coords — spawn-time, pre-assembly) ----
 
     /**
+     * A stamped carriage is considered to have failed when the world afterwards holds fewer than this
+     * fraction of the snapshot's non-air cells. A handful of cells can legitimately go missing (a state
+     * that no longer resolves, a block that pops off on placement), but a wholesale shortfall means the
+     * writes did not land and the caller must fall back rather than assemble a carriage made of air.
+     */
+    private static final double MIN_PLACED_FRACTION = 0.5;
+
+    /**
      * Stamp a snapshot into {@code level} at {@code worldOrigin}: the footprint is cleared to air, then
      * every stored cell is written (block state + block-entity NBT). Returns the set of NON-AIR world
-     * positions written (the carriage's blocks, to hand to Sable's {@code assemble}), or {@code null}
-     * on failure. Runs at spawn, before assembly, so host-level writes at world coords are correct.
+     * positions that the level actually holds afterwards (the carriage's blocks, to hand to Sable's
+     * {@code assemble}), or {@code null} on failure. Runs at spawn, before assembly, so host-level
+     * writes at world coords are correct.
+     *
+     * <p>The returned set is re-read from the world via {@link CarriagePlacer#collectFootprint}, exactly
+     * as the local-template path does in {@code CarriagePlacer.finishPlace}. Trusting the write instead
+     * (accumulating each {@code setBlock} target) would hand Sable phantom coordinates whenever a write
+     * failed to land, assembling an invisible carriage with no warning anywhere — the two spawn paths
+     * must agree on what "placed" means.</p>
      */
     public static java.util.Set<BlockPos> place(ServerLevel level, BlockPos worldOrigin, CompoundTag snap) {
         try {
@@ -223,7 +238,7 @@ public final class CarriageBlockSnapshot {
                     }
                 }
             }
-            java.util.Set<BlockPos> placed = new java.util.HashSet<>();
+            int wanted = 0;
             ListTag cells = snap.getList("cells", net.minecraft.nbt.Tag.TAG_COMPOUND);
             for (int i = 0; i < cells.size(); i++) {
                 CompoundTag cell = cells.getCompound(i);
@@ -231,8 +246,14 @@ public final class CarriageBlockSnapshot {
                 if (p.length != 3) continue;
                 BlockPos abs = worldOrigin.offset(p[0], p[1], p[2]);
                 BlockState state = NbtUtils.readBlockState(blocks, cell.getCompound("s"));
+                if (state.isAir()) {
+                    // An unresolvable state decodes to air — placing it would silently punch a hole.
+                    LOGGER.warn("[DungeonTrain] shared-carriage cell at {} decoded to AIR from {} — skipping.",
+                            abs, cell.getCompound("s"));
+                    continue;
+                }
+                wanted++;
                 level.setBlock(abs, state, PLACE_FLAGS);
-                placed.add(abs.immutable());
                 if (cell.contains("b", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
                     BlockEntity be = level.getBlockEntity(abs);
                     if (be != null) {
@@ -240,6 +261,18 @@ public final class CarriageBlockSnapshot {
                         be.setChanged();
                     }
                 }
+            }
+            // Ground truth: what does the level actually hold now? (Same helper the template path uses.)
+            CarriageDims dims = new CarriageDims(l, w, h);
+            java.util.Set<BlockPos> placed = CarriagePlacer.collectFootprint(level, worldOrigin, dims);
+            if (wanted > 0 && placed.size() < wanted * MIN_PLACED_FRACTION) {
+                LOGGER.warn("[DungeonTrain] shared-carriage snapshot did NOT land at {}: wrote {} cells, world holds {} — falling back to a fresh carriage.",
+                        worldOrigin, wanted, placed.size());
+                return null;
+            }
+            if (placed.size() != wanted) {
+                LOGGER.warn("[DungeonTrain] shared-carriage snapshot at {} placed {}/{} cells (partial).",
+                        worldOrigin, placed.size(), wanted);
             }
             return placed;
         } catch (Exception e) {

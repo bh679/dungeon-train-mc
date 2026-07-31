@@ -90,6 +90,8 @@ public final class SharedCarriageEvents {
         String hostUuid = "";
         List<ServerPlayer> players = level.players();
         if (!players.isEmpty()) hostUuid = players.get(0).getUUID().toString().replace("-", "");
+        // Share it with the pool so leases taken off the spawn thread also record a real holder.
+        SharedCarriagePool.setHostUuid(hostUuid);
         List<Integer> exclude = new ArrayList<>();
         for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.all()) {
             Integer id = inst.relayId();
