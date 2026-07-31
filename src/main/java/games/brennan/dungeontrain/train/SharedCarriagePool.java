@@ -27,8 +27,17 @@ public final class SharedCarriagePool {
     /** How many leases to keep buffered ahead of demand — bounds speculative locking. */
     static final int TARGET_BUFFER = 10; // TEMP Gate-2 test crank (was 2) — REVERT before commit
 
-    /** After a lease attempt finds nothing, wait this long before hitting the relay again. */
-    private static final long EMPTY_BACKOFF_MS = 60_000L;
+    /**
+     * After a lease attempt finds nothing, wait this long before hitting the relay again.
+     *
+     * <p>Kept short deliberately. Leases are exclusive, so a world drains the available pool within
+     * seconds of spawning its first rake and then sees one {@code RELAY_EMPTY}; a long back-off after
+     * that single miss silences every subsequent shared slot for its whole duration, which is how a
+     * train ends up almost entirely fresh templates even though carriages are returning to the pool as
+     * groups get culled. Re-probing costs one small POST against a relay that answers from one indexed
+     * SELECT.</p>
+     */
+    private static final long EMPTY_BACKOFF_MS = 5_000L;
 
     private static final Queue<PoolLease> BUFFER = new ConcurrentLinkedQueue<>();
     private static volatile boolean fetchInFlight = false;
