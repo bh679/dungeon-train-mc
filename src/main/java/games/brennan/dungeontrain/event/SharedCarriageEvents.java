@@ -240,7 +240,7 @@ public final class SharedCarriageEvents {
     private static void heartbeatLeased(SharedCarriageRegistry.Instance inst) {
         inst.setCallInFlight(true);
         long now = System.currentTimeMillis();
-        SharedCarriageClient.heartbeat(inst.relayId(), inst.leaseToken())
+        SharedCarriageClient.heartbeat(inst.relayId(), inst.leaseToken(), SharedCarriagePool.hostUuid())
                 .whenComplete((status, err) -> {
                     try {
                         if (status == CallStatus.OK) inst.stampContact(now);

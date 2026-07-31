@@ -173,10 +173,13 @@ public final class SharedCarriageClient {
         return statusPost("/carriages/save", body);
     }
 
-    public static CompletableFuture<CallStatus> heartbeat(int id, String token) {
+    public static CompletableFuture<CallStatus> heartbeat(int id, String token, String holderUuid) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("token", token);
+        // Carries the host uuid so the relay can backfill a lease claimed before any player was in the
+        // level (world-load spawn) — otherwise those stay attributed to nobody for their whole hold.
+        if (holderUuid != null && !holderUuid.isEmpty()) body.addProperty("uuid", holderUuid);
         return statusPost("/carriages/heartbeat", body);
     }
 

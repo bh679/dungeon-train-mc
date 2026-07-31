@@ -58,6 +58,14 @@ public final class SharedCarriagePool {
     }
 
     /**
+     * The host uuid last seen, or {@code ""} before any player has joined. Leases claimed during the
+     * world-load spawn predate that, so they go out unattributed and are backfilled by the heartbeat.
+     */
+    public static String hostUuid() {
+        return hostUuid;
+    }
+
+    /**
      * Pop a buffered lease matching {@code dims} for the spawn path, or null when none is ready (the
      * caller then places a fresh local carriage instead). A dims-mismatched lease (shouldn't happen —
      * the relay filters by dims) is returned to the pool rather than placed.
