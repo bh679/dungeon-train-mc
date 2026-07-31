@@ -366,6 +366,14 @@ public final class TrainAssembler {
 
         CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
 
+        // Attribute any lease this group takes to the host player. SharedCarriageEvents' prefetch tick
+        // also caches this, but the world-load spawn runs before that tick has fired — leases taken here
+        // would otherwise reach the relay with an empty holder, so the admin view can't say who has a
+        // carriage locked.
+        if (!level.players().isEmpty()) {
+            SharedCarriagePool.setHostUuid(level.players().get(0).getUUID().toString().replace("-", ""));
+        }
+
         // Place every enclosed carriage in the group at world coords.
         // For groupSize > 1, the enclosed run starts at
         // origin + halfPadLen; pad placement runs separately afterwards.
