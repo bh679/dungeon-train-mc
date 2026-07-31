@@ -5,6 +5,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.support.PaymentLinks;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.TitleScreen;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -70,6 +73,7 @@ public final class OfficialLinksFetcher {
                                 // INFO on purpose: one line per session, and the overlay silently changes
                                 // where outbound buttons point — worth being able to see in a player log.
                                 LOGGER.info("[DungeonTrain] official links updated from relay ({} keys)", links.size());
+                                refreshTitleScreenIfLayoutChanged();
                             } else {
                                 OfficialLinks.markFailed();
                             }
@@ -83,6 +87,30 @@ public final class OfficialLinksFetcher {
             LOGGER.debug("[DungeonTrain] links request failed to start: {}", t.toString());
             OfficialLinks.markFailed();
         }
+    }
+
+    /**
+     * Rebuild the title screen when this overlay changed what it should render.
+     *
+     * <p>{@code TitleScreenSupportButton} drops the Patreon icon for clients on the China payment
+     * route, and that decision needs {@code payment_cn} — which arrives here, one HTTP round trip
+     * after the screen that kicked the fetch off was already built. Without this, the first title
+     * screen of every session shows a Chinese player a Patreon shortcut that cannot work for them,
+     * and only a resize or a screen change would clear it.</p>
+     *
+     * <p>Fires only when the China route is actually active, so every other client's title screen
+     * is left completely alone; and only on the success path, so it cannot loop with the
+     * retry-on-failure in {@link OfficialLinks#ensureFetched()}. All Minecraft state is touched on
+     * the render thread — this runs on the HTTP completion thread.</p>
+     */
+    private static void refreshTitleScreenIfLayoutChanged() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null) return;
+        mc.execute(() -> {
+            if (mc.screen instanceof TitleScreen title && PaymentLinks.useChinaPayment()) {
+                title.resize(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
+            }
+        });
     }
 
     /** Parse {@code {ok:true, links:{...}}} into a raw key→url map, or null when malformed. */
