@@ -46,10 +46,9 @@ import java.net.URI;
  *
  * <p>On Chinese-locale clients the Patreon icon is dropped entirely — see
  * {@link PaymentLinks}. That decision needs the relay's {@code payment_cn} value,
- * which is fetched asynchronously, so the very first title screen of a session can
- * still show the icon and lose it on the next re-init (resize, or returning from a
- * world). Self-correcting and cosmetic; the Support screen behind the button is
- * always evaluated after the fetch has had time to land.</p>
+ * which arrives one HTTP round trip after this screen is first built, so
+ * {@code OfficialLinksFetcher} rebuilds the title screen once when the answer lands
+ * rather than leaving a Chinese player looking at a dead Patreon shortcut.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class TitleScreenSupportButton {
