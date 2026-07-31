@@ -5833,6 +5833,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "zh-cn-translator-revision-pass",
+      "version": "0.518.0",
+      "type": "chore",
+      "title": "Simplified Chinese revision pass",
+      "summary": "Community translator \u8001\u672c\u9858 has revised the Simplified Chinese translation, reworking 84 lines across the credits, support, book-voting and death screens for a more natural voice. Every line of Simplified Chinese is now human-translated or human-reviewed \u2014 the faded AI marker beside \u7b80\u4f53\u4e2d\u6587 in the language list is gone.",
+      "highlights": [
+        "84 machine-translated lines rewritten by hand, and the rest checked over",
+        "No unreviewed machine translation left in Simplified Chinese"
+      ],
+      "pr": 856,
+      "date": "2026-07-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
