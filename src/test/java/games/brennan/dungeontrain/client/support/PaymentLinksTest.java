@@ -126,4 +126,53 @@ class PaymentLinksTest {
     void nullBaseSurvivesClientReference() {
         assertNull(PaymentLinks.withClientReference(null, "Steve"));
     }
+
+    // --- locale: the checkout renders in the player's language -------------------------------
+
+    @Test
+    void chineseVariantsKeepTheirScript() {
+        // The whole point: zh_tw must NOT collapse to Simplified the way LanguageFamily does.
+        assertEquals("zh", PaymentLinks.stripeLocale("zh_cn"));
+        assertEquals("zh-TW", PaymentLinks.stripeLocale("zh_tw"));
+        assertEquals("zh-HK", PaymentLinks.stripeLocale("zh_hk"));
+    }
+
+    @Test
+    void everyShippedModLanguageMapsToAStripeLocale() {
+        // The 20 lang files under assets/dungeontrain/lang — none should silently fall back.
+        String[][] expected = {
+            {"de_de", "de"}, {"en_us", "en"}, {"es_es", "es"}, {"es_mx", "es-419"},
+            {"fil_ph", "fil"}, {"fr_fr", "fr"}, {"id_id", "id"}, {"it_it", "it"},
+            {"ja_jp", "ja"}, {"ko_kr", "ko"}, {"ms_my", "ms"}, {"nl_nl", "nl"},
+            {"pl_pl", "pl"}, {"pt_br", "pt-BR"}, {"pt_pt", "pt"}, {"ru_ru", "ru"},
+            {"th_th", "th"}, {"vi_vn", "vi"}, {"zh_cn", "zh"}, {"zh_tw", "zh-TW"},
+        };
+        for (String[] pair : expected) {
+            assertEquals(pair[1], PaymentLinks.stripeLocale(pair[0]), "locale " + pair[0]);
+        }
+    }
+
+    @Test
+    void regionalVariantsStripeDistinguishes() {
+        assertEquals("en-GB", PaymentLinks.stripeLocale("en_gb"));
+        assertEquals("fr-CA", PaymentLinks.stripeLocale("fr_ca"));
+    }
+
+    @Test
+    void languagesStripeDoesNotSpeakOmitTheParameter() {
+        // Minecraft has plenty of locales Stripe has no translation for; omitting the parameter
+        // lets Stripe fall back to the browser rather than rejecting a tag.
+        assertNull(PaymentLinks.stripeLocale("haw_us"));
+        assertNull(PaymentLinks.stripeLocale("tlh_aa"));
+        assertNull(PaymentLinks.stripeLocale(null));
+        assertNull(PaymentLinks.stripeLocale(""));
+    }
+
+    @Test
+    void localeIsAppendedAndOmittedCorrectly() {
+        assertEquals(CN + "?locale=zh", PaymentLinks.withLocale(CN, "zh"));
+        assertEquals(CN, PaymentLinks.withLocale(CN, null));
+        assertEquals(CN + "?client_reference_id=Steve&locale=zh-TW",
+                PaymentLinks.withLocale(PaymentLinks.withClientReference(CN, "Steve"), "zh-TW"));
+    }
 }

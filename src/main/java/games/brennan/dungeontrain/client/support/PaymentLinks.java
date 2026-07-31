@@ -6,6 +6,9 @@ import net.minecraft.client.Minecraft;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Which donation link a given client should be offered, and how to build it.
@@ -33,6 +36,33 @@ public final class PaymentLinks {
     /** Stripe's length cap for {@code client_reference_id}. */
     private static final int MAX_CLIENT_REF = 200;
 
+    /**
+     * Minecraft locales whose REGION changes the Stripe tag, so the bare language prefix would be
+     * wrong. Everything else falls through to its prefix (e.g. {@code de_de} → {@code de}).
+     */
+    private static final Map<String, String> REGIONAL_LOCALES = Map.of(
+            "zh_cn", "zh",      // Simplified
+            "zh_tw", "zh-TW",   // Traditional
+            "zh_hk", "zh-HK",
+            "lzh",   "zh",      // Classical Chinese — Simplified is the closest Stripe offers
+            "pt_br", "pt-BR",
+            "pt_pt", "pt",
+            "es_mx", "es-419",  // Latin American Spanish
+            "en_gb", "en-GB",
+            "fr_ca", "fr-CA"
+    );
+
+    /**
+     * Stripe's {@code locale} enum, less {@code auto} and the regional tags handled above. A
+     * language absent here means Stripe has no translation, so we omit the parameter rather than
+     * send a tag it would reject.
+     */
+    private static final Set<String> STRIPE_LOCALES = Set.of(
+            "bg", "cs", "da", "de", "el", "en", "es", "et", "fi", "fil", "fr", "hr", "hu", "id",
+            "it", "ja", "ko", "lt", "lv", "ms", "mt", "nb", "nl", "pl", "pt", "ro", "ru", "sk",
+            "sl", "sv", "th", "tr", "vi", "zh"
+    );
+
     private PaymentLinks() {}
 
     /** True when this client should be offered the China payment route instead of Patreon. */
@@ -41,11 +71,13 @@ public final class PaymentLinks {
     }
 
     /**
-     * The China payment URL with the player's name attached, or null when
+     * The China payment URL with the player's name and language attached, or null when
      * {@link #useChinaPayment()} is false.
      */
     public static String chinaUrl() {
-        return useChinaPayment() ? withClientReference(OfficialLinks.paymentCn(), playerName()) : null;
+        if (!useChinaPayment()) return null;
+        String url = withClientReference(OfficialLinks.paymentCn(), playerName());
+        return withLocale(url, stripeLocale(selectedLocale()));
     }
 
     /**
@@ -93,10 +125,45 @@ public final class PaymentLinks {
      * discard. Minecraft usernames pass through untouched.</p>
      */
     static String withClientReference(String base, String playerName) {
-        if (base == null) return null;
         String ref = sanitizeClientReference(playerName);
-        if (ref.isEmpty()) return base;
-        return base + (base.indexOf('?') >= 0 ? '&' : '?') + "client_reference_id=" + ref;
+        return ref.isEmpty() ? base : withParam(base, "client_reference_id", ref);
+    }
+
+    /**
+     * Render the checkout in the player's own language via Stripe's {@code locale} parameter.
+     *
+     * <p>A null {@code stripeLocale} leaves the parameter off, which is Stripe's {@code auto} —
+     * it falls back to the browser's locale. That is the right degrade: a language we can't map
+     * is better served by the browser's guess than by a tag Stripe doesn't recognise.</p>
+     */
+    static String withLocale(String base, String stripeLocale) {
+        return stripeLocale == null ? base : withParam(base, "locale", stripeLocale);
+    }
+
+    /** Append {@code key=value}, extending an existing query string rather than starting a new one. */
+    private static String withParam(String base, String key, String value) {
+        if (base == null) return null;
+        return base + (base.indexOf('?') >= 0 ? '&' : '?') + key + '=' + value;
+    }
+
+    /**
+     * Map a Minecraft client language to Stripe's {@code locale} tag, or null when Stripe has no
+     * matching language (caller then omits the parameter and Stripe falls back to the browser).
+     *
+     * <p><b>Do not route this through {@link LanguageFamily}.</b> That collapses {@code zh_tw} into
+     * {@code zh}, which would hand Traditional-Chinese readers a Simplified checkout — the exact
+     * distinction Stripe draws between {@code zh} and {@code zh-TW}. Region matters here in a way
+     * it deliberately doesn't for the book-language filter.</p>
+     */
+    static String stripeLocale(String mcLocale) {
+        if (mcLocale == null) return null;
+        String clean = mcLocale.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_]", "");
+        if (clean.isEmpty()) return null;
+        String exact = REGIONAL_LOCALES.get(clean);
+        if (exact != null) return exact;
+        int us = clean.indexOf('_');
+        String prefix = us > 0 ? clean.substring(0, us) : clean;
+        return STRIPE_LOCALES.contains(prefix) ? prefix : null;
     }
 
     /** Strip {@code playerName} to the characters Stripe accepts, capped at {@value #MAX_CLIENT_REF}. */
