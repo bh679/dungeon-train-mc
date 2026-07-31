@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.narrative.DeathNotePool;
 import games.brennan.dungeontrain.narrative.DeathNoteSpawnMessage;
@@ -98,7 +99,14 @@ public final class DeathNoteRefreshEvents {
         UUID targetUuid = player.getUUID();
         if (!DeathNotePool.hasAny(targetUuid)) return;
         ServerLevel level = player.serverLevel();
+        // Provenance match: a curse spawns only for a target whose Free Play state matches the
+        // author's at signing — Free Play curses haunt only Free Play runs, legit only legit. Dev
+        // builds bypass the match (spawn everything) for testing. A mismatched note is left in the
+        // pool (not removed / marked used) so it can still fire on a later matching life.
+        boolean targetFreePlay = RunIntegrity.isCheated(player);
+        boolean enforce = !DungeonTrain.isDevBuild();
         for (DeathNotePool.Note note : DeathNotePool.notesReached(targetUuid, cur, ARRIVAL_LEAD)) {
+            if (enforce && note.freePlay() != targetFreePlay) continue; // provenance mismatch — wait for a matching life
             boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
                     note.authorUuid(), note.authorName(), note.deathCarriage());
             if (!ok) continue;                                       // not on a carriage yet — retry next scan

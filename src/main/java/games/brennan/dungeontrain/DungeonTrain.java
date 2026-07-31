@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.compat.TradeEverythingBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
+import games.brennan.dungeontrain.compat.FreePlayBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -419,6 +420,18 @@ public class DungeonTrain {
             } catch (Throwable t) {
                 LOGGER.warn("PlayerMob present but echo-spawn seam unavailable ({}); "
                         + "remote-echo encounter stories disabled.", t.toString());
+            }
+            // Free Play provenance: tag each captured life with the dier's Free Play state and, at
+            // spawn, reincarnate a life only for a player whose Free Play state matches — so Free
+            // Play ("creative") echoes stay quarantined to Free Play runs and legit to legit (dev
+            // builds see all). Rides PlayerMob's FreePlayQuery seam. Independent try so a build
+            // predating the seam degrades to "no matching (every echo spawns)" rather than
+            // disabling the bridges above.
+            try {
+                FreePlayBridge.install();
+            } catch (Throwable t) {
+                LOGGER.warn("PlayerMob present but Free Play seam unavailable ({}); "
+                        + "reincarnation echoes will not be provenance-matched.", t.toString());
             }
         }
 

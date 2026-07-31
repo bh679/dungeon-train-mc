@@ -46,7 +46,7 @@ public final class DeathNotePool {
 
     /** One downloaded, not-yet-spawned curse targeting the local player. */
     public record Note(int id, String authorUuid, String authorName, String authorSkinRef,
-                       int deathCarriage, String worldKey) {}
+                       int deathCarriage, String worldKey, boolean freePlay) {}
 
     /** targetPlayerUuid → their current immutable snapshot of unspawned notes. */
     private static final Map<UUID, List<Note>> NOTES = new ConcurrentHashMap<>();
@@ -159,7 +159,7 @@ public final class DeathNotePool {
             int id = o.get("id").getAsInt();
             int carriage = o.get("deathCarriage").getAsInt();
             return new Note(id, str(o, "authorUuid"), str(o, "authorName"), str(o, "authorSkinRef"),
-                    carriage, str(o, "worldKey"));
+                    carriage, str(o, "worldKey"), bool(o, "freePlay"));
         } catch (RuntimeException e) {
             return null;
         }
@@ -167,6 +167,11 @@ public final class DeathNotePool {
 
     private static String str(JsonObject o, String k) {
         return o.has(k) && !o.get(k).isJsonNull() ? o.get(k).getAsString() : "";
+    }
+
+    /** {@code k}'s boolean, or {@code false} if absent/null (older relay omits the field → legit). */
+    private static boolean bool(JsonObject o, String k) {
+        return o.has(k) && !o.get(k).isJsonNull() && o.get(k).getAsBoolean();
     }
 
     private static String enc(String s) {

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -52,6 +53,12 @@ public final class DeathNoteEvents {
                 PendingDeathNotes.get(level).takeForAuthor(player.getUUID());
         if (pending.isEmpty()) return;
 
+        // Tag the curse with the author's Free Play (cheated / sandbox) state at death. The curse is
+        // still uploaded either way; the receive side (DeathNoteRefreshEvents.spawnArrivedEchoes)
+        // spawns it only for a target whose Free Play state matches — so a Free Play curse haunts
+        // only Free Play runs and a legit curse only legit runs.
+        boolean freePlay = RunIntegrity.isCheated(player);
+
         boolean canSync = DeathNoteGate.canSync(player);
         Integer deathCarriage = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
         String worldKey = String.valueOf(DungeonTrainWorldData.get(level).getGenerationSeed());
@@ -72,7 +79,7 @@ public final class DeathNoteEvents {
             // orphaned; the relay is pulled by the target in their next world (login + arrival scan).
             // worldKey is still sent (the relay requires it) but is no longer used to scope the pull.
             DeathNoteReporter.submit(player.getUUID(), note.authorName(), note.targetName(),
-                    note.targetUuid(), deathCarriage, worldKey, "");
+                    note.targetUuid(), deathCarriage, worldKey, "", freePlay);
         }
     }
 
