@@ -172,9 +172,10 @@ lang commits). Judgment calls baked into that backfill:
   ships Claude's 力所能及 idiom fix "pending translator confirmation" (PR #823's own
   words), so it stays **unreviewed** until the translator confirms — at which point:
   `stamp-provenance.py --locale zh_cn --locale zh_tw --reviewer 阿世xAsh --keys gui.dungeontrain.support.subtitle`
-- **The 3 `.modpack` sibling keys** (zh_cn + zh_tw) are Claude-derived variants
-  (模组→整合包) of 阿世xAsh's revised copy that the translator never saw: credited
-  `Opus 4.8 (Claude)`, unreviewed.
+- **The 3 `.modpack` sibling keys** were Claude-derived variants (模组→整合包) of
+  阿世xAsh's revised copy that the translator never saw: credited `Opus 4.8 (Claude)`,
+  unreviewed. Still true for **zh_tw**; for **zh_cn** they were rewritten from scratch in
+  老本願's v0.516.0 pass and are now `老本願 / 老本願`.
 
 ### Sibling namespaces + narrative books (July 2026)
 
