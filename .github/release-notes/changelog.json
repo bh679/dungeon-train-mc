@@ -5849,6 +5849,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "china-alipay-wechat",
+      "version": "0.519.0",
+      "type": "feat",
+      "title": "Alipay and WeChat Pay for players in China",
+      "summary": "Chinese players had no working way to chip in: Patreon is blocked in mainland China, and the direct-donation link needs an overseas card. If your game is set to Chinese, the Ways to Help page and the death-screen Contribute window now offer Alipay and WeChat Pay instead of Patreon, and the payment page opens in your own language.",
+      "highlights": [
+        "Alipay / WeChat Pay on the Ways to Help page and the death-screen Contribute window, for clients set to Chinese",
+        "The payment page opens in your language instead of guessing from your browser",
+        "Your name travels with the donation, so contributions can show on the in-game supporter list",
+        "The Patreon shortcut is hidden on those clients rather than leading somewhere unreachable"
+      ],
+      "date": "2026-07-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
