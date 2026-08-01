@@ -137,6 +137,18 @@ public final class SharedCarriageRegistry {
         /** Mark this carriage as culling — stops further enqueue + flusher POSTs (belt for the cull hook). */
         public void markCulled() { this.culled = true; }
 
+        /**
+         * Set once this carriage's lease has been reported to the relay together with a real host uuid.
+         * A lease claimed during world-load spawn predates any player joining the level, so it reaches
+         * the relay unattributed; without a one-shot follow-up the admin view would say "unknown holder"
+         * until the 5-minute idle heartbeat — which most carriages never reach, being culled first.
+         */
+        private volatile boolean attributed;
+
+        public boolean isAttributed() { return attributed; }
+
+        public void markAttributed() { this.attributed = true; }
+
         public boolean needsRebaseline() { return rebaseline; }
         /** Ask the flusher to re-baseline (full save) — the relay's delta log is near/at full. */
         public void markRebaseline() { this.rebaseline = true; }

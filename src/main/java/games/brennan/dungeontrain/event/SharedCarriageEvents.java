@@ -113,6 +113,14 @@ public final class SharedCarriageEvents {
             else submitFresh(inst);                      // never uploaded → one-time full submit
             return;
         }
+        // One-shot attribution: a lease claimed during world-load spawn reached the relay with no uuid
+        // (no player had joined the level yet), so send one heartbeat as soon as a host is known. Waiting
+        // for the 5-minute idle heartbeat is far too late — most carriages are culled long before it.
+        if (inst.isOnRelay() && !inst.isAttributed() && !SharedCarriagePool.hostUuid().isEmpty()) {
+            inst.markAttributed();
+            heartbeatLeased(inst);
+            return;
+        }
         if (inst.isOnRelay() && System.currentTimeMillis() - inst.lastContactMs() > HEARTBEAT_INTERVAL_MS) {
             heartbeatLeased(inst);                        // idle leased → keep the lock alive
         }
