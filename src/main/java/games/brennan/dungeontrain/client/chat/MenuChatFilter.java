@@ -45,9 +45,17 @@ public final class MenuChatFilter {
 
     private MenuChatFilter() {}
 
-    /** A real Discord-side person — not the bot, not a webhook echo of the player. */
+    /**
+     * A real Discord-side person — not the bot, not a webhook echo of the player.
+     *
+     * <p>{@code devAuthored} overrides the bot flag rather than sitting beside it: a reply the dev
+     * sends from the web dashboard is posted by the bot account, so Discord reports it as a bot post
+     * even though a person wrote it. Only the relay can tell the two apart (it sent one of them), and
+     * it says so on the message. Without this the player would be shown the reply live, then find it
+     * missing from their own backscroll the next time they looked.</p>
+     */
     public static boolean isHuman(ChatHistory.Message m) {
-        return m != null && !m.isBot() && !m.isWebhook();
+        return m != null && (m.devAuthored() || (!m.isBot() && !m.isWebhook()));
     }
 
     /** Whether anyone (dev / community) has ever written in this thread — the panel-visibility gate. */
@@ -144,8 +152,8 @@ public final class MenuChatFilter {
      * difficulty/death/leave report from a genuine survey answer (which carries a question title).</p>
      */
     public static boolean isAutomatedReport(ChatHistory.Message m) {
-        if (m == null) {
-            return false;
+        if (m == null || m.devAuthored()) {
+            return false; // the relay says a person wrote this one, whatever Discord calls the author
         }
         if (m.isBot() && !m.isWebhook()) {
             return true; // DP bot: advancement embeds + "Carriage +N · Difficulty Level M" lines

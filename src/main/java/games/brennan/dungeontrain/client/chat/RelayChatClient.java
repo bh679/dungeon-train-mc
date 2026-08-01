@@ -279,7 +279,8 @@ public final class RelayChatClient {
                 // history rows carry "timestamp"; relay inbox rows (inbox.js toPublic) use "ts"
                 optString(o, "timestamp") != null ? optString(o, "timestamp") : optString(o, "ts"),
                 optBool(o, "seen"),
-                optBool(o, "delivered"));
+                optBool(o, "delivered"),
+                optBool(o, "devAuthored"));
     }
 
     private static List<ChatHistory.Embed> parseEmbeds(JsonObject o) {
