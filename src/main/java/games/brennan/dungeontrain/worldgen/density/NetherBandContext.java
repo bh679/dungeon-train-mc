@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen.density;
 
+import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.world.level.biome.BiomeSource;
 
@@ -32,11 +33,16 @@ import net.minecraft.world.level.biome.BiomeSource;
  *                       makes the vanilla Nether decoration's biome filter pass
  * @param endCoreBiomes  samples the real End biome (all five, swept across End-band passes) for End-core
  *                       columns the way the End itself does — see {@link EndCoreBiomes}
+ * @param endIslands     the real End's terrain density translated onto track level — where the End band's
+ *                       islands are. Lets {@code BandEndCityStructure} site End cities on the islands
+ *                       during structure-start creation, off the worldgen thread pool, without touching
+ *                       the server. {@code null} when the world has no End dimension (⇒ no cities).
  */
 public record NetherBandContext(boolean enabled, long generationSeed, int seaLevel, int worldCeiling,
                                 int netherTop, int baseRelief, WorldGenCycle cycle,
                                 BiomeSource overworldBiomeSource, NetherBandBiomeSet highlandBiomes,
-                                NetherCoreBiomes netherCoreBiomes, EndCoreBiomes endCoreBiomes) {
+                                NetherCoreBiomes netherCoreBiomes, EndCoreBiomes endCoreBiomes,
+                                EndIslandGeometry.Source endIslands) {
 
     private static volatile NetherBandContext current;
 

@@ -4,8 +4,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -19,7 +19,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
@@ -37,28 +36,20 @@ import java.util.Set;
  * by {@code WorldDisintegrationEvents} on chunk load (which preserves end stone +
  * chorus), so trees that spill in from neighbouring chunks are cleaned up too.
  *
- * <p>Island shape comes from {@code endLevel.getChunkSource().randomState().router()
- * .finalDensity()} — the actual {@code minecraft:end} terrain density (2D island
- * function + {@code BASE_3D_NOISE_END} 3D noise + the End vertical slide). We sample
- * it in the outer End (offset on X past the inner void ring) so we get authentic
- * scattered islands, and translate the End's island Y band onto track level. End
- * blocks are stamped with raw section writes; chorus uses the normal worldgen path.</p>
+ * <p>Island shape comes from {@link EndIslandGeometry} — the real {@code minecraft:end}
+ * terrain density, sampled in the outer End and translated onto track level. The same
+ * geometry sites {@link games.brennan.dungeontrain.worldgen.structure.BandEndCityStructure}'s
+ * End cities, so the cities always stand on the islands this feature stamps. End blocks
+ * are stamped with raw section writes; chorus uses the normal worldgen path.</p>
+ *
+ * <p>End cities are placed earlier in generation (the {@code surface_structures} step), so
+ * this feature must not bury them: in the eroded core — where the chunk is otherwise empty —
+ * it stamps only into open air, leaving city blocks standing and still filling the island
+ * around and beneath them.</p>
  */
 public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    /** X offset into the outer End (past the ~1024-block inner void ring) so we sample real scattered islands. */
-    private static final int ISLAND_SAMPLE_OFFSET_X = 16_000;
-    /** End-space Y that maps onto the track's bed Y (the End's islands cluster around here). */
-    private static final int END_ISLAND_CENTER_Y = 56;
-    /**
-     * End-space Y range to sample — the whole slid End island band. We translate the entire band
-     * onto track level rather than clipping it to a fixed window, so islands keep their full natural
-     * taper (a fixed window sliced taller islands flat, reading as "huge chunks missing").
-     */
-    private static final int END_Y_SAMPLE_MIN = 8;
-    private static final int END_Y_SAMPLE_MAX = 120;
 
     /** Air pocket (blocks) cleared above an island top so a chorus plant can grow there. */
     private static final int CHORUS_POCKET = 10;
@@ -99,23 +90,16 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             int chunkMinX = cp.getMinBlockX();
             if (chunkMinX + 15 < startX) return false; // before the first band (or disabled)
 
-            // Real End terrain density (2D islands + BASE_3D_NOISE_END + End slide) and the End's
-            // noise-cell size, so we can trilinearly interpolate exactly like the End's NoiseChunk.
             ServerLevel end = server.getLevel(Level.END);
             if (end == null) return false;
-            DensityFunction endDensity = end.getChunkSource().randomState().router().finalDensity();
-            int cellW = 8;
-            int cellH = 4;
-            if (end.getChunkSource().getGenerator() instanceof net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator nbg) {
-                net.minecraft.world.level.levelgen.NoiseSettings ns = nbg.generatorSettings().value().noiseSettings();
-                cellW = ns.getCellWidth();
-                cellH = ns.getCellHeight();
-            }
 
             DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
             CarriageDims dims = data.dims();
             TrackGeometry g = TrackGeometry.from(dims, data.getTrainY());
             int bedY = g.bedY();
+            // Real End terrain density, translated onto track level — shared with the End-city structure.
+            EndIslandGeometry.Source islandSource = EndIslandGeometry.Source.resolve(server, bedY);
+            if (islandSource == null) return false;
             double[] endRamp = new double[16];
             boolean anyEnd = false;
             for (int dx = 0; dx < 16; dx++) {
@@ -133,68 +117,42 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             java.util.Arrays.fill(islandTop, Integer.MIN_VALUE);
             boolean changed = false;
 
-            // Stamp real-End-shaped islands. For each column we sample the End density at the
-            // noise-cell corners (cellW × cellH grid, world-anchored — same as the End's NoiseChunk)
-            // and trilinearly interpolate per block, so island edges taper exactly like the real End.
-            int yLo = Math.max(minY, bedY + (END_Y_SAMPLE_MIN - END_ISLAND_CENTER_Y));
-            int yHi = Math.min(maxY, bedY + (END_Y_SAMPLE_MAX - END_ISLAND_CENTER_Y));
-            int endYLo = END_ISLAND_CENTER_Y + (yLo - bedY);
-            int cellRowBase = Math.floorDiv(endYLo, cellH);
-            int rows = Math.floorDiv(END_ISLAND_CENTER_Y + (yHi - bedY), cellH) - cellRowBase + 2;
-            // Per-chunk memo of End-density corner columns, keyed by (cornerX, cornerZ). The four
-            // cell corners a column trilinearly interpolates between are shared across every block in
-            // that 8×8 cell — so without this, each of the up-to-256 columns re-walks the entire End
-            // density tree at its corners (~30k uncached SinglePointContext evals/chunk). Memoising
-            // collapses that to one column per distinct corner (a few hundred evals) with
-            // byte-identical output, since the corner density is deterministic per (x, y, z).
-            java.util.Map<Long, double[]> cornerColumns = new java.util.HashMap<>();
+            // Stamp real-End-shaped islands. EndIslandGeometry samples the End density at the noise-cell
+            // corners (world-anchored, memoised per chunk) and trilinearly interpolates per block, so
+            // island edges taper exactly like the real End — and so the End-city structure, which sites
+            // itself off the same geometry, always lands on solid island.
+            //
+            // Islands are stamped across the whole band, INCLUDING the track lane, so the track feature
+            // (which runs AFTER this one — see track_bed_overworld.json) can tunnel/pillar through them.
+            EndIslandGeometry geometry = islandSource.open(minY, maxY);
+            // In the fully-eroded core the chunk generates empty (the noise fill is short-circuited and
+            // vanilla decoration is skipped — see NoiseBasedChunkGeneratorMixin / ChunkGeneratorDecorationMixin),
+            // so anything already in it is an End city placed at the earlier surface_structures step.
+            // Stamp around it rather than through it. Outside the core there are no cities, and real
+            // terrain is still present, so the stamp keeps overwriting as before.
+            boolean protectExisting = DisintegrationBand.isChunkFullyEroded(overworld, chunkMinX);
 
             for (int dx = 0; dx < 16; dx++) {
                 double e = endRamp[dx];
                 if (e <= 0.0) continue;
-                int sampleX = chunkMinX + dx + ISLAND_SAMPLE_OFFSET_X;
-                int x0 = Math.floorDiv(sampleX, cellW) * cellW;
-                int x1 = x0 + cellW;
-                double fx = (double) (sampleX - x0) / cellW;
-                double threshold = Disintegration.islandDensityThreshold(e);
+                int worldX = chunkMinX + dx;
                 for (int dz = 0; dz < 16; dz++) {
                     int worldZ = chunkMinZ + dz;
-                    // Islands are stamped across the whole band, INCLUDING the track lane, so the
-                    // track feature (which now runs AFTER this one — see track_bed_overworld.json)
-                    // can tunnel/pillar through them. The bed/rail + envelope carve clears the lane.
-                    //
-                    // Every column is evaluated against the real (world-seeded) 3D End density — do NOT
-                    // reintroduce a 2D `DensityFunctions.endIslands` prefilter here. A fixed-seed-0 2D
-                    // prefilter samples a different island layout than this world-seeded density and
-                    // rejected whole chunks the 3D density actually fills, leaving clean, chunk-aligned,
-                    // seed-independent holes in the islands. The per-chunk corner memo below keeps the
-                    // full-resolution sampling cheap, so no prefilter is needed.
-                    int z0 = Math.floorDiv(worldZ, cellW) * cellW;
-                    int z1 = z0 + cellW;
-                    double fz = (double) (worldZ - z0) / cellW;
-
-                    // Four shared corner columns of End density spanning the island band, computed
-                    // once per distinct corner and memoised (see cornerColumns above).
-                    double[] col00 = cornerColumn(endDensity, x0, z0, cellRowBase, rows, cellH, cornerColumns);
-                    double[] col10 = cornerColumn(endDensity, x1, z0, cellRowBase, rows, cellH, cornerColumns);
-                    double[] col01 = cornerColumn(endDensity, x0, z1, cellRowBase, rows, cellH, cornerColumns);
-                    double[] col11 = cornerColumn(endDensity, x1, z1, cellRowBase, rows, cellH, cornerColumns);
-
-                    int top = Integer.MIN_VALUE;
-                    for (int myY = yLo; myY <= yHi; myY++) {
-                        int endY = END_ISLAND_CENTER_Y + (myY - bedY);
-                        if (endY < 0 || endY > 127) continue;
-                        int r = Math.floorDiv(endY, cellH) - cellRowBase;
-                        double fy = (double) (endY - (cellRowBase + r) * cellH) / cellH;
-                        double bot = bilerp(col00[r], col10[r], col01[r], col11[r], fx, fz);
-                        double topD = bilerp(col00[r + 1], col10[r + 1], col01[r + 1], col11[r + 1], fx, fz);
-                        double d = bot + (topD - bot) * fy;
-                        if (d <= threshold) continue;
-                        setRaw(chunk, dx, myY, dz, Blocks.END_STONE.defaultBlockState());
-                        top = myY;
-                        changed = true;
-                    }
-                    if (top != Integer.MIN_VALUE) islandTop[dx * 16 + dz] = top;
+                    int[] top = {Integer.MIN_VALUE};
+                    boolean[] wrote = {false};
+                    final int fdx = dx;
+                    final int fdz = dz;
+                    geometry.forEachSolidY(worldX, worldZ, e, y -> {
+                        if (protectExisting && isOccupied(chunk, fdx, y, fdz)) {
+                            top[0] = y; // the city's own floor is still island surface for chorus purposes
+                            return;
+                        }
+                        setRaw(chunk, fdx, y, fdz, Blocks.END_STONE.defaultBlockState());
+                        top[0] = y;
+                        wrote[0] = true;
+                    });
+                    if (wrote[0]) changed = true;
+                    if (top[0] != Integer.MIN_VALUE) islandTop[dx * 16 + dz] = top[0];
                 }
             }
 
@@ -217,9 +175,9 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
                 if (endRamp[dx] <= 0.0) continue;
                 int top = islandTop[dx * 16 + dz];
                 if (top == Integer.MIN_VALUE || top + 1 > maxY) continue;
-                int sampleX = chunkMinX + dx + ISLAND_SAMPLE_OFFSET_X;
+                int sampleX = chunkMinX + dx + EndIslandGeometry.ISLAND_SAMPLE_OFFSET_X;
                 int worldZ = chunkMinZ + dz;
-                int endY = END_ISLAND_CENTER_Y + (top - bedY);
+                int endY = EndIslandGeometry.END_ISLAND_CENTER_Y + (top - bedY);
                 net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> biome = endBiomes.getNoiseBiome(
                         net.minecraft.core.QuartPos.fromBlock(sampleX),
                         net.minecraft.core.QuartPos.fromBlock(endY),
@@ -240,31 +198,13 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
         }
     }
 
-    /**
-     * End-density column at a single noise-cell corner {@code (cornerX, cornerZ)}, sampled at each
-     * cell-Y boundary {@code (cellRowBase + r) · cellH} for {@code r ∈ [0, rows)}. Memoised in
-     * {@code cache} (keyed by the packed corner XZ) so the corners shared by neighbouring island
-     * columns are walked through the End density tree only once per chunk.
-     */
-    private static double[] cornerColumn(DensityFunction endDensity, int cornerX, int cornerZ,
-                                         int cellRowBase, int rows, int cellH, java.util.Map<Long, double[]> cache) {
-        long key = (((long) cornerX) << 32) | (cornerZ & 0xFFFFFFFFL);
-        double[] col = cache.get(key);
-        if (col != null) return col;
-        col = new double[rows];
-        for (int r = 0; r < rows; r++) {
-            int by = (cellRowBase + r) * cellH;
-            col[r] = endDensity.compute(new DensityFunction.SinglePointContext(cornerX, by, cornerZ));
-        }
-        cache.put(key, col);
-        return col;
-    }
-
-    /** Bilinear blend of the four XZ cell corners (d at x0z0, x1z0, x0z1, x1z1). */
-    private static double bilerp(double x0z0, double x1z0, double x0z1, double x1z1, double fx, double fz) {
-        double z0 = x0z0 + (x1z0 - x0z0) * fx;
-        double z1 = x0z1 + (x1z1 - x0z1) * fx;
-        return z0 + (z1 - z0) * fz;
+    /** True if this chunk position already holds a block (an End city's, in the eroded core). */
+    private static boolean isOccupied(ChunkAccess chunk, int dx, int y, int dz) {
+        int sIdx = chunk.getSectionIndex(y);
+        if (sIdx < 0 || sIdx >= chunk.getSectionsCount()) return false;
+        LevelChunkSection section = chunk.getSection(sIdx);
+        int ly = y - SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
+        return !section.getBlockState(dx, ly, dz).isAir();
     }
 
     /** Raw block stamp into the section owning {@code y} (no level-side hooks; heightmaps re-primed after). */

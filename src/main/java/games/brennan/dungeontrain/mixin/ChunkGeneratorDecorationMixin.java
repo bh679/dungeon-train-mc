@@ -4,7 +4,9 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
+import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
@@ -14,7 +16,11 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
+import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructureStart;
 import org.slf4j.Logger;
+
+import java.util.List;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -33,8 +39,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * <p>The DT features {@code track_bed} + {@code disintegration} run in the <b>same</b> monolithic
  * {@link ChunkGenerator#applyBiomeDecoration} (both at {@code top_layer_modification}), so there is
  * no datapack seam to keep only them — instead we redirect the per-feature / per-structure placement
- * calls and, in a fully-eroded overworld chunk, run only the two DT features and no structures. The
- * floating track + End islands + chorus survive; nothing else generates.</p>
+ * calls and, in a fully-eroded overworld chunk, run only the DT features and the DT End-city structure.
+ * The floating track + End islands + chorus + End cities survive; nothing else generates.</p>
  *
  * <p>Determinism is preserved: {@code applyBiomeDecoration} reseeds the {@code WorldgenRandom}
  * before every feature / structure placement, so skipping a call does not desync later ones. Any
@@ -73,20 +79,34 @@ public abstract class ChunkGeneratorDecorationMixin {
     }
 
     /**
-     * Skip ALL structure piece placement in the eroded core. The {@code start.placeInChunk(...)}
-     * call sits inside a {@code forEach} lambda (not bindable from this method by name), so instead
-     * we redirect the {@code shouldGenerateStructures()} guard the structure block is gated on —
-     * returning false in a fully-eroded chunk skips the whole structure loop, every step.
+     * Skip vanilla structure piece placement in the eroded core — pointless in the void, and it would be
+     * erased by the erosion pass anyway. The band's own End cities are the exception: they are the point
+     * of the floating End islands, so their pieces are let through.
+     *
+     * <p>Redirecting the per-structure {@code startsForStructure} lookup (rather than the
+     * {@code shouldGenerateStructures()} guard around the whole loop) is what makes that distinction
+     * possible: an empty start list places nothing, exactly as before, for every other structure.</p>
      */
     @Redirect(
         method = "applyBiomeDecoration",
         at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/world/level/StructureManager;shouldGenerateStructures()Z"))
-    private boolean dungeontrain$skipStructures(StructureManager structureManager) {
-        if (dungeontrain$skipDecoration.get()) {
-            return false; // fully-eroded core: no structures (pointless in the void / floating End)
+            target = "Lnet/minecraft/world/level/StructureManager;startsForStructure(Lnet/minecraft/core/SectionPos;Lnet/minecraft/world/level/levelgen/structure/Structure;)Ljava/util/List;"))
+    private List<StructureStart> dungeontrain$filterStructure(StructureManager structureManager,
+                                                              SectionPos sectionPos, Structure structure) {
+        if (dungeontrain$skipDecoration.get() && !dungeontrain$isDtStructure(structure)) {
+            return List.of();
         }
-        return structureManager.shouldGenerateStructures();
+        return structureManager.startsForStructure(sectionPos, structure);
+    }
+
+    /** The band's End city is the only structure kept in the eroded core. */
+    @Unique
+    private static boolean dungeontrain$isDtStructure(Structure structure) {
+        try {
+            return structure.type() == ModStructureTypes.END_CITY.get();
+        } catch (Throwable t) {
+            return false; // unclassifiable → treat as vanilla (the pre-existing behaviour: skip it)
+        }
     }
 
     /**
