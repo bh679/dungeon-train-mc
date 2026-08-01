@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.discord.DevMessageReport;
+import games.brennan.dungeontrain.discord.DevMessageStateReporter;
 import games.brennan.dungeontrain.net.ConsentUpdatePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.ChatFormatting;
@@ -204,6 +205,10 @@ public final class DevMessageConsent {
             if (isValid(player.getUUID())) {
                 player.sendSystemMessage(deliveredLine(content));
                 AchievementEvents.notifyCreatorAnswered(player);
+                // The silent path: consent was already valid, so nothing is posted to Discord and the
+                // relay would otherwise still be showing "waiting on the title screen" for a message
+                // the player has already read.
+                DevMessageStateReporter.report(player, DevMessageStateReporter.DELIVERED_IN_GAME);
             } else {
                 holdAndPrompt(player, content);
             }
@@ -219,6 +224,7 @@ public final class DevMessageConsent {
                     Component.translatable(DEV_TAG_KEY))
                 .withStyle(ChatFormatting.YELLOW));
             DevMessageReport.postConsentRequested(player);
+            DevMessageStateReporter.report(player, DevMessageStateReporter.CONSENT_REQUESTED);
         }
     }
 
@@ -253,6 +259,7 @@ public final class DevMessageConsent {
             DELIVERIES.add(new PendingDelivery(dueTick, player.getUUID(), List.copyOf(queue)));
         }
         DevMessageReport.postConsentAccepted(player);
+        DevMessageStateReporter.report(player, DevMessageStateReporter.CONSENT_ACCEPTED);
         DungeonTrainNet.sendTo(player, new ConsentUpdatePacket(true, sessionId, (double) now));
     }
 
