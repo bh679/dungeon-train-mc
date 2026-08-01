@@ -88,17 +88,6 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setBandEarlyOuts(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setBandEarlyOuts(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> bandEarlyOutsStatus(ctx.getSource()))))
-            // TEMP Gate-2 — REVERT before merge. /dungeontrain debug sharedwool <on|off|status> —
-            // re-skins relay-sourced carriages in wool so community builds are unmistakable while
-            // riding. Turn it OFF to confirm a build came back from the relay looking like itself.
-            .then(Commands.literal("sharedwool")
-                .then(Commands.literal("on").executes(ctx -> setSharedWool(ctx.getSource(), true)))
-                .then(Commands.literal("off").executes(ctx -> setSharedWool(ctx.getSource(), false)))
-                .then(Commands.literal("status").executes(ctx -> sharedWoolStatus(ctx.getSource()))))
-            // TEMP Gate-2 — REVERT before merge. /dungeontrain debug sharedmap — lists every shared
-            // carriage currently registered, by pIdx, saying which came from the relay and which id.
-            // Answers "where in this train are the community builds?" without reading the server log.
-            .then(Commands.literal("sharedmap").executes(ctx -> sharedMap(ctx.getSource())))
             .then(Commands.literal("pair")
                 .executes(ctx -> runPair(ctx.getSource(), 0.0))
                 .then(Commands.argument("velocity", DoubleArgumentType.doubleArg())
@@ -236,57 +225,6 @@ public final class DebugCommand {
                 ? "ON (optimised skip paths)"
                 : "OFF (pre-change baseline paths — A/B mode)")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), true);
-        return 1;
-    }
-
-    /** TEMP Gate-2 — REVERT before merge. */
-    private static int setSharedWool(CommandSourceStack source, boolean on) {
-        games.brennan.dungeontrain.train.TrainAssembler.setWoolMarker(on);
-        source.sendSuccess(() -> Component.literal(
-            "[DungeonTrain] Relay-carriage wool marker " + (on
-                ? "ON (relay builds re-skinned in wool; newly spawned carriages only)"
-                : "OFF (relay builds place as authored)")
-        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), true);
-        return 1;
-    }
-
-    /**
-     * TEMP Gate-2 — REVERT before merge. Print the shared-carriage map for the live train: one line per
-     * registered shared carriage, ordered by pIdx, marking relay-sourced ones with their relay id. Also
-     * reports the lease buffer + back-off so a train full of fresh templates can be attributed.
-     */
-    private static int sharedMap(CommandSourceStack source) {
-        java.util.List<games.brennan.dungeontrain.train.SharedCarriageRegistry.Instance> all =
-            new java.util.ArrayList<>(games.brennan.dungeontrain.train.SharedCarriageRegistry.all());
-        all.sort(java.util.Comparator.comparingInt(i -> i.pIdx));
-        if (all.isEmpty()) {
-            source.sendSuccess(() -> Component.literal(
-                "[DungeonTrain] No shared carriages registered.").withStyle(ChatFormatting.GOLD), false);
-            return 1;
-        }
-        long fromRelay = all.stream().filter(i -> i.leasedFromPool).count();
-        source.sendSuccess(() -> Component.literal(String.format(
-            "[DungeonTrain] %d shared carriage(s): %d from relay, %d fresh (buffer=%d, backedOff=%s)",
-            all.size(), fromRelay, all.size() - fromRelay,
-            games.brennan.dungeontrain.train.SharedCarriagePool.buffered(),
-            games.brennan.dungeontrain.train.SharedCarriagePool.isBackedOff()))
-            .withStyle(ChatFormatting.AQUA), false);
-        for (games.brennan.dungeontrain.train.SharedCarriageRegistry.Instance inst : all) {
-            String line = String.format("  pIdx=%-4d %s%s", inst.pIdx,
-                inst.leasedFromPool ? "RELAY id=" + inst.relayId() : "fresh",
-                inst.isOnRelay() && !inst.leasedFromPool ? " (uploaded id=" + inst.relayId() + ")" : "");
-            source.sendSuccess(() -> Component.literal(line)
-                .withStyle(inst.leasedFromPool ? ChatFormatting.GREEN : ChatFormatting.GRAY), false);
-        }
-        return 1;
-    }
-
-    /** TEMP Gate-2 — REVERT before merge. */
-    private static int sharedWoolStatus(CommandSourceStack source) {
-        boolean on = games.brennan.dungeontrain.train.TrainAssembler.isWoolMarker();
-        source.sendSuccess(() -> Component.literal(
-            "[DungeonTrain] Relay-carriage wool marker " + (on ? "ON" : "OFF")
-        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
         return 1;
     }
 

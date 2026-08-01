@@ -79,18 +79,10 @@ public final class TrainAssembler {
             logLeaseOutcome(carriagePIdx, "BUFFER_HIT", buffered);
             return buffered;
         }
-        // Captured BEFORE the attempt: leaseNowBlocking returns null both when the back-off suppressed
-        // the request and when the relay genuinely had nothing, and those mean very different things.
-        boolean backedOff = SharedCarriagePool.isBackedOff();
-        // TEMP Gate-2 test — REVERT before commit: "100% from relay unless relay is empty". When the
-        // async buffer is momentarily empty, block on a live lease so a template is used ONLY when the
-        // relay itself has nothing available (ship path drops this and relies on the buffer + poolChance).
-        SharedCarriageClient.PoolLease blocking = SharedCarriagePool.leaseNowBlocking(dims, stageId);
-        if (blocking != null) {
-            logLeaseOutcome(carriagePIdx, "BLOCKING_HIT", blocking);
-            return blocking;
-        }
-        logLeaseOutcome(carriagePIdx, backedOff ? "BACKOFF_SUPPRESSED" : "RELAY_EMPTY", null);
+        // Buffer miss → fresh template. The spawn path never blocks on HTTP: a lease that isn't already
+        // buffered isn't worth hitching the server thread for, and poolChance means some template
+        // variety is intended anyway.
+        logLeaseOutcome(carriagePIdx, SharedCarriagePool.isBackedOff() ? "BACKOFF_SUPPRESSED" : "BUFFER_EMPTY", null);
         return null;
     }
 
@@ -100,7 +92,7 @@ public final class TrainAssembler {
      * community carriages" can't be told apart from "the relay was never asked".
      */
     private static void logLeaseOutcome(int carriagePIdx, String outcome, SharedCarriageClient.PoolLease lease) {
-        LOGGER.info("[DungeonTrain] shared slot pIdx={} → {}{} (buffered={})",
+        LOGGER.debug("[DungeonTrain] shared slot pIdx={} → {}{} (buffered={})",
                 carriagePIdx, outcome, lease == null ? "" : " id=" + lease.id(), SharedCarriagePool.buffered());
     }
 
@@ -118,62 +110,16 @@ public final class TrainAssembler {
                 LOGGER.warn("[DungeonTrain] leased carriage id={} dims mismatch — falling back to fresh.", lease.id());
                 return null;
             }
-            if (woolMarker) snap = woolMark(snap, lease.id());
             int cellCount = snap.getList("cells", net.minecraft.nbt.Tag.TAG_COMPOUND).size();
             Set<BlockPos> placed = CarriageBlockSnapshot.place(level, carriageOrigin, snap);
-            LOGGER.info("[DungeonTrain] relay carriage id={} at {}: {} cells → {} blocks in world (baseSeq={} deltas={}{})",
+            LOGGER.debug("[DungeonTrain] relay carriage id={} at {}: {} cells → {} blocks in world (baseSeq={} deltas={})",
                     lease.id(), carriageOrigin, cellCount, placed == null ? "FAILED" : placed.size(),
-                    lease.baseSeq(), lease.deltas() == null ? 0 : lease.deltas().size(),
-                    woolMarker ? ", wool-marked" : "");
+                    lease.baseSeq(), lease.deltas() == null ? 0 : lease.deltas().size());
             return placed;
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Failed to place leased carriage id={}: {}", lease.id(), e.toString());
             return null;
         }
-    }
-
-    // ---- TEMP Gate-2 wool marker — REVERT before merge -------------------------------------------
-
-    /** Wool colours cycled per relay id so two community carriages next to each other stay distinct. */
-    private static final String[] WOOL_COLOURS = {
-        "yellow", "light_blue", "lime", "orange", "magenta", "pink", "white", "purple",
-    };
-
-    /**
-     * Whether relay-sourced carriages are re-skinned in wool. Toggled by {@code /dt debug sharedwool}.
-     * Default OFF: repainting hides what the build actually looks like, so the game and the relay's admin
-     * viewer disagree about the same carriage. Turn it on only to spot relay carriages at a glance.
-     */
-    private static volatile boolean woolMarker = false;
-
-    /** TEMP Gate-2 seam — REVERT before merge. */
-    public static void setWoolMarker(boolean on) {
-        woolMarker = on;
-    }
-
-    /** TEMP Gate-2 seam — REVERT before merge. */
-    public static boolean isWoolMarker() {
-        return woolMarker;
-    }
-
-    /**
-     * TEMP Gate-2 debug — REVERT before merge. Re-skin a leased snapshot's blocks to wool so relay-sourced
-     * carriages are unmistakable from across the train, whoever built them. Cells backing a block entity
-     * (chests, signs, lecterns) keep their real state so the contents round-trip stays verifiable, and
-     * geometry is untouched — only the material changes.
-     */
-    private static net.minecraft.nbt.CompoundTag woolMark(net.minecraft.nbt.CompoundTag snap, int relayId) {
-        String wool = "minecraft:" + WOOL_COLOURS[Math.floorMod(relayId, WOOL_COLOURS.length)] + "_wool";
-        net.minecraft.nbt.CompoundTag out = snap.copy();
-        net.minecraft.nbt.ListTag cells = out.getList("cells", net.minecraft.nbt.Tag.TAG_COMPOUND);
-        for (int i = 0; i < cells.size(); i++) {
-            net.minecraft.nbt.CompoundTag cell = cells.getCompound(i);
-            if (cell.contains("b", net.minecraft.nbt.Tag.TAG_COMPOUND)) continue; // keep block entities real
-            net.minecraft.nbt.CompoundTag state = new net.minecraft.nbt.CompoundTag();
-            state.putString("Name", wool);
-            cell.put("s", state);
-        }
-        return out;
     }
 
     /** Fold a lease's opaque delta log (seq &gt; baseSeq, ascending seq) onto its decoded base snapshot. */
@@ -203,6 +149,7 @@ public final class TrainAssembler {
         }
         return seed;
     }
+
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
     private TrainAssembler() {}
