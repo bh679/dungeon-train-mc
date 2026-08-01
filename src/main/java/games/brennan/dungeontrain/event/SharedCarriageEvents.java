@@ -98,7 +98,9 @@ public final class SharedCarriageEvents {
             if (id != null) exclude.add(id);
         }
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        SharedCarriagePool.refreshAsync(dims, hostUuid, exclude);
+        // Buffer for the stage the train is actually spawning into — a lease for another stage would sit
+        // unusable here while locking that carriage against every other world.
+        SharedCarriagePool.refreshAsync(dims, SharedCarriagePool.demandStage(), hostUuid, exclude);
     }
 
     /** One flusher pass for a carriage: re-baseline if asked, else upload a delta/first-submit, else heartbeat. */
@@ -145,7 +147,7 @@ public final class SharedCarriageEvents {
         String ownerUuid = contributor.getUUID().toString().replace("-", "");
         inst.setCallInFlight(true);
         long now = System.currentTimeMillis();
-        SharedCarriageClient.submit(ownerUuid, blob.base64(), inst.dims.length(), inst.dims.height(), inst.dims.width(), blob.text())
+        SharedCarriageClient.submit(ownerUuid, blob.base64(), inst.dims.length(), inst.dims.height(), inst.dims.width(), blob.text(), inst.stageId)
                 .whenComplete((result, err) -> {
                     try {
                         if (err == null && result != null && result.isPresent() && result.get().token() != null) {

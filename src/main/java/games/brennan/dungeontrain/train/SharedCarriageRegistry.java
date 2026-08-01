@@ -52,6 +52,12 @@ public final class SharedCarriageRegistry {
         public final String variantId;
         /** True once this carriage was leased from the relay pool (PR C); false for a fresh local build. */
         public final boolean leasedFromPool;
+        /**
+         * The worldgen stage this slot sits in, resolved from its gate context at spawn. Reported on
+         * submit so a build is pooled under the stage it was authored in; null when no stage covers the
+         * slot, which means the build can never be shared (the relay refuses a stageless carriage).
+         */
+        public final String stageId;
 
         /** Relay row id once this carriage exists on the relay (via submit or lease); null until then. */
         private volatile Integer relayId;
@@ -80,7 +86,7 @@ public final class SharedCarriageRegistry {
 
         Instance(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx, BlockPos shipyardOrigin,
                  CarriageDims dims, String variantId, boolean leasedFromPool,
-                 Integer relayId, String leaseToken, int seqSeed) {
+                 Integer relayId, String leaseToken, int seqSeed, String stageId) {
             this.level = level;
             this.subLevelId = subLevelId;
             this.trainId = trainId;
@@ -92,6 +98,7 @@ public final class SharedCarriageRegistry {
             this.relayId = relayId;
             this.leaseToken = leaseToken;
             this.seq = new AtomicInteger(Math.max(0, seqSeed));
+            this.stageId = stageId;
         }
 
         /** Whether shipyard-space (x,y,z) falls inside this carriage's footprint. */
@@ -174,12 +181,13 @@ public final class SharedCarriageRegistry {
      */
     public static Instance register(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx,
                                     BlockPos shipyardOrigin, CarriageDims dims, String variantId,
-                                    boolean leasedFromPool, Integer relayId, String leaseToken, int seqSeed) {
+                                    boolean leasedFromPool, Integer relayId, String leaseToken, int seqSeed,
+                                    String stageId) {
         Instance inst = new Instance(level, subLevelId, trainId, pIdx, shipyardOrigin, dims, variantId,
-                leasedFromPool, relayId, leaseToken, seqSeed);
+                leasedFromPool, relayId, leaseToken, seqSeed, stageId);
         BY_SUBLEVEL.computeIfAbsent(subLevelId, k -> new CopyOnWriteArrayList<>()).add(inst);
-        LOGGER.debug("[DungeonTrain] Registered shared carriage variant={} pIdx={} subLevel={} leased={}.",
-                variantId, pIdx, subLevelId, leasedFromPool);
+        LOGGER.debug("[DungeonTrain] Registered shared carriage variant={} pIdx={} subLevel={} leased={} stage={}.",
+                variantId, pIdx, subLevelId, leasedFromPool, stageId);
         return inst;
     }
 

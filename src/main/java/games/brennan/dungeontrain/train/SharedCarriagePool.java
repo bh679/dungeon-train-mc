@@ -24,8 +24,20 @@ public final class SharedCarriagePool {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** How many leases to keep buffered ahead of demand — bounds speculative locking. */
+    /**
+     * How many leases to keep buffered PER STAGE ahead of demand — bounds speculative locking.
+     *
+     * <p>Per-stage, because a buffered {@code desert} lease cannot fill a {@code stone} slot: it would sit
+     * there holding that carriage locked against every other world while being unusable here.</p>
+     */
     static final int TARGET_BUFFER = 10; // TEMP Gate-2 test crank (was 2) — REVERT before commit
+
+    /**
+     * Ceiling on buffered leases across ALL stages. With one queue per stage the per-stage target would
+     * otherwise multiply by the stage count (nine today), locking that many carriages the world may never
+     * place. A lease held here is invisible to every other world, so the cap is a fairness bound.
+     */
+    static final int MAX_TOTAL_BUFFERED = 12;
 
     /**
      * After a lease attempt finds nothing, wait this long before hitting the relay again.
@@ -39,7 +51,8 @@ public final class SharedCarriagePool {
      */
     private static final long EMPTY_BACKOFF_MS = 5_000L;
 
-    private static final Queue<PoolLease> BUFFER = new ConcurrentLinkedQueue<>();
+    /** Buffered leases keyed by the stage they were leased for; a lease is only usable in its own stage. */
+    private static final java.util.Map<String, Queue<PoolLease>> BUFFER = new java.util.concurrent.ConcurrentHashMap<>();
     private static volatile boolean fetchInFlight = false;
     /** Set when the pool had nothing to lease; suppresses refetches until then so we don't poll every tick. */
     private static volatile long backoffUntilMs = 0L;
@@ -49,12 +62,28 @@ public final class SharedCarriagePool {
      * view unable to say WHO has a carriage locked.
      */
     private static volatile String hostUuid = "";
+    /**
+     * The stage the spawn path most recently asked for. The prefetch tick has no way to know which stage
+     * the train is currently extending into, and buffering the wrong stage locks carriages this world
+     * cannot use — so the spawn path tells it.
+     */
+    private static volatile String demandStage = "";
 
     private SharedCarriagePool() {}
 
     /** Remember the world's host player uuid for leases taken outside the prefetch tick. */
     public static void setHostUuid(String uuid) {
         if (uuid != null && !uuid.isEmpty()) hostUuid = uuid;
+    }
+
+    /** Record which stage the spawn path is currently drawing from, so the prefetch buffers that one. */
+    public static void noteStageDemand(String stage) {
+        if (stage != null && !stage.isEmpty()) demandStage = stage;
+    }
+
+    /** The stage to prefetch for, or {@code ""} before any shared slot has spawned. */
+    public static String demandStage() {
+        return demandStage;
     }
 
     /**
@@ -70,8 +99,10 @@ public final class SharedCarriagePool {
      * caller then places a fresh local carriage instead). A dims-mismatched lease (shouldn't happen —
      * the relay filters by dims) is returned to the pool rather than placed.
      */
-    public static PoolLease poll(CarriageDims dims) {
-        PoolLease l = BUFFER.poll();
+    public static PoolLease poll(CarriageDims dims, String stage) {
+        if (stage == null || stage.isEmpty()) return null; // stageless slot → never draws from the pool
+        Queue<PoolLease> q = BUFFER.get(stage);
+        PoolLease l = q == null ? null : q.poll();
         if (l == null) return null;
         if (l.l() != dims.length() || l.h() != dims.height() || l.w() != dims.width()) {
             LOGGER.warn("[DungeonTrain] buffered lease id={} dims {}x{}x{} != requested {}x{}x{} — returning it unused.",
@@ -82,24 +113,35 @@ public final class SharedCarriagePool {
         return l;
     }
 
+    /** Total buffered leases across every stage — what {@link #MAX_TOTAL_BUFFERED} bounds. */
+    private static int totalBuffered() {
+        int n = 0;
+        for (Queue<PoolLease> q : BUFFER.values()) n += q.size();
+        return n;
+    }
+
     /**
-     * Top the buffer up to {@link #TARGET_BUFFER} by leasing one carriage off-thread (one in-flight at a
-     * time). {@code exclude} lists relay ids already resident/buffered so the relay never hands this world
-     * the same carriage twice.
+     * Top {@code stage}'s buffer up to {@link #TARGET_BUFFER} by leasing one carriage off-thread (one
+     * in-flight at a time, and never past {@link #MAX_TOTAL_BUFFERED} across all stages).
+     * {@code exclude} lists relay ids already resident/buffered so the relay never hands this world the
+     * same carriage twice.
      */
-    public static void refreshAsync(CarriageDims dims, String hostUuid, List<Integer> exclude) {
-        if (fetchInFlight || BUFFER.size() >= TARGET_BUFFER) return;
+    public static void refreshAsync(CarriageDims dims, String stage, String hostUuid, List<Integer> exclude) {
+        if (stage == null || stage.isEmpty()) return; // nothing to prefetch for a stageless slot
+        if (fetchInFlight || totalBuffered() >= MAX_TOTAL_BUFFERED) return;
+        Queue<PoolLease> q = BUFFER.computeIfAbsent(stage, k -> new ConcurrentLinkedQueue<>());
+        if (q.size() >= TARGET_BUFFER) return;
         if (System.currentTimeMillis() < backoffUntilMs) return; // pool was empty recently → don't hammer it
         fetchInFlight = true;
         try {
-            SharedCarriageClient.lease(hostUuid, dims.length(), dims.height(), dims.width(), exclude)
+            SharedCarriageClient.lease(hostUuid, dims.length(), dims.height(), dims.width(), exclude, stage)
                     .whenComplete((opt, err) -> {
                         try {
                             if (err == null && opt != null && opt.isPresent()) {
-                                BUFFER.offer(opt.get());
+                                q.offer(opt.get());
                                 backoffUntilMs = 0L; // got one → resume eager refills
-                                LOGGER.debug("[DungeonTrain] shared-carriage pool buffered lease id={} (buffer={}).",
-                                        opt.get().id(), BUFFER.size());
+                                LOGGER.debug("[DungeonTrain] shared-carriage pool buffered lease id={} stage={} (stage buffer={}, total={}).",
+                                        opt.get().id(), stage, q.size(), totalBuffered());
                             } else {
                                 // Nothing available (or a transient failure) → back off before retrying.
                                 backoffUntilMs = System.currentTimeMillis() + EMPTY_BACKOFF_MS;
@@ -121,14 +163,15 @@ public final class SharedCarriagePool {
      * HTTP — NOT for production; the ship path relies on the async prefetch buffer + a &lt;1.0 poolChance
      * (e.g. 0.95) so the 5% template variety is intentional, not a starvation artifact.
      */
-    public static PoolLease leaseNowBlocking(CarriageDims dims) {
+    public static PoolLease leaseNowBlocking(CarriageDims dims, String stage) {
+        if (stage == null || stage.isEmpty()) return null; // stageless slot → template, never the pool
         // Respect the shared empty-pool backoff: when the relay was just seen empty, don't fire a blocking
         // lease per spawning carriage (a whole-rake spawn would otherwise storm the relay + hitch the
         // server thread) — fall straight to template until the async prefetch re-confirms availability.
         if (System.currentTimeMillis() < backoffUntilMs) return null;
         try {
             java.util.Optional<PoolLease> opt = SharedCarriageClient
-                    .lease(hostUuid, dims.length(), dims.height(), dims.width(), java.util.Collections.emptyList())
+                    .lease(hostUuid, dims.length(), dims.height(), dims.width(), java.util.Collections.emptyList(), stage)
                     .get(2, java.util.concurrent.TimeUnit.SECONDS);
             if (opt != null && opt.isPresent()) {
                 PoolLease l = opt.get();
@@ -153,14 +196,18 @@ public final class SharedCarriagePool {
         if (l != null) SharedCarriageClient.returnLease(l.id(), l.token(), null, null, 0);
     }
 
-    /** Return every buffered-but-unplaced lease (world unload / server stop). */
+    /** Return every buffered-but-unplaced lease, across every stage (world unload / server stop). */
     public static void returnAllBuffered() {
-        PoolLease l;
-        while ((l = BUFFER.poll()) != null) returnLease(l);
+        for (Queue<PoolLease> q : BUFFER.values()) {
+            PoolLease l;
+            while ((l = q.poll()) != null) returnLease(l);
+        }
+        BUFFER.clear();
     }
 
+    /** Buffered leases across all stages. */
     public static int buffered() {
-        return BUFFER.size();
+        return totalBuffered();
     }
 
     /**

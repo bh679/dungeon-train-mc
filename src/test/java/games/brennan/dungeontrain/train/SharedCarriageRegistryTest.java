@@ -28,8 +28,8 @@ class SharedCarriageRegistryTest {
         UUID sub = UUID.randomUUID();
         UUID train = UUID.randomUUID();
         // Two carriages packed into one sub-level (grouped train): x-origins 0 and 9.
-        SharedCarriageRegistry.register(null, sub, train, 0, new BlockPos(0, 64, 0), DIMS, "shared", false, null, null, 0);
-        SharedCarriageRegistry.register(null, sub, train, 1, new BlockPos(9, 64, 0), DIMS, "shared", false, null, null, 0);
+        SharedCarriageRegistry.register(null, sub, train, 0, new BlockPos(0, 64, 0), DIMS, "shared", false, null, null, 0, "stone");
+        SharedCarriageRegistry.register(null, sub, train, 1, new BlockPos(9, 64, 0), DIMS, "shared", false, null, null, 0, "stone");
 
         assertTrue(SharedCarriageRegistry.hasSubLevel(sub));
         assertEquals(2, SharedCarriageRegistry.bySubLevel(sub).size());
@@ -47,7 +47,7 @@ class SharedCarriageRegistryTest {
     void removeDropsTheInstanceAndItsEmptySubLevel() {
         UUID sub = UUID.randomUUID();
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
-            null, sub, UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, null, null, 0);
+            null, sub, UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, null, null, 0, "stone");
         assertTrue(SharedCarriageRegistry.hasSubLevel(sub));
         SharedCarriageRegistry.remove(inst);
         assertFalse(SharedCarriageRegistry.hasSubLevel(sub));
@@ -56,7 +56,7 @@ class SharedCarriageRegistryTest {
     @Test
     void outboxEnqueueDrainAndReenqueue() {
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
-            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, null, null, 0);
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, null, null, 0, "stone");
         assertFalse(inst.hasPending());
         inst.enqueue(new BlockPos(1, 2, 3));
         inst.enqueue(new BlockPos(1, 2, 3)); // deduped by pos
@@ -76,7 +76,7 @@ class SharedCarriageRegistryTest {
     @Test
     void enqueueIsANoOpOnceCulled() {
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
-            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, null, null, 0);
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, null, null, 0, "stone");
         inst.markCulled();
         assertTrue(inst.isCulled());
         inst.enqueue(new BlockPos(1, 1, 1));
@@ -87,7 +87,7 @@ class SharedCarriageRegistryTest {
     void seqIsMonotonicAndSeededFromRelayIdentity() {
         // Fresh local build: seqSeed 0 → first delta seq is 1.
         SharedCarriageRegistry.Instance fresh = SharedCarriageRegistry.register(
-            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, null, null, 0);
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, null, null, 0, "stone");
         assertEquals(0, fresh.currentSeq());
         assertEquals(1, fresh.nextSeq());
         assertEquals(2, fresh.nextSeq());
@@ -95,7 +95,7 @@ class SharedCarriageRegistryTest {
 
         // Pooled lease seeded from max(baseSeq, delta seqs) = 7 → next delta clears the relay watermark.
         SharedCarriageRegistry.Instance pooled = SharedCarriageRegistry.register(
-            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", true, 42, "tok", 7);
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", true, 42, "tok", 7, "stone");
         assertEquals(7, pooled.currentSeq());
         assertEquals(8, pooled.nextSeq());
     }
@@ -103,7 +103,7 @@ class SharedCarriageRegistryTest {
     @Test
     void leaseAndRebaselineStateTransitions() {
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
-            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, null, null, 0);
+            null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0), DIMS, "shared", false, null, null, 0, "stone");
         assertFalse(inst.isOnRelay());
         inst.onRelayLease(5, "tok");
         assertTrue(inst.isOnRelay());

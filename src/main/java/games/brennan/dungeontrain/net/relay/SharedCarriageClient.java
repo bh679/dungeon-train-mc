@@ -67,13 +67,16 @@ public final class SharedCarriageClient {
     // ---- submit (upload a fresh build; auto-leased back to us) ----
 
     public static CompletableFuture<Optional<LeaseResult>> submit(String ownerUuid, String blocksBase64,
-                                                                  int l, int h, int w, String text) {
+                                                                  int l, int h, int w, String text, String stage) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
         body.addProperty("world", WORLD);
         body.addProperty("blocks", blocksBase64);
         body.add("dims", dims(l, h, w));
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
+        // The stage this build was authored in — the relay pools it there, and refuses to lease a
+        // carriage that has no stage at all.
+        if (stage != null && !stage.isEmpty()) body.addProperty("stage", stage);
         return post("/carriages/submit", body).thenApply(resp -> {
             JsonObject o = okJson(resp);
             if (o == null || !o.has("id")) return Optional.empty();
@@ -86,11 +89,13 @@ public final class SharedCarriageClient {
     // ---- lease (pull an existing pooled carriage; PR C) ----
 
     public static CompletableFuture<Optional<PoolLease>> lease(String holderUuid, int l, int h, int w,
-                                                               List<Integer> exclude) {
+                                                               List<Integer> exclude, String stage) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", holderUuid == null ? "" : holderUuid);
         body.addProperty("world", WORLD);
         body.add("dims", dims(l, h, w));
+        // Only carriages pooled under this stage are eligible; a slot with no stage never leases.
+        if (stage != null && !stage.isEmpty()) body.addProperty("stage", stage);
         if (exclude != null && !exclude.isEmpty()) {
             JsonArray arr = new JsonArray();
             for (Integer id : exclude) if (id != null) arr.add(id);
