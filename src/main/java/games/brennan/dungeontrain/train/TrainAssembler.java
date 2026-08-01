@@ -131,8 +131,12 @@ public final class TrainAssembler {
         "yellow", "light_blue", "lime", "orange", "magenta", "pink", "white", "purple",
     };
 
-    /** Whether relay-sourced carriages are re-skinned in wool. Toggled by {@code /dt debug sharedwool}. */
-    private static volatile boolean woolMarker = true;
+    /**
+     * Whether relay-sourced carriages are re-skinned in wool. Toggled by {@code /dt debug sharedwool}.
+     * Default OFF: repainting hides what the build actually looks like, so the game and the relay's admin
+     * viewer disagree about the same carriage. Turn it on only to spot relay carriages at a glance.
+     */
+    private static volatile boolean woolMarker = false;
 
     /** TEMP Gate-2 seam — REVERT before merge. */
     public static void setWoolMarker(boolean on) {
