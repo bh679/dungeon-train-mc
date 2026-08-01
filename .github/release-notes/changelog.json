@@ -5882,6 +5882,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "backer-name-pool",
+      "version": "0.519.0",
+      "type": "feat",
+      "title": "Backers' names ride the train",
+      "summary": "People who back the project can have their name woven into the train's own language. Their name turns up on weapons you loot, on travellers you meet, and in what the people aboard say to you \u2014 mixed in among the community names already there. Nothing is bought that changes how the game plays; it is a name in a hat, drawn at random like all the others.",
+      "highlights": [
+        "Backer names appear on generated gear, mobs, PlayerMobs and in NPC dialogue",
+        "Backers can also write a short phrase, which shows up in item lore and traveller dialogue",
+        "Every name and phrase is screened before it can appear in anyone's world"
+      ],
+      "pr": 858,
+      "date": "2026-08-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
