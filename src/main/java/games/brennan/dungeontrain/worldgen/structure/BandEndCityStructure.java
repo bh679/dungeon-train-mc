@@ -48,9 +48,10 @@ import java.util.Optional;
  *       keeps cities out of the ordinary overworld;</li>
  *   <li>every sampled column must carry island, with the lowest at or above sea level (the band's
  *       analogue of vanilla's {@code y < 60} floor);</li>
- *   <li>the real End biome there ({@link EndCoreBiomes}) must be {@code end_highlands} or
- *       {@code end_midlands} — vanilla's {@code #minecraft:has_structure/end_city} restriction, applied
- *       against the same outer-End field the islands and chorus are sampled from.</li>
+ *   <li>the real End biome of the island field ({@link EndCoreBiomes#islandFieldBiomeAt}) must be
+ *       {@code end_highlands} or {@code end_midlands} — vanilla's
+ *       {@code #minecraft:has_structure/end_city} restriction, asked of the same patch of outer End the
+ *       island itself (and its chorus) came from.</li>
  * </ul>
  *
  * <p>Because that last check is the authoritative one, {@link #findValidGenerationPoint} skips the base
@@ -91,7 +92,8 @@ public class BandEndCityStructure extends Structure {
             int baseY = EndCitySiting.siteY(cycle, geometry, ctx.seaLevel(), anchorX, anchorZ, spanX, spanZ);
             if (baseY == Integer.MIN_VALUE) return Optional.empty();
 
-            if (!isCityBiome(ctx.endCoreBiomes(), cycle, anchorX, anchorZ)) return Optional.empty();
+            int endY = EndIslandGeometry.END_ISLAND_CENTER_Y + (baseY - ctx.endIslands().bedY());
+            if (!isCityBiome(ctx.endCoreBiomes(), anchorX, endY, anchorZ)) return Optional.empty();
 
             BlockPos start = new BlockPos(anchorX, baseY, anchorZ);
             return Optional.of(new GenerationStub(start, builder -> generatePieces(builder, start, rotation, context)));
@@ -103,12 +105,13 @@ public class BandEndCityStructure extends Structure {
 
     /**
      * The band's End-biome gate — vanilla restricts end cities to {@code end_highlands} /
-     * {@code end_midlands}, and {@link EndCoreBiomes} answers that question against the same outer-End
-     * noise field the islands are sampled from, so a city only lands where the real End would put one.
+     * {@code end_midlands}, and {@link EndCoreBiomes#islandFieldBiomeAt} answers that against the same
+     * patch of outer End the island was carved from, so a city only lands where the real End would have
+     * put one on that very island.
      */
-    private static boolean isCityBiome(EndCoreBiomes endBiomes, WorldGenCycle cycle, int worldX, int worldZ) {
+    private static boolean isCityBiome(EndCoreBiomes endBiomes, int worldX, int endY, int worldZ) {
         if (endBiomes == null) return false;
-        Holder<Biome> biome = endBiomes.biomeAt(worldX, worldZ, cycle.endPassIndex(worldX));
+        Holder<Biome> biome = endBiomes.islandFieldBiomeAt(worldX, endY, worldZ);
         return biome.is(Biomes.END_HIGHLANDS) || biome.is(Biomes.END_MIDLANDS);
     }
 

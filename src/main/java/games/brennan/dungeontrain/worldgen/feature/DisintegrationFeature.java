@@ -163,7 +163,8 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             // Grow real chorus plants — matching vanilla's distribution exactly: 0-4 attempts per chunk
             // (CountPlacement), random X/Z (InSquarePlacement), and ONLY in the end_highlands biome (the
             // sole End biome that carries CHORUS_PLANT). We query the real End biome source at the sample
-            // column so chorus lands in the same places it would in the real End — far sparser than before.
+            // column so chorus lands in the same places it would in the real End — the same patch of outer
+            // End that BandEndCityStructure asks about before standing an End city on the island.
             net.minecraft.world.level.biome.BiomeSource endBiomes = end.getChunkSource().getGenerator().getBiomeSource();
             net.minecraft.world.level.biome.Climate.Sampler endSampler = end.getChunkSource().randomState().sampler();
             ChunkGenerator generator = ctx.chunkGenerator();
