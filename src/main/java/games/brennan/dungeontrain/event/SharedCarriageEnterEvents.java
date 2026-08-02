@@ -43,11 +43,19 @@ public final class SharedCarriageEnterEvents {
     private static final int CHECK_INTERVAL_TICKS = 10;   // ~0.5 s
     private static final long MESSAGE_COOLDOWN_MS = 3000L;
     /** Beat between the flavour line and the credit line, so they land as two thoughts, not one block. */
-    private static final int CREDIT_DELAY_TICKS = 20;     // 1 s
+    private static final int CREDIT_DELAY_TICKS = 50;     // 2.5 s
+    /**
+     * Consecutive polls a player must be off every shared carriage before we forget which one they were
+     * on. Footing needs a block at the feet, so a JUMP reads as "left the carriage" for a poll or two —
+     * without this grace, landing again counted as a fresh entry and re-sent the whole message.
+     */
+    private static final int OFF_GRACE_POLLS = 4;         // ~2 s
 
     /** Per-player key ("subLevelId:pIdx") of the shared carriage they were last found standing on. */
     private static final Map<UUID, String> LAST_KEY = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> LAST_MSG_MS = new ConcurrentHashMap<>();
+    /** Consecutive polls each player has been off every shared carriage (saturates at the grace). */
+    private static final Map<UUID, Integer> OFF_POLLS = new ConcurrentHashMap<>();
     /** Credit lines waiting out {@link #CREDIT_DELAY_TICKS} before they are sent. */
     private static final Map<UUID, PendingCredit> PENDING_CREDIT = new ConcurrentHashMap<>();
 
@@ -90,9 +98,15 @@ public final class SharedCarriageEnterEvents {
 
         UUID id = player.getUUID();
         if (key == null) {
-            LAST_KEY.remove(id); // left every shared carriage → a later re-entry messages again
+            // Only forget the carriage after a SUSTAINED absence — a jump inside one carriage drops
+            // footing for a poll or two, and treating that as leaving re-sent the message on landing.
+            // Walking to a different carriage is unaffected: its key differs, so that still messages
+            // immediately whatever this counter says.
+            int off = OFF_POLLS.merge(id, 1, (a, b) -> Math.min(a + b, OFF_GRACE_POLLS));
+            if (off >= OFF_GRACE_POLLS) LAST_KEY.remove(id); // genuinely left → a later re-entry messages again
             return;
         }
+        OFF_POLLS.remove(id);
         if (key.equals(LAST_KEY.get(id))) return; // still on the same carriage
         LAST_KEY.put(id, key);
 
@@ -129,6 +143,7 @@ public final class SharedCarriageEnterEvents {
         UUID id = event.getEntity().getUUID();
         LAST_KEY.remove(id);
         LAST_MSG_MS.remove(id);
+        OFF_POLLS.remove(id);
         // Drop any undelivered credit line — tickCount resets on rejoin, and a Dungeon Train death starts
         // a whole new world, so a line held here would otherwise surface in a run it has nothing to do with.
         PENDING_CREDIT.remove(id);
