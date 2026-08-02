@@ -5899,6 +5899,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "shared-carriages",
+      "version": "0.520.0",
+      "type": "feat",
+      "title": "Shared carriages \u2014 community-built rooms that travel between trains",
+      "summary": "Some carriages can now be shared spaces. Build in one and your room travels to the Dungeon Train relay, where it can later turn up in another player's train \u2014 and theirs in yours, arriving exactly as its author left it, loot and all. A build only ever reappears in the same stage of the run it was made in, so a stone-era room won't surface in the deep dark. This is off by default: a server has to switch it on, and uploading anything also needs your network consent.",
+      "highlights": [
+        "Build in a shared carriage and the room travels to other players' trains",
+        "Community rooms only appear in the stage of the run they were created in",
+        "Stepping into one tells you whether it is untouched or someone has already shaped it",
+        "Report a room you would rather not have seen with /reportcarriage",
+        "Off by default \u2014 a server must enable sharedCarriagesEnabled, and uploads need network consent"
+      ],
+      "pr": 860,
+      "date": "2026-08-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
