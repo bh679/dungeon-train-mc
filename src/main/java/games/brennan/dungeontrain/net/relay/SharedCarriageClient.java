@@ -71,7 +71,8 @@ public final class SharedCarriageClient {
     // ---- submit (upload a fresh build; auto-leased back to us) ----
 
     public static CompletableFuture<Optional<LeaseResult>> submit(String ownerUuid, String blocksBase64,
-                                                                  int l, int h, int w, String text, String stage) {
+                                                                  int l, int h, int w, String text, String stage,
+                                                                  String mode) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
         body.addProperty("world", WORLD);
@@ -81,6 +82,9 @@ public final class SharedCarriageClient {
         // The stage this build was authored in — the relay pools it there, and refuses to lease a
         // carriage that has no stage at all.
         if (stage != null && !stage.isEmpty()) body.addProperty("stage", stage);
+        // Which pool it joins. Free Play builds and normal builds never mix; the relay defaults an
+        // absent mode to normal, so this is sent whenever we know it.
+        if (mode != null && !mode.isEmpty()) body.addProperty("mode", mode);
         return post("/carriages/submit", body).thenApply(resp -> {
             JsonObject o = okJson(resp);
             if (o == null || !o.has("id")) return Optional.empty();
@@ -95,11 +99,12 @@ public final class SharedCarriageClient {
     /**
      * Lease a carriage from the pool. {@code ownerUuid}, when non-empty, narrows the pool to builds by
      * that one author — this is how a player gets their own work handed back. Null/empty leases from
-     * the whole pool, as before.
+     * the whole pool, as before. {@code mode} picks which pool entirely (Free Play or normal) and is
+     * never optional in effect: the relay reads an absent mode as normal.
      */
     public static CompletableFuture<Optional<PoolLease>> lease(String holderUuid, int l, int h, int w,
                                                                List<Integer> exclude, String stage,
-                                                               String ownerUuid) {
+                                                               String ownerUuid, String mode) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", holderUuid == null ? "" : holderUuid);
         body.addProperty("world", WORLD);
@@ -107,6 +112,7 @@ public final class SharedCarriageClient {
         // Only carriages pooled under this stage are eligible; a slot with no stage never leases.
         if (stage != null && !stage.isEmpty()) body.addProperty("stage", stage);
         if (ownerUuid != null && !ownerUuid.isEmpty()) body.addProperty("owner", ownerUuid);
+        if (mode != null && !mode.isEmpty()) body.addProperty("mode", mode);
         if (exclude != null && !exclude.isEmpty()) {
             JsonArray arr = new JsonArray();
             for (Integer id : exclude) if (id != null) arr.add(id);

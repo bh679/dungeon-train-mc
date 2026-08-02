@@ -187,7 +187,7 @@ public final class SharedCarriagePool {
      * {@code exclude} lists relay ids already resident/buffered so the relay never hands this world the
      * same carriage twice.
      */
-    public static void refreshAsync(CarriageDims dims, String stage, String hostUuid, List<Integer> exclude) {
+    public static void refreshAsync(CarriageDims dims, String stage, String hostUuid, List<Integer> exclude, String mode) {
         if (stage == null || stage.isEmpty()) return; // nothing to prefetch for a stageless slot
         if (fetchInFlight || totalBuffered() >= MAX_TOTAL_BUFFERED) return;
         Queue<PoolLease> q = BUFFER.computeIfAbsent(stage, k -> new ConcurrentLinkedQueue<>());
@@ -195,7 +195,7 @@ public final class SharedCarriagePool {
         if (System.currentTimeMillis() < backoffUntilMs) return; // pool was empty recently → don't hammer it
         fetchInFlight = true;
         try {
-            SharedCarriageClient.lease(hostUuid, dims.length(), dims.height(), dims.width(), exclude, stage, null)
+            SharedCarriageClient.lease(hostUuid, dims.length(), dims.height(), dims.width(), exclude, stage, null, mode)
                     .whenComplete((opt, err) -> {
                         try {
                             if (err == null && opt != null && opt.isPresent()) {
@@ -225,7 +225,7 @@ public final class SharedCarriagePool {
      * <p>{@code exclude} carries the ids this world has already placed, so a player is shown each of
      * their builds once per world rather than the same favourite over and over.</p>
      */
-    public static void refreshOwnAsync(CarriageDims dims, String stage, String ownerUuid, List<Integer> exclude) {
+    public static void refreshOwnAsync(CarriageDims dims, String stage, String ownerUuid, List<Integer> exclude, String mode) {
         if (stage == null || stage.isEmpty() || ownerUuid == null || ownerUuid.isEmpty()) return;
         if (ownFetchInFlight || totalBuffered() >= MAX_TOTAL_BUFFERED) return;
         String key = ownKey(stage, ownerUuid);
@@ -235,7 +235,7 @@ public final class SharedCarriagePool {
         if (until != null && System.currentTimeMillis() < until) return;
         ownFetchInFlight = true;
         try {
-            SharedCarriageClient.lease(hostUuid, dims.length(), dims.height(), dims.width(), exclude, stage, ownerUuid)
+            SharedCarriageClient.lease(hostUuid, dims.length(), dims.height(), dims.width(), exclude, stage, ownerUuid, mode)
                     .whenComplete((opt, err) -> {
                         try {
                             if (err == null && opt != null && opt.isPresent()) {
