@@ -88,6 +88,32 @@ public final class CarriageDeck {
     }
 
     /**
+     * The specific carriage whose deck {@code e} is standing on, or {@code null}. Identical test to
+     * {@link #isOnCarriageDeck} but returns which carriage matched (first hit wins) — used by the
+     * shared-carriage "on enter" chat hint to identify the carriage the player just stepped onto.
+     */
+    public static Trains.Carriage carriageUnder(List<Trains.Carriage> carriages, Entity e) {
+        double ex = e.getX();
+        double ey = e.getY();
+        double ez = e.getZ();
+        for (Trains.Carriage c : carriages) {
+            ManagedShip ship = c.ship();
+            AABBdc bb = ship.worldAABB();
+            if (ex < bb.minX() - HORIZONTAL_PADDING || ex > bb.maxX() + HORIZONTAL_PADDING) continue;
+            if (ey < bb.minY() - 1.0 || ey > bb.maxY() + 1.0) continue;
+            if (ez < bb.minZ() - HORIZONTAL_PADDING || ez > bb.maxZ() + HORIZONTAL_PADDING) continue;
+            if (!(ship instanceof SableManagedShip sableShip)) continue;
+            Vector3d local = new Vector3d(ex, ey, ez);
+            ship.worldToShip(local);
+            BlockPos feet = BlockPos.containing(local.x, local.y, local.z);
+            if (isSupportedByCarriage(sableShip.subLevel().getPlot(), feet)) {
+                return c;
+            }
+        }
+        return null;
+    }
+
+    /**
      * True if the ship plot has a non-air block at the feet or directly below them (ship-local
      * coords). Checking feet and feet-1 covers both top-slab walkways and full-block floors.
      */

@@ -93,6 +93,7 @@ public final class TrainCommand {
                     .executes(ctx -> runCinematic(ctx.getSource(), CinematicIntroService.StartMode.SPAWN)))
                 .then(Commands.literal("current")
                     .executes(ctx -> runCinematic(ctx.getSource(), CinematicIntroService.StartMode.CURRENT))))
+            .then(ReportCarriageCommand.build())
             .then(EditorCommand.build(buildContext))
             .then(SaveCommand.build())
             .then(ResetCommand.build())

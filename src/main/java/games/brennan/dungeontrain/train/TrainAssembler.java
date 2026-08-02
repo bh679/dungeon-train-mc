@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
@@ -46,6 +47,109 @@ import java.util.UUID;
 public final class TrainAssembler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    /** Salt for the deterministic per-carriage "lease from pool vs place fresh" roll (distinct from the variant stream). */
+    private static final long SHARED_POOL_SALT = 0x53484152504F4F4CL; // "SHARPOOL"
+
+    /**
+     * Decide whether a shared-carriage slot should be filled from the relay POOL, returning a buffered
+     * lease if so (else null → place a fresh local build). The roll is deterministic per carriage index
+     * (so a walk-back re-decides identically), but availability depends on the async prefetch buffer.
+     */
+    private static SharedCarriageClient.PoolLease tryLeaseShared(CarriageVariant variant, int carriagePIdx,
+                                                                 CarriageDims dims, CarriageGenerationConfig genCfg,
+                                                                 String stageId) {
+        if (!games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()) return null;
+        if (!SharedCarriageFlags.isSharedVariant(variant.id())) return null;
+        // A slot no stage covers can't be matched against the pool at all — the relay only serves
+        // carriages pooled under a stage, so this is a template slot by definition.
+        if (stageId == null || stageId.isEmpty()) {
+            logLeaseOutcome(carriagePIdx, "NO_STAGE", null);
+            return null;
+        }
+        SharedCarriagePool.noteStageDemand(stageId); // steer the prefetch tick at the stage we're spawning into
+        long mixed = genCfg.seed() ^ ((long) carriagePIdx * 0x9E3779B97F4A7C15L) ^ SHARED_POOL_SALT;
+        double roll = new java.util.Random(mixed).nextDouble();
+        if (roll >= games.brennan.dungeontrain.config.DungeonTrainConfig.getSharedCarriagePoolChance()) {
+            logLeaseOutcome(carriagePIdx, "ROLLED_NEW", null);
+            return null;
+        }
+        SharedCarriageClient.PoolLease buffered = SharedCarriagePool.poll(dims, stageId);
+        if (buffered != null) {
+            logLeaseOutcome(carriagePIdx, "BUFFER_HIT", buffered);
+            return buffered;
+        }
+        // Buffer miss → fresh template. The spawn path never blocks on HTTP: a lease that isn't already
+        // buffered isn't worth hitching the server thread for, and poolChance means some template
+        // variety is intended anyway.
+        logLeaseOutcome(carriagePIdx, SharedCarriagePool.isBackedOff() ? "BACKOFF_SUPPRESSED" : "BUFFER_EMPTY", null);
+        return null;
+    }
+
+    /**
+     * Record why a shared slot did or didn't get a relay carriage. Without this the five distinct
+     * reasons {@link #tryLeaseShared} returns null are indistinguishable in a log, and "the train has no
+     * community carriages" can't be told apart from "the relay was never asked".
+     */
+    private static void logLeaseOutcome(int carriagePIdx, String outcome, SharedCarriageClient.PoolLease lease) {
+        LOGGER.debug("[DungeonTrain] shared slot pIdx={} → {}{} (buffered={})",
+                carriagePIdx, outcome, lease == null ? "" : " id=" + lease.id(), SharedCarriagePool.buffered());
+    }
+
+    /**
+     * Stamp a leased carriage's relay snapshot at {@code carriageOrigin} (world coords, pre-assembly).
+     * The relay hands back a base blob PLUS an opaque delta log; we fold the deltas (those with
+     * {@code seq > baseSeq}, in seq order) onto the base before placing. Returns the placed block
+     * positions, or null on decode/dims/place failure (caller falls back to NEW).
+     */
+    private static Set<BlockPos> placeRelayLease(ServerLevel level, BlockPos carriageOrigin,
+                                                 SharedCarriageClient.PoolLease lease, CarriageDims dims) {
+        try {
+            net.minecraft.nbt.CompoundTag snap = foldLeaseDeltas(CarriageBlockSnapshot.decode(lease.blocks()), lease);
+            if (snap.getInt("l") != dims.length() || snap.getInt("h") != dims.height() || snap.getInt("w") != dims.width()) {
+                LOGGER.warn("[DungeonTrain] leased carriage id={} dims mismatch — falling back to fresh.", lease.id());
+                return null;
+            }
+            int cellCount = snap.getList("cells", net.minecraft.nbt.Tag.TAG_COMPOUND).size();
+            Set<BlockPos> placed = CarriageBlockSnapshot.place(level, carriageOrigin, snap);
+            LOGGER.debug("[DungeonTrain] relay carriage id={} at {}: {} cells → {} blocks in world (baseSeq={} deltas={})",
+                    lease.id(), carriageOrigin, cellCount, placed == null ? "FAILED" : placed.size(),
+                    lease.baseSeq(), lease.deltas() == null ? 0 : lease.deltas().size());
+            return placed;
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] Failed to place leased carriage id={}: {}", lease.id(), e.toString());
+            return null;
+        }
+    }
+
+    /** Fold a lease's opaque delta log (seq &gt; baseSeq, ascending seq) onto its decoded base snapshot. */
+    private static net.minecraft.nbt.CompoundTag foldLeaseDeltas(net.minecraft.nbt.CompoundTag base,
+                                                                 SharedCarriageClient.PoolLease lease) {
+        List<SharedCarriageClient.DeltaRec> deltas = lease.deltas();
+        if (deltas == null || deltas.isEmpty()) return base;
+        List<SharedCarriageClient.DeltaRec> sorted = new java.util.ArrayList<>(deltas);
+        sorted.sort(java.util.Comparator.comparingInt(SharedCarriageClient.DeltaRec::seq));
+        net.minecraft.nbt.CompoundTag folded = base;
+        for (SharedCarriageClient.DeltaRec d : sorted) {
+            if (d.seq() <= lease.baseSeq()) continue; // already folded into the base blob
+            try {
+                folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(d.cells()));
+            } catch (Exception e) {
+                LOGGER.warn("[DungeonTrain] leased carriage id={} delta seq={} decode failed: {}", lease.id(), d.seq(), e.toString());
+            }
+        }
+        return folded;
+    }
+
+    /** The delta-sequence floor to seed a leased carriage's Instance with (max of baseSeq + any delta seq). */
+    private static int leaseSeqSeed(SharedCarriageClient.PoolLease lease) {
+        int seed = lease.baseSeq();
+        if (lease.deltas() != null) {
+            for (SharedCarriageClient.DeltaRec d : lease.deltas()) if (d.seq() > seed) seed = d.seq();
+        }
+        return seed;
+    }
+
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
     private TrainAssembler() {}
@@ -221,6 +325,14 @@ public final class TrainAssembler {
 
         CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
 
+        // Attribute any lease this group takes to the host player. SharedCarriageEvents' prefetch tick
+        // also caches this, but the world-load spawn runs before that tick has fired — leases taken here
+        // would otherwise reach the relay with an empty holder, so the admin view can't say who has a
+        // carriage locked.
+        if (!level.players().isEmpty()) {
+            SharedCarriagePool.setHostUuid(level.players().get(0).getUUID().toString().replace("-", ""));
+        }
+
         // Place every enclosed carriage in the group at world coords.
         // For groupSize > 1, the enclosed run starts at
         // origin + halfPadLen; pad placement runs separately afterwards.
@@ -228,6 +340,11 @@ public final class TrainAssembler {
         // and there are no pads.
         Set<BlockPos> blocks = new HashSet<>();
         CarriageVariant[] enclosedBySlot = new CarriageVariant[groupSize];
+        // Per-slot worldgen stage: gates which pooled carriages this slot may draw, and stamps a fresh
+        // build's origin so it is only ever placed back into the same stage.
+        String[] stageBySlot = new String[groupSize];
+        // Non-null for slots filled from the relay pool (leased build placed verbatim); null = fresh/local.
+        SharedCarriageClient.PoolLease[] leaseBySlot = new SharedCarriageClient.PoolLease[groupSize];
 
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
@@ -238,6 +355,8 @@ public final class TrainAssembler {
             GateContext gateCtx = GateContext.forCarriageAtWorldX(level, groupAnchorWorldX, carriagePIdx, length);
             CarriageVariant variant = CarriagePlacer.enclosedVariantForIndex(carriagePIdx, genCfg, gateCtx);
             enclosedBySlot[slot] = variant;
+            String stageId = games.brennan.dungeontrain.template.StageResolver.stageIdFor(gateCtx);
+            stageBySlot[slot] = stageId;
 
             // Within a spawnGroup call, the enclosed run is wrapped by
             // half-flatbed pads when groupSize > 1. Slot 0's BACK door
@@ -250,11 +369,26 @@ public final class TrainAssembler {
             boolean flatbedAtBack  = wrapWithPads && slot == 0;
             boolean flatbedAtFront = wrapWithPads && slot == groupSize - 1;
 
-            // applyContents=false: defer until after assembly so entities
-            // land in shipyard space, not world space.
-            Set<BlockPos> carriageBlocks = CarriagePlacer.placeAt(
-                level, carriageOrigin, variant, dims, genCfg, carriagePIdx,
-                false, flatbedAtBack, flatbedAtFront, groupAnchorWorldX);
+            // Shared-carriage POOL path: if this shared slot rolls "pool" AND a lease is buffered, stamp
+            // the relay build VERBATIM (no parts/variants/contents/loot overlays — blocks come from the
+            // relay). Otherwise fall through to normal placement (the NEW path).
+            Set<BlockPos> carriageBlocks = null;
+            SharedCarriageClient.PoolLease lease = tryLeaseShared(variant, carriagePIdx, dims, genCfg, stageId);
+            if (lease != null) {
+                carriageBlocks = placeRelayLease(level, carriageOrigin, lease, dims);
+                if (carriageBlocks == null) {          // decode/dims/place failure → hand the lease back
+                    SharedCarriagePool.returnLease(lease);
+                } else {
+                    leaseBySlot[slot] = lease;
+                }
+            }
+            if (carriageBlocks == null) {
+                // applyContents=false: defer until after assembly so entities
+                // land in shipyard space, not world space.
+                carriageBlocks = CarriagePlacer.placeAt(
+                    level, carriageOrigin, variant, dims, genCfg, carriagePIdx,
+                    false, flatbedAtBack, flatbedAtFront, groupAnchorWorldX);
+            }
             if (carriageBlocks.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] spawnGroup produced empty enclosed block set anchorPIdx={} slot={} carriagePIdx={} variant={} at {}",
                     anchorPIdx, slot, carriagePIdx, variant.id(), carriageOrigin);
@@ -306,6 +440,20 @@ public final class TrainAssembler {
             int carriagePIdx = anchorPIdx + slot;
             BlockPos carriageShipyardOrigin = shipyardOrigin.offset(enclosedStartOffset + slot * length, 0, 0);
             CarriageVariant variant = enclosedBySlot[slot];
+            SharedCarriageClient.PoolLease lease = leaseBySlot[slot];
+            if (lease != null) {
+                // POOL carriage: its blocks were stamped verbatim from the relay snapshot. Do NOT run the
+                // contents/loot pass (contents come from the relay) and spawn no contents entities.
+                // Register it as leased so later edits save back to the relay.
+                pendingEntities[slot] = null;
+                SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
+                    level, ship.subLevelId(), trainId, carriagePIdx,
+                    carriageShipyardOrigin, dims, variant.id(), true, lease.id(), lease.token(),
+                    leaseSeqSeed(lease), // seq floor = max(baseSeq, delta seqs) so our edits clear the relay watermark
+                    stageBySlot[slot]);
+                inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
+                continue;
+            }
             CarriagePlacer.applyContentsBlocksAt(level, carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx, groupAnchorWorldX);
             // Stash for the appender's tick handler to fire once the
             // placement-collision tracker confirms this group has settled.
@@ -315,6 +463,13 @@ public final class TrainAssembler {
             // groupSize ever moves to mixed-variant groups.
             pendingEntities[slot] = new PendingContentsEntitySpawn(
                 carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx, groupAnchorWorldX);
+            // Fresh shared carriage (NEW path): register it so a real edit later queues a delta and
+            // uploads the build to the pool for the first time. seqSeed=0 (a brand-new relay row is baseSeq=0).
+            if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
+                    && SharedCarriageFlags.isSharedVariant(variant.id())) {
+                SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
+                        carriageShipyardOrigin, dims, variant.id(), false, null, null, 0, stageBySlot[slot]);
+            }
         }
         long tAfterContents = System.nanoTime();
 
