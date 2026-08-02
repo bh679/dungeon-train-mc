@@ -61,6 +61,14 @@ public final class SharedCarriageEvents {
     private static final long HEARTBEAT_INTERVAL_MS = 300_000L; // 5 min
     /** Max base64 blob we'll upload (must stay under the relay's CARRIAGES_MAX_CHARS). */
     private static final int MAX_BLOB_CHARS = 700_000;
+    /**
+     * How many ids to send as the lease exclude-list. Kept under the relay's own cap (128) so the list
+     * arrives whole rather than being silently truncated at the far end.
+     */
+    private static final int MAX_EXCLUDE_IDS = 120;
+
+    /** Rotates through online players so each one's own builds get prefetched in turn. */
+    private static int ownPrefetchCursor = 0;
 
     private SharedCarriageEvents() {}
 
@@ -85,22 +93,39 @@ public final class SharedCarriageEvents {
         }
     }
 
-    /** Keep the lease buffer topped up (self-caps at the pool's target); excludes ids already resident. */
+    /**
+     * Keep both lease buffers topped up (each self-caps at the pool's target): the shared pool, plus one
+     * player's own builds per tick, cycling through everyone online so a busy server doesn't only ever
+     * serve the first player their work back. Excludes ids already resident or already placed here.
+     */
     private static void prefetch(ServerLevel level) {
         String hostUuid = "";
         List<ServerPlayer> players = level.players();
         if (!players.isEmpty()) hostUuid = players.get(0).getUUID().toString().replace("-", "");
         // Share it with the pool so leases taken off the spawn thread also record a real holder.
         SharedCarriagePool.setHostUuid(hostUuid);
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         List<Integer> exclude = new ArrayList<>();
         for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.all()) {
             Integer id = inst.relayId();
             if (id != null) exclude.add(id);
         }
-        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        // Plus what this world has placed before — a build we've already shown is the one repeat that
+        // reads as the generator running dry. Newest first, since the relay truncates the list.
+        for (Integer id : data.recentUsedCarriageIds(MAX_EXCLUDE_IDS)) {
+            if (exclude.size() >= MAX_EXCLUDE_IDS) break;
+            if (!exclude.contains(id)) exclude.add(id);
+        }
+        CarriageDims dims = data.dims();
+        String stage = SharedCarriagePool.demandStage();
         // Buffer for the stage the train is actually spawning into — a lease for another stage would sit
         // unusable here while locking that carriage against every other world.
-        SharedCarriagePool.refreshAsync(dims, SharedCarriagePool.demandStage(), hostUuid, exclude);
+        SharedCarriagePool.refreshAsync(dims, stage, hostUuid, exclude);
+        if (!players.isEmpty()) {
+            int idx = Math.floorMod(ownPrefetchCursor++, players.size());
+            String owner = players.get(idx).getUUID().toString().replace("-", "");
+            SharedCarriagePool.refreshOwnAsync(dims, stage, owner, exclude);
+        }
     }
 
     /** One flusher pass for a carriage: re-baseline if asked, else upload a delta/first-submit, else heartbeat. */

@@ -52,6 +52,7 @@ public final class SharedCarriageEnterEvents {
 
         String key = null;
         boolean leased = false;
+        boolean own = false;
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
         if (!carriages.isEmpty()) {
             Trains.Carriage c = CarriageDeck.carriageUnder(carriages, player);
@@ -65,6 +66,7 @@ public final class SharedCarriageEnterEvents {
                 if (inst != null) {
                     key = ship.subLevelId() + ":" + inst.pIdx;
                     leased = inst.leasedFromPool;
+                    own = inst.authoredHere;
                 }
             }
         }
@@ -82,9 +84,13 @@ public final class SharedCarriageEnterEvents {
         if (last != null && now - last < MESSAGE_COOLDOWN_MS) return;
         LAST_MSG_MS.put(id, now);
 
-        player.sendSystemMessage(leased
-                ? SharedCarriageMessage.seenCarriage(level.getRandom())
-                : SharedCarriageMessage.newCarriage(level.getRandom()));
+        // "You built this" wins over "someone's been here" — it's the more specific fact, and it's the
+        // one the player can verify by looking around.
+        player.sendSystemMessage(own
+                ? SharedCarriageMessage.ownCarriage(level.getRandom())
+                : leased
+                        ? SharedCarriageMessage.seenCarriage(level.getRandom())
+                        : SharedCarriageMessage.newCarriage(level.getRandom()));
     }
 
     @SubscribeEvent

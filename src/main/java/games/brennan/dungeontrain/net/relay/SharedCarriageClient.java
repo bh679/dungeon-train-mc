@@ -57,9 +57,13 @@ public final class SharedCarriageClient {
      * A leased pooled carriage: id + token + its base blocks blob + dims, plus the delta log to fold on
      * top ({@code baseSeq} is the relay drop-watermark; the mod applies deltas with {@code seq > baseSeq}
      * in seq order). See {@code CarriageBlockSnapshot.applyDeltaCells}.
+     *
+     * <p>{@code owner} is the build's author uuid as the relay recorded it at submit (empty when the
+     * relay didn't report one). It lets the spawn path tell a player "you built this" even when the
+     * lease came from the ordinary unfiltered pool.</p>
      */
     public record PoolLease(int id, String token, String blocks, int l, int h, int w,
-                            int baseSeq, List<DeltaRec> deltas) {}
+                            int baseSeq, List<DeltaRec> deltas, String owner) {}
 
     /** Outcome of a delta POST: transport status + whether the holder should re-baseline (soft/hard). */
     public record DeltaResult(CallStatus status, boolean compactNeeded, boolean mustCompact) {}
@@ -88,14 +92,21 @@ public final class SharedCarriageClient {
 
     // ---- lease (pull an existing pooled carriage; PR C) ----
 
+    /**
+     * Lease a carriage from the pool. {@code ownerUuid}, when non-empty, narrows the pool to builds by
+     * that one author — this is how a player gets their own work handed back. Null/empty leases from
+     * the whole pool, as before.
+     */
     public static CompletableFuture<Optional<PoolLease>> lease(String holderUuid, int l, int h, int w,
-                                                               List<Integer> exclude, String stage) {
+                                                               List<Integer> exclude, String stage,
+                                                               String ownerUuid) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", holderUuid == null ? "" : holderUuid);
         body.addProperty("world", WORLD);
         body.add("dims", dims(l, h, w));
         // Only carriages pooled under this stage are eligible; a slot with no stage never leases.
         if (stage != null && !stage.isEmpty()) body.addProperty("stage", stage);
+        if (ownerUuid != null && !ownerUuid.isEmpty()) body.addProperty("owner", ownerUuid);
         if (exclude != null && !exclude.isEmpty()) {
             JsonArray arr = new JsonArray();
             for (Integer id : exclude) if (id != null) arr.add(id);
@@ -110,8 +121,9 @@ public final class SharedCarriageClient {
             int dh = d != null && d.has("h") ? d.get("h").getAsInt() : h;
             int dw = d != null && d.has("w") ? d.get("w").getAsInt() : w;
             int baseSeq = o.has("baseSeq") && !o.get("baseSeq").isJsonNull() ? o.get("baseSeq").getAsInt() : 0;
+            String owner = o.has("owner") && !o.get("owner").isJsonNull() ? o.get("owner").getAsString() : "";
             return Optional.of(new PoolLease(o.get("id").getAsInt(), o.get("token").getAsString(),
-                    o.get("blocks").getAsString(), dl, dh, dw, baseSeq, parseDeltas(o)));
+                    o.get("blocks").getAsString(), dl, dh, dw, baseSeq, parseDeltas(o), owner));
         });
     }
 
