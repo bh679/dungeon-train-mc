@@ -15,6 +15,8 @@ import net.minecraft.util.RandomSource;
  *       change.</li>
  *   <li>{@link #seenCarriage} — a carriage someone else authored; the lines hint that another traveller
  *       has been here before.</li>
+ *   <li>{@link #ownCarriage} — a build by someone in this world, come back around; the lines hint at
+ *       recognising your own work.</li>
  * </ul>
  *
  * <p>Each line is a {@link Component#translatable} template with a {@code %s} slot filled by a randomly
@@ -30,6 +32,8 @@ public final class SharedCarriageMessage {
     private static final int NEW_LINES = 6;
     /** Distinct "someone was here" lines keyed {@code chat.dungeontrain.shared_carriage.seen.1..SEEN_LINES}. */
     private static final int SEEN_LINES = 6;
+    /** Distinct "you built this" lines keyed {@code chat.dungeontrain.shared_carriage.own.1..OWN_LINES}. */
+    private static final int OWN_LINES = 6;
     /** Nouns keyed {@code chat.dungeontrain.shared_carriage.noun.1..NOUNS} (room / carriage / cart / space). */
     private static final int NOUNS = 4;
 
@@ -41,6 +45,11 @@ public final class SharedCarriageMessage {
     /** A random "someone else has built here before you" line, gray. */
     public static Component seenCarriage(RandomSource rng) {
         return line("seen", SEEN_LINES, rng);
+    }
+
+    /** A random "this one came back around to you" line, gray. */
+    public static Component ownCarriage(RandomSource rng) {
+        return line("own", OWN_LINES, rng);
     }
 
     private static Component line(String group, int count, RandomSource rng) {
