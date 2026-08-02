@@ -70,6 +70,13 @@ public final class SharedCarriageEvents {
     /** Rotates through online players so each one's own builds get prefetched in turn. */
     private static int ownPrefetchCursor = 0;
 
+    /**
+     * The pool the world was in on the last prefetch tick, so a mid-session flip is noticed. Null until
+     * the first tick — a world that starts in Free Play has nothing held yet, so there is nothing to
+     * hand back.
+     */
+    private static volatile String lastMode = null;
+
     private SharedCarriageEvents() {}
 
     @SubscribeEvent
@@ -80,6 +87,7 @@ public final class SharedCarriageEvents {
         long t = level.getGameTime();
 
         if (t % PREFETCH_INTERVAL_TICKS == 0) {
+            detectModeFlip(level);
             prefetch(level);
         }
         if (t % FLUSH_INTERVAL_TICKS == 0) {
@@ -91,6 +99,38 @@ public final class SharedCarriageEvents {
                 }
             }
         }
+    }
+
+    /**
+     * Hand back everything the world is holding when it crosses between the Free Play and normal pools
+     * — a player switching to creative mid-run is the usual cause.
+     *
+     * <p>Held leases belong to the pool the world was in when it took them. Once it has flipped, saving
+     * those back would write Free Play edits into the normal pool (or the reverse), which is the exact
+     * mixing the two pools exist to prevent. So the leases go back and the carriages detach from the
+     * relay: they stay standing and playable, they just stop uploading. Edits made since the last save
+     * are lost, which is the price of not contaminating the other pool.</p>
+     */
+    private static void detectModeFlip(ServerLevel level) {
+        String mode = SharedCarriageMode.current(level);
+        String previous = lastMode;
+        lastMode = mode;
+        if (previous == null || previous.equals(mode)) return;
+
+        int detached = 0;
+        for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.all()) {
+            if (!inst.isOnRelay()) continue;
+            Integer id = inst.relayId();
+            String token = inst.leaseToken();
+            inst.clearRelayLease(); // stop the flusher touching it before the return lands
+            if (id != null && token != null) {
+                SharedCarriageClient.returnLease(id, token, null, null, 0);
+                detached++;
+            }
+        }
+        SharedCarriagePool.returnAllBuffered();
+        LOGGER.info("[DungeonTrain] Shared-carriage pool switched {} → {}; returned {} held carriage(s) and cleared the buffers.",
+                previous, mode, detached);
     }
 
     /**
@@ -118,13 +158,14 @@ public final class SharedCarriageEvents {
         }
         CarriageDims dims = data.dims();
         String stage = SharedCarriagePool.demandStage();
+        String mode = SharedCarriageMode.current(level);
         // Buffer for the stage the train is actually spawning into — a lease for another stage would sit
         // unusable here while locking that carriage against every other world.
-        SharedCarriagePool.refreshAsync(dims, stage, hostUuid, exclude);
+        SharedCarriagePool.refreshAsync(dims, stage, hostUuid, exclude, mode);
         if (!players.isEmpty()) {
             int idx = Math.floorMod(ownPrefetchCursor++, players.size());
             String owner = players.get(idx).getUUID().toString().replace("-", "");
-            SharedCarriagePool.refreshOwnAsync(dims, stage, owner, exclude);
+            SharedCarriagePool.refreshOwnAsync(dims, stage, owner, exclude, mode);
         }
     }
 
@@ -172,7 +213,10 @@ public final class SharedCarriageEvents {
         String ownerUuid = contributor.getUUID().toString().replace("-", "");
         inst.setCallInFlight(true);
         long now = System.currentTimeMillis();
-        SharedCarriageClient.submit(ownerUuid, blob.base64(), inst.dims.length(), inst.dims.height(), inst.dims.width(), blob.text(), inst.stageId)
+        // Read the pool live rather than from spawn time: the session may have flipped to Free Play since
+        // this carriage was placed, and the build belongs to whichever pool the world is in when it lands.
+        String mode = SharedCarriageMode.current(inst.level);
+        SharedCarriageClient.submit(ownerUuid, blob.base64(), inst.dims.length(), inst.dims.height(), inst.dims.width(), blob.text(), inst.stageId, mode)
                 .whenComplete((result, err) -> {
                     try {
                         if (err == null && result != null && result.isPresent() && result.get().token() != null) {
@@ -370,5 +414,6 @@ public final class SharedCarriageEvents {
     public static void onServerStopped(ServerStoppedEvent event) {
         SharedCarriageRegistry.clear();
         SharedCarriagePool.clear();
+        lastMode = null; // the next world decides its own pool from scratch
     }
 }
