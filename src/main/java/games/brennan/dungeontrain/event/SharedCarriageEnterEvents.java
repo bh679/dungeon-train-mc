@@ -1,11 +1,13 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
 import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.train.SharedCarriageMessage;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
 import games.brennan.dungeontrain.train.Trains;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -52,6 +54,7 @@ public final class SharedCarriageEnterEvents {
 
         String key = null;
         boolean leased = false;
+        Credits credits = Credits.EMPTY;
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
         if (!carriages.isEmpty()) {
             Trains.Carriage c = CarriageDeck.carriageUnder(carriages, player);
@@ -65,6 +68,7 @@ public final class SharedCarriageEnterEvents {
                 if (inst != null) {
                     key = ship.subLevelId() + ":" + inst.pIdx;
                     leased = inst.leasedFromPool;
+                    credits = inst.credits;
                 }
             }
         }
@@ -85,6 +89,11 @@ public final class SharedCarriageEnterEvents {
         player.sendSystemMessage(leased
                 ? SharedCarriageMessage.seenCarriage(level.getRandom())
                 : SharedCarriageMessage.newCarriage(level.getRandom()));
+        // Second, dimmer line naming who built it. Null whenever there is nobody to credit — a fresh local
+        // carriage, a relay too old to send names, or a build stored before names were captured — so those
+        // carriages keep exactly the single-line message they showed before.
+        Component credit = SharedCarriageMessage.creditLine(credits);
+        if (credit != null) player.sendSystemMessage(credit);
     }
 
     @SubscribeEvent

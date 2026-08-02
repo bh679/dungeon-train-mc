@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import org.slf4j.Logger;
@@ -58,6 +59,12 @@ public final class SharedCarriageRegistry {
          * slot, which means the build can never be shared (the relay refuses a stageless carriage).
          */
         public final String stageId;
+        /**
+         * Who built this carriage, as of the lease that placed it — the relay resolves the names, since
+         * the contributors are players this server has never seen. {@link Credits#EMPTY} for a fresh
+         * local build (nobody has contributed yet) and for a relay too old to send them.
+         */
+        public final Credits credits;
 
         /** Relay row id once this carriage exists on the relay (via submit or lease); null until then. */
         private volatile Integer relayId;
@@ -86,7 +93,7 @@ public final class SharedCarriageRegistry {
 
         Instance(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx, BlockPos shipyardOrigin,
                  CarriageDims dims, String variantId, boolean leasedFromPool,
-                 Integer relayId, String leaseToken, int seqSeed, String stageId) {
+                 Integer relayId, String leaseToken, int seqSeed, String stageId, Credits credits) {
             this.level = level;
             this.subLevelId = subLevelId;
             this.trainId = trainId;
@@ -99,6 +106,7 @@ public final class SharedCarriageRegistry {
             this.leaseToken = leaseToken;
             this.seq = new AtomicInteger(Math.max(0, seqSeed));
             this.stageId = stageId;
+            this.credits = credits == null ? Credits.EMPTY : credits;
         }
 
         /** Whether shipyard-space (x,y,z) falls inside this carriage's footprint. */
@@ -177,14 +185,15 @@ public final class SharedCarriageRegistry {
     /**
      * Register a freshly-placed shared carriage. {@code seqSeed} is the delta-sequence floor tied to the
      * relay carriage — 0 for a fresh local build, or {@code max(baseSeq, maxDeltaSeq)} for one leased from
-     * the pool (so its first upload's seq clears the relay's drop-watermark).
+     * the pool (so its first upload's seq clears the relay's drop-watermark). {@code credits} is who built
+     * it, off the lease; pass {@link Credits#EMPTY} for a fresh local build.
      */
     public static Instance register(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx,
                                     BlockPos shipyardOrigin, CarriageDims dims, String variantId,
                                     boolean leasedFromPool, Integer relayId, String leaseToken, int seqSeed,
-                                    String stageId) {
+                                    String stageId, Credits credits) {
         Instance inst = new Instance(level, subLevelId, trainId, pIdx, shipyardOrigin, dims, variantId,
-                leasedFromPool, relayId, leaseToken, seqSeed, stageId);
+                leasedFromPool, relayId, leaseToken, seqSeed, stageId, credits);
         BY_SUBLEVEL.computeIfAbsent(subLevelId, k -> new CopyOnWriteArrayList<>()).add(inst);
         LOGGER.debug("[DungeonTrain] Registered shared carriage variant={} pIdx={} subLevel={} leased={} stage={}.",
                 variantId, pIdx, subLevelId, leasedFromPool, stageId);

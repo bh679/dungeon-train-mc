@@ -35,6 +35,9 @@ public final class SharedCarriageClient {
             .build();
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
+    /** Cap on a relay-supplied contributor name before it reaches chat (the relay's own cap is 64). */
+    private static final int MAX_NAME_CHARS = 32;
+
     /**
      * Stable per-process token identifying THIS world/server as a lease holder to the relay (the
      * {@code world} field). One per JVM lifetime — a restart is a new holder, and the relay's TTL frees
@@ -54,22 +57,45 @@ public final class SharedCarriageClient {
     public record DeltaRec(int seq, String cells) {}
 
     /**
+     * Who made a leased carriage: its original builder plus the most recent distinct editors, newest
+     * first. Display names only — the relay resolves these, because a contributor's uuid was authored in
+     * a world this server has never seen and could never be looked up locally.
+     *
+     * <p>{@code editors} names at most 5 people, but {@code editorCount} counts every distinct editor
+     * (including any whose name predates name capture), so "and N more" never overstates the list.
+     * Everything may be blank/empty: a carriage stored before contributor names existed has nothing to
+     * credit, and {@link #EMPTY} is what an older relay's lease response yields.
+     */
+    public record Credits(String creator, List<String> editors, int editorCount) {
+        public static final Credits EMPTY = new Credits("", List.of(), 0);
+
+        /** True when there is at least one name worth showing the player. */
+        public boolean hasAny() {
+            return !creator.isEmpty() || !editors.isEmpty();
+        }
+    }
+
+    /**
      * A leased pooled carriage: id + token + its base blocks blob + dims, plus the delta log to fold on
      * top ({@code baseSeq} is the relay drop-watermark; the mod applies deltas with {@code seq > baseSeq}
-     * in seq order). See {@code CarriageBlockSnapshot.applyDeltaCells}.
+     * in seq order). See {@code CarriageBlockSnapshot.applyDeltaCells}. {@code credits} is who built it.
      */
     public record PoolLease(int id, String token, String blocks, int l, int h, int w,
-                            int baseSeq, List<DeltaRec> deltas) {}
+                            int baseSeq, List<DeltaRec> deltas, Credits credits) {}
 
     /** Outcome of a delta POST: transport status + whether the holder should re-baseline (soft/hard). */
     public record DeltaResult(CallStatus status, boolean compactNeeded, boolean mustCompact) {}
 
     // ---- submit (upload a fresh build; auto-leased back to us) ----
 
-    public static CompletableFuture<Optional<LeaseResult>> submit(String ownerUuid, String blocksBase64,
+    public static CompletableFuture<Optional<LeaseResult>> submit(String ownerUuid, String ownerName,
+                                                                  String blocksBase64,
                                                                   int l, int h, int w, String text, String stage) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
+        // The builder's name, so other worlds can credit them by name rather than an unresolvable uuid.
+        // Only ever sent for a player who has granted network consent (see SharedCarriageGate).
+        if (ownerName != null && !ownerName.isEmpty()) body.addProperty("name", ownerName);
         body.addProperty("world", WORLD);
         body.addProperty("blocks", blocksBase64);
         body.add("dims", dims(l, h, w));
@@ -88,10 +114,13 @@ public final class SharedCarriageClient {
 
     // ---- lease (pull an existing pooled carriage; PR C) ----
 
-    public static CompletableFuture<Optional<PoolLease>> lease(String holderUuid, int l, int h, int w,
+    public static CompletableFuture<Optional<PoolLease>> lease(String holderUuid, String holderName,
+                                                               int l, int h, int w,
                                                                List<Integer> exclude, String stage) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", holderUuid == null ? "" : holderUuid);
+        // Names this world's holder on the relay, so OUR edits are credited by name in the next world.
+        if (holderName != null && !holderName.isEmpty()) body.addProperty("name", holderName);
         body.addProperty("world", WORLD);
         body.add("dims", dims(l, h, w));
         // Only carriages pooled under this stage are eligible; a slot with no stage never leases.
@@ -111,8 +140,53 @@ public final class SharedCarriageClient {
             int dw = d != null && d.has("w") ? d.get("w").getAsInt() : w;
             int baseSeq = o.has("baseSeq") && !o.get("baseSeq").isJsonNull() ? o.get("baseSeq").getAsInt() : 0;
             return Optional.of(new PoolLease(o.get("id").getAsInt(), o.get("token").getAsString(),
-                    o.get("blocks").getAsString(), dl, dh, dw, baseSeq, parseDeltas(o)));
+                    o.get("blocks").getAsString(), dl, dh, dw, baseSeq, parseDeltas(o), parseCredits(o)));
         });
+    }
+
+    /**
+     * Parse the {@code credits:{creator,editors[],editorCount}} block off a lease response. A relay older
+     * than this mod simply omits it, so anything missing/garbled yields {@link Credits#EMPTY} and the game
+     * shows no credit line at all.
+     */
+    private static Credits parseCredits(JsonObject o) {
+        if (!o.has("credits") || !o.get("credits").isJsonObject()) return Credits.EMPTY;
+        JsonObject c = o.getAsJsonObject("credits");
+        String creator = sanitizeName(str(c, "creator"));
+        List<String> editors = new java.util.ArrayList<>();
+        if (c.has("editors") && c.get("editors").isJsonArray()) {
+            for (JsonElement el : c.getAsJsonArray("editors")) {
+                if (el == null || !el.isJsonPrimitive()) continue;
+                String name = sanitizeName(el.getAsString());
+                if (!name.isEmpty()) editors.add(name);
+            }
+        }
+        int count = 0;
+        try {
+            if (c.has("editorCount") && !c.get("editorCount").isJsonNull()) count = c.get("editorCount").getAsInt();
+        } catch (RuntimeException ignored) { /* garbage count → fall back to what we can actually name */ }
+        return new Credits(creator, List.copyOf(editors), Math.max(count, editors.size()));
+    }
+
+    /** A string field, or {@code ""} when absent/null — tolerates a relay that predates the field. */
+    private static String str(JsonObject o, String k) {
+        return o.has(k) && !o.get(k).isJsonNull() ? o.get(k).getAsString() : "";
+    }
+
+    /**
+     * Make a relay-supplied name safe to drop into a chat component. The relay already strips these, but
+     * these strings go straight into other players' chat, so never trust the wire: § would otherwise be
+     * honoured as a legacy formatting code and control characters can corrupt the line.
+     */
+    private static String sanitizeName(String raw) {
+        if (raw == null || raw.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder(raw.length());
+        for (int i = 0; i < raw.length() && sb.length() < MAX_NAME_CHARS; i++) {
+            char ch = raw.charAt(i);
+            if (ch == '\u00a7' || ch < ' ' || ch == '\u007f') continue;
+            sb.append(ch);
+        }
+        return sb.toString().trim();
     }
 
     /** Parse the {@code deltas:[{seq,cells}]} array off a lease response (empty on absence/garbage). */
@@ -178,13 +252,16 @@ public final class SharedCarriageClient {
         return statusPost("/carriages/save", body);
     }
 
-    public static CompletableFuture<CallStatus> heartbeat(int id, String token, String holderUuid) {
+    public static CompletableFuture<CallStatus> heartbeat(int id, String token, String holderUuid, String holderName) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("token", token);
         // Carries the host uuid so the relay can backfill a lease claimed before any player was in the
         // level (world-load spawn) — otherwise those stay attributed to nobody for their whole hold.
         if (holderUuid != null && !holderUuid.isEmpty()) body.addProperty("uuid", holderUuid);
+        // The name backfills on the same terms but independently: consent may be granted after the lease
+        // was claimed, so the name can legitimately arrive later than the uuid did.
+        if (holderName != null && !holderName.isEmpty()) body.addProperty("name", holderName);
         return statusPost("/carriages/heartbeat", body);
     }
 

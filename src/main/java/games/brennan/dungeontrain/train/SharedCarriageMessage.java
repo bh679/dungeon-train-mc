@@ -1,8 +1,13 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.RandomSource;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 /**
  * Dark-gray flavour chat line shown the moment a player steps onto a shared carriage — the same muted
@@ -21,6 +26,11 @@ import net.minecraft.util.RandomSource;
  * chosen noun ({@code room / carriage / cart / space}), so every message reads a little differently and
  * the client renders it in its own language. Keys: {@code chat.dungeontrain.shared_carriage.new.1..N},
  * {@code .seen.1..N}, and the nouns {@code .noun.1..4}.</p>
+ *
+ * <p>{@link #creditLine} adds an optional SECOND, dimmer line naming who built the carriage. It is
+ * deliberately separate from the flavour lines above: a list of names doesn't fold gracefully into six
+ * different prose variants, and keeping it apart means a carriage with no names to show (anything stored
+ * before contributor names existed) renders exactly as it always did.</p>
  */
 public final class SharedCarriageMessage {
 
@@ -49,5 +59,49 @@ public final class SharedCarriageMessage {
         Component noun = Component.translatable("chat.dungeontrain.shared_carriage.noun." + nounIdx);
         return Component.translatable("chat.dungeontrain.shared_carriage." + group + "." + n, noun)
                 .withStyle(ChatFormatting.GRAY);
+    }
+
+    /**
+     * The "Built by X. Changed by Y and Z." credit, or {@code null} when there is nobody to name — an
+     * older relay, a build stored before names were captured, or contributors who never granted network
+     * consent. Callers send it as a second chat line only when it is non-null, so those carriages keep
+     * the plain flavour line they have always shown.
+     *
+     * <p>Rendered dark-gray with the names one step brighter, matching how a Death Note signs its
+     * target. At most five editors are named; any beyond that collapse into "and N more".</p>
+     */
+    @Nullable
+    public static Component creditLine(Credits credits) {
+        if (credits == null || !credits.hasAny()) return null;
+        MutableComponent out = Component.empty();
+        boolean hasCreator = !credits.creator().isEmpty();
+        if (hasCreator) {
+            out.append(Component.translatable("chat.dungeontrain.shared_carriage.credit.creator",
+                    name(credits.creator())));
+        }
+        List<String> editors = credits.editors();
+        if (!editors.isEmpty()) {
+            if (hasCreator) out.append(" ");
+            out.append(Component.translatable("chat.dungeontrain.shared_carriage.credit.editors",
+                    editorList(editors, credits.editorCount())));
+        }
+        return out.withStyle(ChatFormatting.DARK_GRAY);
+    }
+
+    /** The named editors joined with ", ", wrapped in "and N more" when the list was truncated. */
+    private static Component editorList(List<String> editors, int total) {
+        MutableComponent joined = Component.empty();
+        for (int i = 0; i < editors.size(); i++) {
+            if (i > 0) joined.append(", ");
+            joined.append(name(editors.get(i)));
+        }
+        int extra = total - editors.size();
+        if (extra <= 0) return joined;
+        return Component.translatable("chat.dungeontrain.shared_carriage.credit.more", joined, extra);
+    }
+
+    /** One contributor's name, a shade brighter than the surrounding line so it reads as a person. */
+    private static Component name(String raw) {
+        return Component.literal(raw).withStyle(ChatFormatting.GRAY);
     }
 }
