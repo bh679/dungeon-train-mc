@@ -78,8 +78,9 @@ public final class SharedCarriageMessage {
      * The editor clause has two families: one that follows a creator ("After them, …") and one that
      * stands alone, for the case where editors are named but the original builder is not.</p>
      *
-     * <p>Rendered dark-gray with the names one step brighter, matching how a Death Note signs its
-     * target. At most five editors are named; any beyond that collapse into "and N others besides".</p>
+     * <p>Rendered in the same gray as the flavour line it follows — names included, deliberately flat,
+     * so the pair reads as one thought rather than a message with a highlighted data field in it. At
+     * most five editors are named; any beyond that collapse into "and N others besides".</p>
      */
     @Nullable
     public static Component creditLine(Credits credits, RandomSource rng) {
@@ -100,7 +101,7 @@ public final class SharedCarriageMessage {
             if (hasCreator) out.append(" ");
             out.append(Component.translatable(key, editorList(editors, credits.editorCount())));
         }
-        return out.withStyle(ChatFormatting.DARK_GRAY);
+        return out.withStyle(ChatFormatting.GRAY);
     }
 
     /** The named editors joined with ", ", wrapped in "and N others" when the list was truncated. */
@@ -115,8 +116,8 @@ public final class SharedCarriageMessage {
         return Component.translatable("chat.dungeontrain.shared_carriage.credit.more", joined, extra);
     }
 
-    /** One contributor's name, a shade brighter than the surrounding line so it reads as a person. */
+    /** One contributor's name. Unstyled on purpose — it inherits the line's colour like any other word. */
     private static Component name(String raw) {
-        return Component.literal(raw).withStyle(ChatFormatting.GRAY);
+        return Component.literal(raw);
     }
 }

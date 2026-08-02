@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Sends a dark-gray chat hint the moment a player steps onto a shared carriage — a fresh-canvas line
+ * Sends a gray chat hint the moment a player steps onto a shared carriage — a fresh-canvas line
  * for a locally-placed carriage, or a "someone was here" line for one leased from the relay pool
  * (distinguished by {@link SharedCarriageRegistry.Instance#leasedFromPool}). See
  * {@link SharedCarriageMessage}.
@@ -31,16 +31,28 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>Detection polls each player's footing on a coarse cadence ({@link #CHECK_INTERVAL_TICKS}) and fires
  * only on a TRANSITION onto a new shared carriage (keyed by sub-level + carriage index), with a short
  * per-player cooldown so hopping a group boundary can't spam. Server-side only.</p>
+ *
+ * <p>A leased carriage adds a second line crediting its contributors, held back
+ * {@link #CREDIT_DELAY_TICKS} so it reads as an afterthought rather than arriving in the same instant
+ * as the flavour line. That beat is why the pending queue is drained every tick while the footing poll
+ * stays coarse.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class SharedCarriageEnterEvents {
 
     private static final int CHECK_INTERVAL_TICKS = 10;   // ~0.5 s
     private static final long MESSAGE_COOLDOWN_MS = 3000L;
+    /** Beat between the flavour line and the credit line, so they land as two thoughts, not one block. */
+    private static final int CREDIT_DELAY_TICKS = 20;     // 1 s
 
     /** Per-player key ("subLevelId:pIdx") of the shared carriage they were last found standing on. */
     private static final Map<UUID, String> LAST_KEY = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> LAST_MSG_MS = new ConcurrentHashMap<>();
+    /** Credit lines waiting out {@link #CREDIT_DELAY_TICKS} before they are sent. */
+    private static final Map<UUID, PendingCredit> PENDING_CREDIT = new ConcurrentHashMap<>();
+
+    /** A credit line held back until {@code dueTick} (the player's own tickCount). */
+    private record PendingCredit(Component line, int dueTick) {}
 
     private SharedCarriageEnterEvents() {}
 
@@ -49,6 +61,9 @@ public final class SharedCarriageEnterEvents {
         Player p = event.getEntity();
         if (p.level().isClientSide() || !(p instanceof ServerPlayer player)) return;
         if (!SharedCarriageGate.canDiscover()) return;
+        // Before the coarse footing poll: the credit beat needs tick resolution, and the poll only
+        // runs every CHECK_INTERVAL_TICKS.
+        releaseDueCredit(player);
         if (player.tickCount % CHECK_INTERVAL_TICKS != 0) return;
         if (!(player.level() instanceof ServerLevel level)) return;
 
@@ -89,11 +104,24 @@ public final class SharedCarriageEnterEvents {
         player.sendSystemMessage(leased
                 ? SharedCarriageMessage.seenCarriage(level.getRandom())
                 : SharedCarriageMessage.newCarriage(level.getRandom()));
-        // Second, dimmer line naming who built it. Null whenever there is nobody to credit — a fresh local
-        // carriage, a relay too old to send names, or a build stored before names were captured — so those
-        // carriages keep exactly the single-line message they showed before.
+        // Second line naming who built it, held back a beat so it doesn't land in the same instant as the
+        // flavour line. Null whenever there is nobody to credit — a fresh local carriage, a relay too old
+        // to send names, or a build stored before names were captured — so those carriages keep exactly
+        // the single-line message they showed before, with no dangling pause after it.
         Component credit = SharedCarriageMessage.creditLine(credits, level.getRandom());
-        if (credit != null) player.sendSystemMessage(credit);
+        if (credit != null) {
+            PENDING_CREDIT.put(id, new PendingCredit(credit, player.tickCount + CREDIT_DELAY_TICKS));
+        } else {
+            PENDING_CREDIT.remove(id); // a previous carriage's credit must not trail into this one
+        }
+    }
+
+    /** Send a player's held-back credit line once its beat has elapsed. */
+    private static void releaseDueCredit(ServerPlayer player) {
+        PendingCredit pending = PENDING_CREDIT.get(player.getUUID());
+        if (pending == null || player.tickCount < pending.dueTick()) return;
+        PENDING_CREDIT.remove(player.getUUID());
+        player.sendSystemMessage(pending.line());
     }
 
     @SubscribeEvent
@@ -101,5 +129,8 @@ public final class SharedCarriageEnterEvents {
         UUID id = event.getEntity().getUUID();
         LAST_KEY.remove(id);
         LAST_MSG_MS.remove(id);
+        // Drop any undelivered credit line — tickCount resets on rejoin, and a Dungeon Train death starts
+        // a whole new world, so a line held here would otherwise surface in a run it has nothing to do with.
+        PENDING_CREDIT.remove(id);
     }
 }
