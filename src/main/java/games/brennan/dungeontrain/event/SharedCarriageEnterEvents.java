@@ -92,7 +92,7 @@ public final class SharedCarriageEnterEvents {
         // Second, dimmer line naming who built it. Null whenever there is nobody to credit — a fresh local
         // carriage, a relay too old to send names, or a build stored before names were captured — so those
         // carriages keep exactly the single-line message they showed before.
-        Component credit = SharedCarriageMessage.creditLine(credits);
+        Component credit = SharedCarriageMessage.creditLine(credits, level.getRandom());
         if (credit != null) player.sendSystemMessage(credit);
     }
 

@@ -61,34 +61,49 @@ public final class SharedCarriageMessage {
                 .withStyle(ChatFormatting.GRAY);
     }
 
+    /** Ways to name the original builder, keyed {@code ….credit.creator.1..CREDIT_CREATOR_LINES}. */
+    private static final int CREDIT_CREATOR_LINES = 4;
+    /** Ways to name later editors AFTER a creator clause, keyed {@code ….credit.editors.1..N}. */
+    private static final int CREDIT_EDITOR_LINES = 4;
+    /** Ways to name editors with NO creator clause in front, keyed {@code ….credit.editors_alone.1..N}. */
+    private static final int CREDIT_EDITORS_ALONE_LINES = 2;
+
     /**
-     * The "Built by X. Changed by Y and Z." credit, or {@code null} when there is nobody to name — an
-     * older relay, a build stored before names were captured, or contributors who never granted network
-     * consent. Callers send it as a second chat line only when it is non-null, so those carriages keep
-     * the plain flavour line they have always shown.
+     * The "It began with X. After them, Y and Z." credit, or {@code null} when there is nobody to name —
+     * an older relay, a build stored before names were captured, or contributors who never granted
+     * network consent. Callers send it as a second chat line only when it is non-null, so those carriages
+     * keep the plain flavour line they have always shown.
+     *
+     * <p>Randomised like the flavour lines above it, so the pair doesn't settle into one fixed phrasing.
+     * The editor clause has two families: one that follows a creator ("After them, …") and one that
+     * stands alone, for the case where editors are named but the original builder is not.</p>
      *
      * <p>Rendered dark-gray with the names one step brighter, matching how a Death Note signs its
-     * target. At most five editors are named; any beyond that collapse into "and N more".</p>
+     * target. At most five editors are named; any beyond that collapse into "and N others besides".</p>
      */
     @Nullable
-    public static Component creditLine(Credits credits) {
+    public static Component creditLine(Credits credits, RandomSource rng) {
         if (credits == null || !credits.hasAny()) return null;
         MutableComponent out = Component.empty();
         boolean hasCreator = !credits.creator().isEmpty();
         if (hasCreator) {
-            out.append(Component.translatable("chat.dungeontrain.shared_carriage.credit.creator",
+            out.append(Component.translatable(
+                    "chat.dungeontrain.shared_carriage.credit.creator." + (rng.nextInt(CREDIT_CREATOR_LINES) + 1),
                     name(credits.creator())));
         }
         List<String> editors = credits.editors();
         if (!editors.isEmpty()) {
+            // "After them, …" only makes sense once someone has been named; otherwise it dangles.
+            String key = hasCreator
+                    ? "chat.dungeontrain.shared_carriage.credit.editors." + (rng.nextInt(CREDIT_EDITOR_LINES) + 1)
+                    : "chat.dungeontrain.shared_carriage.credit.editors_alone." + (rng.nextInt(CREDIT_EDITORS_ALONE_LINES) + 1);
             if (hasCreator) out.append(" ");
-            out.append(Component.translatable("chat.dungeontrain.shared_carriage.credit.editors",
-                    editorList(editors, credits.editorCount())));
+            out.append(Component.translatable(key, editorList(editors, credits.editorCount())));
         }
         return out.withStyle(ChatFormatting.DARK_GRAY);
     }
 
-    /** The named editors joined with ", ", wrapped in "and N more" when the list was truncated. */
+    /** The named editors joined with ", ", wrapped in "and N others" when the list was truncated. */
     private static Component editorList(List<String> editors, int total) {
         MutableComponent joined = Component.empty();
         for (int i = 0; i < editors.size(); i++) {
