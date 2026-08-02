@@ -29,6 +29,7 @@ import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
+import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
 import java.util.List;
 import java.util.UUID;
 import net.minecraft.network.chat.Component;
@@ -221,6 +222,7 @@ public class DungeonTrain {
 
         ModCreativeTabs.register(modBus);
         ModFeatures.register(modBus);
+        ModStructureTypes.register(modBus);
         ModMobEffects.register(modBus);
         ModSounds.register(modBus);
 

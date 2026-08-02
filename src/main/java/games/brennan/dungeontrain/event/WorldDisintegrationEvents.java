@@ -14,6 +14,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -21,6 +22,8 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.ChunkEvent;
+
+import java.util.Set;
 
 /**
  * Erodes overworld terrain (and the track's support pillars) to void across the
@@ -43,9 +46,35 @@ public final class WorldDisintegrationEvents {
 
     private WorldDisintegrationEvents() {}
 
-    /** Blocks the End-gen feature placed — never eroded, so the islands and chorus float in the void. */
-    private static boolean isPreservedEndBlock(BlockState state) {
-        return state.is(Blocks.END_STONE) || state.is(Blocks.CHORUS_PLANT) || state.is(Blocks.CHORUS_FLOWER);
+    /**
+     * The End city's block palette — every block id that appears in a vanilla {@code end_city} template.
+     * Cities are placed by {@link games.brennan.dungeontrain.worldgen.structure.BandEndCityStructure}
+     * during generation and must survive the void erosion intact, loot chests and all.
+     *
+     * <p>Matching on the palette rather than on the structure's bounding box is deliberate: erosion runs
+     * from a chunk-load handler, where resolving a structure start means reaching into neighbouring
+     * chunks that may not be loaded. None of these blocks occur anywhere else in the band, so the palette
+     * is both exact and free of re-entrancy.</p>
+     */
+    private static final Set<Block> END_CITY_BLOCKS = Set.of(
+            Blocks.PURPUR_BLOCK, Blocks.PURPUR_PILLAR, Blocks.PURPUR_STAIRS, Blocks.PURPUR_SLAB,
+            Blocks.END_STONE_BRICKS, Blocks.MAGENTA_STAINED_GLASS, Blocks.OBSIDIAN, Blocks.END_ROD,
+            Blocks.LADDER, Blocks.CHEST, Blocks.ENDER_CHEST, Blocks.BREWING_STAND,
+            Blocks.DRAGON_WALL_HEAD, Blocks.MAGENTA_WALL_BANNER);
+
+    /**
+     * Blocks the End generation placed — never eroded, so the islands, chorus and End cities float in the
+     * void the way they do in the real End.
+     *
+     * <p>{@code core} is true only in the fully-eroded band core, the one place End cities generate. The
+     * city palette is checked there and nowhere else, so ordinary overworld builds that happen to share a
+     * block with an End city (a village chest, a ruined portal's obsidian) still erode in the fade zones.</p>
+     */
+    private static boolean isPreservedEndBlock(BlockState state, boolean core) {
+        if (state.is(Blocks.END_STONE) || state.is(Blocks.CHORUS_PLANT) || state.is(Blocks.CHORUS_FLOWER)) {
+            return true;
+        }
+        return core && END_CITY_BLOCKS.contains(state.getBlock());
     }
 
     @SubscribeEvent
@@ -121,7 +150,7 @@ public final class WorldDisintegrationEvents {
                         if (p <= 0.0) continue;
                         if (Disintegration.coherentNoise(seed, worldX, y, worldZ) >= p) continue;
                         BlockState cur = section.getBlockState(dx, ly, dz);
-                        if (cur.isAir() || isPreservedEndBlock(cur)) continue;
+                        if (cur.isAir() || isPreservedEndBlock(cur, ramp >= 1.0)) continue;
                         if (cur.hasBlockEntity()) {
                             chunk.removeBlockEntity(new BlockPos(worldX, y, worldZ));
                         }

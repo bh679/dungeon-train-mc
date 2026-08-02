@@ -60,6 +60,8 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_DISINTEGRATION_END_HOLD_BLOCKS = 0;
     public static final int MAX_DISINTEGRATION_END_HOLD_BLOCKS = 100_000_000;
     public static final int DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS = 5000;
+    /** End cities on the End-band islands (vanilla spacing + biome rules) are on by default. */
+    public static final boolean DEFAULT_DISINTEGRATION_END_CITIES = true;
     /** Blocks of normal overworld between repeats of the band (the cycle repeats forever). */
     public static final int MIN_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 0;
     public static final int MAX_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 100_000_000;
@@ -270,6 +272,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue DISINTEGRATION_FADE_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_VOID_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_END_HOLD_BLOCKS;
+    public static final ModConfigSpec.BooleanValue DISINTEGRATION_END_CITIES;
     public static final ModConfigSpec.IntValue DISINTEGRATION_OVERWORLD_HOLD_BLOCKS;
     public static final ModConfigSpec.BooleanValue NETHER_TRANSITION_ENABLED;
     public static final ModConfigSpec.IntValue NETHER_STAGE_BLOCKS;
@@ -315,6 +318,7 @@ public final class DungeonTrainCommonConfig {
         DISINTEGRATION_FADE_BLOCKS = pair.getLeft().disintegrationFadeBlocks;
         DISINTEGRATION_VOID_HOLD_BLOCKS = pair.getLeft().disintegrationVoidHoldBlocks;
         DISINTEGRATION_END_HOLD_BLOCKS = pair.getLeft().disintegrationEndHoldBlocks;
+        DISINTEGRATION_END_CITIES = pair.getLeft().disintegrationEndCities;
         DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = pair.getLeft().disintegrationOverworldHoldBlocks;
         NETHER_TRANSITION_ENABLED = pair.getLeft().netherTransitionEnabled;
         NETHER_STAGE_BLOCKS = pair.getLeft().netherStageBlocks;
@@ -425,6 +429,11 @@ public final class DungeonTrainCommonConfig {
                 .comment("Blocks of End world-gen (floating End-stone islands) at the centre of the band. Default 5000.")
                 .defineInRange("disintegrationEndHoldBlocks", DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS,
                         MIN_DISINTEGRATION_END_HOLD_BLOCKS, MAX_DISINTEGRATION_END_HOLD_BLOCKS);
+        ModConfigSpec.BooleanValue disintegrationEndCities = b
+                .comment("Generate End cities on the End islands, the way the real End does — same spacing, same",
+                        "end_highlands/end_midlands restriction, same towers, ships, shulkers and loot. Turn off",
+                        "for empty islands. Default true.")
+                .define("disintegrationEndCities", DEFAULT_DISINTEGRATION_END_CITIES);
         ModConfigSpec.IntValue disintegrationOverworldHoldBlocks = b
                 .comment("Blocks of normal overworld BEFORE each special phase (used twice per cycle: before the",
                         "Nether phase and before the End phase). The single cycle tiles forever along +X from",
@@ -619,7 +628,8 @@ public final class DungeonTrainCommonConfig {
 
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
-                disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationOverworldHoldBlocks,
+                disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationEndCities,
+                disintegrationOverworldHoldBlocks,
                 netherTransitionEnabled, netherStageBlocks, netherStageMultipliers, netherBaseReliefBlocks,
                 netherBeachBlocks, netherMountainHoldBlocks, netherCoreFadeBlocks, netherCoreHoldBlocks,
                 disintegrationFirstOverworldBlocks, disintegrationSkyFadeOffsetBlocks,
@@ -716,6 +726,11 @@ public final class DungeonTrainCommonConfig {
     /** End world-gen core span (blocks); falls back to the hardcoded default pre-load. */
     public static int getDisintegrationEndHoldBlocks() {
         return isLoaded() ? DISINTEGRATION_END_HOLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS;
+    }
+
+    /** End cities on the End-band islands; falls back to the hardcoded default pre-load. */
+    public static boolean isDisintegrationEndCitiesEnabled() {
+        return isLoaded() ? DISINTEGRATION_END_CITIES.get() : DEFAULT_DISINTEGRATION_END_CITIES;
     }
 
     /** Overworld stretch (blocks) between band repeats; falls back to the hardcoded default pre-load. */
@@ -908,6 +923,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue disintegrationFadeBlocks,
                           ModConfigSpec.IntValue disintegrationVoidHoldBlocks,
                           ModConfigSpec.IntValue disintegrationEndHoldBlocks,
+                          ModConfigSpec.BooleanValue disintegrationEndCities,
                           ModConfigSpec.IntValue disintegrationOverworldHoldBlocks,
                           ModConfigSpec.BooleanValue netherTransitionEnabled,
                           ModConfigSpec.IntValue netherStageBlocks,
