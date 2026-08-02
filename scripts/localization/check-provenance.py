@@ -263,24 +263,90 @@ def print_report(targets: list[str], prov_dir: Path, authors: dict[str, str]) ->
           f"{tot['reviewed']:>8}")
 
 
+def check_namespace(ns: provenance_io.Namespace, args: argparse.Namespace,
+                    authors: dict[str, str], urls: dict[str, str]
+                    ) -> tuple[list[str], list[str]]:
+    """Validate one namespace's sidecars. Returns (errors, checkable locales), no printing.
+
+    Errors are namespace-prefixed when the whole table is being checked, so a failure names
+    which mod it came from. Credit/contributor checks are skipped for namespaces that ship
+    none (siblings).
+    """
+    tag = "" if args.single_namespace else f"{ns.name}: "
+    if not ns.lang_dir.is_dir():
+        return ([f"{tag}lang dir not found at {ns.lang_dir}"], [])
+    all_locales = provenance_io.locales(ns.lang_dir)
+    # A locale absent from this namespace is silently skipped (across the table, zh_cn isn't
+    # in discordpresence); an explicit unknown locale is caught in main as a usage error.
+    targets = [loc for loc in args.locale if loc in all_locales] if args.locale else all_locales
+
+    errors = check_file_coverage(ns.lang_dir, ns.prov_dir, targets)
+    checkable = [loc for loc in targets if (ns.prov_dir / f"{loc}.json").is_file()]
+    for locale in checkable:
+        locale_errors = check_locale(locale, ns.lang_dir, ns.prov_dir)
+        try:
+            prov = provenance_io.load_provenance(ns.prov_dir / f"{locale}.json")
+        except (json.JSONDecodeError, ValueError):
+            errors.extend(locale_errors)
+            continue  # already reported by check_locale
+        registry_errors = check_registry(locale, prov, authors)
+        errors.extend(locale_errors)
+        errors.extend(registry_errors)
+        if not locale_errors and not registry_errors and ns.credits_dir is not None:
+            # Counts computed from a structurally-broken sidecar would be noise.
+            errors.extend(check_credit_counts(locale, prov, authors, ns.credits_dir))
+
+    # The translator-credits file is global; only meaningful once every sidecar parses cleanly
+    # (build_contributors reads them all), so gate it on a clean run so far.
+    if not errors and ns.contributors_file is not None:
+        errors.extend(check_contributors(ns.lang_dir, ns.prov_dir, authors, urls,
+                                         ns.contributors_file))
+    if not args.single_namespace:
+        errors = [f"{ns.name}: {e}" for e in errors]
+    return (errors, checkable)
+
+
+def resolve_namespaces(args: argparse.Namespace) -> list[provenance_io.Namespace] | int:
+    """The namespaces to check, or an error code. Sets ``args.single_namespace``.
+
+    Explicit --lang-dir/--provenance-dir → one ad-hoc namespace (the tests use this);
+    otherwise the full table, optionally filtered by --namespace.
+    """
+    if args.lang_dir is not None or args.provenance_dir is not None:
+        args.single_namespace = True
+        return [provenance_io.Namespace(
+            "(explicit)",
+            args.lang_dir or provenance_io.DEFAULT_LANG_DIR,
+            args.provenance_dir or provenance_io.DEFAULT_PROVENANCE_DIR,
+            args.credits_dir, args.contributors_file)]
+    args.single_namespace = False
+    table = provenance_io.namespaces()
+    if args.namespace:
+        unknown = sorted(set(args.namespace) - {n.name for n in table})
+        if unknown:
+            print(f"ERROR: unknown namespace(s): {', '.join(unknown)}", file=sys.stderr)
+            return 2
+        return [n for n in table if n.name in args.namespace]
+    return table
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--lang-dir", type=Path, default=provenance_io.DEFAULT_LANG_DIR)
-    parser.add_argument("--provenance-dir", type=Path,
-                        default=provenance_io.DEFAULT_PROVENANCE_DIR)
-    parser.add_argument("--credits-dir", type=Path, default=provenance_io.DEFAULT_CREDITS_DIR)
-    parser.add_argument("--contributors-file", type=Path,
-                        default=provenance_io.DEFAULT_CONTRIBUTORS_FILE)
+    parser.add_argument("--lang-dir", type=Path, default=None,
+                        help="check one explicit lang dir (default: the namespace table)")
+    parser.add_argument("--provenance-dir", type=Path, default=None)
+    parser.add_argument("--credits-dir", type=Path, default=None)
+    parser.add_argument("--contributors-file", type=Path, default=None)
     parser.add_argument("--authors-file", type=Path, default=provenance_io.DEFAULT_AUTHORS_FILE)
+    parser.add_argument("--namespace", action="append",
+                        help="restrict to namespace(s); default all "
+                             "(dungeontrain + siblings)")
     parser.add_argument("--locale", action="append",
                         help="restrict to specific locale(s); default all non-en_us")
     parser.add_argument("--report", action="store_true",
                         help="print the per-locale coverage table (after validating)")
     args = parser.parse_args(argv)
 
-    if not args.lang_dir.is_dir():
-        print(f"ERROR: lang dir not found at {args.lang_dir}", file=sys.stderr)
-        return 2
     if not args.authors_file.is_file():
         print(f"ERROR: author registry not found at {args.authors_file}", file=sys.stderr)
         return 2
@@ -289,36 +355,31 @@ def main(argv: list[str] | None = None) -> int:
     except (json.JSONDecodeError, ValueError) as exc:
         print(f"ERROR: bad author registry — {exc}", file=sys.stderr)
         return 2
-    all_locales = provenance_io.locales(args.lang_dir)
-    targets = args.locale or all_locales
-    unknown = sorted(set(targets) - set(all_locales))
-    if unknown:
-        print(f"ERROR: unknown locale(s): {', '.join(unknown)}", file=sys.stderr)
-        return 2
 
-    errors = check_file_coverage(args.lang_dir, args.provenance_dir, targets)
-    checkable = [loc for loc in targets
-                 if (args.provenance_dir / f"{loc}.json").is_file()]
-    for locale in checkable:
-        locale_errors = check_locale(locale, args.lang_dir, args.provenance_dir)
-        try:
-            prov = provenance_io.load_provenance(args.provenance_dir / f"{locale}.json")
-        except (json.JSONDecodeError, ValueError):
-            errors.extend(locale_errors)
-            continue  # already reported by check_locale
-        registry_errors = check_registry(locale, prov, authors)
-        errors.extend(locale_errors)
-        errors.extend(registry_errors)
-        if not locale_errors and not registry_errors:
-            # Counts computed from a structurally-broken sidecar would be noise.
-            errors.extend(check_credit_counts(locale, prov, authors, args.credits_dir))
+    ns_list = resolve_namespaces(args)
+    if isinstance(ns_list, int):
+        return ns_list
 
-    # The translator-credits file is global; only meaningful once every sidecar parses cleanly
-    # (build_contributors reads them all), so gate it on a clean run so far.
-    if not errors:
-        urls = provenance_io.load_author_urls(args.authors_file)
-        errors.extend(check_contributors(args.lang_dir, args.provenance_dir, authors, urls,
-                                         args.contributors_file))
+    # Usage-error validation (exit 2) for the explicit single-dir path the tests drive.
+    if args.single_namespace:
+        ns = ns_list[0]
+        if not ns.lang_dir.is_dir():
+            print(f"ERROR: lang dir not found at {ns.lang_dir}", file=sys.stderr)
+            return 2
+        if args.locale:
+            unknown = sorted(set(args.locale) - set(provenance_io.locales(ns.lang_dir)))
+            if unknown:
+                print(f"ERROR: unknown locale(s): {', '.join(unknown)}", file=sys.stderr)
+                return 2
+
+    urls = provenance_io.load_author_urls(args.authors_file)
+
+    errors: list[str] = []
+    checkable_by_ns: list[tuple[provenance_io.Namespace, list[str]]] = []
+    for ns in ns_list:
+        ns_errors, checkable = check_namespace(ns, args, authors, urls)
+        errors.extend(ns_errors)
+        checkable_by_ns.append((ns, checkable))
 
     if errors:
         print("Provenance check FAILED:", file=sys.stderr)
@@ -326,21 +387,25 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  - {err}", file=sys.stderr)
         return 1
 
-    # Advisory only — deliberately does not affect the exit code (see module docstring).
-    for locale in targets:
-        prov = provenance_io.load_provenance(args.provenance_dir / f"{locale}.json")
-        for warn in cross_check_credits(locale, prov, args.credits_dir):
-            print(f"WARNING: {warn}", file=sys.stderr)
-
-    if args.report:
-        print_report(targets, args.provenance_dir, authors)
-    else:
-        for locale in targets:
-            prov = provenance_io.load_provenance(args.provenance_dir / f"{locale}.json")
-            reviewed = sum(1 for e in prov.values() if e["reviewer"])
-            _, _, unrev = provenance_io.ai_counts(prov, authors)
-            print(f"OK: {locale} — {len(prov)} keys aligned, {reviewed} human-reviewed, "
-                  f"{unrev} AI-unreviewed.")
+    multi = not args.single_namespace and len(ns_list) > 1
+    for ns, checkable in checkable_by_ns:
+        # Advisory only — deliberately does not affect the exit code (see module docstring).
+        if ns.credits_dir is not None:
+            for locale in checkable:
+                prov = provenance_io.load_provenance(ns.prov_dir / f"{locale}.json")
+                for warn in cross_check_credits(locale, prov, ns.credits_dir):
+                    print(f"WARNING: {warn}", file=sys.stderr)
+        if multi:
+            print(f"# {ns.name}")
+        if args.report:
+            print_report(checkable, ns.prov_dir, authors)
+        else:
+            for locale in checkable:
+                prov = provenance_io.load_provenance(ns.prov_dir / f"{locale}.json")
+                reviewed = sum(1 for e in prov.values() if e["reviewer"])
+                _, _, unrev = provenance_io.ai_counts(prov, authors)
+                print(f"OK: {locale} — {len(prov)} keys aligned, {reviewed} human-reviewed, "
+                      f"{unrev} AI-unreviewed.")
     return 0
 
 

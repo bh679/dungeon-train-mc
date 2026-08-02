@@ -251,6 +251,16 @@ public final class DungeonTrainCommonConfig {
      */
     public static final boolean DEFAULT_BREAK_BLOCKS_ON_CONTACT = true;
 
+    /**
+     * Weight of a backer name/phrase against the other refs in the AdventureItemNames segment it is
+     * added to (see {@code AinBackerOverlay}). AIN's own community-names pool sits at weight 58-100
+     * in those segments, so the default of 20 makes a backer noticeably rarer than a Discord regular
+     * — present, but not swamping the hand-written names. 0 disables the injection entirely.
+     */
+    public static final double DEFAULT_BACKER_NAME_WEIGHT = 20.0;
+    public static final double MIN_BACKER_NAME_WEIGHT = 0.0;
+    public static final double MAX_BACKER_NAME_WEIGHT = 1000.0;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_BEHIND_SPAWN;
@@ -291,6 +301,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.DoubleValue CHUNCKS_KEEP_DENSITY;
     public static final ModConfigSpec.DoubleValue CHUNCKS_SLICE_RATIO;
     public static final ModConfigSpec.BooleanValue BREAK_BLOCKS_ON_CONTACT;
+    public static final ModConfigSpec.DoubleValue BACKER_NAME_WEIGHT;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -335,6 +346,7 @@ public final class DungeonTrainCommonConfig {
         CHUNCKS_KEEP_DENSITY = pair.getLeft().chuncksKeepDensity;
         CHUNCKS_SLICE_RATIO = pair.getLeft().chuncksSliceRatio;
         BREAK_BLOCKS_ON_CONTACT = pair.getLeft().breakBlocksOnContact;
+        BACKER_NAME_WEIGHT = pair.getLeft().backerNameWeight;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -364,6 +376,16 @@ public final class DungeonTrainCommonConfig {
                         "corridor. false = the train phases through them silently. Used by any world that has not set a",
                         "per-world override in-game (Mods -> Dungeon Train -> Config while in a world). Default true.")
                 .define("defaultBreakBlocksOnContact", DEFAULT_BREAK_BLOCKS_ON_CONTACT);
+        ModConfigSpec.DoubleValue backerNameWeight = b
+                .comment("How heavily a BACKER name/phrase is weighted against the other options in the",
+                        "AdventureItemNames segment it joins — the cosmetic backers buy, which puts their name into",
+                        "generated item names, mob names, PlayerMob names and NPC dialogue. AIN's own community-names",
+                        "pool sits at 58-100 in those segments, so the default 20 makes a backer noticeably rarer than",
+                        "a hand-written Discord name rather than swamping it. Set 0 to switch backer names off",
+                        "entirely. Has no effect when the backer pool is empty or the relay is unreachable — in that",
+                        "case naming is byte-identical to a build without the feature.")
+                .defineInRange("backerNameWeight", DEFAULT_BACKER_NAME_WEIGHT,
+                        MIN_BACKER_NAME_WEIGHT, MAX_BACKER_NAME_WEIGHT);
         b.pop();
 
         b.push("worldgen");
@@ -607,7 +629,7 @@ public final class DungeonTrainCommonConfig {
                 upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute,
                 chuncksEnabled, chuncksHoldBlocks, chuncksFadeBlocks, chuncksLeadGapBlocks,
                 chuncksKeepDensity, chuncksSliceRatio,
-                breakBlocksOnContact);
+                breakBlocksOnContact, backerNameWeight);
     }
 
     /**
@@ -642,6 +664,11 @@ public final class DungeonTrainCommonConfig {
         int clamped = Math.max(MIN_PLAYER_MOB_BEHIND_SPAWN_PERCENT, Math.min(MAX_PLAYER_MOB_BEHIND_SPAWN_PERCENT, value));
         DEFAULT_PLAYER_MOB_BEHIND_SPAWN.set(clamped);
         DEFAULT_PLAYER_MOB_BEHIND_SPAWN.save();
+    }
+
+    /** Weight of a backer name/phrase in AIN naming; falls back to the hardcoded default pre-load. */
+    public static double getBackerNameWeight() {
+        return isLoaded() ? BACKER_NAME_WEIGHT.get() : DEFAULT_BACKER_NAME_WEIGHT;
     }
 
     /** Global default for train-on-contact block breaking; falls back to the hardcoded default pre-load. */
@@ -911,5 +938,6 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue chuncksLeadGapBlocks,
                           ModConfigSpec.DoubleValue chuncksKeepDensity,
                           ModConfigSpec.DoubleValue chuncksSliceRatio,
-                          ModConfigSpec.BooleanValue breakBlocksOnContact) {}
+                          ModConfigSpec.BooleanValue breakBlocksOnContact,
+                          ModConfigSpec.DoubleValue backerNameWeight) {}
 }

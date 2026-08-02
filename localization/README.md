@@ -1,4 +1,19 @@
-# Per-Line Translation Provenance
+# Translation Provenance
+
+Every translated string committed in this repo carries a `{author, reviewer}` record — who
+produced the current translation and who human-reviewed it — so anyone can see at a glance
+which text is machine-translated and which a human has checked. Three bodies of content are
+tracked, all repo-side only (see below):
+
+| Content | Source | Sidecars | Tooling |
+|---|---|---|---|
+| dungeontrain UI (flat lang keys) | `assets/dungeontrain/lang/<locale>.json` | `provenance/<locale>.json` | `stamp-provenance.py` / `check-provenance.py` |
+| Sibling-mod UI (AIN / PlayerMob / DiscordPresence) | `assets/<namespace>/lang/<locale>.json` | `provenance/<namespace>/<locale>.json` | same, all namespaces by default |
+| Narrative books/stories (per book) | `data/dungeontrain/narrative_localizations/<locale>/**` | `narrative_provenance/<locale>.json` | `stamp-narrative-provenance.py` / `check-narrative-provenance.py` |
+
+The rest of this doc describes the dungeontrain per-line system in full; the
+[Siblings](#sibling-mod-namespaces) and [Narrative books](#narrative-booksstories) sections
+below note only where each differs.
 
 `provenance/<locale>.json` records, for **every** localized string in
 `src/main/resources/assets/dungeontrain/lang/<locale>.json`, who produced the current
@@ -51,7 +66,7 @@ locale.
 | Name | Kind | Meaning |
 |---|---|---|
 | `Opus 4.8 (Claude)` | ai | Machine translation by Claude Opus 4.8 (waves #768, #776, #809, #821; the early zh_cn commits #754/#755/#763 didn't record their model and are **assumed Opus 4.8** per operator decision, 2026-07-23) |
-| `老本願` | human | Community translator — original zh_cn tree (#754 seed, #759 v0.458.0 drop) and its review (#770) |
+| `老本願` | human | Community translator — original zh_cn tree (#754 seed, #759 v0.458.0 drop), its review (#770), and the v0.516.0 revision pass (2026-07) that took zh_cn to zero AI-unreviewed lines |
 | `阿世xAsh` | human | Community translator — the #823 zh_cn/zh_tw Support-page revision pass |
 
 To use a new model or translator name, add it to `authors.json` first —
@@ -59,7 +74,58 @@ To use a new model or translator name, add it to `authors.json` first —
 the sidecars. Name future models `<Model> (Claude)` etc., and humans by their
 preferred credited name.
 
+## Sibling-mod namespaces
+
+AdventureItemNames, PlayerMob and DiscordPresence are separate mods whose *source* repos are
+English-only — their community translations are committed **here in DT** (under
+`assets/<namespace>/lang/`), so their provenance lives here too, at
+`provenance/<namespace>/<locale>.json`. These use the **same per-line schema, scripts and
+author registry** as dungeontrain, with two differences:
+
+- They have **no shipped credit files or in-game AI-ring** (bookkeeping only) — so no
+  `total_keys`/`ai_authored`/`ai_unreviewed` counts and no `translation_contributors.json`.
+- Their locale set is whatever each namespace's lang dir actually contains — e.g.
+  DiscordPresence has no `zh_cn` here (it lives in its source repo), so it simply has no
+  `zh_cn` sidecar. Nothing is hardcoded; the tooling discovers each namespace's locales.
+
+`stamp-provenance.py` and `check-provenance.py` process **all namespaces by default**
+(dungeontrain + the three siblings). Use `--namespace <name>` to restrict, or the explicit
+`--lang-dir`/`--provenance-dir` for a one-off dir.
+
+## Narrative books/stories
+
+The long-form books under `data/dungeontrain/narrative_localizations/<locale>/` are tracked
+**per book** (a book is translated as one unit), not per line. Each locale's sidecar
+`narrative_provenance/<locale>.json` is a flat map keyed by the book's path relative to the
+locale dir (sans `.json`):
+
+```json
+{
+  "random_books/deathnote": {"author": "老本願", "reviewer": "老本願"},
+  "starting_books/questions": {"author": "Opus 4.8 (Claude)", "reviewer": ""}
+}
+```
+
+Same `{author, reviewer}` semantics, same author registry, same on-disk format and the same
+"restamp author resets reviewer" rule. There is no `en_us` locale here (the English books
+live in `data/dungeontrain/narratives/`, not as a locale) and no shipped credits. Driven by
+`stamp-narrative-provenance.py` / `check-narrative-provenance.py` (same verbs as the lang
+scripts, but `--files` selects books and `--report` counts books):
+
+```bash
+# new/changed book translations:
+python3 scripts/localization/stamp-narrative-provenance.py --sync --author 'Opus 4.8 (Claude)'
+# a translator reviewed a book:
+python3 scripts/localization/stamp-narrative-provenance.py --locale zh_cn \
+    --author 老本願 --reviewer 老本願 --files random_books/deathnote
+# coverage report:
+python3 scripts/localization/check-narrative-provenance.py --report
+```
+
 ## Workflows
+
+These commands cover the dungeontrain + sibling lang files. For the narrative books, use the
+`*-narrative-provenance.py` equivalents shown above.
 
 **New translation wave** (you added/changed lang keys):
 
@@ -93,15 +159,48 @@ The initial sidecars were generated by `scripts/localization/backfill-provenance
 (committed as the audit trail; its commit map is closed — never rerun it after new
 lang commits). Judgment calls baked into that backfill:
 
-- **zh_cn reviewer coverage** comes from the PR #770 `human_reviewed` flip: the 806
-  keys that existed then (values verified unchanged since) carry `reviewer: 老本願`.
-  Keys machine-added afterwards (#809, #821) are unreviewed — which is why zh_cn shows
-  ~94.6% instead of 100%, and why the check emits an advisory WARNING about the
-  locale-level flag.
+- **zh_cn reviewer coverage** originally came from the PR #770 `human_reviewed` flip: the
+  806 keys that existed then (values verified unchanged since) carried `reviewer: 老本願`,
+  leaving the keys machine-added afterwards (#809, #821) unreviewed at ~94.6%.
+  **Closed by 老本願's v0.516.0 revision pass (2026-07)**, which revised 84 of those
+  Opus-authored lines (becoming author *and* reviewer) and reviewed the remaining 26
+  as-is (author stays `Opus 4.8 (Claude)`, reviewer 老本願). zh_cn is now **0
+  AI-unreviewed**. The advisory WARNING about the locale-level flag still fires, but for
+  one line only — `support.subtitle`, see the next bullet — not for a machine-translation
+  gap.
 - **`gui.dungeontrain.support.subtitle`** (zh_cn + zh_tw) is authored by 阿世xAsh but
   ships Claude's 力所能及 idiom fix "pending translator confirmation" (PR #823's own
   words), so it stays **unreviewed** until the translator confirms — at which point:
   `stamp-provenance.py --locale zh_cn --locale zh_tw --reviewer 阿世xAsh --keys gui.dungeontrain.support.subtitle`
-- **The 3 `.modpack` sibling keys** (zh_cn + zh_tw) are Claude-derived variants
-  (模组→整合包) of 阿世xAsh's revised copy that the translator never saw: credited
-  `Opus 4.8 (Claude)`, unreviewed.
+- **The 3 `.modpack` sibling keys** were Claude-derived variants (模组→整合包) of
+  阿世xAsh's revised copy that the translator never saw: credited `Opus 4.8 (Claude)`,
+  unreviewed. Still true for **zh_tw**; for **zh_cn** they were rewritten from scratch in
+  老本願's v0.516.0 pass and are now `老本願 / 老本願`.
+
+### Sibling namespaces + narrative books (July 2026)
+
+The sibling-namespace sidecars (`provenance/{adventureitemnames,playermob,discordpresence}/`)
+and the narrative sidecars (`narrative_provenance/`) were first backfilled with a plain
+`stamp-*-provenance.py --sync --author 'Opus 4.8 (Claude)'` — every entry credited to Opus and
+unreviewed, the conservative default. These bodies have no closed commit-map backfill script —
+a fresh `--sync` is the correct way to pick up new siblings/books.
+
+**`zh_cn` correction (2026-07-26).** That blanket default was wrong for Chinese. Revision
+history shows the `zh_cn` **sibling UI** (AdventureItemNames, PlayerMob) and **narrative books**
+are 老本願's community translation, not machine output:
+
+- Both sibling `zh_cn` lang files were introduced solely by **#755** (`01e4ad2a`, "auto-load
+  Chinese"), bundled from 老本願's `dev/chinese-localization-autoload` branch under the
+  "Localized by 老本願" credit — genuine human translation, not en_us copies.
+- The 45 `zh_cn` narrative books trace to **#759** (`d229aa73`, 老本願's v0.458.0 drop, 43
+  books) and #755 (2 books). `random_books/deathnote`'s prose is 老本願's; its one-line title
+  field (死亡笔记) was appended by #766 — a trivial term, so the book is credited 老本願.
+- The earlier "#755 = assumed Opus" call applied only to the scattered **dungeontrain UI draft
+  keys** ("draft — confirm with 老本願"), never to this sibling/narrative bundle.
+  DiscordPresence's `zh_cn` was *removed* at #755 (DP self-localizes), so it has no sidecar.
+
+Operator decision (confirmed 2026-07-26): those `zh_cn` entries are **author 老本願, reviewer
+老本願** (translated and reviewed by 老本願). Re-stamped with
+`stamp-*-provenance.py --namespace … --locale zh_cn --author 老本願 --reviewer 老本願 --all`.
+All **other** locales (de/fr/ja/zh_tw/…) came from the Opus AI waves (#768/#776/#766) and
+correctly remain `Opus / unreviewed`.

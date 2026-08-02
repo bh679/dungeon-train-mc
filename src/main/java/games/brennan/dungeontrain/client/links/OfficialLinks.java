@@ -29,6 +29,14 @@ public final class OfficialLinks {
             "https://revolut.me/brennacg7?currency=AUD&amount=2500&note=Dungeon%20Train%20";
     static final String FALLBACK_AFFILIATE =
             "https://billing.kinetichosting.com/aff.php?aff=1461";
+    /**
+     * The China-facing payment link (Stripe, offering Alipay + WeChat Pay) has NO baked fallback on
+     * purpose — it is relay-only. Patreon and Revolut are both walled in mainland China, so this is
+     * the one route that works there; but until the relay serves {@code payment_cn}, {@link
+     * #paymentCn()} returns null and every screen keeps its pre-existing behaviour. That lets the
+     * link go live for already-shipped jars the moment {@code PAYMENT_CN_URL} is set on the relay,
+     * with no rebuild and no re-release.
+     */
 
     private static final int MAX_URL = 500;
 
@@ -53,6 +61,9 @@ public final class OfficialLinks {
     public static String payment()   { return resolve("payment", FALLBACK_PAYMENT); }
     public static String affiliate() { return resolve("affiliate", FALLBACK_AFFILIATE); }
 
+    /** The China payment link, or {@code null} when the relay has not served a valid one. */
+    public static String paymentCn() { return resolve("payment_cn", null); }
+
     /** Called by the fetcher with the raw relay map; invalid entries are dropped, valid ones kept. */
     static void accept(Map<String, String> raw) {
         relay = sanitize(raw);
@@ -63,6 +74,7 @@ public final class OfficialLinks {
         failed = true;
     }
 
+    /** The relay's value for {@code key}, else {@code fallback} — which may be null for relay-only keys. */
     private static String resolve(String key, String fallback) {
         String v = relay.get(key);
         return v != null ? v : fallback;

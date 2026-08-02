@@ -20,8 +20,6 @@ import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.fml.ModList;
 
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -76,6 +74,7 @@ public final class SupportScreen extends Screen {
     /** Sprite tints (multiplied over the grey button sprite). */
     private static final float[] TINT_ORANGE = {1.00F, 0.47F, 0.38F}; // Patreon
     private static final float[] TINT_GREEN  = {0.30F, 0.80F, 0.35F}; // Direct donation
+    private static final float[] TINT_BLUE   = {0.35F, 0.62F, 1.00F}; // China payment (Alipay blue)
 
     private final Screen parent;
 
@@ -131,10 +130,25 @@ public final class SupportScreen extends Screen {
      * Resolve a copy key to its {@code .modpack} variant when this looks like a
      * modpack install and the current language actually has that variant —
      * otherwise the base key, so untranslated languages fall back cleanly.
+     *
+     * <p>The {@code .cn} variant is applied first, so the two suffixes compose:
+     * {@code desc.cn.modpack} → {@code desc.cn} → {@code desc.modpack} → {@code desc}.
+     * Each step is guarded by {@link I18n#exists}, so only the languages that
+     * actually author a variant ever see it.</p>
      */
     private static String copyKey(String baseKey) {
-        String modpackKey = baseKey + ".modpack";
-        return isModpackInstall() && I18n.exists(modpackKey) ? modpackKey : baseKey;
+        String base = cnKey(baseKey);
+        String modpackKey = base + ".modpack";
+        return isModpackInstall() && I18n.exists(modpackKey) ? modpackKey : base;
+    }
+
+    /**
+     * The {@code .cn} copy variant when this client is on the China payment route — the base copy
+     * names Patreon, which is gone from the Financial section in that case.
+     */
+    private static String cnKey(String baseKey) {
+        String cn = baseKey + ".cn";
+        return PaymentLinks.useChinaPayment() && I18n.exists(cn) ? cn : baseKey;
     }
 
     @Override
@@ -154,15 +168,15 @@ public final class SupportScreen extends Screen {
         subtitleY = y;
         y += subtitleLines.size() * lh + 8;
 
-        // Financial — a Direct Donation button (Revolut) then the orange Patreon
-        // button; the affiliate is an inline link spliced into the copy.
+        // Financial — a Direct Donation button (Revolut) then, in the second slot, either the orange
+        // Patreon button or (Chinese clients) the China payment button, since Patreon is blocked
+        // there. The affiliate is an inline link spliced into the copy.
         y = addSection(y, lh,
                 Component.translatable("gui.dungeontrain.support.financial.header"),
                 Component.translatable(copyKey("gui.dungeontrain.support.financial.desc"), affiliateLink()),
                 new LinkButton("gui.dungeontrain.support.financial.donate", revolutUrl(), TINT_GREEN,
                         "gui.dungeontrain.support.donate_tooltip", UiAnalytics.TARGET_DONATE),
-                new LinkButton("gui.dungeontrain.support.financial.patreon", OfficialLinks.patreon(), TINT_ORANGE, null,
-                        UiAnalytics.TARGET_PATREON));
+                secondFinancialButton());
 
         // Share — text only, no link.
         y = addSection(y, lh,
@@ -226,21 +240,22 @@ public final class SupportScreen extends Screen {
     }
 
     /**
-     * The direct-donation URL. When the base (relay-served or baked Revolut link) carries a
-     * {@code note=} field the player's name is URL-encoded onto it, matching the historical
-     * Revolut behaviour; a relay-rotated provider without a note field is used verbatim so the
-     * suffix can't corrupt an unknown URL shape.
+     * The second Financial-section button: the China payment route (Alipay / WeChat Pay) where
+     * Patreon is unreachable, otherwise Patreon. The tooltip differs because the China route runs
+     * through Stripe and so is not fee-free the way the direct Revolut donation is.
      */
-    private String revolutUrl() {
-        String base = OfficialLinks.payment();
-        if (!base.contains("note=")) return base;
-        String encoded = URLEncoder.encode(playerName(), StandardCharsets.UTF_8).replace("+", "%20");
-        return base + encoded;
+    private static LinkButton secondFinancialButton() {
+        if (PaymentLinks.useChinaPayment()) {
+            return new LinkButton("gui.dungeontrain.support.financial.cn_donate", PaymentLinks.chinaUrl(),
+                    TINT_BLUE, "gui.dungeontrain.support.cn_donate_tooltip", UiAnalytics.TARGET_DONATE_CN);
+        }
+        return new LinkButton("gui.dungeontrain.support.financial.patreon", OfficialLinks.patreon(),
+                TINT_ORANGE, null, UiAnalytics.TARGET_PATREON);
     }
 
-    private static String playerName() {
-        Minecraft mc = Minecraft.getInstance();
-        return mc.getUser() != null ? mc.getUser().getName() : "Player";
+    /** @see PaymentLinks#donateUrl() */
+    private String revolutUrl() {
+        return PaymentLinks.donateUrl();
     }
 
     /** A clickable, blue, underlined "Discord" word for splicing into description copy. */

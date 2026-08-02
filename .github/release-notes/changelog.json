@@ -5774,6 +5774,131 @@
       "released": true,
       "released_in": "v0.513.0",
       "released_at": "2026-07-25T07:11:33Z"
+    },
+    {
+      "id": "author-book-vote-tally",
+      "version": "0.514.0",
+      "type": "feat",
+      "title": "Your own community books tell you their vote tally",
+      "summary": "When you come across one of your own player-written books out in the world and pick it up, the train's quiet 'a familiar book\u2026' note can now tell you how it's being received \u2014 how many readers gave it a thumbs up, and how many thumbed it down. Only you, the author, ever sees those numbers.",
+      "highlights": [
+        "Hold one of your own community books found in loot: the familiar-book line may now report its \ud83d\udc4d/\ud83d\udc4e vote tally",
+        "Author-only \u2014 vote counts are never shown to anyone else holding the same book"
+      ],
+      "pr": 847,
+      "date": "2026-07-25",
+      "released": true,
+      "released_in": "v0.517.0",
+      "released_at": "2026-07-26T12:16:27Z"
+    },
+    {
+      "id": "trade-everything-0-2-8",
+      "version": "0.515.0",
+      "type": "feat",
+      "title": "Trade Everything updated \u2014 craftable-item value cap",
+      "summary": "The bundled Trade Everything mod is updated to 0.2.8. Villager 'Trade Anything' payouts for craftable items are now capped at their component worth, so you can't cheese emeralds by crafting cheap high-value items \u2014 enchanted and custom-stat gear stay exempt. Also includes refreshed default trade values.",
+      "highlights": [
+        "Craftable items pay out no more than their raw material worth",
+        "Enchanted / custom-stat items remain exempt from the cap"
+      ],
+      "date": "2026-07-25",
+      "released": true,
+      "released_in": "v0.517.0",
+      "released_at": "2026-07-26T12:16:27Z"
+    },
+    {
+      "id": "modpack-jade-sable-compat",
+      "version": "0.517.0",
+      "type": "feat",
+      "title": "Modpack: Jade block tooltips now work on the moving train",
+      "summary": "The Dungeon Train modpack now enables Jade (the block/item tooltip HUD) by default and bundles Jade Sable Compat, a small client-only mod that fixes Jade's tooltips on the moving train. Jade used to ship off because its tooltips read the wrong block when you looked at anything riding a Sable carriage; with the compat mod they now resolve the correct block on the train deck, so Jade is on out of the box. (Modpack only \u2014 the standalone mod jar is unchanged.)",
+      "highlights": [
+        "Jade enabled by default in the modpack",
+        "Block/item tooltips now read correctly for blocks on the moving train",
+        "Bundled Jade Sable Compat (client-only; auto-skipped on dedicated servers)"
+      ],
+      "date": "2026-07-26",
+      "released": true,
+      "released_in": "v0.517.0",
+      "released_at": "2026-07-26T12:16:27Z"
+    },
+    {
+      "id": "creeper-no-explosion-cloud",
+      "version": "0.518.0",
+      "type": "fix",
+      "title": "Creepers no longer leave a potion cloud when they explode",
+      "summary": "Train creepers were picking up the difficulty system's potion buffs, and vanilla turns a creeper's active effects into a lingering potion cloud when it blows up. Creepers now explode cleanly again.",
+      "highlights": [],
+      "date": "2026-07-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "zh-cn-translator-revision-pass",
+      "version": "0.518.0",
+      "type": "chore",
+      "title": "Simplified Chinese revision pass",
+      "summary": "Community translator \u8001\u672c\u9858 has revised the Simplified Chinese translation, reworking 84 lines across the credits, support, book-voting and death screens for a more natural voice. Every line of Simplified Chinese is now human-translated or human-reviewed \u2014 the faded AI marker beside \u7b80\u4f53\u4e2d\u6587 in the language list is gone.",
+      "highlights": [
+        "84 machine-translated lines rewritten by hand, and the rest checked over",
+        "No unreviewed machine translation left in Simplified Chinese"
+      ],
+      "pr": 856,
+      "date": "2026-07-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "china-alipay-wechat",
+      "version": "0.519.0",
+      "type": "feat",
+      "title": "Alipay and WeChat Pay for players in China",
+      "summary": "Chinese players had no working way to chip in: Patreon is blocked in mainland China, and the direct-donation link needs an overseas card. If your game is set to Chinese, the Ways to Help page and the death-screen Contribute window now offer Alipay and WeChat Pay instead of Patreon, and the payment page opens in your own language.",
+      "highlights": [
+        "Alipay / WeChat Pay on the Ways to Help page and the death-screen Contribute window, for clients set to Chinese",
+        "The payment page opens in your language instead of guessing from your browser",
+        "Your name travels with the donation, so contributions can show on the in-game supporter list",
+        "The Patreon shortcut is hidden on those clients rather than leading somewhere unreachable"
+      ],
+      "date": "2026-07-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "freeplay-echo-quarantine",
+      "version": "0.519.0",
+      "type": "feat",
+      "title": "Free Play echoes stay in Free Play",
+      "summary": "Deaths on a Free Play (creative/cheated) run are now sealed off from normal play. An echo of someone who died in Free Play \u2014 and a Death Note curse written in Free Play \u2014 will only ever appear to other players who are themselves in Free Play; a legit run only meets echoes and curses from other legit runs. No more sandbox deaths leaking into real games, or vice versa.",
+      "highlights": [
+        "Reincarnated echoes are tagged with the run they came from and only spawn in a matching run.",
+        "Death Note curses match the same way: a curse authored in Free Play only hunts Free Play targets."
+      ],
+      "pr": 855,
+      "date": "2026-07-31",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "backer-name-pool",
+      "version": "0.519.0",
+      "type": "feat",
+      "title": "Backers' names ride the train",
+      "summary": "People who back the project can have their name woven into the train's own language. Their name turns up on weapons you loot, on travellers you meet, and in what the people aboard say to you \u2014 mixed in among the community names already there. Nothing is bought that changes how the game plays; it is a name in a hat, drawn at random like all the others.",
+      "highlights": [
+        "Backer names appear on generated gear, mobs, PlayerMobs and in NPC dialogue",
+        "Backers can also write a short phrase, which shows up in item lore and traveller dialogue",
+        "Every name and phrase is screened before it can appear in anyone's world"
+      ],
+      "pr": 858,
+      "date": "2026-08-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

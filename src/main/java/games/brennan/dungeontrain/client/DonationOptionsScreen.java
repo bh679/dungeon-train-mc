@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.ColorTintedButton;
+import games.brennan.dungeontrain.client.support.PaymentLinks;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -14,15 +15,15 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
  * Full-screen "Contribute" window opened from the death-screen donation page's Contribute button.
- * Offers the two ways to give — a direct donation (Revolut, name-tagged) and Patreon — each opened
- * through vanilla's {@link ConfirmLinkScreen} with support-funnel analytics, returning here so the
- * player can follow more than one. Closing returns to the death screen it was opened from.
+ * Offers the two ways to give — a direct donation (Revolut, name-tagged) and, in the right column,
+ * either Patreon or the China payment route for clients where Patreon is unreachable (see
+ * {@link PaymentLinks}) — each opened through vanilla's {@link ConfirmLinkScreen} with support-funnel
+ * analytics, returning here so the player can follow more than one. Closing returns to the death
+ * screen it was opened from.
  *
  * <p>Styled to match the death screen: the same dark-blue backdrop, an amber title and muted
  * narration over the two coloured buttons. URLs come from {@link OfficialLinks} (relay-served,
@@ -36,6 +37,7 @@ public final class DonationOptionsScreen extends Screen {
     private static final int NARR    = 0xFFC7BDA7;
     private static final float[] TINT_GREEN  = {0.30F, 0.80F, 0.35F}; // direct donation
     private static final float[] TINT_ORANGE = {1.00F, 0.47F, 0.38F}; // Patreon
+    private static final float[] TINT_BLUE   = {0.35F, 0.62F, 1.00F}; // China payment (Alipay blue)
 
     private final Screen parent;
     // Text positions computed in init(), drawn in render() (title + subtitle + a per-column
@@ -52,7 +54,8 @@ public final class DonationOptionsScreen extends Screen {
     public DonationOptionsScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.death.narr.donate_button"));
         this.parent = parent;
-        UiAnalytics.pageOpen(UiAnalytics.SURFACE_DEATH_SCREEN);
+        // Distinct funnel step from "viewed the DONATE page": the player opened the Contribute window.
+        UiAnalytics.pageOpen(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.PAGE_CONTRIBUTE);
         OfficialLinks.ensureFetched();
     }
 
@@ -74,8 +77,11 @@ public final class DonationOptionsScreen extends Screen {
         leftColCenter = rowX + each / 2;
         rightColCenter = rowX + each + gap + each / 2;
 
+        boolean cn = PaymentLinks.useChinaPayment();
         revolutDescLines = this.font.split(Component.translatable("gui.dungeontrain.support.donate_tooltip"), each - 4);
-        patreonDescLines = this.font.split(Component.translatable("gui.dungeontrain.death.narr.donate_patreon_desc"), each - 4);
+        patreonDescLines = this.font.split(Component.translatable(cn
+                ? "gui.dungeontrain.death.narr.donate_cn_desc"
+                : "gui.dungeontrain.death.narr.donate_patreon_desc"), each - 4);
         int descRows = Math.max(revolutDescLines.size(), patreonDescLines.size());
 
         // Vertically centre the whole title → back block.
@@ -94,10 +100,16 @@ public final class DonationOptionsScreen extends Screen {
                 TINT_GREEN[0], TINT_GREEN[1], TINT_GREEN[2],
                 b -> openLink(revolutUrl(), UiAnalytics.TARGET_DONATE)));
 
+        // Right column: the China payment route where Patreon is unreachable, else Patreon.
+        float[] rightTint = cn ? TINT_BLUE : TINT_ORANGE;
+        String rightLabel = cn ? "gui.dungeontrain.death.narr.donate_cn"
+                               : "gui.dungeontrain.death.narr.donate_patreon";
+        String rightUrl = cn ? PaymentLinks.chinaUrl() : OfficialLinks.patreon();
+        String rightTarget = cn ? UiAnalytics.TARGET_DONATE_CN : UiAnalytics.TARGET_PATREON;
         addRenderableWidget(new ColorTintedButton(rowX + each + gap, y, each, bh,
-                Component.translatable("gui.dungeontrain.death.narr.donate_patreon"),
-                TINT_ORANGE[0], TINT_ORANGE[1], TINT_ORANGE[2],
-                b -> openLink(OfficialLinks.patreon(), UiAnalytics.TARGET_PATREON)));
+                Component.translatable(rightLabel),
+                rightTint[0], rightTint[1], rightTint[2],
+                b -> openLink(rightUrl, rightTarget)));
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
                 .bounds(cx - 100, y + bh + 12, 200, 20).build());
@@ -148,16 +160,8 @@ public final class DonationOptionsScreen extends Screen {
         }, url, true));
     }
 
-    /** Direct-donation URL with the player's name URL-encoded onto the Revolut {@code note=} tag. */
+    /** @see PaymentLinks#donateUrl() */
     private static String revolutUrl() {
-        String base = OfficialLinks.payment();
-        if (!base.contains("note=")) return base;
-        String encoded = URLEncoder.encode(playerName(), StandardCharsets.UTF_8).replace("+", "%20");
-        return base + encoded;
-    }
-
-    private static String playerName() {
-        Minecraft mc = Minecraft.getInstance();
-        return mc.getUser() != null ? mc.getUser().getName() : "Player";
+        return PaymentLinks.donateUrl();
     }
 }

@@ -359,13 +359,34 @@ def test_unknown_locale_flag_is_usage_error():
 
 
 def test_real_repo_sidecars_are_aligned():
-    """The shipped 19 sidecars must stay in lockstep with the shipped lang files."""
+    """The shipped sidecars — dungeontrain AND the sibling namespaces — must stay in
+    lockstep with their lang files (no args = the whole namespace table)."""
     proc = subprocess.run(
         [sys.executable, SCRIPT], capture_output=True, text=True, cwd=REPO_ROOT,
     )
     assert proc.returncode == 0, proc.stderr
     # exactly the one known advisory (zh_cn flag vs partial coverage) — no errors
     assert "FAILED" not in proc.stderr
+
+
+def test_real_repo_sibling_namespace_filter():
+    """--namespace restricts to one sibling; siblings ship no credits, so this exercises
+    the credits/contributors-skipped path against the real repo."""
+    proc = subprocess.run(
+        [sys.executable, SCRIPT, "--namespace", "playermob"],
+        capture_output=True, text=True, cwd=REPO_ROOT,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "FAILED" not in proc.stderr
+
+
+def test_unknown_namespace_is_usage_error():
+    proc = subprocess.run(
+        [sys.executable, SCRIPT, "--namespace", "nope"],
+        capture_output=True, text=True, cwd=REPO_ROOT,
+    )
+    assert proc.returncode == 2
+    assert "unknown namespace" in proc.stderr
 
 
 def test_contributors_drift_fails():

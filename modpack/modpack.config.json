@@ -13,7 +13,7 @@
   "optional_mods": [
     { "name": "Adventure Item Names", "slug": "adventure-item-names", "project_id": 1546573, "file_id": 8279634, "required": true, "dependency_type": "required", "version": "0.45.0", "gradle_property": "adventureitemnames_min_version", "modrinth_project": "adventureitemnames", "modrinth_version": "4JFLSrhp" },
     { "name": "Adventure Item Stats", "slug": "adventure-item-stats", "project_id": 1554362, "file_id": 8465206, "required": true, "dependency_type": "required", "version": "0.7.0", "gradle_property": "adventureitemstats_min_version", "modrinth_project": "adventure-items-stats", "modrinth_version": "kZyMXeU3" },
-    { "name": "Interactive Player Mobs", "slug": "interactive-player-mobs", "project_id": 1559379, "file_id": 8464482, "required": true, "dependency_type": "required", "version": "0.83.0", "gradle_property": "playermob_min_version", "modrinth_project": "interactive-player-mobs", "modrinth_version": "2N1VqyND" },
+    { "name": "Interactive Player Mobs", "slug": "interactive-player-mobs", "project_id": 1559379, "file_id": 8517180, "required": true, "dependency_type": "required", "version": "0.86.0", "gradle_property": "playermob_min_version", "modrinth_project": "interactive-player-mobs", "modrinth_version": "uqYt1KFW" },
     { "name": "Ender Chest Persistence", "slug": "ender-chest-persistence", "project_id": 1579341, "file_id": 8283688, "required": true, "dependency_type": "required", "version": "0.2.0", "gradle_property": "enderchestpersistence_min_version", "modrinth_project": "ender-chest-persistence", "modrinth_version": "2I1HdVBa" },
     { "name": "AppleSkin", "slug": "appleskin", "project_id": 248787, "file_id": 7854442, "required": true, "modrinth_project": "appleskin", "modrinth_version": "uAKA6Laj" },
     { "name": "FerriteCore", "slug": "ferritecore", "project_id": 429235, "file_id": 7524151, "required": true, "modrinth_project": "ferrite-core", "modrinth_version": "x7kQWVju" },
@@ -26,7 +26,8 @@
     { "name": "Iceberg", "slug": "iceberg", "project_id": 520110, "file_id": 6423863, "required": true, "modrinth_project": "iceberg", "modrinth_version": "IMssx9du" },
     { "name": "Lithostitched", "slug": "lithostitched", "project_id": 936015, "file_id": 8158004, "required": true, "modrinth_project": "lithostitched", "modrinth_version": "wiffJSbz" },
     { "name": "Mouse Tweaks", "slug": "mouse-tweaks", "project_id": 60089, "file_id": 5637846, "required": false, "modrinth_project": "mouse-tweaks", "modrinth_version": "9I21YYxf" },
-    { "name": "Jade", "slug": "jade", "project_id": 324717, "file_id": 7545219, "required": false, "modrinth_project": "jade", "modrinth_version": "yd8FKCmx" },
+    { "name": "Jade", "slug": "jade", "project_id": 324717, "file_id": 7545219, "required": true, "modrinth_project": "jade", "modrinth_version": "yd8FKCmx" },
+    { "name": "Jade Sable Compat", "slug": "jade-sable-compat", "project_id": 1530988, "file_id": 8269260, "required": true, "modrinth_project": "jade-sable-compat", "modrinth_version": "7HFg7hFp" },
     { "name": "Distant Horizons", "slug": "distant-horizons", "project_id": 508933, "file_id": 7350266, "required": false, "modrinth_project": "distanthorizons", "modrinth_version": "75PXmyqH" },
     { "name": "Tectonic", "slug": "tectonic", "project_id": 686836, "file_id": 7903156, "required": false, "modrinth_project": "tectonic", "modrinth_version": "iCGkqnnx" },
     { "name": "Controlling", "slug": "controlling", "project_id": 250398, "file_id": 6368976, "required": true, "modrinth_project": "controlling", "modrinth_version": "FaNppCJJ" },

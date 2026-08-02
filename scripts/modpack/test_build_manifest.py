@@ -169,15 +169,28 @@ def test_real_config_ships_ambientsounds_enabled_by_default():
 
 
 def test_real_config_ships_optins_disabled_by_default():
-    """Guard: Mouse Tweaks / Jade / Distant Horizons / Tectonic ship OFF by default (opt-in).
+    """Guard: Mouse Tweaks / Distant Horizons / Tectonic ship OFF by default (opt-in).
 
     Distant Horizons is pinned to a 2.x file (file 7350266) — 3.x crashes on DT world entry.
+    Jade is no longer opt-in — see test_real_config_ships_jade_with_sable_compat_enabled.
     """
     files = _render_real_config()
     assert {"projectID": 60089, "fileID": 5637846, "required": False} in files, files   # Mouse Tweaks
-    assert {"projectID": 324717, "fileID": 7545219, "required": False} in files, files  # Jade
     assert {"projectID": 508933, "fileID": 7350266, "required": False} in files, files  # Distant Horizons 2.x
     assert {"projectID": 686836, "fileID": 7903156, "required": False} in files, files  # Tectonic
+
+
+def test_real_config_ships_jade_with_sable_compat_enabled():
+    """Guard: Jade + Jade Sable Compat ship ENABLED (required:true).
+
+    Jade was formerly opt-in because its tooltips read the wrong block for anything on the moving
+    train (Sable sub-level). Jade Sable Compat (project 1530988) fixes that with a Sable-aware
+    retrace path, so both ship enabled — flipping either OFF would regress the fix or ship a
+    client mod that depends on a disabled Jade.
+    """
+    files = _render_real_config()
+    assert {"projectID": 324717, "fileID": 7545219, "required": True} in files, files    # Jade
+    assert {"projectID": 1530988, "fileID": 8269260, "required": True} in files, files   # Jade Sable Compat
 
 
 def _main():
