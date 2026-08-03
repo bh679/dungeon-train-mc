@@ -28,33 +28,39 @@ class MenuChatFilterTest {
     // --- fixtures -------------------------------------------------------------
 
     private static ChatHistory.Message human(String id, String ts) {
-        return new ChatHistory.Message(id, "dev1", "Brennan", false, false, "hey! saw your run", List.of(), List.of(), ts, false, false);
+        return new ChatHistory.Message(id, "dev1", "Brennan", false, false, "hey! saw your run", List.of(), List.of(), ts, false, false, false);
     }
 
     private static ChatHistory.Message playerChat(String id, String content, String ts) {
-        return new ChatHistory.Message(id, "wh", "Steve", false, true, content, List.of(), List.of(), ts, true, false);
+        return new ChatHistory.Message(id, "wh", "Steve", false, true, content, List.of(), List.of(), ts, true, false, false);
     }
 
     private static ChatHistory.Message botPost(String id) {
         return new ChatHistory.Message(id, "bot1", "Dungeon Train", true, false, "Carriage +3 · Difficulty Level 2",
-                List.of(), List.of(), T0, false, false);
+                List.of(), List.of(), T0, false, false, false);
+    }
+
+    /** A reply the dev sent from the web dashboard: posted by the bot account, flagged by the relay. */
+    private static ChatHistory.Message dashboardReply(String id, String ts) {
+        return new ChatHistory.Message(id, "dev1", "Brennan", true, false, "on it, thanks",
+                List.of(), List.of(), ts, false, false, true);
     }
 
     private static ChatHistory.Message webhookEmbed(String id, String title) {
         return new ChatHistory.Message(id, "wh", "Steve", false, true, null,
-                List.of(new ChatHistory.Embed(title, "desc", null, List.of())), List.of(), T0, true, false);
+                List.of(new ChatHistory.Embed(title, "desc", null, List.of())), List.of(), T0, true, false, false);
     }
 
     private static ChatHistory.Message surveyAnswer(String id, String prompt, ChatHistory.Field... fields) {
         return new ChatHistory.Message(id, "wh", "Steve", false, true, null,
                 List.of(new ChatHistory.Embed("📋 Feedback — Steve", prompt, null, List.of(fields))),
-                List.of(), T0, true, false);
+                List.of(), T0, true, false, false);
     }
 
     private static ChatHistory.Message attachmentPost(String id) {
         return new ChatHistory.Message(id, "wh", "Steve", false, true, "bug logs attached", List.of(),
                 List.of(new ChatHistory.Attachment("latest.log.gz", 1234L, "application/gzip", "http://x")),
-                T0, true, false);
+                T0, true, false, false);
     }
 
     private static Set<String> shownIds(List<ChatHistory.Message> messages) {
@@ -70,6 +76,42 @@ class MenuChatFilterTest {
         List<ChatHistory.Message> thread = List.of(human("h1", T0));
         assertTrue(MenuChatFilter.hasDevHistory(thread));
         assertEquals(Set.of("h1"), shownIds(thread));
+    }
+
+    /**
+     * The dashboard reply. Discord reports it exactly like the automated bot posts below — same
+     * account, {@code isBot}, no webhook — and the only thing telling them apart is the relay's
+     * {@code devAuthored} flag, because the relay is what sent it. Without honouring that flag the
+     * player is shown the message live in-game and then can't find it in their own backscroll.
+     */
+    @Test
+    void dashboardReplyShowsAndGatesThePanelDespiteBeingABotPost() {
+        ChatHistory.Message reply = dashboardReply("r1", T0);
+        assertTrue(MenuChatFilter.isHuman(reply), "a person wrote it, whatever Discord calls the author");
+        assertFalse(MenuChatFilter.isAutomatedReport(reply));
+        List<ChatHistory.Message> thread = List.of(reply);
+        assertTrue(MenuChatFilter.hasDevHistory(thread), "it reveals the panel like any dev message");
+        assertEquals(Set.of("r1"), shownIds(thread));
+    }
+
+    /** The control: the same bot post WITHOUT the flag is still an automated report. */
+    @Test
+    void unflaggedBotPostStaysHidden() {
+        List<ChatHistory.Message> thread = List.of(
+                new ChatHistory.Message("b1", "bot1", "Brennan", true, false, "on it, thanks",
+                        List.of(), List.of(), T0, false, false, false));
+        assertFalse(MenuChatFilter.hasDevHistory(thread));
+        assertEquals(Set.of(), shownIds(thread));
+    }
+
+    /** And it counts as conversation, so the player's own chat lines around it show too. */
+    @Test
+    void dashboardReplyOpensTheConversationWindow() {
+        List<ChatHistory.Message> thread = List.of(
+                dashboardReply("r1", T0),
+                playerChat("c1", "thanks!", NEAR),
+                playerChat("c2", "unrelated later line", FAR));
+        assertEquals(Set.of("r1", "c1"), shownIds(thread));
     }
 
     @Test

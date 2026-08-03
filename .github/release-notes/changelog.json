@@ -5952,6 +5952,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dev-reply-backscroll",
+      "version": "0.522.0",
+      "type": "fix",
+      "title": "Developer replies stay in your chat history",
+      "summary": "A reply from the developer used to vanish from the title-screen chat panel: the panel treated it as an automated report and hid it, so a message you had read once was gone the next time you looked. It now stays in your conversation where you can find it again.",
+      "highlights": [
+        "Developer replies remain in the title-screen chat backscroll instead of disappearing on the next launch"
+      ],
+      "pr": 859,
+      "date": "2026-08-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
