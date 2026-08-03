@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.event.MultiplayerState;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.neoforged.fml.ModList;
@@ -85,7 +86,10 @@ public final class WorldInfoReporter {
                     WorldJoinReport.modVersion(),
                     LauncherInfo.describe(server.isDedicatedServer()),
                     installedMods(),
-                    clientLanguage(player));
+                    clientLanguage(player),
+                    // Sticky for this server run, so the LAN host is reported multiplayer alongside
+                    // the guest whose join flipped it — see MultiplayerState.
+                    MultiplayerState.observeJoin(server, player));
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] world-info relay report failed: {}", t.toString());
@@ -98,11 +102,15 @@ public final class WorldInfoReporter {
      * they are 64-bit longs and JSON numbers would lose precision when the relay parses them in
      * JavaScript. {@code dims} is a nested {@code {l,w,h}} object; {@code mods} is an array of
      * {@code {modId,version}} objects (the caller sorts them for a stable relay-dedupe order).
+     * {@code multiplayer} says whether this join happened on a multiplayer server run (see
+     * {@link MultiplayerState}); the relay folds it into the explorer's play-mode stat, and it is
+     * part of the record's dedupe identity there, so a solo→multiplayer flip stores a new record.
      */
     static JsonObject buildPayload(String uuid, String player, long worldSeed, long trainSeed,
                                    String mode, int groupSize, int length, int width, int height,
                                    int trainY, String startingDimension, String dtVersion,
-                                   String launcher, List<ModEntry> mods, String language) {
+                                   String launcher, List<ModEntry> mods, String language,
+                                   boolean multiplayer) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         body.addProperty("player", player);
@@ -120,6 +128,7 @@ public final class WorldInfoReporter {
         body.addProperty("startingDimension", startingDimension);
         body.addProperty("dtVersion", dtVersion);
         body.addProperty("launcher", launcher);
+        body.addProperty("multiplayer", multiplayer);
         JsonArray modsArr = new JsonArray();
         for (ModEntry m : mods) {
             JsonObject mo = new JsonObject();

@@ -6000,6 +6000,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "multiplayer-play-mode-telemetry",
+      "version": "0.524.0",
+      "type": "chore",
+      "title": "Play-mode telemetry for the data explorer",
+      "summary": "The world-info report the game already sends on join now notes whether that session was multiplayer, so the private data dashboard can show how the player base splits between single-player, multiplayer, and both. No change to how the game plays.",
+      "highlights": [],
+      "date": "2026-08-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

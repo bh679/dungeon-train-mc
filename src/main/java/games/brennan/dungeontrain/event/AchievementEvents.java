@@ -688,15 +688,15 @@ public final class AchievementEvents {
      * when the guest connects is what retroactively grants the host. Vanilla
      * advancement dedupe makes the repeated firing idempotent (a no-op once the
      * advancement is already complete).</p>
+     *
+     * <p>The "is this multiplayer?" test itself lives in {@link MultiplayerState} — shared with the
+     * world-info telemetry that feeds the explorer's play-mode stat, so the advancement and the
+     * stat always mean the same thing by "multiplayer".</p>
      */
     private static void awardMultiplayerJoinIfApplicable(ServerPlayer joined) {
         MinecraftServer server = joined.getServer();
         if (server == null) return;
-        // Dedicated → isSingleplayerOwner is always false → multiplayer.
-        // Integrated LAN → the joining guest is never the singleplayer owner.
-        boolean multiplayer = !server.isSingleplayerOwner(joined.getGameProfile())
-            || server.getPlayerCount() >= 2;
-        if (!multiplayer) return;
+        if (!MultiplayerState.observeJoin(server, joined)) return;
         for (ServerPlayer online : server.getPlayerList().getPlayers()) {
             ModAdvancementTriggers.MULTIPLAYER_JOIN.get().trigger(online);
         }
