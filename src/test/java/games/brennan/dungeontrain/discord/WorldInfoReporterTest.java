@@ -24,6 +24,12 @@ class WorldInfoReporterTest {
 
     private static JsonObject sample(long worldSeed, long trainSeed,
                                      List<WorldInfoReporter.ModEntry> mods, String language) {
+        return sample(worldSeed, trainSeed, mods, language, false);
+    }
+
+    private static JsonObject sample(long worldSeed, long trainSeed,
+                                     List<WorldInfoReporter.ModEntry> mods, String language,
+                                     boolean multiplayer) {
         return WorldInfoReporter.buildPayload(
                 "069a79f444e94726a5befca90e38aaf5", "Notch",
                 worldSeed, trainSeed,
@@ -34,7 +40,8 @@ class WorldInfoReporterTest {
                 "0.391.1",
                 "CurseForge · brand minecraft v2.4.28",
                 mods,
-                language);
+                language,
+                multiplayer);
     }
 
     @Test
@@ -103,6 +110,17 @@ class WorldInfoReporterTest {
         JsonObject out = sample(1L, 2L, List.of());
         assertTrue(out.has("mods"));
         assertEquals(0, out.getAsJsonArray("mods").size());
+    }
+
+    @Test
+    @DisplayName("multiplayer is always emitted as a JSON boolean (the relay's play-mode stat reads it)")
+    void multiplayerFlag() {
+        JsonObject solo = sample(1L, 2L, List.of(), "en_us", false);
+        assertTrue(solo.getAsJsonPrimitive("multiplayer").isBoolean(), "multiplayer must be a JSON boolean");
+        assertEquals(false, solo.get("multiplayer").getAsBoolean());
+
+        JsonObject shared = sample(1L, 2L, List.of(), "en_us", true);
+        assertEquals(true, shared.get("multiplayer").getAsBoolean());
     }
 
     @Test
