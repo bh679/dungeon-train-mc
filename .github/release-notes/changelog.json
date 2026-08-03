@@ -5967,6 +5967,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "carriage-contributor-credits",
+      "version": "0.523.0",
+      "type": "feat",
+      "title": "Shared carriages now credit the people who built them",
+      "summary": "Step into a carriage that has travelled from another world and it tells you whose hands shaped it \u2014 the original builder, and the travellers who changed it along the way.",
+      "highlights": [
+        "A shared carriage names its original builder plus its five most recent contributors when you step aboard.",
+        "On a build of your own that has come back around, it skips your name and tells you who has changed it while it was away.",
+        "Your name only travels with your work if you have granted network consent; without it your builds are shared exactly as before, just uncredited.",
+        "Fixed the carriage entry message printing twice when you jumped inside a carriage."
+      ],
+      "pr": 863,
+      "date": "2026-08-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
