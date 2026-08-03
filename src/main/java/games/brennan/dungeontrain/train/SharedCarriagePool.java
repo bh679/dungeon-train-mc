@@ -91,6 +91,7 @@ public final class SharedCarriagePool {
      * view unable to say WHO has a carriage locked.
      */
     private static volatile String hostUuid = "";
+    private static volatile String hostName = "";
     /**
      * The stage the spawn path most recently asked for. The prefetch tick has no way to know which stage
      * the train is currently extending into, and buffering the wrong stage locks carriages this world
@@ -100,9 +101,14 @@ public final class SharedCarriagePool {
 
     private SharedCarriagePool() {}
 
-    /** Remember the world's host player uuid for leases taken outside the prefetch tick. */
-    public static void setHostUuid(String uuid) {
+    /**
+     * Remember the world's host player for leases taken outside the prefetch tick. {@code name} is the
+     * host's display name and is only supplied for a player who has granted network consent, so it may
+     * legitimately stay {@code ""} while the uuid is known — never blank out a name we already have.
+     */
+    public static void setHost(String uuid, String name) {
         if (uuid != null && !uuid.isEmpty()) hostUuid = uuid;
+        if (name != null && !name.isEmpty()) hostName = name;
     }
 
     /** Record which stage the spawn path is currently drawing from, so the prefetch buffers that one. */
@@ -121,6 +127,14 @@ public final class SharedCarriagePool {
      */
     public static String hostUuid() {
         return hostUuid;
+    }
+
+    /**
+     * The host's display name, or {@code ""} when no consenting player has been seen. Sent to the relay
+     * so this world's edits are credited by name in whichever world leases the carriage next.
+     */
+    public static String hostName() {
+        return hostName;
     }
 
     /**
@@ -187,7 +201,8 @@ public final class SharedCarriagePool {
      * {@code exclude} lists relay ids already resident/buffered so the relay never hands this world the
      * same carriage twice.
      */
-    public static void refreshAsync(CarriageDims dims, String stage, String hostUuid, List<Integer> exclude, String mode) {
+    public static void refreshAsync(CarriageDims dims, String stage, String hostUuid, String hostName,
+                                    List<Integer> exclude, String mode) {
         if (stage == null || stage.isEmpty()) return; // nothing to prefetch for a stageless slot
         if (fetchInFlight || totalBuffered() >= MAX_TOTAL_BUFFERED) return;
         Queue<PoolLease> q = BUFFER.computeIfAbsent(stage, k -> new ConcurrentLinkedQueue<>());
@@ -195,7 +210,7 @@ public final class SharedCarriagePool {
         if (System.currentTimeMillis() < backoffUntilMs) return; // pool was empty recently → don't hammer it
         fetchInFlight = true;
         try {
-            SharedCarriageClient.lease(hostUuid, dims.length(), dims.height(), dims.width(), exclude, stage, null, mode)
+            SharedCarriageClient.lease(hostUuid, hostName, dims.length(), dims.height(), dims.width(), exclude, stage, null, mode)
                     .whenComplete((opt, err) -> {
                         try {
                             if (err == null && opt != null && opt.isPresent()) {
@@ -235,7 +250,7 @@ public final class SharedCarriagePool {
         if (until != null && System.currentTimeMillis() < until) return;
         ownFetchInFlight = true;
         try {
-            SharedCarriageClient.lease(hostUuid, dims.length(), dims.height(), dims.width(), exclude, stage, ownerUuid, mode)
+            SharedCarriageClient.lease(hostUuid, hostName, dims.length(), dims.height(), dims.width(), exclude, stage, ownerUuid, mode)
                     .whenComplete((opt, err) -> {
                         try {
                             if (err == null && opt != null && opt.isPresent()) {

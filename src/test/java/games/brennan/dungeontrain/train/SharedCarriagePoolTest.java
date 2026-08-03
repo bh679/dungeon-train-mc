@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.PoolLease;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ class SharedCarriagePoolTest {
 
     private static PoolLease lease(int id) {
         return new PoolLease(id, "tok" + id, "BLOB", DIMS.length(), DIMS.height(), DIMS.width(),
-                0, List.of(), "author" + id);
+                0, List.of(), "author" + id, SharedCarriageClient.Credits.EMPTY);
     }
 
     @Test

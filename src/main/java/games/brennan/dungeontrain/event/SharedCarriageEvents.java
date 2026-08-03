@@ -140,10 +140,17 @@ public final class SharedCarriageEvents {
      */
     private static void prefetch(ServerLevel level) {
         String hostUuid = "";
+        String hostName = "";
         List<ServerPlayer> players = level.players();
-        if (!players.isEmpty()) hostUuid = players.get(0).getUUID().toString().replace("-", "");
+        if (!players.isEmpty()) {
+            ServerPlayer host = players.get(0);
+            hostUuid = host.getUUID().toString().replace("-", "");
+            // The NAME is extra personal data, so it rides the contribution consent gate rather than the
+            // uuid's looser terms — no consent means this world's edits stay credited to a bare uuid.
+            if (SharedCarriageGate.canContribute(host)) hostName = host.getGameProfile().getName();
+        }
         // Share it with the pool so leases taken off the spawn thread also record a real holder.
-        SharedCarriagePool.setHostUuid(hostUuid);
+        SharedCarriagePool.setHost(hostUuid, hostName);
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         List<Integer> exclude = new ArrayList<>();
         for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.all()) {
@@ -161,7 +168,7 @@ public final class SharedCarriageEvents {
         String mode = SharedCarriageMode.current(level);
         // Buffer for the stage the train is actually spawning into — a lease for another stage would sit
         // unusable here while locking that carriage against every other world.
-        SharedCarriagePool.refreshAsync(dims, stage, hostUuid, exclude, mode);
+        SharedCarriagePool.refreshAsync(dims, stage, hostUuid, hostName, exclude, mode);
         if (!players.isEmpty()) {
             int idx = Math.floorMod(ownPrefetchCursor++, players.size());
             String owner = players.get(idx).getUUID().toString().replace("-", "");
@@ -211,12 +218,15 @@ public final class SharedCarriageEvents {
             return; // drop covered — nothing we can do; a smaller later edit re-queues
         }
         String ownerUuid = contributor.getUUID().toString().replace("-", "");
+        // `contributor` already passed the contribution gate, so their name may go up with the build —
+        // it is what every other world credits this carriage to.
+        String ownerName = contributor.getGameProfile().getName();
         inst.setCallInFlight(true);
         long now = System.currentTimeMillis();
         // Read the pool live rather than from spawn time: the session may have flipped to Free Play since
         // this carriage was placed, and the build belongs to whichever pool the world is in when it lands.
         String mode = SharedCarriageMode.current(inst.level);
-        SharedCarriageClient.submit(ownerUuid, blob.base64(), inst.dims.length(), inst.dims.height(), inst.dims.width(), blob.text(), inst.stageId, mode)
+        SharedCarriageClient.submit(ownerUuid, ownerName, blob.base64(), inst.dims.length(), inst.dims.height(), inst.dims.width(), blob.text(), inst.stageId, mode)
                 .whenComplete((result, err) -> {
                     try {
                         if (err == null && result != null && result.isPresent() && result.get().token() != null) {
@@ -319,7 +329,8 @@ public final class SharedCarriageEvents {
     private static void heartbeatLeased(SharedCarriageRegistry.Instance inst) {
         inst.setCallInFlight(true);
         long now = System.currentTimeMillis();
-        SharedCarriageClient.heartbeat(inst.relayId(), inst.leaseToken(), SharedCarriagePool.hostUuid())
+        SharedCarriageClient.heartbeat(inst.relayId(), inst.leaseToken(),
+                SharedCarriagePool.hostUuid(), SharedCarriagePool.hostName())
                 .whenComplete((status, err) -> {
                     try {
                         if (status == CallStatus.OK) inst.stampContact(now);

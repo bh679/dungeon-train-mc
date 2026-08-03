@@ -391,7 +391,12 @@ public final class TrainAssembler {
         // would otherwise reach the relay with an empty holder, so the admin view can't say who has a
         // carriage locked.
         if (!level.players().isEmpty()) {
-            SharedCarriagePool.setHostUuid(level.players().get(0).getUUID().toString().replace("-", ""));
+            net.minecraft.server.level.ServerPlayer host = level.players().get(0);
+            // The display name is extra personal data, so it needs the contribution consent gate; the uuid
+            // keeps its existing looser terms. No consent → uuid only, and our edits stay uncredited.
+            String hostName = games.brennan.dungeontrain.event.SharedCarriageGate.canContribute(host)
+                    ? host.getGameProfile().getName() : "";
+            SharedCarriagePool.setHost(host.getUUID().toString().replace("-", ""), hostName);
         }
 
         // Place every enclosed carriage in the group at world coords.
@@ -517,7 +522,7 @@ public final class TrainAssembler {
                     carriageShipyardOrigin, dims, variant.id(), true, pick.authoredHere(),
                     lease.id(), lease.token(),
                     leaseSeqSeed(lease), // seq floor = max(baseSeq, delta seqs) so our edits clear the relay watermark
-                    stageBySlot[slot]);
+                    stageBySlot[slot], lease.credits());
                 inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
                 continue;
             }
@@ -534,8 +539,10 @@ public final class TrainAssembler {
             // uploads the build to the pool for the first time. seqSeed=0 (a brand-new relay row is baseSeq=0).
             if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
                     && SharedCarriageFlags.isSharedVariant(variant.id())) {
+                // No credits: nobody has contributed to a brand-new local build yet.
                 SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
-                        carriageShipyardOrigin, dims, variant.id(), false, false, null, null, 0, stageBySlot[slot]);
+                        carriageShipyardOrigin, dims, variant.id(), false, false, null, null, 0,
+                        stageBySlot[slot], SharedCarriageClient.Credits.EMPTY);
             }
         }
         long tAfterContents = System.nanoTime();
