@@ -353,6 +353,11 @@ public class DungeonTrain {
             @Override public List<String> networkConsentNonFeatures() {
                 return List.of();
             }
+            // DP's own footnote points at its /chatconnect command. DT players reach all of this from
+            // Options -> Dungeon Train..., so point them there instead.
+            @Override public String networkConsentFootnote() {
+                return tr("gui.dungeontrain.consent.footnote");
+            }
             // The Adult / Kid content-mode question, asked on the same card. It rides here rather than on
             // a card of its own because this is the one screen every player answers exactly once, on
             // first launch — a second card would be a second interruption for the same information.

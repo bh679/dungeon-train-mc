@@ -983,5 +983,6 @@
   "gui.dungeontrain.consent.dev_chat.kid.tip": "The developer can not contact you",
   "gui.dungeontrain.consent.harvest_soul": "Harvest your soul",
   "gui.dungeontrain.consent.harvest_soul.adult.tip": "I looked into it. The paperwork was appalling.",
-  "gui.dungeontrain.consent.harvest_soul.kid.tip": "Kids' souls are the good ones. You get safer books. I get your soul. Fair trade.\n\nDon't worry - I give it back at bedtime."
+  "gui.dungeontrain.consent.harvest_soul.kid.tip": "Kids' souls are the good ones. You get safer books. I get your soul. Fair trade.\n\nDon't worry - I give it back at bedtime.",
+  "gui.dungeontrain.consent.footnote": "Change anytime in options."
 }
