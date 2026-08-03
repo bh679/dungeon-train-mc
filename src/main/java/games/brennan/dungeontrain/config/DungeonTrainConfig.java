@@ -118,6 +118,22 @@ public final class DungeonTrainConfig {
     public static final double MIN_SHARED_BOOK_LOOT_CHANCE = 0.0;
     public static final double MAX_SHARED_BOOK_LOOT_CHANCE = 1.0;
 
+    /** Default master for the shared-carriage feature (relay-sourced carriages that travel between worlds). */
+    public static final boolean DEFAULT_SHARED_CARRIAGES_ENABLED = false;
+    /**
+     * A shared-carriage slot splits three ways: a relay build by anyone (pool), a relay build by a
+     * player in this world (own), and a fresh unbuilt template (the remainder). Defaults are
+     * 65% / 30% / 5% — most slots show the community's work, a healthy share hands players their own
+     * back, and a steady trickle of blank canvases keeps entering the pool.
+     */
+    public static final double DEFAULT_SHARED_CARRIAGE_POOL_CHANCE = 0.65;
+    public static final double MIN_SHARED_CARRIAGE_POOL_CHANCE = 0.0;
+    public static final double MAX_SHARED_CARRIAGE_POOL_CHANCE = 1.0;
+    /** Default probability a shared-carriage slot places a build authored by a player in this world. */
+    public static final double DEFAULT_SHARED_CARRIAGE_OWN_CHANCE = 0.30;
+    public static final double MIN_SHARED_CARRIAGE_OWN_CHANCE = 0.0;
+    public static final double MAX_SHARED_CARRIAGE_OWN_CHANCE = 1.0;
+
     /**
      * How many whole CARRIAGE GROUPS a book's loot carriage must scroll behind before the shared-book
      * loot selector treats it as "unloaded" and may serve an already-served-but-unread community book
@@ -196,6 +212,9 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue LETTERS_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_BOOK_LOOT_MAX_CHANCE;
     public static final ModConfigSpec.IntValue SHARED_BOOK_REPEAT_GROUPS;
+    public static final ModConfigSpec.BooleanValue SHARED_CARRIAGES_ENABLED;
+    public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_POOL_CHANCE;
+    public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_OWN_CHANCE;
     public static final ModConfigSpec.BooleanValue DISCOVER_NARRATIVES_ENABLED;
     public static final ModConfigSpec.DoubleValue NARRATIVE_DISCOVERY_RAMP_THRESHOLD;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
@@ -241,6 +260,9 @@ public final class DungeonTrainConfig {
         LETTERS_ENABLED = pair.getLeft().lettersEnabled;
         SHARED_BOOK_LOOT_MAX_CHANCE = pair.getLeft().sharedBookLootMaxChance;
         SHARED_BOOK_REPEAT_GROUPS = pair.getLeft().sharedBookRepeatGroups;
+        SHARED_CARRIAGES_ENABLED = pair.getLeft().sharedCarriagesEnabled;
+        SHARED_CARRIAGE_POOL_CHANCE = pair.getLeft().sharedCarriagePoolChance;
+        SHARED_CARRIAGE_OWN_CHANCE = pair.getLeft().sharedCarriageOwnChance;
         DISCOVER_NARRATIVES_ENABLED = pair.getLeft().discoverNarrativesEnabled;
         NARRATIVE_DISCOVERY_RAMP_THRESHOLD = pair.getLeft().narrativeDiscoveryRampThreshold;
         DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = pair.getLeft().difficultyLevelNoticeToDiscord;
@@ -393,6 +415,32 @@ public final class DungeonTrainConfig {
                 .defineInRange("narrativeDiscoveryRampThreshold", DEFAULT_NARRATIVE_DISCOVERY_RAMP_THRESHOLD,
                         MIN_NARRATIVE_DISCOVERY_RAMP_THRESHOLD, MAX_NARRATIVE_DISCOVERY_RAMP_THRESHOLD);
         b.pop();
+        b.push("carriage");
+        ModConfigSpec.BooleanValue sharedCarriagesEnabled = b
+                .comment("Shared carriages — relay-sourced carriage builds that travel between worlds. When true, a carriage",
+                        "variant flagged in shared-carriages.json either LEASES an existing build from the Dungeon Train relay",
+                        "(locked to your world until you leave it or go idle ~1h) or, placed fresh, is UPLOADED to the pool the",
+                        "first time a player actually changes it — looting a chest or breaking a loot container does NOT count as",
+                        "a change. Uploading also requires the player's client to have granted network consent. Default false —",
+                        "the whole feature is off until enabled here.")
+                .define("sharedCarriagesEnabled", DEFAULT_SHARED_CARRIAGES_ENABLED);
+        ModConfigSpec.DoubleValue sharedCarriagePoolChance = b
+                .comment("When a shared-carriage slot spawns, the probability it LEASES an existing build by ANY author from",
+                        "the relay pool. Together with sharedCarriageOwnChance this splits the slot three ways; whatever is",
+                        "left over places a fresh local 'shared' template. Rolled deterministically per carriage so walking",
+                        "back over the same stretch of track re-decides identically. Default 0.65. If the pool is empty or the",
+                        "relay is unreachable, the slot silently falls back — to an own build if one is ready, else fresh.")
+                .defineInRange("sharedCarriagePoolChance", DEFAULT_SHARED_CARRIAGE_POOL_CHANCE,
+                        MIN_SHARED_CARRIAGE_POOL_CHANCE, MAX_SHARED_CARRIAGE_POOL_CHANCE);
+        ModConfigSpec.DoubleValue sharedCarriageOwnChance = b
+                .comment("The probability a shared-carriage slot leases back a build authored by a player currently in this",
+                        "world — so you meet the rooms you made, rather than losing them into a pool of thousands. A build is",
+                        "only reused if nobody else holds it and this world hasn't already placed it. Default 0.30; with the",
+                        "0.65 pool default that leaves 5% of slots as fresh unbuilt canvases. If pool + own exceed 1.0 the own",
+                        "share is trimmed to fit, and no slot is ever left without something to place.")
+                .defineInRange("sharedCarriageOwnChance", DEFAULT_SHARED_CARRIAGE_OWN_CHANCE,
+                        MIN_SHARED_CARRIAGE_OWN_CHANCE, MAX_SHARED_CARRIAGE_OWN_CHANCE);
+        b.pop();
         b.push("discord");
         ModConfigSpec.BooleanValue deathReportToDiscord = b
                 .comment("Post a run-summary embed to Discord when a player dies — distance, time, carts, mobs,",
@@ -471,7 +519,8 @@ public final class DungeonTrainConfig {
                 worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled, lettersEnabled,
                 sharedBookLootMaxChance, sharedBookRepeatGroups, discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
-                introCinematicChunkPreloadEnabled);
+                introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriagePoolChance,
+                sharedCarriageOwnChance);
     }
 
     /**
@@ -481,6 +530,28 @@ public final class DungeonTrainConfig {
      */
     public static boolean isLoaded() {
         return SPEC.isLoaded();
+    }
+
+    /** Master toggle for the shared-carriage feature (relay-sourced carriages). */
+    public static boolean isSharedCarriagesEnabled() {
+        return isLoaded() ? SHARED_CARRIAGES_ENABLED.get() : DEFAULT_SHARED_CARRIAGES_ENABLED;
+    }
+
+    /** Probability a shared-carriage slot leases a build by any author from the relay pool. */
+    public static double getSharedCarriagePoolChance() {
+        double v = isLoaded() ? SHARED_CARRIAGE_POOL_CHANCE.get() : DEFAULT_SHARED_CARRIAGE_POOL_CHANCE;
+        return Math.max(MIN_SHARED_CARRIAGE_POOL_CHANCE, Math.min(MAX_SHARED_CARRIAGE_POOL_CHANCE, v));
+    }
+
+    /**
+     * Probability a shared-carriage slot leases back a build authored by a player in this world.
+     * Trimmed so pool + own never exceeds 1.0 — an operator who over-sets both loses own share first,
+     * because the community pool is the feature's floor and the fresh remainder is what refills it.
+     */
+    public static double getSharedCarriageOwnChance() {
+        double v = isLoaded() ? SHARED_CARRIAGE_OWN_CHANCE.get() : DEFAULT_SHARED_CARRIAGE_OWN_CHANCE;
+        double own = Math.max(MIN_SHARED_CARRIAGE_OWN_CHANCE, Math.min(MAX_SHARED_CARRIAGE_OWN_CHANCE, v));
+        return Math.min(own, 1.0 - getSharedCarriagePoolChance());
     }
 
     public static int getNumCarriages() {
@@ -803,6 +874,9 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,
             ModConfigSpec.BooleanValue introCinematicEnabled,
             ModConfigSpec.IntValue introCinematicDurationTicks,
-            ModConfigSpec.BooleanValue introCinematicChunkPreloadEnabled
+            ModConfigSpec.BooleanValue introCinematicChunkPreloadEnabled,
+            ModConfigSpec.BooleanValue sharedCarriagesEnabled,
+            ModConfigSpec.DoubleValue sharedCarriagePoolChance,
+            ModConfigSpec.DoubleValue sharedCarriageOwnChance
     ) {}
 }

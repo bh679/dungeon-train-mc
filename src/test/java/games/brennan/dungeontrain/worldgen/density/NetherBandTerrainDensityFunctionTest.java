@@ -53,7 +53,7 @@ final class NetherBandTerrainDensityFunctionTest {
         long seed = 0x1234_5678L;
         int seaLevel = 63, ceiling = 320, netherTop = 40, baseRelief = 100;
         NetherBandContext ctx = new NetherBandContext(
-                true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null);
+                true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null, null);
         NetherBandContext.publish(ctx);
 
         NetherBandTerrainDensityFunction df = new NetherBandTerrainDensityFunction(null);
@@ -81,7 +81,7 @@ final class NetherBandTerrainDensityFunctionTest {
 
         // Populate the memo under seed A across the band.
         NetherBandContext.publish(new NetherBandContext(
-                true, seedA, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null));
+                true, seedA, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null, null));
         NetherBandTerrainDensityFunction df = new NetherBandTerrainDensityFunction(null);
         for (int x = 1300; x <= 1900; x += 5) {
             for (int y = 60; y <= 200; y += 20) {
@@ -91,7 +91,7 @@ final class NetherBandTerrainDensityFunctionTest {
 
         // Same columns, different seed → the memo must recompute against seed B, not reuse seed A's target.
         NetherBandContext.publish(new NetherBandContext(
-                true, seedB, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null));
+                true, seedB, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null, null));
         for (int x = 1300; x <= 1900; x += 5) {
             for (int y = 60; y <= 200; y += 20) {
                 double base = (x + y) % 7 - 3;
@@ -111,7 +111,7 @@ final class NetherBandTerrainDensityFunctionTest {
         assertEquals(7.5, df.raisedOrBase(1500, 0, 100, 7.5), 0.0);   // no context published
 
         NetherBandContext.publish(new NetherBandContext(
-                false, 1L, 63, 320, 40, 100, CYCLE, null, null, null, null));   // enabled=false
+                false, 1L, 63, 320, 40, 100, CYCLE, null, null, null, null, null));   // enabled=false
         assertEquals(-3.25, df.raisedOrBase(1500, 0, 100, -3.25), 0.0);
     }
 
@@ -133,7 +133,7 @@ final class NetherBandTerrainDensityFunctionTest {
         };
         for (long seed : new long[] {0x1234_5678L, 0xDEAD_BEEFL}) {
             NetherBandContext.publish(new NetherBandContext(
-                    true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null));
+                    true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null, null));
             NetherBandTerrainDensityFunction df = new NetherBandTerrainDensityFunction(null);
             // Whole-period sweep (coarse stride, prime so it doesn't sync with chunk/quart alignment).
             for (long lx = anchor - 40; lx <= anchor + period + 40; lx += 3) {
@@ -171,7 +171,7 @@ final class NetherBandTerrainDensityFunctionTest {
         long seed = 0x1234_5678L;
         int seaLevel = 63, ceiling = 320, netherTop = 40, baseRelief = 100;
         NetherBandContext.publish(new NetherBandContext(
-                true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null));
+                true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null, null));
         NetherBandTerrainDensityFunction df = new NetherBandTerrainDensityFunction(null);
         games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED = false;
         try {
@@ -239,7 +239,7 @@ final class NetherBandTerrainDensityFunctionTest {
         long seed = 0x1234_5678L;
         int seaLevel = 63, ceiling = 320, netherTop = 40, baseRelief = 100;
         NetherBandContext.publish(new NetherBandContext(
-                true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null));
+                true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null, null));
 
         // One fillArray call PER cell (matching the real caller: a NoiseChunk batch never spans more
         // than one chunk), each 4×4 columns × several Y layers in Y-outer/X-mid/Z-inner order. Origins
@@ -294,7 +294,7 @@ final class NetherBandTerrainDensityFunctionTest {
 
         // enabled=false → also pass-through.
         NetherBandContext.publish(new NetherBandContext(
-                false, 1L, 63, 320, 40, 100, CYCLE, null, null, null, null));
+                false, 1L, 63, 320, 40, 100, CYCLE, null, null, null, null, null));
         double[] values2 = new double[samples.size()];
         df.fillArray(values2, new CellProvider(samples));
         for (int i = 0; i < samples.size(); i++) {

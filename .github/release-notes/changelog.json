@@ -5901,16 +5901,69 @@
       "released_at": null
     },
     {
-      "id": "dev-reply-backscroll",
+      "id": "end-cities-in-end-band",
       "version": "0.520.0",
+      "type": "feat",
+      "title": "End cities on the End band's islands",
+      "summary": "The End band's floating islands are no longer empty. End cities generate on them exactly as they do in the real End \u2014 the same spacing, the same end_highlands and end_midlands restriction, the same purpur towers, bridges and end ships, with their loot chests, shulkers and elytra intact. Cities always stand on solid island, and one that lands on the track lane gets punched straight through by the train.",
+      "highlights": [
+        "End cities generate on the End band's islands, at real-End density",
+        "End ships, shulkers, end-city loot and elytra come with them",
+        "New disintegrationEndCities config key turns them off"
+      ],
+      "pr": 861,
+      "date": "2026-08-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "shared-carriages",
+      "version": "0.520.0",
+      "type": "feat",
+      "title": "Shared carriages \u2014 community-built rooms that travel between trains",
+      "summary": "Some carriages can now be shared spaces. Build in one and your room travels to the Dungeon Train relay, where it can later turn up in another player's train \u2014 and theirs in yours, arriving exactly as its author left it, loot and all. A build only ever reappears in the same stage of the run it was made in, so a stone-era room won't surface in the deep dark. This is off by default: a server has to switch it on, and uploading anything also needs your network consent.",
+      "highlights": [
+        "Build in a shared carriage and the room travels to other players' trains",
+        "Community rooms only appear in the stage of the run they were created in",
+        "Stepping into one tells you whether it is untouched or someone has already shaped it",
+        "Report a room you would rather not have seen with /reportcarriage",
+        "Off by default \u2014 a server must enable sharedCarriagesEnabled, and uploads need network consent"
+      ],
+      "pr": 860,
+      "date": "2026-08-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "shared-carriages-own-builds-freeplay",
+      "version": "0.521.0",
+      "type": "feat",
+      "title": "Your own shared carriages find their way back to you",
+      "summary": "Shared carriages you build no longer disappear into the pool for good. Around a third of shared carriage slots now hand you back a room you built yourself \u2014 travelled out to other players' worlds and returned, exactly as you last left it \u2014 while most slots still show you someone else's work and a few stay blank canvases. A carriage you've already met won't turn up twice in the same world, and builds only ever reappear in the kind of place they were made. Creative and survival keep entirely separate pools, so a room built in Free Play never turns up in a survival run, or the other way round.",
+      "highlights": [
+        "About 30% of shared carriage slots return a build of your own, 65% show another player's, and 5% stay a fresh blank canvas",
+        "Stepping into one of your own builds says so",
+        "No shared carriage repeats within the same world",
+        "Free Play and normal play have separate carriage pools that never mix"
+      ],
+      "date": "2026-08-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dev-reply-backscroll",
+      "version": "0.522.0",
       "type": "fix",
       "title": "Developer replies stay in your chat history",
-      "summary": "A reply from the developer sent from the dashboard used to vanish from the title-screen chat panel after you had read it \u2014 the panel treated it as an automated report and hid it. It now stays in your conversation where you can find it again.",
+      "summary": "A reply from the developer used to vanish from the title-screen chat panel: the panel treated it as an automated report and hid it, so a message you had read once was gone the next time you looked. It now stays in your conversation where you can find it again.",
       "highlights": [
-        "Dev replies remain in the title-screen chat backscroll instead of disappearing on the next launch"
+        "Developer replies remain in the title-screen chat backscroll instead of disappearing on the next launch"
       ],
       "pr": 859,
-      "date": "2026-08-02",
+      "date": "2026-08-03",
       "released": false,
       "released_in": null,
       "released_at": null

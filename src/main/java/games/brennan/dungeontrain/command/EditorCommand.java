@@ -385,6 +385,10 @@ public final class EditorCommand {
                 .executes(ctx -> runDevMode(ctx.getSource(), !EditorDevMode.isEnabled()))
                 .then(Commands.literal("on").executes(ctx -> runDevMode(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runDevMode(ctx.getSource(), false))))
+            .then(Commands.literal("shared")
+                .executes(ctx -> runSharedToggle(ctx.getSource(), null))
+                .then(Commands.literal("on").executes(ctx -> runSharedToggle(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runSharedToggle(ctx.getSource(), false))))
             .then(Commands.literal("partmenu")
                 .then(Commands.literal("on").executes(ctx -> runPartMenu(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runPartMenu(ctx.getSource(), false))))
@@ -3395,6 +3399,39 @@ public final class EditorCommand {
                 "Editor dev mode: off — '/editor save' writes to config-dir only."
             ), true);
         }
+        return 1;
+    }
+
+    /**
+     * Toggle whether the carriage variant the player is standing in is relay-sourced ("shared"). With
+     * {@code on == null} it flips the current membership. Persists via {@link SharedCarriageFlags} (and,
+     * in dev mode, through to the bundled source file).
+     */
+    private static int runSharedToggle(CommandSourceStack source, Boolean on) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        CarriageVariant current = CarriageEditor.plotContaining(player.blockPosition(), dims);
+        if (current == null) {
+            source.sendFailure(Component.literal(
+                "Not in a carriage editor plot — stand in the carriage whose shared flag you want to toggle."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        boolean target = on != null ? on
+            : !games.brennan.dungeontrain.train.SharedCarriageFlags.isSharedVariant(current.id());
+        try {
+            games.brennan.dungeontrain.train.SharedCarriageFlags.set(current.id(), target);
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("Failed to save shared flag: " + e.getMessage())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        boolean enabled = games.brennan.dungeontrain.config.DungeonTrainConfig.isSharedCarriagesEnabled();
+        source.sendSuccess(() -> Component.literal(
+            "Carriage '" + current.id() + "' shared: " + (target ? "ON" : "off")
+            + (enabled ? "" : " — note: sharedCarriagesEnabled is OFF in dungeontrain-server.toml, so the feature is inactive")
+        ).withStyle(target ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
         return 1;
     }
 

@@ -79,6 +79,34 @@ public final class EndCoreBiomes {
         }
     }
 
+    /**
+     * The real End biome of the <b>island field</b> — the patch of outer End that
+     * {@link games.brennan.dungeontrain.worldgen.EndIslandGeometry} carves the band's islands out of,
+     * sampled at the same fixed offset the density is. This is the biome that shaped the island under
+     * your feet, so it is what decides whether an End city may stand on it (and, in
+     * {@code DisintegrationFeature}, whether chorus grows).
+     *
+     * <p>Distinct from {@link #biomeAt}, which sweeps outward per band pass to give each crossing a
+     * different <em>labelled</em> End biome: that sweep starts on the main island, where nothing
+     * generates, so gating structures on it would leave the first crossing bare.</p>
+     *
+     * @param worldX band world X (the offset into the outer field is applied here)
+     * @param endY   End-space Y of the island surface
+     */
+    public Holder<Biome> islandFieldBiomeAt(int worldX, int endY, int worldZ) {
+        if (endBiomeSource == null || endSampler == null) return fallback;
+        try {
+            return endBiomeSource.getNoiseBiome(
+                    QuartPos.fromBlock(worldX + OUTER_SAMPLE_OFFSET_X),
+                    QuartPos.fromBlock(endY),
+                    QuartPos.fromBlock(worldZ), endSampler);
+        } catch (Throwable t) {
+            SAMPLE_ERRORS.error(LOGGER,
+                    "[DungeonTrain] End island-field biome sample failed; baking the_end fallback instead", t);
+            return fallback;
+        }
+    }
+
     /** The {@code the_end} fallback holder (used when the End dimension is unavailable). */
     public Holder<Biome> fallback() {
         return fallback;
