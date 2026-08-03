@@ -31,6 +31,7 @@ import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.registry.ModSounds;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
@@ -376,15 +377,30 @@ public class DungeonTrain {
             // Single "I'm ready" button (confirmLabel): a deliberate product decision, taken knowing it
             // leaves Esc as the only way to decline. Options -> Dungeon Train... keeps an Internet
             // Connection toggle, so consent stays revocable after the fact.
+            // Raise when what the card ASKS FOR materially changes — a new content stream, a wider
+            // permission — and every already-consented client sees it once more after they update.
+            // Deliberately NOT tied to mod_version, which bumps on every commit: a re-ask is a
+            // decision, not a side effect of shipping. See DiscordCredentialsProvider for the contract.
+            @Override public int networkConsentVersion() {
+                return CONSENT_VERSION;
+            }
             @Override public ConsentChoice networkConsentChoice() {
                 return new ConsentChoice(
                         tr("gui.dungeontrain.content_mode.label"),
                         List.of(tr("gui.dungeontrain.content_mode.adult"), tr("gui.dungeontrain.content_mode.kid")),
-                        ContentMode.ADULT.ordinal(),
+                        // Open on the mode this client is ALREADY in, not on ADULT. On a first launch
+                        // that is the ADULT default; on a re-ask, or when reopened from Options, it must
+                        // not silently offer to undo a parent's earlier choice.
+                        ClientDisplayConfig.getContentMode().ordinal(),
                         index -> {
                             ContentMode[] modes = ContentMode.values();
-                            ClientDisplayConfig.setContentMode(
-                                    index >= 0 && index < modes.length ? modes[index] : ContentMode.ADULT);
+                            ContentMode picked = index >= 0 && index < modes.length ? modes[index] : ContentMode.ADULT;
+                            ClientDisplayConfig.setContentMode(picked);
+                            // Which tier players actually choose, and how that moves when the card is
+                            // shown again. Fires on every exit path, because the card records the answer
+                            // on every exit path — including Esc, where consent lands DENIED and the
+                            // event is dropped by the consent gate inside UiAnalytics anyway.
+                            UiAnalytics.contentModeChosen(picked.isKid());
                         },
                         List.of(consentBullets(ContentMode.ADULT), consentBullets(ContentMode.KID)),
                         tr("gui.dungeontrain.consent.confirm"));
@@ -521,6 +537,16 @@ public class DungeonTrain {
             }
         }
     }
+
+    /**
+     * Which revision of the consent card's ASK this build represents. Bumping it re-shows the card once
+     * to every player who has already consented, after they download the build that carries the bump —
+     * the terms-of-service pattern. Deliberately hand-managed and unrelated to {@code mod_version}:
+     * every commit bumps that, and re-asking on every patch would train players to click through.
+     *
+     * <p>1 — first version to carry the Adult / Kid content-mode question.</p>
+     */
+    private static final int CONSENT_VERSION = 1;
 
     /** A localized string for the consent card — DP takes raw Strings, not Components, on these seams. */
     private static String tr(String key) {
