@@ -5987,6 +5987,21 @@
       "released_at": null
     },
     {
+      "id": "craft2-enchant2-content-variants",
+      "version": "0.524.0",
+      "type": "content",
+      "title": "New crafting carriage content variants",
+      "summary": "The crafting carriage's loot pool now includes two new variant setups, craft2 and enchant2, discovered via the in-game content editor.",
+      "highlights": [
+        "New craft2 content variant",
+        "New enchant2 content variant"
+      ],
+      "date": "2026-08-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "multiplayer-play-mode-telemetry",
       "version": "0.524.0",
       "type": "chore",

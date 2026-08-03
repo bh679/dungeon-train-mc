@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 3,
   "selfWeight": 2,
   "variants": [
     {
@@ -29,6 +29,14 @@
     {
       "id": "trimming",
       "weight": 2
+    },
+    {
+      "id": "craft2",
+      "weight": 1
+    },
+    {
+      "id": "enchant2",
+      "weight": 1
     }
   ]
 }

@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 8,
+  "variants": {
+    "3,0,2": [{"state": "minecraft:crafting_table", "weight": 2}, "minecraft:smithing_table"]
+  }
+}
