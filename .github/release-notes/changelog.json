@@ -6012,6 +6012,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "tradeeverything-0-2-9-bump",
+      "version": "0.525.0",
+      "type": "fix",
+      "title": "Trade Everything: damaged items no longer overpriced",
+      "summary": "Updated the bundled Trade Everything sibling mod so damaged items no longer sell for more than pristine ones in a villager's Trade Anything slot.",
+      "highlights": [
+        "Fixed damaged items overpricing in Trade Anything trades"
+      ],
+      "date": "2026-08-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
