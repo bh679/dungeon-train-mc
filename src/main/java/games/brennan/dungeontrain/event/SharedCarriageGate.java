@@ -39,6 +39,6 @@ public final class SharedCarriageGate {
      */
     public static boolean canDiscover() {
         return DungeonTrainConfig.isSharedCarriagesEnabled()
-                && !WorldLanguage.hostKidMode(ServerLifecycleHooks.getCurrentServer());
+                && !WorldLanguage.hostBlocksSharedContent(ServerLifecycleHooks.getCurrentServer());
     }
 }

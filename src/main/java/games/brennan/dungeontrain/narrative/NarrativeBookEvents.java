@@ -450,7 +450,7 @@ public final class NarrativeBookEvents {
                 lastExhaustedRefreshMs = now;
                 SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()),
                         WorldLanguage.hostUuidConsented(player.getServer()),
-                        WorldLanguage.hostKidMode(player.getServer()));
+                        WorldLanguage.hostFetchesKidSafeBooks(player.getServer()));
                 if (SharedBookPool.isRefreshInFlight()) return false;
             }
             // Recent refresh already completed with nothing new — fall through; selector relaxes.
@@ -501,7 +501,7 @@ public final class NarrativeBookEvents {
         if (windowExhaustedFor(run)) {
             SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()),
                     WorldLanguage.hostUuidConsented(player.getServer()),
-                    WorldLanguage.hostKidMode(player.getServer()));
+                    WorldLanguage.hostFetchesKidSafeBooks(player.getServer()));
         }
         return true;
     }

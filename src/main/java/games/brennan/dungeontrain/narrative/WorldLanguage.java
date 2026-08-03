@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.narrative;
 
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
+import games.brennan.dungeontrain.config.ContentMode;
 import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import net.minecraft.server.MinecraftServer;
@@ -75,26 +76,52 @@ public final class WorldLanguage {
     }
 
     /**
-     * Whether the host / primary player is in Kid mode — the world-scoped half of the Adult / Kid
-     * split. Content that is world-shared and deterministic (lectern narratives, shared carriages) has
-     * no per-player context to resolve against, so it follows the host, exactly as language does.
-     * Community books use this too, but only to narrow the relay fetch; the final book choice is
-     * per-player (see {@code SharedBookSelector}), so a child on an adult's server is still protected.
+     * The host / primary player's {@link ContentMode} — the world-scoped half of the Adult / Kid split
+     * — or {@code null} when there is no host to ask (nobody online, or anything threw).
      *
-     * <p><b>Fail-safe:</b> yields {@code true} (Kid) whenever the host can't be resolved or anything
-     * throws — including the no-players-online case a background pool refresh can hit. A refresh that
-     * fetched the ADULT pool because nobody happened to be online would poison the shared snapshot for
-     * the child who logs in next; fetching the kid-safe pool in that window merely serves less.</p>
+     * <p>Content that is world-shared and deterministic (lectern narratives, shared carriages) has no
+     * per-player context to resolve against, so it follows the host, exactly as language does. Community
+     * books use this too, but only to narrow the relay fetch; the final choice is per-player (see
+     * {@link SharedBookSelector}), so a child on an adult's server is still protected.</p>
+     *
+     * <p><b>Why this returns null rather than a boolean:</b> the two kinds of caller need opposite
+     * answers when there is no host, so neither default can live here.</p>
+     * <ul>
+     *   <li>The book pool fetch must treat "no host" as KID ({@link #hostFetchesKidSafeBooks}). Its
+     *       result is CACHED in a world-shared snapshot, so an adult pool fetched during a moment when
+     *       nobody happened to be online would still be sitting there for the child who logs in next.</li>
+     *   <li>The point-of-use gates must treat "no host" as ADULT ({@link #hostBlocksSharedContent}).
+     *       They are evaluated during train generation, which runs before anyone has logged in — and
+     *       "no host" there means there is nobody to protect, not that a child is present. Defaulting
+     *       those to KID would silently switch shared carriages off for every player.</li>
+     * </ul>
      */
-    public static boolean hostKidMode(MinecraftServer server) {
-        if (server == null) return true;
+    public static ContentMode hostContentMode(MinecraftServer server) {
+        if (server == null) return null;
         try {
             ServerPlayer host = resolveHost(server);
-            if (host == null) return true;
-            return ContentModeMirror.isKid(host);
+            return host == null ? null : ContentModeMirror.get(host);
         } catch (Throwable t) {
-            return true;
+            return null;
         }
+    }
+
+    /**
+     * Whether a community-book pool fetch must ask the relay for kid-safe books only. Fail-closed: an
+     * unresolvable host counts as Kid, because the fetched window is cached and world-shared — see
+     * {@link #hostContentMode}.
+     */
+    public static boolean hostFetchesKidSafeBooks(MinecraftServer server) {
+        return hostContentMode(server) != ContentMode.ADULT;
+    }
+
+    /**
+     * Whether the host's Kid mode blocks world-shared player content (lectern narratives, shared
+     * carriages). Requires a host who is ACTUALLY in Kid mode: with nobody online there is no child to
+     * protect and these gates run during pre-login world generation — see {@link #hostContentMode}.
+     */
+    public static boolean hostBlocksSharedContent(MinecraftServer server) {
+        return hostContentMode(server) == ContentMode.KID;
     }
 
     /** Pick the host player (owner if online), else the first online player, else {@code null}. */

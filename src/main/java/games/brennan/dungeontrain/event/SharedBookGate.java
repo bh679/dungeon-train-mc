@@ -54,7 +54,7 @@ public final class SharedBookGate {
      */
     public static boolean canDiscoverNarratives() {
         return DungeonTrainConfig.isDiscoverNarrativesEnabled()
-                && !WorldLanguage.hostKidMode(ServerLifecycleHooks.getCurrentServer());
+                && !WorldLanguage.hostBlocksSharedContent(ServerLifecycleHooks.getCurrentServer());
     }
 
     /**
