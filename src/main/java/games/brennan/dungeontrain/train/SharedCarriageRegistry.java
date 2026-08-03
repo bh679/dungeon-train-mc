@@ -54,6 +54,12 @@ public final class SharedCarriageRegistry {
         /** True once this carriage was leased from the relay pool (PR C); false for a fresh local build. */
         public final boolean leasedFromPool;
         /**
+         * True when the leased build was authored by a player currently in this world — either it came
+         * from the own-build path, or an ordinary pool lease turned out to be theirs. Drives the "you
+         * built this" on-enter line; always false for a fresh local build.
+         */
+        public final boolean authoredHere;
+        /**
          * The worldgen stage this slot sits in, resolved from its gate context at spawn. Reported on
          * submit so a build is pooled under the stage it was authored in; null when no stage covers the
          * slot, which means the build can never be shared (the relay refuses a stageless carriage).
@@ -92,7 +98,7 @@ public final class SharedCarriageRegistry {
         private volatile long lastContactMs;
 
         Instance(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx, BlockPos shipyardOrigin,
-                 CarriageDims dims, String variantId, boolean leasedFromPool,
+                 CarriageDims dims, String variantId, boolean leasedFromPool, boolean authoredHere,
                  Integer relayId, String leaseToken, int seqSeed, String stageId, Credits credits) {
             this.level = level;
             this.subLevelId = subLevelId;
@@ -102,6 +108,7 @@ public final class SharedCarriageRegistry {
             this.dims = dims;
             this.variantId = variantId;
             this.leasedFromPool = leasedFromPool;
+            this.authoredHere = authoredHere;
             this.relayId = relayId;
             this.leaseToken = leaseToken;
             this.seq = new AtomicInteger(Math.max(0, seqSeed));
@@ -190,13 +197,14 @@ public final class SharedCarriageRegistry {
      */
     public static Instance register(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx,
                                     BlockPos shipyardOrigin, CarriageDims dims, String variantId,
-                                    boolean leasedFromPool, Integer relayId, String leaseToken, int seqSeed,
+                                    boolean leasedFromPool, boolean authoredHere,
+                                    Integer relayId, String leaseToken, int seqSeed,
                                     String stageId, Credits credits) {
         Instance inst = new Instance(level, subLevelId, trainId, pIdx, shipyardOrigin, dims, variantId,
-                leasedFromPool, relayId, leaseToken, seqSeed, stageId, credits);
+                leasedFromPool, authoredHere, relayId, leaseToken, seqSeed, stageId, credits);
         BY_SUBLEVEL.computeIfAbsent(subLevelId, k -> new CopyOnWriteArrayList<>()).add(inst);
-        LOGGER.debug("[DungeonTrain] Registered shared carriage variant={} pIdx={} subLevel={} leased={} stage={}.",
-                variantId, pIdx, subLevelId, leasedFromPool, stageId);
+        LOGGER.debug("[DungeonTrain] Registered shared carriage variant={} pIdx={} subLevel={} leased={} own={} stage={}.",
+                variantId, pIdx, subLevelId, leasedFromPool, authoredHere, stageId);
         return inst;
     }
 

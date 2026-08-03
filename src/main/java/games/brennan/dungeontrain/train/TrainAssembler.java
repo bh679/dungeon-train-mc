@@ -48,17 +48,26 @@ public final class TrainAssembler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Salt for the deterministic per-carriage "lease from pool vs place fresh" roll (distinct from the variant stream). */
-    private static final long SHARED_POOL_SALT = 0x53484152504F4F4CL; // "SHARPOOL"
+    /**
+     * A relay build chosen for a shared slot, plus whether it was authored by someone in this world
+     * (which the on-enter chat line reads). Null in the caller means "place a fresh template".
+     */
+    private record SharedPick(SharedCarriageClient.PoolLease lease, boolean authoredHere) {}
 
     /**
-     * Decide whether a shared-carriage slot should be filled from the relay POOL, returning a buffered
-     * lease if so (else null → place a fresh local build). The roll is deterministic per carriage index
-     * (so a walk-back re-decides identically), but availability depends on the async prefetch buffer.
+     * Decide what fills a shared-carriage slot: a relay build by anyone, a relay build by a player in
+     * this world, or nothing (→ fresh local template). The bucket roll is deterministic per carriage
+     * index (so a walk-back re-decides identically) — see {@link SharedCarriageRolls} — but whether a
+     * bucket can actually be served depends on the async prefetch buffers.
+     *
+     * <p>A bucket that comes up empty falls through to the other lease bucket before giving up on a
+     * fresh template: the alternative is leaving a community build sitting locked in a buffer while the
+     * slot places an empty room. Only {@link SharedCarriageRolls.Bucket#FRESH} never falls through —
+     * that share is what keeps blank canvases entering the pool at all.</p>
      */
-    private static SharedCarriageClient.PoolLease tryLeaseShared(CarriageVariant variant, int carriagePIdx,
-                                                                 CarriageDims dims, CarriageGenerationConfig genCfg,
-                                                                 String stageId) {
+    private static SharedPick tryLeaseShared(ServerLevel level, CarriageVariant variant, int carriagePIdx,
+                                             CarriageDims dims, CarriageGenerationConfig genCfg,
+                                             String stageId, List<String> onlineUuids) {
         if (!games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()) return null;
         if (!SharedCarriageFlags.isSharedVariant(variant.id())) return null;
         // A slot no stage covers can't be matched against the pool at all — the relay only serves
@@ -68,27 +77,79 @@ public final class TrainAssembler {
             return null;
         }
         SharedCarriagePool.noteStageDemand(stageId); // steer the prefetch tick at the stage we're spawning into
-        long mixed = genCfg.seed() ^ ((long) carriagePIdx * 0x9E3779B97F4A7C15L) ^ SHARED_POOL_SALT;
-        double roll = new java.util.Random(mixed).nextDouble();
-        if (roll >= games.brennan.dungeontrain.config.DungeonTrainConfig.getSharedCarriagePoolChance()) {
-            logLeaseOutcome(carriagePIdx, "ROLLED_NEW", null);
+        SharedCarriageRolls.Bucket bucket = SharedCarriageRolls.bucket(
+                genCfg.seed(), carriagePIdx,
+                games.brennan.dungeontrain.config.DungeonTrainConfig.getSharedCarriagePoolChance(),
+                games.brennan.dungeontrain.config.DungeonTrainConfig.getSharedCarriageOwnChance());
+        if (bucket == SharedCarriageRolls.Bucket.FRESH) {
+            logLeaseOutcome(carriagePIdx, "ROLLED_FRESH", null);
             return null;
         }
-        SharedCarriageClient.PoolLease buffered = SharedCarriagePool.poll(dims, stageId);
-        if (buffered != null) {
-            logLeaseOutcome(carriagePIdx, "BUFFER_HIT", buffered);
-            return buffered;
-        }
-        // Buffer miss → fresh template. The spawn path never blocks on HTTP: a lease that isn't already
-        // buffered isn't worth hitching the server thread for, and poolChance means some template
-        // variety is intended anyway.
+        boolean ownFirst = bucket == SharedCarriageRolls.Bucket.OWN;
+        SharedPick pick = ownFirst
+                ? firstNonNull(() -> pollOwn(level, dims, stageId, onlineUuids, carriagePIdx),
+                               () -> pollAny(level, dims, stageId, onlineUuids, carriagePIdx))
+                : firstNonNull(() -> pollAny(level, dims, stageId, onlineUuids, carriagePIdx),
+                               () -> pollOwn(level, dims, stageId, onlineUuids, carriagePIdx));
+        if (pick != null) return pick;
+        // Nothing buffered either way → fresh template. The spawn path never blocks on HTTP: a lease
+        // that isn't already buffered isn't worth hitching the server thread for.
         logLeaseOutcome(carriagePIdx, SharedCarriagePool.isBackedOff() ? "BACKOFF_SUPPRESSED" : "BUFFER_EMPTY", null);
         return null;
     }
 
+    /** Take a buffered build by anyone; flagged as the player's own if the relay says they authored it. */
+    private static SharedPick pollAny(ServerLevel level, CarriageDims dims, String stageId,
+                                      List<String> onlineUuids, int carriagePIdx) {
+        SharedCarriageClient.PoolLease l = SharedCarriagePool.poll(dims, stageId);
+        if (l == null) return null;
+        boolean own = l.owner() != null && !l.owner().isEmpty() && onlineUuids.contains(l.owner());
+        markUsed(level, l);
+        logLeaseOutcome(carriagePIdx, own ? "POOL_HIT_OWN" : "POOL_HIT", l);
+        return new SharedPick(l, own);
+    }
+
+    /** Take a buffered build authored by one of the players currently in this world. */
+    private static SharedPick pollOwn(ServerLevel level, CarriageDims dims, String stageId,
+                                      List<String> onlineUuids, int carriagePIdx) {
+        SharedCarriageClient.PoolLease l = SharedCarriagePool.pollOwn(dims, stageId, onlineUuids);
+        if (l == null) return null;
+        markUsed(level, l);
+        logLeaseOutcome(carriagePIdx, "OWN_HIT", l);
+        return new SharedPick(l, true);
+    }
+
     /**
-     * Record why a shared slot did or didn't get a relay carriage. Without this the five distinct
-     * reasons {@link #tryLeaseShared} returns null are indistinguishable in a log, and "the train has no
+     * Remember that this world has placed this build, so the relay is told not to offer it again. Done
+     * at the poll, not at placement: a lease we fail to stamp is handed back to the pool for someone
+     * else, but showing it here twice would still read as a repeat.
+     */
+    private static void markUsed(ServerLevel level, SharedCarriageClient.PoolLease lease) {
+        try {
+            DungeonTrainWorldData.get(level).markCarriageUsed(lease.id());
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] could not record used carriage id={}: {}", lease.id(), t.toString());
+        }
+    }
+
+    private static SharedPick firstNonNull(java.util.function.Supplier<SharedPick> a,
+                                           java.util.function.Supplier<SharedPick> b) {
+        SharedPick first = a.get();
+        return first != null ? first : b.get();
+    }
+
+    /** Uuids (dashless, as the relay stores them) of the players currently in this level. */
+    private static List<String> onlinePlayerUuids(ServerLevel level) {
+        List<String> out = new java.util.ArrayList<>();
+        for (net.minecraft.server.level.ServerPlayer p : level.players()) {
+            out.add(p.getUUID().toString().replace("-", ""));
+        }
+        return out;
+    }
+
+    /**
+     * Record why a shared slot did or didn't get a relay carriage. Without this the distinct reasons
+     * {@link #tryLeaseShared} returns null are indistinguishable in a log, and "the train has no
      * community carriages" can't be told apart from "the relay was never asked".
      */
     private static void logLeaseOutcome(int carriagePIdx, String outcome, SharedCarriageClient.PoolLease lease) {
@@ -349,7 +410,9 @@ public final class TrainAssembler {
         // build's origin so it is only ever placed back into the same stage.
         String[] stageBySlot = new String[groupSize];
         // Non-null for slots filled from the relay pool (leased build placed verbatim); null = fresh/local.
-        SharedCarriageClient.PoolLease[] leaseBySlot = new SharedCarriageClient.PoolLease[groupSize];
+        SharedPick[] pickBySlot = new SharedPick[groupSize];
+        // Whose builds count as "own" for this group — resolved once, since it can't change mid-spawn.
+        List<String> onlineUuids = onlinePlayerUuids(level);
 
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
@@ -374,17 +437,19 @@ public final class TrainAssembler {
             boolean flatbedAtBack  = wrapWithPads && slot == 0;
             boolean flatbedAtFront = wrapWithPads && slot == groupSize - 1;
 
-            // Shared-carriage POOL path: if this shared slot rolls "pool" AND a lease is buffered, stamp
-            // the relay build VERBATIM (no parts/variants/contents/loot overlays — blocks come from the
-            // relay). Otherwise fall through to normal placement (the NEW path).
+            // Shared-carriage RELAY path: if this shared slot draws a build (the community pool, or one
+            // authored by a player here) AND a lease is buffered, stamp it VERBATIM (no parts/variants/
+            // contents/loot overlays — blocks come from the relay). Otherwise fall through to normal
+            // placement (the FRESH path).
             Set<BlockPos> carriageBlocks = null;
-            SharedCarriageClient.PoolLease lease = tryLeaseShared(variant, carriagePIdx, dims, genCfg, stageId);
-            if (lease != null) {
+            SharedPick pick = tryLeaseShared(level, variant, carriagePIdx, dims, genCfg, stageId, onlineUuids);
+            if (pick != null) {
+                SharedCarriageClient.PoolLease lease = pick.lease();
                 carriageBlocks = placeRelayLease(level, carriageOrigin, lease, dims);
                 if (carriageBlocks == null) {          // decode/dims/place failure → hand the lease back
                     SharedCarriagePool.returnLease(lease);
                 } else {
-                    leaseBySlot[slot] = lease;
+                    pickBySlot[slot] = pick;
                 }
             }
             if (carriageBlocks == null) {
@@ -445,15 +510,17 @@ public final class TrainAssembler {
             int carriagePIdx = anchorPIdx + slot;
             BlockPos carriageShipyardOrigin = shipyardOrigin.offset(enclosedStartOffset + slot * length, 0, 0);
             CarriageVariant variant = enclosedBySlot[slot];
-            SharedCarriageClient.PoolLease lease = leaseBySlot[slot];
-            if (lease != null) {
-                // POOL carriage: its blocks were stamped verbatim from the relay snapshot. Do NOT run the
+            SharedPick pick = pickBySlot[slot];
+            if (pick != null) {
+                // RELAY carriage: its blocks were stamped verbatim from the relay snapshot. Do NOT run the
                 // contents/loot pass (contents come from the relay) and spawn no contents entities.
                 // Register it as leased so later edits save back to the relay.
+                SharedCarriageClient.PoolLease lease = pick.lease();
                 pendingEntities[slot] = null;
                 SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
                     level, ship.subLevelId(), trainId, carriagePIdx,
-                    carriageShipyardOrigin, dims, variant.id(), true, lease.id(), lease.token(),
+                    carriageShipyardOrigin, dims, variant.id(), true, pick.authoredHere(),
+                    lease.id(), lease.token(),
                     leaseSeqSeed(lease), // seq floor = max(baseSeq, delta seqs) so our edits clear the relay watermark
                     stageBySlot[slot], lease.credits());
                 inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
@@ -474,8 +541,8 @@ public final class TrainAssembler {
                     && SharedCarriageFlags.isSharedVariant(variant.id())) {
                 // No credits: nobody has contributed to a brand-new local build yet.
                 SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
-                        carriageShipyardOrigin, dims, variant.id(), false, null, null, 0, stageBySlot[slot],
-                        SharedCarriageClient.Credits.EMPTY);
+                        carriageShipyardOrigin, dims, variant.id(), false, false, null, null, 0,
+                        stageBySlot[slot], SharedCarriageClient.Credits.EMPTY);
             }
         }
         long tAfterContents = System.nanoTime();

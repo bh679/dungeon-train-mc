@@ -77,6 +77,7 @@ public final class SharedCarriageEnterEvents {
 
         String key = null;
         boolean leased = false;
+        boolean own = false;
         Credits credits = Credits.EMPTY;
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
         if (!carriages.isEmpty()) {
@@ -91,6 +92,7 @@ public final class SharedCarriageEnterEvents {
                 if (inst != null) {
                     key = ship.subLevelId() + ":" + inst.pIdx;
                     leased = inst.leasedFromPool;
+                    own = inst.authoredHere;
                     credits = inst.credits;
                 }
             }
@@ -115,14 +117,23 @@ public final class SharedCarriageEnterEvents {
         if (last != null && now - last < MESSAGE_COOLDOWN_MS) return;
         LAST_MSG_MS.put(id, now);
 
-        player.sendSystemMessage(leased
-                ? SharedCarriageMessage.seenCarriage(level.getRandom())
-                : SharedCarriageMessage.newCarriage(level.getRandom()));
+        // "You built this" wins over "someone's been here" — it's the more specific fact, and it's the
+        // one the player can verify by looking around.
+        player.sendSystemMessage(own
+                ? SharedCarriageMessage.ownCarriage(level.getRandom())
+                : leased
+                        ? SharedCarriageMessage.seenCarriage(level.getRandom())
+                        : SharedCarriageMessage.newCarriage(level.getRandom()));
         // Second line naming who built it, held back a beat so it doesn't land in the same instant as the
         // flavour line. Null whenever there is nobody to credit — a fresh local carriage, a relay too old
         // to send names, or a build stored before names were captured — so those carriages keep exactly
         // the single-line message they showed before, with no dangling pause after it.
-        Component credit = SharedCarriageMessage.creditLine(credits, level.getRandom());
+        //
+        // On the player's OWN build the creator clause is dropped: the line above already said it is
+        // theirs, so naming them again reads as a bug. What is genuinely news there is who has changed it
+        // while it was away — which is exactly the credit's stand-alone editor phrasing.
+        Credits shown = own ? new Credits("", credits.editors(), credits.editorCount()) : credits;
+        Component credit = SharedCarriageMessage.creditLine(shown, level.getRandom());
         if (credit != null) {
             PENDING_CREDIT.put(id, new PendingCredit(credit, player.tickCount + CREDIT_DELAY_TICKS));
         } else {

@@ -12,6 +12,11 @@ import java.util.List;
  * see {@link ChatReceipts}), so neither receipt is ever re-marked. Feedback-survey answers arrive as
  * {@link Embed}s and bug-report submissions as {@link Attachment}s, since both already live in the same
  * thread.</p>
+ *
+ * <p>{@code devAuthored} is the relay correcting Discord: a reply the dev sent from the web dashboard
+ * is posted by the bot account, so Discord reports it {@code isBot} under the bot's name. The relay
+ * knows it sent that message, and stamps it — without which {@link MenuChatFilter} would file the
+ * dev's own words as an automated report and hide them.</p>
  */
 public record ChatHistory(String threadId, List<Message> messages, boolean hasMore) {
 
@@ -26,7 +31,8 @@ public record ChatHistory(String threadId, List<Message> messages, boolean hasMo
             List<Attachment> attachments,
             String timestamp,
             boolean seen,
-            boolean delivered) {
+            boolean delivered,
+            boolean devAuthored) {
 
         /** A real Discord-side message (dev/community/bot) — the kind the panel marks 👀 when seen. */
         public boolean isInbound() {

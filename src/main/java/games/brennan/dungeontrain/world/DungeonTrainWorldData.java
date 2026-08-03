@@ -57,6 +57,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE = "playerMobBehindSpawnPercentOverride";
     private static final String TAG_JOIN_REPORT_POSTED = "joinReportPosted";
     private static final String TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE = "breakBlocksOnContactOverride";
+    private static final String TAG_USED_CARRIAGE_IDS = "usedSharedCarriageIds";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -94,6 +95,15 @@ public final class DungeonTrainWorldData extends SavedData {
      * {@link LinkedHashSet} for dedup + stable insertion-order tiebreak. Main-thread only.
      */
     private final java.util.Set<Long> readyMirrorChunks = new java.util.LinkedHashSet<>();
+
+    /**
+     * Shared carriages this world has already placed. Sent to the relay as the lease exclude-list so a
+     * world doesn't meet the same community build twice — the point of the feature is breadth, and a
+     * repeat reads as the generator running out of ideas. Serialized as a flat int array (the identity
+     * is one number).
+     */
+    private final games.brennan.dungeontrain.train.UsedCarriageIds usedCarriageIds =
+            new games.brennan.dungeontrain.train.UsedCarriageIds();
 
     private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed, StartingDimension startingDimension) {
         this.trainY = trainY;
@@ -222,6 +232,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_JOIN_REPORT_POSTED)) {
             data.joinReportPosted = tag.getBoolean(TAG_JOIN_REPORT_POSTED);
         }
+        // getIntArray returns an empty array for an absent key, so worlds saved before shared carriages
+        // simply start having placed nothing.
+        data.usedCarriageIds.loadFrom(tag.getIntArray(TAG_USED_CARRIAGE_IDS));
         return data;
     }
 
@@ -245,6 +258,7 @@ public final class DungeonTrainWorldData extends SavedData {
             tag.putBoolean(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE, breakBlocksOnContactOverride);
         }
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
+        tag.putIntArray(TAG_USED_CARRIAGE_IDS, usedCarriageIds.toIntArray());
         return tag;
     }
 
@@ -391,6 +405,23 @@ public final class DungeonTrainWorldData extends SavedData {
         if (joinReportPosted) return;
         joinReportPosted = true;
         setDirty();
+    }
+
+    /**
+     * Record that this world has placed the shared carriage with relay id {@code id}, so it is never
+     * placed here again.
+     *
+     * @return true if this was a new id (a repeat is a no-op and leaves the save clean)
+     */
+    public boolean markCarriageUsed(int id) {
+        if (!usedCarriageIds.add(id)) return false;
+        setDirty();
+        return true;
+    }
+
+    /** Relay ids this world has already placed, newest first and capped at {@code limit}. */
+    public java.util.List<Integer> recentUsedCarriageIds(int limit) {
+        return usedCarriageIds.recent(limit);
     }
 
     private static int clampY(int y) {
