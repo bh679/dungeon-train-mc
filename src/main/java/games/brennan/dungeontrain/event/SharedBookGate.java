@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.narrative.WorldLanguage;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
  * Central authorisation for the community shared-books feature — one place both halves consult so the
@@ -40,12 +42,19 @@ public final class SharedBookGate {
 
     /**
      * True when the server has opted this world into serving approved player-written narrative series
-     * on narrative lecterns. Governed only by the server-operator master
-     * ({@link DungeonTrainConfig#isDiscoverNarrativesEnabled()}) — like {@link #canDiscover()}, served
-     * narratives are already approved/public so there is no per-player consent.
+     * on narrative lecterns. Governed by the server-operator master
+     * ({@link DungeonTrainConfig#isDiscoverNarrativesEnabled()}) AND the host not being in Kid mode.
+     *
+     * <p>Unlike community books, which the Kid gate FILTERS (down to the kid-safe subset), lectern
+     * narratives are switched off outright: there is no kid-safe curation for them, so there is no
+     * honest subset to serve. And unlike the book filter, this is HOST-scoped rather than per-player —
+     * a lectern's contents are baked world-side with no per-player context (see
+     * {@code BookFactory.buildOrRandomForLectern}), so on a multiplayer world the host's mode governs.
+     * Off simply means lecterns serve the built-in narratives, as they do with the feature disabled.</p>
      */
     public static boolean canDiscoverNarratives() {
-        return DungeonTrainConfig.isDiscoverNarrativesEnabled();
+        return DungeonTrainConfig.isDiscoverNarrativesEnabled()
+                && !WorldLanguage.hostKidMode(ServerLifecycleHooks.getCurrentServer());
     }
 
     /**

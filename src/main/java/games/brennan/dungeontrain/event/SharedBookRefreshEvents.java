@@ -59,7 +59,8 @@ public final class SharedBookRefreshEvents {
             if (firstRefreshCountdown == 0) {
                 firstRefreshCountdown = -1;
                 SharedBookPool.refreshAsync(WorldLanguage.hostLocale(event.getServer()),
-                        WorldLanguage.hostUuidConsented(event.getServer()));
+                        WorldLanguage.hostUuidConsented(event.getServer()),
+                        WorldLanguage.hostKidMode(event.getServer()));
                 return;
             }
         }
@@ -68,7 +69,8 @@ public final class SharedBookRefreshEvents {
         if (tickCounter >= REFRESH_PERIOD_TICKS) {
             tickCounter = 0;
             SharedBookPool.refreshAsync(WorldLanguage.hostLocale(event.getServer()),
-                    WorldLanguage.hostUuidConsented(event.getServer()));
+                    WorldLanguage.hostUuidConsented(event.getServer()),
+                    WorldLanguage.hostKidMode(event.getServer()));
         }
     }
 }

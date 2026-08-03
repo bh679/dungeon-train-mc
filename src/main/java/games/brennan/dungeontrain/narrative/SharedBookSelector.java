@@ -88,13 +88,28 @@ public final class SharedBookSelector {
      *                        {@code DungeonTrainConfig.getSharedBookRepeatCarriages()} from the
      *                        group-based {@code sharedBookRepeatGroups} setting (groups × groupSize), so
      *                        the threshold is "one whole carriage group behind" by default.
+     * @param kidMode         whether THIS player is in Kid mode. Per-player rather than per-world on
+     *                        purpose: the pool snapshot is shared by everyone on a server, so a child
+     *                        playing on an adult's world is protected here rather than at fetch time.
      */
     public record PlayerContext(String playerLang,
                                 IntPredicate hasRead,
                                 IntPredicate wasServed,
                                 IntUnaryOperator servedCarriage,
                                 int currentCarriage,
-                                int repeatCarriages) {}
+                                int repeatCarriages,
+                                boolean kidMode) {
+
+        /** Adult-mode context — the shape every call site had before Kid mode existed. */
+        public PlayerContext(String playerLang,
+                             IntPredicate hasRead,
+                             IntPredicate wasServed,
+                             IntUnaryOperator servedCarriage,
+                             int currentCarriage,
+                             int repeatCarriages) {
+            this(playerLang, hasRead, wasServed, servedCarriage, currentCarriage, repeatCarriages, false);
+        }
+    }
 
     /**
      * Choose a book for the player from {@code pool}, or empty if nothing is eligible (e.g. every book is
@@ -103,6 +118,17 @@ public final class SharedBookSelector {
      */
     public static Optional<PoolBook> select(List<PoolBook> pool, PlayerContext ctx, long seed) {
         if (pool == null || pool.isEmpty()) return Optional.empty();
+
+        // 0. Kid mode (hard) — restrict to books the relay judged fit for a young child, BEFORE anything
+        // else. It has to run first because every later step is allowed to relax back toward the wider
+        // set it was given (see the exhaustion relaxation at step 1): filtering afterwards would let a
+        // relaxation quietly reintroduce a book this player must not see. Running out of kid-safe books
+        // yields empty, and the caller falls back to a built-in book — the right answer for Kid mode,
+        // where the alternative is serving an unjudged stranger's writing.
+        if (ctx.kidMode()) {
+            pool = filter(pool, PoolBook::kidSafe);
+            if (pool.isEmpty()) return Optional.empty();
+        }
 
         // 1. Eligibility — drop books already served this life unless the unread + far-behind escape applies.
         List<PoolBook> eligible = filter(pool, b -> isEligible(b, ctx));

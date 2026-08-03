@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.discordpresence.client.NetworkConsentScreen;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.ContentMode;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.Tooltip;
@@ -63,6 +64,23 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                 .setTooltip(tip("Master switch for online features (leaderboard, developer chat, community books, telemetry). OFF disables all network use; ON opens the consent screen."));
         y += ROW_GAP;
 
+        // Adult / Kid content mode — the second home for the choice made once on the first-launch
+        // consent card, so a player who dismissed that card (or an existing install that answered
+        // consent before this feature shipped, and so never sees it) can still find the setting.
+        // Syncs to the server immediately so the per-player gates follow without a relog.
+        addRenderableWidget(CycleButton.<ContentMode>builder(DungeonTrainClientOptionsScreen::contentModeLabel)
+                .withValues(List.of(ContentMode.ADULT, ContentMode.KID))
+                .withInitialValue(ClientDisplayConfig.getContentMode())
+                .create(left, y, ROW_W, ROW_H, Component.literal("Content"),
+                        (btn, mode) -> {
+                            ClientDisplayConfig.setContentMode(mode);
+                            ContentModeSyncClient.syncNow();
+                        }))
+                .setTooltip(tip("Kid mode turns off developer chat, limits community books to ones flagged kid-safe, "
+                        + "and turns off lectern stories, Death Notes and shared carriages. You can still write and "
+                        + "share your own books and carriages. Adult mode is everything."));
+        y += ROW_GAP;
+
         // Snapshot chat log ON/OFF.
         addRenderableWidget(CycleButton.onOffBuilder(ClientDisplayConfig.isRideSnapshotChatLogEnabled())
                 .create(left, y, ROW_W, ROW_H, Component.literal("Snapshot Chat Log"),
@@ -86,6 +104,13 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
 
     private static Component resolutionLabel(int value) {
         return Component.literal(value <= 0 ? "AUTO" : value + "p");
+    }
+
+    /** Localized name for a content mode — same keys the first-launch consent card's question uses. */
+    private static Component contentModeLabel(ContentMode mode) {
+        return Component.translatable(mode.isKid()
+                ? "gui.dungeontrain.content_mode.kid"
+                : "gui.dungeontrain.content_mode.adult");
     }
 
     /** A word-wrapping hover tooltip from plain text. */

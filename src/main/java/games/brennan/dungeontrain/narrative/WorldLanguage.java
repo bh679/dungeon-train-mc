@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.narrative;
 
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
+import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -70,6 +71,29 @@ public final class WorldLanguage {
             return host.getUUID().toString().replace("-", "");
         } catch (Throwable t) {
             return "";
+        }
+    }
+
+    /**
+     * Whether the host / primary player is in Kid mode — the world-scoped half of the Adult / Kid
+     * split. Content that is world-shared and deterministic (lectern narratives, shared carriages) has
+     * no per-player context to resolve against, so it follows the host, exactly as language does.
+     * Community books use this too, but only to narrow the relay fetch; the final book choice is
+     * per-player (see {@code SharedBookSelector}), so a child on an adult's server is still protected.
+     *
+     * <p><b>Fail-safe:</b> yields {@code true} (Kid) whenever the host can't be resolved or anything
+     * throws — including the no-players-online case a background pool refresh can hit. A refresh that
+     * fetched the ADULT pool because nobody happened to be online would poison the shared snapshot for
+     * the child who logs in next; fetching the kid-safe pool in that window merely serves less.</p>
+     */
+    public static boolean hostKidMode(MinecraftServer server) {
+        if (server == null) return true;
+        try {
+            ServerPlayer host = resolveHost(server);
+            if (host == null) return true;
+            return ContentModeMirror.isKid(host);
+        } catch (Throwable t) {
+            return true;
         }
     }
 

@@ -201,6 +201,11 @@ public final class DevMessageConsent {
         server.execute(() -> {
             ServerPlayer player = server.getPlayerList().getPlayer(owner);
             if (player == null) return; // the thread's owner isn't online here; the menu chat still carries it
+            // Kid mode: drop the message entirely rather than holding it behind the consent prompt. A
+            // prompt would be worse than nothing — it advertises to the child that an adult is trying
+            // to reach them and offers them a way to accept. The menu-chat surface is closed too (see
+            // RelayChatClient.canConnect), so this really is the whole inbound path.
+            if (ContentModeMirror.isKid(player)) return;
             if (isValid(player.getUUID())) {
                 player.sendSystemMessage(deliveredLine(content));
                 AchievementEvents.notifyCreatorAnswered(player);

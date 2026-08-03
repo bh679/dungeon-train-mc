@@ -2,6 +2,7 @@ package games.brennan.dungeontrain;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NamingConfig;
+import games.brennan.discordpresence.config.ConsentChoice;
 import games.brennan.discordpresence.config.DiscordCredentials;
 import games.brennan.discordpresence.config.DiscordCredentialsProvider;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
@@ -14,10 +15,12 @@ import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.compat.FreePlayBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.ContentMode;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.discord.WorldJoinReport;
+import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.logging.SableAabbLogFilter;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
@@ -33,12 +36,15 @@ import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
 import java.util.List;
 import java.util.UUID;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
@@ -353,6 +359,37 @@ public class DungeonTrain {
             // deliberately silly reassurance that sets the positive features apart from the absurd.
             @Override public List<String> networkConsentNonFeatures() {
                 return List.of(Component.translatable("gui.dungeontrain.consent.nonfeature.harvest_soul").getString());
+            }
+            // The Adult / Kid content-mode question, asked on the same card. It rides here rather than on
+            // a card of its own because this is the one screen every player answers exactly once, on
+            // first launch — a second card would be a second interruption for the same information.
+            // The answer is a CLIENT-scope preference, so DP just reports the index and DT persists it;
+            // the option order below must match ContentMode's declaration order. ADULT is the default,
+            // so an existing install (which already answered consent and will never see this card) and a
+            // player who dismisses with Esc both keep exactly today's behaviour. Also changeable later
+            // in Options -> Dungeon Train... (DungeonTrainClientOptionsScreen).
+            @Override public ConsentChoice networkConsentChoice() {
+                return new ConsentChoice(
+                        Component.translatable("gui.dungeontrain.content_mode.label").getString(),
+                        List.of(Component.translatable("gui.dungeontrain.content_mode.adult").getString(),
+                                Component.translatable("gui.dungeontrain.content_mode.kid").getString()),
+                        ContentMode.ADULT.ordinal(),
+                        index -> {
+                            ContentMode[] modes = ContentMode.values();
+                            ClientDisplayConfig.setContentMode(
+                                    index >= 0 && index < modes.length ? modes[index] : ContentMode.ADULT);
+                        });
+            }
+            // Kid mode: this player's chat never reaches Discord, tag or no tag. The mode is a CLIENT
+            // config, so the server reads it from the per-player mirror the client syncs on login —
+            // which fails safe to KID for a player it has never heard from. This is the outbound half
+            // of "cannot chat with the dev"; DevMessageConsent.onDevMessage is the inbound half.
+            @Override public boolean relayGameChatFor(UUID playerId) {
+                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+                if (server == null) return true; // no server context to judge from — leave DP's default
+                ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+                if (player == null) return true; // not a player we can resolve — not ours to veto
+                return !ContentModeMirror.isKid(player);
             }
             // Append a one-time world-info block (DT version + train regeneration data + installed-mods
             // list) under the first player-join message in each world, into the joining player's Discord

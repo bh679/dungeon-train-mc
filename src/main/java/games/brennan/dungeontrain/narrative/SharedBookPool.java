@@ -75,8 +75,15 @@ public final class SharedBookPool {
      * response to its single highest weight tier, so within one snapshot this is usually uniform; it is
      * carried anyway so the selector's translated-penalty comparison has a base value. Absent from the
      * relay payload today → defaults to 1 (see {@link #parseBook}).</p>
+     *
+     * <p>{@code kidSafe} is the relay's separate "fit for a young child" verdict — a stricter bar than
+     * the approval that got the book into the pool at all. It is carried per-book rather than only
+     * narrowing the fetch because ONE snapshot serves everybody on a server: on an adult's world a
+     * child's own pickups still filter down to the kid-safe entries. Absent from the payload (an older
+     * relay) → {@code false}, so a Kid player is served nothing rather than everything.</p>
      */
-    public record PoolBook(int id, String title, String author, List<String> pages, String lang, int weight) {}
+    public record PoolBook(int id, String title, String author, List<String> pages, String lang, int weight,
+                           boolean kidSafe) {}
 
     /**
      * Upper bound on the accumulated snapshot. Fetches MERGE into it (see {@link #applyResponse}) so a
@@ -188,14 +195,18 @@ public final class SharedBookPool {
      *                 read, cross-world), or {@code ""}/{@code null} to leave the pool unpersonalised. Only
      *                 sent when the host consented — see {@link WorldLanguage#hostUuidConsented}. An older
      *                 relay ignores it, so the response is byte-identical to the no-uuid case.
+     * @param hostKidMode whether the HOST is in Kid mode; narrows the fetch to books the relay has
+     *                 flagged kid-safe ({@code &kidsafe=1}). Host-scoped because the snapshot is
+     *                 world-shared — the per-player half is {@link SharedBookSelector}'s hard filter on
+     *                 {@link PoolBook#kidSafe()}, which is what protects a child on an adult's server.
      */
-    public static void refreshAsync(String hostLang, String hostUuid) {
+    public static void refreshAsync(String hostLang, String hostUuid, boolean hostKidMode) {
         if (fetchInFlight) return;
         fetchInFlight = true;
         try {
             String url = DungeonTrain.relayBaseUrl()
                     + "/books/pool?session=" + SESSION + "&limit=" + POOL_LIMIT
-                    + langParam(hostLang) + uuidParam(hostUuid);
+                    + langParam(hostLang) + uuidParam(hostUuid) + (hostKidMode ? "&kidsafe=1" : "");
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Accept", "application/json")
@@ -347,7 +358,17 @@ public final class SharedBookPool {
                 // non-numeric weight — keep the default
             }
         }
-        return new PoolBook(id, title, author, pages, lang, weight);
+        // Absent (a relay too old to send it) or non-boolean → false. Unlike lang/weight, guessing wrong
+        // here means serving a child a book nobody judged, so the unknown case must be the closed one.
+        boolean kidSafe = false;
+        if (o.has("kidSafe") && o.get("kidSafe").isJsonPrimitive()) {
+            try {
+                kidSafe = o.get("kidSafe").getAsBoolean();
+            } catch (RuntimeException ignored) {
+                // non-boolean kidSafe — keep the closed default
+            }
+        }
+        return new PoolBook(id, title, author, pages, lang, weight, kidSafe);
     }
 
     /** The {@code &lang=<locale>} query fragment for language-matched delivery, or {@code ""} when blank. */

@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "48";
+    public static final String PROTOCOL_VERSION = "49";
 
     private DungeonTrainNet() {}
 
@@ -143,6 +143,7 @@ public final class DungeonTrainNet {
         // Network-access consent (community shared books): client → server login sync of the player's
         // Discord Presence "use the internet?" consent, so the server can gate book uploads.
         registrar.playToServer(NetworkConsentSyncPacket.TYPE, NetworkConsentSyncPacket.STREAM_CODEC, NetworkConsentSyncPacket::handle);
+        registrar.playToServer(ContentModeSyncPacket.TYPE, ContentModeSyncPacket.STREAM_CODEC, ContentModeSyncPacket::handle);
 
         // Community shared-book read history: client → server login sync (+ per-read top-ups) of the
         // player's GLOBAL client-side read set, the fallback source for the loot selector's unread-first
