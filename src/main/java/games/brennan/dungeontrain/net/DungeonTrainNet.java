@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "48";
+    public static final String PROTOCOL_VERSION = "49";
 
     private DungeonTrainNet() {}
 
@@ -143,6 +143,10 @@ public final class DungeonTrainNet {
         // Network-access consent (community shared books): client → server login sync of the player's
         // Discord Presence "use the internet?" consent, so the server can gate book uploads.
         registrar.playToServer(NetworkConsentSyncPacket.TYPE, NetworkConsentSyncPacket.STREAM_CODEC, NetworkConsentSyncPacket::handle);
+
+        // Political Filter (community content): client → server login sync (+ on change) of the
+        // player's preference, so per-player book selection can withhold politically-tagged content.
+        registrar.playToServer(PoliticalFilterSyncPacket.TYPE, PoliticalFilterSyncPacket.STREAM_CODEC, PoliticalFilterSyncPacket::handle);
 
         // Community shared-book read history: client → server login sync (+ per-read top-ups) of the
         // player's GLOBAL client-side read set, the fallback source for the loot selector's unread-first

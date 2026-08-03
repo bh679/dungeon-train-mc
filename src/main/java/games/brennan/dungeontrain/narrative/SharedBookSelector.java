@@ -89,12 +89,20 @@ public final class SharedBookSelector {
      *                        group-based {@code sharedBookRepeatGroups} setting (groups × groupSize), so
      *                        the threshold is "one whole carriage group behind" by default.
      */
+    /**
+     * @param politicalFilter whether this player asked not to be served content the relay tagged as
+     *                        politically sensitive (mirrored server-side from their client — see
+     *                        {@link games.brennan.dungeontrain.event.PoliticalFilterMirror}). Per
+     *                        player, not per world: one pool snapshot serves everyone on the server
+     *                        and they may have answered differently.
+     */
     public record PlayerContext(String playerLang,
                                 IntPredicate hasRead,
                                 IntPredicate wasServed,
                                 IntUnaryOperator servedCarriage,
                                 int currentCarriage,
-                                int repeatCarriages) {}
+                                int repeatCarriages,
+                                boolean politicalFilter) {}
 
     /**
      * Choose a book for the player from {@code pool}, or empty if nothing is eligible (e.g. every book is
@@ -104,8 +112,20 @@ public final class SharedBookSelector {
     public static Optional<PoolBook> select(List<PoolBook> pool, PlayerContext ctx, long seed) {
         if (pool == null || pool.isEmpty()) return Optional.empty();
 
+        // 0. Political filter (hard, and FIRST). Applied to the input pool rather than as one more
+        // preference tier, because every later step is allowed to relax back to a wider set when it
+        // runs dry — step 1's exhaustion fallback reconsiders `pool` wholesale, which would hand back
+        // the very books this player asked not to see. Filtering here means they are never in the set
+        // any fallback can reach. An empty result is a legitimate answer: the caller falls back to a
+        // built-in book, which is exactly right — better mod content than content they opted out of.
+        if (ctx.politicalFilter()) {
+            pool = filter(pool, b -> !b.political());
+            if (pool.isEmpty()) return Optional.empty();
+        }
+
         // 1. Eligibility — drop books already served this life unless the unread + far-behind escape applies.
-        List<PoolBook> eligible = filter(pool, b -> isEligible(b, ctx));
+        final List<PoolBook> filtered = pool;
+        List<PoolBook> eligible = filter(filtered, b -> isEligible(b, ctx));
         // RELAXATION: no-duplicates-per-life is a PREFERENCE, not a hard gate. Once a life has seen the
         // whole servable pool, honouring it strictly would leave the caller with nothing and a
         // random_playerbook slot would silently degrade to a built-in book — but that slot's contract is
@@ -113,7 +133,7 @@ public final class SharedBookSelector {
         // mod content, so on exhaustion we reconsider the entire pool. The built-in fallback is then
         // reserved for the only cases that truly warrant it: the relay being unreachable or having no
         // books at all, which the caller checks before ever getting here.
-        if (eligible.isEmpty()) eligible = pool;
+        if (eligible.isEmpty()) eligible = filtered;
 
         // 2. Language bucket (hard) — {MINE, TRANSLATED} drained before OTHER.
         List<PoolBook> inLanguage = filter(eligible, b -> originOf(b, ctx) != Origin.OTHER);

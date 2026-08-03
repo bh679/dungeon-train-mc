@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.narrative;
 
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
+import games.brennan.dungeontrain.event.PoliticalFilterMirror;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -70,6 +71,34 @@ public final class WorldLanguage {
             return host.getUUID().toString().replace("-", "");
         } catch (Throwable t) {
             return "";
+        }
+    }
+
+    /**
+     * Whether politically-tagged narrative series should be withheld from this WORLD's lecterns —
+     * the host / primary player's Political Filter answer.
+     *
+     * <p>World-scoped, unlike the per-player answer community books get. A narrative lectern locks its
+     * resolved letter into the block entity on first interaction and shows that same letter to everyone
+     * who opens it afterwards, and series progress lives in world {@code SavedData} — so there is no
+     * per-player answer for a lectern to give. Following the host is the same rule the lectern's
+     * LANGUAGE already follows ({@link #hostLocale}), which keeps one consistent primary player behind
+     * both decisions.</p>
+     *
+     * <p><b>Known limitation:</b> on a multiplayer server, a player who asked for the filter can still
+     * meet a tagged series at a lectern if the host did not. Their chest books are still filtered — that
+     * path is genuinely per player.</p>
+     *
+     * <p>Defaults to {@code false} when nobody is online: with no host there is no answer to apply, and
+     * an empty server is serving nobody anyway. Never throws.</p>
+     */
+    public static boolean hostPoliticalFilter(MinecraftServer server) {
+        if (server == null) return false;
+        try {
+            ServerPlayer host = resolveHost(server);
+            return host != null && PoliticalFilterMirror.isEnabled(host);
+        } catch (Throwable t) {
+            return false;
         }
     }
 

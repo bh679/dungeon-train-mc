@@ -83,6 +83,28 @@ public final class ClientDisplayConfig {
     /** The player's most recent NPS ("recommend") answer (0-10), or -1 if never answered. */
     public static final ModConfigSpec.IntValue DEATH_SCREEN_LAST_NPS;
 
+    /**
+     * Whether the player wants community content the relay tagged as politically sensitive filtered
+     * out of what they are served.
+     *
+     * <p>Tri-state on purpose. {@link PoliticalFilter#UNSET} is not a third preference — it means the
+     * player has not been asked yet, and it resolves to a DIFFERENT effective answer depending on their
+     * client language (see {@code PoliticalFilterPrefs}): ON for a Chinese locale, OFF otherwise. A
+     * plain boolean would have to pick one default for everybody and would forget whether the player
+     * had ever actually chosen it.</p>
+     */
+    public static final ModConfigSpec.EnumValue<PoliticalFilter> POLITICAL_FILTER;
+
+    /** The player's answer to the Political Filter prompt. See {@link #POLITICAL_FILTER}. */
+    public enum PoliticalFilter {
+        /** Never asked (or asked and dismissed before the prompt existed) — resolved from the locale. */
+        UNSET,
+        /** Filter tagged content out. */
+        ON,
+        /** Show everything. */
+        OFF
+    }
+
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
                 .configure(ClientDisplayConfig::build);
@@ -113,6 +135,7 @@ public final class ClientDisplayConfig {
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
+        POLITICAL_FILTER = pair.getLeft().politicalFilter;
     }
 
     private ClientDisplayConfig() {}
@@ -231,6 +254,16 @@ public final class ClientDisplayConfig {
                 .defineInRange("lastNpsScore", -1, -1, 10);
         b.pop();
 
+        b.push("contentFilter");
+        ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter = b
+                .comment("Whether community books and player narratives flagged as politically sensitive are",
+                         "filtered out of what you're served. ON hides them, OFF shows everything, UNSET means",
+                         "you haven't been asked — which reads as ON for Chinese-language clients (who are the",
+                         "ones offered the choice) and OFF for everyone else. Set from the prompt on the title",
+                         "screen, or the Political Filter row in Options > Dungeon Train.")
+                .defineEnum("politicalFilter", PoliticalFilter.UNSET);
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
@@ -238,7 +271,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
                 framerateThrottleEnabled, framerateThrottleFps, deleteWorldOnReboard, sharedBooksRead,
-                deathScreenLastNps);
+                deathScreenLastNps, politicalFilter);
     }
 
     /**
@@ -351,6 +384,24 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         FREE_PLAY_CONFIRM_OPTED_OUT.set(value);
         FREE_PLAY_CONFIRM_OPTED_OUT.save();
+    }
+
+    // ----- Political content filter (see client/PoliticalFilterPrefs) -----
+
+    /**
+     * The player's RAW stored answer — {@code UNSET} when they have never been asked. Callers deciding
+     * whether to actually filter want {@code PoliticalFilterPrefs.isEnabled()} instead, which resolves
+     * {@code UNSET} against their client language. Reads {@code UNSET} before the config loads, which
+     * is the same "not answered yet" the prompt keys off.
+     */
+    public static PoliticalFilter getPoliticalFilter() {
+        return isLoaded() ? POLITICAL_FILTER.get() : PoliticalFilter.UNSET;
+    }
+
+    public static void setPoliticalFilter(PoliticalFilter value) {
+        if (!isLoaded() || value == null) return;
+        POLITICAL_FILTER.set(value);
+        POLITICAL_FILTER.save();
     }
 
     // ----- Developer-message consent state (see DevMessageConsentClient) -----
@@ -619,6 +670,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
-            ModConfigSpec.IntValue deathScreenLastNps
+            ModConfigSpec.IntValue deathScreenLastNps,
+            ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter
     ) {}
 }

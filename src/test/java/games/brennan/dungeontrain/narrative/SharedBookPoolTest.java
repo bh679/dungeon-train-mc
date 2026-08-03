@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -126,5 +127,28 @@ final class SharedBookPoolTest {
         SharedBookPool.applyResponse(body(1, 2), "en_us");
         SharedBookPool.applyResponse("{\"ok\":true,\"total\":5}", "en_us"); // no books array
         assertEquals(List.of(1, 2), snapshotIds());
+    }
+
+    @Test
+    @DisplayName("the political tag parses when present and defaults to false when absent")
+    void politicalTagParsing() {
+        SharedBookPool.applyResponse("{\"ok\":true,\"total\":2,\"books\":["
+                + "{\"id\":1,\"title\":\"t1\",\"author\":\"a\",\"lang\":\"en_us\",\"pages\":[\"p\"],\"political\":true},"
+                + "{\"id\":2,\"title\":\"t2\",\"author\":\"a\",\"lang\":\"en_us\",\"pages\":[\"p\"]}]}", "en_us");
+        List<SharedBookPool.PoolBook> books = SharedBookPool.snapshot();
+        assertEquals(2, books.size());
+        assertTrue(books.get(0).political());
+        // Absent is the shape EVERY untagged book arrives in, and the shape a relay too old to know
+        // about the tag sends for all of them — it must never read as tagged.
+        assertFalse(books.get(1).political());
+    }
+
+    @Test
+    @DisplayName("a non-boolean political value is treated as untagged rather than throwing")
+    void politicalTagGarbageIsUntagged() {
+        SharedBookPool.applyResponse("{\"ok\":true,\"total\":1,\"books\":["
+                + "{\"id\":1,\"title\":\"t1\",\"author\":\"a\",\"lang\":\"en_us\",\"pages\":[\"p\"],\"political\":null}]}", "en_us");
+        assertEquals(1, SharedBookPool.snapshot().size(), "the book still parses");
+        assertFalse(SharedBookPool.snapshot().get(0).political());
     }
 }

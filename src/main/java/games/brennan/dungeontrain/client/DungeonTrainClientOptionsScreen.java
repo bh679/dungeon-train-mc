@@ -25,6 +25,11 @@ import java.util.List;
  *
  * <p>Labels are plain literals, matching the existing plain-English DT options screens (no new
  * localization keys). The two {@link CycleButton}s manage their own display.</p>
+ *
+ * <p><b>One deliberate exception:</b> the Political Filter row is translated. It is shown only to
+ * players on a Chinese-language client (see {@link PoliticalFilterPrefs}), so by construction nobody
+ * who reads it is reading the rest of this screen in English — a plain literal there would be the one
+ * label its entire audience cannot read.</p>
  */
 public final class DungeonTrainClientOptionsScreen extends Screen {
 
@@ -62,6 +67,17 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                 .bounds(left, y, ROW_W, ROW_H).build())
                 .setTooltip(tip("Master switch for online features (leaderboard, developer chat, community books, telemetry). OFF disables all network use; ON opens the consent screen."));
         y += ROW_GAP;
+
+        // Political Filter — offered only where it is a live concern (Chinese-language clients), so the
+        // row is absent rather than merely inert for everyone else. Translated; see the class javadoc.
+        if (PoliticalFilterPrefs.isChineseLocale()) {
+            addRenderableWidget(CycleButton.onOffBuilder(PoliticalFilterPrefs.isEnabled())
+                    .create(left, y, ROW_W, ROW_H,
+                            Component.translatable("gui.dungeontrain.political_filter.option"),
+                            (btn, on) -> PoliticalFilterPrefs.answer(on)))
+                    .setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.political_filter.option.tooltip")));
+            y += ROW_GAP;
+        }
 
         // Snapshot chat log ON/OFF.
         addRenderableWidget(CycleButton.onOffBuilder(ClientDisplayConfig.isRideSnapshotChatLogEnabled())

@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.event.AchievementEvents;
+import games.brennan.dungeontrain.event.PoliticalFilterMirror;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.event.SharedBookReadMirror;
 import games.brennan.dungeontrain.player.PlayerRunState;
@@ -465,7 +466,10 @@ public final class NarrativeBookEvents {
             run::wasServed,
             id -> { Integer c = run.servedCarriage(id); return c == null ? 0 : c; },
             run.travelledCarriageIndex(),
-            DungeonTrainConfig.getSharedBookRepeatCarriages());
+            DungeonTrainConfig.getSharedBookRepeatCarriages(),
+            // THIS holder's political-filter answer, for the same reason as the locale above: the pool
+            // is shared, the preference is not.
+            PoliticalFilterMirror.isEnabled(player));
         // Vary the seed per stack as well as per tick: a sweep resolving several placeholders in the SAME
         // tick would otherwise feed the selector an identical seed and hand out the same book for each.
         long seed = ow.getGameTime() ^ uuid.getLeastSignificantBits() ^ (System.identityHashCode(stack) * 0x9E3779B9L);

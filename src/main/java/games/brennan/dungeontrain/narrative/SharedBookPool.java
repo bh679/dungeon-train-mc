@@ -75,8 +75,15 @@ public final class SharedBookPool {
      * response to its single highest weight tier, so within one snapshot this is usually uniform; it is
      * carried anyway so the selector's translated-penalty comparison has a base value. Absent from the
      * relay payload today → defaults to 1 (see {@link #parseBook}).</p>
+     *
+     * <p>{@code political} is the relay's moderation tag for politically sensitive content — the one
+     * moderation fact that crosses to the game, because whether it matters depends on the READER (see
+     * {@link games.brennan.dungeontrain.client.PoliticalFilterPrefs}). Like {@code lang} it is stored
+     * per book and applied per player at selection time, not filtered out of the shared snapshot: one
+     * snapshot serves every player on the server and they may have answered differently.</p>
      */
-    public record PoolBook(int id, String title, String author, List<String> pages, String lang, int weight) {}
+    public record PoolBook(int id, String title, String author, List<String> pages, String lang, int weight,
+                           boolean political) {}
 
     /**
      * Upper bound on the accumulated snapshot. Fetches MERGE into it (see {@link #applyResponse}) so a
@@ -194,7 +201,7 @@ public final class SharedBookPool {
         fetchInFlight = true;
         try {
             String url = DungeonTrain.relayBaseUrl()
-                    + "/books/pool?session=" + SESSION + "&limit=" + POOL_LIMIT
+                    + "/books/pool?session=" + SESSION + "&limit=" + POOL_LIMIT + POLITICAL_CAPABILITY
                     + langParam(hostLang) + uuidParam(hostUuid);
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
@@ -347,8 +354,22 @@ public final class SharedBookPool {
                 // non-numeric weight — keep the default
             }
         }
-        return new PoolBook(id, title, author, pages, lang, weight);
+        // The relay sends `political` only when true, and only to a request carrying `pol=1` (below) —
+        // absent therefore means "not tagged", which is also the right read for a relay too old to know
+        // about the tag at all.
+        boolean political = o.has("political") && !o.get("political").isJsonNull()
+                && o.get("political").isJsonPrimitive() && o.get("political").getAsBoolean();
+        return new PoolBook(id, title, author, pages, lang, weight, political);
     }
+
+    /**
+     * Declares to the relay that this jar understands the {@code political} tag and filters it per
+     * player, so tagged books may be included in the response. WITHOUT it the relay withholds them —
+     * that is what keeps older jars, which have no filter to apply, from ever being handed content
+     * that needs one. Always sent: the pool is shared across every player on the server, and which of
+     * them want it filtered is decided later, per player, by {@link SharedBookSelector}.
+     */
+    private static final String POLITICAL_CAPABILITY = "&pol=1";
 
     /** The {@code &lang=<locale>} query fragment for language-matched delivery, or {@code ""} when blank. */
     static String langParam(String hostLang) {
