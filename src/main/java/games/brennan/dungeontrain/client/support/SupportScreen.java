@@ -74,7 +74,7 @@ public final class SupportScreen extends Screen {
     /** Sprite tints (multiplied over the grey button sprite). */
     private static final float[] TINT_ORANGE = {1.00F, 0.47F, 0.38F}; // Patreon
     private static final float[] TINT_GREEN  = {0.30F, 0.80F, 0.35F}; // Direct donation
-    private static final float[] TINT_BLUE   = {0.35F, 0.62F, 1.00F}; // China payment (Alipay blue)
+    private static final float[] TINT_BLUE   = {0.35F, 0.62F, 1.00F}; // China payment — distinct from the green direct-donation button
 
     private final Screen parent;
 
@@ -240,7 +240,7 @@ public final class SupportScreen extends Screen {
     }
 
     /**
-     * The second Financial-section button: the China payment route (Alipay / WeChat Pay) where
+     * The second Financial-section button: the China payment route (WeChat Pay) where
      * Patreon is unreachable, otherwise Patreon. The tooltip differs because the China route runs
      * through Stripe and so is not fee-free the way the direct Revolut donation is.
      */

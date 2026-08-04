@@ -30,7 +30,7 @@ public final class OfficialLinks {
     static final String FALLBACK_AFFILIATE =
             "https://billing.kinetichosting.com/aff.php?aff=1461";
     /**
-     * The China-facing payment link (Stripe, offering Alipay + WeChat Pay) has NO baked fallback on
+     * The China-facing payment link (a Stripe link; WeChat Pay today) has NO baked fallback on
      * purpose — it is relay-only. Patreon and Revolut are both walled in mainland China, so this is
      * the one route that works there; but until the relay serves {@code payment_cn}, {@link
      * #paymentCn()} returns null and every screen keeps its pre-existing behaviour. That lets the

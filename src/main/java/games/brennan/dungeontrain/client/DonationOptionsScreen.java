@@ -37,7 +37,7 @@ public final class DonationOptionsScreen extends Screen {
     private static final int NARR    = 0xFFC7BDA7;
     private static final float[] TINT_GREEN  = {0.30F, 0.80F, 0.35F}; // direct donation
     private static final float[] TINT_ORANGE = {1.00F, 0.47F, 0.38F}; // Patreon
-    private static final float[] TINT_BLUE   = {0.35F, 0.62F, 1.00F}; // China payment (Alipay blue)
+    private static final float[] TINT_BLUE   = {0.35F, 0.62F, 1.00F}; // China payment — distinct from the green direct-donation button
 
     private final Screen parent;
     // Text positions computed in init(), drawn in render() (title + subtitle + a per-column
