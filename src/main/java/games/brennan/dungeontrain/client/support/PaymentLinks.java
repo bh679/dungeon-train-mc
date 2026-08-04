@@ -15,8 +15,14 @@ import java.util.Set;
  *
  * <p><b>Why a China-specific route exists.</b> Both default funnels assume a Visa/Mastercard:
  * Patreon's domain is blocked in mainland China and Revolut has no presence there. Chinese players
- * pay with Alipay or WeChat Pay. {@link OfficialLinks#paymentCn()} carries a Stripe link offering
- * both, and {@link #useChinaPayment()} decides who sees it.</p>
+ * pay with WeChat Pay or Alipay. {@link OfficialLinks#paymentCn()} carries a Stripe link, and
+ * {@link #useChinaPayment()} decides who sees it.</p>
+ *
+ * <p>Which methods that link actually offers is a property of the relay-served URL, not of this
+ * class — currently WeChat Pay only, because Stripe declined the Alipay activation ("Online
+ * Gaming" is an unsupported category for it). Nothing here needs to change if that widens: the
+ * button opens whatever the relay serves. Only the button's label does, since it names the
+ * method.</p>
  *
  * <p><b>The gate is the client's language, not its location</b> — Minecraft exposes no country. A
  * Chinese-language client anywhere is offered the China route, and conversely a mainland player
