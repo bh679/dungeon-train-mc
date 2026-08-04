@@ -31,7 +31,9 @@ import org.slf4j.Logger;
 public final class OptionsScreenDungeonTrainButton {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final Component LABEL = Component.literal("Dungeon Train…");
+    /** "Dungeon Train…" — the mod name stays as-is in every locale; the key exists so a locale can
+     *  adjust the ellipsis or spacing around it. */
+    private static final Component LABEL = Component.translatable("gui.dungeontrain.options.client.open");
     /** The vanilla FOV slider caption — its widget's message renders as "FOV: <value>". */
     private static final Component FOV_CAPTION = Component.translatable("options.fov");
     private static final int GAP = 4;

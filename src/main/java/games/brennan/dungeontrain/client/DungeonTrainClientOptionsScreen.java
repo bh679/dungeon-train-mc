@@ -24,18 +24,14 @@ import java.util.List;
  * scale steppers) plus the ride-snapshot toggles, all reading/writing the same {@link ClientDisplayConfig}
  * accessors the X-menu uses — so the surfaces never diverge.</p>
  *
- * <p>Most labels are plain literals, matching the existing plain-English DT options screens. Two rows
- * are deliberate exceptions and ARE localized, and new rows of that kind should follow them rather
- * than the literals around them:</p>
- * <ul>
- *   <li>The Adult / Kid content row — the only place outside the first-launch consent card that says
- *       what Kid mode does, and where a parent goes to change it, so it must be readable on a
- *       non-English client.</li>
- *   <li>The Political Filter row — shown only to players on a Chinese-language client (see
- *       {@link PoliticalFilterPrefs}), so by construction nobody who reads it is reading the rest of
- *       this screen in English; a plain literal there would be the one label its entire audience
- *       cannot read.</li>
- * </ul>
+ * <p><b>Every row here is localized</b> — labels and tooltips alike — and new rows must follow suit
+ * rather than reaching for {@link Component#literal}. This screen used to be plain-English literals
+ * with the content-mode and Political Filter rows as localized exceptions; a screenshot of a Chinese
+ * client settled it, because the exceptions are the reason the rest has to be translated too. The
+ * consent flow asks a player for the Kid-mode and Chinese-filter answers <em>in their own language</em>,
+ * then sends them here to change them: arriving at a screen where two rows are Chinese and four are
+ * English is worse than either extreme. The on/off states come from vanilla's own {@code options.on} /
+ * {@code options.off}, which are already translated for every locale MC ships.</p>
  */
 public final class DungeonTrainClientOptionsScreen extends Screen {
 
@@ -49,7 +45,8 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
     private final Screen parent;
 
     public DungeonTrainClientOptionsScreen(Screen parent) {
-        super(Component.literal("Dungeon Train Options"));
+        // ".client." because gui.dungeontrain.options.title is already taken by the WORLD options screen.
+        super(Component.translatable("gui.dungeontrain.options.client.title"));
         this.parent = parent;
     }
 
@@ -60,10 +57,10 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
         int y = this.height / 3;
 
         // Editor / display-scale settings live on their own sub-screen.
-        addRenderableWidget(Button.builder(Component.literal("Editor Settings…"),
+        addRenderableWidget(Button.builder(Component.translatable("gui.dungeontrain.options.editor_settings"),
                         b -> this.minecraft.setScreen(new DungeonTrainEditorSettingsScreen(this)))
                 .bounds(left, y, ROW_W, ROW_H).build())
-                .setTooltip(tip("Display scale for Dungeon Train's in-world menus, HUD and debug labels."));
+                .setTooltip(tip("gui.dungeontrain.options.editor_settings.tip"));
         y += ROW_GAP;
 
         // Master network / internet-connection switch (DP's one-time "use the internet?" consent). OFF
@@ -71,7 +68,7 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
         // silently granting — granting network access gates leaderboard / dev chat / book share / telemetry.
         addRenderableWidget(Button.builder(internetLabel(), b -> toggleInternet())
                 .bounds(left, y, ROW_W, ROW_H).build())
-                .setTooltip(tip("Master switch for online features (leaderboard, developer chat, community books, telemetry). OFF disables all network use; ON opens the consent screen."));
+                .setTooltip(tip("gui.dungeontrain.options.internet.tip"));
         y += ROW_GAP;
 
         // Political Filter — offered only where it is a live concern (Chinese-language clients), so the
@@ -97,18 +94,17 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                             ClientDisplayConfig.setContentMode(mode);
                             ContentModeSyncClient.syncNow();
                         }))
-                // Localized, unlike this screen's other rows. Those describe display scale and a master
-                // on/off; this one is the only place outside the one-time card that says what Kid mode
-                // actually does, and it is where a parent comes to change it — a parent reading a
-                // non-English client should not be shown three lines of English to make that decision.
+                // The longest tooltip on the screen, and the one that most has to land: it is the only
+                // place outside the one-time card that says what Kid mode actually does, and it is where
+                // a parent comes to change it.
                 .setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.options.content_mode.tip")));
         y += ROW_GAP;
 
         // Snapshot chat log ON/OFF.
         addRenderableWidget(CycleButton.onOffBuilder(ClientDisplayConfig.isRideSnapshotChatLogEnabled())
-                .create(left, y, ROW_W, ROW_H, Component.literal("Snapshot Chat Log"),
+                .create(left, y, ROW_W, ROW_H, Component.translatable("gui.dungeontrain.options.snapshot_chat_log"),
                         (btn, on) -> ClientDisplayConfig.setRideSnapshotChatLog(on)))
-                .setTooltip(tip("Print a chat line each time a ride photo is auto-captured, showing its tag and reason. A debug aid; off by default."));
+                .setTooltip(tip("gui.dungeontrain.options.snapshot_chat_log.tip"));
         y += ROW_GAP;
 
         // Snapshot max resolution ceiling (0 = AUTO).
@@ -116,9 +112,9 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
         addRenderableWidget(CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::resolutionLabel)
                 .withValues(RESOLUTION_VALUES)
                 .withInitialValue(RESOLUTION_VALUES.contains(currentRes) ? currentRes : 0)
-                .create(left, y, ROW_W, ROW_H, Component.literal("Snapshot Max Resolution"),
+                .create(left, y, ROW_W, ROW_H, Component.translatable("gui.dungeontrain.options.snapshot_max_res"),
                         (btn, value) -> ClientDisplayConfig.setRideSnapshotMaxResolution(value)))
-                .setTooltip(tip("Upper limit for ride-photo capture resolution. AUTO uses 1080p, rising to 1440p/2160p with Distant Horizons + shaders or Fabulous graphics."));
+                .setTooltip(tip("gui.dungeontrain.options.snapshot_max_res.tip"));
         y += ROW_GAP;
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
@@ -126,7 +122,9 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
     }
 
     private static Component resolutionLabel(int value) {
-        return Component.literal(value <= 0 ? "AUTO" : value + "p");
+        return value <= 0
+                ? Component.translatable("gui.dungeontrain.options.snapshot_max_res.auto")
+                : Component.literal(value + "p"); // "1080p" — a unit, not prose
     }
 
     /** Localized name for a content mode — same keys the first-launch consent card's question uses. */
@@ -136,13 +134,15 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                 : "gui.dungeontrain.content_mode.adult");
     }
 
-    /** A word-wrapping hover tooltip from plain text. */
-    private static Tooltip tip(String text) {
-        return Tooltip.create(Component.literal(text));
+    /** A word-wrapping hover tooltip from a lang key. */
+    private static Tooltip tip(String key) {
+        return Tooltip.create(Component.translatable(key));
     }
 
+    /** ON/OFF comes from vanilla's own already-translated {@code options.on} / {@code options.off}. */
     private static Component internetLabel() {
-        return Component.literal("Internet Connection: " + (DiscordPresenceClientConfig.isGranted() ? "ON" : "OFF"));
+        return Component.translatable("gui.dungeontrain.options.internet",
+                Component.translatable(DiscordPresenceClientConfig.isGranted() ? "options.on" : "options.off"));
     }
 
     /** ON→OFF revokes network consent immediately (+ server re-sync); OFF→ON opens DP's informed consent screen. */
