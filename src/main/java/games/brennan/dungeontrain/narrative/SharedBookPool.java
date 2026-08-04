@@ -76,14 +76,20 @@ public final class SharedBookPool {
      * carried anyway so the selector's translated-penalty comparison has a base value. Absent from the
      * relay payload today → defaults to 1 (see {@link #parseBook}).</p>
      *
+     * <p>{@code kidSafe} is the relay's separate "fit for a young child" verdict — a stricter bar than
+     * the approval that got the book into the pool at all. Absent from the payload (an older relay) →
+     * {@code false}, so a Kid player is served nothing rather than everything.</p>
+     *
      * <p>{@code political} is the relay's moderation tag for politically sensitive content — the one
-     * moderation fact that crosses to the game, because whether it matters depends on the READER (see
-     * {@link games.brennan.dungeontrain.client.PoliticalFilterPrefs}). Like {@code lang} it is stored
-     * per book and applied per player at selection time, not filtered out of the shared snapshot: one
-     * snapshot serves every player on the server and they may have answered differently.</p>
+     * moderation VERDICT that crosses to the game, because whether it matters depends on the READER
+     * (see {@link games.brennan.dungeontrain.client.PoliticalFilterPrefs}).</p>
+     *
+     * <p>Both are carried per-book rather than only narrowing the fetch, and for the same reason ONE
+     * snapshot serves everybody on a server: two players may have answered differently, so like
+     * {@code lang} these are stored per book and applied per player at selection time.</p>
      */
     public record PoolBook(int id, String title, String author, List<String> pages, String lang, int weight,
-                           boolean political) {}
+                           boolean kidSafe, boolean political) {}
 
     /**
      * Upper bound on the accumulated snapshot. Fetches MERGE into it (see {@link #applyResponse}) so a
@@ -195,14 +201,18 @@ public final class SharedBookPool {
      *                 read, cross-world), or {@code ""}/{@code null} to leave the pool unpersonalised. Only
      *                 sent when the host consented — see {@link WorldLanguage#hostUuidConsented}. An older
      *                 relay ignores it, so the response is byte-identical to the no-uuid case.
+     * @param hostKidMode whether the HOST is in Kid mode; narrows the fetch to books the relay has
+     *                 flagged kid-safe ({@code &kidsafe=1}). Host-scoped because the snapshot is
+     *                 world-shared — the per-player half is {@link SharedBookSelector}'s hard filter on
+     *                 {@link PoolBook#kidSafe()}, which is what protects a child on an adult's server.
      */
-    public static void refreshAsync(String hostLang, String hostUuid) {
+    public static void refreshAsync(String hostLang, String hostUuid, boolean hostKidMode) {
         if (fetchInFlight) return;
         fetchInFlight = true;
         try {
             String url = DungeonTrain.relayBaseUrl()
                     + "/books/pool?session=" + SESSION + "&limit=" + POOL_LIMIT + POLITICAL_CAPABILITY
-                    + langParam(hostLang) + uuidParam(hostUuid);
+                    + langParam(hostLang) + uuidParam(hostUuid) + (hostKidMode ? "&kidsafe=1" : "");
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Accept", "application/json")
@@ -354,12 +364,22 @@ public final class SharedBookPool {
                 // non-numeric weight — keep the default
             }
         }
+        // Absent (a relay too old to send it) or non-boolean → false. Unlike lang/weight, guessing wrong
+        // here means serving a child a book nobody judged, so the unknown case must be the closed one.
+        boolean kidSafe = false;
+        if (o.has("kidSafe") && o.get("kidSafe").isJsonPrimitive()) {
+            try {
+                kidSafe = o.get("kidSafe").getAsBoolean();
+            } catch (RuntimeException ignored) {
+                // non-boolean kidSafe — keep the closed default
+            }
+        }
         // The relay sends `political` only when true, and only to a request carrying `pol=1` (below) —
         // absent therefore means "not tagged", which is also the right read for a relay too old to know
         // about the tag at all.
         boolean political = o.has("political") && !o.get("political").isJsonNull()
                 && o.get("political").isJsonPrimitive() && o.get("political").getAsBoolean();
-        return new PoolBook(id, title, author, pages, lang, weight, political);
+        return new PoolBook(id, title, author, pages, lang, weight, kidSafe, political);
     }
 
     /**

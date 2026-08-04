@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -28,14 +29,19 @@ final class SharedBookSelectorTest {
 
     private static final String EN = "en_us";
 
-    /** Convenience factory — pages/title are irrelevant to selection. */
+    /** Convenience factory — pages/title are irrelevant to selection. Kid-safe unless stated otherwise. */
     private static PoolBook book(int id, String lang, int weight) {
-        return new PoolBook(id, "title" + id, "author", List.of("p"), lang, weight, false);
+        return book(id, lang, weight, true);
+    }
+
+    /** As {@link #book(int, String, int)} but with an explicit kid-safe verdict. */
+    private static PoolBook book(int id, String lang, int weight, boolean kidSafe) {
+        return new PoolBook(id, "title" + id, "author", List.of("p"), lang, weight, kidSafe, false);
     }
 
     /** An en_us player who has read nothing and been served nothing; carriage 0, repeat threshold 10. */
     private static PlayerContext freshPlayer() {
-        return new PlayerContext(EN, id -> false, id -> false, id -> 0, 0, 10, false);
+        return new PlayerContext(EN, id -> false, id -> false, id -> 0, 0, 10);
     }
 
     @Test
@@ -54,7 +60,7 @@ final class SharedBookSelectorTest {
         assertEquals(Origin.MINE, SharedBookSelector.originOf(book(1, null, 1), en), "untagged → English default");
         assertEquals(Origin.OTHER, SharedBookSelector.originOf(book(1, "es_es", 1), en));
         // Same pool book, different player → different origin (proves it is not a stored field).
-        PlayerContext es = new PlayerContext("es_es", id -> false, id -> false, id -> 0, 0, 10, false);
+        PlayerContext es = new PlayerContext("es_es", id -> false, id -> false, id -> 0, 0, 10);
         assertEquals(Origin.MINE, SharedBookSelector.originOf(book(1, "es_es", 1), es));
         assertEquals(Origin.OTHER, SharedBookSelector.originOf(book(1, "en_us", 1), es));
     }
@@ -87,7 +93,7 @@ final class SharedBookSelectorTest {
             book(1, EN, 9),   // read
             book(2, EN, 1));  // unread
         Set<Integer> read = new HashSet<>(Set.of(1));
-        PlayerContext ctx = new PlayerContext(EN, read::contains, id -> false, id -> 0, 0, 10, false);
+        PlayerContext ctx = new PlayerContext(EN, read::contains, id -> false, id -> 0, 0, 10);
         for (long seed = 0; seed < 200; seed++) {
             assertEquals(2, SharedBookSelector.select(pool, ctx, seed).orElseThrow().id(),
                 "unread book wins even though the read one is heavier");
@@ -98,7 +104,7 @@ final class SharedBookSelectorTest {
     @DisplayName("unread-first is soft: an all-read tier still returns the heaviest read book")
     void allReadFallsBack() {
         List<PoolBook> pool = List.of(book(1, EN, 9), book(2, EN, 1));
-        PlayerContext ctx = new PlayerContext(EN, id -> true, id -> false, id -> 0, 0, 10, false);
+        PlayerContext ctx = new PlayerContext(EN, id -> true, id -> false, id -> 0, 0, 10);
         for (long seed = 0; seed < 50; seed++) {
             assertEquals(1, SharedBookSelector.select(pool, ctx, seed).orElseThrow().id(),
                 "all read → fall back to the tier, top weight wins");
@@ -122,7 +128,7 @@ final class SharedBookSelectorTest {
         Map<Integer, Integer> servedAt = new HashMap<>(Map.of(1, 0));
         // current carriage 5, threshold 10 → book 1 is only 5 behind → still ineligible.
         PlayerContext ctx = new PlayerContext(EN, id -> false, served::contains,
-            id -> servedAt.getOrDefault(id, 0), 5, 10, false);
+            id -> servedAt.getOrDefault(id, 0), 5, 10);
         for (long seed = 0; seed < 200; seed++) {
             assertEquals(2, SharedBookSelector.select(pool, ctx, seed).orElseThrow().id(),
                 "served-this-life book stays out until its carriage scrolls far behind");
@@ -136,7 +142,7 @@ final class SharedBookSelectorTest {
         Set<Integer> served = new HashSet<>(Set.of(1));
         // Threshold 3 (= one default carriage group). At carriage 3, the book served at 0 is exactly one
         // group behind → re-eligible.
-        PlayerContext ctx = new PlayerContext(EN, id -> false, served::contains, id -> 0, 3, 3, false);
+        PlayerContext ctx = new PlayerContext(EN, id -> false, served::contains, id -> 0, 3, 3);
         Optional<PoolBook> pick = SharedBookSelector.select(pool, ctx, 1L);
         assertTrue(pick.isPresent(), "unread + one whole group behind → re-eligible");
         assertEquals(1, pick.get().id());
@@ -155,8 +161,7 @@ final class SharedBookSelectorTest {
             id -> true,                        // both served this life
             servedAt::get,
             4,                                 // current carriage
-            3,                                 // threshold = one group
-            false);                            // no political filter
+            3);                                // threshold = one group
         // #1 is 4 behind (>=3 → eligible); #2 is only 1 behind (<3 → still excluded).
         for (long seed = 0; seed < 100; seed++) {
             assertEquals(1, SharedBookSelector.select(pool, ctx, seed).orElseThrow().id(),
@@ -172,7 +177,7 @@ final class SharedBookSelectorTest {
         // player-book slot — so the dedup is relaxed instead.
         List<PoolBook> pool = List.of(book(1, EN, 5));
         Set<Integer> served = new HashSet<>(Set.of(1));
-        PlayerContext ctx = new PlayerContext(EN, id -> true, served::contains, id -> 0, 0, 10, false);
+        PlayerContext ctx = new PlayerContext(EN, id -> true, served::contains, id -> 0, 0, 10);
         Optional<PoolBook> pick = SharedBookSelector.select(pool, ctx, 1L);
         assertTrue(pick.isPresent(), "a repeated community book beats falling back to a built-in");
         assertEquals(1, pick.get().id());
@@ -183,7 +188,7 @@ final class SharedBookSelectorTest {
     void exhaustionKeepsLanguagePriority() {
         // Everything served+read → relaxed, but the language bucket must still win.
         List<PoolBook> pool = List.of(book(1, "ja_jp", 9), book(2, EN, 1));
-        PlayerContext ctx = new PlayerContext(EN, id -> true, id -> true, id -> 0, 0, 10, false);
+        PlayerContext ctx = new PlayerContext(EN, id -> true, id -> true, id -> 0, 0, 10);
         for (long seed = 0; seed < 100; seed++) {
             assertEquals(2, SharedBookSelector.select(pool, ctx, seed).orElseThrow().id(),
                 "relaxation reconsiders the pool, it does not bypass the language bucket");
@@ -193,7 +198,7 @@ final class SharedBookSelectorTest {
     @Test
     @DisplayName("empty pool is the ONLY no-pick case — that is what reserves the built-in fallback")
     void onlyEmptyPoolYieldsNoPick() {
-        PlayerContext everythingSeen = new PlayerContext(EN, id -> true, id -> true, id -> 0, 0, 10, false);
+        PlayerContext everythingSeen = new PlayerContext(EN, id -> true, id -> true, id -> 0, 0, 10);
         assertTrue(SharedBookSelector.select(List.of(), everythingSeen, 1L).isEmpty());
         // ...but any non-empty pool always yields something, however thoroughly seen.
         assertTrue(SharedBookSelector.select(List.of(book(1, "fr_fr", 0)), everythingSeen, 1L).isPresent());
@@ -203,11 +208,11 @@ final class SharedBookSelectorTest {
 
     /** A tagged book — the relay marked it politically sensitive; see PoliticalFilterPrefs. */
     private static PoolBook politicalBook(int id, String lang, int weight) {
-        return new PoolBook(id, "title" + id, "author", List.of("p"), lang, weight, true);
+        return new PoolBook(id, "title" + id, "author", List.of("p"), lang, weight, true, true);
     }
 
     private static PlayerContext filteringPlayer() {
-        return new PlayerContext(EN, id -> false, id -> false, id -> 0, 0, 10, true);
+        return new PlayerContext(EN, id -> false, id -> false, id -> 0, 0, 10, false, true);
     }
 
     @Test
@@ -243,7 +248,7 @@ final class SharedBookSelectorTest {
         // If the political filter ran as a later tier instead of on the input pool, this player — who
         // has seen everything — would be handed the tagged book by that fallback.
         List<PoolBook> pool = List.of(politicalBook(1, EN, 9), book(2, EN, 1));
-        PlayerContext seenEverything = new PlayerContext(EN, id -> true, id -> true, id -> 0, 0, 10, true);
+        PlayerContext seenEverything = new PlayerContext(EN, id -> true, id -> true, id -> 0, 0, 10, false, true);
         for (long seed = 0; seed < 200; seed++) {
             assertEquals(2, SharedBookSelector.select(pool, seenEverything, seed).orElseThrow().id());
         }
@@ -279,5 +284,63 @@ final class SharedBookSelectorTest {
         for (int i = 0; i < 20; i++) {
             assertEquals(first, SharedBookSelector.select(pool, freshPlayer(), 42L).orElseThrow().id());
         }
+    }
+
+    // ---- Kid mode ----
+
+    /** An en_us KID-mode player, otherwise identical to {@link #freshPlayer()}. */
+    private static PlayerContext freshKid() {
+        return new PlayerContext(EN, id -> false, id -> false, id -> 0, 0, 10, true, false);
+    }
+
+    @Test
+    @DisplayName("kid mode: only kid-safe books are ever picked")
+    void kidModeFiltersToKidSafe() {
+        List<PoolBook> pool = List.of(
+                book(1, EN, 5, false),  // higher weight, but not kid-safe — must lose anyway
+                book(2, EN, 0, true));
+        for (long seed = 0; seed < 30; seed++) {
+            assertEquals(2, SharedBookSelector.select(pool, freshKid(), seed).orElseThrow().id());
+        }
+        // the same pool in adult mode prefers the weight-5 book, proving the filter is what changed it
+        assertEquals(1, SharedBookSelector.select(pool, freshPlayer(), 1L).orElseThrow().id());
+    }
+
+    @Test
+    @DisplayName("kid mode: no kid-safe books yields NO pick — the caller falls back to a built-in book")
+    void kidModeEmptyRatherThanRelaxing() {
+        List<PoolBook> adultOnly = List.of(book(1, EN, 5, false), book(2, EN, 3, false));
+        assertTrue(SharedBookSelector.select(adultOnly, freshKid(), 1L).isEmpty());
+        // adult mode serves the same pool happily — the emptiness is the kid filter, not the pool
+        assertTrue(SharedBookSelector.select(adultOnly, freshPlayer(), 1L).isPresent());
+    }
+
+    @Test
+    @DisplayName("kid mode: the exhaustion relaxation cannot reintroduce a non-kid-safe book")
+    void kidFilterSurvivesExhaustionRelaxation() {
+        // Everything read AND served this life → step 1's relaxation reconsiders the WHOLE pool. That
+        // relaxation must reconsider only the kid-safe books, which is why the kid filter runs first.
+        PlayerContext seenEverything = new PlayerContext(EN, id -> true, id -> true, id -> 0, 0, 10, true, false);
+        List<PoolBook> pool = List.of(book(1, EN, 5, false), book(2, EN, 0, true));
+        for (long seed = 0; seed < 30; seed++) {
+            assertEquals(2, SharedBookSelector.select(pool, seenEverything, seed).orElseThrow().id());
+        }
+    }
+
+    @Test
+    @DisplayName("kid mode: a wrong-language kid-safe book beats a native non-kid-safe one")
+    void kidFilterOutranksLanguageBucket() {
+        // Language is a hard bucket at step 2, but it only ever sees what step 0 left — so an English
+        // player in Kid mode gets the French kid-safe book rather than the English adult one.
+        List<PoolBook> pool = List.of(book(1, EN, 5, false), book(2, "fr_fr", 5, true));
+        assertEquals(2, SharedBookSelector.select(pool, freshKid(), 1L).orElseThrow().id());
+    }
+
+    @Test
+    @DisplayName("the 6-arg PlayerContext constructor still means adult mode, filter off")
+    void legacyContextIsAdult() {
+        PlayerContext legacy = new PlayerContext(EN, id -> false, id -> false, id -> 0, 0, 10);
+        assertFalse(legacy.kidMode());
+        assertFalse(legacy.politicalFilter());
     }
 }

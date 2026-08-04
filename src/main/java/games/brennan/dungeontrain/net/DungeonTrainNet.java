@@ -143,6 +143,7 @@ public final class DungeonTrainNet {
         // Network-access consent (community shared books): client → server login sync of the player's
         // Discord Presence "use the internet?" consent, so the server can gate book uploads.
         registrar.playToServer(NetworkConsentSyncPacket.TYPE, NetworkConsentSyncPacket.STREAM_CODEC, NetworkConsentSyncPacket::handle);
+        registrar.playToServer(ContentModeSyncPacket.TYPE, ContentModeSyncPacket.STREAM_CODEC, ContentModeSyncPacket::handle);
 
         // Political Filter (community content): client → server login sync (+ on change) of the
         // player's preference, so per-player book selection can withhold politically-tagged content.

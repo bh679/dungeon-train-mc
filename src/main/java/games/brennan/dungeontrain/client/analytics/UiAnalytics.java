@@ -58,6 +58,10 @@ public final class UiAnalytics {
     // Patreon's slot — see PaymentLinks. Separate from TARGET_DONATE so the funnel can show whether
     // the China route converts. Lock-step with ui-events.js TARGETS.
     public static final String TARGET_DONATE_CN = "donate_cn";
+    // The Adult / Kid answer on the first-launch consent card (and on any later re-ask). Lock-step
+    // with the relay's ui-events.js TARGETS whitelist, or these 400 silently.
+    public static final String TARGET_CONTENT_MODE_ADULT = "content_mode_adult";
+    public static final String TARGET_CONTENT_MODE_KID = "content_mode_kid";
     public static final String TARGET_AFFILIATE = "affiliate";
     public static final String TARGET_DISCORD = "discord";
     // Death-screen button targets (see NarrativeDeathScreen). Lock-step with ui-events.js TARGETS.
@@ -90,6 +94,22 @@ public final class UiAnalytics {
     /** A button/link was pressed (before any confirm screen). */
     public static void click(String surface, String target) {
         send(surface, target, "click", -1, null, null, -1, -1);
+    }
+
+    /**
+     * The Adult / Kid content mode was answered on the consent card. Fires on every exit path, because
+     * the card records the answer on every exit path.
+     *
+     * <p>Two targets rather than one event carrying a value: every other event here is a bare
+     * surface+target+action, and the funnel counts them the same way, so a split keeps the Adult and
+     * Kid counts directly comparable with the rest of the title-screen funnel.</p>
+     *
+     * <p>Note this rides the same network-consent gate as every other UI event, so an answer given by a
+     * player who then declines the connection never leaves their machine — the Adult/Kid split measures
+     * consenting players only, which is also the only population it can honestly describe.</p>
+     */
+    public static void contentModeChosen(boolean kid) {
+        click(SURFACE_TITLE_SCREEN, kid ? TARGET_CONTENT_MODE_KID : TARGET_CONTENT_MODE_ADULT);
     }
 
     /** The ConfirmLinkScreen resolved — {@code yes} means the external link actually opened. */

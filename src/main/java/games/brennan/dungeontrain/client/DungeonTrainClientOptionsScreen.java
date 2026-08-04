@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.discordpresence.client.NetworkConsentScreen;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.ContentMode;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.Tooltip;
@@ -23,13 +24,18 @@ import java.util.List;
  * scale steppers) plus the ride-snapshot toggles, all reading/writing the same {@link ClientDisplayConfig}
  * accessors the X-menu uses — so the surfaces never diverge.</p>
  *
- * <p>Labels are plain literals, matching the existing plain-English DT options screens (no new
- * localization keys). The two {@link CycleButton}s manage their own display.</p>
- *
- * <p><b>One deliberate exception:</b> the Political Filter row is translated. It is shown only to
- * players on a Chinese-language client (see {@link PoliticalFilterPrefs}), so by construction nobody
- * who reads it is reading the rest of this screen in English — a plain literal there would be the one
- * label its entire audience cannot read.</p>
+ * <p>Most labels are plain literals, matching the existing plain-English DT options screens. Two rows
+ * are deliberate exceptions and ARE localized, and new rows of that kind should follow them rather
+ * than the literals around them:</p>
+ * <ul>
+ *   <li>The Adult / Kid content row — the only place outside the first-launch consent card that says
+ *       what Kid mode does, and where a parent goes to change it, so it must be readable on a
+ *       non-English client.</li>
+ *   <li>The Political Filter row — shown only to players on a Chinese-language client (see
+ *       {@link PoliticalFilterPrefs}), so by construction nobody who reads it is reading the rest of
+ *       this screen in English; a plain literal there would be the one label its entire audience
+ *       cannot read.</li>
+ * </ul>
  */
 public final class DungeonTrainClientOptionsScreen extends Screen {
 
@@ -79,6 +85,25 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
             y += ROW_GAP;
         }
 
+        // Adult / Kid content mode — the second home for the choice made once on the first-launch
+        // consent card, so a player who dismissed that card (or an existing install that answered
+        // consent before this feature shipped, and so never sees it) can still find the setting.
+        // Syncs to the server immediately so the per-player gates follow without a relog.
+        addRenderableWidget(CycleButton.<ContentMode>builder(DungeonTrainClientOptionsScreen::contentModeLabel)
+                .withValues(List.of(ContentMode.ADULT, ContentMode.KID))
+                .withInitialValue(ClientDisplayConfig.getContentMode())
+                .create(left, y, ROW_W, ROW_H, Component.translatable("gui.dungeontrain.options.content_mode"),
+                        (btn, mode) -> {
+                            ClientDisplayConfig.setContentMode(mode);
+                            ContentModeSyncClient.syncNow();
+                        }))
+                // Localized, unlike this screen's other rows. Those describe display scale and a master
+                // on/off; this one is the only place outside the one-time card that says what Kid mode
+                // actually does, and it is where a parent comes to change it — a parent reading a
+                // non-English client should not be shown three lines of English to make that decision.
+                .setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.options.content_mode.tip")));
+        y += ROW_GAP;
+
         // Snapshot chat log ON/OFF.
         addRenderableWidget(CycleButton.onOffBuilder(ClientDisplayConfig.isRideSnapshotChatLogEnabled())
                 .create(left, y, ROW_W, ROW_H, Component.literal("Snapshot Chat Log"),
@@ -102,6 +127,13 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
 
     private static Component resolutionLabel(int value) {
         return Component.literal(value <= 0 ? "AUTO" : value + "p");
+    }
+
+    /** Localized name for a content mode — same keys the first-launch consent card's question uses. */
+    private static Component contentModeLabel(ContentMode mode) {
+        return Component.translatable(mode.isKid()
+                ? "gui.dungeontrain.content_mode.kid"
+                : "gui.dungeontrain.content_mode.adult");
     }
 
     /** A word-wrapping hover tooltip from plain text. */

@@ -88,13 +88,13 @@ public final class SharedBookSelector {
      *                        {@code DungeonTrainConfig.getSharedBookRepeatCarriages()} from the
      *                        group-based {@code sharedBookRepeatGroups} setting (groups × groupSize), so
      *                        the threshold is "one whole carriage group behind" by default.
-     */
-    /**
+     * @param kidMode         whether THIS player is in Kid mode. Per-player rather than per-world on
+     *                        purpose: the pool snapshot is shared by everyone on a server, so a child
+     *                        playing on an adult's world is protected here rather than at fetch time.
      * @param politicalFilter whether this player asked not to be served content the relay tagged as
      *                        politically sensitive (mirrored server-side from their client — see
      *                        {@link games.brennan.dungeontrain.event.PoliticalFilterMirror}). Per
-     *                        player, not per world: one pool snapshot serves everyone on the server
-     *                        and they may have answered differently.
+     *                        player for the same reason {@code kidMode} is.
      */
     public record PlayerContext(String playerLang,
                                 IntPredicate hasRead,
@@ -102,7 +102,19 @@ public final class SharedBookSelector {
                                 IntUnaryOperator servedCarriage,
                                 int currentCarriage,
                                 int repeatCarriages,
-                                boolean politicalFilter) {}
+                                boolean kidMode,
+                                boolean politicalFilter) {
+
+        /** Unfiltered context — the shape every call site had before either content filter existed. */
+        public PlayerContext(String playerLang,
+                             IntPredicate hasRead,
+                             IntPredicate wasServed,
+                             IntUnaryOperator servedCarriage,
+                             int currentCarriage,
+                             int repeatCarriages) {
+            this(playerLang, hasRead, wasServed, servedCarriage, currentCarriage, repeatCarriages, false, false);
+        }
+    }
 
     /**
      * Choose a book for the player from {@code pool}, or empty if nothing is eligible (e.g. every book is
@@ -112,12 +124,17 @@ public final class SharedBookSelector {
     public static Optional<PoolBook> select(List<PoolBook> pool, PlayerContext ctx, long seed) {
         if (pool == null || pool.isEmpty()) return Optional.empty();
 
-        // 0. Political filter (hard, and FIRST). Applied to the input pool rather than as one more
-        // preference tier, because every later step is allowed to relax back to a wider set when it
-        // runs dry — step 1's exhaustion fallback reconsiders `pool` wholesale, which would hand back
-        // the very books this player asked not to see. Filtering here means they are never in the set
-        // any fallback can reach. An empty result is a legitimate answer: the caller falls back to a
-        // built-in book, which is exactly right — better mod content than content they opted out of.
+        // 0. The two hard per-player content filters, BEFORE anything else. Applied to the input pool
+        // rather than as one more preference tier, because every later step is allowed to relax back
+        // toward the wider set it was given — step 1's exhaustion fallback reconsiders `pool` wholesale,
+        // which would hand back the very books this player asked not to see. Filtering here means they
+        // are never in the set any fallback can reach. An empty result is a legitimate answer: the
+        // caller falls back to a built-in book, which is the right outcome for both filters — better mod
+        // content than an unjudged stranger's writing, or content the player opted out of.
+        if (ctx.kidMode()) {
+            pool = filter(pool, PoolBook::kidSafe);
+            if (pool.isEmpty()) return Optional.empty();
+        }
         if (ctx.politicalFilter()) {
             pool = filter(pool, b -> !b.political());
             if (pool.isEmpty()) return Optional.empty();

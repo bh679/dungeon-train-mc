@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.event.AchievementEvents;
+import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.event.PoliticalFilterMirror;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.event.SharedBookReadMirror;
@@ -449,7 +450,8 @@ public final class NarrativeBookEvents {
             if (now - lastExhaustedRefreshMs > EXHAUSTED_REFRESH_RETRY_MS) {
                 lastExhaustedRefreshMs = now;
                 SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()),
-                        WorldLanguage.hostUuidConsented(player.getServer()));
+                        WorldLanguage.hostUuidConsented(player.getServer()),
+                        WorldLanguage.hostFetchesKidSafeBooks(player.getServer()));
                 if (SharedBookPool.isRefreshInFlight()) return false;
             }
             // Recent refresh already completed with nothing new — fall through; selector relaxes.
@@ -467,6 +469,9 @@ public final class NarrativeBookEvents {
             id -> { Integer c = run.servedCarriage(id); return c == null ? 0 : c; },
             run.travelledCarriageIndex(),
             DungeonTrainConfig.getSharedBookRepeatCarriages(),
+            // THIS holder's mode, not the host's — the snapshot is world-shared, so a child on an
+            // adult's server is filtered down to kid-safe books right here, at the moment of pickup.
+            ContentModeMirror.isKid(player),
             // THIS holder's political-filter answer, for the same reason as the locale above: the pool
             // is shared, the preference is not.
             PoliticalFilterMirror.isEnabled(player));
@@ -499,7 +504,8 @@ public final class NarrativeBookEvents {
         // already has fresh content waiting (the pre-select guard above then has nothing to wait for).
         if (windowExhaustedFor(run)) {
             SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()),
-                    WorldLanguage.hostUuidConsented(player.getServer()));
+                    WorldLanguage.hostUuidConsented(player.getServer()),
+                    WorldLanguage.hostFetchesKidSafeBooks(player.getServer()));
         }
         return true;
     }
