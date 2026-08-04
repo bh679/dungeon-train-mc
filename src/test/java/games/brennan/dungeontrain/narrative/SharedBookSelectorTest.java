@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -28,9 +29,14 @@ final class SharedBookSelectorTest {
 
     private static final String EN = "en_us";
 
-    /** Convenience factory — pages/title are irrelevant to selection. */
+    /** Convenience factory — pages/title are irrelevant to selection. Kid-safe unless stated otherwise. */
     private static PoolBook book(int id, String lang, int weight) {
-        return new PoolBook(id, "title" + id, "author", List.of("p"), lang, weight);
+        return book(id, lang, weight, true);
+    }
+
+    /** As {@link #book(int, String, int)} but with an explicit kid-safe verdict. */
+    private static PoolBook book(int id, String lang, int weight, boolean kidSafe) {
+        return new PoolBook(id, "title" + id, "author", List.of("p"), lang, weight, kidSafe);
     }
 
     /** An en_us player who has read nothing and been served nothing; carriage 0, repeat threshold 10. */
@@ -206,5 +212,61 @@ final class SharedBookSelectorTest {
         for (int i = 0; i < 20; i++) {
             assertEquals(first, SharedBookSelector.select(pool, freshPlayer(), 42L).orElseThrow().id());
         }
+    }
+
+    // ---- Kid mode ----
+
+    /** An en_us KID-mode player, otherwise identical to {@link #freshPlayer()}. */
+    private static PlayerContext freshKid() {
+        return new PlayerContext(EN, id -> false, id -> false, id -> 0, 0, 10, true);
+    }
+
+    @Test
+    @DisplayName("kid mode: only kid-safe books are ever picked")
+    void kidModeFiltersToKidSafe() {
+        List<PoolBook> pool = List.of(
+                book(1, EN, 5, false),  // higher weight, but not kid-safe — must lose anyway
+                book(2, EN, 0, true));
+        for (long seed = 0; seed < 30; seed++) {
+            assertEquals(2, SharedBookSelector.select(pool, freshKid(), seed).orElseThrow().id());
+        }
+        // the same pool in adult mode prefers the weight-5 book, proving the filter is what changed it
+        assertEquals(1, SharedBookSelector.select(pool, freshPlayer(), 1L).orElseThrow().id());
+    }
+
+    @Test
+    @DisplayName("kid mode: no kid-safe books yields NO pick — the caller falls back to a built-in book")
+    void kidModeEmptyRatherThanRelaxing() {
+        List<PoolBook> adultOnly = List.of(book(1, EN, 5, false), book(2, EN, 3, false));
+        assertTrue(SharedBookSelector.select(adultOnly, freshKid(), 1L).isEmpty());
+        // adult mode serves the same pool happily — the emptiness is the kid filter, not the pool
+        assertTrue(SharedBookSelector.select(adultOnly, freshPlayer(), 1L).isPresent());
+    }
+
+    @Test
+    @DisplayName("kid mode: the exhaustion relaxation cannot reintroduce a non-kid-safe book")
+    void kidFilterSurvivesExhaustionRelaxation() {
+        // Everything read AND served this life → step 1's relaxation reconsiders the WHOLE pool. That
+        // relaxation must reconsider only the kid-safe books, which is why the kid filter runs first.
+        PlayerContext seenEverything = new PlayerContext(EN, id -> true, id -> true, id -> 0, 0, 10, true);
+        List<PoolBook> pool = List.of(book(1, EN, 5, false), book(2, EN, 0, true));
+        for (long seed = 0; seed < 30; seed++) {
+            assertEquals(2, SharedBookSelector.select(pool, seenEverything, seed).orElseThrow().id());
+        }
+    }
+
+    @Test
+    @DisplayName("kid mode: a wrong-language kid-safe book beats a native non-kid-safe one")
+    void kidFilterOutranksLanguageBucket() {
+        // Language is a hard bucket at step 2, but it only ever sees what step 0 left — so an English
+        // player in Kid mode gets the French kid-safe book rather than the English adult one.
+        List<PoolBook> pool = List.of(book(1, EN, 5, false), book(2, "fr_fr", 5, true));
+        assertEquals(2, SharedBookSelector.select(pool, freshKid(), 1L).orElseThrow().id());
+    }
+
+    @Test
+    @DisplayName("the 6-arg PlayerContext constructor still means adult mode")
+    void legacyContextIsAdult() {
+        assertFalse(new PlayerContext(EN, id -> false, id -> false, id -> 0, 0, 10).kidMode());
     }
 }

@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.event.AchievementEvents;
+import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.event.SharedBookReadMirror;
 import games.brennan.dungeontrain.player.PlayerRunState;
@@ -448,7 +449,8 @@ public final class NarrativeBookEvents {
             if (now - lastExhaustedRefreshMs > EXHAUSTED_REFRESH_RETRY_MS) {
                 lastExhaustedRefreshMs = now;
                 SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()),
-                        WorldLanguage.hostUuidConsented(player.getServer()));
+                        WorldLanguage.hostUuidConsented(player.getServer()),
+                        WorldLanguage.hostFetchesKidSafeBooks(player.getServer()));
                 if (SharedBookPool.isRefreshInFlight()) return false;
             }
             // Recent refresh already completed with nothing new — fall through; selector relaxes.
@@ -465,7 +467,10 @@ public final class NarrativeBookEvents {
             run::wasServed,
             id -> { Integer c = run.servedCarriage(id); return c == null ? 0 : c; },
             run.travelledCarriageIndex(),
-            DungeonTrainConfig.getSharedBookRepeatCarriages());
+            DungeonTrainConfig.getSharedBookRepeatCarriages(),
+            // THIS holder's mode, not the host's — the snapshot is world-shared, so a child on an
+            // adult's server is filtered down to kid-safe books right here, at the moment of pickup.
+            ContentModeMirror.isKid(player));
         // Vary the seed per stack as well as per tick: a sweep resolving several placeholders in the SAME
         // tick would otherwise feed the selector an identical seed and hand out the same book for each.
         long seed = ow.getGameTime() ^ uuid.getLeastSignificantBits() ^ (System.identityHashCode(stack) * 0x9E3779B9L);
@@ -495,7 +500,8 @@ public final class NarrativeBookEvents {
         // already has fresh content waiting (the pre-select guard above then has nothing to wait for).
         if (windowExhaustedFor(run)) {
             SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()),
-                    WorldLanguage.hostUuidConsented(player.getServer()));
+                    WorldLanguage.hostUuidConsented(player.getServer()),
+                    WorldLanguage.hostFetchesKidSafeBooks(player.getServer()));
         }
         return true;
     }
