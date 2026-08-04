@@ -5830,9 +5830,9 @@
       "summary": "Train creepers were picking up the difficulty system's potion buffs, and vanilla turns a creeper's active effects into a lingering potion cloud when it blows up. Creepers now explode cleanly again.",
       "highlights": [],
       "date": "2026-07-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "zh-cn-translator-revision-pass",
@@ -5846,9 +5846,9 @@
       ],
       "pr": 856,
       "date": "2026-07-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "china-alipay-wechat",
@@ -5863,9 +5863,9 @@
         "The Patreon shortcut is hidden on those clients rather than leading somewhere unreachable"
       ],
       "date": "2026-07-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "freeplay-echo-quarantine",
@@ -5879,9 +5879,9 @@
       ],
       "pr": 855,
       "date": "2026-07-31",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "backer-name-pool",
@@ -5896,9 +5896,9 @@
       ],
       "pr": 858,
       "date": "2026-08-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "end-cities-in-end-band",
@@ -5913,9 +5913,9 @@
       ],
       "pr": 861,
       "date": "2026-08-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "shared-carriages",
@@ -5932,9 +5932,9 @@
       ],
       "pr": 860,
       "date": "2026-08-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "shared-carriages-own-builds-freeplay",
@@ -5949,9 +5949,9 @@
         "Free Play and normal play have separate carriage pools that never mix"
       ],
       "date": "2026-08-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "dev-reply-backscroll",
@@ -5964,9 +5964,9 @@
       ],
       "pr": 859,
       "date": "2026-08-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "carriage-contributor-credits",
@@ -5982,9 +5982,9 @@
       ],
       "pr": 863,
       "date": "2026-08-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "craft2-enchant2-content-variants",
@@ -5997,9 +5997,9 @@
         "New enchant2 content variant"
       ],
       "date": "2026-08-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "multiplayer-play-mode-telemetry",
@@ -6009,9 +6009,9 @@
       "summary": "The world-info report the game already sends on join now notes whether that session was multiplayer, so the private data dashboard can show how the player base splits between single-player, multiplayer, and both. No change to how the game plays.",
       "highlights": [],
       "date": "2026-08-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "tradeeverything-0-2-9-bump",
@@ -6023,9 +6023,9 @@
         "Fixed damaged items overpricing in Trade Anything trades"
       ],
       "date": "2026-08-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "adult-kid-content-mode",
@@ -6040,9 +6040,9 @@
         "Adult mode is unchanged \u2014 existing worlds keep every feature they had"
       ],
       "date": "2026-08-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "political-content-filter",
@@ -6056,9 +6056,9 @@
         "Your answer is yours alone \u2014 on a shared world other players are unaffected by it."
       ],
       "date": "2026-08-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "options-consent-card-19-languages",
@@ -6073,9 +6073,9 @@
         "Machine translation credited as such \u2014 Simplified Chinese's human-reviewed lines are untouched, and the new lines are flagged for a translator's review"
       ],
       "date": "2026-08-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "zh-cn-ai-badge-returns",
@@ -6088,9 +6088,9 @@
         "It goes back to a solid logo once those lines have been reviewed"
       ],
       "date": "2026-08-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     },
     {
       "id": "release-0529-what-we-give",
@@ -6107,9 +6107,9 @@
         "Dev replies stay in your chat history"
       ],
       "date": "2026-08-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.531.0",
+      "released_at": "2026-08-04T15:09:56Z"
     }
   ]
 }
