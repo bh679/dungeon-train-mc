@@ -19,12 +19,17 @@ public final class DeathNoteGate {
     }
 
     /**
-     * True when this player's Death Note traffic may reach the relay — the feature is enabled AND
-     * the client granted network consent. Null-safe and fail-closed (mirrors
-     * {@link SharedBookGate#canContribute}).
+     * True when this player's Death Note traffic may reach the relay — the feature is enabled, the
+     * client granted network consent, AND the player is not in Kid mode. Null-safe and fail-closed
+     * (mirrors {@link SharedBookGate#canContribute}).
+     *
+     * <p>Kid mode gates this PER-PLAYER, not host-scoped like lecterns and carriages, because a curse
+     * is addressed to one specific player: a child in Kid mode neither uploads a curse nor has one
+     * delivered to them, even on an adult's server. Both directions are covered here because this is
+     * the single seam all Death Note relay traffic passes through.</p>
      */
     public static boolean canSync(ServerPlayer player) {
         if (player == null) return false;
-        return isEnabled() && NetworkConsentMirror.isGranted(player);
+        return isEnabled() && NetworkConsentMirror.isGranted(player) && !ContentModeMirror.isKid(player);
     }
 }

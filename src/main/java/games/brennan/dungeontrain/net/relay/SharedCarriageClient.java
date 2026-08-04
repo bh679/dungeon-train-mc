@@ -149,6 +149,12 @@ public final class SharedCarriageClient {
             for (Integer id : exclude) if (id != null) arr.add(id);
             body.add("exclude", arr);
         }
+        // Kid mode narrows the pool to builds the relay flagged kid-safe. Sent only when set, so an
+        // Adult world's request is byte-identical to before and an older relay ignores it either way —
+        // in which case a Kid world simply gets the unfiltered pool, so the relay must ship first.
+        if (games.brennan.dungeontrain.event.SharedCarriageGate.leasesKidSafeOnly()) {
+            body.addProperty("kidSafe", true);
+        }
         return post("/carriages/lease", body).thenApply(resp -> {
             JsonObject o = okJson(resp);
             if (o == null || (o.has("none") && o.get("none").getAsBoolean())) return Optional.empty();

@@ -33,7 +33,7 @@ public final class DungeonTrainEditorSettingsScreen extends Screen {
     private final Screen parent;
 
     public DungeonTrainEditorSettingsScreen(Screen parent) {
-        super(Component.literal("Editor Settings"));
+        super(Component.translatable("gui.dungeontrain.editor_settings.title"));
         this.parent = parent;
     }
 
@@ -42,23 +42,25 @@ public final class DungeonTrainEditorSettingsScreen extends Screen {
         int cx = this.width / 2;
         int y = this.height / 3;
 
-        y = scaleRow(cx, y, "All Displays", "Master multiplier applied on top of both the Worldspace and HUD scales.",
-                ClientDisplayConfig::getAllScale, ClientDisplayConfig::setAllScale);
-        y = scaleRow(cx, y, "Worldspace", "Scale for the X-menu, editor menus and in-world debug labels.",
-                ClientDisplayConfig::getWorldspaceChannel, ClientDisplayConfig::setWorldspaceChannel);
-        y = scaleRow(cx, y, "HUD", "Scale for the top-left version line and the editor status bar.",
-                ClientDisplayConfig::getHudChannel, ClientDisplayConfig::setHudChannel);
+        y = scaleRow(cx, y, "all_displays", ClientDisplayConfig::getAllScale, ClientDisplayConfig::setAllScale);
+        y = scaleRow(cx, y, "worldspace", ClientDisplayConfig::getWorldspaceChannel, ClientDisplayConfig::setWorldspaceChannel);
+        y = scaleRow(cx, y, "hud", ClientDisplayConfig::getHudChannel, ClientDisplayConfig::setHudChannel);
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(cx - 100, y + 6, 200, ROW_H).build());
     }
 
-    /** A {@code [label: value] [-] [+]} row for one display-scale channel; returns the next row's y. */
-    private int scaleRow(int cx, int y, String name, String description, DoubleSupplier get, DoubleConsumer set) {
+    /**
+     * A {@code [label: value] [-] [+]} row for one display-scale channel; returns the next row's y.
+     * {@code channel} is the lang-key suffix under {@code gui.dungeontrain.editor_settings.} — the name
+     * and its tooltip are both derived from it, so a row can't ship with one localized and one not.
+     */
+    private int scaleRow(int cx, int y, String channel, DoubleSupplier get, DoubleConsumer set) {
         int left = cx - ROW_W / 2;
-        Tooltip tip = Tooltip.create(Component.literal(description));
+        String key = "gui.dungeontrain.editor_settings." + channel;
+        Tooltip tip = Tooltip.create(Component.translatable(key + ".tip"));
         StringWidget label = new StringWidget(left, y, ROW_W - 2 * (STEP_W + GAP), ROW_H,
-                scaleLabel(name, get.getAsDouble()), this.font);
+                scaleLabel(key, get.getAsDouble()), this.font);
         label.setTooltip(tip);
         addRenderableWidget(label);
         Button minus = Button.builder(Component.literal("-"),
@@ -74,8 +76,14 @@ public final class DungeonTrainEditorSettingsScreen extends Screen {
         return y + ROW_GAP;
     }
 
-    private static Component scaleLabel(String name, double value) {
-        return Component.literal(name + ": " + String.format(Locale.ROOT, "%.1f", value));
+    /**
+     * {@code "<name>: <value>"} through the shared {@code options.value_row} pattern, so CJK locales can
+     * use the full-width colon. The number itself stays {@link Locale#ROOT}-formatted — it is a config
+     * value the player types back into a toml, not prose.
+     */
+    private static Component scaleLabel(String nameKey, double value) {
+        return Component.translatable("gui.dungeontrain.options.value_row",
+                Component.translatable(nameKey), String.format(Locale.ROOT, "%.1f", value));
     }
 
     @Override

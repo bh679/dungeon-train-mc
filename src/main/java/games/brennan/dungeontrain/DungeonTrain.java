@@ -2,6 +2,8 @@ package games.brennan.dungeontrain;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NamingConfig;
+import games.brennan.discordpresence.config.ConsentBullet;
+import games.brennan.discordpresence.config.ConsentChoice;
 import games.brennan.discordpresence.config.DiscordCredentials;
 import games.brennan.discordpresence.config.DiscordCredentialsProvider;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
@@ -14,10 +16,12 @@ import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.compat.FreePlayBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.ContentMode;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.discord.WorldJoinReport;
+import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.logging.SableAabbLogFilter;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
@@ -27,18 +31,22 @@ import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.registry.ModSounds;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
 import java.util.List;
 import java.util.UUID;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
@@ -336,23 +344,77 @@ public class DungeonTrain {
             @Override public List<String> presenceTrackUserIds() {
                 return List.of(BRENNAN_DISCORD_ID);
             }
-            // The one-time title-screen "use the internet?" popup (DP's NetworkConsentScreen) lists what
-            // the connection is for; DP renders these bullets verbatim on the card. Leaderboard scoring
-            // isn't built yet, so it's flagged "(coming soon)"; the dev support chat is the @dev relay above;
-            // the reincarnation bullet discloses that a death snapshot (name, skin, gear, traits) can be
-            // relayed cross-world so the player may return as a PlayerMob "echo" in another player's world
-            // (PlayerMob's external-reincarnation seam, surfaced via DP).
+            // The one-time title-screen "use the internet?" popup (DP's NetworkConsentScreen). The card's
+            // bullets are supplied PER CONTENT MODE below (networkConsentChoice), so these two seams are
+            // deliberately left empty — DP uses them only when a bundler supplies no per-option list, and
+            // a stale duplicate here would render above the real list rather than instead of it.
             @Override public List<String> networkConsentFeatures() {
-                return List.of(
-                        Component.translatable("gui.dungeontrain.consent.feature.leaderboard").getString(),
-                        Component.translatable("gui.dungeontrain.consent.feature.dev_chat").getString(),
-                        Component.translatable("gui.dungeontrain.consent.feature.book_share").getString(),
-                        Component.translatable("gui.dungeontrain.consent.feature.reincarnate").getString());
+                return List.of();
             }
-            // A "won't do" line (DP renders these with a red ✗ marker below the bullets above) — a
-            // deliberately silly reassurance that sets the positive features apart from the absurd.
             @Override public List<String> networkConsentNonFeatures() {
-                return List.of(Component.translatable("gui.dungeontrain.consent.nonfeature.harvest_soul").getString());
+                return List.of();
+            }
+            // DP's own footnote points at its /chatconnect command. DT players reach all of this from
+            // Options -> Dungeon Train..., so point them there instead.
+            @Override public String networkConsentFootnote() {
+                return tr("gui.dungeontrain.consent.footnote");
+            }
+            // The Adult / Kid content-mode question, asked on the same card. It rides here rather than on
+            // a card of its own because this is the one screen every player answers exactly once, on
+            // first launch — a second card would be a second interruption for the same information.
+            //
+            // The card's whole bullet list is supplied per option: selecting Kid changes the lines, their
+            // markers AND their hover text, so the card shows what the choice actually does rather than
+            // asserting it. Line order is identical between the two so the eye tracks the flip — the three
+            // that never change first, the two that do last.
+            //
+            // The answer is a CLIENT-scope preference, so DP just reports the index and DT persists it;
+            // the option order below must match ContentMode's declaration order. ADULT is the default, so
+            // an existing install (which already answered consent and will never see this card) and a
+            // player who dismisses with Esc both keep exactly today's behaviour. Also changeable later in
+            // Options -> Dungeon Train... (DungeonTrainClientOptionsScreen).
+            //
+            // Single "I'm ready" button (confirmLabel): a deliberate product decision, taken knowing it
+            // leaves Esc as the only way to decline. Options -> Dungeon Train... keeps an Internet
+            // Connection toggle, so consent stays revocable after the fact.
+            // Raise when what the card ASKS FOR materially changes — a new content stream, a wider
+            // permission — and every already-consented client sees it once more after they update.
+            // Deliberately NOT tied to mod_version, which bumps on every commit: a re-ask is a
+            // decision, not a side effect of shipping. See DiscordCredentialsProvider for the contract.
+            @Override public int networkConsentVersion() {
+                return CONSENT_VERSION;
+            }
+            @Override public ConsentChoice networkConsentChoice() {
+                return new ConsentChoice(
+                        tr("gui.dungeontrain.content_mode.label"),
+                        List.of(tr("gui.dungeontrain.content_mode.adult"), tr("gui.dungeontrain.content_mode.kid")),
+                        // Open on the mode this client is ALREADY in, not on ADULT. On a first launch
+                        // that is the ADULT default; on a re-ask, or when reopened from Options, it must
+                        // not silently offer to undo a parent's earlier choice.
+                        ClientDisplayConfig.getContentMode().ordinal(),
+                        index -> {
+                            ContentMode[] modes = ContentMode.values();
+                            ContentMode picked = index >= 0 && index < modes.length ? modes[index] : ContentMode.ADULT;
+                            ClientDisplayConfig.setContentMode(picked);
+                            // Which tier players actually choose, and how that moves when the card is
+                            // shown again. Fires on every exit path, because the card records the answer
+                            // on every exit path — including Esc, where consent lands DENIED and the
+                            // event is dropped by the consent gate inside UiAnalytics anyway.
+                            UiAnalytics.contentModeChosen(picked.isKid());
+                        },
+                        List.of(consentBullets(ContentMode.ADULT), consentBullets(ContentMode.KID)),
+                        tr("gui.dungeontrain.consent.confirm"));
+            }
+            // Kid mode: this player's chat never reaches Discord, tag or no tag. The mode is a CLIENT
+            // config, so the server reads it from the per-player mirror the client syncs on login —
+            // which fails safe to KID for a player it has never heard from. This is the outbound half
+            // of "cannot chat with the dev"; DevMessageConsent.onDevMessage is the inbound half.
+            @Override public boolean relayGameChatFor(UUID playerId) {
+                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+                if (server == null) return true; // no server context to judge from — leave DP's default
+                ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+                if (player == null) return true; // not a player we can resolve — not ours to veto
+                return !ContentModeMirror.isKid(player);
             }
             // Append a one-time world-info block (DT version + train regeneration data + installed-mods
             // list) under the first player-join message in each world, into the joining player's Discord
@@ -474,5 +536,57 @@ public class DungeonTrain {
                         + "echo-story dev-chat guard falls back to @-mention only.", t.toString());
             }
         }
+    }
+
+    /**
+     * Which revision of the consent card's ASK this build represents. Bumping it re-shows the card once
+     * to every player who has already consented, after they download the build that carries the bump —
+     * the terms-of-service pattern. Deliberately hand-managed and unrelated to {@code mod_version}:
+     * every commit bumps that, and re-asking on every patch would train players to click through.
+     *
+     * <p>1 — first version to carry the Adult / Kid content-mode question.</p>
+     */
+    private static final int CONSENT_VERSION = 1;
+
+    /** A localized string for the consent card — DP takes raw Strings, not Components, on these seams. */
+    private static String tr(String key) {
+        return Component.translatable(key).getString();
+    }
+
+    /**
+     * The consent card's bullet list for one content mode. Both modes list the SAME five things in the
+     * same order so the eye tracks what flips: the three that never change first (player content,
+     * telemetry, reincarnations), then the two that do (developer chat, and the joke).
+     *
+     * <p>Only two lines actually differ between the modes. Player content stays on for both but
+     * narrows to the AI-reviewed kid-safe subset, which the label and hover both say. Developer chat
+     * is the one real capability Kid mode removes. Telemetry and reincarnations are on either way —
+     * reincarnations deliberately so: an echo carries another player's name and skin, and a skin is an
+     * image that nothing in the moderation pipeline can review, so it is not part of the choice.</p>
+     */
+    private static List<ConsentBullet> consentBullets(ContentMode mode) {
+        boolean kid = mode.isKid();
+        return List.of(
+                new ConsentBullet(
+                        tr(kid ? "gui.dungeontrain.consent.content.kid" : "gui.dungeontrain.consent.content.adult"),
+                        true,
+                        tr(kid ? "gui.dungeontrain.consent.content.kid.tip" : "gui.dungeontrain.consent.content.adult.tip")),
+                new ConsentBullet(
+                        tr("gui.dungeontrain.consent.telemetry"), true,
+                        tr("gui.dungeontrain.consent.telemetry.tip")),
+                new ConsentBullet(
+                        tr("gui.dungeontrain.consent.reincarnations"), true,
+                        tr(kid ? "gui.dungeontrain.consent.reincarnations.kid.tip"
+                               : "gui.dungeontrain.consent.reincarnations.adult.tip")),
+                new ConsentBullet(
+                        tr("gui.dungeontrain.consent.dev_chat"), !kid,
+                        tr(kid ? "gui.dungeontrain.consent.dev_chat.kid.tip"
+                               : "gui.dungeontrain.consent.dev_chat.adult.tip")),
+                // The soul line is the one whose marker flips the "wrong" way — off for adults, on for
+                // kids — which is the joke. Its hovers carry it, in the developer's own first person.
+                new ConsentBullet(
+                        tr("gui.dungeontrain.consent.harvest_soul"), kid,
+                        tr(kid ? "gui.dungeontrain.consent.harvest_soul.kid.tip"
+                               : "gui.dungeontrain.consent.harvest_soul.adult.tip")));
     }
 }

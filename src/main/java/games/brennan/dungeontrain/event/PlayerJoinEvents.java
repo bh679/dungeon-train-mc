@@ -208,6 +208,8 @@ public final class PlayerJoinEvents {
             EditorWelcome.forget(player.getUUID());
             DevMessageConsent.forget(player.getUUID());
             NetworkConsentMirror.forget(player.getUUID());
+            PoliticalFilterMirror.forget(player.getUUID());
+            ContentModeMirror.forget(player.getUUID());
             SharedBookReadMirror.forget(player.getUUID());
         }
     }

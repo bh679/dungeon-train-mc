@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -42,9 +43,18 @@ public final class RelayChatClient {
 
     private RelayChatClient() {}
 
-    /** True when the panel is allowed to talk to the relay at all (consent granted). */
+    /**
+     * True when the panel is allowed to talk to the relay at all — network consent granted AND this
+     * client is not in Kid mode.
+     *
+     * <p>The Kid check belongs here rather than on the title-screen button because every menu-chat
+     * call already funnels through this one predicate: history, the inbox drain, the live poll and the
+     * send path. Gating the four surfaces individually would work today and drift tomorrow. With it
+     * false the envelope button never appears, nothing polls, and no message can be sent — which is
+     * what "cannot chat with the dev" has to mean in both directions.</p>
+     */
     public static boolean canConnect() {
-        return DiscordPresenceClientConfig.isGranted();
+        return DiscordPresenceClientConfig.isGranted() && !ClientDisplayConfig.isKidMode();
     }
 
     /**

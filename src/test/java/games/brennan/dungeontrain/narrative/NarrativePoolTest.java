@@ -98,16 +98,36 @@ final class NarrativePoolTest {
                 + "{\"seriesId\":\"b\",\"letters\":[{\"letterIndex\":1,\"pages\":[\"p\"]}]}]}";
         NarrativePool.applyResponse(body);
 
-        Optional<NarrativePool.Series> pick1 = NarrativePool.pickUnstarted(42L, Set.of());
-        Optional<NarrativePool.Series> pick2 = NarrativePool.pickUnstarted(42L, Set.of());
+        Optional<NarrativePool.Series> pick1 = NarrativePool.pickUnstarted(42L, Set.of(), false);
+        Optional<NarrativePool.Series> pick2 = NarrativePool.pickUnstarted(42L, Set.of(), false);
         assertTrue(pick1.isPresent());
         assertEquals(pick1.get().seriesId(), pick2.get().seriesId(), "same seed → same pick (deterministic)");
 
-        Optional<NarrativePool.Series> other = NarrativePool.pickUnstarted(42L, Set.of(pick1.get().seriesId()));
+        Optional<NarrativePool.Series> other = NarrativePool.pickUnstarted(42L, Set.of(pick1.get().seriesId()), false);
         assertTrue(other.isPresent());
         assertNotEquals(pick1.get().seriesId(), other.get().seriesId(), "excluded series is skipped");
 
-        assertTrue(NarrativePool.pickUnstarted(42L, Set.of("a", "b")).isEmpty(), "all started → nothing to start");
+        assertTrue(NarrativePool.pickUnstarted(42L, Set.of("a", "b"), false).isEmpty(), "all started → nothing to start");
+    }
+
+    @Test
+    @DisplayName("pickUnstarted: skipPolitical drops tagged series; the tag defaults to false when absent")
+    void pickUnstartedSkipsPoliticalSeries() {
+        String body = "{\"ok\":true,\"total\":2,\"series\":["
+                + "{\"seriesId\":\"a\",\"political\":true,\"letters\":[{\"letterIndex\":1,\"pages\":[\"p\"]}]},"
+                + "{\"seriesId\":\"b\",\"letters\":[{\"letterIndex\":1,\"pages\":[\"p\"]}]}]}";
+        NarrativePool.applyResponse(body);
+        assertTrue(NarrativePool.resolve("a").orElseThrow().political());
+        // Absent is how every untagged series arrives, and how an older relay sends all of them.
+        assertFalse(NarrativePool.resolve("b").orElseThrow().political());
+
+        // Filtering ON: only the untagged series can ever be started, at any seed.
+        for (long seed = 0; seed < 100; seed++) {
+            assertEquals("b", NarrativePool.pickUnstarted(seed, Set.of(), true).orElseThrow().seriesId());
+        }
+        // ...and with the untagged one already started there is nothing left, rather than a fallback
+        // to the tagged series.
+        assertTrue(NarrativePool.pickUnstarted(42L, Set.of("b"), true).isEmpty());
     }
 
     @Test

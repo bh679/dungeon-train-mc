@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -30,6 +31,12 @@ class WorldInfoReporterTest {
     private static JsonObject sample(long worldSeed, long trainSeed,
                                      List<WorldInfoReporter.ModEntry> mods, String language,
                                      boolean multiplayer) {
+        return sample(worldSeed, trainSeed, mods, language, multiplayer, "adult");
+    }
+
+    private static JsonObject sample(long worldSeed, long trainSeed,
+                                     List<WorldInfoReporter.ModEntry> mods, String language,
+                                     boolean multiplayer, String contentMode) {
         return WorldInfoReporter.buildPayload(
                 "069a79f444e94726a5befca90e38aaf5", "Notch",
                 worldSeed, trainSeed,
@@ -41,7 +48,8 @@ class WorldInfoReporterTest {
                 "CurseForge · brand minecraft v2.4.28",
                 mods,
                 language,
-                multiplayer);
+                multiplayer,
+                contentMode);
     }
 
     @Test
@@ -135,5 +143,16 @@ class WorldInfoReporterTest {
 
         JsonObject nullLang = sample(1L, 2L, List.of(), null);
         assertTrue(!nullLang.has("language"), "language omitted when null");
+    }
+
+    @Test
+    @DisplayName("contentMode rides along, and is omitted rather than guessed when unknown")
+    void contentModeIsCarriedAndOmittable() {
+        JsonObject kid = sample(1L, 2L, List.of(), "en_us", false, "kid");
+        assertEquals("kid", kid.get("contentMode").getAsString());
+        // A jar/session that cannot say must send NOTHING — the relay reads absence as unknown, and an
+        // absent field must never be back-filled as "adult" on either side.
+        JsonObject unknown = sample(1L, 2L, List.of(), "en_us", false, null);
+        assertFalse(unknown.has("contentMode"));
     }
 }

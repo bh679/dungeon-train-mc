@@ -82,6 +82,34 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.ConfigValue<List<? extends String>> SHARED_BOOKS_READ;
     /** The player's most recent NPS ("recommend") answer (0-10), or -1 if never answered. */
     public static final ModConfigSpec.IntValue DEATH_SCREEN_LAST_NPS;
+    /**
+     * Which tier of other-players' content this client accepts — see {@link ContentMode}. Client-scope
+     * so it follows the player across worlds and servers, like the dev-consent and shared-book-read
+     * state above; the server learns it per-player via {@code ContentModeSyncPacket}.
+     */
+    public static final ModConfigSpec.EnumValue<ContentMode> CONTENT_MODE;
+
+    /**
+     * Whether the player wants community content the relay tagged as politically sensitive filtered
+     * out of what they are served.
+     *
+     * <p>Tri-state on purpose. {@link PoliticalFilter#UNSET} is not a third preference — it means the
+     * player has not been asked yet, and it resolves to a DIFFERENT effective answer depending on their
+     * client language (see {@code PoliticalFilterPrefs}): ON for a Chinese locale, OFF otherwise. A
+     * plain boolean would have to pick one default for everybody and would forget whether the player
+     * had ever actually chosen it.</p>
+     */
+    public static final ModConfigSpec.EnumValue<PoliticalFilter> POLITICAL_FILTER;
+
+    /** The player's answer to the Political Filter prompt. See {@link #POLITICAL_FILTER}. */
+    public enum PoliticalFilter {
+        /** Never asked (or asked and dismissed before the prompt existed) — resolved from the locale. */
+        UNSET,
+        /** Filter tagged content out. */
+        ON,
+        /** Show everything. */
+        OFF
+    }
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -113,6 +141,8 @@ public final class ClientDisplayConfig {
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
+        POLITICAL_FILTER = pair.getLeft().politicalFilter;
+        CONTENT_MODE = pair.getLeft().contentMode;
     }
 
     private ClientDisplayConfig() {}
@@ -225,10 +255,37 @@ public final class ClientDisplayConfig {
                         o -> o instanceof String);
         b.pop();
 
+        b.push("contentMode");
+        ModConfigSpec.EnumValue<ContentMode> contentMode = b
+                .comment("Which tier of other players' content this game accepts.",
+                         "ADULT (default) — everything: community books written by strangers as chest loot,",
+                         "  player-written narrative series on lecterns, Death Note curses, carriages built in",
+                         "  other worlds, and direct chat with the developer.",
+                         "KID — no developer chat in either direction; community books restricted to those",
+                         "  explicitly flagged kid-safe (a stricter bar than the normal moderation pass); lectern",
+                         "  narratives, Death Note curses and shared carriages off, since there is no kid-safe",
+                         "  curation for those. You can still write and share your own books and carriages —",
+                         "  what you publish is additionally screened for contact/personal information.",
+                         "On a multiplayer server, dev chat and community books follow YOUR setting; lectern",
+                         "narratives and shared carriages are world-shared and follow the host's.",
+                         "Asked once on the first-launch consent card; changeable in Options -> Dungeon Train...")
+                .defineEnum("mode", ContentMode.ADULT);
+        b.pop();
+
         b.push("deathScreen");
         ModConfigSpec.IntValue deathScreenLastNps = b
                 .comment("Internal: the player's most recent NPS (\"how likely to recommend\") answer, 0-10, or -1 if never answered. Used to decide when the death-screen donation page appears. Managed automatically.")
                 .defineInRange("lastNpsScore", -1, -1, 10);
+        b.pop();
+
+        b.push("contentFilter");
+        ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter = b
+                .comment("Whether community books and player narratives flagged as politically sensitive are",
+                         "filtered out of what you're served. ON hides them, OFF shows everything, UNSET means",
+                         "you haven't been asked — which reads as ON for Chinese-language clients (who are the",
+                         "ones offered the choice) and OFF for everyone else. Set from the prompt on the title",
+                         "screen, or the Political Filter row in Options > Dungeon Train.")
+                .defineEnum("politicalFilter", PoliticalFilter.UNSET);
         b.pop();
 
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
@@ -238,7 +295,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
                 framerateThrottleEnabled, framerateThrottleFps, deleteWorldOnReboard, sharedBooksRead,
-                deathScreenLastNps);
+                deathScreenLastNps, politicalFilter, contentMode);
     }
 
     /**
@@ -351,6 +408,24 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         FREE_PLAY_CONFIRM_OPTED_OUT.set(value);
         FREE_PLAY_CONFIRM_OPTED_OUT.save();
+    }
+
+    // ----- Political content filter (see client/PoliticalFilterPrefs) -----
+
+    /**
+     * The player's RAW stored answer — {@code UNSET} when they have never been asked. Callers deciding
+     * whether to actually filter want {@code PoliticalFilterPrefs.isEnabled()} instead, which resolves
+     * {@code UNSET} against their client language. Reads {@code UNSET} before the config loads, which
+     * is the same "not answered yet" the prompt keys off.
+     */
+    public static PoliticalFilter getPoliticalFilter() {
+        return isLoaded() ? POLITICAL_FILTER.get() : PoliticalFilter.UNSET;
+    }
+
+    public static void setPoliticalFilter(PoliticalFilter value) {
+        if (!isLoaded() || value == null) return;
+        POLITICAL_FILTER.set(value);
+        POLITICAL_FILTER.save();
     }
 
     // ----- Developer-message consent state (see DevMessageConsentClient) -----
@@ -555,6 +630,37 @@ public final class ClientDisplayConfig {
         DELETE_WORLD_ON_REBOARD.save();
     }
 
+    // ----- Content mode (Adult / Kid) — see ContentMode -----
+
+    /**
+     * Which tier of other-players' content this client accepts. Defaults to {@link ContentMode#ADULT},
+     * including before the config loads.
+     *
+     * <p>Note this is the opposite of the fail-safe direction the SERVER mirror uses: there, an unknown
+     * player reads as KID so a missing sync can never leak adult content. Here the value IS the local
+     * setting rather than an assumption about a stranger — defaulting a pre-load read to KID would blink
+     * the title-screen chat affordance off and back on during startup for every adult player.</p>
+     */
+    public static ContentMode getContentMode() {
+        return isLoaded() ? CONTENT_MODE.get() : ContentMode.ADULT;
+    }
+
+    /** Convenience for the gate call sites: is this client in Kid mode? */
+    public static boolean isKidMode() {
+        return getContentMode().isKid();
+    }
+
+    /**
+     * Persist the content mode. Idempotent — skips the TOML write when unchanged. Driven by the
+     * first-launch consent card and by the Options row; no-op pre-load.
+     */
+    public static void setContentMode(ContentMode mode) {
+        if (!isLoaded() || mode == null) return;
+        if (CONTENT_MODE.get() == mode) return;
+        CONTENT_MODE.set(mode);
+        CONTENT_MODE.save();
+    }
+
     // ----- Global client-side community-book read history (see SharedBookReadSyncClient / SharedBookReadMirror) -----
 
     /**
@@ -619,6 +725,8 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
-            ModConfigSpec.IntValue deathScreenLastNps
+            ModConfigSpec.IntValue deathScreenLastNps,
+            ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
+            ModConfigSpec.EnumValue<ContentMode> contentMode
     ) {}
 }

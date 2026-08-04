@@ -6026,6 +6026,56 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "adult-kid-content-mode",
+      "version": "0.527.0",
+      "type": "feat",
+      "title": "Adult and Kid modes",
+      "summary": "The first-launch screen now asks who is playing. Kid mode turns off chat with the developer and limits player-written books to those an AI has checked as suitable for children \u2014 screening for sexual, frightening or cruel content, personal details, and anyone trying to strike up a private conversation. Carriages built by other players are filtered the same way, though a build with no writing in it has nothing to check. You can still write and share your own books and carriages either way. Adult mode is everything, exactly as before, and the setting can be changed anytime in Options.",
+      "highlights": [
+        "Choose Adult or Kid on the first-launch screen, or in Options \u2192 Dungeon Train\u2026",
+        "Kid mode: no developer chat, and only kid-safe player-written books and carriages",
+        "Hover any line on the screen to see exactly what it does",
+        "Adult mode is unchanged \u2014 existing worlds keep every feature they had"
+      ],
+      "date": "2026-08-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "political-content-filter",
+      "version": "0.527.0",
+      "type": "feat",
+      "title": "Political Content Filter for Chinese-language players",
+      "summary": "Players on a Chinese-language client are asked once whether to filter out community books and player-written letters that touch on politically sensitive topics. Say yes and they are quietly left out of what you are shown; say no and nothing changes. You can change your answer any time in Options > Dungeon Train.",
+      "highlights": [
+        "Asked once on the title screen, and changeable later from Options > Dungeon Train.",
+        "Applies to community books found in chests and to player-written narrative letters.",
+        "Your answer is yours alone \u2014 on a shared world other players are unaffected by it."
+      ],
+      "date": "2026-08-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "options-consent-card-19-languages",
+      "version": "0.528.0",
+      "type": "feat",
+      "title": "The settings screen and the first-launch card now speak all 19 languages",
+      "summary": "Dungeon Train's own settings screen (Options \u2192 Dungeon Train\u2026) and the first-launch 'connect to the internet?' card used to be English no matter what language you play in \u2014 so the Adult/Kid question, the five things the card asks about, and the settings you'd go back to in order to change them were unreadable unless you read English. Both are now fully translated, along with the ride-photo options, the familiar-book vote counts, the messages you get when boarding a shared carriage, /report_carriage replies, and the Alipay/WeChat support options. These are machine translations (Claude Opus 5), not yet checked by a human translator \u2014 the AI ring in the language list shows how much of your language that covers.",
+      "highlights": [
+        "Options \u2192 Dungeon Train\u2026 is translated end to end: every row and every hover description",
+        "The first-launch internet card \u2014 the Adult/Kid choice, all five bullet points and their hover text, and the confirm button",
+        "Also translated: ride-photo settings, familiar-book vote counts, shared-carriage arrival messages, /report_carriage, and the Alipay/WeChat support options",
+        "Machine translation credited as such \u2014 Simplified Chinese's human-reviewed lines are untouched, and the new lines are flagged for a translator's review"
+      ],
+      "date": "2026-08-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

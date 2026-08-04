@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.event.MultiplayerState;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -89,7 +90,11 @@ public final class WorldInfoReporter {
                     clientLanguage(player),
                     // Sticky for this server run, so the LAN host is reported multiplayer alongside
                     // the guest whose join flipped it — see MultiplayerState.
-                    MultiplayerState.observeJoin(server, player));
+                    MultiplayerState.observeJoin(server, player),
+                    // The joining player's own content tier, from the per-player mirror their client
+                    // syncs on login. Per-player rather than host-scoped: on a shared server this
+                    // records what THIS session was actually served.
+                    ContentModeMirror.get(player).name().toLowerCase(java.util.Locale.ROOT));
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] world-info relay report failed: {}", t.toString());
@@ -105,12 +110,17 @@ public final class WorldInfoReporter {
      * {@code multiplayer} says whether this join happened on a multiplayer server run (see
      * {@link MultiplayerState}); the relay folds it into the explorer's play-mode stat, and it is
      * part of the record's dedupe identity there, so a solo→multiplayer flip stores a new record.
+     *
+     * <p>{@code contentMode} ("adult"/"kid") is the tier this session ran under, and is likewise part of
+     * the relay's dedupe identity — switching mode mid-run stores a new record rather than deduping the
+     * change away, which is the only evidence the switch happened.</p>
      */
     static JsonObject buildPayload(String uuid, String player, long worldSeed, long trainSeed,
                                    String mode, int groupSize, int length, int width, int height,
                                    int trainY, String startingDimension, String dtVersion,
                                    String launcher, List<ModEntry> mods, String language,
-                                   boolean multiplayer) {
+                                   boolean multiplayer,
+                                   String contentMode) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         body.addProperty("player", player);
@@ -129,6 +139,7 @@ public final class WorldInfoReporter {
         body.addProperty("dtVersion", dtVersion);
         body.addProperty("launcher", launcher);
         body.addProperty("multiplayer", multiplayer);
+        if (contentMode != null && !contentMode.isEmpty()) body.addProperty("contentMode", contentMode);
         JsonArray modsArr = new JsonArray();
         for (ModEntry m : mods) {
             JsonObject mo = new JsonObject();
