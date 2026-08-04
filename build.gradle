@@ -108,6 +108,14 @@ neoForge {
             server()
             programArgument '--nogui'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Same local-relay seam as the client above. The SERVER is what fetches the community
+            // book + narrative pools (SharedBookRefreshEvents ticks server-side), so verifying that
+            // half against a local dp-relay needs it here too — and a dedicated server needs no GUI,
+            // which makes it the only way to test those fetches unattended.
+            def localRelay = project.findProperty('relayBaseUrl') ?: System.getenv('DUNGEONTRAIN_RELAY_BASE_URL')
+            if (localRelay) {
+                environment.put('DUNGEONTRAIN_RELAY_BASE_URL', localRelay.toString())
+            }
             // Determinism-harness seam: ./gradlew runServer -PgenDetLog enables the flag-gated
             // [gen.det] worldgen diagnostics (GenDeterminismLog). A project property rather than an
             // env var because the forked server inherits the Gradle DAEMON's environment, not the
