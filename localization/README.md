@@ -26,7 +26,13 @@ player-visible counterparts live in
 `src/main/resources/assets/dungeontrain/localization_credits/<locale>.json`:
 
 - the locale-LEVEL `human_reviewed` flag (hand-maintained judgment call) that drives
-  the faded "AI" logo in the language list, and
+  the faded "AI" logo in the language list. **Flip it back to `false` when a machine
+  translation wave adds unreviewed lines to a locale that was flagged `true`** — the flag
+  is a claim to the player that a person stood behind this translation, and it stops being
+  true the moment AI writes lines nobody has checked. `check-provenance.py` emits an
+  advisory WARNING for exactly that state; treat the warning as the to-do. Set it back to
+  `true` when a translator has worked the queue down (see
+  [Handing work to a translator](#workflows)), and
 - three GENERATED count fields — `total_keys` / `ai_authored` / `ai_unreviewed` —
   summarizing this directory's sidecars, which drive the **blue AI-fraction ring**
   around that logo (filled circumference = `ai_unreviewed / total_keys`). Every
@@ -66,7 +72,7 @@ locale.
 | Name | Kind | Meaning |
 |---|---|---|
 | `Opus 4.8 (Claude)` | ai | Machine translation by Claude Opus 4.8 (waves #768, #776, #809, #821; the early zh_cn commits #754/#755/#763 didn't record their model and are **assumed Opus 4.8** per operator decision, 2026-07-23) |
-| `老本願` | human | Community translator — original zh_cn tree (#754 seed, #759 v0.458.0 drop), its review (#770), and the v0.516.0 revision pass (2026-07) that took zh_cn to zero AI-unreviewed lines |
+| `老本願` | human | Community translator — original zh_cn tree (#754 seed, #759 v0.458.0 drop), its review (#770), and the v0.516.0 revision pass (2026-07) that took zh_cn to zero AI-unreviewed lines (reopened by the v0.528.0 machine wave — see [Backfill notes](#backfill-notes-july-2026)) |
 | `阿世xAsh` | human | Community translator — the #823 zh_cn/zh_tw Support-page revision pass |
 
 To use a new model or translator name, add it to `authors.json` first —
@@ -187,10 +193,13 @@ lang commits). Judgment calls baked into that backfill:
   leaving the keys machine-added afterwards (#809, #821) unreviewed at ~94.6%.
   **Closed by 老本願's v0.516.0 revision pass (2026-07)**, which revised 84 of those
   Opus-authored lines (becoming author *and* reviewer) and reviewed the remaining 26
-  as-is (author stays `Opus 4.8 (Claude)`, reviewer 老本願). zh_cn is now **0
-  AI-unreviewed**. The advisory WARNING about the locale-level flag still fires, but for
-  one line only — `support.subtitle`, see the next bullet — not for a machine-translation
-  gap.
+  as-is (author stays `Opus 4.8 (Claude)`, reviewer 老本願). That took zh_cn to **0
+  AI-unreviewed**, with the advisory WARNING firing for one line only —
+  `support.subtitle`, see the next bullet — not for a machine-translation gap.
+  **No longer true as of the v0.528.0 wave (2026-08):** ~103 machine-translated lines
+  (`Opus 5 (Claude)`, unreviewed) put zh_cn at ~10% AI-unreviewed, so its
+  `human_reviewed` flag was flipped back to **`false`** — the faded "AI" logo is showing on
+  Simplified Chinese again. Flip it back when 老本願 has worked through the review queue.
 - **`gui.dungeontrain.support.subtitle`** (zh_cn + zh_tw) is authored by 阿世xAsh but
   ships Claude's 力所能及 idiom fix "pending translator confirmation" (PR #823's own
   words), so it stays **unreviewed** until the translator confirms — at which point:

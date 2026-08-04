@@ -6076,6 +6076,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "zh-cn-ai-badge-returns",
+      "version": "0.530.0",
+      "type": "fix",
+      "title": "The AI badge is showing on Simplified Chinese again",
+      "summary": "Simplified Chinese was marked as human-reviewed in the language list \u2014 no AI badge, solid logo \u2014 because a community translator had been through every line. This release adds about 103 machine-translated lines to it (the settings screen and the first-launch card), which no human has checked yet, so the badge and its blue ring are back until a translator works through them. Nothing about the translation itself got worse; the label just tells the truth about the new lines.",
+      "highlights": [
+        "Simplified Chinese shows the faded AI label again, with the ring at roughly 10% \u2014 the share of lines that are machine-translated and unreviewed",
+        "It goes back to a solid logo once those lines have been reviewed"
+      ],
+      "date": "2026-08-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
