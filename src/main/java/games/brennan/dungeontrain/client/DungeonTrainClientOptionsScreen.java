@@ -24,8 +24,11 @@ import java.util.List;
  * scale steppers) plus the ride-snapshot toggles, all reading/writing the same {@link ClientDisplayConfig}
  * accessors the X-menu uses — so the surfaces never diverge.</p>
  *
- * <p>Labels are plain literals, matching the existing plain-English DT options screens (no new
- * localization keys). The two {@link CycleButton}s manage their own display.</p>
+ * <p>Most labels are plain literals, matching the existing plain-English DT options screens. The
+ * Adult / Kid content row is the exception and IS localized: it is the only place outside the
+ * first-launch consent card that says what Kid mode does, and it is where a parent goes to change it,
+ * so it must be readable on a non-English client. New rows of that kind should follow it rather than
+ * the literals around it.</p>
  */
 public final class DungeonTrainClientOptionsScreen extends Screen {
 
@@ -71,14 +74,16 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
         addRenderableWidget(CycleButton.<ContentMode>builder(DungeonTrainClientOptionsScreen::contentModeLabel)
                 .withValues(List.of(ContentMode.ADULT, ContentMode.KID))
                 .withInitialValue(ClientDisplayConfig.getContentMode())
-                .create(left, y, ROW_W, ROW_H, Component.literal("Content"),
+                .create(left, y, ROW_W, ROW_H, Component.translatable("gui.dungeontrain.options.content_mode"),
                         (btn, mode) -> {
                             ClientDisplayConfig.setContentMode(mode);
                             ContentModeSyncClient.syncNow();
                         }))
-                .setTooltip(tip("Kid mode turns off developer chat, limits community books to ones flagged kid-safe, "
-                        + "and turns off lectern stories, Death Notes and shared carriages. You can still write and "
-                        + "share your own books and carriages. Adult mode is everything."));
+                // Localized, unlike this screen's other rows. Those describe display scale and a master
+                // on/off; this one is the only place outside the one-time card that says what Kid mode
+                // actually does, and it is where a parent comes to change it — a parent reading a
+                // non-English client should not be shown three lines of English to make that decision.
+                .setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.options.content_mode.tip")));
         y += ROW_GAP;
 
         // Snapshot chat log ON/OFF.
