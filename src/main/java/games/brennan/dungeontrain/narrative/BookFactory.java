@@ -162,14 +162,18 @@ public final class BookFactory {
             if (book.isPresent()) return book;
         }
 
+        // The world's Political Filter answer, resolved once so (b) and (c) can never disagree — one
+        // sweep must not continue a series the other would refuse to start.
+        boolean skipPolitical = WorldLanguage.hostPoliticalFilter(overworld.getServer());
+
         // (b) Continue an in-progress PLAYER series (most recently started first).
-        Optional<ItemStack> continued = continueInProgressPlayerSeries(data, seed);
+        Optional<ItemStack> continued = continueInProgressPlayerSeries(data, seed, skipPolitical);
         if (continued.isPresent()) return continued;
 
         // (c) Coin flip: with the tapered chance, START a new player series instead of a new mod story.
         if (SharedBookGate.canDiscoverNarratives() && !NarrativePool.isEmpty()
                 && rollNarrativeChance(narrativeLecternChanceForWorld(overworld, data), seed)) {
-            Optional<ItemStack> started = startNewPlayerSeries(data, seed);
+            Optional<ItemStack> started = startNewPlayerSeries(data, seed, skipPolitical);
             if (started.isPresent()) return started;
             // no unstarted series available right now → fall through to a mod story
         }
@@ -225,12 +229,17 @@ public final class BookFactory {
      * from {@link NarrativePool}). A series that has rotated out of the pool window while the relay is cold
      * simply resolves empty and is skipped; a series with all present letters read is complete and skipped.
      */
-    private static Optional<ItemStack> continueInProgressPlayerSeries(NarrativeProgressData data, long seed) {
+    private static Optional<ItemStack> continueInProgressPlayerSeries(NarrativeProgressData data, long seed,
+                                                                     boolean skipPolitical) {
         List<String> started = data.startedPlayerSeriesIds();
         for (int i = started.size() - 1; i >= 0; i--) { // tail = most recently started
             Optional<NarrativePool.Series> resolved = NarrativePool.resolve(started.get(i));
             if (resolved.isEmpty()) continue;
             NarrativePool.Series series = resolved.get();
+            // Turning the filter ON mid-world abandons a series already in progress rather than
+            // finishing it — the world simply stops offering its letters and lecterns fall through to
+            // mod stories. Honouring the setting immediately beats honouring an earlier commitment.
+            if (skipPolitical && series.political()) continue;
             Optional<NarrativePool.SeriesLetter> next = nextUnreadPlayerLetter(data, series);
             if (next.isPresent()) return Optional.of(buildPlayerSeriesLetter(series, next.get()));
         }
@@ -238,9 +247,10 @@ public final class BookFactory {
     }
 
     /** Start a fresh (unstarted) player series from the pool, serving its lowest letter. Empty if none available. */
-    private static Optional<ItemStack> startNewPlayerSeries(NarrativeProgressData data, long seed) {
+    private static Optional<ItemStack> startNewPlayerSeries(NarrativeProgressData data, long seed,
+                                                            boolean skipPolitical) {
         Set<String> started = new HashSet<>(data.startedPlayerSeriesIds());
-        Optional<NarrativePool.Series> pick = NarrativePool.pickUnstarted(seed, started);
+        Optional<NarrativePool.Series> pick = NarrativePool.pickUnstarted(seed, started, skipPolitical);
         if (pick.isEmpty()) return Optional.empty();
         NarrativePool.Series series = pick.get();
         Optional<NarrativePool.SeriesLetter> first = nextUnreadPlayerLetter(data, series);

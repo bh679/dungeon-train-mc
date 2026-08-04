@@ -77,13 +77,19 @@ public final class SharedBookPool {
      * relay payload today → defaults to 1 (see {@link #parseBook}).</p>
      *
      * <p>{@code kidSafe} is the relay's separate "fit for a young child" verdict — a stricter bar than
-     * the approval that got the book into the pool at all. It is carried per-book rather than only
-     * narrowing the fetch because ONE snapshot serves everybody on a server: on an adult's world a
-     * child's own pickups still filter down to the kid-safe entries. Absent from the payload (an older
-     * relay) → {@code false}, so a Kid player is served nothing rather than everything.</p>
+     * the approval that got the book into the pool at all. Absent from the payload (an older relay) →
+     * {@code false}, so a Kid player is served nothing rather than everything.</p>
+     *
+     * <p>{@code political} is the relay's moderation tag for politically sensitive content — the one
+     * moderation VERDICT that crosses to the game, because whether it matters depends on the READER
+     * (see {@link games.brennan.dungeontrain.client.PoliticalFilterPrefs}).</p>
+     *
+     * <p>Both are carried per-book rather than only narrowing the fetch, and for the same reason ONE
+     * snapshot serves everybody on a server: two players may have answered differently, so like
+     * {@code lang} these are stored per book and applied per player at selection time.</p>
      */
     public record PoolBook(int id, String title, String author, List<String> pages, String lang, int weight,
-                           boolean kidSafe) {}
+                           boolean kidSafe, boolean political) {}
 
     /**
      * Upper bound on the accumulated snapshot. Fetches MERGE into it (see {@link #applyResponse}) so a
@@ -205,7 +211,7 @@ public final class SharedBookPool {
         fetchInFlight = true;
         try {
             String url = DungeonTrain.relayBaseUrl()
-                    + "/books/pool?session=" + SESSION + "&limit=" + POOL_LIMIT
+                    + "/books/pool?session=" + SESSION + "&limit=" + POOL_LIMIT + POLITICAL_CAPABILITY
                     + langParam(hostLang) + uuidParam(hostUuid) + (hostKidMode ? "&kidsafe=1" : "");
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
@@ -368,8 +374,22 @@ public final class SharedBookPool {
                 // non-boolean kidSafe — keep the closed default
             }
         }
-        return new PoolBook(id, title, author, pages, lang, weight, kidSafe);
+        // The relay sends `political` only when true, and only to a request carrying `pol=1` (below) —
+        // absent therefore means "not tagged", which is also the right read for a relay too old to know
+        // about the tag at all.
+        boolean political = o.has("political") && !o.get("political").isJsonNull()
+                && o.get("political").isJsonPrimitive() && o.get("political").getAsBoolean();
+        return new PoolBook(id, title, author, pages, lang, weight, kidSafe, political);
     }
+
+    /**
+     * Declares to the relay that this jar understands the {@code political} tag and filters it per
+     * player, so tagged books may be included in the response. WITHOUT it the relay withholds them —
+     * that is what keeps older jars, which have no filter to apply, from ever being handed content
+     * that needs one. Always sent: the pool is shared across every player on the server, and which of
+     * them want it filtered is decided later, per player, by {@link SharedBookSelector}.
+     */
+    private static final String POLITICAL_CAPABILITY = "&pol=1";
 
     /** The {@code &lang=<locale>} query fragment for language-matched delivery, or {@code ""} when blank. */
     static String langParam(String hostLang) {

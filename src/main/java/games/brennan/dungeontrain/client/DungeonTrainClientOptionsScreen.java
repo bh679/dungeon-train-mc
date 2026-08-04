@@ -24,11 +24,18 @@ import java.util.List;
  * scale steppers) plus the ride-snapshot toggles, all reading/writing the same {@link ClientDisplayConfig}
  * accessors the X-menu uses — so the surfaces never diverge.</p>
  *
- * <p>Most labels are plain literals, matching the existing plain-English DT options screens. The
- * Adult / Kid content row is the exception and IS localized: it is the only place outside the
- * first-launch consent card that says what Kid mode does, and it is where a parent goes to change it,
- * so it must be readable on a non-English client. New rows of that kind should follow it rather than
- * the literals around it.</p>
+ * <p>Most labels are plain literals, matching the existing plain-English DT options screens. Two rows
+ * are deliberate exceptions and ARE localized, and new rows of that kind should follow them rather
+ * than the literals around them:</p>
+ * <ul>
+ *   <li>The Adult / Kid content row — the only place outside the first-launch consent card that says
+ *       what Kid mode does, and where a parent goes to change it, so it must be readable on a
+ *       non-English client.</li>
+ *   <li>The Political Filter row — shown only to players on a Chinese-language client (see
+ *       {@link PoliticalFilterPrefs}), so by construction nobody who reads it is reading the rest of
+ *       this screen in English; a plain literal there would be the one label its entire audience
+ *       cannot read.</li>
+ * </ul>
  */
 public final class DungeonTrainClientOptionsScreen extends Screen {
 
@@ -66,6 +73,17 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                 .bounds(left, y, ROW_W, ROW_H).build())
                 .setTooltip(tip("Master switch for online features (leaderboard, developer chat, community books, telemetry). OFF disables all network use; ON opens the consent screen."));
         y += ROW_GAP;
+
+        // Political Filter — offered only where it is a live concern (Chinese-language clients), so the
+        // row is absent rather than merely inert for everyone else. Translated; see the class javadoc.
+        if (PoliticalFilterPrefs.isChineseLocale()) {
+            addRenderableWidget(CycleButton.onOffBuilder(PoliticalFilterPrefs.isEnabled())
+                    .create(left, y, ROW_W, ROW_H,
+                            Component.translatable("gui.dungeontrain.political_filter.option"),
+                            (btn, on) -> PoliticalFilterPrefs.answer(on)))
+                    .setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.political_filter.option.tooltip")));
+            y += ROW_GAP;
+        }
 
         // Adult / Kid content mode — the second home for the choice made once on the first-launch
         // consent card, so a player who dismissed that card (or an existing install that answered

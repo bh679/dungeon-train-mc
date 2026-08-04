@@ -36,7 +36,7 @@ final class SharedBookSelectorTest {
 
     /** As {@link #book(int, String, int)} but with an explicit kid-safe verdict. */
     private static PoolBook book(int id, String lang, int weight, boolean kidSafe) {
-        return new PoolBook(id, "title" + id, "author", List.of("p"), lang, weight, kidSafe);
+        return new PoolBook(id, "title" + id, "author", List.of("p"), lang, weight, kidSafe, false);
     }
 
     /** An en_us player who has read nothing and been served nothing; carriage 0, repeat threshold 10. */
@@ -204,6 +204,78 @@ final class SharedBookSelectorTest {
         assertTrue(SharedBookSelector.select(List.of(book(1, "fr_fr", 0)), everythingSeen, 1L).isPresent());
     }
 
+    // ---- political filter ----
+
+    /** A tagged book — the relay marked it politically sensitive; see PoliticalFilterPrefs. */
+    private static PoolBook politicalBook(int id, String lang, int weight) {
+        return new PoolBook(id, "title" + id, "author", List.of("p"), lang, weight, true, true);
+    }
+
+    private static PlayerContext filteringPlayer() {
+        return new PlayerContext(EN, id -> false, id -> false, id -> 0, 0, 10, false, true);
+    }
+
+    @Test
+    @DisplayName("political filter OFF changes nothing — a tagged book is picked like any other")
+    void politicalFilterOffServesTaggedBooks() {
+        List<PoolBook> pool = List.of(politicalBook(1, EN, 5));
+        assertEquals(1, SharedBookSelector.select(pool, freshPlayer(), 1L).orElseThrow().id());
+    }
+
+    @Test
+    @DisplayName("political filter ON never yields a tagged book, at any seed")
+    void politicalFilterOnSkipsTaggedBooks() {
+        List<PoolBook> pool = List.of(politicalBook(1, EN, 9), book(2, EN, 1));
+        for (long seed = 0; seed < 200; seed++) {
+            // Note the tagged book carries the HIGHER weight, so it would win outright if the filter
+            // were merely a preference rather than a hard exclusion.
+            assertEquals(2, SharedBookSelector.select(pool, filteringPlayer(), seed).orElseThrow().id());
+        }
+    }
+
+    @Test
+    @DisplayName("a pool of nothing but tagged books yields NO pick — the caller falls back to a built-in")
+    void allTaggedYieldsNoPick() {
+        List<PoolBook> pool = List.of(politicalBook(1, EN, 5), politicalBook(2, EN, 5));
+        assertTrue(SharedBookSelector.select(pool, filteringPlayer(), 1L).isEmpty(),
+            "handing back mod content beats handing back content the player opted out of");
+    }
+
+    @Test
+    @DisplayName("REGRESSION: exhaustion relaxation must not resurrect a filtered-out book")
+    void exhaustionCannotResurrectTaggedBooks() {
+        // The subtle failure this guards: step 1 falls back to the WHOLE pool when nothing is eligible.
+        // If the political filter ran as a later tier instead of on the input pool, this player — who
+        // has seen everything — would be handed the tagged book by that fallback.
+        List<PoolBook> pool = List.of(politicalBook(1, EN, 9), book(2, EN, 1));
+        PlayerContext seenEverything = new PlayerContext(EN, id -> true, id -> true, id -> 0, 0, 10, false, true);
+        for (long seed = 0; seed < 200; seed++) {
+            assertEquals(2, SharedBookSelector.select(pool, seenEverything, seed).orElseThrow().id());
+        }
+    }
+
+    @Test
+    @DisplayName("REGRESSION: the language fallback must not resurrect a filtered-out book either")
+    void languageFallbackCannotResurrectTaggedBooks() {
+        // Only the tagged book is in the player's language, so the language bucket empties and the chain
+        // relaxes to out-of-language books. The tagged one must still not come back.
+        List<PoolBook> pool = List.of(politicalBook(1, EN, 9), book(2, "ja_jp", 1));
+        for (long seed = 0; seed < 200; seed++) {
+            assertEquals(2, SharedBookSelector.select(pool, filteringPlayer(), seed).orElseThrow().id(),
+                "an out-of-language book beats a filtered-out one");
+        }
+    }
+
+    @Test
+    @DisplayName("the filter is per PLAYER: one snapshot, two players, different answers")
+    void filterIsPerPlayerNotPerPool() {
+        // The pool is a single shared snapshot on the server, so this is the case that would break if
+        // filtering were done at fetch time instead of at selection.
+        List<PoolBook> pool = List.of(politicalBook(1, EN, 5));
+        assertEquals(1, SharedBookSelector.select(pool, freshPlayer(), 1L).orElseThrow().id());
+        assertTrue(SharedBookSelector.select(pool, filteringPlayer(), 1L).isEmpty());
+    }
+
     @Test
     @DisplayName("determinism: same (pool, ctx, seed) always yields the same pick")
     void deterministic() {
@@ -218,7 +290,7 @@ final class SharedBookSelectorTest {
 
     /** An en_us KID-mode player, otherwise identical to {@link #freshPlayer()}. */
     private static PlayerContext freshKid() {
-        return new PlayerContext(EN, id -> false, id -> false, id -> 0, 0, 10, true);
+        return new PlayerContext(EN, id -> false, id -> false, id -> 0, 0, 10, true, false);
     }
 
     @Test
@@ -248,7 +320,7 @@ final class SharedBookSelectorTest {
     void kidFilterSurvivesExhaustionRelaxation() {
         // Everything read AND served this life → step 1's relaxation reconsiders the WHOLE pool. That
         // relaxation must reconsider only the kid-safe books, which is why the kid filter runs first.
-        PlayerContext seenEverything = new PlayerContext(EN, id -> true, id -> true, id -> 0, 0, 10, true);
+        PlayerContext seenEverything = new PlayerContext(EN, id -> true, id -> true, id -> 0, 0, 10, true, false);
         List<PoolBook> pool = List.of(book(1, EN, 5, false), book(2, EN, 0, true));
         for (long seed = 0; seed < 30; seed++) {
             assertEquals(2, SharedBookSelector.select(pool, seenEverything, seed).orElseThrow().id());
@@ -265,8 +337,10 @@ final class SharedBookSelectorTest {
     }
 
     @Test
-    @DisplayName("the 6-arg PlayerContext constructor still means adult mode")
+    @DisplayName("the 6-arg PlayerContext constructor still means adult mode, filter off")
     void legacyContextIsAdult() {
-        assertFalse(new PlayerContext(EN, id -> false, id -> false, id -> 0, 0, 10).kidMode());
+        PlayerContext legacy = new PlayerContext(EN, id -> false, id -> false, id -> 0, 0, 10);
+        assertFalse(legacy.kidMode());
+        assertFalse(legacy.politicalFilter());
     }
 }

@@ -67,8 +67,16 @@ public final class NarrativePool {
     /** One approved letter within a series. */
     public record SeriesLetter(int letterIndex, String title, List<String> pages) {}
 
-    /** One approved player narrative series, materialised from the relay's pool response (approved letters only). */
-    public record Series(String seriesId, String author, List<SeriesLetter> letters) {}
+    /**
+     * One approved player narrative series, materialised from the relay's pool response (approved
+     * letters only).
+     *
+     * <p>{@code political} is the relay's moderation tag, carried at SERIES level because a lectern
+     * hands out one letter at a time and a reader filtered out of letter 3 of 5 would be stranded
+     * mid-story. Unlike community books this is applied per WORLD rather than per player — see
+     * {@link BookFactory#buildOrRandomForLectern}.</p>
+     */
+    public record Series(String seriesId, String author, List<SeriesLetter> letters, boolean political) {}
 
     /** Current immutable snapshot. Replaced wholesale by {@link #refreshAsync}; read by {@link #resolve}/{@link #pickUnstarted}. */
     private static volatile List<Series> snapshot = List.of();
@@ -119,11 +127,17 @@ public final class NarrativePool {
      * {@code excludeStarted} and any series with no servable letters. Deterministic per {@code seed} so the
      * same lectern at the same world state always starts the same series. {@link Optional#empty()} when the
      * snapshot has no fresh series (empty pool, or every windowed series already started).
+     *
+     * @param skipPolitical drop politically-tagged series from consideration — the world's Political
+     *                      Filter answer ({@link WorldLanguage#hostPoliticalFilter}). Applied here
+     *                      rather than by dropping them from the snapshot, so a toggle takes effect at
+     *                      the next lectern instead of waiting on the ~30 s pool refresh.
      */
-    public static Optional<Series> pickUnstarted(long seed, Set<String> excludeStarted) {
+    public static Optional<Series> pickUnstarted(long seed, Set<String> excludeStarted, boolean skipPolitical) {
         List<Series> pool = snapshot; // single volatile read → consistent snapshot
         List<Series> avail = new ArrayList<>();
         for (Series s : pool) {
+            if (skipPolitical && s.political()) continue;
             if (!s.letters().isEmpty() && !excludeStarted.contains(s.seriesId())) avail.add(s);
         }
         if (avail.isEmpty()) return Optional.empty();
@@ -149,7 +163,7 @@ public final class NarrativePool {
             String include = idsCsv(pinnedInProgress);
             String url = DungeonTrain.relayBaseUrl()
                     + "/narratives/pool?session=" + SESSION + "&include=" + include + "&limit=" + POOL_LIMIT
-                    + langParam(hostLang);
+                    + POLITICAL_CAPABILITY + langParam(hostLang);
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Accept", "application/json")
@@ -239,7 +253,11 @@ public final class NarrativePool {
             }
         }
         if (letters.isEmpty()) return null; // no approved content → not servable
-        return new Series(seriesId, author, letters);
+        // Sent only when true, and only to a request carrying `pol=1` (see POLITICAL_CAPABILITY) —
+        // absent means untagged, which is also how a relay too old to know about the tag reads.
+        boolean political = o.has("political") && !o.get("political").isJsonNull()
+                && o.get("political").isJsonPrimitive() && o.get("political").getAsBoolean();
+        return new Series(seriesId, author, letters, political);
     }
 
     /** Materialise one letter; returns {@code null} without a positive letterIndex. */
@@ -268,6 +286,14 @@ public final class NarrativePool {
         if (ids == null || ids.isEmpty()) return "";
         return ids.stream().filter(s -> s != null && !s.isEmpty()).collect(Collectors.joining(","));
     }
+
+    /**
+     * Declares that this jar understands the {@code political} tag and filters it itself, so the relay
+     * may include tagged series. Without it the relay withholds them, which is what keeps older jars
+     * from being handed content they have no way to filter. Always sent — WHICH series are withheld is
+     * decided locally, at the lectern (see {@link BookFactory}).
+     */
+    private static final String POLITICAL_CAPABILITY = "&pol=1";
 
     /** The {@code &lang=<locale>} query fragment for language-matched delivery, or {@code ""} when blank. */
     static String langParam(String hostLang) {

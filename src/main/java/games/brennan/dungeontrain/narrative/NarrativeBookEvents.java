@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.event.ContentModeMirror;
+import games.brennan.dungeontrain.event.PoliticalFilterMirror;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.event.SharedBookReadMirror;
 import games.brennan.dungeontrain.player.PlayerRunState;
@@ -424,6 +425,29 @@ public final class NarrativeBookEvents {
     /** Last time an exhausted-window refresh was fired (server thread only). */
     private static long lastExhaustedRefreshMs = 0;
 
+    /**
+     * Claim the right to fire an exhausted-window refresh, at most once per
+     * {@link #EXHAUSTED_REFRESH_RETRY_MS}. Returns whether the caller may fetch.
+     *
+     * <p>BOTH exhausted-window refreshes go through this — the pre-select one that decides whether to
+     * defer, and the post-serve prefetch. The prefetch used to be ungated, so once a player's window
+     * was exhausted it fired a relay request on essentially every book pickup (only
+     * {@link SharedBookPool#refreshAsync}'s in-flight flag held it back), every one of them returning
+     * nothing new. That is not an edge case for the players it hits hardest: the snapshot is
+     * language-scoped, so a non-English player draws from a much smaller set and lives in the
+     * exhausted state.</p>
+     *
+     * <p>The budget is deliberately GLOBAL rather than per player: the pool snapshot is world-shared,
+     * so two players exhausting it want the same single fetch, not one each.</p>
+     *
+     * <p>Package-private and clock-injected so the throttle can be tested without a server.</p>
+     */
+    static boolean claimRefreshSlot(long now) {
+        if (now - lastExhaustedRefreshMs <= EXHAUSTED_REFRESH_RETRY_MS) return false;
+        lastExhaustedRefreshMs = now;
+        return true;
+    }
+
     private static boolean resolvePending(ServerPlayer player, ItemStack stack) {
         if (!SharedBookGate.canDiscover() || SharedBookPool.isEmpty()) return false;
         ServerLevel ow = overworldOf(player);
@@ -445,9 +469,7 @@ public final class NarrativeBookEvents {
             // wedging pending placeholders forever as unburnable built-in books once the whole pool
             // had been served (observed against a 3-book test pool).
             if (SharedBookPool.isRefreshInFlight()) return false;
-            long now = System.currentTimeMillis();
-            if (now - lastExhaustedRefreshMs > EXHAUSTED_REFRESH_RETRY_MS) {
-                lastExhaustedRefreshMs = now;
+            if (claimRefreshSlot(System.currentTimeMillis())) {
                 SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()),
                         WorldLanguage.hostUuidConsented(player.getServer()),
                         WorldLanguage.hostFetchesKidSafeBooks(player.getServer()));
@@ -470,7 +492,10 @@ public final class NarrativeBookEvents {
             DungeonTrainConfig.getSharedBookRepeatCarriages(),
             // THIS holder's mode, not the host's — the snapshot is world-shared, so a child on an
             // adult's server is filtered down to kid-safe books right here, at the moment of pickup.
-            ContentModeMirror.isKid(player));
+            ContentModeMirror.isKid(player),
+            // THIS holder's political-filter answer, for the same reason as the locale above: the pool
+            // is shared, the preference is not.
+            PoliticalFilterMirror.isEnabled(player));
         // Vary the seed per stack as well as per tick: a sweep resolving several placeholders in the SAME
         // tick would otherwise feed the selector an identical seed and hand out the same book for each.
         long seed = ow.getGameTime() ^ uuid.getLeastSignificantBits() ^ (System.identityHashCode(stack) * 0x9E3779B9L);
@@ -498,7 +523,9 @@ public final class NarrativeBookEvents {
 
         // Serving that book may have just drained the window — pull the next tier now so the NEXT pickup
         // already has fresh content waiting (the pre-select guard above then has nothing to wait for).
-        if (windowExhaustedFor(run)) {
+        // Throttled on the SAME budget as that guard: ungated, this fired once per pickup for as long
+        // as the window stayed exhausted. See claimRefreshSlot.
+        if (windowExhaustedFor(run) && claimRefreshSlot(System.currentTimeMillis())) {
             SharedBookPool.refreshAsync(WorldLanguage.hostLocale(player.getServer()),
                     WorldLanguage.hostUuidConsented(player.getServer()),
                     WorldLanguage.hostFetchesKidSafeBooks(player.getServer()));
