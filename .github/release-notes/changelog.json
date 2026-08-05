@@ -6150,9 +6150,9 @@
         "\"Something For The Next One\" renamed to \"A Drift Gift\", in every language"
       ],
       "date": "2026-08-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.534.0",
+      "released_at": "2026-08-05T06:57:22Z"
     }
   ]
 }
