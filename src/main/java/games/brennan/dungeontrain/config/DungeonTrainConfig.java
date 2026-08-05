@@ -118,8 +118,14 @@ public final class DungeonTrainConfig {
     public static final double MIN_SHARED_BOOK_LOOT_CHANCE = 0.0;
     public static final double MAX_SHARED_BOOK_LOOT_CHANCE = 1.0;
 
-    /** Default master for the shared-carriage feature (relay-sourced carriages that travel between worlds). */
-    public static final boolean DEFAULT_SHARED_CARRIAGES_ENABLED = false;
+    /**
+     * Default master for the shared-carriage feature (relay-sourced carriages that travel between worlds).
+     *
+     * <p>On since the feature's moderation pipeline was proven in play. This is a SERVER config, written
+     * into {@code <save>/serverconfig} when a world is created, so the default only reaches worlds made
+     * after the update — an existing save keeps whatever its toml already says.</p>
+     */
+    public static final boolean DEFAULT_SHARED_CARRIAGES_ENABLED = true;
     /**
      * A shared-carriage slot splits three ways: a relay build by anyone (pool), a relay build by a
      * player in this world (own), and a fresh unbuilt template (the remainder). Defaults are
@@ -421,8 +427,9 @@ public final class DungeonTrainConfig {
                         "variant flagged in shared-carriages.json either LEASES an existing build from the Dungeon Train relay",
                         "(locked to your world until you leave it or go idle ~1h) or, placed fresh, is UPLOADED to the pool the",
                         "first time a player actually changes it — looting a chest or breaking a loot container does NOT count as",
-                        "a change. Uploading also requires the player's client to have granted network consent. Default false —",
-                        "the whole feature is off until enabled here.")
+                        "a change. Uploading also requires the player's client to have granted network consent. Default",
+                        "true. Set it false to opt a world out entirely: it then neither leases community builds nor",
+                        "uploads its own.")
                 .define("sharedCarriagesEnabled", DEFAULT_SHARED_CARRIAGES_ENABLED);
         ModConfigSpec.DoubleValue sharedCarriagePoolChance = b
                 .comment("When a shared-carriage slot spawns, the probability it LEASES an existing build by ANY author from",

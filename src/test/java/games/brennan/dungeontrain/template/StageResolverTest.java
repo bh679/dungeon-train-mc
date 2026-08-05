@@ -84,10 +84,35 @@ final class StageResolverTest {
         assertEquals("nether", at(500, TrainPhase.NETHER));
     }
 
+    /**
+     * The top overworld band is open-ended on purpose. It used to stop at level 200, so a long run
+     * eventually rode into levels no stage covered — every shared slot there was skipped as
+     * {@code NO_STAGE}, silently, for the rest of the run.
+     */
     @Test
-    @DisplayName("a level above every band resolves to no stage (and so can never be pooled)")
-    void aboveAllBandsResolvesToNull() {
-        assertNull(at(5000, TrainPhase.OVERWORLD));
+    @DisplayName("a level above every named band still resolves — the top band runs open-ended")
+    void aboveAllBandsResolvesToTheTopStage() {
+        assertEquals("wood_oak", at(201, TrainPhase.OVERWORLD));
+        assertEquals("wood_oak", at(5000, TrainPhase.OVERWORLD));
+        // Still preferred over the unbounded `nether` stage in the phases both cover.
+        assertEquals("wood_oak", at(5000, TrainPhase.END));
+    }
+
+    /** The chuncks band is on by default; a slot there must belong to its level's stage, not to nothing. */
+    @Test
+    @DisplayName("the CHUNCKS phase resolves to the level's stage")
+    void chuncksPhaseResolvesToTheLevelBand() {
+        assertEquals("stone", at(5, TrainPhase.CHUNCKS));
+        assertEquals("copper", at(40, TrainPhase.CHUNCKS));
+        assertEquals("wood_oak", at(300, TrainPhase.CHUNCKS));
+    }
+
+    /** A genuinely uncovered {@code (level, phase)} still resolves to null rather than guessing. */
+    @Test
+    @DisplayName("an uncovered phase resolves to null")
+    void uncoveredPhaseIsNull() {
+        List<Stage> netherOnly = stages.stream().filter(s -> s.id().equals("nether")).toList();
+        assertNull(StageResolver.stageIdFor(5, TrainPhase.OVERWORLD, netherOnly));
     }
 
     @Test

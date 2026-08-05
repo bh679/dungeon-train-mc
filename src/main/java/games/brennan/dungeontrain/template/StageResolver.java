@@ -64,9 +64,18 @@ public final class StageResolver {
         return best.id();
     }
 
-    /** Level-band width, with an {@link TemplateGate#ALL} max treated as unbounded (widest possible). */
+    /**
+     * Level-band width, with an {@link TemplateGate#ALL} max treated as unbounded.
+     *
+     * <p>An open-ended band is still measured from its {@code minLevel}, so a stage that starts at 131
+     * and runs on forever counts as narrower than one with no level bounds at all. That distinction is
+     * load-bearing: the top overworld band is deliberately open-ended (a run's Diff-Level has no
+     * ceiling), and {@code nether} is likewise unbounded and lists END — without subtracting the floor
+     * the two would tie on width and the alphabetical tie-break would hand every high-level End
+     * carriage to {@code nether}, pooling overworld builds as nether ones.</p>
+     */
     private static long bandWidth(TemplateGate gate) {
-        if (gate.maxLevel() == TemplateGate.ALL) return Long.MAX_VALUE;
+        if (gate.maxLevel() == TemplateGate.ALL) return Long.MAX_VALUE - gate.minLevel();
         return (long) gate.maxLevel() - gate.minLevel();
     }
 }
