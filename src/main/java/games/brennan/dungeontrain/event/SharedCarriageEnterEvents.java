@@ -78,6 +78,8 @@ public final class SharedCarriageEnterEvents {
         String key = null;
         boolean leased = false;
         boolean own = false;
+        // Whether the relay credits THIS player (not merely someone in this world) with building it.
+        boolean ownByThisPlayer = false;
         Credits credits = Credits.EMPTY;
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
         if (!carriages.isEmpty()) {
@@ -93,6 +95,7 @@ public final class SharedCarriageEnterEvents {
                     key = ship.subLevelId() + ":" + inst.pIdx;
                     leased = inst.leasedFromPool;
                     own = inst.authoredHere;
+                    ownByThisPlayer = inst.isAuthoredBy(player.getUUID());
                     credits = inst.credits;
                 }
             }
@@ -119,6 +122,14 @@ public final class SharedCarriageEnterEvents {
 
         // "You built this" wins over "someone's been here" — it's the more specific fact, and it's the
         // one the player can verify by looking around.
+        // "The rails brought your own build back" — the milestone the own-build lease exists to create.
+        // Gated on the AUTHOR uuid, not on `own`: on a multiplayer world `authoredHere` is true when the
+        // build belongs to ANY player present, and handing the achievement to a bystander standing in
+        // someone else's carriage would be plainly wrong.
+        if (ownByThisPlayer) {
+            games.brennan.dungeontrain.advancement.ModAdvancementTriggers.GAMEPLAY_ACTION.get()
+                    .trigger(player, "drift_own_return");
+        }
         player.sendSystemMessage(own
                 ? SharedCarriageMessage.ownCarriage(level.getRandom())
                 : leased

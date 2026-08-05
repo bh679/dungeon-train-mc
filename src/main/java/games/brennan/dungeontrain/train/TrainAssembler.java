@@ -522,7 +522,7 @@ public final class TrainAssembler {
                 pendingEntities[slot] = null;
                 SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
                     level, ship.subLevelId(), trainId, carriagePIdx,
-                    carriageShipyardOrigin, dims, variant.id(), true, pick.authoredHere(),
+                    carriageShipyardOrigin, dims, variant.id(), true, pick.authoredHere(), lease.owner(),
                     lease.id(), lease.token(),
                     leaseSeqSeed(lease), // seq floor = max(baseSeq, delta seqs) so our edits clear the relay watermark
                     stageBySlot[slot], lease.credits());
@@ -548,7 +548,7 @@ public final class TrainAssembler {
                     && stageBySlot[slot] != null && !stageBySlot[slot].isEmpty()) {
                 // No credits: nobody has contributed to a brand-new local build yet.
                 SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
-                        carriageShipyardOrigin, dims, variant.id(), false, false, null, null, 0,
+                        carriageShipyardOrigin, dims, variant.id(), false, false, "", null, null, 0,
                         stageBySlot[slot], SharedCarriageClient.Credits.EMPTY);
             }
         }

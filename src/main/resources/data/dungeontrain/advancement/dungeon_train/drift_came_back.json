@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/root",
+  "display": {
+    "icon": { "id": "minecraft:compass" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.drift_came_back.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.drift_came_back.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "drift_own_return" }
+    }
+  },
+  "requirements": [["action"]]
+}
