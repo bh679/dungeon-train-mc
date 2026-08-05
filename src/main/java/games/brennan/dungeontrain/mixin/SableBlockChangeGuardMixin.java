@@ -5,8 +5,8 @@ import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
-import games.brennan.dungeontrain.editor.ContainerContentsRoller;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
+import games.brennan.dungeontrain.train.SharedCarriageChangeFilter;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -34,8 +34,10 @@ import java.util.UUID;
  *       nested {@code getChunk} → permanent deadlock. Skipping the hook avoids the re-entry.</li>
  *   <li><b>Shared-carriage edit tracking (TAIL)</b> — after a block change lands in a carriage
  *       sub-level, marks the corresponding {@link SharedCarriageRegistry} instance dirty so its build
- *       is uploaded/saved to the relay. Breaking a loot container is excluded (looting never fires this
- *       hook at all; only breaking the block does), so ordinary looting never dirties a carriage.</li>
+ *       is uploaded/saved to the relay. Which changes count is
+ *       {@link SharedCarriageChangeFilter}'s call — it excludes breaking a loot container (so ordinary
+ *       looting never dirties a carriage) and transient property flips (a plate powering, a door
+ *       swinging), which otherwise upload a delta every ~1.5&nbsp;s while a player walks around.</li>
  * </ol>
  *
  * <p>{@code remap = false}: {@code SableCommonEvents} and {@code handleBlockChange} are Sable's own
@@ -71,19 +73,14 @@ public abstract class SableBlockChangeGuardMixin {
         if (plot == null || !(plot.getSubLevel() instanceof ServerSubLevel serverSub)) return;
         UUID subLevelId = serverSub.getUniqueId();
         if (!SharedCarriageRegistry.hasSubLevel(subLevelId)) return;
-        // Breaking a loot container (chest/barrel/pot/brushable → air) does NOT count as a build change.
-        if (newState.isAir() && isLootContainer(oldState)) return;
+        // Not every block change is a BUILD change — breaking a loot container and flipping a transient
+        // property (a plate powering, a door swinging) both leave the build untouched.
+        if (!SharedCarriageChangeFilter.isBuildChange(oldState, newState)) return;
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.resolve(subLevelId, x, y, z);
         // Queue the changed cell for the next delta flush (deduped by pos; drained off-thread). Cheap +
         // non-blocking — safe on the server thread inside setBlock. Skipped once the carriage is culling.
         if (inst != null && !inst.isCulled()) {
             inst.enqueue(new BlockPos(x, y, z));
         }
-    }
-
-    private static boolean isLootContainer(BlockState s) {
-        return ContainerContentsRoller.isContainerState(s)
-                || ContainerContentsRoller.isDecoratedPot(s)
-                || ContainerContentsRoller.isBrushable(s);
     }
 }
