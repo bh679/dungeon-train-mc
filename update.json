@@ -1,6 +1,7 @@
 {
   "homepage": "https://github.com/bh679/dungeon-train-mc",
   "1.21.1": {
+    "0.535.0": "### 0.535.0\n\n**Someone aboard has been keeping notes**\n\nThere is a passenger who stopped reading books for what they say, and started reading them for how they arrive \u2014 which book reaches whose hands, in what tongue, how often. They kept a ledger. Copies of it have started turning up in the carriages.\n\nWhether the train arranged any of it, or the one who built the train, the ledger declines to say.",
     "0.534.0": "### 0.534.0\n\n**A Drift Gift**\n\nThe chest-gift advancement introduced in 0.533.0 as \"Something For The Next One\" is now called \"A Drift Gift\". Same advancement, same requirement \u2014 leave an item in a chest aboard a drifting carriage; only the name changed.\n\n- \"Something For The Next One\" renamed to \"A Drift Gift\", in every language",
     "0.533.0": "### 0.533.0\n\n**Drifting carriages: a new name and four advancements**\n\nShared carriages are now called drifting carriages \u2014 carriages that come loose down the line and reattach to someone else's train. Four new advancements track what you do with them: shaping one nobody has touched, rearranging one a stranger built, having your own come back around to you, and leaving an item in a chest for whoever rides it next. Items you leave in a carriage chest now actually travel with it \u2014 before this, a gift left in a chest was never uploaded.\n\n- Shared carriages renamed to drifting carriages, in every language\n- New advancements: Leaving Marks, Uninvited Renovations, Full Circle, Something For The Next One\n- Items left in a drifting carriage's chest now ride along for the next traveller to find\n- Cover me in ...leather? is hidden until you earn it",
     "0.532.0": "### 0.532.0\n\n**Shared carriages are actually switched on**\n\nThey shipped with their master switch off, so no one ever met one. Now on by default, including on worlds you have already been playing.",
@@ -20,7 +21,7 @@
     "0.485.0": "https://github.com/bh679/dungeon-train-mc/releases/tag/v0.485.0"
   },
   "promos": {
-    "1.21.1-latest": "0.534.0",
-    "1.21.1-recommended": "0.534.0"
+    "1.21.1-latest": "0.535.0",
+    "1.21.1-recommended": "0.535.0"
   }
 }
