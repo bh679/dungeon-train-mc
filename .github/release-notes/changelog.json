@@ -6194,9 +6194,9 @@
         "You can buy more than one at a time without going through checkout twice"
       ],
       "date": "2026-08-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.537.0",
+      "released_at": "2026-08-05T13:46:14Z"
     }
   ]
 }
