@@ -8,11 +8,13 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -51,14 +53,20 @@ import java.util.concurrent.ConcurrentHashMap;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class SharedCarriageAdvancementEvents {
 
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
     /**
      * Item count seen in a container the moment a player opened it, keyed by player. Written on the
      * open click, consumed on the matching close.
      */
     private static final Map<UUID, OpenContainer> OPEN_CONTAINER = new ConcurrentHashMap<>();
 
-    /** A container a player has open: where it is, which carriage it belongs to, and what was in it. */
-    private record OpenContainer(BlockPos pos, UUID subLevelId, int itemCount) {}
+    /**
+     * A container a player has open: where it is, which carriage it belongs to, and what was in it.
+     * The level is carried explicitly — a carriage's blocks live in the plot level, which is not
+     * necessarily the level the player themselves is standing in.
+     */
+    private record OpenContainer(ResourceKey<Level> levelKey, BlockPos pos, UUID subLevelId, int itemCount) {}
 
     private SharedCarriageAdvancementEvents() {}
 
@@ -84,11 +92,13 @@ public final class SharedCarriageAdvancementEvents {
         if (inst == null || inst.isCulled()) return;
         // A fresh local build has no author yet — this player is about to become its first. A pooled
         // build they authored themselves is neither: changing your own work back is not a milestone.
-        if (!inst.leasedFromPool) {
-            trigger(player, "drift_edit_new");
-        } else if (!inst.isAuthoredBy(player.getUUID())) {
-            trigger(player, "drift_edit_other");
-        }
+        String actionId = !inst.leasedFromPool ? "drift_edit_new"
+                : !inst.isAuthoredBy(player.getUUID()) ? "drift_edit_other"
+                : null;
+        LOGGER.debug("[DungeonTrain] drifting-carriage edit by {} at {} pIdx={} leased={} ownAuthor={} → {}",
+                player.getGameProfile().getName(), pos, inst.pIdx, inst.leasedFromPool,
+                inst.isAuthoredBy(player.getUUID()), actionId);
+        if (actionId != null) trigger(player, actionId);
     }
 
     // ---------------- Leaving something in a chest ----------------
@@ -107,7 +117,8 @@ public final class SharedCarriageAdvancementEvents {
         if (inst == null || inst.isCulled()) return;
         Container container = containerAt(level, pos);
         if (container == null) return;
-        OPEN_CONTAINER.put(player.getUUID(), new OpenContainer(pos.immutable(), inst.subLevelId, countItems(container)));
+        OPEN_CONTAINER.put(player.getUUID(),
+                new OpenContainer(level.dimension(), pos.immutable(), inst.subLevelId, countItems(container)));
     }
 
     /**
@@ -129,7 +140,9 @@ public final class SharedCarriageAdvancementEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         OpenContainer opened = OPEN_CONTAINER.remove(player.getUUID());
         if (opened == null) return;
-        if (!(player.level() instanceof ServerLevel level)) return;
+        if (player.getServer() == null) return;
+        ServerLevel level = player.getServer().getLevel(opened.levelKey());
+        if (level == null) return;
         Container container = containerAt(level, opened.pos());
         if (container == null) return;
         if (!isGift(opened.itemCount(), countItems(container))) return;
@@ -137,6 +150,8 @@ public final class SharedCarriageAdvancementEvents {
                 opened.subLevelId(), opened.pos().getX(), opened.pos().getY(), opened.pos().getZ());
         if (inst == null || inst.isCulled()) return;
         inst.enqueue(opened.pos());
+        LOGGER.debug("[DungeonTrain] gift left in drifting carriage pIdx={} at {} by {} (queued for upload).",
+                inst.pIdx, opened.pos(), player.getGameProfile().getName());
         if (SharedCarriageGate.canContribute(player)) trigger(player, "drift_gift_left");
     }
 
