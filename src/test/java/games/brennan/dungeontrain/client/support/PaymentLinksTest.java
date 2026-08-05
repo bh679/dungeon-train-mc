@@ -127,6 +127,48 @@ class PaymentLinksTest {
         assertNull(PaymentLinks.withClientReference(null, "Steve"));
     }
 
+    // --- the relay checkout route (the visible prefill) ---------------------------------------
+
+    private static final String ROUTE = "https://brennan.games/api/dp-relay/somecap/pay/cn";
+
+    @Test
+    void theNameRidesAsDisplaynameForTheRelayToPrefill() {
+        // This parameter is read by the relay, not Stripe, and becomes what the player SEES.
+        assertEquals(ROUTE + "?displayname=Steve&locale=zh",
+                PaymentLinks.withDisplayName(ROUTE, "Steve", "zh"));
+    }
+
+    @Test
+    void aNameStripeWouldRejectStillReachesTheRelayIntact() {
+        // The whole point of a separate parameter: client_reference_id would silently drop this,
+        // so a player whose name isn't plain ASCII would see an empty field.
+        assertEquals(ROUTE + "?displayname=%E7%8E%A9%E5%AE%B6&locale=zh",
+                PaymentLinks.withDisplayName(ROUTE, "玩家", "zh"));
+    }
+
+    @Test
+    void spacesEncodeAsPercent20NotPlusOnTheRoute() {
+        // A literal + in a query string decodes back to a space on some stacks.
+        assertEquals(ROUTE + "?displayname=A%20B", PaymentLinks.withDisplayName(ROUTE, "A B", null));
+    }
+
+    @Test
+    void anEmptyNameOmitsTheParameterRatherThanSendingBlank() {
+        assertEquals(ROUTE + "?locale=zh", PaymentLinks.withDisplayName(ROUTE, "   ", "zh"));
+        assertEquals(ROUTE, PaymentLinks.withDisplayName(ROUTE, null, null));
+    }
+
+    @Test
+    void anExistingQueryStringOnTheRouteIsExtended() {
+        assertEquals(ROUTE + "?utm_source=dt&displayname=Steve",
+                PaymentLinks.withDisplayName(ROUTE + "?utm_source=dt", "Steve", null));
+    }
+
+    @Test
+    void nullBaseSurvivesTheRoute() {
+        assertNull(PaymentLinks.withDisplayName(null, "Steve", "zh"));
+    }
+
     // --- locale: the checkout renders in the player's language -------------------------------
 
     @Test
