@@ -6210,9 +6210,9 @@
       ],
       "pr": 879,
       "date": "2026-08-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.538.0",
+      "released_at": "2026-08-05T13:59:27Z"
     },
     {
       "id": "drifting-carriage-weight-up",
@@ -6223,9 +6223,9 @@
       "highlights": [],
       "pr": 879,
       "date": "2026-08-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.538.0",
+      "released_at": "2026-08-05T13:59:27Z"
     }
   ]
 }
