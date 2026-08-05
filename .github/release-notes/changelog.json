@@ -6122,6 +6122,23 @@
       "released": true,
       "released_in": "v0.532.0",
       "released_at": "2026-08-05T05:01:28Z"
+    },
+    {
+      "id": "drifting-carriages-advancements",
+      "version": "0.533.0",
+      "type": "feat",
+      "title": "Drifting carriages: a new name and four advancements",
+      "summary": "Shared carriages are now called drifting carriages \u2014 carriages that come loose down the line and reattach to someone else's train. Four new advancements track what you do with them: shaping one nobody has touched, rearranging one a stranger built, having your own come back around to you, and leaving an item in a chest for whoever rides it next. Items you leave in a carriage chest now actually travel with it \u2014 before this, a gift left in a chest was never uploaded.",
+      "highlights": [
+        "Shared carriages renamed to drifting carriages, in every language",
+        "New advancements: Leaving Marks, Uninvited Renovations, Full Circle, Something For The Next One",
+        "Items left in a drifting carriage's chest now ride along for the next traveller to find",
+        "Cover me in ...leather? is hidden until you earn it"
+      ],
+      "date": "2026-08-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
