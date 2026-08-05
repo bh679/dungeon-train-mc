@@ -60,6 +60,13 @@ public final class SharedCarriageRegistry {
          */
         public final boolean authoredHere;
         /**
+         * Dashless uuid of the player the relay says authored this build, or "" when unknown (a fresh
+         * local build, or a lease that carried no owner). {@link #authoredHere} only says the author is
+         * SOMEBODY in this world — on a multiplayer server that is not enough to hand an achievement to
+         * the right person, so the identity is kept alongside it.
+         */
+        public final String authorUuid;
+        /**
          * The worldgen stage this slot sits in, resolved from its gate context at spawn. Reported on
          * submit so a build is pooled under the stage it was authored in; null when no stage covers the
          * slot, which means the build can never be shared (the relay refuses a stageless carriage).
@@ -99,7 +106,8 @@ public final class SharedCarriageRegistry {
 
         Instance(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx, BlockPos shipyardOrigin,
                  CarriageDims dims, String variantId, boolean leasedFromPool, boolean authoredHere,
-                 Integer relayId, String leaseToken, int seqSeed, String stageId, Credits credits) {
+                 String authorUuid, Integer relayId, String leaseToken, int seqSeed, String stageId,
+                 Credits credits) {
             this.level = level;
             this.subLevelId = subLevelId;
             this.trainId = trainId;
@@ -109,6 +117,7 @@ public final class SharedCarriageRegistry {
             this.variantId = variantId;
             this.leasedFromPool = leasedFromPool;
             this.authoredHere = authoredHere;
+            this.authorUuid = authorUuid == null ? "" : authorUuid;
             this.relayId = relayId;
             this.leaseToken = leaseToken;
             this.seq = new AtomicInteger(Math.max(0, seqSeed));
@@ -122,6 +131,16 @@ public final class SharedCarriageRegistry {
             return x >= ox && x < ox + dims.length()
                 && y >= oy && y < oy + dims.height()
                 && z >= oz && z < oz + dims.width();
+        }
+
+        /**
+         * Whether {@code playerId} is the player the relay credits with building this carriage. False
+         * whenever the author is unknown — an unattributed build must not hand anyone a "you made this"
+         * achievement on the strength of standing in it.
+         */
+        public boolean isAuthoredBy(UUID playerId) {
+            return playerId != null && !authorUuid.isEmpty()
+                && authorUuid.equals(playerId.toString().replace("-", ""));
         }
 
         public Integer relayId() { return relayId; }
@@ -193,15 +212,16 @@ public final class SharedCarriageRegistry {
      * Register a freshly-placed shared carriage. {@code seqSeed} is the delta-sequence floor tied to the
      * relay carriage — 0 for a fresh local build, or {@code max(baseSeq, maxDeltaSeq)} for one leased from
      * the pool (so its first upload's seq clears the relay's drop-watermark). {@code credits} is who built
-     * it, off the lease; pass {@link Credits#EMPTY} for a fresh local build.
+     * it, off the lease; pass {@link Credits#EMPTY} for a fresh local build. {@code authorUuid} is the
+     * lease's owner uuid ("" when the build is fresh or the lease carried none).
      */
     public static Instance register(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx,
                                     BlockPos shipyardOrigin, CarriageDims dims, String variantId,
-                                    boolean leasedFromPool, boolean authoredHere,
+                                    boolean leasedFromPool, boolean authoredHere, String authorUuid,
                                     Integer relayId, String leaseToken, int seqSeed,
                                     String stageId, Credits credits) {
         Instance inst = new Instance(level, subLevelId, trainId, pIdx, shipyardOrigin, dims, variantId,
-                leasedFromPool, authoredHere, relayId, leaseToken, seqSeed, stageId, credits);
+                leasedFromPool, authoredHere, authorUuid, relayId, leaseToken, seqSeed, stageId, credits);
         BY_SUBLEVEL.computeIfAbsent(subLevelId, k -> new CopyOnWriteArrayList<>()).add(inst);
         LOGGER.debug("[DungeonTrain] Registered shared carriage variant={} pIdx={} subLevel={} leased={} own={} stage={}.",
                 variantId, pIdx, subLevelId, leasedFromPool, authoredHere, stageId);
