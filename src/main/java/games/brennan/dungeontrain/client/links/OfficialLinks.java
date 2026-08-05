@@ -64,6 +64,19 @@ public final class OfficialLinks {
     /** The China payment link, or {@code null} when the relay has not served a valid one. */
     public static String paymentCn() { return resolve("payment_cn", null); }
 
+    /**
+     * The relay's own checkout route, which builds a Stripe Checkout Session carrying the player's
+     * name already filled into the display-name field — something a raw Stripe link cannot do, since
+     * a Payment Link accepts no custom-field prefill from its URL.
+     *
+     * <p>Relay-only and separate from {@link #paymentCn()} on purpose. Jars shipped before this
+     * existed read only {@code payment_cn} and are untouched by it; unsetting the key on the relay
+     * drops even new jars back to the raw link with no rebuild. The China route stays gated on
+     * {@code payment_cn}, so this key never changes WHO is offered the button — only where it
+     * points.</p>
+     */
+    public static String paymentCnCheckout() { return resolve("payment_cn_checkout", null); }
+
     /** Called by the fetcher with the raw relay map; invalid entries are dropped, valid ones kept. */
     static void accept(Map<String, String> raw) {
         relay = sanitize(raw);

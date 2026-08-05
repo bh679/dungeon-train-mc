@@ -6182,6 +6182,21 @@
       "released": true,
       "released_in": "v0.536.0",
       "released_at": "2026-08-05T09:11:21Z"
+    },
+    {
+      "id": "china-checkout-name-prefill",
+      "version": "0.537.0",
+      "type": "feat",
+      "title": "Your name is filled in on the China payment page",
+      "summary": "Players paying with WeChat Pay no longer have to type their Minecraft name at checkout \u2014 it arrives already filled in, so the support is credited to the right person on the leaderboard.",
+      "highlights": [
+        "The name field is prefilled and the page appears in your own language",
+        "You can buy more than one at a time without going through checkout twice"
+      ],
+      "date": "2026-08-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -79,11 +79,24 @@ public final class PaymentLinks {
     /**
      * The China payment URL with the player's name and language attached, or null when
      * {@link #useChinaPayment()} is false.
+     *
+     * <p>Prefers the relay's checkout route when one is served, because that is the only way the
+     * player's name reaches the checkout as a <b>visible, prefilled</b> field: Stripe accepts no
+     * custom-field prefill from a Payment Link URL, so the name can only be baked in when the
+     * session itself is created, which the relay does. Absent that key the behaviour is exactly what
+     * shipped before — the raw link with {@code client_reference_id}, which credits the donation but
+     * shows the player nothing.</p>
+     *
+     * <p>Note the route is still <b>gated on {@code payment_cn}</b> via {@link #useChinaPayment()}.
+     * A checkout URL served without a China link must not conjure the button into existence for
+     * anyone, and the raw link remains the relay's own fallback when Stripe is unreachable.</p>
      */
     public static String chinaUrl() {
         if (!useChinaPayment()) return null;
-        String url = withClientReference(OfficialLinks.paymentCn(), playerName());
-        return withLocale(url, stripeLocale(selectedLocale()));
+        String checkout = OfficialLinks.paymentCnCheckout();
+        String locale = stripeLocale(selectedLocale());
+        if (checkout != null) return withDisplayName(checkout, playerName(), locale);
+        return withLocale(withClientReference(OfficialLinks.paymentCn(), playerName()), locale);
     }
 
     /**
@@ -133,6 +146,29 @@ public final class PaymentLinks {
     static String withClientReference(String base, String playerName) {
         String ref = sanitizeClientReference(playerName);
         return ref.isEmpty() ? base : withParam(base, "client_reference_id", ref);
+    }
+
+    /**
+     * Attach the player's name and language to the relay's checkout route.
+     *
+     * <p>Unlike {@link #withClientReference} the name is <b>not</b> stripped to Stripe's
+     * {@code client_reference_id} charset: this parameter is read by the relay, not by Stripe, and
+     * it becomes the value the player sees in the field. It is URL-encoded rather than sanitised so
+     * a name survives intact, and {@code +} is rewritten to {@code %20} because a literal plus in a
+     * query string decodes back to a space on some stacks — the same reason
+     * {@link #withPlayerNote} does it.</p>
+     *
+     * <p>The relay caps and cleans the value on arrival, so nothing here has to trust it either.</p>
+     */
+    static String withDisplayName(String base, String playerName, String stripeLocale) {
+        if (base == null) return null;
+        String url = base;
+        String name = playerName == null ? "" : playerName.trim();
+        if (!name.isEmpty()) {
+            String encoded = URLEncoder.encode(name, StandardCharsets.UTF_8).replace("+", "%20");
+            url = withParam(url, "displayname", encoded);
+        }
+        return withLocale(url, stripeLocale);
     }
 
     /**
