@@ -6182,6 +6182,35 @@
       "released": true,
       "released_in": "v0.536.0",
       "released_at": "2026-08-05T09:11:21Z"
+    },
+    {
+      "id": "drifting-carriage-transient-changes",
+      "version": "0.537.0",
+      "type": "fix",
+      "title": "Drifting carriages only record real changes",
+      "summary": "A drifting carriage used to count every door swing and pressure-plate step as an edit, so a carriage nobody had touched could pile up hundreds of recorded changes. Now only changes to the build itself count \u2014 placing, breaking, and leaving things behind. Walking through a carriage leaves it exactly as you found it.",
+      "highlights": [
+        "Doors, pressure plates, buttons and levers no longer register as edits to a drifting carriage",
+        "Real building \u2014 placing, breaking, gifts left in chests \u2014 is recorded as before"
+      ],
+      "pr": 879,
+      "date": "2026-08-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "drifting-carriage-weight-up",
+      "version": "0.537.0",
+      "type": "content",
+      "title": "Drifting carriages turn up more often",
+      "summary": "Drifting carriages \u2014 the ones other players have built and left on the line \u2014 were rare enough that a long run could pass without one. They now appear about three times as often.",
+      "highlights": [],
+      "pr": 879,
+      "date": "2026-08-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
