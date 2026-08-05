@@ -1,14 +1,21 @@
 package games.brennan.dungeontrain.config;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageGenerationConfig;
 import games.brennan.dungeontrain.train.CarriageGenerationMode;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
 
 /**
  * Server-scoped Forge config for Dungeon Train tunables.
  *
- * Stored per-world at {@code <save>/serverconfig/dungeontrain-server.toml}.
+ * Stored in the ONE GLOBAL {@code config/dungeontrain-server.toml} — <b>not</b> per-world. The
+ * per-save {@code <save>/serverconfig/} folder is an opt-in override that is empty by default, so
+ * every world on an install shares these values and a setting changed in one world changes them all.
+ * Two consequences worth remembering: a changed {@code DEFAULT_*} constant does NOT reach an install
+ * that already has this file (see {@link #runPendingMigrations()}), and the spec is not loaded at the
+ * title screen, where {@code setX} silently no-ops.
  * Registered from {@link games.brennan.dungeontrain.DungeonTrain} constructor.
  *
  * Exposes:
@@ -22,6 +29,8 @@ import org.apache.commons.lang3.tuple.Pair;
  *   - {@code groupSize} — non-flatbed run length for RANDOM_GROUPED, [1, 16]
  */
 public final class DungeonTrainConfig {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     public static final int MIN_CARRIAGES = 0;
     public static final int MAX_CARRIAGES = 50;
@@ -183,7 +192,25 @@ public final class DungeonTrainConfig {
     /** Hold the join intro cinematic behind a loading screen until nearby chunks stream in. */
     public static final boolean DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED = true;
 
+    /**
+     * Schema version of the on-disk config, bumped whenever a shipped default change must reach
+     * installs that already have a {@code dungeontrain-server.toml}.
+     *
+     * <p>NeoForge only writes a default for a key the file is <b>missing</b>; an existing valid value
+     * always wins, so changing a {@code DEFAULT_*} constant alone reaches new installs only. This
+     * counter is how a default change is actually delivered: {@link #runPendingMigrations()} applies
+     * every step above the file's recorded version, then stamps the current one, so each migration
+     * runs exactly once per install and a player's later choice is never overwritten.</p>
+     *
+     * <p>0 = pre-versioning (any file written before this mechanism existed).</p>
+     */
+    public static final int CURRENT_CONFIG_VERSION = 1;
+    public static final int DEFAULT_CONFIG_VERSION = 0;
+    public static final int MIN_CONFIG_VERSION = 0;
+    public static final int MAX_CONFIG_VERSION = 1_000_000;
+
     public static final ModConfigSpec SPEC;
+    public static final ModConfigSpec.IntValue CONFIG_VERSION;
     public static final ModConfigSpec.IntValue NUM_CARRIAGES;
     public static final ModConfigSpec.DoubleValue SPEED;
     public static final ModConfigSpec.IntValue TRAIN_Y;
@@ -232,6 +259,7 @@ public final class DungeonTrainConfig {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
                 .configure(DungeonTrainConfig::build);
         SPEC = pair.getRight();
+        CONFIG_VERSION = pair.getLeft().configVersion;
         NUM_CARRIAGES = pair.getLeft().numCarriages;
         SPEED = pair.getLeft().speed;
         TRAIN_Y = pair.getLeft().trainY;
@@ -280,6 +308,11 @@ public final class DungeonTrainConfig {
     private DungeonTrainConfig() {}
 
     private static Holder build(ModConfigSpec.Builder b) {
+        ModConfigSpec.IntValue configVersion = b
+                .comment("Internal bookkeeping — do not edit. Records which one-time config migrations have already",
+                        "been applied to this file, so a changed default can reach an install that already has a",
+                        "config written. Lowering it re-runs those migrations and may overwrite your settings.")
+                .defineInRange("configVersion", DEFAULT_CONFIG_VERSION, MIN_CONFIG_VERSION, MAX_CONFIG_VERSION);
         b.push("train");
         ModConfigSpec.IntValue numCarriages = b
                 .comment("Carriages visible in the rolling window around each player. Set to 0 to auto-scale to each player's render distance (recommended). Positive values pin the count; e.g. 15 = 5 groups at the default groupSize of 3.")
@@ -516,7 +549,7 @@ public final class DungeonTrainConfig {
                         "start the cinematic immediately on spawn as before.")
                 .define("introCinematicChunkPreloadEnabled", DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED);
         b.pop();
-        return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
+        return new Holder(configVersion, numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
                 difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
                 difficultyScaleHostileGearPastCap,
                 villagerTradeScalingEnabled, villagerTradeScalingMinCarriage, villagerTradeScalingTiersPerStep,
@@ -767,6 +800,37 @@ public final class DungeonTrainConfig {
         return isLoaded() ? INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED.get() : DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED;
     }
 
+    /**
+     * Apply every one-time config migration this install has not seen yet, then stamp the file with
+     * {@link #CURRENT_CONFIG_VERSION}. Idempotent and safe to call on every config load.
+     *
+     * <p>Why this exists: a shipped {@code DEFAULT_*} constant is only ever written for a key the
+     * on-disk file does not already have. Shared carriages shipped with their master switch defaulted
+     * off, so every install that has launched since then holds {@code sharedCarriagesEnabled = false},
+     * and simply flipping the constant would have reached new installs only — the feature would have
+     * stayed dead for the entire existing player base, silently, exactly as it already had been.</p>
+     *
+     * <p>Migrations run once. Once the file records a version, a player who later switches a migrated
+     * setting back keeps their choice permanently: the step that set it never runs again.</p>
+     */
+    public static void runPendingMigrations() {
+        if (!isLoaded()) return;
+        int from = CONFIG_VERSION.get();
+        if (from >= CURRENT_CONFIG_VERSION) return;
+
+        // v0 → v1: adopt the shared-carriage master switch's new default. The feature had never once
+        // executed on any install, so a stored `false` is the old default rather than a player's
+        // decision — there is no opt-out here to preserve.
+        if (from < 1 && !SHARED_CARRIAGES_ENABLED.get()) {
+            SHARED_CARRIAGES_ENABLED.set(true);
+            LOGGER.info("[DungeonTrain] Config migration v{}→v{}: enabled shared carriages.",
+                    from, CURRENT_CONFIG_VERSION);
+        }
+
+        CONFIG_VERSION.set(CURRENT_CONFIG_VERSION);
+        CONFIG_VERSION.save();
+    }
+
     public static void setNumCarriages(int value) {
         if (!isLoaded()) return;
         int clamped = Math.max(MIN_CARRIAGES, Math.min(MAX_CARRIAGES, value));
@@ -842,6 +906,7 @@ public final class DungeonTrainConfig {
     }
 
     private record Holder(
+            ModConfigSpec.IntValue configVersion,
             ModConfigSpec.IntValue numCarriages,
             ModConfigSpec.DoubleValue speed,
             ModConfigSpec.IntValue trainY,

@@ -29,6 +29,24 @@ class SharedCarriageDefaultsTest {
                         + "player and no lease or upload can ever happen");
     }
 
+    /**
+     * The default flip alone only reaches installs with no config file yet, so it must be paired with
+     * a migration step. If someone changes a shipped default in future without bumping this counter,
+     * that change silently reaches new installs only — the failure mode this whole test class exists
+     * to catch.
+     */
+    @Test
+    @DisplayName("a config migration ships to carry the new default to existing installs")
+    void aMigrationShipsForTheNewDefault() {
+        assertTrue(DungeonTrainConfig.CURRENT_CONFIG_VERSION > DungeonTrainConfig.DEFAULT_CONFIG_VERSION,
+                "CURRENT_CONFIG_VERSION must exceed the pre-versioning default ("
+                        + DungeonTrainConfig.DEFAULT_CONFIG_VERSION + "), or runPendingMigrations() never "
+                        + "fires and an existing dungeontrain-server.toml keeps its stale values forever");
+        assertTrue(DungeonTrainConfig.CURRENT_CONFIG_VERSION <= DungeonTrainConfig.MAX_CONFIG_VERSION,
+                "CURRENT_CONFIG_VERSION must stay inside the spec's allowed range, or the value fails "
+                        + "validation and NeoForge silently resets it to the default");
+    }
+
     @Test
     @DisplayName("pool + own defaults leave a fresh-canvas share")
     void poolAndOwnLeaveRoomForFreshBuilds() {
