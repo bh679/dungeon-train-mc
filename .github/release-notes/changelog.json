@@ -6139,6 +6139,20 @@
       "released": true,
       "released_in": "v0.533.0",
       "released_at": "2026-08-05T06:33:05Z"
+    },
+    {
+      "id": "drift-gift-title",
+      "version": "0.534.0",
+      "type": "fix",
+      "title": "A Drift Gift",
+      "summary": "The chest-gift advancement introduced in 0.533.0 as \"Something For The Next One\" is now called \"A Drift Gift\". Same advancement, same requirement \u2014 leave an item in a chest aboard a drifting carriage; only the name changed.",
+      "highlights": [
+        "\"Something For The Next One\" renamed to \"A Drift Gift\", in every language"
+      ],
+      "date": "2026-08-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
