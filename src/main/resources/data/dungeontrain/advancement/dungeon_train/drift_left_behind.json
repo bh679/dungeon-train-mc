@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/drift_rearranged",
   "display": {
     "icon": { "id": "minecraft:chest" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.drift_left_behind.title" },

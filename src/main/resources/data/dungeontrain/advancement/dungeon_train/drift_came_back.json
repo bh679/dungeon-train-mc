@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/drift_first_marks",
   "display": {
     "icon": { "id": "minecraft:compass" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.drift_came_back.title" },
