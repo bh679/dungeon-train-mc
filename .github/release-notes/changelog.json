@@ -6179,9 +6179,9 @@
         "New glossary entries for drifting carriages and drift-gifts, and two new quiet rules"
       ],
       "date": "2026-08-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.536.0",
+      "released_at": "2026-08-05T09:11:21Z"
     }
   ]
 }
