@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/drift_rearranged",
+  "display": {
+    "icon": { "id": "minecraft:chest" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.drift_left_behind.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.drift_left_behind.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "drift_gift_left" }
+    }
+  },
+  "requirements": [["action"]]
+}

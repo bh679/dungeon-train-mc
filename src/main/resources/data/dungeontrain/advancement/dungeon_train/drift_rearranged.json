@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/drift_first_marks",
+  "display": {
+    "icon": { "id": "minecraft:piston" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.drift_rearranged.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.drift_rearranged.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "drift_edit_other" }
+    }
+  },
+  "requirements": [["action"]]
+}
