@@ -6110,6 +6110,18 @@
       "released": true,
       "released_in": "v0.531.0",
       "released_at": "2026-08-04T15:09:56Z"
+    },
+    {
+      "id": "shared-carriages-switched-on",
+      "version": "0.532.0",
+      "type": "fix",
+      "title": "Shared carriages are actually switched on",
+      "summary": "They shipped with their master switch off, so no one ever met one. Now on by default, including on worlds you have already been playing.",
+      "highlights": [],
+      "date": "2026-08-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
