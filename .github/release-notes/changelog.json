@@ -6165,6 +6165,23 @@
       "released": true,
       "released_in": "v0.535.0",
       "released_at": "2026-08-05T08:44:33Z"
+    },
+    {
+      "id": "drifting-carriage-and-funding-books",
+      "version": "0.536.0",
+      "type": "content",
+      "title": "Three new books ride the train",
+      "summary": "Three new books turn up in chests. One is a traveller's field notes on drifting carriages \u2014 how to tell one from a carriage the train built, and what it means to find a chest somebody filled on purpose. The other two ask for help keeping the line running: one a reverent tract, one a plain-spoken passenger who is slightly embarrassed to be raising it at all.",
+      "highlights": [
+        "New book: The Drifting Carriages \u2014 recognising a drifting carriage, and what to do in someone else's room",
+        "New book: The Second Offering \u2014 a tract on the one offering the Creator never asks you for",
+        "New book: The Creator's Burden \u2014 a plainer account of what the line costs, and where to find the Support screen",
+        "New glossary entries for drifting carriages and drift-gifts, and two new quiet rules"
+      ],
+      "date": "2026-08-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
