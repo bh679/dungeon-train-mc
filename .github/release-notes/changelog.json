@@ -6162,9 +6162,9 @@
       "summary": "There is a passenger who stopped reading books for what they say, and started reading them for how they arrive \u2014 which book reaches whose hands, in what tongue, how often. They kept a ledger. Copies of it have started turning up in the carriages.\n\nWhether the train arranged any of it, or the one who built the train, the ledger declines to say.",
       "highlights": [],
       "date": "2026-08-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.535.0",
+      "released_at": "2026-08-05T08:44:33Z"
     }
   ]
 }
