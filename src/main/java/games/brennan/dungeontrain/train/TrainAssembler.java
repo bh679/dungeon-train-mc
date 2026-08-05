@@ -153,7 +153,10 @@ public final class TrainAssembler {
      * community carriages" can't be told apart from "the relay was never asked".
      */
     private static void logLeaseOutcome(int carriagePIdx, String outcome, SharedCarriageClient.PoolLease lease) {
-        LOGGER.debug("[DungeonTrain] shared slot pIdx={} → {}{} (buffered={})",
+        // INFO, not debug: at debug these lines are absent from every shipped log, which is precisely why
+        // "no player has ever seen a shared carriage" took a code audit rather than a log read to diagnose.
+        // A shared slot is ~1 in 73 carriages, so the volume is negligible.
+        LOGGER.info("[DungeonTrain] shared slot pIdx={} → {}{} (buffered={})",
                 carriagePIdx, outcome, lease == null ? "" : " id=" + lease.id(), SharedCarriagePool.buffered());
     }
 
@@ -537,8 +540,12 @@ public final class TrainAssembler {
                 carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx, groupAnchorWorldX);
             // Fresh shared carriage (NEW path): register it so a real edit later queues a delta and
             // uploads the build to the pool for the first time. seqSeed=0 (a brand-new relay row is baseSeq=0).
+            // The stage precondition mirrors tryLeaseShared's: the relay pools a carriage under its stage
+            // and refuses to lease one that has none, so registering a stageless slot would upload a build
+            // nobody can ever be served — pool pollution, and the author's work silently stranded.
             if (games.brennan.dungeontrain.event.SharedCarriageGate.canDiscover()
-                    && SharedCarriageFlags.isSharedVariant(variant.id())) {
+                    && SharedCarriageFlags.isSharedVariant(variant.id())
+                    && stageBySlot[slot] != null && !stageBySlot[slot].isEmpty()) {
                 // No credits: nobody has contributed to a brand-new local build yet.
                 SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
                         carriageShipyardOrigin, dims, variant.id(), false, false, null, null, 0,

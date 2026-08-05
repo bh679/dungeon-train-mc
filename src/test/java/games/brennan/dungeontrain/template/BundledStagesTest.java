@@ -70,18 +70,7 @@ final class BundledStagesTest {
     @Test
     @DisplayName("bundled stages cover every level 0..200 in OVERWORLD/VOID/END/UPSIDE_DOWN (no all-stages fallback)")
     void bundledStagesCoverAllOverworldPhases() {
-        Map<String, Stage> parsed = new LinkedHashMap<>();
-        InputStream in = BundledStagesTest.class.getResourceAsStream(RESOURCE);
-        assertNotNull(in, "bundled " + RESOURCE + " must ship on the classpath");
-        try (InputStreamReader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-            JsonObject root = JsonParser.parseReader(r).getAsJsonObject();
-            for (Map.Entry<String, JsonElement> e : root.entrySet()) {
-                Stage s = Stage.fromJson(e.getKey(), e.getValue());
-                parsed.put(s.id(), s);
-            }
-        } catch (Exception e) {
-            throw new AssertionError("bundled stages.json failed to read: " + e, e);
-        }
+        Map<String, Stage> parsed = loadBundled();
 
         TrainPhase[] overworldPhases = {
             TrainPhase.OVERWORLD, TrainPhase.VOID, TrainPhase.END, TrainPhase.UPSIDE_DOWN
@@ -97,5 +86,51 @@ final class BundledStagesTest {
                         + " — the gated pool would empty and source all stages here");
             }
         }
+    }
+
+    /**
+     * Every {@link TrainPhase} must be covered, at every level a run can reach — not just the four
+     * phases the test above walks.
+     *
+     * <p>This exists because two real gaps shipped: {@link TrainPhase#CHUNCKS} (a band that is ON by
+     * default) was listed by no Stage at all, and {@code wood_oak} capped at level 200 so anything
+     * past it fell through. Both are invisible in normal play — the selectors quietly fall back to the
+     * ungated all-stages pool — but they are fatal to shared carriages, whose slots are SKIPPED
+     * outright when no Stage resolves ({@code TrainAssembler.tryLeaseShared} → {@code NO_STAGE}), so
+     * a community build can neither be leased into nor uploaded from an uncovered stretch of track.</p>
+     */
+    @Test
+    @DisplayName("every TrainPhase is covered at every level 0..400 (CHUNCKS included, no level cap)")
+    void bundledStagesCoverEveryPhaseAndHighLevels() {
+        Map<String, Stage> parsed = loadBundled();
+
+        for (TrainPhase phase : TrainPhase.values()) {
+            for (int level = 0; level <= 400; level++) {
+                boolean covered = false;
+                for (Stage s : parsed.values()) {
+                    if (s.gate().eligible(level, phase)) { covered = true; break; }
+                }
+                assertTrue(covered,
+                    "no bundled Stage covers Diff-Level " + level + " in phase " + phase
+                        + " — shared-carriage slots there are skipped as NO_STAGE");
+            }
+        }
+    }
+
+    /** Parse the shipped stages.json off the classpath, keyed by Stage id. */
+    private static Map<String, Stage> loadBundled() {
+        InputStream in = BundledStagesTest.class.getResourceAsStream(RESOURCE);
+        assertNotNull(in, "bundled " + RESOURCE + " must ship on the classpath");
+        Map<String, Stage> parsed = new LinkedHashMap<>();
+        try (InputStreamReader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+            JsonObject root = JsonParser.parseReader(r).getAsJsonObject();
+            for (Map.Entry<String, JsonElement> e : root.entrySet()) {
+                Stage s = Stage.fromJson(e.getKey(), e.getValue());
+                parsed.put(s.id(), s);
+            }
+        } catch (Exception e) {
+            throw new AssertionError("bundled stages.json failed to read: " + e, e);
+        }
+        return parsed;
     }
 }

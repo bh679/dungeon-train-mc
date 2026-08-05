@@ -269,6 +269,13 @@ public class DungeonTrain {
                 games.brennan.dungeontrain.worldgen.WorldGenCycle.invalidateCache();
                 games.brennan.dungeontrain.worldgen.ChuncksBand.invalidateCache();
             }
+            // Deliver shipped default changes to installs that already have a server config on disk.
+            // NeoForge writes a default only for a MISSING key, so without this a changed DEFAULT_*
+            // constant reaches new installs only. Runs on Loading and Reloading alike; it is version-
+            // stamped and idempotent, so the write it performs re-entering here is a no-op.
+            if (event.getConfig().getSpec() == DungeonTrainConfig.SPEC) {
+                DungeonTrainConfig.runPendingMigrations();
+            }
         });
 
         // No NeoForge.EVENT_BUS.register(this) — every game-bus listener in
