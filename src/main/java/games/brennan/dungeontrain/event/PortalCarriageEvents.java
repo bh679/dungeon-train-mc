@@ -90,6 +90,15 @@ public final class PortalCarriageEvents {
      */
     private static final int TWIN_FLOOR_MARGIN = 1;
 
+    /** Distinct heights pairs are spread over, so two structures cannot land on each other. */
+    private static final int TWIN_LANES = 6;
+
+    /**
+     * Vertical spacing between lanes — a corridor's full height plus the pocket room's, with room to
+     * spare so no part of one structure reaches into the lane above.
+     */
+    private static final int TWIN_LANE_HEIGHT = 12;
+
     /**
      * Stamp the twin once a player is this close to the portal carriage — near enough to be about to
      * walk in. Deliberately tight: with a portal every few carriages, a generous range would keep
@@ -262,8 +271,9 @@ public final class PortalCarriageEvents {
         BlockPos existing = STRUCTURES.get(pairKey);
 
         // Same chunk columns as the carriage — that is what keeps the destination loaded — but at the
-        // world floor rather than a fixed height above the train.
-        int twinY = level.getMinBuildHeight() + TWIN_FLOOR_MARGIN;
+        // world floor rather than a fixed height above the train, and on a per-pair Y lane so two
+        // pairs cannot stamp into each other.
+        int twinY = twinFloorY(level, pairKey);
         BlockPos wanted = BlockPos.containing(originX, twinY, originZ);
 
         // A world too shallow to hold the structure between its floor and the carriage gets no twin,
@@ -326,6 +336,24 @@ public final class PortalCarriageEvents {
             }
         }
         return false;
+    }
+
+    /**
+     * The floor height for a pair's structure: the world floor, plus a per-pair lane.
+     *
+     * <p><b>Why lanes.</b> Every structure was stamped at the same height, at whatever X its entry
+     * carriage happened to be at, with nothing checking whether another pair already occupied that
+     * space. A structure is about 35 blocks long, and two pairs were observed stamping four blocks
+     * apart — near-total overlap, each overwriting the other's corridor so neither matched its
+     * carriage any more. Spreading pairs over {@link #TWIN_LANES} heights makes a collision need
+     * both the same lane and overlapping X, which the lane count makes vanishingly rare.</p>
+     *
+     * <p>Lanes go in Y rather than Z deliberately: the whole loading guarantee is that a twin sits in
+     * its carriage's <b>chunk columns</b>, and Y is the one axis that cannot take it out of them.</p>
+     */
+    private static int twinFloorY(ServerLevel level, int pairKey) {
+        int lane = Math.floorMod(pairKey, TWIN_LANES);
+        return level.getMinBuildHeight() + TWIN_FLOOR_MARGIN + lane * TWIN_LANE_HEIGHT;
     }
 
     private static double horizontalDistance(BlockPos twin, double x, double z) {
