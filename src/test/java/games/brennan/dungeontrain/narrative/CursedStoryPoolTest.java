@@ -48,6 +48,39 @@ final class CursedStoryPoolTest {
     }
 
     @Test
+    @DisplayName("parses the encounter journal, and treats a missing or broken one as simply absent")
+    void parsesEncounter() {
+        String body = """
+            {"ok":true,"notes":[
+              {"id":1,"deathCarriage":5,"encounter":{"beats":["SPAWNED","MET"],
+                "items":["a netherite axe"],"acquired":["an enchanted golden apple"],
+                "end":"ECHO_SLAIN_BY_YOU","sec":61}},
+              {"id":2,"deathCarriage":5},
+              {"id":3,"deathCarriage":5,"encounter":"not an object"},
+              {"id":4,"deathCarriage":5,"encounter":{}}
+            ]}""";
+        List<Story> stories = CursedStoryPool.parseStories(body);
+        assertNotNull(stories);
+        assertEquals(4, stories.size());
+
+        CursedStoryPool.Encounter enc = stories.get(0).encounter();
+        assertNotNull(enc);
+        assertEquals(List.of("SPAWNED", "MET"), enc.beats());
+        assertEquals(List.of("a netherite axe"), enc.items());
+        assertEquals(List.of("an enchanted golden apple"), enc.acquired());
+        assertEquals("ECHO_SLAIN_BY_YOU", enc.end());
+        assertEquals(61L, enc.seconds());
+
+        assertNull(stories.get(1).encounter(), "a note with no journal has none");
+        assertNull(stories.get(2).encounter(), "a non-object journal is absent, not fatal");
+
+        // An empty object is a journal with nothing in it — usable, and renders to nothing.
+        assertNotNull(stories.get(3).encounter());
+        assertTrue(stories.get(3).encounter().beats().isEmpty());
+        assertEquals("", stories.get(3).encounter().end());
+    }
+
+    @Test
     @DisplayName("a malformed or unsuccessful body returns null so the last snapshot is kept")
     void malformedBodiesKeepTheSnapshot() {
         assertNull(CursedStoryPool.parseStories("{\"ok\":false}"));

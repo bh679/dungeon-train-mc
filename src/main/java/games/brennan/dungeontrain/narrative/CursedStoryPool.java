@@ -63,7 +63,27 @@ public final class CursedStoryPool {
      *                      ending was never reported — the story then says as much
      */
     public record Story(int id, String targetName, int deathCarriage,
-                        long signedTs, long landedTs, String outcome) {}
+                        long signedTs, long landedTs, String outcome, Encounter encounter) {}
+
+    /**
+     * The journal of the fight itself, as recorded by the target's game and stored on the relay (see
+     * {@code CursedEncounterPayload}) — {@code null} on a curse that has no journal: an older relay, a
+     * target whose game never opened one, or an echo whose encounter never finished.
+     *
+     * @param beats    ordered beat names ({@code MET}, {@code PLAYER_STRUCK_ECHO}, …)
+     * @param items    descriptors of the gear the echo carried when it arrived
+     * @param acquired descriptors of the gear it took during the encounter
+     * @param end      the terminal reason ({@code ECHO_SLAIN_BY_YOU}, {@code LEFT_BEHIND}, …)
+     * @param seconds  how long the encounter lasted
+     */
+    public record Encounter(List<String> beats, List<String> items, List<String> acquired,
+                            String end, long seconds) {
+        public Encounter {
+            beats = List.copyOf(beats);
+            items = List.copyOf(items);
+            acquired = List.copyOf(acquired);
+        }
+    }
 
     /** authorUuid → their current immutable snapshot of untold stories, oldest first. */
     private static final Map<UUID, List<Story>> STORIES = new ConcurrentHashMap<>();
@@ -187,10 +207,36 @@ public final class CursedStoryPool {
             int id = o.get("id").getAsInt();
             if (id <= 0) return null;
             return new Story(id, str(o, "targetName"), o.get("deathCarriage").getAsInt(),
-                    num(o, "ts"), num(o, "usedTs"), str(o, "outcome"));
+                    num(o, "ts"), num(o, "usedTs"), str(o, "outcome"), parseEncounter(o));
         } catch (RuntimeException e) {
             return null;
         }
+    }
+
+    /**
+     * The encounter journal attached to a note, or {@code null} when it has none — an older relay, or
+     * a curse whose fight was never journaled. A malformed journal is treated as absent rather than
+     * failing the whole story: the book falls back to the bare facts.
+     */
+    static Encounter parseEncounter(JsonObject o) {
+        if (!o.has("encounter") || !o.get("encounter").isJsonObject()) return null;
+        JsonObject e = o.getAsJsonObject("encounter");
+        try {
+            return new Encounter(strings(e, "beats"), strings(e, "items"), strings(e, "acquired"),
+                    str(e, "end"), num(e, "sec"));
+        } catch (RuntimeException ex) {
+            return null;
+        }
+    }
+
+    /** {@code k}'s array of strings, or an empty list when absent / malformed. Non-strings are skipped. */
+    private static List<String> strings(JsonObject o, String k) {
+        if (!o.has(k) || !o.get(k).isJsonArray()) return List.of();
+        List<String> out = new ArrayList<>();
+        for (JsonElement el : o.getAsJsonArray(k)) {
+            if (el.isJsonPrimitive()) out.add(el.getAsString());
+        }
+        return out;
     }
 
     private static String str(JsonObject o, String k) {

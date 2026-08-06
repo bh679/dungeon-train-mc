@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyApplier;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.event.DeathNoteEchoController;
 import games.brennan.playermob.compat.TrainConfinement;
 import games.brennan.playermob.entity.FeelingLedger;
@@ -77,7 +78,7 @@ public final class DeathNoteEchoSpawner {
         int pidx = TrainConfinement.carriageIndex(target);
         if (pidx < anchor || pidx >= anchor + groupSize) pidx = anchor;
         BlockPos floorPos = interiorFloorPos(provider, pidx);
-        return spawn(level, floorPos, deathCarriage, authorUuid, authorName, target.getUUID(), noteId);
+        return spawn(level, floorPos, deathCarriage, authorUuid, authorName, target, noteId);
     }
 
     /** The train group whose world AABB contains {@code player} (player position is world-space), or null. */
@@ -111,8 +112,9 @@ public final class DeathNoteEchoSpawner {
      * so the caller doesn't consume the note on a bad spawn.
      */
     private static boolean spawn(ServerLevel level, BlockPos floorPos, int carriagePIdx,
-                                 String authorUuidStr, String authorNameStr, UUID targetUuid,
+                                 String authorUuidStr, String authorNameStr, ServerPlayer target,
                                  int noteId) {
+        UUID targetUuid = target.getUUID();
         try {
             Optional<EntityType<?>> typeOpt = EntityType.byString(PLAYER_MOB_ID.toString());
             if (typeOpt.isEmpty()) return false;
@@ -172,6 +174,11 @@ public final class DeathNoteEchoSpawner {
             }
             // Track it so DeathNoteEchoController can steer it onto the target (frame-consistent).
             DeathNoteEchoController.register(mob.getUUID(), targetUuid);
+            // Open the encounter journal — a Death Note echo is a remote echo with a grudge, so it gets
+            // the same beats, the same Discord story, and (uniquely) a report back to the curse's
+            // author. The audience is the cursed target explicitly, not whoever happens to be nearest.
+            RemoteEchoEncounters.onDeathNoteEchoSpawned(mob, parseUuid(authorUuidStr), authorName,
+                carriagePIdx, target, noteId);
             LOGGER.info("[DungeonTrain] DeathNote echo of {} spawned at carriage {} hunting {}",
                 authorName, carriagePIdx, targetUuid);
             return true;

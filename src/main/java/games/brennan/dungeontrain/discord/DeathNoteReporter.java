@@ -86,6 +86,32 @@ public final class DeathNoteReporter {
     }
 
     /**
+     * Report the full encounter journal for a landed curse — the ordered beats, the gear the echo bore
+     * and claimed, how long it lasted and how it ended — so the author's story book can narrate what
+     * actually happened rather than just naming a carriage. Rides the same write-once
+     * {@code /deathnotes/outcome} endpoint as {@link #reportOutcome}.
+     *
+     * @param noteId    the relay note id the echo was spawned from
+     * @param outcome   the ending, or {@code null} when the encounter produced no verdict (the echo was
+     *                  left behind, or the target died to something else) — the journal still ships
+     * @param encounter the journal object built by {@code CursedEncounterPayload}
+     */
+    public static void reportEncounter(int noteId, String outcome, JsonObject encounter) {
+        try {
+            if (noteId <= 0 || encounter == null) return;
+            JsonObject body = new JsonObject();
+            body.addProperty("id", noteId);
+            if (outcome != null && !outcome.isBlank()) body.addProperty("outcome", outcome);
+            body.add("encounter", encounter);
+            RelayOutbox.get().enqueue("/deathnotes/outcome", body.toString());
+            LOGGER.debug("[DungeonTrain] DeathNote encounter for note {} (ending {}) queued to the relay outbox.",
+                    noteId, outcome == null ? "none" : outcome);
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] DeathNote encounter failed to build: {}", t.toString());
+        }
+    }
+
+    /**
      * Report that the AUTHOR read note {@code noteId}'s story book — flips the relay's one-way
      * {@code storyRead} latch so that curse's story is never handed out again (one story per curse).
      * Durable + idempotent. No-throw.

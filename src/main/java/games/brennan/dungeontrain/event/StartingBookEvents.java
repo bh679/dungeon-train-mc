@@ -59,6 +59,7 @@ import org.joml.Vector3f;
 import org.slf4j.Logger;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -960,8 +961,18 @@ public final class StartingBookEvents {
         };
         long now = System.currentTimeMillis();
         long threeDays = 3L * 24L * 60L * 60L * 1000L;
+        // A representative journal so %STORY% / %GEAR% / %ENDING% render in the preview instead of
+        // silently collapsing — the shape a real encounter produces, with a plausible fight in it.
+        String end = switch (context) {
+            case CURSED_FULFILLED -> "YOU_SLAIN_BY_ECHO";
+            case CURSED_DEFIED -> "ECHO_SLAIN_BY_YOU";
+            default -> "LEFT_BEHIND";
+        };
+        CursedStoryPool.Encounter encounter = new CursedStoryPool.Encounter(
+            List.of("SPAWNED", "MET", "EYE_CONTACT", "PLAYER_STRUCK_ECHO", "ECHO_STRUCK_PLAYER"),
+            List.of("a diamond axe", "an iron chestplate"), List.of(), end, 74L);
         return new CursedStoryPool.Story(0, player.getGameProfile().getName(),
-            carriage == null ? 0 : carriage, now - threeDays, now, outcome);
+            carriage == null ? 0 : carriage, now - threeDays, now, outcome, encounter);
     }
 
     /**

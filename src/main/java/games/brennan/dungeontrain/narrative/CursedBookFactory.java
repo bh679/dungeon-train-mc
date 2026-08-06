@@ -113,17 +113,44 @@ public final class CursedBookFactory {
      *   <li>{@code %CARRIAGE%} — the carriage the author died at, where the echo lay in wait</li>
      *   <li>{@code %DAYS%} — whole days the echo waited between the author's death and the moment it
      *       found its target ({@code 0} when either timestamp is unknown, i.e. "the same day")</li>
+     *   <li>{@code %STORY%} — the whole encounter as second-person prose (gear, beats, ending)</li>
+     *   <li>{@code %GEAR%} — just the gear the echo was still carrying</li>
+     *   <li>{@code %ENDING%} — just the closing line</li>
      * </ul>
-     * Pure and null-safe — a null/empty template returns an empty string.
+     *
+     * <p>The last three come from the encounter journal and are <b>empty when there is none</b> (an
+     * older relay, a fight nobody journaled) — so a variant must still read when they render to
+     * nothing. Trailing space left by an empty token is collapsed.</p>
+     *
+     * <p>Pure and null-safe — a null/empty template returns an empty string.</p>
      */
     static String fill(String text, CursedStoryPool.Story story) {
         if (text == null || text.isEmpty()) return "";
         String target = story.targetName() == null || story.targetName().isBlank()
             ? UNKNOWN_TARGET : story.targetName();
-        return text
+        String filled = text
             .replace("%TARGET%", target)
             .replace("%CARRIAGE%", Integer.toString(story.deathCarriage()))
-            .replace("%DAYS%", Long.toString(waitedDays(story)));
+            .replace("%DAYS%", Long.toString(waitedDays(story)))
+            .replace("%STORY%", CursedStoryNarrative.story(story))
+            .replace("%GEAR%", CursedStoryNarrative.gear(story))
+            .replace("%ENDING%", CursedStoryNarrative.ending(story));
+        return tidy(filled);
+    }
+
+    /**
+     * Clean up after an empty token: collapse runs of spaces left mid-line and strip trailing spaces
+     * at line ends, without touching the newlines — those are the author's page breaks and line breaks,
+     * and are load-bearing. A page left completely empty by its tokens stays empty; the paginator
+     * already drops leading/trailing blank pages.
+     */
+    private static String tidy(String text) {
+        StringBuilder out = new StringBuilder(text.length());
+        for (String line : text.split("\n", -1)) {
+            if (out.length() > 0) out.append('\n');
+            out.append(line.replaceAll("[ \\t]{2,}", " ").stripTrailing());
+        }
+        return out.toString();
     }
 
     /**
