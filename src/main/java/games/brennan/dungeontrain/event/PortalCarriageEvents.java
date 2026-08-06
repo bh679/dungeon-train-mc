@@ -57,11 +57,12 @@ import java.util.UUID;
  * jitter cancels — the corridor's blocks and its origin move together, so the player's position
  * within the corridor stays correct however much the group is drifting.</p>
  *
- * <p><b>The twin is stamped on approach, not at the crossing.</b> It goes {@link #TWIN_Y_OFFSET}
- * blocks above the carriage's current position — the same chunk columns, so it is already loaded,
- * sent to the client and meshed by the time the swap happens ({@code ViewArea} sizes its render grid
- * to the full build height). Doing it on approach also keeps a few thousand block writes away from
- * the instant the player crosses.</p>
+ * <p><b>The twin is stamped on approach, not at the crossing.</b> It goes at the bottom of the world,
+ * below the bedrock, in the carriage's <b>own chunk columns</b> — which is what makes it already
+ * loaded, sent to the client and meshed by the time the swap happens ({@code ViewArea} sizes its
+ * render grid to the full build height, so any Y in the same column qualifies). Doing it on approach
+ * also keeps a few thousand block writes away from the instant the player crosses. See
+ * {@link #TWIN_FLOOR_MARGIN} for why the depth is derived from the world floor rather than fixed.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PortalCarriageEvents {
@@ -71,8 +72,23 @@ public final class PortalCarriageEvents {
     /** All five axes relative: velocity and the render interpolation baseline both survive the move. */
     private static final Set<RelativeMovement> RELATIVE_ALL = EnumSet.allOf(RelativeMovement.class);
 
-    /** How far above the carriage the twin is stamped. Same chunk columns, so always loaded. */
-    private static final int TWIN_Y_OFFSET = 96;
+    /**
+     * How far above the world floor a twin's own floor sits.
+     *
+     * <p>Twins go <b>below the bedrock</b>, at the very bottom of the world, rather than in the sky
+     * above the train where they used to hang in plain view. Derived from
+     * {@link ServerLevel#getMinBuildHeight()} rather than a fixed Y, so a world with a deeper floor
+     * puts its twins deeper — they are always as low as that world allows.</p>
+     *
+     * <p>Nothing about the illusion depends on the height. The guarantee that a twin is already
+     * loaded, sent and meshed when a player crosses comes from it sharing the carriage's <b>chunk
+     * columns</b>, which constrains X and Z only: {@code ViewArea} sizes its render grid to the full
+     * build height, so any Y in the same column is equally safe.</p>
+     *
+     * <p>One block of clearance keeps the structure's floor off the absolute limit, since blocks
+     * cannot be placed below it.</p>
+     */
+    private static final int TWIN_FLOOR_MARGIN = 1;
 
     /**
      * Stamp the twin once a player is this close to the portal carriage — near enough to be about to
@@ -244,9 +260,18 @@ public final class PortalCarriageEvents {
     private static BlockPos ensureStructure(ServerLevel level, CarriageDims dims, int pairKey,
                                             double originX, double originY, double originZ) {
         BlockPos existing = STRUCTURES.get(pairKey);
-        BlockPos wanted = BlockPos.containing(originX, originY + TWIN_Y_OFFSET, originZ);
 
-        if (wanted.getY() + dims.height() > level.getMaxBuildHeight() - CEILING_MARGIN) return existing;
+        // Same chunk columns as the carriage — that is what keeps the destination loaded — but at the
+        // world floor rather than a fixed height above the train.
+        int twinY = level.getMinBuildHeight() + TWIN_FLOOR_MARGIN;
+        BlockPos wanted = BlockPos.containing(originX, twinY, originZ);
+
+        // A world too shallow to hold the structure between its floor and the carriage gets no twin,
+        // rather than one stamped through the train.
+        int structureTop = twinY + Math.max(dims.height(), POCKET_ROOM_SLACK);
+        if (structureTop >= originY || structureTop > level.getMaxBuildHeight() - CEILING_MARGIN) {
+            return existing;
+        }
 
         if (existing != null && horizontalDistance(existing, originX, originZ) <= TWIN_MAX_DRIFT) {
             return existing;
