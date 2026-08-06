@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.portal.PortalGeometry;
 import games.brennan.dungeontrain.portal.PortalRegistry;
@@ -16,6 +17,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.joml.primitives.AABBdc;
+import org.slf4j.Logger;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -45,6 +47,8 @@ import java.util.Set;
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PortalTransitEvents {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     /** All five axes relative: zero deltas on X/Z/rotation, the real move on Y. */
     private static final Set<RelativeMovement> RELATIVE_ALL = EnumSet.allOf(RelativeMovement.class);
@@ -92,6 +96,17 @@ public final class PortalTransitEvents {
 
                 player.connection.teleport(px, py + shift, pz,
                     player.getYRot(), player.getXRot(), RELATIVE_ALL);
+
+                // Logged because the swap is meant to be invisible: without a trace there is no
+                // way to tell "it worked perfectly" from "it never fired" after the fact, in a
+                // player report or a test session someone else ran.
+                LOGGER.info("[DungeonTrain] Hallway portal swap: player={} {}→{} at x={} y={}→{} (portal originX={})",
+                    player.getName().getString(),
+                    shift > 0 ? "NEAR" : "FAR",
+                    shift > 0 ? "FAR" : "NEAR",
+                    String.format("%.2f", px), String.format("%.2f", py),
+                    String.format("%.2f", py + shift),
+                    geo.originX());
             }
 
             // Chunk reads only while someone is in the corridor — an empty portal's chunks may be
