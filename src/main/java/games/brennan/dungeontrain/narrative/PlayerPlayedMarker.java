@@ -29,6 +29,9 @@ import java.util.UUID;
  *       the dimension-welcome cycle in {@code StartingBookEvents}; once a
  *       dimension's whole pool is in this set, new runs in that dimension
  *       fall through to the lifecycle welcome.</li>
+ *   <li>Which landed Death Note curses of this player's have already had
+ *       their story told — the local half of the cursed-book "one story per
+ *       curse" latch (see {@code CursedStoryPool}).</li>
  * </ol>
  *
  * <p>Backed by a tiny {@link Properties} file at
@@ -57,6 +60,8 @@ public final class PlayerPlayedMarker {
     private static final String KEY_JOINED_WORLD = "joined_world_count";
     /** Comma-joined set of seen dimension-welcome keys (see {@code StartingBookFactory.dimKey}). */
     private static final String KEY_SEEN_DIMENSION = "seen_dimension_variants";
+    /** Comma-joined set of relay note ids whose cursed story this player has already read. */
+    private static final String KEY_READ_CURSED_STORIES = "cursed_stories_read";
 
     private PlayerPlayedMarker() {}
 
@@ -146,6 +151,30 @@ public final class PlayerPlayedMarker {
         }
     }
 
+    /**
+     * Relay note ids whose cursed story this player has already read (empty when never marked). The
+     * local half of the "one story per curse" latch — the relay holds the authoritative one, but a
+     * story must not be re-offered while a slow or failed report is still in the outbox.
+     *
+     * <p>Per-installation on purpose: in this roguelike a death starts a brand-new world, so any
+     * per-world store would be orphaned the moment the author dies.</p>
+     */
+    public static Set<String> readCursedStories(UUID uuid) {
+        return new LinkedHashSet<>(read(uuid).readCursedStories);
+    }
+
+    /**
+     * Record that the cursed story for relay note {@code noteId} has been read. Idempotent — only
+     * rewrites the file when the id was not already present.
+     */
+    public static void markCursedStoryRead(UUID uuid, int noteId) {
+        if (noteId <= 0) return;
+        State state = read(uuid);
+        if (state.readCursedStories.add(Integer.toString(noteId))) {
+            write(uuid, state);
+        }
+    }
+
     /** Visible for tests. */
     public static Path propsPath(UUID uuid) {
         return FMLPaths.GAMEDIR.get()
@@ -166,6 +195,7 @@ public final class PlayerPlayedMarker {
         int newWorldCount;
         int joinedWorldCount;
         Set<String> seenDimensionVariants = new LinkedHashSet<>();
+        Set<String> readCursedStories = new LinkedHashSet<>();
     }
 
     private static State read(UUID uuid) {
@@ -182,6 +212,7 @@ public final class PlayerPlayedMarker {
         state.newWorldCount = parseIntOrZero(props.getProperty(KEY_NEW_WORLD));
         state.joinedWorldCount = parseIntOrZero(props.getProperty(KEY_JOINED_WORLD));
         state.seenDimensionVariants = parseKeySet(props.getProperty(KEY_SEEN_DIMENSION));
+        state.readCursedStories = parseKeySet(props.getProperty(KEY_READ_CURSED_STORIES));
         return state;
     }
 
@@ -191,6 +222,7 @@ public final class PlayerPlayedMarker {
         props.setProperty(KEY_NEW_WORLD, Integer.toString(state.newWorldCount));
         props.setProperty(KEY_JOINED_WORLD, Integer.toString(state.joinedWorldCount));
         props.setProperty(KEY_SEEN_DIMENSION, String.join(",", state.seenDimensionVariants));
+        props.setProperty(KEY_READ_CURSED_STORIES, String.join(",", state.readCursedStories));
         try {
             Files.createDirectories(path.getParent());
             try (OutputStream out = Files.newOutputStream(path)) {

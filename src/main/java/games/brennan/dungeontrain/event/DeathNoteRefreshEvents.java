@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
+import games.brennan.dungeontrain.narrative.CursedStoryPool;
 import games.brennan.dungeontrain.narrative.DeathNotePool;
 import games.brennan.dungeontrain.narrative.DeathNoteSpawnMessage;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
@@ -51,13 +52,30 @@ public final class DeathNoteRefreshEvents {
     /** playerUuid → carriage index at their last download (to fire every REFRESH_EVERY_CARRIAGES). */
     private static final Map<UUID, Integer> LAST_REFRESH_CARRIAGE = new ConcurrentHashMap<>();
 
+    /**
+     * playerUuid → the carriage index seen at the previous scan, used to detect the moment a player
+     * crosses from one cart into the next — when a cursed story book is delivered mid-life (see
+     * {@link #deliverCursedStoryBetweenCarts}). Cleared on login/logout so a fresh life starts quiet.
+     */
+    private static final Map<UUID, Integer> LAST_SCAN_CARRIAGE = new ConcurrentHashMap<>();
+
+    /**
+     * Players already handed a mid-life cursed strike this life. The welcome strike on the next
+     * login / respawn re-offers an unread story anyway, so one mid-life delivery is enough — without
+     * this the strike would re-fire at every cart boundary until the book is opened.
+     */
+    private static final Map<UUID, Boolean> CURSED_STRUCK_THIS_LIFE = new ConcurrentHashMap<>();
+
     private DeathNoteRefreshEvents() {}
 
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         LAST_REFRESH_CARRIAGE.remove(player.getUUID());
-        // A new world load counts as a login → re-pull this target's unspawned curses from the relay.
+        LAST_SCAN_CARRIAGE.remove(player.getUUID());
+        CURSED_STRUCK_THIS_LIFE.remove(player.getUUID());
+        // A new world load counts as a login → re-pull this target's unspawned curses from the relay,
+        // and this author's landed curses awaiting their story.
         if (DeathNoteGate.canSync(player)) refresh(player);
     }
 
@@ -65,7 +83,10 @@ public final class DeathNoteRefreshEvents {
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         DeathNotePool.forget(player.getUUID());
+        CursedStoryPool.forget(player.getUUID());
         LAST_REFRESH_CARRIAGE.remove(player.getUUID());
+        LAST_SCAN_CARRIAGE.remove(player.getUUID());
+        CURSED_STRUCK_THIS_LIFE.remove(player.getUUID());
     }
 
     @SubscribeEvent
@@ -83,7 +104,10 @@ public final class DeathNoteRefreshEvents {
             // (1) Arrival spawn from the relay-downloaded pool.
             spawnArrivedEchoes(player, cur);
 
-            // (2) Relay re-download every REFRESH_EVERY_CARRIAGES of travel (login covers world entry).
+            // (2) A cursed story book, handed over as the player crosses into the next cart.
+            deliverCursedStoryBetweenCarts(player, cur);
+
+            // (3) Relay re-download every REFRESH_EVERY_CARRIAGES of travel (login covers world entry).
             if (DeathNoteGate.canSync(player)) {
                 Integer last = LAST_REFRESH_CARRIAGE.get(player.getUUID());
                 if (last == null || Math.abs(cur - last) >= REFRESH_EVERY_CARRIAGES) {
@@ -92,6 +116,26 @@ public final class DeathNoteRefreshEvents {
                 }
             }
         }
+    }
+
+    /**
+     * Hand over a pending cursed story mid-life, at the moment the player steps from one cart into
+     * the next — a beat between rooms rather than an interruption mid-fight, and the reason a curse
+     * that lands while the author is already playing doesn't have to wait for their next life.
+     *
+     * <p>Fires at most once per life: the welcome strike on the next login / respawn re-offers an
+     * unread story anyway. Held back during the spawn cinematic for the same reason the welcome
+     * strike is.</p>
+     */
+    private static void deliverCursedStoryBetweenCarts(ServerPlayer player, int cur) {
+        UUID uuid = player.getUUID();
+        Integer previous = LAST_SCAN_CARRIAGE.put(uuid, cur);
+        if (previous == null || previous == cur) return;          // not a cart boundary (yet)
+        if (CURSED_STRUCK_THIS_LIFE.containsKey(uuid)) return;    // already had this life's delivery
+        if (!CursedStoryPool.hasPending(uuid)) return;
+        if (CinematicIntroService.isCinematicActive(uuid)) return;
+        CURSED_STRUCK_THIS_LIFE.put(uuid, Boolean.TRUE);
+        StartingBookEvents.fireCursedStrike(player);
     }
 
     /** Spawn (once) every echo whose death carriage {@code player} has reached, just ahead of them. */
@@ -108,7 +152,7 @@ public final class DeathNoteRefreshEvents {
         for (DeathNotePool.Note note : DeathNotePool.notesReached(targetUuid, cur, ARRIVAL_LEAD)) {
             if (enforce && note.freePlay() != targetFreePlay) continue; // provenance mismatch — wait for a matching life
             boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
-                    note.authorUuid(), note.authorName(), note.deathCarriage());
+                    note.authorUuid(), note.authorName(), note.deathCarriage(), note.id());
             if (!ok) continue;                                       // not on a carriage yet — retry next scan
             DeathNotePool.remove(targetUuid, note.id());
             DeathNoteReporter.markUsed(note.id());
@@ -130,5 +174,8 @@ public final class DeathNoteRefreshEvents {
      */
     public static void refresh(ServerPlayer player) {
         DeathNotePool.refreshForPlayer(player.getUUID(), player.getGameProfile().getName());
+        // Same trip, opposite direction: the curses this player WROTE that have since landed and are
+        // owed a story (see CursedStoryPool + the cursed welcome book).
+        CursedStoryPool.refreshForPlayer(player.getUUID());
     }
 }

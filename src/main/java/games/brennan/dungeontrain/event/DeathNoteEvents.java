@@ -97,6 +97,9 @@ public final class DeathNoteEvents {
         DeathNoteEchoController.unregister(echo.getUUID());
         String author = data.contains(DeathNoteEchoSpawner.KEY_AUTHOR)
                 ? data.getString(DeathNoteEchoSpawner.KEY_AUTHOR) : "Unknown";
+        // The curse landed but was survived — tell the relay so the author's story book knows how it
+        // ended. Write-once relay-side, so whoever landed the killing blow, this is the ending.
+        reportOutcome(echo, data, DeathNoteReporter.OUTCOME_TARGET_KILLED_ECHO);
         ItemStack book = DeathNoteSigning.buildTrophyBook(author);
         ItemEntity drop = new ItemEntity(echo.level(), echo.getX(), echo.getY() + 0.5, echo.getZ(), book);
         drop.setDefaultPickUpDelay();
@@ -105,5 +108,52 @@ public final class DeathNoteEvents {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(killer, "killed_death_note_echo");
         }
         LOGGER.debug("[DungeonTrain] DeathNote: echo of {} dropped a Death Note on death", author);
+    }
+
+    /**
+     * The other ending: a cursed player killed BY the echo hunting them. Reported against the same
+     * relay note so the author's story book can say the curse ran its course.
+     *
+     * <p>Read off the damage source's owning entity (not the direct entity) so an echo's arrow still
+     * counts as the echo's kill, and gated on the echo's {@code KEY_TARGET} matching the player who
+     * died — an echo that happens to kill a bystander is not that bystander's curse.</p>
+     */
+    @SubscribeEvent
+    public static void onCursedPlayerDeath(LivingDeathEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer victim)) return;
+        if (victim.level().isClientSide()) return;
+        if (!(event.getSource().getEntity() instanceof PlayerMobEntity echo)) return;
+        CompoundTag data = echo.getPersistentData();
+        if (!data.contains(DeathNoteEchoSpawner.KEY_TARGET)) return;      // an ordinary PlayerMob kill
+        if (!victim.getUUID().toString().equals(data.getString(DeathNoteEchoSpawner.KEY_TARGET))) return;
+        reportOutcome(echo, data, DeathNoteReporter.OUTCOME_ECHO_KILLED_TARGET);
+        LOGGER.debug("[DungeonTrain] DeathNote: echo killed its target {}", victim.getName().getString());
+    }
+
+    /**
+     * Report {@code outcome} for the curse stamped on {@code echo}'s persistent data, if it is both
+     * reportable and permitted:
+     * <ul>
+     *   <li>the echo carries a relay note id — dev-spawned echoes ({@code /dtechotest deathnote}) and
+     *       echoes from before this stamp existed have no note to report against;</li>
+     *   <li>the cursed target is online and their client granted relay consent
+     *       ({@link DeathNoteGate#canSync}) — this report leaves their game, so it rides the same
+     *       fail-closed gate as the download that delivered the curse in the first place.</li>
+     * </ul>
+     */
+    private static void reportOutcome(PlayerMobEntity echo, CompoundTag echoData, String outcome) {
+        int noteId = echoData.contains(DeathNoteEchoSpawner.KEY_NOTE_ID)
+                ? echoData.getInt(DeathNoteEchoSpawner.KEY_NOTE_ID) : 0;
+        if (noteId <= 0) return;
+        if (echo.level().getServer() == null) return;
+        UUID targetUuid;
+        try {
+            targetUuid = UUID.fromString(echoData.getString(DeathNoteEchoSpawner.KEY_TARGET));
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        ServerPlayer target = echo.level().getServer().getPlayerList().getPlayer(targetUuid);
+        if (target == null || !DeathNoteGate.canSync(target)) return;
+        DeathNoteReporter.reportOutcome(noteId, outcome);
     }
 }

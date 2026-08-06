@@ -510,6 +510,11 @@ public final class AchievementEvents {
         Map<String, NarrativeProgress> snapshot = data.startingBookSeenSnapshot();
         boolean anyBook = false;
         for (StartingBookContext ctx : StartingBookContext.values()) {
+            // The cursed folders are the exception to "every context": a cursed book is only
+            // delivered when one of this player's Death Note curses lands in someone else's world,
+            // so requiring them would make a solo player's grand slam depend on other people's
+            // deaths. They are collectible, just not part of this set.
+            if (ctx.isCursed()) continue;
             List<RandomBookFile> books = StartingBookRegistry.booksIn(ctx);
             if (books.isEmpty()) continue;
             anyBook = true;

@@ -263,8 +263,9 @@ public final class EchoEncounterTestCommand {
         ServerLevel level = source.getLevel();
         Integer carriage = TrainCarriageAppender.lastCarriageIndex(player.getUUID());
         int deathCarriage = carriage == null ? 0 : carriage;
+        // noteId 0 — a dev spawn has no relay note behind it, so its outcome is reported nowhere.
         boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
-            player.getUUID().toString(), player.getGameProfile().getName(), deathCarriage);
+            player.getUUID().toString(), player.getGameProfile().getName(), deathCarriage, 0);
         source.sendSuccess(() -> Component.literal(
                 "[echotest] deathnote spawnForTarget -> " + (ok ? "TRUE" : "FALSE (deferred/failed)")
                     + " at carriage " + deathCarriage + " (lastCarriageIndex=" + carriage

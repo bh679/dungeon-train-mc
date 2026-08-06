@@ -41,7 +41,20 @@ public enum StartingBookContext {
     NETHER("nether"),
 
     /** Dimension-routed welcome pool for runs that start in the End. */
-    END("end");
+    END("end"),
+
+    /**
+     * A Death Note curse of this player's has landed in its target's world and the ending was never
+     * reported (the target logged out, the echo unloaded) — the story is told without one. Also the
+     * fallback when an outcome-specific cursed pool below is empty.
+     */
+    CURSED("cursed"),
+
+    /** A landed curse that ran its course: the author's echo killed the target. */
+    CURSED_FULFILLED("cursed_fulfilled"),
+
+    /** A landed curse that was survived: the target killed the author's echo. */
+    CURSED_DEFIED("cursed_defied");
 
     /** Folder name relative to {@code .../starting_books/}. Empty for DEFAULT. */
     private final String folderName;
@@ -132,7 +145,17 @@ public enum StartingBookContext {
         return switch (this) {
             case NETHER -> Optional.of("nether_starting_books");
             case END -> Optional.of("end_starting_books");
+            // The cursed folders are earned by cursing another player and having it land, not by
+            // playing on — so they must not hold the grand-slam "read every starting book" hostage.
+            // Declaring a set id is how a folder opts out of it (and into the per-installation
+            // seen-store the cursed cycle uses); no advancement listens for this id.
+            case CURSED, CURSED_FULFILLED, CURSED_DEFIED -> Optional.of("cursed_starting_books");
             default -> Optional.empty();
         };
+    }
+
+    /** True for the three cursed pools — the Death Note story books, routed by {@code CursedBookFactory}. */
+    public boolean isCursed() {
+        return this == CURSED || this == CURSED_FULFILLED || this == CURSED_DEFIED;
     }
 }

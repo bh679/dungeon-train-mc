@@ -55,9 +55,15 @@ public final class DeathNoteEchoSpawner {
      * space position (e.g. the player's live coords) leaves the mob off the moving deck and invisible.
      * Returns false (leaving the note to retry next scan) if the target isn't on a resolvable
      * carriage group yet.
+     *
+     * <p>{@code noteId} is the relay note this echo came from; it is stamped into the echo's
+     * persistent data ({@link #KEY_NOTE_ID}) so the outcome of the fight can be reported back
+     * against the right curse — see {@code DeathNoteEvents}. Pass {@code 0} for an echo with no
+     * relay note behind it (the dev {@code /dtechotest} spawn); no outcome is then reported.</p>
      */
     public static boolean spawnForTarget(ServerLevel level, ServerPlayer target,
-                                         String authorUuid, String authorName, int deathCarriage) {
+                                         String authorUuid, String authorName, int deathCarriage,
+                                         int noteId) {
         Trains.Carriage group = groupContaining(level, target);
         if (group == null) {
             LOGGER.debug("[DungeonTrain] DeathNote echo: {} not on a resolvable carriage group yet — deferring.",
@@ -71,7 +77,7 @@ public final class DeathNoteEchoSpawner {
         int pidx = TrainConfinement.carriageIndex(target);
         if (pidx < anchor || pidx >= anchor + groupSize) pidx = anchor;
         BlockPos floorPos = interiorFloorPos(provider, pidx);
-        return spawn(level, floorPos, deathCarriage, authorUuid, authorName, target.getUUID());
+        return spawn(level, floorPos, deathCarriage, authorUuid, authorName, target.getUUID(), noteId);
     }
 
     /** The train group whose world AABB contains {@code player} (player position is world-space), or null. */
@@ -105,7 +111,8 @@ public final class DeathNoteEchoSpawner {
      * so the caller doesn't consume the note on a bad spawn.
      */
     private static boolean spawn(ServerLevel level, BlockPos floorPos, int carriagePIdx,
-                                 String authorUuidStr, String authorNameStr, UUID targetUuid) {
+                                 String authorUuidStr, String authorNameStr, UUID targetUuid,
+                                 int noteId) {
         try {
             Optional<EntityType<?>> typeOpt = EntityType.byString(PLAYER_MOB_ID.toString());
             if (typeOpt.isEmpty()) return false;
@@ -152,6 +159,10 @@ public final class DeathNoteEchoSpawner {
             CompoundTag persistent = mob.getPersistentData();
             persistent.putString(KEY_TARGET, targetUuid.toString());
             persistent.putString(KEY_AUTHOR, authorName);
+            // The curse this echo is: lets the outcome of the fight be reported back to the relay
+            // against the right note, so the author's story book can tell how it ended. A dev-spawned
+            // echo (noteId 0) carries no id and reports nothing.
+            if (noteId > 0) persistent.putInt(KEY_NOTE_ID, noteId);
             mob.setPersistenceRequired();
 
             if (!level.addFreshEntity(mob)) {

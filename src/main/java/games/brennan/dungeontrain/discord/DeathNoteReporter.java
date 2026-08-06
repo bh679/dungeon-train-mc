@@ -67,6 +67,55 @@ public final class DeathNoteReporter {
     }
 
     /**
+     * Report how a landed curse ended, from the TARGET's game — the other half of the author's story
+     * loop (the relay serves it back on {@code /deathnotes/landed}). Write-once on the relay: the first
+     * report wins, so a retry or a second death event can't rewrite the ending. Durable + no-throw.
+     *
+     * @param noteId  the relay note id the echo was spawned from (stamped on the echo at spawn)
+     * @param outcome one of {@link #OUTCOME_ECHO_KILLED_TARGET} / {@link #OUTCOME_TARGET_KILLED_ECHO}
+     */
+    public static void reportOutcome(int noteId, String outcome) {
+        try {
+            if (noteId <= 0 || outcome == null || outcome.isBlank()) return;
+            RelayOutbox.get().enqueue("/deathnotes/outcome", buildOutcomePayload(noteId, outcome).toString());
+            LOGGER.debug("[DungeonTrain] DeathNote outcome {} for note {} queued to the relay outbox.",
+                    outcome, noteId);
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] DeathNote outcome failed to build: {}", t.toString());
+        }
+    }
+
+    /**
+     * Report that the AUTHOR read note {@code noteId}'s story book — flips the relay's one-way
+     * {@code storyRead} latch so that curse's story is never handed out again (one story per curse).
+     * Durable + idempotent. No-throw.
+     */
+    public static void markStoryRead(int noteId) {
+        try {
+            if (noteId <= 0) return;
+            JsonObject body = new JsonObject();
+            body.addProperty("id", noteId);
+            RelayOutbox.get().enqueue("/deathnotes/story-read", body.toString());
+            LOGGER.debug("[DungeonTrain] DeathNote story-read {} queued to the relay outbox.", noteId);
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] DeathNote story-read failed to build: {}", t.toString());
+        }
+    }
+
+    /** The curse ran its course: the author's echo killed the target it was written for. */
+    public static final String OUTCOME_ECHO_KILLED_TARGET = "echo_killed_target";
+    /** The target fought the echo off — the curse landed but was survived. */
+    public static final String OUTCOME_TARGET_KILLED_ECHO = "target_killed_echo";
+
+    /** Pure assembly of the {@code /deathnotes/outcome} body — package-private for unit tests. */
+    static JsonObject buildOutcomePayload(int noteId, String outcome) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", noteId);
+        body.addProperty("outcome", outcome);
+        return body;
+    }
+
+    /**
      * Pure assembly of the {@code /deathnotes/submit} JSON body — package-private so the shape can be
      * unit-tested without a running server. Matches the relay contract exactly. Null strings emit as "".
      */

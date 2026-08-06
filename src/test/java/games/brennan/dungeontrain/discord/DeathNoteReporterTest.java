@@ -37,4 +37,21 @@ class DeathNoteReporterTest {
         assertEquals("", body.get("authorSkinRef").getAsString());
         assertEquals(false, body.get("freePlay").getAsBoolean());
     }
+
+    @Test
+    void outcomePayloadCarriesTheNoteIdAndTheEnding() {
+        JsonObject body = DeathNoteReporter.buildOutcomePayload(
+            12, DeathNoteReporter.OUTCOME_ECHO_KILLED_TARGET);
+        assertEquals(12, body.get("id").getAsInt());
+        assertEquals("echo_killed_target", body.get("outcome").getAsString());
+        assertEquals(2, body.size()); // the relay validates the ending itself — send nothing else
+    }
+
+    @Test
+    void outcomeConstantsMatchTheRelaysAcceptedValues() {
+        // These two strings are the contract with dp-relay's deathnotes.OUTCOMES; a typo here means
+        // the ending is silently rejected and the author's story book says "no one knows".
+        assertEquals("echo_killed_target", DeathNoteReporter.OUTCOME_ECHO_KILLED_TARGET);
+        assertEquals("target_killed_echo", DeathNoteReporter.OUTCOME_TARGET_KILLED_ECHO);
+    }
 }
