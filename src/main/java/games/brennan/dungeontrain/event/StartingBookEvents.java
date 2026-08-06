@@ -13,6 +13,7 @@ import games.brennan.dungeontrain.narrative.CursedStoryPool;
 import games.brennan.dungeontrain.narrative.CursedStoryTag;
 import games.brennan.dungeontrain.narrative.DeathNoteBookTag;
 import games.brennan.dungeontrain.narrative.LoveNoteBookTag;
+import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.narrative.LetterBookTag;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
@@ -969,7 +970,7 @@ public final class StartingBookEvents {
      * {@link CursedStoryTag}, so reading it retires nothing.</p>
      */
     public static void forceFireForTest(ServerPlayer player, StartingBookContext context) {
-        if (context.isCursed()) {
+        if (context.isNoteStory()) {
             long seed = player.serverLevel().getGameTime() ^ player.getUUID().getLeastSignificantBits();
             Optional<ItemStack> book = CursedBookFactory.roll(seed, stubStory(player, context),
                 PlayerPlayedMarker.seenDimensionVariants(player.getUUID()), key -> { });
@@ -994,8 +995,8 @@ public final class StartingBookEvents {
         Integer carriage = games.brennan.dungeontrain.train.TrainCarriageAppender
             .lastCarriageIndex(player.getUUID());
         String outcome = switch (context) {
-            case CURSED_FULFILLED -> DeathNoteReporter.OUTCOME_ECHO_KILLED_TARGET;
-            case CURSED_DEFIED -> DeathNoteReporter.OUTCOME_TARGET_KILLED_ECHO;
+            case CURSED_FULFILLED, LOVED_TURNED -> DeathNoteReporter.OUTCOME_ECHO_KILLED_TARGET;
+            case CURSED_DEFIED, LOVED_BETRAYED -> DeathNoteReporter.OUTCOME_TARGET_KILLED_ECHO;
             default -> "";
         };
         long now = System.currentTimeMillis();
@@ -1003,15 +1004,20 @@ public final class StartingBookEvents {
         // A representative journal so %STORY% / %GEAR% / %ENDING% render in the preview instead of
         // silently collapsing — the shape a real encounter produces, with a plausible fight in it.
         String end = switch (context) {
-            case CURSED_FULFILLED -> "YOU_SLAIN_BY_ECHO";
-            case CURSED_DEFIED -> "ECHO_SLAIN_BY_YOU";
+            case CURSED_FULFILLED, LOVED_TURNED -> "YOU_SLAIN_BY_ECHO";
+            case CURSED_DEFIED, LOVED_BETRAYED -> "ECHO_SLAIN_BY_YOU";
             default -> "LEFT_BEHIND";
         };
+        // A loved preview shows the beats a Love Note actually produces — gifts, not blows — so the
+        // %STORY% token renders something representative rather than a fight the echo never picks.
+        List<String> beats = context.isLoved()
+            ? List.of("SPAWNED", "MET", "EYE_CONTACT", "RECEIVED_GIFT", "GAVE_GIFT")
+            : List.of("SPAWNED", "MET", "EYE_CONTACT", "PLAYER_STRUCK_ECHO", "ECHO_STRUCK_PLAYER");
         CursedStoryPool.Encounter encounter = new CursedStoryPool.Encounter(
-            List.of("SPAWNED", "MET", "EYE_CONTACT", "PLAYER_STRUCK_ECHO", "ECHO_STRUCK_PLAYER"),
-            List.of("a diamond axe", "an iron chestplate"), List.of(), end, 74L);
+            beats, List.of("a diamond axe", "an iron chestplate"), List.of(), end, 74L);
         return new CursedStoryPool.Story(0, player.getGameProfile().getName(),
-            carriage == null ? 0 : carriage, now - threeDays, now, outcome, encounter);
+            carriage == null ? 0 : carriage, now - threeDays, now, outcome, encounter,
+            context.isLoved() ? NoteKind.LOVE : NoteKind.DEATH);
     }
 
     /**

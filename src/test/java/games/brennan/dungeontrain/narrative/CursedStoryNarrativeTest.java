@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class CursedStoryNarrativeTest {
 
     private static Story story(String outcome, Encounter enc) {
-        return new Story(1, "Alex", 20, 0L, 0L, outcome, enc);
+        return new Story(1, "Alex", 20, 0L, 0L, outcome, enc, NoteKind.DEATH);
     }
 
     private static Encounter enc(List<String> beats, String end) {
@@ -83,7 +83,8 @@ final class CursedStoryNarrativeTest {
     @Test
     @DisplayName("a nameless target degrades to the stand-in rather than an empty gap")
     void namelessTarget() {
-        Story s = new Story(1, "  ", 20, 0L, 0L, "", enc(List.of("MET"), "ECHO_SLAIN_BY_YOU"));
+        Story s = new Story(1, "  ", 20, 0L, 0L, "", enc(List.of("MET"), "ECHO_SLAIN_BY_YOU"),
+                NoteKind.DEATH);
         assertEquals("They crossed paths. someone killed it.", CursedStoryNarrative.story(s));
     }
 }
