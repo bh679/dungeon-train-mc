@@ -152,4 +152,34 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
         Origin to = originOf(wantFrame);
         return new Move(wantFrame, to.x() + localX, to.y() + localY, to.z() + localZ);
     }
+
+    /**
+     * Where a position in one corridor appears in the <b>other</b> one, or {@code null} if it is in
+     * neither.
+     *
+     * <p>What a puppet needs, and deliberately not what {@link #requiredMove} computes. That method
+     * answers "should this player be moved?", so it carries the hysteresis band and the
+     * {@link PortalCarriageRole} side rule — both of which are decisions about <i>swapping</i>. A
+     * stand-in has no such decision to make: an entity anywhere in a corridor has a counterpart
+     * position in the twin of that corridor at every moment, on either side of the midpoint, and it
+     * must not blink out for the width of the band.</p>
+     *
+     * <p>The mapping itself is the same one: corridor-local offset out of the source frame and into
+     * the destination, which is what keeps a puppet at the same place in the room as the entity it
+     * stands for. Rotation needs no equivalent — both frames are axis-aligned, so a yaw carries
+     * across unchanged.</p>
+     */
+    public Move mirror(double wx, double wy, double wz) {
+        int frame = frameAt(wx, wy, wz);
+        if (frame == FRAME_NONE) return null;
+
+        Origin from = originOf(frame);
+        int toFrame = frame == FRAME_CARRIAGE ? FRAME_TWIN : FRAME_CARRIAGE;
+        Origin to = originOf(toFrame);
+
+        return new Move(toFrame,
+            to.x() + (wx - from.x()),
+            to.y() + (wy - from.y()),
+            to.z() + (wz - from.z()));
+    }
 }

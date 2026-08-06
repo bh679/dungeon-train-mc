@@ -162,11 +162,30 @@ public record PortalCarriageLayout(int length, int height, int width) {
         return localX > nearBaffleX() && localX < farBaffleX();
     }
 
+    /**
+     * The corridor interior as a box in local coordinates, pads included.
+     *
+     * <p>Exists so the volume can be handed to a spatial query — the puppet pass asks the level for
+     * every entity in a corridor — without restating the bounds {@link #insideCorridor} tests. Two
+     * copies of that arithmetic would be free to drift apart, and an entity search that disagreed
+     * with the containment rule would put a puppet in a corridor the swap says you are not in.</p>
+     */
+    public record Bounds(double minX, double minY, double minZ,
+                         double maxX, double maxY, double maxZ) {}
+
+    /** {@link Bounds} of this corridor. */
+    public Bounds localBounds() {
+        return new Bounds(
+            -PAD, floorY() - PAD, interiorMinZ() - PAD,
+            length + PAD, ceilingY() + PAD, interiorMaxZ() + 1 + PAD);
+    }
+
     /** True if the local position is inside the corridor interior, pads included. */
     public boolean insideCorridor(double localX, double localY, double localZ) {
-        return localX >= -PAD && localX <= length + PAD
-            && localY >= floorY() - PAD && localY <= ceilingY() + PAD
-            && localZ >= interiorMinZ() - PAD && localZ <= interiorMaxZ() + 1 + PAD;
+        Bounds b = localBounds();
+        return localX >= b.minX() && localX <= b.maxX()
+            && localY >= b.minY() && localY <= b.maxY()
+            && localZ >= b.minZ() && localZ <= b.maxZ();
     }
 
     /**

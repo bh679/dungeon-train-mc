@@ -11,6 +11,7 @@ import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.portal.PortalEditMirror;
 import games.brennan.dungeontrain.portal.PortalFrames;
 import games.brennan.dungeontrain.portal.PortalPairIndex;
+import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
@@ -171,6 +172,11 @@ public final class PortalCarriageEvents {
         int groupSize = DungeonTrainConfig.getGroupSize();
         int padLen = CarriagePlacer.halfPadLen(dims);
 
+        // Puppets are accumulated across every pair and sent once per player at the end of the tick.
+        // Sending per pair would have a player near two of them receive two snapshots, each looking
+        // like the whole picture, and the second would wipe the first.
+        PortalPuppets.Session puppets = PortalPuppets.begin();
+
         for (UUID trainId : Trains.byTrainId(level).keySet()) {
             for (Map.Entry<Integer, ManagedShip> group : Trains.knownGroups(trainId).entrySet()) {
                 int anchorPIdx = group.getKey();
@@ -192,17 +198,20 @@ public final class PortalCarriageEvents {
                     int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, every);
 
                     handlePortalCarriage(level, players, layout, dims, carriageIndex, role, pairKey,
-                        group.getValue(), originX, originY, originZ);
+                        group.getValue(), originX, originY, originZ, puppets);
                 }
             }
         }
+
+        puppets.dispatch(players);
     }
 
     private static void handlePortalCarriage(ServerLevel level, List<ServerPlayer> players,
                                              PortalCarriageLayout layout, CarriageDims dims,
                                              int carriageIndex, PortalCarriageRole role, int pairKey,
                                              ManagedShip ship,
-                                             double originX, double originY, double originZ) {
+                                             double originX, double originY, double originZ,
+                                             PortalPuppets.Session puppets) {
         // One structure per pair, stamped from the ENTRY carriage's approach and keyed on its index,
         // so both carriages of a pair address the same room rather than building one each.
         BlockPos structure = STRUCTURES.get(pairKey);
@@ -211,17 +220,28 @@ public final class PortalCarriageEvents {
             || anyPlayerInCorridor(players, layout, originX, originY, originZ);
 
         if (!occupied && !anyPlayerWithin(players, originX, originY, originZ, APPROACH_RANGE)) {
+            // Nobody near this pair. Drop its puppets rather than leaving the last set standing in a
+            // corridor the train has since rolled away from — and log the removals on the way out.
+            PortalPuppets.forget(carriageIndex);
             return;
         }
 
         // Only the ENTRY carriage places the structure: it fixes where the room sits, and the EXIT
         // twin's position follows from it. An EXIT carriage approached first simply waits.
-        if (structure == null && role != PortalCarriageRole.ENTRY) return;
+        if (structure == null && role != PortalCarriageRole.ENTRY) {
+            PortalPuppets.forget(carriageIndex);
+            return;
+        }
 
         BlockPos structureOrigin = occupied && structure != null
             ? structure
             : ensureStructure(level, dims, pairKey, originX, originY, originZ);
-        if (structureOrigin == null) return;
+        if (structureOrigin == null) {
+            // No twin — a world too shallow to hold one. With only half a pair there is no opposite
+            // corridor for a puppet to stand in.
+            PortalPuppets.forget(carriageIndex);
+            return;
+        }
 
         // The entry twin sits at the structure's origin; the exit twin one corridor and one room along.
         BlockPos twinOrigin = role == PortalCarriageRole.ENTRY
@@ -259,6 +279,11 @@ public final class PortalCarriageEvents {
                 move.toFrame() == PortalFrames.FRAME_TWIN ? "TWIN" : "CARRIAGE",
                 fmt(px), fmt(py), fmt(pz), fmt(move.x()), fmt(targetY), fmt(move.z()));
         }
+
+        // Stand-ins for whoever is in the other copy, so two players either side of the midpoint can
+        // still see each other. After the swap loop, so a player who just crossed is described from
+        // the position they ended up at rather than the one they were about to leave.
+        PortalPuppets.gather(level, players, frames, ship, carriageIndex, puppets);
     }
 
     /**

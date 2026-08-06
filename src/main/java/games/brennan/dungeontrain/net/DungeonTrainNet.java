@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "49";
+    public static final String PROTOCOL_VERSION = "50";
 
     private DungeonTrainNet() {}
 
@@ -60,6 +60,11 @@ public final class DungeonTrainNet {
         // hands the entity its constant plot coordinate so the client positions it from the carriage's
         // own synced sub-level pose (phase-locked, no shimmer). See TrainStaticContentsCarrier.
         registrar.playToClient(CarriedStaticEntityPacket.TYPE, CarriedStaticEntityPacket.STREAM_CODEC, CarriedStaticEntityPacket::handle);
+
+        // Hallway portal puppets: stand-ins for the entities in the other half of a portal pair, so
+        // two players either side of the midpoint can still see each other. Pushed every tick while a
+        // corridor is occupied, and once empty when it clears. See portal/PortalPuppets.
+        registrar.playToClient(PortalPuppetsPacket.TYPE, PortalPuppetsPacket.STREAM_CODEC, PortalPuppetsPacket::handle);
 
         registrar.playToServer(ContainerHotkeyPacket.TYPE, ContainerHotkeyPacket.STREAM_CODEC, ContainerHotkeyPacket::handle);
         registrar.playToServer(ContainerContentsMenuTogglePacket.TYPE, ContainerContentsMenuTogglePacket.STREAM_CODEC, ContainerContentsMenuTogglePacket::handle);
