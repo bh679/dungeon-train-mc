@@ -30,6 +30,7 @@ public final class PortalRegistry extends SavedData {
     public static final String NAME = "dungeontrain_hallway_portals";
 
     private static final String TAG_PORTALS = "portals";
+    private static final String TAG_AUTO_SPACING = "autoSpacing";
     private static final String TAG_ORIGIN_X = "originX";
     private static final String TAG_FLOOR_Y = "floorY";
     private static final String TAG_ORIGIN_Z = "originZ";
@@ -39,6 +40,20 @@ public final class PortalRegistry extends SavedData {
     private static final String TAG_DELTA_Y = "deltaY";
 
     private final List<PortalGeometry> portals = new ArrayList<>();
+
+    /**
+     * Anchor-grid spacing for auto-spawning, or {@link PortalAnchors#SPACING_OFF}. Persisted so the
+     * setting survives a reload — otherwise a world would quietly stop spawning portals (or start
+     * again) depending on when it was last saved.
+     */
+    private int autoSpacing = DEFAULT_AUTO_SPACING;
+
+    /**
+     * Default anchor spacing, in blocks. Tuned for testing rather than play: at the default train
+     * speed of 2 m/s this is roughly a portal a minute. See the Gate 3 notes — shipping this on by
+     * default is a gameplay decision that has not been made.
+     */
+    public static final int DEFAULT_AUTO_SPACING = 128;
 
     private PortalRegistry() {}
 
@@ -66,6 +81,25 @@ public final class PortalRegistry extends SavedData {
         setDirty();
     }
 
+    /** True if a portal has already been stamped with its corridor starting at {@code originX}. */
+    public synchronized boolean hasPortalAt(int originX) {
+        for (PortalGeometry geo : portals) {
+            if (geo.originX() == originX) return true;
+        }
+        return false;
+    }
+
+    /** Anchor spacing for auto-spawning, or {@link PortalAnchors#SPACING_OFF} when disabled. */
+    public synchronized int autoSpacing() {
+        return autoSpacing;
+    }
+
+    public synchronized void setAutoSpacing(int spacing) {
+        if (autoSpacing == spacing) return;
+        autoSpacing = spacing;
+        setDirty();
+    }
+
     /** Forget every portal, returning how many were dropped. Blocks already stamped are left alone. */
     public synchronized int clear() {
         int removed = portals.size();
@@ -78,6 +112,9 @@ public final class PortalRegistry extends SavedData {
 
     private static PortalRegistry load(CompoundTag tag) {
         PortalRegistry data = new PortalRegistry();
+        if (tag.contains(TAG_AUTO_SPACING)) {
+            data.autoSpacing = tag.getInt(TAG_AUTO_SPACING);
+        }
         if (!tag.contains(TAG_PORTALS)) return data;
 
         ListTag list = tag.getList(TAG_PORTALS, Tag.TAG_COMPOUND);
@@ -105,6 +142,8 @@ public final class PortalRegistry extends SavedData {
 
     @Override
     public synchronized CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+        tag.putInt(TAG_AUTO_SPACING, autoSpacing);
+
         ListTag list = new ListTag();
         for (PortalGeometry geo : portals) {
             CompoundTag e = new CompoundTag();

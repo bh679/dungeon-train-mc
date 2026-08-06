@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.portal.PortalAnchors;
 import games.brennan.dungeontrain.portal.PortalBuilder;
 import games.brennan.dungeontrain.portal.PortalGeometry;
 import games.brennan.dungeontrain.portal.PortalRegistry;
@@ -64,6 +65,11 @@ public final class PortalCommand {
                         .executes(ctx -> runBuild(ctx.getSource(),
                             IntegerArgumentType.getInteger(ctx, "length"),
                             IntegerArgumentType.getInteger(ctx, "deltaY"))))))
+            .then(Commands.literal("auto")
+                .then(Commands.literal("off").executes(ctx -> runAuto(ctx.getSource(), PortalAnchors.SPACING_OFF)))
+                .then(Commands.argument("spacing", IntegerArgumentType.integer(PortalAnchors.MIN_SPACING, 100_000))
+                    .executes(ctx -> runAuto(ctx.getSource(),
+                        IntegerArgumentType.getInteger(ctx, "spacing")))))
             .then(Commands.literal("list").executes(ctx -> runList(ctx.getSource())))
             .then(Commands.literal("clear").executes(ctx -> runClear(ctx.getSource())))
             .then(Commands.literal("tp")
@@ -127,10 +133,31 @@ public final class PortalCommand {
         return 1;
     }
 
+    private static int runAuto(CommandSourceStack source, int spacing) {
+        PortalRegistry.get(source.getLevel()).setAutoSpacing(spacing);
+
+        if (spacing == PortalAnchors.SPACING_OFF) {
+            source.sendSuccess(() -> Component.literal(
+                "Auto-spawning off. Portals already built stay where they are."), true);
+            return 1;
+        }
+
+        source.sendSuccess(() -> Component.literal(
+            "Auto-spawning every " + spacing + " blocks along +X, beside the track. "
+                + "Ride east and they will appear as chunks load."), true);
+        return 1;
+    }
+
     private static int runList(CommandSourceStack source) {
-        List<PortalGeometry> portals = PortalRegistry.get(source.getLevel()).all();
+        PortalRegistry registry = PortalRegistry.get(source.getLevel());
+        int spacing = registry.autoSpacing();
+        source.sendSuccess(() -> Component.literal(spacing == PortalAnchors.SPACING_OFF
+            ? "Auto-spawning: off"
+            : "Auto-spawning: every " + spacing + " blocks"), false);
+
+        List<PortalGeometry> portals = registry.all();
         if (portals.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("No hallway portals in this dimension."), false);
+            source.sendSuccess(() -> Component.literal("No hallway portals built in this dimension yet."), false);
             return 0;
         }
 
