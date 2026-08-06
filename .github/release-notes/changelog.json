@@ -6259,6 +6259,20 @@
       "released": true,
       "released_in": "v0.540.0",
       "released_at": "2026-08-06T15:34:51Z"
+    },
+    {
+      "id": "where-the-writing-goes-translations",
+      "version": "0.541.0",
+      "type": "content",
+      "title": "Where the Writing Goes, in 19 languages",
+      "summary": "The found book added last release is now readable in every language the mod supports \u2014 all eight accounts, translated.",
+      "highlights": [
+        "Machine-translated (Opus 5) and marked as such in the translation credits, so a human translator can review it later."
+      ],
+      "date": "2026-08-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
