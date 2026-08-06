@@ -58,11 +58,18 @@ public final class PortalRegistry extends SavedData {
     private int carriageEvery = PortalCarriageSelection.DEFAULT_CARRIAGE_EVERY;
 
     /**
-     * Default anchor spacing, in blocks. Tuned for testing rather than play: at the default train
-     * speed of 2 m/s this is roughly a portal a minute. See the Gate 3 notes — shipping this on by
-     * default is a gameplay decision that has not been made.
+     * Default anchor spacing for the free-standing portals that generate beside the track.
+     *
+     * <p><b>Off.</b> They were the prototype — a pair of corridors in the world with a fixed vertical
+     * offset — and the carriage portals have superseded them. Leaving them on meant portals kept
+     * appearing beside and above the train alongside the real ones. The system stays in the codebase
+     * as a working reference for the simpler stationary case; turn it back on per world with
+     * {@code /dungeontrain portal auto <spacing>}.</p>
+     *
+     * <p>Note this only affects worlds that have not stored a spacing yet. A world already carrying
+     * one keeps it — {@code /dungeontrain portal auto off} clears that.</p>
      */
-    public static final int DEFAULT_AUTO_SPACING = 128;
+    public static final int DEFAULT_AUTO_SPACING = PortalAnchors.SPACING_OFF;
 
     private PortalRegistry() {}
 
