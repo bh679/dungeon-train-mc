@@ -6241,9 +6241,9 @@
         "Death Note echo encounters now post their story to the Discord feed like any other echo"
       ],
       "date": "2026-08-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.539.0",
+      "released_at": "2026-08-06T07:11:55Z"
     }
   ]
 }
