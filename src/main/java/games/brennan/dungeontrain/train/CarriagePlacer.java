@@ -540,6 +540,13 @@ public final class CarriagePlacer {
             legacyPlaceAt(level, origin, b.type(), dims, relight);
             return "legacy";
         }
+        // The portal corridor is the one custom with code-generated geometry to fall back on, so it
+        // stamps something even before anyone has authored its .nbt. Without this the editor would
+        // open an empty plot for it — and the editor is where that .nbt is meant to come from.
+        if (variant.equals(PortalCarriageBuilder.portalVariant())) {
+            PortalCarriageBuilder.stampCorridorFrom(level, origin, dims, relight);
+            return "portal";
+        }
         return null;
     }
 

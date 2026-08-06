@@ -55,11 +55,21 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
      * three swaps in 0.13s, at local X 4.64 → 4.47 → 4.64 around a 4.5 midpoint.</p>
      *
      * <p>Idempotence alone cannot fix this: it prevents a repeat fire at the <i>same</i> position,
-     * not oscillation <i>around</i> the boundary. 0.4 comfortably exceeds the observed ~0.17 drift
-     * while staying far too small to notice — the two corridors are identical, and the baffles mean
-     * there is nothing to see at either end that would betray which side of the line you are on.</p>
+     * not oscillation <i>around</i> the boundary.</p>
+     *
+     * <p><b>Why 1.25 and not 0.4.</b> The first attempt used 0.4, sized against the ~0.17 client/server
+     * disagreement. That ignored a second, larger source: the carriage frame is read from the live
+     * ship AABB, and the train's own jitter tripwire measures drift of about 0.4 blocks — the same
+     * size as the band. A player standing near the midpoint then had the jitter alone carrying them
+     * over the threshold and back, swapping roughly once a second indefinitely. The band has to clear
+     * the jitter amplitude, not just the network's. It stays invisible at any width: the two corridors
+     * are identical, and the baffles mean nothing at either end betrays which side of the line you are
+     * on.</p>
+     *
+     * <p>The deeper fix is to read the carriage's canonical/target transform rather than its jittering
+     * physics pose, which would remove the drift at source instead of tolerating it.</p>
      */
-    public static final double SWAP_HYSTERESIS = 0.4;
+    public static final double SWAP_HYSTERESIS = 1.25;
 
     /** World position of a corridor's local origin. */
     public record Origin(double x, double y, double z) {}

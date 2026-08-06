@@ -115,7 +115,7 @@ public final class PortalCarriageEvents {
      * the client's movement until the acknowledgement arrives, so for a tick or two the position it
      * is judging is not one the client has agreed to yet.</p>
      */
-    private static final int SWAP_COOLDOWN_TICKS = 6;
+    private static final int SWAP_COOLDOWN_TICKS = 20;
 
     /** Player → game time at which they may swap again. */
     private static final Map<UUID, Long> COOLDOWNS = new HashMap<>();

@@ -70,7 +70,7 @@ final class PortalFramesTest {
     @DisplayName("crossing the midpoint on the train lands in the twin at the same corridor offset")
     void crossingIntoTwinPreservesLocalOffset() {
         PortalFrames f = frames();
-        double localX = 5.25;                       // just past the 4.5 midpoint
+        double localX = LAYOUT.midX() + PortalFrames.SWAP_HYSTERESIS + 0.5;   // clear of the band
 
         PortalFrames.Move move = f.requiredMove(CAR_X + localX, CAR_Y + FEET_Y, CAR_Z + WALK_Z);
 
@@ -105,7 +105,7 @@ final class PortalFramesTest {
     @DisplayName("applying a move twice is a no-op — the rule is idempotent, not an event")
     void idempotent() {
         PortalFrames f = frames();
-        PortalFrames.Move move = f.requiredMove(CAR_X + 5.25, CAR_Y + FEET_Y, CAR_Z + WALK_Z);
+        PortalFrames.Move move = f.requiredMove(CAR_X + LAYOUT.midX() + PortalFrames.SWAP_HYSTERESIS + 0.5, CAR_Y + FEET_Y, CAR_Z + WALK_Z);
 
         assertNotNull(move);
         assertNull(f.requiredMove(move.x(), move.y(), move.z()));
