@@ -1,6 +1,6 @@
 # Sub-level group packing — does one sub-level per 2 carriage groups buy tick time?
 
-**Status:** protocol ready, measurement pending
+**Status:** measured 2026-08-06 — no measurable win, recommendation is DON'T BUILD (see Results)
 **Date:** 2026-08
 **Branch:** `dev/sublevel-group-packing-bench`
 
@@ -73,71 +73,59 @@ mspt `.332`).
 
 ## Run protocol
 
-Paired in-session A/B in a single world. Only a config value changes between arms, so both arms run
-on identical terrain in the same JVM at the same JIT state — this removes the terrain and warmup
-confounds that wrecked the earlier fresh-world-per-arm attempts, and it is why the arms are
-alternated rather than run as two blocks.
+**A fresh world per arm, regenerated from the same seed.** Every arm gets identical terrain, an
+identical spawn position and identical carriage content, leaving `groupSize` as the only variable.
 
-Three known confounds and how the design kills each:
+The cheaper design — alternating arms inside one world — was tried first and **must not be used**.
+Each `/dungeontrain spawn` walks the train to a new position, so every arm sits on different terrain
+and draws different carriage variants (both deterministic on position + seed, both confounded with
+the thing under test). It produced two paired reps that disagreed in *sign* (+10.2 ms and −35.4 ms),
+and the same arm measured 47 ms, 44 ms and 5.78 ms in one session. Its `run` mode is kept for quick
+pokes only.
 
-1. **Chunk-gen noise swamps the physics signal.** → Sample with the train **parked** (`speed 0`) on
-   already-generated terrain; the parser drops any window carrying a `[gen.timing]` line.
-2. **View distance couples train length to sim-bubble churn.** → View distance is untouched, and the
-   window is pinned by carriage count so it never auto-sizes off render distance.
-3. **Spawn nondeterminism.** → Alternate A/B/A/B/A/B and read the paired deltas, not one pair.
+Pinning the arm before boot is possible because `groupSize` lives in
+`run/config/dungeontrain-server.toml`, which is **global, not per-world** — so the world-creation
+train is already correct and no in-world respawn is needed to apply it.
 
-### Headless (the supported path)
+Four confounds and how the design handles each:
 
-A dedicated server driven over RCON, with an auto-joining rider client — the train is culled outright
-on a player-less server, since both generation and sustain are gated on `players.isEmpty()`.
+1. **Chunk-gen noise swamps the signal.** → Train parked (`speed 0`); the parser drops any window
+   carrying a `[gen.timing]` line.
+2. **View distance couples train length to sim-bubble churn.** → View distance fixed at 20, window
+   pinned by carriage count so it never auto-sizes off render distance.
+3. **Post-respawn fill.** → The parser keeps only windows at the segment's settled sub-level count.
+4. **Rider loss.** → The train is culled outright the moment the rider drops. Each cycle asserts the
+   rider is still online at the end of its dwell and marks itself invalid otherwise. This is not
+   hypothetical: a client exited mid-run, the train culled to 1 sub-level, and that arm would
+   otherwise have folded an emptying world into its median.
 
 ```bash
 python3 scripts/perf/run-ab.py setup
+python3 scripts/perf/run-ab.py matrix --reps 3 --arms 3,6 --carriages 48 --dwell 90
 ```
 
-Then start the two JVMs (separate terminals, or background tasks — both survive fine):
+`matrix` owns both JVMs, cycling: reset world → pin the arm in the TOML → boot server → join rider →
+spawn → wait for the resident count to settle → dwell → stop. Ports are 25571 (game) / 25581 (RCON),
+deliberately not the defaults, since a sibling worktree's dev server sits on 25565. Old worlds are
+**moved** to `run/bench-archive/`, never deleted (`rm -rf` is deny-listed in this repo).
 
-```bash
-./gradlew runServer
-```
+Use `--tag` for a second run (e.g. a counterbalanced `--arms 6,3`) or it overwrites the first run's
+per-cycle logs.
 
-```bash
-./gradlew runClient -PjoinServer=127.0.0.1:25571
-```
-
-And drive it:
-
-```bash
-python3 scripts/perf/run-ab.py run --reps 3 --dwell 90 --carriages 36 --arms 3,6
-```
-
-The driver pins the window, parks the train, then alternates the arms — for each: set `groupSize`,
-respawn via `execute as <player>` (`/dungeontrain spawn` needs a player source, so it cannot run from
-the RCON console directly), teleport the rider aboard, poll until the resident sub-level count stops
-moving, then dwell while the log samples. It refuses a `--carriages` value that is not divisible by
-every arm, because that would hand the arms different group-rounding overshoot.
-
-Ports are 25571 (game) / 25581 (RCON), deliberately not the defaults — a sibling worktree's dev server
-sits on 25565.
-
-### Manual (GUI fallback)
-
-Same protocol by hand if you'd rather watch it: `/dungeontrain carriages 36`, `/dungeontrain speed 0`,
-then alternate `/dungeontrain debug groupsize 3|6` + `/dungeontrain spawn 36`, standing still aboard
-~90 s per arm, three times each.
-
-Either way, verify from the log that the arm actually changed — `Spawned group … groupSize=N` states
-what was really used.
+Verify from the log that the arm actually took — `Spawned group … groupSize=N` states what was used.
 
 ## Analysis
 
-> **`debug.log`, not `latest.log`.** `[mspt]` and `[freeze]` are DEBUG lines; `latest.log` is
-> INFO-only and contains **zero** of them. Pointing the parser at `latest.log` yields an empty
-> analysis that looks like a failed run.
+`matrix` captures each cycle's server stdout separately, which is what you parse:
 
 ```bash
-python3 scripts/perf/parse-dt-perf-log.py run/logs/debug.log --csv windows.csv
+python3 scripts/perf/parse-dt-perf-log.py run/logs/ab/rep*-arm*-server.log --csv windows.csv
 ```
+
+> **Never `latest.log`.** `[mspt]` and `[freeze]` are DEBUG lines; `latest.log` is INFO-only and
+> contains **zero** of them, so pointing the parser at it yields an empty analysis that looks like a
+> failed run. `debug.log` does have them, but the server and the rider client share `run/` and both
+> write it — which is why `matrix` captures per-cycle stdout instead.
 
 The parser segments the log on each `/dungeontrain spawn` and labels each segment by the `groupSize`
 in its `Spawning train` line, so the arms need no manual bookkeeping. It drops the first 10 windows
@@ -167,19 +155,68 @@ If it clears the bar, two shipping forms are on the table (decision deferred unt
 Either way, if per-group placement ms roughly doubles, `TrainCarriageAppender.MAX_SPAWNS_PER_TICK`
 (currently 2) should drop to 1: spawn spikes are what players actually feel.
 
-## Results
+## Results — 2026-08-06
 
-_Pending the run. Paste the parser output here, then fill in the analysis and the call._
+Dedicated server, view-distance 20, `--carriages 48`, 90 s dwell, 3 reps × 2 arms, fresh world from
+seed `dtbench` per arm. 6/6 cycles valid; 151 and 146 retained windows.
 
-| arm (groupSize) | sub-levels | windows | median MSPT | p15 | p85 | active bodies |
+| arm (groupSize) | sub-levels | carriages | median MSPT | p15 | p85 | ms/carriage |
 |---|---|---|---|---|---|---|
-| 3 | | | | | | |
-| 6 | | | | | | |
+| 3 | 17 | 51 | **19.26** | 16.68 | 20.69 | 0.378 |
+| 6 | 10 | 60 | **19.23** | 18.56 | 20.33 | 0.321 |
 
-### Sanity checks before trusting a number
+**Raw difference: −0.03 ms (−0.2%). That is a null.**
 
-- Sub-level counts came out at the expected 12 vs 6 — if not, the window was not actually pinned.
-- Both arms have ≥30 retained windows; the parser flags thin segments.
-- Paired per-rep deltas agree in sign. Three deltas that disagree mean the signal is inside the noise
-  — escalate to a dedicated server at view-distance 20 (more resident bodies, bigger signal) rather
-  than over-reading a single-player run, which caps residents at roughly 22 sub-levels.
+Per-rep medians, which are the honest way to read it:
+
+| rep | arm 3 | arm 6 | paired delta |
+|---|---|---|---|
+| 1 | 19.75 | 18.71 | −1.04 |
+| 2 | 19.80 | 19.12 | −0.68 |
+| 3 | 16.79 | 19.91 | **+3.12** |
+
+The deltas do not agree in sign, and the **within-arm** spread (arm 3: 16.79–19.80, a 3.01 ms range
+across identical same-seed worlds) is ~100× the between-arm difference. The effect, if any, is below
+this rig's resolution.
+
+### What that actually means
+
+Halving the sub-level count did **not** reduce server tick time — but it did not raise it either,
+while carrying **18% more carriages**. So the fixed per-sub-level overhead (plot, tickets, pose sync,
+provider tick) is real but small, and here it roughly cancelled the cost of 9 extra carriages of
+content. The dominant term is content-proportional, not per-sub-level — which is the opposite of the
+premise the experiment was built on.
+
+Note the arms could not be load-matched by pinning: the appender rounds the window outward to group
+boundaries, so a bigger group overshoots further (51 vs 60 carriages off the same `--carriages 48`).
+That over-fetch is not a measurement artifact — it is a real property the change would ship with.
+
+### The one clear, repeatable difference: spawn spikes
+
+| arm | groups placed | median total | p95 total | per carriage |
+|---|---|---|---|---|
+| 3 | 102 | 24.0 ms | 80 ms | 8.0 ms |
+| 6 | 58 | **39.5 ms** | **119 ms** | 6.6 ms |
+
+Placing one group costs 1.6× more, and the p95 spike is 1.5× worse. Per carriage it is cheaper, but
+players feel the spike, not the average — and `TrainCarriageAppender.MAX_SPAWNS_PER_TICK` is 2, so a
+bad tick can place two of them.
+
+### Call: don't build it
+
+Against the thresholds above (≥10% to justify a feature session, <5% = don't build), a −0.2% raw
+result with an inconsistent sign is a clear no. Packing 2 groups per sub-level would buy no
+measurable server tick time, cost a 1.5× worse spawn hitch, over-fetch ~18% more carriages than
+asked for, and — in the `DEFAULT_GROUP_SIZE` form — halve the open-air flatbed cadence.
+
+### Limitations, stated plainly
+
+- **Order was not counterbalanced.** Arm 3 ran first in every rep. That cannot manufacture a null,
+  so it does not threaten this conclusion — but it would have to be fixed before claiming a win.
+- **Rig noise floor is ~±1.5–3 ms**, so a real effect smaller than ~15% would not be visible here.
+  A quieter box (no rider client sharing the CPU) would resolve more.
+- **Single load point per arm.** To get the marginal cost of a carriage under each grouping, sweep
+  several pinned window sizes per arm and fit the slope — that is the experiment to run if the
+  question ever comes back.
+- **Server-side only.** Fewer sub-levels may still help the *client* (fewer render setups, fewer
+  pose syncs); nothing here measures frame time.

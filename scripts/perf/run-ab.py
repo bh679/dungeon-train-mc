@@ -18,18 +18,32 @@ Design notes that matter:
   * **`spawn` needs a player source** (`getPlayerOrException`), so it is issued
     through `execute as <player>` rather than straight from the RCON console.
 
-Two JVMs must already be running (`run/` is gitignored, so `setup` writes the
-server config):
+Two modes:
 
-    python3 scripts/perf/run-ab.py setup
-    ./gradlew runServer                             # terminal 1
-    ./gradlew runClient -PjoinServer=127.0.0.1:25571  # terminal 2, the rider
-    python3 scripts/perf/run-ab.py run
+  `matrix` (accurate, the default choice) — a FRESH same-seed world per arm,
+  starting and stopping both JVMs itself. Driving the arms inside one world
+  walks the train forward on each respawn, so every arm sits on different
+  terrain and draws different carriage variants; both are deterministic on
+  position + seed, and both are confounded with the thing under test. It is
+  possible to pin the arm before boot only because `groupSize` lives in
+  run/config/dungeontrain-server.toml, which is GLOBAL rather than per-world.
 
-Then analyse — note it is debug.log, NOT latest.log: the [mspt]/[freeze] lines
-are DEBUG, and latest.log is INFO-only.
+      python3 scripts/perf/run-ab.py setup
+      python3 scripts/perf/run-ab.py matrix --reps 3 --arms 3,6 --carriages 48
 
-    python3 scripts/perf/parse-dt-perf-log.py run/logs/debug.log
+  `run` (fast, less controlled) — alternates arms inside one already-running
+  world. Needs both JVMs up first:
+
+      ./gradlew runServer                               # terminal 1
+      ./gradlew runClient -PjoinServer=127.0.0.1:25571   # terminal 2, the rider
+      python3 scripts/perf/run-ab.py run
+
+Then analyse. `matrix` captures each cycle's server stdout separately (both
+JVMs share run/, so debug.log is written by two processes); for `run`, parse
+run/logs/debug.log — NOT latest.log, which is INFO-only and carries none of
+the [mspt]/[freeze] DEBUG lines.
+
+    python3 scripts/perf/parse-dt-perf-log.py 'run/logs/ab/rep*-arm*-server.log'
 """
 from __future__ import annotations
 
@@ -39,6 +53,7 @@ import os
 import re
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -248,6 +263,25 @@ def launch(command: list[str], log_path: Path) -> subprocess.Popen:
                             stderr=subprocess.STDOUT, start_new_session=True, env=env)
 
 
+def wait_for_port_free(host: str, port: int, timeout_s: float = 120.0) -> None:
+    """Block until nothing is listening on `port`.
+
+    The next cycle must not connect to the PREVIOUS cycle's server: a stopping
+    server keeps its RCON listener up while it saves, so a fresh `connect()`
+    succeeds against the dying process and then dies mid-command. That is
+    exactly how the first matrix attempt aborted.
+    """
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        try:
+            with socket.create_connection((host, port), timeout=2.0):
+                pass
+        except OSError:
+            return
+        time.sleep(2.0)
+    raise SystemExit(f"port {port} still busy after {timeout_s:.0f}s — a stale server is running.")
+
+
 def terminate(process: subprocess.Popen | None, grace_s: float = 25.0) -> None:
     if process is None or process.poll() is not None:
         return
@@ -267,9 +301,10 @@ def terminate(process: subprocess.Popen | None, grace_s: float = 25.0) -> None:
 
 def run_one_arm(args: argparse.Namespace, rep: int, arm: int) -> dict:
     """One complete cycle: fresh same-seed world, boot, join, settle, sample."""
-    label = f"rep{rep}-arm{arm}"
+    label = f"{args.tag}rep{rep}-arm{arm}"
     print(f"\n=== {label}: fresh world, groupSize={arm} ===", flush=True)
 
+    wait_for_port_free(args.host, args.port)
     reset_world(label)
     patch_mod_config(groupSize=arm, numCarriages=args.carriages, speed="0.0")
 
@@ -333,12 +368,20 @@ def run_matrix(args: argparse.Namespace) -> int:
     results = []
     for rep in range(1, args.reps + 1):
         for arm in arms:
-            results.append(run_one_arm(args, rep, arm))
+            # One bad cycle (a client that quit, a server that took too long to
+            # release its port) should cost that cycle, not the whole matrix —
+            # every completed cycle's log is already on disk and usable.
+            try:
+                results.append(run_one_arm(args, rep, arm))
+            except (OSError, RconError, SystemExit) as exc:
+                print(f"  CYCLE FAILED: {exc}", flush=True)
+                results.append({"rep": rep, "groupSize": arm, "valid": False,
+                                "error": str(exc)})
 
     manifest = {"mode": "matrix", "carriages": args.carriages, "arms": arms,
-                "reps": args.reps, "dwellSeconds": args.dwell,
+                "reps": args.reps, "dwellSeconds": args.dwell, "tag": args.tag,
                 "seed": BENCH_SERVER_PROPERTIES["level-seed"], "results": results}
-    path = AB_LOG_DIR / "matrix-manifest.json"
+    path = AB_LOG_DIR / f"{args.tag}matrix-manifest.json"
     path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     valid = [r for r in results if r["valid"]]
@@ -417,6 +460,10 @@ def main(argv: list[str] | None = None) -> int:
                           help="seconds to wait for the server and the rider to come up")
         mode.add_argument("--no-tp", action="store_true",
                           help="skip teleporting the rider onto the train after each respawn")
+        mode.add_argument("--tag", default="",
+                          help="prefix for this run's log/world labels, e.g. --tag rev- for a "
+                               "counterbalanced (--arms 6,3) run. Without it a second run "
+                               "overwrites the first run's per-cycle logs.")
 
     args = parser.parse_args(argv)
     if args.mode == "setup":
