@@ -39,15 +39,18 @@ import java.util.Set;
  * {@code ▓} baffle, {@code ░} lantern floor (the crossing zone), {@code ·} plain floor:</p>
  * <pre>
  *        x:  0  1  2  3  4  5  6  7  8
- *   z=5      ·  ·  ░  ░  ░  ░  ░  ▓  ·
- *   z=4      ·  ·  ░  ░  ░  ░  ░  ▓  ·
+ *   z=5      ·  ·  ░  ░  ░  ░  ░  ·  ·
+ *   z=4      ·  ·  ░  ░  ░  ░  ░  ·  ·
  *   z=3      D  ▓  ░  ░  ░  ░  ░  ▓  D
- *   z=2      ·  ▓  ░  ░  ░  ░  ░  ·  ·
- *   z=1      ·  ▓  ░  ░  ░  ░  ░  ·  ·
+ *   z=2      ·  ▓  ░  ░  ░  ░  ░  ▓  ·
+ *   z=1      ·  ▓  ░  ░  ░  ░  ░  ▓  ·
  * </pre>
- * <p>The two baffles are staggered to opposite sides, so the walk is an S-bend — in at {@code z=3},
- * around to {@code z=4/5}, across the crossing zone, back to {@code z=1/2}, out at {@code z=3} —
- * and no straight line runs from either doorway to the midpoint.</p>
+ * <p>The walk is a dog-leg: in at {@code z=3}, around to {@code z=4/5} past the first baffle, across
+ * the crossing zone, and back to {@code z=3} to leave. No straight line runs from either doorway to
+ * the midpoint, because both baffles interrupt the walkway centre.</p>
+ * <p>Both baffles block the <b>same</b> side deliberately, which makes the corridor mirror-symmetric
+ * — an {@link PortalCarriageRole#ENTRY} carriage and an {@link PortalCarriageRole#EXIT} carriage are
+ * then block-for-block identical, differing only in which half the rule treats as the train side.</p>
  *
  * <p>Follows {@code CarriagePlacer.legacyPlaceAt}'s contract for code-generated carriage geometry:
  * {@code null} means "leave this cell", and writes go through the section-local fast path on the
@@ -102,9 +105,12 @@ public final class PortalCarriageBuilder {
             return doorway ? doorState(dy == layout.floorY() + 1) : SHELL;
         }
 
-        // Baffles: staggered so no straight line survives from either doorway to the crossing zone.
-        if (dx == layout.nearBaffleX() && dz <= layout.baffleZ()) return SHELL;
-        if (dx == layout.farBaffleX() && dz >= layout.baffleZ()) return SHELL;
+        // Baffles: both on the same side, so no straight line survives from either doorway to the
+        // crossing zone AND the corridor is mirror-symmetric — an entry and an exit carriage stamp
+        // identical blocks, differing only in which half the swap rule treats as the train side.
+        if ((dx == layout.nearBaffleX() || dx == layout.farBaffleX()) && dz <= layout.baffleZ()) {
+            return SHELL;
+        }
 
         return null;
     }
@@ -172,9 +178,39 @@ public final class PortalCarriageBuilder {
                 }
             }
         }
+    }
 
-        plugBehindNearDoor(level, origin, dims);
-        stampPocket(level, origin, dims, layout);
+    /**
+     * X offset from the entry twin's origin to the exit twin's — one corridor plus the room between
+     * them.
+     */
+    public static int exitTwinOffsetX(CarriageDims dims) {
+        return dims.length() + POCKET_LENGTH;
+    }
+
+    /**
+     * Stamp a whole pair structure at {@code entryOrigin}:
+     *
+     * <pre>
+     *   [plug] [entry twin] [room] [exit twin] [plug]
+     * </pre>
+     *
+     * <p>Each twin's dead side is plugged: the entry twin's near door has nothing behind it (its
+     * near half maps to the entry carriage), and the exit twin's far door likewise (its far half
+     * maps to the exit carriage). The room opens onto both corridors, so a player walks in from the
+     * train through one and out to the train through the other without turning round.</p>
+     */
+    public static void stampPairStructure(ServerLevel level, BlockPos entryOrigin, CarriageDims dims) {
+        PortalCarriageLayout layout = layoutFor(dims);
+        BlockPos exitOrigin = entryOrigin.offset(exitTwinOffsetX(dims), 0, 0);
+
+        stampTwin(level, entryOrigin, dims);
+        stampTwin(level, exitOrigin, dims);
+        stampRoom(level, entryOrigin, exitOrigin, dims, layout);
+
+        // Dead space behind the door that leads nowhere, at each outer end.
+        plugBeyond(level, entryOrigin.offset(-PLUG_DEPTH, 0, 0), PLUG_DEPTH, dims);
+        plugBeyond(level, exitOrigin.offset(dims.length(), 0, 0), PLUG_DEPTH, dims);
     }
 
     /**
@@ -191,7 +227,8 @@ public final class PortalCarriageBuilder {
 
         int zCentre = origin.getZ() + layout.doorZ();
         int minX = origin.getX() - PLUG_DEPTH;
-        int maxX = origin.getX() + dims.length() + POCKET_LENGTH;
+        // Both corridors, the room between them, and the plug past the far end.
+        int maxX = origin.getX() + exitTwinOffsetX(dims) + dims.length() + PLUG_DEPTH;
         int minZ = Math.min(origin.getZ() - 1, zCentre - POCKET_WIDTH / 2 - 1);
         int maxZ = Math.max(origin.getZ() + dims.width(), zCentre + POCKET_WIDTH / 2 + 1);
         int maxY = origin.getY() + Math.max(dims.height(), POCKET_HEIGHT + 2);
@@ -205,13 +242,17 @@ public final class PortalCarriageBuilder {
         }
     }
 
-    /** Solid rock behind the twin's dummy near door, so nothing is reachable or visible through it. */
-    private static void plugBehindNearDoor(ServerLevel level, BlockPos origin, CarriageDims dims) {
+    /**
+     * Solid rock filling {@code depth} blocks from {@code from} along +X, across the corridor's
+     * cross-section — the dead space behind a twin's door that leads nowhere, so nothing is reachable
+     * or visible through it if it is ever forced open.
+     */
+    private static void plugBeyond(ServerLevel level, BlockPos from, int depth, CarriageDims dims) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for (int dx = -PLUG_DEPTH; dx < 0; dx++) {
+        for (int dx = 0; dx < depth; dx++) {
             for (int dz = -1; dz <= dims.width(); dz++) {
                 for (int dy = 0; dy < dims.height(); dy++) {
-                    pos.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz);
+                    pos.set(from.getX() + dx, from.getY() + dy, from.getZ() + dz);
                     level.setBlock(pos, PLUG, Block.UPDATE_ALL);
                 }
             }
@@ -219,26 +260,31 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * The pocket area beyond the twin's far door — a sealed room in a palette nothing in the
-     * corridor shares, so stepping through reads unmistakably as arriving somewhere else.
+     * The pocket room between the two twins — a sealed space in a palette nothing in the corridors
+     * shares, so stepping out of either one reads unmistakably as arriving somewhere else.
+     *
+     * <p>Open at <b>both</b> ends: the entry twin's far door feeds it and the exit twin's near door
+     * leads out of it, which is what lets a player cross the room and rejoin the train facing the
+     * same way they set off.</p>
      */
-    private static void stampPocket(ServerLevel level, BlockPos origin, CarriageDims dims,
-                                    PortalCarriageLayout layout) {
-        int x0 = origin.getX() + dims.length();
-        int x1 = x0 + POCKET_LENGTH - 1;
-        int zCentre = origin.getZ() + layout.doorZ();
+    private static void stampRoom(ServerLevel level, BlockPos entryOrigin, BlockPos exitOrigin,
+                                  CarriageDims dims, PortalCarriageLayout layout) {
+        int x0 = entryOrigin.getX() + dims.length();
+        int x1 = exitOrigin.getX() - 1;
+        int zCentre = entryOrigin.getZ() + layout.doorZ();
         int z0 = zCentre - POCKET_WIDTH / 2;
         int z1 = z0 + POCKET_WIDTH - 1;
-        int floorY = origin.getY();
+        int floorY = entryOrigin.getY();
         int ceilingY = floorY + POCKET_HEIGHT + 1;
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
-        // Interior plus every wall except the near one, which is the corridor's own far-door plane.
-        for (int x = x0; x <= x1 + 1; x++) {
+        // Interior, side walls, floor and ceiling. Neither end plane is written here — both are the
+        // corridors' own door planes, and writing over them would delete the doors.
+        for (int x = x0; x <= x1; x++) {
             for (int z = z0 - 1; z <= z1 + 1; z++) {
                 for (int y = floorY; y <= ceilingY; y++) {
-                    boolean shell = x > x1 || z < z0 || z > z1 || y == floorY || y == ceilingY;
+                    boolean shell = z < z0 || z > z1 || y == floorY || y == ceilingY;
                     BlockState state = !shell ? Blocks.AIR.defaultBlockState()
                         : (y == floorY ? POCKET_FLOOR : POCKET_SHELL);
                     level.setBlock(pos.set(x, y, z), state, Block.UPDATE_ALL);
@@ -246,21 +292,30 @@ public final class PortalCarriageBuilder {
             }
         }
 
-        // Seal the ring of the pocket's opening the corridor's own shell does not already cover,
-        // leaving that shell — and the far door hanging in it — untouched.
-        for (int z = z0 - 1; z <= z1 + 1; z++) {
-            for (int y = floorY; y <= ceilingY; y++) {
-                boolean coveredByCorridor = z >= origin.getZ() && z < origin.getZ() + dims.width()
-                    && y < floorY + dims.height();
-                if (coveredByCorridor) continue;
-                level.setBlock(pos.set(x0 - 1, y, z), y == floorY ? POCKET_FLOOR : POCKET_SHELL,
-                    Block.UPDATE_ALL);
-            }
-        }
+        // Seal the ring around each corridor mouth: the room is wider and taller than a corridor, so
+        // everything its shell does not already cover has to be walled off, leaving that shell — and
+        // the door hanging in it — untouched.
+        sealCorridorMouth(level, x0 - 1, entryOrigin, dims, z0, z1, floorY, ceilingY);
+        sealCorridorMouth(level, x1 + 1, exitOrigin, dims, z0, z1, floorY, ceilingY);
 
         for (int dx = 2; dx <= POCKET_LENGTH - 3; dx += POCKET_LENGTH - 5) {
             for (int dz = 2; dz <= POCKET_WIDTH - 3; dz += POCKET_WIDTH - 5) {
                 level.setBlock(pos.set(x0 + dx, ceilingY, z0 + dz), POCKET_LIGHT, Block.UPDATE_ALL);
+            }
+        }
+    }
+
+    private static void sealCorridorMouth(ServerLevel level, int planeX, BlockPos corridorOrigin,
+                                          CarriageDims dims, int z0, int z1, int floorY, int ceilingY) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int z = z0 - 1; z <= z1 + 1; z++) {
+            for (int y = floorY; y <= ceilingY; y++) {
+                boolean coveredByCorridor = z >= corridorOrigin.getZ()
+                    && z < corridorOrigin.getZ() + dims.width()
+                    && y < floorY + dims.height();
+                if (coveredByCorridor) continue;
+                level.setBlock(pos.set(planeX, y, z), y == floorY ? POCKET_FLOOR : POCKET_SHELL,
+                    Block.UPDATE_ALL);
             }
         }
     }

@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageLayout;
+import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalFrames;
 import games.brennan.dungeontrain.portal.PortalRegistry;
@@ -88,11 +89,18 @@ public final class PortalCarriageEvents {
     private static final int CEILING_MARGIN = 4;
 
     /**
-     * Carriage index → world origin of the twin currently stamped for it. Carriage indices are
-     * global along the track, so they key this on their own. In-memory only: the twin's blocks are
+     * ENTRY carriage index → world origin of that pair's structure. Carriage indices are global
+     * along the track, so the entry index keys a pair on its own. In-memory only: the blocks are
      * re-stamped on the next approach anyway.
      */
-    private static final Map<Integer, BlockPos> TWINS = new HashMap<>();
+    private static final Map<Integer, BlockPos> STRUCTURES = new HashMap<>();
+
+    /**
+     * How far outside the corridor's own cross-section the room extends, for the "is anyone in this
+     * structure" test. The room is wider and taller than a corridor, and a player standing in it
+     * must still pin the structure against being re-stamped.
+     */
+    private static final int POCKET_ROOM_SLACK = 8;
 
     /**
      * Ticks after a swap during which that player is left alone.
@@ -149,7 +157,11 @@ public final class PortalCarriageEvents {
                     double originY = bb.minY();
                     double originZ = bb.minZ();
 
-                    handlePortalCarriage(level, players, layout, dims, carriageIndex,
+                    int every = PortalRegistry.get(level).carriageEvery();
+                    PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, every);
+                    int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, every);
+
+                    handlePortalCarriage(level, players, layout, dims, carriageIndex, role, pairKey,
                         originX, originY, originZ);
                 }
             }
@@ -158,27 +170,37 @@ public final class PortalCarriageEvents {
 
     private static void handlePortalCarriage(ServerLevel level, List<ServerPlayer> players,
                                              PortalCarriageLayout layout, CarriageDims dims,
-                                             int carriageIndex, double originX, double originY, double originZ) {
-        BlockPos existingTwin = TWINS.get(carriageIndex);
+                                             int carriageIndex, PortalCarriageRole role, int pairKey,
+                                             double originX, double originY, double originZ) {
+        // One structure per pair, stamped from the ENTRY carriage's approach and keyed on its index,
+        // so both carriages of a pair address the same room rather than building one each.
+        BlockPos structure = STRUCTURES.get(pairKey);
 
-        // Anyone standing in either corridor pins the pairing: re-stamping the twin out from under a
-        // player would strand them in an abandoned corridor that no longer maps to anything.
-        boolean occupied = existingTwin != null
-            && anyPlayerInCorridor(players, layout, existingTwin.getX(), existingTwin.getY(), existingTwin.getZ())
+        boolean occupied = structure != null && anyPlayerInStructure(players, layout, dims, structure)
             || anyPlayerInCorridor(players, layout, originX, originY, originZ);
 
         if (!occupied && !anyPlayerWithin(players, originX, originY, originZ, APPROACH_RANGE)) {
             return;
         }
 
-        BlockPos twinOrigin = occupied && existingTwin != null
-            ? existingTwin
-            : ensureTwin(level, dims, carriageIndex, originX, originY, originZ);
-        if (twinOrigin == null) return;
+        // Only the ENTRY carriage places the structure: it fixes where the room sits, and the EXIT
+        // twin's position follows from it. An EXIT carriage approached first simply waits.
+        if (structure == null && role != PortalCarriageRole.ENTRY) return;
+
+        BlockPos structureOrigin = occupied && structure != null
+            ? structure
+            : ensureStructure(level, dims, pairKey, originX, originY, originZ);
+        if (structureOrigin == null) return;
+
+        // The entry twin sits at the structure's origin; the exit twin one corridor and one room along.
+        BlockPos twinOrigin = role == PortalCarriageRole.ENTRY
+            ? structureOrigin
+            : structureOrigin.offset(PortalCarriageBuilder.exitTwinOffsetX(dims), 0, 0);
 
         PortalFrames frames = new PortalFrames(layout,
             new PortalFrames.Origin(originX, originY, originZ),
-            new PortalFrames.Origin(twinOrigin.getX(), twinOrigin.getY(), twinOrigin.getZ()));
+            new PortalFrames.Origin(twinOrigin.getX(), twinOrigin.getY(), twinOrigin.getZ()),
+            role);
 
         for (ServerPlayer player : players) {
             if (player.isPassenger()) continue;
@@ -209,9 +231,9 @@ public final class PortalCarriageEvents {
      * the chunk columns the old one sits in — which is the condition the crossing's seamlessness
      * depends on, so it is also exactly when a fresh one is worth the block writes.
      */
-    private static BlockPos ensureTwin(ServerLevel level, CarriageDims dims, int carriageIndex,
-                                       double originX, double originY, double originZ) {
-        BlockPos existing = TWINS.get(carriageIndex);
+    private static BlockPos ensureStructure(ServerLevel level, CarriageDims dims, int pairKey,
+                                            double originX, double originY, double originZ) {
+        BlockPos existing = STRUCTURES.get(pairKey);
         BlockPos wanted = BlockPos.containing(originX, originY + TWIN_Y_OFFSET, originZ);
 
         if (wanted.getY() + dims.height() > level.getMaxBuildHeight() - CEILING_MARGIN) return existing;
@@ -220,17 +242,33 @@ public final class PortalCarriageEvents {
             return existing;
         }
 
-        // Clear the outgoing twin rather than leaving it hanging in the sky. Without this the train
-        // would trail a line of abandoned corridors, one every time it drifted out of range.
+        // Clear the outgoing structure rather than leaving it hanging in the sky. Without this the
+        // train would trail abandoned corridors, a set every time a pair drifted out of range.
         if (existing != null) {
             PortalCarriageBuilder.eraseTwin(level, existing, dims);
         }
 
-        PortalCarriageBuilder.stampTwin(level, wanted, dims);
-        TWINS.put(carriageIndex, wanted);
-        LOGGER.info("[DungeonTrain] Stamped portal twin for carriage {} at {} (carriage at {}, {}, {})",
-            carriageIndex, wanted, fmt(originX), fmt(originY), fmt(originZ));
+        PortalCarriageBuilder.stampPairStructure(level, wanted, dims);
+        STRUCTURES.put(pairKey, wanted);
+        LOGGER.info("[DungeonTrain] Stamped portal pair {} at {} (entry carriage at {}, {}, {})",
+            pairKey, wanted, fmt(originX), fmt(originY), fmt(originZ));
         return wanted;
+    }
+
+    /** True if any player is anywhere inside a pair structure — either corridor, or the room between. */
+    private static boolean anyPlayerInStructure(List<ServerPlayer> players, PortalCarriageLayout layout,
+                                                CarriageDims dims, BlockPos structure) {
+        int span = PortalCarriageBuilder.exitTwinOffsetX(dims) + dims.length();
+        for (ServerPlayer player : players) {
+            double dx = player.getX() - structure.getX();
+            double dy = player.getY() - structure.getY();
+            double dz = player.getZ() - structure.getZ();
+            if (dx >= -1 && dx <= span + 1 && dy >= -1 && dy <= dims.height() + POCKET_ROOM_SLACK
+                && dz >= -POCKET_ROOM_SLACK && dz <= dims.width() + POCKET_ROOM_SLACK) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static double horizontalDistance(BlockPos twin, double x, double z) {

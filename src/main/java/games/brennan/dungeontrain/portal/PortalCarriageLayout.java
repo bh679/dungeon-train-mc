@@ -89,9 +89,20 @@ public record PortalCarriageLayout(int length, int height, int width) {
     }
 
     /**
-     * Local Z the baffle blocks off at {@link #nearBaffleX()} / {@link #farBaffleX()}. Sits on the
-     * walkway centre so the player steps around it, which is what breaks the line of sight through
-     * to the far end.
+     * Local Z the baffle blocks off, up to and including this value, at <b>both</b>
+     * {@link #nearBaffleX()} and {@link #farBaffleX()}. Sits on the walkway centre so the player
+     * steps around it, which is what breaks the line of sight through to the far end.
+     *
+     * <p><b>Both baffles block the same side on purpose.</b> That makes the corridor
+     * mirror-symmetric, so an {@link PortalCarriageRole#ENTRY} carriage and an
+     * {@link PortalCarriageRole#EXIT} carriage stamp identical blocks and differ only in which half
+     * counts as the train side. Staggering them to opposite sides would mean arriving in an exit
+     * corridor showed the baffles on the wrong side of the walkway — a difference visible at exactly
+     * the moment the swap is meant to be invisible.</p>
+     *
+     * <p>Symmetry costs nothing in sight-blocking: a straight line down the walkway centre is
+     * interrupted at <i>both</i> baffles, so neither doorway is ever visible from the crossing
+     * zone.</p>
      */
     public int baffleZ() {
         return doorZ();

@@ -28,7 +28,16 @@ final class PortalFramesTest {
     private static PortalFrames frames(double carriageX) {
         return new PortalFrames(LAYOUT,
             new PortalFrames.Origin(carriageX, CAR_Y, CAR_Z),
-            new PortalFrames.Origin(TWIN_X, TWIN_Y, TWIN_Z));
+            new PortalFrames.Origin(TWIN_X, TWIN_Y, TWIN_Z),
+            PortalCarriageRole.ENTRY);
+    }
+
+    /** The same pair with the mirrored rule: the train is the far half rather than the near one. */
+    private static PortalFrames exitFrames() {
+        return new PortalFrames(LAYOUT,
+            new PortalFrames.Origin(CAR_X, CAR_Y, CAR_Z),
+            new PortalFrames.Origin(TWIN_X, TWIN_Y, TWIN_Z),
+            PortalCarriageRole.EXIT);
     }
 
     private static PortalFrames frames() {
@@ -152,12 +161,58 @@ final class PortalFramesTest {
         // A carriage whose pose leaves its origin fractional, exactly as the live ship AABB reports.
         PortalFrames f = new PortalFrames(LAYOUT,
             new PortalFrames.Origin(CAR_X, 77.99, CAR_Z),
-            new PortalFrames.Origin(TWIN_X, 173, TWIN_Z));
+            new PortalFrames.Origin(TWIN_X, 173, TWIN_Z),
+            PortalCarriageRole.ENTRY);
 
         // The twin's floor block sits at Y=173, so its walkable surface is 174 — not the 173.98 that
         // carrying a local Y of 0.98 across would have produced.
         assertEquals(174.0, f.floorSurfaceY(PortalFrames.FRAME_TWIN), 1e-9);
         assertEquals(78.99, f.floorSurfaceY(PortalFrames.FRAME_CARRIAGE), 1e-9);
+    }
+
+    // ---- the mirrored EXIT rule ------------------------------------------------
+
+    /**
+     * The EXIT half of a pair reverses which side is the train, and that reversal is the whole
+     * reason a player can walk train → room → train without turning round. With the ENTRY rule on
+     * both ends, stepping into the second corridor would teleport them straight back onto the train
+     * before its midpoint, still walking forwards — two steps later they would re-cross it and be
+     * back in the room. A revolving door.
+     */
+    @Test
+    @DisplayName("EXIT mirrors the rule: the twin owns the near half, the carriage the far half")
+    void exitRoleMirrorsTheRule() {
+        PortalFrames f = exitFrames();
+        double clearlyBefore = LAYOUT.midX() - PortalFrames.SWAP_HYSTERESIS - 0.1;
+        double clearlyPast = LAYOUT.midX() + PortalFrames.SWAP_HYSTERESIS + 0.1;
+
+        // Walking out of the room into the exit twin: before the line, so it stays put — under the
+        // ENTRY rule this position would have been yanked onto the train immediately.
+        assertNull(f.requiredMove(TWIN_X + clearlyBefore, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z));
+
+        // Crossing its midpoint hands the player to the carriage, past ITS midpoint, so they carry
+        // on forwards and leave through the carriage's far door onto the next carriage.
+        PortalFrames.Move onward = f.requiredMove(TWIN_X + clearlyPast, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z);
+        assertNotNull(onward);
+        assertEquals(PortalFrames.FRAME_CARRIAGE, onward.toFrame());
+        assertEquals(CAR_X + clearlyPast, onward.x(), 1e-9);
+
+        // And the reverse: backing up past the carriage's midpoint returns them to the room.
+        PortalFrames.Move back = f.requiredMove(CAR_X + clearlyBefore, CAR_Y + FEET_Y, CAR_Z + WALK_Z);
+        assertNotNull(back);
+        assertEquals(PortalFrames.FRAME_TWIN, back.toFrame());
+    }
+
+    @Test
+    @DisplayName("ENTRY and EXIT disagree about the same position — they are true mirrors")
+    void entryAndExitAreMirrors() {
+        PortalFrames entry = frames();
+        PortalFrames exit = exitFrames();
+        double past = LAYOUT.midX() + PortalFrames.SWAP_HYSTERESIS + 0.1;
+
+        // Same spot on the carriage, opposite verdicts: ENTRY sends it to the twin, EXIT keeps it.
+        assertNotNull(entry.requiredMove(CAR_X + past, CAR_Y + FEET_Y, CAR_Z + WALK_Z));
+        assertNull(exit.requiredMove(CAR_X + past, CAR_Y + FEET_Y, CAR_Z + WALK_Z));
     }
 
     // ---- simulated walk on a moving train -------------------------------------

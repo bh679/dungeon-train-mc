@@ -23,11 +23,20 @@ package games.brennan.dungeontrain.portal;
  *
  * <p>No Minecraft types, so it unit-tests without a NeoForge bootstrap.</p>
  *
+ * <p><b>The role mirrors the rule.</b> An {@link PortalCarriageRole#ENTRY} pair puts the train on
+ * the near side of the midpoint: walk past it and you go to the twin. An
+ * {@link PortalCarriageRole#EXIT} pair puts the train on the far side: walk past the midpoint in the
+ * twin and you arrive on the train, leaving through the carriage's far door. That mirror is what
+ * lets a player walk train → room → train without ever turning round, and it lives here rather than
+ * in the geometry because a mirrored corridor would flip the view ahead of them mid-swap.</p>
+ *
  * @param layout   the corridor layout both frames were stamped from
  * @param carriage world position of the carriage corridor's local origin, read live each tick
  * @param twin     world position of the static twin corridor's local origin
+ * @param role     which half of the pair is the train side
  */
-public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin twin) {
+public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin twin,
+                           PortalCarriageRole role) {
 
     /** Position is in neither corridor. */
     public static final int FRAME_NONE = -1;
@@ -115,10 +124,16 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
         boolean pastLine = localX > layout.midX() + SWAP_HYSTERESIS;
         boolean beforeLine = localX < layout.midX() - SWAP_HYSTERESIS;
 
+        // ENTRY: the train is the near half, so past the line belongs to the twin.
+        // EXIT: mirrored — the train is the far half, so before the line belongs to the twin.
+        int trainSideFrame = FRAME_CARRIAGE;
+        boolean onTwinSide = role == PortalCarriageRole.ENTRY ? pastLine : beforeLine;
+        boolean onTrainSide = role == PortalCarriageRole.ENTRY ? beforeLine : pastLine;
+
         int wantFrame;
-        if (frame == FRAME_CARRIAGE && pastLine) {
+        if (frame == trainSideFrame && onTwinSide) {
             wantFrame = FRAME_TWIN;
-        } else if (frame == FRAME_TWIN && beforeLine) {
+        } else if (frame == FRAME_TWIN && onTrainSide) {
             wantFrame = FRAME_CARRIAGE;
         } else {
             return null;
