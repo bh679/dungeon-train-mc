@@ -59,4 +59,32 @@ class UsedCarriageIdsTest {
         used.loadFrom(null);
         assertEquals(0, used.size());
     }
+
+    @Test
+    void clearForgetsEveryIdAndReportsHowMany() {
+        UsedCarriageIds used = new UsedCarriageIds();
+        for (int id : new int[] {7, 8, 9}) used.add(id);
+
+        assertEquals(3, used.clear(), "reports what it forgot so the caller can skip marking dirty");
+        assertEquals(0, used.size());
+        assertFalse(used.contains(7));
+        assertEquals(List.of(), used.recent(10));
+    }
+
+    @Test
+    void clearingAnEmptyMemoryIsANoOp() {
+        UsedCarriageIds used = new UsedCarriageIds();
+        assertEquals(0, used.clear(), "nothing forgotten → the save stays clean");
+    }
+
+    @Test
+    void idsCanBeRememberedAgainAfterAClear() {
+        UsedCarriageIds used = new UsedCarriageIds();
+        used.add(42);
+        used.clear();
+
+        // The whole point of the reset: a build the old train used is eligible again.
+        assertTrue(used.add(42), "a previously-placed id counts as new after a clear");
+        assertEquals(List.of(42), used.recent(10));
+    }
 }

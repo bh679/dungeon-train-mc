@@ -35,8 +35,15 @@ import java.util.UUID;
 
 /**
  * Registers OP-only (permission level 2) commands:
- *   - {@code /dungeontrain spawn [count]} — spawns a train at the configured
- *     speed with {@code count} carriages (default from config).
+ *   - {@code /dungeontrain spawn [count]} — <b>the delete-and-reset command</b>.
+ *     Deletes the world's current train outright, then spawns a fresh one at the
+ *     configured speed with {@code count} carriages (default from config), 10
+ *     blocks ahead of where the player is looking. Because it starts a new run it
+ *     also clears the difficulty travelled-offset (back to automatic scaling) and
+ *     the world's already-placed shared-carriage exclude-list, so community builds
+ *     the old train used can appear again — see {@link #resetRunState}. The
+ *     deletion itself lives in {@code TrainAssembler.spawnTrain}, which hands every
+ *     shared carriage back to the relay before destroying its plot.
  *   - {@code /dungeontrain speed <value>} — sets train speed in blocks/second,
  *     persists to config, and updates any active train live.
  *   - {@code /dungeontrain carriages <count>} — sets the default carriage
@@ -140,9 +147,12 @@ public final class TrainCommand {
             int lengthBlocks = count * dims.length();
             LOGGER.info("[DungeonTrain] Spawned train ship id={} carriages={} length={} blocks",
                 ship.id(), count, lengthBlocks);
+            int forgotten = resetRunState(source.getServer());
             source.sendSuccess(() -> Component.literal(
                 "Spawned " + count + "-carriage train (ship id " + ship.id() + ", length "
-                    + lengthBlocks + " blocks) at " + origin + ", velocity +X " + speed + " m/s"
+                    + lengthBlocks + " blocks) at " + origin + ", velocity +X " + speed + " m/s."
+                    + " The previous train was deleted; difficulty is back on automatic scaling and "
+                    + forgotten + " remembered community carriage(s) can appear again."
             ), true);
             return 1;
         } catch (Throwable t) {
@@ -152,6 +162,31 @@ public final class TrainCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /**
+     * Clear the run-scoped progression state that a deleted train leaves behind, so
+     * {@code /dungeontrain spawn} really is "start over" rather than "new train, old baggage":
+     *
+     * <ul>
+     *   <li>the difficulty travelled-offset — otherwise the fresh train's pIdx-0 seed stays anchored
+     *       at whatever tier the deleted train had earned;</li>
+     *   <li>the world's already-placed shared-carriage ids — otherwise every community build the
+     *       previous train used stays permanently excluded from the new one.</li>
+     * </ul>
+     *
+     * <p>Deliberately lives here and not in {@code TrainAssembler.deleteExistingTrains}: that method
+     * also runs on the world-start bootstrap path (which must not wipe the exclude-list every boot)
+     * and under {@code /dtp}, which sets the difficulty offset on purpose for its teleport target.</p>
+     *
+     * @return how many remembered shared-carriage ids were forgotten
+     */
+    private static int resetRunState(MinecraftServer server) {
+        DungeonTrainConfig.setDifficultyTravelledOffset(DungeonTrainConfig.DEFAULT_DIFFICULTY_TRAVELLED_OFFSET);
+        int forgotten = DungeonTrainWorldData.get(server.overworld()).clearUsedCarriageIds();
+        LOGGER.info("[DungeonTrain] spawn reset: difficulty offset cleared; forgot {} used shared-carriage id(s)",
+            forgotten);
+        return forgotten;
     }
 
     private static int runSpeed(CommandSourceStack source, double value) {
