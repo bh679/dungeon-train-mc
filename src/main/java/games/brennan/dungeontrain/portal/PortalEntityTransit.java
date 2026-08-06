@@ -1,0 +1,105 @@
+package games.brennan.dungeontrain.portal;
+
+import com.mojang.logging.LogUtils;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.entity.decoration.HangingEntity;
+import net.minecraft.world.phys.Vec3;
+import org.slf4j.Logger;
+
+import java.util.List;
+
+/**
+ * Carries <b>everything else</b> across the midpoint, on the same rule that carries players.
+ *
+ * <p>Without this a corridor is only half a portal. A villager that walks in keeps walking in the
+ * carriage while the player who followed it is in the twin, so the two part company inside a room
+ * that is supposed to be one place; a thrown ender pearl sails through the crossing and lands in the
+ * copy the thrower is no longer in. The rule that makes the illusion work for a player —
+ * {@link PortalFrames#requiredMove} — is about a position, not about being a player, so it applies
+ * unchanged.</p>
+ *
+ * <p><b>No cooldown, unlike the player swap.</b> That cooldown exists for the network round trip: a
+ * teleported player's client has not yet acknowledged the move, so for a tick or two the server is
+ * judging a position the client has not agreed to. Nothing else has a client to disagree with — the
+ * server is the only authority on where a villager is — so the hysteresis band alone settles it, and
+ * the rule's idempotence does the rest.</p>
+ *
+ * <p><b>Momentum survives.</b> {@code teleportTo} moves an entity without touching its velocity,
+ * which is what an ender pearl needs: it arrives in the twin still travelling, at the speed and
+ * bearing it had, and carries on down the corridor as though nothing happened.</p>
+ */
+public final class PortalEntityTransit {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    private PortalEntityTransit() {}
+
+    /** Move every entity in the pair's corridors that is on the wrong side of its midpoint. */
+    public static void run(ServerLevel level, PortalFrames frames, List<Entity> entities,
+                           int carriageIndex) {
+        for (Entity entity : entities) {
+            if (!eligible(entity)) continue;
+
+            double x = entity.getX(), y = entity.getY(), z = entity.getZ();
+            PortalFrames.Move move = frames.requiredMove(x, y, z);
+            if (move == null) continue;
+
+            // Grounded entities land on the destination floor's surface rather than the
+            // carried-across local Y, for the reason the player swap does it: the two frames' block
+            // grids differ by the ship's fractional pose, and a fraction inside the floor of a twin
+            // that hangs in open air is resolved by dropping through it.
+            double targetY = entity.onGround() ? frames.floorSurfaceY(move.toFrame()) : move.y();
+
+            Vec3 velocity = entity.getDeltaMovement();
+            entity.teleportTo(move.x(), targetY, move.z());
+            entity.setDeltaMovement(velocity);
+
+            // The path it was following leads back to a place it is no longer near — in the twin's
+            // case, forty-odd blocks straight up. Dropping it makes the mob look around and decide
+            // again from where it now is, rather than spend a moment walking into a wall.
+            if (entity instanceof Mob mob) {
+                mob.getNavigation().stop();
+            }
+
+            LOGGER.info("[DungeonTrain] Portal carriage transit: entity={} carriage={} → {} ({}, {}, {}) → ({}, {}, {})",
+                BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()), carriageIndex,
+                move.toFrame() == PortalFrames.FRAME_TWIN ? "TWIN" : "CARRIAGE",
+                fmt(x), fmt(y), fmt(z), fmt(move.x()), fmt(targetY), fmt(move.z()));
+        }
+    }
+
+    /**
+     * Whether an entity is the sort of thing that travels through a corridor.
+     *
+     * <p>Players are excluded because {@code PortalCarriageEvents} already moves them, with the
+     * relative teleport and the acknowledgement cooldown a client needs. Passengers are excluded
+     * because their position is their vehicle's to decide — move the vehicle and they come along.</p>
+     *
+     * <p>The interesting exclusion is <b>fixtures</b>: paintings, item frames and End Crystals are
+     * decor, not travellers. They are also the one category the rule would quietly damage — a
+     * painting hung in the far half of a corridor is permanently on the wrong side of the midpoint,
+     * so it would migrate to the twin the moment anyone walked past and never come back. Blocks in a
+     * corridor are mirrored rather than moved, and these behave like blocks. The same predicate
+     * {@code TrainStaticContentsCarrier} uses for "does not move itself".</p>
+     */
+    private static boolean eligible(Entity entity) {
+        if (entity instanceof ServerPlayer) return false;
+        if (entity.isPassenger()) return false;
+        if (!entity.isAlive()) return false;
+        return !isFixture(entity);
+    }
+
+    /** Decor that stays where it was hung. Mirrors {@code TrainStaticContentsCarrier}'s set. */
+    private static boolean isFixture(Entity entity) {
+        return entity instanceof EndCrystal || entity instanceof HangingEntity;
+    }
+
+    private static String fmt(double v) {
+        return String.format("%.2f", v);
+    }
+}

@@ -10,8 +10,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.Pose;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -160,13 +158,31 @@ public final class PortalPuppetsClient {
                 living.walkAnimation.update(Math.min(moved * 4.0F, 1.0F), 0.4F);
             }
 
-            // The model reads the pose, not the shift flag — Entity.isCrouching() asks whether the
-            // pose is CROUCHING, so setting only the key-down flag leaves a crouching source's
-            // puppet standing bolt upright beside them. Both are set: the flag is what some
-            // renderers and layers consult, the pose is what bends the model.
-            model.setShiftKeyDown(entry.crouching());
-            model.setPose(entry.crouching() ? Pose.CROUCHING : Pose.STANDING);
+            applyData();
             model.tickCount++;
+        }
+
+        /**
+         * Copy the source's synched data onto the model — its appearance, wholesale.
+         *
+         * <p>This is what makes the puppet the same creature and not just the same species: a snow
+         * villager's biome type, a sheep's colour, a baby zombie, a charged creeper, a named mob's
+         * nameplate, a crouching player's pose. All of it is synched data, so copying the lot is
+         * both more faithful and simpler than mirroring the handful of fields anyone thought of —
+         * and it works for entity types this code has never heard of.</p>
+         *
+         * <p>Guarded because the data is applied to an entity built from a type id off the wire.
+         * A mismatched or truncated field would otherwise throw inside the render loop; a puppet
+         * that looks wrong is a far better outcome than a client that stops drawing the world.</p>
+         */
+        private void applyData() {
+            if (entry.data().isEmpty()) return;
+            try {
+                model.getEntityData().assignValues(entry.data());
+            } catch (RuntimeException e) {
+                LOGGER.warn("[DungeonTrain] Portal puppet data rejected for {} (key={}): {}",
+                    entry.typeId(), entry.key(), e.toString());
+            }
         }
 
         private static double sqr(double v) {
@@ -254,10 +270,6 @@ public final class PortalPuppetsClient {
         model.noPhysics = true;
         model.setNoGravity(true);
         model.setSilent(true);
-        // Only mobs have a baby form; for anything else the flag has no meaning and is ignored.
-        if (model instanceof Mob mob) {
-            mob.setBaby(entry.baby());
-        }
         return model;
     }
 

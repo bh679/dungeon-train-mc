@@ -10,6 +10,8 @@ import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.portal.PortalEditMirror;
 import games.brennan.dungeontrain.portal.PortalFrames;
+import games.brennan.dungeontrain.portal.PortalCorridorEntities;
+import games.brennan.dungeontrain.portal.PortalEntityTransit;
 import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
@@ -280,10 +282,21 @@ public final class PortalCarriageEvents {
                 fmt(px), fmt(py), fmt(pz), fmt(move.x()), fmt(targetY), fmt(move.z()));
         }
 
+        // One scan of the corridors, shared by the two things that act on their occupants — so a mob
+        // that transits is necessarily a mob that had a puppet, and neither can see an entity the
+        // other missed.
+        List<net.minecraft.world.entity.Entity> occupants =
+            PortalCorridorEntities.inCorridors(level, frames);
+
+        // Everything that is not a player crosses the midpoint on the same rule players do. Without
+        // this a corridor is only half a portal: a villager followed in would stay behind on the
+        // train, and a thrown ender pearl would land in the copy its thrower had just left.
+        PortalEntityTransit.run(level, frames, occupants, carriageIndex);
+
         // Stand-ins for whoever is in the other copy, so two players either side of the midpoint can
-        // still see each other. After the swap loop, so a player who just crossed is described from
-        // the position they ended up at rather than the one they were about to leave.
-        PortalPuppets.gather(level, players, frames, ship, carriageIndex, puppets);
+        // still see each other. Last, so everything is described from where it ended up this tick
+        // rather than where it was about to leave.
+        PortalPuppets.gather(level, players, frames, ship, carriageIndex, occupants, puppets);
     }
 
     /**

@@ -6,6 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemStack;
@@ -41,13 +42,8 @@ public record PortalPuppetsPacket(List<Entry> entries) implements CustomPacketPa
 
     /** {@link Entry#kind()} for a puppet of a player, drawn with that player's skin. */
     public static final byte KIND_PLAYER = 0;
-    /** {@link Entry#kind()} for a puppet of any other living entity, drawn by its own renderer. */
+    /** {@link Entry#kind()} for a puppet of any other entity, drawn by its own renderer. */
     public static final byte KIND_MOB = 1;
-
-    /** {@link Entry#flags()} bit: the source entity is crouching. */
-    public static final byte FLAG_CROUCHING = 1;
-    /** {@link Entry#flags()} bit: the source entity is a baby. */
-    public static final byte FLAG_BABY = 2;
 
     /**
      * One puppet.
@@ -66,7 +62,7 @@ public record PortalPuppetsPacket(List<Entry> entries) implements CustomPacketPa
      * @param yaw       body yaw, carried across unchanged — both corridors are axis-aligned
      * @param headYaw   head yaw, so a puppet looks where its source is looking
      * @param pitch     head pitch
-     * @param flags     see {@code FLAG_*}
+     * @param data      the source's non-default synched entity data — see {@link Entry#data()}
      * @param mainHand  held item, so a puppet is not empty-handed when its source is armed
      * @param head      helmet slot
      * @param chest     chestplate slot
@@ -86,7 +82,7 @@ public record PortalPuppetsPacket(List<Entry> entries) implements CustomPacketPa
         float yaw,
         float headYaw,
         float pitch,
-        byte flags,
+        List<SynchedEntityData.DataValue<?>> data,
         ItemStack mainHand,
         ItemStack head,
         ItemStack chest,
@@ -103,12 +99,21 @@ public record PortalPuppetsPacket(List<Entry> entries) implements CustomPacketPa
             return subLevel != null;
         }
 
-        public boolean crouching() {
-            return (flags & FLAG_CROUCHING) != 0;
-        }
-
-        public boolean baby() {
-            return (flags & FLAG_BABY) != 0;
+        /**
+         * The source's non-default synched entity data, applied verbatim to the puppet.
+         *
+         * <p>This is what makes a puppet the <b>same</b> creature rather than merely the same
+         * species. A villager's biome type and profession, a sheep's colour, a charged creeper, a
+         * baby zombie, a named mob's custom name, a player's crouch and skin-layer settings — all of
+         * it lives in synched data, and copying the lot is both simpler and more faithful than
+         * enumerating the fields that happen to matter. It is also exactly what vanilla sends to
+         * make a client-side entity look right, so a puppet inherits appearance support for entity
+         * types this code has never heard of, from other mods included.</p>
+         *
+         * <p>Empty when the source is entirely default.</p>
+         */
+        public List<SynchedEntityData.DataValue<?>> data() {
+            return data;
         }
 
         /** The source's entity type, or {@code null} if this client does not know that id. */
@@ -160,7 +165,13 @@ public record PortalPuppetsPacket(List<Entry> entries) implements CustomPacketPa
             buf.writeFloat(e.yaw());
             buf.writeFloat(e.headYaw());
             buf.writeFloat(e.pitch());
-            buf.writeByte(e.flags());
+
+            // Each value writes its own field id, so a count prefix is all the framing needed —
+            // ClientboundSetEntityDataPacket uses a terminator byte for the same job.
+            buf.writeVarInt(e.data().size());
+            for (SynchedEntityData.DataValue<?> value : e.data()) {
+                value.write(buf);
+            }
 
             ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, e.mainHand());
             ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, e.head());
@@ -193,10 +204,15 @@ public record PortalPuppetsPacket(List<Entry> entries) implements CustomPacketPa
             float yaw = buf.readFloat();
             float headYaw = buf.readFloat();
             float pitch = buf.readFloat();
-            byte flags = buf.readByte();
+
+            int dataCount = buf.readVarInt();
+            List<SynchedEntityData.DataValue<?>> data = new ArrayList<>(dataCount);
+            for (int d = 0; d < dataCount; d++) {
+                data.add(SynchedEntityData.DataValue.read(buf, buf.readByte()));
+            }
 
             out.add(new Entry(key, kind, typeId, sourceId, name, subLevel, x, y, z,
-                yaw, headYaw, pitch, flags,
+                yaw, headYaw, pitch, data,
                 ItemStack.OPTIONAL_STREAM_CODEC.decode(buf),
                 ItemStack.OPTIONAL_STREAM_CODEC.decode(buf),
                 ItemStack.OPTIONAL_STREAM_CODEC.decode(buf),

@@ -5,13 +5,14 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalPuppetsPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.world.item.ItemStack;
 import org.joml.Vector3d;
 import org.slf4j.Logger;
 
@@ -147,20 +148,21 @@ public final class PortalPuppets {
      * @param carriageIndex the portal carriage's index, which keys this pair's logging
      */
     public static void gather(ServerLevel level, List<ServerPlayer> players, PortalFrames frames,
-                              ManagedShip ship, int carriageIndex, Session session) {
+                              ManagedShip ship, int carriageIndex, List<Entity> occupants,
+                              Session session) {
         List<PortalPuppetsPacket.Entry> entries = new ArrayList<>();
         Map<Integer, String> live = new HashMap<>();
 
-        List<LivingEntity> sources = new ArrayList<>();
-        collectSources(level, frames, PortalFrames.FRAME_CARRIAGE, sources);
-        collectSources(level, frames, PortalFrames.FRAME_TWIN, sources);
+        List<Entity> sources = new ArrayList<>(occupants);
 
         // Players first, so a corridor crowded past the cap keeps the puppets this feature exists
         // for and drops the scenery rather than the other way round.
         sources.sort(Comparator.comparingInt(e -> e instanceof ServerPlayer ? 0 : 1));
 
         int dropped = 0;
-        for (LivingEntity source : sources) {
+        for (Entity source : sources) {
+            if (!eligible(source)) continue;
+
             if (entries.size() >= MAX_PER_PAIR) {
                 dropped++;
                 continue;
@@ -205,26 +207,17 @@ public final class PortalPuppets {
         SENT.clear();
     }
 
-    /** Every living entity physically inside one corridor of the pair. */
-    private static void collectSources(ServerLevel level, PortalFrames frames, int frame,
-                                       List<LivingEntity> out) {
-        PortalCarriageLayout.Bounds b = frames.layout().localBounds();
-        PortalFrames.Origin o = frames.originOf(frame);
-        AABB box = new AABB(
-            o.x() + b.minX(), o.y() + b.minY(), o.z() + b.minZ(),
-            o.x() + b.maxX(), o.y() + b.maxY(), o.z() + b.maxZ());
-
-        for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, box, PortalPuppets::eligible)) {
-            if (!out.contains(entity)) out.add(entity);
-        }
-    }
-
     /**
      * Whether an entity gets a stand-in at all.
      *
      * <p>Passengers are skipped for the same reason the swap skips them — they are being carried, and
      * their position is their vehicle's business. A spectator has no body to mirror, and an entity
      * that has made itself invisible should not be given away by its puppet.</p>
+     *
+     * <p>Everything else qualifies, not only mobs: a dropped item, a thrown ender pearl and a
+     * painting are all physically in the room, and the room is meant to look the same from either
+     * copy. The appearance of whatever it turns out to be is carried by its synched data rather than
+     * by anything type-specific here, so this needs no list of what is supported.</p>
      */
     private static boolean eligible(Entity entity) {
         if (!entity.isAlive() || entity.isPassenger() || entity.isSpectator()) return false;
@@ -234,7 +227,7 @@ public final class PortalPuppets {
 
     /** One entity's puppet, or {@code null} if it turns out not to be in either corridor. */
     private static PortalPuppetsPacket.Entry describe(PortalFrames frames, ManagedShip ship,
-                                                      LivingEntity source) {
+                                                      Entity source) {
         PortalFrames.Move dest = frames.mirror(source.getX(), source.getY(), source.getZ());
         if (dest == null) return null;
 
@@ -264,10 +257,14 @@ public final class PortalPuppets {
 
         boolean isPlayer = source instanceof ServerPlayer;
         ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(source.getType());
+        LivingEntity living = source instanceof LivingEntity le ? le : null;
 
-        byte flags = 0;
-        if (source.isCrouching()) flags |= PortalPuppetsPacket.FLAG_CROUCHING;
-        if (source.isBaby()) flags |= PortalPuppetsPacket.FLAG_BABY;
+        // The whole of the source's non-default synched data, which is what makes the puppet the
+        // same creature rather than a fresh one of the same species — a snow villager stays a snow
+        // villager, a charged creeper stays charged. Read-only: getNonDefaultValues does not touch
+        // the dirty flags, which belong to the real entity's own tracker. Null means "all default".
+        List<SynchedEntityData.DataValue<?>> data = source.getEntityData().getNonDefaultValues();
+        if (data == null) data = List.of();
 
         return new PortalPuppetsPacket.Entry(
             source.getId(),
@@ -278,16 +275,16 @@ public final class PortalPuppets {
             subLevel,
             x, y, z,
             // Body yaw, not the entity's own yRot: for a mob those differ while it turns, and the
-            // body is what the renderer squares the model up with.
-            source.yBodyRot,
+            // body is what the renderer squares the model up with. Only living things have one.
+            living != null ? living.yBodyRot : source.getYRot(),
             source.getYHeadRot(),
             source.getXRot(),
-            flags,
-            source.getItemBySlot(EquipmentSlot.MAINHAND).copy(),
-            source.getItemBySlot(EquipmentSlot.HEAD).copy(),
-            source.getItemBySlot(EquipmentSlot.CHEST).copy(),
-            source.getItemBySlot(EquipmentSlot.LEGS).copy(),
-            source.getItemBySlot(EquipmentSlot.FEET).copy());
+            data,
+            living == null ? ItemStack.EMPTY : living.getItemBySlot(EquipmentSlot.MAINHAND).copy(),
+            living == null ? ItemStack.EMPTY : living.getItemBySlot(EquipmentSlot.HEAD).copy(),
+            living == null ? ItemStack.EMPTY : living.getItemBySlot(EquipmentSlot.CHEST).copy(),
+            living == null ? ItemStack.EMPTY : living.getItemBySlot(EquipmentSlot.LEGS).copy(),
+            living == null ? ItemStack.EMPTY : living.getItemBySlot(EquipmentSlot.FEET).copy());
     }
 
     /** True if this player is close enough to either corridor to be shown its puppets. */
@@ -339,7 +336,7 @@ public final class PortalPuppets {
     }
 
     /** Human-readable "what, and which way across" for the spawn/despawn lines. */
-    private static String label(PortalFrames frames, LivingEntity source) {
+    private static String label(PortalFrames frames, Entity source) {
         int from = frames.frameAt(source.getX(), source.getY(), source.getZ());
         String direction = from == PortalFrames.FRAME_CARRIAGE ? "CARRIAGE→TWIN" : "TWIN→CARRIAGE";
         String who = source instanceof ServerPlayer player
