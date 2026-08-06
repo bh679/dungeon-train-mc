@@ -94,7 +94,30 @@ public final class PortalCarriageEvents {
      */
     private static final Map<Integer, BlockPos> TWINS = new HashMap<>();
 
+    /**
+     * Ticks after a swap during which that player is left alone.
+     *
+     * <p>Belt to the hysteresis band's braces, and it covers a different cause: the band absorbs
+     * positional disagreement, this absorbs the round trip. A teleport leaves the server ignoring
+     * the client's movement until the acknowledgement arrives, so for a tick or two the position it
+     * is judging is not one the client has agreed to yet.</p>
+     */
+    private static final int SWAP_COOLDOWN_TICKS = 6;
+
+    /** Player → game time at which they may swap again. */
+    private static final Map<UUID, Long> COOLDOWNS = new HashMap<>();
+
     private PortalCarriageEvents() {}
+
+    private static boolean onCooldown(ServerPlayer player, long gameTime) {
+        Long until = COOLDOWNS.get(player.getUUID());
+        if (until == null) return false;
+        if (gameTime >= until) {
+            COOLDOWNS.remove(player.getUUID());
+            return false;
+        }
+        return true;
+    }
 
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
@@ -159,18 +182,25 @@ public final class PortalCarriageEvents {
 
         for (ServerPlayer player : players) {
             if (player.isPassenger()) continue;
+            if (onCooldown(player, level.getGameTime())) continue;
 
             double px = player.getX(), py = player.getY(), pz = player.getZ();
             PortalFrames.Move move = frames.requiredMove(px, py, pz);
             if (move == null) continue;
 
-            player.connection.teleport(move.x(), move.y(), move.z(),
+            // A player who was standing goes to the destination's floor surface rather than to the
+            // carried-across local Y — the two frames' block grids differ by the ship's fractional
+            // pose, and landing a fraction inside a twin that hangs in open air drops them through it.
+            double targetY = player.onGround() ? frames.floorSurfaceY(move.toFrame()) : move.y();
+
+            player.connection.teleport(move.x(), targetY, move.z(),
                 player.getYRot(), player.getXRot(), RELATIVE_ALL);
+            COOLDOWNS.put(player.getUUID(), level.getGameTime() + SWAP_COOLDOWN_TICKS);
 
             LOGGER.info("[DungeonTrain] Portal carriage swap: player={} carriage={} → {} ({}, {}, {}) → ({}, {}, {})",
                 player.getName().getString(), carriageIndex,
                 move.toFrame() == PortalFrames.FRAME_TWIN ? "TWIN" : "CARRIAGE",
-                fmt(px), fmt(py), fmt(pz), fmt(move.x()), fmt(move.y()), fmt(move.z()));
+                fmt(px), fmt(py), fmt(pz), fmt(move.x()), fmt(targetY), fmt(move.z()));
         }
     }
 

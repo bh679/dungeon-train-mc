@@ -102,15 +102,62 @@ final class PortalFramesTest {
         assertNull(f.requiredMove(move.x(), move.y(), move.z()));
     }
 
+    /**
+     * The hysteresis band, and why it exists: preserving the local offset lands a player barely past
+     * the line, and on a Sable carriage the client/server position disagreement is larger than that
+     * margin — so a strict comparison oscillates. Observed live before this band: three swaps in
+     * 0.13s at local X 4.64 → 4.47 → 4.64.
+     */
     @Test
-    @DisplayName("the midpoint tie resolves to the carriage side, so only one branch can fire")
-    void midpointTie() {
+    @DisplayName("neither frame swaps while inside the hysteresis band around the midpoint")
+    void hysteresisBandHoldsBothFrames() {
         PortalFrames f = frames();
-        assertNull(f.requiredMove(CAR_X + LAYOUT.midX(), CAR_Y + FEET_Y, CAR_Z + WALK_Z));
+        double justPast = LAYOUT.midX() + PortalFrames.SWAP_HYSTERESIS / 2;
+        double justBefore = LAYOUT.midX() - PortalFrames.SWAP_HYSTERESIS / 2;
 
-        PortalFrames.Move move = f.requiredMove(TWIN_X + LAYOUT.midX(), TWIN_Y + FEET_Y, TWIN_Z + WALK_Z);
-        assertNotNull(move);
-        assertEquals(PortalFrames.FRAME_CARRIAGE, move.toFrame());
+        // On the carriage, a hair past the line: stays put rather than swapping.
+        assertNull(f.requiredMove(CAR_X + justPast, CAR_Y + FEET_Y, CAR_Z + WALK_Z));
+        // In the twin, a hair before it: likewise. This is the pairing that used to ping-pong.
+        assertNull(f.requiredMove(TWIN_X + justBefore, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z));
+        // Exactly on the line, from either side: still nothing.
+        assertNull(f.requiredMove(CAR_X + LAYOUT.midX(), CAR_Y + FEET_Y, CAR_Z + WALK_Z));
+        assertNull(f.requiredMove(TWIN_X + LAYOUT.midX(), TWIN_Y + FEET_Y, TWIN_Z + WALK_Z));
+    }
+
+    @Test
+    @DisplayName("clearing the band swaps, from either side")
+    void clearingTheBandSwaps() {
+        PortalFrames f = frames();
+        double clearlyPast = LAYOUT.midX() + PortalFrames.SWAP_HYSTERESIS + 0.1;
+        double clearlyBefore = LAYOUT.midX() - PortalFrames.SWAP_HYSTERESIS - 0.1;
+
+        PortalFrames.Move out = f.requiredMove(CAR_X + clearlyPast, CAR_Y + FEET_Y, CAR_Z + WALK_Z);
+        assertNotNull(out);
+        assertEquals(PortalFrames.FRAME_TWIN, out.toFrame());
+
+        PortalFrames.Move back = f.requiredMove(TWIN_X + clearlyBefore, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z);
+        assertNotNull(back);
+        assertEquals(PortalFrames.FRAME_CARRIAGE, back.toFrame());
+    }
+
+    /**
+     * The landing height for a player who was standing. The two frames' block grids differ by the
+     * ship's fractional pose, so carrying local Y across verbatim put a grounded player inside the
+     * twin's floor — and because a twin hangs in open air, Minecraft resolved that by dropping them
+     * through it. This is that bug, pinned.
+     */
+    @Test
+    @DisplayName("floorSurfaceY lands a grounded player on the floor, not inside it")
+    void floorSurfaceIgnoresFractionalPose() {
+        // A carriage whose pose leaves its origin fractional, exactly as the live ship AABB reports.
+        PortalFrames f = new PortalFrames(LAYOUT,
+            new PortalFrames.Origin(CAR_X, 77.99, CAR_Z),
+            new PortalFrames.Origin(TWIN_X, 173, TWIN_Z));
+
+        // The twin's floor block sits at Y=173, so its walkable surface is 174 — not the 173.98 that
+        // carrying a local Y of 0.98 across would have produced.
+        assertEquals(174.0, f.floorSurfaceY(PortalFrames.FRAME_TWIN), 1e-9);
+        assertEquals(78.99, f.floorSurfaceY(PortalFrames.FRAME_CARRIAGE), 1e-9);
     }
 
     // ---- simulated walk on a moving train -------------------------------------

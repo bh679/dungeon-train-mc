@@ -36,11 +36,43 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
     /** The static twin corridor — where a player past the midpoint belongs. */
     public static final int FRAME_TWIN = 1;
 
+    /**
+     * How far past the midpoint a player must be before the swap fires, in blocks.
+     *
+     * <p>Without a band this oscillates. Preserving the local offset exactly — which is what makes
+     * the swap invisible — lands the player barely past the line in the destination frame, and on a
+     * Sable carriage the client and server disagree about a rider's position by more than that, so
+     * the next tick's correction knocks them back across it and the swap fires again. Observed live:
+     * three swaps in 0.13s, at local X 4.64 → 4.47 → 4.64 around a 4.5 midpoint.</p>
+     *
+     * <p>Idempotence alone cannot fix this: it prevents a repeat fire at the <i>same</i> position,
+     * not oscillation <i>around</i> the boundary. 0.4 comfortably exceeds the observed ~0.17 drift
+     * while staying far too small to notice — the two corridors are identical, and the baffles mean
+     * there is nothing to see at either end that would betray which side of the line you are on.</p>
+     */
+    public static final double SWAP_HYSTERESIS = 0.4;
+
     /** World position of a corridor's local origin. */
     public record Origin(double x, double y, double z) {}
 
     /** A move the invariant demands: the frame to end up in, and the world position to land at. */
     public record Move(int toFrame, double x, double y, double z) {}
+
+    /**
+     * Y of the destination corridor's floor surface — where a player who was standing on the floor
+     * belongs after the move.
+     *
+     * <p>Needed because the two frames' block grids do not share a fractional offset: a carriage's
+     * origin rides the ship's pose ({@code 77.99}) while its twin is stamped block-aligned
+     * ({@code 173}). Carrying the local offset across verbatim therefore lands a grounded player
+     * slightly inside or above the destination floor — and since a twin hangs in open air, "slightly
+     * inside" means Minecraft resolves the overlap by dropping them through it. Observed live: feet
+     * at local Y {@code 0.98} landing at {@code 173.98} against a floor whose surface is {@code 174},
+     * and the player fell out of the sky.</p>
+     */
+    public double floorSurfaceY(int frame) {
+        return originOf(frame).y() + layout.floorY() + 1;
+    }
 
     /** Origin of the given frame. */
     public Origin originOf(int frame) {
@@ -77,10 +109,20 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
         double localY = wy - from.y();
         double localZ = wz - from.z();
 
-        int wantFrame = layout.copyForLocalX(localX) == PortalGeometry.COPY_NEAR
-            ? FRAME_CARRIAGE
-            : FRAME_TWIN;
-        if (wantFrame == frame) return null;
+        // Hysteresis band: fire only when clearly on the wrong side. See SWAP_HYSTERESIS — landing
+        // barely past the line is inherent to preserving the local offset, so without a band the
+        // client's position correction knocks the player back over it and the swap oscillates.
+        boolean pastLine = localX > layout.midX() + SWAP_HYSTERESIS;
+        boolean beforeLine = localX < layout.midX() - SWAP_HYSTERESIS;
+
+        int wantFrame;
+        if (frame == FRAME_CARRIAGE && pastLine) {
+            wantFrame = FRAME_TWIN;
+        } else if (frame == FRAME_TWIN && beforeLine) {
+            wantFrame = FRAME_CARRIAGE;
+        } else {
+            return null;
+        }
 
         Origin to = originOf(wantFrame);
         return new Move(wantFrame, to.x() + localX, to.y() + localY, to.z() + localZ);
