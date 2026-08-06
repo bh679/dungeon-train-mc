@@ -17,6 +17,8 @@ import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
@@ -285,8 +287,7 @@ public final class PortalCarriageEvents {
         // One scan of the corridors, shared by the two things that act on their occupants — so a mob
         // that transits is necessarily a mob that had a puppet, and neither can see an entity the
         // other missed.
-        List<net.minecraft.world.entity.Entity> occupants =
-            PortalCorridorEntities.inCorridors(level, frames);
+        List<Entity> occupants = PortalCorridorEntities.inCorridors(level, frames);
 
         // Everything that is not a player crosses the midpoint on the same rule players do. Without
         // this a corridor is only half a portal: a villager followed in would stay behind on the
@@ -328,6 +329,7 @@ public final class PortalCarriageEvents {
         // Clear the outgoing structure rather than leaving it hanging in the sky. Without this the
         // train would trail abandoned corridors, a set every time a pair drifted out of range.
         if (existing != null) {
+            carryStructureOccupants(level, dims, existing, wanted);
             PortalCarriageBuilder.eraseTwin(level, existing, dims);
         }
 
@@ -363,17 +365,61 @@ public final class PortalCarriageEvents {
     /** True if any player is anywhere inside a pair structure — either corridor, or the room between. */
     private static boolean anyPlayerInStructure(List<ServerPlayer> players, PortalCarriageLayout layout,
                                                 CarriageDims dims, BlockPos structure) {
-        int span = PortalCarriageBuilder.exitTwinOffsetX(dims) + dims.length();
+        AABB box = structureBox(dims, structure);
         for (ServerPlayer player : players) {
-            double dx = player.getX() - structure.getX();
-            double dy = player.getY() - structure.getY();
-            double dz = player.getZ() - structure.getZ();
-            if (dx >= -1 && dx <= span + 1 && dy >= -1 && dy <= dims.height() + POCKET_ROOM_SLACK
-                && dz >= -POCKET_ROOM_SLACK && dz <= dims.width() + POCKET_ROOM_SLACK) {
-                return true;
-            }
+            if (box.contains(player.getX(), player.getY(), player.getZ())) return true;
         }
         return false;
+    }
+
+    /** The whole pair structure as a box: both twin corridors and the room between them. */
+    private static AABB structureBox(CarriageDims dims, BlockPos structure) {
+        int span = PortalCarriageBuilder.exitTwinOffsetX(dims) + dims.length();
+        return new AABB(
+            structure.getX() - 1,
+            structure.getY() - 1,
+            structure.getZ() - POCKET_ROOM_SLACK,
+            structure.getX() + span + 1,
+            structure.getY() + dims.height() + POCKET_ROOM_SLACK,
+            structure.getZ() + dims.width() + POCKET_ROOM_SLACK);
+    }
+
+    /**
+     * Move whatever is standing in a structure along with it when it is restamped further down the
+     * track.
+     *
+     * <p>The room is the same room — it is relocated to stay inside the carriage's chunk columns, not
+     * replaced — so its occupants should arrive in it rather than be left behind. Without this, a
+     * villager led into the portal world is stranded in mid-air at the world floor the moment the
+     * player who led it there steps back onto the train and stops pinning the structure, and it falls
+     * out of the world a second later. Now that everything transits, that is a routine sequence
+     * rather than a curiosity.</p>
+     *
+     * <p>Players are never here: a structure holding one is never restamped in the first place. They
+     * are skipped anyway, because moving a player wants the relative teleport the swap uses.</p>
+     */
+    private static void carryStructureOccupants(ServerLevel level, CarriageDims dims,
+                                                BlockPos from, BlockPos to) {
+        if (from.equals(to)) return;
+
+        int dx = to.getX() - from.getX();
+        int dy = to.getY() - from.getY();
+        int dz = to.getZ() - from.getZ();
+
+        int carried = 0;
+        for (Entity entity : level.getEntities((Entity) null, structureBox(dims, from), e -> true)) {
+            if (entity instanceof ServerPlayer) continue;
+
+            Vec3 velocity = entity.getDeltaMovement();
+            entity.teleportTo(entity.getX() + dx, entity.getY() + dy, entity.getZ() + dz);
+            entity.setDeltaMovement(velocity);
+            carried++;
+        }
+
+        if (carried > 0) {
+            LOGGER.info("[DungeonTrain] Portal structure moved {} → {}, carrying {} entities",
+                from, to, carried);
+        }
     }
 
     /**
