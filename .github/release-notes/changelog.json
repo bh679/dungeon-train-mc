@@ -6226,6 +6226,24 @@
       "released": true,
       "released_in": "v0.538.0",
       "released_at": "2026-08-05T13:59:27Z"
+    },
+    {
+      "id": "cursed-book-death-note-story",
+      "version": "0.539.0",
+      "type": "feat",
+      "title": "Cursed books \u2014 find out what your Death Note did",
+      "summary": "Sign a Death Note, die, and your echo goes hunting in a world you will never see. Until now that was the end of it for you. Now, once your curse actually lands, the next lightning strike brings you a black-violet book telling the story of it: who it found, the carriage it waited at, how long it waited, what it was still carrying, how the fight went, and how it ended. One story per curse \u2014 read it and it is gone; ignore it and it comes back next life.",
+      "highlights": [
+        "A cursed welcome book, delivered when one of your Death Note curses lands",
+        "The whole encounter, not just the outcome: gear, the beats of the fight, and who walked away",
+        "Three books, one per ending \u2014 your echo won, they won, or nobody ever found out",
+        "Delivered at your next spawn, or between carts if the curse lands mid-run",
+        "Death Note echo encounters now post their story to the Discord feed like any other echo"
+      ],
+      "date": "2026-08-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
