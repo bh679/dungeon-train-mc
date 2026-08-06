@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.portal.PortalEditMirror;
 import games.brennan.dungeontrain.portal.PortalFrames;
 import games.brennan.dungeontrain.portal.PortalCorridorEntities;
 import games.brennan.dungeontrain.portal.PortalEntityTransit;
+import games.brennan.dungeontrain.portal.PortalOccupants;
 import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
@@ -284,6 +285,11 @@ public final class PortalCarriageEvents {
                 fmt(px), fmt(py), fmt(pz), fmt(move.x()), fmt(targetY), fmt(move.z()));
         }
 
+        // Everything anywhere in the structure — both twin corridors and the pocket room between
+        // them — is noted as being in a portal room, so vanilla's despawn rule leaves it alone. The
+        // corridor scan below would miss the room, which is most of where things actually stand.
+        protectStructureOccupants(level, dims, structureOrigin);
+
         // One scan of the corridors, shared by the two things that act on their occupants — so a mob
         // that transits is necessarily a mob that had a puppet, and neither can see an entity the
         // other missed.
@@ -370,6 +376,21 @@ public final class PortalCarriageEvents {
             if (box.contains(player.getX(), player.getY(), player.getZ())) return true;
         }
         return false;
+    }
+
+    /**
+     * Note everything standing in the structure, so {@code PortalDespawnEvents} spares it.
+     *
+     * <p>The room is at the bottom of the world and the train rolls away from it, which to vanilla
+     * reads as "nobody is near this mob" — so without this a villager led into the portal world is
+     * quietly discarded while its player is away on the train.</p>
+     */
+    private static void protectStructureOccupants(ServerLevel level, CarriageDims dims,
+                                                  BlockPos structure) {
+        long gameTime = level.getGameTime();
+        for (Entity entity : level.getEntities((Entity) null, structureBox(dims, structure), e -> true)) {
+            PortalOccupants.protect(entity, gameTime);
+        }
     }
 
     /** The whole pair structure as a box: both twin corridors and the room between them. */

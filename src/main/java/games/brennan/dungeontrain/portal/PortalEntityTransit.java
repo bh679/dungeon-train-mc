@@ -64,6 +64,7 @@ public final class PortalEntityTransit {
             // again from where it now is, rather than spend a moment walking into a wall.
             if (entity instanceof Mob mob) {
                 mob.getNavigation().stop();
+                if (move.toFrame() == PortalFrames.FRAME_TWIN) markPersistent(mob);
             }
 
             LOGGER.info("[DungeonTrain] Portal carriage transit: entity={} carriage={} → {} ({}, {}, {}) → ({}, {}, {})",
@@ -71,6 +72,28 @@ public final class PortalEntityTransit {
                 move.toFrame() == PortalFrames.FRAME_TWIN ? "TWIN" : "CARRIAGE",
                 fmt(x), fmt(y), fmt(z), fmt(move.x()), fmt(targetY), fmt(move.z()));
         }
+    }
+
+    /**
+     * Make a mob that has gone through into the portal world stay there.
+     *
+     * <p>The room is at the bottom of the world and the train leaves it behind, so to vanilla its
+     * occupants are mobs nobody is near, and the distance rule reaps them.
+     * {@code PortalDespawnEvents} covers the room while it is being used; this covers the rest —
+     * walking a villager through a portal is a deliberate act, and it should still be there an hour
+     * later rather than only while somebody is standing next to it.</p>
+     *
+     * <p>The same flag vanilla sets for a mob you have name-tagged or traded with, and one-way for
+     * the same reason: there is no un-set in the API. So a mob that merely wandered through is
+     * persistent from then on, which is why it is logged — a lasting change to a mob deserves a line
+     * as much as a lasting change to the world does.</p>
+     */
+    private static void markPersistent(Mob mob) {
+        if (mob.isPersistenceRequired()) return;
+
+        mob.setPersistenceRequired();
+        LOGGER.info("[DungeonTrain] Portal transit made {} persistent — it is in the portal world now",
+            BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()));
     }
 
     /**
