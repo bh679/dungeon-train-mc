@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.discord;
 
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import org.slf4j.Logger;
 
@@ -35,14 +36,17 @@ public final class DeathNoteReporter {
      * @param authorSkinRef  optional pre-encoded skin ref for the echo, or "" (spawner encodes from uuid+name)
      * @param freePlay       whether the author died on a Free Play (cheated) run — the curse then only
      *                       spawns for a target who is also in Free Play (provenance match)
+     * @param kind           which book was signed — decides how the echo feels about the target when
+     *                       it arrives (see {@link NoteKind})
      */
     public static void submit(UUID authorId, String authorName, String targetName, String targetUuid,
-                              int deathCarriage, String worldKey, String authorSkinRef, boolean freePlay) {
+                              int deathCarriage, String worldKey, String authorSkinRef, boolean freePlay,
+                              NoteKind kind) {
         try {
             if (authorId == null) return;
             String uuid = authorId.toString().replace("-", "");
             JsonObject payload = buildPayload(uuid, authorName, targetName, targetUuid,
-                    deathCarriage, worldKey, authorSkinRef, freePlay);
+                    deathCarriage, worldKey, authorSkinRef, freePlay, kind);
             RelayOutbox.get().enqueue("/deathnotes/submit", payload.toString());
             LOGGER.debug("[DungeonTrain] DeathNote submit (target {}, carriage {}) queued to the relay outbox.",
                     targetName, deathCarriage);
@@ -146,8 +150,10 @@ public final class DeathNoteReporter {
      * unit-tested without a running server. Matches the relay contract exactly. Null strings emit as "".
      */
     static JsonObject buildPayload(String authorUuid, String authorName, String targetName, String targetUuid,
-                                   int deathCarriage, String worldKey, String authorSkinRef, boolean freePlay) {
+                                   int deathCarriage, String worldKey, String authorSkinRef, boolean freePlay,
+                                   NoteKind kind) {
         JsonObject body = new JsonObject();
+        body.addProperty("kind", (kind == null ? NoteKind.DEATH : kind).id());
         body.addProperty("authorUuid", authorUuid == null ? "" : authorUuid);
         body.addProperty("authorName", authorName == null ? "" : authorName);
         body.addProperty("targetName", targetName == null ? "" : targetName);

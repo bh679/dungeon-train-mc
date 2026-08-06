@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.narrative.CursedBookFactory;
 import games.brennan.dungeontrain.narrative.CursedStoryPool;
 import games.brennan.dungeontrain.narrative.CursedStoryTag;
 import games.brennan.dungeontrain.narrative.DeathNoteBookTag;
+import games.brennan.dungeontrain.narrative.LoveNoteBookTag;
 import games.brennan.dungeontrain.narrative.LetterBookTag;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
@@ -151,12 +152,14 @@ public final class StartingBookEvents {
     private static final int BURN_DURATION_TICKS = 60;
 
     /**
-     * Which flame a burning book renders. {@link #SOUL} (a Death Note curse) takes precedence over
-     * any vote; a book the player voted on burns {@link #APPROVED} green or {@link #REJECTED} red
-     * (flame-dust tint only — the client-only ghost fire block stays the vanilla orange, since no
-     * green/red fire block exists); everything else is the {@link #DEFAULT} orange burn.
+     * Which flame a burning book renders. {@link #SOUL} (a Death Note curse) and {@link #LOVE} (its
+     * mirror, the Love Note) take precedence over any vote; a book the player voted on burns
+     * {@link #APPROVED} green or {@link #REJECTED} red. All three tints are flame-dust only — the
+     * client-only ghost fire block stays vanilla orange, since no green/red/pink fire block exists
+     * (SOUL is the exception: soul fire is a real block). Everything else is the {@link #DEFAULT}
+     * orange burn.
      */
-    enum FlameVariant { DEFAULT, SOUL, APPROVED, REJECTED }
+    enum FlameVariant { DEFAULT, SOUL, LOVE, APPROVED, REJECTED }
 
     /**
      * Tint of the cursed strike — a dim violet rather than the welcome strike's random vibrant hue.
@@ -168,6 +171,8 @@ public final class StartingBookEvents {
     /** Flame dust tints for voted burns (approved green / rejected red). */
     private static final Vector3f APPROVED_FLAME_COLOR = new Vector3f(0.30f, 0.78f, 0.30f);
     private static final Vector3f REJECTED_FLAME_COLOR = new Vector3f(0.86f, 0.22f, 0.18f);
+    /** Flame dust tint for a Love Note burn — warm pink, the counterpart to the curse's soul fire. */
+    private static final Vector3f LOVE_FLAME_COLOR = new Vector3f(0.96f, 0.45f, 0.68f);
 
     /** Tracking entry for one in-progress book burn. */
     private static final class BurnState {
@@ -189,6 +194,20 @@ public final class StartingBookEvents {
         /** Soul-only conditions (ghost soul-fire block, soul sounds) — vote tints don't change these. */
         boolean soul() {
             return variant == FlameVariant.SOUL;
+        }
+
+        /** A Love Note burn — pink dust and a chime rather than the curse's soul fire. */
+        boolean love() {
+            return variant == FlameVariant.LOVE;
+        }
+
+        /**
+         * Variants rendered as colored dust rather than a real flame particle. These are mixed 50:50
+         * with the vanilla orange flame so the fire still reads as FIRE — just tinted.
+         */
+        boolean tinted() {
+            return variant == FlameVariant.APPROVED || variant == FlameVariant.REJECTED
+                || variant == FlameVariant.LOVE;
         }
     }
 
@@ -324,9 +343,9 @@ public final class StartingBookEvents {
             // other tick so we don't flood the particle queue at long
             // distances when several books are burning simultaneously.
             if (itemEntity.tickCount % 2 == 0) {
-                if (state.variant == FlameVariant.APPROVED || state.variant == FlameVariant.REJECTED) {
-                    // Voted burns: colored dust mixed 50:50 with the vanilla orange flame, so the
-                    // fire still reads as FIRE — just tinted by the verdict.
+                if (state.tinted()) {
+                    // Tinted burns: colored dust mixed 50:50 with the vanilla orange flame, so the
+                    // fire still reads as FIRE — just tinted by the verdict (or by love).
                     itemLevel.sendParticles(flameParticle(state.variant),
                         itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
                         2, 0.12, 0.08, 0.12, 0.02);
@@ -338,7 +357,7 @@ public final class StartingBookEvents {
                         itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
                         3, 0.12, 0.08, 0.12, 0.02);
                 }
-                itemLevel.sendParticles(state.soul() ? ParticleTypes.SOUL : ParticleTypes.SMOKE,
+                itemLevel.sendParticles(companionParticle(state),
                     itemEntity.getX(), itemEntity.getY() + 0.3, itemEntity.getZ(),
                     1, 0.08, 0.05, 0.08, 0.01);
             }
@@ -373,11 +392,15 @@ public final class StartingBookEvents {
                 if (state.soul()) {
                     itemLevel.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
                         SoundEvents.SOUL_ESCAPE, SoundSource.BLOCKS, 0.6f, 1.2f);
+                } else if (state.love()) {
+                    itemLevel.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
+                        SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 0.6f, 1.2f);
                 } else {
                     itemLevel.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
                         SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.6f, 1.2f);
                 }
-                itemLevel.sendParticles(state.soul() ? ParticleTypes.SOUL : ParticleTypes.LARGE_SMOKE,
+                itemLevel.sendParticles(state.soul() ? ParticleTypes.SOUL
+                        : state.love() ? ParticleTypes.HEART : ParticleTypes.LARGE_SMOKE,
                     itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
                     8, 0.2, 0.1, 0.2, 0.02);
                 itemEntity.discard();
@@ -387,12 +410,14 @@ public final class StartingBookEvents {
     }
 
     /**
-     * The burn flame for {@code stack}: Death Note soul burn takes precedence, then the player's
-     * stamped 👍/👎 vote ({@link BookVoteTag}, green/red), else the default orange.
+     * The burn flame for {@code stack}: the note burns (Death Note soul / Love Note pink) take
+     * precedence, then the player's stamped 👍/👎 vote ({@link BookVoteTag}, green/red), else the
+     * default orange.
      */
     private static FlameVariant flameVariantOf(ItemStack stack) {
         // A cursed story book burns like the Death Note it came from — same curse, same soul fire.
         if (DeathNoteBookTag.isDeathNote(stack) || CursedStoryTag.isCursedBook(stack)) return FlameVariant.SOUL;
+        if (LoveNoteBookTag.isLoveNote(stack)) return FlameVariant.LOVE;
         OptionalInt vote = BookVoteTag.read(stack);
         if (vote.isPresent()) {
             return vote.getAsInt() == 1 ? FlameVariant.APPROVED : FlameVariant.REJECTED;
@@ -400,14 +425,24 @@ public final class StartingBookEvents {
         return FlameVariant.DEFAULT;
     }
 
-    /** The per-flavor ambient flame particle — vote tints ride colored dust (no green/red flame exists). */
+    /** The per-flavor ambient flame particle — tints ride colored dust (no green/red/pink flame exists). */
     private static ParticleOptions flameParticle(FlameVariant variant) {
         return switch (variant) {
             case SOUL -> ParticleTypes.SOUL_FIRE_FLAME;
+            case LOVE -> new DustParticleOptions(LOVE_FLAME_COLOR, 1.0F);
             case APPROVED -> new DustParticleOptions(APPROVED_FLAME_COLOR, 1.0F);
             case REJECTED -> new DustParticleOptions(REJECTED_FLAME_COLOR, 1.0F);
             case DEFAULT -> ParticleTypes.FLAME;
         };
+    }
+
+    /**
+     * The wisp trailing the flame: souls for a curse, hearts for a Love Note, plain smoke otherwise.
+     */
+    private static ParticleOptions companionParticle(BurnState state) {
+        if (state.soul()) return ParticleTypes.SOUL;
+        if (state.love()) return ParticleTypes.HEART;
+        return ParticleTypes.SMOKE;
     }
 
     /**
@@ -585,8 +620,9 @@ public final class StartingBookEvents {
         // burning book mid-burn and stash it. Matches the close-handler
         // behaviour from the earlier inline-registration code path.
         // A signed "Death Note" curse book burns with the SOUL variant (ghostly soul-fire + a soul
-        // sound) instead of the normal fire — see DeathNoteBookTag; otherwise a book the player
-        // voted on burns with a green (approved) or red (rejected) flame tint. Soul wins.
+        // sound) and a "Love Note" with the pink LOVE variant instead of the normal fire — see
+        // DeathNoteBookTag / LoveNoteBookTag; otherwise a book the player voted on burns with a
+        // green (approved) or red (rejected) flame tint. The note burns win.
         FlameVariant variant = flameVariantOf(stack);
         item.setPickUpDelay(BURN_DURATION_TICKS);
         BURN_ENTITIES.put(item.getUUID(), new BurnState(BURN_DURATION_TICKS, variant));
@@ -598,6 +634,9 @@ public final class StartingBookEvents {
         if (variant == FlameVariant.SOUL) {
             level.playSound(null, item.getX(), item.getY(), item.getZ(),
                 SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 0.6f, 1.5f);
+        } else if (variant == FlameVariant.LOVE) {
+            level.playSound(null, item.getX(), item.getY(), item.getZ(),
+                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.6f, 1.5f);
         } else {
             level.playSound(null, item.getX(), item.getY(), item.getZ(),
                 SoundEvents.FIRE_AMBIENT, SoundSource.PLAYERS, 0.6f, 1.5f);

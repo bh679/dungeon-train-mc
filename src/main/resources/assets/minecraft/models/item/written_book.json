@@ -7,6 +7,10 @@
     {
       "predicate": { "custom_model_data": 1 },
       "model": "dungeontrain:item/death_note_book"
+    },
+    {
+      "predicate": { "custom_model_data": 2 },
+      "model": "dungeontrain:item/love_note_book"
     }
   ]
 }

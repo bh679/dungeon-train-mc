@@ -112,6 +112,9 @@ public final class DungeonTrainConfig {
     /** Default master for the "Death Note" curse book mechanic (local sign/burn + relay sync). */
     public static final boolean DEFAULT_DEATH_NOTES_ENABLED = true;
 
+    /** Default master for the "Love Note" book mechanic — the Death Note's mirror. */
+    public static final boolean DEFAULT_LOVE_NOTES_ENABLED = true;
+
     /** Default master for player-written "lectern letters" (sign a book & quill on a lectern → per-life relay series). */
     public static final boolean DEFAULT_LETTERS_ENABLED = true;
 
@@ -242,6 +245,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue SHARE_BOOKS_ENABLED;
     public static final ModConfigSpec.BooleanValue DISCOVER_SHARED_BOOKS_ENABLED;
     public static final ModConfigSpec.BooleanValue DEATH_NOTES_ENABLED;
+    public static final ModConfigSpec.BooleanValue LOVE_NOTES_ENABLED;
     public static final ModConfigSpec.BooleanValue LETTERS_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_BOOK_LOOT_MAX_CHANCE;
     public static final ModConfigSpec.IntValue SHARED_BOOK_REPEAT_GROUPS;
@@ -291,6 +295,7 @@ public final class DungeonTrainConfig {
         SHARE_BOOKS_ENABLED = pair.getLeft().shareBooksEnabled;
         DISCOVER_SHARED_BOOKS_ENABLED = pair.getLeft().discoverSharedBooksEnabled;
         DEATH_NOTES_ENABLED = pair.getLeft().deathNotesEnabled;
+        LOVE_NOTES_ENABLED = pair.getLeft().loveNotesEnabled;
         LETTERS_ENABLED = pair.getLeft().lettersEnabled;
         SHARED_BOOK_LOOT_MAX_CHANCE = pair.getLeft().sharedBookLootMaxChance;
         SHARED_BOOK_REPEAT_GROUPS = pair.getLeft().sharedBookRepeatGroups;
@@ -407,6 +412,15 @@ public final class DungeonTrainConfig {
                         "requires network consent (Discord Presence's 'use the internet?' prompt). False disables the mechanic",
                         "entirely — a \"Death Note\" signs like any other book.")
                 .define("deathNotesEnabled", DEFAULT_DEATH_NOTES_ENABLED);
+        ModConfigSpec.BooleanValue loveNotesEnabled = b
+                .comment("The \"Love Note\" book — the Death Note's mirror. When true, signing a book titled \"Love Note\"",
+                        "(any caps/spacing) consumes it (burning it away in pink flame) and marks the player named on its",
+                        "first page: after the author later dies, the next time that target reaches the carriage the author",
+                        "died at, an echo of the author spawns beside them with the highest possible regard — it greets",
+                        "rather than attacks, gives them items, and defends them. Syncing uses the relay and additionally",
+                        "requires network consent (Discord Presence's 'use the internet?' prompt). False disables the",
+                        "mechanic entirely — a \"Love Note\" signs like any other book.")
+                .define("loveNotesEnabled", DEFAULT_LOVE_NOTES_ENABLED);
         ModConfigSpec.BooleanValue lettersEnabled = b
                 .comment("Player-written lectern letters. When true, right-clicking a lectern with a book & quill opens",
                         "the sign screen; signing it uploads the letter to the Dungeon Train relay as the next entry in your",
@@ -556,7 +570,8 @@ public final class DungeonTrainConfig {
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
-                worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled, lettersEnabled,
+                worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled,
+                loveNotesEnabled, lettersEnabled,
                 sharedBookLootMaxChance, sharedBookRepeatGroups, discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriagePoolChance,
@@ -741,6 +756,11 @@ public final class DungeonTrainConfig {
     /** Master for the "Death Note" curse book mechanic (local sign/burn + relay sync). */
     public static boolean isDeathNotesEnabled() {
         return isLoaded() ? DEATH_NOTES_ENABLED.get() : DEFAULT_DEATH_NOTES_ENABLED;
+    }
+
+    /** Master for the "Love Note" book mechanic — the Death Note's mirror (local sign/burn + relay sync). */
+    public static boolean isLoveNotesEnabled() {
+        return isLoaded() ? LOVE_NOTES_ENABLED.get() : DEFAULT_LOVE_NOTES_ENABLED;
     }
 
     /** Master for player-written lectern letters (sign a book & quill on a lectern → per-life relay series). */
@@ -938,6 +958,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue shareBooksEnabled,
             ModConfigSpec.BooleanValue discoverSharedBooksEnabled,
             ModConfigSpec.BooleanValue deathNotesEnabled,
+            ModConfigSpec.BooleanValue loveNotesEnabled,
             ModConfigSpec.BooleanValue lettersEnabled,
             ModConfigSpec.DoubleValue sharedBookLootMaxChance,
             ModConfigSpec.IntValue sharedBookRepeatGroups,
