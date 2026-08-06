@@ -83,7 +83,13 @@ public record PortalCarriageLayout(int length, int height, int width) {
         return length - 2;
     }
 
-    /** Local Z of the walkway centre line, which the doorways sit on. */
+    /**
+     * Local Z of the walkway centre line, which the doorways sit on.
+     *
+     * <p><b>Authoring constraint for the {@code portal} template:</b> keep its doorways on this line.
+     * The pocket room's two openings are cut to meet a corridor here, so doors authored off-centre
+     * would open onto the room's wall.</p>
+     */
     public int doorZ() {
         return width / 2;
     }
@@ -93,15 +99,14 @@ public record PortalCarriageLayout(int length, int height, int width) {
      * {@link #nearBaffleX()} and {@link #farBaffleX()}. Sits on the walkway centre so the player
      * steps around it, which is what breaks the line of sight through to the far end.
      *
-     * <p><b>Both baffles block the same side on purpose.</b> That makes the corridor
-     * mirror-symmetric, so an {@link PortalCarriageRole#ENTRY} carriage and an
-     * {@link PortalCarriageRole#EXIT} carriage stamp identical blocks and differ only in which half
-     * counts as the train side. Staggering them to opposite sides would mean arriving in an exit
-     * corridor showed the baffles on the wrong side of the walkway — a difference visible at exactly
-     * the moment the swap is meant to be invisible.</p>
+     * <p>Both baffles block the same side, which makes the corridor mirror-symmetric. That is a look
+     * preference, <b>not</b> a requirement: a pair's carriage and its twin are stamped from the same
+     * source whatever their {@link PortalCarriageRole}, and nothing is ever mirrored between them, so
+     * a staggered S-bend would cross just as seamlessly. (An earlier version of this comment claimed
+     * symmetry was load-bearing for the exit role. It is not.)</p>
      *
-     * <p>Symmetry costs nothing in sight-blocking: a straight line down the walkway centre is
-     * interrupted at <i>both</i> baffles, so neither doorway is ever visible from the crossing
+     * <p>Symmetry costs nothing in sight-blocking either way: a straight line down the walkway centre
+     * is interrupted at <i>both</i> baffles, so neither doorway is ever visible from the crossing
      * zone.</p>
      */
     public int baffleZ() {

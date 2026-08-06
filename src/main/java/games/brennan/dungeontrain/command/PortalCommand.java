@@ -3,9 +3,17 @@ package games.brennan.dungeontrain.command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.portal.PortalAnchors;
 import games.brennan.dungeontrain.portal.PortalBuilder;
+import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
+import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageVariantRegistry;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import games.brennan.dungeontrain.portal.PortalGeometry;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import net.minecraft.ChatFormatting;
@@ -53,6 +61,9 @@ public final class PortalCommand {
     /** Yaw facing +X, the direction the corridor runs. Matches the train's travel direction. */
     private static final float FACE_EAST = -90.0f;
 
+    /** How far above the player the template capture is stamped, clear of anything they are standing in. */
+    private static final int SCRATCH_Y_OFFSET = 40;
+
     private PortalCommand() {}
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
@@ -79,6 +90,7 @@ public final class PortalCommand {
                 .then(Commands.argument("every", IntegerArgumentType.integer(3, 64))
                     .executes(ctx -> runCarriage(ctx.getSource(),
                         IntegerArgumentType.getInteger(ctx, "every")))))
+            .then(Commands.literal("savetemplate").executes(ctx -> runSaveTemplate(ctx.getSource())))
             .then(Commands.literal("list").executes(ctx -> runList(ctx.getSource())))
             .then(Commands.literal("clear").executes(ctx -> runClear(ctx.getSource())))
             .then(Commands.literal("tp")
@@ -155,6 +167,65 @@ public final class PortalCommand {
             "Auto-spawning every " + spacing + " blocks along +X, beside the track. "
                 + "Ride east and they will appear as chunks load."), true);
         return 1;
+    }
+
+    /**
+     * Write the built-in corridor out as {@code user/templates/portal.nbt} so it becomes an ordinary
+     * editable variant.
+     *
+     * <p>The variant registry finds customs by scanning for {@code .nbt} files, so {@code portal} is
+     * invisible to the editor until a file exists — this is what creates it. Afterwards
+     * {@code /dungeontrain editor carriage portal} opens it like any other variant, and because every
+     * corridor is stamped from that one template, an edit lands on the carriage and its twin
+     * alike.</p>
+     *
+     * <p>Captured from a scratch stamp well above the player rather than from a live carriage: a
+     * carriage's blocks live in a Sable sub-level, not the world, so {@code fillFromWorld} cannot see
+     * them.</p>
+     */
+    private static int runSaveTemplate(CommandSourceStack source) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("This command must be run by a player."));
+            return 0;
+        }
+
+        ServerLevel level = source.getLevel();
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+
+        BlockPos scratch = new BlockPos(
+            player.blockPosition().getX(),
+            Math.min(player.blockPosition().getY() + SCRATCH_Y_OFFSET,
+                level.getMaxBuildHeight() - dims.height() - 2),
+            player.blockPosition().getZ());
+
+        try {
+            PortalCarriageBuilder.stampBuiltInForCapture(level, scratch, dims);
+
+            StructureTemplate template = new StructureTemplate();
+            template.fillFromWorld(level, scratch,
+                new Vec3i(dims.length(), dims.height(), dims.width()),
+                /*withEntities*/ false, /*toIgnore*/ null);
+
+            CarriageTemplateStore.save(PortalCarriageBuilder.portalVariant(), template);
+            CarriageVariantRegistry.reload();
+
+            source.sendSuccess(() -> Component.literal(
+                "Saved " + CarriageTemplateStore.fileFor(PortalCarriageBuilder.portalVariant())
+                    + ". Edit it with /dungeontrain editor carriage portal — every portal corridor "
+                    + "and its twin stamp from it."), true);
+            return 1;
+        } catch (Exception e) {
+            LOGGER.error("[DungeonTrain] portal savetemplate failed", e);
+            source.sendFailure(Component.literal(
+                "Failed to save portal template: " + e.getClass().getSimpleName() + ": " + e.getMessage())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        } finally {
+            PortalCarriageBuilder.clearBox(level, scratch, dims);
+        }
     }
 
     private static int runCarriage(CommandSourceStack source, int every) {

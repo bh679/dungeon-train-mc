@@ -1127,6 +1127,22 @@ public final class CarriagePlacer {
         }
     }
 
+    /**
+     * Stamp a carriage-sized {@link StructureTemplate} at {@code origin}, choosing the write path the
+     * same way every other carriage stamp does.
+     *
+     * <p>Exists so the hallway portal ({@code games.brennan.dungeontrain.portal}) can put an authored
+     * corridor into both a carriage and its static twin without duplicating the relit /
+     * section-local decision, which belongs here next to the reasons for it.</p>
+     *
+     * @param relight {@code true} for blocks nothing will lift into a Sable sub-level (an editor plot,
+     *                or a portal twin standing in the world); {@code false} on the spawn path
+     */
+    public static void stampTemplateAt(ServerLevel level, BlockPos origin, StructureTemplate template,
+                                       boolean relight) {
+        stampTemplate(level, origin, template, null, relight);
+    }
+
     private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,
                                       StructureProcessor processor, boolean relight) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);

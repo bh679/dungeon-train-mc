@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriagePlacer;
+import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -12,7 +15,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoorHingeSide;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -48,9 +54,9 @@ import java.util.Set;
  * <p>The walk is a dog-leg: in at {@code z=3}, around to {@code z=4/5} past the first baffle, across
  * the crossing zone, and back to {@code z=3} to leave. No straight line runs from either doorway to
  * the midpoint, because both baffles interrupt the walkway centre.</p>
- * <p>Both baffles block the <b>same</b> side deliberately, which makes the corridor mirror-symmetric
- * — an {@link PortalCarriageRole#ENTRY} carriage and an {@link PortalCarriageRole#EXIT} carriage are
- * then block-for-block identical, differing only in which half the rule treats as the train side.</p>
+ * <p>Both baffles block the same side, so the corridor happens to be mirror-symmetric — a look
+ * preference rather than a requirement, since a pair's carriage and twin are stamped from the same
+ * source whatever their {@link PortalCarriageRole} and nothing is mirrored between them.</p>
  *
  * <p>Follows {@code CarriagePlacer.legacyPlaceAt}'s contract for code-generated carriage geometry:
  * {@code null} means "leave this cell", and writes go through the section-local fast path on the
@@ -75,11 +81,39 @@ public final class PortalCarriageBuilder {
     private static final int POCKET_HEIGHT = 5;
     private static final int PLUG_DEPTH = 3;
 
+    /** The carriage variant a portal corridor is authored as: {@code user/templates/portal.nbt}. */
+    private static final CarriageVariant PORTAL_VARIANT = CarriageVariant.custom("portal");
+
     private PortalCarriageBuilder() {}
+
+    public static CarriageVariant portalVariant() {
+        return PORTAL_VARIANT;
+    }
 
     /** The layout for a world's carriage dims. */
     public static PortalCarriageLayout layoutFor(CarriageDims dims) {
         return new PortalCarriageLayout(dims.length(), dims.height(), dims.width());
+    }
+
+    /**
+     * Put a portal corridor at {@code origin}: the authored {@code portal} template when one exists,
+     * the built-in geometry when it does not.
+     *
+     * <p><b>Every corridor in the system goes through here</b> — the carriage and both twins alike.
+     * That is what keeps a carriage and its twin identical whichever source is live, and it is why
+     * editing the template changes both halves of a crossing rather than one.</p>
+     *
+     * @param relight {@code true} for blocks nothing lifts into a Sable sub-level (a twin standing in
+     *                the world, or an editor plot); {@code false} on the spawn path
+     */
+    public static void stampCorridorFrom(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                         boolean relight) {
+        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, PORTAL_VARIANT, dims);
+        if (stored.isPresent()) {
+            CarriagePlacer.stampTemplateAt(level, origin, stored.get(), relight);
+            return;
+        }
+        stampBuiltIn(level, origin, dims, relight);
     }
 
     /**
@@ -133,6 +167,35 @@ public final class PortalCarriageBuilder {
      *                {@code false} on the spawn path, where Sable relights the plot afterwards
      */
     public static Set<BlockPos> stampCarriage(ServerLevel level, BlockPos origin, CarriageDims dims, boolean relight) {
+        stampCorridorFrom(level, origin, dims, relight);
+        return Set.of();   // the caller re-reads the footprint via CarriagePlacer.finishPlace
+    }
+
+    /**
+     * Stamp the built-in geometry into the world so it can be captured as a template — deliberately
+     * the built-in and not {@link #stampCorridorFrom}, so re-running the capture always writes out
+     * the original corridor rather than a copy of whatever is already saved.
+     */
+    public static void stampBuiltInForCapture(ServerLevel level, BlockPos origin, CarriageDims dims) {
+        clearBox(level, origin, dims);
+        stampBuiltIn(level, origin, dims, /*relight*/ true);
+    }
+
+    /** Clear a carriage-sized box to air. */
+    public static void clearBox(ServerLevel level, BlockPos origin, CarriageDims dims) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int dx = 0; dx < dims.length(); dx++) {
+            for (int dz = 0; dz < dims.width(); dz++) {
+                for (int dy = 0; dy < dims.height(); dy++) {
+                    level.setBlock(pos.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz),
+                        Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+                }
+            }
+        }
+    }
+
+    /** The built-in corridor geometry, used when no {@code portal} template has been authored yet. */
+    private static Set<BlockPos> stampBuiltIn(ServerLevel level, BlockPos origin, CarriageDims dims, boolean relight) {
         PortalCarriageLayout layout = layoutFor(dims);
         Set<BlockPos> placed = new HashSet<>();
 
@@ -165,19 +228,11 @@ public final class PortalCarriageBuilder {
      * them.</p>
      */
     public static void stampTwin(ServerLevel level, BlockPos origin, CarriageDims dims) {
-        PortalCarriageLayout layout = layoutFor(dims);
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-
-        for (int dx = 0; dx < dims.length(); dx++) {
-            for (int dz = 0; dz < dims.width(); dz++) {
-                for (int dy = 0; dy < dims.height(); dy++) {
-                    BlockState state = stateAt(layout, dx, dy, dz);
-                    pos.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz);
-                    level.setBlock(pos, state != null ? state : Blocks.AIR.defaultBlockState(),
-                        Block.UPDATE_ALL);
-                }
-            }
-        }
+        // Clear first: unlike a carriage, a twin lands in open air rather than a pre-cleared volume,
+        // and a template stamp only writes its own cells — anything already standing there would
+        // show through and break the match with the carriage.
+        clearBox(level, origin, dims);
+        stampCorridorFrom(level, origin, dims, /*relight*/ true);
     }
 
     /**
