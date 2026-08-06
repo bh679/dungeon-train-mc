@@ -1,8 +1,12 @@
 package games.brennan.dungeontrain.portal;
 
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
+import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3d;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,20 +28,32 @@ public final class PortalPairIndex {
     /**
      * One live corridor pairing.
      *
-     * <p>Holds the {@link LevelPlot} itself rather than a sub-level id: the Sable hook already has
-     * the plot in hand for the changed chunk, so matching on identity avoids a lookup on the hot
-     * path, and writing the mirrored block needs the plot anyway.</p>
+     * <p>Holds the {@link LevelPlot} for identity matching (the Sable hook already has it in hand for
+     * the changed chunk) and the {@link ManagedShip} for coordinate work.</p>
      *
-     * @param plot        the carriage's sub-level plot, where its blocks actually live
-     * @param plotOrigin  the corridor's origin in the plot's shipyard space
-     * @param twinOrigin  the twin corridor's origin in world space
-     * @param dims        carriage dims, which bound both corridors
+     * <p><b>Every plot↔world conversion goes through the ship's own transform, one point at a time.</b>
+     * An earlier version precomputed the corridor's plot origin once and did plain subtraction, which
+     * silently assumed the plot's axes run the same way as the world's. When a ship's pose flips an
+     * axis that assumption reflects every mirrored edit onto the opposite side of the corridor — a
+     * block broken on the left wall vanishing from the right. Asking the ship to convert each point
+     * costs a few multiplications and cannot be wrong about orientation.</p>
+     *
+     * @param plot          the carriage's sub-level plot, where its blocks actually live
+     * @param ship          the carriage, for {@code worldToShip} / {@code shipToWorld}
+     * @param carriageWorld the corridor's origin in WORLD space, read live from the ship's AABB
+     * @param twinOrigin    the twin corridor's origin in world space
+     * @param dims          carriage dims, which bound both corridors
      */
-    public record Entry(LevelPlot plot, BlockPos plotOrigin, BlockPos twinOrigin, CarriageDims dims) {
+    public record Entry(LevelPlot plot, ManagedShip ship, Vec3 carriageWorld, BlockPos twinOrigin,
+                        CarriageDims dims) {
 
         /** Local cell of a shipyard position, or {@code null} if it falls outside the corridor. */
         public int[] localOfPlot(int x, int y, int z) {
-            return localOf(x - plotOrigin.getX(), y - plotOrigin.getY(), z - plotOrigin.getZ());
+            Vector3d world = ship.shipToWorld(new Vector3d(x + 0.5, y + 0.5, z + 0.5));
+            return localOf(
+                Mth.floor(world.x - carriageWorld.x),
+                Mth.floor(world.y - carriageWorld.y),
+                Mth.floor(world.z - carriageWorld.z));
         }
 
         /** Local cell of a world position, or {@code null} if it falls outside the twin. */
@@ -54,8 +70,13 @@ public final class PortalPairIndex {
             return new int[] {dx, dy, dz};
         }
 
+        /** The shipyard position of a local cell, via the ship's transform rather than an assumed axis. */
         public BlockPos plotPosOf(int[] local) {
-            return plotOrigin.offset(local[0], local[1], local[2]);
+            Vector3d ship3 = ship.worldToShip(new Vector3d(
+                carriageWorld.x + local[0] + 0.5,
+                carriageWorld.y + local[1] + 0.5,
+                carriageWorld.z + local[2] + 0.5));
+            return BlockPos.containing(ship3.x, ship3.y, ship3.z);
         }
 
         public BlockPos twinPosOf(int[] local) {

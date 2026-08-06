@@ -74,13 +74,25 @@ public record PortalCarriageLayout(int length, int height, int width) {
         return length - 1;
     }
 
-    /** Local X of the baffle just inside each door. */
+    /**
+     * Local X of the baffle inside each door — <b>two</b> blocks in, not one.
+     *
+     * <p>One block in makes the corridor unwalkable. The door plane is solid except its doorway
+     * column, and a baffle immediately behind it blocks that same column, so the only route from the
+     * doorway to the open side is a diagonal step between two solid corners. Minecraft refuses that:
+     * the two blocks touch at an edge, leaving a zero-width gap that a 0.6-wide player cannot pass.
+     * Leaving a clear column between door and baffle makes every step orthogonal — through the door,
+     * sideways, then on.</p>
+     *
+     * <p>The sight-line is unaffected: a straight run down the doorway's own column still meets a
+     * baffle at each end.</p>
+     */
     public int nearBaffleX() {
-        return 1;
+        return 2;
     }
 
     public int farBaffleX() {
-        return length - 2;
+        return length - 3;
     }
 
     /**

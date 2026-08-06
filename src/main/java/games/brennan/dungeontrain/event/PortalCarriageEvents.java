@@ -14,7 +14,7 @@ import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
-import org.joml.Vector3d;
+import net.minecraft.world.phys.Vec3;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.Trains;
@@ -280,11 +280,11 @@ public final class PortalCarriageEvents {
         LevelPlot plot = sable.subLevel().getPlot();
         if (plot == null) return;
 
-        Vector3d shipLocal = ship.worldToShip(new Vector3d(originX, originY, originZ));
-        BlockPos plotOrigin = BlockPos.containing(shipLocal.x, shipLocal.y, shipLocal.z);
-
+        // The world origin, not a precomputed plot origin: the entry converts each point through the
+        // ship's own transform, so nothing here has to assume the plot's axes run the same way as the
+        // world's — an assumption that reflected mirrored edits onto the opposite side of the corridor.
         PortalPairIndex.publish(carriageIndex,
-            new PortalPairIndex.Entry(plot, plotOrigin, twinOrigin, dims));
+            new PortalPairIndex.Entry(plot, ship, new Vec3(originX, originY, originZ), twinOrigin, dims));
     }
 
     /** True if any player is anywhere inside a pair structure — either corridor, or the room between. */

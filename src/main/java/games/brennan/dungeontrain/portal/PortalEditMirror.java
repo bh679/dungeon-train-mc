@@ -60,11 +60,18 @@ public final class PortalEditMirror {
 
         MIRRORING.set(true);
         try {
+            BlockPos target = entry.twinPosOf(local);
             // setBlockSilent, not the section-local write: the twin's blocks are ordinary world
             // blocks that nothing subsequently relights or re-syncs, and a section-local write skips
             // both the light engine and the client update — the mirrored change would be invisible.
-            // This is the same call EditorMirror makes for the same reason.
-            SilentBlockOps.setBlockSilent(level, entry.twinPosOf(local), newState);
+            // Air goes through clearBlockSilent, which drops the block entity with it; setting an air
+            // state over a chest would otherwise leave the container behind. Both calls, and the
+            // split between them, follow EditorMirror.
+            if (newState.isAir()) {
+                SilentBlockOps.clearBlockSilent(level, target);
+            } else {
+                SilentBlockOps.setBlockSilent(level, target, newState);
+            }
         } finally {
             MIRRORING.set(false);
         }
