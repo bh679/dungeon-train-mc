@@ -31,6 +31,7 @@ public final class PortalRegistry extends SavedData {
 
     private static final String TAG_PORTALS = "portals";
     private static final String TAG_AUTO_SPACING = "autoSpacing";
+    private static final String TAG_CARRIAGE_EVERY = "carriageEvery";
     private static final String TAG_ORIGIN_X = "originX";
     private static final String TAG_FLOOR_Y = "floorY";
     private static final String TAG_ORIGIN_Z = "originZ";
@@ -47,6 +48,14 @@ public final class PortalRegistry extends SavedData {
      * again) depending on when it was last saved.
      */
     private int autoSpacing = DEFAULT_AUTO_SPACING;
+
+    /**
+     * Every nth carriage is a portal corridor. Persisted for the same reason as the spacing above:
+     * a carriage's blocks are re-stamped whenever the rolling window brings it round again, so this
+     * has to give the same answer after a reload or a corridor would quietly become an ordinary
+     * carriage under a player standing in it.
+     */
+    private int carriageEvery = PortalCarriageSelection.DEFAULT_CARRIAGE_EVERY;
 
     /**
      * Default anchor spacing, in blocks. Tuned for testing rather than play: at the default train
@@ -100,6 +109,20 @@ public final class PortalRegistry extends SavedData {
         setDirty();
     }
 
+    /**
+     * Every nth carriage along the train is stamped as a portal corridor, or
+     * {@link PortalCarriageSelection#CARRIAGE_EVERY_OFF} for none.
+     */
+    public synchronized int carriageEvery() {
+        return carriageEvery;
+    }
+
+    public synchronized void setCarriageEvery(int every) {
+        if (carriageEvery == every) return;
+        carriageEvery = every;
+        setDirty();
+    }
+
     /** Forget every portal, returning how many were dropped. Blocks already stamped are left alone. */
     public synchronized int clear() {
         int removed = portals.size();
@@ -114,6 +137,9 @@ public final class PortalRegistry extends SavedData {
         PortalRegistry data = new PortalRegistry();
         if (tag.contains(TAG_AUTO_SPACING)) {
             data.autoSpacing = tag.getInt(TAG_AUTO_SPACING);
+        }
+        if (tag.contains(TAG_CARRIAGE_EVERY)) {
+            data.carriageEvery = tag.getInt(TAG_CARRIAGE_EVERY);
         }
         if (!tag.contains(TAG_PORTALS)) return data;
 
@@ -143,6 +169,7 @@ public final class PortalRegistry extends SavedData {
     @Override
     public synchronized CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putInt(TAG_AUTO_SPACING, autoSpacing);
+        tag.putInt(TAG_CARRIAGE_EVERY, carriageEvery);
 
         ListTag list = new ListTag();
         for (PortalGeometry geo : portals) {

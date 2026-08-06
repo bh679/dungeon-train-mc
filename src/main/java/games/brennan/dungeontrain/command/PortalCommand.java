@@ -5,6 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalAnchors;
 import games.brennan.dungeontrain.portal.PortalBuilder;
+import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalGeometry;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import net.minecraft.ChatFormatting;
@@ -70,6 +71,14 @@ public final class PortalCommand {
                 .then(Commands.argument("spacing", IntegerArgumentType.integer(PortalAnchors.MIN_SPACING, 100_000))
                     .executes(ctx -> runAuto(ctx.getSource(),
                         IntegerArgumentType.getInteger(ctx, "spacing")))))
+            .then(Commands.literal("carriage")
+                .then(Commands.literal("off")
+                    .executes(ctx -> runCarriage(ctx.getSource(), PortalCarriageSelection.CARRIAGE_EVERY_OFF)))
+                // Minimum 3: each twin is its corridor plus a pocket room, about 24 blocks, so
+                // portals closer than 3 carriages (27 blocks) apart would stamp twins into each other.
+                .then(Commands.argument("every", IntegerArgumentType.integer(3, 64))
+                    .executes(ctx -> runCarriage(ctx.getSource(),
+                        IntegerArgumentType.getInteger(ctx, "every")))))
             .then(Commands.literal("list").executes(ctx -> runList(ctx.getSource())))
             .then(Commands.literal("clear").executes(ctx -> runClear(ctx.getSource())))
             .then(Commands.literal("tp")
@@ -148,9 +157,29 @@ public final class PortalCommand {
         return 1;
     }
 
+    private static int runCarriage(CommandSourceStack source, int every) {
+        PortalRegistry.get(source.getLevel()).setCarriageEvery(every);
+
+        if (every == PortalCarriageSelection.CARRIAGE_EVERY_OFF) {
+            source.sendSuccess(() -> Component.literal(
+                "Portal carriages off. Carriages already stamped keep their corridor until the "
+                    + "rolling window re-places them."), true);
+            return 1;
+        }
+
+        source.sendSuccess(() -> Component.literal(
+            "Every " + every + (every == 1 ? "st" : "th") + " carriage is now a portal corridor. "
+                + "Walk the train to find one — the twin is stamped as you approach."), true);
+        return 1;
+    }
+
     private static int runList(CommandSourceStack source) {
         PortalRegistry registry = PortalRegistry.get(source.getLevel());
         int spacing = registry.autoSpacing();
+        int every = registry.carriageEvery();
+        source.sendSuccess(() -> Component.literal(every == PortalCarriageSelection.CARRIAGE_EVERY_OFF
+            ? "Portal carriages: off"
+            : "Portal carriages: every " + every + " carriages"), false);
         source.sendSuccess(() -> Component.literal(spacing == PortalAnchors.SPACING_OFF
             ? "Auto-spawning: off"
             : "Auto-spawning: every " + spacing + " blocks"), false);

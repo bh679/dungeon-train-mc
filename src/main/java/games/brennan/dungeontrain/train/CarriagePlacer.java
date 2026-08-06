@@ -6,6 +6,8 @@ import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.VariantState;
+import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
+import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateType;
@@ -240,6 +242,16 @@ public final class CarriagePlacer {
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
         boolean applyContents, boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX
     ) {
+        // Portal carriages replace the whole carriage with a hallway-portal corridor
+        // (games.brennan.dungeontrain.portal). Returning here deliberately skips the parts overlay,
+        // the variant-block sidecar and the contents pass: the corridor's geometry IS the carriage,
+        // and loot or furniture stamped into it would both block the walkway and break the
+        // block-for-block match with its twin that the illusion depends on.
+        if (PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) {
+            PortalCarriageBuilder.stampCarriage(level, origin, dims, /*relight*/ false);
+            return finishPlace(level, origin, variant, dims, "portal", null);
+        }
+
         // relight=false: the spawn shell/parts are placed in the SOURCE world and lifted into a Sable
         // sub-level this same tick; Sable's moveBlocks re-places each block via LevelChunk.setBlockState
         // and relights it in the plot, so the world-side light engine work here would be discarded (#645).
