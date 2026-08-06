@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "50";
+    public static final String PROTOCOL_VERSION = "51";
 
     private DungeonTrainNet() {}
 
@@ -65,6 +65,9 @@ public final class DungeonTrainNet {
         // two players either side of the midpoint can still see each other. Pushed every tick while a
         // corridor is occupied, and once empty when it clears. See portal/PortalPuppets.
         registrar.playToClient(PortalPuppetsPacket.TYPE, PortalPuppetsPacket.STREAM_CODEC, PortalPuppetsPacket::handle);
+        // …and the swing back the other way: a puppet is not an entity, so a hit on one needs its own
+        // round trip. The id is re-validated against the live pairing before anything is damaged.
+        registrar.playToServer(PortalPuppetAttackPacket.TYPE, PortalPuppetAttackPacket.STREAM_CODEC, PortalPuppetAttackPacket::handle);
 
         registrar.playToServer(ContainerHotkeyPacket.TYPE, ContainerHotkeyPacket.STREAM_CODEC, ContainerHotkeyPacket::handle);
         registrar.playToServer(ContainerContentsMenuTogglePacket.TYPE, ContainerContentsMenuTogglePacket.STREAM_CODEC, ContainerContentsMenuTogglePacket::handle);

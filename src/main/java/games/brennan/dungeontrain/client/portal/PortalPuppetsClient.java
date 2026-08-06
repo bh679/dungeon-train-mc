@@ -158,6 +158,12 @@ public final class PortalPuppetsClient {
                 living.walkAnimation.update(Math.min(moved * 4.0F, 1.0F), 0.4F);
             }
 
+            // Nothing ticks a puppet, so the hurt flash has to be wound down here or a puppet hit
+            // once through the portal would glow red for as long as it existed.
+            if (model instanceof LivingEntity hurt && hurt.hurtTime > 0) {
+                hurt.hurtTime--;
+            }
+
             applyData();
             model.tickCount++;
         }

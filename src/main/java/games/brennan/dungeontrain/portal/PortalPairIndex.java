@@ -43,9 +43,13 @@ public final class PortalPairIndex {
      * @param carriageWorld the corridor's origin in WORLD space, read live from the ship's AABB
      * @param twinOrigin    the twin corridor's origin in world space
      * @param dims          carriage dims, which bound both corridors
+     * @param frames        the same pairing as a frame mapping, for code that needs to convert
+     *                      <i>positions</i> between the copies rather than block cells — see
+     *                      {@link PortalPuppetAttack}, which measures an attacker's reach to a target
+     *                      in the other corridor and can only do that through the mirror
      */
     public record Entry(LevelPlot plot, ManagedShip ship, Vec3 carriageWorld, BlockPos twinOrigin,
-                        CarriageDims dims) {
+                        CarriageDims dims, PortalFrames frames) {
 
         /** Local cell of a shipyard position, or {@code null} if it falls outside the corridor. */
         public int[] localOfPlot(int x, int y, int z) {
@@ -103,6 +107,11 @@ public final class PortalPairIndex {
 
     public static boolean isEmpty() {
         return ENTRIES.isEmpty();
+    }
+
+    /** Every live pairing, for callers that have to test a position against all of them. */
+    public static Iterable<Entry> all() {
+        return ENTRIES.values();
     }
 
     /** The corridor containing this shipyard position in the given plot, or {@code null}. */

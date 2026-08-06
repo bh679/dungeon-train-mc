@@ -259,8 +259,9 @@ public final class PortalCarriageEvents {
             role);
 
         // Publish for PortalEditMirror, which needs to answer "is this block in a portal corridor?"
-        // on the hot path of every sub-level block change and cannot re-derive train geometry there.
-        publishPairing(carriageIndex, ship, dims, originX, originY, originZ, twinOrigin);
+        // on the hot path of every sub-level block change and cannot re-derive train geometry there —
+        // and for PortalPuppetAttack, which needs the frames to measure a hit through the mirror.
+        publishPairing(carriageIndex, ship, dims, originX, originY, originZ, twinOrigin, frames);
 
         for (ServerPlayer player : players) {
             if (player.isPassenger()) continue;
@@ -355,7 +356,8 @@ public final class PortalCarriageEvents {
      * carriage blocks.</p>
      */
     private static void publishPairing(int carriageIndex, ManagedShip ship, CarriageDims dims,
-                                       double originX, double originY, double originZ, BlockPos twinOrigin) {
+                                       double originX, double originY, double originZ,
+                                       BlockPos twinOrigin, PortalFrames frames) {
         if (!(ship instanceof SableManagedShip sable)) return;
 
         LevelPlot plot = sable.subLevel().getPlot();
@@ -365,7 +367,8 @@ public final class PortalCarriageEvents {
         // ship's own transform, so nothing here has to assume the plot's axes run the same way as the
         // world's — an assumption that reflected mirrored edits onto the opposite side of the corridor.
         PortalPairIndex.publish(carriageIndex,
-            new PortalPairIndex.Entry(plot, ship, new Vec3(originX, originY, originZ), twinOrigin, dims));
+            new PortalPairIndex.Entry(plot, ship, new Vec3(originX, originY, originZ), twinOrigin,
+                dims, frames));
     }
 
     /** True if any player is anywhere inside a pair structure — either corridor, or the room between. */
