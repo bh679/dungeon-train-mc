@@ -102,6 +102,17 @@ neoForge {
             if (localRelay) {
                 environment.put('DUNGEONTRAIN_RELAY_BASE_URL', localRelay.toString())
             }
+            // Auto-join seam for the headless perf A/B (scripts/perf/run-ab.py), e.g.
+            //   ./gradlew runClient -PjoinServer=127.0.0.1:25571
+            // The dedicated server culls the train with no player aboard (generation AND sustain are
+            // gated on players.isEmpty()), so a server-side benchmark needs a rider client — and it
+            // has to join without anyone clicking through the multiplayer menu. Do NOT also pass
+            // --gameDir: ModDevGradle already passes `--gameDir .` and MC rejects the duplicate.
+            def joinServer = project.findProperty('joinServer')
+            if (joinServer) {
+                programArgument '--quickPlayMultiplayer'
+                programArgument joinServer.toString()
+            }
         }
 
         server {

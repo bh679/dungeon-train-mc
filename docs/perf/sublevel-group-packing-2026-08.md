@@ -59,6 +59,10 @@ The `games.brennan.dungeontrain.jitter` namespace is forced to DEBUG on dev buil
 | `[gen.timing] … chunksFulled= …` | `GenProfiler` | fires only when chunks generated — our gen-quiet detector |
 | `Spawned group … timing(ms): … total=` | `TrainAssembler.java:583` | per-group placement hitch |
 
+The arm is flipped with `/dungeontrain debug groupsize <n>` (added for this bench so the A/B can be
+driven headlessly — it delegates to the same `DungeonTrainConfig.setGroupSize` the settings screen
+uses, and only affects groups spawned after it).
+
 > **Naming trap:** `[mspt] carriages=` counts **sub-levels**, not visual carriages — it is
 > `Trains.Carriage` entries, one per `spawnGroup`. The parser reports it as `subLevels`.
 
@@ -82,31 +86,57 @@ Three known confounds and how the design kills each:
    window is pinned by carriage count so it never auto-sizes off render distance.
 3. **Spawn nondeterminism.** → Alternate A/B/A/B/A/B and read the paired deltas, not one pair.
 
-Run it (the client must be launched from a real terminal — the agent harness reaps long-lived clients):
+### Headless (the supported path)
+
+A dedicated server driven over RCON, with an auto-joining rider client — the train is culled outright
+on a player-less server, since both generation and sustain are gated on `players.isEmpty()`.
 
 ```bash
-./gradlew runClient
+python3 scripts/perf/run-ab.py setup
 ```
 
-1. New world, Dungeon Train world type, note the seed. Ride/fly forward ~2 min to generate a stretch.
-2. `/dungeontrain carriages 36` — pins the rolling window off render distance. 36 divides evenly by
-   both 3 and 6, so neither arm pays group-rounding overshoot: expect exactly 12 vs 6 sub-levels.
-3. `/dungeontrain speed 0` — park the train.
-4. **Arm A:** settings screen → groupSize **3** → `/dungeontrain spawn 36`. Stand still aboard ~90 s.
-5. **Arm B:** settings screen → groupSize **6** → `/dungeontrain spawn 36`. Stand still aboard ~90 s.
-6. Repeat steps 4–5 twice more.
-7. Optional, once per arm: `/dungeontrain debug physicsfreeze off` for 60 s, to split the physics
-   share from the rest of the per-sub-level overhead.
-8. Quit. The log is `run/logs/latest.log`.
+Then start the two JVMs (separate terminals, or background tasks — both survive fine):
 
-Verify from the log that the arm actually changed — `Spawned group … groupSize=N` states what was
-really used. If the settings screen does not take effect live, fall back to one fresh world per arm
-at the same seed.
+```bash
+./gradlew runServer
+```
+
+```bash
+./gradlew runClient -PjoinServer=127.0.0.1:25571
+```
+
+And drive it:
+
+```bash
+python3 scripts/perf/run-ab.py run --reps 3 --dwell 90 --carriages 36 --arms 3,6
+```
+
+The driver pins the window, parks the train, then alternates the arms — for each: set `groupSize`,
+respawn via `execute as <player>` (`/dungeontrain spawn` needs a player source, so it cannot run from
+the RCON console directly), teleport the rider aboard, poll until the resident sub-level count stops
+moving, then dwell while the log samples. It refuses a `--carriages` value that is not divisible by
+every arm, because that would hand the arms different group-rounding overshoot.
+
+Ports are 25571 (game) / 25581 (RCON), deliberately not the defaults — a sibling worktree's dev server
+sits on 25565.
+
+### Manual (GUI fallback)
+
+Same protocol by hand if you'd rather watch it: `/dungeontrain carriages 36`, `/dungeontrain speed 0`,
+then alternate `/dungeontrain debug groupsize 3|6` + `/dungeontrain spawn 36`, standing still aboard
+~90 s per arm, three times each.
+
+Either way, verify from the log that the arm actually changed — `Spawned group … groupSize=N` states
+what was really used.
 
 ## Analysis
 
+> **`debug.log`, not `latest.log`.** `[mspt]` and `[freeze]` are DEBUG lines; `latest.log` is
+> INFO-only and contains **zero** of them. Pointing the parser at `latest.log` yields an empty
+> analysis that looks like a failed run.
+
 ```bash
-python3 scripts/perf/parse-dt-perf-log.py run/logs/latest.log --csv windows.csv
+python3 scripts/perf/parse-dt-perf-log.py run/logs/debug.log --csv windows.csv
 ```
 
 The parser segments the log on each `/dungeontrain spawn` and labels each segment by the `groupSize`

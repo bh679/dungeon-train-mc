@@ -1,12 +1,14 @@
 package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.debug.CarriageDebug;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.ChiseledBookshelfSync;
@@ -18,6 +20,7 @@ import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageGenerationConfig;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -88,6 +91,16 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setBandEarlyOuts(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setBandEarlyOuts(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> bandEarlyOutsStatus(ctx.getSource()))))
+            // /dungeontrain debug groupsize <n> — set carriages per sub-level group, then respawn
+            // (`/dungeontrain spawn <count>`) for it to take effect. Same setter the settings screen
+            // uses. Exists so the sub-level packing A/B can be driven over RCON from
+            // scripts/perf/run-ab.py: without it the arm can only be flipped from a GUI, which rules
+            // out a headless benchmark. Existing groups keep the groupSize they were spawned with.
+            .then(Commands.literal("groupsize")
+                .executes(ctx -> groupSizeStatus(ctx.getSource()))
+                .then(Commands.argument("value", IntegerArgumentType.integer(
+                        CarriageGenerationConfig.MIN_GROUP_SIZE, CarriageGenerationConfig.MAX_GROUP_SIZE))
+                    .executes(ctx -> setGroupSize(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "value")))))
             .then(Commands.literal("pair")
                 .executes(ctx -> runPair(ctx.getSource(), 0.0))
                 .then(Commands.argument("velocity", DoubleArgumentType.doubleArg())
@@ -180,6 +193,22 @@ public final class DebugCommand {
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Physics-freeze " + (on ? "ON" : "OFF — all bodies restored next tick")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setGroupSize(CommandSourceStack source, int value) {
+        DungeonTrainConfig.setGroupSize(value);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] groupSize=" + DungeonTrainConfig.getGroupSize()
+                + " — respawn (/dungeontrain spawn <count>) for it to take effect; "
+                + "already-spawned groups keep theirs."
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private static int groupSizeStatus(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] groupSize=" + DungeonTrainConfig.getGroupSize()), false);
         return 1;
     }
 

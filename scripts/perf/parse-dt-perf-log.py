@@ -92,6 +92,17 @@ class Window:
     def gen_active(self) -> bool:
         return self.gen_chunks > 0
 
+    @property
+    def carriages(self) -> int:
+        """Visual carriages aboard = sub-levels × group size.
+
+        The arms do NOT carry equal carriage counts even with the window pinned:
+        the appender rounds outward to group boundaries around the player, so a
+        bigger group overshoots further. Comparing raw MSPT between arms would
+        credit or penalise that difference as if it were the effect under test.
+        """
+        return self.sub_levels * self.group_size
+
 
 @dataclass(frozen=True)
 class SpawnCost:
@@ -199,12 +210,28 @@ def parse(lines: list[str]) -> list[Segment]:
     return segments
 
 
-def retain(segments: list[Segment], warmup: int, include_gen: bool) -> list[Window]:
-    """Apply the warmup and gen-quiet filters, returning the surviving windows."""
+def settled_sub_levels(segment: Segment) -> int | None:
+    """The sub-level count this segment spent most of its windows at.
+
+    A respawned train fills over tens of seconds, so a segment's early windows
+    sit at a smaller body count than its steady state. Comparing arms means
+    comparing settled trains, so the modal count defines "settled" and anything
+    else is fill phase.
+    """
+    counts = [w.sub_levels for w in segment.windows]
+    return statistics.mode(counts) if counts else None
+
+
+def retain(segments: list[Segment], warmup: int, include_gen: bool,
+           stable_only: bool = True) -> list[Window]:
+    """Apply the warmup, gen-quiet and settled-count filters."""
     kept: list[Window] = []
     for segment in segments:
+        settled = settled_sub_levels(segment) if stable_only else None
         for window in segment.windows[warmup:]:
             if window.gen_active and not include_gen:
+                continue
+            if settled is not None and window.sub_levels != settled:
                 continue
             kept.append(window)
     return kept
@@ -251,16 +278,20 @@ def report_arms(kept: list[Window]) -> dict[int, list[Window]]:
         arms.setdefault(window.group_size, []).append(window)
 
     print("=== Arm aggregate (pooled windows) ===")
-    print(f"{'arm':>5} {'segs':>5} {'windows':>8} {'subLvl':>7} {'MSPT med':>9} "
-          f"{'p15':>7} {'p85':>7} {'active':>7}")
+    print(f"{'arm':>5} {'segs':>5} {'windows':>8} {'subLvl':>7} {'carr':>6} {'MSPT med':>9} "
+          f"{'p15':>7} {'p85':>7} {'ms/carr':>8} {'ms/subLvl':>10} {'active':>7}")
     for arm in sorted(arms):
         windows = arms[arm]
         msp = [w.mspt for w in windows]
         active = [w.active for w in windows if w.active is not None]
+        med = median_or_nan(msp)
+        sub_levels = median_or_nan([w.sub_levels for w in windows])
+        carriages = median_or_nan([w.carriages for w in windows])
         print(f"{arm:>5} {len({w.segment for w in windows}):>5} {len(windows):>8} "
-              f"{median_or_nan([w.sub_levels for w in windows]):>7.0f} "
-              f"{median_or_nan(msp):>9.2f} {percentile(msp, 0.15):>7.2f} "
-              f"{percentile(msp, 0.85):>7.2f} {median_or_nan(active):>7.1f}")
+              f"{sub_levels:>7.0f} {carriages:>6.0f} "
+              f"{med:>9.2f} {percentile(msp, 0.15):>7.2f} {percentile(msp, 0.85):>7.2f} "
+              f"{med / carriages:>8.3f} {med / sub_levels:>10.3f} "
+              f"{median_or_nan(active):>7.1f}")
     print()
     return arms
 
@@ -282,11 +313,19 @@ def report_ab(arms: dict[int, list[Window]], segments: list[Segment], kept: list
     base_lv = median_or_nan([w.sub_levels for w in arms[base_arm]])
     test_lv = median_or_nan([w.sub_levels for w in arms[test_arm]])
 
+    base_carr = median_or_nan([w.carriages for w in arms[base_arm]])
+    test_carr = median_or_nan([w.carriages for w in arms[test_arm]])
+
     print(f"=== A/B: groupSize {base_arm} -> {test_arm} ===")
     print(f"sub-levels    {base_lv:.0f} -> {test_lv:.0f}"
           f"   ({pct(base_lv, test_lv)})")
+    print(f"carriages     {base_carr:.0f} -> {test_carr:.0f}"
+          f"   ({pct(base_carr, test_carr)})"
+          f"{'   ⚠ arms not load-matched — read ms/carriage' if abs(test_carr - base_carr) > 0.02 * base_carr else ''}")
     print(f"median MSPT   {base:.2f} -> {test:.2f} ms"
           f"   ({test - base:+.2f} ms, {pct(base, test)})")
+    print(f"ms/carriage   {base / base_carr:.3f} -> {test / test_carr:.3f}"
+          f"   ({pct(base / base_carr, test / test_carr)})")
 
     paired = paired_deltas(base_arm, test_arm, segments, kept)
     if paired:
@@ -371,6 +410,9 @@ def main(argv: list[str] | None = None) -> int:
                              f"(default {DEFAULT_WARMUP_WINDOWS}; avgTickMs is a 100-tick rolling mean)")
     parser.add_argument("--include-gen", action="store_true",
                         help="keep windows where chunks generated (default: drop — gen swamps the signal)")
+    parser.add_argument("--include-filling", action="store_true",
+                        help="keep windows from the post-respawn fill phase (default: drop — only "
+                             "windows at the segment's settled sub-level count are comparable)")
     parser.add_argument("--csv", type=Path, help="write every retained window to this CSV")
     args = parser.parse_args(argv)
 
@@ -385,14 +427,15 @@ def main(argv: list[str] | None = None) -> int:
               file=sys.stderr)
         return 1
 
-    kept = retain(segments, args.warmup, args.include_gen)
+    kept = retain(segments, args.warmup, args.include_gen, not args.include_filling)
     dropped = sum(len(s.windows) for s in segments) - len(kept)
     print(f"{len(segments)} segment(s), {len(kept)} window(s) retained, {dropped} dropped "
-          f"(warmup={args.warmup}, gen-quiet={'off' if args.include_gen else 'on'})\n")
+          f"(warmup={args.warmup}, gen-quiet={'off' if args.include_gen else 'on'}, "
+          f"settled-only={'off' if args.include_filling else 'on'})\n")
 
     if not kept:
-        print("every window was filtered out — lower --warmup, or pass --include-gen "
-              "if the run was never gen-quiet.", file=sys.stderr)
+        print("every window was filtered out — lower --warmup, or pass --include-gen / "
+              "--include-filling if the run was never quiet or never settled.", file=sys.stderr)
         return 1
 
     report_segments(segments, kept)

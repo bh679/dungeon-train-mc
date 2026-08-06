@@ -145,6 +145,21 @@ def test_retain_drops_warmup_and_gen_active_windows():
     assert len(kept_with_gen) == 8, f"expected 8 retained, got {len(kept_with_gen)}"
 
 
+def test_retain_drops_the_post_respawn_fill_phase():
+    """The train fills over tens of seconds after a respawn; those windows sit at
+    a smaller body count and are not comparable to the settled ones."""
+    lines = [spawning_train(3)]
+    for i, sub_levels in enumerate([3, 7, 11] + [14] * 8):   # fill, then settle at 14
+        lines.append(freeze(2, i, sub_levels, 4, sub_levels - 4))
+        lines.append(mspt(2, i, 14.0, sub_levels))
+    segments = P.parse(lines)
+    kept = P.retain(segments, warmup=0, include_gen=False, stable_only=True)
+    assert len(kept) == 8, f"expected the 8 settled windows, got {len(kept)}"
+    assert {w.sub_levels for w in kept} == {14}, {w.sub_levels for w in kept}
+    unfiltered = P.retain(segments, warmup=0, include_gen=False, stable_only=False)
+    assert len(unfiltered) == 11, f"expected all 11 without the filter, got {len(unfiltered)}"
+
+
 def test_paired_deltas_pairs_each_test_segment_with_the_base_before_it():
     lines = (arm(3, 4, 14.0, 12) + arm(6, 4, 11.0, 6)
              + arm(3, 4, 15.0, 12) + arm(6, 4, 11.5, 6))
