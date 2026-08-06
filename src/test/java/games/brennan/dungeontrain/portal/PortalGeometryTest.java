@@ -124,6 +124,67 @@ final class PortalGeometryTest {
         assertEquals(DELTA_Y, g.requiredShift(MID_X + 12.0, NEAR_Y, IN_Z));
     }
 
+    // ---- simulated walks -----------------------------------------------------
+
+    /**
+     * Walk the corridor tick by tick, applying the invariant exactly as
+     * {@code PortalTransitEvents} does, and count the swaps. This is the property the whole
+     * illusion rests on: one swap per crossing, and never a second one that would ping-pong the
+     * player between the copies.
+     *
+     * @param perTick blocks of X travelled per tick
+     * @return number of swaps performed over the walk
+     */
+    private static int walkAndCountSwaps(PortalGeometry g, double startX, double endX,
+                                         double perTick, double startY) {
+        double x = startX;
+        double y = startY;
+        int swaps = 0;
+        double step = endX >= startX ? perTick : -perTick;
+
+        for (int tick = 0; tick < 10_000; tick++) {
+            x += step;
+            if (step > 0 ? x > endX : x < endX) break;
+
+            int shift = g.requiredShift(x, y, IN_Z);
+            if (shift != 0) {
+                y += shift;
+                swaps++;
+                // The invariant must be settled immediately — a second shift on the same
+                // position is exactly the ping-pong this design is built to avoid.
+                assertEquals(0, g.requiredShift(x, y, IN_Z),
+                    "position still wrong after one shift at x=" + x);
+            }
+        }
+        return swaps;
+    }
+
+    @Test
+    @DisplayName("walking the corridor swaps exactly once, at any speed, in either direction")
+    void walkSwapsExactlyOnce() {
+        PortalGeometry g = geo();
+        double from = ORIGIN_X + 1;
+        double to = ORIGIN_X + LENGTH - 2;
+
+        // Walking (~0.22/tick), sprinting (~0.28/tick) and an absurd elytra-grade step.
+        assertEquals(1, walkAndCountSwaps(g, from, to, 0.22, NEAR_Y));
+        assertEquals(1, walkAndCountSwaps(g, from, to, 0.28, NEAR_Y));
+        assertEquals(1, walkAndCountSwaps(g, from, to, 3.5, NEAR_Y));
+
+        // ...and back the other way, starting in FAR as the player would be.
+        assertEquals(1, walkAndCountSwaps(g, to, from, 0.22, FAR_Y));
+        assertEquals(1, walkAndCountSwaps(g, to, from, 3.5, FAR_Y));
+    }
+
+    @Test
+    @DisplayName("loitering on the near side of the midpoint never swaps")
+    void loiteringNeverSwaps() {
+        PortalGeometry g = geo();
+        // Pace back and forth just short of the line — the classic ping-pong trap.
+        assertEquals(0, walkAndCountSwaps(g, ORIGIN_X + 2, MID_X - 0.5, 0.22, NEAR_Y));
+        assertEquals(0, walkAndCountSwaps(g, MID_X - 0.5, ORIGIN_X + 2, 0.22, NEAR_Y));
+    }
+
     // ---- outside the corridor ------------------------------------------------
 
     @Test
