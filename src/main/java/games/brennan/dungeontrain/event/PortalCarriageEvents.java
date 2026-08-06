@@ -273,7 +273,7 @@ public final class PortalCarriageEvents {
         // Same chunk columns as the carriage — that is what keeps the destination loaded — but at the
         // world floor rather than a fixed height above the train, and on a per-pair Y lane so two
         // pairs cannot stamp into each other.
-        int twinY = twinFloorY(level, pairKey);
+        int twinY = twinFloorY(level, pairKey, originY);
         BlockPos wanted = BlockPos.containing(originX, twinY, originZ);
 
         // A world too shallow to hold the structure between its floor and the carriage gets no twin,
@@ -351,9 +351,17 @@ public final class PortalCarriageEvents {
      * <p>Lanes go in Y rather than Z deliberately: the whole loading guarantee is that a twin sits in
      * its carriage's <b>chunk columns</b>, and Y is the one axis that cannot take it out of them.</p>
      */
-    private static int twinFloorY(ServerLevel level, int pairKey) {
-        int lane = Math.floorMod(pairKey, TWIN_LANES);
-        return level.getMinBuildHeight() + TWIN_FLOOR_MARGIN + lane * TWIN_LANE_HEIGHT;
+    private static int twinFloorY(ServerLevel level, int pairKey, double carriageY) {
+        int floor = level.getMinBuildHeight() + TWIN_FLOOR_MARGIN;
+
+        // Only as many lanes as actually fit between the world floor and the train. A world can be
+        // shallow — this one runs its floor at Y 32 with the train at 78, which holds three lanes,
+        // not six — and a lane stacked above the train is rejected by the fit check below, silently
+        // leaving those pairs with no twin at all.
+        int headroom = (int) carriageY - floor;
+        int usableLanes = Math.max(1, Math.min(TWIN_LANES, headroom / TWIN_LANE_HEIGHT));
+
+        return floor + Math.floorMod(pairKey, usableLanes) * TWIN_LANE_HEIGHT;
     }
 
     private static double horizontalDistance(BlockPos twin, double x, double z) {
