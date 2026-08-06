@@ -1,0 +1,11 @@
+{
+  "id": "it_worked",
+  "title": "It Worked",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "It worked.\n\n%TARGET% is dead.\n\nYou werent there.\nYou were already dead.\n\nCarriage %CARRIAGE%.\nThe number you died on became the number they died on.\n\nIt waited %DAYS% days to do it.\n%GEAR%\n\nHeres how it went.\n\n%STORY%\n\nDoesnt that feel strange?\nSomething with your face,\nin a world you never saw,\nfinishing what you started.\n\nYou dont have to feel good about it.\nYou dont have to feel bad about it.\n\nYou just have to know.\n\nYou know now.",
+    "Welcome back to the Dungeon Train\nWhat is the train?\nWhy are you here?\nWhat did you write?\nThese are all good questions\n\nYou wrote %TARGET%.\n\n%DAYS% days later, at carriage %CARRIAGE%, the paper was right.\n\n%STORY%\n\nPaper usually isnt.\n\nI am paper.\nI am rarely right.\n\nThat one was.\n\nSleep well."
+  ]
+}

@@ -45,6 +45,13 @@ final class EchoEncounter {
     /** The primary player's first chat near the echo, when contents are shown; {@code null} = note-only. */
     String chatLine = null;
 
+    /**
+     * The relay Death Note id this echo was raised by, or {@code 0} for an ordinary remote echo. When
+     * set, the finished journal is also reported to the relay so the curse's AUTHOR can be told the
+     * story of what their curse did — see {@code CursedEncounterPayload}.
+     */
+    int deathNoteId = 0;
+
     private final List<EchoEvent> beats = new ArrayList<>();
     private final EnumSet<EchoEvent> seen = EnumSet.noneOf(EchoEvent.class);
 

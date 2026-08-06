@@ -377,8 +377,11 @@ public final class StartingBookFactory {
         return s.length() <= BookFactory.MAX_TITLE_CHARS ? s : s.substring(0, BookFactory.MAX_TITLE_CHARS);
     }
 
-    /** Splittable-mix — same family used by {@link RandomBookFactory}. */
-    private static long mix(long seed, long salt) {
+    /**
+     * Splittable-mix — same family used by {@link RandomBookFactory}. Package-private so sibling
+     * builders ({@link CursedBookFactory}) derive their picks from the same seed family.
+     */
+    static long mix(long seed, long salt) {
         long state = seed ^ salt;
         state = (state ^ (state >>> 30)) * 0xBF58476D1CE4E5B9L;
         state = (state ^ (state >>> 27)) * 0x94D049BB133111EBL;

@@ -405,7 +405,8 @@ public final class NarrativeCommand {
         Optional<StartingBookContext> contextOpt = StartingBookContext.fromString(raw);
         if (contextOpt.isEmpty()) {
             ctx.getSource().sendFailure(Component.literal(
-                "Unknown context '" + raw + "'. Try: default, new_world, joined_world, respawn."));
+                "Unknown context '" + raw + "'. Try: default, new_world, joined_world, respawn, "
+                    + "nether, end, cursed, cursed_fulfilled, cursed_defied."));
             return 0;
         }
         StartingBookContext context = contextOpt.get();

@@ -18,8 +18,51 @@ This folder is partitioned by **lifecycle context** via subfolders. The subfolde
 | `new_world/` | `NEW_WORLD` | Player has played the mod before (gamedir marker present) but this world has no other welcomed players yet. |
 | `joined_world/` | `JOINED_WORLD` | First login on a multiplayer world where at least one other player has already been welcomed. |
 | `respawn/` | `RESPAWN` | Every non-End-conquered respawn. RESPAWN pool **cycles** — each (book, variantIndex) tuple is only shown once per world until exhausted; then widens permanently to RESPAWN + DEFAULT. |
+| `nether/` | `NETHER` | First login of a run that *starts* in the Nether. Per-installation playlist — each (book, variant) shown once, then falls through to the lifecycle welcome. |
+| `end/` | `END` | Same, for runs that start in the End. |
+| `cursed/` | `CURSED` | A Death Note curse **this player wrote** has landed in its target's world, and the ending was never reported. Also the fallback when an outcome folder below is empty. |
+| `cursed_fulfilled/` | `CURSED_FULFILLED` | …and the author's echo killed the target. |
+| `cursed_defied/` | `CURSED_DEFIED` | …and the target killed the author's echo. |
 
-Fallback rule: an empty or zero-weight context pool falls through to DEFAULT. So if you ship no `respawn/` books, every respawn rolls from DEFAULT.
+Fallback rule: an empty or zero-weight context pool falls through to DEFAULT. So if you ship no `respawn/` books, every respawn rolls from DEFAULT. **The cursed folders are the exception** — they never fall through to DEFAULT (an outcome folder falls back to `cursed/`, and if that is empty too the strike is simply skipped), because handing out a cheerful welcome book in place of a curse's story would be worse than handing out nothing.
+
+### The cursed folders in detail
+
+Cursed books are the only starting books that are *earned*, and the only ones written as templates.
+
+- **When:** the author's next welcome strike after the curse lands, **and** mid-life as they cross from one cart into the next if it lands while they're already playing.
+- **One story per curse:** reading the book retires that curse's story permanently. An unread book just burns and the same story is offered again at the next strike. A player with several landed curses gets one book per strike, oldest first.
+- **Cycling:** the variant shown is one this installation hasn't seen before where possible, so a serial curser gets fresh prose each time.
+- **Not part of any collection milestone** — see `StartingBookContext.achievementSetId()`. Don't write a cursed book assuming players will "collect" it.
+- **Voice:** the reader is the *curser*. They wrote a name in a book and the name came true. Don't congratulate them, and don't scold them — the corpus's warm-unreliable narrator has more than enough room to sit with what they did.
+
+Code: `narrative/CursedBookFactory` (routing + tokens), `narrative/CursedStoryPool` (what landed), `event/StartingBookEvents.fireCursedStrike`.
+
+---
+
+## 1b. Tokens — cursed books only
+
+A cursed variant is a **template**. These tokens are substituted (everywhere they appear, in the body **and** the title) before the book is built:
+
+| Token | Becomes | Notes |
+|---|---|---|
+| `%TARGET%` | The name the author wrote on page one | Falls back to `someone` when the relay has no name |
+| `%CARRIAGE%` | The carriage the author died at, where their echo lay in wait | Can be negative (behind the origin) |
+| `%DAYS%` | Whole days the echo waited between the author's death and finding its target | `0` when unknown or under a day — write it so "0 days" still reads ("%DAYS% days later" → prefer "after %DAYS% days" phrasings that survive zero, or avoid the token) |
+
+Tokens are literal — no spacing or case variants. `%target%` will NOT substitute.
+
+Remember the 32-char title clamp applies **after** substitution: `Cursed: %TARGET%` can overflow with a 16-char username. Prefer tokens in the body.
+
+Preview any cursed variant in-game without owning a curse:
+
+```
+/narrative startingbook fire cursed
+/narrative startingbook fire cursed_fulfilled
+/narrative startingbook fire cursed_defied
+```
+
+That fires against a stub story (your own name, your current carriage, 3 days) and consumes nothing.
 
 **Pick the right subfolder before drafting.** A book about "joining your friend's world" belongs in `joined_world/`. A book about "ahhh a brand new world" belongs in `new_world/`. A book about "back from the dead" belongs in `respawn/`. A generic welcome belongs in the root (DEFAULT).
 
