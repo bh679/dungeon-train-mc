@@ -16,28 +16,36 @@ public final class LoveNoteSpawnMessage {
 
     private LoveNoteSpawnMessage() {}
 
-    /** 20 arrival one-liners; {@code %s} is the author's name (the player whose echo returns). */
+    /**
+     * 20 arrival one-liners; {@code %s} is the author's name (the player whose echo returns).
+     *
+     * <p>Deliberately <em>not</em> the vengeance pool softened — an earlier draft inverted
+     * {@link DeathNoteSpawnMessage} line for line and read as "the same sentence, but nicer".
+     * These put the love in the foreground and say what the echo <em>is</em> rather than what it
+     * isn't. The broadcast is server-wide, so a few lines are written for the bystander rather
+     * than the target: the sting for them is that the love is real and it isn't theirs.</p>
+     */
     private static final List<String> LINES = List.of(
-        "An echo of %s has come back for someone.",
-        "%s's echo walks the train again — gently, this time.",
-        "The echo of %s returns, and it remembers kindly.",
-        "%s left something unsaid. Their echo came to say it.",
-        "A warm echo of %s stirs among the carriages.",
-        "%s's echo rises, looking for a familiar face.",
-        "Death wasn't the end for %s. Their echo came back anyway.",
-        "The train softens — the echo of %s has returned.",
-        "An echo of %s steps out of the dark, hands open.",
-        "%s's echo has come to repay a kindness.",
-        "Something old and gentle wearing %s's face walks the train.",
-        "The echo of %s crossed back for one more meeting.",
-        "%s never forgot a friend. Their echo returned to prove it.",
-        "A warm draught runs the rails — %s's echo has awoken.",
-        "%s's echo steps back through the veil, searching the carriages.",
-        "The dead don't knock — %s's echo is already aboard, waiting.",
-        "An echo of %s returns, and this time it's fond.",
-        "%s's echo has crawled back for one last kindness.",
-        "The carriage warms as the echo of %s takes form.",
-        "%s's echo has returned to finish what death interrupted."
+        "%s's echo is aboard, and it comes in love.",
+        "An echo of %s steps aboard with its arms full.",
+        "%s died loving someone. The echo carries it.",
+        "An echo of %s walks the carriages, looking for someone it loves.",
+        "%s's echo has waited here a long time to love someone. Not you.",
+        "The echo of %s arrives with gifts it will not be talked out of.",
+        "%s's echo boards in silence, in love, and looking.",
+        "Somewhere ahead, %s's echo has found the one it loved.",
+        "An echo of %s stands up. It has been in love since it died.",
+        "%s's echo remembers who it loved, and nothing else.",
+        "Love outlived %s. Their echo brought it aboard.",
+        "%s left love behind instead of a grudge. The echo came to deliver it.",
+        "An echo of %s walks the line, giving away everything it has.",
+        "%s's echo wants nothing from you. It already loves someone else.",
+        "The echo of %s came a long way to love someone in person.",
+        "%s's echo has arrived, and for once the train brought love.",
+        "Something of %s stayed on the tracks. Love kept it there.",
+        "An echo of %s is here, in love. Let it through.",
+        "%s's echo has come back to finish loving someone.",
+        "The dead rarely come back gently. %s's echo came back in love."
     );
 
     /** How many distinct lines exist (for tests + callers). */

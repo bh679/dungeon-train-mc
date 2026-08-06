@@ -118,6 +118,43 @@ public final class DeathNoteEvents {
         return NoteKind.fromId(echoData.getString(DeathNoteEchoSpawner.KEY_KIND));
     }
 
+    /**
+     * The other half of a Love Note: the cursed — beloved — player gives something <em>back</em> to
+     * the echo that came to find them. Grants the "Loved Back" advancement.
+     *
+     * <p>Called from {@code PlayerMobSocialBridge} off PlayerMob's gift seam, which already fires
+     * whenever a player hands any PlayerMob an item; this just filters that stream down to the one
+     * exchange worth rewarding. Three conditions, all required:</p>
+     * <ul>
+     *   <li>the mob is a note echo carrying {@link DeathNoteEchoSpawner#KEY_TARGET};</li>
+     *   <li>it is a {@link NoteKind#LOVE} echo — gifting a curse's echo is not this story;</li>
+     *   <li>the giver <em>is</em> that note's target. The advancement means "you gave back to the
+     *       one who came to love you", not "a bystander threw an item at it".</li>
+     * </ul>
+     *
+     * <p>Reads the kind off the entity's persistent data rather than {@code DeathNoteEchoController}'s
+     * live map, so an echo that has been saved and reloaded still counts. No-throw: the gift seam is
+     * best-effort compat, and a failure here must never break the gift itself.</p>
+     */
+    public static void onPlayerGiftedEcho(ServerPlayer giver, UUID echoUuid) {
+        try {
+            if (giver == null || echoUuid == null) return;
+            if (!(giver.level() instanceof ServerLevel level)) return;
+            if (!(level.getEntity(echoUuid) instanceof PlayerMobEntity echo)) return;
+            CompoundTag data = echo.getPersistentData();
+            if (!data.contains(DeathNoteEchoSpawner.KEY_TARGET)) return;      // an ordinary PlayerMob
+            if (kindOf(data) != NoteKind.LOVE) return;                        // a curse's echo — not this
+            if (!giver.getUUID().toString().equals(data.getString(DeathNoteEchoSpawner.KEY_TARGET))) {
+                return;                                                       // a bystander, not the beloved
+            }
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(giver, "gifted_love_note_echo");
+            LOGGER.debug("[DungeonTrain] LoveNote: {} gave a gift back to the echo that came for them",
+                    giver.getName().getString());
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] LoveNote: gift-back check failed: {}", t.toString());
+        }
+    }
+
     /** Advancement action id for killing an echo of {@code kind}. */
     private static String killedEchoActionId(NoteKind kind) {
         return kind == NoteKind.LOVE ? "killed_love_note_echo" : "killed_death_note_echo";

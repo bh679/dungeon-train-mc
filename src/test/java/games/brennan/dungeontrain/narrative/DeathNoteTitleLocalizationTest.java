@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
+import games.brennan.dungeontrain.RepoPaths;
 import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.io.StringReader;
@@ -101,8 +102,8 @@ class DeathNoteTitleLocalizationTest {
         // Guard against a translator shipping a note book whose title a player can't type (vanilla
         // caps the title field at 15 chars). Such a title teaches an unusable trigger word, so every
         // bundled narrative_localizations/<locale>/random_books/<kind>.json title must fit.
-        Path overlays = Path.of("src/main/resources/data/dungeontrain/narrative_localizations");
-        if (!Files.isDirectory(overlays)) return; // running outside the repo tree — nothing to check
+        Path overlays = RepoPaths.narrativeLocalizations();
+        assertTrue(Files.isDirectory(overlays), "missing " + overlays);
         for (NoteKind kind : NoteKind.values()) {
             try (Stream<Path> tree = Files.walk(overlays)) {
                 List<Path> books = tree
@@ -127,8 +128,8 @@ class DeathNoteTitleLocalizationTest {
     void noLocaleGivesBothKindsTheSameTrigger() throws IOException {
         // A translation that titled both books the same word would make one mechanic unreachable:
         // NoteKind.of tests DEATH first, so a Love Note signed with that title would arm a curse.
-        Path overlays = Path.of("src/main/resources/data/dungeontrain/narrative_localizations");
-        if (!Files.isDirectory(overlays)) return;
+        Path overlays = RepoPaths.narrativeLocalizations();
+        assertTrue(Files.isDirectory(overlays), "missing " + overlays);
         for (Path locale : localeDirs(overlays)) {
             String deathTitle = normalizedTitleIn(locale, NoteKind.DEATH);
             String loveTitle = normalizedTitleIn(locale, NoteKind.LOVE);
