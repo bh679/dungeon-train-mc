@@ -302,6 +302,7 @@ public final class CarriagePlacer {
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
+        if (PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) return;
         applyContents(level, origin, variant, dims, config, carriageIndex,
             /*placeBlocks*/ true, /*spawnEntities*/ true, GateContext.WORLDX_FROM_PIDX);
     }
@@ -325,6 +326,10 @@ public final class CarriagePlacer {
         if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
             return null;
         }
+        // A portal corridor gets no contents, for the same reason FLATBED gets none: there is no
+        // interior to furnish. Loot in the walkway would also break the block-for-block match with
+        // its twin that the crossing depends on.
+        if (PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) return null;
         return applyContents(level, origin, variant, dims, config, carriageIndex,
             /*placeBlocks*/ true, /*spawnEntities*/ false, groupAnchorWorldX);
     }
@@ -348,6 +353,11 @@ public final class CarriagePlacer {
         // forced to the COMMAND_BLOCK sentinel by the canonical
         // VariantState constructor). Subject to the same 48-block player-
         // distance gate that wraps this entity pass.
+        // Portal corridors take neither pass — not the shell/parts mob spawn above, and not the
+        // contents entities below. A mob standing in one corridor and not its twin is exactly the
+        // difference a player would see at the crossing.
+        if (PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) return;
+
         spawnShellAndPartsVariantMobs(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
         if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
             return;
