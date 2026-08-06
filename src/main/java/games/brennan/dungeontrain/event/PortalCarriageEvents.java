@@ -198,12 +198,13 @@ public final class PortalCarriageEvents {
                     double originY = bb.minY();
                     double originZ = bb.minZ();
 
-                    int every = PortalRegistry.get(level).carriageEvery();
-                    PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, every);
-                    int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, every);
+                    // A portal is one group, so both its corridors key on that group's anchor and
+                    // the role falls out of which end of the group this one is.
+                    PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, groupSize);
+                    int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, groupSize);
 
                     handlePortalCarriage(level, players, layout, dims, carriageIndex, role, pairKey,
-                        group.getValue(), originX, originY, originZ, puppets);
+                        group.getValue(), originX, originY, originZ, groupSize, puppets);
                 }
             }
         }
@@ -216,7 +217,7 @@ public final class PortalCarriageEvents {
                                              int carriageIndex, PortalCarriageRole role, int pairKey,
                                              ManagedShip ship,
                                              double originX, double originY, double originZ,
-                                             PortalPuppets.Session puppets) {
+                                             int groupSize, PortalPuppets.Session puppets) {
         // One structure per pair, stamped from the ENTRY carriage's approach and keyed on its index,
         // so both carriages of a pair address the same room rather than building one each.
         BlockPos structure = STRUCTURES.get(pairKey);
@@ -240,7 +241,7 @@ public final class PortalCarriageEvents {
 
         BlockPos structureOrigin = occupied && structure != null
             ? structure
-            : ensureStructure(level, dims, pairKey, originX, originY, originZ);
+            : ensureStructure(level, dims, pairKey, originX, originY, originZ, groupSize);
         if (structureOrigin == null) {
             // No twin — a world too shallow to hold one. With only half a pair there is no opposite
             // corridor for a puppet to stand in.
@@ -313,13 +314,14 @@ public final class PortalCarriageEvents {
      * depends on, so it is also exactly when a fresh one is worth the block writes.
      */
     private static BlockPos ensureStructure(ServerLevel level, CarriageDims dims, int pairKey,
-                                            double originX, double originY, double originZ) {
+                                            double originX, double originY, double originZ,
+                                            int groupSize) {
         BlockPos existing = STRUCTURES.get(pairKey);
 
         // Same chunk columns as the carriage — that is what keeps the destination loaded — but at the
         // world floor rather than a fixed height above the train, and on a per-pair Y lane so two
         // pairs cannot stamp into each other.
-        int twinY = twinFloorY(level, pairKey, originY);
+        int twinY = twinFloorY(level, pairKey, originY, groupSize);
         BlockPos wanted = BlockPos.containing(originX, twinY, originZ);
 
         // A world too shallow to hold the structure between its floor and the carriage gets no twin,
@@ -459,8 +461,15 @@ public final class PortalCarriageEvents {
      * <p>Lanes go in Y rather than Z deliberately: the whole loading guarantee is that a twin sits in
      * its carriage's <b>chunk columns</b>, and Y is the one axis that cannot take it out of them.</p>
      */
-    private static int twinFloorY(ServerLevel level, int pairKey, double carriageY) {
+    private static int twinFloorY(ServerLevel level, int pairKey, double carriageY, int groupSize) {
         int floor = level.getMinBuildHeight() + TWIN_FLOOR_MARGIN;
+
+        // Lane from the GROUP ordinal, not the raw pair key. A pair is keyed on its group's anchor,
+        // which is always a multiple of the group size — so keying the lane on it directly would
+        // give every pair in the world the same remainder, land them all in lane 0, and reinstate
+        // the overlapping-structures bug the lanes exist to prevent. Dividing first makes
+        // consecutive portal groups take consecutive lanes, which is what the spread wants.
+        long lane = Math.floorDiv((long) pairKey, Math.max(1, groupSize));
 
         // Only as many lanes as actually fit between the world floor and the train. A world can be
         // shallow — this one runs its floor at Y 32 with the train at 78, which holds three lanes,
@@ -469,7 +478,7 @@ public final class PortalCarriageEvents {
         int headroom = (int) carriageY - floor;
         int usableLanes = Math.max(1, Math.min(TWIN_LANES, headroom / TWIN_LANE_HEIGHT));
 
-        return floor + Math.floorMod(pairKey, usableLanes) * TWIN_LANE_HEIGHT;
+        return floor + (int) Math.floorMod(lane, (long) usableLanes) * TWIN_LANE_HEIGHT;
     }
 
     private static double horizontalDistance(BlockPos twin, double x, double z) {

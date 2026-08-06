@@ -1,10 +1,11 @@
 package games.brennan.dungeontrain.portal;
 
 /**
- * Whether a portal carriage is the way in or the way out of its pocket room.
+ * Whether a portal corridor is the way in or the way out of its pocket room.
  *
- * <p>Portal carriages alternate along the train, so consecutive ones form a pair sharing a single
- * structure: {@code twin(ENTRY) → room → twin(EXIT)}.</p>
+ * <p>A portal is one carriage group — {@code ENTRY | middle cart | EXIT} — so a corridor's role is
+ * simply which slot of its group it sits in, and the pair is found without arithmetic: the other
+ * corridor is the other end of the same group. See {@link PortalCarriageSelection}.</p>
  *
  * <p><b>Why two carriages rather than two corridors on one.</b> The swap rule is symmetric — before
  * the midpoint you belong on the train, past it you belong in the twin. A second twin carrying that
@@ -27,30 +28,33 @@ public enum PortalCarriageRole {
     EXIT;
 
     /**
-     * The role of the portal carriage at {@code carriageIndex}, given portals every {@code every}
-     * carriages. Alternates ENTRY, EXIT, ENTRY, … so consecutive portal carriages pair up.
+     * The role of the portal corridor at {@code carriageIndex}.
      *
-     * <p>{@link Math#floorDiv} rather than {@code /} because carriage indices go negative when the
-     * train extends backwards, and integer division truncates toward zero — which would repeat a
-     * role either side of the origin and break the pairing there.</p>
+     * <p>Only meaningful for a carriage {@link PortalCarriageSelection#isPortalCarriage} accepts;
+     * anything else answers {@link #ENTRY} and means nothing by it.</p>
      */
-    public static PortalCarriageRole roleFor(int carriageIndex, int every) {
-        long ordinal = Math.floorDiv((long) carriageIndex, Math.max(1, every));
-        return Math.floorMod(ordinal, 2L) == 0L ? ENTRY : EXIT;
+    public static PortalCarriageRole roleFor(int carriageIndex, int groupSize) {
+        return PortalCarriageSelection.slotOf(carriageIndex, groupSize) == PortalCarriageSelection.SLOT_EXIT
+            ? EXIT
+            : ENTRY;
+    }
+
+    /** The index of the other corridor in this one's pair — the other end of the same group. */
+    public static int partnerIndex(int carriageIndex, int groupSize) {
+        int anchor = PortalCarriageSelection.groupAnchorOf(carriageIndex, groupSize);
+        return roleFor(carriageIndex, groupSize) == ENTRY
+            ? anchor + PortalCarriageSelection.SLOT_EXIT
+            : anchor + PortalCarriageSelection.SLOT_ENTRY;
     }
 
     /**
-     * The index of the other carriage in this one's pair: the next portal carriage along for an
-     * ENTRY, the previous one for an EXIT.
+     * The key a pair's structure is stored under: its group's anchor.
+     *
+     * <p>Which is also the entry corridor's own index, since the entry sits in slot 0 — so both
+     * corridors of a pair, and the cart between them, resolve to one key without either having to
+     * know the other's index.</p>
      */
-    public static int partnerIndex(int carriageIndex, int every) {
-        return roleFor(carriageIndex, every) == ENTRY
-            ? carriageIndex + every
-            : carriageIndex - every;
-    }
-
-    /** The ENTRY carriage of the pair {@code carriageIndex} belongs to — the key a pair is stored under. */
-    public static int entryIndexOf(int carriageIndex, int every) {
-        return roleFor(carriageIndex, every) == ENTRY ? carriageIndex : carriageIndex - every;
+    public static int entryIndexOf(int carriageIndex, int groupSize) {
+        return PortalCarriageSelection.groupAnchorOf(carriageIndex, groupSize);
     }
 }

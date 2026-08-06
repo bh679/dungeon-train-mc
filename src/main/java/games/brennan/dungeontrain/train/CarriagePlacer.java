@@ -255,6 +255,15 @@ public final class CarriagePlacer {
             return finishPlace(level, origin, PortalCarriageBuilder.portalVariant(), dims, "portal", null);
         }
 
+        // The cart between a portal's two corridors, from its own template. Sealed space by
+        // construction — the corridors either side swap a player out before they can reach it — so it
+        // skips the same passes the corridors do. Furnishing a room nobody can enter with loot, and
+        // trapping mobs in it, is the waste that pinning a portal to one group exists to remove.
+        if (PortalCarriageSelection.isPortalMiddle(level, carriageIndex)) {
+            PortalCarriageBuilder.stampMiddle(level, origin, dims, /*relight*/ false);
+            return finishPlace(level, origin, PortalCarriageBuilder.middleVariant(), dims, "portal_middle", null);
+        }
+
         // relight=false: the spawn shell/parts are placed in the SOURCE world and lifted into a Sable
         // sub-level this same tick; Sable's moveBlocks re-places each block via LevelChunk.setBlockState
         // and relights it in the plot, so the world-side light engine work here would be discarded (#645).
@@ -305,7 +314,7 @@ public final class CarriagePlacer {
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
-        if (PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) return;
+        if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) return;
         applyContents(level, origin, variant, dims, config, carriageIndex,
             /*placeBlocks*/ true, /*spawnEntities*/ true, GateContext.WORLDX_FROM_PIDX);
     }
@@ -329,10 +338,11 @@ public final class CarriagePlacer {
         if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
             return null;
         }
-        // A portal corridor gets no contents, for the same reason FLATBED gets none: there is no
-        // interior to furnish. Loot in the walkway would also break the block-for-block match with
-        // its twin that the crossing depends on.
-        if (PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) return null;
+        // No part of a portal gets contents, for the same reason FLATBED gets none: there is no
+        // interior to furnish. Loot in a corridor's walkway would also break the block-for-block
+        // match with its twin that the crossing depends on, and loot in the cart between the two
+        // corridors would sit in a room with no way into it.
+        if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) return null;
         return applyContents(level, origin, variant, dims, config, carriageIndex,
             /*placeBlocks*/ true, /*spawnEntities*/ false, groupAnchorWorldX);
     }
@@ -356,10 +366,11 @@ public final class CarriagePlacer {
         // forced to the COMMAND_BLOCK sentinel by the canonical
         // VariantState constructor). Subject to the same 48-block player-
         // distance gate that wraps this entity pass.
-        // Portal corridors take neither pass — not the shell/parts mob spawn above, and not the
+        // No part of a portal takes either pass — not the shell/parts mob spawn above, and not the
         // contents entities below. A mob standing in one corridor and not its twin is exactly the
-        // difference a player would see at the crossing.
-        if (PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) return;
+        // difference a player would see at the crossing, and a mob in the cart between them would
+        // spend its life in a sealed room.
+        if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) return;
 
         spawnShellAndPartsVariantMobs(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
         if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
@@ -559,6 +570,12 @@ public final class CarriagePlacer {
         if (variant.equals(PortalCarriageBuilder.portalVariant())) {
             PortalCarriageBuilder.stampCorridorFrom(level, origin, dims, relight);
             return "portal";
+        }
+        // Same for the cart between a portal's corridors: something to open in the editor before
+        // anyone has authored its .nbt, since the editor is where that .nbt comes from.
+        if (variant.equals(PortalCarriageBuilder.middleVariant())) {
+            PortalCarriageBuilder.stampMiddle(level, origin, dims, relight);
+            return "portal_middle";
         }
         return null;
     }

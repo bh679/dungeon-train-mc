@@ -84,10 +84,20 @@ public final class PortalCarriageBuilder {
     /** The carriage variant a portal corridor is authored as: {@code user/templates/portal.nbt}. */
     private static final CarriageVariant PORTAL_VARIANT = CarriageVariant.custom("portal");
 
+    /**
+     * The carriage variant the cart between the two corridors is authored as:
+     * {@code user/templates/portal_middle.nbt}.
+     */
+    private static final CarriageVariant MIDDLE_VARIANT = CarriageVariant.custom("portal_middle");
+
     private PortalCarriageBuilder() {}
 
     public static CarriageVariant portalVariant() {
         return PORTAL_VARIANT;
+    }
+
+    public static CarriageVariant middleVariant() {
+        return MIDDLE_VARIANT;
     }
 
     /** The layout for a world's carriage dims. */
@@ -169,6 +179,59 @@ public final class PortalCarriageBuilder {
     public static Set<BlockPos> stampCarriage(ServerLevel level, BlockPos origin, CarriageDims dims, boolean relight) {
         stampCorridorFrom(level, origin, dims, relight);
         return Set.of();   // the caller re-reads the footprint via CarriagePlacer.finishPlace
+    }
+
+    /**
+     * Put the cart that sits between a portal's two corridors at {@code origin}: the authored
+     * {@code portal_middle} template when one exists, the built-in geometry when it does not.
+     *
+     * <p><b>Nobody can walk into this carriage.</b> Going forward, the entry corridor swaps you into
+     * the twin before you reach its far door; coming back, the exit corridor's near half swaps you
+     * out before you reach it. So it is sealed space by construction — which is exactly why it is a
+     * template rather than a rolled variant. Under the old spacing the carriages in this gap were
+     * ordinary ones, each rolling a variant and taking parts, contents, loot and mobs that no player
+     * would ever see. One authored carriage says what it is.</p>
+     */
+    public static Set<BlockPos> stampMiddle(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                            boolean relight) {
+        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, MIDDLE_VARIANT, dims);
+        if (stored.isPresent()) {
+            CarriagePlacer.stampTemplateAt(level, origin, stored.get(), relight);
+            return Set.of();
+        }
+        return stampMiddleBuiltIn(level, origin, dims, relight);
+    }
+
+    /**
+     * The built-in cart geometry: a sealed shell with a hollow interior.
+     *
+     * <p>Sealed because that is the truth about the space — there is no way in, and a doorway would
+     * suggest otherwise. Hollow rather than solid because the editor opens this plot to author the
+     * real one in, and there has to be somewhere to stand.</p>
+     */
+    private static Set<BlockPos> stampMiddleBuiltIn(ServerLevel level, BlockPos origin,
+                                                    CarriageDims dims, boolean relight) {
+        Set<BlockPos> placed = new HashSet<>();
+
+        for (int dx = 0; dx < dims.length(); dx++) {
+            for (int dz = 0; dz < dims.width(); dz++) {
+                for (int dy = 0; dy < dims.height(); dy++) {
+                    boolean shell = dx == 0 || dx == dims.length() - 1
+                        || dy == 0 || dy == dims.height() - 1
+                        || dz == 0 || dz == dims.width() - 1;
+                    if (!shell) continue;
+
+                    BlockPos pos = origin.offset(dx, dy, dz);
+                    if (relight) {
+                        level.setBlock(pos, SHELL, Block.UPDATE_ALL);
+                    } else {
+                        SilentBlockOps.setBlockSectionLocal(level, pos, SHELL);
+                    }
+                    placed.add(pos.immutable());
+                }
+            }
+        }
+        return placed;
     }
 
     /**
