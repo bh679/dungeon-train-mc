@@ -249,7 +249,10 @@ public final class CarriagePlacer {
         // block-for-block match with its twin that the illusion depends on.
         if (PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) {
             PortalCarriageBuilder.stampCarriage(level, origin, dims, /*relight*/ false);
-            return finishPlace(level, origin, variant, dims, "portal", null);
+            // Report the portal variant, not the one the roll happened to land on: what stands here
+            // is a portal corridor, and a log line reading "variant=fancywood sources=portal" sends
+            // anyone reading it after the fact looking for a bug that isn't there.
+            return finishPlace(level, origin, PortalCarriageBuilder.portalVariant(), dims, "portal", null);
         }
 
         // relight=false: the spawn shell/parts are placed in the SOURCE world and lifted into a Sable

@@ -33,6 +33,8 @@ import net.minecraft.world.level.chunk.LevelChunk;
  */
 public final class PortalEditMirror {
 
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
     /** True on this thread while a mirrored write is in flight, so the echo is ignored. */
     private static final ThreadLocal<Boolean> MIRRORING = ThreadLocal.withInitial(() -> false);
 
@@ -92,18 +94,28 @@ public final class PortalEditMirror {
         if (local == null) return false;
 
         BlockPos target = entry.plotPosOf(local);
-        LevelChunk chunk = chunkAt(entry.plot(), target);
-        if (chunk == null) return false;
 
         MIRRORING.set(true);
         try {
-            // Through the chunk's own setBlockState so Sable sees it and syncs the sub-level to
-            // clients; the guard above stops that notification bouncing back here.
-            chunk.setBlockState(target, newState, false);
-            chunk.setUnsaved(true);
+            // Write at SHIPYARD coordinates through the ordinary level path, which is how
+            // CarriageContentsPlacer puts blocks into a plot: Sable's LevelChunkMixin redirects
+            // getLightEngine() to the plot's own engine and syncs the sub-level to clients.
+            //
+            // Poking LevelChunk.setBlockState directly — the first attempt — changed the block
+            // server-side but told no client, because vanilla's client update comes from
+            // Level.setBlock rather than the chunk. The edit was there and invisible.
+            if (newState.isAir()) {
+                SilentBlockOps.clearBlockSilent(level, target);
+            } else {
+                SilentBlockOps.setBlockSilent(level, target, newState);
+            }
         } finally {
             MIRRORING.set(false);
         }
+
+        LOGGER.info("[DungeonTrain] Portal edit mirrored twin→carriage: {} at local ({},{},{}) → shipyard {}",
+            newState.isAir() ? "cleared" : newState.getBlock().getName().getString(),
+            local[0], local[1], local[2], target);
         return true;
     }
 
