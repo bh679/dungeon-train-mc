@@ -7,9 +7,14 @@ import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageLayout;
 import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
+import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
+import games.brennan.dungeontrain.portal.PortalEditMirror;
 import games.brennan.dungeontrain.portal.PortalFrames;
+import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.sable.SableManagedShip;
+import org.joml.Vector3d;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.Trains;
@@ -162,7 +167,7 @@ public final class PortalCarriageEvents {
                     int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, every);
 
                     handlePortalCarriage(level, players, layout, dims, carriageIndex, role, pairKey,
-                        originX, originY, originZ);
+                        group.getValue(), originX, originY, originZ);
                 }
             }
         }
@@ -171,6 +176,7 @@ public final class PortalCarriageEvents {
     private static void handlePortalCarriage(ServerLevel level, List<ServerPlayer> players,
                                              PortalCarriageLayout layout, CarriageDims dims,
                                              int carriageIndex, PortalCarriageRole role, int pairKey,
+                                             ManagedShip ship,
                                              double originX, double originY, double originZ) {
         // One structure per pair, stamped from the ENTRY carriage's approach and keyed on its index,
         // so both carriages of a pair address the same room rather than building one each.
@@ -201,6 +207,10 @@ public final class PortalCarriageEvents {
             new PortalFrames.Origin(originX, originY, originZ),
             new PortalFrames.Origin(twinOrigin.getX(), twinOrigin.getY(), twinOrigin.getZ()),
             role);
+
+        // Publish for PortalEditMirror, which needs to answer "is this block in a portal corridor?"
+        // on the hot path of every sub-level block change and cannot re-derive train geometry there.
+        publishPairing(carriageIndex, ship, dims, originX, originY, originZ, twinOrigin);
 
         for (ServerPlayer player : players) {
             if (player.isPassenger()) continue;
@@ -253,6 +263,28 @@ public final class PortalCarriageEvents {
         LOGGER.info("[DungeonTrain] Stamped portal pair {} at {} (entry carriage at {}, {}, {})",
             pairKey, wanted, fmt(originX), fmt(originY), fmt(originZ));
         return wanted;
+    }
+
+    /**
+     * Publish this carriage's corridor↔twin pairing for {@link PortalEditMirror}.
+     *
+     * <p>The carriage's blocks do not live at its world position — they are in its sub-level plot at
+     * shipyard coordinates — so the world origin is converted with {@code worldToShip}, the same
+     * conversion {@code CarriageBlockSnapshot} and {@code SoulCampfireHealEvents} use to reach
+     * carriage blocks.</p>
+     */
+    private static void publishPairing(int carriageIndex, ManagedShip ship, CarriageDims dims,
+                                       double originX, double originY, double originZ, BlockPos twinOrigin) {
+        if (!(ship instanceof SableManagedShip sable)) return;
+
+        LevelPlot plot = sable.subLevel().getPlot();
+        if (plot == null) return;
+
+        Vector3d shipLocal = ship.worldToShip(new Vector3d(originX, originY, originZ));
+        BlockPos plotOrigin = BlockPos.containing(shipLocal.x, shipLocal.y, shipLocal.z);
+
+        PortalPairIndex.publish(carriageIndex,
+            new PortalPairIndex.Entry(plot, plotOrigin, twinOrigin, dims));
     }
 
     /** True if any player is anywhere inside a pair structure — either corridor, or the room between. */
