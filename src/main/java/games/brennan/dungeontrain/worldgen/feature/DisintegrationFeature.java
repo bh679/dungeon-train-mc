@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.MinecraftServer;
@@ -110,7 +111,9 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
 
             ChunkAccess chunk = level.getChunk(cp.x, cp.z);
             int chunkMinZ = cp.getMinBlockZ();
-            int minY = level.getMinBuildHeight();
+            // Island geometry is keyed off the world's floor, not the level's — the portal basement
+            // below the bedrock is not terrain and must not shift where the islands land.
+            int minY = WorldFloor.bedrockY(level);
             int maxY = level.getMaxBuildHeight() - 1;
 
             int[] islandTop = new int[256];

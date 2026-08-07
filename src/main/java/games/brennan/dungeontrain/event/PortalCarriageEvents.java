@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageLayout;
 import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
+import games.brennan.dungeontrain.portal.PortalClear;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.portal.PortalEditMirror;
@@ -22,6 +23,7 @@ import games.brennan.dungeontrain.portal.PortalRoomTiler;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalSever;
 import games.brennan.dungeontrain.portal.PortalStructure;
+import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
 import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
@@ -33,6 +35,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
@@ -78,12 +81,13 @@ import java.util.UUID;
  * jitter cancels — the corridor's blocks and its origin move together, so the player's position
  * within the corridor stays correct however much the group is drifting.</p>
  *
- * <p><b>The twin is stamped on approach, not at the crossing.</b> It goes at the bottom of the world,
- * below the bedrock, in the carriage's <b>own chunk columns</b> — which is what makes it already
- * loaded, sent to the client and meshed by the time the swap happens ({@code ViewArea} sizes its
- * render grid to the full build height, so any Y in the same column qualifies). Doing it on approach
- * also keeps a few thousand block writes away from the instant the player crosses. See
- * {@link #TWIN_FLOOR_MARGIN} for why the depth is derived from the world floor rather than fixed.</p>
+ * <p><b>The twin is stamped on approach, not at the crossing.</b> It goes in the empty basement a DT
+ * overworld keeps <b>below its bedrock</b> — world no terrain reaches and no player can dig into —
+ * in the carriage's <b>own chunk columns</b>, which is what makes it already loaded, sent to the
+ * client and meshed by the time the swap happens ({@code ViewArea} sizes its render grid to the full
+ * build height, so any Y in the same column qualifies). Doing it on approach also keeps a few
+ * thousand block writes away from the instant the player crosses. See {@link PortalTwinLanes} for
+ * the depth and the per-pair Y lanes, and {@link WorldFloor} for the basement itself.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PortalCarriageEvents {
@@ -92,34 +96,6 @@ public final class PortalCarriageEvents {
 
     /** All five axes relative: velocity and the render interpolation baseline both survive the move. */
     private static final Set<RelativeMovement> RELATIVE_ALL = EnumSet.allOf(RelativeMovement.class);
-
-    /**
-     * How far above the world floor a twin's own floor sits.
-     *
-     * <p>Twins go <b>below the bedrock</b>, at the very bottom of the world, rather than in the sky
-     * above the train where they used to hang in plain view. Derived from
-     * {@link ServerLevel#getMinBuildHeight()} rather than a fixed Y, so a world with a deeper floor
-     * puts its twins deeper — they are always as low as that world allows.</p>
-     *
-     * <p>Nothing about the illusion depends on the height. The guarantee that a twin is already
-     * loaded, sent and meshed when a player crosses comes from it sharing the carriage's <b>chunk
-     * columns</b>, which constrains X and Z only: {@code ViewArea} sizes its render grid to the full
-     * build height, so any Y in the same column is equally safe.</p>
-     *
-     * <p>One block of clearance keeps the structure's floor off the absolute limit, since blocks
-     * cannot be placed below it.</p>
-     */
-    private static final int TWIN_FLOOR_MARGIN = 1;
-
-    /** Distinct heights pairs are spread over, so two structures cannot land on each other. */
-    private static final int TWIN_LANES = 6;
-
-    /**
-     * Vertical spacing between lanes — enough that no part of one structure reaches into the lane
-     * above. Lives on {@link PortalRoomLayout} because it is really a statement about how tall a
-     * room may be, and {@code PortalRoomLayout.MAX_HEIGHT} is derived from it.
-     */
-    private static final int TWIN_LANE_HEIGHT = PortalRoomLayout.TWIN_LANE_HEIGHT;
 
     /**
      * Stamp the twin once a player is this close to the portal carriage — near enough to be about to
@@ -594,10 +570,12 @@ public final class PortalCarriageEvents {
                                                    int groupSize) {
         PortalStructure existing = STRUCTURES.get(pairKey);
 
-        // Same chunk columns as the carriage — that is what keeps the destination loaded — but at the
-        // world floor rather than a fixed height above the train, and on a per-pair Y lane so two
-        // pairs cannot stamp into each other.
-        int twinY = twinFloorY(level, pairKey, originY, groupSize);
+        // Same chunk columns as the carriage — that is what keeps the destination loaded — but in
+        // the basement under the world's bedrock rather than a fixed height above the train, and on
+        // a per-pair Y lane so two pairs cannot stamp into each other.
+        int worldMinY = level.getMinBuildHeight();
+        int bedrockY = WorldFloor.bedrockY(level);
+        int twinY = PortalTwinLanes.twinFloorY(worldMinY, bedrockY, pairKey, groupSize);
         BlockPos wanted = BlockPos.containing(originX, twinY, originZ);
 
         // Which room this pair rolls, and how big it is. Deterministic on the pair key, so a
@@ -605,9 +583,13 @@ public final class PortalCarriageEvents {
         PortalStructure planned = PortalCarriageBuilder.planStructure(level, dims, wanted, pairKey);
 
         // A world too shallow to hold the structure between its floor and the carriage gets no twin,
-        // rather than one stamped through the train.
-        int structureTop = twinY + Math.max(dims.height(), planned.roomSize().getY());
-        if (structureTop >= originY || structureTop > level.getMaxBuildHeight() - CEILING_MARGIN) {
+        // rather than one stamped through the train — or, in a world with a basement, one that would
+        // push up through the bedrock into terrain a player could walk into.
+        int structureHeight = Math.max(dims.height(), planned.roomSize().getY());
+        int structureTop = twinY + structureHeight;
+        if (structureTop >= originY
+            || structureTop > level.getMaxBuildHeight() - CEILING_MARGIN
+            || !PortalTwinLanes.fitsUnderWorld(worldMinY, bedrockY, twinY, structureHeight)) {
             return existing;
         }
 
@@ -751,6 +733,10 @@ public final class PortalCarriageEvents {
         int carried = 0;
         for (Entity entity : level.getEntities((Entity) null, structureBox(dims, from), e -> true)) {
             if (entity instanceof ServerPlayer) continue;
+            // Loose items are not occupants — they are what a room's containers used to spill every
+            // time one was erased. Carrying them meant a world's worth of them followed the rooms
+            // around forever; the erase discards them instead (see PortalClear).
+            if (PortalClear.isLoose(entity)) continue;
 
             Vec3 velocity = entity.getDeltaMovement();
             entity.teleportTo(entity.getX() + dx, entity.getY() + dy, entity.getZ() + dz);
@@ -762,39 +748,6 @@ public final class PortalCarriageEvents {
             LOGGER.info("[DungeonTrain] Portal structure moved {} → {}, carrying {} entities",
                 from, to, carried);
         }
-    }
-
-    /**
-     * The floor height for a pair's structure: the world floor, plus a per-pair lane.
-     *
-     * <p><b>Why lanes.</b> Every structure was stamped at the same height, at whatever X its entry
-     * carriage happened to be at, with nothing checking whether another pair already occupied that
-     * space. A structure is about 35 blocks long, and two pairs were observed stamping four blocks
-     * apart — near-total overlap, each overwriting the other's corridor so neither matched its
-     * carriage any more. Spreading pairs over {@link #TWIN_LANES} heights makes a collision need
-     * both the same lane and overlapping X, which the lane count makes vanishingly rare.</p>
-     *
-     * <p>Lanes go in Y rather than Z deliberately: the whole loading guarantee is that a twin sits in
-     * its carriage's <b>chunk columns</b>, and Y is the one axis that cannot take it out of them.</p>
-     */
-    private static int twinFloorY(ServerLevel level, int pairKey, double carriageY, int groupSize) {
-        int floor = level.getMinBuildHeight() + TWIN_FLOOR_MARGIN;
-
-        // Lane from the GROUP ordinal, not the raw pair key. A pair is keyed on its group's anchor,
-        // which is always a multiple of the group size — so keying the lane on it directly would
-        // give every pair in the world the same remainder, land them all in lane 0, and reinstate
-        // the overlapping-structures bug the lanes exist to prevent. Dividing first makes
-        // consecutive portal groups take consecutive lanes, which is what the spread wants.
-        long lane = Math.floorDiv((long) pairKey, Math.max(1, groupSize));
-
-        // Only as many lanes as actually fit between the world floor and the train. A world can be
-        // shallow — this one runs its floor at Y 32 with the train at 78, which holds three lanes,
-        // not six — and a lane stacked above the train is rejected by the fit check below, silently
-        // leaving those pairs with no twin at all.
-        int headroom = (int) carriageY - floor;
-        int usableLanes = Math.max(1, Math.min(TWIN_LANES, headroom / TWIN_LANE_HEIGHT));
-
-        return floor + (int) Math.floorMod(lane, (long) usableLanes) * TWIN_LANE_HEIGHT;
     }
 
     private static double horizontalDistance(BlockPos twin, double x, double z) {

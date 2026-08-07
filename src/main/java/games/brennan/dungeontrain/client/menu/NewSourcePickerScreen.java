@@ -29,9 +29,11 @@ public final class NewSourcePickerScreen implements MenuScreen {
          */
         PORTALS,
         /**
-         * Sub-variant of a contents group. {@code currentId} carries the parent
-         * id. Picker collapses to a single "name" TypeArg that dispatches
-         * {@code editor contents group new <parent> <name>} — atomic create +
+         * Sub-variant of a contents group. {@code currentId} carries the <b>parent</b> id — a
+         * sub-variant cannot itself be a parent, so the command always targets the group's root —
+         * while {@code sourceId} carries the plot the player is actually standing in, which differs
+         * when they are inside a sibling sub-variant. Dispatches
+         * {@code editor contents group new <parent> <name> <source>} — atomic create +
          * add-to-group + teleport.
          */
         CONTENTS_SUB_VARIANT
@@ -40,11 +42,25 @@ public final class NewSourcePickerScreen implements MenuScreen {
     private final Category category;
     private final String kind;
     private final String currentId;
+    private final String sourceId;
 
     public NewSourcePickerScreen(Category category, String kind, String currentId) {
+        this(category, kind, currentId, currentId);
+    }
+
+    /**
+     * @param currentId the model the command targets — for {@link Category#CONTENTS_SUB_VARIANT},
+     *                  the group's parent
+     * @param sourceId  the model "Current" copies from: the plot the player is standing in, which is
+     *                  the parent for every category except a sub-variant created from a sibling.
+     *                  Falls back to {@code currentId}.
+     */
+    public NewSourcePickerScreen(Category category, String kind, String currentId, String sourceId) {
         this.category = category;
         this.kind = kind == null ? "" : kind;
         this.currentId = currentId == null ? "" : currentId;
+        String src = sourceId == null || sourceId.isEmpty() ? this.currentId : sourceId;
+        this.sourceId = src;
     }
 
     @Override public String title() {
@@ -114,11 +130,16 @@ public final class NewSourcePickerScreen implements MenuScreen {
                     "New", "name", "dungeontrain editor portals new " + kind));
             }
             case CONTENTS_SUB_VARIANT -> {
-                // Single row — type the name, dispatch the atomic create+add+
-                // teleport command. Parent id is baked into the prefix from
-                // {@code currentId}.
-                out.add(new CommandMenuEntry.TypeArg(
-                    "New", "name", "dungeontrain editor contents group new " + currentId));
+                // Same Blank / Current shape as CONTENTS. The parent is baked into the prefix; the
+                // source token after the name decides what the new sub-variant is seeded with.
+                // No "Standard" row: for contents that means the `default` built-in, which is not a
+                // meaningful starting point for a variation on this particular parent.
+                String prefix = "dungeontrain editor contents group new " + currentId;
+                out.add(new CommandMenuEntry.TypeArg("Blank", "name", prefix, "blank"));
+                if (!sourceId.isEmpty()) {
+                    out.add(new CommandMenuEntry.TypeArg(
+                        "Current (" + sourceId + ")", "name", prefix, sourceId));
+                }
             }
         }
         out.add(new CommandMenuEntry.Back("< Back"));

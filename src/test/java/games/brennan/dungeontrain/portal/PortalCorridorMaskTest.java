@@ -96,6 +96,55 @@ class PortalCorridorMaskTest {
     }
 
     @Test
+    @DisplayName("The room's end columns face straight into a corridor, so nothing may settle them")
+    void endColumnsFaceIntoACorridor() {
+        PortalStructure s = structure();
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCorridorMask mask = mask();
+        BlockPos room = s.roomOrigin(DIMS, layout);
+        int y = ORIGIN.getY() + 1;
+
+        // The doorway the player walks through lives in these two columns. They sit one block inside
+        // each door plane, so covers() is false for them — and closing that face would brick up the
+        // way in. Both ends, right across the room's width.
+        for (int dz = 0; dz < s.roomWidth(); dz++) {
+            int z = room.getZ() + dz;
+            BlockPos entryEnd = new BlockPos(room.getX(), y, z);
+            BlockPos exitEnd = new BlockPos(room.getX() + s.roomLength() - 1, y, z);
+
+            assertFalse(mask.covers(entryEnd), "the room's first column is the room, not a corridor");
+            assertTrue(mask.facedBy(entryEnd, -1, 0), "entry door plane is one step -X of it");
+            assertFalse(mask.covers(exitEnd), "the room's last column is the room, not a corridor");
+            assertTrue(mask.facedBy(exitEnd, 1, 0), "exit door plane is one step +X of it");
+        }
+    }
+
+    @Test
+    @DisplayName("Nothing else faces a corridor: mid-room columns and both Z walls settle as before")
+    void onlyTheEndColumnsFaceIntoACorridor() {
+        PortalStructure s = structure();
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCorridorMask mask = mask();
+        BlockPos room = s.roomOrigin(DIMS, layout);
+        int y = ORIGIN.getY() + 1;
+
+        // One in from each end, and the ±Z walls the endless modes still have to open and close.
+        BlockPos afterEntry = new BlockPos(room.getX() + 1, y, room.getZ() + 1);
+        assertFalse(mask.facedBy(afterEntry, -1, 0), "one block further in is the room's own business");
+
+        BlockPos beforeExit = new BlockPos(room.getX() + s.roomLength() - 2, y, room.getZ() + 1);
+        assertFalse(mask.facedBy(beforeExit, 1, 0), "one block short of the exit likewise");
+
+        for (int dx = 0; dx < s.roomLength(); dx++) {
+            int x = room.getX() + dx;
+            assertFalse(mask.facedBy(new BlockPos(x, y, room.getZ()), 0, -1),
+                "the -Z wall at " + dx + " faces the rock, not a corridor");
+            assertFalse(mask.facedBy(new BlockPos(x, y, room.getZ() + s.roomWidth() - 1), 0, 1),
+                "the +Z wall at " + dx + " faces the rock, not a corridor");
+        }
+    }
+
+    @Test
     @DisplayName("A copy one room off the corridor row is untouched — only that row meets a twin")
     void leavesOtherRowsAlone() {
         PortalStructure s = structure();

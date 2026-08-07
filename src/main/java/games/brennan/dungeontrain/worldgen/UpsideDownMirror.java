@@ -165,7 +165,9 @@ public final class UpsideDownMirror {
         int maxCeilingHeight = DungeonTrainCommonConfig.getUpsideDownMaxCeilingHeight();
         int ceilCapY = maxCeilingHeight > 0 ? mirror + ceilingGap + maxCeilingHeight : Integer.MAX_VALUE;
 
-        int minY = level.getMinBuildHeight();
+        // The world's floor, not the level's: everything below the bedrock is the portal system's
+        // basement, and reflecting a twin structure into the sky is exactly what it is hidden from.
+        int minY = WorldFloor.bedrockY(level);
         int maxY = level.getMaxBuildHeight();          // exclusive
         int floorGuard = minY;                          // never read or write the bedrock row
 

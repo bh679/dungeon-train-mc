@@ -5,6 +5,7 @@ import com.mojang.serialization.MapCodec;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
+import games.brennan.dungeontrain.worldgen.WorldFloor;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.EndCoreBiomes;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
@@ -87,8 +88,11 @@ public class BandEndCityStructure extends Structure {
             int spanZ = (rotation == Rotation.CLOCKWISE_180 || rotation == Rotation.COUNTERCLOCKWISE_90) ? -span : span;
 
             WorldGenCycle cycle = ctx.cycle();
+            // Bottom of the island geometry is the world's floor, not the level's — a city has to
+            // site itself against the same range DisintegrationFeature stamped its islands over.
             EndIslandGeometry geometry = ctx.endIslands().open(
-                    context.heightAccessor().getMinBuildHeight(), context.heightAccessor().getMaxBuildHeight() - 1);
+                    WorldFloor.bedrockY(context.heightAccessor(), context.chunkGenerator()),
+                    context.heightAccessor().getMaxBuildHeight() - 1);
             int baseY = EndCitySiting.siteY(cycle, geometry, ctx.seaLevel(), anchorX, anchorZ, spanX, spanZ);
             if (baseY == Integer.MIN_VALUE) return Optional.empty();
 
