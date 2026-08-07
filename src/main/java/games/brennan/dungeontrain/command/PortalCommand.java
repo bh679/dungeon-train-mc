@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.portal.PortalAnchors;
 import games.brennan.dungeontrain.portal.PortalBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
+import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -206,9 +207,13 @@ public final class PortalCommand {
         try {
             PortalCarriageBuilder.stampBuiltInForCapture(level, scratch, dims);
 
+            // The CORRIDOR's box, not the carriage's — a corridor runs past its slot into the cart
+            // between a portal's pair, and capturing dims.length() would save a truncated one that
+            // the size gate then rejects, silently dropping every corridor back to the built-in.
+            CarriageDims corridor = PortalCorridorSize.corridorDims(dims);
             StructureTemplate template = new StructureTemplate();
             template.fillFromWorld(level, scratch,
-                new Vec3i(dims.length(), dims.height(), dims.width()),
+                new Vec3i(corridor.length(), corridor.height(), corridor.width()),
                 /*withEntities*/ false, /*toIgnore*/ null);
 
             CarriageTemplateStore.save(PortalCarriageBuilder.portalVariant(), template);

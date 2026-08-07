@@ -6,8 +6,11 @@ import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.VariantState;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
+import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
+import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateType;
@@ -248,11 +251,24 @@ public final class CarriagePlacer {
         // and loot or furniture stamped into it would both block the walkway and break the
         // block-for-block match with its twin that the illusion depends on.
         if (PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) {
-            PortalCarriageBuilder.stampCarriage(level, origin, dims, /*relight*/ false);
+            // A corridor is longer than the slot it was placed for and grows inward, into the cart
+            // between the pair — so an ENTRY runs forward out of its slot and an EXIT starts before
+            // its own (PortalCorridorSize). Both the stamp and the footprint sweep have to use that
+            // box, not the slot's: the EXIT's overrun is written AFTER the cart's own footprint was
+            // collected, so a slot-sized sweep here would leave those blocks behind in the world
+            // instead of lifting them into the group's Sable sub-level.
+            PortalCarriageRole role =
+                PortalCarriageRole.roleFor(carriageIndex, DungeonTrainConfig.getGroupSize());
+            BlockPos corridorOrigin =
+                origin.offset(PortalCorridorSize.originOffsetX(role, dims), 0, 0);
+            CarriageDims corridorDims = PortalCorridorSize.corridorDims(dims);
+
+            PortalCarriageBuilder.stampCarriage(level, corridorOrigin, dims, /*relight*/ false);
             // Report the portal variant, not the one the roll happened to land on: what stands here
             // is a portal corridor, and a log line reading "variant=fancywood sources=portal" sends
             // anyone reading it after the fact looking for a bug that isn't there.
-            return finishPlace(level, origin, PortalCarriageBuilder.portalVariant(), dims, "portal", null);
+            return finishPlace(level, corridorOrigin, PortalCarriageBuilder.portalVariant(),
+                corridorDims, "portal", null);
         }
 
         // The cart between a portal's two corridors, from its own template. Sealed space by

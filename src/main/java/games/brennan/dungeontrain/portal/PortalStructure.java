@@ -107,9 +107,15 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         return roomSize.getZ();
     }
 
-    /** X offset from the entry twin's origin to the exit twin's — one corridor plus one room. */
+    /**
+     * X offset from the entry twin's origin to the exit twin's — one corridor plus one room.
+     *
+     * <p>A <i>corridor</i>, not a carriage: {@link PortalCorridorSize#corridorLength} is longer than
+     * {@code dims.length()}. The twins have to stand exactly one corridor apart across the room or
+     * the frame a player is mapped into would not line up with the blocks around them.</p>
+     */
     public int exitTwinOffsetX(CarriageDims dims) {
-        return dims.length() + roomLength();
+        return PortalCorridorSize.corridorLength(dims) + roomLength();
     }
 
     /** Minimum corner of the exit twin corridor. */
@@ -132,7 +138,7 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * which is what keeps every reader of this figure, {@code PortalFrames} included, agreeing.</p>
      */
     public int spanX(CarriageDims dims) {
-        return exitTwinOffsetX(dims) + dims.length();
+        return exitTwinOffsetX(dims) + PortalCorridorSize.corridorLength(dims);
     }
 
     /** Minimum corner of the room copy standing at {@code tile}. */

@@ -118,7 +118,9 @@ class PortalCorridorMaskTest {
         int z = ORIGIN.getZ() + 1;
 
         assertFalse(mask.covers(s.origin().getX() - PLUG_DEPTH - 1, y, z));
-        assertFalse(mask.covers(s.exitOrigin(DIMS).getX() + DIMS.length() + PLUG_DEPTH, y, z));
+        // The exit corridor's own length, not the carriage's — the mask covers the whole corridor.
+        assertFalse(mask.covers(
+            s.exitOrigin(DIMS).getX() + PortalCorridorSize.corridorLength(DIMS) + PLUG_DEPTH, y, z));
     }
 
     @Test

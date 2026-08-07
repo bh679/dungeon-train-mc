@@ -146,8 +146,10 @@ public final class PortalRoomLayout {
         int interiorWidth = width - 2;
         int zCentre = entryOrigin.getZ() + layout.doorZ();
         int interiorMinZ = zCentre - interiorWidth / 2;
+        // One CORRIDOR along, not one carriage — a corridor is the longer of the two
+        // (PortalCorridorSize), and the room has to start where the corridor actually ends.
         return new BlockPos(
-            entryOrigin.getX() + dims.length(),
+            entryOrigin.getX() + layout.length(),
             entryOrigin.getY(),
             interiorMinZ - 1);
     }

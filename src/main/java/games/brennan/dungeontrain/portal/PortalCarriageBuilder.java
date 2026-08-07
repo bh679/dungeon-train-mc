@@ -132,9 +132,23 @@ public final class PortalCarriageBuilder {
         return PortalCorridorMask.forStructure(structure, dims, layoutFor(dims), PLUG_DEPTH);
     }
 
-    /** The layout for a world's carriage dims. */
+    /**
+     * The layout for a world's carriage dims.
+     *
+     * <p>Note the <b>length is the corridor's, not the carriage's</b> — see
+     * {@link PortalCorridorSize}. Everything downstream of the layout (the midpoint the swap fires
+     * on, the far door, the far baffle, the crossing zone, the containment bounds) is derived from
+     * that number, so this one substitution is what makes the corridor longer than its slot
+     * everywhere at once.</p>
+     */
     public static PortalCarriageLayout layoutFor(CarriageDims dims) {
-        return new PortalCarriageLayout(dims.length(), dims.height(), dims.width());
+        return new PortalCarriageLayout(
+            PortalCorridorSize.corridorLength(dims), dims.height(), dims.width());
+    }
+
+    /** The box a corridor's blocks occupy — {@code dims} with the corridor's own length. */
+    public static CarriageDims corridorDims(CarriageDims dims) {
+        return PortalCorridorSize.corridorDims(dims);
     }
 
     /**
@@ -150,7 +164,11 @@ public final class PortalCarriageBuilder {
      */
     public static void stampCorridorFrom(ServerLevel level, BlockPos origin, CarriageDims dims,
                                          boolean relight) {
-        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, PORTAL_VARIANT, dims);
+        // Looked up against the CORRIDOR's dims, not the world's carriage dims: a corridor template
+        // is longer than every other carriage template (PortalCorridorSize), and CarriagePlacer's
+        // size gate would reject it against the wrong figure and silently drop to the built-in.
+        Optional<StructureTemplate> stored =
+            CarriageTemplateStore.get(level, PORTAL_VARIANT, PortalCorridorSize.corridorDims(dims));
         if (stored.isPresent()) {
             CarriagePlacer.stampTemplateAt(level, origin, stored.get(), relight);
             return;
@@ -223,15 +241,62 @@ public final class PortalCarriageBuilder {
      * template rather than a rolled variant. Under the old spacing the carriages in this gap were
      * ordinary ones, each rolling a variant and taking parts, contents, loot and mobs that no player
      * would ever see. One authored carriage says what it is.</p>
+     *
+     * <p><b>Almost all of it now belongs to the corridors.</b> Each corridor overruns
+     * {@link PortalCorridorSize#overrun} blocks into this slot, leaving only
+     * {@link PortalCorridorSize#centreWallWidth} columns at the exact centre of the group. Those are
+     * stamped as a plain solid wall and the rest is left alone — deliberately <b>not</b> written,
+     * rather than written and overwritten, because the two corridors are stamped either side of this
+     * one (slots 0 and 2) and a full-slot stamp here would erase whichever of them went down first.
+     * Skipping makes the result the same in any placement order.</p>
+     *
+     * <p>The authored {@code portal_middle} template is only honoured when the corridors have not
+     * eaten into this slot at all ({@code overrun == 0}, which happens only for carriages long enough
+     * to hit {@link games.brennan.dungeontrain.train.CarriageDims#MAX_LENGTH}). At every ordinary
+     * carriage length there is no longer a cart-shaped space for it to describe.</p>
      */
     public static Set<BlockPos> stampMiddle(ServerLevel level, BlockPos origin, CarriageDims dims,
                                             boolean relight) {
+        if (PortalCorridorSize.overrun(dims) > 0) {
+            return stampCentreWall(level, origin, dims, relight);
+        }
+
         Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, MIDDLE_VARIANT, dims);
         if (stored.isPresent()) {
             CarriagePlacer.stampTemplateAt(level, origin, stored.get(), relight);
             return Set.of();
         }
         return stampMiddleBuiltIn(level, origin, dims, relight);
+    }
+
+    /**
+     * The wall left standing between two corridors that have grown into this slot from both ends:
+     * {@link PortalCorridorSize#centreWallWidth} solid columns at the centre of the group.
+     *
+     * <p>Solid rather than a hollow shell. A hollow one would be a sealed pocket of air nobody can
+     * ever reach, which is the waste that lengthening the corridors exists to remove; and at the
+     * default carriage length the wall is a single column, where "hollow" has no meaning anyway.</p>
+     */
+    private static Set<BlockPos> stampCentreWall(ServerLevel level, BlockPos origin,
+                                                 CarriageDims dims, boolean relight) {
+        Set<BlockPos> placed = new HashSet<>();
+        int from = PortalCorridorSize.overrun(dims);
+        int to = from + PortalCorridorSize.centreWallWidth(dims);
+
+        for (int dx = from; dx < to; dx++) {
+            for (int dz = 0; dz < dims.width(); dz++) {
+                for (int dy = 0; dy < dims.height(); dy++) {
+                    BlockPos pos = origin.offset(dx, dy, dz);
+                    if (relight) {
+                        level.setBlock(pos, SHELL, Block.UPDATE_ALL);
+                    } else {
+                        SilentBlockOps.setBlockSectionLocal(level, pos, SHELL);
+                    }
+                    placed.add(pos.immutable());
+                }
+            }
+        }
+        return placed;
     }
 
     /**
@@ -276,10 +341,10 @@ public final class PortalCarriageBuilder {
         stampBuiltIn(level, origin, dims, /*relight*/ true);
     }
 
-    /** Clear a carriage-sized box to air. */
+    /** Clear a corridor-sized box to air — {@link PortalCorridorSize#corridorLength} along X. */
     public static void clearBox(ServerLevel level, BlockPos origin, CarriageDims dims) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for (int dx = 0; dx < dims.length(); dx++) {
+        for (int dx = 0; dx < PortalCorridorSize.corridorLength(dims); dx++) {
             for (int dz = 0; dz < dims.width(); dz++) {
                 for (int dy = 0; dy < dims.height(); dy++) {
                     level.setBlock(pos.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz),
@@ -294,7 +359,7 @@ public final class PortalCarriageBuilder {
         PortalCarriageLayout layout = layoutFor(dims);
         Set<BlockPos> placed = new HashSet<>();
 
-        for (int dx = 0; dx < dims.length(); dx++) {
+        for (int dx = 0; dx < layout.length(); dx++) {
             for (int dz = 0; dz < dims.width(); dz++) {
                 for (int dy = 0; dy < dims.height(); dy++) {
                     BlockState state = stateAt(layout, dx, dy, dz);
@@ -424,13 +489,13 @@ public final class PortalCarriageBuilder {
         // Seal the ring around each corridor mouth. The room's shell is wider and taller than a
         // corridor, so everything it does not already cover at the door plane has to be walled off,
         // leaving that plane — and the door hanging in it — untouched.
-        sealCorridorMouth(level, entryOrigin.getX() + dims.length() - 1, entryOrigin, dims,
+        sealCorridorMouth(level, entryOrigin.getX() + layout.length() - 1, entryOrigin, dims,
             roomOrigin, roomSize);
         sealCorridorMouth(level, exitOrigin.getX(), exitOrigin, dims, roomOrigin, roomSize);
 
         // Dead space behind the door that leads nowhere, at each outer end.
         plugBeyond(level, entryOrigin.offset(-PLUG_DEPTH, 0, 0), PLUG_DEPTH, dims);
-        plugBeyond(level, exitOrigin.offset(dims.length(), 0, 0), PLUG_DEPTH, dims);
+        plugBeyond(level, exitOrigin.offset(layout.length(), 0, 0), PLUG_DEPTH, dims);
     }
 
     /**

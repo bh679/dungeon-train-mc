@@ -85,7 +85,8 @@ class PortalRoomLayoutTest {
         int width = PortalRoomLayout.minWidth(DEFAULT_DIMS);
         BlockPos room = PortalRoomLayout.roomOrigin(entry, DEFAULT_DIMS, layout, width);
 
-        assertEquals(entry.getX() + DEFAULT_DIMS.length(), room.getX(), "room begins where the corridor ends");
+        assertEquals(entry.getX() + PortalCorridorSize.corridorLength(DEFAULT_DIMS), room.getX(),
+            "room begins where the corridor ends — a corridor, which is longer than a carriage");
         assertEquals(entry.getY(), room.getY(), "room shares the corridor's floor");
 
         // The interior's centre column must land on the doorway line, or the openings meet a wall.
