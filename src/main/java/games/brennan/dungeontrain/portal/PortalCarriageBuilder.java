@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.portal;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsPlacement;
+import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.track.TrackVariantMobs;
@@ -625,7 +626,11 @@ public final class PortalCarriageBuilder {
         if (sidecar.isEmpty()) return;
 
         long worldSeed = level.getSeed();
-        String plotKey = "portal_room:" + roomName;
+        // Must be the key the EDITOR saved the pool under, or the authored contents are looked up in
+        // a file that does not exist and every chest in the room rolls nothing. ContainerContentsStore
+        // takes "track:<kind>:<name>" and sanitises the colons into a filename, so a portal room's
+        // pool lives at containers/track_portal_room_<name>.contents.json.
+        String plotKey = ContainerContentsStore.trackPlotKey(TrackKind.PORTAL_ROOM, roomName);
         for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
             BlockPos local = entry.localPos();
             BlockPos world = roomOrigin.offset(local);
