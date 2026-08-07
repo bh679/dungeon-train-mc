@@ -35,7 +35,7 @@ import java.util.Objects;
  *
  * <p><b>{@link #tiling} grows and shrinks; {@link #spanX} never does.</b> The endless modes append
  * copies of the room around the base one on both horizontal axes, including straight through the row
- * the twins stand in — the room clears that space and the corridor is stamped back into it. So
+ * the twins stand in, masked off the volume the corridors own so each twin is placed only once. So
  * {@link #exitOrigin} and {@link #spanX} stay exactly what the room's own length makes them, which is
  * what keeps the EXIT frame under a player's feet still. The tiled copies widen
  * {@link #tiledMinX}..{@link #tiledMaxZ} instead, and the occupancy box and the erase sweep read
@@ -93,8 +93,8 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
     /**
      * Total X span from the entry twin's origin to the far end of the exit twin.
      *
-     * <p>Deliberately blind to {@link #tiling}. Copies of the room are laid through the corridors and
-     * the corridors written back over them, so however far the room repeats, the twins do not move —
+     * <p>Deliberately blind to {@link #tiling}. Copies of the room are laid around the corridors
+     * rather than through them, so however far the room repeats, the twins neither move nor change —
      * which is what keeps every reader of this figure, {@code PortalFrames} included, agreeing.</p>
      */
     public int spanX(CarriageDims dims) {

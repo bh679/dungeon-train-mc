@@ -109,6 +109,14 @@ public final class PortalCarriageBuilder {
         return MIDDLE_VARIANT;
     }
 
+    /**
+     * The volume this structure's two corridors own — see {@link PortalCorridorMask}. Built here
+     * because {@code PLUG_DEPTH} is this class's business and nothing else should be guessing it.
+     */
+    public static PortalCorridorMask corridorMask(PortalStructure structure, CarriageDims dims) {
+        return PortalCorridorMask.forStructure(structure, dims, layoutFor(dims), PLUG_DEPTH);
+    }
+
     /** The layout for a world's carriage dims. */
     public static PortalCarriageLayout layoutFor(CarriageDims dims) {
         return new PortalCarriageLayout(dims.length(), dims.height(), dims.width());
@@ -348,8 +356,9 @@ public final class PortalCarriageBuilder {
      * other way round, on the reasoning that the base room's box stops one block short of each door
      * plane and so could never reach them. True for the base room; not true once the endless modes
      * started putting copies of it along the corridor row, which land exactly where a twin goes. Now
-     * the room clears that space and the corridor is placed into it, which is the same rule
-     * {@link PortalRoomTiler} follows every time a corridor-row copy appears or retires.</p>
+     * the room clears that space and the corridor is placed into it — once. Copies stamped later are
+     * masked off that volume rather than overwriting and being repaired; see
+     * {@link PortalCorridorMask}.</p>
      */
     public static void stampPairStructure(ServerLevel level, PortalStructure structure,
                                           CarriageDims dims) {
@@ -376,11 +385,11 @@ public final class PortalCarriageBuilder {
      * Lay both twin corridors into whatever is currently standing: the corridors themselves, the seal
      * ring around each mouth, and the plug beyond each outer door.
      *
-     * <p><b>Always last, and re-run whenever something could have written over them.</b> A twin has
-     * to be block-identical to the carriage it mirrors or the crossing shows a seam, and the only way
-     * to guarantee that against a room that may have been stamped through the same volume is to put
-     * the corridor down after it. {@link PortalRoomTiler} calls this every time a copy of the room
-     * appears or retires on the corridor row, which is the only row whose copies reach a twin.</p>
+     * <p><b>Once per structure, and last.</b> A twin has to be block-identical to the carriage it
+     * mirrors or the crossing shows a seam. Placing it after the room settles that against the base
+     * room; keeping it placed is {@link PortalCorridorMask}'s job — every later write from the endless
+     * tiling skips the volume the corridors own, so there is nothing to repair and this never runs
+     * again for the life of the structure.</p>
      *
      * <p>Each twin's dead side is plugged: the entry twin's near door has nothing behind it (its near
      * half maps to the entry carriage), and the exit twin's far door likewise.</p>
@@ -569,28 +578,46 @@ public final class PortalCarriageBuilder {
      */
     public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
                                    String roomName, Vec3i size, boolean relight) {
+        stampRoomAt(level, roomOrigin, dims, roomName, size, relight, PortalCorridorMask.NONE);
+    }
+
+    /**
+     * {@link #stampRoomAt} that leaves every cell {@code mask} covers alone.
+     *
+     * <p>How a copy of the room on the corridor row is stamped around the twins instead of over them
+     * — which is what lets a twin be placed once and never touched again. See
+     * {@link PortalCorridorMask}.</p>
+     */
+    public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
+                                   String roomName, Vec3i size, boolean relight,
+                                   PortalCorridorMask mask) {
         // Clear first, for the same reason a twin does: the room lands in solid rock at the world
         // floor, and a template stamp only writes its own cells — anything the author left as
         // STRUCTURE_VOID would otherwise show deepslate through the wall.
-        clearRoomBox(level, roomOrigin, size);
+        clearRoomBox(level, roomOrigin, size, mask);
 
         Optional<StructureTemplate> stored = PortalRoomTemplateStore.get(level, roomName, dims);
         if (stored.isPresent() && stored.get().getSize().equals(size)) {
-            CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(), relight);
+            CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(),
+                mask.isEmpty() ? null : mask.asProcessor(), relight);
             return;
         }
-        stampRoomBuiltIn(level, roomOrigin, size, relight);
+        stampRoomBuiltIn(level, roomOrigin, size, relight, mask);
     }
 
-    /** Clear a room-sized box to air. */
-    private static void clearRoomBox(ServerLevel level, BlockPos origin, Vec3i size) {
+    /** Clear a room-sized box to air, leaving whatever {@code mask} covers untouched. */
+    private static void clearRoomBox(ServerLevel level, BlockPos origin, Vec3i size,
+                                     PortalCorridorMask mask) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         BlockState air = Blocks.AIR.defaultBlockState();
         for (int dx = 0; dx < size.getX(); dx++) {
             for (int dz = 0; dz < size.getZ(); dz++) {
                 for (int dy = 0; dy < size.getY(); dy++) {
-                    level.setBlock(pos.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz),
-                        air, Block.UPDATE_ALL);
+                    int x = origin.getX() + dx;
+                    int y = origin.getY() + dy;
+                    int z = origin.getZ() + dz;
+                    if (mask.covers(x, y, z)) continue;
+                    level.setBlock(pos.set(x, y, z), air, Block.UPDATE_ALL);
                 }
             }
         }
@@ -606,6 +633,11 @@ public final class PortalCarriageBuilder {
      */
     public static void stampRoomBuiltIn(ServerLevel level, BlockPos roomOrigin, Vec3i size,
                                         boolean relight) {
+        stampRoomBuiltIn(level, roomOrigin, size, relight, PortalCorridorMask.NONE);
+    }
+
+    public static void stampRoomBuiltIn(ServerLevel level, BlockPos roomOrigin, Vec3i size,
+                                        boolean relight, PortalCorridorMask mask) {
         int x0 = roomOrigin.getX();
         int x1 = x0 + size.getX() - 1;
         int zWall0 = roomOrigin.getZ();
@@ -620,6 +652,7 @@ public final class PortalCarriageBuilder {
         for (int x = x0; x <= x1; x++) {
             for (int z = zWall0; z <= zWall1; z++) {
                 for (int y = floorY; y <= ceilingY; y++) {
+                    if (mask.covers(x, y, z)) continue;
                     boolean shell = z < z0 || z > z1 || y == floorY || y == ceilingY;
                     BlockState state = !shell ? Blocks.AIR.defaultBlockState()
                         : (y == floorY ? POCKET_FLOOR : POCKET_SHELL);
@@ -630,6 +663,7 @@ public final class PortalCarriageBuilder {
 
         for (int x = x0 + LIGHT_INSET; x <= x1 - LIGHT_INSET; x += LIGHT_SPACING) {
             for (int z = z0 + LIGHT_INSET; z <= z1 - LIGHT_INSET; z += LIGHT_SPACING) {
+                if (mask.covers(x, ceilingY, z)) continue;
                 setRoomBlock(level, pos.set(x, ceilingY, z), POCKET_LIGHT, relight);
             }
         }

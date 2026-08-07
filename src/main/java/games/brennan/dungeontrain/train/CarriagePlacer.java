@@ -1180,6 +1180,16 @@ public final class CarriagePlacer {
         stampTemplate(level, origin, template, null, relight);
     }
 
+    /**
+     * {@link #stampTemplateAt} with a {@link StructureProcessor} in front of the write, so a caller
+     * can drop cells it must not touch. Used by the portal room to stamp copies around the twin
+     * corridors rather than through them.
+     */
+    public static void stampTemplateAt(ServerLevel level, BlockPos origin, StructureTemplate template,
+                                       StructureProcessor processor, boolean relight) {
+        stampTemplate(level, origin, template, processor, relight);
+    }
+
     private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,
                                       StructureProcessor processor, boolean relight) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);

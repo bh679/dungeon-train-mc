@@ -7,14 +7,14 @@
       "VOID",
       "END"
     ],
-    "mode": "bedrock_lock"
+    "mode": "endless_repetition"
   },
   "endless": {
-    "weight": 1,
+    "weight": 3,
     "mode": "endless_repetition"
   },
   "endless2": {
-    "weight": 1,
+    "weight": 3,
     "mode": "endless_open"
   }
 }

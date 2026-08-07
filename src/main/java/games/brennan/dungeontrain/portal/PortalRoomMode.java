@@ -29,10 +29,10 @@ import java.util.Locale;
  * grid horizontal makes that safe by construction rather than by a check that could drift.</p>
  *
  * <h2>The corridors sit inside the endless space, not at its edge</h2>
- * <p>Copies of the room tile straight through the row the two twin corridors stand in. The room
- * clears that space and the corridor is stamped back into it afterwards — see
- * {@code PortalCarriageBuilder.stampCorridors} — so the way back to the train is an object standing
- * in the endless room rather than a wall bounding it.</p>
+ * <p>Copies of the room tile straight through the row the two twin corridors stand in, so the way
+ * back to the train is an object standing in the endless room rather than a wall bounding it. Each
+ * twin is placed once, when the structure is built, and every copy stamped afterwards is masked off
+ * the volume the corridors own — see {@code PortalCorridorMask}.</p>
  *
  * <p>What must not happen is the tiling moving a twin. {@link PortalStructure}'s javadoc is the
  * warning: {@code spanX} is the single source for where the exit twin is stamped, how far

@@ -17,10 +17,10 @@ import java.util.function.Predicate;
  * Minecraft types.</p>
  *
  * <h2>The corridor row tiles like any other</h2>
- * <p>Copies on row {@code z == 0} land exactly where the two twin corridors go, which is why the
- * corridors are stamped <b>after</b> the rooms and re-stamped whenever a copy there appears or
- * retires — the room clears the space, the corridor is placed into it. See
- * {@code PortalCarriageBuilder.stampCorridors}.</p>
+ * <p>Copies on row {@code z == 0} land exactly where the two twin corridors go. The corridors are
+ * stamped <b>after</b> the base room and only ever once; every copy placed later is masked off the
+ * volume they own, so it is built around them rather than over them. See
+ * {@code PortalCorridorMask}.</p>
  *
  * <p>What the tiling must never do is move a twin. The exit twin's position feeds
  * {@code PortalFrames}, so growing {@link PortalStructure#spanX} per copy would shift the frame a

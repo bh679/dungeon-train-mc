@@ -167,43 +167,44 @@ public final class PortalRoomTiler {
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
 
+        PortalCorridorMask mask = maskFor(structure, dims, tile);
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, structure.roomName(), size,
-            /*relight*/ true);
-        if (!structure.mode().tilesWholeRoom()) clearInterior(level, origin, size);
+            /*relight*/ true, mask);
+        if (!structure.mode().tilesWholeRoom()) clearInterior(level, origin, size, mask);
 
         PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
         refreshFacesAround(level, dims, grown, tile);
-        relayCorridorsIfDisturbed(level, dims, grown, tile);
         return grown;
     }
 
     /**
-     * Put the twin corridors back if this copy was on the row that runs through them.
+     * What this copy must not write into: the corridors, when it sits on the row that runs through
+     * them, and nothing at all on every other row.
      *
-     * <p>A copy on {@code z == 0} occupies the same space a twin does — that is the point, the room
-     * clears that space and the corridor is placed back into it — so the corridor has to be laid down
-     * again afterwards or the player walks into a room where their way back to the train used to be.
-     * Every other row is clear of the corridors and costs nothing here.</p>
-     *
-     * <p>Runs after the face work as well as after the stamp, because carving a seam between the base
-     * room and its neighbour along X cuts straight through a door plane. The corridor is written last,
-     * so the door comes back.</p>
+     * <p>This is what lets a twin be placed <b>once</b>, when its structure is built. The copy is
+     * stamped around it rather than over it, so there is never anything to repair — no re-laying the
+     * corridors each time a copy on that row appears, retires, or has a seam carved through it.</p>
      */
-    private static void relayCorridorsIfDisturbed(ServerLevel level, CarriageDims dims,
-                                                  PortalStructure structure, Tile tile) {
-        if (tile.z() != 0) return;
-        PortalCarriageBuilder.stampCorridors(level, structure, dims);
+    private static PortalCorridorMask maskFor(PortalStructure structure, CarriageDims dims,
+                                              Tile tile) {
+        return tile.z() == 0
+            ? PortalCarriageBuilder.corridorMask(structure, dims)
+            : PortalCorridorMask.NONE;
     }
 
-    /** Everything strictly between the floor and the ceiling, back to air. */
-    private static void clearInterior(ServerLevel level, BlockPos origin, Vec3i size) {
+    /** Everything strictly between the floor and the ceiling, back to air, bar what the mask owns. */
+    private static void clearInterior(ServerLevel level, BlockPos origin, Vec3i size,
+                                      PortalCorridorMask mask) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         BlockState air = Blocks.AIR.defaultBlockState();
         for (int x = 0; x < size.getX(); x++) {
             for (int z = 0; z < size.getZ(); z++) {
                 for (int y = 1; y < size.getY() - 1; y++) {
-                    level.setBlock(pos.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z),
-                        air, Block.UPDATE_ALL);
+                    int wx = origin.getX() + x;
+                    int wy = origin.getY() + y;
+                    int wz = origin.getZ() + z;
+                    if (mask.covers(wx, wy, wz)) continue;
+                    level.setBlock(pos.set(wx, wy, wz), air, Block.UPDATE_ALL);
                 }
             }
         }
@@ -232,13 +233,17 @@ public final class PortalRoomTiler {
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
 
+        PortalCorridorMask mask = maskFor(structure, dims, tile);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         BlockState air = Blocks.AIR.defaultBlockState();
         for (int x = 0; x < size.getX(); x++) {
             for (int z = 0; z < size.getZ(); z++) {
                 for (int y = 0; y < size.getY(); y++) {
-                    level.setBlock(pos.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z),
-                        air, Block.UPDATE_ALL);
+                    int wx = origin.getX() + x;
+                    int wy = origin.getY() + y;
+                    int wz = origin.getZ() + z;
+                    if (mask.covers(wx, wy, wz)) continue;
+                    level.setBlock(pos.set(wx, wy, wz), air, Block.UPDATE_ALL);
                 }
             }
         }
@@ -250,7 +255,6 @@ public final class PortalRoomTiler {
             Tile neighbour = tile.offset(d[0], d[1]);
             if (shrunk.tiling().has(neighbour)) refreshFace(level, dims, shrunk, neighbour, -d[0], -d[1]);
         }
-        relayCorridorsIfDisturbed(level, dims, shrunk, tile);
         return shrunk;
     }
 
@@ -296,13 +300,16 @@ public final class PortalRoomTiler {
     private static void carveSeam(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                  Tile tile, int dx, int dz) {
         BlockState air = Blocks.AIR.defaultBlockState();
+        // The far column belongs to the neighbour, so eachFaceCell's own mask check does not cover it.
+        PortalCorridorMask seamMask = PortalCarriageBuilder.corridorMask(structure, dims);
         eachFaceCell(level, dims, structure, tile, dx, dz, /*interiorOnly*/ true, (wall, inner) -> {
             // Open the seam only where both rooms are already open one step further in, so the
             // passage that appears is the passage that exists on both sides.
             BlockPos innerFar = wall.offset(dx * 2, 0, dz * 2);
             if (!level.getBlockState(inner).isAir() || !level.getBlockState(innerFar).isAir()) return;
             level.setBlock(wall, air, Block.UPDATE_ALL);
-            level.setBlock(wall.offset(dx, 0, dz), air, Block.UPDATE_ALL);
+            BlockPos far = wall.offset(dx, 0, dz);
+            if (!seamMask.covers(far)) level.setBlock(far, air, Block.UPDATE_ALL);
         });
     }
 
@@ -350,6 +357,10 @@ public final class PortalRoomTiler {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
+        // Masked here rather than in each of the three face operations, so none of them can forget:
+        // carving a seam along X from the base room runs straight through a door plane, and the door
+        // is placed once and must survive.
+        PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
 
         int x0 = origin.getX();
         int x1 = x0 + size.getX() - 1;
@@ -367,6 +378,7 @@ public final class PortalRoomTiler {
             for (int x = x0 + inset; x <= x1 - inset; x++) {
                 for (int y = yLow; y <= yHigh; y++) {
                     BlockPos wall = new BlockPos(x, y, wallZ);
+                    if (mask.covers(wall)) continue;
                     body.accept(wall, wall.offset(0, 0, -dz));
                 }
             }
@@ -376,6 +388,7 @@ public final class PortalRoomTiler {
         for (int z = z0 + inset; z <= z1 - inset; z++) {
             for (int y = yLow; y <= yHigh; y++) {
                 BlockPos wall = new BlockPos(wallX, y, z);
+                if (mask.covers(wall)) continue;
                 body.accept(wall, wall.offset(-dx, 0, 0));
             }
         }
