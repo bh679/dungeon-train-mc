@@ -58,4 +58,30 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId) {
     public boolean isLinked() {
         return stageId != null;
     }
+
+    /**
+     * The entry a weight store should store when a weight edit lands on {@code prev} ({@code null}
+     * = no existing entry, created unlinked with the default gate).
+     *
+     * <p>Shared by all three stores' {@code set(...)} so the "keep everything but the weight"
+     * decision lives in one place. Rebuilding the record from parts here instead would silently
+     * drop the {@link #stageId() Stage link} — the reason this helper exists rather than each store
+     * calling a constructor.</p>
+     */
+    public static TemplateMeta mergeWeight(TemplateMeta prev, int weight) {
+        return prev == null ? new TemplateMeta(weight, TemplateGate.DEFAULT, null) : prev.withWeight(weight);
+    }
+
+    /**
+     * The entry a weight store should store when an inline-gate edit lands on {@code prev}
+     * ({@code null} = no existing entry, created unlinked at {@code defaultWeight}). Counterpart to
+     * {@link #mergeWeight}: preserves the weight and the Stage link.
+     *
+     * <p>Note this writes the <em>inline</em> gate, which is inert while the entry is Stage-linked —
+     * the effective gate then comes from the Stage. Callers that surface the edit to a user should
+     * say so; see {@code EditorCommand.gateSuccess}.</p>
+     */
+    public static TemplateMeta mergeGate(TemplateMeta prev, TemplateGate gate, int defaultWeight) {
+        return prev == null ? new TemplateMeta(defaultWeight, gate, null) : prev.withGate(gate);
+    }
 }
