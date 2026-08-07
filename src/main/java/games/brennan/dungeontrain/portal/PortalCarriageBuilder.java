@@ -342,12 +342,51 @@ public final class PortalCarriageBuilder {
      * maps to the exit carriage). The room opens onto both corridors, so a player walks in from the
      * train through one and out to the train through the other without turning round.</p>
      *
-     * <p>Order matters: the twins go down first and the room's own box stops one block short of
-     * each door plane, so a corridor's blocks are never written over by the room. That is what keeps
-     * a twin identical to its carriage whatever the room is authored as.</p>
+     * <p><b>Rooms first, corridors last.</b> The room is stamped, the mode gets to act on it, and only
+     * then do the two twins go down — so whatever the room did, a corridor's blocks are written over
+     * the top of it and end up identical to the carriage they mirror. That ordering used to be the
+     * other way round, on the reasoning that the base room's box stops one block short of each door
+     * plane and so could never reach them. True for the base room; not true once the endless modes
+     * started putting copies of it along the corridor row, which land exactly where a twin goes. Now
+     * the room clears that space and the corridor is placed into it, which is the same rule
+     * {@link PortalRoomTiler} follows every time a corridor-row copy appears or retires.</p>
      */
     public static void stampPairStructure(ServerLevel level, PortalStructure structure,
                                           CarriageDims dims) {
+        PortalCarriageLayout layout = layoutFor(dims);
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        Vec3i roomSize = structure.roomSize();
+
+        stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true);
+
+        // Before the corridors, so each mode acts on the room as it actually turned out rather than
+        // as it was asked for — and so that a mode reaching a door plane is overwritten rather than
+        // left. Bedrock Lock wraps the room; the endless modes settle its own side walls, which for
+        // Endless Open means taking them away so there is somewhere to walk out to.
+        if (structure.mode() == PortalRoomMode.BEDROCK_LOCK) {
+            bedrockSkin(level, roomOrigin, roomSize);
+        } else if (structure.mode().tiles()) {
+            PortalRoomTiler.refreshFacesAround(level, dims, structure, PortalRoomTiling.Tile.BASE);
+        }
+
+        stampCorridors(level, structure, dims);
+    }
+
+    /**
+     * Lay both twin corridors into whatever is currently standing: the corridors themselves, the seal
+     * ring around each mouth, and the plug beyond each outer door.
+     *
+     * <p><b>Always last, and re-run whenever something could have written over them.</b> A twin has
+     * to be block-identical to the carriage it mirrors or the crossing shows a seam, and the only way
+     * to guarantee that against a room that may have been stamped through the same volume is to put
+     * the corridor down after it. {@link PortalRoomTiler} calls this every time a copy of the room
+     * appears or retires on the corridor row, which is the only row whose copies reach a twin.</p>
+     *
+     * <p>Each twin's dead side is plugged: the entry twin's near door has nothing behind it (its near
+     * half maps to the entry carriage), and the exit twin's far door likewise.</p>
+     */
+    public static void stampCorridors(ServerLevel level, PortalStructure structure,
+                                      CarriageDims dims) {
         PortalCarriageLayout layout = layoutFor(dims);
         BlockPos entryOrigin = structure.origin();
         BlockPos exitOrigin = structure.exitOrigin(dims);
@@ -356,7 +395,6 @@ public final class PortalCarriageBuilder {
 
         stampTwin(level, entryOrigin, dims);
         stampTwin(level, exitOrigin, dims);
-        stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true);
 
         // Seal the ring around each corridor mouth. The room's shell is wider and taller than a
         // corridor, so everything it does not already cover at the door plane has to be walled off,
@@ -368,15 +406,6 @@ public final class PortalCarriageBuilder {
         // Dead space behind the door that leads nowhere, at each outer end.
         plugBeyond(level, entryOrigin.offset(-PLUG_DEPTH, 0, 0), PLUG_DEPTH, dims);
         plugBeyond(level, exitOrigin.offset(dims.length(), 0, 0), PLUG_DEPTH, dims);
-
-        // Last, so each mode acts on the room as it actually turned out rather than as it was asked
-        // for. Bedrock Lock wraps it; the two endless modes settle the base room's own side walls,
-        // which for Endless Open means taking them away so there is somewhere to walk out to.
-        if (structure.mode() == PortalRoomMode.BEDROCK_LOCK) {
-            bedrockSkin(level, roomOrigin, roomSize);
-        } else if (structure.mode().tiles()) {
-            PortalRoomTiler.refreshFacesAround(level, dims, structure, PortalRoomTiling.Tile.BASE);
-        }
     }
 
     /**

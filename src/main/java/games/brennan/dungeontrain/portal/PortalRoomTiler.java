@@ -173,7 +173,26 @@ public final class PortalRoomTiler {
 
         PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
         refreshFacesAround(level, dims, grown, tile);
+        relayCorridorsIfDisturbed(level, dims, grown, tile);
         return grown;
+    }
+
+    /**
+     * Put the twin corridors back if this copy was on the row that runs through them.
+     *
+     * <p>A copy on {@code z == 0} occupies the same space a twin does — that is the point, the room
+     * clears that space and the corridor is placed back into it — so the corridor has to be laid down
+     * again afterwards or the player walks into a room where their way back to the train used to be.
+     * Every other row is clear of the corridors and costs nothing here.</p>
+     *
+     * <p>Runs after the face work as well as after the stamp, because carving a seam between the base
+     * room and its neighbour along X cuts straight through a door plane. The corridor is written last,
+     * so the door comes back.</p>
+     */
+    private static void relayCorridorsIfDisturbed(ServerLevel level, CarriageDims dims,
+                                                  PortalStructure structure, Tile tile) {
+        if (tile.z() != 0) return;
+        PortalCarriageBuilder.stampCorridors(level, structure, dims);
     }
 
     /** Everything strictly between the floor and the ceiling, back to air. */
@@ -231,6 +250,7 @@ public final class PortalRoomTiler {
             Tile neighbour = tile.offset(d[0], d[1]);
             if (shrunk.tiling().has(neighbour)) refreshFace(level, dims, shrunk, neighbour, -d[0], -d[1]);
         }
+        relayCorridorsIfDisturbed(level, dims, shrunk, tile);
         return shrunk;
     }
 
@@ -253,15 +273,13 @@ public final class PortalRoomTiler {
     /**
      * Open or close one face of one copy.
      *
-     * <p>A direction whose neighbour could never be built is left entirely alone. That is what keeps
-     * the fog and the blocks off the corridor doors: looking along X from the base room, what is
-     * there is a twin's sealed mouth, which the player is meant to walk through.</p>
+     * <p>Every direction is treated the same, the corridor row included. Carving along X from the
+     * base room does cut through a door plane — and that is fine, because
+     * {@link #relayCorridorsIfDisturbed} writes the corridor back over the top afterwards.</p>
      */
     private static void refreshFace(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                     Tile tile, int dx, int dz) {
         Tile neighbour = tile.offset(dx, dz);
-        if (!PortalRoomTiling.isLegal(neighbour)) return;
-
         if (structure.tiling().has(neighbour)) {
             carveSeam(level, dims, structure, tile, dx, dz);
         } else if (structure.mode().closesOuterFaces()) {

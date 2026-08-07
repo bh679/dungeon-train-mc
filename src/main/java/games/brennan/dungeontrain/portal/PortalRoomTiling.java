@@ -16,13 +16,16 @@ import java.util.function.Predicate;
  * unit-tests without a NeoForge bootstrap, the same reason {@link PortalCarriageLayout} avoids
  * Minecraft types.</p>
  *
- * <h2>The corridor row holds tile 0 only</h2>
- * <p>{@link #isLegal} rejects {@code (i, 0)} for every {@code i != 0}. Along X the base room is
- * bookended by the two twin corridors and their plugs, so a tile there would land on top of a twin —
- * and the twin is what the player walks through to be swapped back onto the train. Moving the exit
- * twin out to the far edge instead is the thing {@link PortalStructure} warns against: its position
- * feeds {@code PortalFrames}, so growing the span would move the frame a player is standing in, under
- * them, every time a tile appended. Step one room sideways in Z and X is free in every direction.</p>
+ * <h2>The corridor row tiles like any other</h2>
+ * <p>Copies on row {@code z == 0} land exactly where the two twin corridors go, which is why the
+ * corridors are stamped <b>after</b> the rooms and re-stamped whenever a copy there appears or
+ * retires — the room clears the space, the corridor is placed into it. See
+ * {@code PortalCarriageBuilder.stampCorridors}.</p>
+ *
+ * <p>What the tiling must never do is move a twin. The exit twin's position feeds
+ * {@code PortalFrames}, so growing {@link PortalStructure#spanX} per copy would shift the frame a
+ * player is standing in, under them. It does not: {@code spanX} is the corridor span and is blind to
+ * the tiling, so the corridors stay put and the endless space is built through them.</p>
  *
  * <h2>Why a window rather than a growing region</h2>
  * <p>The window is centred on the player's tile and slides with them: walk one room along and a tile
@@ -36,7 +39,7 @@ import java.util.function.Predicate;
  * gets its immediate neighbours and no more. That is the scale-invariant reading of "five rooms out"
  * — a room big enough that five copies fill the view does not need a hundred of them.</p>
  *
- * @param tiles the resident set; always contains {@link Tile#BASE}, never an illegal tile
+ * @param tiles the resident set; always contains {@link Tile#BASE}
  */
 public record PortalRoomTiling(Set<Tile> tiles) {
 
@@ -65,8 +68,8 @@ public record PortalRoomTiling(Set<Tile> tiles) {
      * How far the window reaches for somebody who is near the portal carriage but not yet in the
      * room.
      *
-     * <p>Just the ring around the base room — six copies once the corridor row's two illegal cells
-     * are taken out, against a hundred at {@link #MAX_RADIUS}. The point of building anything before
+     * <p>Just the ring around the base room — eight copies, against a hundred and twenty at
+     * {@link #MAX_RADIUS}. The point of building anything before
      * a player walks in is only that the room should already be there when they arrive rather than
      * filling in behind their back, and one ring does that. Going straight to the full window would
      * mean somebody who rides past a portal carriage and never goes through it has paid for a hundred
@@ -103,7 +106,6 @@ public record PortalRoomTiling(Set<Tile> tiles) {
     public PortalRoomTiling {
         Set<Tile> copy = new LinkedHashSet<>(tiles);
         copy.add(Tile.BASE);
-        copy.removeIf(t -> !isLegal(t));
         tiles = Set.copyOf(copy);
     }
 
@@ -125,11 +127,6 @@ public record PortalRoomTiling(Set<Tile> tiles) {
         return Math.max(1, Math.min(MAX_WINDOW_TILES, MAX_RESIDENT_BLOCKS / blocksPerTile));
     }
 
-    /** False for the corridor row's non-zero tiles — see the class javadoc. */
-    public static boolean isLegal(Tile tile) {
-        return tile.z() != 0 || tile.x() == 0;
-    }
-
     /** True when a copy of the room is standing at {@code tile}. */
     public boolean has(Tile tile) {
         return tiles.contains(tile);
@@ -144,9 +141,9 @@ public record PortalRoomTiling(Set<Tile> tiles) {
         return tiles.size() == 1;
     }
 
-    /** This tiling plus {@code tile}. Ignored when the tile is illegal. */
+    /** This tiling plus {@code tile}. */
     public PortalRoomTiling with(Tile tile) {
-        if (!isLegal(tile) || tiles.contains(tile)) return this;
+        if (tiles.contains(tile)) return this;
         Set<Tile> next = new LinkedHashSet<>(tiles);
         next.add(tile);
         return new PortalRoomTiling(next);
@@ -187,7 +184,7 @@ public record PortalRoomTiling(Set<Tile> tiles) {
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
                 Tile candidate = centre.offset(dx, dz);
-                if (!isLegal(candidate) || tiles.contains(candidate)) continue;
+                if (tiles.contains(candidate)) continue;
                 if (best != null && order.compare(candidate, best) >= 0) continue;
                 if (!buildable.test(candidate)) continue;
                 best = candidate;
@@ -251,37 +248,6 @@ public record PortalRoomTiling(Set<Tile> tiles) {
             worst = tile;
         }
         return worst;
-    }
-
-    /**
-     * How many rooms stand in an unbroken line from {@code from} heading {@code (dx, dz)}, counting
-     * {@code from} itself — so 1 means "this room and then the edge".
-     *
-     * <p>This is how far the player can see that way, and therefore where the fog has to sit.</p>
-     */
-    public int runLength(Tile from, int dx, int dz) {
-        if (!tiles.contains(from)) return 0;
-        int run = 1;
-        Tile cursor = from.offset(dx, dz);
-        while (tiles.contains(cursor)) {
-            run++;
-            cursor = cursor.offset(dx, dz);
-        }
-        return run;
-    }
-
-    /**
-     * True when the gap at the end of that run is one this tiling could legally fill.
-     *
-     * <p>The distinction is what keeps the fog off the corridor doors. Looking along X from the base
-     * room, the next tile is illegal — what is actually there is a twin's sealed mouth, which the
-     * player is meant to see and walk through. Everywhere else an unfilled legal gap is raw rock the
-     * fog exists to hide.</p>
-     */
-    public boolean runEndsAtFillableGap(Tile from, int dx, int dz) {
-        int run = runLength(from, dx, dz);
-        if (run == 0) return false;
-        return isLegal(from.offset(dx * run, dz * run));
     }
 
     public int minTileX() {

@@ -368,9 +368,10 @@ public final class PortalCarriageEvents {
     /**
      * Which room copies players are standing in, in the order they were found.
      *
-     * <p>A player in one of the twin corridors counts as being in the base room: the corridor adjoins
-     * it, they are about to walk in, and the tile arithmetic would otherwise place them in the
-     * corridor row, where no copy can stand.</p>
+     * <p>A player in one of the twin corridors resolves to whichever corridor-row copy that corridor
+     * stands in — a real cell of the grid, since the corridor row tiles like any other. So walking
+     * into a doorway is already enough to open the window, and it opens centred on where they are
+     * rather than on the room they have not reached yet.</p>
      */
     private static Set<PortalRoomTiling.Tile> occupiedTiles(List<ServerPlayer> players,
                                                             CarriageDims dims,
@@ -380,9 +381,7 @@ public final class PortalCarriageEvents {
         Set<PortalRoomTiling.Tile> occupied = new LinkedHashSet<>();
         for (ServerPlayer player : players) {
             if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
-            PortalRoomTiling.Tile tile =
-                structure.tileAt(dims, layout, player.getX(), player.getZ());
-            occupied.add(PortalRoomTiling.isLegal(tile) ? tile : PortalRoomTiling.Tile.BASE);
+            occupied.add(structure.tileAt(dims, layout, player.getX(), player.getZ()));
         }
         return occupied;
     }

@@ -34,11 +34,12 @@ import java.util.Objects;
  * picks it up.</p>
  *
  * <p><b>{@link #tiling} grows and shrinks; {@link #spanX} never does.</b> The endless modes append
- * copies of the room around the base one, but only sideways in Z and — off the corridor row — along
- * X, never in line with the twins. So {@link #exitOrigin} and {@link #spanX} stay exactly what the
- * room's own length makes them, which is what keeps the EXIT frame under a player's feet still. The
- * tiled copies widen {@link #tiledMinX}..{@link #tiledMaxZ} instead, and the occupancy box and the
- * erase sweep read those.</p>
+ * copies of the room around the base one on both horizontal axes, including straight through the row
+ * the twins stand in — the room clears that space and the corridor is stamped back into it. So
+ * {@link #exitOrigin} and {@link #spanX} stay exactly what the room's own length makes them, which is
+ * what keeps the EXIT frame under a player's feet still. The tiled copies widen
+ * {@link #tiledMinX}..{@link #tiledMaxZ} instead, and the occupancy box and the erase sweep read
+ * those.</p>
  *
  * @param origin   world position of the entry twin's minimum corner — the structure's origin
  * @param roomName the {@code portal_room} variant this pair rolled
@@ -92,8 +93,9 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
     /**
      * Total X span from the entry twin's origin to the far end of the exit twin.
      *
-     * <p>Deliberately blind to {@link #tiling}: this is the corridor span, and the whole point of
-     * tiling off the corridor row is that appending a copy of the room does not move a twin.</p>
+     * <p>Deliberately blind to {@link #tiling}. Copies of the room are laid through the corridors and
+     * the corridors written back over them, so however far the room repeats, the twins do not move —
+     * which is what keeps every reader of this figure, {@code PortalFrames} included, agreeing.</p>
      */
     public int spanX(CarriageDims dims) {
         return exitTwinOffsetX(dims) + dims.length();

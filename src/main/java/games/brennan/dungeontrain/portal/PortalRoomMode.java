@@ -28,16 +28,17 @@ import java.util.Locale;
  * would reach into the lane above, which is the collision the lanes exist to prevent. Keeping the
  * grid horizontal makes that safe by construction rather than by a check that could drift.</p>
  *
- * <h2>Why the corridor row does not tile along X</h2>
- * <p>Along X the base room is bookended by the two twin corridors and their plugs — a tile at
- * {@code (±1, 0)} would land on top of a twin, and the twin is exactly what the player walks through
- * to be swapped back onto the train. Pushing the exit twin out to the far edge of the tiled region
- * instead is what {@link PortalStructure}'s javadoc warns against: {@code spanX} is the single source
- * for where the exit twin is stamped, how far {@code eraseTwin} reaches, the occupancy box, <b>and
- * the origin the EXIT role's {@code PortalFrames} maps into</b>. Growing it per appended tile would
- * move the frame a player is standing in, under them, every time a tile appended. So the corridor row
- * holds tile 0 only; step one room sideways in Z and X is free in every direction. See
- * {@link PortalRoomTiling}.</p>
+ * <h2>The corridors sit inside the endless space, not at its edge</h2>
+ * <p>Copies of the room tile straight through the row the two twin corridors stand in. The room
+ * clears that space and the corridor is stamped back into it afterwards — see
+ * {@code PortalCarriageBuilder.stampCorridors} — so the way back to the train is an object standing
+ * in the endless room rather than a wall bounding it.</p>
+ *
+ * <p>What must not happen is the tiling moving a twin. {@link PortalStructure}'s javadoc is the
+ * warning: {@code spanX} is the single source for where the exit twin is stamped, how far
+ * {@code eraseTwin} reaches, the occupancy box, <b>and the origin the EXIT role's
+ * {@code PortalFrames} maps into</b>. It stays the corridor span and is blind to the tiling, so no
+ * number of copies can shift the frame a player is standing in, under them.</p>
  */
 public enum PortalRoomMode {
 
