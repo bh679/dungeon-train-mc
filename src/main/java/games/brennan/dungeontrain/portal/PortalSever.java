@@ -80,7 +80,7 @@ public final class PortalSever {
 
         // Both copies: whoever is in the corridor should hear and see it wherever they are standing,
         // and the two are in completely different parts of the world.
-        PortalSeverEffects.begin(level, entry, local, carriagePos, twinPos);
+        PortalSeverEffects.play(level, carriagePos, twinPos);
 
         LOGGER.info("[DungeonTrain] Portal connection severed: carriage={} role={} shell broken at "
                 + "local ({},{},{}) — world {}, twin {}. The way IN is closed; the way out stays open.",

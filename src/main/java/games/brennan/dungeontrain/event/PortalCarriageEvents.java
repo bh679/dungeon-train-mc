@@ -21,7 +21,6 @@ import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomTiler;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalSever;
-import games.brennan.dungeontrain.portal.PortalSeverEffects;
 import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
 import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
@@ -248,17 +247,12 @@ public final class PortalCarriageEvents {
         LAST_FOG.clear();
         LAST_TRAIN_AUDIO.clear();
         COOLDOWNS.clear();
-        PortalSeverEffects.clear();
     }
 
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
-
-        // Above the early-outs below: a hole left smoking should finish smoking even if the last
-        // player logged out, or portals were switched off, in the seconds after it was made.
-        PortalSeverEffects.tick(level);
 
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;

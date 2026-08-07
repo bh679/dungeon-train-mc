@@ -123,11 +123,6 @@ public final class PortalPairIndex {
         return ENTRIES.values();
     }
 
-    /** The live pairing for a carriage index, or {@code null} if it has gone out of range. */
-    public static Entry byCarriage(int carriageIndex) {
-        return ENTRIES.get(carriageIndex);
-    }
-
     /** The corridor containing this shipyard position in the given plot, or {@code null}. */
     public static Entry findByPlotPos(LevelPlot plot, int x, int y, int z) {
         for (Entry entry : ENTRIES.values()) {
