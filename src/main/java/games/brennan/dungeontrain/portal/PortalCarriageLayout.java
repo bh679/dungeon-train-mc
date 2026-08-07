@@ -163,6 +163,60 @@ public record PortalCarriageLayout(int length, int height, int width) {
     }
 
     /**
+     * True if a local cell is part of the corridor's <b>exterior shell</b> — the floor, the ceiling,
+     * either side wall, or a solid part of an end plane.
+     *
+     * <p>This is the surface that separates the corridor from whatever is outside it, and a hole in
+     * it is what {@link PortalSever} treats as fatal to the illusion: on the train side the hole
+     * shows open sky beside a moving carriage, and in the twin it shows the pocket room's plug. The
+     * two copies then visibly differ.</p>
+     *
+     * <p>Three things inside the box are deliberately <b>not</b> shell, because breaking them opens
+     * nothing to the outside:</p>
+     * <ul>
+     *   <li>the <b>crossing-zone lanterns</b>, which sit in the floor line but read as a fitting;</li>
+     *   <li>the <b>baffles</b>, which are free-standing pillars in the interior;</li>
+     *   <li>the <b>doorway column</b> of each end plane, so a door — including the dead dummy one —
+     *       can still be broken the way any door can.</li>
+     * </ul>
+     *
+     * <p>{@code PortalCarriageBuilder.stateAt} is written against this, so the shape has one
+     * definition rather than two free to drift apart.</p>
+     */
+    public boolean isShellCell(int dx, int dy, int dz) {
+        // The lantern is tested first because it sits ON the floor line, which the next test claims.
+        if (dy == floorY() && isCrossingZone(dx) && dz >= interiorMinZ() && dz <= interiorMaxZ()) {
+            return false;
+        }
+        if (dy == floorY() || dy == ceilingY()) return true;
+        if (dz < interiorMinZ() || dz > interiorMaxZ()) return true;
+        if (dx == nearDoorX() || dx == farDoorX()) return !isDoorwayCell(dy, dz);
+        return false;
+    }
+
+    /** The two-block column an end plane leaves open for its door. */
+    public boolean isDoorwayCell(int dy, int dz) {
+        return dz == doorZ() && dy <= floorY() + 2;
+    }
+
+    /**
+     * True if a local X lies on the <b>twin</b> side of the midpoint for a corridor in this role —
+     * the half a player standing there would have been teleported out of.
+     *
+     * <p>The same side rule {@link PortalFrames#requiredMove} applies, and mirrored for the same
+     * reason: an {@link PortalCarriageRole#ENTRY} corridor puts the train on its near half, an
+     * {@link PortalCarriageRole#EXIT} corridor on its far half.</p>
+     *
+     * <p><b>No {@link PortalFrames#SWAP_HYSTERESIS} here.</b> That band exists to absorb the
+     * positional jitter of a player riding a Sable carriage. A block cell does not jitter, so the
+     * plain midpoint is the honest line — and widening it would leave a band of shell either side of
+     * the midpoint that could be mined with no consequence.</p>
+     */
+    public boolean isTwinSideLocalX(double localX, PortalCarriageRole role) {
+        return role == PortalCarriageRole.ENTRY ? localX > midX() : localX < midX();
+    }
+
+    /**
      * The corridor interior as a box in local coordinates, pads included.
      *
      * <p>Exists so the volume can be handed to a spatial query — the puppet pass asks the level for

@@ -1013,6 +1013,7 @@ public final class VariantOverlayRenderer {
         java.util.List<EditorTypeMenusPacket.Menu> baseMenus,
         ServerPlayer player, CarriageDims dims, EditorCategory category
     ) {
+        if (category == EditorCategory.PORTALS) return appendPortalRoomSubVariants(baseMenus, player, dims);
         if (category != EditorCategory.CONTENTS) return baseMenus;
         CarriageContents active = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
         if (active == null) return baseMenus;
@@ -1077,6 +1078,71 @@ public final class VariantOverlayRenderer {
         BlockPos perPlotAnchor = null;
         for (EditorPlotLabels.Label l : EditorPlotLabels.forCategory(category, dims)) {
             if (active.id().equals(l.modelId())) {
+                perPlotAnchor = l.worldPos();
+                break;
+            }
+        }
+        if (perPlotAnchor == null) return baseMenus;
+
+        java.util.List<EditorTypeMenusPacket.Menu> out = new java.util.ArrayList<>(baseMenus.size() + 1);
+        out.addAll(baseMenus);
+        out.add(new EditorTypeMenusPacket.Menu(
+            perPlotAnchor, SUB_VARIANTS_TYPE_NAME, rows, true));
+        return out;
+    }
+
+    /**
+     * The Sub-Variants companion for the portal room plot the player is standing in — the same
+     * panel the CONTENTS plots get, one template layer up.
+     *
+     * <p>Rows carry the <b>room name</b> as their {@code modelId} rather than the kind tag every
+     * other PORTALS row uses. That is what lets the client read the parent off row 0 exactly as it
+     * does for contents, and it costs nothing here because these rows only ever dispatch the two
+     * commands that take names: teleport (which reads {@code modelName}) and the group weight nudge
+     * (which the input handler routes by category).</p>
+     */
+    private static java.util.List<EditorTypeMenusPacket.Menu> appendPortalRoomSubVariants(
+        java.util.List<EditorTypeMenusPacket.Menu> baseMenus, ServerPlayer player, CarriageDims dims
+    ) {
+        games.brennan.dungeontrain.track.variant.TrackKind kind =
+            games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM;
+        String active = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        if (active == null) return baseMenus;
+
+        // Standing inside a sub-variant shows its parent's pool, so the panel reads the same from
+        // any plot in the group.
+        String parent = TrackVariantGroupStore.exists(kind, active)
+            ? active
+            : TrackVariantGroupStore.findParentOf(kind, active).orElse(active);
+
+        Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> groupOpt =
+            TrackVariantGroupStore.get(kind, parent);
+        boolean hasMembers = groupOpt.isPresent() && !groupOpt.get().isEmpty();
+        // With no members to compete against, selfWeight decides nothing — hide the cell rather
+        // than offer a dial that does nothing.
+        int selfRowWeight = hasMembers
+            ? groupOpt.get().selfWeight()
+            : games.brennan.dungeontrain.net.EditorPlotLabelsPacket.NO_WEIGHT;
+
+        String cat = EditorCategory.PORTALS.name();
+        List<EditorTypeMenusPacket.Variant> rows = new java.util.ArrayList<>();
+        EditorPlotLabels.Provenance parentProv = EditorPlotLabels.provenanceOf(
+            games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, parent));
+        rows.add(new EditorTypeMenusPacket.Variant(
+            parent + " (default)", selfRowWeight,
+            cat, parent, parent, parentProv.isUser(), parentProv.isImported()));
+        if (hasMembers) {
+            for (var m : groupOpt.get().members()) {
+                EditorPlotLabels.Provenance prov = EditorPlotLabels.provenanceOf(
+                    games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, m.id()));
+                rows.add(new EditorTypeMenusPacket.Variant(
+                    m.id(), m.weight(), cat, m.id(), m.id(), prov.isUser(), prov.isImported()));
+            }
+        }
+
+        BlockPos perPlotAnchor = null;
+        for (EditorPlotLabels.Label l : EditorPlotLabels.forCategory(EditorCategory.PORTALS, dims)) {
+            if (active.equals(l.modelName())) {
                 perPlotAnchor = l.worldPos();
                 break;
             }

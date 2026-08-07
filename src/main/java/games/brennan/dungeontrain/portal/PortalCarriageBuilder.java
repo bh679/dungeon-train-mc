@@ -268,19 +268,19 @@ public final class PortalCarriageBuilder {
      * which is what makes them identical by construction rather than by inspection.</p>
      */
     public static BlockState stateAt(PortalCarriageLayout layout, int dx, int dy, int dz) {
-        boolean shellCell = dy == layout.floorY() || dy == layout.ceilingY()
-            || dz < layout.interiorMinZ() || dz > layout.interiorMaxZ();
-
         if (dy == layout.floorY() && layout.isCrossingZone(dx)
             && dz >= layout.interiorMinZ() && dz <= layout.interiorMaxZ()) {
             return CROSSING_LIGHT;
         }
-        if (shellCell) return SHELL;
 
-        // Door planes: the cross-section is walled off apart from the doorway column.
+        // The exterior surface — floor, ceiling, side walls, and the solid part of each end plane.
+        // Defined on the layout because PortalSever has to ask the same question of a broken block,
+        // and two copies of this test would be free to disagree about what "outside" means.
+        if (layout.isShellCell(dx, dy, dz)) return SHELL;
+
+        // What survives of an end plane once the shell has taken it is the doorway column itself.
         if (dx == layout.nearDoorX() || dx == layout.farDoorX()) {
-            boolean doorway = dz == layout.doorZ() && dy <= layout.floorY() + 2;
-            return doorway ? doorState(dy == layout.floorY() + 1) : SHELL;
+            return doorState(dy == layout.floorY() + 1);
         }
 
         // Baffles: both on the same side, so no straight line survives from either doorway to the
