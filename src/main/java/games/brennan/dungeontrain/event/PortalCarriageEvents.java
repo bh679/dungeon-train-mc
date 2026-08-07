@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageLayout;
 import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
+import games.brennan.dungeontrain.portal.PortalClear;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.portal.PortalEditMirror;
 import games.brennan.dungeontrain.portal.PortalFrames;
@@ -714,6 +715,10 @@ public final class PortalCarriageEvents {
         int carried = 0;
         for (Entity entity : level.getEntities((Entity) null, structureBox(dims, from), e -> true)) {
             if (entity instanceof ServerPlayer) continue;
+            // Loose items are not occupants — they are what a room's containers used to spill every
+            // time one was erased. Carrying them meant a world's worth of them followed the rooms
+            // around forever; the erase discards them instead (see PortalClear).
+            if (PortalClear.isLoose(entity)) continue;
 
             Vec3 velocity = entity.getDeltaMovement();
             entity.teleportTo(entity.getX() + dx, entity.getY() + dy, entity.getZ() + dz);

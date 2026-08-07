@@ -508,17 +508,7 @@ public final class PortalCarriageBuilder {
      * only the cost does.</p>
      */
     public static void eraseTwin(ServerLevel level, PortalStructure structure, CarriageDims dims) {
-        BoundingBox box = footprintOf(level, structure, dims);
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        BlockState air = Blocks.AIR.defaultBlockState();
-
-        for (int x = box.minX(); x <= box.maxX(); x++) {
-            for (int z = box.minZ(); z <= box.maxZ(); z++) {
-                for (int y = box.minY(); y <= box.maxY(); y++) {
-                    level.setBlock(pos.set(x, y, z), air, Block.UPDATE_ALL);
-                }
-            }
-        }
+        PortalClear.clearBox(level, footprintOf(level, structure, dims), PortalCorridorMask.NONE);
     }
 
     /**
@@ -674,7 +664,7 @@ public final class PortalCarriageBuilder {
         // Clear first, for the same reason a twin does: the room lands in solid rock at the world
         // floor, and a template stamp only writes its own cells — anything the author left as
         // STRUCTURE_VOID would otherwise show deepslate through the wall.
-        clearRoomBox(level, roomOrigin, size, mask);
+        clearRoomBox(level, roomOrigin, size, mask, relight);
         clearIntruders(level, roomOrigin, size);
         plugFluidsAround(level, roomOrigin, size);
 
@@ -792,20 +782,24 @@ public final class PortalCarriageBuilder {
     }
 
     /** Clear a room-sized box to air, leaving whatever {@code mask} covers untouched. */
+    /**
+     * Empty the room's box before it is stamped.
+     *
+     * <p>{@code relight} follows the stamp's own flag rather than being decided here: a twin in the
+     * basement is under the bedrock where nothing sees the light, but an editor plot stands under
+     * open sky, and a cell cleared there has to stop occluding skylight. See {@link PortalClear}.</p>
+     */
     private static void clearRoomBox(ServerLevel level, BlockPos origin, Vec3i size,
-                                     PortalCorridorMask mask) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        BlockState air = Blocks.AIR.defaultBlockState();
-        for (int dx = 0; dx < size.getX(); dx++) {
-            for (int dz = 0; dz < size.getZ(); dz++) {
-                for (int dy = 0; dy < size.getY(); dy++) {
-                    int x = origin.getX() + dx;
-                    int y = origin.getY() + dy;
-                    int z = origin.getZ() + dz;
-                    if (mask.covers(x, y, z)) continue;
-                    level.setBlock(pos.set(x, y, z), air, Block.UPDATE_ALL);
-                }
-            }
+                                     PortalCorridorMask mask, boolean relight) {
+        BoundingBox box = new BoundingBox(
+            origin.getX(), origin.getY(), origin.getZ(),
+            origin.getX() + size.getX() - 1,
+            origin.getY() + size.getY() - 1,
+            origin.getZ() + size.getZ() - 1);
+        if (relight) {
+            PortalClear.clearBoxRelit(level, box, mask);
+        } else {
+            PortalClear.clearBox(level, box, mask);
         }
     }
 
