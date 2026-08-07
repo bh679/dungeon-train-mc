@@ -6350,9 +6350,9 @@
         "Editing a spawn gate by command on a Stage-linked template now warns that the inline gate won't take effect until you detach the template to Custom."
       ],
       "date": "2026-08-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.547.0",
+      "released_at": "2026-08-07T08:05:42Z"
     },
     {
       "id": "payment-pricing-tiers",
@@ -6368,9 +6368,9 @@
       ],
       "pr": 891,
       "date": "2026-08-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.547.0",
+      "released_at": "2026-08-07T08:05:42Z"
     }
   ]
 }
