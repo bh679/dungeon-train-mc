@@ -504,14 +504,19 @@ public final class EditorTypeMenuInputHandler {
             : first.modelId();
 
         // Sub-variants companion has a special typeName marker; route + New to
-        // the CONTENTS_SUB_VARIANT picker (single-row name TypeArg) with the
-        // parent id (= first row's modelId, the "default" sub-variant) as
-        // currentId.
+        // the CONTENTS_SUB_VARIANT picker with the parent id (= first row's
+        // modelId, the "default" sub-variant) as currentId.
+        //
+        // The parent and the clone source are deliberately separate: the command must target the
+        // group's root, because a sub-variant cannot itself be a parent, but "Current" should copy
+        // the plot the author is actually standing in — which is a sibling sub-variant whenever they
+        // opened this from inside one.
         if (games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
                 .equals(menu.typeName())) {
-            LOGGER.debug("[DungeonTrain] EditorTypeMenu New: sub-variant of parent '{}'", first.modelId());
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu New: sub-variant of parent '{}' (source '{}')",
+                first.modelId(), currentId);
             CommandMenuState.openAt(new NewSourcePickerScreen(
-                NewSourcePickerScreen.Category.CONTENTS_SUB_VARIANT, null, first.modelId()));
+                NewSourcePickerScreen.Category.CONTENTS_SUB_VARIANT, null, first.modelId(), currentId));
             return;
         }
 

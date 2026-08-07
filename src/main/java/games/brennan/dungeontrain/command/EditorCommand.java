@@ -564,9 +564,19 @@ public final class EditorCommand {
                         .then(Commands.argument("parent", StringArgumentType.word())
                             .suggests(CONTENTS_SUGGESTIONS)
                             .then(Commands.argument("name", StringArgumentType.word())
+                                // Bare form clones the parent — a sub-variant is a variation on it,
+                                // so an empty box is the wrong default. Same [source] shape as
+                                // `contents new <name> [source]` above.
                                 .executes(ctx -> runContentsGroupNew(ctx.getSource(),
                                     StringArgumentType.getString(ctx, "parent"),
-                                    StringArgumentType.getString(ctx, "name"))))))
+                                    StringArgumentType.getString(ctx, "name"),
+                                    /*sourceRaw*/ null))
+                                .then(Commands.argument("source", StringArgumentType.word())
+                                    .suggests(CONTENTS_SUGGESTIONS)
+                                    .executes(ctx -> runContentsGroupNew(ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "parent"),
+                                        StringArgumentType.getString(ctx, "name"),
+                                        StringArgumentType.getString(ctx, "source")))))))
                     .then(Commands.literal("add")
                         .then(Commands.argument("parent", StringArgumentType.word())
                             .suggests(CONTENTS_SUGGESTIONS)
@@ -2107,12 +2117,18 @@ public final class EditorCommand {
     }
 
     /**
-     * {@code /dt editor contents group new <parent> <name>} — atomic
+     * {@code /dt editor contents group new <parent> <name> [source]} — atomic
      * create + add-to-group + teleport. Used by the editor's sub-variant
      * menu "+ New" button: one click → one keyboard prompt → fully wired
      * sub-variant ready to author.
+     *
+     * <p>{@code source} is {@code blank} for an empty template, or the id of a contents to clone.
+     * Omitted, it clones {@code parent}: a sub-variant is a variation on its parent, so starting
+     * from an empty box is the wrong default — and for something like the portal corridor, whose
+     * interior is hundreds of blocks of authored geometry, close to useless.</p>
      */
-    private static int runContentsGroupNew(CommandSourceStack source, String parentRaw, String rawName) {
+    private static int runContentsGroupNew(CommandSourceStack source, String parentRaw, String rawName,
+                                           String sourceRaw) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
 
@@ -2153,10 +2169,23 @@ public final class EditorCommand {
             return 0;
         }
 
+        // 2b. Resolve the source to clone from. Omitted means the parent; "blank" means none.
+        boolean blank = "blank".equalsIgnoreCase(sourceRaw);
+        CarriageContents cloneFrom = null;
+        if (!blank) {
+            cloneFrom = (sourceRaw == null) ? parent : parseContents(source, sourceRaw);
+            if (cloneFrom == null) return 0;
+        }
+
         try {
-            // 3. Create blank contents and register it.
+            // 3. Create the contents and register it — cloned from the source, or blank.
+            //    Either way it is sized as the PARENT: the target is not a group member yet, so
+            //    asking for its own box would still answer "carriage" and capture a template the
+            //    size gate then rejects on every load.
             CarriageContents.Custom target = (CarriageContents.Custom) CarriageContents.custom(name);
-            var origin = CarriageContentsEditor.createBlank(player, target);
+            var origin = blank
+                ? CarriageContentsEditor.createBlank(player, target, parent)
+                : CarriageContentsEditor.duplicate(player, cloneFrom, target);
 
             // 4. Append to parent's group (creates the group sidecar if missing).
             CarriageContentsGroup existing = CarriageContentsGroupStore.get(parent.id())
@@ -2169,9 +2198,10 @@ public final class EditorCommand {
             // because the plot layout is flattened-by-group).
             CarriageContentsEditor.enter(player, target, null);
 
+            String from = blank ? "blank" : "cloned from '" + cloneFrom.id() + "'";
             source.sendSuccess(() -> Component.literal(
                 "Editor: created sub-variant '" + target.id() + "' of '" + parent.id()
-                    + "' at plot " + origin + " (" + updated.members().size()
+                    + "' (" + from + ") at plot " + origin + " (" + updated.members().size()
                     + " member" + (updated.members().size() == 1 ? "" : "s") + " in group)."
             ).withStyle(ChatFormatting.GREEN), true);
             return 1;

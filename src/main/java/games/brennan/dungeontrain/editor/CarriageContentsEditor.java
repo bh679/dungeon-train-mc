@@ -438,6 +438,22 @@ public final class CarriageContentsEditor {
      * interior from scratch.
      */
     public static BlockPos createBlank(ServerPlayer player, CarriageContents.Custom target) throws IOException {
+        return createBlank(player, target, /*boxSource*/ null);
+    }
+
+    /**
+     * As above, but sized and shelled as {@code boxSource} rather than as {@code target}.
+     *
+     * <p><b>Why the box cannot come from {@code target}.</b> A brand-new sub-variant is not yet a
+     * member of its parent's group at this point, so {@link #plotDims} still answers "carriage" for
+     * it — and a blank captured at a carriage interior is rejected by the size gate on every load
+     * afterwards. Saving the group membership first would fix the lookup but leave a dangling member
+     * if this then threw, so the caller names the source instead and the dependency stays visible.</p>
+     *
+     * <p>Pass {@code null} for an ordinary top-level contents, which is its own box.</p>
+     */
+    public static BlockPos createBlank(ServerPlayer player, CarriageContents.Custom target,
+                                       CarriageContents boxSource) throws IOException {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
@@ -453,14 +469,17 @@ public final class CarriageContentsEditor {
             throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
         }
 
-        CarriagePlacer.eraseAt(overworld, targetOrigin, dims);
-        CarriageContentsPlacer.eraseAt(overworld, targetOrigin, dims);
-        CarriagePlacer.placeAt(overworld, targetOrigin, DEFAULT_SHELL, dims);
+        CarriageContents sizedAs = boxSource != null ? boxSource : target;
+        CarriageDims box = plotDims(sizedAs, dims);
 
-        StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, dims);
+        CarriagePlacer.eraseAt(overworld, targetOrigin, box);
+        CarriageContentsPlacer.eraseAt(overworld, targetOrigin, box);
+        CarriagePlacer.placeAt(overworld, targetOrigin, shellFor(sizedAs), dims);
+
+        StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, box);
         CarriageContentsStore.save(target, template);
 
-        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
+        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, box);
 
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
             .trigger(player, "made_contents");
