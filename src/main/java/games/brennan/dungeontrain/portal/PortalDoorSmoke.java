@@ -24,6 +24,11 @@ package games.brennan.dungeontrain.portal;
  * It is atmosphere — a hint that the far side is not empty — and it must not fog up the doorway the
  * player is walking through.</p>
  *
+ * <p><b>Out of the door, not up from it.</b> The drift is horizontal, and the particle it feeds is
+ * chosen for zero gravity ({@link PortalDoorSmokeEmitter}), so the smoke crawls out into the corridor
+ * and settles instead of climbing. Rising smoke reads as a fire behind the door; this should read as
+ * something heavy leaking past it.</p>
+ *
  * <p>No Minecraft types, so it unit-tests without a NeoForge bootstrap.</p>
  *
  * @param layout the corridor layout both copies were stamped from
@@ -49,20 +54,32 @@ public record PortalDoorSmoke(PortalCarriageLayout layout, PortalCarriageRole ro
     /** Height above the floor of the seep under the door — low enough to look like it is creeping out. */
     private static final double UNDER_DOOR_Y = 1.06;
 
-    /** Height of the two seeps at the sides of the frame. */
-    private static final double FRAME_Y = 1.85;
+    /** Height of the two seeps at the sides of the frame — low, around the handle rather than the lintel. */
+    private static final double FRAME_Y = 1.5;
 
     /** How far off the doorway's centre line the frame seeps sit. Inside a one-block doorway. */
     private static final double FRAME_Z = 0.34;
 
-    /** Drift into the corridor, in blocks per tick. Roughly a block every four seconds. */
-    private static final double DRIFT = 0.012;
+    /**
+     * Drift into the corridor, in blocks per tick, at the moment of release.
+     *
+     * <p>It decays: the particle this feeds carries friction, so the seep slows as it goes and comes
+     * to rest something like a block out from the door. That deceleration is most of what makes it
+     * look like smoke leaking under a door rather than being blown out of one.</p>
+     */
+    private static final double DRIFT = 0.04;
 
-    /** A touch of lift, so the smoke rolls rather than sliding flat along the floor. */
-    private static final double LIFT = 0.004;
+    /**
+     * A trace of sink, so the smoke settles toward the floor as it slows.
+     *
+     * <p>Deliberately not lift. Smoke that climbs reads as a fire on the other side of the door;
+     * smoke that spreads and lies low reads as something heavier getting past it, which is the
+     * impression the portal wants.</p>
+     */
+    private static final double SINK = -0.004;
 
     /** Sideways spill, which keeps the three seeps from reading as one straight line. */
-    private static final double SPILL = 0.003;
+    private static final double SPILL = 0.006;
 
     /**
      * One particle: a corridor-local position and the velocity it leaves with, both in blocks
@@ -110,6 +127,6 @@ public record PortalDoorSmoke(PortalCarriageLayout layout, PortalCarriageRole ro
 
         return new Emission(
             x, y, zCentre + side * FRAME_Z,
-            into * DRIFT, LIFT, side * SPILL);
+            into * DRIFT, SINK, side * SPILL);
     }
 }

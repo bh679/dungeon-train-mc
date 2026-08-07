@@ -67,16 +67,25 @@ final class PortalDoorSmokeTest {
         }
     }
 
+    /**
+     * Both halves of "comes out of the door, and does not go up". The vertical one is the easier of
+     * the two to lose: it is one sign, and getting it wrong turns a leak into a chimney.
+     */
     @Test
-    @DisplayName("the drift carries the smoke into the corridor, never into the door")
-    void driftsIntoTheCorridor() {
+    @DisplayName("the drift carries the smoke out into the corridor, and never upward")
+    void driftsOutAndNotUp() {
         for (PortalCarriageRole role : PortalCarriageRole.values()) {
             PortalDoorSmoke s = smoke(role);
-            PortalDoorSmoke.Emission e = s.emissionOn(0L);
-            assertNotNull(e);
-            assertTrue(e.vx() * s.intoCorridor() > 0,
-                "the seep drifts back through the door for " + role);
-            assertTrue(e.vy() > 0, "the seep should lift a little rather than slide flat");
+            for (long tick = 0; tick < 16; tick++) {
+                PortalDoorSmoke.Emission e = s.emissionOn(tick);
+                if (e == null) continue;
+                assertTrue(e.vx() * s.intoCorridor() > 0,
+                    "the seep drifts back through the door at tick " + tick + " for " + role);
+                assertTrue(e.vy() <= 0,
+                    "the seep rises at tick " + tick + " for " + role + " — it should settle, not climb");
+                assertTrue(Math.abs(e.vx()) > Math.abs(e.vy()),
+                    "the seep should travel mainly outward, not vertically, for " + role);
+            }
         }
     }
 
