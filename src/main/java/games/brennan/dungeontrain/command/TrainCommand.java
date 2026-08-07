@@ -9,6 +9,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.event.CinematicIntroService;
+import games.brennan.dungeontrain.event.DtpPlacementService;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
@@ -23,7 +25,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.phys.Vec3;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import org.joml.Vector3d;
 import org.slf4j.Logger;
@@ -37,8 +38,11 @@ import java.util.UUID;
  * Registers OP-only (permission level 2) commands:
  *   - {@code /dungeontrain spawn [count]} — <b>the delete-and-reset command</b>.
  *     Deletes the world's current train outright, then spawns a fresh one at the
- *     configured speed with {@code count} carriages (default from config), 10
- *     blocks ahead of where the player is looking. Because it starts a new run it
+ *     configured speed with {@code count} carriages (default from config). The new
+ *     train is always seeded <b>on the track</b> — at the corridor's Y and Z, at the
+ *     player's X — never at the player's own position, because the live
+ *     {@code TrackGeometry} is derived from that origin. The player is lifted clear
+ *     of the assembly footprint and set down on the flatbed. Because it starts a new run it
  *     also clears the difficulty travelled-offset (back to automatic scaling) and
  *     the world's already-placed shared-carriage exclude-list, so community builds
  *     the old train used can appear again — see {@link #resetRunState}. The
@@ -60,7 +64,17 @@ import java.util.UUID;
 public final class TrainCommand {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final double SPAWN_DISTANCE = 10.0;
+
+    /**
+     * Vertical clearance above {@code trainY} for the pre-spawn holding spot — comfortably above
+     * {@link CarriageDims#MAX_HEIGHT} (24) so the player can never be inside the assembly footprint.
+     * Mirrors {@code DtpCommand.HOLD_Y_MARGIN}; kept private to each command rather than shared,
+     * since two ints don't justify a constants class.
+     */
+    private static final int HOLD_Y_MARGIN = 48;
+
+    /** Safety margin below the train level's build-height ceiling for the holding spot. See {@code DtpCommand}. */
+    private static final int CEILING_MARGIN = 5;
 
     private TrainCommand() {}
 
@@ -128,35 +142,69 @@ public final class TrainCommand {
             return 0;
         }
 
-        ServerLevel level = source.getLevel();
-        Vec3 look = player.getLookAngle();
-        Vec3 spawn = player.position().add(look.x * SPAWN_DISTANCE, 0.0, look.z * SPAWN_DISTANCE);
-        BlockPos origin = BlockPos.containing(spawn.x, spawn.y, spawn.z);
-        Vec3 pp = player.position();
-        Vector3d spawnerWorldPos = new Vector3d(pp.x, pp.y, pp.z);
+        // Operate in the player's CURRENT dimension, not the world's nominal starting
+        // dimension — TrainCarriageAppender.onLevelTick runs independently per loaded
+        // level, so each dimension maintains its own train once one exists there.
+        // Same reasoning as /dtp.
+        ServerLevel level = player.serverLevel();
+
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(source.getServer().overworld());
+        CarriageDims dims = data.dims();
+        int trainY = data.getTrainY();
+
+        // The train ALWAYS goes on the track. Only X comes from the player — the
+        // corridor runs along +X, so the player's Y and Z are meaningless here and
+        // actively harmful: TrainAssembler.spawnCore rebuilds the train's live
+        // TrackGeometry out of origin.y/origin.z, so a player-derived origin would
+        // permanently desynchronise this train's corridor from the worldgen one
+        // (bed at trainY-2, rails at trainY-1, Z spanning 0..width-1) and the
+        // appender would lay track at the wrong height and offset for its whole life.
+        //
+        // origin.z = 0 is the corridor's trackZMin, NOT its centreline — the
+        // centreline (trackCenterZ) is where PLAYERS stand, half a carriage away.
+        // Mixing the two puts the train beside the rails. Cf. /dtp, which likewise
+        // uses Z=0 for the origin and trackCenterZ()+0.5 for the player.
+        double spawnX = player.getX();
+        BlockPos origin = new BlockPos((int) Math.floor(spawnX), trainY, 0);
+        Vector3d spawnerWorldPos = new Vector3d(spawnX, trainY, 0); // only .x is read, to pick the seed pIdx
 
         double speed = DungeonTrainConfig.getSpeed();
         Vector3d velocity = new Vector3d(speed, 0.0, 0.0);
 
-        LOGGER.info("[DungeonTrain] /dungeontrain spawn {} by {} at origin {} speed {}",
+        // Lift the player clear before anything assembles: spawnGroup converts every
+        // world block in the footprint into ship blocks and drags along whatever is
+        // caught inside — the long-standing /dungeontrain spawn bug (issue #22).
+        // Hold them in the same X/Z column as the eventual flatbed so the client
+        // isn't loading two separate regions.
+        int holdY = Math.min(level.getMaxBuildHeight() - CEILING_MARGIN, trainY + HOLD_Y_MARGIN);
+        double holdZ = TrackGeometry.from(dims, trainY).trackCenterZ() + 0.5;
+        player.setInvulnerable(true);
+        player.teleportTo(level, spawnX, holdY, holdZ, player.getYRot(), player.getXRot());
+
+        LOGGER.info("[DungeonTrain] /dungeontrain spawn {} by {} at on-track origin {} speed {}",
             count, player.getName().getString(), origin, speed);
 
         try {
-            CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
             ManagedShip ship = TrainAssembler.spawnTrain(level, origin, velocity, count, spawnerWorldPos, dims);
             int lengthBlocks = count * dims.length();
             LOGGER.info("[DungeonTrain] Spawned train ship id={} carriages={} length={} blocks",
                 ship.id(), count, lengthBlocks);
             int forgotten = resetRunState(source.getServer());
+            // Drops the player onto the nearest flatbed once the fresh group's physics
+            // settle (canonicalPos is null the tick it's assembled) and clears the
+            // invulnerability set above.
+            DtpPlacementService.enqueue(player, level, spawnX);
             source.sendSuccess(() -> Component.literal(
                 "Spawned " + count + "-carriage train (ship id " + ship.id() + ", length "
-                    + lengthBlocks + " blocks) at " + origin + ", velocity +X " + speed + " m/s."
+                    + lengthBlocks + " blocks) on the track at X=" + origin.getX()
+                    + ", velocity +X " + speed + " m/s — you'll land on the flatbed once it settles."
                     + " The previous train was deleted; difficulty is back on automatic scaling and "
                     + forgotten + " remembered community carriage(s) can appear again."
             ), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] spawnTrain failed", t);
+            player.setInvulnerable(false); // else they're left invincible in the holding spot
             source.sendFailure(Component.literal(
                 "spawnTrain failed: " + t.getClass().getSimpleName() + ": " + t.getMessage()
             ).withStyle(ChatFormatting.RED));
