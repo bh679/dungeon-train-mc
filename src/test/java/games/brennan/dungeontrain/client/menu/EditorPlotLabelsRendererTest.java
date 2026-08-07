@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The panel's row walk.
@@ -225,6 +226,45 @@ class EditorPlotLabelsRendererTest {
         EditorPlotLabelsPacket.Entry outOfPlot = entry("PORTALS", false, 1, 21, 17, 9);
         assertNotEquals(EditorPlotLabelsRenderer.halfHeight(e),
             EditorPlotLabelsRenderer.halfHeight(outOfPlot));
+    }
+
+    // ---- panel width ----
+
+    /** Stand-in for a Font: every glyph six pixels wide, which is close enough to vanilla's. */
+    private static final java.util.function.ToIntFunction<String> SIX_PX = s -> s.length() * 6;
+
+    @Test
+    @DisplayName("The panel widens to fit the Walls label — a short name must not clip a long mode")
+    void panelFitsTheWallsLabel() {
+        // "default" is seven characters; "Walls: Endless Repetition" is twenty-five. Sizing off the
+        // name alone is what had the label spilling out past both edges of the backdrop.
+        EditorPlotLabelsPacket.Entry e = entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition");
+        double halfW = EditorPlotLabelsRenderer.halfWidth(e, SIX_PX);
+        double labelHalfW =
+            SIX_PX.applyAsInt(EditorPlotLabelsRenderer.modeLabel(e.roomMode())) * 0.025 / 2.0;
+        assertTrue(halfW >= labelHalfW, "panel half-width " + halfW + " clips a " + labelHalfW + " label");
+    }
+
+    @Test
+    @DisplayName("A panel with no Walls row keeps the width it always had")
+    void panelWithoutModeRowIsUnchanged() {
+        EditorPlotLabelsPacket.Entry withMode = entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition");
+        EditorPlotLabelsPacket.Entry without =
+            entry("PORTALS", true, 1, 11, 13, 7, EditorPlotLabelsPacket.NO_MODE);
+        assertEquals(EditorPlotLabelsRenderer.MIN_HALF_W,
+            EditorPlotLabelsRenderer.halfWidth(without, SIX_PX));
+        assertTrue(EditorPlotLabelsRenderer.halfWidth(withMode, SIX_PX)
+            > EditorPlotLabelsRenderer.halfWidth(without, SIX_PX));
+    }
+
+    @Test
+    @DisplayName("A name longer than the Walls label still wins — the widest row sets the width")
+    void longNameStillWidensThePanel() {
+        EditorPlotLabelsPacket.Entry longName = new EditorPlotLabelsPacket.Entry(
+            POS, "a_very_long_portal_room_variant_name_indeed", 1, "PORTALS",
+            "portal_room", "default", true, false, false, 11, 13, 7, "bedrock_lock");
+        double halfW = EditorPlotLabelsRenderer.halfWidth(longName, SIX_PX);
+        assertTrue(halfW >= SIX_PX.applyAsInt(longName.name()) * 0.025 / 2.0);
     }
 
     private static int indexOf(RowKind[] rows, RowKind kind) {

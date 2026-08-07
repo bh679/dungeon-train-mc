@@ -326,10 +326,32 @@ public final class EditorPlotLabelsRenderer {
     /**
      * Compute the half-width of {@code entry}'s panel in world units. Same
      * formula used by the renderer and the raycast so cell rectangles agree.
+     *
+     * <p><b>Every row that can outgrow the panel has to be measured here.</b> The width used to come
+     * from the name alone, on the assumption that {@link #MIN_HALF_W} covered every other row — true
+     * while the longest was "Contents". The Walls row broke it: a variant called {@code default} is
+     * six characters and "Walls: Endless Repetition" is twenty-five, so the label spilled out past
+     * both edges of the backdrop. Taking the widest of the two means the panel fits whatever it
+     * actually has to say, and the raycast reads the same figure so the cells stay under what is
+     * drawn.</p>
      */
     public static double halfWidth(EditorPlotLabelsPacket.Entry entry, Font font) {
-        double nameW = font.width(entry.name()) * TEXT_SCALE + 2 * PAD_X;
-        double w = Math.max(MIN_HALF_W * 2.0, nameW);
+        return halfWidth(entry, font::width);
+    }
+
+    /**
+     * {@link #halfWidth(EditorPlotLabelsPacket.Entry, Font)} against any text measurer.
+     *
+     * <p>Exists for the same reason {@code cellAt} has an explicit-halfWidth overload: the
+     * {@link Font} is the one part of this that cannot run headless, and the width rule is worth a
+     * test of its own now that more than the name feeds it.</p>
+     */
+    public static double halfWidth(EditorPlotLabelsPacket.Entry entry,
+                                   java.util.function.ToIntFunction<String> measure) {
+        double w = Math.max(MIN_HALF_W * 2.0, measure.applyAsInt(entry.name()) * TEXT_SCALE + 2 * PAD_X);
+        if (hasModeRow(entry)) {
+            w = Math.max(w, measure.applyAsInt(modeLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
+        }
         return w / 2.0;
     }
 

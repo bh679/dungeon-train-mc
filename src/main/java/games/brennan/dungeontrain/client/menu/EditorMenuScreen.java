@@ -22,6 +22,16 @@ import java.util.Locale;
  */
 public final class EditorMenuScreen implements MenuScreen {
 
+    /**
+     * Panel width while the Walls row is showing, in world units.
+     *
+     * <p>Sized for the longest mode label, "Walls: Endless Repetition", at
+     * {@link CommandMenuLayout#TEXT_SCALE} — the shared default fits about fifteen characters and
+     * that is twenty-five. A constant rather than a measurement because {@code entries()} has no
+     * {@code Font} to hand, and the set of modes is fixed and small.</p>
+     */
+    private static final double WALLS_ROW_PANEL_WIDTH = 2.6;
+
     @Override public String title() { return "Editor"; }
 
     @Override public List<CommandMenuEntry> entries() {
@@ -316,6 +326,24 @@ public final class EditorMenuScreen implements MenuScreen {
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.modeLabel(currentMode),
             "dungeontrain editor portals mode next");
+    }
+
+    /**
+     * Wider than the shared default while a Walls row is showing.
+     *
+     * <p>{@link CommandMenuLayout#PANEL_WIDTH} fits about fifteen characters, which covered every
+     * row this menu had until "Walls: Endless Repetition" — twenty-five — ran off both edges.
+     * Widening only this screen, and only while the row is present, keeps every other menu in the
+     * game at the width it was tuned at; the renderer and the raycast both read
+     * {@code CommandMenuState.panelWidth()}, so they cannot disagree about it.</p>
+     */
+    @Override
+    public double panelWidth() {
+        String mode = EditorStatusHudOverlay.roomMode();
+        if (mode == null || EditorStatusPacket.NO_MODE.equals(mode)) {
+            return CommandMenuLayout.PANEL_WIDTH;
+        }
+        return Math.max(CommandMenuLayout.PANEL_WIDTH, WALLS_ROW_PANEL_WIDTH);
     }
 
     static CommandMenuEntry sizeTripleFor(String axis, String label, int current) {

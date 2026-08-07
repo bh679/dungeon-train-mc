@@ -6,6 +6,15 @@
       "NETHER",
       "VOID",
       "END"
-    ]
+    ],
+    "mode": "bedrock_lock"
+  },
+  "endless": {
+    "weight": 1,
+    "mode": "endless_repetition"
+  },
+  "endless2": {
+    "weight": 1,
+    "mode": "endless_open"
   }
 }
