@@ -134,6 +134,15 @@ public final class EditorPlotTeleport {
     }
 
     /**
+     * {@link #groupMemberWeightCommandFor} for a portal room's sub-variants — same idea one template
+     * layer up, so the same companion panel drives both. {@code parentId == memberId} edits the
+     * parent's own share of the draw.
+     */
+    public static String portalRoomGroupWeightCommandFor(String parentId, String memberId, String dir) {
+        return "dungeontrain editor portals group set-weight " + parentId + " " + memberId + " " + dir;
+    }
+
+    /**
      * Build the slash command bumping a group <em>member</em>'s spawn-gate level bound
      * ({@code sub} = {@code minlevel}/{@code maxlevel}) in {@code dir} ({@code inc}/{@code dec}).
      * The member ({@code memberId}) lives in {@code parentId}'s {@code .group.json} sidecar. Mirrors

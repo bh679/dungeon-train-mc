@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 1,
+  "variants": [
+    {
+      "id": "default2",
+      "weight": 1
+    }
+  ]
+}

@@ -36,7 +36,15 @@ public final class NewSourcePickerScreen implements MenuScreen {
          * {@code editor contents group new <parent> <name> <source>} — atomic create +
          * add-to-group + teleport.
          */
-        CONTENTS_SUB_VARIANT
+        CONTENTS_SUB_VARIANT,
+        /**
+         * Sub-variant of a portal room. {@code currentId} carries the parent room. Single-name shape
+         * like {@link #PORTALS} — there is no source to choose, because the server always seeds the
+         * new room from its parent (falling back to the built-in room when the parent has nothing
+         * saved yet), which is the only sensible start for a variation on it. Dispatches
+         * {@code editor portals group new <parent> <name>}.
+         */
+        PORTAL_ROOM_SUB_VARIANT
     }
 
     private final Category category;
@@ -74,7 +82,7 @@ public final class NewSourcePickerScreen implements MenuScreen {
             // a single name TypeArg + Back below.
             case TRACKS -> "New " + kind + " — name";
             case PORTALS -> "New portal room — name";
-            case CONTENTS_SUB_VARIANT -> "New sub-variant of " + currentId + " — name";
+            case CONTENTS_SUB_VARIANT, PORTAL_ROOM_SUB_VARIANT -> "New sub-variant of " + currentId + " — name";
         };
     }
 
@@ -140,6 +148,12 @@ public final class NewSourcePickerScreen implements MenuScreen {
                     out.add(new CommandMenuEntry.TypeArg(
                         "Current (" + sourceId + ")", "name", prefix, sourceId));
                 }
+            }
+            case PORTAL_ROOM_SUB_VARIANT -> {
+                // Single row: the server seeds the new room from its parent, so there is nothing to
+                // pick between. The parent is baked into the prefix.
+                out.add(new CommandMenuEntry.TypeArg(
+                    "New", "name", "dungeontrain editor portals group new " + currentId));
             }
         }
         out.add(new CommandMenuEntry.Back("< Back"));
