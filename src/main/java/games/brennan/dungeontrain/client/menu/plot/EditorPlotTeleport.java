@@ -69,6 +69,24 @@ public final class EditorPlotTeleport {
     }
 
     /**
+     * Build the slash command that steps the portal room the player is standing in to its next
+     * {@code PortalRoomMode}. Null for every other category — nothing else has walls to decide about.
+     *
+     * <p>Addressed by the plot the player is in rather than by name, like the dimension steppers and
+     * for the same reason: the row only exists while they are standing in it.</p>
+     */
+    public static String modeCycleCommandFor(String category) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals mode next";
+    }
+
+    /** As {@link #modeCycleCommandFor}, for the Copies sub-mode under Endless Repetition. */
+    public static String copiesCycleCommandFor(String category) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals copies next";
+    }
+
+    /**
      * Build the slash command that bumps a per-template spawn-gate level bound
      * ({@code sub} = {@code "minlevel"} / {@code "maxlevel"}) of the template
      * identified by {@code (category, modelId, modelName)} in {@code dir}

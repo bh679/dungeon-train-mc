@@ -418,18 +418,22 @@ public final class VariantOverlayRenderer {
         int roomLength = roomSize == null ? EditorStatusPacket.NO_SIZE : roomSize.getX();
         int roomWidth = roomSize == null ? EditorStatusPacket.NO_SIZE : roomSize.getZ();
         int roomHeight = roomSize == null ? EditorStatusPacket.NO_SIZE : roomSize.getY();
+        // Resolved rather than passed through raw, so the row shows the mode the room will actually
+        // behave as even when the tag on disk is absent or misspelt.
+        String roomMode = roomSize == null ? EditorStatusPacket.NO_MODE
+            : games.brennan.dungeontrain.portal.PortalRoomSettings.of(modelName).toTag();
 
         String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight
             + "|" + minLevel + "|" + maxLevel + "|" + phaseMask + "|" + stageId
             + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + mirror[3] + "|" + excludedKey
-            + "|" + roomLength + "x" + roomHeight + "x" + roomWidth;
+            + "|" + roomLength + "x" + roomHeight + "x" + roomWidth + "/" + roomMode;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
             l.category().displayName(), l.model().displayName(), l.model().id(), modelName,
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
             mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId,
-            roomLength, roomWidth, roomHeight));
+            roomLength, roomWidth, roomHeight, roomMode));
     }
 
     /**
@@ -674,10 +678,11 @@ public final class VariantOverlayRenderer {
             BlockPos p = l.worldPos();
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
                 .append(':').append(l.name()).append('=').append(l.weight())
-                // Room size in the key too, or a resize would not re-push and the panel's
-                // steppers would keep showing the old numbers.
+                // Room size and mode in the key too, or a resize or a Walls click would not re-push
+                // and the panel would keep showing the old numbers and the old mode.
                 .append('@').append(l.roomLength()).append('x').append(l.roomHeight())
                 .append('x').append(l.roomWidth())
+                .append('/').append(l.roomMode())
                 .append(l.inPlot() ? "*" : "").append(';');
         }
         String snapshotKey = keyBuf.toString();
@@ -697,7 +702,7 @@ public final class VariantOverlayRenderer {
                 l.worldPos(), l.name(), l.weight(),
                 l.category(), l.modelId(), l.modelName(),
                 l.inPlot(), l.isUser(), l.isImported(),
-                l.roomLength(), l.roomWidth(), l.roomHeight()));
+                l.roomLength(), l.roomWidth(), l.roomHeight(), l.roomMode()));
         }
         EditorPlotLabels.Label first = labels.get(0);
         LOGGER.info("[DungeonTrain] EditorPlotLabels: send {} entries (category {}, first '{}' weight={} @ {}) to {}",

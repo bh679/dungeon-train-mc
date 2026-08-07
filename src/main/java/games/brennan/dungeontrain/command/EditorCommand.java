@@ -173,6 +173,24 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_MODE_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomMode mode
+                    : games.brennan.dungeontrain.portal.PortalRoomMode.values()) {
+                builder.suggest(mode.id());
+            }
+            return builder.buildFuture();
+        };
+
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_COPIES_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomCopies c
+                    : games.brennan.dungeontrain.portal.PortalRoomCopies.values()) {
+                builder.suggest(c.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> CONTENTS_SUGGESTIONS =
         (ctx, builder) -> {
             for (CarriageContents c : CarriageContentsRegistry.allContents()) {
@@ -390,7 +408,25 @@ public final class EditorCommand {
                                 .executes(ctx -> runPortalRoomSizeAll(ctx.getSource(),
                                     IntegerArgumentType.getInteger(ctx, "length"),
                                     IntegerArgumentType.getInteger(ctx, "width"),
-                                    IntegerArgumentType.getInteger(ctx, "height"))))))))
+                                    IntegerArgumentType.getInteger(ctx, "height")))))))
+                // What the room does at its walls. `next` is what the panel's button sends; the
+                // named forms are for typing, and for saying which one you want in one go.
+                .then(Commands.literal("mode")
+                    .then(Commands.literal("next")
+                        .executes(ctx -> runPortalRoomModeCycle(ctx.getSource())))
+                    .then(Commands.argument("mode", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_MODE_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomMode(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "mode")))))
+                // Whether Endless Repetition's copies are the room block for block, or each rolled
+                // afresh from its variant sidecar. Means nothing under the other modes.
+                .then(Commands.literal("copies")
+                    .then(Commands.literal("next")
+                        .executes(ctx -> runPortalRoomCopiesCycle(ctx.getSource())))
+                    .then(Commands.argument("copies", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_COPIES_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomCopies(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "copies"))))))
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -4800,6 +4836,100 @@ public final class EditorCommand {
     }
 
     /**
+     * {@code /dt editor portals mode next} — step the room plot the player is standing in to the
+     * next {@link games.brennan.dungeontrain.portal.PortalRoomMode}.
+     *
+     * <p>What the floating plot panel's Walls button sends. Three modes is few enough that cycling
+     * reaches any of them in at most two clicks, and a cycle needs no keyboard.</p>
+     */
+    private static int runPortalRoomModeCycle(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name, current.withMode(current.mode().next()));
+    }
+
+    /** {@code /dt editor portals copies next} — step the Copies sub-mode. */
+    private static int runPortalRoomCopiesCycle(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name, current.withCopies(current.copies().next()));
+    }
+
+    /** {@code /dt editor portals copies <exact|dynamic>} — set it outright. */
+    private static int runPortalRoomCopies(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomCopies wanted =
+            games.brennan.dungeontrain.portal.PortalRoomCopies.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.literal(
+                "Unknown copies option '" + raw + "'. Try exact or dynamic."));
+            return 0;
+        }
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withCopies(wanted));
+    }
+
+    /** {@code /dt editor portals mode <mode>} — set it outright. */
+    private static int runPortalRoomMode(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomMode wanted =
+            games.brennan.dungeontrain.portal.PortalRoomMode.parse(raw);
+        // parse is total by design, so a typo would silently set the default rather than complain.
+        // Worth complaining about here: the player typed something and meant it.
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.literal(
+                "Unknown portal room mode '" + raw + "'. Try bedrock_lock, endless_repetition or endless_open."));
+            return 0;
+        }
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withMode(wanted));
+    }
+
+    private static int applyPortalRoomSettings(
+        CommandSourceStack source, String name,
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings
+    ) {
+        try {
+            games.brennan.dungeontrain.track.variant.TrackVariantWeights.setMode(
+                games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name,
+                settings.toTag());
+        } catch (IOException e) {
+            source.sendFailure(Component.literal(
+                "Could not save the settings for portal room '" + name + "': " + e.getMessage()));
+            return 0;
+        }
+        // The Copies half is only worth reporting when it means anything.
+        String copies = settings.copiesApply() ? ", copies: " + settings.copies().displayName() : "";
+        source.sendSuccess(() -> Component.literal(
+            "Portal room '" + name + "' walls: " + settings.mode().displayName() + copies
+            + ". Portals already standing keep the settings they were built with — this takes effect "
+            + "on the next one the train reaches."
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    /** The portal room plot the player is standing in, or null with the reason already reported. */
+    private static String portalRoomPlotUnderPlayer(CommandSourceStack source) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return null;
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        if (name == null) {
+            source.sendFailure(Component.literal(
+                "Stand in a portal room plot first — /dt editor portals."));
+        }
+        return name;
+    }
+
+    /**
      * One {@code <axis> inc|dec|<blocks>} node, shared by length / width / height.
      *
      * <p>The bare {@code <blocks>} form takes an absolute value; {@code inc} / {@code dec} step by
@@ -4848,7 +4978,7 @@ public final class EditorCommand {
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' is now " + applied.getX() + " long, " + applied.getZ()
             + " wide, " + applied.getY() + " tall" + note
-            + ". The plot was reset to the built-in room at that size — /dt save to keep it."
+            + ". What you built is still there — /dt save to keep the new size."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -4896,7 +5026,7 @@ public final class EditorCommand {
             : " (clamped from " + blocks + " — the room must still seal the corridor mouth and fit its Y lane)";
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' " + axisName + " is now " + value + note
-            + ". The plot was reset to the built-in room at that size — /dt save to keep it."
+            + ". What you built is still there — /dt save to keep the new size."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }

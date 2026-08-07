@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.fml.loading.FMLPaths;
@@ -101,6 +102,18 @@ public final class ContainerContentsStore {
         this.plotKey = plotKey;
         this.pools = pools;
         this.links = links;
+    }
+
+    /**
+     * The plot key a track-side template's pool is stored under — {@code "track:<kind>:<name>"}.
+     *
+     * <p>Exists so the editor that <b>writes</b> a pool and the placer that <b>reads</b> it derive
+     * the key from one place. They did not, and a portal room's authored contents were being looked
+     * up under a key that sanitised to a different filename, so every chest in the room rolled
+     * nothing.</p>
+     */
+    public static String trackPlotKey(TrackKind kind, String name) {
+        return "track:" + kind.id() + ":" + name;
     }
 
     public static synchronized ContainerContentsStore loadFor(String plotKey) {

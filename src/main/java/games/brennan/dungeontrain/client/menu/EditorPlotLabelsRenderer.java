@@ -86,7 +86,11 @@ public final class EditorPlotLabelsRenderer {
         /** The number between a dimension row's arrows — opens a typing field for that axis alone. */
         LENGTH_TYPE,
         WIDTH_TYPE,
-        HEIGHT_TYPE
+        HEIGHT_TYPE,
+        /** The whole mode row — one button, clicking it steps to the next mode. */
+        MODE_CYCLE,
+        /** The sub-mode row — only shown while the mode makes copies. */
+        COPIES_CYCLE
     }
 
     /**
@@ -98,7 +102,7 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, ENTER, ACTION, CONTENTS
+        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ENTER, ACTION, CONTENTS
     }
 
     /** The rows {@code entry} shows, top to bottom. */
@@ -112,10 +116,25 @@ public final class EditorPlotLabelsRenderer {
             buf[n++] = RowKind.WIDTH;
             buf[n++] = RowKind.HEIGHT;
         }
+        if (hasModeRow(entry)) buf[n++] = RowKind.MODE;
+        if (hasCopiesRow(entry)) buf[n++] = RowKind.COPIES;
         if (hasEnterRow(entry)) buf[n++] = RowKind.ENTER;
         if (hasActionRow(entry)) buf[n++] = RowKind.ACTION;
         if (hasContentsButton(entry)) buf[n++] = RowKind.CONTENTS;
         return java.util.Arrays.copyOf(buf, n);
+    }
+
+    /**
+     * What this room does at its walls — portal rooms only, and only while the player is standing in
+     * the plot, on the same reasoning as the dimension rows.
+     *
+     * <p>Sits directly under them because it is the same kind of fact: a property of the room's box
+     * rather than of the template inside it.</p>
+     */
+    public static boolean hasModeRow(EditorPlotLabelsPacket.Entry entry) {
+        return entry.inPlot()
+            && "PORTALS".equals(entry.category())
+            && !EditorPlotLabelsPacket.NO_MODE.equals(entry.roomMode());
     }
 
     /**
@@ -147,6 +166,34 @@ public final class EditorPlotLabelsRenderer {
             case HEIGHT -> "height";
             default -> "";
         };
+    }
+
+    /**
+     * Whether the Copies row shows: only when the walls repeat the whole room, since that is the
+     * only mode that makes copies for the setting to describe.
+     */
+    public static boolean hasCopiesRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry)
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+                .copiesApply();
+    }
+
+    /** What the Copies row reads, e.g. {@code "Copies: Dynamic"}. */
+    public static String copiesLabel(String modeTag) {
+        return "Copies: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .copies().displayName();
+    }
+
+    /**
+     * What the mode row reads, e.g. {@code "Walls: Endless Open"}.
+     *
+     * <p>Resolved through {@code PortalRoomMode.parse}, which is total, so a tag hand-edited into
+     * {@code weights.json} that nothing recognises shows the default the room will actually behave as
+     * rather than the misspelling.</p>
+     */
+    public static String modeLabel(String modeTag) {
+        return "Walls: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .mode().displayName();
     }
 
     /** Short prefix drawn to the left of a dimension row's number. */
@@ -299,10 +346,35 @@ public final class EditorPlotLabelsRenderer {
     /**
      * Compute the half-width of {@code entry}'s panel in world units. Same
      * formula used by the renderer and the raycast so cell rectangles agree.
+     *
+     * <p><b>Every row that can outgrow the panel has to be measured here.</b> The width used to come
+     * from the name alone, on the assumption that {@link #MIN_HALF_W} covered every other row — true
+     * while the longest was "Contents". The Walls row broke it: a variant called {@code default} is
+     * six characters and "Walls: Endless Repetition" is twenty-five, so the label spilled out past
+     * both edges of the backdrop. Taking the widest of the two means the panel fits whatever it
+     * actually has to say, and the raycast reads the same figure so the cells stay under what is
+     * drawn.</p>
      */
     public static double halfWidth(EditorPlotLabelsPacket.Entry entry, Font font) {
-        double nameW = font.width(entry.name()) * TEXT_SCALE + 2 * PAD_X;
-        double w = Math.max(MIN_HALF_W * 2.0, nameW);
+        return halfWidth(entry, font::width);
+    }
+
+    /**
+     * {@link #halfWidth(EditorPlotLabelsPacket.Entry, Font)} against any text measurer.
+     *
+     * <p>Exists for the same reason {@code cellAt} has an explicit-halfWidth overload: the
+     * {@link Font} is the one part of this that cannot run headless, and the width rule is worth a
+     * test of its own now that more than the name feeds it.</p>
+     */
+    public static double halfWidth(EditorPlotLabelsPacket.Entry entry,
+                                   java.util.function.ToIntFunction<String> measure) {
+        double w = Math.max(MIN_HALF_W * 2.0, measure.applyAsInt(entry.name()) * TEXT_SCALE + 2 * PAD_X);
+        if (hasModeRow(entry)) {
+            w = Math.max(w, measure.applyAsInt(modeLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
+        }
+        if (hasCopiesRow(entry)) {
+            w = Math.max(w, measure.applyAsInt(copiesLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
+        }
         return w / 2.0;
     }
 
@@ -404,6 +476,10 @@ public final class EditorPlotLabelsRenderer {
             case LENGTH -> stepperCell(hitX, halfW, CellKind.LENGTH_DEC, CellKind.LENGTH_INC, CellKind.LENGTH_TYPE);
             case WIDTH -> stepperCell(hitX, halfW, CellKind.WIDTH_DEC, CellKind.WIDTH_INC, CellKind.WIDTH_TYPE);
             case HEIGHT -> stepperCell(hitX, halfW, CellKind.HEIGHT_DEC, CellKind.HEIGHT_INC, CellKind.HEIGHT_TYPE);
+            // One button rather than a stepper: there are three modes, and naming the one you want
+            // costs no more clicks than aiming at an arrow for it.
+            case MODE -> CellKind.MODE_CYCLE;
+            case COPIES -> CellKind.COPIES_CYCLE;
             case ENTER -> CellKind.BUTTON_ENTER_INSIDE;
             case ACTION -> actionRowCell(hitX, halfW);
             case CONTENTS -> CellKind.BUTTON_CONTENTS;
@@ -557,6 +633,21 @@ public final class EditorPlotLabelsRenderer {
                     drawCenteredText(ps, buffer, font,
                         dimensionLabel(rowKind) + " " + dimensionValue(entry, rowKind),
                         0, rCY, WEIGHT_COLOR);
+                }
+                // Mode — full-width button showing what this room does at its walls; clicking steps
+                // to the next one. Sits under the dimension rows because it is the same kind of
+                // fact: a property of the room's box rather than of the template inside it.
+                case MODE -> {
+                    drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
+                    int bg = hovered == CellKind.MODE_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, modeLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Copies — the sub-mode under Walls, present only while the walls repeat the room.
+                case COPIES -> {
+                    int bg = hovered == CellKind.COPIES_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, copiesLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
                 // Enter — full-width button, visible only when the player is already inside the
                 // plot. Clicking dispatches EditorPlotActionPacket(ENTER_INSIDE) so the player

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The exit twin's position is derived here and nowhere else. Everything that reads it — where the
@@ -76,6 +77,101 @@ class PortalStructureTest {
         assertEquals(s.roomSize(), moved.roomSize());
         assertEquals(s.spanX(DIMS), moved.spanX(DIMS));
         assertNotEquals(s.exitOrigin(DIMS), moved.exitOrigin(DIMS));
+    }
+
+    // ---- tiling ----
+
+    @Test
+    @DisplayName("Tiling never moves the exit twin — the EXIT frame stays under a player's feet")
+    void tilingDoesNotMoveTheExitTwin() {
+        PortalStructure plain = withRoomLength(15);
+        PortalStructure tiled = plain.withTiling(PortalRoomTiling.base()
+            .with(new PortalRoomTiling.Tile(0, 4))
+            .with(new PortalRoomTiling.Tile(-3, 2)));
+
+        // The whole reason tiling stays off the corridor row: these four have to agree, and they all
+        // read spanX / exitOrigin.
+        assertEquals(plain.spanX(DIMS), tiled.spanX(DIMS));
+        assertEquals(plain.exitOrigin(DIMS), tiled.exitOrigin(DIMS));
+        assertEquals(plain.exitTwinOffsetX(DIMS), tiled.exitTwinOffsetX(DIMS));
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        assertEquals(plain.roomOrigin(DIMS, layout), tiled.roomOrigin(DIMS, layout));
+    }
+
+    @Test
+    @DisplayName("A base-only structure reports the base room's own bounds — the boxes are unchanged")
+    void baseOnlyTilingKeepsTheOldBounds() {
+        PortalStructure s = withRoomLength(15);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        BlockPos room = s.roomOrigin(DIMS, layout);
+
+        assertEquals(room.getX(), s.tiledMinX(DIMS, layout));
+        assertEquals(room.getX() + s.roomLength() - 1, s.tiledMaxX(DIMS, layout));
+        assertEquals(room.getZ(), s.tiledMinZ(DIMS, layout));
+        assertEquals(room.getZ() + s.roomWidth() - 1, s.tiledMaxZ(DIMS, layout));
+    }
+
+    @Test
+    @DisplayName("Tiled bounds span every standing copy, at the room's own stride")
+    void tiledBoundsSpanTheCopies() {
+        PortalStructure s = withRoomLength(15).withTiling(PortalRoomTiling.base()
+            .with(new PortalRoomTiling.Tile(2, 1))
+            .with(new PortalRoomTiling.Tile(-1, -3)));
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        BlockPos room = s.roomOrigin(DIMS, layout);
+
+        assertEquals(room.getX() - s.roomLength(), s.tiledMinX(DIMS, layout));
+        assertEquals(room.getX() + 3 * s.roomLength() - 1, s.tiledMaxX(DIMS, layout));
+        assertEquals(room.getZ() - 3 * s.roomWidth(), s.tiledMinZ(DIMS, layout));
+        assertEquals(room.getZ() + 2 * s.roomWidth() - 1, s.tiledMaxZ(DIMS, layout));
+    }
+
+    @Test
+    @DisplayName("tileOrigin and tileAt are inverses — a copy's corner resolves back to its own tile")
+    void tileOriginAndTileAtAgree() {
+        PortalStructure s = withRoomLength(15);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        for (PortalRoomTiling.Tile tile : new PortalRoomTiling.Tile[]{
+            PortalRoomTiling.Tile.BASE, new PortalRoomTiling.Tile(3, 2),
+            new PortalRoomTiling.Tile(-2, -4)}) {
+            BlockPos corner = s.tileOrigin(DIMS, layout, tile);
+            assertEquals(tile, s.tileAt(DIMS, layout, corner.getX(), corner.getZ()));
+            // And anywhere inside it, including the far corner — floorDiv, not truncation, so this
+            // holds on the negative side too.
+            assertEquals(tile, s.tileAt(DIMS, layout,
+                corner.getX() + s.roomLength() - 1, corner.getZ() + s.roomWidth() - 1));
+        }
+    }
+
+    @Test
+    @DisplayName("Relocating drops the standing copies — they belong to the place it left")
+    void movedToDropsTheTiling() {
+        PortalStructure s = withRoomLength(15)
+            .withTiling(PortalRoomTiling.base().with(new PortalRoomTiling.Tile(0, 2)));
+        assertEquals(2, s.tiling().size());
+
+        PortalStructure moved = s.movedTo(ORIGIN.offset(64, 0, 0));
+        assertTrue(moved.tiling().isBaseOnly());
+        assertEquals(s.mode(), moved.mode());
+    }
+
+    @Test
+    @DisplayName("An unset mode is the sealed default, and it survives a re-tiling")
+    void modeDefaultsAndSurvives() {
+        PortalStructure s = withRoomLength(15);
+        assertEquals(PortalRoomMode.DEFAULT, s.mode());
+
+        PortalStructure open = PortalStructure.withMode(ORIGIN, "default", s.roomSize(),
+            PortalRoomMode.ENDLESS_OPEN, PortalRoomTiling.base());
+        assertEquals(PortalRoomMode.ENDLESS_OPEN,
+            open.withTiling(PortalRoomTiling.base().with(new PortalRoomTiling.Tile(0, 1))).mode());
+        // Null settings or tiling are normalised rather than stored — nothing downstream null-checks.
+        assertEquals(PortalRoomMode.DEFAULT,
+            new PortalStructure(ORIGIN, "default", s.roomSize(), null, null).mode());
+        assertTrue(new PortalStructure(ORIGIN, "default", s.roomSize(), null, null)
+            .tiling().isBaseOnly());
+        assertEquals(PortalRoomMode.DEFAULT,
+            PortalStructure.withMode(ORIGIN, "default", s.roomSize(), null, null).mode());
     }
 
     @Test

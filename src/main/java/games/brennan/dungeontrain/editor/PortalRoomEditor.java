@@ -257,9 +257,10 @@ public final class PortalRoomEditor {
     /**
      * Restamp {@code name}'s plot with one axis changed.
      *
-     * <p>Destructive by nature: the box changes size, so whatever was authored in the old one is
-     * replaced with the built-in room at the new size. The change is only a plot state until the
-     * next save writes a template of that size.</p>
+     * <p>Keeps what was authored. The plot is restamped at the new size with the saved room laid
+     * back over it — clipped to the new box, so shrinking crops rather than spilling — and only the
+     * space the resize newly exposed comes back as the built-in room. The change is a plot state
+     * until the next save writes a template of that size.</p>
      *
      * @return the size actually applied, after clamping to what this world's corridor allows
      */
