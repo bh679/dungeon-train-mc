@@ -6,7 +6,6 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.SectionOcclusionGraph;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
-import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -53,8 +52,6 @@ import javax.annotation.Nullable;
 @Mixin(SectionOcclusionGraph.class)
 public abstract class SectionOcclusionGraphPortalSwapMixin {
 
-    private static final Logger DUNGEONTRAIN$LOGGER = LogUtils.getLogger();
-
     /**
      * Long enough that a rebuild queued behind other background work still lands, short enough that
      * the worst case reads as one stutter rather than as a hang.
@@ -70,7 +67,11 @@ public abstract class SectionOcclusionGraphPortalSwapMixin {
                                                           Frustum frustum,
                                                           List<SectionRenderDispatcher.RenderSection> sections,
                                                           CallbackInfo ci) {
-        if (!ClientPortalSwap.consume()) return;
+        if (!ClientPortalSwap.claimGraphWait()) return;
+        if (ClientPortalSwap.claimFirstTrace()) {
+            LogUtils.getLogger().info(
+                "[DungeonTrain] Portal swap: renderer is waiting out the occlusion rebuild before drawing");
+        }
 
         Future<?> task = this.fullUpdateTask;
         // Nothing scheduled means the graph was already current for this camera — the swap moved less
@@ -84,8 +85,10 @@ public abstract class SectionOcclusionGraphPortalSwapMixin {
         } catch (Exception failed) {
             // A timeout or a failed rebuild is only a cosmetic loss — the frame may flash, as it did
             // before this existed. Logged rather than swallowed so a client that flashes every swap
-            // says why in its log.
-            DUNGEONTRAIN$LOGGER.debug(
+            // says why in its log. The logger is fetched here rather than held in a field: a mixin's
+            // static field would have to be merged into the target's initialiser, and this path is
+            // rare enough not to be worth that.
+            LogUtils.getLogger().debug(
                 "[DungeonTrain] Portal swap: occlusion graph rebuild not ready in {} ms",
                 DUNGEONTRAIN$WAIT_MILLIS, failed);
         }
