@@ -269,9 +269,11 @@ public final class PortalRoomTiler {
     /**
      * Open or close one face of one copy.
      *
-     * <p>Every direction is treated the same, the corridor row included. Carving along X from the
-     * base room does cut through a door plane — and that is fine, because
-     * {@link #relayCorridorsIfDisturbed} writes the corridor back over the top afterwards.</p>
+     * <p>Every direction is treated the same, the corridor row included: {@link #eachFaceCell} drops
+     * the cells a corridor owns, and along X from the base room that is the whole face — both the door
+     * plane and the room's own column in front of it. What the player walks through there is the
+     * door, laid once by {@code stampCorridors}, and none of the three operations below may touch
+     * it.</p>
      */
     private static void refreshFace(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                     Tile tile, int dx, int dz) {
@@ -292,16 +294,15 @@ public final class PortalRoomTiler {
     private static void carveSeam(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                  Tile tile, int dx, int dz) {
         BlockState air = Blocks.AIR.defaultBlockState();
-        // The far column belongs to the neighbour, so eachFaceCell's own mask check does not cover it.
-        PortalCorridorMask seamMask = PortalCarriageBuilder.corridorMask(structure, dims);
         eachFaceCell(level, dims, structure, tile, dx, dz, /*interiorOnly*/ true, (wall, inner) -> {
             // Open the seam only where both rooms are already open one step further in, so the
             // passage that appears is the passage that exists on both sides.
             BlockPos innerFar = wall.offset(dx * 2, 0, dz * 2);
             if (!level.getBlockState(inner).isAir() || !level.getBlockState(innerFar).isAir()) return;
             level.setBlock(wall, air, Block.UPDATE_ALL);
-            BlockPos far = wall.offset(dx, 0, dz);
-            if (!seamMask.covers(far)) level.setBlock(far, air, Block.UPDATE_ALL);
+            // The far column belongs to the neighbour; eachFaceCell has already dropped every cell
+            // whose far side is a corridor's, so writing it here needs no second guard.
+            level.setBlock(wall.offset(dx, 0, dz), air, Block.UPDATE_ALL);
         });
     }
 
@@ -350,8 +351,8 @@ public final class PortalRoomTiler {
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
         // Masked here rather than in each of the three face operations, so none of them can forget:
-        // carving a seam along X from the base room runs straight through a door plane, and the door
-        // is placed once and must survive.
+        // a face along X from the base room runs straight into a door plane, and the door is placed
+        // once and must survive. Two cells short of it, not one — see the facedBy check below.
         PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
 
         int x0 = origin.getX();
@@ -370,7 +371,7 @@ public final class PortalRoomTiler {
             for (int x = x0 + inset; x <= x1 - inset; x++) {
                 for (int y = yLow; y <= yHigh; y++) {
                     BlockPos wall = new BlockPos(x, y, wallZ);
-                    if (mask.covers(wall)) continue;
+                    if (mask.covers(wall) || mask.facedBy(wall, 0, dz)) continue;
                     body.accept(wall, wall.offset(0, 0, -dz));
                 }
             }
@@ -380,7 +381,10 @@ public final class PortalRoomTiler {
         for (int z = z0 + inset; z <= z1 - inset; z++) {
             for (int y = yLow; y <= yHigh; y++) {
                 BlockPos wall = new BlockPos(wallX, y, z);
-                if (mask.covers(wall)) continue;
+                // The room's own end column is not masked — the mask stops at the door plane — but
+                // the door is what stands in front of it, so it is the corridor's all the same.
+                // Without this the base room's end plane is bricked up right across its doorway.
+                if (mask.covers(wall) || mask.facedBy(wall, dx, 0)) continue;
                 body.accept(wall, wall.offset(-dx, 0, 0));
             }
         }
