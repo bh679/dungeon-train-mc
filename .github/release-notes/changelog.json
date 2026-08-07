@@ -6273,6 +6273,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "train-reset-drifting-carriage-handback",
+      "version": "0.542.0",
+      "type": "fix",
+      "title": "Resetting the train no longer strands drifting carriages",
+      "summary": "Spawning a fresh train used to quietly abandon any drifting carriages riding on the old one: edits you'd made to them were lost along with the deleted train, and the builds stayed locked to your world for up to an hour before anyone else could receive them. They're now handed back properly before the old train is taken apart. The reset command itself also got two fixes \u2014 it always places the new train on the track now, instead of wherever you happened to be standing, and it can no longer leave you with no train at all.",
+      "highlights": [
+        "Edits you made to a drifting carriage survive a train reset instead of vanishing with the old train.",
+        "Drifting carriage builds return to the pool straight away, rather than staying locked to your world until they time out.",
+        "The train always spawns on the track, and you're set down on the flatbed once it settles.",
+        "Removed the carriage count from the spawn command \u2014 passing zero deleted your train and then refused to build a new one. Set the window with '/dungeontrain carriages' instead."
+      ],
+      "pr": 885,
+      "date": "2026-08-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
