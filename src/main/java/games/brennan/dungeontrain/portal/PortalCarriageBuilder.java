@@ -80,6 +80,8 @@ public final class PortalCarriageBuilder {
     private static final BlockState POCKET_LIGHT = Blocks.SHROOMLIGHT.defaultBlockState();
     /** Solid fill behind the twin's dummy door. */
     private static final BlockState PLUG = Blocks.DEEPSLATE.defaultBlockState();
+    /** {@link PortalRoomMode#BEDROCK_LOCK}'s skin, one block outside the room box. */
+    private static final BlockState LOCK = Blocks.BEDROCK.defaultBlockState();
 
     private static final int PLUG_DEPTH = 3;
 
@@ -365,6 +367,71 @@ public final class PortalCarriageBuilder {
         // Dead space behind the door that leads nowhere, at each outer end.
         plugBeyond(level, entryOrigin.offset(-PLUG_DEPTH, 0, 0), PLUG_DEPTH, dims);
         plugBeyond(level, exitOrigin.offset(dims.length(), 0, 0), PLUG_DEPTH, dims);
+
+        // Last, so it wraps whatever the room turned out to be rather than what it was asked for.
+        if (structure.mode() == PortalRoomMode.BEDROCK_LOCK) {
+            bedrockSkin(level, roomOrigin, roomSize);
+        }
+    }
+
+    /**
+     * Lowest Y a structure may write to: one row under its floor, but never the world's own bottom
+     * layer.
+     *
+     * <p>Shared by the skin that writes there and the {@link #eraseTwin} sweep that clears it, so the
+     * two cannot disagree — a structure must never leave behind a block its own erase will not
+     * reach. The clamp matters because {@code TWIN_FLOOR_MARGIN} puts the lowest lane's floor one
+     * block above {@code getMinBuildHeight()}, and that row is the world's vanilla bedrock: writing
+     * to it is pointless and erasing it would open a hole into the void.</p>
+     */
+    static int lowestWritableY(int worldMinY, int structureFloorY) {
+        return Math.max(worldMinY + 1, structureFloorY - 1);
+    }
+
+    /**
+     * Wrap a room in one block of bedrock — {@link PortalRoomMode#BEDROCK_LOCK}.
+     *
+     * <p><b>Outside the box, not instead of it.</b> The skin sits one block beyond each face, so an
+     * authored room still looks like whatever its author built; the bedrock is only ever met by
+     * somebody digging through that. A room whose own shell was replaced with bedrock would read as
+     * a vault regardless of what was authored, which is a different feature.</p>
+     *
+     * <p><b>Four faces, not six.</b> The room's ±X ends are the two corridors' door planes — the way
+     * back to the train, and the one part of a twin that is block-identical to its carriage. Skinning
+     * those would either wall the player in or break that identity, so the lock covers the sides, the
+     * ceiling and the floor and leaves the doors alone. It follows that a determined player can still
+     * dig out sideways through a corridor's own wall and its plug; sealing that would mean changing
+     * corridor geometry, which is shared with the carriage and cannot move.</p>
+     */
+    private static void bedrockSkin(ServerLevel level, BlockPos roomOrigin, Vec3i size) {
+        int x0 = roomOrigin.getX();
+        int x1 = x0 + size.getX() - 1;
+        int z0 = roomOrigin.getZ();
+        int z1 = z0 + size.getZ() - 1;
+        int floorY = roomOrigin.getY();
+        int ceilingY = floorY + size.getY() - 1;
+        int belowY = lowestWritableY(level.getMinBuildHeight(), floorY);
+        int aboveY = ceilingY + 1;
+
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        // Sides, running the full height of the skin so its corners meet the top and bottom planes.
+        for (int x = x0; x <= x1; x++) {
+            for (int y = belowY; y <= aboveY; y++) {
+                level.setBlock(pos.set(x, y, z0 - 1), LOCK, Block.UPDATE_ALL);
+                level.setBlock(pos.set(x, y, z1 + 1), LOCK, Block.UPDATE_ALL);
+            }
+        }
+
+        // Ceiling and floor, out to the sides so nothing can be tunnelled around a corner.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0 - 1; z <= z1 + 1; z++) {
+                level.setBlock(pos.set(x, aboveY, z), LOCK, Block.UPDATE_ALL);
+                // Only when there is genuinely a row below the floor to write — in the lowest lane
+                // there is not, and the world's own bedrock is already doing the job.
+                if (belowY < floorY) level.setBlock(pos.set(x, belowY, z), LOCK, Block.UPDATE_ALL);
+            }
+        }
     }
 
     /**
@@ -403,10 +470,8 @@ public final class PortalCarriageBuilder {
             structure.tiledMinZ(dims, layout) - 1);
         int maxZ = Math.max(Math.max(origin.getZ() + dims.width(), roomOrigin.getZ() + roomSize.getZ()),
             structure.tiledMaxZ(dims, layout) + 1);
-        // One row below the floor as well as one past the top: Bedrock Lock skins both. Held above
-        // the world's own bottom layer — that row is vanilla bedrock, and erasing it would punch a
-        // hole into the void under every structure in the lowest lane.
-        int minY = Math.max(level.getMinBuildHeight() + 1, origin.getY() - 1);
+        // One row below the floor as well as one past the top: Bedrock Lock skins both.
+        int minY = lowestWritableY(level.getMinBuildHeight(), origin.getY());
         int maxY = origin.getY() + Math.max(dims.height(), roomSize.getY());
 
         for (int x = minX; x <= maxX; x++) {
