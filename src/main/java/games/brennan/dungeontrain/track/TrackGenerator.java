@@ -25,6 +25,7 @@ import games.brennan.dungeontrain.worldgen.StampRandom;
 import games.brennan.dungeontrain.worldgen.NetherFade;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -279,7 +280,7 @@ public final class TrackGenerator {
      * Returns that block's Y + 1 — i.e., the Y where the pillar's lowest
      * block would sit. If the bed is already sitting on solid terrain,
      * returns {@code bedY} (zero-height pillar). If no ground is found down
-     * to {@code minBuildHeight}, returns {@code minBuildHeight + 1}
+     * to the world floor, returns {@code WorldFloor.bedrockY(level) + 1}
      * (pillar reaches world bottom).
      *
      * <p>Returns {@code bedY} (sentinel = "no pillar needed / no probe") if
@@ -289,7 +290,7 @@ public final class TrackGenerator {
     private static int probeGroundY(ServerLevel level, int x, int z, int bedY) {
         Shipyard shipyard = Shipyards.of(level);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int minY = level.getMinBuildHeight() + 1;
+        int minY = WorldFloor.bedrockY(level) + 1;
         for (int py = bedY - 1; py >= minY; py--) {
             pos.set(x, py, z);
             if (shipyard.isInShip(pos)) {
@@ -338,7 +339,7 @@ public final class TrackGenerator {
         int deepest = bedY;                            // bedSentinel = "no useful ground"
         int currentIdx = N / 2;                        // anchor = centre column
         int currentY = bedY - 1;
-        int minY = level.getMinBuildHeight() + 1;
+        int minY = WorldFloor.bedrockY(level) + 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         while (unresolved > 0) {
@@ -820,11 +821,11 @@ public final class TrackGenerator {
      * {@link WorldGenLevel} directly and skips the ship check (no ships
      * exist during chunk gen). Walks down from {@code bedY-1} until a
      * non-passable block is hit; returns that block's Y + 1, or
-     * {@code minBuildHeight + 1} (void sentinel) if none is found.
+     * {@code WorldFloor.bedrockY(level) + 1} (void sentinel) if none is found.
      */
     private static int probeGroundYWorldgen(WorldGenLevel level, int x, int z, int bedY) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int minY = level.getMinBuildHeight() + 1;
+        int minY = WorldFloor.bedrockY(level) + 1;
         for (int py = bedY - 1; py >= minY; py--) {
             pos.set(x, py, z);
             BlockState state = level.getBlockState(pos);
@@ -850,7 +851,7 @@ public final class TrackGenerator {
         int deepest = bedY;
         int currentIdx = N / 2;
         int currentY = bedY - 1;
-        int minY = level.getMinBuildHeight() + 1;
+        int minY = WorldFloor.bedrockY(level) + 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         while (unresolved > 0) {
@@ -940,7 +941,7 @@ public final class TrackGenerator {
         if (probeZ < chunkMinZ || probeZ > chunkMaxZ) return;
 
         long worldSeed = level.getSeed();
-        int voidSentinel = minBuildHeight + 1;
+        int voidSentinel = WorldFloor.bedrockY(level) + 1;
 
         // Pre-compute pillar positions + heights in [chunkMinX - MIN_STAIRS_SPACING,
         // chunkMaxX + MIN_STAIRS_SPACING]. Used to apply the cross-chunk
@@ -1367,7 +1368,7 @@ public final class TrackGenerator {
         // Walk up if terrain is solid at that level (hill rising past the
         // pillar) or down if air (cliff edge / down-slope).
         int centerStairsZ = originZ + (STAIRS_Z - 1) / 2;
-        int minY = level.getMinBuildHeight() + 1;
+        int minY = WorldFloor.bedrockY(level) + 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int deepestGroundY;
         pos.set(centerX, pillarBaseY, centerStairsZ);

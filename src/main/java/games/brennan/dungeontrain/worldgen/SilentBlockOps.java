@@ -9,6 +9,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import org.jetbrains.annotations.Nullable;
@@ -57,6 +58,25 @@ public final class SilentBlockOps {
      * Callers are responsible for all other guards (ship-owned positions,
      * chunk loaded, idempotence).
      */
+    /**
+     * Drop the block entity at {@code pos}, <b>pending ones included</b>, so a section-local write
+     * over its cell leaves nothing orphaned.
+     *
+     * <p>{@link net.minecraft.world.level.chunk.LevelChunk#removeBlockEntity} alone drops only
+     * <i>live</i> block entities. A freshly generated structure's BE (a chest, suspicious sand) is
+     * still <b>pending</b> — NBT that has not been promoted — when {@code ChunkEvent.Load} fires, and
+     * a bare remove leaves that NBT behind: at chunk save {@code promotePendingBlockEntity} then
+     * fails {@code BlockEntity.validateBlockState} against the air that replaced it, losing the
+     * contents and spamming the log. Reading the BE first promotes it while the block still matches,
+     * so the remove has something to take.</p>
+     *
+     * <p>Must be called <b>before</b> the cell is overwritten, for the same reason.</p>
+     */
+    public static void evictBlockEntity(ChunkAccess chunk, BlockPos pos) {
+        chunk.getBlockEntity(pos);   // promotes pending → live
+        chunk.removeBlockEntity(pos);
+    }
+
     public static void setBlockSilent(ServerLevel level, BlockPos pos, BlockState newState) {
         BlockState existing = level.getBlockState(pos);
         if (existing.hasBlockEntity()) {
