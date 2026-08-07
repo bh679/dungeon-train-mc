@@ -12,6 +12,10 @@
       "END"
     ]
   },
+  "distantenemies": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
   "library_dimension": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
