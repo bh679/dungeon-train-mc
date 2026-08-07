@@ -640,23 +640,81 @@ public final class TrainAssembler {
         TrainCarriageAppender.clearSettleTracker();
         games.brennan.dungeontrain.event.CarriageGroupGapTicker.resetWarnings();
         Shipyard shipyard = Shipyards.of(level);
-        // Sweep any trailing-segment force-load tickets before the train
-        // re-fills. Guarantees no DT force-load survives a session boundary —
-        // Sable persists tickets to disk and resurrects the ticketed
-        // sub-levels on world load, so a ticket left live at save would
-        // otherwise reappear as an orphan carriage. See SableShipyard.
-        shipyard.releaseAllForceLoads();
+        // Gather the doomed ships BEFORE touching force-loads, because the
+        // shared-carriage handback below has to read their still-live plots.
         List<ManagedShip> trains = new ArrayList<>();
         for (ManagedShip ship : shipyard.findAll()) {
             if (ship.getKinematicDriver() instanceof TrainTransformProvider) {
                 trains.add(ship);
             }
         }
+        returnSharedCarriages(trains);
+        // Sweep any trailing-segment force-load tickets before the train
+        // re-fills. Guarantees no DT force-load survives a session boundary —
+        // Sable persists tickets to disk and resurrects the ticketed
+        // sub-levels on world load, so a ticket left live at save would
+        // otherwise reappear as an orphan carriage. See SableShipyard.
+        shipyard.releaseAllForceLoads();
         for (ManagedShip ship : trains) {
             shipyard.delete(ship);
         }
         CarriagePersistenceStore.clear(level);
         return trains.size();
+    }
+
+    /**
+     * Cap on synchronous full shared-carriage captures per wipe. A capture
+     * reads the whole carriage footprint on the server thread, so a wide
+     * window (20+ carriages, each able to host a shared build) would stall
+     * the tick badly without a ceiling. Past the cap the lease is still
+     * returned, just without a final capture — the deltas already streamed
+     * to the relay cover all but the last sub-second of edits. Mirrors
+     * {@code TrainCarriageAppender.MAX_SHARED_CAPTURES_PER_CULL}.
+     */
+    private static final int MAX_SHARED_CAPTURES_PER_WIPE = 8;
+
+    /**
+     * Hand every shared carriage riding on {@code doomed} back to the relay —
+     * final flush + lease return — and drop it from
+     * {@link SharedCarriageRegistry}, BEFORE any of those sub-levels are
+     * deleted. Without this a train wipe strands each lease until its ~1h
+     * TTL, leaks a registry entry per sub-level, and loses any un-flushed
+     * player edits along with the destroyed plot.
+     *
+     * <p>The ordering constraint is {@code finalFlushAndReturn}'s own: the
+     * capture is synchronous against the live plot, so it MUST run on the
+     * server thread and before deletion. Same teardown shape as
+     * {@code TrainCarriageAppender.cleanupGhostAnchors}, which is where this
+     * was already being done correctly for the rolling-window cull.</p>
+     *
+     * <p>Best-effort per instance — a carriage that throws is logged and
+     * skipped so one bad build can never abort the wipe.</p>
+     */
+    private static void returnSharedCarriages(List<ManagedShip> doomed) {
+        int captured = 0;
+        int deferred = 0;
+        for (ManagedShip ship : doomed) {
+            UUID shipId = ship.subLevelId();
+            if (!SharedCarriageRegistry.hasSubLevel(shipId)) continue;
+            for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.bySubLevel(shipId)) {
+                boolean allowCapture = captured < MAX_SHARED_CAPTURES_PER_WIPE;
+                try {
+                    if (games.brennan.dungeontrain.event.SharedCarriageEvents.finalFlushAndReturn(inst, allowCapture)) {
+                        captured++;
+                    } else if (!allowCapture && inst.hasPending()) {
+                        deferred++;
+                    }
+                } catch (Throwable t) {
+                    LOGGER.debug("[DungeonTrain] wipe: shared-carriage return failed for pIdx={}: {}",
+                        inst.pIdx, t.toString());
+                }
+            }
+            SharedCarriageRegistry.removeSubLevel(shipId);
+        }
+        if (captured > 0 || deferred > 0) {
+            LOGGER.info("[DungeonTrain] wipe: returned shared carriages ({} captured, {} bare-returned past "
+                + "the per-wipe capture cap — last un-flushed edits left to streamed deltas)", captured, deferred);
+        }
     }
 
     /**

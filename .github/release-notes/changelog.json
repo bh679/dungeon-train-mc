@@ -6261,18 +6261,32 @@
       "released_at": "2026-08-06T15:34:51Z"
     },
     {
-      "id": "love-note-book",
+      "id": "where-the-writing-goes-translations",
       "version": "0.541.0",
-      "type": "feat",
-      "title": "Love Notes \u2014 an echo that comes back loving you",
-      "summary": "The Death Note has a mirror. Sign a book titled \"Love Note\" naming another player and it burns away in pink flame instead of soul-fire. When you later die, an echo of you waits for them at the carriage depth you fell at \u2014 and greets them instead of hunting them. It hands over what it is carrying, steps in when something attacks them, and never once raises a hand to them. Same book and quill, same price (you still have to die first), opposite intent.",
+      "type": "content",
+      "title": "Where the Writing Goes, in 19 languages",
+      "summary": "The found book added last release is now readable in every language the mod supports \u2014 all eight accounts, translated.",
       "highlights": [
-        "The echo arrives with the highest possible regard for the one you named: it greets rather than attacks, gives them what it has, and defends them even when badly outmatched.",
-        "Once your Love Note lands, your next lightning strike brings you its story \u2014 how they took it, and whether they took it at all.",
-        "A new advancement, Loved Back, for giving something back to the echo that came all that way for you.",
-        "Every language has its own Love Note title, and naming your book that works too."
+        "Machine-translated (Opus 5) and marked as such in the translation credits, so a human translator can review it later."
       ],
-      "pr": 884,
+      "date": "2026-08-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "train-reset-drifting-carriage-handback",
+      "version": "0.542.0",
+      "type": "fix",
+      "title": "Resetting the train no longer strands drifting carriages",
+      "summary": "Spawning a fresh train used to quietly abandon any drifting carriages riding on the old one: edits you'd made to them were lost along with the deleted train, and the builds stayed locked to your world for up to an hour before anyone else could receive them. They're now handed back properly before the old train is taken apart. The reset command itself also got two fixes \u2014 it always places the new train on the track now, instead of wherever you happened to be standing, and it can no longer leave you with no train at all.",
+      "highlights": [
+        "Edits you made to a drifting carriage survive a train reset instead of vanishing with the old train.",
+        "Drifting carriage builds return to the pool straight away, rather than staying locked to your world until they time out.",
+        "The train always spawns on the track, and you're set down on the flatbed once it settles.",
+        "Removed the carriage count from the spawn command \u2014 passing zero deleted your train and then refused to build a new one. Set the window with '/dungeontrain carriages' instead."
+      ],
+      "pr": 885,
       "date": "2026-08-07",
       "released": false,
       "released_in": null,
