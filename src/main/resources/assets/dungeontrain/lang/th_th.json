@@ -1057,9 +1057,14 @@
   "gui.dungeontrain.death.narr.donate_cn_desc": "สนับสนุนครั้งเดียวผ่าน WeChat Pay - จำนวนเท่าไรก็ได้",
   "gui.dungeontrain.death.narr.lbl_raised_month": "ระดมได้",
   "gui.dungeontrain.death.narr.lbl_running_cost": "ค่าใช้จ่ายรายเดือน",
+  "gui.dungeontrain.death.narr.lbl_server_cost": "ค่าเซิร์ฟเวอร์",
   "gui.dungeontrain.death.narr.lbl_covered": "ค่าใช้จ่ายที่ครอบคลุม",
   "gui.dungeontrain.death.narr.lbl_leaderboard_monthly": "เหล่าผู้ร่วมโดยสาร",
   "gui.dungeontrain.death.narr.tip_monthly_cost": "ค่าใช้จ่ายเพื่อให้ไฟยังคงส่องสว่าง และขบวนรถไฟยังคงแล่นต่อไป ไม่รวมเวลาของผู้สร้าง",
   "gui.dungeontrain.death.narr.tip_covered": "ค่าใช้จ่ายในการดำเนินงานรายเดือนถูกครอบคลุมด้วยการสมทบของผู้เล่นมากเพียงใด",
+  "gui.dungeontrain.death.narr.goal_running_costs": "ค่าดำเนินงาน",
+  "gui.dungeontrain.death.narr.goal_dev_tools": "เครื่องมือพัฒนา",
+  "gui.dungeontrain.death.narr.tip_goal_running_costs": "เป้าหมายแรก คือค่าใช้จ่ายรายเดือนที่ทำให้เส้นทางนี้เดินต่อได้ ทั้งค่าโฮสต์ การดูแลเนื้อหา และค่าธรรมเนียมการชำระเงิน",
+  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "เป้าหมายถัดไปเมื่อค่าดำเนินงานถูกครอบคลุมแล้ว คือเครื่องมือที่ใช้สร้างและพัฒนาม็อดนี้",
   "gui.dungeontrain.death.narr.tip_raised": "ยอดรวมที่ผู้เล่นสมทบในเดือนนี้"
 }

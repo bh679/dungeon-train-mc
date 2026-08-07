@@ -50,13 +50,30 @@ public final class DonationSummaryClient {
     public record Entry(String name, int amountUsd, String source) {}
 
     /**
+     * One rung of the relay's support ladder (funding-goals.js): running costs first, then
+     * whatever the relay has been configured to ask for next. Support stacks — a rung's
+     * {@code raised} only starts filling once every rung before it is complete — so the ladder
+     * always sums to the month's total raised.
+     *
+     * <p>{@code label} is the relay's own English text, used verbatim only when this jar has no
+     * translation for {@code id}. That is what lets a goal added relay-side appear on jars that
+     * predate it (see {@code FundingGoals#label}).</p>
+     */
+    public record Goal(String id, String label, int targetAud, int raisedAud,
+                       int percent, boolean complete) {}
+
+    /**
      * The parsed ledger. {@code monthlyCostUsd}/{@code percentCovered} are -1 when the relay has no
      * cost snapshot yet; {@code hasYou} is false when the player hasn't consented / isn't a donor.
+     * {@code goals} is empty (and {@code activeGoalId} null) against a relay that predates the
+     * ladder, or when there is no cost snapshot to build the first rung from — the screen falls
+     * back to {@code percentCovered} then.
      */
     public record Summary(int monthlyRaisedUsd, int totalRaisedUsd, int monthlyCostUsd,
                           int percentCovered, int patronCount, int patronMonthlyUsd,
                           List<Entry> monthly, List<Entry> allTime,
-                          boolean hasYou, int youMonthlyUsd, int youTotalUsd) {}
+                          boolean hasYou, int youMonthlyUsd, int youTotalUsd,
+                          List<Goal> goals, String activeGoalId) {}
 
     /**
      * Fetch the donation summary off-thread and hand the parsed result to {@code callback} (invoked
@@ -98,8 +115,12 @@ public final class DonationSummaryClient {
         }
     }
 
-    /** Parse the relay JSON body into {@link Summary}, or null when it isn't a well-formed ok response. */
-    private static Summary parse(String body) {
+    /**
+     * Parse the relay JSON body into {@link Summary}, or null when it isn't a well-formed ok
+     * response. Package-private so the wire shape can be pinned against a real relay body in a
+     * test — this payload is the one contract the relay and every shipped jar share.
+     */
+    static Summary parse(String body) {
         JsonElement root = JsonParser.parseString(body);
         if (!root.isJsonObject()) return null;
         JsonObject o = root.getAsJsonObject();
@@ -119,7 +140,32 @@ public final class DonationSummaryClient {
                 parseEntries(o, "allTime"),
                 you != null,
                 you != null ? optInt(you, "monthlyUsd", 0) : 0,
-                you != null ? optInt(you, "totalUsd", 0) : 0);
+                you != null ? optInt(you, "totalUsd", 0) : 0,
+                parseGoals(o),
+                o.has("activeGoalId") && o.get("activeGoalId").isJsonPrimitive()
+                        ? o.get("activeGoalId").getAsString() : null);
+    }
+
+    /**
+     * The support ladder, in relay order. Rungs without an {@code id} are dropped rather than
+     * rendered as a nameless goal; a relay that sends no {@code goals} at all yields an empty list,
+     * which the death screen reads as "no ladder" and falls back to the coverage percentage.
+     */
+    private static List<Goal> parseGoals(JsonObject o) {
+        List<Goal> out = new ArrayList<>();
+        if (!o.has("goals") || !o.get("goals").isJsonArray()) return out;
+        for (JsonElement el : o.getAsJsonArray("goals")) {
+            if (!el.isJsonObject()) continue;
+            JsonObject g = el.getAsJsonObject();
+            String id = g.has("id") && g.get("id").isJsonPrimitive() ? g.get("id").getAsString() : null;
+            if (id == null || id.isBlank()) continue;
+            String label = g.has("label") && g.get("label").isJsonPrimitive() ? g.get("label").getAsString() : id;
+            boolean complete = g.has("complete") && g.get("complete").isJsonPrimitive()
+                    && g.get("complete").getAsBoolean();
+            out.add(new Goal(id, label, optInt(g, "targetAud", 0), optInt(g, "raisedAud", 0),
+                    optInt(g, "percent", 0), complete));
+        }
+        return out;
     }
 
     private static List<Entry> parseEntries(JsonObject o, String key) {
