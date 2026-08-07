@@ -10,6 +10,11 @@ import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.support.FundingGoals;
 import games.brennan.dungeontrain.net.relay.DonationSummaryClient.Goal;
+import games.brennan.dungeontrain.client.modrec.ModRecPage;
+import games.brennan.dungeontrain.client.modrec.ModRecState;
+import games.brennan.dungeontrain.modrec.ModRoster;
+import games.brennan.dungeontrain.net.ModRecommendPacket;
+import games.brennan.dungeontrain.net.relay.ModPopularityClient;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.relay.DonationSummaryClient;
@@ -48,6 +53,7 @@ import net.minecraft.resources.ResourceLocation;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
+import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -89,7 +95,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class NarrativeDeathScreen extends Screen {
 
-    private enum Kind { FALL, DEEDS, GEAR, LIVES, SURVEY, DONATE, PLATFORM }
+    private enum Kind { FALL, DEEDS, GEAR, LIVES, SURVEY, MODREC, DONATE, PLATFORM }
 
     private record Page(Kind kind, SurveyQuestionPayload.Entry survey) {
         static Page of(Kind k) { return new Page(k, null); }
@@ -242,6 +248,13 @@ public final class NarrativeDeathScreen extends Screen {
     // death (a new death = new screen instance = fresh pick). -1 = not yet picked.
     private int surveyIntro2Choice = -1;
     private EditBox commentBox;
+    // ---- Mod Recommendations (MODREC) page ----
+    // Built once per screen from the loaded mod list minus Dungeon Train's own roster; null until
+    // init() runs, and left empty (page absent) when the player runs nothing of their own.
+    private ModRecState modRec;
+    private ModRecPage modRecPage;
+    private EditBox modCommentBox;   // "why would you recommend it?" — required before Send
+    private EditBox modNameBox;      // the requested mod's name; only for the "not installed" tile
     private boolean opened = false;
     private boolean photoSent = false;
     private boolean gallerySent = false;
@@ -333,6 +346,11 @@ public final class NarrativeDeathScreen extends Screen {
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
             list.add(Page.survey(e));
         }
+        // "The recommendations" — only for players running mods that aren't ours. On a clean
+        // Dungeon Train / modpack install there is nothing to ask about and the page never exists.
+        if (modRec != null && !modRec.isEmpty()) {
+            list.add(Page.of(Kind.MODREC));
+        }
         // "Support the line" — the donation ledger, just before the platform send-off. Always in
         // the list (so the platform button can always reach it); whether it appears in the normal
         // Next-Screen flow is gated by donateInFlow (see shouldShowDonate).
@@ -372,6 +390,14 @@ public final class NarrativeDeathScreen extends Screen {
         // Freeze the gallery for as long as the death screen is up: no flush / eviction / texture
         // release may run while we're blitting these photos (a released texture would blank a page).
         RideSnapshotGallery.freeze();
+        // Built once per death, before buildPages() decides whether the MODREC page exists at all.
+        // init() re-runs on every rebuildWidgets (page swap, late survey arrival), so guarding on
+        // null is what keeps the player's selection, typed comment and sent tiles across pages.
+        if (modRec == null) {
+            modRec = new ModRecState(ModRoster.leftovers(loadedMods()));
+            modRecPage = new ModRecPage(this.font, this::fade);
+            if (!modRec.isEmpty()) kickModPopularityFetch();
+        }
         pages = buildPages();
         donateInFlow = shouldShowDonate();
         donateReturnPage = -1;
@@ -386,6 +412,8 @@ public final class NarrativeDeathScreen extends Screen {
         donateScroll = 0f;
         donateScrollTarget = 0f;
         commentBox = null;
+        modCommentBox = null;
+        modNameBox = null;
         LOGGER.info("[DungeonTrain] NarrativeDeathScreen: page {}/{}, surveyQuestions={}, statsCached={}",
                 currentPage, pages.size(), lastSurveyCount, DeathStatsCache.get() != null);
 
@@ -414,6 +442,28 @@ public final class NarrativeDeathScreen extends Screen {
             }
             commentBox.setHint(Component.translatable(hintKey));
             addRenderableWidget(commentBox);
+        }
+
+        if (p.kind() == Kind.MODREC && modRec != null) {
+            // Both boxes exist for the whole page; drawModRec positions them and hides them when
+            // nothing is selected. The state — not the widget — is the source of truth for Send, so
+            // a rebuild mid-page restores whatever was typed.
+            modRecPage.resetScroll();
+            modNameBox = new EditBox(this.font, 0, 0, 100, 16,
+                    Component.translatable("gui.dungeontrain.death.modrec.name"));
+            modNameBox.setMaxLength(ModRecState.MAX_NAME);
+            modNameBox.setHint(Component.translatable("gui.dungeontrain.death.modrec.name"));
+            modNameBox.setValue(modRec.requestedName());
+            modNameBox.setResponder(modRec::setRequestedName);
+            addRenderableWidget(modNameBox);
+
+            modCommentBox = new EditBox(this.font, 0, 0, 100, 16,
+                    Component.translatable("gui.dungeontrain.death.modrec.why"));
+            modCommentBox.setMaxLength(ModRecState.MAX_COMMENT);
+            modCommentBox.setHint(Component.translatable("gui.dungeontrain.death.modrec.why"));
+            modCommentBox.setValue(modRec.comment());
+            modCommentBox.setResponder(modRec::setComment);
+            addRenderableWidget(modCommentBox);
         }
 
         // First appearance: fade the opening page's UI up over its photo instead
@@ -570,6 +620,10 @@ public final class NarrativeDeathScreen extends Screen {
         // during the hold and at the tail of each fade. The photo + vignette above
         // (drawn with fill, which has no such quirk) keep showing.
         if (commentBox != null) commentBox.visible = settled();
+        // The MODREC input boxes only exist while a tile is selected — and the name box only for
+        // the "not installed" tile. Hidden boxes are also moved off-layout by drawModRec.
+        if (modCommentBox != null) modCommentBox.visible = settled() && modRec.selected() != null;
+        if (modNameBox != null) modNameBox.visible = settled() && modRec.isRequesting();
         if (uiAlpha > UI_EPS) {
             drawTopBar(g, mouseX, mouseY);
 
@@ -580,6 +634,7 @@ public final class NarrativeDeathScreen extends Screen {
                 case GEAR -> y = drawGear(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
                 case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
                 case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
+                case MODREC -> y = drawModRec(g, left, contentW, cx, y, mouseX, mouseY);
                 case DONATE -> y = drawDonate(g, left, contentW, cx, y);
                 case PLATFORM -> y = drawPlatform(g, narr, left, contentW, cx, y);
             }
@@ -665,7 +720,7 @@ public final class NarrativeDeathScreen extends Screen {
             case DEEDS    -> List.of(SnapshotTag.COMBAT, SnapshotTag.SCENIC);
             case GEAR     -> List.of(SnapshotTag.GEAR, SnapshotTag.SCENIC);
             case LIVES    -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
-            case SURVEY, DONATE, PLATFORM -> List.of();
+            case SURVEY, MODREC, DONATE, PLATFORM -> List.of();
         };
     }
 
@@ -683,6 +738,7 @@ public final class NarrativeDeathScreen extends Screen {
             case GEAR -> UiAnalytics.PAGE_GEAR;
             case LIVES -> UiAnalytics.PAGE_LIVES;
             case SURVEY -> UiAnalytics.PAGE_SURVEY;
+            case MODREC -> UiAnalytics.PAGE_MODREC;
             case DONATE -> UiAnalytics.PAGE_DONATE;
             case PLATFORM -> UiAnalytics.PAGE_PLATFORM;
         };
@@ -1309,6 +1365,46 @@ public final class NarrativeDeathScreen extends Screen {
      * leaderboard, and a green Donate button. Reads {@link DonationSummaryCache} live each frame;
      * a late fetch simply fills in. Kept graceful when the summary is null (loading / offline).
      */
+    /**
+     * "The recommendations" — the grid of mods the player runs that aren't ours, and the ask.
+     * Layout and hit-testing live in {@link ModRecPage}; this method contributes the page's chrome
+     * (kicker, train, heading) and parks the two {@link EditBox} widgets where the page put them.
+     */
+    private int drawModRec(GuiGraphics g, int left, int w, int cx, int y, int mouseX, int mouseY) {
+        drawKicker(g, cx, y, "gui.dungeontrain.death.modrec.kicker");
+        y += 14;
+        drawTrain(g, left, w, y, currentPage);
+        y += 46;
+        // The heading changes once something has been sent, so a second pass reads as an invitation
+        // to keep going rather than a repeat of the same question.
+        y = drawQuestion(g, Component.translatable(modRec.sentCount() > 0
+                ? "gui.dungeontrain.death.modrec.more"
+                : "gui.dungeontrain.death.modrec.ask").getString(), cx, w, y);
+        y += 4;
+
+        int below = modRecPage.draw(g, modRec, left, w, cx, y, this.height - 28, mouseX, mouseY);
+
+        // Park the widgets. An unused box is moved off-screen as well as hidden: an invisible
+        // EditBox still owns its rect for focus/click purposes, and a stale one under the grid
+        // would swallow tile clicks.
+        placeBox(modNameBox, modRecPage.commentBoxX(), modRecPage.nameBoxY(), modRecPage.commentBoxW());
+        placeBox(modCommentBox, modRecPage.commentBoxX(), modRecPage.commentBoxY(), modRecPage.commentBoxW());
+        return below;
+    }
+
+    /** Position an optional EditBox, or park it off-screen when the page gave it no slot (y &lt; 0). */
+    private void placeBox(EditBox box, int x, int y, int w) {
+        if (box == null) return;
+        if (y < 0) {
+            box.setX(-1000);
+            box.setY(-1000);
+            return;
+        }
+        box.setX(x);
+        box.setY(y);
+        box.setWidth(w);
+    }
+
     private int drawDonate(GuiGraphics g, int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_donate");
         y += 14;
@@ -1747,6 +1843,23 @@ public final class NarrativeDeathScreen extends Screen {
                 openDonateLink();
                 return true;
             }
+            if (page.kind() == Kind.MODREC && modRec != null) {
+                if (modRecPage.sendAt(mx, my)) { sendModRecommendation(); return true; }
+                String modId = modRecPage.tileAt(mx, my);
+                if (modId != null) {
+                    modRec.toggle(modId);
+                    // The state cleared the text; the widgets have to follow, or the old comment
+                    // would re-arm Send for the newly selected mod.
+                    if (modCommentBox != null) modCommentBox.setValue(modRec.comment());
+                    if (modNameBox != null) modNameBox.setValue(modRec.requestedName());
+                    // Deliberately NOT focused here: vanilla EditBox hides its hint while focused
+                    // (EditBox#renderWidget), so auto-focusing would swallow the "Why would you
+                    // recommend this?" prompt at exactly the moment the player needs to read it.
+                    // They click the box to start typing.
+                    this.setFocused(null);
+                    return true;
+                }
+            }
             if (page.kind() == Kind.SURVEY && page.survey() != null) {
                 String qid = page.survey().id();
                 for (int i = 0; i < scoreRects.size(); i++) {
@@ -1771,6 +1884,11 @@ public final class NarrativeDeathScreen extends Screen {
                 && advViewport != null && advViewport.has(mx, my) && gearAdvMaxScroll > 0) {
             int step = SLOT + 4;  // one cell per notch
             gearAdvScroll = Math.max(0, Math.min(gearAdvMaxScroll, gearAdvScroll - (int) Math.round(dy) * step));
+            return true;
+        }
+        // Vertical-scroll the MODREC tile grid when the cursor is over it.
+        if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.MODREC && modRecPage != null
+                && modRecPage.scroll(mx, my, dy)) {
             return true;
         }
         // Vertical-scroll the DONATE supporter list when the cursor is over its viewport. The wheel
@@ -1892,6 +2010,47 @@ public final class NarrativeDeathScreen extends Screen {
 
     private void openGallery() {
         Minecraft.getInstance().setScreen(new RideGalleryScreen(this));
+    }
+
+    /** Every mod the loader has, as the roster's {@code (modId, displayName)} pairs. */
+    private static List<ModRoster.LoadedMod> loadedMods() {
+        List<ModRoster.LoadedMod> out = new ArrayList<>();
+        try {
+            for (var info : ModList.get().getMods()) {
+                out.add(new ModRoster.LoadedMod(info.getModId(), info.getDisplayName()));
+            }
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] could not read the loaded mod list: {}", t.toString());
+        }
+        return out;
+    }
+
+    /**
+     * Kick the anonymous popularity fetch that orders the recommendations grid. Sends nothing about
+     * the player; a failure simply leaves the grid alphabetical (see {@link ModPopularityClient}).
+     */
+    private void kickModPopularityFetch() {
+        ModPopularityClient.fetch(byModId -> Minecraft.getInstance().execute(() -> {
+            if (modRec != null) modRec.setPopularity(byModId);
+        }));
+    }
+
+    /**
+     * Send the selected recommendation and sink its tile. Fires only from the live Send button, so
+     * the comment (and, for a request, the typed name) are already non-blank — but re-check rather
+     * than trust the drawn state, since a rebuild between draw and click could stale it.
+     */
+    private void sendModRecommendation() {
+        if (modRec == null || !modRec.canSend()) return;
+        boolean requested = modRec.isRequesting();
+        String modId = requested ? "" : modRec.selected();
+        String name = modRec.selectedName();
+        DungeonTrainNet.sendToServer(new ModRecommendPacket(modId, name, modRec.comment().trim(), requested));
+        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_MOD_RECOMMEND);
+        modRec.markSent();
+        if (modCommentBox != null) modCommentBox.setValue("");
+        if (modNameBox != null) modNameBox.setValue("");
+        this.setFocused(null);
     }
 
     /**
