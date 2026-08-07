@@ -6270,9 +6270,9 @@
         "Machine-translated (Opus 5) and marked as such in the translation credits, so a human translator can review it later."
       ],
       "date": "2026-08-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.543.0",
+      "released_at": "2026-08-07T03:06:04Z"
     },
     {
       "id": "train-reset-drifting-carriage-handback",
@@ -6288,9 +6288,9 @@
       ],
       "pr": 885,
       "date": "2026-08-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.543.0",
+      "released_at": "2026-08-07T03:06:04Z"
     },
     {
       "id": "love-note-book",
@@ -6306,9 +6306,9 @@
       ],
       "pr": 884,
       "date": "2026-08-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.543.0",
+      "released_at": "2026-08-07T03:06:04Z"
     }
   ]
 }
