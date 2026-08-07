@@ -426,7 +426,9 @@ public final class EditorCommand {
                     .then(Commands.argument("copies", StringArgumentType.word())
                         .suggests(PORTAL_ROOM_COPIES_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomCopies(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "copies"))))))
+                            StringArgumentType.getString(ctx, "copies")))))
+                // Sub-variants: one named room standing for several designs, drawn by weight.
+                .then(portalRoomGroupNode()))
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -4868,6 +4870,414 @@ public final class EditorCommand {
         }
         games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, name);
         source.sendSuccess(() -> Component.literal("Editor: entered portal room '" + name + "'."), true);
+        return 1;
+    }
+
+    // ---------- portal room sub-variants ----------
+
+    private static final games.brennan.dungeontrain.track.variant.TrackKind PORTAL_ROOM_KIND =
+        games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM;
+
+    /**
+     * {@code /dt editor portals group …} — the sub-variant layer for portal rooms: one named room
+     * that stands for several room designs, each drawn against the parent's own {@code selfWeight}.
+     *
+     * <p>Deliberately the same verbs as {@code /dt editor contents group …}, because it is the same
+     * idea one level up the template tree.</p>
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> portalRoomGroupNode() {
+        return Commands.literal("group")
+            .then(Commands.literal("new")
+                .then(Commands.argument("parent", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .executes(ctx -> runPortalRoomGroupNew(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "parent"),
+                            StringArgumentType.getString(ctx, "name"))))))
+            .then(Commands.literal("add")
+                .then(Commands.argument("parent", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                    .then(Commands.argument("child", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomGroupAdd(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "parent"),
+                            StringArgumentType.getString(ctx, "child"),
+                            games.brennan.dungeontrain.track.variant.TrackVariantGroup.DEFAULT_WEIGHT))
+                        .then(Commands.argument("weight", IntegerArgumentType.integer(
+                                games.brennan.dungeontrain.track.variant.TrackVariantGroup.MIN_WEIGHT,
+                                games.brennan.dungeontrain.track.variant.TrackVariantGroup.MAX_WEIGHT))
+                            .executes(ctx -> runPortalRoomGroupAdd(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "parent"),
+                                StringArgumentType.getString(ctx, "child"),
+                                IntegerArgumentType.getInteger(ctx, "weight")))))))
+            .then(Commands.literal("set-weight")
+                .then(Commands.argument("parent", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                    .then(Commands.argument("child", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                        .then(Commands.literal("inc").executes(ctx -> runPortalRoomGroupWeightAdjust(
+                            ctx.getSource(),
+                            StringArgumentType.getString(ctx, "parent"),
+                            StringArgumentType.getString(ctx, "child"), +1)))
+                        .then(Commands.literal("dec").executes(ctx -> runPortalRoomGroupWeightAdjust(
+                            ctx.getSource(),
+                            StringArgumentType.getString(ctx, "parent"),
+                            StringArgumentType.getString(ctx, "child"), -1)))
+                        .then(Commands.argument("value", IntegerArgumentType.integer(
+                                games.brennan.dungeontrain.track.variant.TrackVariantGroup.MIN_WEIGHT,
+                                games.brennan.dungeontrain.track.variant.TrackVariantGroup.MAX_WEIGHT))
+                            .executes(ctx -> runPortalRoomGroupWeightSet(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "parent"),
+                                StringArgumentType.getString(ctx, "child"),
+                                IntegerArgumentType.getInteger(ctx, "value")))))))
+            .then(Commands.literal("remove")
+                .then(Commands.argument("parent", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                    .then(Commands.argument("child", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomGroupRemove(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "parent"),
+                            StringArgumentType.getString(ctx, "child"))))))
+            .then(Commands.literal("list")
+                .then(Commands.argument("parent", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                    .executes(ctx -> runPortalRoomGroupList(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "parent")))))
+            .then(Commands.literal("clear")
+                .then(Commands.argument("parent", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                    .executes(ctx -> runPortalRoomGroupClear(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "parent")))));
+    }
+
+    /** Registered room name, or null after sending the failure message. */
+    private static String parsePortalRoom(CommandSourceStack source, String raw) {
+        java.util.Optional<String> found = games.brennan.dungeontrain.track.variant.TrackVariantRegistry
+            .find(PORTAL_ROOM_KIND, raw);
+        if (found.isEmpty()) {
+            source.sendFailure(Component.literal("Unknown portal room '" + raw + "'.")
+                .withStyle(ChatFormatting.RED));
+            return null;
+        }
+        return found.get();
+    }
+
+    /**
+     * Persist {@code updated} for {@code parent}, restamping whatever the change moves.
+     *
+     * <p>Membership decides where a plot sits — a member sits beside its parent rather than in the
+     * top-level row — so every mutation goes through {@link PortalRoomEditor#relayout}, or the row
+     * fills with rooms at positions nothing will clear again.</p>
+     */
+    private static int savePortalRoomGroup(CommandSourceStack source, String parent,
+                                           games.brennan.dungeontrain.track.variant.TrackVariantGroup updated,
+                                           String message) {
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        IOException[] failure = new IOException[1];
+        games.brennan.dungeontrain.editor.PortalRoomEditor.relayout(overworld, dims, () -> {
+            try {
+                games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(PORTAL_ROOM_KIND, parent, updated);
+            } catch (IOException e) {
+                failure[0] = e;
+            }
+        });
+        if (failure[0] != null) {
+            LOGGER.error("[DungeonTrain] editor portals group save failed", failure[0]);
+            source.sendFailure(Component.literal("group save failed: " + failure[0].toString())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(message).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    /**
+     * {@code /dt editor portals group add <parent> <child> [weight]} — make an existing room a
+     * sub-variant of another. Single-hop only, no cycles, and {@code default} may not be a member
+     * (it is the synthetic fallback every kind keeps, not an authored room).
+     */
+    private static int runPortalRoomGroupAdd(CommandSourceStack source, String parentRaw, String childRaw, int weight) {
+        String parent = parsePortalRoom(source, parentRaw);
+        if (parent == null) return 0;
+        String child = parsePortalRoom(source, childRaw);
+        if (child == null) return 0;
+        if (parent.equals(child)) {
+            source.sendFailure(Component.literal("Cannot add '" + parent + "' as a sub-variant of itself.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(child)) {
+            source.sendFailure(Component.literal(
+                "'default' cannot be a sub-variant — it is the fallback every portal room falls back to.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (games.brennan.dungeontrain.editor.TrackVariantGroupStore.exists(PORTAL_ROOM_KIND, child)) {
+            source.sendFailure(Component.literal(
+                "'" + child + "' has sub-variants of its own — nesting is single-hop only.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        java.util.Optional<String> existingParent = games.brennan.dungeontrain.editor.TrackVariantGroupStore
+            .findParentOf(PORTAL_ROOM_KIND, child);
+        if (existingParent.isPresent() && !existingParent.get().equals(parent)) {
+            source.sendFailure(Component.literal(
+                "'" + child + "' is already a sub-variant of '" + existingParent.get() + "'.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (games.brennan.dungeontrain.editor.TrackVariantGroupStore
+                .allChildIds(PORTAL_ROOM_KIND).contains(parent)) {
+            source.sendFailure(Component.literal(
+                "'" + parent + "' is itself a sub-variant — making it a parent would create a cycle.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        games.brennan.dungeontrain.track.variant.TrackVariantGroup updated =
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent)
+                .orElse(games.brennan.dungeontrain.track.variant.TrackVariantGroup.EMPTY)
+                .withMember(new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(child, weight));
+        return savePortalRoomGroup(source, parent, updated,
+            "Editor: portal room '" + parent + "' → added sub-variant '" + child + "' (weight=" + weight
+                + ", " + updated.members().size() + " sub-variant"
+                + (updated.members().size() == 1 ? "" : "s") + " + the parent itself).");
+    }
+
+    /**
+     * {@code /dt editor portals group new <parent> <name>} — create a brand-new sub-variant of
+     * {@code parent}, seeded from the parent's own room so it starts as a variation on it rather
+     * than an empty box. Falls back to the built-in room when the parent has nothing saved yet.
+     */
+    private static int runPortalRoomGroupNew(CommandSourceStack source, String parentRaw, String nameRaw) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        String parent = parsePortalRoom(source, parentRaw);
+        if (parent == null) return 0;
+
+        String key = nameRaw == null ? "" : nameRaw.toLowerCase(Locale.ROOT);
+        if (!games.brennan.dungeontrain.track.variant.TrackVariantRegistry.NAME_PATTERN.matcher(key).matches()) {
+            source.sendFailure(Component.literal(
+                "Invalid room name '" + nameRaw + "'. Allowed: lowercase letters, digits, underscore (1..32 chars).")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(key)) {
+            source.sendFailure(Component.literal("'default' is reserved — pick another name.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry.contains(PORTAL_ROOM_KIND, key)) {
+            source.sendFailure(Component.literal("Portal room '" + key + "' already exists.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (games.brennan.dungeontrain.editor.TrackVariantGroupStore
+                .allChildIds(PORTAL_ROOM_KIND).contains(parent)) {
+            source.sendFailure(Component.literal(
+                "'" + parent + "' is itself a sub-variant — nesting is single-hop only.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        // Membership first: it decides where the new plot lands, so registering the name before the
+        // group would stamp it in the top-level row and then move it.
+        games.brennan.dungeontrain.track.variant.TrackVariantGroup updated =
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent)
+                .orElse(games.brennan.dungeontrain.track.variant.TrackVariantGroup.EMPTY)
+                .withMember(new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(
+                    key, games.brennan.dungeontrain.track.variant.TrackVariantGroup.DEFAULT_WEIGHT));
+        try {
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(PORTAL_ROOM_KIND, parent, updated);
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] editor portals group new failed", e);
+            source.sendFailure(Component.literal("group new failed: " + e.toString())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        try {
+            java.util.Optional<net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate> src =
+                games.brennan.dungeontrain.editor.PortalRoomTemplateStore.get(overworld, parent, dims);
+            if (src.isPresent()) {
+                // Save first so the freshly-registered plot stamps the parent's room rather than the
+                // built-in one, then register inside a relayout — the new slot shifts the row.
+                games.brennan.dungeontrain.editor.PortalRoomTemplateStore.save(key, src.get());
+                net.minecraft.core.Vec3i inherited =
+                    games.brennan.dungeontrain.portal.PortalRoomSizes.sizeOf(parent, dims);
+                games.brennan.dungeontrain.editor.PortalRoomEditor.relayout(overworld, dims, () -> {
+                    games.brennan.dungeontrain.portal.PortalRoomSizes.pending(key, inherited);
+                    games.brennan.dungeontrain.track.variant.TrackVariantRegistry.register(PORTAL_ROOM_KIND, key);
+                });
+            } else {
+                games.brennan.dungeontrain.editor.PortalRoomEditor.createFromBuiltIn(overworld, parent, key, dims);
+            }
+        } catch (IOException e) {
+            // Roll the membership back rather than leaving a sub-variant that points at nothing.
+            try {
+                games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(PORTAL_ROOM_KIND, parent,
+                    updated.withoutMember(key));
+            } catch (IOException rollback) {
+                LOGGER.error("[DungeonTrain] editor portals group new: rollback failed", rollback);
+            }
+            LOGGER.error("[DungeonTrain] editor portals group new failed", e);
+            source.sendFailure(Component.literal("group new failed: " + e.getMessage())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, key);
+        source.sendSuccess(() -> Component.literal(
+            "Editor: created portal room sub-variant '" + key + "' under '" + parent
+                + "' — teleported to its plot.").withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    /**
+     * {@code /dt editor portals group set-weight <parent> <child> <value>} — the weight the
+     * sub-variant is drawn at. {@code parent == child} sets the parent's own share of the draw
+     * ({@code selfWeight}), which is how a parent stops being picked as itself.
+     */
+    private static int runPortalRoomGroupWeightSet(CommandSourceStack source, String parentRaw,
+                                                   String childRaw, int value) {
+        String parent = parsePortalRoom(source, parentRaw);
+        if (parent == null) return 0;
+        String child = parsePortalRoom(source, childRaw);
+        if (child == null) return 0;
+        java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> existing =
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
+        if (existing.isEmpty()) {
+            source.sendFailure(Component.literal("Portal room '" + parent + "' has no sub-variants.")
+                .withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        boolean isSelf = parent.equals(child);
+        if (!isSelf && existing.get().member(child).isEmpty()) {
+            source.sendFailure(Component.literal(
+                "'" + child + "' is not a sub-variant of '" + parent + "'.").withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        games.brennan.dungeontrain.track.variant.TrackVariantGroup updated;
+        final int stored;
+        if (isSelf) {
+            updated = existing.get().withSelfWeight(value);
+            stored = updated.selfWeight();
+        } else {
+            games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member m =
+                existing.get().member(child).get().withWeight(value);
+            updated = existing.get().withMember(m);
+            stored = m.weight();
+        }
+        String label = isSelf ? "the parent's own share" : "'" + child + "'";
+        return savePortalRoomGroup(source, parent, updated,
+            "Editor: portal room '" + parent + "' → " + label + " weight=" + stored + ".");
+    }
+
+    /** Read-modify-write nudge for a sub-variant's weight (or the parent's own share). */
+    private static int runPortalRoomGroupWeightAdjust(CommandSourceStack source, String parentRaw,
+                                                      String childRaw, int delta) {
+        String parent = parsePortalRoom(source, parentRaw);
+        if (parent == null) return 0;
+        String child = parsePortalRoom(source, childRaw);
+        if (child == null) return 0;
+        java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> existing =
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
+        if (existing.isEmpty()) {
+            source.sendFailure(Component.literal("Portal room '" + parent + "' has no sub-variants.")
+                .withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        int current;
+        if (parent.equals(child)) {
+            current = existing.get().selfWeight();
+        } else {
+            java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member> m =
+                existing.get().member(child);
+            if (m.isEmpty()) {
+                source.sendFailure(Component.literal(
+                    "'" + child + "' is not a sub-variant of '" + parent + "'.").withStyle(ChatFormatting.YELLOW));
+                return 0;
+            }
+            current = m.get().weight();
+        }
+        return runPortalRoomGroupWeightSet(source, parentRaw, childRaw, current + delta);
+    }
+
+    /**
+     * {@code /dt editor portals group remove <parent> <child>} — detach a sub-variant. The room
+     * itself is untouched: it returns to the top-level row as a room in its own right.
+     */
+    private static int runPortalRoomGroupRemove(CommandSourceStack source, String parentRaw, String childRaw) {
+        String parent = parsePortalRoom(source, parentRaw);
+        if (parent == null) return 0;
+        String child = parsePortalRoom(source, childRaw);
+        if (child == null) return 0;
+        java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> existing =
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
+        if (existing.isEmpty() || existing.get().member(child).isEmpty()) {
+            source.sendFailure(Component.literal(
+                "'" + child + "' is not a sub-variant of '" + parent + "'.").withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        return savePortalRoomGroup(source, parent, existing.get().withoutMember(child),
+            "Editor: portal room '" + parent + "' → removed sub-variant '" + child
+                + "' (it is a top-level room again).");
+    }
+
+    /** {@code /dt editor portals group list <parent>} — what a room's sub-variant pool looks like. */
+    private static int runPortalRoomGroupList(CommandSourceStack source, String parentRaw) {
+        String parent = parsePortalRoom(source, parentRaw);
+        if (parent == null) return 0;
+        java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> existing =
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
+        if (existing.isEmpty() || existing.get().isEmpty()) {
+            source.sendSuccess(() -> Component.literal(
+                "Portal room '" + parent + "' has no sub-variants."), false);
+            return 1;
+        }
+        games.brennan.dungeontrain.track.variant.TrackVariantGroup group = existing.get();
+        StringBuilder sb = new StringBuilder("Portal room '").append(parent).append("' sub-variants: ")
+            .append(parent).append(" (self) = ").append(group.selfWeight());
+        for (games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member m : group.members()) {
+            sb.append(", ").append(m.id()).append(" = ").append(m.weight());
+        }
+        String line = sb.toString();
+        source.sendSuccess(() -> Component.literal(line), false);
+        return 1;
+    }
+
+    /** {@code /dt editor portals group clear <parent>} — drop the whole sidecar. Rooms are kept. */
+    private static int runPortalRoomGroupClear(CommandSourceStack source, String parentRaw) {
+        String parent = parsePortalRoom(source, parentRaw);
+        if (parent == null) return 0;
+        if (!games.brennan.dungeontrain.editor.TrackVariantGroupStore.exists(PORTAL_ROOM_KIND, parent)) {
+            source.sendFailure(Component.literal("Portal room '" + parent + "' has no sub-variants.")
+                .withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        IOException[] failure = new IOException[1];
+        games.brennan.dungeontrain.editor.PortalRoomEditor.relayout(overworld, dims, () -> {
+            try {
+                games.brennan.dungeontrain.editor.TrackVariantGroupStore.delete(PORTAL_ROOM_KIND, parent);
+            } catch (IOException e) {
+                failure[0] = e;
+            }
+        });
+        if (failure[0] != null) {
+            LOGGER.error("[DungeonTrain] editor portals group clear failed", failure[0]);
+            source.sendFailure(Component.literal("group clear failed: " + failure[0].toString())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(
+            "Editor: portal room '" + parent + "' → sub-variants cleared (the rooms themselves are kept).")
+            .withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 

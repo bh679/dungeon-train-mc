@@ -248,7 +248,9 @@ public final class EditorTypeMenus {
         List<EditorTypeMenusPacket.TypeTab> typeStrip,
         EditorCategory owner
     ) {
-        List<String> names = TrackVariantRegistry.namesFor(kind);
+        // Sub-variants render as the inline row beside their parent (see subVariantsFor), so they
+        // are filtered out of the top-level list here — same rule the CONTENTS menu follows.
+        List<String> names = TrackVariantGroupStore.topLevelNames(kind);
         if (names.isEmpty()) return;
         BlockPos firstOrigin = TrackSidePlots.plotOrigin(kind, names.get(0), dims);
         Vec3i footprint = TrackSidePlots.footprint(kind, names.get(0), dims);
@@ -265,7 +267,7 @@ public final class EditorTypeMenus {
                 name, TrackVariantWeights.weightFor(kind, name),
                 g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
                 cat, modelId, name, p.isUser(), p.isImported(),
-                stageId == null ? "" : stageId));
+                subVariantsFor(kind, name, cat, modelId), stageId == null ? "" : stageId));
         }
         out.add(new EditorTypeMenusPacket.Menu(
             anchor, typeName, rows, false,
@@ -364,6 +366,32 @@ public final class EditorTypeMenus {
                 games.brennan.dungeontrain.editor.CarriageContentsStore.fileForId(m.id()));
             out.add(new EditorTypeMenusPacket.Variant(
                 m.id(), m.weight(), category, m.id(), m.id(),
+                prov.isUser(), prov.isImported()));
+        }
+        return out;
+    }
+
+    /**
+     * Sub-variants of a track-side variant as packet-shaped rows — the horizontal row beside its
+     * parent in the nav menu, the same affordance the CONTENTS rows use. Empty when the name has no
+     * group.
+     *
+     * <p>Cells carry the parent's {@code modelId} (the kind) with the member's own name as the
+     * model name, which is what the click router needs to teleport into the member's plot.</p>
+     */
+    private static List<EditorTypeMenusPacket.Variant> subVariantsFor(
+        TrackKind kind, String parentName, String category, String modelId
+    ) {
+        java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> group =
+            TrackVariantGroupStore.get(kind, parentName);
+        if (group.isEmpty() || group.get().isEmpty()) return Collections.emptyList();
+        List<games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member> members = group.get().members();
+        List<EditorTypeMenusPacket.Variant> out = new ArrayList<>(members.size());
+        for (games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member m : members) {
+            EditorPlotLabels.Provenance prov = EditorPlotLabels.provenanceOf(
+                games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, m.id()));
+            out.add(new EditorTypeMenusPacket.Variant(
+                m.id(), m.weight(), category, modelId, m.id(),
                 prov.isUser(), prov.isImported()));
         }
         return out;

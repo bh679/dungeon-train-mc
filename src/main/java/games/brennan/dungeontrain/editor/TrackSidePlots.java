@@ -33,7 +33,9 @@ import java.util.List;
  *       {@code Z=0}, with each subsequent name offset by
  *       {@code footprint.z + GAP}. Names follow
  *       {@link TrackVariantRegistry#namesFor} order — alphabetical with
- *       {@code default} guaranteed first.</li>
+ *       {@code default} guaranteed first. A name that is a <b>sub-variant</b>
+ *       of another claims no Z slot: it sits {@code +X} of its parent
+ *       instead, so a group grows away from the row rather than through it.</li>
  * </ul>
  *
  * <p>Every track-side editor ({@link TrackEditor}, {@link PillarEditor},
@@ -90,10 +92,40 @@ public final class TrackSidePlots {
      * offset falls back to slot 0 — caller should validate beforehand.
      */
     public static BlockPos plotOrigin(TrackKind kind, String name, CarriageDims dims) {
+        BlockPos child = subVariantOrigin(kind, name, dims);
+        if (child != null) return child;
         int x = categoryX(kind);
         int y = stackY(kind, dims);
         int z = variantZ(kind, name, dims);
         return new BlockPos(x, y, z);
+    }
+
+    /**
+     * Plot origin for a sub-variant, or null when {@code name} is top-level.
+     *
+     * <p>A row of a given kind runs along {@code +Z}, so a parent's members run along {@code +X}
+     * from it — the two axes stay independent, and a group grows away from its neighbours rather
+     * than into them. Each member's step is its <b>own</b> footprint plus the gap, because a portal
+     * room is whatever size its author made it and a uniform stride would let a widened member grow
+     * into the next one.</p>
+     *
+     * <p>Only the last category's column can afford to grow on {@code +X}, which today is exactly
+     * the one kind that has groups ({@link TrackKind#PORTAL_ROOM}, at {@link #X_PORTALS}).</p>
+     */
+    private static BlockPos subVariantOrigin(TrackKind kind, String name, CarriageDims dims) {
+        java.util.Optional<String> parent = TrackVariantGroupStore.findParentOf(kind, name);
+        if (parent.isEmpty()) return null;
+        java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> group =
+            TrackVariantGroupStore.get(kind, parent.get());
+        if (group.isEmpty()) return null;
+        int index = group.get().indexOf(name);
+        if (index < 0) return null;
+
+        int x = categoryX(kind) + footprint(kind, parent.get(), dims).getX() + EditorLayout.GAP;
+        for (int i = 0; i < index; i++) {
+            x += footprint(kind, group.get().members().get(i).id(), dims).getX() + EditorLayout.GAP;
+        }
+        return new BlockPos(x, stackY(kind, dims), variantZ(kind, parent.get(), dims));
     }
 
     /** {@link Vec3i} footprint of one stamped instance. Forwards to {@link TrackKind#dims}. */
@@ -153,7 +185,9 @@ public final class TrackSidePlots {
      * {@code PortalRoomEditor.relayout}.</p>
      */
     public static int variantZ(TrackKind kind, String name, CarriageDims dims) {
-        List<String> names = TrackVariantRegistry.namesFor(kind);
+        // Top-level names only — a sub-variant claims no Z slot of its own (it sits +X of its
+        // parent), so its parent's row position stays where it would have been without it.
+        List<String> names = TrackVariantGroupStore.topLevelNames(kind);
         int idx = names.indexOf(name);
         if (idx < 0) idx = 0;
 

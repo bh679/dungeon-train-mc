@@ -311,7 +311,11 @@ public final class EditorTypeMenuInputHandler {
                 if (isSubVariants) {
                     String parentId = menu.variants().get(0).modelId();
                     String memberId = variant.modelId();
-                    String cmd = EditorPlotTeleport.groupMemberWeightCommandFor(parentId, memberId, dir);
+                    // Portal rooms carry the same panel one template layer up — same parent/member
+                    // shape, different command prefix.
+                    String cmd = "PORTALS".equals(variant.category())
+                        ? EditorPlotTeleport.portalRoomGroupWeightCommandFor(parentId, memberId, dir)
+                        : EditorPlotTeleport.groupMemberWeightCommandFor(parentId, memberId, dir);
                     LOGGER.debug("[DungeonTrain] EditorTypeMenu weight (group {}): {}",
                         parentId.equals(memberId) ? "self" : "member", cmd);
                     CommandRunner.run(cmd);
@@ -515,8 +519,13 @@ public final class EditorTypeMenuInputHandler {
                 .equals(menu.typeName())) {
             LOGGER.debug("[DungeonTrain] EditorTypeMenu New: sub-variant of parent '{}' (source '{}')",
                 first.modelId(), currentId);
+            // A portal room's sub-variant is always seeded from its parent, so there is no source to
+            // pick — the picker collapses to the name row.
+            NewSourcePickerScreen.Category subCategory = "PORTALS".equals(category)
+                ? NewSourcePickerScreen.Category.PORTAL_ROOM_SUB_VARIANT
+                : NewSourcePickerScreen.Category.CONTENTS_SUB_VARIANT;
             CommandMenuState.openAt(new NewSourcePickerScreen(
-                NewSourcePickerScreen.Category.CONTENTS_SUB_VARIANT, null, first.modelId(), currentId));
+                subCategory, null, first.modelId(), currentId));
             return;
         }
 
