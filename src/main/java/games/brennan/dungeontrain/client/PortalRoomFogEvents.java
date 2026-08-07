@@ -21,6 +21,11 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
  * beyond what they can see anyway changes nothing, which is why a small room does not look fogged
  * until enough copies of it are standing to be worth hiding.</p>
  *
+ * <p><b>Vanilla's far plane is also an input.</b> It is the far end of the ease the cache runs, so
+ * the frame a player arrives in a room looks exactly like the frame before it and the fog closes in
+ * from there. Handing only the camera position over and easing up from zero is what made a portal
+ * swap flash — a far plane of four blocks is a screenful of fog colour, not a hint of fog.</p>
+ *
  * <p><b>The event has to be cancelled for any of it to apply.</b> {@code ClientHooks.onFogRender}
  * only pushes the near and far planes into the shader when the event was cancelled — an uncancelled
  * handler that sets them is silently ignored. So this cancels, but only on the frames where it
@@ -43,7 +48,12 @@ public final class PortalRoomFogEvents {
         if (mc.level == null) return;
 
         Vec3 camera = event.getCamera().getPosition();
-        float distance = ClientPortalRoomFog.fogDistanceAt(camera.x, camera.y, camera.z);
+        // Vanilla's own far plane goes in as well as coming out: it is the "no room" end of the ease,
+        // so engaging can never hand back a distance shorter than the room asked for. See
+        // ClientPortalRoomFog#fogDistanceAt — easing up from zero instead is what used to fill the
+        // screen with fog colour for the first frames of a portal swap.
+        float distance = ClientPortalRoomFog.fogDistanceAt(
+            camera.x, camera.y, camera.z, event.getFarPlaneDistance());
         if (distance <= 0.0f) return;
 
         float far = Math.min(event.getFarPlaneDistance(), distance);

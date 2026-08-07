@@ -66,6 +66,10 @@ public final class DungeonTrainNet {
         // corridor is occupied, and once empty when it clears. See portal/PortalPuppets.
         registrar.playToClient(PortalPuppetsPacket.TYPE, PortalPuppetsPacket.STREAM_CODEC, PortalPuppetsPacket::handle);
         registrar.playToClient(PortalRoomFogPacket.TYPE, PortalRoomFogPacket.STREAM_CODEC, PortalRoomFogPacket::handle);
+        // …and the swap itself, which the client cannot infer from the position packet that carries it:
+        // the renderer has to be told to finish its occlusion rebuild before drawing, or the first
+        // frames in the twin draw nothing at all. See client/portal/ClientPortalSwap.
+        registrar.playToClient(PortalSwapPacket.TYPE, PortalSwapPacket.STREAM_CODEC, PortalSwapPacket::handle);
         // …and the same region trick for the engine sound: a twin corridor is not a sub-level, so the
         // client cannot work out from the train's geometry that it should still sound like one.
         registrar.playToClient(PortalTrainAudioPacket.TYPE, PortalTrainAudioPacket.STREAM_CODEC, PortalTrainAudioPacket::handle);

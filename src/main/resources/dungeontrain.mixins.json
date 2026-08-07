@@ -62,7 +62,9 @@
     "client.ModelBlockRendererUpsideDownMixin",
     "client.MinecraftFramerateThrottleMixin",
     "client.SoundEngineMusicFadeMixin",
-    "client.LanguageSelectEntryLogoMixin"
+    "client.LanguageSelectEntryLogoMixin",
+    "client.SectionOcclusionGraphPortalSwapMixin",
+    "client.LevelRendererPortalSwapCompileMixin"
   ],
   "server": [],
   "injectors": {
