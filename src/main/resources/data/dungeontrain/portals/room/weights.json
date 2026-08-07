@@ -6,15 +6,6 @@
       "NETHER",
       "VOID",
       "END"
-    ],
-    "mode": "endless_repetition"
-  },
-  "endless": {
-    "weight": 3,
-    "mode": "endless_repetition"
-  },
-  "endless2": {
-    "weight": 3,
-    "mode": "endless_open"
+    ]
   }
 }
