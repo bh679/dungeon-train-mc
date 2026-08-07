@@ -234,19 +234,11 @@ public final class PortalRoomTiler {
         Vec3i size = structure.roomSize();
 
         PortalCorridorMask mask = maskFor(structure, dims, tile);
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        BlockState air = Blocks.AIR.defaultBlockState();
-        for (int x = 0; x < size.getX(); x++) {
-            for (int z = 0; z < size.getZ(); z++) {
-                for (int y = 0; y < size.getY(); y++) {
-                    int wx = origin.getX() + x;
-                    int wy = origin.getY() + y;
-                    int wz = origin.getZ() + z;
-                    if (mask.covers(wx, wy, wz)) continue;
-                    level.setBlock(pos.set(wx, wy, wz), air, Block.UPDATE_ALL);
-                }
-            }
-        }
+        PortalClear.clearBox(level, new BoundingBox(
+            origin.getX(), origin.getY(), origin.getZ(),
+            origin.getX() + size.getX() - 1,
+            origin.getY() + size.getY() - 1,
+            origin.getZ() + size.getZ() - 1), mask);
 
         PortalStructure shrunk = structure.withTiling(structure.tiling().without(tile));
         // The neighbours that were open onto this copy now face nothing, so they close again — which

@@ -45,10 +45,21 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
         return boxes.isEmpty();
     }
 
-    /** True when {@code (x, y, z)} belongs to a corridor and must be left alone. */
+    /**
+     * True when {@code (x, y, z)} belongs to a corridor and must be left alone.
+     *
+     * <p>Compares the bounds directly rather than through {@code BoundingBox.isInside(Vec3i)}, which
+     * would allocate a vector per box per cell — this is called once for every cell of every stamp
+     * and every erase.</p>
+     */
     public boolean covers(int x, int y, int z) {
-        for (BoundingBox box : boxes) {
-            if (box.isInside(new Vec3i(x, y, z))) return true;
+        for (int i = 0; i < boxes.size(); i++) {
+            BoundingBox box = boxes.get(i);
+            if (x >= box.minX() && x <= box.maxX()
+                && y >= box.minY() && y <= box.maxY()
+                && z >= box.minZ() && z <= box.maxZ()) {
+                return true;
+            }
         }
         return false;
     }
