@@ -36,9 +36,12 @@ import java.util.UUID;
 
 /**
  * Registers OP-only (permission level 2) commands:
- *   - {@code /dungeontrain spawn [count]} — <b>the delete-and-reset command</b>.
+ *   - {@code /dungeontrain spawn} — <b>the delete-and-reset command</b>.
  *     Deletes the world's current train outright, then spawns a fresh one at the
- *     configured speed with {@code count} carriages (default from config). The new
+ *     configured speed. Takes no arguments: there is only ever one train, and its
+ *     carriage window is config state changed with {@code carriages <count>}, not a
+ *     per-spawn choice (a literal count also let the config's 0 = "auto" sentinel
+ *     through to a spawn that wipes the train and then refuses to build one). The new
  *     train is always seeded <b>on the track</b> — at the corridor's Y and Z, at the
  *     player's X — never at the player's own position, because the live
  *     {@code TrackGeometry} is derived from that origin. The player is lifted clear
@@ -81,11 +84,10 @@ public final class TrainCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext buildContext) {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("dungeontrain")
             .requires(s -> s.hasPermission(2))
+            // No count argument: there is only ever one train, and its carriage window is
+            // config state set with 'carriages <count>', not a per-spawn choice.
             .then(Commands.literal("spawn")
-                .executes(ctx -> runSpawn(ctx.getSource(), DungeonTrainConfig.getNumCarriages()))
-                .then(Commands.argument("count",
-                        IntegerArgumentType.integer(DungeonTrainConfig.MIN_CARRIAGES, DungeonTrainConfig.MAX_CARRIAGES))
-                    .executes(ctx -> runSpawn(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))))
+                .executes(ctx -> runSpawn(ctx.getSource())))
             .then(Commands.literal("speed")
                 .then(Commands.argument("value",
                         DoubleArgumentType.doubleArg(DungeonTrainConfig.MIN_SPEED, DungeonTrainConfig.MAX_SPEED))
@@ -133,7 +135,7 @@ public final class TrainCommand {
             .redirect(registered));
     }
 
-    private static int runSpawn(CommandSourceStack source, int count) {
+    private static int runSpawn(CommandSourceStack source) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -171,6 +173,14 @@ public final class TrainCommand {
         double speed = DungeonTrainConfig.getSpeed();
         Vector3d velocity = new Vector3d(speed, 0.0, 0.0);
 
+        // Seed-only spawn; the per-tick appender extends from here. Config 0 is the "auto"
+        // sentinel, NOT a literal count — spawnCore rejects <= 0, and it does so AFTER
+        // deleteExistingTrains has run, so passing the sentinel through would delete the
+        // train and spawn nothing. Same guard as TrainBootstrapEvents.ensureTrainSpawned
+        // and /dtp.
+        int configCount = DungeonTrainConfig.getNumCarriages();
+        int count = configCount > 0 ? configCount : DungeonTrainConfig.DEFAULT_CARRIAGES_AUTO_SEED;
+
         // Lift the player clear before anything assembles: spawnGroup converts every
         // world block in the footprint into ship blocks and drags along whatever is
         // caught inside — the long-standing /dungeontrain spawn bug (issue #22).
@@ -181,8 +191,8 @@ public final class TrainCommand {
         player.setInvulnerable(true);
         player.teleportTo(level, spawnX, holdY, holdZ, player.getYRot(), player.getXRot());
 
-        LOGGER.info("[DungeonTrain] /dungeontrain spawn {} by {} at on-track origin {} speed {}",
-            count, player.getName().getString(), origin, speed);
+        LOGGER.info("[DungeonTrain] /dungeontrain spawn by {} at on-track origin {} speed {} seed {} (configCount={})",
+            player.getName().getString(), origin, speed, count, configCount);
 
         try {
             ManagedShip ship = TrainAssembler.spawnTrain(level, origin, velocity, count, spawnerWorldPos, dims);
@@ -195,11 +205,12 @@ public final class TrainCommand {
             // invulnerability set above.
             DtpPlacementService.enqueue(player, level, spawnX);
             source.sendSuccess(() -> Component.literal(
-                "Spawned " + count + "-carriage train (ship id " + ship.id() + ", length "
-                    + lengthBlocks + " blocks) on the track at X=" + origin.getX()
-                    + ", velocity +X " + speed + " m/s — you'll land on the flatbed once it settles."
+                "Spawned a fresh train on the track at X=" + origin.getX() + " (ship id " + ship.id()
+                    + ", seeded with " + count + " carriages / " + lengthBlocks + " blocks, velocity +X "
+                    + speed + " m/s) — you'll land on the flatbed once it settles."
                     + " The previous train was deleted; difficulty is back on automatic scaling and "
                     + forgotten + " remembered community carriage(s) can appear again."
+                    + " Use '/dungeontrain carriages <count>' to change the carriage window."
             ), true);
             return 1;
         } catch (Throwable t) {
