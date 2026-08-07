@@ -104,8 +104,9 @@ class EditorPlotLabelsRendererTest {
                 axes[a] + " left third must decrement " + axes[a]);
             assertEquals(expected[a][1], EditorPlotLabelsRenderer.cellAt(e, halfW, right, y),
                 axes[a] + " right third must increment " + axes[a]);
-            // The middle of a stepper row is the number — deliberately dead.
-            assertEquals(CellKind.NONE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, y));
+            // The number between the arrows opens the type-all-three field.
+            assertEquals(CellKind.SIZE_TYPE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, y),
+                axes[a] + " middle cell should open the size field");
         }
     }
 
@@ -124,6 +125,16 @@ class EditorPlotLabelsRendererTest {
             EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, rowCentreY(e, indexOf(rows, RowKind.ENTER))));
         assertEquals(CellKind.ACTION_SAVE,
             EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.05, rowCentreY(e, indexOf(rows, RowKind.ACTION))));
+    }
+
+    @Test
+    @DisplayName("The weight row's number stays dead — only dimension rows open the size field")
+    void weightNumberIsNotATypingTarget() {
+        EditorPlotLabelsPacket.Entry e = portalInPlot();
+        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
+        RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
+        assertEquals(CellKind.NONE,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, rowCentreY(e, indexOf(rows, RowKind.WEIGHT))));
     }
 
     @Test

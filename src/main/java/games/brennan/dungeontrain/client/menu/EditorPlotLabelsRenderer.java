@@ -82,7 +82,9 @@ public final class EditorPlotLabelsRenderer {
         WIDTH_DEC,
         WIDTH_INC,
         HEIGHT_DEC,
-        HEIGHT_INC
+        HEIGHT_INC,
+        /** The number in the middle of any dimension row — opens the type-all-three field. */
+        SIZE_TYPE
     }
 
     /**
@@ -385,9 +387,11 @@ public final class EditorPlotLabelsRenderer {
             // Weight is always visible (display only) but its arrows are clickable only from
             // inside the plot.
             case WEIGHT -> hasWeightArrows(entry) ? weightRowCell(hitX, halfW) : CellKind.NONE;
-            case LENGTH -> stepperCell(hitX, halfW, CellKind.LENGTH_DEC, CellKind.LENGTH_INC);
-            case WIDTH -> stepperCell(hitX, halfW, CellKind.WIDTH_DEC, CellKind.WIDTH_INC);
-            case HEIGHT -> stepperCell(hitX, halfW, CellKind.HEIGHT_DEC, CellKind.HEIGHT_INC);
+            // The number between the arrows opens the typing field — the panel has no keyboard
+            // entry of its own, and stepping from 13 to 48 is thirty-five taps.
+            case LENGTH -> stepperCell(hitX, halfW, CellKind.LENGTH_DEC, CellKind.LENGTH_INC, CellKind.SIZE_TYPE);
+            case WIDTH -> stepperCell(hitX, halfW, CellKind.WIDTH_DEC, CellKind.WIDTH_INC, CellKind.SIZE_TYPE);
+            case HEIGHT -> stepperCell(hitX, halfW, CellKind.HEIGHT_DEC, CellKind.HEIGHT_INC, CellKind.SIZE_TYPE);
             case ENTER -> CellKind.BUTTON_ENTER_INSIDE;
             case ACTION -> actionRowCell(hitX, halfW);
             case CONTENTS -> CellKind.BUTTON_CONTENTS;
@@ -395,18 +399,20 @@ public final class EditorPlotLabelsRenderer {
     }
 
     private static CellKind weightRowCell(double hitX, double halfW) {
-        return stepperCell(hitX, halfW, CellKind.WEIGHT_DEC, CellKind.WEIGHT_INC);
+        return stepperCell(hitX, halfW, CellKind.WEIGHT_DEC, CellKind.WEIGHT_INC, CellKind.NONE);
     }
 
     /**
      * Thirds split shared by every {@code [-] N [+]} row: decrement on the left third, increment on
-     * the right third, the number in the middle non-interactive.
+     * the right third, and {@code middle} for the number between them — {@link CellKind#NONE} where
+     * the number is display-only.
      */
-    private static CellKind stepperCell(double hitX, double halfW, CellKind dec, CellKind inc) {
+    private static CellKind stepperCell(double hitX, double halfW, CellKind dec, CellKind inc,
+                                        CellKind middle) {
         double third = (halfW * 2.0) / 3.0;
         if (hitX < -halfW + third) return dec;
         if (hitX > halfW - third) return inc;
-        return CellKind.NONE;
+        return middle;
     }
 
     private static CellKind actionRowCell(double hitX, double halfW) {
@@ -526,6 +532,11 @@ public final class EditorPlotLabelsRenderer {
                     };
                     drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
                     drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY, hovered, dec, inc);
+                    if (hovered == CellKind.SIZE_TYPE) {
+                        double third = (halfW * 2.0) / 3.0;
+                        drawQuad(ps, buffer, -halfW + third + 0.005, rBot + 0.005,
+                            halfW - third - 0.005, rTop - 0.005, HOVER_COLOR);
+                    }
                     drawCenteredText(ps, buffer, font,
                         dimensionLabel(rowKind) + " " + dimensionValue(entry, rowKind),
                         0, rCY, WEIGHT_COLOR);

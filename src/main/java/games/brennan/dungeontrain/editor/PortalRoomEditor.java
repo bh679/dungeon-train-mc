@@ -330,6 +330,24 @@ public final class PortalRoomEditor {
         return out;
     }
 
+    /**
+     * Restamp {@code name}'s plot at an explicit whole box.
+     *
+     * <p>The typed-entry counterpart to the per-axis steppers: setting all three at once is one
+     * relayout instead of three, and lets the author jump straight to a size rather than walking
+     * there a block at a time.</p>
+     *
+     * @return the size actually applied, after clamping to what this world's corridor allows
+     */
+    public static Vec3i setSize(ServerLevel overworld, String name, Vec3i wanted, CarriageDims dims) {
+        Vec3i clamped = PortalRoomLayout.clampSize(dims, wanted);
+        relayout(overworld, dims, () -> PortalRoomSizes.pending(name, clamped));
+        LOGGER.info("[DungeonTrain] Portal room '{}' plot restamped at {}x{}x{} (typed {}x{}x{})",
+            name, clamped.getX(), clamped.getY(), clamped.getZ(),
+            wanted.getX(), wanted.getY(), wanted.getZ());
+        return clamped;
+    }
+
     /** Current value of {@code axis} for {@code name}. */
     public static int axisOf(Vec3i size, Axis axis) {
         return switch (axis) {

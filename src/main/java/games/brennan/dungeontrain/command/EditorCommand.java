@@ -381,7 +381,16 @@ public final class EditorCommand {
                             StringArgumentType.getString(ctx, "name")))))
                 .then(portalSizeNode("length", PortalRoomEditor.Axis.LENGTH))
                 .then(portalSizeNode("width", PortalRoomEditor.Axis.WIDTH))
-                .then(portalSizeNode("height", PortalRoomEditor.Axis.HEIGHT)))
+                .then(portalSizeNode("height", PortalRoomEditor.Axis.HEIGHT))
+                // All three at once, in the order the menus label them.
+                .then(Commands.literal("size")
+                    .then(Commands.argument("length", IntegerArgumentType.integer(1, 512))
+                        .then(Commands.argument("width", IntegerArgumentType.integer(1, 512))
+                            .then(Commands.argument("height", IntegerArgumentType.integer(1, 512))
+                                .executes(ctx -> runPortalRoomSizeAll(ctx.getSource(),
+                                    IntegerArgumentType.getInteger(ctx, "length"),
+                                    IntegerArgumentType.getInteger(ctx, "width"),
+                                    IntegerArgumentType.getInteger(ctx, "height"))))))))
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -4807,6 +4816,41 @@ public final class EditorCommand {
                     PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MAX_LENGTH))
                 .executes(ctx -> runPortalRoomSize(ctx.getSource(), axis,
                     IntegerArgumentType.getInteger(ctx, "blocks"))));
+    }
+
+    /**
+     * {@code /dt editor portals size <length> <width> <height>} — set the whole box at once.
+     *
+     * <p>Argument bounds are deliberately loose; {@link PortalRoomLayout#clampSize} decides what is
+     * legal for this world and the reply says so when it had to pull a number in. A typed size that
+     * is silently rejected would be worse than one that is visibly clamped.</p>
+     */
+    private static int runPortalRoomSizeAll(CommandSourceStack source, int length, int width, int height) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        if (name == null) {
+            source.sendFailure(Component.literal(
+                "Stand in a portal room plot first — /dt editor portals."));
+            return 0;
+        }
+
+        net.minecraft.core.Vec3i wanted = new net.minecraft.core.Vec3i(length, height, width);
+        net.minecraft.core.Vec3i applied = PortalRoomEditor.setSize(overworld, name, wanted, dims);
+        boolean clamped = !applied.equals(wanted);
+        String note = clamped
+            ? " (clamped from " + length + " " + width + " " + height
+                + " — the room must still seal the corridor mouth and fit its Y lane)"
+            : "";
+        source.sendSuccess(() -> Component.literal(
+            "Portal room '" + name + "' is now " + applied.getX() + " long, " + applied.getZ()
+            + " wide, " + applied.getY() + " tall" + note
+            + ". The plot was reset to the built-in room at that size — /dt save to keep it."
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
     }
 
     /** Nudge one axis of the room plot the player is standing in by {@code delta}. */

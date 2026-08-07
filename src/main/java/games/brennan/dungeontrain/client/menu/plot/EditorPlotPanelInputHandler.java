@@ -147,6 +147,7 @@ public final class EditorPlotPanelInputHandler {
             case WIDTH_INC -> dispatchDimension(entry, "width", "inc");
             case HEIGHT_DEC -> dispatchDimension(entry, "height", "dec");
             case HEIGHT_INC -> dispatchDimension(entry, "height", "inc");
+            case SIZE_TYPE -> openSizeEntry(entry);
             case ACTION_SAVE -> dispatchAction(entry, EditorPlotActionPacket.Action.SAVE);
             case ACTION_RESET -> dispatchAction(entry, EditorPlotActionPacket.Action.RESET);
             case ACTION_CLEAR -> dispatchAction(entry, EditorPlotActionPacket.Action.CLEAR);
@@ -173,6 +174,18 @@ public final class EditorPlotPanelInputHandler {
      * shared {@link EditorPlotTeleport#weightCommandFor(String, String, String, String)}
      * routing helper.
      */
+    /**
+     * Open the type-all-three size field for the portal room the player is standing in.
+     *
+     * <p>The panel itself cannot take keyboard input, so it hands off to a keyboard menu screen —
+     * the same move {@code + New} makes to reach the name picker.</p>
+     */
+    private static void openSizeEntry(EditorPlotLabelsPacket.Entry entry) {
+        if (!"PORTALS".equals(entry.category())) return;
+        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomSizeScreen(
+            entry.roomLength(), entry.roomWidth(), entry.roomHeight()));
+    }
+
     /** Step one axis of the portal room the player is standing in. */
     private static void dispatchDimension(EditorPlotLabelsPacket.Entry entry, String axis, String dir) {
         String cmd = EditorPlotTeleport.dimensionCommandFor(entry.category(), axis, dir);

@@ -165,6 +165,15 @@ public final class EditorMenuScreen implements MenuScreen {
             CommandMenuEntry heightRow = sizeTripleFor("height", "Height",
                 EditorStatusHudOverlay.roomHeight());
             if (heightRow != null) out.add(heightRow);
+
+            // …and all three in one field, for getting somewhere rather than nudging. Prefilled
+            // with the current box so editing one number leaves the others alone.
+            if (lengthRow != null) {
+                out.add(new CommandMenuEntry.DrillIn("Size…", new PortalRoomSizeScreen(
+                    EditorStatusHudOverlay.roomLength(),
+                    EditorStatusHudOverlay.roomWidth(),
+                    EditorStatusHudOverlay.roomHeight())));
+            }
         }
 
         // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases
