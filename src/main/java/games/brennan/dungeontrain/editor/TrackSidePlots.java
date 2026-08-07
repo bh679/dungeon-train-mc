@@ -145,8 +145,8 @@ public final class TrackSidePlots {
      * {@link TrackKind#freeSizeAboveFloor()} kind does not: a portal room is as wide as its author
      * made it, and a uniform stride sized off the kind would let a widened room grow straight into
      * its neighbour's plot. Those rows are packed from each variant's own {@link #slotZ} instead —
-     * a reserved span that only grows, in {@link #SLOT_STEP} jumps, once a room comes within
-     * {@link #SLOT_MIN_CLEARANCE} of filling it. Most resizes therefore move nothing.</p>
+     * a reserved span that only grows, in {@link #SLOT_STEP} jumps, once a room closes to within
+     * {@link #SLOT_MIN_CLEARANCE} blocks of filling it. Most resizes therefore move nothing.</p>
      *
      * <p>Callers that change a size or the registered name set must clear every plot in the row
      * <b>before</b> the change and restamp after, because the change moves the later plots — see
@@ -172,8 +172,12 @@ public final class TrackSidePlots {
     /**
      * Least air a plot keeps between its far edge and the next plot's slot before the row has to
      * make more room.
+     *
+     * <p>Three blocks rather than one: a single block of clearance reads as touching from inside
+     * the plot, and the whole point of the slot is that the author never sees their room about to
+     * collide with the next one.</p>
      */
-    public static final int SLOT_MIN_CLEARANCE = 1;
+    public static final int SLOT_MIN_CLEARANCE = 3;
 
     /**
      * How much a slot grows by when a plot outgrows it.

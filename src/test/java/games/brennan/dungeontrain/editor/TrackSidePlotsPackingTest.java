@@ -55,9 +55,9 @@ class TrackSidePlotsPackingTest {
 
         int secondAt13 = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ();
 
-        // The base slot is 13 + GAP = 18, so anything up to 17 wide still leaves the required
-        // 1 block of clearance and costs nothing.
-        for (int width = 14; width <= 17; width++) {
+        // The base slot is 13 + GAP = 18, so anything up to 15 wide still leaves the required
+        // 3 blocks of clearance and costs nothing.
+        for (int width = 14; width <= 15; width++) {
             PortalRoomSizes.pending("default", new Vec3i(11, 7, width));
             assertEquals(secondAt13,
                 TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ(),
@@ -72,22 +72,22 @@ class TrackSidePlotsPackingTest {
         TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, "second");
         int before = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ();
 
-        // 18 wide leaves no clearance in an 18-block slot, so the slot buys another 10.
-        PortalRoomSizes.pending("default", new Vec3i(11, 7, 18));
+        // 16 wide leaves under 3 blocks of clearance in an 18-block slot, so it buys another 10.
+        PortalRoomSizes.pending("default", new Vec3i(11, 7, 16));
         int after = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ();
         assertEquals(before + TrackSidePlots.SLOT_STEP, after);
         assertNoOverlap();
 
         // …and the next nine blocks of growth are then free.
-        for (int width = 19; width <= 27; width++) {
+        for (int width = 17; width <= 25; width++) {
             PortalRoomSizes.pending("default", new Vec3i(11, 7, width));
             assertEquals(after, TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ(),
                 "width " + width + " should still fit the widened slot");
             assertNoOverlap();
         }
 
-        // 28 needs a second step.
-        PortalRoomSizes.pending("default", new Vec3i(11, 7, 28));
+        // 26 needs a second step.
+        PortalRoomSizes.pending("default", new Vec3i(11, 7, 26));
         assertEquals(before + 2 * TrackSidePlots.SLOT_STEP,
             TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ());
         assertNoOverlap();
