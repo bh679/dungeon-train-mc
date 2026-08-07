@@ -46,6 +46,21 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
     }
 
     /**
+     * This mask with one more box in it.
+     *
+     * <p>What {@link PortalRoomMode#ENDLESS_OPEN} adds to a tile's <b>write</b> mask: the tile's
+     * interior, so the stamp puts down a floor and a roof and skips everything between them. Kept a
+     * union rather than a replacement because the corridor row's tile needs both boxes — the
+     * corridors it must stamp around, and the interior it must not fill.</p>
+     */
+    public PortalCorridorMask plus(BoundingBox box) {
+        List<BoundingBox> grown = new java.util.ArrayList<>(boxes.size() + 1);
+        grown.addAll(boxes);
+        grown.add(box);
+        return new PortalCorridorMask(grown);
+    }
+
+    /**
      * True when {@code (x, y, z)} belongs to a corridor and must be left alone.
      *
      * <p>Compares the bounds directly rather than through {@code BoundingBox.isInside(Vec3i)}, which

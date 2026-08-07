@@ -734,8 +734,33 @@ public final class PortalCarriageBuilder {
     public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
                                    String roomName, Vec3i size, boolean relight,
                                    PortalCorridorMask mask, int variantIndex) {
-        stampRoomAt(level, roomOrigin, dims, roomName, size, relight, mask);
-        applyRoomVariants(level, roomOrigin, roomName, size, mask, variantIndex);
+        stampRoomAt(level, roomOrigin, dims, roomName, size, relight, mask, mask, variantIndex);
+    }
+
+    /**
+     * {@link #stampRoomAt} with the two jobs a mask does held apart.
+     *
+     * <p>{@code clearMask} is what must be left <b>standing</b>; {@code writeMask} is what must be
+     * left <b>empty</b>. They are the same mask everywhere but an
+     * {@link PortalRoomMode#ENDLESS_OPEN} tile, which adds its own interior to the write mask so the
+     * stamp lays a floor and a roof and nothing between them.</p>
+     *
+     * <p>They cannot be one mask. A room lands in solid rock at the world floor, so the interior has
+     * to be cleared to air even when nothing is stamped into it — widening the clear mask instead
+     * would leave deepslate standing where the open space belongs. The clear stays corridor-only and
+     * only the writes are suppressed.</p>
+     *
+     * <p>This replaces stamping the whole room and then stripping the interior back out. That order
+     * placed every chest and rolled its loot pool before breaking it a moment later, and the break
+     * ran through a plain {@code setBlock} over a live block entity — so each copy sprayed its
+     * contents across the floor. See {@link PortalClear} for the same hazard, found earlier.</p>
+     */
+    public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
+                                   String roomName, Vec3i size, boolean relight,
+                                   PortalCorridorMask clearMask, PortalCorridorMask writeMask,
+                                   int variantIndex) {
+        stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask);
+        applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex);
     }
 
     /**
@@ -791,22 +816,31 @@ public final class PortalCarriageBuilder {
     public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
                                    String roomName, Vec3i size, boolean relight,
                                    PortalCorridorMask mask) {
+        stampRoomAt(level, roomOrigin, dims, roomName, size, relight, mask, mask);
+    }
+
+    /** {@link #stampRoomAt} with the clear mask and the write mask held apart. */
+    public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
+                                   String roomName, Vec3i size, boolean relight,
+                                   PortalCorridorMask clearMask, PortalCorridorMask writeMask) {
         // Clear first, for the same reason a twin does: the room lands in solid rock at the world
         // floor, and a template stamp only writes its own cells — anything the author left as
-        // STRUCTURE_VOID would otherwise show deepslate through the wall.
-        clearRoomBox(level, roomOrigin, size, mask, relight);
+        // STRUCTURE_VOID would otherwise show deepslate through the wall. This is the CLEAR mask
+        // deliberately: an ENDLESS_OPEN tile still needs its interior emptied, it just does not
+        // want anything put back into it.
+        clearRoomBox(level, roomOrigin, size, clearMask, relight);
         clearIntruders(level, roomOrigin, size);
         plugFluidsAround(level, roomOrigin, size);
 
         Optional<StructureTemplate> stored = PortalRoomTemplateStore.get(level, roomName, dims);
         if (stored.isEmpty()) {
-            stampRoomBuiltIn(level, roomOrigin, size, relight, mask);
+            stampRoomBuiltIn(level, roomOrigin, size, relight, writeMask);
             return;
         }
 
         if (stored.get().getSize().equals(size)) {
             CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(),
-                mask.isEmpty() ? null : mask.asProcessor(), relight);
+                writeMask.isEmpty() ? null : writeMask.asProcessor(), relight);
             return;
         }
 
@@ -819,9 +853,9 @@ public final class PortalCarriageBuilder {
         // fits, and only genuinely new space comes back as the built-in room. Replacing the whole
         // thing with the built-in room — which is what used to happen — threw the work away on
         // every stepper click.
-        stampRoomBuiltIn(level, roomOrigin, size, relight, mask);
+        stampRoomBuiltIn(level, roomOrigin, size, relight, writeMask);
         CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(),
-            clipTo(roomOrigin, size, mask), relight);
+            clipTo(roomOrigin, size, writeMask), relight);
     }
 
     /**

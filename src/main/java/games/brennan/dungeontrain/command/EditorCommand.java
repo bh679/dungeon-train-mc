@@ -3339,11 +3339,32 @@ public final class EditorCommand {
             }
         }
 
+        String roomName = PortalRoomEditor.plotContaining(pos, dims);
+        if (roomName != null) {
+            try {
+                int cleared = PortalRoomEditor.clearEverything(overworld, roomName, dims);
+                final String id = roomName;
+                final int n = cleared;
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: cleared all blocks in portal room '" + id + "'"
+                        + (n > 0 ? " (and " + n + " authored entr" + (n == 1 ? "y" : "ies") + ")." : ".")
+                ).withStyle(ChatFormatting.GREEN), true);
+                return 1;
+            } catch (Throwable t) {
+                LOGGER.error("[DungeonTrain] editor clear (portal room) failed", t);
+                source.sendFailure(Component.literal("clear failed: "
+                    + t.getClass().getSimpleName() + ": " + t.getMessage()
+                ).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+        }
+
         source.sendFailure(Component.literal(
-            "editor clear: stand inside a carriage / contents / parts plot first."
+            "editor clear: stand inside a carriage / contents / parts / portal room plot first."
         ));
         return 0;
     }
+
 
     private static int runNew(CommandSourceStack source, String rawName, CarriageVariant sourceVariant) {
         ServerPlayer player = requirePlayer(source);

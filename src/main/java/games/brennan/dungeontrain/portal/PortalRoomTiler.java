@@ -154,12 +154,17 @@ public final class PortalRoomTiler {
     /**
      * Put a copy of the room at {@code tile} and settle the faces around it.
      *
-     * <p>{@link PortalRoomMode#ENDLESS_OPEN} stamps the whole room and then clears everything between
-     * its floor and its ceiling — so what repeats is the floor and the roof, in the authored room's
-     * own blocks, and nothing else. Stamping and stripping rather than reading two planes out of the
-     * template keeps this working for any authored room without a second code path, and the clear was
-     * already paid for: a copy has to be cleared to air before anything is stamped in it either way.
-     * </p>
+     * <p>{@link PortalRoomMode#ENDLESS_OPEN} repeats the floor and the roof, in the authored room's
+     * own blocks, and nothing else. It gets there by masking the tile's interior out of the
+     * <b>write</b> mask, so the stamp never puts anything between the two planes — the clear mask is
+     * untouched, so the interior is still emptied of the rock the copy landed in.</p>
+     *
+     * <p>It used to stamp the whole room and strip the interior back out afterwards, on the reasoning
+     * that the clear was already paid for. It was not: the strip ran a plain {@code setBlock} over
+     * live block entities, so every chest the stamp had just placed <i>and filled</i> spilled its
+     * loot across the floor — once per tile, up to the whole window, re-firing as the window slid.
+     * Not writing the interior costs a mask box and skips the placement, the loot roll and the break
+     * together. See {@link PortalClear} for the same hazard, found earlier on the erase paths.</p>
      */
     private static PortalStructure stampTile(ServerLevel level, CarriageDims dims,
                                              PortalStructure structure, Tile tile) {
@@ -167,14 +172,38 @@ public final class PortalRoomTiler {
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
 
-        PortalCorridorMask mask = maskFor(structure, dims, tile);
+        PortalCorridorMask clearMask = maskFor(structure, dims, tile);
+        PortalCorridorMask writeMask = writeMaskFor(structure, clearMask, origin, size);
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, structure.roomName(), size,
-            /*relight*/ true, mask, structure.variantIndexFor(tile));
-        if (!structure.mode().tilesWholeRoom()) clearInterior(level, origin, size, mask);
+            /*relight*/ true, clearMask, writeMask, structure.variantIndexFor(tile));
 
         PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
         refreshFacesAround(level, dims, grown, tile);
         return grown;
+    }
+
+    /**
+     * What this copy must not write into: whatever the clear mask already protects, plus — for
+     * {@link PortalRoomMode#ENDLESS_OPEN} — everything strictly between the tile's floor and its
+     * ceiling.
+     *
+     * <p>Tested against {@code ENDLESS_OPEN} rather than {@code !tilesWholeRoom()}, which is also
+     * true of {@link PortalRoomMode#BEDROCK_LOCK} and is only unreachable for it because
+     * {@link #tick} returns early for a mode that does not tile at all. That is a trap waiting for
+     * the next mode to be added.</p>
+     */
+    // Package-private rather than private so it can be tested directly: it is pure, and it is the
+    // whole of the ENDLESS_OPEN rule — getting it wrong either sprays loot again or fills the open
+    // space with the rock the copy landed in.
+    static PortalCorridorMask writeMaskFor(PortalStructure structure,
+                                           PortalCorridorMask clearMask,
+                                           BlockPos origin, Vec3i size) {
+        if (structure.mode() != PortalRoomMode.ENDLESS_OPEN) return clearMask;
+        return clearMask.plus(new BoundingBox(
+            origin.getX(), origin.getY() + 1, origin.getZ(),
+            origin.getX() + size.getX() - 1,
+            origin.getY() + size.getY() - 2,
+            origin.getZ() + size.getZ() - 1));
     }
 
     /**
@@ -190,24 +219,6 @@ public final class PortalRoomTiler {
         return tile.z() == 0
             ? PortalCarriageBuilder.corridorMask(structure, dims)
             : PortalCorridorMask.NONE;
-    }
-
-    /** Everything strictly between the floor and the ceiling, back to air, bar what the mask owns. */
-    private static void clearInterior(ServerLevel level, BlockPos origin, Vec3i size,
-                                      PortalCorridorMask mask) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        BlockState air = Blocks.AIR.defaultBlockState();
-        for (int x = 0; x < size.getX(); x++) {
-            for (int z = 0; z < size.getZ(); z++) {
-                for (int y = 1; y < size.getY() - 1; y++) {
-                    int wx = origin.getX() + x;
-                    int wy = origin.getY() + y;
-                    int wz = origin.getZ() + z;
-                    if (mask.covers(wx, wy, wz)) continue;
-                    level.setBlock(pos.set(wx, wy, wz), air, Block.UPDATE_ALL);
-                }
-            }
-        }
     }
 
     // ---------- erasing ----------
@@ -293,16 +304,17 @@ public final class PortalRoomTiler {
      */
     private static void carveSeam(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                  Tile tile, int dx, int dz) {
-        BlockState air = Blocks.AIR.defaultBlockState();
         eachFaceCell(level, dims, structure, tile, dx, dz, /*interiorOnly*/ true, (wall, inner) -> {
             // Open the seam only where both rooms are already open one step further in, so the
             // passage that appears is the passage that exists on both sides.
             BlockPos innerFar = wall.offset(dx * 2, 0, dz * 2);
             if (!level.getBlockState(inner).isAir() || !level.getBlockState(innerFar).isAir()) return;
-            level.setBlock(wall, air, Block.UPDATE_ALL);
+            // Through clearCell, not setBlock: an authored chest standing against a face would
+            // otherwise spill its contents when the seam opens through it.
+            PortalClear.clearCell(level, wall);
             // The far column belongs to the neighbour; eachFaceCell has already dropped every cell
             // whose far side is a corridor's, so writing it here needs no second guard.
-            level.setBlock(wall.offset(dx, 0, dz), air, Block.UPDATE_ALL);
+            PortalClear.clearCell(level, wall.offset(dx, 0, dz));
         });
     }
 
@@ -318,12 +330,11 @@ public final class PortalRoomTiler {
     /** Take a face away — {@link PortalRoomMode#ENDLESS_OPEN} only. */
     private static void openFace(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                  Tile tile, int dx, int dz) {
-        BlockState air = Blocks.AIR.defaultBlockState();
         eachFaceCell(level, dims, structure, tile, dx, dz, /*interiorOnly*/ true, (wall, inner) -> {
             // Same test as the seam carve, for the same reason: only where the room behind it is
             // already open, so an authored pillar standing against the wall is not hollowed out.
             if (!level.getBlockState(inner).isAir()) return;
-            level.setBlock(wall, air, Block.UPDATE_ALL);
+            PortalClear.clearCell(level, wall);
         });
     }
 

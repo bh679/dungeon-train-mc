@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -187,6 +188,25 @@ public final class PortalClear {
 
         discardLooseItems(level, box);
         return cleared[0];
+    }
+
+    /**
+     * One cell to air, without a container spilling its contents on the way out.
+     *
+     * <p>The single-cell counterpart to {@link #clearBox}, for the face operations that open a wall
+     * column at a time and so cannot go through a box clear. Same rule as the loop above: evict the
+     * block entity <b>before</b> the state changes, or {@code onRemove} drops the inventory.</p>
+     *
+     * <p>Keeps {@code UPDATE_ALL} rather than writing through the section, because the callers rely
+     * on the neighbour and lighting updates a face becoming open should produce.</p>
+     */
+    public static void clearCell(ServerLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (state.isAir()) return;
+        if (state.hasBlockEntity()) {
+            SilentBlockOps.evictBlockEntity(level.getChunkAt(pos), pos);
+        }
+        level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
     }
 
     /**
