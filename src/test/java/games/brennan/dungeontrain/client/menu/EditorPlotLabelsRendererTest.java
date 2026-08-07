@@ -91,9 +91,9 @@ class EditorPlotLabelsRendererTest {
 
         RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
         CellKind[][] expected = {
-            {CellKind.LENGTH_DEC, CellKind.LENGTH_INC},
-            {CellKind.WIDTH_DEC, CellKind.WIDTH_INC},
-            {CellKind.HEIGHT_DEC, CellKind.HEIGHT_INC},
+            {CellKind.LENGTH_DEC, CellKind.LENGTH_INC, CellKind.LENGTH_TYPE},
+            {CellKind.WIDTH_DEC, CellKind.WIDTH_INC, CellKind.WIDTH_TYPE},
+            {CellKind.HEIGHT_DEC, CellKind.HEIGHT_INC, CellKind.HEIGHT_TYPE},
         };
         RowKind[] axes = {RowKind.LENGTH, RowKind.WIDTH, RowKind.HEIGHT};
 
@@ -104,10 +104,20 @@ class EditorPlotLabelsRendererTest {
                 axes[a] + " left third must decrement " + axes[a]);
             assertEquals(expected[a][1], EditorPlotLabelsRenderer.cellAt(e, halfW, right, y),
                 axes[a] + " right third must increment " + axes[a]);
-            // The number between the arrows opens the type-all-three field.
-            assertEquals(CellKind.SIZE_TYPE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, y),
-                axes[a] + " middle cell should open the size field");
+            // Every cell on the row belongs to that row's axis and no other — the number in the
+            // middle types the same axis its arrows step.
+            assertEquals(expected[a][2], EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, y),
+                axes[a] + " middle cell must type " + axes[a] + " alone");
         }
+    }
+
+    @Test
+    @DisplayName("Each dimension row reports its own command token")
+    void dimensionRows_carryTheirAxisToken() {
+        assertEquals("length", EditorPlotLabelsRenderer.dimensionAxis(RowKind.LENGTH));
+        assertEquals("width", EditorPlotLabelsRenderer.dimensionAxis(RowKind.WIDTH));
+        assertEquals("height", EditorPlotLabelsRenderer.dimensionAxis(RowKind.HEIGHT));
+        assertEquals("", EditorPlotLabelsRenderer.dimensionAxis(RowKind.WEIGHT));
     }
 
     @Test
@@ -128,7 +138,7 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("The weight row's number stays dead — only dimension rows open the size field")
+    @DisplayName("The weight row's number stays dead — only dimension rows type")
     void weightNumberIsNotATypingTarget() {
         EditorPlotLabelsPacket.Entry e = portalInPlot();
         double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;

@@ -83,8 +83,10 @@ public final class EditorPlotLabelsRenderer {
         WIDTH_INC,
         HEIGHT_DEC,
         HEIGHT_INC,
-        /** The number in the middle of any dimension row — opens the type-all-three field. */
-        SIZE_TYPE
+        /** The number between a dimension row's arrows — opens a typing field for that axis alone. */
+        LENGTH_TYPE,
+        WIDTH_TYPE,
+        HEIGHT_TYPE
     }
 
     /**
@@ -134,6 +136,16 @@ public final class EditorPlotLabelsRenderer {
             case WIDTH -> entry.roomWidth();
             case HEIGHT -> entry.roomHeight();
             default -> -1;
+        };
+    }
+
+    /** Command token for a dimension row's axis — {@code length} / {@code width} / {@code height}. */
+    public static String dimensionAxis(RowKind kind) {
+        return switch (kind) {
+            case LENGTH -> "length";
+            case WIDTH -> "width";
+            case HEIGHT -> "height";
+            default -> "";
         };
     }
 
@@ -387,11 +399,11 @@ public final class EditorPlotLabelsRenderer {
             // Weight is always visible (display only) but its arrows are clickable only from
             // inside the plot.
             case WEIGHT -> hasWeightArrows(entry) ? weightRowCell(hitX, halfW) : CellKind.NONE;
-            // The number between the arrows opens the typing field — the panel has no keyboard
-            // entry of its own, and stepping from 13 to 48 is thirty-five taps.
-            case LENGTH -> stepperCell(hitX, halfW, CellKind.LENGTH_DEC, CellKind.LENGTH_INC, CellKind.SIZE_TYPE);
-            case WIDTH -> stepperCell(hitX, halfW, CellKind.WIDTH_DEC, CellKind.WIDTH_INC, CellKind.SIZE_TYPE);
-            case HEIGHT -> stepperCell(hitX, halfW, CellKind.HEIGHT_DEC, CellKind.HEIGHT_INC, CellKind.SIZE_TYPE);
+            // The number between the arrows types that row's axis on its own — the panel has no
+            // keyboard entry of its own, and stepping from 13 to 48 is thirty-five taps.
+            case LENGTH -> stepperCell(hitX, halfW, CellKind.LENGTH_DEC, CellKind.LENGTH_INC, CellKind.LENGTH_TYPE);
+            case WIDTH -> stepperCell(hitX, halfW, CellKind.WIDTH_DEC, CellKind.WIDTH_INC, CellKind.WIDTH_TYPE);
+            case HEIGHT -> stepperCell(hitX, halfW, CellKind.HEIGHT_DEC, CellKind.HEIGHT_INC, CellKind.HEIGHT_TYPE);
             case ENTER -> CellKind.BUTTON_ENTER_INSIDE;
             case ACTION -> actionRowCell(hitX, halfW);
             case CONTENTS -> CellKind.BUTTON_CONTENTS;
@@ -532,7 +544,12 @@ public final class EditorPlotLabelsRenderer {
                     };
                     drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
                     drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY, hovered, dec, inc);
-                    if (hovered == CellKind.SIZE_TYPE) {
+                    CellKind type = switch (rowKind) {
+                        case LENGTH -> CellKind.LENGTH_TYPE;
+                        case WIDTH -> CellKind.WIDTH_TYPE;
+                        default -> CellKind.HEIGHT_TYPE;
+                    };
+                    if (hovered == type) {
                         double third = (halfW * 2.0) / 3.0;
                         drawQuad(ps, buffer, -halfW + third + 0.005, rBot + 0.005,
                             halfW - third - 0.005, rTop - 0.005, HOVER_COLOR);

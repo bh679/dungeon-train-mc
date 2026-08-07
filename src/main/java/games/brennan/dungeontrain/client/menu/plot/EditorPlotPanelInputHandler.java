@@ -147,7 +147,9 @@ public final class EditorPlotPanelInputHandler {
             case WIDTH_INC -> dispatchDimension(entry, "width", "inc");
             case HEIGHT_DEC -> dispatchDimension(entry, "height", "dec");
             case HEIGHT_INC -> dispatchDimension(entry, "height", "inc");
-            case SIZE_TYPE -> openSizeEntry(entry);
+            case LENGTH_TYPE -> openAxisEntry(entry, "length", "Length", entry.roomLength());
+            case WIDTH_TYPE -> openAxisEntry(entry, "width", "Width", entry.roomWidth());
+            case HEIGHT_TYPE -> openAxisEntry(entry, "height", "Height", entry.roomHeight());
             case ACTION_SAVE -> dispatchAction(entry, EditorPlotActionPacket.Action.SAVE);
             case ACTION_RESET -> dispatchAction(entry, EditorPlotActionPacket.Action.RESET);
             case ACTION_CLEAR -> dispatchAction(entry, EditorPlotActionPacket.Action.CLEAR);
@@ -175,15 +177,17 @@ public final class EditorPlotPanelInputHandler {
      * routing helper.
      */
     /**
-     * Open the type-all-three size field for the portal room the player is standing in.
+     * Open the typing field for one axis of the portal room the player is standing in.
      *
      * <p>The panel itself cannot take keyboard input, so it hands off to a keyboard menu screen —
-     * the same move {@code + New} makes to reach the name picker.</p>
+     * the same move {@code + New} makes to reach the name picker. One axis per button, so setting
+     * a width never disturbs the length someone just dialled in.</p>
      */
-    private static void openSizeEntry(EditorPlotLabelsPacket.Entry entry) {
+    private static void openAxisEntry(EditorPlotLabelsPacket.Entry entry, String axis,
+                                      String label, int current) {
         if (!"PORTALS".equals(entry.category())) return;
-        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomSizeScreen(
-            entry.roomLength(), entry.roomWidth(), entry.roomHeight()));
+        CommandMenuState.openAt(
+            new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(axis, label, current));
     }
 
     /** Step one axis of the portal room the player is standing in. */
