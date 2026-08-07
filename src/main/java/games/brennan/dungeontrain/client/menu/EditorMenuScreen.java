@@ -165,6 +165,8 @@ public final class EditorMenuScreen implements MenuScreen {
             CommandMenuEntry heightRow = sizeTripleFor("height", "Height",
                 EditorStatusHudOverlay.roomHeight());
             if (heightRow != null) out.add(heightRow);
+            CommandMenuEntry modeRow = wallsModeRowFor(EditorStatusHudOverlay.roomMode());
+            if (modeRow != null) out.add(modeRow);
         }
 
         // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases
@@ -301,6 +303,21 @@ public final class EditorMenuScreen implements MenuScreen {
      * needs to stay sealed, and height cannot reach into the next portal pair's Y lane. Tapping
      * {@code −} past the floor simply stops.</p>
      */
+    /**
+     * The row that says what a portal room does at its walls, or null outside a portal room plot.
+     *
+     * <p>One cycling button rather than a stepper or a drilldown: there are three modes, so any of
+     * them is at most two taps away, and staying open lets the player tap past the one they do not
+     * want. Position-resolved like the size rows — the server reads which plot they are standing
+     * in.</p>
+     */
+    static CommandMenuEntry wallsModeRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.modeLabel(currentMode),
+            "dungeontrain editor portals mode next");
+    }
+
     static CommandMenuEntry sizeTripleFor(String axis, String label, int current) {
         if (current == EditorStatusPacket.NO_SIZE) return null;
         String prefix = "dungeontrain editor portals " + axis;

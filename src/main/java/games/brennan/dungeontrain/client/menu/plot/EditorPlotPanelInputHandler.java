@@ -150,6 +150,7 @@ public final class EditorPlotPanelInputHandler {
             case LENGTH_TYPE -> openAxisEntry(entry, "length", "Length", entry.roomLength());
             case WIDTH_TYPE -> openAxisEntry(entry, "width", "Width", entry.roomWidth());
             case HEIGHT_TYPE -> openAxisEntry(entry, "height", "Height", entry.roomHeight());
+            case MODE_CYCLE -> dispatchModeCycle(entry);
             case ACTION_SAVE -> dispatchAction(entry, EditorPlotActionPacket.Action.SAVE);
             case ACTION_RESET -> dispatchAction(entry, EditorPlotActionPacket.Action.RESET);
             case ACTION_CLEAR -> dispatchAction(entry, EditorPlotActionPacket.Action.CLEAR);
@@ -188,6 +189,13 @@ public final class EditorPlotPanelInputHandler {
         if (!"PORTALS".equals(entry.category())) return;
         CommandMenuState.openAt(
             new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(axis, label, current));
+    }
+
+    /** Step the portal room the player is standing in to its next mode. */
+    private static void dispatchModeCycle(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.modeCycleCommandFor(entry.category());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
     }
 
     /** Step one axis of the portal room the player is standing in. */

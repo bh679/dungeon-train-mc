@@ -173,6 +173,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_MODE_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomMode mode
+                    : games.brennan.dungeontrain.portal.PortalRoomMode.values()) {
+                builder.suggest(mode.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> CONTENTS_SUGGESTIONS =
         (ctx, builder) -> {
             for (CarriageContents c : CarriageContentsRegistry.allContents()) {
@@ -390,7 +399,16 @@ public final class EditorCommand {
                                 .executes(ctx -> runPortalRoomSizeAll(ctx.getSource(),
                                     IntegerArgumentType.getInteger(ctx, "length"),
                                     IntegerArgumentType.getInteger(ctx, "width"),
-                                    IntegerArgumentType.getInteger(ctx, "height"))))))))
+                                    IntegerArgumentType.getInteger(ctx, "height")))))))
+                // What the room does at its walls. `next` is what the panel's button sends; the
+                // named forms are for typing, and for saying which one you want in one go.
+                .then(Commands.literal("mode")
+                    .then(Commands.literal("next")
+                        .executes(ctx -> runPortalRoomModeCycle(ctx.getSource())))
+                    .then(Commands.argument("mode", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_MODE_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomMode(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "mode"))))))
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -4797,6 +4815,70 @@ public final class EditorCommand {
         games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, name);
         source.sendSuccess(() -> Component.literal("Editor: entered portal room '" + name + "'."), true);
         return 1;
+    }
+
+    /**
+     * {@code /dt editor portals mode next} — step the room plot the player is standing in to the
+     * next {@link games.brennan.dungeontrain.portal.PortalRoomMode}.
+     *
+     * <p>What the floating plot panel's Walls button sends. Three modes is few enough that cycling
+     * reaches any of them in at most two clicks, and a cycle needs no keyboard.</p>
+     */
+    private static int runPortalRoomModeCycle(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        return applyPortalRoomMode(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomMode.parse(
+                games.brennan.dungeontrain.track.variant.TrackVariantWeights.modeFor(
+                    games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name)).next());
+    }
+
+    /** {@code /dt editor portals mode <mode>} — set it outright. */
+    private static int runPortalRoomMode(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomMode wanted =
+            games.brennan.dungeontrain.portal.PortalRoomMode.parse(raw);
+        // parse is total by design, so a typo would silently set the default rather than complain.
+        // Worth complaining about here: the player typed something and meant it.
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.literal(
+                "Unknown portal room mode '" + raw + "'. Try bedrock_lock, endless_repetition or endless_open."));
+            return 0;
+        }
+        return applyPortalRoomMode(source, name, wanted);
+    }
+
+    private static int applyPortalRoomMode(CommandSourceStack source, String name,
+                                           games.brennan.dungeontrain.portal.PortalRoomMode mode) {
+        try {
+            games.brennan.dungeontrain.track.variant.TrackVariantWeights.setMode(
+                games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name, mode.id());
+        } catch (IOException e) {
+            source.sendFailure(Component.literal(
+                "Could not save the mode for portal room '" + name + "': " + e.getMessage()));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(
+            "Portal room '" + name + "' walls: " + mode.displayName()
+            + ". Portals already standing keep the mode they were built with — this takes effect on "
+            + "the next one the train reaches."
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    /** The portal room plot the player is standing in, or null with the reason already reported. */
+    private static String portalRoomPlotUnderPlayer(CommandSourceStack source) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return null;
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        if (name == null) {
+            source.sendFailure(Component.literal(
+                "Stand in a portal room plot first — /dt editor portals."));
+        }
+        return name;
     }
 
     /**
