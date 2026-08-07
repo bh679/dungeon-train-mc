@@ -261,7 +261,8 @@ public final class EditorPlotLabelsRenderer {
     public static boolean hasActionRow(EditorPlotLabelsPacket.Entry entry) {
         if (!entry.inPlot()) return false;
         String c = entry.category();
-        return "CARRIAGES".equals(c) || "CONTENTS".equals(c) || "TRACKS".equals(c);
+        return "CARRIAGES".equals(c) || "CONTENTS".equals(c) || "TRACKS".equals(c)
+            || "PORTALS".equals(c);
     }
 
     /** Contents button — carriages only, gated on the player being inside the plot. */

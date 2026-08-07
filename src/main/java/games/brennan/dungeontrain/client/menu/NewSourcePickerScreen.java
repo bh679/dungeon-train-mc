@@ -24,6 +24,11 @@ public final class NewSourcePickerScreen implements MenuScreen {
     public enum Category {
         CARRIAGES, CONTENTS, PARTS, TRACKS,
         /**
+         * Portal pocket room. Same single-name shape as {@link #TRACKS} — no source choice — but
+         * dispatches through the {@code portals} command prefix.
+         */
+        PORTALS,
+        /**
          * Sub-variant of a contents group. {@code currentId} carries the parent
          * id. Picker collapses to a single "name" TypeArg that dispatches
          * {@code editor contents group new <parent> <name>} — atomic create +
@@ -52,6 +57,7 @@ public final class NewSourcePickerScreen implements MenuScreen {
             // consistently with its siblings; the entry list collapses to
             // a single name TypeArg + Back below.
             case TRACKS -> "New " + kind + " — name";
+            case PORTALS -> "New portal room — name";
             case CONTENTS_SUB_VARIANT -> "New sub-variant of " + currentId + " — name";
         };
     }
@@ -99,6 +105,13 @@ public final class NewSourcePickerScreen implements MenuScreen {
                 // is in {@code kind}.
                 out.add(new CommandMenuEntry.TypeArg(
                     "New", "name", "dungeontrain editor tracks new " + kind));
+            }
+            case PORTALS -> {
+                // Same single-row shape as TRACKS. The server seeds the new room from the
+                // built-in geometry when nothing has been authored yet, so there is still no
+                // source to choose between.
+                out.add(new CommandMenuEntry.TypeArg(
+                    "New", "name", "dungeontrain editor portals new " + kind));
             }
             case CONTENTS_SUB_VARIANT -> {
                 // Single row — type the name, dispatch the atomic create+add+

@@ -394,6 +394,15 @@ public final class EditorDirtyCheck {
                     EditorPlotSnapshots.get(TunnelEditor.tunnelSnapshotKey(tv, name)), skip, out);
             }
         }
+        if ("portals".equals(categoryId) && modelId.contains(".")) {
+            String name = modelId.substring(modelId.indexOf('.') + 1);
+            BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
+            Vec3i fp = PortalRoomEditor.plotSize(name, dims);
+            Set<BlockPos> skip = variantCellPositions(
+                TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, fp).entries());
+            collectDiffs(overworld, origin, fp.getX(), fp.getY(), fp.getZ(),
+                EditorPlotSnapshots.get(PortalRoomEditor.snapshotKey(name)), skip, out);
+        }
         return out;
     }
 
