@@ -512,9 +512,12 @@ public final class PortalCarriageBuilder {
             PortalCorridorMask.NONE, structure.variantIndexFor(PortalRoomTiling.Tile.BASE));
 
         // Before the corridors, so each mode acts on the room as it actually turned out rather than
-        // as it was asked for — and so that a mode reaching a door plane is overwritten rather than
-        // left. Bedrock Lock wraps the room; the endless modes settle its own side walls, which for
-        // Endless Open means taking them away so there is somewhere to walk out to.
+        // as it was asked for. It does not follow that the corridors repair whatever a mode wrote at
+        // a door plane — they are stamped over their own volume only, and never over the room's end
+        // column one block inside it, which is why nothing may write there in the first place; see
+        // PortalCorridorMask#facedBy. Bedrock Lock wraps the room; the endless modes settle its own
+        // side walls, which for Endless Open means taking them away so there is somewhere to walk
+        // out to.
         if (structure.mode() == PortalRoomMode.BEDROCK_LOCK) {
             bedrockSkin(level, roomOrigin, roomSize);
         } else if (structure.mode().tiles()) {
@@ -566,9 +569,9 @@ public final class PortalCarriageBuilder {
      *
      * <p>Shared by the skin that writes there and the {@link #eraseTwin} sweep that clears it, so the
      * two cannot disagree — a structure must never leave behind a block its own erase will not
-     * reach. The clamp matters because {@code TWIN_FLOOR_MARGIN} puts the lowest lane's floor one
-     * block above {@code getMinBuildHeight()}, and that row is the world's vanilla bedrock: writing
-     * to it is pointless and erasing it would open a hole into the void.</p>
+     * reach. The clamp matters because {@link PortalTwinLanes#FLOOR_MARGIN} puts the lowest lane's
+     * floor one block above {@code getMinBuildHeight()}, and nothing can be placed below that: the
+     * skin would silently drop its bottom row while the erase swept a row that never existed.</p>
      */
     static int lowestWritableY(int worldMinY, int structureFloorY) {
         return Math.max(worldMinY + 1, structureFloorY - 1);
@@ -635,17 +638,7 @@ public final class PortalCarriageBuilder {
      * only the cost does.</p>
      */
     public static void eraseTwin(ServerLevel level, PortalStructure structure, CarriageDims dims) {
-        BoundingBox box = footprintOf(level, structure, dims);
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        BlockState air = Blocks.AIR.defaultBlockState();
-
-        for (int x = box.minX(); x <= box.maxX(); x++) {
-            for (int z = box.minZ(); z <= box.maxZ(); z++) {
-                for (int y = box.minY(); y <= box.maxY(); y++) {
-                    level.setBlock(pos.set(x, y, z), air, Block.UPDATE_ALL);
-                }
-            }
-        }
+        PortalClear.clearBox(level, footprintOf(level, structure, dims), PortalCorridorMask.NONE);
     }
 
     /**
@@ -801,7 +794,7 @@ public final class PortalCarriageBuilder {
         // Clear first, for the same reason a twin does: the room lands in solid rock at the world
         // floor, and a template stamp only writes its own cells — anything the author left as
         // STRUCTURE_VOID would otherwise show deepslate through the wall.
-        clearRoomBox(level, roomOrigin, size, mask);
+        clearRoomBox(level, roomOrigin, size, mask, relight);
         clearIntruders(level, roomOrigin, size);
         plugFluidsAround(level, roomOrigin, size);
 
@@ -919,20 +912,24 @@ public final class PortalCarriageBuilder {
     }
 
     /** Clear a room-sized box to air, leaving whatever {@code mask} covers untouched. */
+    /**
+     * Empty the room's box before it is stamped.
+     *
+     * <p>{@code relight} follows the stamp's own flag rather than being decided here: a twin in the
+     * basement is under the bedrock where nothing sees the light, but an editor plot stands under
+     * open sky, and a cell cleared there has to stop occluding skylight. See {@link PortalClear}.</p>
+     */
     private static void clearRoomBox(ServerLevel level, BlockPos origin, Vec3i size,
-                                     PortalCorridorMask mask) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        BlockState air = Blocks.AIR.defaultBlockState();
-        for (int dx = 0; dx < size.getX(); dx++) {
-            for (int dz = 0; dz < size.getZ(); dz++) {
-                for (int dy = 0; dy < size.getY(); dy++) {
-                    int x = origin.getX() + dx;
-                    int y = origin.getY() + dy;
-                    int z = origin.getZ() + dz;
-                    if (mask.covers(x, y, z)) continue;
-                    level.setBlock(pos.set(x, y, z), air, Block.UPDATE_ALL);
-                }
-            }
+                                     PortalCorridorMask mask, boolean relight) {
+        BoundingBox box = new BoundingBox(
+            origin.getX(), origin.getY(), origin.getZ(),
+            origin.getX() + size.getX() - 1,
+            origin.getY() + size.getY() - 1,
+            origin.getZ() + size.getZ() - 1);
+        if (relight) {
+            PortalClear.clearBoxRelit(level, box, mask);
+        } else {
+            PortalClear.clearBox(level, box, mask);
         }
     }
 

@@ -20,7 +20,7 @@ class PortalRoomLayoutTest {
     }
 
     @Test
-    @DisplayName("A corridor wider or taller than the built-in room raises the floor, never lowers it")
+    @DisplayName("The floor on every axis is whatever the corridor mouth needs, at any carriage width")
     void floors_coverTheCorridorMouth() {
         CarriageDims wide = CarriageDims.clamp(9, 21, 7);
         CarriageDims tall = CarriageDims.clamp(9, 7, 11);
@@ -30,10 +30,47 @@ class PortalRoomLayoutTest {
             "room width " + PortalRoomLayout.minWidth(wide) + " must exceed corridor width " + wide.width());
         // Tall: the room must be at least as tall, or the corridor pokes through its ceiling.
         assertTrue(PortalRoomLayout.minHeight(tall) >= tall.height());
+        assertTrue(PortalRoomLayout.minHeight(DEFAULT_DIMS) >= DEFAULT_DIMS.height());
 
-        // Never drops below the built-in figures.
-        assertTrue(PortalRoomLayout.minWidth(DEFAULT_DIMS) >= 13);
-        assertTrue(PortalRoomLayout.minHeight(DEFAULT_DIMS) >= 7);
+        // The width floor is the seal's requirement and nothing more — two blocks of room either
+        // side of the corridor, at every legal carriage width, odd or even. It is deliberately NOT
+        // held up to the built-in room's 13; see minWidth's javadoc.
+        assertEquals(11, PortalRoomLayout.minWidth(DEFAULT_DIMS));
+        for (int carriageWidth = CarriageDims.MIN_WIDTH; carriageWidth <= CarriageDims.MAX_WIDTH; carriageWidth++) {
+            CarriageDims dims = CarriageDims.clamp(9, carriageWidth, 7);
+            assertEquals(carriageWidth + 4, PortalRoomLayout.minWidth(dims),
+                "carriage width " + carriageWidth + " needs two blocks of room either side");
+        }
+    }
+
+    @Test
+    @DisplayName("Relaxing the width floor left the built-in room, and so the editor's plot slots, alone")
+    void builtInSize_keepsItsOwnWidth() {
+        // TrackKind.dims(PORTAL_ROOM) reports this, and TrackSidePlots.slotZ bases the editor's
+        // plot slot on it — so it must not follow minWidth down.
+        assertEquals(13, PortalRoomLayout.builtInSize(DEFAULT_DIMS).getZ());
+        assertTrue(PortalRoomLayout.builtInSize(DEFAULT_DIMS).getZ() > PortalRoomLayout.minWidth(DEFAULT_DIMS));
+
+        // A world wider than the built-in shell still raises it, or the seal ring cannot close.
+        CarriageDims wide = CarriageDims.clamp(9, 21, 7);
+        assertEquals(PortalRoomLayout.minWidth(wide), PortalRoomLayout.builtInSize(wide).getZ());
+    }
+
+    @Test
+    @DisplayName("An authored room narrower than the built-in shell is legal — library_dimension is 13 × 7 × 12")
+    void minSize_admitsARoomNarrowerThanTheBuiltInShell() {
+        Vec3i floor = PortalRoomLayout.minSize(DEFAULT_DIMS);
+        assertEquals(PortalRoomLayout.MIN_LENGTH, floor.getX());
+        assertEquals(PortalRoomLayout.minHeight(DEFAULT_DIMS), floor.getY());
+        assertEquals(PortalRoomLayout.minWidth(DEFAULT_DIMS), floor.getZ());
+
+        // The rotated library template's own box. It clears the floor on every axis, and clampSize
+        // leaves it alone — which together are what stop it being rejected on load and silently
+        // replaced by the built-in room.
+        Vec3i library = new Vec3i(13, 7, 12);
+        assertTrue(library.getX() >= floor.getX() && library.getY() >= floor.getY()
+            && library.getZ() >= floor.getZ(), "library_dimension must clear the floor");
+        assertEquals(library, PortalRoomLayout.clampSize(DEFAULT_DIMS, library));
     }
 
     @Test
@@ -70,11 +107,10 @@ class PortalRoomLayoutTest {
     @Test
     @DisplayName("sizeOfLength moves only the length; height and width stay at their floors")
     void sizeOfLength_movesOnlyTheLength() {
-        Vec3i built = PortalRoomLayout.builtInSize(DEFAULT_DIMS);
         Vec3i longer = PortalRoomLayout.sizeOfLength(DEFAULT_DIMS, 21);
         assertEquals(21, longer.getX());
-        assertEquals(built.getY(), longer.getY());
-        assertEquals(built.getZ(), longer.getZ());
+        assertEquals(PortalRoomLayout.minHeight(DEFAULT_DIMS), longer.getY());
+        assertEquals(PortalRoomLayout.minWidth(DEFAULT_DIMS), longer.getZ());
     }
 
     @Test
