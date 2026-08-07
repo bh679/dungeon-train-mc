@@ -115,8 +115,12 @@ public final class DonationSummaryClient {
         }
     }
 
-    /** Parse the relay JSON body into {@link Summary}, or null when it isn't a well-formed ok response. */
-    private static Summary parse(String body) {
+    /**
+     * Parse the relay JSON body into {@link Summary}, or null when it isn't a well-formed ok
+     * response. Package-private so the wire shape can be pinned against a real relay body in a
+     * test — this payload is the one contract the relay and every shipped jar share.
+     */
+    static Summary parse(String body) {
         JsonElement root = JsonParser.parseString(body);
         if (!root.isJsonObject()) return null;
         JsonObject o = root.getAsJsonObject();
