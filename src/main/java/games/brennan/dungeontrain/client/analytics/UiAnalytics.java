@@ -58,6 +58,14 @@ public final class UiAnalytics {
     // Patreon's slot — see PaymentLinks. Separate from TARGET_DONATE so the funnel can show whether
     // the China route converts. Lock-step with ui-events.js TARGETS.
     public static final String TARGET_DONATE_CN = "donate_cn";
+    // The three named price points, on both the Support page and the death-screen Contribute window
+    // (see SupportTier, which owns the mapping). Named for the tier's identity rather than its
+    // amount: the amount is a quantity multiplier the operator can re-price without a mod release,
+    // so a target called "donate_30" would quietly start meaning something else the day it changed.
+    // Lock-step with ui-events.js TARGETS.
+    public static final String TARGET_DONATE_HELP_DEV = "donate_help_dev";
+    public static final String TARGET_DONATE_BIG_FAN = "donate_big_fan";
+    public static final String TARGET_DONATE_SERVER_COSTS = "donate_server_costs";
     // The Adult / Kid answer on the first-launch consent card (and on any later re-ask). Lock-step
     // with the relay's ui-events.js TARGETS whitelist, or these 400 silently.
     public static final String TARGET_CONTENT_MODE_ADULT = "content_mode_adult";

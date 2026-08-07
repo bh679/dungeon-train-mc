@@ -29,9 +29,11 @@ import java.util.List;
  * three ways a player can support Dungeon Train:
  *
  * <ol>
- *   <li><b>Financial Support</b> — a Direct Donation button (Revolut) + the
- *       orange Patreon button, with the Kinetic Hosting affiliate (the referral
- *       shipped in the modpack's {@code khi.toml}) as an inline link.</li>
+ *   <li><b>Financial Support</b> — the three named price points ({@link SupportTier})
+ *       on one row, with Custom Amount (Revolut) and Recurring (Patreon) beneath
+ *       them, and the Kinetic Hosting affiliate (the referral shipped in the
+ *       modpack's {@code khi.toml}) as an inline link. See {@link #financialRows()}
+ *       for who sees which row.</li>
  *   <li><b>Share the Mod</b> — text only.</li>
  *   <li><b>Feedback &amp; Testing</b> — text only, with an inline clickable
  *       "Discord" link ("Join the Discord") to get involved.</li>
@@ -143,12 +145,26 @@ public final class SupportScreen extends Screen {
     }
 
     /**
-     * The {@code .cn} copy variant when this client is on the China payment route — the base copy
-     * names Patreon, which is gone from the Financial section in that case.
+     * The {@code .cn} copy variant for clients that aren't shown Patreon — the base copy names it,
+     * so leaving that copy in place would advertise a button that isn't on the screen.
+     *
+     * <p>The condition is "is Patreon absent", not "is this a Chinese client", and the two stopped
+     * being the same thing when the price points landed: with tiers available only Simplified
+     * Chinese loses the Patreon slot ({@link PaymentLinks#hidesOpenEndedOptions()}), while the
+     * pre-tier layout still hands the whole {@code zh} family the China button instead
+     * ({@link PaymentLinks#useChinaPayment()}). Asking the question the copy actually cares about
+     * keeps both paths honest.</p>
      */
     private static String cnKey(String baseKey) {
         String cn = baseKey + ".cn";
-        return PaymentLinks.useChinaPayment() && I18n.exists(cn) ? cn : baseKey;
+        return patreonHidden() && I18n.exists(cn) ? cn : baseKey;
+    }
+
+    /** Whether the Financial section omits Patreon, under whichever layout is in force. */
+    private static boolean patreonHidden() {
+        return PaymentLinks.tiersAvailable()
+                ? PaymentLinks.hidesOpenEndedOptions()
+                : PaymentLinks.useChinaPayment();
     }
 
     @Override
@@ -168,25 +184,24 @@ public final class SupportScreen extends Screen {
         subtitleY = y;
         y += subtitleLines.size() * lh + 8;
 
-        // Financial — a Direct Donation button (Revolut) then, in the second slot, either the orange
-        // Patreon button or (Chinese clients) the China payment button, since Patreon is blocked
-        // there. The affiliate is an inline link spliced into the copy.
+        // Financial — the three named price points, then the open-ended options under them (see
+        // financialRows). The affiliate is an inline link spliced into the copy.
         y = addSection(y, lh,
                 Component.translatable("gui.dungeontrain.support.financial.header"),
                 Component.translatable(copyKey("gui.dungeontrain.support.financial.desc"), affiliateLink()),
-                new LinkButton("gui.dungeontrain.support.financial.donate", revolutUrl(), TINT_GREEN,
-                        "gui.dungeontrain.support.donate_tooltip", UiAnalytics.TARGET_DONATE),
-                secondFinancialButton());
+                financialRows());
 
         // Share — text only, no link.
         y = addSection(y, lh,
                 Component.translatable("gui.dungeontrain.support.share.header"),
-                Component.translatable(copyKey("gui.dungeontrain.support.share.desc")));
+                Component.translatable(copyKey("gui.dungeontrain.support.share.desc")),
+                List.of());
 
         // Feedback — only the final "Discord" (Join the Discord) is a clickable link.
         y = addSection(y, lh,
                 Component.translatable("gui.dungeontrain.support.feedback.header"),
-                Component.translatable(copyKey("gui.dungeontrain.support.feedback.desc"), discordLink()));
+                Component.translatable(copyKey("gui.dungeontrain.support.feedback.desc"), discordLink()),
+                List.of());
 
         panelBottom = y + (PANEL_PAD - SECTION_GAP);
 
@@ -198,11 +213,16 @@ public final class SupportScreen extends Screen {
     }
 
     /**
-     * Lay out one section (header text + wrapped description + an optional row of
-     * link buttons), registering the text for {@link #render} and the buttons as
-     * live widgets. Returns the Y just below the section.
+     * Lay out one section (header text + wrapped description + zero or more rows of link buttons),
+     * registering the text for {@link #render} and the buttons as live widgets. Returns the Y just
+     * below the section.
+     *
+     * <p>Each row divides the column width among its own buttons, so a three-button row and a
+     * two-button row stack without either having to know about the other — which is what lets the
+     * Financial section put price points above the open-ended options, and lets the second row
+     * simply not exist for the clients that don't get it.</p>
      */
-    private int addSection(int y, int lh, Component header, Component desc, LinkButton... links) {
+    private int addSection(int y, int lh, Component header, Component desc, List<List<LinkButton>> rows) {
         int headerY = y;
         y += lh + HEADER_GAP;
 
@@ -212,17 +232,21 @@ public final class SupportScreen extends Screen {
 
         textBlocks.add(new TextBlock(header, headerY, descLines, descY));
 
-        int n = links.length;
-        if (n == 0) {
-            // Text-only section — no button row to reserve.
-            return y + SECTION_GAP;
+        boolean anyRow = false;
+        for (List<LinkButton> row : rows) {
+            int n = row.size();
+            if (n == 0) continue;
+            int each = (colW - (n - 1) * BUTTON_GAP) / n;
+            for (int i = 0; i < n; i++) {
+                int bx = colX + i * (each + BUTTON_GAP);
+                addRenderableWidget(makeLinkButton(bx, y, each, BUTTON_H, row.get(i)));
+            }
+            y += BUTTON_H + BUTTON_GAP;
+            anyRow = true;
         }
-        int each = (colW - (n - 1) * BUTTON_GAP) / n;
-        for (int i = 0; i < n; i++) {
-            int bx = colX + i * (each + BUTTON_GAP);
-            addRenderableWidget(makeLinkButton(bx, y, each, BUTTON_H, links[i]));
-        }
-        return y + BUTTON_H + SECTION_GAP;
+        // Only undo the trailing inter-row gap if a row was actually laid out — a text-only section
+        // (and one whose rows all came back empty) must not pull the next section upward.
+        return (anyRow ? y - BUTTON_GAP : y) + SECTION_GAP;
     }
 
     /** Build a link button, tinted to {@link LinkButton#tint()} when set, else the default grey. */
@@ -240,21 +264,55 @@ public final class SupportScreen extends Screen {
     }
 
     /**
-     * The second Financial-section button: the China payment route (WeChat Pay) where
-     * Patreon is unreachable, otherwise Patreon. The tooltip differs because the China route runs
-     * through Stripe and so is not fee-free the way the direct Revolut donation is.
+     * The Financial section's button rows: the three named price points, then the open-ended
+     * options — Custom Amount (Revolut) and Recurring (Patreon) — underneath them.
+     *
+     * <p>The second row is dropped entirely for Simplified-Chinese clients, where both providers are
+     * walled: showing a button that cannot complete is worse than showing one fewer. The price
+     * points stay, because they run through Stripe, which does work there — so that audience keeps a
+     * working donation route without needing the separate WeChat button the pre-tier layout gave
+     * them.</p>
+     *
+     * <p>When the relay hasn't served a checkout route ({@link PaymentLinks#tiersAvailable()}) this
+     * returns the exact layout that shipped before price points existed — see
+     * {@link #preTierRow()}.</p>
      */
-    private static LinkButton secondFinancialButton() {
-        if (PaymentLinks.useChinaPayment()) {
-            return new LinkButton("gui.dungeontrain.support.financial.cn_donate", PaymentLinks.chinaUrl(),
-                    TINT_BLUE, "gui.dungeontrain.support.cn_donate_tooltip", UiAnalytics.TARGET_DONATE_CN);
+    private static List<List<LinkButton>> financialRows() {
+        if (!PaymentLinks.tiersAvailable()) return List.of(preTierRow());
+
+        List<LinkButton> tiers = new ArrayList<>();
+        for (SupportTier tier : SupportTier.values()) {
+            tiers.add(new LinkButton(tier.labelKey(), PaymentLinks.tierUrl(tier), TINT_BLUE,
+                    tier.tooltipKey(), tier.analyticsTarget()));
         }
-        return new LinkButton("gui.dungeontrain.support.financial.patreon", OfficialLinks.patreon(),
-                TINT_ORANGE, null, UiAnalytics.TARGET_PATREON);
+        if (PaymentLinks.hidesOpenEndedOptions()) return List.of(tiers);
+
+        return List.of(tiers, List.of(
+                new LinkButton("gui.dungeontrain.support.financial.custom_amount", revolutUrl(), TINT_GREEN,
+                        "gui.dungeontrain.support.donate_tooltip", UiAnalytics.TARGET_DONATE),
+                new LinkButton("gui.dungeontrain.support.financial.recurring", OfficialLinks.patreon(),
+                        TINT_ORANGE, "gui.dungeontrain.support.recurring_tooltip", UiAnalytics.TARGET_PATREON)));
+    }
+
+    /**
+     * The pre-price-point layout, kept intact for the offline / relay-unreachable case: a Direct
+     * Donation button (Revolut) then either Patreon or, where Patreon is blocked, the China payment
+     * route. The China tooltip differs because that route runs through Stripe and so is not fee-free
+     * the way the direct Revolut donation is.
+     */
+    private static List<LinkButton> preTierRow() {
+        LinkButton donate = new LinkButton("gui.dungeontrain.support.financial.donate", revolutUrl(),
+                TINT_GREEN, "gui.dungeontrain.support.donate_tooltip", UiAnalytics.TARGET_DONATE);
+        LinkButton second = PaymentLinks.useChinaPayment()
+                ? new LinkButton("gui.dungeontrain.support.financial.cn_donate", PaymentLinks.chinaUrl(),
+                        TINT_BLUE, "gui.dungeontrain.support.cn_donate_tooltip", UiAnalytics.TARGET_DONATE_CN)
+                : new LinkButton("gui.dungeontrain.support.financial.patreon", OfficialLinks.patreon(),
+                        TINT_ORANGE, null, UiAnalytics.TARGET_PATREON);
+        return List.of(donate, second);
     }
 
     /** @see PaymentLinks#donateUrl() */
-    private String revolutUrl() {
+    private static String revolutUrl() {
         return PaymentLinks.donateUrl();
     }
 

@@ -100,6 +100,49 @@ public final class PaymentLinks {
     }
 
     /**
+     * Whether the three named price points can be offered at all — i.e. whether the relay has served
+     * a checkout route to build them from.
+     *
+     * <p>False is the offline / pre-fetch / not-configured case, and both donation screens then
+     * render exactly the layout they shipped with before tiers existed. That degrade is the whole
+     * reason there is no baked fallback: three buttons that lead nowhere would be worse than the two
+     * open-ended options they replaced.</p>
+     */
+    public static boolean tiersAvailable() {
+        return OfficialLinks.paymentCheckout() != null;
+    }
+
+    /**
+     * The checkout URL for one price point, or null when {@link #tiersAvailable()} is false.
+     *
+     * <p>Same relay route as {@link #chinaUrl()}, with the tier's {@code qty} appended — the relay
+     * multiplies its unit price by it when creating the Checkout Session, and clamps it on arrival,
+     * so nothing here has to be trusted downstream.</p>
+     */
+    public static String tierUrl(SupportTier tier) {
+        String base = OfficialLinks.paymentCheckout();
+        if (base == null || tier == null) return null;
+        return withQuantity(withDisplayName(base, playerName(), stripeLocale(selectedLocale())), tier.quantity());
+    }
+
+    /**
+     * Whether to hide the open-ended options — Custom Amount (Revolut) and Recurring (Patreon) —
+     * because neither provider is reachable for this player. Both are walled in mainland China, so
+     * the row is dropped rather than shown broken; the price points remain, since they run through
+     * Stripe, which works there.
+     *
+     * <p><b>This is deliberately narrower than {@link #useChinaPayment()}'s gate.</b> That one covers
+     * the whole {@code zh} family, because it decides which payment route to <i>offer</i> and erring
+     * wide only costs a Traditional-Chinese reader a button they could also have used. This one
+     * decides what to <i>take away</i>, and Taiwan and Hong Kong players genuinely can use Patreon
+     * and Revolut — so taking those from them to keep one tidy predicate would be a real loss for no
+     * gain. The two differ on purpose; don't collapse them.</p>
+     */
+    public static boolean hidesOpenEndedOptions() {
+        return isSimplifiedChineseLocale(selectedLocale());
+    }
+
+    /**
      * The direct-donation URL. When the base (relay-served or baked Revolut link) carries a
      * {@code note=} field the player's name is URL-encoded onto it, matching the historical Revolut
      * behaviour; a relay-rotated provider without a note field is used verbatim so the suffix can't
@@ -122,6 +165,33 @@ public final class PaymentLinks {
     /** Whether a raw client locale belongs to the Chinese language family. */
     static boolean isChineseLocale(String locale) {
         return locale != null && "zh".equals(LanguageFamily.of(locale));
+    }
+
+    /**
+     * Whether a raw client locale is <b>Simplified</b> Chinese — {@code zh_cn}, or {@code lzh}
+     * (Classical Chinese, which Minecraft renders in Simplified characters and which
+     * {@link #REGIONAL_LOCALES} already treats as {@code zh} for Stripe).
+     *
+     * <p>Not routed through {@link LanguageFamily} for the same reason {@link #stripeLocale} isn't:
+     * that collapses {@code zh_tw} and {@code zh_hk} in with {@code zh_cn}, and here the region is
+     * precisely the question — it is what separates the players who can reach Patreon and Revolut
+     * from the ones who can't.</p>
+     */
+    static boolean isSimplifiedChineseLocale(String locale) {
+        if (locale == null) return false;
+        String clean = locale.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_]", "");
+        return "zh_cn".equals(clean) || "lzh".equals(clean);
+    }
+
+    /**
+     * Append a price point's {@code qty} — the number of units of the relay's checkout price, which
+     * Stripe multiplies into the charged amount. Values below 1 are dropped rather than sent: the
+     * relay would clamp them anyway, and an omitted parameter is the honest way to say "no choice
+     * made" (the checkout then uses the link's own quantity).
+     */
+    static String withQuantity(String base, int quantity) {
+        if (base == null || quantity < 1) return base;
+        return withParam(base, "qty", Integer.toString(quantity));
     }
 
     /** Append the encoded player name to {@code base} when, and only when, it carries a note field. */

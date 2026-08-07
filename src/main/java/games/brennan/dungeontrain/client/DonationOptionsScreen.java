@@ -4,10 +4,12 @@ import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.ColorTintedButton;
 import games.brennan.dungeontrain.client.support.PaymentLinks;
+import games.brennan.dungeontrain.client.support.SupportTier;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
@@ -19,11 +21,17 @@ import java.util.List;
 
 /**
  * Full-screen "Contribute" window opened from the death-screen donation page's Contribute button.
- * Offers the two ways to give — a direct donation (Revolut, name-tagged) and, in the right column,
- * either Patreon or the China payment route for clients where Patreon is unreachable (see
- * {@link PaymentLinks}) — each opened through vanilla's {@link ConfirmLinkScreen} with support-funnel
- * analytics, returning here so the player can follow more than one. Closing returns to the death
- * screen it was opened from.
+ * Offers the three named price points ({@link SupportTier}) on one row, with the open-ended options
+ * under them — Custom Amount (Revolut, name-tagged) and Recurring (Patreon). Each opens through
+ * vanilla's {@link ConfirmLinkScreen} with support-funnel analytics, returning here so the player can
+ * follow more than one. Closing returns to the death screen it was opened from.
+ *
+ * <p>Two clients see something different. Simplified-Chinese clients lose the open-ended row, since
+ * Revolut and Patreon are both walled there and the Stripe-backed price points work regardless. And
+ * a client whose relay never served a checkout route ({@link PaymentLinks#tiersAvailable()}) gets the
+ * pre-price-point layout it always had: Revolut plus Patreon, or Revolut plus the China payment
+ * route. Mirrors the Support page's Financial section — see
+ * {@link games.brennan.dungeontrain.client.support.SupportScreen}.</p>
  *
  * <p>Styled to match the death screen: the same dark-blue backdrop, an amber title and muted
  * narration over the two coloured buttons. URLs come from {@link OfficialLinks} (relay-served,
@@ -68,51 +76,90 @@ public final class DonationOptionsScreen extends Screen {
         subtitleLines = this.font.split(
                 Component.translatable("gui.dungeontrain.death.narr.donate_options_sub"), wrapW);
 
-        // Two options side by side on one row, tall for prominence; each has a description above it.
         int rowW = Math.min(340, this.width - 60);
         int gap = 10;
-        int each = (rowW - gap) / 2;
         int rowX = cx - rowW / 2;
         int bh = 32;
-        leftColCenter = rowX + each / 2;
-        rightColCenter = rowX + each + gap + each / 2;
+
+        boolean tiers = PaymentLinks.tiersAvailable();
+        // The open-ended options keep their descriptive line above the button; the price points do
+        // not. At three across each column is ~106px, which fits roughly two words — a description
+        // there would wrap into an unreadable stack, so those buttons carry tooltips instead.
+        int modeEach = (rowW - gap) / 2;
+        leftColCenter = rowX + modeEach / 2;
+        rightColCenter = rowX + modeEach + gap + modeEach / 2;
 
         boolean cn = PaymentLinks.useChinaPayment();
-        revolutDescLines = this.font.split(Component.translatable("gui.dungeontrain.support.donate_tooltip"), each - 4);
-        patreonDescLines = this.font.split(Component.translatable(cn
-                ? "gui.dungeontrain.death.narr.donate_cn_desc"
-                : "gui.dungeontrain.death.narr.donate_patreon_desc"), each - 4);
+        boolean showModes = !tiers || !PaymentLinks.hidesOpenEndedOptions();
+        revolutDescLines = showModes
+                ? this.font.split(Component.translatable("gui.dungeontrain.support.donate_tooltip"), modeEach - 4)
+                : List.of();
+        // Pre-tier the right column is Patreon-or-WeChat; with tiers it is always Recurring
+        // (Patreon), because the audience that can't reach Patreon has no mode row at all.
+        patreonDescLines = showModes
+                ? this.font.split(Component.translatable(!tiers && cn
+                        ? "gui.dungeontrain.death.narr.donate_cn_desc"
+                        : "gui.dungeontrain.death.narr.donate_patreon_desc"), modeEach - 4)
+                : List.of();
         int descRows = Math.max(revolutDescLines.size(), patreonDescLines.size());
 
-        // Vertically centre the whole title → back block.
+        // Vertically centre the whole title → back block. The tier row (when present) sits above the
+        // descriptions, so it adds its own height plus a gap.
+        int tierRowH = tiers ? bh + gap : 0;
         int subH = subtitleLines.size() * lineH;
         int descH = descRows * lineH;
-        int blockH = lineH + 6 + subH + 12 + descH + 4 + bh + 12 + 20;
+        int modeRowH = showModes ? descH + 4 + bh : 0;
+        int blockH = lineH + 6 + subH + 12 + tierRowH + modeRowH + 12 + 20;
         int top = Math.max(20, (this.height - blockH) / 2);
 
         titleY = top;
         subtitleTop = titleY + lineH + 6;
-        descTop = subtitleTop + subH + 12;
-        int y = descTop + descH + 4;
+        int y = subtitleTop + subH + 12;
 
-        addRenderableWidget(new ColorTintedButton(rowX, y, each, bh,
-                Component.translatable("gui.dungeontrain.death.narr.donate_revolut"),
-                TINT_GREEN[0], TINT_GREEN[1], TINT_GREEN[2],
-                b -> openLink(revolutUrl(), UiAnalytics.TARGET_DONATE)));
+        if (tiers) {
+            int tierEach = (rowW - gap * (SupportTier.values().length - 1)) / SupportTier.values().length;
+            int i = 0;
+            for (SupportTier tier : SupportTier.values()) {
+                Button b = new ColorTintedButton(rowX + i * (tierEach + gap), y, tierEach, bh,
+                        Component.translatable(tier.labelKey()),
+                        TINT_BLUE[0], TINT_BLUE[1], TINT_BLUE[2],
+                        p -> openLink(PaymentLinks.tierUrl(tier), tier.analyticsTarget()));
+                b.setTooltip(Tooltip.create(Component.translatable(tier.tooltipKey())));
+                addRenderableWidget(b);
+                i++;
+            }
+            y += bh + gap;
+        }
 
-        // Right column: the China payment route where Patreon is unreachable, else Patreon.
-        float[] rightTint = cn ? TINT_BLUE : TINT_ORANGE;
-        String rightLabel = cn ? "gui.dungeontrain.death.narr.donate_cn"
-                               : "gui.dungeontrain.death.narr.donate_patreon";
-        String rightUrl = cn ? PaymentLinks.chinaUrl() : OfficialLinks.patreon();
-        String rightTarget = cn ? UiAnalytics.TARGET_DONATE_CN : UiAnalytics.TARGET_PATREON;
-        addRenderableWidget(new ColorTintedButton(rowX + each + gap, y, each, bh,
-                Component.translatable(rightLabel),
-                rightTint[0], rightTint[1], rightTint[2],
-                b -> openLink(rightUrl, rightTarget)));
+        descTop = y;
+        y += descH + 4;
+
+        if (showModes) {
+            // Left: the custom-amount route (Revolut, no fees). Right: Patreon — or, on the pre-tier
+            // layout only, the China payment route where Patreon is unreachable.
+            addRenderableWidget(new ColorTintedButton(rowX, y, modeEach, bh,
+                    Component.translatable(tiers
+                            ? "gui.dungeontrain.support.financial.custom_amount"
+                            : "gui.dungeontrain.death.narr.donate_revolut"),
+                    TINT_GREEN[0], TINT_GREEN[1], TINT_GREEN[2],
+                    b -> openLink(revolutUrl(), UiAnalytics.TARGET_DONATE)));
+
+            boolean rightIsCn = !tiers && cn;
+            float[] rightTint = rightIsCn ? TINT_BLUE : TINT_ORANGE;
+            String rightLabel = rightIsCn ? "gui.dungeontrain.death.narr.donate_cn"
+                    : tiers ? "gui.dungeontrain.support.financial.recurring"
+                            : "gui.dungeontrain.death.narr.donate_patreon";
+            String rightUrl = rightIsCn ? PaymentLinks.chinaUrl() : OfficialLinks.patreon();
+            String rightTarget = rightIsCn ? UiAnalytics.TARGET_DONATE_CN : UiAnalytics.TARGET_PATREON;
+            addRenderableWidget(new ColorTintedButton(rowX + modeEach + gap, y, modeEach, bh,
+                    Component.translatable(rightLabel),
+                    rightTint[0], rightTint[1], rightTint[2],
+                    b -> openLink(rightUrl, rightTarget)));
+            y += bh;
+        }
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
-                .bounds(cx - 100, y + bh + 12, 200, 20).build());
+                .bounds(cx - 100, y + 12, 200, 20).build());
     }
 
     @Override
