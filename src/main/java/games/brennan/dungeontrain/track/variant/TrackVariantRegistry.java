@@ -196,6 +196,8 @@ public final class TrackVariantRegistry {
         for (TreeSet<String> set : NAMES.values()) set.clear();
         ZERO_WARNED.clear();
         GATE_EMPTY_WARNED.clear();
+        // Room lengths are read off templates, so they belong to the world that was just closed.
+        games.brennan.dungeontrain.portal.PortalRoomLengths.clear();
     }
 
     /**
@@ -376,7 +378,11 @@ public final class TrackVariantRegistry {
                 n -> new Template.Tunnel(TunnelVariant.PORTAL, n)));
     }
 
+    private static final TemplateRegistry<Template.PortalRoom> PORTAL_ROOM_ADAPTER =
+        makeAdapter(TrackKind.PORTAL_ROOM, TemplateKind.PORTAL_ROOM, Template.PortalRoom::new);
+
     public static TemplateRegistry<Template.Track> adapterForTrack() { return TRACK_ADAPTER; }
+    public static TemplateRegistry<Template.PortalRoom> adapterForPortalRoom() { return PORTAL_ROOM_ADAPTER; }
     public static TemplateRegistry<Template.Pillar> adapterForPillar(PillarSection section) {
         return PILLAR_ADAPTERS.get(section);
     }

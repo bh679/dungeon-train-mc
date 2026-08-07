@@ -84,6 +84,7 @@ public final class EditorPlotLabels {
             case CARRIAGES -> carriageLabels(dims);
             case CONTENTS -> contentsLabels(dims);
             case TRACKS -> trackLabels(dims);
+            case PORTALS -> portalLabels(dims);
             case ARCHITECTURE -> Collections.emptyList();
         };
     }
@@ -180,14 +181,27 @@ public final class EditorPlotLabels {
         return out;
     }
 
+    private static List<Label> portalLabels(CarriageDims dims) {
+        List<Label> out = new ArrayList<>();
+        addTrackKindLabels(out, TrackKind.PORTAL_ROOM, dims, EditorCategory.PORTALS);
+        return out;
+    }
+
     private static void addTrackKindLabels(List<Label> out, TrackKind kind, CarriageDims dims) {
-        Vec3i footprint = TrackSidePlots.footprint(kind, dims);
-        String category = EditorCategory.TRACKS.name();
-        // For TRACKS the modelId is the kind tag (e.g. "tile", "pillar_bottom")
+        addTrackKindLabels(out, kind, dims, EditorCategory.TRACKS);
+    }
+
+    private static void addTrackKindLabels(List<Label> out, TrackKind kind, CarriageDims dims,
+                                           EditorCategory owner) {
+        String category = owner.name();
+        // The modelId is the kind tag (e.g. "tile", "pillar_bottom", "portal_room")
         // — that's what the existing weight commands key on. modelName is the
         // bare variant name segment.
         String modelId = kind.id();
         for (String name : TrackVariantRegistry.namesFor(kind)) {
+            // Per-name footprint: a portal room is as long as its author made it, so the label
+            // anchor has to follow the individual plot rather than a kind-wide size.
+            Vec3i footprint = TrackSidePlots.footprint(kind, name, dims);
             BlockPos origin = TrackSidePlots.plotOrigin(kind, name, dims);
             int w = TrackVariantWeights.weightFor(kind, name);
             Provenance p = provenanceOf(

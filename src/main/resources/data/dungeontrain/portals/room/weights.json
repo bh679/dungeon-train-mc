@@ -1,0 +1,11 @@
+{
+  "default": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END"
+    ]
+  }
+}

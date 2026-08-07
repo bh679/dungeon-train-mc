@@ -89,6 +89,7 @@ public final class EditorDirtyCheck {
         scanPillarSections(overworld, dims, devmode, out);
         scanAdjuncts(overworld, dims, devmode, out);
         scanTunnels(overworld, dims, devmode, out);
+        scanPortalRooms(overworld, dims, devmode, out);
 
         return out;
     }
@@ -260,6 +261,26 @@ public final class EditorDirtyCheck {
                     out.add(new DirtyEntry("tracks",
                         "tunnel_" + tunnelLabel + "." + name, display, true, false));
                 }
+            }
+        }
+    }
+
+    private static void scanPortalRooms(ServerLevel level, CarriageDims dims, boolean devmode,
+                                        List<DirtyEntry> out) {
+        for (String name : TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM)) {
+            BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
+            String key = PortalRoomEditor.snapshotKey(name);
+            Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
+
+            Vec3i fp = PortalRoomEditor.plotSize(name, dims);
+            Set<BlockPos> skip = variantCellPositions(
+                TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, fp).entries());
+            boolean unsaved = snapshot != null
+                && !regionMatchesSnapshot(level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+
+            if (unsaved) {
+                out.add(new DirtyEntry("portals", "portal_room." + name,
+                    "portal room / " + name, true, false));
             }
         }
     }
@@ -444,7 +465,8 @@ public final class EditorDirtyCheck {
         return switch (model.kind()) {
             case CARRIAGE, CONTENTS -> model.id();
             case TRACK -> "track." + model.variantName();
-            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL -> model.id() + "." + model.variantName();
+            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL, PORTAL_ROOM ->
+                model.id() + "." + model.variantName();
             case PART -> null;
         };
     }

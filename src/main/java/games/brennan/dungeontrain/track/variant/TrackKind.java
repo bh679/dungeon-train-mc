@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.track.variant;
 
+import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.TrackPlacer;
@@ -10,10 +11,11 @@ import net.minecraft.core.Vec3i;
 import java.util.Locale;
 
 /**
- * Every track-side template kind that supports named variants — the open-air
+ * Every named-variant template kind that is not carriage-shaped — the open-air
  * track tile, both tunnel kinds (section + portal), the three pillar column
- * sections, and the stairs adjunct. Each kind has a fixed footprint (some
- * width-dependent on {@link CarriageDims}) and a stable on-disk subdirectory
+ * sections, the stairs adjunct, and the portal pocket room. Each kind has a
+ * fixed footprint (some width-dependent on {@link CarriageDims}, one with a
+ * free length axis — see {@link #freeLengthAxis()}) and a stable on-disk subdirectory
  * under {@code config/dungeontrain/user/} where its named templates live as
  * {@code <name>.nbt} (+ optional {@code <name>.variants.json} sidecar).
  *
@@ -32,6 +34,7 @@ import java.util.Locale;
  *   <li>{@link #PILLAR_TOP} / {@link #PILLAR_MIDDLE} / {@link #PILLAR_BOTTOM} —
  *       {@code pillars/<section>/<name>.nbt}</li>
  *   <li>{@link #ADJUNCT_STAIRS} — {@code pillars/adjunct_stairs/<name>.nbt}</li>
+ *   <li>{@link #PORTAL_ROOM} — {@code portals/room/<name>.nbt}</li>
  * </ul>
  *
  * <p>The seed used to deterministically pick a name for a given tile derives
@@ -47,7 +50,8 @@ public enum TrackKind {
     PILLAR_MIDDLE("pillar_middle", "pillars/middle"),
     PILLAR_BOTTOM("pillar_bottom", "pillars/bottom"),
     ADJUNCT_STAIRS("adjunct_stairs", "pillars/adjunct_stairs"),
-    ADJUNCT_STAIRS_ENTRANCE("adjunct_stairs_entrance", "pillars/adjunct_stairs_entrance");
+    ADJUNCT_STAIRS_ENTRANCE("adjunct_stairs_entrance", "pillars/adjunct_stairs_entrance"),
+    PORTAL_ROOM("portal_room", "portals/room");
 
     /** The default ("built-in") variant name present even when the disk is empty. */
     public static final String DEFAULT_NAME = "default";
@@ -122,7 +126,23 @@ public enum TrackKind {
                 new Vec3i(PillarAdjunct.STAIRS.xSize(), PillarAdjunct.STAIRS.ySize(), PillarAdjunct.STAIRS.zSize());
             case ADJUNCT_STAIRS_ENTRANCE ->
                 new Vec3i(PillarAdjunct.STAIRS_ENTRANCE.xSize(), PillarAdjunct.STAIRS_ENTRANCE.ySize(), PillarAdjunct.STAIRS_ENTRANCE.zSize());
+            case PORTAL_ROOM -> PortalRoomLayout.builtInSize(worldDims);
         };
+    }
+
+    /**
+     * True when a template of this kind may be any length along {@code X} and only its {@code Y} and
+     * {@code Z} bounds are checked on load.
+     *
+     * <p>Only {@link #PORTAL_ROOM}. A portal room's height and width are pinned by the corridor
+     * whose mouth opens into it — get them wrong and the mouth's seal ring does not close — but its
+     * length is the distance a player walks underneath, which is exactly the dial the portal exists
+     * to turn. Everything downstream reads that length off the loaded template
+     * ({@code PortalStructure}) rather than off {@link #dims}, so a mismatch there is authored
+     * intent rather than a broken file.</p>
+     */
+    public boolean freeLengthAxis() {
+        return this == PORTAL_ROOM;
     }
 
     /** Parse a lowercase id back to a kind, or {@code null} if unrecognised. */

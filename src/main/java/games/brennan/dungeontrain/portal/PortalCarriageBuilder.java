@@ -1,12 +1,16 @@
 package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -76,10 +80,11 @@ public final class PortalCarriageBuilder {
     /** Solid fill behind the twin's dummy door. */
     private static final BlockState PLUG = Blocks.DEEPSLATE.defaultBlockState();
 
-    private static final int POCKET_LENGTH = 11;
-    private static final int POCKET_WIDTH = 11;
-    private static final int POCKET_HEIGHT = 5;
     private static final int PLUG_DEPTH = 3;
+
+    /** Ceiling lights sit this far in from the room's interior edges, repeating every {@link #LIGHT_SPACING}. */
+    private static final int LIGHT_INSET = 2;
+    private static final int LIGHT_SPACING = 6;
 
     /** The carriage variant a portal corridor is authored as: {@code user/templates/portal.nbt}. */
     private static final CarriageVariant PORTAL_VARIANT = CarriageVariant.custom("portal");
@@ -299,15 +304,24 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * X offset from the entry twin's origin to the exit twin's — one corridor plus the room between
-     * them.
+     * Decide what a pair's structure is before building it: which room variant it rolls, and how
+     * big that room turns out to be.
+     *
+     * <p>The name is a pure function of the world seed and the pair's key, so a pair keeps the same
+     * room for the life of the world — re-stamping it further down the track relocates it rather
+     * than re-rolling it. The size is read off the authored template, or the built-in room's when
+     * nothing has been authored.</p>
      */
-    public static int exitTwinOffsetX(CarriageDims dims) {
-        return dims.length() + POCKET_LENGTH;
+    public static PortalStructure planStructure(ServerLevel level, CarriageDims dims,
+                                                BlockPos entryOrigin, int pairKey) {
+        String roomName = TrackVariantRegistry.pickName(
+            TrackKind.PORTAL_ROOM, level.getSeed(), pairKey);
+        return new PortalStructure(entryOrigin, roomName,
+            PortalRoomTemplateStore.sizeOf(level, roomName, dims));
     }
 
     /**
-     * Stamp a whole pair structure at {@code entryOrigin}:
+     * Stamp a whole pair structure:
      *
      * <pre>
      *   [plug] [entry twin] [room] [exit twin] [plug]
@@ -317,14 +331,29 @@ public final class PortalCarriageBuilder {
      * near half maps to the entry carriage), and the exit twin's far door likewise (its far half
      * maps to the exit carriage). The room opens onto both corridors, so a player walks in from the
      * train through one and out to the train through the other without turning round.</p>
+     *
+     * <p>Order matters: the twins go down first and the room's own box stops one block short of
+     * each door plane, so a corridor's blocks are never written over by the room. That is what keeps
+     * a twin identical to its carriage whatever the room is authored as.</p>
      */
-    public static void stampPairStructure(ServerLevel level, BlockPos entryOrigin, CarriageDims dims) {
+    public static void stampPairStructure(ServerLevel level, PortalStructure structure,
+                                          CarriageDims dims) {
         PortalCarriageLayout layout = layoutFor(dims);
-        BlockPos exitOrigin = entryOrigin.offset(exitTwinOffsetX(dims), 0, 0);
+        BlockPos entryOrigin = structure.origin();
+        BlockPos exitOrigin = structure.exitOrigin(dims);
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        Vec3i roomSize = structure.roomSize();
 
         stampTwin(level, entryOrigin, dims);
         stampTwin(level, exitOrigin, dims);
-        stampRoom(level, entryOrigin, exitOrigin, dims, layout);
+        stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true);
+
+        // Seal the ring around each corridor mouth. The room's shell is wider and taller than a
+        // corridor, so everything it does not already cover at the door plane has to be walled off,
+        // leaving that plane — and the door hanging in it — untouched.
+        sealCorridorMouth(level, entryOrigin.getX() + dims.length() - 1, entryOrigin, dims,
+            roomOrigin, roomSize);
+        sealCorridorMouth(level, exitOrigin.getX(), exitOrigin, dims, roomOrigin, roomSize);
 
         // Dead space behind the door that leads nowhere, at each outer end.
         plugBeyond(level, entryOrigin.offset(-PLUG_DEPTH, 0, 0), PLUG_DEPTH, dims);
@@ -338,18 +367,24 @@ public final class PortalCarriageBuilder {
      * train would trail a line of abandoned corridors hanging in the sky, one for every time a
      * portal carriage drifted out of range.</p>
      */
-    public static void eraseTwin(ServerLevel level, BlockPos origin, CarriageDims dims) {
+    public static void eraseTwin(ServerLevel level, PortalStructure structure, CarriageDims dims) {
         PortalCarriageLayout layout = layoutFor(dims);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         BlockState air = Blocks.AIR.defaultBlockState();
 
-        int zCentre = origin.getZ() + layout.doorZ();
+        // Measured off the structure record rather than a constant: the pair may have rolled a
+        // longer room than the built-in one, and erasing the built-in span would leave its tail
+        // hanging at the world floor.
+        BlockPos origin = structure.origin();
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        Vec3i roomSize = structure.roomSize();
+
         int minX = origin.getX() - PLUG_DEPTH;
         // Both corridors, the room between them, and the plug past the far end.
-        int maxX = origin.getX() + exitTwinOffsetX(dims) + dims.length() + PLUG_DEPTH;
-        int minZ = Math.min(origin.getZ() - 1, zCentre - POCKET_WIDTH / 2 - 1);
-        int maxZ = Math.max(origin.getZ() + dims.width(), zCentre + POCKET_WIDTH / 2 + 1);
-        int maxY = origin.getY() + Math.max(dims.height(), POCKET_HEIGHT + 2);
+        int maxX = origin.getX() + structure.spanX(dims) + PLUG_DEPTH;
+        int minZ = Math.min(origin.getZ() - 1, roomOrigin.getZ() - 1);
+        int maxZ = Math.max(origin.getZ() + dims.width(), roomOrigin.getZ() + roomSize.getZ());
+        int maxY = origin.getY() + Math.max(dims.height(), roomSize.getY());
 
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
@@ -378,55 +413,112 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * The pocket room between the two twins — a sealed space in a palette nothing in the corridors
-     * shares, so stepping out of either one reads unmistakably as arriving somewhere else.
+     * The pocket room between the two twins — a space in a palette nothing in the corridors shares,
+     * so stepping out of either one reads unmistakably as arriving somewhere else.
      *
      * <p>Open at <b>both</b> ends: the entry twin's far door feeds it and the exit twin's near door
      * leads out of it, which is what lets a player cross the room and rejoin the train facing the
      * same way they set off.</p>
+     *
+     * <p>The authored {@code portal_room} template when one exists at exactly {@code size}, the
+     * built-in geometry when it does not — the same arrangement {@link #stampCorridorFrom} has, and
+     * what gives the editor a non-empty plot to author the first real room in. {@code size} is
+     * passed rather than re-derived so the caller's seal ring and erase box cannot disagree with
+     * what was actually stamped.</p>
+     *
+     * <p>Takes an explicit origin, so putting a second room alongside this one is another call at
+     * {@code roomOrigin.offset(0, 0, ±size.getZ())} rather than a rewrite.</p>
      */
-    private static void stampRoom(ServerLevel level, BlockPos entryOrigin, BlockPos exitOrigin,
-                                  CarriageDims dims, PortalCarriageLayout layout) {
-        int x0 = entryOrigin.getX() + dims.length();
-        int x1 = exitOrigin.getX() - 1;
-        int zCentre = entryOrigin.getZ() + layout.doorZ();
-        int z0 = zCentre - POCKET_WIDTH / 2;
-        int z1 = z0 + POCKET_WIDTH - 1;
-        int floorY = entryOrigin.getY();
-        int ceilingY = floorY + POCKET_HEIGHT + 1;
+    public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
+                                   String roomName, Vec3i size, boolean relight) {
+        // Clear first, for the same reason a twin does: the room lands in solid rock at the world
+        // floor, and a template stamp only writes its own cells — anything the author left as
+        // STRUCTURE_VOID would otherwise show deepslate through the wall.
+        clearRoomBox(level, roomOrigin, size);
 
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-
-        // Interior, side walls, floor and ceiling. Neither end plane is written here — both are the
-        // corridors' own door planes, and writing over them would delete the doors.
-        for (int x = x0; x <= x1; x++) {
-            for (int z = z0 - 1; z <= z1 + 1; z++) {
-                for (int y = floorY; y <= ceilingY; y++) {
-                    boolean shell = z < z0 || z > z1 || y == floorY || y == ceilingY;
-                    BlockState state = !shell ? Blocks.AIR.defaultBlockState()
-                        : (y == floorY ? POCKET_FLOOR : POCKET_SHELL);
-                    level.setBlock(pos.set(x, y, z), state, Block.UPDATE_ALL);
-                }
-            }
+        Optional<StructureTemplate> stored = PortalRoomTemplateStore.get(level, roomName, dims);
+        if (stored.isPresent() && stored.get().getSize().equals(size)) {
+            CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(), relight);
+            return;
         }
+        stampRoomBuiltIn(level, roomOrigin, size, relight);
+    }
 
-        // Seal the ring around each corridor mouth: the room is wider and taller than a corridor, so
-        // everything its shell does not already cover has to be walled off, leaving that shell — and
-        // the door hanging in it — untouched.
-        sealCorridorMouth(level, x0 - 1, entryOrigin, dims, z0, z1, floorY, ceilingY);
-        sealCorridorMouth(level, x1 + 1, exitOrigin, dims, z0, z1, floorY, ceilingY);
-
-        for (int dx = 2; dx <= POCKET_LENGTH - 3; dx += POCKET_LENGTH - 5) {
-            for (int dz = 2; dz <= POCKET_WIDTH - 3; dz += POCKET_WIDTH - 5) {
-                level.setBlock(pos.set(x0 + dx, ceilingY, z0 + dz), POCKET_LIGHT, Block.UPDATE_ALL);
+    /** Clear a room-sized box to air. */
+    private static void clearRoomBox(ServerLevel level, BlockPos origin, Vec3i size) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        BlockState air = Blocks.AIR.defaultBlockState();
+        for (int dx = 0; dx < size.getX(); dx++) {
+            for (int dz = 0; dz < size.getZ(); dz++) {
+                for (int dy = 0; dy < size.getY(); dy++) {
+                    level.setBlock(pos.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz),
+                        air, Block.UPDATE_ALL);
+                }
             }
         }
     }
 
-    private static void sealCorridorMouth(ServerLevel level, int planeX, BlockPos corridorOrigin,
-                                          CarriageDims dims, int z0, int z1, int floorY, int ceilingY) {
+    /**
+     * The built-in room: a shell of floor, ceiling and two side walls with ceiling lights, in a
+     * palette nothing in the corridors shares.
+     *
+     * <p>Neither end plane is written — both are the corridors' own door planes, and writing over
+     * them would delete the doors. The lights repeat rather than sitting at fixed fractions of the
+     * length, so a room authored at any length is lit the same way as the default one.</p>
+     */
+    public static void stampRoomBuiltIn(ServerLevel level, BlockPos roomOrigin, Vec3i size,
+                                        boolean relight) {
+        int x0 = roomOrigin.getX();
+        int x1 = x0 + size.getX() - 1;
+        int zWall0 = roomOrigin.getZ();
+        int zWall1 = zWall0 + size.getZ() - 1;
+        int z0 = zWall0 + 1;
+        int z1 = zWall1 - 1;
+        int floorY = roomOrigin.getY();
+        int ceilingY = floorY + size.getY() - 1;
+
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for (int z = z0 - 1; z <= z1 + 1; z++) {
+
+        for (int x = x0; x <= x1; x++) {
+            for (int z = zWall0; z <= zWall1; z++) {
+                for (int y = floorY; y <= ceilingY; y++) {
+                    boolean shell = z < z0 || z > z1 || y == floorY || y == ceilingY;
+                    BlockState state = !shell ? Blocks.AIR.defaultBlockState()
+                        : (y == floorY ? POCKET_FLOOR : POCKET_SHELL);
+                    setRoomBlock(level, pos.set(x, y, z), state, relight);
+                }
+            }
+        }
+
+        for (int x = x0 + LIGHT_INSET; x <= x1 - LIGHT_INSET; x += LIGHT_SPACING) {
+            for (int z = z0 + LIGHT_INSET; z <= z1 - LIGHT_INSET; z += LIGHT_SPACING) {
+                setRoomBlock(level, pos.set(x, ceilingY, z), POCKET_LIGHT, relight);
+            }
+        }
+    }
+
+    private static void setRoomBlock(ServerLevel level, BlockPos pos, BlockState state,
+                                     boolean relight) {
+        if (relight) {
+            level.setBlock(pos, state, Block.UPDATE_ALL);
+        } else {
+            SilentBlockOps.setBlockSectionLocal(level, pos, state);
+        }
+    }
+
+    /**
+     * Wall off everything in a corridor's door plane that the room's own shell does not cover.
+     *
+     * <p>Only cells <b>outside</b> the corridor's cross-section are written — the corridor's own
+     * blocks, doorway included, are never touched. That is what keeps a twin block-identical to its
+     * carriage regardless of what the room is authored as.</p>
+     */
+    private static void sealCorridorMouth(ServerLevel level, int planeX, BlockPos corridorOrigin,
+                                          CarriageDims dims, BlockPos roomOrigin, Vec3i roomSize) {
+        int floorY = roomOrigin.getY();
+        int ceilingY = floorY + roomSize.getY() - 1;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int z = roomOrigin.getZ(); z < roomOrigin.getZ() + roomSize.getZ(); z++) {
             for (int y = floorY; y <= ceilingY; y++) {
                 boolean coveredByCorridor = z >= corridorOrigin.getZ()
                     && z < corridorOrigin.getZ() + dims.width()

@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.portal.PortalOccupants;
 import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
+import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import net.minecraft.world.entity.Entity;
@@ -26,6 +27,7 @@ import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.RelativeMovement;
@@ -129,12 +131,16 @@ public final class PortalCarriageEvents {
      * along the track, so the entry index keys a pair on its own. In-memory only: the blocks are
      * re-stamped on the next approach anyway.
      */
-    private static final Map<Integer, BlockPos> STRUCTURES = new HashMap<>();
+    private static final Map<Integer, PortalStructure> STRUCTURES = new HashMap<>();
 
     /**
      * How far outside the corridor's own cross-section the room extends, for the "is anyone in this
      * structure" test. The room is wider and taller than a corridor, and a player standing in it
      * must still pin the structure against being re-stamped.
+     *
+     * <p>A floor, not the figure: {@link #structureBox} takes the larger of this and what the
+     * pair's actual room needs, so an authored room bigger than the built-in one widens the box
+     * rather than falling outside it.</p>
      */
     private static final int POCKET_ROOM_SLACK = 8;
 
@@ -220,9 +226,9 @@ public final class PortalCarriageEvents {
                                              int groupSize, PortalPuppets.Session puppets) {
         // One structure per pair, stamped from the ENTRY carriage's approach and keyed on its index,
         // so both carriages of a pair address the same room rather than building one each.
-        BlockPos structure = STRUCTURES.get(pairKey);
+        PortalStructure structure = STRUCTURES.get(pairKey);
 
-        boolean occupied = structure != null && anyPlayerInStructure(players, layout, dims, structure)
+        boolean occupied = structure != null && anyPlayerInStructure(players, dims, structure)
             || anyPlayerInCorridor(players, layout, originX, originY, originZ);
 
         if (!occupied && !anyPlayerWithin(players, originX, originY, originZ, APPROACH_RANGE)) {
@@ -239,20 +245,21 @@ public final class PortalCarriageEvents {
             return;
         }
 
-        BlockPos structureOrigin = occupied && structure != null
+        PortalStructure built = occupied && structure != null
             ? structure
             : ensureStructure(level, dims, pairKey, originX, originY, originZ, groupSize);
-        if (structureOrigin == null) {
+        if (built == null) {
             // No twin — a world too shallow to hold one. With only half a pair there is no opposite
             // corridor for a puppet to stand in.
             PortalPuppets.forget(carriageIndex);
             return;
         }
 
-        // The entry twin sits at the structure's origin; the exit twin one corridor and one room along.
+        // The entry twin sits at the structure's origin; the exit twin one corridor and one room
+        // along — read off the structure, because the room's length is whatever this pair rolled.
         BlockPos twinOrigin = role == PortalCarriageRole.ENTRY
-            ? structureOrigin
-            : structureOrigin.offset(PortalCarriageBuilder.exitTwinOffsetX(dims), 0, 0);
+            ? built.origin()
+            : built.exitOrigin(dims);
 
         PortalFrames frames = new PortalFrames(layout,
             new PortalFrames.Origin(originX, originY, originZ),
@@ -290,7 +297,7 @@ public final class PortalCarriageEvents {
         // Everything anywhere in the structure — both twin corridors and the pocket room between
         // them — is noted as being in a portal room, so vanilla's despawn rule leaves it alone. The
         // corridor scan below would miss the room, which is most of where things actually stand.
-        protectStructureOccupants(level, dims, structureOrigin);
+        protectStructureOccupants(level, dims, built);
 
         // One scan of the corridors, shared by the two things that act on their occupants — so a mob
         // that transits is necessarily a mob that had a puppet, and neither can see an entity the
@@ -313,10 +320,10 @@ public final class PortalCarriageEvents {
      * the chunk columns the old one sits in — which is the condition the crossing's seamlessness
      * depends on, so it is also exactly when a fresh one is worth the block writes.
      */
-    private static BlockPos ensureStructure(ServerLevel level, CarriageDims dims, int pairKey,
-                                            double originX, double originY, double originZ,
-                                            int groupSize) {
-        BlockPos existing = STRUCTURES.get(pairKey);
+    private static PortalStructure ensureStructure(ServerLevel level, CarriageDims dims, int pairKey,
+                                                   double originX, double originY, double originZ,
+                                                   int groupSize) {
+        PortalStructure existing = STRUCTURES.get(pairKey);
 
         // Same chunk columns as the carriage — that is what keeps the destination loaded — but at the
         // world floor rather than a fixed height above the train, and on a per-pair Y lane so two
@@ -324,29 +331,37 @@ public final class PortalCarriageEvents {
         int twinY = twinFloorY(level, pairKey, originY, groupSize);
         BlockPos wanted = BlockPos.containing(originX, twinY, originZ);
 
+        // Which room this pair rolls, and how big it is. Deterministic on the pair key, so a
+        // re-stamp relocates the same room rather than swapping it for another one.
+        PortalStructure planned = PortalCarriageBuilder.planStructure(level, dims, wanted, pairKey);
+
         // A world too shallow to hold the structure between its floor and the carriage gets no twin,
         // rather than one stamped through the train.
-        int structureTop = twinY + Math.max(dims.height(), POCKET_ROOM_SLACK);
+        int structureTop = twinY + Math.max(dims.height(), planned.roomSize().getY());
         if (structureTop >= originY || structureTop > level.getMaxBuildHeight() - CEILING_MARGIN) {
             return existing;
         }
 
-        if (existing != null && horizontalDistance(existing, originX, originZ) <= TWIN_MAX_DRIFT) {
+        if (existing != null
+            && horizontalDistance(existing.origin(), originX, originZ) <= TWIN_MAX_DRIFT) {
             return existing;
         }
 
         // Clear the outgoing structure rather than leaving it hanging in the sky. Without this the
         // train would trail abandoned corridors, a set every time a pair drifted out of range.
+        // Both the carry and the erase read the OLD record, so they cover exactly the box that was
+        // written even if the room has since been authored at a different length.
         if (existing != null) {
             carryStructureOccupants(level, dims, existing, wanted);
             PortalCarriageBuilder.eraseTwin(level, existing, dims);
         }
 
-        PortalCarriageBuilder.stampPairStructure(level, wanted, dims);
-        STRUCTURES.put(pairKey, wanted);
-        LOGGER.info("[DungeonTrain] Stamped portal pair {} at {} (entry carriage at {}, {}, {})",
-            pairKey, wanted, fmt(originX), fmt(originY), fmt(originZ));
-        return wanted;
+        PortalCarriageBuilder.stampPairStructure(level, planned, dims);
+        STRUCTURES.put(pairKey, planned);
+        LOGGER.info("[DungeonTrain] Stamped portal pair {} at {} (room '{}' {} long, entry carriage at {}, {}, {})",
+            pairKey, wanted, planned.roomName(), planned.roomLength(),
+            fmt(originX), fmt(originY), fmt(originZ));
+        return planned;
     }
 
     /**
@@ -374,8 +389,8 @@ public final class PortalCarriageEvents {
     }
 
     /** True if any player is anywhere inside a pair structure — either corridor, or the room between. */
-    private static boolean anyPlayerInStructure(List<ServerPlayer> players, PortalCarriageLayout layout,
-                                                CarriageDims dims, BlockPos structure) {
+    private static boolean anyPlayerInStructure(List<ServerPlayer> players, CarriageDims dims,
+                                                PortalStructure structure) {
         AABB box = structureBox(dims, structure);
         for (ServerPlayer player : players) {
             if (box.contains(player.getX(), player.getY(), player.getZ())) return true;
@@ -391,23 +406,36 @@ public final class PortalCarriageEvents {
      * quietly discarded while its player is away on the train.</p>
      */
     private static void protectStructureOccupants(ServerLevel level, CarriageDims dims,
-                                                  BlockPos structure) {
+                                                  PortalStructure structure) {
         long gameTime = level.getGameTime();
         for (Entity entity : level.getEntities((Entity) null, structureBox(dims, structure), e -> true)) {
             PortalOccupants.protect(entity, gameTime);
         }
     }
 
-    /** The whole pair structure as a box: both twin corridors and the room between them. */
-    private static AABB structureBox(CarriageDims dims, BlockPos structure) {
-        int span = PortalCarriageBuilder.exitTwinOffsetX(dims) + dims.length();
+    /**
+     * The whole pair structure as a box: both twin corridors and the room between them.
+     *
+     * <p>Sized off the structure's own record. The X span is the room this pair actually rolled,
+     * and the Z/Y slack is the larger of {@link #POCKET_ROOM_SLACK} and what that room needs — so
+     * an authored room bigger than the built-in one still has its occupants pin the structure
+     * against a re-stamp, be spared by the despawn rule, and be carried when it relocates.</p>
+     */
+    private static AABB structureBox(CarriageDims dims, PortalStructure structure) {
+        BlockPos origin = structure.origin();
+        int span = structure.spanX(dims);
+        Vec3i room = structure.roomSize();
+        // Half the room's overhang either side of the corridor, plus a block; never less than the
+        // slack the built-in room was tuned with.
+        int slackZ = Math.max(POCKET_ROOM_SLACK, (room.getZ() - dims.width()) / 2 + 1);
+        int slackY = Math.max(POCKET_ROOM_SLACK, room.getY() - dims.height() + 1);
         return new AABB(
-            structure.getX() - 1,
-            structure.getY() - 1,
-            structure.getZ() - POCKET_ROOM_SLACK,
-            structure.getX() + span + 1,
-            structure.getY() + dims.height() + POCKET_ROOM_SLACK,
-            structure.getZ() + dims.width() + POCKET_ROOM_SLACK);
+            origin.getX() - 1,
+            origin.getY() - 1,
+            origin.getZ() - slackZ,
+            origin.getX() + span + 1,
+            origin.getY() + dims.height() + slackY,
+            origin.getZ() + dims.width() + slackZ);
     }
 
     /**
@@ -425,12 +453,13 @@ public final class PortalCarriageEvents {
      * are skipped anyway, because moving a player wants the relative teleport the swap uses.</p>
      */
     private static void carryStructureOccupants(ServerLevel level, CarriageDims dims,
-                                                BlockPos from, BlockPos to) {
-        if (from.equals(to)) return;
+                                                PortalStructure from, BlockPos to) {
+        BlockPos origin = from.origin();
+        if (origin.equals(to)) return;
 
-        int dx = to.getX() - from.getX();
-        int dy = to.getY() - from.getY();
-        int dz = to.getZ() - from.getZ();
+        int dx = to.getX() - origin.getX();
+        int dy = to.getY() - origin.getY();
+        int dz = to.getZ() - origin.getZ();
 
         int carried = 0;
         for (Entity entity : level.getEntities((Entity) null, structureBox(dims, from), e -> true)) {

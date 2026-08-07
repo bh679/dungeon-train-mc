@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.portal.PortalRoomLengths;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -65,6 +66,12 @@ public final class TrackSidePlots {
     public static final int X_TUNNELS = X_TRACK + 4 + EditorLayout.GAP;          // 4 = TILE_LENGTH
     public static final int X_STAIRS = X_TUNNELS + TunnelPlacer.LENGTH + EditorLayout.GAP; // +10+5 = 19
     public static final int X_PILLARS = X_STAIRS + 3 + EditorLayout.GAP;         // +3+5 = 27 (stairs xSize=3)
+    /**
+     * Portal rooms sit past the pillar column (pillar xSize = 1). Their own category, so nothing is
+     * ever stamped here at the same time as the track-side kinds — the editor clears every plot on
+     * a category switch — but the column keeps the two apart when reading the layout.
+     */
+    public static final int X_PORTALS = X_PILLARS + 1 + EditorLayout.GAP;        // +1+5 = 33
 
     private TrackSidePlots() {}
 
@@ -95,6 +102,19 @@ public final class TrackSidePlots {
     }
 
     /**
+     * Footprint of one stamped instance of {@code (kind, name)}.
+     *
+     * <p>Identical to {@link #footprint(TrackKind, CarriageDims)} except for a
+     * {@link TrackKind#freeLengthAxis()} kind, where the length belongs to the individual variant
+     * rather than the kind — a portal room is as long as its author made it.</p>
+     */
+    public static Vec3i footprint(TrackKind kind, String name, CarriageDims dims) {
+        Vec3i base = kind.dims(dims);
+        if (!kind.freeLengthAxis()) return base;
+        return new Vec3i(PortalRoomLengths.lengthOf(name), base.getY(), base.getZ());
+    }
+
+    /**
      * Test whether {@code pos} lies inside any track-side plot, including
      * the 1-block outline-cage margin used by every editor's
      * {@code plotContaining}. Returns the resolved
@@ -110,7 +130,7 @@ public final class TrackSidePlots {
             List<String> names = TrackVariantRegistry.namesFor(kind);
             for (String name : names) {
                 BlockPos origin = plotOrigin(kind, name, dims);
-                Vec3i fp = footprint(kind, dims);
+                Vec3i fp = footprint(kind, name, dims);
                 if (containsWithMargin(pos, origin, fp)) {
                     return new TrackPlotLocator.PlotInfo(kind, name, origin, fp);
                 }
@@ -145,6 +165,7 @@ public final class TrackSidePlots {
             case PILLAR_TOP -> Y_BASELINE
                 + PillarSection.BOTTOM.height() + EditorLayout.GAP
                 + PillarSection.MIDDLE.height() + EditorLayout.GAP;
+            case PORTAL_ROOM -> Y_BASELINE;
         };
     }
 
@@ -155,6 +176,7 @@ public final class TrackSidePlots {
             case TUNNEL_SECTION, TUNNEL_PORTAL -> X_TUNNELS;
             case ADJUNCT_STAIRS, ADJUNCT_STAIRS_ENTRANCE -> X_STAIRS;
             case PILLAR_TOP, PILLAR_MIDDLE, PILLAR_BOTTOM -> X_PILLARS;
+            case PORTAL_ROOM -> X_PORTALS;
         };
     }
 

@@ -90,6 +90,22 @@ final class EditorCategoryTest {
     }
 
     @Test
+    @DisplayName("PORTALS: the pocket room, default first — and it is NOT in TRACKS")
+    void portals_holdTheRoomAndOnlyTheRoom() {
+        List<Template> models = EditorCategory.PORTALS.models();
+        assertFalse(models.isEmpty(), "PORTALS should always expose the synthetic default room");
+        assertInstanceOf(Template.PortalRoom.class, models.get(0));
+        assertEquals("default", ((Template.PortalRoom) models.get(0)).name());
+        assertEquals("portal_room", EditorCategory.PORTALS.firstModel().orElseThrow().id());
+
+        // The room is its own category — TRACKS must not have grown a row for it.
+        for (Template m : EditorCategory.TRACKS.models()) {
+            assertFalse(m instanceof Template.PortalRoom,
+                "portal rooms belong to PORTALS, not TRACKS");
+        }
+    }
+
+    @Test
     @DisplayName("ARCHITECTURE: empty models, no firstModel")
     void architecture_isEmpty() {
         assertTrue(EditorCategory.ARCHITECTURE.models().isEmpty());

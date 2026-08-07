@@ -193,6 +193,14 @@ public final class SaveCommand {
                 return new Template.Tunnel(tv, name);
             }
         }
+        if (category == EditorCategory.PORTALS && id.contains(".")) {
+            int sep = id.indexOf('.');
+            if (games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM.id()
+                    .equals(id.substring(0, sep))) {
+                return new Template.PortalRoom(id.substring(sep + 1));
+            }
+            return null;
+        }
         for (Template m : category.models()) {
             if (m.id().equals(id)) return m;
         }

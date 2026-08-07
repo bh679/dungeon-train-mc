@@ -150,6 +150,14 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry weightRow = weightTripleFor(category, modelId, modelName, currentWeight);
         if (weightRow != null) out.add(weightRow);
 
+        // Length — portals only. A portal room is the one template whose length the author chooses,
+        // because it is the distance walked underneath a portal rather than a fixed footprint.
+        // Position-resolved (no model id in the command), so it needs the player inside the plot.
+        if ("portals".equals(category)) {
+            out.add(new CommandMenuEntry.TypeArg(
+                "Length", "blocks", "dungeontrain editor portals length"));
+        }
+
         // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases
         // drilldown to the OW/Nether/Void/End checkbox popup. Only shown for weighted, addressable
         // models (weightRow != null is the exact same gate). When the model is linked to a Stage we
@@ -183,7 +191,8 @@ public final class EditorMenuScreen implements MenuScreen {
         // Editor mirror toggles — author one octant, the editor mirrors live
         // (and rebuilds on save) across the enabled axes. Available in every
         // template plot (off by default outside tunnels).
-        if (("carriages".equals(category) || "contents".equals(category) || "tracks".equals(category))
+        if (("carriages".equals(category) || "contents".equals(category) || "tracks".equals(category)
+             || "portals".equals(category))
             && modelName != null && !modelName.isEmpty()) {
             addMirrorToggles(out);
         }
@@ -256,6 +265,10 @@ public final class EditorMenuScreen implements MenuScreen {
                 if (modelName == null || modelName.isEmpty()) return null;
                 prefix = "dungeontrain editor tracks weight " + modelId + " " + modelName;
             }
+            case "portals" -> {
+                if (modelName == null || modelName.isEmpty()) return null;
+                prefix = "dungeontrain editor portals weight " + modelId + " " + modelName;
+            }
             case "contents" -> prefix = "dungeontrain editor contents weight " + modelId;
             default -> { return null; }
         }
@@ -287,6 +300,10 @@ public final class EditorMenuScreen implements MenuScreen {
             case "tracks" -> {
                 if (modelName == null || modelName.isEmpty()) return null;
                 prefix = "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName;
+            }
+            case "portals" -> {
+                if (modelName == null || modelName.isEmpty()) return null;
+                prefix = "dungeontrain editor portals " + sub + " " + modelId + " " + modelName;
             }
             case "contents" -> prefix = "dungeontrain editor contents " + sub + " " + modelId;
             default -> { return null; }
@@ -329,6 +346,12 @@ public final class EditorMenuScreen implements MenuScreen {
                     "New", "name",
                     "dungeontrain editor tracks new " + modelId);
             }
+            case "portals" -> {
+                if (modelId == null || modelId.isEmpty()) yield null;
+                yield new CommandMenuEntry.TypeArg(
+                    "New", "name",
+                    "dungeontrain editor portals new " + modelId);
+            }
             default -> null;
         };
     }
@@ -363,6 +386,10 @@ public final class EditorMenuScreen implements MenuScreen {
                 "Remove",
                 new ConfirmScreen("Remove the current variant for '" + model + "'?",
                     "dungeontrain editor tracks reset " + modelId));
+            case "portals" -> new CommandMenuEntry.DrillIn(
+                "Remove",
+                new ConfirmScreen("Remove the current variant for '" + model + "'?",
+                    "dungeontrain editor portals reset " + modelId));
             default -> null;
         };
     }

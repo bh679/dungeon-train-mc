@@ -261,11 +261,12 @@ public final class TrackVariantStore {
 
         Vec3i expected = kind.dims(dims);
         Vec3i size = template.getSize();
-        if (!size.equals(expected)) {
+        if (!boundsMatch(kind, size, expected)) {
             LOGGER.warn(
-                "[DungeonTrain] Track template {}:{} ({}) has bounds {}x{}x{}, expected {}x{}x{} — ignoring.",
+                "[DungeonTrain] Track template {}:{} ({}) has bounds {}x{}x{}, expected {}x{}x{}{} — ignoring.",
                 kind.id(), name, origin, size.getX(), size.getY(), size.getZ(),
-                expected.getX(), expected.getY(), expected.getZ()
+                expected.getX(), expected.getY(), expected.getZ(),
+                kind.freeLengthAxis() ? " (any length)" : ""
             );
             return Optional.empty();
         }
@@ -273,12 +274,26 @@ public final class TrackVariantStore {
         return Optional.of(template);
     }
 
+    /**
+     * Whether a loaded template's bounds are acceptable for {@code kind}.
+     *
+     * <p>Normally an exact match. For a {@link TrackKind#freeLengthAxis()} kind the {@code X} bound
+     * is the author's to choose and only {@code Y} and {@code Z} are checked — those are the axes
+     * pinned by what the template has to meet in world.</p>
+     */
+    private static boolean boundsMatch(TrackKind kind, Vec3i size, Vec3i expected) {
+        if (kind.freeLengthAxis()) {
+            return size.getY() == expected.getY() && size.getZ() == expected.getZ();
+        }
+        return size.equals(expected);
+    }
+
     private static Optional<StructureTemplate> filterForDims(
         TrackKind kind, String name, Optional<StructureTemplate> cached, CarriageDims dims
     ) {
         if (cached.isEmpty()) return cached;
         Vec3i expected = kind.dims(dims);
-        if (cached.get().getSize().equals(expected)) return cached;
+        if (boundsMatch(kind, cached.get().getSize(), expected)) return cached;
         LOGGER.warn(
             "[DungeonTrain] Cached track template {}:{} no longer matches dims {}x{}x{} — falling back.",
             kind.id(), name, dims.length(), dims.width(), dims.height()
