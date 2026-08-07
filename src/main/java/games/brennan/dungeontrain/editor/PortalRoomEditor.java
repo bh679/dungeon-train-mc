@@ -209,6 +209,40 @@ public final class PortalRoomEditor {
     }
 
     /**
+     * Create a new room variant seeded from the built-in geometry.
+     *
+     * <p>The "New" button normally duplicates the source variant's stored template. A portal room
+     * ships none — its fallback is code — so there is nothing to copy until somebody has saved one.
+     * Seeding from the built-in room gives the new variant exactly the starting point
+     * {@code default} itself has.</p>
+     *
+     * <p>The capture at the end is not optional bookkeeping: without a file on disk the registry's
+     * next directory scan would not find the name, and the variant would vanish on server restart.
+     * The new room also inherits {@code sourceName}'s length, so duplicating a 21-block room gives
+     * another 21-block room rather than silently reverting to the built-in 11.</p>
+     */
+    public static void createFromBuiltIn(ServerLevel overworld, String sourceName, String name,
+                                         CarriageDims dims) throws IOException {
+        PortalRoomLengths.pendingLength(name, PortalRoomLengths.lengthOf(sourceName));
+        TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, name);
+
+        // No template for this name yet, so this stamps the built-in room at the inherited length.
+        stampPlot(overworld, name, dims);
+
+        BlockPos origin = plotOrigin(name, dims);
+        Vec3i size = plotSize(name, dims);
+        StructureTemplate template = new StructureTemplate();
+        template.fillFromWorld(overworld, origin, size, false, Blocks.STRUCTURE_VOID);
+        PortalRoomTemplateStore.save(name, template);
+
+        // Fresh baseline, or the brand-new plot reads as already edited.
+        captureSnapshot(overworld, origin, size, name);
+
+        LOGGER.info("[DungeonTrain] Portal room '{}' created from the built-in room ({} long)",
+            name, size.getX());
+    }
+
+    /**
      * Restamp {@code name}'s plot at a new length.
      *
      * <p>Destructive by nature: the box changes size, so whatever was authored in the old one is

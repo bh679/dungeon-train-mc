@@ -145,6 +145,20 @@ public enum TrackKind {
         return this == PORTAL_ROOM;
     }
 
+    /**
+     * True when this kind has code-generated geometry to fall back on, so a variant with no stored
+     * template is a working variant rather than an empty plot.
+     *
+     * <p>Only {@link #PORTAL_ROOM}. Every other kind ships a bundled {@code default.nbt}; the
+     * portal room ships none on purpose, because its fallback is
+     * {@code PortalCarriageBuilder.stampRoomBuiltIn} — which is what lets the editor open a
+     * non-empty plot to author the first real room in. Anything that assumes "a variant means a
+     * file exists" has to check this: duplicating {@code default} has nothing to copy.</p>
+     */
+    public boolean hasBuiltInFallback() {
+        return this == PORTAL_ROOM;
+    }
+
     /** Parse a lowercase id back to a kind, or {@code null} if unrecognised. */
     public static TrackKind fromId(String raw) {
         if (raw == null) return null;

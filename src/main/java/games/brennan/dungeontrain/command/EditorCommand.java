@@ -4919,6 +4919,25 @@ public final class EditorCommand {
         java.util.Optional<net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate> sourceTemplate =
             games.brennan.dungeontrain.track.variant.TrackVariantStore.get(overworld, kind, sourceName, dims);
         if (sourceTemplate.isEmpty()) {
+            // A kind whose fallback is code has nothing to copy until somebody has saved one — the
+            // portal room ships no bundled nbt on purpose. Seed the new variant from the built-in
+            // geometry instead, which is the same starting point 'default' has.
+            if (kind.hasBuiltInFallback()) {
+                try {
+                    games.brennan.dungeontrain.editor.PortalRoomEditor.createFromBuiltIn(
+                        overworld, sourceName, key, dims);
+                } catch (java.io.IOException e) {
+                    source.sendFailure(Component.literal("Save failed: " + e.getMessage()));
+                    return 0;
+                }
+                restampPlotForKind(overworld, kind, dims);
+                teleportToPlot(player, overworld, kind, key, dims);
+                source.sendSuccess(() -> Component.literal(
+                    "Created " + kind.id() + ":" + key + " from the built-in room"
+                    + " — teleported to the new plot."
+                ).withStyle(ChatFormatting.GREEN), true);
+                return 1;
+            }
             source.sendFailure(Component.literal(
                 "Cannot duplicate " + kind.id() + ":" + sourceName + " — no template found at expected size."));
             return 0;
@@ -5007,6 +5026,11 @@ public final class EditorCommand {
             return 0;
         }
         games.brennan.dungeontrain.track.variant.TrackVariantRegistry.unregister(kind, name);
+        // Drop the removed room's cached length, or re-creating the same name later would silently
+        // inherit the dead variant's size.
+        if (kind.hasBuiltInFallback()) {
+            games.brennan.dungeontrain.portal.PortalRoomLengths.forget(name);
+        }
         restampPlotForKind(overworld, kind, dims);
         teleportToPlot(player, overworld, kind,
             games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
@@ -5028,8 +5052,10 @@ public final class EditorCommand {
         CarriageDims dims
     ) {
         BlockPos origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(kind, name, dims);
+        // Name-aware: a portal room is as long as its author made it, and the kind-level footprint
+        // would drop the player short of the centre of a longer one.
         net.minecraft.core.Vec3i fp =
-            games.brennan.dungeontrain.editor.TrackSidePlots.footprint(kind, dims);
+            games.brennan.dungeontrain.editor.TrackSidePlots.footprint(kind, name, dims);
         double tx = origin.getX() + fp.getX() / 2.0;
         double ty = origin.getY() + 1.0;
         double tz = origin.getZ() + fp.getZ() / 2.0;
