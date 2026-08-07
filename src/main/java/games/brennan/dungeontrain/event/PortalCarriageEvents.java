@@ -21,6 +21,7 @@ import games.brennan.dungeontrain.portal.PortalRoomTiler;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
+import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import net.minecraft.world.entity.Entity;
@@ -185,6 +186,21 @@ public final class PortalCarriageEvents {
      */
     private static final Map<UUID, PortalRoomFogPacket> LAST_FOG = new HashMap<>();
 
+    /**
+     * Player → the engine-audio region they were last told about, on the same "only when it changes"
+     * rule as {@link #LAST_FOG}.
+     */
+    private static final Map<UUID, PortalTrainAudioPacket> LAST_TRAIN_AUDIO = new HashMap<>();
+
+    /**
+     * How far past a corridor mouth the train's engine takes to fade to silence, in blocks.
+     *
+     * <p>Short on purpose. The corridor is a copy of a carriage and sounds like one; the room is
+     * somewhere else, and the walk between them is a few paces. A longer fade would have the engine
+     * trailing a player around a room that is meant to read as off the train entirely.</p>
+     */
+    private static final float TRAIN_AUDIO_FADE_BLOCKS = 3.0f;
+
     private PortalCarriageEvents() {}
 
     /**
@@ -227,6 +243,7 @@ public final class PortalCarriageEvents {
         STRUCTURES.clear();
         ACTIVE_PAIRS.clear();
         LAST_FOG.clear();
+        LAST_TRAIN_AUDIO.clear();
         COOLDOWNS.clear();
     }
 
@@ -297,6 +314,7 @@ public final class PortalCarriageEvents {
                                        PortalCarriageLayout layout, List<ServerPlayer> players) {
         if (STRUCTURES.isEmpty()) {
             clearFogFor(players, Set.of());
+            clearTrainAudioFor(players, Set.of());
             return;
         }
 
@@ -304,6 +322,7 @@ public final class PortalCarriageEvents {
         // against the others so no two pairs stamp into each other.
         List<Map.Entry<Integer, PortalStructure>> pairs = new ArrayList<>(STRUCTURES.entrySet());
         Set<UUID> fogged = new HashSet<>();
+        Set<UUID> inStructure = new HashSet<>();
 
         for (Map.Entry<Integer, PortalStructure> pair : pairs) {
             PortalStructure structure = pair.getValue();
@@ -330,9 +349,54 @@ public final class PortalCarriageEvents {
             if (next != structure) STRUCTURES.put(pair.getKey(), next);
 
             sendFogFor(players, dims, layout, next, fogged);
+            sendTrainAudioFor(players, dims, next, inStructure);
         }
 
         clearFogFor(players, fogged);
+        clearTrainAudioFor(players, inStructure);
+    }
+
+    /**
+     * Tell whoever is inside a structure where its corridors are, so the engine sound can follow them
+     * through the corridor copy and fade out in the room.
+     *
+     * <p>Sent for <b>every</b> room mode, unlike the fog, which only the tiling ones want. The sound
+     * rule is about the corridors and the walk out of them, which every portal has.</p>
+     */
+    private static void sendTrainAudioFor(List<ServerPlayer> players, CarriageDims dims,
+                                          PortalStructure structure, Set<UUID> inStructure) {
+        AABB box = structureBox(dims, structure);
+        BlockPos entry = structure.origin();
+        BlockPos exit = structure.exitOrigin(dims);
+        PortalTrainAudioPacket region = new PortalTrainAudioPacket(
+            (int) Math.floor(box.minX), (int) Math.floor(box.minY), (int) Math.floor(box.minZ),
+            (int) Math.ceil(box.maxX), (int) Math.ceil(box.maxY), (int) Math.ceil(box.maxZ),
+            entry.getX(), entry.getY(), entry.getZ(),
+            exit.getX(), exit.getY(), exit.getZ(),
+            dims.length(), dims.height(), dims.width(),
+            TRAIN_AUDIO_FADE_BLOCKS);
+
+        for (ServerPlayer player : players) {
+            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            inStructure.add(player.getUUID());
+            if (region.equals(LAST_TRAIN_AUDIO.get(player.getUUID()))) continue;
+            LAST_TRAIN_AUDIO.put(player.getUUID(), region);
+            PacketDistributor.sendToPlayer(player, region);
+        }
+    }
+
+    /** Hand the engine back to its ordinary distance curve for anyone who has left a structure. */
+    private static void clearTrainAudioFor(List<ServerPlayer> players, Set<UUID> stillInside) {
+        if (LAST_TRAIN_AUDIO.isEmpty()) return;
+        for (ServerPlayer player : players) {
+            UUID id = player.getUUID();
+            if (stillInside.contains(id) || !LAST_TRAIN_AUDIO.containsKey(id)) continue;
+            LAST_TRAIN_AUDIO.remove(id);
+            PacketDistributor.sendToPlayer(player, PortalTrainAudioPacket.none());
+        }
+        // Same reasoning as the fog: somebody who left the world never gets the message, which is why
+        // the client holds a region it can simply stop being inside.
+        LAST_TRAIN_AUDIO.keySet().removeIf(id -> players.stream().noneMatch(p -> p.getUUID().equals(id)));
     }
 
     /**

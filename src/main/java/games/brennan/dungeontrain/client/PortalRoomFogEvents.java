@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.sound.ClientPortalTrainAudio;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.Vec3;
@@ -62,5 +63,8 @@ public final class PortalRoomFogEvents {
         // would not contain the player wherever they arrived next — but a stale region is exactly
         // the thing that used to strand somebody permanently fogged, so it is cleared outright.
         ClientPortalRoomFog.reset();
+        // The engine-audio region is the same shape of cache with the same failure mode — a stale one
+        // would have the train audible in the next world's portal-shaped nowhere — so it goes too.
+        ClientPortalTrainAudio.reset();
     }
 }
