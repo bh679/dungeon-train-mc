@@ -142,7 +142,16 @@ public final class CarriageContentsPlacer {
      * counts its steps: {@code findParentOf} reads sidecars off disk, and a cycle authored into
      * them ({@code a}'s parent is {@code b}, {@code b}'s is {@code a}) would otherwise hang the
      * server on a lookup that runs per placement.</p>
+     *
+     * <p><b>Public because the editor's shell choice reads it too</b>
+     * ({@code CarriageContentsEditor.shellFor}). It used to compare ids directly and so shelled a
+     * sub-variant's corridor-sized plot with a standard carriage — the box rule and the shell rule
+     * were the same question answered twice, and only one of them learned about groups.</p>
      */
+    public static boolean isPortalContents(CarriageContents contents) {
+        return isPortalContents(contents.id());
+    }
+
     private static boolean isPortalContents(String id) {
         String portal = PortalCarriageBuilder.portalContents().id();
         String current = id;

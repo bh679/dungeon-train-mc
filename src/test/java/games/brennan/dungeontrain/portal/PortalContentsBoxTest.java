@@ -1,10 +1,12 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.editor.CarriageContentsEditor;
 import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsGroup;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageVariant;
 import net.minecraft.core.Vec3i;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -107,6 +109,27 @@ class PortalContentsBoxTest {
             CarriageContentsGroupStore.invalidate("portal");
             CarriageContentsGroupStore.invalidate("portalzigzag");
             CarriageContentsGroupStore.invalidate("books");
+        }
+    }
+
+    @Test
+    @DisplayName("The plot's shell follows the same rule as its box — corridor for the whole family")
+    void shell_followsTheBox() {
+        CarriageContentsGroupStore.injectForTesting("portal",
+            new CarriageContentsGroup(List.of(new CarriageContentsGroup.Member("portalzig", 1))));
+        try {
+            CarriageVariant corridor = PortalCarriageBuilder.portalVariant();
+
+            assertEquals(corridor, CarriageContentsEditor.shellFor(PORTAL));
+            // The one that regressed: a sub-variant got the corridor-sized box but a standard
+            // carriage stamped around it, because the shell compared ids instead of asking whether
+            // this contents belongs to the portal family.
+            assertEquals(corridor,
+                CarriageContentsEditor.shellFor(CarriageContents.custom("portalzig")));
+
+            assertNotEquals(corridor, CarriageContentsEditor.shellFor(ORDINARY));
+        } finally {
+            CarriageContentsGroupStore.invalidate("portal");
         }
     }
 

@@ -98,10 +98,14 @@ public final class CarriageContentsEditor {
      *
      * <p>The portal corridor's contents get the <b>corridor</b> rather than a standard carriage —
      * they are authored to sit inside one, and against a standard shell they would be the wrong
-     * length and show none of the walkway, baffles or lantern floor they have to work around.</p>
+     * length and show none of the walkway, baffles or lantern floor they have to work around. That
+     * applies to its <b>sub-variants</b> too, which is why the test goes through
+     * {@link CarriageContentsPlacer#isPortalContents} rather than comparing ids: those two are the
+     * same question, and when the shell asked it separately a sub-variant got a corridor-sized plot
+     * with a carriage built around it.</p>
      */
-    private static CarriageVariant shellFor(CarriageContents contents) {
-        return contents.id().equals(PortalCarriageBuilder.portalContents().id())
+    public static CarriageVariant shellFor(CarriageContents contents) {
+        return CarriageContentsPlacer.isPortalContents(contents)
             ? PortalCarriageBuilder.portalVariant()
             : DEFAULT_SHELL;
     }
