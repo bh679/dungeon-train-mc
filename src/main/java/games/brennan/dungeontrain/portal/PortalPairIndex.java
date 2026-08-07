@@ -38,6 +38,11 @@ public final class PortalPairIndex {
      * block broken on the left wall vanishing from the right. Asking the ship to convert each point
      * costs a few multiplications and cannot be wrong about orientation.</p>
      *
+     * @param carriageIndex this corridor's index along the track — the same key the entry is
+     *                      published under. Carried in the record as well so a caller holding only
+     *                      an entry can name the corridor: {@link PortalSever} is reached from the
+     *                      block-change hook, which has a position and nothing else, and severing is
+     *                      recorded per carriage index
      * @param plot          the carriage's sub-level plot, where its blocks actually live
      * @param ship          the carriage, for {@code worldToShip} / {@code shipToWorld}
      * @param carriageWorld the corridor's origin in WORLD space, read live from the ship's AABB
@@ -48,8 +53,8 @@ public final class PortalPairIndex {
      *                      {@link PortalPuppetAttack}, which measures an attacker's reach to a target
      *                      in the other corridor and can only do that through the mirror
      */
-    public record Entry(LevelPlot plot, ManagedShip ship, Vec3 carriageWorld, BlockPos twinOrigin,
-                        CarriageDims dims, PortalFrames frames) {
+    public record Entry(int carriageIndex, LevelPlot plot, ManagedShip ship, Vec3 carriageWorld,
+                        BlockPos twinOrigin, CarriageDims dims, PortalFrames frames) {
 
         /** Local cell of a shipyard position, or {@code null} if it falls outside the corridor. */
         public int[] localOfPlot(int x, int y, int z) {
