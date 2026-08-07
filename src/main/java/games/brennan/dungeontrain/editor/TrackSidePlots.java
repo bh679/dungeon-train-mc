@@ -138,11 +138,33 @@ public final class TrackSidePlots {
         return null;
     }
 
-    /** Z offset of {@code name} within {@code kind}'s row. {@code default} is slot 0. */
+    /**
+     * Z offset of {@code name} within {@code kind}'s row. {@code default} is slot 0.
+     *
+     * <p>Every kind but one has a fixed per-variant footprint, so slots are a uniform stride. A
+     * {@link TrackKind#freeSizeAboveFloor()} kind does not: a portal room is as wide as its author
+     * made it, and a uniform stride sized off the kind would let a widened room grow straight into
+     * its neighbour's plot. Those rows are <b>packed cumulatively</b> instead — each name starts one
+     * {@link EditorLayout#GAP} past the far edge of the one before it — so widening a room pushes
+     * everything after it along by exactly the amount it grew, and narrowing pulls them back.</p>
+     *
+     * <p>Callers that change a size or the registered name set must clear every plot in the row
+     * <b>before</b> the change and restamp after, because the change moves the later plots — see
+     * {@code PortalRoomEditor.relayout}.</p>
+     */
     public static int variantZ(TrackKind kind, String name, CarriageDims dims) {
         List<String> names = TrackVariantRegistry.namesFor(kind);
         int idx = names.indexOf(name);
         if (idx < 0) idx = 0;
+
+        if (kind.freeSizeAboveFloor()) {
+            int z = Z_BASELINE;
+            for (int i = 0; i < idx; i++) {
+                z += footprint(kind, names.get(i), dims).getZ() + EditorLayout.GAP;
+            }
+            return z;
+        }
+
         int step = footprint(kind, dims).getZ() + EditorLayout.GAP;
         return Z_BASELINE + idx * step;
     }

@@ -5052,7 +5052,14 @@ public final class EditorCommand {
         // plot doesn't sit in the world after teleport. restampPlotForKind
         // below only re-stamps registered names, so a leftover plot would
         // otherwise stay visible indefinitely.
-        clearPlotForVariant(overworld, kind, name, dims);
+        //
+        // For a cumulatively-packed row (portal rooms) removing a name also shifts every plot
+        // after it, so the whole row has to go, not just this one.
+        if (kind.freeSizeAboveFloor()) {
+            PortalRoomEditor.clearAllPlots(overworld, dims);
+        } else {
+            clearPlotForVariant(overworld, kind, name, dims);
+        }
 
         try {
             games.brennan.dungeontrain.track.variant.TrackVariantStore.delete(kind, name);

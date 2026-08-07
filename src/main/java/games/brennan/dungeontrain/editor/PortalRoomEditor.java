@@ -226,11 +226,13 @@ public final class PortalRoomEditor {
      */
     public static void createFromBuiltIn(ServerLevel overworld, String sourceName, String name,
                                          CarriageDims dims) throws IOException {
-        PortalRoomSizes.pending(name, PortalRoomSizes.sizeOf(sourceName, dims));
-        TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, name);
-
-        // No template for this name yet, so this stamps the built-in room at the inherited length.
-        stampPlot(overworld, name, dims);
+        Vec3i inherited = PortalRoomSizes.sizeOf(sourceName, dims);
+        // Registering inserts the name alphabetically, which shifts every plot after it along the
+        // cumulatively-packed row — so the whole row is cleared first and restamped after.
+        relayout(overworld, dims, () -> {
+            PortalRoomSizes.pending(name, inherited);
+            TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, name);
+        });
 
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
@@ -267,15 +269,30 @@ public final class PortalRoomEditor {
         };
         Vec3i clamped = PortalRoomLayout.clampSize(dims, wanted);
 
-        // Clear at the OLD size before the new one takes effect, or the leftover shell of a
-        // shrinking room stays behind in the plot.
-        clearPlot(overworld, name, dims);
-        PortalRoomSizes.pending(name, clamped);
-        stampPlot(overworld, name, dims);
+        // The whole row, not just this plot: plots are packed cumulatively along +Z, so resizing
+        // one moves every plot after it. Clearing only this one would leave the old neighbours
+        // standing where the new layout no longer puts them.
+        relayout(overworld, dims, () -> PortalRoomSizes.pending(name, clamped));
 
         LOGGER.info("[DungeonTrain] Portal room '{}' plot restamped at {}x{}x{} ({} -> {})",
             name, clamped.getX(), clamped.getY(), clamped.getZ(), axis, value);
         return clamped;
+    }
+
+    /**
+     * Apply a change that moves the plot row, clearing the old layout first and stamping the new
+     * one after.
+     *
+     * <p>Portal room plots are packed cumulatively along {@code +Z} (see
+     * {@link TrackSidePlots#variantZ}), so anything that changes a room's width or the registered
+     * name set shifts every plot after it. Clearing has to happen while the <b>old</b> positions
+     * are still what {@code plotOrigin} reports, or the vacated plots are never erased and the row
+     * fills up with abandoned rooms.</p>
+     */
+    public static void relayout(ServerLevel overworld, CarriageDims dims, Runnable change) {
+        clearAllPlots(overworld, dims);
+        change.run();
+        stampAllPlots(overworld, dims);
     }
 
     /** Current value of {@code axis} for {@code name}. */
