@@ -6244,6 +6244,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-enemies-and-varied-corridors",
+      "version": "0.539.0",
+      "type": "feat",
+      "title": "Portal rooms can hold enemies, and no two corridors are alike",
+      "summary": "Step through a portal and the corridor you walk isn't always the same one \u2014 each portal furnishes its own. The pocket room beyond can be home to something, too: rooms are authored with the creatures that live in them, and an endless room keeps them coming as it unfolds around you.",
+      "highlights": [
+        "Portal rooms can be home to creatures, placed by whoever built the room",
+        "Each portal's corridors are furnished from their own set, so no two portals read the same"
+      ],
+      "pr": 903,
+      "date": "2026-08-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
