@@ -161,15 +161,17 @@ class PortalStructureTest {
         PortalStructure s = withRoomLength(15);
         assertEquals(PortalRoomMode.DEFAULT, s.mode());
 
-        PortalStructure open = new PortalStructure(ORIGIN, "default", s.roomSize(),
+        PortalStructure open = PortalStructure.withMode(ORIGIN, "default", s.roomSize(),
             PortalRoomMode.ENDLESS_OPEN, PortalRoomTiling.base());
         assertEquals(PortalRoomMode.ENDLESS_OPEN,
             open.withTiling(PortalRoomTiling.base().with(new PortalRoomTiling.Tile(0, 1))).mode());
-        // A null mode or tiling is normalised rather than stored — nothing downstream null-checks.
+        // Null settings or tiling are normalised rather than stored — nothing downstream null-checks.
         assertEquals(PortalRoomMode.DEFAULT,
             new PortalStructure(ORIGIN, "default", s.roomSize(), null, null).mode());
         assertTrue(new PortalStructure(ORIGIN, "default", s.roomSize(), null, null)
             .tiling().isBaseOnly());
+        assertEquals(PortalRoomMode.DEFAULT,
+            PortalStructure.withMode(ORIGIN, "default", s.roomSize(), null, null).mode());
     }
 
     @Test

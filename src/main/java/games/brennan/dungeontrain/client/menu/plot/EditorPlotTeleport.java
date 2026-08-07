@@ -80,6 +80,12 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals mode next";
     }
 
+    /** As {@link #modeCycleCommandFor}, for the Copies sub-mode under Endless Repetition. */
+    public static String copiesCycleCommandFor(String category) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals copies next";
+    }
+
     /**
      * Build the slash command that bumps a per-template spawn-gate level bound
      * ({@code sub} = {@code "minlevel"} / {@code "maxlevel"}) of the template

@@ -44,23 +44,57 @@ import java.util.Objects;
  * @param origin   world position of the entry twin's minimum corner — the structure's origin
  * @param roomName the {@code portal_room} variant this pair rolled
  * @param roomSize the room's full box, shell included, as stamped (length is the free axis)
- * @param mode     what this room does at its walls, resolved when the pair was planned
+ * @param settings what this room does at its walls, and what its copies are, resolved when the pair
+ *                 was planned
  * @param tiling   which copies of the room are currently standing
  */
 public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
-                              PortalRoomMode mode, PortalRoomTiling tiling) {
+                              PortalRoomSettings settings, PortalRoomTiling tiling) {
 
     public PortalStructure {
         Objects.requireNonNull(origin, "origin");
         Objects.requireNonNull(roomName, "roomName");
         Objects.requireNonNull(roomSize, "roomSize");
-        if (mode == null) mode = PortalRoomMode.DEFAULT;
+        if (settings == null) settings = PortalRoomSettings.DEFAULT;
         if (tiling == null) tiling = PortalRoomTiling.base();
     }
 
     /** Back-compat 3-arg form — a default-mode structure with only its base room standing. */
     public PortalStructure(BlockPos origin, String roomName, Vec3i roomSize) {
-        this(origin, roomName, roomSize, PortalRoomMode.DEFAULT, PortalRoomTiling.base());
+        this(origin, roomName, roomSize, PortalRoomSettings.DEFAULT, PortalRoomTiling.base());
+    }
+
+    /**
+     * A structure with only its wall mode set, which is all most callers care about.
+     *
+     * <p>A static factory rather than a second constructor: an overload differing from the canonical
+     * one only in that parameter's type is ambiguous the moment somebody passes {@code null} for
+     * both, which is exactly what a test asserting the null-handling does.</p>
+     */
+    public static PortalStructure withMode(BlockPos origin, String roomName, Vec3i roomSize,
+                                           PortalRoomMode mode, PortalRoomTiling tiling) {
+        return new PortalStructure(origin, roomName, roomSize,
+            PortalRoomSettings.DEFAULT.withMode(mode), tiling);
+    }
+
+    /** What this room does at its walls. */
+    public PortalRoomMode mode() {
+        return settings.mode();
+    }
+
+    /**
+     * The seed index the copy at {@code tile} rolls its block variants and container contents from.
+     *
+     * <p>Under {@link PortalRoomCopies#EXACT} every copy shares the base room's index, so the hall is
+     * the same room repeated block for block. Under {@link PortalRoomCopies#DYNAMIC} the index mixes
+     * in the copy's position, so copies differ from one another — but it is a pure function of that
+     * position, so walking back to one finds the room and the chests you left rather than a fresh
+     * roll. That is what stops a sliding window from being a loot machine.</p>
+     */
+    public int variantIndexFor(PortalRoomTiling.Tile tile) {
+        int base = roomName.hashCode();
+        if (settings.copies() != PortalRoomCopies.DYNAMIC) return base;
+        return Objects.hash(base, tile.x(), tile.z());
     }
 
     /** Length of this pair's room along the direction of travel. */
@@ -159,13 +193,13 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
             Math.floorDiv((int) Math.floor(worldZ) - room.getZ(), roomWidth()));
     }
 
-    /** The same structure relocated — same room, same mode, back to just its base tile. */
+    /** The same structure relocated — same room, same settings, back to just its base tile. */
     public PortalStructure movedTo(BlockPos newOrigin) {
-        return new PortalStructure(newOrigin, roomName, roomSize, mode, PortalRoomTiling.base());
+        return new PortalStructure(newOrigin, roomName, roomSize, settings, PortalRoomTiling.base());
     }
 
     /** The same structure with a different set of room copies standing. */
     public PortalStructure withTiling(PortalRoomTiling newTiling) {
-        return new PortalStructure(origin, roomName, roomSize, mode, newTiling);
+        return new PortalStructure(origin, roomName, roomSize, settings, newTiling);
     }
 }

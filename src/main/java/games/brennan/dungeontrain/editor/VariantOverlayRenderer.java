@@ -421,9 +421,7 @@ public final class VariantOverlayRenderer {
         // Resolved rather than passed through raw, so the row shows the mode the room will actually
         // behave as even when the tag on disk is absent or misspelt.
         String roomMode = roomSize == null ? EditorStatusPacket.NO_MODE
-            : games.brennan.dungeontrain.portal.PortalRoomMode.parse(
-                games.brennan.dungeontrain.track.variant.TrackVariantWeights.modeFor(
-                    games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, modelName)).id();
+            : games.brennan.dungeontrain.portal.PortalRoomSettings.of(modelName).toTag();
 
         String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight
             + "|" + minLevel + "|" + maxLevel + "|" + phaseMask + "|" + stageId

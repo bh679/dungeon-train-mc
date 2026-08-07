@@ -182,6 +182,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_COPIES_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomCopies c
+                    : games.brennan.dungeontrain.portal.PortalRoomCopies.values()) {
+                builder.suggest(c.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> CONTENTS_SUGGESTIONS =
         (ctx, builder) -> {
             for (CarriageContents c : CarriageContentsRegistry.allContents()) {
@@ -408,7 +417,16 @@ public final class EditorCommand {
                     .then(Commands.argument("mode", StringArgumentType.word())
                         .suggests(PORTAL_ROOM_MODE_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomMode(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "mode"))))))
+                            StringArgumentType.getString(ctx, "mode")))))
+                // Whether Endless Repetition's copies are the room block for block, or each rolled
+                // afresh from its variant sidecar. Means nothing under the other modes.
+                .then(Commands.literal("copies")
+                    .then(Commands.literal("next")
+                        .executes(ctx -> runPortalRoomCopiesCycle(ctx.getSource())))
+                    .then(Commands.argument("copies", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_COPIES_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomCopies(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "copies"))))))
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -4827,10 +4845,34 @@ public final class EditorCommand {
     private static int runPortalRoomModeCycle(CommandSourceStack source) {
         String name = portalRoomPlotUnderPlayer(source);
         if (name == null) return 0;
-        return applyPortalRoomMode(source, name,
-            games.brennan.dungeontrain.portal.PortalRoomMode.parse(
-                games.brennan.dungeontrain.track.variant.TrackVariantWeights.modeFor(
-                    games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name)).next());
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name, current.withMode(current.mode().next()));
+    }
+
+    /** {@code /dt editor portals copies next} — step the Copies sub-mode. */
+    private static int runPortalRoomCopiesCycle(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name, current.withCopies(current.copies().next()));
+    }
+
+    /** {@code /dt editor portals copies <exact|dynamic>} — set it outright. */
+    private static int runPortalRoomCopies(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomCopies wanted =
+            games.brennan.dungeontrain.portal.PortalRoomCopies.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.literal(
+                "Unknown copies option '" + raw + "'. Try exact or dynamic."));
+            return 0;
+        }
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withCopies(wanted));
     }
 
     /** {@code /dt editor portals mode <mode>} — set it outright. */
@@ -4847,23 +4889,29 @@ public final class EditorCommand {
                 "Unknown portal room mode '" + raw + "'. Try bedrock_lock, endless_repetition or endless_open."));
             return 0;
         }
-        return applyPortalRoomMode(source, name, wanted);
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withMode(wanted));
     }
 
-    private static int applyPortalRoomMode(CommandSourceStack source, String name,
-                                           games.brennan.dungeontrain.portal.PortalRoomMode mode) {
+    private static int applyPortalRoomSettings(
+        CommandSourceStack source, String name,
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings
+    ) {
         try {
             games.brennan.dungeontrain.track.variant.TrackVariantWeights.setMode(
-                games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name, mode.id());
+                games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name,
+                settings.toTag());
         } catch (IOException e) {
             source.sendFailure(Component.literal(
-                "Could not save the mode for portal room '" + name + "': " + e.getMessage()));
+                "Could not save the settings for portal room '" + name + "': " + e.getMessage()));
             return 0;
         }
+        // The Copies half is only worth reporting when it means anything.
+        String copies = settings.copiesApply() ? ", copies: " + settings.copies().displayName() : "";
         source.sendSuccess(() -> Component.literal(
-            "Portal room '" + name + "' walls: " + mode.displayName()
-            + ". Portals already standing keep the mode they were built with — this takes effect on "
-            + "the next one the train reaches."
+            "Portal room '" + name + "' walls: " + settings.mode().displayName() + copies
+            + ". Portals already standing keep the settings they were built with — this takes effect "
+            + "on the next one the train reaches."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }

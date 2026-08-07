@@ -24,7 +24,7 @@ class PortalCorridorMaskTest {
     private static final int PLUG_DEPTH = 3;
 
     private static PortalStructure structure() {
-        return new PortalStructure(ORIGIN, "default", PortalRoomLayout.builtInSize(DIMS),
+        return PortalStructure.withMode(ORIGIN, "default", PortalRoomLayout.builtInSize(DIMS),
             PortalRoomMode.ENDLESS_REPETITION, PortalRoomTiling.base());
     }
 

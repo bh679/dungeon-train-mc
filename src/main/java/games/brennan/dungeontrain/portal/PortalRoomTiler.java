@@ -169,7 +169,7 @@ public final class PortalRoomTiler {
 
         PortalCorridorMask mask = maskFor(structure, dims, tile);
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, structure.roomName(), size,
-            /*relight*/ true, mask);
+            /*relight*/ true, mask, structure.variantIndexFor(tile));
         if (!structure.mode().tilesWholeRoom()) clearInterior(level, origin, size, mask);
 
         PortalStructure grown = structure.withTiling(structure.tiling().with(tile));

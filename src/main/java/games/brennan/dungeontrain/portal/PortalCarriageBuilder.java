@@ -1,7 +1,12 @@
 package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.ContainerContentsPlacement;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
+import games.brennan.dungeontrain.editor.VariantState;
+import games.brennan.dungeontrain.track.TrackVariantMobs;
+import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
@@ -324,8 +329,8 @@ public final class PortalCarriageBuilder {
      * than re-rolling it. The size is read off the authored template, or the built-in room's when
      * nothing has been authored.</p>
      *
-     * <p>The {@link PortalRoomMode mode} is read here and then carried on the record rather than
-     * looked up per tick, so an author saving a different mode while somebody is standing in the
+     * <p>The {@link PortalRoomSettings settings} are read here and then carried on the record rather
+     * than looked up per tick, so an author saving a different mode while somebody is standing in the
      * room cannot change the walls around them mid-visit.</p>
      */
     public static PortalStructure planStructure(ServerLevel level, CarriageDims dims,
@@ -334,7 +339,7 @@ public final class PortalCarriageBuilder {
             TrackKind.PORTAL_ROOM, level.getSeed(), pairKey);
         return new PortalStructure(entryOrigin, roomName,
             PortalRoomTemplateStore.sizeOf(level, roomName, dims),
-            PortalRoomMode.parse(TrackVariantWeights.modeFor(TrackKind.PORTAL_ROOM, roomName)),
+            PortalRoomSettings.of(roomName),
             PortalRoomTiling.base());
     }
 
@@ -366,7 +371,8 @@ public final class PortalCarriageBuilder {
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
 
-        stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true);
+        stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
+            PortalCorridorMask.NONE, structure.variantIndexFor(PortalRoomTiling.Tile.BASE));
 
         // Before the corridors, so each mode acts on the room as it actually turned out rather than
         // as it was asked for — and so that a mode reaching a door plane is overwritten rather than
@@ -579,6 +585,66 @@ public final class PortalCarriageBuilder {
     public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
                                    String roomName, Vec3i size, boolean relight) {
         stampRoomAt(level, roomOrigin, dims, roomName, size, relight, PortalCorridorMask.NONE);
+    }
+
+    /**
+     * {@link #stampRoomAt} plus the room's authored block-variant sidecar, rolled at
+     * {@code variantIndex}.
+     *
+     * <p><b>Portal rooms could always author variants and never actually got them.</b> The editor has
+     * been saving a {@code .variants.json} beside every room, and nothing on the world side ever read
+     * it — the template was stamped raw, so per-cell variant picks, container-contents pools and
+     * linked loot prefabs all sat dead on disk. This is the read, done the same way
+     * {@code TunnelPlacer} does it for tunnels.</p>
+     *
+     * <p>{@code variantIndex} is what makes one copy of a room differ from another under
+     * {@link PortalRoomCopies#DYNAMIC}, and what makes them identical under
+     * {@link PortalRoomCopies#EXACT} — see {@code PortalStructure.variantIndexFor}.</p>
+     */
+    public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
+                                   String roomName, Vec3i size, boolean relight,
+                                   PortalCorridorMask mask, int variantIndex) {
+        stampRoomAt(level, roomOrigin, dims, roomName, size, relight, mask);
+        applyRoomVariants(level, roomOrigin, roomName, size, mask, variantIndex);
+    }
+
+    /**
+     * Roll and place the room's per-cell variant picks over a stamp that has already landed.
+     *
+     * <p>Mirrors {@code TunnelPlacer}'s sidecar pass: resolve each authored cell, drop the ones the
+     * corridor mask owns, blank the explicit "empty" placeholder, and put everything else down
+     * through {@code ContainerContentsPlacement} so chests roll their pool and signs keep their
+     * authored NBT.</p>
+     *
+     * <p>Mob entries are dropped with a warning rather than spawned, matching tunnels. A portal room
+     * repeats, and a mob entry that spawned per copy would be a spawner with a hundred outlets.</p>
+     */
+    private static void applyRoomVariants(ServerLevel level, BlockPos roomOrigin, String roomName,
+                                          Vec3i size, PortalCorridorMask mask, int variantIndex) {
+        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, roomName, size);
+        if (sidecar.isEmpty()) return;
+
+        long worldSeed = level.getSeed();
+        String plotKey = "portal_room:" + roomName;
+        for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
+            BlockPos local = entry.localPos();
+            BlockPos world = roomOrigin.offset(local);
+            if (mask.covers(world)) continue;
+
+            VariantState picked = sidecar.resolve(local, worldSeed, variantIndex);
+            if (picked == null) continue;
+            if (picked.isMob()) {
+                TrackVariantMobs.warnDropped("portal_room", local, picked.entityId());
+                level.setBlock(world, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+                continue;
+            }
+            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
+                level.setBlock(world, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+                continue;
+            }
+            ContainerContentsPlacement.place(level, world, picked.state(), picked.blockEntityNbt(),
+                plotKey, local, worldSeed, variantIndex, picked.linkedLootPrefabId());
+        }
     }
 
     /**

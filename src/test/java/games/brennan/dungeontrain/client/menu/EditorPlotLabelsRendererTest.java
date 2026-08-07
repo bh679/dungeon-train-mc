@@ -96,6 +96,52 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
+    @DisplayName("Endless Repetition grows a Copies row under Walls; the other modes do not")
+    void copiesRowOnlyForRepetition() {
+        assertArrayEquals(
+            new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ENTER, RowKind.ACTION},
+            EditorPlotLabelsRenderer.rows(
+                entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition")));
+
+        for (String mode : new String[]{"bedrock_lock", "endless_open"}) {
+            assertArrayEquals(
+                new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
+                    RowKind.HEIGHT, RowKind.MODE, RowKind.ENTER, RowKind.ACTION},
+                EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, mode)), mode);
+        }
+    }
+
+    @Test
+    @DisplayName("The Copies row is one button, and inserting it does not shift its neighbours")
+    void copiesRowIsOneButton() {
+        EditorPlotLabelsPacket.Entry e =
+            entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition/dynamic");
+        RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
+        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
+        double y = rowCentreY(e, indexOf(rows, RowKind.COPIES));
+
+        for (double x : new double[]{-halfW + 0.05, 0.0, halfW - 0.05}) {
+            assertEquals(CellKind.COPIES_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, x, y));
+        }
+        assertEquals(CellKind.MODE_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
+            rowCentreY(e, indexOf(rows, RowKind.MODE))));
+        assertEquals(CellKind.BUTTON_ENTER_INSIDE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
+            rowCentreY(e, indexOf(rows, RowKind.ENTER))));
+    }
+
+    @Test
+    @DisplayName("Both rows read their own half of the one stored tag")
+    void rowsReadTheirOwnHalfOfTheTag() {
+        assertEquals("Walls: Endless Repetition",
+            EditorPlotLabelsRenderer.modeLabel("endless_repetition/dynamic"));
+        assertEquals("Copies: Dynamic",
+            EditorPlotLabelsRenderer.copiesLabel("endless_repetition/dynamic"));
+        // No sub-mode stored is the default, not a blank.
+        assertEquals("Copies: Exact", EditorPlotLabelsRenderer.copiesLabel("endless_repetition"));
+    }
+
+    @Test
     @DisplayName("The Walls label names the mode, and an unreadable tag shows the default it behaves as")
     void modeLabel_readsTheMode() {
         assertEquals("Walls: Endless Open", EditorPlotLabelsRenderer.modeLabel("endless_open"));

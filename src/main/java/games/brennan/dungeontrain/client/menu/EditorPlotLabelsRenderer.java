@@ -88,7 +88,9 @@ public final class EditorPlotLabelsRenderer {
         WIDTH_TYPE,
         HEIGHT_TYPE,
         /** The whole mode row — one button, clicking it steps to the next mode. */
-        MODE_CYCLE
+        MODE_CYCLE,
+        /** The sub-mode row — only shown while the mode makes copies. */
+        COPIES_CYCLE
     }
 
     /**
@@ -100,7 +102,7 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, ENTER, ACTION, CONTENTS
+        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ENTER, ACTION, CONTENTS
     }
 
     /** The rows {@code entry} shows, top to bottom. */
@@ -115,6 +117,7 @@ public final class EditorPlotLabelsRenderer {
             buf[n++] = RowKind.HEIGHT;
         }
         if (hasModeRow(entry)) buf[n++] = RowKind.MODE;
+        if (hasCopiesRow(entry)) buf[n++] = RowKind.COPIES;
         if (hasEnterRow(entry)) buf[n++] = RowKind.ENTER;
         if (hasActionRow(entry)) buf[n++] = RowKind.ACTION;
         if (hasContentsButton(entry)) buf[n++] = RowKind.CONTENTS;
@@ -166,14 +169,31 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /**
+     * Whether the Copies row shows: only when the walls repeat the whole room, since that is the
+     * only mode that makes copies for the setting to describe.
+     */
+    public static boolean hasCopiesRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry)
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+                .copiesApply();
+    }
+
+    /** What the Copies row reads, e.g. {@code "Copies: Dynamic"}. */
+    public static String copiesLabel(String modeTag) {
+        return "Copies: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .copies().displayName();
+    }
+
+    /**
      * What the mode row reads, e.g. {@code "Walls: Endless Open"}.
      *
      * <p>Resolved through {@code PortalRoomMode.parse}, which is total, so a tag hand-edited into
      * {@code weights.json} that nothing recognises shows the default the room will actually behave as
      * rather than the misspelling.</p>
      */
-    public static String modeLabel(String modeId) {
-        return "Walls: " + games.brennan.dungeontrain.portal.PortalRoomMode.parse(modeId).displayName();
+    public static String modeLabel(String modeTag) {
+        return "Walls: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .mode().displayName();
     }
 
     /** Short prefix drawn to the left of a dimension row's number. */
@@ -352,6 +372,9 @@ public final class EditorPlotLabelsRenderer {
         if (hasModeRow(entry)) {
             w = Math.max(w, measure.applyAsInt(modeLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
+        if (hasCopiesRow(entry)) {
+            w = Math.max(w, measure.applyAsInt(copiesLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
+        }
         return w / 2.0;
     }
 
@@ -456,6 +479,7 @@ public final class EditorPlotLabelsRenderer {
             // One button rather than a stepper: there are three modes, and naming the one you want
             // costs no more clicks than aiming at an arrow for it.
             case MODE -> CellKind.MODE_CYCLE;
+            case COPIES -> CellKind.COPIES_CYCLE;
             case ENTER -> CellKind.BUTTON_ENTER_INSIDE;
             case ACTION -> actionRowCell(hitX, halfW);
             case CONTENTS -> CellKind.BUTTON_CONTENTS;
@@ -618,6 +642,12 @@ public final class EditorPlotLabelsRenderer {
                     int bg = hovered == CellKind.MODE_CYCLE ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, modeLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Copies — the sub-mode under Walls, present only while the walls repeat the room.
+                case COPIES -> {
+                    int bg = hovered == CellKind.COPIES_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, copiesLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
                 // Enter — full-width button, visible only when the player is already inside the
                 // plot. Clicking dispatches EditorPlotActionPacket(ENTER_INSIDE) so the player

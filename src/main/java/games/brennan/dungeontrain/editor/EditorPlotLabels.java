@@ -206,8 +206,8 @@ public final class EditorPlotLabels {
             Vec3i size = PortalRoomSizes.sizeOf(l.modelName(), dims);
             // Resolved rather than passed through raw, so the row shows the mode the room will
             // actually behave as even when the tag on disk is absent or misspelt.
-            String mode = PortalRoomMode.parse(
-                TrackVariantWeights.modeFor(TrackKind.PORTAL_ROOM, l.modelName())).id();
+            String mode = games.brennan.dungeontrain.portal.PortalRoomSettings
+                .of(l.modelName()).toTag();
             out.set(i, new Label(l.worldPos(), l.name(), l.weight(), l.category(),
                 l.modelId(), l.modelName(), l.inPlot(), l.isUser(), l.isImported(),
                 size.getX(), size.getZ(), size.getY(), mode));

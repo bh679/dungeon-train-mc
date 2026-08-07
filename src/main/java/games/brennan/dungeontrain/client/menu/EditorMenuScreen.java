@@ -177,6 +177,8 @@ public final class EditorMenuScreen implements MenuScreen {
             if (heightRow != null) out.add(heightRow);
             CommandMenuEntry modeRow = wallsModeRowFor(EditorStatusHudOverlay.roomMode());
             if (modeRow != null) out.add(modeRow);
+            CommandMenuEntry copiesRow = copiesRowFor(EditorStatusHudOverlay.roomMode());
+            if (copiesRow != null) out.add(copiesRow);
         }
 
         // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases
@@ -344,6 +346,20 @@ public final class EditorMenuScreen implements MenuScreen {
             return CommandMenuLayout.PANEL_WIDTH;
         }
         return Math.max(CommandMenuLayout.PANEL_WIDTH, WALLS_ROW_PANEL_WIDTH);
+    }
+
+    /**
+     * The Copies row, or null unless the walls are set to repeat the whole room — the only mode that
+     * makes copies for the setting to describe.
+     */
+    static CommandMenuEntry copiesRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        if (!games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode).copiesApply()) {
+            return null;
+        }
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.copiesLabel(currentMode),
+            "dungeontrain editor portals copies next");
     }
 
     static CommandMenuEntry sizeTripleFor(String axis, String label, int current) {
