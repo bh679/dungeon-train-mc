@@ -11,7 +11,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * What a severing looks and sounds like: the connection going with a sheet of breaking glass, and
+ * What a severing looks and sounds like: a sheet of glass going with a beacon dying under it, and
  * then something soul-ish guttering at the hole for a few seconds afterwards.
  *
  * <p>Played in <b>both</b> copies. The two corridors are in completely different parts of the world
@@ -34,8 +34,29 @@ public final class PortalSeverEffects {
     /** A sparser second type on top, for a bit of light in a dark corridor. */
     private static final ParticleOptions ACCENT = ParticleTypes.SOUL_FIRE_FLAME;
 
-    /** How long the hole keeps smoking. Long enough to be read as an event, short enough not to nag. */
-    private static final int DURATION_TICKS = 60;
+    /** The shatter. Pitched down from a pane of glass to something heavier. */
+    private static final float GLASS_VOLUME = 1.4f;
+    private static final float GLASS_PITCH = 0.65f;
+
+    /**
+     * A beacon switching off, laid under the shatter.
+     *
+     * <p>The glass alone says <i>damaged</i>. The falling pair of tones underneath it is what makes
+     * the moment read as <i>lost</i> — which is the accurate description, since the corridor is not
+     * broken so much as permanently one-way from here on. Quieter than the glass so it reads as the
+     * tail of the break rather than a second event.</p>
+     */
+    private static final float BEACON_VOLUME = 0.8f;
+    private static final float BEACON_PITCH = 1.0f;
+
+    /**
+     * How long the hole keeps smoking.
+     *
+     * <p>70 ticks rather than a round 60 because {@code block.beacon.deactivate} is a 3.5-second
+     * clip: at 60 the tone outlives the particles and the effect ends twice. Matching the two means
+     * the corridor goes quiet and stops smoking together.</p>
+     */
+    private static final int DURATION_TICKS = 70;
 
     /** Particles per emitting tick, per type, per copy. */
     private static final int LINGER_COUNT = 6;
@@ -90,8 +111,18 @@ public final class PortalSeverEffects {
         SITES.add(new Site(entry.carriageIndex(), local[0], local[1], local[2], carriagePos, endsAt));
     }
 
+    /**
+     * The sever, in two layers played on the same tick: the shatter, and the beacon falling away
+     * under it.
+     *
+     * <p>Passed a {@code null} player so it goes to everyone in earshot rather than to whoever swung
+     * the pickaxe — the other copy may hold someone who did not.</p>
+     */
     private static void playBreak(ServerLevel level, BlockPos pos) {
-        level.playSound(null, pos, SoundEvents.GLASS_BREAK, SoundSource.BLOCKS, 1.4f, 0.65f);
+        level.playSound(null, pos, SoundEvents.GLASS_BREAK, SoundSource.BLOCKS,
+            GLASS_VOLUME, GLASS_PITCH);
+        level.playSound(null, pos, SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS,
+            BEACON_VOLUME, BEACON_PITCH);
     }
 
     /** Advance every live emitter, dropping the ones that have burned out. Cheap when idle. */
