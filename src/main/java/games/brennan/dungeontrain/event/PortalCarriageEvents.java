@@ -607,7 +607,7 @@ public final class PortalCarriageEvents {
             PortalCarriageBuilder.eraseTwin(level, existing, dims);
         }
 
-        PortalCarriageBuilder.stampPairStructure(level, planned, dims);
+        PortalCarriageBuilder.stampPairStructure(level, planned, dims, pairKey);
         STRUCTURES.put(pairKey, planned);
         LOGGER.info("[DungeonTrain] Stamped portal pair {} at {} (room '{}' {} long, entry carriage at {}, {}, {})",
             pairKey, wanted, planned.roomName(), planned.roomLength(),

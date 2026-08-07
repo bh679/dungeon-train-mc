@@ -206,8 +206,23 @@ public final class PortalCarriageBuilder {
      * stamping the contents into it would bake them into the shell template, which then stamps them
      * again underneath the contents pass. The contents have their own plot to be authored in.</p>
      */
+    /**
+     * The {@code pairKey} for a corridor that belongs to no pair — the editor plot, which stamps the
+     * shell with {@code withContents = false} and so never rolls anything.
+     */
+    public static final int NO_PAIR = Integer.MIN_VALUE;
+
+    /** {@link #stampCorridorFrom} for a corridor with no pair; only valid without contents. */
     public static void stampCorridorFrom(ServerLevel level, BlockPos origin, CarriageDims dims,
                                          boolean relight, boolean withContents) {
+        if (withContents) {
+            throw new IllegalArgumentException("corridor contents need a pairKey to roll against");
+        }
+        stampCorridorFrom(level, origin, dims, relight, false, NO_PAIR);
+    }
+
+    public static void stampCorridorFrom(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                         boolean relight, boolean withContents, int pairKey) {
         // Looked up against the CORRIDOR's dims, not the world's carriage dims: a corridor template
         // is longer than every other carriage template (PortalCorridorSize), and CarriagePlacer's
         // size gate would reject it against the wrong figure and silently drop to the built-in.
@@ -218,7 +233,7 @@ public final class PortalCarriageBuilder {
         } else {
             stampBuiltIn(level, origin, dims, relight);
         }
-        if (withContents) stampCorridorContents(level, origin, dims);
+        if (withContents) stampCorridorContents(level, origin, dims, pairKey);
     }
 
     /**
@@ -233,9 +248,16 @@ public final class PortalCarriageBuilder {
      * itself from the contents id ({@link CarriageContentsPlacer#contentsDims}), and handing it an
      * already-resolved box would grow it a second time.</p>
      */
-    private static void stampCorridorContents(ServerLevel level, BlockPos origin, CarriageDims dims) {
+    private static void stampCorridorContents(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                              int pairKey) {
+        // The pair's rolled sub-variant, not the literal `portal` template: the contents carry a
+        // group sidecar, and naming the parent here is what used to make every corridor in every
+        // world identical. PortalCorridorContents holds the draw so this pair's carriage and its
+        // twin cannot disagree. CONTENTS_SEED/CONTENTS_INDEX still govern the sidecar's per-cell
+        // picks WITHIN the chosen template, which is a separate thing and still has to be fixed.
+        CarriageContents contents = PortalCorridorContents.forPair(level, pairKey);
         CarriageContentsPlacer.placeBlocksOnly(
-            level, origin, PORTAL_CONTENTS, dims, CONTENTS_SEED, CONTENTS_INDEX);
+            level, origin, contents, dims, CONTENTS_SEED, CONTENTS_INDEX);
     }
 
     /**
@@ -288,8 +310,9 @@ public final class PortalCarriageBuilder {
      * @param relight {@code true} in an editor plot, which is never lifted into a sub-level;
      *                {@code false} on the spawn path, where Sable relights the plot afterwards
      */
-    public static Set<BlockPos> stampCarriage(ServerLevel level, BlockPos origin, CarriageDims dims, boolean relight) {
-        stampCorridorFrom(level, origin, dims, relight, /*withContents*/ true);
+    public static Set<BlockPos> stampCarriage(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                              boolean relight, int pairKey) {
+        stampCorridorFrom(level, origin, dims, relight, /*withContents*/ true, pairKey);
         return Set.of();   // the caller re-reads the footprint via CarriagePlacer.finishPlace
     }
 
@@ -449,12 +472,12 @@ public final class PortalCarriageBuilder {
      * written through the light engine — nothing lifts these blocks into a sub-level to relight
      * them.</p>
      */
-    public static void stampTwin(ServerLevel level, BlockPos origin, CarriageDims dims) {
+    public static void stampTwin(ServerLevel level, BlockPos origin, CarriageDims dims, int pairKey) {
         // Clear first: unlike a carriage, a twin lands in open air rather than a pre-cleared volume,
         // and a template stamp only writes its own cells — anything already standing there would
         // show through and break the match with the carriage.
         clearBox(level, origin, dims);
-        stampCorridorFrom(level, origin, dims, /*relight*/ true, /*withContents*/ true);
+        stampCorridorFrom(level, origin, dims, /*relight*/ true, /*withContents*/ true, pairKey);
     }
 
     /**
@@ -503,7 +526,7 @@ public final class PortalCarriageBuilder {
      * {@link PortalCorridorMask}.</p>
      */
     public static void stampPairStructure(ServerLevel level, PortalStructure structure,
-                                          CarriageDims dims) {
+                                          CarriageDims dims, int pairKey) {
         PortalCarriageLayout layout = layoutFor(dims);
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
@@ -524,7 +547,7 @@ public final class PortalCarriageBuilder {
             PortalRoomTiler.refreshFacesAround(level, dims, structure, PortalRoomTiling.Tile.BASE);
         }
 
-        stampCorridors(level, structure, dims);
+        stampCorridors(level, structure, dims, pairKey);
     }
 
     /**
@@ -541,15 +564,16 @@ public final class PortalCarriageBuilder {
      * half maps to the entry carriage), and the exit twin's far door likewise.</p>
      */
     public static void stampCorridors(ServerLevel level, PortalStructure structure,
-                                      CarriageDims dims) {
+                                      CarriageDims dims, int pairKey) {
         PortalCarriageLayout layout = layoutFor(dims);
         BlockPos entryOrigin = structure.origin();
         BlockPos exitOrigin = structure.exitOrigin(dims);
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
 
-        stampTwin(level, entryOrigin, dims);
-        stampTwin(level, exitOrigin, dims);
+        // Both twins take the pair's key, so both match the carriages they mirror — and each other.
+        stampTwin(level, entryOrigin, dims, pairKey);
+        stampTwin(level, exitOrigin, dims, pairKey);
 
         // Seal the ring around each corridor mouth. The room's shell is wider and taller than a
         // corridor, so everything it does not already cover at the door plane has to be walled off,
