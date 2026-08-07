@@ -39,6 +39,11 @@ final class PortalRoomSubVariantTest {
     void cleanSlate() {
         TrackVariantRegistry.clear();
         TrackVariantGroupStore.clearCache();
+        // The mod ships a real group sidecar for 'default' (portals/room/default.group.json), and
+        // 'default' is in every pool as the synthetic fallback — so without this the classpath copy
+        // would leak its members into these fixtures and the answers would depend on shipped
+        // content. Injecting an empty group states the world each test wants.
+        TrackVariantGroupStore.injectForTesting(KIND, TrackKind.DEFAULT_NAME, TrackVariantGroup.EMPTY);
     }
 
     private static TrackVariantGroup group(String... idsAndWeights) {
