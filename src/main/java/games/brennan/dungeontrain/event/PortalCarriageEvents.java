@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.portal.PortalOccupants;
 import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
+import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
@@ -102,10 +103,11 @@ public final class PortalCarriageEvents {
     private static final int TWIN_LANES = 6;
 
     /**
-     * Vertical spacing between lanes — a corridor's full height plus the pocket room's, with room to
-     * spare so no part of one structure reaches into the lane above.
+     * Vertical spacing between lanes — enough that no part of one structure reaches into the lane
+     * above. Lives on {@link PortalRoomLayout} because it is really a statement about how tall a
+     * room may be, and {@code PortalRoomLayout.MAX_HEIGHT} is derived from it.
      */
-    private static final int TWIN_LANE_HEIGHT = 12;
+    private static final int TWIN_LANE_HEIGHT = PortalRoomLayout.TWIN_LANE_HEIGHT;
 
     /**
      * Stamp the twin once a player is this close to the portal carriage — near enough to be about to

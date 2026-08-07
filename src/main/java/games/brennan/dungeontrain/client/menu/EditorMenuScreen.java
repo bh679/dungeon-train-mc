@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.net.EditorStatusPacket;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -150,12 +151,20 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry weightRow = weightTripleFor(category, modelId, modelName, currentWeight);
         if (weightRow != null) out.add(weightRow);
 
-        // Length — portals only. A portal room is the one template whose length the author chooses,
-        // because it is the distance walked underneath a portal rather than a fixed footprint.
-        // Position-resolved (no model id in the command), so it needs the player inside the plot.
+        // Size — portals only. A portal room is the one plot whose box the author chooses: length
+        // outright (it is the distance walked underneath a portal, not a footprint) and width and
+        // height above the floor the corridor mouth sets. Position-resolved (no model id in the
+        // command), so these need the player inside the plot.
         if ("portals".equals(category)) {
-            out.add(new CommandMenuEntry.TypeArg(
-                "Length", "blocks", "dungeontrain editor portals length"));
+            CommandMenuEntry lengthRow = sizeTripleFor("length", "Length",
+                EditorStatusHudOverlay.roomLength());
+            if (lengthRow != null) out.add(lengthRow);
+            CommandMenuEntry widthRow = sizeTripleFor("width", "Width",
+                EditorStatusHudOverlay.roomWidth());
+            if (widthRow != null) out.add(widthRow);
+            CommandMenuEntry heightRow = sizeTripleFor("height", "Height",
+                EditorStatusHudOverlay.roomHeight());
+            if (heightRow != null) out.add(heightRow);
         }
 
         // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases
@@ -277,6 +286,29 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry weight = new CommandMenuEntry.TypeArg(label, "0-100", prefix);
         CommandMenuEntry plus   = new CommandMenuEntry.Stay("+", prefix + " inc");
         return new CommandMenuEntry.Triple(minus, weight, plus, 0.10, 0.90);
+    }
+
+    /**
+     * Build a {@link CommandMenuEntry.Triple} stepper for one axis of a portal room's box, or null
+     * when the server hasn't reported a size (i.e. this isn't a portal room plot).
+     *
+     * <p>Same shape as {@link #weightTripleFor}: side cells nudge by one and keep the menu open so
+     * the player can tap; the middle cell drops into typing mode for an exact value. The command is
+     * position-resolved — the server reads which plot the player is standing in — so no model id is
+     * spliced in and there is nothing to go stale.</p>
+     *
+     * <p>Values are clamped server-side: width and height cannot go below what the corridor mouth
+     * needs to stay sealed, and height cannot reach into the next portal pair's Y lane. Tapping
+     * {@code −} past the floor simply stops.</p>
+     */
+    static CommandMenuEntry sizeTripleFor(String axis, String label, int current) {
+        if (current == EditorStatusPacket.NO_SIZE) return null;
+        String prefix = "dungeontrain editor portals " + axis;
+        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
+        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
+            label + " (" + current + ")", "blocks", prefix);
+        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
+        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
     }
 
     /**

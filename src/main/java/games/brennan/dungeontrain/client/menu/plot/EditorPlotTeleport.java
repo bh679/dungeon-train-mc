@@ -56,6 +56,19 @@ public final class EditorPlotTeleport {
     }
 
     /**
+     * Build the slash command that steps one axis of a portal room's box in {@code dir}
+     * ({@code "inc"} / {@code "dec"}), or {@code null} for any other category.
+     *
+     * <p>Position-resolved: the server reads which plot the player is standing in, so no model id
+     * is spliced in. That is safe because the dimension rows only render while the player is inside
+     * the plot.</p>
+     */
+    public static String dimensionCommandFor(String category, String axis, String dir) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals " + axis + " " + dir;
+    }
+
+    /**
      * Build the slash command that bumps a per-template spawn-gate level bound
      * ({@code sub} = {@code "minlevel"} / {@code "maxlevel"}) of the template
      * identified by {@code (category, modelId, modelName)} in {@code dir}

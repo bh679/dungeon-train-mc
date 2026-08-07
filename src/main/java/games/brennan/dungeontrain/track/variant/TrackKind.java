@@ -15,7 +15,7 @@ import java.util.Locale;
  * track tile, both tunnel kinds (section + portal), the three pillar column
  * sections, the stairs adjunct, and the portal pocket room. Each kind has a
  * fixed footprint (some width-dependent on {@link CarriageDims}, one with a
- * free length axis — see {@link #freeLengthAxis()}) and a stable on-disk subdirectory
+ * free size above a floor — see {@link #freeSizeAboveFloor()}) and a stable on-disk subdirectory
  * under {@code config/dungeontrain/user/} where its named templates live as
  * {@code <name>.nbt} (+ optional {@code <name>.variants.json} sidecar).
  *
@@ -131,17 +131,20 @@ public enum TrackKind {
     }
 
     /**
-     * True when a template of this kind may be any length along {@code X} and only its {@code Y} and
-     * {@code Z} bounds are checked on load.
+     * True when a template of this kind may be <b>larger</b> than {@link #dims} on any axis, which
+     * is then treated as a floor rather than an exact size.
      *
-     * <p>Only {@link #PORTAL_ROOM}. A portal room's height and width are pinned by the corridor
-     * whose mouth opens into it — get them wrong and the mouth's seal ring does not close — but its
-     * length is the distance a player walks underneath, which is exactly the dial the portal exists
-     * to turn. Everything downstream reads that length off the loaded template
-     * ({@code PortalStructure}) rather than off {@link #dims}, so a mismatch there is authored
-     * intent rather than a broken file.</p>
+     * <p>Only {@link #PORTAL_ROOM}. A portal room must be at least as wide and tall as the corridor
+     * mouth that opens into it — smaller and the mouth's seal ring cannot close, leaving the twin
+     * structure open to the surrounding rock — but there is no reason it cannot be bigger. Length
+     * has no floor at all beyond legibility: it is the distance a player walks underneath, which is
+     * exactly the dial the portal exists to turn.</p>
+     *
+     * <p>Everything downstream reads the real size off the loaded template
+     * ({@code PortalStructure}, {@code PortalRoomSizes}) rather than off {@link #dims}, so a
+     * larger-than-floor template is authored intent rather than a broken file.</p>
      */
-    public boolean freeLengthAxis() {
+    public boolean freeSizeAboveFloor() {
         return this == PORTAL_ROOM;
     }
 

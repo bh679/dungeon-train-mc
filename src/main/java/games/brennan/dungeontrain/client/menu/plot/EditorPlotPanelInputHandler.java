@@ -141,6 +141,12 @@ public final class EditorPlotPanelInputHandler {
             case NAME -> dispatchTeleport(entry);
             case WEIGHT_DEC -> dispatchWeight(entry, "dec");
             case WEIGHT_INC -> dispatchWeight(entry, "inc");
+            case LENGTH_DEC -> dispatchDimension(entry, "length", "dec");
+            case LENGTH_INC -> dispatchDimension(entry, "length", "inc");
+            case WIDTH_DEC -> dispatchDimension(entry, "width", "dec");
+            case WIDTH_INC -> dispatchDimension(entry, "width", "inc");
+            case HEIGHT_DEC -> dispatchDimension(entry, "height", "dec");
+            case HEIGHT_INC -> dispatchDimension(entry, "height", "inc");
             case ACTION_SAVE -> dispatchAction(entry, EditorPlotActionPacket.Action.SAVE);
             case ACTION_RESET -> dispatchAction(entry, EditorPlotActionPacket.Action.RESET);
             case ACTION_CLEAR -> dispatchAction(entry, EditorPlotActionPacket.Action.CLEAR);
@@ -167,6 +173,13 @@ public final class EditorPlotPanelInputHandler {
      * shared {@link EditorPlotTeleport#weightCommandFor(String, String, String, String)}
      * routing helper.
      */
+    /** Step one axis of the portal room the player is standing in. */
+    private static void dispatchDimension(EditorPlotLabelsPacket.Entry entry, String axis, String dir) {
+        String cmd = EditorPlotTeleport.dimensionCommandFor(entry.category(), axis, dir);
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
     private static void dispatchWeight(EditorPlotLabelsPacket.Entry entry, String dir) {
         String cmd = EditorPlotTeleport.weightCommandFor(entry.category(), entry.modelId(), entry.modelName(), dir);
         if (cmd == null) return;

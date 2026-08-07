@@ -13,7 +13,7 @@ import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
-import games.brennan.dungeontrain.portal.PortalRoomLengths;
+import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.editor.TrackEditor;
 import games.brennan.dungeontrain.editor.TrackPlotLocator;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
@@ -757,7 +757,7 @@ public sealed interface Template
      * <p>The only template whose <b>length is the author's to choose</b>: height and width are
      * pinned by the corridor mouth, but the length is the distance walked underneath, which is the
      * whole point of the portal. {@link #plotSize} reads it back from
-     * {@link PortalRoomLengths}.</p>
+     * {@link PortalRoomSizes}.</p>
      */
     record PortalRoom(String name) implements Template {
         public PortalRoom {
@@ -804,7 +804,7 @@ public sealed interface Template
             return PortalRoomEditor.plotOrigin(name, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
-            return PortalRoomLayout.sizeOfLength(dims, PortalRoomLengths.lengthOf(name));
+            return PortalRoomSizes.sizeOf(name, dims);
         }
         @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
             PortalCarriageBuilder.stampRoomAt(level, origin, dims, name, plotSize(dims), /*relight*/ true);

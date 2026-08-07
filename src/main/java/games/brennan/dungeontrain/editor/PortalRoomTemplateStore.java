@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.portal.PortalRoomLengths;
+import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateKind;
@@ -26,7 +26,7 @@ import java.util.Optional;
  * {@link #get} returns empty and {@code PortalCarriageBuilder} stamps the built-in geometry, which
  * is what gives the editor a non-empty plot to author the first real room in.</p>
  *
- * <p>Every load also feeds {@link PortalRoomLengths}, because a room's length is the one thing the
+ * <p>Every load also feeds {@link PortalRoomSizes}, because a room's size is the one thing the
  * plot layout needs to know without a {@link ServerLevel} to hand.</p>
  */
 public final class PortalRoomTemplateStore {
@@ -47,7 +47,7 @@ public final class PortalRoomTemplateStore {
                                                                CarriageDims dims) {
         Optional<StructureTemplate> found =
             TrackVariantStore.get(level, TrackKind.PORTAL_ROOM, name, dims);
-        found.ifPresent(t -> PortalRoomLengths.observe(name, t.getSize().getX()));
+        found.ifPresent(t -> PortalRoomSizes.observe(name, t.getSize()));
         return found;
     }
 
@@ -60,7 +60,7 @@ public final class PortalRoomTemplateStore {
 
     public static synchronized void save(String name, StructureTemplate template) throws IOException {
         TrackVariantStore.save(TrackKind.PORTAL_ROOM, name, template);
-        PortalRoomLengths.settle(name, template.getSize().getX());
+        PortalRoomSizes.settle(name, template.getSize());
     }
 
     /** Write {@code template} into the source tree for {@code name} (dev mode). */
@@ -74,7 +74,7 @@ public final class PortalRoomTemplateStore {
     }
 
     public static synchronized boolean delete(String name) throws IOException {
-        PortalRoomLengths.forget(name);
+        PortalRoomSizes.forget(name);
         return TrackVariantStore.delete(TrackKind.PORTAL_ROOM, name);
     }
 

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.portal.PortalRoomLengths;
+import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -105,13 +105,12 @@ public final class TrackSidePlots {
      * Footprint of one stamped instance of {@code (kind, name)}.
      *
      * <p>Identical to {@link #footprint(TrackKind, CarriageDims)} except for a
-     * {@link TrackKind#freeLengthAxis()} kind, where the length belongs to the individual variant
-     * rather than the kind — a portal room is as long as its author made it.</p>
+     * {@link TrackKind#freeSizeAboveFloor()} kind, where the size belongs to the individual variant
+     * rather than the kind — a portal room is whatever size its author made it.</p>
      */
     public static Vec3i footprint(TrackKind kind, String name, CarriageDims dims) {
-        Vec3i base = kind.dims(dims);
-        if (!kind.freeLengthAxis()) return base;
-        return new Vec3i(PortalRoomLengths.lengthOf(name), base.getY(), base.getZ());
+        if (!kind.freeSizeAboveFloor()) return kind.dims(dims);
+        return PortalRoomSizes.sizeOf(name, dims);
     }
 
     /**

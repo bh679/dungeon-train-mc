@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.track.variant;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
@@ -266,7 +267,7 @@ public final class TrackVariantStore {
                 "[DungeonTrain] Track template {}:{} ({}) has bounds {}x{}x{}, expected {}x{}x{}{} — ignoring.",
                 kind.id(), name, origin, size.getX(), size.getY(), size.getZ(),
                 expected.getX(), expected.getY(), expected.getZ(),
-                kind.freeLengthAxis() ? " (any length)" : ""
+                kind.freeSizeAboveFloor() ? " (minimum; larger is allowed)" : ""
             );
             return Optional.empty();
         }
@@ -277,13 +278,16 @@ public final class TrackVariantStore {
     /**
      * Whether a loaded template's bounds are acceptable for {@code kind}.
      *
-     * <p>Normally an exact match. For a {@link TrackKind#freeLengthAxis()} kind the {@code X} bound
-     * is the author's to choose and only {@code Y} and {@code Z} are checked — those are the axes
-     * pinned by what the template has to meet in world.</p>
+     * <p>Normally an exact match. For a {@link TrackKind#freeSizeAboveFloor()} kind
+     * {@code expected} is a <b>floor</b> rather than an exact size — the author may go bigger on
+     * any axis, and only undersize is rejected, because that is the case that breaks something in
+     * world (a portal room narrower than the corridor mouth it has to seal).</p>
      */
     private static boolean boundsMatch(TrackKind kind, Vec3i size, Vec3i expected) {
-        if (kind.freeLengthAxis()) {
-            return size.getY() == expected.getY() && size.getZ() == expected.getZ();
+        if (kind.freeSizeAboveFloor()) {
+            return size.getX() >= PortalRoomLayout.MIN_LENGTH
+                && size.getY() >= expected.getY()
+                && size.getZ() >= expected.getZ();
         }
         return size.equals(expected);
     }

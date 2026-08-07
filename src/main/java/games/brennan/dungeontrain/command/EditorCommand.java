@@ -20,6 +20,7 @@ import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
+import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
@@ -378,11 +379,9 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomEnter(ctx.getSource(),
                             StringArgumentType.getString(ctx, "name")))))
-                .then(Commands.literal("length")
-                    .then(Commands.argument("blocks", IntegerArgumentType.integer(
-                            PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MAX_LENGTH))
-                        .executes(ctx -> runPortalRoomLength(ctx.getSource(),
-                            IntegerArgumentType.getInteger(ctx, "blocks"))))))
+                .then(portalSizeNode("length", PortalRoomEditor.Axis.LENGTH))
+                .then(portalSizeNode("width", PortalRoomEditor.Axis.WIDTH))
+                .then(portalSizeNode("height", PortalRoomEditor.Axis.HEIGHT)))
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -4777,14 +4776,6 @@ public final class EditorCommand {
         return null;
     }
 
-    /**
-     * {@code /dt editor portals length <blocks>} — restamp the room plot the player is standing in
-     * at a new length.
-     *
-     * <p>Destructive: the box changes size, so the plot goes back to the built-in room at the new
-     * length. Nothing is written to disk until the next {@code /dt save}, which is what makes the
-     * length permanent.</p>
-     */
     /** {@code /dt editor portals enter <name>} — teleport to one room's plot. */
     private static int runPortalRoomEnter(CommandSourceStack source, String name) {
         ServerPlayer player = requirePlayer(source);
@@ -4799,25 +4790,69 @@ public final class EditorCommand {
         return 1;
     }
 
-    private static int runPortalRoomLength(CommandSourceStack source, int blocks) {
+    /**
+     * One {@code <axis> inc|dec|<blocks>} node, shared by length / width / height.
+     *
+     * <p>The bare {@code <blocks>} form takes an absolute value; {@code inc} / {@code dec} step by
+     * one so the menu steppers can be tapped. All three land on
+     * {@link PortalRoomEditor#setSize}, which clamps to what this world's corridor allows.</p>
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> portalSizeNode(
+        String literal, PortalRoomEditor.Axis axis
+    ) {
+        return Commands.literal(literal)
+            .then(Commands.literal("inc").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, +1)))
+            .then(Commands.literal("dec").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, -1)))
+            .then(Commands.argument("blocks", IntegerArgumentType.integer(
+                    PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MAX_LENGTH))
+                .executes(ctx -> runPortalRoomSize(ctx.getSource(), axis,
+                    IntegerArgumentType.getInteger(ctx, "blocks"))));
+    }
+
+    /** Nudge one axis of the room plot the player is standing in by {@code delta}. */
+    private static int runPortalRoomSizeStep(CommandSourceStack source, PortalRoomEditor.Axis axis, int delta) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        if (name == null) {
+            source.sendFailure(Component.literal(
+                "Stand in a portal room plot first — /dt editor portals."));
+            return 0;
+        }
+        int current = PortalRoomEditor.axisOf(PortalRoomEditor.plotSize(name, dims), axis);
+        return runPortalRoomSize(source, axis, current + delta);
+    }
+
+    /**
+     * {@code /dt editor portals length|width|height <blocks>} — restamp the room plot the player is
+     * standing in with that axis set.
+     *
+     * <p>Destructive: the box changes size, so the plot goes back to the built-in room at the new
+     * size. Nothing is written to disk until the next {@code /dt save}, which is what makes the
+     * size permanent.</p>
+     */
+    private static int runPortalRoomSize(CommandSourceStack source, PortalRoomEditor.Axis axis, int blocks) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        String name = games.brennan.dungeontrain.editor.PortalRoomEditor.plotContaining(
-            player.blockPosition(), dims);
+        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
         if (name == null) {
             source.sendFailure(Component.literal(
                 "Stand in a portal room plot first — /dt editor portals."));
             return 0;
         }
 
-        int applied = games.brennan.dungeontrain.editor.PortalRoomEditor.setLength(
-            overworld, name, blocks, dims);
+        net.minecraft.core.Vec3i applied = PortalRoomEditor.setSize(overworld, name, axis, blocks, dims);
+        int value = PortalRoomEditor.axisOf(applied, axis);
+        String axisName = axis.name().toLowerCase(Locale.ROOT);
+        String note = value == blocks ? ""
+            : " (clamped from " + blocks + " — the room must still seal the corridor mouth and fit its Y lane)";
         source.sendSuccess(() -> Component.literal(
-            "Portal room '" + name + "' is now " + applied + " blocks long. The plot was reset to the "
-            + "built-in room at that size — /dt save to keep it."
+            "Portal room '" + name + "' " + axisName + " is now " + value + note
+            + ". The plot was reset to the built-in room at that size — /dt save to keep it."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -5026,10 +5061,10 @@ public final class EditorCommand {
             return 0;
         }
         games.brennan.dungeontrain.track.variant.TrackVariantRegistry.unregister(kind, name);
-        // Drop the removed room's cached length, or re-creating the same name later would silently
-        // inherit the dead variant's size.
+        // Drop the removed room's cached size, or re-creating the same name later would silently
+        // inherit the dead variant's dimensions.
         if (kind.hasBuiltInFallback()) {
-            games.brennan.dungeontrain.portal.PortalRoomLengths.forget(name);
+            games.brennan.dungeontrain.portal.PortalRoomSizes.forget(name);
         }
         restampPlotForKind(overworld, kind, dims);
         teleportToPlot(player, overworld, kind,

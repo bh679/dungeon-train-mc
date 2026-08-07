@@ -196,8 +196,8 @@ public final class TrackVariantRegistry {
         for (TreeSet<String> set : NAMES.values()) set.clear();
         ZERO_WARNED.clear();
         GATE_EMPTY_WARNED.clear();
-        // Room lengths are read off templates, so they belong to the world that was just closed.
-        games.brennan.dungeontrain.portal.PortalRoomLengths.clear();
+        // Room sizes are read off templates, so they belong to the world that was just closed.
+        games.brennan.dungeontrain.portal.PortalRoomSizes.clear();
     }
 
     /**

@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.editor;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
-import games.brennan.dungeontrain.portal.PortalRoomLengths;
+import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -37,12 +37,13 @@ import java.util.UUID;
  * snapshot per plot. Pre-enter session state is per-player; on exit the dispatcher tries
  * {@link #exit} first, falling back to {@link CarriageEditor#exit}.</p>
  *
- * <p><b>The one thing that is not like the others: length.</b> Every other plot kind has a footprint
- * fixed in code. A portal room's length is the author's — it is the distance a player walks
- * underneath, which is the dial the portal exists to turn — so the plot is stamped at whatever
- * {@link PortalRoomLengths} says, and {@link #setLength} restamps it at a new one. The built-in
- * geometry fills the plot whenever no template of exactly that size has been authored yet, which is
- * what gives the first author something to edit rather than an empty box.</p>
+ * <p><b>The one thing that is not like the others: size.</b> Every other plot kind has a footprint
+ * fixed in code. A portal room's is the author's — free above a floor on every axis, with length
+ * free outright, because it is the distance a player walks underneath and that is the dial the
+ * portal exists to turn. The plot is stamped at whatever {@link PortalRoomSizes} says, and
+ * {@link #setSize} restamps it at a new one. The built-in geometry fills the plot whenever no
+ * template of exactly that size has been authored yet, which is what gives the first author
+ * something to edit rather than an empty box.</p>
  */
 public final class PortalRoomEditor {
 
@@ -73,9 +74,9 @@ public final class PortalRoomEditor {
         return TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, name, dims);
     }
 
-    /** The box {@code name}'s plot occupies — the length is per-variant, the rest per-world. */
+    /** The box {@code name}'s plot occupies — per-variant on every axis, clamped to this world. */
     public static Vec3i plotSize(String name, CarriageDims dims) {
-        return PortalRoomLayout.sizeOfLength(dims, PortalRoomLengths.lengthOf(name));
+        return PortalRoomSizes.sizeOf(name, dims);
     }
 
     /**
@@ -106,9 +107,9 @@ public final class PortalRoomEditor {
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        // Prime every room's length from its template before anything reads the layout: the plot
-        // grid has to know how long each room is, and only the templates know.
-        primeLengths(overworld, dims);
+        // Prime every room's size from its template before anything reads the layout: the plot
+        // grid has to know how big each room is, and only the templates know.
+        primeSizes(overworld, dims);
 
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
@@ -137,18 +138,20 @@ public final class PortalRoomEditor {
         player.sendSystemMessage(Component.literal(
             "[DungeonTrain] Portal room editor: this is the room between a portal's two corridors. "
             + "Keep the way through clear on the walkway centre line — the corridors open onto it "
-            + "at both ends. Change the room's length with /dt editor portals length <blocks>."));
+            + "at both ends. Resize it from the X menu, or with "
+            + "/dt editor portals length|width|height <blocks>."));
 
-        LOGGER.info("[DungeonTrain] Editor enter: {} -> portal room '{}' plot at {} ({} long, {} variants)",
-            player.getName().getString(), name, origin, size.getX(), names().size());
+        LOGGER.info("[DungeonTrain] Editor enter: {} -> portal room '{}' plot at {} ({}x{}x{}, {} variants)",
+            player.getName().getString(), name, origin,
+            size.getX(), size.getY(), size.getZ(), names().size());
     }
 
     /**
-     * Load every registered room's template once so {@link PortalRoomLengths} knows how long each
-     * one is. The plot layout resolves positions without a level to hand, so it cannot do this
+     * Load every registered room's template once so {@link PortalRoomSizes} knows how big each one
+     * is. The plot layout resolves positions without a level to hand, so it cannot do this
      * itself.
      */
-    public static void primeLengths(ServerLevel overworld, CarriageDims dims) {
+    public static void primeSizes(ServerLevel overworld, CarriageDims dims) {
         for (String name : names()) {
             PortalRoomTemplateStore.get(overworld, name, dims);
         }
@@ -163,11 +166,11 @@ public final class PortalRoomEditor {
 
     /**
      * Erase + restamp the single plot for {@code name} — the authored template when one exists at
-     * the plot's current length, the built-in room otherwise.
+     * the plot's current size, the built-in room otherwise.
      */
     public static void stampPlot(ServerLevel overworld, String name, CarriageDims dims) {
-        // Load first: the plot's length comes from the template, and until it has been read once
-        // this session PortalRoomLengths only knows the built-in figure. Without this a room
+        // Load first: the plot's size comes from the template, and until it has been read once
+        // this session PortalRoomSizes only knows the built-in figure. Without this a room
         // authored at 21 blocks stamps as an 11-block built-in one after every server restart.
         PortalRoomTemplateStore.get(overworld, name, dims);
 
@@ -218,12 +221,12 @@ public final class PortalRoomEditor {
      *
      * <p>The capture at the end is not optional bookkeeping: without a file on disk the registry's
      * next directory scan would not find the name, and the variant would vanish on server restart.
-     * The new room also inherits {@code sourceName}'s length, so duplicating a 21-block room gives
+     * The new room also inherits {@code sourceName}'s size, so duplicating a 21-block room gives
      * another 21-block room rather than silently reverting to the built-in 11.</p>
      */
     public static void createFromBuiltIn(ServerLevel overworld, String sourceName, String name,
                                          CarriageDims dims) throws IOException {
-        PortalRoomLengths.pendingLength(name, PortalRoomLengths.lengthOf(sourceName));
+        PortalRoomSizes.pending(name, PortalRoomSizes.sizeOf(sourceName, dims));
         TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, name);
 
         // No template for this name yet, so this stamps the built-in room at the inherited length.
@@ -238,24 +241,50 @@ public final class PortalRoomEditor {
         // Fresh baseline, or the brand-new plot reads as already edited.
         captureSnapshot(overworld, origin, size, name);
 
-        LOGGER.info("[DungeonTrain] Portal room '{}' created from the built-in room ({} long)",
-            name, size.getX());
+        LOGGER.info("[DungeonTrain] Portal room '{}' created from the built-in room ({}x{}x{})",
+            name, size.getX(), size.getY(), size.getZ());
     }
 
+    /** Which axis of a room a size command addresses. */
+    public enum Axis { LENGTH, WIDTH, HEIGHT }
+
     /**
-     * Restamp {@code name}'s plot at a new length.
+     * Restamp {@code name}'s plot with one axis changed.
      *
      * <p>Destructive by nature: the box changes size, so whatever was authored in the old one is
-     * replaced with the built-in room at the new length. The change is only a plot state until the
-     * next save writes a template of that length.</p>
+     * replaced with the built-in room at the new size. The change is only a plot state until the
+     * next save writes a template of that size.</p>
+     *
+     * @return the size actually applied, after clamping to what this world's corridor allows
      */
-    public static int setLength(ServerLevel overworld, String name, int length, CarriageDims dims) {
+    public static Vec3i setSize(ServerLevel overworld, String name, Axis axis, int value,
+                                CarriageDims dims) {
+        Vec3i current = plotSize(name, dims);
+        Vec3i wanted = switch (axis) {
+            case LENGTH -> new Vec3i(value, current.getY(), current.getZ());
+            case WIDTH -> new Vec3i(current.getX(), current.getY(), value);
+            case HEIGHT -> new Vec3i(current.getX(), value, current.getZ());
+        };
+        Vec3i clamped = PortalRoomLayout.clampSize(dims, wanted);
+
+        // Clear at the OLD size before the new one takes effect, or the leftover shell of a
+        // shrinking room stays behind in the plot.
         clearPlot(overworld, name, dims);
-        int clamped = PortalRoomLayout.clampLength(length);
-        PortalRoomLengths.pendingLength(name, clamped);
+        PortalRoomSizes.pending(name, clamped);
         stampPlot(overworld, name, dims);
-        LOGGER.info("[DungeonTrain] Portal room '{}' plot restamped at length {}", name, clamped);
+
+        LOGGER.info("[DungeonTrain] Portal room '{}' plot restamped at {}x{}x{} ({} -> {})",
+            name, clamped.getX(), clamped.getY(), clamped.getZ(), axis, value);
         return clamped;
+    }
+
+    /** Current value of {@code axis} for {@code name}. */
+    public static int axisOf(Vec3i size, Axis axis) {
+        return switch (axis) {
+            case LENGTH -> size.getX();
+            case WIDTH -> size.getZ();
+            case HEIGHT -> size.getY();
+        };
     }
 
     /** Snapshot the freshly-stamped plot for {@link EditorDirtyCheck}'s baseline. */
@@ -301,8 +330,8 @@ public final class PortalRoomEditor {
 
         captureSnapshot(overworld, origin, size, name);
 
-        LOGGER.info("[DungeonTrain] Editor save: {} -> portal room '{}' template ({} long)",
-            player.getName().getString(), name, size.getX());
+        LOGGER.info("[DungeonTrain] Editor save: {} -> portal room '{}' template ({}x{}x{})",
+            player.getName().getString(), name, size.getX(), size.getY(), size.getZ());
 
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {

@@ -74,8 +74,25 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
         String modelName,
         boolean inPlot,
         boolean isUser,
-        boolean isImported
-    ) {}
+        boolean isImported,
+        int roomLength,
+        int roomWidth,
+        int roomHeight
+    ) {
+        /** Back-compat shape for every category but PORTALS — no authored size to show. */
+        public Entry(BlockPos worldPos, String name, int weight, String category,
+                     String modelId, String modelName,
+                     boolean inPlot, boolean isUser, boolean isImported) {
+            this(worldPos, name, weight, category, modelId, modelName,
+                inPlot, isUser, isImported, NO_SIZE, NO_SIZE, NO_SIZE);
+        }
+    }
+
+    /**
+     * Sentinel for "this model has no authored size" — every category but portal rooms, whose plot
+     * box the author chooses rather than the kind fixing it.
+     */
+    public static final int NO_SIZE = -1;
 
     public static final Type<EditorPlotLabelsPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_plot_labels"));
@@ -106,6 +123,9 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             buf.writeBoolean(e.inPlot());
             buf.writeBoolean(e.isUser());
             buf.writeBoolean(e.isImported());
+            buf.writeVarInt(e.roomLength());
+            buf.writeVarInt(e.roomWidth());
+            buf.writeVarInt(e.roomHeight());
         }
     }
 
@@ -123,8 +143,11 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             boolean inPlot = buf.readBoolean();
             boolean isUser = buf.readBoolean();
             boolean isImported = buf.readBoolean();
+            int roomLength = buf.readVarInt();
+            int roomWidth = buf.readVarInt();
+            int roomHeight = buf.readVarInt();
             out.add(new Entry(pos, name, weight, category, modelId, modelName,
-                inPlot, isUser, isImported));
+                inPlot, isUser, isImported, roomLength, roomWidth, roomHeight));
         }
         return new EditorPlotLabelsPacket(out);
     }
