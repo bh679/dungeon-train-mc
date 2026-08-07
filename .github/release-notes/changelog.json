@@ -6309,6 +6309,23 @@
       "released": true,
       "released_in": "v0.543.0",
       "released_at": "2026-08-07T03:06:04Z"
+    },
+    {
+      "id": "mod-recommendations-death-screen",
+      "version": "0.544.0",
+      "type": "feat",
+      "title": "Recommend your favourite mods from the death screen",
+      "summary": "If you play with mods beyond Dungeon Train and its modpack, the death screen now has a new page asking which of them you'd recommend to the creator. Your mods appear as a grid, ordered by how many other Dungeon Train players run them. Pick one, say why in a line, and send \u2014 then pick another, as many as you like. There's also a tile for naming a mod you don't have but wish the train supported. Nothing is sent unless you write something, and the page only ever appears if you're running mods of your own.",
+      "highlights": [
+        "New death-screen page: recommend the mods you play with",
+        "Your mods are ranked by how many other players run them",
+        "Ask for a mod you don't have yet",
+        "Only appears if you run mods outside Dungeon Train and its modpack"
+      ],
+      "date": "2026-08-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

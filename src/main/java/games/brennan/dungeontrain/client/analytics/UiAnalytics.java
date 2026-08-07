@@ -69,15 +69,19 @@ public final class UiAnalytics {
     public static final String TARGET_BOARD_ANEW = "board_anew";  // "Board anew" — start the next run
     public static final String TARGET_LEAVE = "leave";           // "Leave" — back to title / quit
     public static final String TARGET_CHIP = "chip";             // the "$" top-bar chip → donate page
+    // A mod recommendation was sent from the MODREC page. The mod itself is NOT a funnel dimension —
+    // which mods get recommended is counted by /telemetry/mod-rec, this is only the button press.
+    public static final String TARGET_MOD_RECOMMEND = "mod_recommend";
 
     // Death-screen page identities (the {@code page} dimension on open / page_time / survey_answer).
-    // Lock-step with ui-events.js PAGES. The seven paginated death-screen pages, plus the full-screen
+    // Lock-step with ui-events.js PAGES. The eight paginated death-screen pages, plus the full-screen
     // Contribute (donate-options) window that layers over the DONATE page.
     public static final String PAGE_FALL = "fall";
     public static final String PAGE_DEEDS = "deeds";
     public static final String PAGE_GEAR = "gear";
     public static final String PAGE_LIVES = "lives";
     public static final String PAGE_SURVEY = "survey";
+    public static final String PAGE_MODREC = "modrec";
     public static final String PAGE_DONATE = "donate";
     public static final String PAGE_PLATFORM = "platform";
     public static final String PAGE_CONTRIBUTE = "contribute";
