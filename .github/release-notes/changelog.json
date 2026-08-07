@@ -6226,6 +6226,24 @@
       "released": true,
       "released_in": "v0.538.0",
       "released_at": "2026-08-05T13:59:27Z"
+    },
+    {
+      "id": "portal-sever-on-shell-break",
+      "version": "0.539.0",
+      "type": "feat",
+      "title": "Breaking into a portal corridor closes it for good",
+      "summary": "Dig through the outer wall of a portal corridor past the halfway point and the portal breaks \u2014 glass shatters, a beacon dies away, and that portal never takes you through again. You can always still walk back out of a portal room, so a broken portal can strand nothing and nobody.",
+      "highlights": [
+        "Breaking a portal corridor's outer wall past the halfway point permanently closes it",
+        "Both ends of a portal close together \u2014 one hole shuts the whole thing",
+        "The way back out always works, so you can never be trapped in a portal room",
+        "Digging inside a portal room, or before the halfway point, is safe"
+      ],
+      "pr": 898,
+      "date": "2026-08-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
