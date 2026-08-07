@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
+import games.brennan.dungeontrain.portal.PortalClear;
+import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.track.variant.TrackKind;
@@ -20,12 +22,14 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -183,6 +187,85 @@ public final class PortalRoomEditor {
         captureSnapshot(overworld, origin, size, name);
     }
 
+    /**
+     * Wipe what has been built in {@code name}'s plot and leave the plain built-in shell behind.
+     *
+     * <p>What the editor's Clear does, and deliberately not what {@link #clearPlot} does: that one
+     * erases the box to nothing, which is right as a teardown primitive but leaves an author staring
+     * into a hole. This leaves a room to keep building in, at the plot's <b>current</b> size — the
+     * authored size is preserved, so this is not a reset to {@code builtInSize}.</p>
+     *
+     * <p>Nothing on disk changes. The saved {@code .nbt} survives until the next save, the same way
+     * Clear behaves for carriages and contents; removing the variant itself is
+     * {@code /dt editor portals reset}. The caller is responsible for the sidecars — the per-cell
+     * variants and the container-contents pools — which live in their own files and would otherwise
+     * put the old chests straight back on the next stamp.</p>
+     */
+    public static void clearToBuiltIn(ServerLevel overworld, String name, CarriageDims dims) {
+        // Same reason as stampPlot: resolve the box that is actually there, not the built-in one.
+        PortalRoomTemplateStore.get(overworld, name, dims);
+
+        BlockPos origin = plotOrigin(name, dims);
+        Vec3i size = plotSize(name, dims);
+
+        // Also sweeps up loose items — including anything an earlier build spilled on the floor.
+        EditorPlotEntityClearer.discardNonPlayersIn(overworld, origin, size);
+        // Clear before stamping, not just because the shell does not write every cell, but because
+        // stampRoomBuiltIn writes its interior as AIR through setBlock — straight over any chest
+        // still holding its block entity. PortalClear evicts first, so nothing drops.
+        PortalClear.clearBoxRelit(overworld, boxOf(origin, size), PortalCorridorMask.NONE);
+        PortalCarriageBuilder.stampRoomBuiltIn(overworld, origin, size, /*relight*/ true);
+        setOutline(overworld, origin, size, OUTLINE_BLOCK);
+        captureSnapshot(overworld, origin, size, name);
+    }
+
+    /**
+     * The editor's Clear: {@link #clearToBuiltIn}, plus everything authored on top of the blocks.
+     *
+     * <p>A portal room keeps its authored state in three files, and clearing only the blocks would
+     * put the other two back on the next stamp — the per-cell variant sidecar, and the
+     * container-contents pools each copy's chests are rolled from. Both go.</p>
+     *
+     * <p>The pools are the part that differs from every other category: carriages and contents leave
+     * their pools alone on Clear. A portal room's chests are re-rolled per copy from that file, so
+     * leaving it would restock exactly the chests the author had just cleared out.</p>
+     *
+     * @return how many authored entries were dropped across both sidecars
+     */
+    public static int clearEverything(ServerLevel overworld, String name, CarriageDims dims)
+            throws IOException {
+        clearToBuiltIn(overworld, name, dims);
+
+        Vec3i size = plotSize(name, dims);
+        int cleared = 0;
+
+        // Delete the sidecar file rather than emptying it entry by entry: a cleared room has no
+        // variants left to describe, and delete() drops the session cache with it.
+        int variants = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size).size();
+        TrackVariantBlocks.delete(TrackKind.PORTAL_ROOM, name);
+        cleared += variants;
+
+        String plotKey = ContainerContentsStore.trackPlotKey(TrackKind.PORTAL_ROOM, name);
+        ContainerContentsStore store = ContainerContentsStore.loadFor(plotKey);
+        // Copy the positions before mutating — removePool writes to the map they are drawn from.
+        for (BlockPos local : List.copyOf(store.allPositions())) {
+            store.clearLink(local);
+            if (store.removePool(local)) cleared++;
+        }
+        store.save();
+        ContainerContentsStore.invalidate(plotKey);
+
+        return cleared;
+    }
+
+    private static BoundingBox boxOf(BlockPos origin, Vec3i size) {
+        return new BoundingBox(
+            origin.getX(), origin.getY(), origin.getZ(),
+            origin.getX() + size.getX() - 1,
+            origin.getY() + size.getY() - 1,
+            origin.getZ() + size.getZ() - 1);
+    }
+
     /** Erase every room plot. */
     public static void clearAllPlots(ServerLevel overworld, CarriageDims dims) {
         for (String name : names()) {
@@ -201,16 +284,11 @@ public final class PortalRoomEditor {
     private static void clearBox(ServerLevel overworld, PlotBox box, String name) {
         BlockPos origin = box.origin();
         Vec3i size = box.size();
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         BlockState air = Blocks.AIR.defaultBlockState();
-        for (int dx = 0; dx < size.getX(); dx++) {
-            for (int dy = 0; dy < size.getY(); dy++) {
-                for (int dz = 0; dz < size.getZ(); dz++) {
-                    overworld.setBlock(
-                        pos.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz), air, 3);
-                }
-            }
-        }
+        // Through PortalClear rather than a setBlock loop: a plot being erased may hold authored
+        // chests, and replacing a container that still has its block entity spills its contents as
+        // items. This path runs on relayout too, so the debris would outlive the plot that made it.
+        PortalClear.clearBoxRelit(overworld, boxOf(origin, size), PortalCorridorMask.NONE);
         setOutline(overworld, origin, size, air);
         EditorPlotSnapshots.clear(snapshotKey(name));
     }

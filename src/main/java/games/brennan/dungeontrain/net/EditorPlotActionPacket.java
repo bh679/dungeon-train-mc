@@ -287,9 +287,16 @@ public record EditorPlotActionPacket(
             case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.PortalRoom(name));
             case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.PortalRoom(name));
             case CLEAR -> {
-                games.brennan.dungeontrain.editor.PortalRoomEditor.clearPlot(overworld, name, dims);
+                // The same path the X menu's Clear takes. This used to call clearPlot, which erases
+                // the box to nothing — leaving the author looking into a hole with no shell and no
+                // cage, and leaving both sidecars behind to restock the room on the next stamp.
+                int cleared = games.brennan.dungeontrain.editor.PortalRoomEditor
+                    .clearEverything(overworld, name, dims);
                 sender.sendSystemMessage(Component.literal(
-                    "Editor: cleared all blocks in " + label + ".")
+                    "Editor: cleared all blocks in " + label
+                        + (cleared > 0
+                            ? " (and " + cleared + " authored entr" + (cleared == 1 ? "y" : "ies") + ")."
+                            : "."))
                     .copy().withStyle(ChatFormatting.GREEN));
             }
             case ENTER_INSIDE -> games.brennan.dungeontrain.editor.PortalRoomEditor.enter(sender, name, false);

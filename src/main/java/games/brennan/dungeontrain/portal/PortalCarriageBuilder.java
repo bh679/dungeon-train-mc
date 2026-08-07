@@ -6,7 +6,6 @@ import games.brennan.dungeontrain.editor.ContainerContentsPlacement;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
 import games.brennan.dungeontrain.editor.VariantState;
-import games.brennan.dungeontrain.track.TrackVariantMobs;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -15,6 +14,7 @@ import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
+import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
@@ -206,8 +206,23 @@ public final class PortalCarriageBuilder {
      * stamping the contents into it would bake them into the shell template, which then stamps them
      * again underneath the contents pass. The contents have their own plot to be authored in.</p>
      */
+    /**
+     * The {@code pairKey} for a corridor that belongs to no pair — the editor plot, which stamps the
+     * shell with {@code withContents = false} and so never rolls anything.
+     */
+    public static final int NO_PAIR = Integer.MIN_VALUE;
+
+    /** {@link #stampCorridorFrom} for a corridor with no pair; only valid without contents. */
     public static void stampCorridorFrom(ServerLevel level, BlockPos origin, CarriageDims dims,
                                          boolean relight, boolean withContents) {
+        if (withContents) {
+            throw new IllegalArgumentException("corridor contents need a pairKey to roll against");
+        }
+        stampCorridorFrom(level, origin, dims, relight, false, NO_PAIR);
+    }
+
+    public static void stampCorridorFrom(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                         boolean relight, boolean withContents, int pairKey) {
         // Looked up against the CORRIDOR's dims, not the world's carriage dims: a corridor template
         // is longer than every other carriage template (PortalCorridorSize), and CarriagePlacer's
         // size gate would reject it against the wrong figure and silently drop to the built-in.
@@ -218,7 +233,7 @@ public final class PortalCarriageBuilder {
         } else {
             stampBuiltIn(level, origin, dims, relight);
         }
-        if (withContents) stampCorridorContents(level, origin, dims);
+        if (withContents) stampCorridorContents(level, origin, dims, pairKey);
     }
 
     /**
@@ -233,9 +248,16 @@ public final class PortalCarriageBuilder {
      * itself from the contents id ({@link CarriageContentsPlacer#contentsDims}), and handing it an
      * already-resolved box would grow it a second time.</p>
      */
-    private static void stampCorridorContents(ServerLevel level, BlockPos origin, CarriageDims dims) {
+    private static void stampCorridorContents(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                              int pairKey) {
+        // The pair's rolled sub-variant, not the literal `portal` template: the contents carry a
+        // group sidecar, and naming the parent here is what used to make every corridor in every
+        // world identical. PortalCorridorContents holds the draw so this pair's carriage and its
+        // twin cannot disagree. CONTENTS_SEED/CONTENTS_INDEX still govern the sidecar's per-cell
+        // picks WITHIN the chosen template, which is a separate thing and still has to be fixed.
+        CarriageContents contents = PortalCorridorContents.forPair(level, pairKey);
         CarriageContentsPlacer.placeBlocksOnly(
-            level, origin, PORTAL_CONTENTS, dims, CONTENTS_SEED, CONTENTS_INDEX);
+            level, origin, contents, dims, CONTENTS_SEED, CONTENTS_INDEX);
     }
 
     /**
@@ -288,8 +310,9 @@ public final class PortalCarriageBuilder {
      * @param relight {@code true} in an editor plot, which is never lifted into a sub-level;
      *                {@code false} on the spawn path, where Sable relights the plot afterwards
      */
-    public static Set<BlockPos> stampCarriage(ServerLevel level, BlockPos origin, CarriageDims dims, boolean relight) {
-        stampCorridorFrom(level, origin, dims, relight, /*withContents*/ true);
+    public static Set<BlockPos> stampCarriage(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                              boolean relight, int pairKey) {
+        stampCorridorFrom(level, origin, dims, relight, /*withContents*/ true, pairKey);
         return Set.of();   // the caller re-reads the footprint via CarriagePlacer.finishPlace
     }
 
@@ -449,12 +472,12 @@ public final class PortalCarriageBuilder {
      * written through the light engine — nothing lifts these blocks into a sub-level to relight
      * them.</p>
      */
-    public static void stampTwin(ServerLevel level, BlockPos origin, CarriageDims dims) {
+    public static void stampTwin(ServerLevel level, BlockPos origin, CarriageDims dims, int pairKey) {
         // Clear first: unlike a carriage, a twin lands in open air rather than a pre-cleared volume,
         // and a template stamp only writes its own cells — anything already standing there would
         // show through and break the match with the carriage.
         clearBox(level, origin, dims);
-        stampCorridorFrom(level, origin, dims, /*relight*/ true, /*withContents*/ true);
+        stampCorridorFrom(level, origin, dims, /*relight*/ true, /*withContents*/ true, pairKey);
     }
 
     /**
@@ -503,13 +526,15 @@ public final class PortalCarriageBuilder {
      * {@link PortalCorridorMask}.</p>
      */
     public static void stampPairStructure(ServerLevel level, PortalStructure structure,
-                                          CarriageDims dims) {
+                                          CarriageDims dims, int pairKey) {
         PortalCarriageLayout layout = layoutFor(dims);
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
 
         stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
-            PortalCorridorMask.NONE, structure.variantIndexFor(PortalRoomTiling.Tile.BASE));
+            PortalCorridorMask.NONE, PortalCorridorMask.NONE,
+            structure.variantIndexFor(PortalRoomTiling.Tile.BASE), pairKey, PortalRoomTiling.Tile.BASE,
+            PortalRoomMobs.liveCount(level, footprintOf(level, structure, dims), pairKey));
 
         // Before the corridors, so each mode acts on the room as it actually turned out rather than
         // as it was asked for. It does not follow that the corridors repair whatever a mode wrote at
@@ -524,7 +549,7 @@ public final class PortalCarriageBuilder {
             PortalRoomTiler.refreshFacesAround(level, dims, structure, PortalRoomTiling.Tile.BASE);
         }
 
-        stampCorridors(level, structure, dims);
+        stampCorridors(level, structure, dims, pairKey);
     }
 
     /**
@@ -541,15 +566,16 @@ public final class PortalCarriageBuilder {
      * half maps to the entry carriage), and the exit twin's far door likewise.</p>
      */
     public static void stampCorridors(ServerLevel level, PortalStructure structure,
-                                      CarriageDims dims) {
+                                      CarriageDims dims, int pairKey) {
         PortalCarriageLayout layout = layoutFor(dims);
         BlockPos entryOrigin = structure.origin();
         BlockPos exitOrigin = structure.exitOrigin(dims);
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
 
-        stampTwin(level, entryOrigin, dims);
-        stampTwin(level, exitOrigin, dims);
+        // Both twins take the pair's key, so both match the carriages they mirror — and each other.
+        stampTwin(level, entryOrigin, dims, pairKey);
+        stampTwin(level, exitOrigin, dims, pairKey);
 
         // Seal the ring around each corridor mouth. The room's shell is wider and taller than a
         // corridor, so everything it does not already cover at the door plane has to be walled off,
@@ -731,11 +757,32 @@ public final class PortalCarriageBuilder {
      * {@link PortalRoomCopies#DYNAMIC}, and what makes them identical under
      * {@link PortalRoomCopies#EXACT} — see {@code PortalStructure.variantIndexFor}.</p>
      */
+    /**
+     * {@link #stampRoomAt} with the two jobs a mask does held apart.
+     *
+     * <p>{@code clearMask} is what must be left <b>standing</b>; {@code writeMask} is what must be
+     * left <b>empty</b>. They are the same mask everywhere but an
+     * {@link PortalRoomMode#ENDLESS_OPEN} tile, which adds its own interior to the write mask so the
+     * stamp lays a floor and a roof and nothing between them.</p>
+     *
+     * <p>They cannot be one mask. A room lands in solid rock at the world floor, so the interior has
+     * to be cleared to air even when nothing is stamped into it — widening the clear mask instead
+     * would leave deepslate standing where the open space belongs. The clear stays corridor-only and
+     * only the writes are suppressed.</p>
+     *
+     * <p>This replaces stamping the whole room and then stripping the interior back out. That order
+     * placed every chest and rolled its loot pool before breaking it a moment later, and the break
+     * ran through a plain {@code setBlock} over a live block entity — so each copy sprayed its
+     * contents across the floor. See {@link PortalClear} for the same hazard, found earlier.</p>
+     */
     public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
                                    String roomName, Vec3i size, boolean relight,
-                                   PortalCorridorMask mask, int variantIndex) {
-        stampRoomAt(level, roomOrigin, dims, roomName, size, relight, mask);
-        applyRoomVariants(level, roomOrigin, roomName, size, mask, variantIndex);
+                                   PortalCorridorMask clearMask, PortalCorridorMask writeMask,
+                                   int variantIndex, int pairKey, PortalRoomTiling.Tile tile,
+                                   int liveMobCount) {
+        stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask);
+        applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex, pairKey, tile,
+            liveMobCount);
     }
 
     /**
@@ -746,11 +793,16 @@ public final class PortalCarriageBuilder {
      * through {@code ContainerContentsPlacement} so chests roll their pool and signs keep their
      * authored NBT.</p>
      *
-     * <p>Mob entries are dropped with a warning rather than spawned, matching tunnels. A portal room
-     * repeats, and a mob entry that spawned per copy would be a spawner with a hundred outlets.</p>
+     * <p>Mob entries go through {@link PortalRoomMobs}, which spawns them and — just as importantly —
+     * takes them away when the copy they are standing in retires. They used to be dropped with a
+     * warning, on the grounds that a portal room repeats and a mob entry spawning per copy would be a
+     * spawner with a hundred outlets. That was true of spawning alone; it is the paired reap that
+     * makes it safe, not the spawn being clever.</p>
      */
     private static void applyRoomVariants(ServerLevel level, BlockPos roomOrigin, String roomName,
-                                          Vec3i size, PortalCorridorMask mask, int variantIndex) {
+                                          Vec3i size, PortalCorridorMask mask, int variantIndex,
+                                          int pairKey, PortalRoomTiling.Tile tile,
+                                          int liveMobCount) {
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, roomName, size);
         if (sidecar.isEmpty()) return;
 
@@ -760,6 +812,10 @@ public final class PortalCarriageBuilder {
         // takes "track:<kind>:<name>" and sanitises the colons into a filename, so a portal room's
         // pool lives at containers/track_portal_room_<name>.contents.json.
         String plotKey = ContainerContentsStore.trackPlotKey(TrackKind.PORTAL_ROOM, roomName);
+        // Counted once for the whole stamp rather than per cell: it is an entity query over the
+        // structure, and the cap only has to be approximately right — it is a backstop against a
+        // badly-weighted room, not an exact quota.
+        int live = liveMobCount;
         for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
             BlockPos local = entry.localPos();
             BlockPos world = roomOrigin.offset(local);
@@ -768,8 +824,12 @@ public final class PortalCarriageBuilder {
             VariantState picked = sidecar.resolve(local, worldSeed, variantIndex);
             if (picked == null) continue;
             if (picked.isMob()) {
-                TrackVariantMobs.warnDropped("portal_room", local, picked.entityId());
+                // The cell itself still has to go: a mob entry carries a COMMAND_BLOCK sentinel as
+                // its state so every block applier blanks it without a special case.
                 level.setBlock(world, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+                if (PortalRoomMobs.spawn(level, world, picked, pairKey, tile, worldSeed, live)) {
+                    live++;
+                }
                 continue;
             }
             if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
@@ -791,22 +851,31 @@ public final class PortalCarriageBuilder {
     public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
                                    String roomName, Vec3i size, boolean relight,
                                    PortalCorridorMask mask) {
+        stampRoomAt(level, roomOrigin, dims, roomName, size, relight, mask, mask);
+    }
+
+    /** {@link #stampRoomAt} with the clear mask and the write mask held apart. */
+    public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
+                                   String roomName, Vec3i size, boolean relight,
+                                   PortalCorridorMask clearMask, PortalCorridorMask writeMask) {
         // Clear first, for the same reason a twin does: the room lands in solid rock at the world
         // floor, and a template stamp only writes its own cells — anything the author left as
-        // STRUCTURE_VOID would otherwise show deepslate through the wall.
-        clearRoomBox(level, roomOrigin, size, mask, relight);
+        // STRUCTURE_VOID would otherwise show deepslate through the wall. This is the CLEAR mask
+        // deliberately: an ENDLESS_OPEN tile still needs its interior emptied, it just does not
+        // want anything put back into it.
+        clearRoomBox(level, roomOrigin, size, clearMask, relight);
         clearIntruders(level, roomOrigin, size);
         plugFluidsAround(level, roomOrigin, size);
 
         Optional<StructureTemplate> stored = PortalRoomTemplateStore.get(level, roomName, dims);
         if (stored.isEmpty()) {
-            stampRoomBuiltIn(level, roomOrigin, size, relight, mask);
+            stampRoomBuiltIn(level, roomOrigin, size, relight, writeMask);
             return;
         }
 
         if (stored.get().getSize().equals(size)) {
             CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(),
-                mask.isEmpty() ? null : mask.asProcessor(), relight);
+                writeMask.isEmpty() ? null : writeMask.asProcessor(), relight);
             return;
         }
 
@@ -819,9 +888,9 @@ public final class PortalCarriageBuilder {
         // fits, and only genuinely new space comes back as the built-in room. Replacing the whole
         // thing with the built-in room — which is what used to happen — threw the work away on
         // every stepper click.
-        stampRoomBuiltIn(level, roomOrigin, size, relight, mask);
+        stampRoomBuiltIn(level, roomOrigin, size, relight, writeMask);
         CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(),
-            clipTo(roomOrigin, size, mask), relight);
+            clipTo(roomOrigin, size, writeMask), relight);
     }
 
     /**
@@ -875,12 +944,19 @@ public final class PortalCarriageBuilder {
      * into solid rock. A copy that already has somebody's villager standing in it is never
      * re-stamped — {@code PortalRoomTiler} refuses to retire a copy anybody is in, and a structure
      * with a player inside is pinned against re-stamping altogether.</p>
+     *
+     * <p><b>What DT itself placed is spared</b>, by the same contents tag the train's runway sweep
+     * reads. Without that this would delete the room's own authored mobs on the next stamp of the
+     * copy they stand in, which — since a copy is re-stamped every time the window slides back over
+     * it — is most of them, most of the time. "Whatever was standing here" has to mean whatever
+     * arrived on its own.</p>
      */
     private static void clearIntruders(ServerLevel level, BlockPos origin, Vec3i size) {
         AABB box = new AABB(
             origin.getX(), origin.getY(), origin.getZ(),
             origin.getX() + size.getX(), origin.getY() + size.getY(), origin.getZ() + size.getZ());
-        for (Entity entity : level.getEntities((Entity) null, box, e -> !(e instanceof Player))) {
+        for (Entity entity : level.getEntities((Entity) null, box,
+                e -> !(e instanceof Player) && !TrainMembership.isOnTrain(e))) {
             entity.discard();
         }
     }

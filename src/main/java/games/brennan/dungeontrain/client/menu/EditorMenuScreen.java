@@ -497,7 +497,7 @@ public final class EditorMenuScreen implements MenuScreen {
     private static CommandMenuEntry clearEntryFor(String category, String model) {
         if (model == null || model.isEmpty()) return null;
         return switch (category) {
-            case "carriages", "contents", "parts" -> new CommandMenuEntry.DrillIn(
+            case "carriages", "contents", "parts", "portals" -> new CommandMenuEntry.DrillIn(
                 "Clear",
                 new ConfirmScreen("Clear all blocks in '" + model + "'?",
                     "dungeontrain editor clear"));

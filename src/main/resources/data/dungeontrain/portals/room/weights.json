@@ -1,4 +1,8 @@
 {
+  "book": {
+    "weight": 1,
+    "mode": "endless_repetition"
+  },
   "default": {
     "weight": 1,
     "phases": [
@@ -8,8 +12,16 @@
       "END"
     ]
   },
+  "distantenemies": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
   "library_dimension": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
+  },
+  "singlepillar": {
+    "weight": 1,
+    "mode": "endless_open"
   }
 }

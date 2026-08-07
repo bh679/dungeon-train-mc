@@ -66,6 +66,17 @@ public final class PortalRoomLayout {
     public static final int MIN_LENGTH = 5;
 
     /**
+     * Shortest room that is still a room: floor, two blocks of headroom for a door, ceiling. The
+     * same number and the same reasoning as {@link PortalCarriageLayout#MIN_HEIGHT}.
+     *
+     * <p>This is a constant floor under {@link #minHeight}, not the whole rule — the corridor's own
+     * height still raises it whenever the corridor is taller, which at the default dims it is. What
+     * this guards is the short end: {@link CarriageDims#MIN_HEIGHT} is 3, and a 3-block room is a
+     * floor and a ceiling with nothing between them.</p>
+     */
+    public static final int MIN_HEIGHT = 4;
+
+    /**
      * Longest room. Not a technical ceiling — the structure is free-standing at the world floor —
      * but a room longer than this walks further than the crossing reads as, and every block of it
      * is re-stamped each time the train drifts {@code TWIN_MAX_DRIFT}.
@@ -88,16 +99,23 @@ public final class PortalRoomLayout {
     /**
      * The built-in room's full box, shell included.
      *
-     * <p>Its width is its own — {@link #BUILT_IN_INTERIOR_WIDTH} plus a wall each side, held up to
-     * {@link #minWidth} for a world whose carriages are wider than the built-in room ever was.
-     * Deliberately not just {@link #minWidth}: this is also the footprint
+     * <p>Its width and height are its own — {@link #BUILT_IN_INTERIOR_WIDTH} and
+     * {@link #BUILT_IN_INTERIOR_HEIGHT} plus a shell row each side, each held up to the matching
+     * validation floor for a world whose carriages are bigger than the built-in room ever was.
+     * Deliberately not just {@link #minWidth}/{@link #minHeight}: this is also the footprint
      * {@link games.brennan.dungeontrain.track.variant.TrackKind#dims} reports for
      * {@code PORTAL_ROOM}, and {@code TrackSidePlots.slotZ} uses that as the editor's plot-slot base
      * — so tying it to the validation floor would re-pack every track-side editor row the moment
      * that floor moved.</p>
+     *
+     * <p>The height {@code max} is load-bearing for exactly that reason. {@link #minHeight} floors
+     * at {@link #MIN_HEIGHT} (4), so in a world with short carriages it drops below the built-in
+     * room's own 7 — and without this the built-in shell would follow it down and stamp a box too
+     * short for the {@link #BUILT_IN_INTERIOR_HEIGHT} interior it is made of.</p>
      */
     public static Vec3i builtInSize(CarriageDims dims) {
-        return new Vec3i(BUILT_IN_LENGTH, minHeight(dims),
+        return new Vec3i(BUILT_IN_LENGTH,
+            Math.max(BUILT_IN_INTERIOR_HEIGHT + 2, minHeight(dims)),
             Math.max(BUILT_IN_INTERIOR_WIDTH + 2, minWidth(dims)));
     }
 
@@ -128,13 +146,22 @@ public final class PortalRoomLayout {
     }
 
     /**
-     * Smallest legal full room height. At the default {@code CarriageDims(9,7,7)} this is 7, the
-     * value the room was hardcoded at. The {@code max} matters for a world whose carriages are
-     * taller than that: a corridor poking out through the room's ceiling would leave the mouth
-     * unsealed and open the twin structure to the rock above it.
+     * Smallest legal full room height — the taller of {@link #MIN_HEIGHT} and the corridor. At the
+     * default {@code CarriageDims(9,7,7)} that is 7, the value the room was hardcoded at.
+     *
+     * <p>The {@code max} against {@code dims.height()} is what keeps the room's ceiling at or above
+     * the corridor's: a corridor poking out through the room's ceiling would leave the mouth
+     * unsealed and open the twin structure to the rock above it. So the corridor, not
+     * {@link #MIN_HEIGHT}, is what binds at any ordinary carriage height — {@link #MIN_HEIGHT} only
+     * takes over below 4, where a room would otherwise have no interior at all.</p>
+     *
+     * <p>This used to floor at {@code BUILT_IN_INTERIOR_HEIGHT + 2} (7), which was the built-in
+     * room's own height leaking into the validation floor rather than anything the seal needed —
+     * the same mistake {@link #minWidth} used to make. {@link #builtInSize} applies that 7 itself
+     * now, so the built-in room is unchanged.</p>
      */
     public static int minHeight(CarriageDims dims) {
-        return Math.min(MAX_HEIGHT, Math.max(BUILT_IN_INTERIOR_HEIGHT + 2, dims.height()));
+        return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, dims.height()));
     }
 
     /**
@@ -144,9 +171,17 @@ public final class PortalRoomLayout {
      * plane by sweeping the <b>room's</b> Z span and skipping the corridor's cross-section, so a
      * corridor column outside that span is never sealed and never covered either — it opens the twin
      * structure onto the surrounding rock. Against {@link #roomOrigin}'s centring,
-     * {@code dims.width() + 4} is what holds the containment: it leaves exactly two blocks of room
-     * either side of the corridor — one wall, one interior — at every legal
-     * {@link CarriageDims#width()}, odd or even.</p>
+     * {@code dims.width() + 2} is exactly what holds the containment: the room's <b>interior</b>
+     * ({@code width - 2}, centred on the corridor's doorway line) then spans the corridor's full Z
+     * extent, at every legal {@link CarriageDims#width()}, odd or even. One block narrower and a
+     * corridor column falls outside the room — which is the failure this floor exists to prevent.</p>
+     *
+     * <p>There is no margin in that number, and deliberately so: it is the geometric bound, not a
+     * comfortable distance from it. It was {@code + 4} — one spare block of room either side — which
+     * was taste rather than a requirement, and cost authors two blocks of width they could have had.
+     * The sweep in {@code PortalRoomLayoutTest} checks the containment holds at exactly
+     * {@code minWidth} for every legal carriage width, so a future change to {@link #roomOrigin}'s
+     * centring cannot quietly invalidate it.</p>
      *
      * <p>This also used to floor at {@code BUILT_IN_INTERIOR_WIDTH + 2} (13 at the default dims),
      * which was the built-in room's own width leaking into the validation floor rather than anything
@@ -155,7 +190,7 @@ public final class PortalRoomLayout {
      * is.</p>
      */
     public static int minWidth(CarriageDims dims) {
-        return Math.min(MAX_WIDTH, dims.width() + 4);
+        return Math.min(MAX_WIDTH, dims.width() + 2);
     }
 
     /** Clamp an authored length into {@link #MIN_LENGTH}..{@link #MAX_LENGTH}. */

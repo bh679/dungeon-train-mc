@@ -47,27 +47,6 @@
     "12,5,3": { "lockId": 1, "states": ["minecraft:stone", "minecraft:stone_bricks"] },
     "0,1,5": { "lockId": 1, "states": ["minecraft:stone", "minecraft:stone_bricks"] },
     "12,1,1": { "lockId": 1, "states": ["minecraft:stone", "minecraft:stone_bricks"] },
-    "12,1,5": { "lockId": 1, "states": ["minecraft:stone", "minecraft:stone_bricks"] },
-    "4,0,3": { "lockId": 2, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "5,0,3": { "lockId": 2, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "7,0,3": { "lockId": 2, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "6,0,3": { "lockId": 4, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "8,0,3": { "lockId": 2, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "9,0,3": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "3,0,3": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "9,0,2": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "9,0,4": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "3,0,2": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "3,0,4": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "8,0,2": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "8,0,4": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "4,0,2": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "4,0,4": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "7,0,2": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "7,0,4": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "5,0,2": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "5,0,4": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "6,0,2": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] },
-    "6,0,4": { "lockId": 3, "states": ["minecraft:sea_lantern", "minecraft:stone_bricks"] }
+    "12,1,5": { "lockId": 1, "states": ["minecraft:stone", "minecraft:stone_bricks"] }
   }
 }

@@ -35,12 +35,50 @@ class PortalRoomLayoutTest {
         // The width floor is the seal's requirement and nothing more — two blocks of room either
         // side of the corridor, at every legal carriage width, odd or even. It is deliberately NOT
         // held up to the built-in room's 13; see minWidth's javadoc.
-        assertEquals(11, PortalRoomLayout.minWidth(DEFAULT_DIMS));
+        assertEquals(9, PortalRoomLayout.minWidth(DEFAULT_DIMS));
         for (int carriageWidth = CarriageDims.MIN_WIDTH; carriageWidth <= CarriageDims.MAX_WIDTH; carriageWidth++) {
             CarriageDims dims = CarriageDims.clamp(9, carriageWidth, 7);
-            assertEquals(carriageWidth + 4, PortalRoomLayout.minWidth(dims),
-                "carriage width " + carriageWidth + " needs two blocks of room either side");
+            assertEquals(carriageWidth + 2, PortalRoomLayout.minWidth(dims),
+                "carriage width " + carriageWidth + " needs one wall of room either side");
         }
+    }
+
+    @Test
+    @DisplayName("The height floor is the taller of MIN_HEIGHT and the corridor — 4 only bites below that")
+    void minHeight_floorsAtMinHeightButNeverBelowTheCorridor() {
+        // Ordinary and tall worlds: the corridor binds, because the room's ceiling may not sit
+        // below the corridor poking into it.
+        assertEquals(7, PortalRoomLayout.minHeight(DEFAULT_DIMS));
+        for (int carriageHeight = CarriageDims.MIN_HEIGHT; carriageHeight <= CarriageDims.MAX_HEIGHT; carriageHeight++) {
+            CarriageDims dims = CarriageDims.clamp(9, 7, carriageHeight);
+            int floor = PortalRoomLayout.minHeight(dims);
+            assertTrue(floor >= Math.min(PortalRoomLayout.MAX_HEIGHT, dims.height()),
+                "carriage height " + carriageHeight + " must not poke through the room's ceiling");
+            assertTrue(floor >= PortalRoomLayout.MIN_HEIGHT,
+                "carriage height " + carriageHeight + " still needs a room with an interior");
+            assertTrue(floor <= PortalRoomLayout.MAX_HEIGHT, "must stay inside the twin's Y lane");
+        }
+
+        // Short world: MIN_HEIGHT takes over. CarriageDims allows a 3-tall carriage, and a 3-tall
+        // room is a floor and a ceiling with nothing between them.
+        CarriageDims shortDims = CarriageDims.clamp(9, 7, CarriageDims.MIN_HEIGHT);
+        assertEquals(PortalRoomLayout.MIN_HEIGHT, PortalRoomLayout.minHeight(shortDims));
+    }
+
+    @Test
+    @DisplayName("Relaxing the height floor left the built-in room, and so the editor's plot slots, alone")
+    void builtInSize_keepsItsOwnHeight() {
+        // Same coupling as builtInSize_keepsItsOwnWidth: TrackKind.dims(PORTAL_ROOM) reports this
+        // and TrackSidePlots stacks the editor's plots on it, so it must not follow minHeight down
+        // — nor stamp a shell too short for the 5-block interior it is made of.
+        CarriageDims shortDims = CarriageDims.clamp(9, 7, CarriageDims.MIN_HEIGHT);
+        assertTrue(PortalRoomLayout.minHeight(shortDims) < 7, "precondition: the floor did drop");
+        assertEquals(7, PortalRoomLayout.builtInSize(shortDims).getY());
+        assertEquals(7, PortalRoomLayout.builtInSize(DEFAULT_DIMS).getY());
+
+        // A world taller than the built-in shell still raises it, as the width side does.
+        CarriageDims tall = CarriageDims.clamp(9, 7, 11);
+        assertEquals(PortalRoomLayout.minHeight(tall), PortalRoomLayout.builtInSize(tall).getY());
     }
 
     @Test
@@ -143,19 +181,51 @@ class PortalRoomLayoutTest {
     }
 
     @Test
-    @DisplayName("The corridor's whole cross-section fits inside the room's interior")
+    @DisplayName("The corridor's whole cross-section fits inside the room's interior, at every carriage width")
     void roomInterior_swallowsTheCorridorCrossSection() {
         BlockPos entry = new BlockPos(0, 0, 0);
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DEFAULT_DIMS);
-        int width = PortalRoomLayout.minWidth(DEFAULT_DIMS);
-        BlockPos room = PortalRoomLayout.roomOrigin(entry, DEFAULT_DIMS, layout, width);
 
-        int interiorMinZ = room.getZ() + 1;
-        int interiorMaxZ = room.getZ() + width - 2;
-        assertTrue(interiorMinZ <= entry.getZ(),
-            "corridor's -Z edge (" + entry.getZ() + ") must be inside the room (" + interiorMinZ + ")");
-        assertTrue(interiorMaxZ >= entry.getZ() + DEFAULT_DIMS.width() - 1,
-            "corridor's +Z edge must be inside the room");
-        assertTrue(PortalRoomLayout.minHeight(DEFAULT_DIMS) >= DEFAULT_DIMS.height());
+        // minWidth is the exact geometric bound now (dims.width() + 2), not a comfortable distance
+        // from it — so this has to hold at every carriage width a portal can exist at, odd and even,
+        // rather than at one sampled width with slack to spare. This sweep is what licenses the
+        // `+ 2`. It starts at PortalCarriageLayout.MIN_WIDTH rather than CarriageDims.MIN_WIDTH (3):
+        // a corridor narrower than 5 has no walkway beside its doorway and layoutFor throws.
+        for (int carriageWidth = PortalCarriageLayout.MIN_WIDTH; carriageWidth <= CarriageDims.MAX_WIDTH; carriageWidth++) {
+            CarriageDims dims = CarriageDims.clamp(9, carriageWidth, 7);
+            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+            int width = PortalRoomLayout.minWidth(dims);
+            BlockPos room = PortalRoomLayout.roomOrigin(entry, dims, layout, width);
+
+            int interiorMinZ = room.getZ() + 1;
+            int interiorMaxZ = room.getZ() + width - 2;
+            assertTrue(interiorMinZ <= entry.getZ(),
+                "carriage width " + carriageWidth + ": corridor's -Z edge (" + entry.getZ()
+                    + ") must be inside the room (" + interiorMinZ + ")");
+            assertTrue(interiorMaxZ >= entry.getZ() + dims.width() - 1,
+                "carriage width " + carriageWidth + ": corridor's +Z edge ("
+                    + (entry.getZ() + dims.width() - 1) + ") must be inside the room ("
+                    + interiorMaxZ + ")");
+        }
+    }
+
+    @Test
+    @DisplayName("One block under minWidth and the corridor no longer fits — the floor has no slack left")
+    void roomInterior_failsOneBlockUnderMinWidth() {
+        BlockPos entry = new BlockPos(0, 0, 0);
+
+        for (int carriageWidth = PortalCarriageLayout.MIN_WIDTH; carriageWidth <= CarriageDims.MAX_WIDTH; carriageWidth++) {
+            CarriageDims dims = CarriageDims.clamp(9, carriageWidth, 7);
+            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+            int tooNarrow = PortalRoomLayout.minWidth(dims) - 1;
+            BlockPos room = PortalRoomLayout.roomOrigin(entry, dims, layout, tooNarrow);
+
+            int interiorMinZ = room.getZ() + 1;
+            int interiorMaxZ = room.getZ() + tooNarrow - 2;
+            assertTrue(interiorMinZ > entry.getZ()
+                    || interiorMaxZ < entry.getZ() + dims.width() - 1,
+                "carriage width " + carriageWidth + ": width " + tooNarrow
+                    + " should leave a corridor column outside the room — if this passes, minWidth"
+                    + " is one block more conservative than it needs to be");
+        }
     }
 }

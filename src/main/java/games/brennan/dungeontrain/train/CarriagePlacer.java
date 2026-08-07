@@ -257,13 +257,18 @@ public final class CarriagePlacer {
             // box, not the slot's: the EXIT's overrun is written AFTER the cart's own footprint was
             // collected, so a slot-sized sweep here would leave those blocks behind in the world
             // instead of lifting them into the group's Sable sub-level.
-            PortalCarriageRole role =
-                PortalCarriageRole.roleFor(carriageIndex, DungeonTrainConfig.getGroupSize());
+            int groupSize = DungeonTrainConfig.getGroupSize();
+            PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, groupSize);
             BlockPos corridorOrigin =
                 origin.offset(PortalCorridorSize.originOffsetX(role, dims), 0, 0);
             CarriageDims corridorDims = PortalCorridorSize.corridorDims(dims);
 
-            PortalCarriageBuilder.stampCarriage(level, corridorOrigin, dims, /*relight*/ false);
+            // The pair's key, derived the same way PortalCarriageEvents derives it for the twin —
+            // a pure function of the carriage index, so the corridor placed here and the twin
+            // placed underground later roll the same contents sub-variant without either knowing
+            // about the other. Entry and exit share the key, and so share a corridor.
+            int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, groupSize);
+            PortalCarriageBuilder.stampCarriage(level, corridorOrigin, dims, /*relight*/ false, pairKey);
             // Report the portal variant, not the one the roll happened to land on: what stands here
             // is a portal corridor, and a log line reading "variant=fancywood sources=portal" sends
             // anyone reading it after the fact looking for a bug that isn't there.

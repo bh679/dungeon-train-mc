@@ -330,7 +330,7 @@ public final class PortalCarriageEvents {
             }
 
             PortalStructure next =
-                PortalRoomTiler.tick(level, dims, structure, standingIn, radius, others);
+                PortalRoomTiler.tick(level, dims, structure, standingIn, radius, others, pair.getKey());
             if (next != structure) STRUCTURES.put(pair.getKey(), next);
 
             sendFogFor(players, dims, layout, next, fogged);
@@ -622,7 +622,7 @@ public final class PortalCarriageEvents {
             PortalCarriageBuilder.eraseTwin(level, existing, dims);
         }
 
-        PortalCarriageBuilder.stampPairStructure(level, planned, dims);
+        PortalCarriageBuilder.stampPairStructure(level, planned, dims, pairKey);
         STRUCTURES.put(pairKey, planned);
         LOGGER.info("[DungeonTrain] Stamped portal pair {} at {} (room '{}' {} long, entry carriage at {}, {}, {})",
             pairKey, wanted, planned.roomName(), planned.roomLength(),

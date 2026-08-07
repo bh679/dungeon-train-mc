@@ -3341,11 +3341,32 @@ public final class EditorCommand {
             }
         }
 
+        String roomName = PortalRoomEditor.plotContaining(pos, dims);
+        if (roomName != null) {
+            try {
+                int cleared = PortalRoomEditor.clearEverything(overworld, roomName, dims);
+                final String id = roomName;
+                final int n = cleared;
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: cleared all blocks in portal room '" + id + "'"
+                        + (n > 0 ? " (and " + n + " authored entr" + (n == 1 ? "y" : "ies") + ")." : ".")
+                ).withStyle(ChatFormatting.GREEN), true);
+                return 1;
+            } catch (Throwable t) {
+                LOGGER.error("[DungeonTrain] editor clear (portal room) failed", t);
+                source.sendFailure(Component.literal("clear failed: "
+                    + t.getClass().getSimpleName() + ": " + t.getMessage()
+                ).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+        }
+
         source.sendFailure(Component.literal(
-            "editor clear: stand inside a carriage / contents / parts plot first."
+            "editor clear: stand inside a carriage / contents / parts / portal room plot first."
         ));
         return 0;
     }
+
 
     private static int runNew(CommandSourceStack source, String rawName, CarriageVariant sourceVariant) {
         ServerPlayer player = requirePlayer(source);
@@ -5388,8 +5409,12 @@ public final class EditorCommand {
         return Commands.literal(literal)
             .then(Commands.literal("inc").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, +1)))
             .then(Commands.literal("dec").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, -1)))
+            // Loosest floor of any axis, not the length's — this node is shared by length, width
+            // and height, and a parser bound is a silent rejection where clampSize is a visible
+            // one. PortalRoomLayout.clampSize stays the single authority on what is legal.
             .then(Commands.argument("blocks", IntegerArgumentType.integer(
-                    PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MAX_LENGTH))
+                    Math.min(PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MIN_HEIGHT),
+                    PortalRoomLayout.MAX_LENGTH))
                 .executes(ctx -> runPortalRoomSize(ctx.getSource(), axis,
                     IntegerArgumentType.getInteger(ctx, "blocks"))));
     }
