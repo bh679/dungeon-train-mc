@@ -20,6 +20,7 @@ import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomTiler;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalStructure;
+import games.brennan.dungeontrain.net.PortalRoomFogPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import net.minecraft.world.entity.Entity;
@@ -37,13 +38,17 @@ import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 
+import net.neoforged.neoforge.network.PacketDistributor;
+
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -163,6 +168,23 @@ public final class PortalCarriageEvents {
     /** Player → game time at which they may swap again. */
     private static final Map<UUID, Long> COOLDOWNS = new HashMap<>();
 
+    /**
+     * Pair keys somebody was near this tick, refilled from scratch each time.
+     *
+     * <p>Collected in the carriage loop, where the approach range is already being measured against
+     * the carriage's live position, and read afterwards by {@link #tickRoomTiling} — which walks
+     * structures rather than carriages and so has no way to work it out for itself. It is what lets
+     * an endless room start building its copies while the player is still walking up to the corridor,
+     * instead of filling in behind their back once they are inside.</p>
+     */
+    private static final Set<Integer> ACTIVE_PAIRS = new HashSet<>();
+
+    /**
+     * Player → the fog region they were last told about, so an unchanged one is not re-sent every
+     * tick. Cleared for anyone who leaves a room, and pruned of players who leave the world.
+     */
+    private static final Map<UUID, PortalRoomFogPacket> LAST_FOG = new HashMap<>();
+
     private PortalCarriageEvents() {}
 
     private static boolean onCooldown(ServerPlayer player, long gameTime) {
@@ -173,6 +195,23 @@ public final class PortalCarriageEvents {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Forget every structure when the server stops.
+     *
+     * <p>All three maps are static and would otherwise survive into the next world a single-player
+     * client opens, where the same pair keys mean different places. That was survivable while a
+     * structure was only a position — the next approach re-stamped it — but a stale record now also
+     * claims room copies that were never built there, which {@code eraseTwin} would sweep at the
+     * wrong coordinates.</p>
+     */
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        STRUCTURES.clear();
+        ACTIVE_PAIRS.clear();
+        LAST_FOG.clear();
+        COOLDOWNS.clear();
     }
 
     @SubscribeEvent
@@ -193,6 +232,7 @@ public final class PortalCarriageEvents {
         // Sending per pair would have a player near two of them receive two snapshots, each looking
         // like the whole picture, and the second would wipe the first.
         PortalPuppets.Session puppets = PortalPuppets.begin();
+        ACTIVE_PAIRS.clear();
 
         for (UUID trainId : Trains.byTrainId(level).keySet()) {
             for (Map.Entry<Integer, ManagedShip> group : Trains.knownGroups(trainId).entrySet()) {
@@ -239,11 +279,16 @@ public final class PortalCarriageEvents {
      */
     private static void tickRoomTiling(ServerLevel level, CarriageDims dims,
                                        PortalCarriageLayout layout, List<ServerPlayer> players) {
-        if (STRUCTURES.isEmpty()) return;
+        if (STRUCTURES.isEmpty()) {
+            clearFogFor(players, Set.of());
+            return;
+        }
 
         // Snapshot: the tiler replaces entries as it works, and every candidate copy is tested
         // against the others so no two pairs stamp into each other.
         List<Map.Entry<Integer, PortalStructure>> pairs = new ArrayList<>(STRUCTURES.entrySet());
+        Set<UUID> fogged = new HashSet<>();
+
         for (Map.Entry<Integer, PortalStructure> pair : pairs) {
             PortalStructure structure = pair.getValue();
             List<PortalStructure> others = new ArrayList<>(pairs.size());
@@ -251,10 +296,68 @@ public final class PortalCarriageEvents {
                 if (!other.getKey().equals(pair.getKey())) others.add(other.getValue());
             }
 
-            PortalStructure next = PortalRoomTiler.tick(level, dims, structure,
-                occupiedTiles(players, dims, layout, structure), others);
+            // Copies start going up as soon as a player is near enough for the structure to have been
+            // stamped at all, not once they walk in — so the room around them is already there when
+            // they arrive rather than filling in behind their back. Nobody near at all is the signal
+            // to drain.
+            Set<PortalRoomTiling.Tile> standingIn = occupiedTiles(players, dims, layout, structure);
+            if (standingIn.isEmpty() && ACTIVE_PAIRS.contains(pair.getKey())) {
+                standingIn = Set.of(PortalRoomTiling.Tile.BASE);
+            }
+
+            PortalStructure next = PortalRoomTiler.tick(level, dims, structure, standingIn, others);
             if (next != structure) STRUCTURES.put(pair.getKey(), next);
+
+            sendFogFor(players, dims, layout, next, fogged);
         }
+
+        clearFogFor(players, fogged);
+    }
+
+    /**
+     * Tell whoever is inside an endless room how far they can see, when that has changed.
+     *
+     * <p>The bounds sent are of the copies that have actually been stamped, not of the window the
+     * mode asked for. A copy can fail to appear — an unloaded chunk, a spent budget, another pair's
+     * structure in the way — and a fog reaching past the built edge would be describing a room the
+     * player could walk out of.</p>
+     */
+    private static void sendFogFor(List<ServerPlayer> players, CarriageDims dims,
+                                   PortalCarriageLayout layout, PortalStructure structure,
+                                   Set<UUID> fogged) {
+        if (!structure.mode().tiles()) return;
+
+        AABB box = structureBox(dims, structure);
+        PortalRoomFogPacket region = new PortalRoomFogPacket(
+            structure.tiledMinX(dims, layout),
+            structure.origin().getY(),
+            structure.tiledMinZ(dims, layout),
+            structure.tiledMaxX(dims, layout),
+            structure.origin().getY() + structure.roomSize().getY(),
+            structure.tiledMaxZ(dims, layout),
+            structure.fogRadius());
+
+        for (ServerPlayer player : players) {
+            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            fogged.add(player.getUUID());
+            if (region.equals(LAST_FOG.get(player.getUUID()))) continue;
+            LAST_FOG.put(player.getUUID(), region);
+            PacketDistributor.sendToPlayer(player, region);
+        }
+    }
+
+    /** Take the fog back off anyone who was in a room this tick and is not any more. */
+    private static void clearFogFor(List<ServerPlayer> players, Set<UUID> stillFogged) {
+        if (LAST_FOG.isEmpty()) return;
+        for (ServerPlayer player : players) {
+            UUID id = player.getUUID();
+            if (stillFogged.contains(id) || !LAST_FOG.containsKey(id)) continue;
+            LAST_FOG.remove(id);
+            PacketDistributor.sendToPlayer(player, PortalRoomFogPacket.none());
+        }
+        // A player who left the world entirely never gets the message, which is exactly why the
+        // client holds a region rather than a flag — it stops applying the moment they are not in it.
+        LAST_FOG.keySet().removeIf(id -> players.stream().noneMatch(p -> p.getUUID().equals(id)));
     }
 
     /**
@@ -295,9 +398,12 @@ public final class PortalCarriageEvents {
         if (!occupied && !anyPlayerWithin(players, originX, originY, originZ, APPROACH_RANGE)) {
             // Nobody near this pair. Drop its puppets rather than leaving the last set standing in a
             // corridor the train has since rolled away from — and log the removals on the way out.
+            // Deliberately does not mark the pair active: an unvisited structure sheds its room
+            // copies, which is what lets it be re-stamped when the train has rolled on.
             PortalPuppets.forget(carriageIndex);
             return;
         }
+        ACTIVE_PAIRS.add(pairKey);
 
         // Only the ENTRY carriage places the structure: it fixes where the room sits, and the EXIT
         // twin's position follows from it. An EXIT carriage approached first simply waits.

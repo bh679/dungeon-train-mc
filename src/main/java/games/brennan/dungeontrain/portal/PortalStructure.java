@@ -106,6 +106,18 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
             .offset(tile.x() * roomLength(), 0, tile.z() * roomWidth());
     }
 
+    /**
+     * How far an endless room lets a player see, in blocks: five rooms out, measured on whichever of
+     * the room's two horizontal axes is narrower.
+     *
+     * <p>Scaled by the room rather than fixed, so "five rooms out" means the same thing in a small
+     * room and a large one. The narrower axis is the honest one: fog is a single distance in every
+     * direction, so a long thin room has to be fogged at the distance that hides its short side.</p>
+     */
+    public float fogRadius() {
+        return (float) PortalRoomTiling.MAX_RADIUS * Math.min(roomLength(), roomWidth());
+    }
+
     /** How many blocks one copy of this room occupies — what the tiling budget is measured in. */
     public int blocksPerTile() {
         return roomSize.getX() * roomSize.getY() * roomSize.getZ();
