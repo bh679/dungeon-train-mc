@@ -49,6 +49,15 @@ public final class PortalEntityTransit {
             PortalFrames.Move move = frames.requiredMove(x, y, z);
             if (move == null) continue;
 
+            // Same one-way gate the player swap carries, and for the same reason: a severed corridor
+            // takes nothing in, but everything already in the room can still come back out. Without
+            // this a villager led in before the break would be walled off from the train while its
+            // player walked back through.
+            if (move.toFrame() == PortalFrames.FRAME_TWIN
+                && PortalSever.isSevered(level, carriageIndex)) {
+                continue;
+            }
+
             // Grounded entities land on the destination floor's surface rather than the
             // carried-across local Y, for the reason the player swap does it: the two frames' block
             // grids differ by the ship's fractional pose, and a fraction inside the floor of a twin

@@ -21,6 +21,7 @@ import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomTiler;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
+import games.brennan.dungeontrain.portal.PortalSever;
 import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
@@ -515,6 +516,14 @@ public final class PortalCarriageEvents {
             PortalFrames.Move move = frames.requiredMove(px, py, pz);
             if (move == null) continue;
 
+            // A corridor whose shell has been broken open past the midpoint no longer takes anyone
+            // in. Only inbound: a move back to the carriage is never gated, so nobody who is already
+            // in the room can be shut out of the train. See PortalSever.
+            if (move.toFrame() == PortalFrames.FRAME_TWIN
+                && PortalSever.isSevered(level, carriageIndex)) {
+                continue;
+            }
+
             // A player who was standing goes to the destination's floor surface rather than to the
             // carried-across local Y — the two frames' block grids differ by the ship's fractional
             // pose, and landing a fraction inside a twin that hangs in open air drops them through it.
@@ -635,8 +644,8 @@ public final class PortalCarriageEvents {
         // ship's own transform, so nothing here has to assume the plot's axes run the same way as the
         // world's — an assumption that reflected mirrored edits onto the opposite side of the corridor.
         PortalPairIndex.publish(carriageIndex,
-            new PortalPairIndex.Entry(plot, ship, new Vec3(originX, originY, originZ), twinOrigin,
-                dims, frames));
+            new PortalPairIndex.Entry(carriageIndex, plot, ship,
+                new Vec3(originX, originY, originZ), twinOrigin, dims, frames));
     }
 
     /** True if any player is anywhere inside a pair structure — either corridor, or the room between. */

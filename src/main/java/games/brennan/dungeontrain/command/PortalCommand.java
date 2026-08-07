@@ -93,6 +93,10 @@ public final class PortalCommand {
                 .then(Commands.argument("every", IntegerArgumentType.integer(1, 64))
                     .executes(ctx -> runCarriage(ctx.getSource(),
                         IntegerArgumentType.getInteger(ctx, "every")))))
+            .then(Commands.literal("severed")
+                .executes(ctx -> runSeveredList(ctx.getSource()))
+                .then(Commands.literal("list").executes(ctx -> runSeveredList(ctx.getSource())))
+                .then(Commands.literal("clear").executes(ctx -> runSeveredClear(ctx.getSource()))))
             .then(Commands.literal("savetemplate").executes(ctx -> runSaveTemplate(ctx.getSource())))
             .then(Commands.literal("list").executes(ctx -> runList(ctx.getSource())))
             .then(Commands.literal("clear").executes(ctx -> runClear(ctx.getSource())))
@@ -280,6 +284,33 @@ public final class PortalCommand {
                     + " far Y " + geo.floorYOf(PortalGeometry.COPY_FAR)), false);
         }
         return portals.size();
+    }
+
+    /**
+     * The corridors whose way in has been broken open. Reports both directions explicitly, because
+     * "severed" reads as fully dead and it is not — the way out of a severed corridor still works.
+     */
+    private static int runSeveredList(CommandSourceStack source) {
+        List<Integer> severed = PortalRegistry.get(source.getLevel()).severed();
+        if (severed.isEmpty()) {
+            source.sendSuccess(() -> Component.literal("No severed portal corridors in this dimension."), false);
+            return 0;
+        }
+
+        source.sendSuccess(() -> Component.literal(
+            severed.size() + " severed portal corridor" + (severed.size() == 1 ? "" : "s")
+                + " (no way in; the way out still works):"), false);
+        for (int carriageIndex : severed) {
+            source.sendSuccess(() -> Component.literal("  carriage " + carriageIndex), false);
+        }
+        return severed.size();
+    }
+
+    private static int runSeveredClear(CommandSourceStack source) {
+        int restored = PortalRegistry.get(source.getLevel()).clearSevered();
+        source.sendSuccess(() -> Component.literal(
+            "Restored " + restored + " severed portal corridor" + (restored == 1 ? "" : "s") + "."), true);
+        return restored;
     }
 
     private static int runClear(CommandSourceStack source) {
