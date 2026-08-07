@@ -340,6 +340,10 @@ public final class SupportScreen extends Screen {
      * names, or null to open untracked (an inline URL we don't recognise).
      */
     private void openLink(String url, String analyticsTarget) {
+        // The price-point URLs are built from a relay-served base that a late fetch can in principle
+        // change between init() and the click. Swallowing that is right: the alternative is an NPE
+        // in front of someone trying to donate, and the next screen open rebuilds the buttons.
+        if (url == null) return;
         if (analyticsTarget != null) {
             UiAnalytics.click(UiAnalytics.SURFACE_SUPPORT_PAGE, analyticsTarget);
         }

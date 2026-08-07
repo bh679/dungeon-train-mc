@@ -199,6 +199,9 @@ public final class DonationOptionsScreen extends Screen {
 
     /** Open {@code url} through the confirm screen, tracking the click + follow-through, then return here. */
     private void openLink(String url, String analyticsTarget) {
+        // See SupportScreen.openLink — a relay-served base can go away under a built button, and an
+        // NPE in front of a would-be donor is the worst possible way to handle that.
+        if (url == null) return;
         UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, analyticsTarget);
         Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
             UiAnalytics.confirm(UiAnalytics.SURFACE_DEATH_SCREEN, analyticsTarget, yes);
