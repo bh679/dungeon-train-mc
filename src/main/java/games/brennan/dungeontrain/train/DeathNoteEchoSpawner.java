@@ -201,7 +201,7 @@ public final class DeathNoteEchoSpawner {
             // the same beats, the same Discord story, and (uniquely) a report back to the curse's
             // author. The audience is the cursed target explicitly, not whoever happens to be nearest.
             RemoteEchoEncounters.onDeathNoteEchoSpawned(mob, parseUuid(authorUuidStr), authorName,
-                carriagePIdx, target, noteId);
+                carriagePIdx, target, noteId, kind);
             LOGGER.info("[DungeonTrain] {} echo of {} spawned at carriage {} for {}",
                 kind.trophyTitle(), authorName, carriagePIdx, targetUuid);
             return true;
