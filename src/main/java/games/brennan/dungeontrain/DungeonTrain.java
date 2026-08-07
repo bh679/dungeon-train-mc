@@ -28,6 +28,7 @@ import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.registry.ModMobEffects;
+import games.brennan.dungeontrain.registry.ModParticles;
 import games.brennan.dungeontrain.registry.ModSounds;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.client.VersionInfo;
@@ -233,6 +234,7 @@ public class DungeonTrain {
         ModStructureTypes.register(modBus);
         ModMobEffects.register(modBus);
         ModSounds.register(modBus);
+        ModParticles.register(modBus);
 
         // Global achievements (advancements) — custom criterion triggers
         // + per-player run-state attachment.

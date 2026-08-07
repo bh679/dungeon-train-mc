@@ -1,25 +1,23 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.registry.ModParticles;
 import games.brennan.dungeontrain.ship.ManagedShip;
-import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.server.level.ServerLevel;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
-import org.joml.Vector3f;
+
+import java.util.List;
 
 /**
  * Plays {@link PortalDoorSmoke} into the world — the same seep, in both copies of a corridor.
  *
- * <p><b>Black dust, not smoke.</b> The obvious choice, {@code ParticleTypes.SMOKE}, is wrong twice
- * over and neither fault can be corrected from the server: {@code SmokeParticle} tints itself a
- * <i>random grey</i> capped at {@code 0.3}, and it carries a negative gravity, which in
- * {@code Particle.tick} means it climbs. Grey smoke rising off a door frame reads as a chimney.</p>
- *
- * <p>{@code DUST} is the same picture without either problem. Its particle definition uses the very
- * same {@code generic_0…7} sprites {@code smoke} does — so it is, texture for texture, a puff of
- * smoke — but the colour comes from the server, {@code DustParticle} multiplies it rather than
- * randomising it (so {@link #BLACK} stays exactly black), and {@code DustParticleBase} sets no
- * gravity at all, leaving the drift entirely to us.</p>
+ * <p><b>DT's own particles, not a vanilla one.</b> Three things have to be true at once — black,
+ * no rise, and smoke-shaped — and each is fixed inside a vanilla particle's constructor where no
+ * server call reaches. {@code SMOKE} is a random grey that climbs; {@code DUST} takes a colour from
+ * the server but draws the small round {@code generic_0…7} blobs. So the look lives in
+ * {@link games.brennan.dungeontrain.client.particle.PortalSmokeParticle} and the two ids in
+ * {@link ModParticles}, and this class only decides which of them each emission is.</p>
  *
  * <p><b>The carriage copy is emitted at plot coordinates, not world ones.</b> A corridor riding the
  * train is a Sable sub-level: its blocks live in a plot far from where the player sees them, and the
@@ -42,23 +40,13 @@ public final class PortalDoorSmokeEmitter {
      */
     private static final int SINGLE = 0;
 
-    /** Pure black. {@code DustParticle} multiplies this by its randomised shade, and zero stays zero. */
-    private static final Vector3f BLACK = new Vector3f(0.0f, 0.0f, 0.0f);
-
     /**
-     * Particle size. Around one and a half times a redstone mote, which is roughly the size a puff of
-     * vanilla smoke comes out at — big enough to read as smoke rather than soot, small enough that
-     * three of them do not curtain off the doorway. It also stretches the particle's life, so the
-     * seep is still visible by the time it has crawled clear of the frame.
+     * Velocity multiplier — {@code 1}, because the velocity is already in blocks per tick and DT's
+     * particle takes what it is handed verbatim. (Vanilla particles do not: {@code DustParticleBase},
+     * for one, quietly scales the speed it is given by a tenth. Owning the particle is what removes
+     * that class of surprise.)
      */
-    private static final float SCALE = 1.6f;
-
-    /**
-     * Velocity multiplier, and not a free parameter: {@code DustParticleBase} multiplies the speed it
-     * is handed by {@code 0.1} before using it, so it must be handed ten times the drift
-     * {@link PortalDoorSmoke} asks for. Anything less and the smoke barely leaves the door.
-     */
-    private static final double SPEED = 10.0;
+    private static final double SPEED = 1.0;
 
     private PortalDoorSmokeEmitter() {}
 
@@ -69,12 +57,14 @@ public final class PortalDoorSmokeEmitter {
      * enough for the pair to be live — an unattended corridor emits nothing.</p>
      */
     public static void emit(ServerLevel level, PortalFrames frames, ManagedShip ship) {
-        PortalDoorSmoke.Emission emission =
-            new PortalDoorSmoke(frames.layout(), frames.role()).emissionOn(level.getGameTime());
-        if (emission == null) return;
+        List<PortalDoorSmoke.Emission> emissions =
+            new PortalDoorSmoke(frames.layout(), frames.role()).emissionsOn(level.getGameTime());
+        if (emissions.isEmpty()) return;
 
-        sendAt(level, frames.originOf(PortalFrames.FRAME_CARRIAGE), emission, ship);
-        sendAt(level, frames.originOf(PortalFrames.FRAME_TWIN), emission, null);
+        for (PortalDoorSmoke.Emission emission : emissions) {
+            sendAt(level, frames.originOf(PortalFrames.FRAME_CARRIAGE), emission, ship);
+            sendAt(level, frames.originOf(PortalFrames.FRAME_TWIN), emission, null);
+        }
     }
 
     /**
@@ -107,6 +97,13 @@ public final class PortalDoorSmokeEmitter {
             z = plot.z;
         }
 
-        level.sendParticles(new DustParticleOptions(BLACK, SCALE), x, y, z, SINGLE, vx, vy, vz, SPEED);
+        level.sendParticles(typeOf(emission.kind()), x, y, z, SINGLE, vx, vy, vz, SPEED);
+    }
+
+    /** The registered id behind each kind. */
+    private static SimpleParticleType typeOf(PortalDoorSmoke.Kind kind) {
+        return kind == PortalDoorSmoke.Kind.HAZE
+            ? ModParticles.PORTAL_HAZE.get()
+            : ModParticles.PORTAL_SMOKE.get();
     }
 }

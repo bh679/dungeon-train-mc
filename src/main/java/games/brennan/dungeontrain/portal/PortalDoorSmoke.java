@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
+import java.util.List;
+
 /**
  * Where black smoke seeps out of a corridor's <b>portal-ward</b> door, in carriage-local
  * coordinates — the closed door at the end that leads on to the pocket room.
@@ -82,10 +84,44 @@ public record PortalDoorSmoke(PortalCarriageLayout layout, PortalCarriageRole ro
     private static final double SPILL = 0.006;
 
     /**
+     * Ticks between haze quads.
+     *
+     * <p>Set against the haze's own lifetime rather than picked for a rate: at roughly 90 ticks a
+     * quad, one every fifteen keeps about six of them alive in the doorway at once, which is the
+     * overlap that makes a stack of flat sprites read as a volume. Slower and the frame flickers
+     * between thick and thin as they expire.</p>
+     */
+    private static final int HAZE_INTERVAL_TICKS = 15;
+
+    /** Height of the haze — the middle of the two-block doorway opening. */
+    private static final double HAZE_Y = 1.9;
+
+    /** How far the haze alternates either side of the doorway centre, so the stack has depth. */
+    private static final double HAZE_Z = 0.18;
+
+    /** Barely a drift. Enough that the haze breathes outward rather than hanging perfectly still. */
+    private static final double HAZE_DRIFT = 0.004;
+
+    /** And barely a sink, for the same reason. */
+    private static final double HAZE_SINK = -0.001;
+
+    /**
+     * Which of the two looks a particle is. The emitter maps these onto the two registered types;
+     * the sizes and lifetimes themselves live client-side in {@code PortalSmokeParticle}, since
+     * nothing here needs to know them.
+     */
+    public enum Kind {
+        /** Small and fairly solid — what peels off the frame and drifts down the corridor. */
+        WISP,
+        /** Big, faint and near-still — the body of it, sitting in the doorway. */
+        HAZE
+    }
+
+    /**
      * One particle: a corridor-local position and the velocity it leaves with, both in blocks
      * (velocity per tick).
      */
-    public record Emission(double x, double y, double z, double vx, double vy, double vz) {}
+    public record Emission(Kind kind, double x, double y, double z, double vx, double vy, double vz) {}
 
     /** Local X of the door plane facing the room. */
     public int doorX() {
@@ -101,22 +137,32 @@ public record PortalDoorSmoke(PortalCarriageLayout layout, PortalCarriageRole ro
         return role == PortalCarriageRole.ENTRY ? -1 : 1;
     }
 
-    /** True on the ticks that emit. */
+    /** True on the ticks a wisp comes off the frame. */
     public boolean emitsOn(long gameTime) {
         return Math.floorMod(gameTime, EMIT_INTERVAL_TICKS) == 0;
     }
 
     /**
-     * The particle to spawn on this tick, or {@code null} on the ticks between.
+     * Everything to spawn on this tick — a wisp every {@link #EMIT_INTERVAL_TICKS}, a haze quad
+     * every {@link #HAZE_INTERVAL_TICKS}, both or neither. Empty on the ticks between.
      *
      * <p>A pure function of the tick, which is what lets the two copies be fed from one call without
      * either of them holding state that could drift out of step with the other.</p>
      */
-    public Emission emissionOn(long gameTime) {
+    public List<Emission> emissionsOn(long gameTime) {
+        Emission wisp = wispOn(gameTime);
+        Emission haze = hazeOn(gameTime);
+        if (wisp == null && haze == null) return List.of();
+        if (wisp == null) return List.of(haze);
+        if (haze == null) return List.of(wisp);
+        return List.of(wisp, haze);
+    }
+
+    /** The wisp for this tick, or {@code null}. */
+    public Emission wispOn(long gameTime) {
         if (!emitsOn(gameTime)) return null;
 
         int into = intoCorridor();
-        double x = doorX() + 0.5 + into * FACE_OFFSET;
         double zCentre = layout.doorZ() + 0.5;
         int point = (int) Math.floorMod(Math.floorDiv(gameTime, EMIT_INTERVAL_TICKS), (long) POINTS);
 
@@ -125,8 +171,38 @@ public record PortalDoorSmoke(PortalCarriageLayout layout, PortalCarriageRole ro
         double y = point == 0 ? layout.floorY() + UNDER_DOOR_Y : layout.floorY() + FRAME_Y;
         double side = point == 1 ? -1.0 : point == 2 ? 1.0 : 0.0;
 
-        return new Emission(
-            x, y, zCentre + side * FRAME_Z,
+        return new Emission(Kind.WISP,
+            faceX(), y, zCentre + side * FRAME_Z,
             into * DRIFT, SINK, side * SPILL);
+    }
+
+    /**
+     * The haze quad for this tick, or {@code null}.
+     *
+     * <p>Sits at the middle of the doorway opening and barely moves — the volume is an illusion of
+     * several long-lived translucent quads overlapping in the frame, so what matters is that they
+     * stay there, not that they travel. It alternates a little either side of the centre line so the
+     * stack does not collapse into one plane.</p>
+     */
+    public Emission hazeOn(long gameTime) {
+        if (Math.floorMod(gameTime, HAZE_INTERVAL_TICKS) != 0) return null;
+
+        int into = intoCorridor();
+        double side = Math.floorMod(Math.floorDiv(gameTime, HAZE_INTERVAL_TICKS), 2L) == 0L ? -1.0 : 1.0;
+
+        return new Emission(Kind.HAZE,
+            faceX(), layout.floorY() + HAZE_Y, layout.doorZ() + 0.5 + side * HAZE_Z,
+            into * HAZE_DRIFT, HAZE_SINK, 0.0);
+    }
+
+    /**
+     * Local X every particle starts at: clear of the door's own cell, on the corridor side.
+     *
+     * <p>Shared by both kinds because the reason is the same for both — a particle spawned inside
+     * the door block is shoved out of it on its first tick, which reads as a flick rather than a
+     * leak.</p>
+     */
+    private double faceX() {
+        return doorX() + 0.5 + intoCorridor() * FACE_OFFSET;
     }
 }
