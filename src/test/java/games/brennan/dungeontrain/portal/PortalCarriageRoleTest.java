@@ -97,6 +97,48 @@ final class PortalCarriageRoleTest {
         }
     }
 
+    /**
+     * The predicate every system that has to leave a portal alone asks — the placer's skipped passes,
+     * and the shared-carriage relay's refusal to serve or pool one. A gap in it does not read as a
+     * portal bug: it reads as somebody else's carriage standing where an entrance should be, which is
+     * how a leased build came to be stamped over a corridor in the first place.
+     */
+    @Test
+    @DisplayName("every slot of a portal group is a part, and nothing outside one is")
+    void portalPartCoversTheWholeGroup() {
+        for (int anchor : new int[] {-6, -3, 0, 3, 6}) {
+            for (int slot = 0; slot < GROUP; slot++) {
+                assertTrue(PortalCarriageSelection.isPortalPart(anchor + slot, GROUP, EVERY),
+                    "slot " + slot + " of the group at " + anchor);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("a part is a corridor or the cart between, and nothing else ever is")
+    void portalPartIsExactlyTheUnion() {
+        for (int every : new int[] {1, 2, 5}) {
+            for (int i = -40; i <= 40; i++) {
+                boolean union = PortalCarriageSelection.isPortalCarriage(i, GROUP, every)
+                    || PortalCarriageSelection.isPortalMiddle(i, GROUP, every);
+                assertEquals(union, PortalCarriageSelection.isPortalPart(i, GROUP, every),
+                    "index " + i + " at every=" + every);
+            }
+        }
+    }
+
+    /** A larger group's trailing carriages are reachable and ordinary — they may still be shared. */
+    @Test
+    @DisplayName("in a larger group only the first three slots are parts")
+    void portalPartStopsAtTheGroupsPortal() {
+        int groupSize = 5;
+        assertTrue(PortalCarriageSelection.isPortalPart(0, groupSize, EVERY));
+        assertTrue(PortalCarriageSelection.isPortalPart(1, groupSize, EVERY));
+        assertTrue(PortalCarriageSelection.isPortalPart(2, groupSize, EVERY));
+        assertFalse(PortalCarriageSelection.isPortalPart(3, groupSize, EVERY));
+        assertFalse(PortalCarriageSelection.isPortalPart(4, groupSize, EVERY));
+    }
+
     @Test
     @DisplayName("no carriage is ever both a corridor and the cart between them")
     void corridorAndMiddleArePartitioned() {
