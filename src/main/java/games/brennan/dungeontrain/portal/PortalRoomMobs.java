@@ -99,6 +99,12 @@ public final class PortalRoomMobs {
                 new AABB(worldPos).inflate(1.0), e -> isUnmarkedRoomMob(e, pairKey))) {
             mark(spawned.getPersistentData(), pairKey, tile);
         }
+        // Logged on success, not only on refusal. A room's mob cells are weighted rolls — two cells
+        // at one-in-eleven means most stamps place nothing — so without this a run that spawned
+        // nothing reads exactly like a run where the spawn is broken, which is the state this whole
+        // change was fixing. The reap logs at debug; this is the one worth seeing by default.
+        LOGGER.info("[DungeonTrain] Portal pair {} copy {},{} spawned '{}' at {}",
+            pairKey, tile.x(), tile.z(), picked.entityId(), worldPos);
         return true;
     }
 
