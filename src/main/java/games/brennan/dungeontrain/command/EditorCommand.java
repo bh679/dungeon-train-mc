@@ -2313,16 +2313,19 @@ public final class EditorCommand {
             source.sendFailure(Component.literal("Plot origin missing for '" + plotVariant.id() + "'."));
             return null;
         }
+        // Bounds-checked against this variant's own plot box — the portal corridor's is longer than
+        // a carriage, and a dims-sized check would refuse every block past x=8 in it.
+        CarriageDims box = CarriageEditor.plotDims(plotVariant, dims);
         BlockPos local = bhr.getBlockPos().subtract(plotOrigin);
-        if (local.getX() < 0 || local.getX() >= dims.length()
-            || local.getY() < 0 || local.getY() >= dims.height()
-            || local.getZ() < 0 || local.getZ() >= dims.width()) {
+        if (local.getX() < 0 || local.getX() >= box.length()
+            || local.getY() < 0 || local.getY() >= box.height()
+            || local.getZ() < 0 || local.getZ() >= box.width()) {
             source.sendFailure(Component.literal(
                 "Target block is outside the plot footprint (local " + local + " vs dims "
-                    + dims.length() + "x" + dims.height() + "x" + dims.width() + ")."));
+                    + box.length() + "x" + box.height() + "x" + box.width() + ")."));
             return null;
         }
-        return new VariantTarget(plotVariant, local, dims);
+        return new VariantTarget(plotVariant, local, box);
     }
 
     private static int runVariantClear(CommandSourceStack source) {
@@ -2478,7 +2481,8 @@ public final class EditorCommand {
                 "Not in an editor plot. Use '/dungeontrain editor enter <variant>' first."));
             return 0;
         }
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(plotVariant, dims);
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(
+            plotVariant, CarriageEditor.plotDims(plotVariant, dims));
         sendVariantsListing(source,
             "'" + plotVariant.id() + "'",
             sidecar.entries(), sidecar.isEmpty(), sidecar.size());
@@ -2827,7 +2831,8 @@ public final class EditorCommand {
             }
             if (model instanceof Template.Carriage cm) {
                 origin = CarriageEditor.plotOrigin(cm.variant(), dims);
-                size = new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
+                CarriageDims cmBox = CarriageEditor.plotDims(cm.variant(), dims);
+                size = new net.minecraft.core.Vec3i(cmBox.length(), cmBox.height(), cmBox.width());
             } else if (model instanceof Template.Contents cm) {
                 origin = CarriageContentsEditor.plotOrigin(cm.contents(), dims);
                 size = new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
@@ -3281,8 +3286,9 @@ public final class EditorCommand {
         if (carriage != null) {
             try {
                 BlockPos origin = CarriageEditor.plotOrigin(carriage, dims);
-                CarriagePlacer.eraseAt(overworld, origin, dims);
-                CarriageVariantBlocks carriageSidecar = CarriageVariantBlocks.loadFor(carriage, dims);
+                CarriageDims carriageBox = CarriageEditor.plotDims(carriage, dims);
+                CarriagePlacer.eraseAt(overworld, origin, carriageBox);
+                CarriageVariantBlocks carriageSidecar = CarriageVariantBlocks.loadFor(carriage, carriageBox);
                 int cleared = carriageSidecar.clearAll();
                 final String id = carriage.id();
                 final int n = cleared;

@@ -295,7 +295,7 @@ public final class CarriagePlacer {
         if (nbtBacked) {
             applyVariantBlocks(level, origin, variant, dims, config, carriageIndex);
         } else if ("legacy".equals(base)) {
-            CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+            CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
             if (!sidecar.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar for '{}' ignored — built-in using hardcoded fallback.",
                     variant.id());
@@ -413,7 +413,7 @@ public final class CarriagePlacer {
     private static void spawnShellVariantMobs(ServerLevel level, BlockPos origin,
                                                CarriageVariant variant, CarriageDims dims,
                                                long seed, int carriageIndex) {
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
         if (sidecar.isEmpty()) return;
         int spawned = 0;
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
@@ -675,7 +675,11 @@ public final class CarriagePlacer {
         int bodyHits = 0;
         int partHits = 0;
         for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
-            CarriageTemplateStore.get(level, variant, dims);
+            // At the variant's OWN box — this sweep runs over every registered variant on
+            // ServerStartedEvent, so warming the portal corridor at plain carriage dims would log a
+            // size-mismatch warning on every world load and leave the one variant that most needs
+            // warming un-warmed.
+            CarriageTemplateStore.get(level, variant, variantDims(variant, dims));
             bodyHits++;
             Optional<CarriagePartAssignment> assignment = CarriageVariantPartsStore.get(variant);
             if (assignment.isEmpty()) continue;

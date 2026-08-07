@@ -148,7 +148,8 @@ public final class VariantBlockInteractions {
 
         BlockState baseState = level.getBlockState(clicked);
         VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(plotVariant, dims);
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(
+            plotVariant, CarriageEditor.plotDims(plotVariant, dims));
         List<VariantState> existing = sidecar.statesAt(local);
 
         List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, player, event);

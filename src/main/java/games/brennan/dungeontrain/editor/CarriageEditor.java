@@ -463,7 +463,7 @@ public final class CarriageEditor {
 
         // Copy the source's variant sidecar into the new variant so the
         // duplicate shares the "pick from these blocks" authoring.
-        CarriageVariantBlocks sourceSidecar = CarriageVariantBlocks.loadFor(source, dims);
+        CarriageVariantBlocks sourceSidecar = CarriageVariantBlocks.loadFor(source, plotDims(source, dims));
         if (!sourceSidecar.isEmpty()) {
             CarriageVariantBlocks copy = CarriageVariantBlocks.empty();
             for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {

@@ -291,7 +291,10 @@ public sealed interface Template
             CarriageEditor.stampPlot(level, variant, dims);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
-            return CarriageTemplateStore.getBundled(level, variant, dims);
+            // The variant's own box — `/dt reset default` on the portal corridor is asking for a
+            // 13-long shipped template, not a carriage-sized one.
+            return CarriageTemplateStore.getBundled(
+                level, variant, CarriagePlacer.variantDims(variant, dims));
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
             return CarriageEditor.plotOrigin(variant, dims);

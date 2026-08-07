@@ -257,7 +257,8 @@ public final class VariantOverlayRenderer {
 
                 PartPositionMenuController.update(player, plotVariant, plotOrigin, dims);
 
-                CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(plotVariant, dims);
+                CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(
+                    plotVariant, CarriageEditor.plotDims(plotVariant, dims));
                 if (sidecar.isEmpty()) {
                     clearHoverIfStale(player);
                     continue;
