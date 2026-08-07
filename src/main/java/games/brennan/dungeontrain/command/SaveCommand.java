@@ -451,6 +451,7 @@ public final class SaveCommand {
             case PILLAR   -> "Editor: also wrote bundled pillar copy to source tree (devmode ON).";
             case STAIRS   -> "Editor: also wrote bundled adjunct copy to source tree (devmode ON).";
             case TUNNEL   -> "Editor: also wrote bundled tunnel copy to source tree (devmode ON).";
+            case PORTAL_ROOM -> "Editor: also wrote bundled portal room copy to source tree (devmode ON).";
             case TRACK    -> "Editor: also wrote bundled track copy to source tree (devmode ON).";
             default       -> "Editor: also wrote bundled copy to source tree (devmode ON).";
         };
@@ -463,6 +464,7 @@ public final class SaveCommand {
             case PILLAR   -> "Editor: pillar source-tree write failed: ";
             case STAIRS   -> "Editor: adjunct source-tree write failed: ";
             case TUNNEL   -> "Editor: tunnel source-tree write failed: ";
+            case PORTAL_ROOM -> "Editor: portal room source-tree write failed: ";
             case TRACK    -> "Editor: track source-tree write failed: ";
             default       -> "Editor: source-tree write failed: ";
         };
@@ -478,6 +480,7 @@ public final class SaveCommand {
         return switch (model.kind()) {
             case CONTENTS -> "Contents templates have no separate bundled tier — '/dt save default' does not apply.";
             case TUNNEL   -> "Tunnel templates have no bundled tier — '/dt save default' does not apply.";
+            case PORTAL_ROOM -> "Portal rooms have no bundled tier — the built-in room is code, not an nbt.";
             case CARRIAGE -> "Default save not supported for custom variants — only built-ins have a bundled tier.";
             default       -> "'/dt save default' is not supported for this template kind.";
         };
