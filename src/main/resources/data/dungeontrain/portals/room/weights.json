@@ -1,4 +1,8 @@
 {
+  "book": {
+    "weight": 1,
+    "mode": "endless_repetition"
+  },
   "default": {
     "weight": 1,
     "phases": [
@@ -11,5 +15,9 @@
   "library_dimension": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
+  },
+  "singlepillar": {
+    "weight": 1,
+    "mode": "endless_open"
   }
 }

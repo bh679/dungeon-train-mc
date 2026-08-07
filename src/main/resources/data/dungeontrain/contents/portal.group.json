@@ -5,6 +5,10 @@
     {
       "id": "portalzigzag",
       "weight": 1
+    },
+    {
+      "id": "two",
+      "weight": 1
     }
   ]
 }
