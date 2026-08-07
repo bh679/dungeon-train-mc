@@ -5,8 +5,8 @@ import java.util.List;
 /**
  * Type one axis of a portal room's box — length, width or height, each on its own.
  *
- * <p>The arrows are for nudging; this is for getting somewhere. Walking a room from 13 to 48 wide is
- * thirty-five taps, and the world-space panel has no typing of its own, so clicking the number
+ * <p>The arrows are for nudging; this is for getting somewhere. Walking a room from 11 to 48 wide is
+ * thirty-seven taps, and the world-space panel has no typing of its own, so clicking the number
  * between the arrows opens this for that row's axis alone.</p>
  *
  * <p>Prefilled with the current value, so the field doubles as a readout and the other two axes are
