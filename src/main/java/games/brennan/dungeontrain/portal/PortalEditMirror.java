@@ -60,9 +60,14 @@ public final class PortalEditMirror {
         int[] local = entry.localOfPlot(x, y, z);
         if (local == null) return;
 
+        BlockPos target = entry.twinPosOf(local);
+
+        // Before the mirror, not after: severing wants both the cell that was broken and the twin
+        // cell it maps to, and the write below is about to make the two identical again.
+        PortalSever.onCarriageBlockChanged(level, entry, local, newState, target);
+
         MIRRORING.set(true);
         try {
-            BlockPos target = entry.twinPosOf(local);
             // setBlockSilent, not the section-local write: the twin's blocks are ordinary world
             // blocks that nothing subsequently relights or re-syncs, and a section-local write skips
             // both the light engine and the client update — the mirrored change would be invisible.

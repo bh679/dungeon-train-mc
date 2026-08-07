@@ -10,7 +10,9 @@ import net.minecraft.world.level.saveddata.SavedData;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Per-level registry of built hallway portals, persisted to
@@ -39,8 +41,24 @@ public final class PortalRegistry extends SavedData {
     private static final String TAG_WIDTH = "width";
     private static final String TAG_HEIGHT = "height";
     private static final String TAG_DELTA_Y = "deltaY";
+    private static final String TAG_SEVERED = "severed";
 
     private final List<PortalGeometry> portals = new ArrayList<>();
+
+    /**
+     * Carriage indices whose way <b>in</b> has been severed by a break in their corridor's outer
+     * shell — see {@link PortalSever}.
+     *
+     * <p>Persisted because the severing is permanent. A carriage index is a fixed place along the
+     * track, so this stays meaningful across a reload, across the pair being re-stamped when the
+     * train rolls on, and across the world being reopened months later. Without persistence a
+     * player could break the illusion, quit, and come back to a portal that had quietly forgiven
+     * them.</p>
+     *
+     * <p>Stored rather than derived: the hole itself does not survive, because a corridor's blocks
+     * are re-stamped from its template every time the rolling window brings it round again.</p>
+     */
+    private final Set<Integer> severedCarriages = new HashSet<>();
 
     /**
      * Anchor-grid spacing for auto-spawning, or {@link PortalAnchors#SPACING_OFF}. Persisted so the
@@ -130,6 +148,33 @@ public final class PortalRegistry extends SavedData {
         setDirty();
     }
 
+    /** True if this carriage's corridor no longer takes anyone in. The way out is never severed. */
+    public synchronized boolean isSevered(int carriageIndex) {
+        return severedCarriages.contains(carriageIndex);
+    }
+
+    /** Record a severing. Returns false if it was already severed, so the effects fire only once. */
+    public synchronized boolean sever(int carriageIndex) {
+        if (!severedCarriages.add(carriageIndex)) return false;
+        setDirty();
+        return true;
+    }
+
+    /** The severed carriage indices, ascending, for {@code /dungeontrain portal severed list}. */
+    public synchronized List<Integer> severed() {
+        return severedCarriages.stream().sorted().toList();
+    }
+
+    /** Repair every severed corridor, returning how many were restored. */
+    public synchronized int clearSevered() {
+        int restored = severedCarriages.size();
+        if (restored > 0) {
+            severedCarriages.clear();
+            setDirty();
+        }
+        return restored;
+    }
+
     /** Forget every portal, returning how many were dropped. Blocks already stamped are left alone. */
     public synchronized int clear() {
         int removed = portals.size();
@@ -147,6 +192,11 @@ public final class PortalRegistry extends SavedData {
         }
         if (tag.contains(TAG_CARRIAGE_EVERY)) {
             data.carriageEvery = tag.getInt(TAG_CARRIAGE_EVERY);
+        }
+        // Absent in worlds saved before severing existed, which read back as "nothing severed" —
+        // the right answer for a world where no corridor had ever been broken into.
+        for (int carriageIndex : tag.getIntArray(TAG_SEVERED)) {
+            data.severedCarriages.add(carriageIndex);
         }
         if (!tag.contains(TAG_PORTALS)) return data;
 
@@ -177,6 +227,7 @@ public final class PortalRegistry extends SavedData {
     public synchronized CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putInt(TAG_AUTO_SPACING, autoSpacing);
         tag.putInt(TAG_CARRIAGE_EVERY, carriageEvery);
+        tag.putIntArray(TAG_SEVERED, severedCarriages.stream().mapToInt(Integer::intValue).toArray());
 
         ListTag list = new ListTag();
         for (PortalGeometry geo : portals) {
