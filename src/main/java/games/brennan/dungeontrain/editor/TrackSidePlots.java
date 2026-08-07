@@ -144,9 +144,9 @@ public final class TrackSidePlots {
      * <p>Every kind but one has a fixed per-variant footprint, so slots are a uniform stride. A
      * {@link TrackKind#freeSizeAboveFloor()} kind does not: a portal room is as wide as its author
      * made it, and a uniform stride sized off the kind would let a widened room grow straight into
-     * its neighbour's plot. Those rows are <b>packed cumulatively</b> instead — each name starts one
-     * {@link EditorLayout#GAP} past the far edge of the one before it — so widening a room pushes
-     * everything after it along by exactly the amount it grew, and narrowing pulls them back.</p>
+     * its neighbour's plot. Those rows are packed from each variant's own {@link #slotZ} instead —
+     * a reserved span that only grows, in {@link #SLOT_STEP} jumps, once a room comes within
+     * {@link #SLOT_MIN_CLEARANCE} of filling it. Most resizes therefore move nothing.</p>
      *
      * <p>Callers that change a size or the registered name set must clear every plot in the row
      * <b>before</b> the change and restamp after, because the change moves the later plots — see
@@ -160,13 +160,44 @@ public final class TrackSidePlots {
         if (kind.freeSizeAboveFloor()) {
             int z = Z_BASELINE;
             for (int i = 0; i < idx; i++) {
-                z += footprint(kind, names.get(i), dims).getZ() + EditorLayout.GAP;
+                z += slotZ(kind, names.get(i), dims);
             }
             return z;
         }
 
         int step = footprint(kind, dims).getZ() + EditorLayout.GAP;
         return Z_BASELINE + idx * step;
+    }
+
+    /**
+     * Least air a plot keeps between its far edge and the next plot's slot before the row has to
+     * make more room.
+     */
+    public static final int SLOT_MIN_CLEARANCE = 1;
+
+    /**
+     * How much a slot grows by when a plot outgrows it.
+     *
+     * <p>Deliberately coarse. The row is re-stamped whenever a slot changes, so quantising means an
+     * ordinary resize moves nothing at all — a room can widen freely inside its slot, and only the
+     * tap that would close to within {@link #SLOT_MIN_CLEARANCE} of the neighbour pays for shifting
+     * the rest of the row. Buying ten blocks at a time then keeps the next nine taps free too.</p>
+     */
+    public static final int SLOT_STEP = 10;
+
+    /**
+     * Z span reserved for one plot of a {@link TrackKind#freeSizeAboveFloor()} kind, gap included.
+     *
+     * <p>Starts at the kind's own footprint plus {@link EditorLayout#GAP} — so a row of
+     * default-sized rooms lays out exactly as it did before sizes were authorable — and grows in
+     * {@link #SLOT_STEP} jumps once a room needs more.</p>
+     */
+    public static int slotZ(TrackKind kind, String name, CarriageDims dims) {
+        int base = kind.dims(dims).getZ() + EditorLayout.GAP;
+        int needed = footprint(kind, name, dims).getZ() + SLOT_MIN_CLEARANCE;
+        if (needed <= base) return base;
+        int steps = (needed - base + SLOT_STEP - 1) / SLOT_STEP;
+        return base + steps * SLOT_STEP;
     }
 
     /**

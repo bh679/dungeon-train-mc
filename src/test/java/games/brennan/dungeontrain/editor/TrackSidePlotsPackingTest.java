@@ -47,35 +47,73 @@ class TrackSidePlotsPackingTest {
     }
 
     @Test
-    @DisplayName("Widening one room pushes every later plot along, never into it")
-    void wideningPushesLaterPlotsAlong() {
+    @DisplayName("Widening inside the reserved slot moves nothing — the row is not re-laid out")
+    void wideningInsideTheSlotMovesNothing() {
         TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, "second");
         TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, "third");
         assertNoOverlap();
 
-        int secondBefore = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ();
+        int secondAt13 = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ();
 
-        // Default goes from its 13-wide floor to 19.
-        PortalRoomSizes.pending("default", new Vec3i(11, 7, 19));
-        assertNoOverlap();
-
-        int secondAfter = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ();
-        assertEquals(secondBefore + 6, secondAfter,
-            "the later plot should move by exactly the 6 blocks default grew");
+        // The base slot is 13 + GAP = 18, so anything up to 17 wide still leaves the required
+        // 1 block of clearance and costs nothing.
+        for (int width = 14; width <= 17; width++) {
+            PortalRoomSizes.pending("default", new Vec3i(11, 7, width));
+            assertEquals(secondAt13,
+                TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ(),
+                "width " + width + " still fits its slot and must not move the row");
+            assertNoOverlap();
+        }
     }
 
     @Test
-    @DisplayName("Narrowing pulls them back — the row packs, it does not just grow")
-    void narrowingPullsLaterPlotsBack() {
+    @DisplayName("Outgrowing the slot moves the rest of the row by exactly one SLOT_STEP")
+    void outgrowingTheSlotMovesByOneStep() {
         TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, "second");
+        int before = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ();
+
+        // 18 wide leaves no clearance in an 18-block slot, so the slot buys another 10.
+        PortalRoomSizes.pending("default", new Vec3i(11, 7, 18));
+        int after = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ();
+        assertEquals(before + TrackSidePlots.SLOT_STEP, after);
+        assertNoOverlap();
+
+        // …and the next nine blocks of growth are then free.
+        for (int width = 19; width <= 27; width++) {
+            PortalRoomSizes.pending("default", new Vec3i(11, 7, width));
+            assertEquals(after, TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ(),
+                "width " + width + " should still fit the widened slot");
+            assertNoOverlap();
+        }
+
+        // 28 needs a second step.
+        PortalRoomSizes.pending("default", new Vec3i(11, 7, 28));
+        assertEquals(before + 2 * TrackSidePlots.SLOT_STEP,
+            TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ());
+        assertNoOverlap();
+    }
+
+    @Test
+    @DisplayName("Narrowing gives the slot back, so the row does not creep wider forever")
+    void narrowingReleasesTheSlot() {
+        TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, "second");
+        int base = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ();
+
         PortalRoomSizes.pending("default", new Vec3i(11, 7, 25));
-        int wide = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ();
+        assertTrue(TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ() > base);
 
         PortalRoomSizes.pending("default", new Vec3i(11, 7, 13));
-        int narrow = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ();
-
-        assertTrue(narrow < wide, "narrowing default should pull 'second' back, got " + narrow + " vs " + wide);
+        assertEquals(base, TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ());
         assertNoOverlap();
+    }
+
+    @Test
+    @DisplayName("A row of default-sized rooms lays out exactly as it did before sizes were authorable")
+    void defaultSizedRow_isUnchanged() {
+        TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, "second");
+        int stride = TrackSidePlots.footprint(TrackKind.PORTAL_ROOM, DIMS).getZ() + EditorLayout.GAP;
+        assertEquals(TrackSidePlots.Z_BASELINE + stride,
+            TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "second", DIMS).getZ());
     }
 
     @Test

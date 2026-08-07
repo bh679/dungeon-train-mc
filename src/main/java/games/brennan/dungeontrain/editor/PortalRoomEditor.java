@@ -194,9 +194,13 @@ public final class PortalRoomEditor {
     public static void clearPlot(ServerLevel overworld, String name, CarriageDims dims) {
         // Same reason as stampPlot: clear the box that is actually there, not the built-in one.
         PortalRoomTemplateStore.get(overworld, name, dims);
+        clearBox(overworld, new PlotBox(plotOrigin(name, dims), plotSize(name, dims)), name);
+    }
 
-        BlockPos origin = plotOrigin(name, dims);
-        Vec3i size = plotSize(name, dims);
+    /** Erase an explicit box — used to clear a plot at the position it occupied before a move. */
+    private static void clearBox(ServerLevel overworld, PlotBox box, String name) {
+        BlockPos origin = box.origin();
+        Vec3i size = box.size();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         BlockState air = Blocks.AIR.defaultBlockState();
         for (int dx = 0; dx < size.getX(); dx++) {
@@ -269,9 +273,9 @@ public final class PortalRoomEditor {
         };
         Vec3i clamped = PortalRoomLayout.clampSize(dims, wanted);
 
-        // The whole row, not just this plot: plots are packed cumulatively along +Z, so resizing
-        // one moves every plot after it. Clearing only this one would leave the old neighbours
-        // standing where the new layout no longer puts them.
+        // Through relayout, which erases and restamps only what actually moves. A room resizes
+        // freely inside its reserved slot, so this is usually just this one plot; crossing a slot
+        // boundary is what pays for shifting the rest of the row.
         relayout(overworld, dims, () -> PortalRoomSizes.pending(name, clamped));
 
         LOGGER.info("[DungeonTrain] Portal room '{}' plot restamped at {}x{}x{} ({} -> {})",
@@ -279,20 +283,51 @@ public final class PortalRoomEditor {
         return clamped;
     }
 
+    /** Where one plot sits and how big it is — enough to erase it later. */
+    private record PlotBox(BlockPos origin, Vec3i size) {}
+
     /**
-     * Apply a change that moves the plot row, clearing the old layout first and stamping the new
-     * one after.
+     * Apply a change to the row, erasing and restamping only the plots it actually moves.
      *
-     * <p>Portal room plots are packed cumulatively along {@code +Z} (see
-     * {@link TrackSidePlots#variantZ}), so anything that changes a room's width or the registered
-     * name set shifts every plot after it. Clearing has to happen while the <b>old</b> positions
-     * are still what {@code plotOrigin} reports, or the vacated plots are never erased and the row
-     * fills up with abandoned rooms.</p>
+     * <p>A room's plot sits in a reserved slot that only grows in {@link TrackSidePlots#SLOT_STEP}
+     * jumps (see {@link TrackSidePlots#slotZ}), so most resizes shift nothing and this touches one
+     * plot. When a room does outgrow its slot — or a name is added or removed — the later plots
+     * move, and each one that moved has to be erased at its <b>old</b> box before being stamped at
+     * the new one, or the row fills up with abandoned rooms nothing will ever clear.</p>
+     *
+     * <p>Boxes are snapshotted either side of {@code change} rather than assuming what moved, so a
+     * future layout rule cannot silently leave debris behind.</p>
      */
     public static void relayout(ServerLevel overworld, CarriageDims dims, Runnable change) {
-        clearAllPlots(overworld, dims);
+        Map<String, PlotBox> before = snapshotBoxes(dims);
         change.run();
-        stampAllPlots(overworld, dims);
+        Map<String, PlotBox> after = snapshotBoxes(dims);
+
+        int moved = 0;
+        for (Map.Entry<String, PlotBox> e : before.entrySet()) {
+            PlotBox now = after.get(e.getKey());
+            if (now == null || !now.equals(e.getValue())) {
+                clearBox(overworld, e.getValue(), e.getKey());
+                moved++;
+            }
+        }
+        for (Map.Entry<String, PlotBox> e : after.entrySet()) {
+            PlotBox was = before.get(e.getKey());
+            if (was == null || !was.equals(e.getValue())) {
+                stampPlot(overworld, e.getKey(), dims);
+            }
+        }
+        if (moved > 1) {
+            LOGGER.info("[DungeonTrain] Portal room row re-laid out — {} plots moved", moved);
+        }
+    }
+
+    private static Map<String, PlotBox> snapshotBoxes(CarriageDims dims) {
+        Map<String, PlotBox> out = new java.util.LinkedHashMap<>();
+        for (String name : names()) {
+            out.put(name, new PlotBox(plotOrigin(name, dims), plotSize(name, dims)));
+        }
+        return out;
     }
 
     /** Current value of {@code axis} for {@code name}. */
