@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
@@ -18,12 +19,14 @@ import org.slf4j.Logger;
  * copies, which is what puts the contradiction in front of the player rather than hiding it. So the
  * portal stops pretending.</p>
  *
- * <p><b>Severed one way only, and this is the important part.</b> Only carriage → twin is cut. The
- * return leg keeps working forever, for every corridor, severed or not. A player who is standing in
- * the pocket room when someone else breaks the shell — or who breaks it themselves from inside —
- * can always walk back onto the train. Nothing this class does can strand anybody, which is why the
- * trigger is restricted to the carriage-side copy: a break in the twin corridor or anywhere in the
- * room is ignored outright.</p>
+ * <p><b>Both ends of the pair, one direction each.</b> A hole in either corridor closes entry
+ * through <i>both</i> — a portal is a pair sharing one room, and it is the pair that is broken.
+ * What is never cut is the way out: twin → carriage keeps working forever, at both ends, severed or
+ * not. A player standing in the pocket room when someone breaks the shell — or who breaks it
+ * themselves from inside — can always walk back onto the train, through whichever corridor is
+ * nearer. Nothing this class does can strand anybody, which is also why the trigger is restricted
+ * to the carriage-side copy: a break in a twin corridor or anywhere in the room is ignored
+ * outright.</p>
  *
  * <p><b>Permanent.</b> Recorded against the carriage index in {@link PortalRegistry}, which is a
  * fixed place along the track, and persisted. It has to be stored rather than re-derived from the
@@ -65,26 +68,42 @@ public final class PortalSever {
      * changes and has already resolved the position to a corridor and a local cell. Being on that
      * path means this also catches a shell blown out by a creeper or dismantled by a piston, not
      * only one a player mined — the illusion does not care what made the hole.</p>
+     *
+     * <p><b>One hole closes both ends.</b> A portal is a pair — {@code ENTRY | cart | EXIT} sharing
+     * one room — and it is the <i>pair</i> that is broken, not the corridor that happened to be
+     * mined. Severing only the corridor with the hole in it would leave the other end still taking
+     * people into a room whose way back is now half dead, which is a worse state than either
+     * corridor working or neither. So the partner goes with it.</p>
      */
     public static void onCarriageBlockChanged(ServerLevel level, PortalPairIndex.Entry entry,
                                               int[] local, BlockState newState, BlockPos twinPos) {
         PortalFrames frames = entry.frames();
         if (!isSeveringBreak(frames.layout(), frames.role(), local, newState.isAir())) return;
 
-        if (!PortalRegistry.get(level).sever(entry.carriageIndex())) return;
+        int broken = entry.carriageIndex();
+        int partner = PortalCarriageRole.partnerIndex(broken, DungeonTrainConfig.getGroupSize());
+
+        // Read before writing either: if this pair is already severed — including from a hole made
+        // in its OTHER corridor — the effects have played once already and must not play again.
+        PortalRegistry registry = PortalRegistry.get(level);
+        boolean already = registry.isSevered(broken) || registry.isSevered(partner);
+        registry.sever(broken);
+        registry.sever(partner);
+        if (already) return;
 
         BlockPos carriagePos = BlockPos.containing(
             entry.carriageWorld().x + local[0] + 0.5,
             entry.carriageWorld().y + local[1] + 0.5,
             entry.carriageWorld().z + local[2] + 0.5);
 
-        // Both copies: whoever is in the corridor should hear and see it wherever they are standing,
-        // and the two are in completely different parts of the world.
+        // Both copies: whoever is in the corridor should hear it wherever they are standing, and the
+        // two are in completely different parts of the world.
         PortalSeverEffects.play(level, carriagePos, twinPos);
 
-        LOGGER.info("[DungeonTrain] Portal connection severed: carriage={} role={} shell broken at "
-                + "local ({},{},{}) — world {}, twin {}. The way IN is closed; the way out stays open.",
-            entry.carriageIndex(), frames.role(), local[0], local[1], local[2], carriagePos, twinPos);
+        LOGGER.info("[DungeonTrain] Portal connection severed: carriages {} ({}) + {} (partner), "
+                + "shell broken at local ({},{},{}) — world {}, twin {}. "
+                + "Both ends are closed to entry; both ways out stay open.",
+            broken, frames.role(), partner, local[0], local[1], local[2], carriagePos, twinPos);
     }
 
     /**

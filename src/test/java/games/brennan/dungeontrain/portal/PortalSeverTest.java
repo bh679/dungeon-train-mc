@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.portal;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -92,6 +93,23 @@ final class PortalSeverTest {
         // But the solid part of that same end plane is shell.
         assertTrue(severs(PortalCarriageRole.ENTRY, ENTRY_LAYOUT.farDoorX(),
             ENTRY_LAYOUT.floorY() + 1, ENTRY_LAYOUT.doorZ() + 1), "end plane beside the doorway");
+    }
+
+    @Test
+    @DisplayName("one hole closes both ends: the pair resolves the same from either corridor")
+    void severingIsPairWide() {
+        int groupSize = 3;
+        int entry = 24;                                        // a group anchor, as in a live run
+        int exit = entry + PortalCarriageSelection.SLOT_EXIT;
+
+        // What PortalSever.onCarriageBlockChanged severs, whichever corridor was mined. Both
+        // directions must name the same two carriages, or a hole in the exit corridor would sever a
+        // different pair from a hole in the entry one.
+        assertEquals(exit, PortalCarriageRole.partnerIndex(entry, groupSize));
+        assertEquals(entry, PortalCarriageRole.partnerIndex(exit, groupSize));
+
+        assertEquals(PortalCarriageRole.ENTRY, PortalCarriageRole.roleFor(entry, groupSize));
+        assertEquals(PortalCarriageRole.EXIT, PortalCarriageRole.roleFor(exit, groupSize));
     }
 
     @Test
