@@ -88,9 +88,16 @@ public final class PortalCarriageSelection {
         return isPortalMiddle(carriageIndex, DungeonTrainConfig.getGroupSize(), every(level));
     }
 
-    /** True if this carriage is any part of a portal — either corridor, or the cart between. */
+    /**
+     * True if this carriage is any part of a portal — either corridor, or the cart between.
+     *
+     * <p>The predicate every system that must leave a portal alone asks: the placer skips the shell,
+     * parts and contents passes for one ({@code CarriagePlacer.placeAt}), and the shared-carriage
+     * relay neither serves nor pools one ({@code TrainAssembler.tryLeaseShared}) — a corridor has to
+     * match its twin block-for-block, and the cart between two corridors is sealed space.</p>
+     */
     public static boolean isPortalPart(ServerLevel level, int carriageIndex) {
-        return isPortalCarriage(level, carriageIndex) || isPortalMiddle(level, carriageIndex);
+        return isPortalPart(carriageIndex, DungeonTrainConfig.getGroupSize(), every(level));
     }
 
     public static boolean isPortalCarriage(int carriageIndex, int groupSize, int every) {
@@ -102,6 +109,11 @@ public final class PortalCarriageSelection {
     public static boolean isPortalMiddle(int carriageIndex, int groupSize, int every) {
         if (!isPortalGroup(carriageIndex, groupSize, every)) return false;
         return slotOf(carriageIndex, groupSize) == SLOT_MIDDLE;
+    }
+
+    public static boolean isPortalPart(int carriageIndex, int groupSize, int every) {
+        return isPortalCarriage(carriageIndex, groupSize, every)
+            || isPortalMiddle(carriageIndex, groupSize, every);
     }
 
     private static int every(ServerLevel level) {
