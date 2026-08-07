@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.portal.PortalCarriageLayout;
 import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
+import games.brennan.dungeontrain.portal.PortalDoorSmokeEmitter;
 import games.brennan.dungeontrain.portal.PortalEditMirror;
 import games.brennan.dungeontrain.portal.PortalFrames;
 import games.brennan.dungeontrain.portal.PortalPairIndex;
@@ -236,6 +237,10 @@ public final class PortalCarriageEvents {
         // Publish for PortalEditMirror, which needs to answer "is this block in a portal corridor?"
         // on the hot path of every sub-level block change and cannot re-derive train geometry there.
         publishPairing(carriageIndex, ship, dims, originX, originY, originZ, twinOrigin);
+
+        // Black smoke seeping out of the closed door at the room end — in BOTH copies, from the same
+        // local point, or it would say which side of the midpoint the player is on.
+        PortalDoorSmokeEmitter.emit(level, frames, ship);
 
         for (ServerPlayer player : players) {
             if (player.isPassenger()) continue;
