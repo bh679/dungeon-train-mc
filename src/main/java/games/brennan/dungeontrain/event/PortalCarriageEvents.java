@@ -416,28 +416,37 @@ public final class PortalCarriageEvents {
     }
 
     /**
-     * The whole pair structure as a box: both twin corridors and the room between them.
+     * The whole pair structure as a box: both twin corridors, the room between them, and every copy
+     * of that room currently standing.
      *
      * <p>Sized off the structure's own record. The X span is the room this pair actually rolled,
      * and the Z/Y slack is the larger of {@link #POCKET_ROOM_SLACK} and what that room needs — so
      * an authored room bigger than the built-in one still has its occupants pin the structure
      * against a re-stamp, be spared by the despawn rule, and be carried when it relocates.</p>
+     *
+     * <p><b>The tiled copies have to be inside it too.</b> This one box answers three questions —
+     * is anyone in here (so do not re-stamp), what should the despawn rule spare, and what gets
+     * carried when the structure relocates. A mob standing in an appended copy that fell outside the
+     * box would be stranded in mid-air at the world floor the moment the structure moved. So the box
+     * takes the union of the corridor span and the tiled rectangle; when nothing is tiled those are
+     * the same thing and this is the box it always was.</p>
      */
     private static AABB structureBox(CarriageDims dims, PortalStructure structure) {
         BlockPos origin = structure.origin();
         int span = structure.spanX(dims);
         Vec3i room = structure.roomSize();
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
         // Half the room's overhang either side of the corridor, plus a block; never less than the
         // slack the built-in room was tuned with.
         int slackZ = Math.max(POCKET_ROOM_SLACK, (room.getZ() - dims.width()) / 2 + 1);
         int slackY = Math.max(POCKET_ROOM_SLACK, room.getY() - dims.height() + 1);
         return new AABB(
-            origin.getX() - 1,
+            Math.min(origin.getX() - 1, structure.tiledMinX(dims, layout) - 1),
             origin.getY() - 1,
-            origin.getZ() - slackZ,
-            origin.getX() + span + 1,
+            Math.min(origin.getZ() - slackZ, structure.tiledMinZ(dims, layout) - 1),
+            Math.max(origin.getX() + span + 1, structure.tiledMaxX(dims, layout) + 2),
             origin.getY() + dims.height() + slackY,
-            origin.getZ() + dims.width() + slackZ);
+            Math.max(origin.getZ() + dims.width() + slackZ, structure.tiledMaxZ(dims, layout) + 2));
     }
 
     /**

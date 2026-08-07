@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -304,20 +305,26 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * Decide what a pair's structure is before building it: which room variant it rolls, and how
-     * big that room turns out to be.
+     * Decide what a pair's structure is before building it: which room variant it rolls, how big
+     * that room turns out to be, and what it does at its walls.
      *
      * <p>The name is a pure function of the world seed and the pair's key, so a pair keeps the same
      * room for the life of the world — re-stamping it further down the track relocates it rather
      * than re-rolling it. The size is read off the authored template, or the built-in room's when
      * nothing has been authored.</p>
+     *
+     * <p>The {@link PortalRoomMode mode} is read here and then carried on the record rather than
+     * looked up per tick, so an author saving a different mode while somebody is standing in the
+     * room cannot change the walls around them mid-visit.</p>
      */
     public static PortalStructure planStructure(ServerLevel level, CarriageDims dims,
                                                 BlockPos entryOrigin, int pairKey) {
         String roomName = TrackVariantRegistry.pickName(
             TrackKind.PORTAL_ROOM, level.getSeed(), pairKey);
         return new PortalStructure(entryOrigin, roomName,
-            PortalRoomTemplateStore.sizeOf(level, roomName, dims));
+            PortalRoomTemplateStore.sizeOf(level, roomName, dims),
+            PortalRoomMode.parse(TrackVariantWeights.modeFor(TrackKind.PORTAL_ROOM, roomName)),
+            PortalRoomTiling.base());
     }
 
     /**
@@ -361,11 +368,18 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * Clear a twin back to air — corridor, plug and pocket alike.
+     * Clear a twin back to air — corridor, plug, pocket and any standing room copies alike.
      *
      * <p>Called when a twin is superseded because the train has rolled away from it. Without it the
      * train would trail a line of abandoned corridors hanging in the sky, one for every time a
      * portal carriage drifted out of range.</p>
+     *
+     * <p><b>The tiled terms are a backstop, not the usual path.</b> A structure is drained back to
+     * its base tile before it is allowed to be re-stamped ({@code PortalCarriageEvents} refuses while
+     * copies are still standing, retiring them a few per tick instead), so in the ordinary case
+     * {@code tiledMinX..tiledMaxZ} are just the base room's own bounds and this sweeps what it always
+     * did. They are read anyway so that correctness does not depend on the drain having finished —
+     * only the cost does.</p>
      */
     public static void eraseTwin(ServerLevel level, PortalStructure structure, CarriageDims dims) {
         PortalCarriageLayout layout = layoutFor(dims);
@@ -379,16 +393,25 @@ public final class PortalCarriageBuilder {
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
 
-        int minX = origin.getX() - PLUG_DEPTH;
+        // One block of margin around the tiled rectangle, because both the outer-face closures and
+        // Bedrock Lock's skin sit just outside a room box rather than inside it.
+        int minX = Math.min(origin.getX() - PLUG_DEPTH, structure.tiledMinX(dims, layout) - 1);
         // Both corridors, the room between them, and the plug past the far end.
-        int maxX = origin.getX() + structure.spanX(dims) + PLUG_DEPTH;
-        int minZ = Math.min(origin.getZ() - 1, roomOrigin.getZ() - 1);
-        int maxZ = Math.max(origin.getZ() + dims.width(), roomOrigin.getZ() + roomSize.getZ());
+        int maxX = Math.max(origin.getX() + structure.spanX(dims) + PLUG_DEPTH,
+            structure.tiledMaxX(dims, layout) + 1);
+        int minZ = Math.min(Math.min(origin.getZ() - 1, roomOrigin.getZ() - 1),
+            structure.tiledMinZ(dims, layout) - 1);
+        int maxZ = Math.max(Math.max(origin.getZ() + dims.width(), roomOrigin.getZ() + roomSize.getZ()),
+            structure.tiledMaxZ(dims, layout) + 1);
+        // One row below the floor as well as one past the top: Bedrock Lock skins both. Held above
+        // the world's own bottom layer — that row is vanilla bedrock, and erasing it would punch a
+        // hole into the void under every structure in the lowest lane.
+        int minY = Math.max(level.getMinBuildHeight() + 1, origin.getY() - 1);
         int maxY = origin.getY() + Math.max(dims.height(), roomSize.getY());
 
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
-                for (int y = origin.getY(); y <= maxY; y++) {
+                for (int y = minY; y <= maxY; y++) {
                     level.setBlock(pos.set(x, y, z), air, Block.UPDATE_ALL);
                 }
             }
