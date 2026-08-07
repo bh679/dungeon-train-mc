@@ -1730,7 +1730,11 @@ public final class NarrativeDeathScreen extends Screen {
                     // would re-arm Send for the newly selected mod.
                     if (modCommentBox != null) modCommentBox.setValue(modRec.comment());
                     if (modNameBox != null) modNameBox.setValue(modRec.requestedName());
-                    this.setFocused(modRec.isRequesting() ? modNameBox : modCommentBox);
+                    // Deliberately NOT focused here: vanilla EditBox hides its hint while focused
+                    // (EditBox#renderWidget), so auto-focusing would swallow the "Why would you
+                    // recommend this?" prompt at exactly the moment the player needs to read it.
+                    // They click the box to start typing.
+                    this.setFocused(null);
                     return true;
                 }
             }

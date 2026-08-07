@@ -35,11 +35,17 @@ public final class ModRecState {
     public static final int MAX_COMMENT = 300;
     public static final int MAX_NAME = 80;
 
-    /** One grid tile. {@code sent} drives both the colour and the sink-to-bottom ordering. */
-    public record Tile(String modId, String displayName, boolean sent) {}
+    /**
+     * One grid tile. {@code sent} drives both the colour and the sink-to-bottom ordering;
+     * {@code request} marks a card for a mod the player asked for but doesn't have, which is a
+     * record of what they sent rather than something to click again.
+     */
+    public record Tile(String modId, String displayName, boolean sent, boolean request) {}
 
     private final List<ModRoster.LoadedMod> mods;
     private final LinkedHashSet<String> sent = new LinkedHashSet<>();
+    /** Names of mods requested this death, in send order — each becomes its own card. */
+    private final List<String> sentRequests = new ArrayList<>();
 
     private Map<String, Integer> popularity = Map.of();
     private String selected = null;
@@ -62,20 +68,22 @@ public final class ModRecState {
     }
 
     public List<Tile> tiles() {
-        return order(mods, popularity, sent);
+        return order(mods, popularity, sent, sentRequests);
     }
 
     /**
-     * Pure ordering: unsent by popularity desc then name, followed by sent in send order.
-     * {@code sentOrder} must preserve insertion order (a {@link LinkedHashSet} at the call site).
+     * Pure ordering: unsent by popularity desc then name, then sent mods in send order, then one
+     * card per requested mod. {@code sentOrder} must preserve insertion order (a
+     * {@link LinkedHashSet} at the call site).
      */
     public static List<Tile> order(List<ModRoster.LoadedMod> mods,
                                    Map<String, Integer> popularity,
-                                   Set<String> sentOrder) {
+                                   Set<String> sentOrder,
+                                   List<String> sentRequests) {
         List<Tile> unsent = new ArrayList<>();
         for (ModRoster.LoadedMod m : mods) {
             if (!sentOrder.contains(m.modId())) {
-                unsent.add(new Tile(m.modId(), name(m), false));
+                unsent.add(new Tile(m.modId(), name(m), false, false));
             }
         }
         unsent.sort(Comparator
@@ -86,10 +94,17 @@ public final class ModRecState {
         for (String modId : sentOrder) {
             for (ModRoster.LoadedMod m : mods) {
                 if (m.modId().equals(modId)) {
-                    out.add(new Tile(modId, name(m), true));
+                    out.add(new Tile(modId, name(m), true, false));
                     break;
                 }
             }
+        }
+        // Requested mods have no modId — the id is synthesised purely so each card is distinct.
+        // They are never selectable (ModRecPage registers no hit for them): there is nothing to
+        // change about a mod the player doesn't have, and a second thought is a second request.
+        List<String> requests = sentRequests == null ? List.of() : sentRequests;
+        for (int i = 0; i < requests.size(); i++) {
+            out.add(new Tile(REQUEST_ID + "#" + i, requests.get(i), true, true));
         }
         return List.copyOf(out);
     }
@@ -153,7 +168,12 @@ public final class ModRecState {
     /** Record a successful send: the tile sinks to the bottom and the inputs clear. */
     public void markSent() {
         if (selected == null) return;
-        if (!isRequesting()) {
+        if (isRequesting()) {
+            // Each request becomes its own card, so the player can see what they've asked for and
+            // ask for something else. Duplicates are kept rather than merged: sending the same name
+            // twice means they sent it twice, and hiding the second one would look like a failure.
+            sentRequests.add(requestedName.trim());
+        } else {
             // add() on an element already present is a no-op for a LinkedHashSet, so a re-send
             // keeps the tile exactly where it was rather than jumping to the end of the grid.
             sent.add(selected);

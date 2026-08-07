@@ -130,18 +130,23 @@ public final class ModRecPage {
             int ty = gridTop + row * (TILE_H + GAP) - scrollY;
             if (ty + TILE_H < gridTop || ty > gridBottom) continue;   // fully scrolled out
 
-            boolean isRequestTile = i == tiles.size();
-            String modId = isRequestTile ? ModRecState.REQUEST_ID : tiles.get(i).modId();
-            String label = isRequestTile
+            boolean isAskTile = i == tiles.size();
+            ModRecState.Tile tile = isAskTile ? null : tiles.get(i);
+            String modId = isAskTile ? ModRecState.REQUEST_ID : tile.modId();
+            String label = isAskTile
                     ? Component.translatable("gui.dungeontrain.death.modrec.not_installed").getString()
-                    : tiles.get(i).displayName();
-            boolean sent = !isRequestTile && tiles.get(i).sent();
-            boolean selected = state.isSelected(modId);
-            boolean hover = mouseX >= tx && mouseX < tx + cellW && mouseY >= ty && mouseY < ty + TILE_H
+                    : tile.displayName();
+            boolean sent = !isAskTile && tile.sent();
+            // A sent request is a receipt, not a control: there is nothing to change about a mod the
+            // player doesn't have, so it draws but registers no hit and can't be selected.
+            boolean clickable = isAskTile || !tile.request();
+            boolean selected = clickable && state.isSelected(modId);
+            boolean hover = clickable && mouseX >= tx && mouseX < tx + cellW
+                    && mouseY >= ty && mouseY < ty + TILE_H
                     && mouseY >= gridTop && mouseY < gridBottom;
 
-            drawTile(g, tx, ty, cellW, label, sent, selected, hover, isRequestTile);
-            hits.add(new Hit(modId, tx, ty, cellW, TILE_H));
+            drawTile(g, tx, ty, cellW, label, sent, selected, hover, isAskTile || !clickable);
+            if (clickable) hits.add(new Hit(modId, tx, ty, cellW, TILE_H));
         }
         g.disableScissor();
 
@@ -186,10 +191,10 @@ public final class ModRecPage {
     }
 
     private void drawTile(GuiGraphics g, int x, int y, int w, String label,
-                          boolean sent, boolean selected, boolean hover, boolean request) {
+                          boolean sent, boolean selected, boolean hover, boolean muted) {
         int bg = selected ? SEL_BG : TILE_BG;
         int border = selected ? SEL_BORDER : (sent ? SENT_BORDER : (hover ? TILE_HOVER : TILE_BORDER));
-        int text = selected ? SEL_TEXT : (sent ? SENT_TEXT : (request ? ASK_TEXT : TILE_TEXT));
+        int text = selected ? SEL_TEXT : (sent ? SENT_TEXT : (muted ? ASK_TEXT : TILE_TEXT));
 
         g.fill(x, y, x + w, y + TILE_H, fade.applyAsInt(bg));
         drawBorder(g, x, y, w, TILE_H, border);

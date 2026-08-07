@@ -397,6 +397,13 @@ tasks.register('generateModRoster') {
         // Companions whose modId matches neither their slug nor their display name. Only add an
         // entry here once you have confirmed the real modId from the mod's own neoforge.mods.toml.
         keys.add('iris')  // slug "irisshaders" / name "Iris Shaders", modId `iris`
+
+        // Sable's OWN dependencies. They arrive with Sable rather than through modpack.config.json,
+        // so neither source above knows about them — but every Dungeon Train player has them, and
+        // offering a player their physics engine's rendering library to recommend is noise. Found by
+        // reading the dev client's mod list; keep in step if Sable's dependency set changes.
+        keys.add('veil')
+        keys.add('sablecompanion')
         keys.removeAll([''])
 
         outFile.parentFile.mkdirs()

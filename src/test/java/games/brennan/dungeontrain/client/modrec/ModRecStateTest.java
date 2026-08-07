@@ -90,8 +90,8 @@ class ModRecStateTest {
     }
 
     @Test
-    @DisplayName("a request additionally needs the typed mod name, and never becomes a sent tile")
-    void requestNeedsNameAndDoesNotSink() {
+    @DisplayName("a request needs the typed mod name, and becomes its own card once sent")
+    void requestNeedsNameAndBecomesACard() {
         ModRecState s = popular();
         s.toggle(ModRecState.REQUEST_ID);
         assertTrue(s.isRequesting());
@@ -102,8 +102,59 @@ class ModRecStateTest {
         assertEquals("Create", s.selectedName());
 
         s.markSent();
-        assertEquals(List.of("jei", "xaerominimap", "chunky"), ids(s));  // grid unchanged
         assertEquals(1, s.sentCount());
+        // The installed mods keep their order and a card for the requested one is appended.
+        List<ModRecState.Tile> tiles = s.tiles();
+        assertEquals(List.of("jei", "xaerominimap", "chunky"), ids(s).subList(0, 3));
+        assertEquals(4, tiles.size());
+        assertEquals("Create", tiles.get(3).displayName());
+        assertTrue(tiles.get(3).sent());
+        assertTrue(tiles.get(3).request());
+    }
+
+    @Test
+    @DisplayName("each request gets its own card, even when the same name is sent twice")
+    void everyRequestGetsACard() {
+        ModRecState s = popular();
+        for (String name : List.of("Create", "Farmer's Delight", "Create")) {
+            s.toggle(ModRecState.REQUEST_ID);
+            s.setRequestedName(name);
+            s.setComment("please");
+            s.markSent();
+        }
+        List<ModRecState.Tile> tiles = s.tiles();
+        assertEquals(6, tiles.size());   // 3 installed + 3 request cards
+        assertEquals(List.of("Create", "Farmer's Delight", "Create"),
+                tiles.subList(3, 6).stream().map(ModRecState.Tile::displayName).toList());
+        assertTrue(tiles.subList(3, 6).stream().allMatch(ModRecState.Tile::request));
+    }
+
+    @Test
+    @DisplayName("request cards sit below sent mods, which sit below unsent ones")
+    void cardOrderIsUnsentThenSentThenRequests() {
+        ModRecState s = popular();
+        s.toggle("jei");
+        s.setComment("indispensable");
+        s.markSent();
+        s.toggle(ModRecState.REQUEST_ID);
+        s.setRequestedName("Create");
+        s.setComment("please");
+        s.markSent();
+        List<ModRecState.Tile> tiles = s.tiles();
+        assertEquals(List.of("xaerominimap", "chunky"), ids(s).subList(0, 2));  // unsent
+        assertEquals("jei", tiles.get(2).modId());                              // sent mod
+        assertTrue(tiles.get(3).request());                                     // request card
+    }
+
+    @Test
+    @DisplayName("the requested name is trimmed before it becomes a card")
+    void requestNameTrimmed() {
+        ModRecState s = popular();
+        s.toggle(ModRecState.REQUEST_ID);
+        s.setRequestedName("  Create  ");
+        s.setComment("please");
+        s.markSent();
+        assertEquals("Create", s.tiles().get(3).displayName());
     }
 
     @Test
