@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.portal;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Which copies of a portal room are currently standing, for the two endless
@@ -155,6 +156,18 @@ public record PortalRoomTiling(Set<Tile> tiles) {
      * is a gap they would see.</p>
      */
     public Tile nextToAdd(Tile centre, int radius, int budget) {
+        return nextToAdd(centre, radius, budget, t -> true);
+    }
+
+    /**
+     * As {@link #nextToAdd(Tile, int, int)}, but skipping candidates {@code buildable} rejects.
+     *
+     * <p>The filter is how "this copy cannot be built here" stays out of the geometry: the caller
+     * knows about unloaded chunks and other pairs' structures, and a rejected tile is passed over for
+     * the next-nearest rather than returned and refused, which would stall the fill on the same tile
+     * every tick.</p>
+     */
+    public Tile nextToAdd(Tile centre, int radius, int budget, Predicate<Tile> buildable) {
         if (tiles.size() >= budget) return null;
         Comparator<Tile> order = nearestTo(centre);
         Tile best = null;
@@ -162,7 +175,9 @@ public record PortalRoomTiling(Set<Tile> tiles) {
             for (int dz = -radius; dz <= radius; dz++) {
                 Tile candidate = centre.offset(dx, dz);
                 if (!isLegal(candidate) || tiles.contains(candidate)) continue;
-                if (best == null || order.compare(candidate, best) < 0) best = candidate;
+                if (best != null && order.compare(candidate, best) >= 0) continue;
+                if (!buildable.test(candidate)) continue;
+                best = candidate;
             }
         }
         return best;
@@ -176,6 +191,17 @@ public record PortalRoomTiling(Set<Tile> tiles) {
      * rather than what is beside them.</p>
      */
     public Tile nextToRemove(Tile centre, int radius) {
+        return nextToRemove(centre, radius, t -> true);
+    }
+
+    /**
+     * As {@link #nextToRemove(Tile, int)}, but never offering up a tile {@code removable} rejects.
+     *
+     * <p>The caller uses this to hold on to a room somebody is standing in. Erasing a copy clears its
+     * floor along with everything else, so retiring one out from under a second player who wandered
+     * the other way would drop them onto the rock at the world floor.</p>
+     */
+    public Tile nextToRemove(Tile centre, int radius, Predicate<Tile> removable) {
         Comparator<Tile> order = nearestTo(centre);
         Tile worst = null;
         for (Tile tile : tiles) {
@@ -183,7 +209,9 @@ public record PortalRoomTiling(Set<Tile> tiles) {
             if (Math.abs(tile.x() - centre.x()) <= radius && Math.abs(tile.z() - centre.z()) <= radius) {
                 continue;
             }
-            if (worst == null || order.compare(tile, worst) > 0) worst = tile;
+            if (worst != null && order.compare(tile, worst) <= 0) continue;
+            if (!removable.test(tile)) continue;
+            worst = tile;
         }
         return worst;
     }
@@ -196,11 +224,18 @@ public record PortalRoomTiling(Set<Tile> tiles) {
      * down the track, so that the erase is never more than the base structure's own box.</p>
      */
     public Tile farthestFrom(Tile centre) {
+        return farthestFrom(centre, t -> true);
+    }
+
+    /** As {@link #farthestFrom(Tile)}, sparing anything {@code removable} rejects. */
+    public Tile farthestFrom(Tile centre, Predicate<Tile> removable) {
         Comparator<Tile> order = nearestTo(centre);
         Tile worst = null;
         for (Tile tile : tiles) {
             if (Tile.BASE.equals(tile)) continue;
-            if (worst == null || order.compare(tile, worst) > 0) worst = tile;
+            if (worst != null && order.compare(tile, worst) <= 0) continue;
+            if (!removable.test(tile)) continue;
+            worst = tile;
         }
         return worst;
     }

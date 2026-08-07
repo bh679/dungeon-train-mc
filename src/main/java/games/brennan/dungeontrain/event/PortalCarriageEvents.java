@@ -17,6 +17,8 @@ import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
+import games.brennan.dungeontrain.portal.PortalRoomTiler;
+import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
@@ -39,8 +41,10 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -218,6 +222,61 @@ public final class PortalCarriageEvents {
         }
 
         puppets.dispatch(players);
+
+        // Once per pair rather than once per carriage, and outside the loop above so it also runs for
+        // pairs nobody is near any more — those are exactly the ones that need draining.
+        tickRoomTiling(level, dims, layout, players);
+    }
+
+    /**
+     * Keep each structure's room copies up to date: one stamp or one erase per pair per tick.
+     *
+     * <p>Runs over {@link #STRUCTURES} rather than over portal carriages because a pair is one
+     * structure however many of its carriages are in range, and because a structure whose carriages
+     * have all rolled out of range still has copies to shed. A structure that is not drained cannot
+     * be re-stamped ({@link PortalRoomTiler#drainedEnoughToRestamp}), so leaving one full would strand
+     * its twin at a position the train has left.</p>
+     */
+    private static void tickRoomTiling(ServerLevel level, CarriageDims dims,
+                                       PortalCarriageLayout layout, List<ServerPlayer> players) {
+        if (STRUCTURES.isEmpty()) return;
+
+        // Snapshot: the tiler replaces entries as it works, and every candidate copy is tested
+        // against the others so no two pairs stamp into each other.
+        List<Map.Entry<Integer, PortalStructure>> pairs = new ArrayList<>(STRUCTURES.entrySet());
+        for (Map.Entry<Integer, PortalStructure> pair : pairs) {
+            PortalStructure structure = pair.getValue();
+            List<PortalStructure> others = new ArrayList<>(pairs.size());
+            for (Map.Entry<Integer, PortalStructure> other : pairs) {
+                if (!other.getKey().equals(pair.getKey())) others.add(other.getValue());
+            }
+
+            PortalStructure next = PortalRoomTiler.tick(level, dims, structure,
+                occupiedTiles(players, dims, layout, structure), others);
+            if (next != structure) STRUCTURES.put(pair.getKey(), next);
+        }
+    }
+
+    /**
+     * Which room copies players are standing in, in the order they were found.
+     *
+     * <p>A player in one of the twin corridors counts as being in the base room: the corridor adjoins
+     * it, they are about to walk in, and the tile arithmetic would otherwise place them in the
+     * corridor row, where no copy can stand.</p>
+     */
+    private static Set<PortalRoomTiling.Tile> occupiedTiles(List<ServerPlayer> players,
+                                                            CarriageDims dims,
+                                                            PortalCarriageLayout layout,
+                                                            PortalStructure structure) {
+        AABB box = structureBox(dims, structure);
+        Set<PortalRoomTiling.Tile> occupied = new LinkedHashSet<>();
+        for (ServerPlayer player : players) {
+            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            PortalRoomTiling.Tile tile =
+                structure.tileAt(dims, layout, player.getX(), player.getZ());
+            occupied.add(PortalRoomTiling.isLegal(tile) ? tile : PortalRoomTiling.Tile.BASE);
+        }
+        return occupied;
     }
 
     private static void handlePortalCarriage(ServerLevel level, List<ServerPlayer> players,
@@ -346,6 +405,15 @@ public final class PortalCarriageEvents {
 
         if (existing != null
             && horizontalDistance(existing.origin(), originX, originZ) <= TWIN_MAX_DRIFT) {
+            return existing;
+        }
+
+        // Far enough to want a new one, but not while copies of the room are still standing: the
+        // erase below would have to sweep all of them in a single tick. The tiler is shedding them a
+        // few per tick, faster than the train can travel the drift distance, so this waits rather
+        // than pays. Correctness does not depend on it — eraseTwin covers the tiled bounds either
+        // way — but a hitch would be felt.
+        if (existing != null && !PortalRoomTiler.drainedEnoughToRestamp(existing)) {
             return existing;
         }
 

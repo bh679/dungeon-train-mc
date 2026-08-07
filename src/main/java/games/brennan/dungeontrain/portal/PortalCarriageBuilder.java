@@ -20,6 +20,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoorHingeSide;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.HashSet;
@@ -75,8 +76,8 @@ public final class PortalCarriageBuilder {
     private static final BlockState CROSSING_LIGHT = Blocks.SEA_LANTERN.defaultBlockState();
 
     /** Pocket-area palette, beyond the twin's far door — deliberately shares nothing with the corridor. */
-    private static final BlockState POCKET_SHELL = Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState();
-    private static final BlockState POCKET_FLOOR = Blocks.POLISHED_BLACKSTONE.defaultBlockState();
+    static final BlockState POCKET_SHELL = Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState();
+    static final BlockState POCKET_FLOOR = Blocks.POLISHED_BLACKSTONE.defaultBlockState();
     private static final BlockState POCKET_LIGHT = Blocks.SHROOMLIGHT.defaultBlockState();
     /** Solid fill behind the twin's dummy door. */
     private static final BlockState PLUG = Blocks.DEEPSLATE.defaultBlockState();
@@ -368,9 +369,13 @@ public final class PortalCarriageBuilder {
         plugBeyond(level, entryOrigin.offset(-PLUG_DEPTH, 0, 0), PLUG_DEPTH, dims);
         plugBeyond(level, exitOrigin.offset(dims.length(), 0, 0), PLUG_DEPTH, dims);
 
-        // Last, so it wraps whatever the room turned out to be rather than what it was asked for.
+        // Last, so each mode acts on the room as it actually turned out rather than as it was asked
+        // for. Bedrock Lock wraps it; the two endless modes settle the base room's own side walls,
+        // which for Endless Open means taking them away so there is somewhere to walk out to.
         if (structure.mode() == PortalRoomMode.BEDROCK_LOCK) {
             bedrockSkin(level, roomOrigin, roomSize);
+        } else if (structure.mode().tiles()) {
+            PortalRoomTiler.refreshFacesAround(level, dims, structure, PortalRoomTiling.Tile.BASE);
         }
     }
 
@@ -449,19 +454,41 @@ public final class PortalCarriageBuilder {
      * only the cost does.</p>
      */
     public static void eraseTwin(ServerLevel level, PortalStructure structure, CarriageDims dims) {
-        PortalCarriageLayout layout = layoutFor(dims);
+        BoundingBox box = footprintOf(level, structure, dims);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         BlockState air = Blocks.AIR.defaultBlockState();
 
-        // Measured off the structure record rather than a constant: the pair may have rolled a
-        // longer room than the built-in one, and erasing the built-in span would leave its tail
-        // hanging at the world floor.
+        for (int x = box.minX(); x <= box.maxX(); x++) {
+            for (int z = box.minZ(); z <= box.maxZ(); z++) {
+                for (int y = box.minY(); y <= box.maxY(); y++) {
+                    level.setBlock(pos.set(x, y, z), air, Block.UPDATE_ALL);
+                }
+            }
+        }
+    }
+
+    /**
+     * Every block a structure currently occupies: both corridors, both plugs, the room between them,
+     * every standing copy of that room, and the block of margin their closed faces and Bedrock Lock's
+     * skin sit in.
+     *
+     * <p><b>One definition, read by both sides.</b> {@link #eraseTwin} sweeps exactly this, and
+     * {@code PortalRoomTiler} tests candidate copies against it so no two pairs stamp into each
+     * other. A structure that wrote outside its own footprint would leave blocks its erase never
+     * reaches; one that claimed more than it wrote would refuse copies for no reason. Deriving both
+     * from here is what stops the two drifting apart.</p>
+     *
+     * <p>Measured off the structure record rather than constants: the pair may have rolled a longer
+     * room than the built-in one, and erasing the built-in span would leave its tail hanging at the
+     * world floor.</p>
+     */
+    public static BoundingBox footprintOf(ServerLevel level, PortalStructure structure,
+                                          CarriageDims dims) {
+        PortalCarriageLayout layout = layoutFor(dims);
         BlockPos origin = structure.origin();
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
 
-        // One block of margin around the tiled rectangle, because both the outer-face closures and
-        // Bedrock Lock's skin sit just outside a room box rather than inside it.
         int minX = Math.min(origin.getX() - PLUG_DEPTH, structure.tiledMinX(dims, layout) - 1);
         // Both corridors, the room between them, and the plug past the far end.
         int maxX = Math.max(origin.getX() + structure.spanX(dims) + PLUG_DEPTH,
@@ -474,13 +501,7 @@ public final class PortalCarriageBuilder {
         int minY = lowestWritableY(level.getMinBuildHeight(), origin.getY());
         int maxY = origin.getY() + Math.max(dims.height(), roomSize.getY());
 
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                for (int y = minY; y <= maxY; y++) {
-                    level.setBlock(pos.set(x, y, z), air, Block.UPDATE_ALL);
-                }
-            }
-        }
+        return new BoundingBox(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     /**

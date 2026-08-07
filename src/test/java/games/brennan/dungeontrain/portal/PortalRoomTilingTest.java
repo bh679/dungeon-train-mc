@@ -193,6 +193,54 @@ class PortalRoomTilingTest {
         assertNull(tiling.nextToRemove(walkedTo, RADIUS));
     }
 
+    // ---- copies that cannot be built, and copies that must not be erased ----
+
+    @Test
+    @DisplayName("a candidate that cannot be built is passed over for the next-nearest, not returned")
+    void unbuildableCandidatesArePassedOver() {
+        PortalRoomTiling tiling = PortalRoomTiling.base();
+        // Stand in for an unloaded chunk or another pair's structure sitting across the near side.
+        Tile blocked = new Tile(0, -1);
+
+        Tile chosen = tiling.nextToAdd(Tile.BASE, RADIUS, UNLIMITED, t -> !t.equals(blocked));
+        assertEquals(new Tile(0, 1), chosen,
+            "the blocked near tile should be skipped for the other side, not stall the fill");
+    }
+
+    @Test
+    @DisplayName("a fill whose every candidate is refused simply builds nothing")
+    void everythingRefusedBuildsNothing() {
+        assertNull(PortalRoomTiling.base().nextToAdd(Tile.BASE, RADIUS, UNLIMITED, t -> false));
+    }
+
+    @Test
+    @DisplayName("a copy somebody is standing in is never retired — clearing it takes its floor too")
+    void occupiedCopiesAreSpared() {
+        PortalRoomTiling tiling = fillAround(Tile.BASE, RADIUS, UNLIMITED);
+        Tile walkedTo = new Tile(0, 3);
+        Tile secondPlayer = new Tile(5, -5);   // the far corner, first in line to retire
+
+        assertEquals(secondPlayer, tiling.nextToRemove(walkedTo, RADIUS));
+        Tile spared = tiling.nextToRemove(walkedTo, RADIUS, t -> !t.equals(secondPlayer));
+        assertNotNull(spared);
+        assertFalse(secondPlayer.equals(spared));
+    }
+
+    @Test
+    @DisplayName("draining spares occupied copies too — a logged-in player is not dropped")
+    void drainSparesOccupiedCopies() {
+        Tile occupied = new Tile(0, 5);
+        PortalRoomTiling tiling = PortalRoomTiling.base().with(occupied).with(new Tile(0, 1));
+
+        PortalRoomTiling drained = tiling;
+        for (Tile next; (next = drained.farthestFrom(Tile.BASE, t -> !t.equals(occupied))) != null; ) {
+            drained = drained.without(next);
+        }
+        assertTrue(drained.has(occupied));
+        assertTrue(drained.has(Tile.BASE));
+        assertEquals(2, drained.size());
+    }
+
     // ---- how far you can see (the fog clamp) ----
 
     @Test
