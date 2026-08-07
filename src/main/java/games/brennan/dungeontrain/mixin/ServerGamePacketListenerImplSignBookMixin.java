@@ -7,8 +7,8 @@ import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
-import games.brennan.dungeontrain.narrative.DeathNoteTitle;
 import games.brennan.dungeontrain.narrative.DeathNoteTitleLocalization;
+import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.narrative.LetterLecternEvents;
 import games.brennan.dungeontrain.narrative.LetterSigning;
 import games.brennan.dungeontrain.narrative.PlayerWrittenBookTag;
@@ -111,17 +111,20 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
                 return;
             }
 
-            // Death Note curse — a book titled "Death Note" (any caps/spacing) is a personal + relay
-            // mechanic, NOT a community contribution: it runs independently of the shared-book consent
-            // gate and never uploads its text. Handled locally; vanilla signing is cancelled. The
-            // trigger matches ANY language's Death Note title (e.g. zh_cn "死亡笔记") for every player,
-            // plus English always — all case/space-insensitive (DeathNoteTitleLocalization derives the
-            // localized titles from each language's instruction-book title).
-            if (DeathNoteTitle.isDeathNoteTitle(titleStr, DeathNoteTitleLocalization.all())
-                    && games.brennan.dungeontrain.config.DungeonTrainConfig.isDeathNotesEnabled()) {
-                DeathNoteSigning.handleSigning(serverPlayer, titleStr, author, pageStrs, writable);
+            // Death Note curse / Love Note — a book titled "Death Note" or "Love Note" (any
+            // caps/spacing) is a personal + relay mechanic, NOT a community contribution: it runs
+            // independently of the shared-book consent gate and never uploads its text. Handled
+            // locally; vanilla signing is cancelled. The trigger matches ANY language's title for
+            // that kind (e.g. zh_cn "死亡笔记") for every player, plus English always — all
+            // case/space-insensitive (DeathNoteTitleLocalization derives the localized titles from
+            // each language's instruction-book title).
+            NoteKind noteKind = NoteKind.of(titleStr,
+                    DeathNoteTitleLocalization.all(NoteKind.DEATH),
+                    DeathNoteTitleLocalization.all(NoteKind.LOVE));
+            if (noteKind != null && dungeontrain$isNoteKindEnabled(noteKind)) {
+                DeathNoteSigning.handleSigning(serverPlayer, noteKind, titleStr, author, pageStrs, writable);
                 ci.cancel();
-                DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] DeathNote: {} signed a Death Note", author);
+                DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] Note: {} signed a {}", author, noteKind.trophyTitle());
                 return;
             }
 
@@ -166,6 +169,13 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             DUNGEONTRAIN$LOGGER.warn("[DungeonTrain] SharedBook: sign interception failed, falling back to vanilla: {}",
                     t.toString());
         }
+    }
+
+    /** Each note kind has its own feature flag, so either mechanic can be turned off independently. */
+    private static boolean dungeontrain$isNoteKindEnabled(NoteKind kind) {
+        return kind == NoteKind.LOVE
+            ? games.brennan.dungeontrain.config.DungeonTrainConfig.isLoveNotesEnabled()
+            : games.brennan.dungeontrain.config.DungeonTrainConfig.isDeathNotesEnabled();
     }
 
     /**

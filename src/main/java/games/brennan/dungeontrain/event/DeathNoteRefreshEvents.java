@@ -7,8 +7,11 @@ import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.narrative.CursedStoryPool;
 import games.brennan.dungeontrain.narrative.DeathNotePool;
 import games.brennan.dungeontrain.narrative.DeathNoteSpawnMessage;
+import games.brennan.dungeontrain.narrative.LoveNoteSpawnMessage;
+import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -152,20 +155,23 @@ public final class DeathNoteRefreshEvents {
         for (DeathNotePool.Note note : DeathNotePool.notesReached(targetUuid, cur, ARRIVAL_LEAD)) {
             if (enforce && note.freePlay() != targetFreePlay) continue; // provenance mismatch — wait for a matching life
             boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
-                    note.authorUuid(), note.authorName(), note.deathCarriage(), note.id());
+                    note.authorUuid(), note.authorName(), note.deathCarriage(), note.id(), note.kind());
             if (!ok) continue;                                       // not on a carriage yet — retry next scan
             DeathNotePool.remove(targetUuid, note.id());
             DeathNoteReporter.markUsed(note.id());
-            announce(level, player, note.authorName(), cur);
+            announce(level, player, note.authorName(), cur, note.kind());
         }
     }
 
-    /** Broadcast the vengeance line naming the author + log the spawn. */
-    private static void announce(ServerLevel level, ServerPlayer player, String authorName, int cur) {
-        level.getServer().getPlayerList().broadcastSystemMessage(
-                DeathNoteSpawnMessage.random(level.getRandom(), authorName), false);
-        LOGGER.info("[DungeonTrain] DeathNote: echo of {} spawned near {} at carriage {}.",
-                authorName, player.getGameProfile().getName(), cur);
+    /** Broadcast this kind's arrival line naming the author + log the spawn. */
+    private static void announce(ServerLevel level, ServerPlayer player, String authorName, int cur,
+                                 NoteKind kind) {
+        Component line = kind == NoteKind.LOVE
+                ? LoveNoteSpawnMessage.random(level.getRandom(), authorName)
+                : DeathNoteSpawnMessage.random(level.getRandom(), authorName);
+        level.getServer().getPlayerList().broadcastSystemMessage(line, false);
+        LOGGER.info("[DungeonTrain] {}: echo of {} spawned near {} at carriage {}.",
+                kind.trophyTitle(), authorName, player.getGameProfile().getName(), cur);
     }
 
     /**

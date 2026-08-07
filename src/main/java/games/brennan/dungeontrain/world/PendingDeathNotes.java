@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.world;
 
+import games.brennan.dungeontrain.narrative.NoteKind;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -12,16 +13,20 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Persisted store of signed-but-not-yet-fired Death Note curses on the overworld world save
- * ({@code <world>/data/dungeontrain_pending_deathnotes.dat}).
+ * Persisted store of signed-but-not-yet-fired notes — Death Note curses and Love Notes alike — on
+ * the overworld world save ({@code <world>/data/dungeontrain_pending_deathnotes.dat}).
  *
- * <p>Holds the <b>pending</b> list: curses a player has signed but not yet triggered — the author is
+ * <p>Holds the <b>pending</b> list: notes a player has signed but not yet triggered — the author is
  * still alive, so the carriage they die at isn't known. When the author next dies, {@code DeathNoteEvents}
- * {@link #takeForAuthor takes} their pending curses and uploads each to the relay stamped with the death
+ * {@link #takeForAuthor takes} their pending notes and uploads each to the relay stamped with the death
  * carriage. Per-world is correct here: signing and the author's death happen in one life/world, and the
- * <em>relay</em> — not this file — carries the armed curse across the target's later, differently-seeded
+ * <em>relay</em> — not this file — carries the armed note across the target's later, differently-seeded
  * worlds. (The old dev-local {@code armed} list was removed: it was per-save-file, so the fresh world a
  * roguelike death starts could never see it.)</p>
+ *
+ * <p>The file name and NBT keys keep their original "deathnote" spelling: every note lives in one
+ * list distinguished by {@link PendingDeathNote#kind}, and renaming the save file would orphan the
+ * pending notes in existing worlds for nothing.</p>
  */
 public final class PendingDeathNotes extends SavedData {
 
@@ -34,9 +39,15 @@ public final class PendingDeathNotes extends SavedData {
     private static final String TAG_AUTHOR_NAME = "authorName";
     private static final String TAG_TARGET_NAME = "targetName";
     private static final String TAG_TARGET_UUID = "targetUuid";
+    private static final String TAG_KIND = "kind";
 
-    /** One signed, awaiting-death curse. {@code targetUuid} is "" when unresolved at sign time. */
-    public record PendingDeathNote(UUID authorUuid, String authorName, String targetName, String targetUuid) {}
+    /**
+     * One signed, awaiting-death note. {@code targetUuid} is "" when unresolved at sign time;
+     * {@code kind} is which book was signed (a note saved before Love Notes existed reads back as
+     * {@link NoteKind#DEATH}, which is what it was).
+     */
+    public record PendingDeathNote(UUID authorUuid, String authorName, String targetName,
+                                   String targetUuid, NoteKind kind) {}
 
     private final List<PendingDeathNote> notes;
 
@@ -82,8 +93,11 @@ public final class PendingDeathNotes extends SavedData {
             CompoundTag n = list.getCompound(i);
             try {
                 UUID author = UUID.fromString(n.getString(TAG_AUTHOR_UUID));
+                // A note written before the kind existed has no tag — getString gives "" and
+                // NoteKind.fromId reads that as DEATH, which is exactly what it was.
                 loadedPending.add(new PendingDeathNote(author, n.getString(TAG_AUTHOR_NAME),
-                    n.getString(TAG_TARGET_NAME), n.getString(TAG_TARGET_UUID)));
+                    n.getString(TAG_TARGET_NAME), n.getString(TAG_TARGET_UUID),
+                    NoteKind.fromId(n.getString(TAG_KIND))));
             } catch (IllegalArgumentException ignored) {
                 // skip a corrupt entry rather than fail the whole load
             }
@@ -102,6 +116,7 @@ public final class PendingDeathNotes extends SavedData {
             c.putString(TAG_AUTHOR_NAME, n.authorName());
             c.putString(TAG_TARGET_NAME, n.targetName());
             c.putString(TAG_TARGET_UUID, n.targetUuid());
+            c.putString(TAG_KIND, n.kind().id());
             list.add(c);
         }
         tag.put(TAG_NOTES, list);

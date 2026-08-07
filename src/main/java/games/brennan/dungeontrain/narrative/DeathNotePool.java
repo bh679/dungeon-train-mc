@@ -44,9 +44,13 @@ public final class DeathNotePool {
             .build();
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
-    /** One downloaded, not-yet-spawned curse targeting the local player. */
+    /**
+     * One downloaded, not-yet-spawned note targeting the local player. {@code kind} decides how the
+     * echo feels about them on arrival; a relay too old to send the field yields
+     * {@link NoteKind#DEATH}, which is what every note predating Love Notes was.
+     */
     public record Note(int id, String authorUuid, String authorName, String authorSkinRef,
-                       int deathCarriage, String worldKey, boolean freePlay) {}
+                       int deathCarriage, String worldKey, boolean freePlay, NoteKind kind) {}
 
     /** targetPlayerUuid → their current immutable snapshot of unspawned notes. */
     private static final Map<UUID, List<Note>> NOTES = new ConcurrentHashMap<>();
@@ -159,7 +163,7 @@ public final class DeathNotePool {
             int id = o.get("id").getAsInt();
             int carriage = o.get("deathCarriage").getAsInt();
             return new Note(id, str(o, "authorUuid"), str(o, "authorName"), str(o, "authorSkinRef"),
-                    carriage, str(o, "worldKey"), bool(o, "freePlay"));
+                    carriage, str(o, "worldKey"), bool(o, "freePlay"), NoteKind.fromId(str(o, "kind")));
         } catch (RuntimeException e) {
             return null;
         }

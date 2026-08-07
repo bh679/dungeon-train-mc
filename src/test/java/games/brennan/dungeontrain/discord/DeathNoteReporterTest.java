@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.discord;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.gson.JsonObject;
+import games.brennan.dungeontrain.narrative.NoteKind;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -14,7 +15,7 @@ class DeathNoteReporterTest {
     @Test
     void payloadMatchesTheRelayContract() {
         JsonObject body = DeathNoteReporter.buildPayload(
-                "aaaa", "Author", "Victim", "bbbb", 7, "seed-123", "skin:x", true);
+                "aaaa", "Author", "Victim", "bbbb", 7, "seed-123", "skin:x", true, NoteKind.DEATH);
         assertEquals("aaaa", body.get("authorUuid").getAsString());
         assertEquals("Author", body.get("authorName").getAsString());
         assertEquals("Victim", body.get("targetName").getAsString());
@@ -23,11 +24,31 @@ class DeathNoteReporterTest {
         assertEquals("seed-123", body.get("worldKey").getAsString());
         assertEquals("skin:x", body.get("authorSkinRef").getAsString());
         assertEquals(true, body.get("freePlay").getAsBoolean());
+        assertEquals("death", body.get("kind").getAsString());
+    }
+
+    @Test
+    void loveNotesRideTheSameSubmitBodyAndDifferOnlyByKind() {
+        JsonObject body = DeathNoteReporter.buildPayload(
+                "aaaa", "Author", "Beloved", "bbbb", 7, "seed-123", "skin:x", false, NoteKind.LOVE);
+        assertEquals("love", body.get("kind").getAsString());
+        assertEquals("Beloved", body.get("targetName").getAsString());
+        assertEquals(9, body.size()); // same eight fields as a curse, plus the kind
+    }
+
+    @Test
+    void aNullKindSubmitsAsTheCurse() {
+        // Matches the relay's own fallback (deathnotes.js normKind) and NoteKind.fromId: anything
+        // that isn't explicitly a Love Note is the curse, which is what every note used to be.
+        JsonObject body = DeathNoteReporter.buildPayload(
+                "aaaa", "Author", "Victim", "bbbb", 7, "seed-123", "", false, null);
+        assertEquals("death", body.get("kind").getAsString());
     }
 
     @Test
     void nullStringsBecomeEmptyAndNegativeCarriageIsKept() {
-        JsonObject body = DeathNoteReporter.buildPayload(null, null, null, null, -3, null, null, false);
+        JsonObject body = DeathNoteReporter.buildPayload(
+                null, null, null, null, -3, null, null, false, NoteKind.DEATH);
         assertEquals("", body.get("authorUuid").getAsString());
         assertEquals("", body.get("authorName").getAsString());
         assertEquals("", body.get("targetName").getAsString());

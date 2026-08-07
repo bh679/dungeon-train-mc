@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Locks down the pure half of {@link CursedBookFactory}: which pool an ending routes to, and the
@@ -17,25 +19,64 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 final class CursedBookFactoryTest {
 
     private static Story story(String target, int carriage, long signedTs, long landedTs, String outcome) {
-        return new Story(1, target, carriage, signedTs, landedTs, outcome, null);
+        return new Story(1, target, carriage, signedTs, landedTs, outcome, null, NoteKind.DEATH);
     }
 
     @Test
     @DisplayName("contextFor: each reported ending routes to its own folder")
     void outcomeRouting() {
         assertEquals(StartingBookContext.CURSED_FULFILLED,
-            CursedBookFactory.contextFor("echo_killed_target"));
+            CursedBookFactory.contextFor(NoteKind.DEATH, "echo_killed_target"));
         assertEquals(StartingBookContext.CURSED_DEFIED,
-            CursedBookFactory.contextFor("target_killed_echo"));
+            CursedBookFactory.contextFor(NoteKind.DEATH, "target_killed_echo"));
     }
 
     @Test
     @DisplayName("contextFor: no ending reported → the plain cursed pool, never a crash")
     void unknownOutcomeFallsBackToCursed() {
-        assertEquals(StartingBookContext.CURSED, CursedBookFactory.contextFor(""));
-        assertEquals(StartingBookContext.CURSED, CursedBookFactory.contextFor(null));
+        assertEquals(StartingBookContext.CURSED, CursedBookFactory.contextFor(NoteKind.DEATH, ""));
+        assertEquals(StartingBookContext.CURSED, CursedBookFactory.contextFor(NoteKind.DEATH, null));
         // A future relay outcome this build doesn't know about must degrade, not explode.
-        assertEquals(StartingBookContext.CURSED, CursedBookFactory.contextFor("target_fled"));
+        assertEquals(StartingBookContext.CURSED, CursedBookFactory.contextFor(NoteKind.DEATH, "target_fled"));
+    }
+
+    @Test
+    @DisplayName("contextFor: a Love Note never routes to curse prose")
+    void loveRoutesToItsOwnFolders() {
+        // The whole point of the kind: before it existed, a landed Love Note would have handed its
+        // author a book saying the target was dead and they had finished what they started.
+        assertEquals(StartingBookContext.LOVED_TURNED,
+            CursedBookFactory.contextFor(NoteKind.LOVE, "echo_killed_target"));
+        assertEquals(StartingBookContext.LOVED_BETRAYED,
+            CursedBookFactory.contextFor(NoteKind.LOVE, "target_killed_echo"));
+        assertEquals(StartingBookContext.LOVED,
+            CursedBookFactory.contextFor(NoteKind.LOVE, ""));
+        assertEquals(StartingBookContext.LOVED,
+            CursedBookFactory.contextFor(NoteKind.LOVE, null));
+        assertEquals(StartingBookContext.LOVED,
+            CursedBookFactory.contextFor(NoteKind.LOVE, "target_fled"));
+    }
+
+    @Test
+    @DisplayName("contextFor: the same ending means opposite things to the two kinds")
+    void identicalOutcomesNeverShareAFolder() {
+        // echo_killed_target is a curse running its course, but for a Love Note it can only happen
+        // when the target attacked first — so no outcome may ever resolve to the same folder.
+        for (String outcome : new String[] {"echo_killed_target", "target_killed_echo", "", null}) {
+            StartingBookContext death = CursedBookFactory.contextFor(NoteKind.DEATH, outcome);
+            StartingBookContext love = CursedBookFactory.contextFor(NoteKind.LOVE, outcome);
+            assertNotEquals(death, love, "outcome " + outcome + " routed both kinds to " + death);
+            assertTrue(death.isCursed(), outcome + " → " + death + " is not a cursed pool");
+            assertTrue(love.isLoved(), outcome + " → " + love + " is not a loved pool");
+        }
+    }
+
+    @Test
+    @DisplayName("contextFor: a null kind is the curse — what every landed note used to be")
+    void nullKindDegradesToTheCurse() {
+        assertEquals(StartingBookContext.CURSED, CursedBookFactory.contextFor(null, ""));
+        assertEquals(StartingBookContext.CURSED_FULFILLED,
+            CursedBookFactory.contextFor(null, "echo_killed_target"));
     }
 
     @Test
@@ -68,7 +109,7 @@ final class CursedBookFactoryTest {
     void fillsEncounterTokens() {
         Story s = new Story(1, "Alex", 20, 0L, 0L, "target_killed_echo",
             new CursedStoryPool.Encounter(List.of("SPAWNED", "MET", "PLAYER_STRUCK_ECHO"),
-                List.of("a netherite axe"), List.of(), "ECHO_SLAIN_BY_YOU", 61L));
+                List.of("a netherite axe"), List.of(), "ECHO_SLAIN_BY_YOU", 61L), NoteKind.DEATH);
         assertEquals("It still carried a netherite axe. They crossed paths. Alex struck first. Alex killed it.",
             CursedBookFactory.fill("%STORY%", s));
         assertEquals("It still carried a netherite axe.", CursedBookFactory.fill("%GEAR%", s));

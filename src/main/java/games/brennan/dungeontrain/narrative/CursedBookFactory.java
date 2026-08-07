@@ -55,12 +55,19 @@ public final class CursedBookFactory {
      * An unknown / absent outcome is the plain {@link StartingBookContext#CURSED} pool — those books
      * tell the story without an ending, which is exactly the situation.
      */
-    public static StartingBookContext contextFor(String outcome) {
-        if (outcome == null) return StartingBookContext.CURSED;
+    public static StartingBookContext contextFor(NoteKind kind, String outcome) {
+        boolean love = kind == NoteKind.LOVE;
+        if (outcome == null) return love ? StartingBookContext.LOVED : StartingBookContext.CURSED;
         return switch (outcome) {
-            case "echo_killed_target" -> StartingBookContext.CURSED_FULFILLED;
-            case "target_killed_echo" -> StartingBookContext.CURSED_DEFIED;
-            default -> StartingBookContext.CURSED;
+            // The echo killed the player it was sent to. For a curse that is the curse running its
+            // course; for a Love Note it can only happen when the target swung first and the echo
+            // defended itself, so the two need entirely different prose.
+            case "echo_killed_target" ->
+                love ? StartingBookContext.LOVED_TURNED : StartingBookContext.CURSED_FULFILLED;
+            // The player killed the echo: survived a curse, or refused a kindness.
+            case "target_killed_echo" ->
+                love ? StartingBookContext.LOVED_BETRAYED : StartingBookContext.CURSED_DEFIED;
+            default -> love ? StartingBookContext.LOVED : StartingBookContext.CURSED;
         };
     }
 
@@ -79,14 +86,18 @@ public final class CursedBookFactory {
      */
     public static Optional<ItemStack> roll(long seed, CursedStoryPool.Story story,
                                            Set<String> seen, Consumer<String> markSeen) {
-        StartingBookContext context = contextFor(story.outcome());
+        StartingBookContext context = contextFor(story.kind(), story.outcome());
+        // The no-outcome pool of this note's OWN kind is the fallback — never the other kind's, and
+        // never DEFAULT. A Love Note author must not be handed a curse's story.
+        StartingBookContext base = story.kind() == NoteKind.LOVE
+            ? StartingBookContext.LOVED : StartingBookContext.CURSED;
         List<Leaf> leaves = leavesIn(context);
-        if (leaves.isEmpty() && context != StartingBookContext.CURSED) {
-            leaves = leavesIn(StartingBookContext.CURSED);   // outcome folder unauthored — tell it plainly
+        if (leaves.isEmpty() && context != base) {
+            leaves = leavesIn(base);                        // outcome folder unauthored — tell it plainly
         }
         if (leaves.isEmpty()) {
-            LOGGER.warn("[DungeonTrain] CursedBook: no cursed books authored (context {}) — skipping story {}",
-                context, story.id());
+            LOGGER.warn("[DungeonTrain] NoteStory: no {} books authored (context {}) — skipping story {}",
+                story.kind().id(), context, story.id());
             return Optional.empty();
         }
 

@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/remote_echo_befriend",
+  "display": {
+    "icon": { "id": "minecraft:poppy" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.loved_back.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.loved_back.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "gifted_love_note_echo" }
+    }
+  },
+  "requirements": [["action"]]
+}
