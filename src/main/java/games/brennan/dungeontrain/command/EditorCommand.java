@@ -4978,7 +4978,7 @@ public final class EditorCommand {
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' is now " + applied.getX() + " long, " + applied.getZ()
             + " wide, " + applied.getY() + " tall" + note
-            + ". The plot was reset to the built-in room at that size — /dt save to keep it."
+            + ". What you built is still there — /dt save to keep the new size."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -5026,7 +5026,7 @@ public final class EditorCommand {
             : " (clamped from " + blocks + " — the room must still seal the corridor mouth and fit its Y lane)";
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' " + axisName + " is now " + value + note
-            + ". The plot was reset to the built-in room at that size — /dt save to keep it."
+            + ". What you built is still there — /dt save to keep the new size."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }

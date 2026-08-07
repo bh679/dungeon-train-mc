@@ -19,6 +19,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoorBlock;
@@ -26,7 +29,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoorHingeSide;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.HashSet;
@@ -89,6 +96,8 @@ public final class PortalCarriageBuilder {
     private static final BlockState PLUG = Blocks.DEEPSLATE.defaultBlockState();
     /** {@link PortalRoomMode#BEDROCK_LOCK}'s skin, one block outside the room box. */
     private static final BlockState LOCK = Blocks.BEDROCK.defaultBlockState();
+    /** What a liquid found against a room's outside wall is replaced with — the rock it is cut into. */
+    private static final BlockState FLUID_PLUG = Blocks.DEEPSLATE.defaultBlockState();
 
     private static final int PLUG_DEPTH = 3;
 
@@ -666,14 +675,120 @@ public final class PortalCarriageBuilder {
         // floor, and a template stamp only writes its own cells — anything the author left as
         // STRUCTURE_VOID would otherwise show deepslate through the wall.
         clearRoomBox(level, roomOrigin, size, mask);
+        clearIntruders(level, roomOrigin, size);
+        plugFluidsAround(level, roomOrigin, size);
 
         Optional<StructureTemplate> stored = PortalRoomTemplateStore.get(level, roomName, dims);
-        if (stored.isPresent() && stored.get().getSize().equals(size)) {
+        if (stored.isEmpty()) {
+            stampRoomBuiltIn(level, roomOrigin, size, relight, mask);
+            return;
+        }
+
+        if (stored.get().getSize().equals(size)) {
             CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(),
                 mask.isEmpty() ? null : mask.asProcessor(), relight);
             return;
         }
+
+        // The saved room is a different size from the box being stamped — which is what a resize
+        // looks like, before the author has saved again at the new size. Keep what they built.
+        //
+        // The built-in room goes down first so the new box has a complete shell whatever it grew
+        // into, and the saved room is then laid over it, clipped to the box so shrinking cannot
+        // spill blocks into the plot next door. What the author made survives wherever it still
+        // fits, and only genuinely new space comes back as the built-in room. Replacing the whole
+        // thing with the built-in room — which is what used to happen — threw the work away on
+        // every stepper click.
         stampRoomBuiltIn(level, roomOrigin, size, relight, mask);
+        CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(),
+            clipTo(roomOrigin, size, mask), relight);
+    }
+
+    /**
+     * A processor that drops any cell outside {@code roomOrigin + size}, and any cell {@code mask}
+     * covers.
+     *
+     * <p>Only the resize path needs it: a template saved at one size being stamped into another has
+     * to be cut off at the new box's edge. Same {@code null}-returning contract
+     * {@link PortalCorridorMask} uses, so a dropped cell is left alone rather than written as air.</p>
+     */
+    private static StructureProcessor clipTo(BlockPos roomOrigin, Vec3i size,
+                                             PortalCorridorMask mask) {
+        BoundingBox box = new BoundingBox(
+            roomOrigin.getX(), roomOrigin.getY(), roomOrigin.getZ(),
+            roomOrigin.getX() + size.getX() - 1,
+            roomOrigin.getY() + size.getY() - 1,
+            roomOrigin.getZ() + size.getZ() - 1);
+        return new StructureProcessor() {
+            @Override
+            public StructureTemplate.StructureBlockInfo processBlock(
+                LevelReader level, BlockPos origin, BlockPos pivot,
+                StructureTemplate.StructureBlockInfo source,
+                StructureTemplate.StructureBlockInfo target,
+                StructurePlaceSettings settings
+            ) {
+                if (!box.isInside(target.pos())) return null;
+                return mask.covers(target.pos()) ? null : target;
+            }
+
+            @Override
+            protected StructureProcessorType<?> getType() {
+                return CLIP_TYPE;
+            }
+        };
+    }
+
+    /** Runtime-only, never serialised — same sentinel shape the parts filter uses. */
+    private static final StructureProcessorType<StructureProcessor> CLIP_TYPE =
+        () -> com.mojang.serialization.MapCodec.unit(
+            clipTo(BlockPos.ZERO, Vec3i.ZERO, PortalCorridorMask.NONE));
+
+    /**
+     * Discard whatever was standing in the volume a room is about to occupy.
+     *
+     * <p>A room is carved out of the rock at the world floor, so anything found in it arrived by
+     * spawning there — a mob in a cave the box happens to cross, an item that fell down a ravine —
+     * and none of it is what the author built. Players are never discarded.</p>
+     *
+     * <p>Safe against the mobs a player deliberately leads in, because this only ever runs on a
+     * volume that is about to be cleared to air anyway: a fresh structure, or a copy being stamped
+     * into solid rock. A copy that already has somebody's villager standing in it is never
+     * re-stamped — {@code PortalRoomTiler} refuses to retire a copy anybody is in, and a structure
+     * with a player inside is pinned against re-stamping altogether.</p>
+     */
+    private static void clearIntruders(ServerLevel level, BlockPos origin, Vec3i size) {
+        AABB box = new AABB(
+            origin.getX(), origin.getY(), origin.getZ(),
+            origin.getX() + size.getX(), origin.getY() + size.getY(), origin.getZ() + size.getZ());
+        for (Entity entity : level.getEntities((Entity) null, box, e -> !(e instanceof Player))) {
+            entity.discard();
+        }
+    }
+
+    /**
+     * Replace any liquid in the one-block skin around a room with the rock it is cut into.
+     *
+     * <p>Clearing the box to air is not enough on its own: the world floor has aquifers and lava
+     * down there, and a room carved beside one has its wall become the dam holding it back. The
+     * moment anything opens that wall — an Endless Open face, a seam carved between copies, a player
+     * with a pickaxe — it floods. Turning the fluid immediately outside the box into stone plugs it
+     * at the source instead, which is bounded work and holds however the room is opened up later.</p>
+     */
+    private static void plugFluidsAround(ServerLevel level, BlockPos origin, Vec3i size) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int dx = -1; dx <= size.getX(); dx++) {
+            for (int dy = -1; dy <= size.getY(); dy++) {
+                for (int dz = -1; dz <= size.getZ(); dz++) {
+                    boolean skin = dx == -1 || dx == size.getX()
+                        || dy == -1 || dy == size.getY()
+                        || dz == -1 || dz == size.getZ();
+                    if (!skin) continue;
+                    pos.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz);
+                    if (level.getFluidState(pos).isEmpty()) continue;
+                    level.setBlock(pos, FLUID_PLUG, Block.UPDATE_ALL);
+                }
+            }
+        }
     }
 
     /** Clear a room-sized box to air, leaving whatever {@code mask} covers untouched. */

@@ -187,6 +187,22 @@ public final class PortalCarriageEvents {
 
     private PortalCarriageEvents() {}
 
+    /**
+     * True when {@code (x, y, z)} is anywhere inside a portal pair's structure — either corridor, the
+     * room between them, or any copy of that room currently standing.
+     *
+     * <p>Read by {@code PortalRoomSpawnGuard} to keep the dark from filling a portal room with
+     * skeletons. The structures live here because this is what stamps and moves them, so the query
+     * lives here too rather than the spawn rule keeping its own idea of where they are.</p>
+     */
+    public static boolean isInsidePortalStructure(CarriageDims dims, double x, double y, double z) {
+        if (STRUCTURES.isEmpty()) return false;
+        for (PortalStructure structure : STRUCTURES.values()) {
+            if (structureBox(dims, structure).contains(x, y, z)) return true;
+        }
+        return false;
+    }
+
     private static boolean onCooldown(ServerPlayer player, long gameTime) {
         Long until = COOLDOWNS.get(player.getUUID());
         if (until == null) return false;
