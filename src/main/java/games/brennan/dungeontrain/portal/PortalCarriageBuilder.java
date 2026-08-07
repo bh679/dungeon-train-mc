@@ -385,9 +385,12 @@ public final class PortalCarriageBuilder {
             PortalCorridorMask.NONE, structure.variantIndexFor(PortalRoomTiling.Tile.BASE));
 
         // Before the corridors, so each mode acts on the room as it actually turned out rather than
-        // as it was asked for — and so that a mode reaching a door plane is overwritten rather than
-        // left. Bedrock Lock wraps the room; the endless modes settle its own side walls, which for
-        // Endless Open means taking them away so there is somewhere to walk out to.
+        // as it was asked for. It does not follow that the corridors repair whatever a mode wrote at
+        // a door plane — they are stamped over their own volume only, and never over the room's end
+        // column one block inside it, which is why nothing may write there in the first place; see
+        // PortalCorridorMask#facedBy. Bedrock Lock wraps the room; the endless modes settle its own
+        // side walls, which for Endless Open means taking them away so there is somewhere to walk
+        // out to.
         if (structure.mode() == PortalRoomMode.BEDROCK_LOCK) {
             bedrockSkin(level, roomOrigin, roomSize);
         } else if (structure.mode().tiles()) {

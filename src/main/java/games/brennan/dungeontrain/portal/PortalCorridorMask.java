@@ -69,6 +69,20 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
     }
 
     /**
+     * True when {@code wall} looks straight into a corridor one step along {@code (dx, dz)} — that is,
+     * when the cell beyond it is masked even though the cell itself is not.
+     *
+     * <p>The room's own end column is like that: it sits one block inside a corridor's door plane, so
+     * it is outside the mask, but what stands in front of it is the door. Walling it is walling the
+     * way in, and carving it open buys nothing the door does not already give. Such a column belongs
+     * to the corridor as surely as the corridor's own blocks do, and is left exactly as the room's
+     * author wrote it.</p>
+     */
+    public boolean facedBy(BlockPos wall, int dx, int dz) {
+        return covers(wall.getX() + dx, wall.getY(), wall.getZ() + dz);
+    }
+
+    /**
      * The mask for {@code structure}: a full-height, full-room-width slab across each corridor's X
      * range, plus the plug beyond each outer door.
      *
