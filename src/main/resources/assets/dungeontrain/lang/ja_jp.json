@@ -1048,9 +1048,14 @@
   "gui.dungeontrain.death.narr.donate_cn_desc": "WeChat Payによる一度きりの支援 - 金額は自由",
   "gui.dungeontrain.death.narr.lbl_raised_month": "集まった額",
   "gui.dungeontrain.death.narr.lbl_running_cost": "月額費用",
+  "gui.dungeontrain.death.narr.lbl_server_cost": "サーバー費用",
   "gui.dungeontrain.death.narr.lbl_covered": "費用の充当",
   "gui.dungeontrain.death.narr.lbl_leaderboard_monthly": "乗り合わせた者たち",
   "gui.dungeontrain.death.narr.tip_monthly_cost": "灯りを、そして列車を走らせ続けるための費用。創造主の時間は含まない。",
   "gui.dungeontrain.death.narr.tip_covered": "月々の運行費用のうち、プレイヤーの貢献で賄われている割合。",
+  "gui.dungeontrain.death.narr.goal_running_costs": "運行費用",
+  "gui.dungeontrain.death.narr.goal_dev_tools": "開発ツール",
+  "gui.dungeontrain.death.narr.tip_goal_running_costs": "最初の目標。路線を走らせ続けるための月々の費用——ホスティング、モデレーション、決済手数料です。",
+  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "運行費用が賄われた次の目標。このMODを作り、開発するためのツールです。",
   "gui.dungeontrain.death.narr.tip_raised": "今月プレイヤーから寄せられた総額。"
 }

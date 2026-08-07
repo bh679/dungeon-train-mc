@@ -6326,6 +6326,17 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "support-funding-goals",
+      "version": "0.545.0",
+      "type": "feat",
+      "title": "Death screen financial numbers updated",
+      "summary": "The support page's figures have been reworked.",
+      "date": "2026-08-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

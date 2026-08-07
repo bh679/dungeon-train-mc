@@ -1065,9 +1065,14 @@
   "gui.dungeontrain.death.narr.donate_cn_desc": "Apoio único por WeChat Pay - qualquer valor",
   "gui.dungeontrain.death.narr.lbl_raised_month": "Arrecadado",
   "gui.dungeontrain.death.narr.lbl_running_cost": "Custo Mensal",
+  "gui.dungeontrain.death.narr.lbl_server_cost": "Custos de servidor",
   "gui.dungeontrain.death.narr.lbl_covered": "Custos Cobertos",
   "gui.dungeontrain.death.narr.lbl_leaderboard_monthly": "os que estão a bordo",
   "gui.dungeontrain.death.narr.tip_monthly_cost": "O custo de manter as luzes acesas e o trem funcionando. Sem incluir o tempo do criador.",
   "gui.dungeontrain.death.narr.tip_covered": "Quanto do custo mensal de operação é coberto pelas contribuições dos jogadores.",
+  "gui.dungeontrain.death.narr.goal_running_costs": "Custos de operação",
+  "gui.dungeontrain.death.narr.goal_dev_tools": "Ferramentas de desenvolvimento",
+  "gui.dungeontrain.death.narr.tip_goal_running_costs": "O primeiro objetivo: o custo mensal de manter a linha em funcionamento - hospedagem, moderação e taxas de pagamento.",
+  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "O próximo objetivo, depois de cobertos os custos de operação: as ferramentas com que o mod é feito e desenvolvido.",
   "gui.dungeontrain.death.narr.tip_raised": "Total contribuído pelos jogadores este mês."
 }

@@ -1048,9 +1048,14 @@
   "gui.dungeontrain.death.narr.donate_cn_desc": "Dukungan sekali lewat WeChat Pay - jumlah bebas",
   "gui.dungeontrain.death.narr.lbl_raised_month": "Terkumpul",
   "gui.dungeontrain.death.narr.lbl_running_cost": "Biaya Bulanan",
+  "gui.dungeontrain.death.narr.lbl_server_cost": "Biaya Server",
   "gui.dungeontrain.death.narr.lbl_covered": "Biaya Tertutupi",
   "gui.dungeontrain.death.narr.lbl_leaderboard_monthly": "mereka yang menumpang",
   "gui.dungeontrain.death.narr.tip_monthly_cost": "Biaya untuk menjaga lampu tetap menyala, dan kereta tetap melaju. Tidak termasuk waktu sang pencipta.",
   "gui.dungeontrain.death.narr.tip_covered": "Seberapa banyak biaya operasional bulanan yang tertutupi oleh sumbangan pemain.",
+  "gui.dungeontrain.death.narr.goal_running_costs": "Biaya Operasional",
+  "gui.dungeontrain.death.narr.goal_dev_tools": "Peralatan Pengembangan",
+  "gui.dungeontrain.death.narr.tip_goal_running_costs": "Tujuan pertama: biaya bulanan untuk menjaga jalur tetap berjalan - hosting, moderasi, dan biaya pembayaran.",
+  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "Tujuan berikutnya, setelah biaya operasional tertutupi: peralatan yang digunakan untuk membangun dan mengembangkan mod ini.",
   "gui.dungeontrain.death.narr.tip_raised": "Total yang disumbangkan pemain bulan ini."
 }

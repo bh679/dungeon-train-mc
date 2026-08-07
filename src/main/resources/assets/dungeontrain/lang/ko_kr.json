@@ -1048,9 +1048,14 @@
   "gui.dungeontrain.death.narr.donate_cn_desc": "WeChat Pay로 일회성 후원 - 금액 자유",
   "gui.dungeontrain.death.narr.lbl_raised_month": "모인 금액",
   "gui.dungeontrain.death.narr.lbl_running_cost": "월 비용",
+  "gui.dungeontrain.death.narr.lbl_server_cost": "서버 비용",
   "gui.dungeontrain.death.narr.lbl_covered": "충당된 비용",
   "gui.dungeontrain.death.narr.lbl_leaderboard_monthly": "함께 탄 이들",
   "gui.dungeontrain.death.narr.tip_monthly_cost": "불을 밝히고 기차를 계속 달리게 하는 데 드는 비용. 창조자의 시간은 포함하지 않음.",
   "gui.dungeontrain.death.narr.tip_covered": "월 운영비 중 플레이어의 기여로 충당되는 비율.",
+  "gui.dungeontrain.death.narr.goal_running_costs": "운영비",
+  "gui.dungeontrain.death.narr.goal_dev_tools": "개발 도구",
+  "gui.dungeontrain.death.narr.tip_goal_running_costs": "첫 번째 목표. 노선을 계속 운행하기 위한 월 비용 — 호스팅, 관리, 결제 수수료입니다.",
+  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "운영비가 충당된 다음 목표. 이 모드를 만들고 개발하는 데 쓰이는 도구입니다.",
   "gui.dungeontrain.death.narr.tip_raised": "이번 달 플레이어들이 기여한 총액."
 }
