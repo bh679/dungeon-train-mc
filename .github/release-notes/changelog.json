@@ -6323,9 +6323,9 @@
         "Only appears if you run mods outside Dungeon Train and its modpack"
       ],
       "date": "2026-08-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.545.0",
+      "released_at": "2026-08-07T04:53:07Z"
     },
     {
       "id": "support-funding-goals",
@@ -6334,9 +6334,9 @@
       "title": "Death screen financial numbers updated",
       "summary": "The support page's figures have been reworked.",
       "date": "2026-08-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.545.0",
+      "released_at": "2026-08-07T04:53:07Z"
     }
   ]
 }
