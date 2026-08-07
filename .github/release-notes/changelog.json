@@ -6259,6 +6259,24 @@
       "released": true,
       "released_in": "v0.540.0",
       "released_at": "2026-08-06T15:34:51Z"
+    },
+    {
+      "id": "love-note-book",
+      "version": "0.541.0",
+      "type": "feat",
+      "title": "Love Notes \u2014 an echo that comes back loving you",
+      "summary": "The Death Note has a mirror. Sign a book titled \"Love Note\" naming another player and it burns away in pink flame instead of soul-fire. When you later die, an echo of you waits for them at the carriage depth you fell at \u2014 and greets them instead of hunting them. It hands over what it is carrying, steps in when something attacks them, and never once raises a hand to them. Same book and quill, same price (you still have to die first), opposite intent.",
+      "highlights": [
+        "The echo arrives with the highest possible regard for the one you named: it greets rather than attacks, gives them what it has, and defends them even when badly outmatched.",
+        "Once your Love Note lands, your next lightning strike brings you its story \u2014 how they took it, and whether they took it at all.",
+        "A new advancement, Loved Back, for giving something back to the echo that came all that way for you.",
+        "Every language has its own Love Note title, and naming your book that works too."
+      ],
+      "pr": 884,
+      "date": "2026-08-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
