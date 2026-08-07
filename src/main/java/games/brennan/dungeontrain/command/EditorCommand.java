@@ -1001,7 +1001,8 @@ public final class EditorCommand {
         try {
             TemplateGate next = op.apply(CarriageWeights.current().gateFor(variant.id()));
             CarriageWeights.setGate(variant.id(), next);
-            gateSuccess(source, variant.id(), next, CarriageWeights.configPath().toString());
+            gateSuccess(source, variant.id(), next, CarriageWeights.configPath().toString(),
+                CarriageWeights.current().stageIdFor(variant.id()));
             return 1;
         } catch (Throwable t) {
             return gateFail(source, "carriage", variant.id(), t);
@@ -1014,7 +1015,8 @@ public final class EditorCommand {
         try {
             TemplateGate next = op.apply(CarriageContentsWeights.current().gateFor(contents.id()));
             CarriageContentsWeights.setGate(contents.id(), next);
-            gateSuccess(source, contents.id(), next, CarriageContentsWeights.configPath().toString());
+            gateSuccess(source, contents.id(), next, CarriageContentsWeights.configPath().toString(),
+                CarriageContentsWeights.current().stageIdFor(contents.id()));
             return 1;
         } catch (Throwable t) {
             return gateFail(source, "contents", contents.id(), t);
@@ -1031,14 +1033,21 @@ public final class EditorCommand {
         try {
             TemplateGate next = op.apply(TrackVariantWeights.gateFor(kind, name));
             TrackVariantWeights.setGate(kind, name, next);
-            gateSuccess(source, kind.id() + ":" + name, next, TrackVariantWeights.configPath(kind).toString());
+            gateSuccess(source, kind.id() + ":" + name, next, TrackVariantWeights.configPath(kind).toString(),
+                TrackVariantWeights.stageIdFor(kind, name));
             return 1;
         } catch (Throwable t) {
             return gateFail(source, "track", kind.id() + ":" + name, t);
         }
     }
 
-    private static void gateSuccess(CommandSourceStack source, String id, TemplateGate g, String path) {
+    /**
+     * Report a stored gate. {@code linkedStage} is the Stage the target is linked to, or null when
+     * it is Custom — on a linked entry the write lands in the inline detach snapshot and the
+     * effective gate still comes from the Stage, so say so rather than reporting a bare success.
+     */
+    private static void gateSuccess(CommandSourceStack source, String id, TemplateGate g, String path,
+                                    String linkedStage) {
         String maxStr = g.maxLevel() == TemplateGate.ALL ? "all" : Integer.toString(g.maxLevel());
         StringBuilder phases = new StringBuilder();
         if (g.phases().size() == TrainPhase.values().length) {
@@ -1055,6 +1064,13 @@ public final class EditorCommand {
             "Editor: gate " + id + " — level " + g.minLevel() + ".." + maxStr
                 + ", phases [" + phaseStr + "] (saved to " + path + ")."
         ).withStyle(ChatFormatting.GREEN), true);
+        if (linkedStage != null) {
+            source.sendSuccess(() -> Component.literal(
+                "  Note: '" + id + "' is linked to Stage '" + linkedStage + "' — this inline gate is"
+                    + " stored as its detach snapshot and won't take effect until you detach it to"
+                    + " Custom (/dungeontrain editor stage …)."
+            ).withStyle(ChatFormatting.YELLOW), false);
+        }
     }
 
     private static int gateFail(CommandSourceStack source, String what, String id, Throwable t) {
@@ -1225,8 +1241,9 @@ public final class EditorCommand {
                 .orElse(TemplateGate.DEFAULT);
             TemplateGate next = op.apply(current);
             games.brennan.dungeontrain.editor.StageStore.setGate(id, next);
+            // A Stage's own gate — nothing upstream to be linked to, so no detach note.
             gateSuccess(source, "stage:" + id, next,
-                games.brennan.dungeontrain.editor.StageStore.configPath().toString());
+                games.brennan.dungeontrain.editor.StageStore.configPath().toString(), null);
             return 1;
         } catch (Throwable t) {
             return gateFail(source, "stage", id, t);
@@ -1828,8 +1845,9 @@ public final class EditorCommand {
             CarriageContentsGroup.Member updated = new CarriageContentsGroup.Member(
                 m.id(), m.weight(), next, java.util.List.of());
             CarriageContentsGroupStore.save(parent.id(), existing.get().withMember(updated));
+            // The member was just detached to Custom above (by design), so it is unlinked now.
             gateSuccess(source, parent.id() + ":" + member.id(), next,
-                CarriageContentsGroupStore.fileForId(parent.id()).toString());
+                CarriageContentsGroupStore.fileForId(parent.id()).toString(), null);
             return 1;
         } catch (Throwable t) {
             return gateFail(source, "contents group", parent.id() + ":" + member.id(), t);
