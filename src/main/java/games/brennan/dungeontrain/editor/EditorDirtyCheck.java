@@ -102,10 +102,13 @@ public final class EditorDirtyCheck {
             String key = EditorPlotSnapshots.key("carriages", v.id());
             Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
 
-            Set<BlockPos> skip = variantCellPositions(CarriageVariantBlocks.loadFor(v, dims).entries());
+            // The variant's own box — a carriage-sized compare would miss every unsaved edit past
+            // x=8 in the longer portal corridor and report it clean.
+            CarriageDims box = CarriageEditor.plotDims(v, dims);
+            Set<BlockPos> skip = variantCellPositions(CarriageVariantBlocks.loadFor(v, box).entries());
             boolean unsaved = snapshot != null
                 && !regionMatchesSnapshot(level, origin,
-                    dims.length(), dims.height(), dims.width(),
+                    box.length(), box.height(), box.width(),
                     snapshot, skip);
 
             boolean unpromoted = devmode
@@ -329,8 +332,9 @@ public final class EditorDirtyCheck {
             BlockPos origin = CarriageEditor.plotOrigin(variant, dims);
             if (origin == null) return out;
             String key = EditorPlotSnapshots.key("carriages", modelId);
-            Set<BlockPos> skip = variantCellPositions(CarriageVariantBlocks.loadFor(variant, dims).entries());
-            collectDiffs(overworld, origin, dims.length(), dims.height(), dims.width(),
+            CarriageDims box = CarriageEditor.plotDims(variant, dims);
+            Set<BlockPos> skip = variantCellPositions(CarriageVariantBlocks.loadFor(variant, box).entries());
+            collectDiffs(overworld, origin, box.length(), box.height(), box.width(),
                 EditorPlotSnapshots.get(key), skip, out);
             return out;
         }

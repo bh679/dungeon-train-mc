@@ -159,8 +159,10 @@ public interface BlockVariantPlot {
                 .map(v -> {
                     BlockPos origin = CarriageEditor.plotOrigin(v, dims);
                     if (origin == null) return (BlockVariantPlot) null;
+                    // The variant's own box — longer than a carriage for the portal corridor.
+                    CarriageDims box = CarriageEditor.plotDims(v, dims);
                     return new CarriagePlot(v, origin,
-                        new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width()), dims);
+                        new net.minecraft.core.Vec3i(box.length(), box.height(), box.width()), dims);
                 })
                 .orElse(null);
         }
@@ -220,7 +222,11 @@ public interface BlockVariantPlot {
         if (carriage != null) {
             BlockPos origin = CarriageEditor.plotOrigin(carriage, dims);
             if (origin == null) return null;
-            return new CarriagePlot(carriage, origin, new Vec3i(dims.length(), dims.height(), dims.width()), dims);
+            // The variant's own box, which is what the live mirror reflects around and what
+            // inside() tests against — a carriage-sized footprint on the longer portal corridor
+            // would mirror around x=4 instead of x=6 and reject every edit past x=8.
+            CarriageDims box = CarriageEditor.plotDims(carriage, dims);
+            return new CarriagePlot(carriage, origin, new Vec3i(box.length(), box.height(), box.width()), dims);
         }
         CarriageContents contents = CarriageContentsEditor.plotContaining(pos, dims);
         if (contents != null) {
@@ -260,7 +266,10 @@ public interface BlockVariantPlot {
             this.origin = origin;
             this.footprint = footprint;
             this.dims = dims;
-            this.sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+            // Bounds-checked against this variant's own box, not the world's carriage dims:
+            // CarriageVariantBlocks drops any entry outside the dims it is handed, which on the
+            // longer portal corridor would silently discard everything authored past x=8.
+            this.sidecar = CarriageVariantBlocks.loadFor(variant, CarriageEditor.plotDims(variant, dims));
         }
 
         @Override public String key() { return "carriage:" + variant.id(); }

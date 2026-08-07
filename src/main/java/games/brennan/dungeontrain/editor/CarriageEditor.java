@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
@@ -107,11 +106,13 @@ public final class CarriageEditor {
      * Never pass the result back into {@link CarriagePlacer#placeAt}: the placer derives the corridor
      * length from the world's carriage dims itself, and handing it an already-lengthened figure would
      * apply the growth twice.</p>
+     *
+     * <p>Delegates to {@link CarriagePlacer#variantDims} rather than repeating the rule — the plot,
+     * the template the plot is captured into, and the sidecar bounds the plot is edited against all
+     * have to be the same box, and two copies of that rule would be free to drift apart.</p>
      */
     public static CarriageDims plotDims(CarriageVariant variant, CarriageDims dims) {
-        return variant.equals(PortalCarriageBuilder.portalVariant())
-            ? PortalCorridorSize.corridorDims(dims)
-            : dims;
+        return CarriagePlacer.variantDims(variant, dims);
     }
 
     /**
@@ -334,10 +335,11 @@ public final class CarriageEditor {
         // Apply the editor mirror (save-time backstop to live mirroring) before
         // capture so the stored template is symmetric per the sidecar's enabled
         // axes. No-op when all axes are off (the carriage default).
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
         // The plot's own box — longer than a carriage for the portal corridor, so the capture below
-        // saves the whole corridor rather than its first nine blocks.
+        // saves the whole corridor rather than its first nine blocks, and the sidecar keeps entries
+        // authored in the part of the plot that is past a carriage's length.
         CarriageDims box = plotDims(variant, dims);
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, box);
         // "V" toggle: mirror the variant pools first so the structural pass below
         // sees (and preserves) the freshly-reflected far cells via markersOf.
         EditorVariantMirror.rebuildFromMaster(overworld, new BlockVariantPlot.CarriagePlot(

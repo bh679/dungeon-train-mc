@@ -519,11 +519,32 @@ public final class CarriagePlacer {
         }
     }
 
+    /**
+     * The box {@code variant} actually occupies — which is <b>not</b> always the world's carriage
+     * dims.
+     *
+     * <p>The portal corridor is the exception: it runs past its slot into the cart between a
+     * portal's pair, so its template, its editor plot, its sidecar bounds and its mirror axis are
+     * all measured over {@link PortalCorridorSize#corridorDims} instead. Every question of the form
+     * "how big is this variant's box" has to come through here, because the pieces disagreeing is
+     * not a visible mistake — it is a template silently rejected on size, a mirror reflecting around
+     * the wrong axis, and a sidecar entry dropped for being out of bounds.</p>
+     *
+     * <p><b>Never feed the result back into {@link #placeAt} or {@code stampBase}.</b> Those derive
+     * the corridor length from the world's carriage dims themselves; handing them an
+     * already-lengthened figure would apply the growth twice.</p>
+     */
+    public static CarriageDims variantDims(CarriageVariant variant, CarriageDims dims) {
+        return variant.equals(PortalCarriageBuilder.portalVariant())
+            ? PortalCorridorSize.corridorDims(dims)
+            : dims;
+    }
+
     private static void applyVariantBlocks(
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
         if (sidecar.isEmpty()) return;
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
             VariantState picked = sidecar.resolve(e.localPos(), config.seed(), carriageIndex);
@@ -560,7 +581,13 @@ public final class CarriagePlacer {
                                     CarriageDims dims, long seed, int carriageIndex,
                                     boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX,
                                     boolean relight) {
-        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
+        // Looked up against the VARIANT's box, not the world's carriage dims. CarriageTemplateStore
+        // caches by variant id alone and re-checks the cached entry against whatever dims the caller
+        // passed — so asking for the portal corridor at carriage dims does not merely miss, it caches
+        // an empty result under "portal" that then defeats the correctly-sized lookup for the rest of
+        // the session, dropping every corridor (and every saved edit to it) back to the built-in.
+        Optional<StructureTemplate> stored =
+            CarriageTemplateStore.get(level, variant, variantDims(variant, dims));
         if (stored.isPresent()) {
             // Filter cells the parts overlay will claim — keeps the base from
             // stamping (and the parts overlay from having to pre-erase) any
