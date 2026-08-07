@@ -20,16 +20,18 @@ import java.util.Set;
  * Keeps the copies of a portal room standing around it — the working half of
  * {@link PortalRoomMode#ENDLESS_REPETITION} and {@link PortalRoomMode#ENDLESS_OPEN}.
  *
- * <h2>One tile per tick, and only while somebody is in there</h2>
+ * <h2>One tile per tick, and only while somebody is about</h2>
  * <p>{@link #tick} does at most one thing: stamp a copy, or erase one. That holds the per-tick cost
  * at a single room stamp, which is what the base room already costs, and it is why the appending can
  * run on the server tick beside the swap logic without being felt.</p>
  *
- * <p>Copies are only ever added while a player is inside the structure — and a structure with a
- * player in it is already pinned against being re-stamped by {@code PortalCarriageEvents}. So the
- * expensive path (the train drifting far enough to rebuild the whole thing) never meets a tiled
- * structure. That is not a coincidence to be preserved by review: {@link #drainedEnoughToRestamp}
- * is the gate, and a structure that still has copies standing is drained rather than rebuilt.</p>
+ * <p>Copies are only ever added while somebody is near the pair — a ring of them
+ * ({@link PortalRoomTiling#APPROACH_RADIUS}) for a player approaching the carriage, the full window
+ * once one is actually inside. A structure with a player in it is already pinned against being
+ * re-stamped by {@code PortalCarriageEvents}, so the expensive path (the train drifting far enough to
+ * rebuild the whole thing) never meets a tiled structure. That is not a coincidence to be preserved
+ * by review: {@link #drainedEnoughToRestamp} is the gate, and a structure that still has copies
+ * standing is drained rather than rebuilt.</p>
  *
  * <h2>Why a copy might not appear</h2>
  * <p>Three reasons, all of which simply leave the tile unbuilt rather than failing:</p>
@@ -98,10 +100,13 @@ public final class PortalRoomTiler {
      *                   the signal to drain. The first is where the window centres; the rest are
      *                   simply never erased, because clearing a copy takes its floor with it and
      *                   would drop whoever was standing there onto the rock at the world floor.
+     * @param radius     how far the window reaches — {@link PortalRoomTiling#MAX_RADIUS} for somebody
+     *                   actually in the room, {@link PortalRoomTiling#APPROACH_RADIUS} for somebody
+     *                   merely near the carriage
      * @param neighbours every other live structure, so a copy is never stamped onto one
      */
     public static PortalStructure tick(ServerLevel level, CarriageDims dims,
-                                       PortalStructure structure, Set<Tile> standingIn,
+                                       PortalStructure structure, Set<Tile> standingIn, int radius,
                                        Collection<PortalStructure> neighbours) {
         if (!structure.mode().tiles()) {
             // A room that does not tile should have nothing standing. It can still get here carrying
@@ -120,11 +125,11 @@ public final class PortalRoomTiler {
         // can see — the fog sits at the edge of what has been built — whereas what is behind is
         // already out of sight. When the budget is spent this finds nothing, and the retire below
         // frees a slot for the next tick, so a sliding window still slides.
-        Tile next = tiling.nextToAdd(centre, PortalRoomTiling.MAX_RADIUS, structure.tileBudget(),
+        Tile next = tiling.nextToAdd(centre, radius, structure.tileBudget(),
             candidate -> canStamp(level, dims, structure, candidate, neighbours));
         if (next != null) return stampTile(level, dims, structure, next);
 
-        Tile stale = tiling.nextToRemove(centre, PortalRoomTiling.MAX_RADIUS,
+        Tile stale = tiling.nextToRemove(centre, radius,
             candidate -> !standingIn.contains(candidate));
         if (stale != null) return eraseTile(level, dims, structure, stale);
 

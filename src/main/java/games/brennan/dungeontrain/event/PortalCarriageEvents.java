@@ -298,14 +298,19 @@ public final class PortalCarriageEvents {
 
             // Copies start going up as soon as a player is near enough for the structure to have been
             // stamped at all, not once they walk in — so the room around them is already there when
-            // they arrive rather than filling in behind their back. Nobody near at all is the signal
-            // to drain.
+            // they arrive rather than filling in behind their back. But only one ring of them until
+            // somebody is actually inside: riding past a portal carriage is far more common than
+            // going through it, and the full window is a hundred copies of a room nobody looked at.
+            // Nobody near at all is the signal to drain.
             Set<PortalRoomTiling.Tile> standingIn = occupiedTiles(players, dims, layout, structure);
+            int radius = PortalRoomTiling.MAX_RADIUS;
             if (standingIn.isEmpty() && ACTIVE_PAIRS.contains(pair.getKey())) {
                 standingIn = Set.of(PortalRoomTiling.Tile.BASE);
+                radius = PortalRoomTiling.APPROACH_RADIUS;
             }
 
-            PortalStructure next = PortalRoomTiler.tick(level, dims, structure, standingIn, others);
+            PortalStructure next =
+                PortalRoomTiler.tick(level, dims, structure, standingIn, radius, others);
             if (next != structure) STRUCTURES.put(pair.getKey(), next);
 
             sendFogFor(players, dims, layout, next, fogged);

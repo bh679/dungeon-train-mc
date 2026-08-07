@@ -193,6 +193,36 @@ class PortalRoomTilingTest {
         assertNull(tiling.nextToRemove(walkedTo, RADIUS));
     }
 
+    @Test
+    @DisplayName("the approach radius builds one ring — six copies, not a hundred")
+    void approachRadiusBuildsOneRing() {
+        PortalRoomTiling tiling = fillAround(Tile.BASE, PortalRoomTiling.APPROACH_RADIUS, UNLIMITED);
+        // The 3×3 around the base, less the base itself and the corridor row's two illegal cells.
+        assertEquals(7, tiling.size());
+        assertTrue(tiling.has(new Tile(1, 1)));
+        assertTrue(tiling.has(new Tile(0, 1)));
+        assertFalse(tiling.has(new Tile(1, 0)), "the corridor row still holds tile 0 only");
+        assertFalse(tiling.has(new Tile(0, 2)), "one ring, not two");
+
+        // And it is a small fraction of what standing in the room gets you.
+        assertTrue(fillAround(Tile.BASE, RADIUS, UNLIMITED).size() > tiling.size() * 10);
+    }
+
+    @Test
+    @DisplayName("walking in widens the window rather than rebuilding it — the ring is kept")
+    void approachRingSurvivesWideningToTheFullWindow() {
+        PortalRoomTiling approached =
+            fillAround(Tile.BASE, PortalRoomTiling.APPROACH_RADIUS, UNLIMITED);
+        PortalRoomTiling inside = approached;
+        for (Tile next; (next = inside.nextToAdd(Tile.BASE, RADIUS, UNLIMITED)) != null; ) {
+            inside = inside.with(next);
+        }
+        for (Tile t : approached.tiles()) {
+            assertTrue(inside.has(t), t + " was dropped when the window widened");
+        }
+        assertNull(inside.nextToRemove(Tile.BASE, RADIUS));
+    }
+
     // ---- copies that cannot be built, and copies that must not be erased ----
 
     @Test

@@ -62,6 +62,19 @@ public record PortalRoomTiling(Set<Tile> tiles) {
     public static final int MAX_RADIUS = 5;
 
     /**
+     * How far the window reaches for somebody who is near the portal carriage but not yet in the
+     * room.
+     *
+     * <p>Just the ring around the base room — six copies once the corridor row's two illegal cells
+     * are taken out, against a hundred at {@link #MAX_RADIUS}. The point of building anything before
+     * a player walks in is only that the room should already be there when they arrive rather than
+     * filling in behind their back, and one ring does that. Going straight to the full window would
+     * mean somebody who rides past a portal carriage and never goes through it has paid for a hundred
+     * copies of a room nobody looked at.</p>
+     */
+    public static final int APPROACH_RADIUS = 1;
+
+    /**
      * Ceiling on how much room the resident tiles may occupy, in blocks.
      *
      * <p>{@link #MAX_RADIUS} times {@code MAX_LENGTH × MAX_HEIGHT × MAX_WIDTH} — the largest single
