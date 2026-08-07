@@ -328,7 +328,7 @@ public final class PortalCarriageEvents {
             }
 
             PortalStructure next =
-                PortalRoomTiler.tick(level, dims, structure, standingIn, radius, others);
+                PortalRoomTiler.tick(level, dims, structure, standingIn, radius, others, pair.getKey());
             if (next != structure) STRUCTURES.put(pair.getKey(), next);
 
             sendFogFor(players, dims, layout, next, fogged);

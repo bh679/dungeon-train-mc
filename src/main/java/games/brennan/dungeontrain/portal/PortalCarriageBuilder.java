@@ -6,7 +6,6 @@ import games.brennan.dungeontrain.editor.ContainerContentsPlacement;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
 import games.brennan.dungeontrain.editor.VariantState;
-import games.brennan.dungeontrain.track.TrackVariantMobs;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -15,6 +14,7 @@ import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
+import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
@@ -532,7 +532,9 @@ public final class PortalCarriageBuilder {
         Vec3i roomSize = structure.roomSize();
 
         stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
-            PortalCorridorMask.NONE, structure.variantIndexFor(PortalRoomTiling.Tile.BASE));
+            PortalCorridorMask.NONE, PortalCorridorMask.NONE,
+            structure.variantIndexFor(PortalRoomTiling.Tile.BASE), pairKey, PortalRoomTiling.Tile.BASE,
+            PortalRoomMobs.liveCount(level, footprintOf(level, structure, dims), pairKey));
 
         // Before the corridors, so each mode acts on the room as it actually turned out rather than
         // as it was asked for. It does not follow that the corridors repair whatever a mode wrote at
@@ -755,12 +757,6 @@ public final class PortalCarriageBuilder {
      * {@link PortalRoomCopies#DYNAMIC}, and what makes them identical under
      * {@link PortalRoomCopies#EXACT} — see {@code PortalStructure.variantIndexFor}.</p>
      */
-    public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
-                                   String roomName, Vec3i size, boolean relight,
-                                   PortalCorridorMask mask, int variantIndex) {
-        stampRoomAt(level, roomOrigin, dims, roomName, size, relight, mask, mask, variantIndex);
-    }
-
     /**
      * {@link #stampRoomAt} with the two jobs a mask does held apart.
      *
@@ -782,9 +778,11 @@ public final class PortalCarriageBuilder {
     public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
                                    String roomName, Vec3i size, boolean relight,
                                    PortalCorridorMask clearMask, PortalCorridorMask writeMask,
-                                   int variantIndex) {
+                                   int variantIndex, int pairKey, PortalRoomTiling.Tile tile,
+                                   int liveMobCount) {
         stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask);
-        applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex);
+        applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex, pairKey, tile,
+            liveMobCount);
     }
 
     /**
@@ -795,11 +793,16 @@ public final class PortalCarriageBuilder {
      * through {@code ContainerContentsPlacement} so chests roll their pool and signs keep their
      * authored NBT.</p>
      *
-     * <p>Mob entries are dropped with a warning rather than spawned, matching tunnels. A portal room
-     * repeats, and a mob entry that spawned per copy would be a spawner with a hundred outlets.</p>
+     * <p>Mob entries go through {@link PortalRoomMobs}, which spawns them and — just as importantly —
+     * takes them away when the copy they are standing in retires. They used to be dropped with a
+     * warning, on the grounds that a portal room repeats and a mob entry spawning per copy would be a
+     * spawner with a hundred outlets. That was true of spawning alone; it is the paired reap that
+     * makes it safe, not the spawn being clever.</p>
      */
     private static void applyRoomVariants(ServerLevel level, BlockPos roomOrigin, String roomName,
-                                          Vec3i size, PortalCorridorMask mask, int variantIndex) {
+                                          Vec3i size, PortalCorridorMask mask, int variantIndex,
+                                          int pairKey, PortalRoomTiling.Tile tile,
+                                          int liveMobCount) {
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, roomName, size);
         if (sidecar.isEmpty()) return;
 
@@ -809,6 +812,10 @@ public final class PortalCarriageBuilder {
         // takes "track:<kind>:<name>" and sanitises the colons into a filename, so a portal room's
         // pool lives at containers/track_portal_room_<name>.contents.json.
         String plotKey = ContainerContentsStore.trackPlotKey(TrackKind.PORTAL_ROOM, roomName);
+        // Counted once for the whole stamp rather than per cell: it is an entity query over the
+        // structure, and the cap only has to be approximately right — it is a backstop against a
+        // badly-weighted room, not an exact quota.
+        int live = liveMobCount;
         for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
             BlockPos local = entry.localPos();
             BlockPos world = roomOrigin.offset(local);
@@ -817,8 +824,12 @@ public final class PortalCarriageBuilder {
             VariantState picked = sidecar.resolve(local, worldSeed, variantIndex);
             if (picked == null) continue;
             if (picked.isMob()) {
-                TrackVariantMobs.warnDropped("portal_room", local, picked.entityId());
+                // The cell itself still has to go: a mob entry carries a COMMAND_BLOCK sentinel as
+                // its state so every block applier blanks it without a special case.
                 level.setBlock(world, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+                if (PortalRoomMobs.spawn(level, world, picked, pairKey, tile, worldSeed, live)) {
+                    live++;
+                }
                 continue;
             }
             if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
@@ -933,12 +944,19 @@ public final class PortalCarriageBuilder {
      * into solid rock. A copy that already has somebody's villager standing in it is never
      * re-stamped — {@code PortalRoomTiler} refuses to retire a copy anybody is in, and a structure
      * with a player inside is pinned against re-stamping altogether.</p>
+     *
+     * <p><b>What DT itself placed is spared</b>, by the same contents tag the train's runway sweep
+     * reads. Without that this would delete the room's own authored mobs on the next stamp of the
+     * copy they stand in, which — since a copy is re-stamped every time the window slides back over
+     * it — is most of them, most of the time. "Whatever was standing here" has to mean whatever
+     * arrived on its own.</p>
      */
     private static void clearIntruders(ServerLevel level, BlockPos origin, Vec3i size) {
         AABB box = new AABB(
             origin.getX(), origin.getY(), origin.getZ(),
             origin.getX() + size.getX(), origin.getY() + size.getY(), origin.getZ() + size.getZ());
-        for (Entity entity : level.getEntities((Entity) null, box, e -> !(e instanceof Player))) {
+        for (Entity entity : level.getEntities((Entity) null, box,
+                e -> !(e instanceof Player) && !TrainMembership.isOnTrain(e))) {
             entity.discard();
         }
     }

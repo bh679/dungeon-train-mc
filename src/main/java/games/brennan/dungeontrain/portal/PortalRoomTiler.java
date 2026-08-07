@@ -107,13 +107,13 @@ public final class PortalRoomTiler {
      */
     public static PortalStructure tick(ServerLevel level, CarriageDims dims,
                                        PortalStructure structure, Set<Tile> standingIn, int radius,
-                                       Collection<PortalStructure> neighbours) {
+                                       Collection<PortalStructure> neighbours, int pairKey) {
         if (!structure.mode().tiles()) {
             // A room that does not tile should have nothing standing. It can still get here carrying
             // copies if its variant's mode was changed between one visit and the next.
-            return structure.tiling().isBaseOnly() ? structure : drain(level, dims, structure, standingIn);
+            return structure.tiling().isBaseOnly() ? structure : drain(level, dims, structure, standingIn, pairKey);
         }
-        if (standingIn.isEmpty()) return drain(level, dims, structure, standingIn);
+        if (standingIn.isEmpty()) return drain(level, dims, structure, standingIn, pairKey);
 
         // With two players walking opposite ways the window can only follow one of them. It follows
         // the first, and the other is held up by whatever budget is left — but never dropped, since
@@ -127,24 +127,24 @@ public final class PortalRoomTiler {
         // frees a slot for the next tick, so a sliding window still slides.
         Tile next = tiling.nextToAdd(centre, radius, structure.tileBudget(),
             candidate -> canStamp(level, dims, structure, candidate, neighbours));
-        if (next != null) return stampTile(level, dims, structure, next);
+        if (next != null) return stampTile(level, dims, structure, next, pairKey);
 
         Tile stale = tiling.nextToRemove(centre, radius,
             candidate -> !standingIn.contains(candidate));
-        if (stale != null) return eraseTile(level, dims, structure, stale);
+        if (stale != null) return eraseTile(level, dims, structure, stale, pairKey);
 
         return structure;
     }
 
     /** Shed copies from the outside in, several a tick — see {@link #ERASES_PER_TICK}. */
     private static PortalStructure drain(ServerLevel level, CarriageDims dims,
-                                         PortalStructure structure, Set<Tile> standingIn) {
+                                         PortalStructure structure, Set<Tile> standingIn, int pairKey) {
         PortalStructure current = structure;
         for (int i = 0; i < ERASES_PER_TICK; i++) {
             Tile farthest = current.tiling().farthestFrom(Tile.BASE,
                 candidate -> !standingIn.contains(candidate));
             if (farthest == null) break;
-            current = eraseTile(level, dims, current, farthest);
+            current = eraseTile(level, dims, current, farthest, pairKey);
         }
         return current;
     }
@@ -167,7 +167,7 @@ public final class PortalRoomTiler {
      * together. See {@link PortalClear} for the same hazard, found earlier on the erase paths.</p>
      */
     private static PortalStructure stampTile(ServerLevel level, CarriageDims dims,
-                                             PortalStructure structure, Tile tile) {
+                                             PortalStructure structure, Tile tile, int pairKey) {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
@@ -175,7 +175,9 @@ public final class PortalRoomTiler {
         PortalCorridorMask clearMask = maskFor(structure, dims, tile);
         PortalCorridorMask writeMask = writeMaskFor(structure, clearMask, origin, size);
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, structure.roomName(), size,
-            /*relight*/ true, clearMask, writeMask, structure.variantIndexFor(tile));
+            /*relight*/ true, clearMask, writeMask, structure.variantIndexFor(tile),
+            pairKey, tile,
+            PortalRoomMobs.liveCount(level, PortalCarriageBuilder.footprintOf(level, structure, dims), pairKey));
 
         PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
         refreshFacesAround(level, dims, grown, tile);
@@ -239,17 +241,26 @@ public final class PortalRoomTiler {
      * repair are the same shape.</p>
      */
     private static PortalStructure eraseTile(ServerLevel level, CarriageDims dims,
-                                             PortalStructure structure, Tile tile) {
+                                             PortalStructure structure, Tile tile, int pairKey) {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
         BlockPos origin = structure.tileOrigin(dims, layout, tile);
         Vec3i size = structure.roomSize();
 
-        PortalCorridorMask mask = maskFor(structure, dims, tile);
-        PortalClear.clearBox(level, new BoundingBox(
+        BoundingBox box = new BoundingBox(
             origin.getX(), origin.getY(), origin.getZ(),
             origin.getX() + size.getX() - 1,
             origin.getY() + size.getY() - 1,
-            origin.getZ() + size.getZ() - 1), mask);
+            origin.getZ() + size.getZ() - 1);
+
+        // Before the blocks go, and separately from PortalClear: `isLoose` spares mobs on purpose,
+        // because a structure that RELOCATES should carry its occupants. A copy falling out of the
+        // window is the other case — it should leave nothing behind. Without this the floor
+        // disappears and the mobs stay, falling to the world floor, and since they are all
+        // persistence-required that is a permanent leak rather than a passing mess.
+        PortalRoomMobs.reapTile(level, box, pairKey, tile);
+
+        PortalCorridorMask mask = maskFor(structure, dims, tile);
+        PortalClear.clearBox(level, box, mask);
 
         PortalStructure shrunk = structure.withTiling(structure.tiling().without(tile));
         // The neighbours that were open onto this copy now face nothing, so they close again — which
