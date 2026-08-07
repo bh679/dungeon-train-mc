@@ -43,7 +43,20 @@ public final class ModRoster {
     /** One mod as reported by the loader: its id and the name a player would recognise. */
     public record LoadedMod(String modId, String displayName) {}
 
-    private static volatile Set<String> keys;
+    /**
+     * The loaded roster: exact normalised {@code keys}, plus raw-modId {@code prefixes} for families
+     * that register many ids at once (the Forgified Fabric API's {@code fabric_*} modules).
+     */
+    public record Roster(Set<String> keys, List<String> prefixes) {
+        public Roster {
+            keys = Set.copyOf(keys);
+            prefixes = List.copyOf(prefixes);
+        }
+        public boolean isEmpty() { return keys.isEmpty(); }
+        public static Roster of(Set<String> keys) { return new Roster(keys, List.of()); }
+    }
+
+    private static volatile Roster roster;
 
     private ModRoster() {}
 
@@ -53,44 +66,61 @@ public final class ModRoster {
         return s.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
     }
 
-    /** The roster keys, loaded once from the jar. Empty when the resource is missing or broken. */
-    public static Set<String> keys() {
-        Set<String> local = keys;
+    /** The roster, loaded once from the jar. Empty when the resource is missing or broken. */
+    public static Roster roster() {
+        Roster local = roster;
         if (local == null) {
             synchronized (ModRoster.class) {
-                local = keys;
+                local = roster;
                 if (local == null) {
                     local = load();
-                    keys = local;
+                    roster = local;
                 }
             }
         }
         return local;
     }
 
-    private static Set<String> load() {
+    private static Roster load() {
         try (var in = ModRoster.class.getResourceAsStream(RESOURCE)) {
             if (in == null) {
                 LOGGER.warn("[DungeonTrain] mod roster resource {} missing; recommendations page disabled", RESOURCE);
-                return Set.of();
+                return Roster.of(Set.of());
             }
             JsonObject root = JsonParser.parseReader(
                     new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
-            Set<String> out = new HashSet<>();
+            Set<String> keys = new HashSet<>();
             for (var e : root.getAsJsonArray("keys")) {
                 String k = normalise(e.getAsString());
-                if (!k.isEmpty()) out.add(k);
+                if (!k.isEmpty()) keys.add(k);
             }
-            return Set.copyOf(out);
+            List<String> prefixes = new ArrayList<>();
+            if (root.has("prefixes")) {
+                for (var e : root.getAsJsonArray("prefixes")) {
+                    String p = e.getAsString().toLowerCase(Locale.ROOT);
+                    if (!p.isEmpty()) prefixes.add(p);
+                }
+            }
+            return new Roster(keys, prefixes);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] mod roster failed to load; recommendations page disabled: {}", t.toString());
-            return Set.of();
+            return Roster.of(Set.of());
         }
     }
 
-    /** Whether this mod is part of Dungeon Train or its modpack — matched by id or display name. */
-    public static boolean isOurs(Set<String> roster, String modId, String displayName) {
-        return roster.contains(normalise(modId)) || roster.contains(normalise(displayName));
+    /**
+     * Whether this mod is part of Dungeon Train or its modpack. Matched against the normalised id
+     * and display name, then against the raw-id prefixes (which catch families like the Forgified
+     * Fabric API's {@code fabric_*} modules without enumerating a set that keeps changing).
+     */
+    public static boolean isOurs(Roster roster, String modId, String displayName) {
+        if (roster.keys().contains(normalise(modId))) return true;
+        if (roster.keys().contains(normalise(displayName))) return true;
+        String raw = modId == null ? "" : modId.toLowerCase(Locale.ROOT);
+        for (String p : roster.prefixes()) {
+            if (raw.startsWith(p)) return true;
+        }
+        return false;
     }
 
     /**
@@ -99,7 +129,7 @@ public final class ModRoster {
      * the runtime entry point. An empty roster returns nothing (see the class note on failing
      * closed).
      */
-    public static List<LoadedMod> leftovers(Set<String> roster, Collection<LoadedMod> loaded) {
+    public static List<LoadedMod> leftovers(Roster roster, Collection<LoadedMod> loaded) {
         if (roster.isEmpty() || loaded == null) return List.of();
         List<LoadedMod> out = new ArrayList<>();
         for (LoadedMod m : loaded) {
@@ -111,6 +141,6 @@ public final class ModRoster {
 
     /** The player's mods that aren't ours, against the roster shipped in the jar. */
     public static List<LoadedMod> leftovers(Collection<LoadedMod> loaded) {
-        return leftovers(keys(), loaded);
+        return leftovers(roster(), loaded);
     }
 }
