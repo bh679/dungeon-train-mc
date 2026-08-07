@@ -439,9 +439,9 @@ public final class PortalCarriageBuilder {
      *
      * <p>Shared by the skin that writes there and the {@link #eraseTwin} sweep that clears it, so the
      * two cannot disagree — a structure must never leave behind a block its own erase will not
-     * reach. The clamp matters because {@code TWIN_FLOOR_MARGIN} puts the lowest lane's floor one
-     * block above {@code getMinBuildHeight()}, and that row is the world's vanilla bedrock: writing
-     * to it is pointless and erasing it would open a hole into the void.</p>
+     * reach. The clamp matters because {@link PortalTwinLanes#FLOOR_MARGIN} puts the lowest lane's
+     * floor one block above {@code getMinBuildHeight()}, and nothing can be placed below that: the
+     * skin would silently drop its bottom row while the erase swept a row that never existed.</p>
      */
     static int lowestWritableY(int worldMinY, int structureFloorY) {
         return Math.max(worldMinY + 1, structureFloorY - 1);
