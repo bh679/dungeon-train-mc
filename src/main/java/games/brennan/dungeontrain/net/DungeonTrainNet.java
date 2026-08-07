@@ -66,6 +66,9 @@ public final class DungeonTrainNet {
         // corridor is occupied, and once empty when it clears. See portal/PortalPuppets.
         registrar.playToClient(PortalPuppetsPacket.TYPE, PortalPuppetsPacket.STREAM_CODEC, PortalPuppetsPacket::handle);
         registrar.playToClient(PortalRoomFogPacket.TYPE, PortalRoomFogPacket.STREAM_CODEC, PortalRoomFogPacket::handle);
+        // …and the same region trick for the engine sound: a twin corridor is not a sub-level, so the
+        // client cannot work out from the train's geometry that it should still sound like one.
+        registrar.playToClient(PortalTrainAudioPacket.TYPE, PortalTrainAudioPacket.STREAM_CODEC, PortalTrainAudioPacket::handle);
         // …and the swing back the other way: a puppet is not an entity, so a hit on one needs its own
         // round trip. The id is re-validated against the live pairing before anything is damaged.
         registrar.playToServer(PortalPuppetAttackPacket.TYPE, PortalPuppetAttackPacket.STREAM_CODEC, PortalPuppetAttackPacket::handle);
