@@ -5,6 +5,7 @@ import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -27,6 +28,13 @@ import java.util.List;
  * before goals existed.</p>
  */
 public final class FundingGoals {
+
+    /**
+     * The first rung, which the death screen gives a dedicated tile rather than treating as one
+     * goal among many: it is the bill that has to be paid before anything else can be, so the
+     * screen shows it whether it is the current ask or already settled.
+     */
+    public static final String RUNNING_COSTS = "running_costs";
 
     /** Translation-key stem; a goal's id is appended (e.g. {@code …goal_running_costs}). */
     private static final String LABEL_KEY_PREFIX = "gui.dungeontrain.death.narr.goal_";
@@ -54,17 +62,26 @@ public final class FundingGoals {
         return goals.get(goals.size() - 1);
     }
 
+    /** The rung with this id, or null — the screen tiles {@link #RUNNING_COSTS} specifically. */
+    public static Goal byId(List<Goal> goals, String id) {
+        if (goals == null || id == null) return null;
+        for (Goal g : goals) {
+            if (id.equals(g.id())) return g;
+        }
+        return null;
+    }
+
     /**
-     * The goals already funded, in ladder order, EXCLUDING the active one — a goal that is both
-     * complete and still being displayed would otherwise appear twice, once ticked and once as
-     * the current ask.
+     * The goals already funded, in ladder order, EXCLUDING any the caller already draws a tile for
+     * — a goal shown as a tile and ticked off above it would be the same goal twice. With the
+     * standard two-rung ladder that leaves nothing, and the ✓ line disappears entirely; it exists
+     * for the case where the relay has added rungs beyond the two the grid has slots for.
      */
-    public static List<Goal> completed(List<Goal> goals, String activeGoalId) {
+    public static List<Goal> completed(List<Goal> goals, Collection<String> tiledIds) {
         List<Goal> out = new ArrayList<>();
         if (goals == null) return out;
-        Goal active = active(goals, activeGoalId);
         for (Goal g : goals) {
-            if (g.complete() && (active == null || !g.id().equals(active.id()))) out.add(g);
+            if (g.complete() && (tiledIds == null || !tiledIds.contains(g.id()))) out.add(g);
         }
         return out;
     }

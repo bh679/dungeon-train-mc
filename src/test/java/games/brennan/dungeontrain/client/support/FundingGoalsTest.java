@@ -64,28 +64,42 @@ final class FundingGoalsTest {
     // ---- which goals are ticked off ------------------------------------------------------
 
     @Test
-    @DisplayName("completed goals exclude the one currently on display")
-    void completedExcludesTheActiveGoal() {
-        // Every rung funded: dev_tools is still the ask, so ticking it off above the grid too
-        // would show the same goal twice.
+    @DisplayName("goals the grid already tiles are not also ticked off above it")
+    void completedExcludesTiledGoals() {
+        // The standard two-rung ladder, both funded: dev_tools holds the goal tile and
+        // running_costs holds the blue server-costs tile, so the ✓ line has nothing left to say.
         List<Goal> all = List.of(COSTS_DONE, TOOLS_DONE);
-        assertEquals(List.of("running_costs"),
-                FundingGoals.completed(all, null).stream().map(Goal::id).toList());
+        assertTrue(FundingGoals.completed(all, List.of("dev_tools", FundingGoals.RUNNING_COSTS)).isEmpty());
     }
 
     @Test
     @DisplayName("nothing is ticked off until the first goal is actually covered")
     void nothingCompletedEarlyInTheMonth() {
-        assertTrue(FundingGoals.completed(List.of(COSTS_PART, TOOLS_PART), null).isEmpty());
+        assertTrue(FundingGoals.completed(List.of(COSTS_PART, TOOLS_PART), List.of()).isEmpty());
     }
 
     @Test
-    @DisplayName("completed goals keep the relay's ladder order")
-    void completedKeepsLadderOrder() {
+    @DisplayName("a funded rung the grid has no slot for is ticked off, in ladder order")
+    void completedKeepsLadderOrderForUntiledGoals() {
+        // A third rung the relay added: dev_tools is now funded but no longer tiled, so it
+        // reappears on the ✓ line above the grid.
         Goal third = goal("third", 10, false);
         List<Goal> ladder = List.of(COSTS_DONE, TOOLS_DONE, third);
-        assertEquals(List.of("running_costs", "dev_tools"),
-                FundingGoals.completed(ladder, "third").stream().map(Goal::id).toList());
+        assertEquals(List.of("dev_tools"),
+                FundingGoals.completed(ladder, List.of("third", FundingGoals.RUNNING_COSTS))
+                        .stream().map(Goal::id).toList());
+    }
+
+    // ---- the server-costs rung the grid tiles specifically --------------------------------
+
+    @Test
+    @DisplayName("the running-costs rung is findable by id, and absent ids give null")
+    void findsTheRunningCostsRung() {
+        List<Goal> ladder = List.of(COSTS_DONE, TOOLS_PART);
+        assertEquals(100, FundingGoals.byId(ladder, FundingGoals.RUNNING_COSTS).percent());
+        assertNull(FundingGoals.byId(ladder, "sound_design"));
+        assertNull(FundingGoals.byId(ladder, null));
+        assertNull(FundingGoals.byId(null, FundingGoals.RUNNING_COSTS));
     }
 
     // ---- naming --------------------------------------------------------------------------

@@ -1039,6 +1039,7 @@
   "gui.dungeontrain.death.narr.donate_cn_desc": "Eenmalige steun via WeChat Pay - elk bedrag",
   "gui.dungeontrain.death.narr.lbl_raised_month": "Opgehaald",
   "gui.dungeontrain.death.narr.lbl_running_cost": "Maandelijkse Kosten",
+  "gui.dungeontrain.death.narr.lbl_server_cost": "Serverkosten",
   "gui.dungeontrain.death.narr.lbl_covered": "Kosten Gedekt",
   "gui.dungeontrain.death.narr.lbl_leaderboard_monthly": "die aan boord",
   "gui.dungeontrain.death.narr.tip_monthly_cost": "De kosten om de lichten aan en de trein rijdend te houden. Exclusief de tijd van de schepper.",
@@ -1046,6 +1047,6 @@
   "gui.dungeontrain.death.narr.goal_running_costs": "Bedrijfskosten",
   "gui.dungeontrain.death.narr.goal_dev_tools": "Ontwikkeltools",
   "gui.dungeontrain.death.narr.tip_goal_running_costs": "Het eerste doel: de maandelijkse kosten om de lijn draaiende te houden - hosting, moderatie en betaalkosten.",
-  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "Het volgende doel, zodra de bedrijfskosten gedekt zijn: de tools waarmee de mod gebouwd wordt, waaronder het Claude Max-abonnement van de maker.",
+  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "Het volgende doel, zodra de bedrijfskosten gedekt zijn: de tools waarmee de mod gebouwd en ontwikkeld wordt.",
   "gui.dungeontrain.death.narr.tip_raised": "Totaal deze maand bijgedragen door spelers."
 }

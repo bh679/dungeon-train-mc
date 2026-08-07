@@ -1056,6 +1056,7 @@
   "gui.dungeontrain.death.narr.donate_cn_desc": "Einmalige Unterstützung per WeChat Pay – beliebiger Betrag",
   "gui.dungeontrain.death.narr.lbl_raised_month": "Eingenommen",
   "gui.dungeontrain.death.narr.lbl_running_cost": "Monatliche Kosten",
+  "gui.dungeontrain.death.narr.lbl_server_cost": "Serverkosten",
   "gui.dungeontrain.death.narr.lbl_covered": "Kosten gedeckt",
   "gui.dungeontrain.death.narr.lbl_leaderboard_monthly": "die an Bord",
   "gui.dungeontrain.death.narr.tip_monthly_cost": "Die Kosten, um das Licht am Brennen und den Zug am Laufen zu halten. Ohne die Zeit des Schöpfers.",
@@ -1063,6 +1064,6 @@
   "gui.dungeontrain.death.narr.goal_running_costs": "Betriebskosten",
   "gui.dungeontrain.death.narr.goal_dev_tools": "Entwicklungswerkzeuge",
   "gui.dungeontrain.death.narr.tip_goal_running_costs": "Das erste Ziel: die monatlichen Kosten, um die Strecke am Laufen zu halten - Hosting, Moderation und Zahlungsgebühren.",
-  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "Das nächste Ziel, sobald die Betriebskosten gedeckt sind: die Werkzeuge, mit denen die Mod gebaut wird, einschließlich des Claude-Max-Abos des Erstellers.",
+  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "Das nächste Ziel, sobald die Betriebskosten gedeckt sind: die Werkzeuge, mit denen die Mod gebaut und entwickelt wird.",
   "gui.dungeontrain.death.narr.tip_raised": "Insgesamt von Spielern in diesem Monat beigetragen."
 }

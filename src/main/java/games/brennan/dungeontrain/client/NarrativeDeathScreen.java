@@ -166,6 +166,13 @@ public final class NarrativeDeathScreen extends Screen {
     // Ticked-off funding goals above the ledger grid: the primary green, muted so a line of past
     // wins reads as settled background rather than competing with the Contribute button.
     private static final int GOAL_DONE      = 0xFF6E9973;
+    // A funded goal's figure — the blue of the shift-modified buttons, brightened for tile text.
+    // Deliberately NOT the cost orange: this bill is settled, not one still being asked for.
+    private static final int GOAL_MET       = 0xFF7B93D8;
+    // The ✓ on a paid-off tile, and the progress bar along the bottom of the current goal's tile.
+    private static final int GOAL_CHECK     = 0xFF6DBF7A;
+    private static final int GOAL_BAR_FILL  = 0xFF5C9162;
+    private static final int GOAL_BAR_TRACK = 0x33FFFFFF;
     private static final int SCORE_BG       = 0xFF1A1813;
     private static final int SCORE_BORDER   = 0xFF4A443C;
     private static final int SCORE_TEXT     = 0xFFCDBB95;
@@ -1321,11 +1328,19 @@ public final class NarrativeDeathScreen extends Screen {
             return y + 28;
         }
 
-        // Goals already funded, ticked off on one line above the grid — the ask has moved on, but
-        // the progress players already paid for stays visible. Nothing is drawn (and no vertical
-        // space taken) until the first goal is actually covered.
+        // The ask, and whether the server bill behind it is already paid for this month. Once it is,
+        // the grid re-orders: the new goal's COST leads, the server bill drops to the third slot
+        // and turns blue — a bill that is settled, not one still being asked for.
         Goal activeGoal = FundingGoals.active(s.goals(), s.activeGoalId());
-        List<Goal> done = FundingGoals.completed(s.goals(), s.activeGoalId());
+        Goal serverCosts = FundingGoals.byId(s.goals(), FundingGoals.RUNNING_COSTS);
+        boolean serverCostsMet = serverCosts != null && serverCosts.complete()
+                && activeGoal != null && !FundingGoals.RUNNING_COSTS.equals(activeGoal.id());
+
+        // Any OTHER goal already funded — one the grid has no slot for — ticked off on one line
+        // above it. Usually empty: with the standard two-rung ladder the blue server-costs tile is
+        // the completion marker, and no line is drawn (nor vertical space taken).
+        List<Goal> done = FundingGoals.completed(s.goals(),
+                List.of(activeGoal == null ? "" : activeGoal.id(), FundingGoals.RUNNING_COSTS));
         if (!done.isEmpty()) {
             MutableComponent line = Component.empty();
             for (int i = 0; i < done.size(); i++) {
@@ -1337,33 +1352,51 @@ public final class NarrativeDeathScreen extends Screen {
         }
 
         // Two columns below the narration: the money on the left (explicitly labelled costs, the
-        // cost figure tinted orange), the supporters' names scrolling down the right side. The
+        // cost figures tinted orange), the supporters' names scrolling down the right side. The
         // Contribute button sits in the fourth (bottom-right) tile slot.
         int gap = 10;
         int colW = (w - gap) / 2;
         int rightX = left + colW + gap;
 
-        // ---- Left block: 2x2 grid — monthly cost / costs covered / raised / [Contribute] ----
+        // ---- Left block: 2x2 grid, the first slot leading with whatever is being asked for ----
         int cellGap = 4;
         int cellW = (colW - cellGap) / 2;
         int lc0 = left + cellW / 2;
         int lc1 = left + cellW + cellGap + cellW / 2;
-        costTile(g, lc0, y, cellW, s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—",
-                "gui.dungeontrain.death.narr.lbl_running_cost", "gui.dungeontrain.death.narr.tip_monthly_cost", COST);
-        // The second tile is the current ask: the active goal's progress when the relay serves a
-        // ladder, else the flat coverage percentage this page showed before goals existed (an
-        // older relay, or one with no cost snapshot to build the first rung from).
-        if (activeGoal != null) {
-            costTile(g, lc1, y, cellW, activeGoal.percent() + "%",
-                    FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), VALUE);
+        int ly = y + 30;
+        String costValue = s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—";
+        if (serverCostsMet) {
+            // Slot 1: the new goal, as a COST — what the next thing needs per month, not a
+            // percentage. The progress against it reads off the raised figure beside it.
+            costTile(g, lc0, y, cellW, fmtUsd(activeGoal.targetAud()),
+                    FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), COST);
+            // Slot 2: raised. Slot 3: the settled server bill, blue and renamed — it is no longer
+            // the ask, it is the thing this month's support already paid off.
+            costTile(g, lc1, y, cellW, fmtUsd(s.monthlyRaisedUsd()),
+                    "gui.dungeontrain.death.narr.lbl_raised_month",
+                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
+            checkedCostTile(g, lc0, ly, cellW, costValue,
+                    "gui.dungeontrain.death.narr.lbl_server_cost",
+                    "gui.dungeontrain.death.narr.tip_monthly_cost", GOAL_MET);
+            // Each rung's progress along the foot of its own tile: the new goal part-filled, the
+            // server bill full — the same bar in both, so one reads as the continuation of the other.
+            drawTileProgress(g, lc0, y, cellW, activeGoal.percent());
+            drawTileProgress(g, lc0, ly, cellW, serverCosts.percent());
         } else {
-            costTile(g, lc1, y, cellW, s.percentCovered() >= 0 ? s.percentCovered() + "%" : "—",
+            // Nothing covered yet: the bill leads, with progress toward it beside it — the layout
+            // this page has always had. The percentage is the first rung's when a ladder is served,
+            // else the flat coverage figure from a relay that predates goals.
+            costTile(g, lc0, y, cellW, costValue,
+                    "gui.dungeontrain.death.narr.lbl_running_cost",
+                    "gui.dungeontrain.death.narr.tip_monthly_cost", COST);
+            int percent = activeGoal != null ? activeGoal.percent() : s.percentCovered();
+            costTile(g, lc1, y, cellW, percent >= 0 ? percent + "%" : "—",
                     Component.translatable("gui.dungeontrain.death.narr.lbl_covered"),
                     "gui.dungeontrain.death.narr.tip_covered", VALUE);
+            costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
+                    "gui.dungeontrain.death.narr.lbl_raised_month",
+                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
         }
-        int ly = y + 30;
-        costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
-                "gui.dungeontrain.death.narr.lbl_raised_month", "gui.dungeontrain.death.narr.tip_raised", VALUE);
         // Contribute button in place of the old "your total" tile.
         donateRect = drawBevel(g, lc1 - cellW / 2, ly, cellW, 26,
                 Component.translatable("gui.dungeontrain.death.narr.donate_button"),
@@ -1417,6 +1450,57 @@ public final class NarrativeDeathScreen extends Screen {
                           Component label, String tipKey, int valueColor) {
         drawCell(g, centerX, y, value, label, cw, valueColor);
         donateTips.add(new TileTip(new Rect(centerX - cw / 2, y, cw, 26), tipKey));
+    }
+
+    /**
+     * A tile whose label carries a green ✓ — this one is paid off. The tick is its own string
+     * rather than a styled sibling of the label so it honours {@link #fade}; a Style colour would
+     * ignore the page's alpha and pop in ahead of everything around it.
+     */
+    private void checkedCostTile(GuiGraphics g, int centerX, int y, int cw, String value,
+                                 String labelKey, String tipKey, int valueColor) {
+        Component label = Component.translatable(labelKey);
+        int ch = 26;
+        int x = centerX - cw / 2;
+        g.fill(x, y, x + cw, y + ch, fade(TILE_BG));
+        drawBorder(g, x, y, cw, ch, TILE_BORDER);
+        drawCenteredStr(g, value, centerX, y + 4, valueColor);
+        int startX = centerX - (CHECK_W + this.font.width(label)) / 2;
+        int ly = y + 4 + this.font.lineHeight + 1;
+        drawCheckGlyph(g, startX, ly + 1);
+        g.drawString(this.font, label, startX + CHECK_W, ly, fade(LABEL), false);
+        donateTips.add(new TileTip(new Rect(x, y, cw, ch), tipKey));
+    }
+
+    /** Advance of {@link #drawCheckGlyph}: the 8px mark plus the gap before the label. */
+    private static final int CHECK_W = 11;
+
+    /**
+     * A chunky ✓, drawn as 2×2 pixel blocks rather than the font's glyph — at this size the
+     * typeset tick is a hairline that disappears against the tile. Blocks also mean {@link #fade}
+     * applies (fills honour it where a glyph's Style colour would not), so it fades in with the
+     * rest of the page.
+     */
+    private void drawCheckGlyph(GuiGraphics g, int x, int y) {
+        int c = fade(GOAL_CHECK);
+        // Short stroke down-right into the elbow, then the long stroke back up.
+        for (int i = 0; i < 3; i++) g.fill(x + i, y + 2 + i, x + i + 2, y + 4 + i, c);
+        for (int i = 0; i < 4; i++) g.fill(x + 3 + i, y + 3 - i, x + 5 + i, y + 5 - i, c);
+    }
+
+    /**
+     * Progress toward the current goal, as a 2px bar along the foot of its tile (inside the
+     * border, under the label). Clamped to 0–100: a relay that reports an over-funded rung fills
+     * the bar rather than overrunning the tile.
+     */
+    private void drawTileProgress(GuiGraphics g, int centerX, int y, int cw, int percent) {
+        int x0 = centerX - cw / 2 + 1;
+        int x1 = centerX + cw / 2 - 1;
+        int top = y + 26 - 3;
+        g.fill(x0, top, x1, top + 2, fade(GOAL_BAR_TRACK));
+        int p = Math.max(0, Math.min(100, percent));
+        int filled = Math.round((x1 - x0) * (p / 100f));
+        if (filled > 0) g.fill(x0, top, x0 + filled, top + 2, fade(GOAL_BAR_FILL));
     }
 
     private int drawPlatform(GuiGraphics g, DeathNarrative n, int left, int w, int cx, int y) {
