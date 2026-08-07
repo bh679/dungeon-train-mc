@@ -1060,5 +1060,9 @@
   "gui.dungeontrain.death.narr.lbl_leaderboard_monthly": "những người trên tàu",
   "gui.dungeontrain.death.narr.tip_monthly_cost": "Chi phí để giữ đèn sáng, và đoàn tàu lăn bánh. Chưa tính thời gian của đấng sáng tạo.",
   "gui.dungeontrain.death.narr.tip_covered": "Bao nhiêu phần chi phí vận hành hằng tháng được trang trải bởi đóng góp của người chơi.",
+  "gui.dungeontrain.death.narr.goal_running_costs": "Chi Phí Vận Hành",
+  "gui.dungeontrain.death.narr.goal_dev_tools": "Công Cụ Phát Triển",
+  "gui.dungeontrain.death.narr.tip_goal_running_costs": "Mục tiêu đầu tiên: chi phí hằng tháng để giữ tuyến đường hoạt động - lưu trữ, kiểm duyệt và phí thanh toán.",
+  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "Mục tiêu tiếp theo, khi chi phí vận hành đã được trang trải: những công cụ dùng để làm nên bản mod này, gồm cả gói Claude Max của người tạo.",
   "gui.dungeontrain.death.narr.tip_raised": "Tổng số người chơi đã đóng góp trong tháng này."
 }

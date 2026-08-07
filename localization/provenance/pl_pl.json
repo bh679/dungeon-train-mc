@@ -1043,5 +1043,9 @@
   "gui.dungeontrain.death.narr.lbl_leaderboard_monthly": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.death.narr.tip_monthly_cost": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.death.narr.tip_covered": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.death.narr.goal_running_costs": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.death.narr.goal_dev_tools": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.death.narr.tip_goal_running_costs": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.death.narr.tip_goal_dev_tools": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.death.narr.tip_raised": {"author": "Opus 4.8 (Claude)", "reviewer": ""}
 }

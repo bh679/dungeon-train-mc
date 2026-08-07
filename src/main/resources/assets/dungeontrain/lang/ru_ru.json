@@ -1060,5 +1060,9 @@
   "gui.dungeontrain.death.narr.lbl_leaderboard_monthly": "те, кто в пути",
   "gui.dungeontrain.death.narr.tip_monthly_cost": "Стоимость того, чтобы свет горел, а поезд шёл. Без учёта времени создателя.",
   "gui.dungeontrain.death.narr.tip_covered": "Какая часть ежемесячных расходов покрывается вкладами игроков.",
+  "gui.dungeontrain.death.narr.goal_running_costs": "Расходы на содержание",
+  "gui.dungeontrain.death.narr.goal_dev_tools": "Инструменты разработки",
+  "gui.dungeontrain.death.narr.tip_goal_running_costs": "Первая цель: ежемесячные расходы на то, чтобы линия работала, — хостинг, модерация и платёжные комиссии.",
+  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "Следующая цель, когда расходы на содержание покрыты: инструменты, которыми создаётся мод, включая подписку создателя на Claude Max.",
   "gui.dungeontrain.death.narr.tip_raised": "Всего внесено игроками за этот месяц."
 }

@@ -8,6 +8,8 @@ import games.brennan.discordpresence.survey.SurveyRegistry;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
+import games.brennan.dungeontrain.client.support.FundingGoals;
+import games.brennan.dungeontrain.net.relay.DonationSummaryClient.Goal;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.relay.DonationSummaryClient;
@@ -161,6 +163,9 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int BTN_DONE_TEXT  = 0xCCFFFFFF;
     // Dark-orange tint for the monthly-cost figure — signals money going OUT (a cost, not raised).
     private static final int COST           = 0xFFE07B39;
+    // Ticked-off funding goals above the ledger grid: the primary green, muted so a line of past
+    // wins reads as settled background rather than competing with the Contribute button.
+    private static final int GOAL_DONE      = 0xFF6E9973;
     private static final int SCORE_BG       = 0xFF1A1813;
     private static final int SCORE_BORDER   = 0xFF4A443C;
     private static final int SCORE_TEXT     = 0xFFCDBB95;
@@ -1316,6 +1321,21 @@ public final class NarrativeDeathScreen extends Screen {
             return y + 28;
         }
 
+        // Goals already funded, ticked off on one line above the grid — the ask has moved on, but
+        // the progress players already paid for stays visible. Nothing is drawn (and no vertical
+        // space taken) until the first goal is actually covered.
+        Goal activeGoal = FundingGoals.active(s.goals(), s.activeGoalId());
+        List<Goal> done = FundingGoals.completed(s.goals(), s.activeGoalId());
+        if (!done.isEmpty()) {
+            MutableComponent line = Component.empty();
+            for (int i = 0; i < done.size(); i++) {
+                if (i > 0) line.append(Component.literal(" · "));
+                line.append(Component.literal("✓ ")).append(FundingGoals.label(done.get(i)));
+            }
+            y = drawCentered(g, line, cx, w, y, GOAL_DONE);
+            y += 4;
+        }
+
         // Two columns below the narration: the money on the left (explicitly labelled costs, the
         // cost figure tinted orange), the supporters' names scrolling down the right side. The
         // Contribute button sits in the fourth (bottom-right) tile slot.
@@ -1330,8 +1350,17 @@ public final class NarrativeDeathScreen extends Screen {
         int lc1 = left + cellW + cellGap + cellW / 2;
         costTile(g, lc0, y, cellW, s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—",
                 "gui.dungeontrain.death.narr.lbl_running_cost", "gui.dungeontrain.death.narr.tip_monthly_cost", COST);
-        costTile(g, lc1, y, cellW, s.percentCovered() >= 0 ? s.percentCovered() + "%" : "—",
-                "gui.dungeontrain.death.narr.lbl_covered", "gui.dungeontrain.death.narr.tip_covered", VALUE);
+        // The second tile is the current ask: the active goal's progress when the relay serves a
+        // ladder, else the flat coverage percentage this page showed before goals existed (an
+        // older relay, or one with no cost snapshot to build the first rung from).
+        if (activeGoal != null) {
+            costTile(g, lc1, y, cellW, activeGoal.percent() + "%",
+                    FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), VALUE);
+        } else {
+            costTile(g, lc1, y, cellW, s.percentCovered() >= 0 ? s.percentCovered() + "%" : "—",
+                    Component.translatable("gui.dungeontrain.death.narr.lbl_covered"),
+                    "gui.dungeontrain.death.narr.tip_covered", VALUE);
+        }
         int ly = y + 30;
         costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
                 "gui.dungeontrain.death.narr.lbl_raised_month", "gui.dungeontrain.death.narr.tip_raised", VALUE);
@@ -1377,7 +1406,16 @@ public final class NarrativeDeathScreen extends Screen {
     /** A cost/stat tile plus its hover-tooltip region (rendered when the page is settled). */
     private void costTile(GuiGraphics g, int centerX, int y, int cw, String value,
                           String labelKey, String tipKey, int valueColor) {
-        drawCell(g, centerX, y, value, labelKey, cw, valueColor);
+        costTile(g, centerX, y, cw, value, Component.translatable(labelKey), tipKey, valueColor);
+    }
+
+    /**
+     * As above, for a label that is not a translation key — a relay-served funding goal this jar
+     * has no translation for renders its English label verbatim rather than not at all.
+     */
+    private void costTile(GuiGraphics g, int centerX, int y, int cw, String value,
+                          Component label, String tipKey, int valueColor) {
+        drawCell(g, centerX, y, value, label, cw, valueColor);
         donateTips.add(new TileTip(new Rect(centerX - cw / 2, y, cw, 26), tipKey));
     }
 
@@ -1874,12 +1912,16 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private void drawCell(GuiGraphics g, int centerX, int y, String value, String labelKey, int cw, int valueColor) {
+        drawCell(g, centerX, y, value, Component.translatable(labelKey), cw, valueColor);
+    }
+
+    private void drawCell(GuiGraphics g, int centerX, int y, String value, Component label, int cw, int valueColor) {
         int ch = 26;
         int x = centerX - cw / 2;
         g.fill(x, y, x + cw, y + ch, fade(TILE_BG));
         drawBorder(g, x, y, cw, ch, TILE_BORDER);
         drawCenteredStr(g, value, centerX, y + 4, valueColor);
-        drawCenteredStr(g, Component.translatable(labelKey), centerX, y + 4 + this.font.lineHeight + 1, LABEL);
+        drawCenteredStr(g, label, centerX, y + 4 + this.font.lineHeight + 1, LABEL);
     }
 
     /** The portrait subject's name, centered under the figure and shrunk to fit {@code maxW}. */

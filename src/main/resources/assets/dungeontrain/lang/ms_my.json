@@ -1043,5 +1043,9 @@
   "gui.dungeontrain.death.narr.lbl_leaderboard_monthly": "mereka yang menaikinya",
   "gui.dungeontrain.death.narr.tip_monthly_cost": "Kos untuk memastikan lampu terus menyala, dan kereta api terus berjalan. Tidak termasuk masa sang pencipta.",
   "gui.dungeontrain.death.narr.tip_covered": "Berapa banyak kos operasi bulanan yang ditanggung oleh sumbangan pemain.",
+  "gui.dungeontrain.death.narr.goal_running_costs": "Kos Operasi",
+  "gui.dungeontrain.death.narr.goal_dev_tools": "Alat Pembangunan",
+  "gui.dungeontrain.death.narr.tip_goal_running_costs": "Matlamat pertama: kos bulanan untuk memastikan laluan terus beroperasi - pengehosan, penyederhanaan dan yuran pembayaran.",
+  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "Matlamat seterusnya, setelah kos operasi ditanggung: alat yang digunakan untuk membina mod ini, termasuk langganan Claude Max pencipta.",
   "gui.dungeontrain.death.narr.tip_raised": "Jumlah keseluruhan yang disumbangkan pemain bulan ini."
 }

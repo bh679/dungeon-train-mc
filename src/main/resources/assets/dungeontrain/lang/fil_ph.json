@@ -1043,5 +1043,9 @@
   "gui.dungeontrain.death.narr.lbl_leaderboard_monthly": "silang nakasakay",
   "gui.dungeontrain.death.narr.tip_monthly_cost": "Ang gastos para manatiling nakasindi ang mga ilaw, at tumatakbo ang tren. Hindi kasama ang panahon ng lumikha.",
   "gui.dungeontrain.death.narr.tip_covered": "Gaano kalaki sa buwanang gastos sa pagpapatakbo ang natutustusan ng mga ambag ng manlalaro.",
+  "gui.dungeontrain.death.narr.goal_running_costs": "Gastos sa Pagpapatakbo",
+  "gui.dungeontrain.death.narr.goal_dev_tools": "Kagamitan sa Pagbuo",
+  "gui.dungeontrain.death.narr.tip_goal_running_costs": "Ang unang layunin: ang buwanang gastos para mapatakbo ang linya - hosting, moderasyon at bayarin sa pagbabayad.",
+  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "Ang susunod na layunin, kapag natustusan na ang gastos sa pagpapatakbo: ang mga kagamitang ginagamit sa pagbuo ng mod, kabilang ang Claude Max subscription ng lumikha.",
   "gui.dungeontrain.death.narr.tip_raised": "Kabuuang naiambag ng mga manlalaro ngayong buwan."
 }

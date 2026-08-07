@@ -1057,5 +1057,9 @@
   "gui.dungeontrain.death.narr.lbl_leaderboard_monthly": "同行旅人",
   "gui.dungeontrain.death.narr.tip_monthly_cost": "维持灯火与列车运行所需的成本，不包括造物主投入的时间。",
   "gui.dungeontrain.death.narr.tip_covered": "玩家贡献覆盖了多少每月运行成本。",
+  "gui.dungeontrain.death.narr.goal_running_costs": "运行成本",
+  "gui.dungeontrain.death.narr.goal_dev_tools": "开发工具",
+  "gui.dungeontrain.death.narr.tip_goal_running_costs": "第一个目标：让这条线路继续运转的每月成本——托管、内容审核与支付手续费。",
+  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "运行成本覆盖之后的下一个目标：制作这个模组所用的开发工具，包括作者的 Claude Max 订阅。",
   "gui.dungeontrain.death.narr.tip_raised": "玩家本月贡献的总额。"
 }

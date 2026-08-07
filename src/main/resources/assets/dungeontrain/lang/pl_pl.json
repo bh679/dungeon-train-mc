@@ -1060,5 +1060,9 @@
   "gui.dungeontrain.death.narr.lbl_leaderboard_monthly": "ci na pokładzie",
   "gui.dungeontrain.death.narr.tip_monthly_cost": "Koszt utrzymania świateł i pociągu w ruchu. Bez wliczania czasu twórcy.",
   "gui.dungeontrain.death.narr.tip_covered": "Jaka część miesięcznych kosztów utrzymania jest pokryta z wkładów graczy.",
+  "gui.dungeontrain.death.narr.goal_running_costs": "Koszty utrzymania",
+  "gui.dungeontrain.death.narr.goal_dev_tools": "Narzędzia deweloperskie",
+  "gui.dungeontrain.death.narr.tip_goal_running_costs": "Pierwszy cel: miesięczny koszt utrzymania linii w ruchu - hosting, moderacja i opłaty za płatności.",
+  "gui.dungeontrain.death.narr.tip_goal_dev_tools": "Kolejny cel, gdy koszty utrzymania są pokryte: narzędzia, którymi tworzony jest mod, w tym subskrypcja Claude Max twórcy.",
   "gui.dungeontrain.death.narr.tip_raised": "Łączna kwota wpłacona przez graczy w tym miesiącu."
 }
