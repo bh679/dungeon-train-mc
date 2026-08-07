@@ -4978,8 +4978,12 @@ public final class EditorCommand {
         return Commands.literal(literal)
             .then(Commands.literal("inc").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, +1)))
             .then(Commands.literal("dec").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, -1)))
+            // Loosest floor of any axis, not the length's — this node is shared by length, width
+            // and height, and a parser bound is a silent rejection where clampSize is a visible
+            // one. PortalRoomLayout.clampSize stays the single authority on what is legal.
             .then(Commands.argument("blocks", IntegerArgumentType.integer(
-                    PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MAX_LENGTH))
+                    Math.min(PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MIN_HEIGHT),
+                    PortalRoomLayout.MAX_LENGTH))
                 .executes(ctx -> runPortalRoomSize(ctx.getSource(), axis,
                     IntegerArgumentType.getInteger(ctx, "blocks"))));
     }
