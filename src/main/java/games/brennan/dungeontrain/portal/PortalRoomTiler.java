@@ -187,7 +187,21 @@ public final class PortalRoomTiler {
 
     // ---------- erasing ----------
 
-    /** Clear {@code tile} back to air, then settle the faces its neighbours are now left with. */
+    /**
+     * Clear {@code tile} back to air, then settle the faces its neighbours are now left with.
+     *
+     * <p><b>Its own box and not a block more.</b> A margin here would reach into whatever is next
+     * door, and next door is another copy of the room — so it would take a column out of that
+     * neighbour's <i>floor and ceiling</i> as well as its wall, leaving a one-block trench along the
+     * seam that the repair below cannot fill (face work only ever touches the rows between the floor
+     * and the ceiling, which is the whole point of it).</p>
+     *
+     * <p>Nothing outside a copy's own box needs clearing anyway. Everything the tiler writes lands
+     * inside the box it belongs to, with one exception: a seam carve opens the near column of the
+     * <i>neighbour's</i> wall as well as its own. That column belongs to the neighbour, and the
+     * refresh below is what puts it back — exactly the rows the carve opened, so the damage and the
+     * repair are the same shape.</p>
+     */
     private static PortalStructure eraseTile(ServerLevel level, CarriageDims dims,
                                              PortalStructure structure, Tile tile) {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
@@ -196,10 +210,8 @@ public final class PortalRoomTiler {
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         BlockState air = Blocks.AIR.defaultBlockState();
-        // One block of margin, because a closed outer face and Bedrock Lock's skin both sit just
-        // outside a room box rather than inside it.
-        for (int x = -1; x <= size.getX(); x++) {
-            for (int z = -1; z <= size.getZ(); z++) {
+        for (int x = 0; x < size.getX(); x++) {
+            for (int z = 0; z < size.getZ(); z++) {
                 for (int y = 0; y < size.getY(); y++) {
                     level.setBlock(pos.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z),
                         air, Block.UPDATE_ALL);
@@ -208,7 +220,8 @@ public final class PortalRoomTiler {
         }
 
         PortalStructure shrunk = structure.withTiling(structure.tiling().without(tile));
-        // The neighbours that were open onto this copy now face nothing, so they close again.
+        // The neighbours that were open onto this copy now face nothing, so they close again — which
+        // is also what restores the column this copy's seam carve took out of each of them.
         for (int[] d : DIRECTIONS) {
             Tile neighbour = tile.offset(d[0], d[1]);
             if (shrunk.tiling().has(neighbour)) refreshFace(level, dims, shrunk, neighbour, -d[0], -d[1]);
