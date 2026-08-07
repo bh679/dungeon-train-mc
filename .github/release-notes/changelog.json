@@ -6337,6 +6337,24 @@
       "released": true,
       "released_in": "v0.545.0",
       "released_at": "2026-08-07T04:53:07Z"
+    },
+    {
+      "id": "payment-pricing-tiers",
+      "version": "0.546.0",
+      "type": "feat",
+      "title": "Pick an amount: three price points on the support pages",
+      "summary": "The Ways to Help page and the death-screen Contribute window now lead with three named amounts instead of asking you to invent one \u2014 $10 Help The Dev, $30 A Big Fan, and $70 Server Costs, which covers a whole month of running the servers. Each opens a checkout with your player name already filled in. Giving a custom amount or setting up a monthly pledge on Patreon are both still there, tucked underneath.",
+      "highlights": [
+        "Three named amounts on both support screens: $10, $30 and $70 AUD",
+        "$70 covers a full month of Dungeon Train's server costs",
+        "Custom Amount and Recurring are still available below the three amounts",
+        "Translated into all 19 languages"
+      ],
+      "pr": 891,
+      "date": "2026-08-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
