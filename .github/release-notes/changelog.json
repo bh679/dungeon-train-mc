@@ -6337,6 +6337,22 @@
       "released": true,
       "released_in": "v0.545.0",
       "released_at": "2026-08-07T04:53:07Z"
+    },
+    {
+      "id": "stage-link-survives-weight-edit",
+      "version": "0.546.0",
+      "type": "fix",
+      "title": "Editing a weight no longer unlinks a template from its Stage",
+      "summary": "In the in-world editor, changing the weight of a carriage, contents, or track-side variant that was linked to a Stage silently detached it \u2014 the row quietly stopped following its Stage and froze on whatever stale spawn gate had been snapshotted. Weight and gate edits now keep the Stage link.",
+      "highlights": [
+        "Affects all three weight editors: carriages, carriage contents, and track-side variants.",
+        "Templates already unlinked by this bug cannot be recovered automatically \u2014 the link is gone from disk and needs setting again in the editor.",
+        "Editing a spawn gate by command on a Stage-linked template now warns that the inline gate won't take effect until you detach the template to Custom."
+      ],
+      "date": "2026-08-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
