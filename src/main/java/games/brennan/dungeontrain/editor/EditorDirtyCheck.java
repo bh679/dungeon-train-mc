@@ -132,7 +132,7 @@ public final class EditorDirtyCheck {
             // Snapshots for contents are keyed to the INTERIOR region so the
             // shell isn't part of the diff (matches the save's capture region).
             BlockPos interiorOrigin = origin.offset(1, 1, 1);
-            Vec3i interior = CarriageContentsPlacer.interiorSize(dims);
+            Vec3i interior = CarriageContentsPlacer.interiorSizeFor(c, dims);
             String key = EditorPlotSnapshots.key("contents", c.id());
             Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
 
@@ -345,7 +345,7 @@ public final class EditorDirtyCheck {
             BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
             if (origin == null) return out;
             BlockPos interiorOrigin = origin.offset(1, 1, 1);
-            Vec3i interior = CarriageContentsPlacer.interiorSize(dims);
+            Vec3i interior = CarriageContentsPlacer.interiorSizeFor(contents, dims);
             String key = EditorPlotSnapshots.key("contents", modelId);
             Set<BlockPos> skip = variantCellPositions(
                 CarriageContentsVariantBlocks.loadFor(contents, interior).entries());

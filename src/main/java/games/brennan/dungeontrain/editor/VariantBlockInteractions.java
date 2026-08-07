@@ -239,7 +239,7 @@ public final class VariantBlockInteractions {
         BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contents, dims);
         if (carriageOrigin == null) return;
         BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
-        Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
+        Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
 
         BlockPos local = clicked.subtract(interiorOrigin);
         if (local.getX() < 0 || local.getX() >= interiorSize.getX()

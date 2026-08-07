@@ -174,7 +174,7 @@ public interface BlockVariantPlot {
                     if (carriageOrigin == null) return (BlockVariantPlot) null;
                     BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
                     net.minecraft.core.Vec3i interiorSize =
-                        games.brennan.dungeontrain.train.CarriageContentsPlacer.interiorSize(dims);
+                        games.brennan.dungeontrain.train.CarriageContentsPlacer.interiorSizeFor(c, dims);
                     return new ContentsPlot(c, interiorOrigin, interiorSize);
                 })
                 .orElse(null);
@@ -233,7 +233,7 @@ public interface BlockVariantPlot {
             BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contents, dims);
             if (carriageOrigin == null) return null;
             BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
-            Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
+            Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
             return new ContentsPlot(contents, interiorOrigin, interiorSize);
         }
         CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(pos, dims);

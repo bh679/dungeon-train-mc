@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
+import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
@@ -68,6 +70,43 @@ public final class CarriageContentsEditor {
     private CarriageContentsEditor() {}
 
     /**
+     * The box a contents variant's plot occupies.
+     *
+     * <p>Every one but the portal corridor's is a plain carriage box. Delegates to
+     * {@link CarriageContentsPlacer#contentsDims} rather than repeating the rule — the plot, the
+     * template captured out of it and the interior the dirty-check compares must all be the same
+     * box.</p>
+     *
+     * <p><b>Only for sizing the plot box.</b> Never hand it back to {@link CarriagePlacer#placeAt} or
+     * {@link CarriageContentsPlacer#placeAt}: both resolve their own box from the variant / contents
+     * id, so an already-resolved one would be grown twice.</p>
+     */
+    public static CarriageDims plotDims(CarriageContents contents, CarriageDims dims) {
+        return CarriageContentsPlacer.contentsDims(contents, dims);
+    }
+
+    /**
+     * The uniform {@code +X} step between contents plots — the widest any of them can be, so the
+     * longer portal-corridor plot cannot reach its neighbour whatever order the registry is in.
+     */
+    private static int plotStep(CarriageDims dims) {
+        return PortalCorridorSize.corridorLength(dims) + EditorLayout.GAP;
+    }
+
+    /**
+     * The shell stamped around a contents plot for visual context.
+     *
+     * <p>The portal corridor's contents get the <b>corridor</b> rather than a standard carriage —
+     * they are authored to sit inside one, and against a standard shell they would be the wrong
+     * length and show none of the walkway, baffles or lantern floor they have to work around.</p>
+     */
+    private static CarriageVariant shellFor(CarriageContents contents) {
+        return contents.id().equals(PortalCarriageBuilder.portalContents().id())
+            ? PortalCarriageBuilder.portalVariant()
+            : DEFAULT_SHELL;
+    }
+
+    /**
      * Re-stamp the plot for {@code contents} in-place: fresh shell, fresh
      * contents, fresh barrier cage. Used by {@code runEnterCategory(CONTENTS)}
      * to materialise every registered contents plot at once so the player can
@@ -80,11 +119,15 @@ public final class CarriageContentsEditor {
         // re-stamp reads the last-saved disk state; placement writes only
         // touch the in-memory cache until /save.
         ContainerContentsStore.invalidate("contents:" + contents.id());
-        CarriagePlacer.eraseAt(overworld, origin, dims);
-        CarriageContentsPlacer.eraseAt(overworld, origin, dims);
-        CarriagePlacer.placeAt(overworld, origin, DEFAULT_SHELL, dims);
+        // The plot's own box — longer than a carriage for the portal corridor's contents.
+        // The two placers take the WORLD's dims and resolve their own box from the variant /
+        // contents id; only the box operations take the resolved one. See plotDims.
+        CarriageDims box = plotDims(contents, dims);
+        CarriagePlacer.eraseAt(overworld, origin, box);
+        CarriageContentsPlacer.eraseAt(overworld, origin, box);
+        CarriagePlacer.placeAt(overworld, origin, shellFor(contents), dims);
         CarriageContentsPlacer.placeAt(overworld, origin, contents, dims);
-        setOutline(overworld, origin, OUTLINE_BLOCK, dims);
+        setOutline(overworld, origin, OUTLINE_BLOCK, box);
 
         // Snapshot the freshly-stamped INTERIOR for the dirty-check baseline.
         // Save's captureTemplate captures only the interior (size = dims-2),
@@ -92,7 +135,7 @@ public final class CarriageContentsEditor {
         // interior to a snapshot of just the interior keeps shell blocks
         // (which the contents save deliberately excludes) out of the diff.
         BlockPos interiorOrigin = origin.offset(1, 1, 1);
-        net.minecraft.core.Vec3i interior = CarriageContentsPlacer.interiorSize(dims);
+        net.minecraft.core.Vec3i interior = CarriageContentsPlacer.interiorSize(box);
         EditorPlotSnapshots.capture(
             EditorPlotSnapshots.key("contents", contents.id()),
             overworld, interiorOrigin, interior.getX(), interior.getY(), interior.getZ()
@@ -109,13 +152,15 @@ public final class CarriageContentsEditor {
      * {@link CarriageContentsRegistry#unregister}.
      */
     public static void restampRowAfterDeletion(ServerLevel level, int oldDeletedIndex, int oldCount, CarriageDims dims) {
-        int step = dims.length() + EditorLayout.GAP;
         BlockState air = Blocks.AIR.defaultBlockState();
+        // Erased at the widest plot size — the loop works by index and cannot know which of the
+        // shifted contents was the long portal one, and clearing extra air is harmless.
+        CarriageDims widest = PortalCorridorSize.corridorDims(dims);
         for (int i = oldDeletedIndex; i < oldCount; i++) {
-            BlockPos pos = new BlockPos(FIRST_PLOT_X + i * step, PLOT_Y, PLOT_Z);
-            CarriagePlacer.eraseAt(level, pos, dims);
-            CarriageContentsPlacer.eraseAt(level, pos, dims);
-            setOutline(level, pos, air, dims);
+            BlockPos pos = new BlockPos(FIRST_PLOT_X + i * plotStep(dims), PLOT_Y, PLOT_Z);
+            CarriagePlacer.eraseAt(level, pos, widest);
+            CarriageContentsPlacer.eraseAt(level, pos, widest);
+            setOutline(level, pos, air, widest);
         }
         List<CarriageContents> remaining = CarriageContentsRegistry.allContents();
         for (int i = oldDeletedIndex; i < remaining.size(); i++) {
@@ -131,11 +176,12 @@ public final class CarriageContentsEditor {
     public static void clearPlot(ServerLevel overworld, CarriageContents contents, CarriageDims dims) {
         BlockPos origin = plotOrigin(contents, dims);
         if (origin == null) return;
-        CarriagePlacer.eraseAt(overworld, origin, dims);
-        CarriageContentsPlacer.eraseAt(overworld, origin, dims);
+        CarriageDims box = plotDims(contents, dims);
+        CarriagePlacer.eraseAt(overworld, origin, box);
+        CarriageContentsPlacer.eraseAt(overworld, origin, box);
         // Drop the dirty-check baseline — same reasoning as CarriageEditor.clearPlot.
         EditorPlotSnapshots.clear(EditorPlotSnapshots.key("contents", contents.id()));
-        setOutline(overworld, origin, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), dims);
+        setOutline(overworld, origin, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), box);
     }
 
     /**
@@ -190,7 +236,7 @@ public final class CarriageContentsEditor {
     private static BlockPos topLevelPlotOrigin(String targetId, CarriageDims dims) {
         java.util.Set<String> children = CarriageContentsGroupStore.allChildIds();
         List<CarriageContents> all = CarriageContentsRegistry.allContents();
-        int step = dims.length() + EditorLayout.GAP;
+        int step = plotStep(dims);
         int index = 0;
         for (CarriageContents c : all) {
             if (children.contains(c.id())) continue;
@@ -225,10 +271,11 @@ public final class CarriageContentsEditor {
         for (CarriageContents contents : CarriageContentsRegistry.allContents()) {
             BlockPos o = plotOrigin(contents, dims);
             if (o == null) continue;
+            CarriageDims box = plotDims(contents, dims);
             // +2 Y headroom above cage top — see CarriageEditor.plotContaining for rationale.
-            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + dims.length()
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + dims.height() + 2
-                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + dims.width()) {
+            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + box.length()
+                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + box.height() + 2
+                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + box.width()) {
                 return contents;
             }
         }
@@ -259,34 +306,37 @@ public final class CarriageContentsEditor {
             LOGGER.warn("[DungeonTrain] Contents editor enter: unknown contents '{}'", contents.id());
             return;
         }
-        CarriageVariant shell = shellVariant != null ? shellVariant : DEFAULT_SHELL;
+        // An explicit shell wins; otherwise the contents' natural one — the corridor for the portal
+        // contents, a standard carriage for everything else.
+        CarriageVariant shell = shellVariant != null ? shellVariant : shellFor(contents);
+        CarriageDims box = plotDims(contents, dims);
 
         CarriageEditor.rememberReturn(player);
 
-        CarriagePlacer.eraseAt(overworld, origin, dims);
+        CarriagePlacer.eraseAt(overworld, origin, box);
         // Also discard any entities left from a previous edit session
         // (armor stands / item frames / paintings don't get cleared by the
         // block-only erase above). Must run before the shell + contents stamp
         // so the freshly stamped NBT entities don't get caught up in this.
-        CarriageContentsPlacer.eraseAt(overworld, origin, dims);
+        CarriageContentsPlacer.eraseAt(overworld, origin, box);
         // Stamp the shell first — this fills floor/walls/ceiling as context.
         // Uses the 4-arg placeAt so variant-block sidecar entries don't get
         // applied here (the author is editing contents, not the shell).
         CarriagePlacer.placeAt(overworld, origin, shell, dims);
         // Stamp the current contents template on top of the air interior.
         CarriageContentsPlacer.placeAt(overworld, origin, contents, dims);
-        setOutline(overworld, origin, OUTLINE_BLOCK, dims);
+        setOutline(overworld, origin, OUTLINE_BLOCK, box);
 
-        double tx = origin.getX() + dims.length() / 2.0;
+        double tx = origin.getX() + box.length() / 2.0;
         double ty = onTop
-            ? origin.getY() + dims.height() + 1.0
+            ? origin.getY() + box.height() + 1.0
             : origin.getY() + 1.0;
-        double tz = origin.getZ() + dims.width() / 2.0;
+        double tz = origin.getZ() + box.width() / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
         LOGGER.info("[DungeonTrain] Contents editor enter: {} -> {} (shell={}) plot at {} dims={}x{}x{} ({})",
             player.getName().getString(), contents.id(), shell.id(), origin,
-            dims.length(), dims.width(), dims.height(), onTop ? "top" : "inside");
+            box.length(), box.width(), box.height(), onTop ? "top" : "inside");
     }
 
     /**
@@ -310,7 +360,7 @@ public final class CarriageContentsEditor {
         // interior-relative cells. No-op when all axes are off (default).
         {
             BlockPos mirrorOrigin = origin.offset(1, 1, 1);
-            net.minecraft.core.Vec3i mirrorSize = CarriageContentsPlacer.interiorSize(dims);
+            net.minecraft.core.Vec3i mirrorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
             CarriageContentsVariantBlocks mirrorSidecar =
                 CarriageContentsVariantBlocks.loadFor(contents, mirrorSize);
             // "V" toggle: mirror the variant pools first so the structural pass
@@ -322,7 +372,10 @@ public final class CarriageContentsEditor {
                 EditorMirror.markersOf(mirrorSidecar.entries()));
         }
 
-        StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, origin, dims);
+        // The contents' own box — captures the whole corridor interior for the portal contents
+        // rather than its first seven blocks, which the size gate would then reject on load.
+        StructureTemplate template = CarriageContentsPlacer.captureTemplate(
+            overworld, origin, plotDims(contents, dims));
         CarriageContentsStore.save(contents, template);
 
         // Contents store: persist any in-session loot-prefab link changes
@@ -338,7 +391,7 @@ public final class CarriageContentsEditor {
         // Refresh the dirty-check baseline so the just-saved state reads as
         // clean on the next /dt editor unsaved-list query.
         BlockPos interiorOrigin = origin.offset(1, 1, 1);
-        net.minecraft.core.Vec3i interiorSnapshotSize = CarriageContentsPlacer.interiorSize(dims);
+        net.minecraft.core.Vec3i interiorSnapshotSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
         EditorPlotSnapshots.capture(
             EditorPlotSnapshots.key("contents", contents.id()),
             overworld, interiorOrigin,
@@ -349,7 +402,7 @@ public final class CarriageContentsEditor {
             .trigger(player, "saved_contents_variant");
         LOGGER.info("[DungeonTrain] Contents editor save: {} -> {} template interior={}x{}x{}",
             player.getName().getString(), contents.id(),
-            Math.max(0, dims.length() - 2), Math.max(0, dims.height() - 2), Math.max(0, dims.width() - 2));
+            interiorSnapshotSize.getX(), interiorSnapshotSize.getY(), interiorSnapshotSize.getZ());
 
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {
@@ -357,7 +410,7 @@ public final class CarriageContentsEditor {
             // Promote the variants sidecar too — without this, shift-right-click
             // variant authoring stayed in run/config and was lost on worktree
             // delete (the bug PR #79's vase update silently shipped without).
-            net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
+            net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
             CarriageContentsVariantBlocks sidecar =
                 CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
             sidecar.saveToSource(contents);
@@ -434,17 +487,18 @@ public final class CarriageContentsEditor {
 
         // Stamp the default shell as context, then stamp the source contents
         // on top. Capture the interior region and save under the new id.
-        CarriagePlacer.eraseAt(overworld, targetOrigin, dims);
-        CarriageContentsPlacer.eraseAt(overworld, targetOrigin, dims);
-        CarriagePlacer.placeAt(overworld, targetOrigin, DEFAULT_SHELL, dims);
+        CarriageDims sourceBox = plotDims(source, dims);
+        CarriagePlacer.eraseAt(overworld, targetOrigin, sourceBox);
+        CarriageContentsPlacer.eraseAt(overworld, targetOrigin, sourceBox);
+        CarriagePlacer.placeAt(overworld, targetOrigin, shellFor(source), dims);
         CarriageContentsPlacer.placeAt(overworld, targetOrigin, source, dims);
 
-        StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, dims);
+        StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, sourceBox);
         CarriageContentsStore.save(target, template);
 
         // Copy the source's variants sidecar onto the duplicate so authors get
         // the random-pick set "for free" — same pattern as CarriageEditor.
-        net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
+        net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(source, dims);
         CarriageContentsVariantBlocks sourceSidecar = CarriageContentsVariantBlocks.loadFor(source, interiorSize);
         if (!sourceSidecar.isEmpty()) {
             CarriageContentsVariantBlocks copy = CarriageContentsVariantBlocks.empty();
@@ -516,7 +570,7 @@ public final class CarriageContentsEditor {
         if (EditorDevMode.isEnabled()) {
             try {
                 CarriageContentsStore.saveToSource(renamed, template);
-                net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
+                net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(current, dims);
                 CarriageContentsVariantBlocks newSidecar =
                     CarriageContentsVariantBlocks.loadFor(renamed, interiorSize);
                 newSidecar.saveToSource(renamed);

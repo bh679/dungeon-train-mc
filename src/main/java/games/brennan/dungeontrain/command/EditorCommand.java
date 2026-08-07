@@ -2418,7 +2418,7 @@ public final class EditorCommand {
             return 0;
         }
         BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
-        Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
+        Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contentsPlot, dims);
         BlockPos local = hit.subtract(interiorOrigin);
         if (!inBounds(local, interiorSize)) {
             source.sendFailure(Component.literal(
@@ -2467,7 +2467,7 @@ public final class EditorCommand {
 
         CarriageContents contentsPlot = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
         if (contentsPlot != null) {
-            Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
+            Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contentsPlot, dims);
             CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
             sendVariantsListing(source,
                 "contents '" + contentsPlot.id() + "'",
@@ -3252,7 +3252,7 @@ public final class EditorCommand {
                 // operates on interiorOrigin/interiorSize, so the floor/walls/
                 // ceiling stay put for the author to keep building inside.
                 CarriageContentsPlacer.eraseAt(overworld, origin, dims);
-                Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
+                Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
                 CarriageContentsVariantBlocks contentsSidecar =
                     CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
                 int cleared = contentsSidecar.clearAll();

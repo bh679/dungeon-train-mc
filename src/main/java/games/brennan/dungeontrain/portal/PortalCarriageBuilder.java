@@ -11,6 +11,8 @@ import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
+import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -114,7 +116,33 @@ public final class PortalCarriageBuilder {
      */
     private static final CarriageVariant MIDDLE_VARIANT = CarriageVariant.custom("portal_middle");
 
+    /**
+     * The contents authored for the inside of a corridor: {@code contents/portal.nbt}.
+     *
+     * <p>Interior-sized against the <b>corridor's</b> box rather than a carriage's, so 11×5×5 at the
+     * default dims — see {@link CarriageContentsPlacer#contentsDims}. Weighted 0 in
+     * {@code contents/weights.json} so it never enters an ordinary carriage's random pick: it is the
+     * corridor's own furnishing, and its interior would not fit a carriage in any case.</p>
+     */
+    private static final CarriageContents PORTAL_CONTENTS = CarriageContents.custom("portal");
+
+    /**
+     * The seed and carriage index the corridor's contents are resolved with.
+     *
+     * <p><b>Fixed, not the carriage's own.</b> Those two values drive the contents sidecar's
+     * variant-block picks, and a corridor's blocks have to match its twin exactly — so both copies
+     * must resolve the same way. Feeding in a per-carriage index would let the carriage and its twin
+     * roll different blocks and tear the crossing open.</p>
+     */
+    private static final long CONTENTS_SEED = 0L;
+    private static final int CONTENTS_INDEX = 0;
+
     private PortalCarriageBuilder() {}
+
+    /** The contents variant authored for the inside of a portal corridor. */
+    public static CarriageContents portalContents() {
+        return PORTAL_CONTENTS;
+    }
 
     public static CarriageVariant portalVariant() {
         return PORTAL_VARIANT;
@@ -164,6 +192,22 @@ public final class PortalCarriageBuilder {
      */
     public static void stampCorridorFrom(ServerLevel level, BlockPos origin, CarriageDims dims,
                                          boolean relight) {
+        stampCorridorFrom(level, origin, dims, relight, /*withContents*/ false);
+    }
+
+    /**
+     * As above, optionally laying the authored {@code portal} contents into the corridor's interior
+     * on top of the shell.
+     *
+     * <p><b>{@code withContents} is about the editor, not about lighting.</b> The two live paths —
+     * the carriage copy and its twin — pass {@code true}, so both halves of a crossing get the same
+     * furnishing from the same call and stay identical by construction. The <i>carriage editor's</i>
+     * plot passes {@code false}: that plot is captured back into {@code portal.nbt} on save, and
+     * stamping the contents into it would bake them into the shell template, which then stamps them
+     * again underneath the contents pass. The contents have their own plot to be authored in.</p>
+     */
+    public static void stampCorridorFrom(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                         boolean relight, boolean withContents) {
         // Looked up against the CORRIDOR's dims, not the world's carriage dims: a corridor template
         // is longer than every other carriage template (PortalCorridorSize), and CarriagePlacer's
         // size gate would reject it against the wrong figure and silently drop to the built-in.
@@ -171,9 +215,27 @@ public final class PortalCarriageBuilder {
             CarriageTemplateStore.get(level, PORTAL_VARIANT, PortalCorridorSize.corridorDims(dims));
         if (stored.isPresent()) {
             CarriagePlacer.stampTemplateAt(level, origin, stored.get(), relight);
-            return;
+        } else {
+            stampBuiltIn(level, origin, dims, relight);
         }
-        stampBuiltIn(level, origin, dims, relight);
+        if (withContents) stampCorridorContents(level, origin, dims);
+    }
+
+    /**
+     * Lay the {@code portal} contents into a corridor's interior.
+     *
+     * <p><b>Blocks only.</b> {@code CarriageContentsPlacer} can also spawn the template's entities and
+     * roll its loot, and neither belongs here: a corridor has to read identically to its twin, and a
+     * mob that wandered or a chest that was opened would differ between the copies the moment anyone
+     * touched it.</p>
+     *
+     * <p>The world's carriage dims go in, not the corridor's — the placer resolves the corridor box
+     * itself from the contents id ({@link CarriageContentsPlacer#contentsDims}), and handing it an
+     * already-resolved box would grow it a second time.</p>
+     */
+    private static void stampCorridorContents(ServerLevel level, BlockPos origin, CarriageDims dims) {
+        CarriageContentsPlacer.placeBlocksOnly(
+            level, origin, PORTAL_CONTENTS, dims, CONTENTS_SEED, CONTENTS_INDEX);
     }
 
     /**
@@ -227,7 +289,7 @@ public final class PortalCarriageBuilder {
      *                {@code false} on the spawn path, where Sable relights the plot afterwards
      */
     public static Set<BlockPos> stampCarriage(ServerLevel level, BlockPos origin, CarriageDims dims, boolean relight) {
-        stampCorridorFrom(level, origin, dims, relight);
+        stampCorridorFrom(level, origin, dims, relight, /*withContents*/ true);
         return Set.of();   // the caller re-reads the footprint via CarriagePlacer.finishPlace
     }
 
@@ -392,7 +454,7 @@ public final class PortalCarriageBuilder {
         // and a template stamp only writes its own cells — anything already standing there would
         // show through and break the match with the carriage.
         clearBox(level, origin, dims);
-        stampCorridorFrom(level, origin, dims, /*relight*/ true);
+        stampCorridorFrom(level, origin, dims, /*relight*/ true, /*withContents*/ true);
     }
 
     /**
