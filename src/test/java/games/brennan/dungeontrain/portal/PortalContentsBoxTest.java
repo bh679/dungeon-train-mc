@@ -1,14 +1,20 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsGroup;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.Vec3i;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 /**
  * The {@code portal} contents describe what stands inside a portal <i>corridor</i>, which is longer
@@ -59,6 +65,67 @@ class PortalContentsBoxTest {
             assertEquals(CarriageContentsPlacer.interiorSize(corridor),
                 CarriageContentsPlacer.interiorSizeFor(PORTAL, dims),
                 "length " + length);
+        }
+    }
+
+    @Test
+    @DisplayName("A sub-variant of the portal contents is measured as a corridor, like its parent")
+    void subVariants_inheritTheCorridorBox() {
+        CarriageContentsGroupStore.injectForTesting("portal",
+            new CarriageContentsGroup(List.of(new CarriageContentsGroup.Member("portalzigzag", 1))));
+        try {
+            CarriageContents child = CarriageContents.custom("portalzigzag");
+
+            // A sub-variant fills the same space as its parent — sized as a carriage it would get a
+            // plot four blocks short, and the template captured there is rejected on load.
+            assertEquals(PortalCorridorSize.corridorDims(DIMS),
+                CarriageContentsPlacer.contentsDims(child, DIMS));
+            assertEquals(new Vec3i(11, 5, 5),
+                CarriageContentsPlacer.interiorSizeFor(child, DIMS));
+        } finally {
+            CarriageContentsGroupStore.invalidate("portal");
+        }
+    }
+
+    @Test
+    @DisplayName("Nesting is followed to the root, and a sub-variant of something else is untouched")
+    void nestedGroups_resolveToTheRoot() {
+        CarriageContentsGroupStore.injectForTesting("portal",
+            new CarriageContentsGroup(List.of(new CarriageContentsGroup.Member("portalzigzag", 1))));
+        CarriageContentsGroupStore.injectForTesting("portalzigzag",
+            new CarriageContentsGroup(List.of(new CarriageContentsGroup.Member("portalzigzag_lit", 1))));
+        CarriageContentsGroupStore.injectForTesting("books",
+            new CarriageContentsGroup(List.of(new CarriageContentsGroup.Member("books_rare", 1))));
+        try {
+            assertEquals(PortalCorridorSize.corridorDims(DIMS),
+                CarriageContentsPlacer.contentsDims(CarriageContents.custom("portalzigzag_lit"), DIMS),
+                "a grandchild of portal is still a corridor");
+            assertEquals(DIMS,
+                CarriageContentsPlacer.contentsDims(CarriageContents.custom("books_rare"), DIMS),
+                "a sub-variant of something else stays a carriage");
+        } finally {
+            CarriageContentsGroupStore.invalidate("portal");
+            CarriageContentsGroupStore.invalidate("portalzigzag");
+            CarriageContentsGroupStore.invalidate("books");
+        }
+    }
+
+    @Test
+    @DisplayName("A cycle in the group sidecars terminates instead of hanging the server")
+    void cyclicGroups_doNotHang() {
+        // findParentOf reads sidecars off disk and this runs per placement, so an authored cycle
+        // has to be survivable, not merely unlikely.
+        CarriageContentsGroupStore.injectForTesting("loop_a",
+            new CarriageContentsGroup(List.of(new CarriageContentsGroup.Member("loop_b", 1))));
+        CarriageContentsGroupStore.injectForTesting("loop_b",
+            new CarriageContentsGroup(List.of(new CarriageContentsGroup.Member("loop_a", 1))));
+        try {
+            assertTimeoutPreemptively(Duration.ofSeconds(5), () ->
+                assertEquals(DIMS,
+                    CarriageContentsPlacer.contentsDims(CarriageContents.custom("loop_a"), DIMS)));
+        } finally {
+            CarriageContentsGroupStore.invalidate("loop_a");
+            CarriageContentsGroupStore.invalidate("loop_b");
         }
     }
 

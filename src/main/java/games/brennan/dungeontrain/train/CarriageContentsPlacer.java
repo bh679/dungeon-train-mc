@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
@@ -123,10 +124,41 @@ public final class CarriageContentsPlacer {
      * callers pass the resolved box.</p>
      */
     public static CarriageDims contentsDims(CarriageContents contents, CarriageDims dims) {
-        return contents.id().equals(PortalCarriageBuilder.portalContents().id())
+        return isPortalContents(contents.id())
             ? PortalCorridorSize.corridorDims(dims)
             : dims;
     }
+
+    /**
+     * True for the portal contents <b>or any sub-variant of it</b>.
+     *
+     * <p>A sub-variant is an alternative filling for the same space — the group picks between the
+     * parent and its members for one slot — so a member of the portal group is authored into a
+     * corridor exactly as its parent is, and has to be measured the same way. Sizing one as a
+     * carriage gives it a plot four blocks short, and a template captured there is rejected by the
+     * size gate the moment it is loaded.</p>
+     *
+     * <p>Walks the whole parent chain rather than checking one level, since groups may nest, and
+     * counts its steps: {@code findParentOf} reads sidecars off disk, and a cycle authored into
+     * them ({@code a}'s parent is {@code b}, {@code b}'s is {@code a}) would otherwise hang the
+     * server on a lookup that runs per placement.</p>
+     */
+    private static boolean isPortalContents(String id) {
+        String portal = PortalCarriageBuilder.portalContents().id();
+        String current = id;
+        for (int depth = 0; depth <= MAX_GROUP_DEPTH; depth++) {
+            if (current.equals(portal)) return true;
+            Optional<String> parent = CarriageContentsGroupStore.findParentOf(current);
+            if (parent.isEmpty()) return false;
+            current = parent.get();
+        }
+        LOGGER.warn("[DungeonTrain] Contents group chain from '{}' exceeded {} levels — "
+            + "treating as un-nested. Check for a cycle in the group sidecars.", id, MAX_GROUP_DEPTH);
+        return false;
+    }
+
+    /** How far {@link #isPortalContents} will walk a group chain before calling it a cycle. */
+    private static final int MAX_GROUP_DEPTH = 16;
 
     /** {@link #interiorSize} of the box {@code contents} is authored against. */
     public static Vec3i interiorSizeFor(CarriageContents contents, CarriageDims dims) {
