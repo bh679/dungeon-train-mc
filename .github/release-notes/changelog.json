@@ -6309,6 +6309,22 @@
       "released": true,
       "released_in": "v0.543.0",
       "released_at": "2026-08-07T03:06:04Z"
+    },
+    {
+      "id": "support-funding-goals",
+      "version": "0.544.0",
+      "type": "feat",
+      "title": "The support page now has goals",
+      "summary": "The death screen's support page used to show one number: how much of the month's running costs your contributions had covered. Past 100% it just kept climbing, with nothing left to aim at. It now shows a goal at a time. Keeping the line running is the first \u2014 once it's covered it's ticked off, and the page moves on to the next thing your support pays for.",
+      "highlights": [
+        "Running costs are goal one; once covered they're marked complete and stay ticked off.",
+        "Dev tools are goal two \u2014 the tools the mod is actually built with.",
+        "Support stacks: a contribution counts toward the next goal only once the one before it is fully funded."
+      ],
+      "date": "2026-08-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
