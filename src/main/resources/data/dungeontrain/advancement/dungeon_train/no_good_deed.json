@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/remote_echo_kill",
+  "display": {
+    "icon": { "id": "minecraft:iron_sword" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.no_good_deed.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.no_good_deed.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "killed_love_note_echo" }
+    }
+  },
+  "requirements": [["action"]]
+}

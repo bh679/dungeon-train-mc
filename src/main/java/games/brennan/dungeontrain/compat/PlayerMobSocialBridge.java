@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.compat;
 
 import games.brennan.dungeontrain.advancement.PlayerMobSocialTracker;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
+import games.brennan.dungeontrain.event.DeathNoteEvents;
 import games.brennan.playermob.compat.PlayerMobSocialHooks;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -45,6 +46,9 @@ public final class PlayerMobSocialBridge {
                 // The player gave a PlayerMob an item it picked up (creditGift). player -> mob.
                 PlayerMobSocialTracker.recordPlayerGift(giver, mobId);
                 RemoteEchoEncounters.onGaveGift(giver, mobId);
+                // ...and if that mob is the Love Note echo sent to find THIS player, giving
+                // something back is the "Loved Back" advancement. Filtered + no-throw inside.
+                DeathNoteEvents.onPlayerGiftedEcho(giver, mobId);
             }
         });
     }

@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
+import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.dungeontrain.world.PendingDeathNotes;
 import games.brennan.playermob.entity.PlayerMobEntity;
@@ -79,35 +80,84 @@ public final class DeathNoteEvents {
             // orphaned; the relay is pulled by the target in their next world (login + arrival scan).
             // worldKey is still sent (the relay requires it) but is no longer used to scope the pull.
             DeathNoteReporter.submit(player.getUUID(), note.authorName(), note.targetName(),
-                    note.targetUuid(), deathCarriage, worldKey, "", freePlay);
+                    note.targetUuid(), deathCarriage, worldKey, "", freePlay, note.kind());
         }
     }
 
     /**
-     * A death-note echo drops the Death Note itself when it dies — a keepable black "Death Note"
-     * trophy book (does not soul-burn). Identified by the {@code KEY_TARGET} persistent-data marker
-     * so ordinary PlayerMobs are unaffected.
+     * A note echo drops the note itself when it dies — a keepable trophy book (black for a Death
+     * Note, pink for a Love Note; neither burns). Identified by the {@code KEY_TARGET}
+     * persistent-data marker so ordinary PlayerMobs are unaffected.
      */
     @SubscribeEvent
     public static void onEchoDeath(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof PlayerMobEntity echo)) return;
         if (echo.level().isClientSide()) return;
         CompoundTag data = echo.getPersistentData();
-        if (!data.contains(DeathNoteEchoSpawner.KEY_TARGET)) return; // not a death-note echo
+        if (!data.contains(DeathNoteEchoSpawner.KEY_TARGET)) return; // not a note echo
         DeathNoteEchoController.unregister(echo.getUUID());
         String author = data.contains(DeathNoteEchoSpawner.KEY_AUTHOR)
                 ? data.getString(DeathNoteEchoSpawner.KEY_AUTHOR) : "Unknown";
-        // The curse landed but was survived — tell the relay so the author's story book knows how it
-        // ended. Write-once relay-side, so whoever landed the killing blow, this is the ending.
+        NoteKind kind = kindOf(data);
+        // The note landed but the echo did not survive it — tell the relay so the author's story
+        // book knows how it ended. Write-once relay-side, so whoever landed the killing blow, this
+        // is the ending.
         reportOutcome(echo, data, DeathNoteReporter.OUTCOME_TARGET_KILLED_ECHO);
-        ItemStack book = DeathNoteSigning.buildTrophyBook(author);
+        ItemStack book = DeathNoteSigning.buildTrophyBook(author, kind);
         ItemEntity drop = new ItemEntity(echo.level(), echo.getX(), echo.getY() + 0.5, echo.getZ(), book);
         drop.setDefaultPickUpDelay();
         echo.level().addFreshEntity(drop);
         if (event.getSource().getEntity() instanceof ServerPlayer killer) {
-            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(killer, "killed_death_note_echo");
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(killer, killedEchoActionId(kind));
         }
-        LOGGER.debug("[DungeonTrain] DeathNote: echo of {} dropped a Death Note on death", author);
+        LOGGER.debug("[DungeonTrain] Note: echo of {} dropped a {} on death", author, kind.trophyTitle());
+    }
+
+    /** The {@link NoteKind} stamped on an echo; {@link NoteKind#DEATH} for echoes predating the marker. */
+    private static NoteKind kindOf(CompoundTag echoData) {
+        return NoteKind.fromId(echoData.getString(DeathNoteEchoSpawner.KEY_KIND));
+    }
+
+    /**
+     * The other half of a Love Note: the cursed — beloved — player gives something <em>back</em> to
+     * the echo that came to find them. Grants the "Loved Back" advancement.
+     *
+     * <p>Called from {@code PlayerMobSocialBridge} off PlayerMob's gift seam, which already fires
+     * whenever a player hands any PlayerMob an item; this just filters that stream down to the one
+     * exchange worth rewarding. Three conditions, all required:</p>
+     * <ul>
+     *   <li>the mob is a note echo carrying {@link DeathNoteEchoSpawner#KEY_TARGET};</li>
+     *   <li>it is a {@link NoteKind#LOVE} echo — gifting a curse's echo is not this story;</li>
+     *   <li>the giver <em>is</em> that note's target. The advancement means "you gave back to the
+     *       one who came to love you", not "a bystander threw an item at it".</li>
+     * </ul>
+     *
+     * <p>Reads the kind off the entity's persistent data rather than {@code DeathNoteEchoController}'s
+     * live map, so an echo that has been saved and reloaded still counts. No-throw: the gift seam is
+     * best-effort compat, and a failure here must never break the gift itself.</p>
+     */
+    public static void onPlayerGiftedEcho(ServerPlayer giver, UUID echoUuid) {
+        try {
+            if (giver == null || echoUuid == null) return;
+            if (!(giver.level() instanceof ServerLevel level)) return;
+            if (!(level.getEntity(echoUuid) instanceof PlayerMobEntity echo)) return;
+            CompoundTag data = echo.getPersistentData();
+            if (!data.contains(DeathNoteEchoSpawner.KEY_TARGET)) return;      // an ordinary PlayerMob
+            if (kindOf(data) != NoteKind.LOVE) return;                        // a curse's echo — not this
+            if (!giver.getUUID().toString().equals(data.getString(DeathNoteEchoSpawner.KEY_TARGET))) {
+                return;                                                       // a bystander, not the beloved
+            }
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(giver, "gifted_love_note_echo");
+            LOGGER.debug("[DungeonTrain] LoveNote: {} gave a gift back to the echo that came for them",
+                    giver.getName().getString());
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] LoveNote: gift-back check failed: {}", t.toString());
+        }
+    }
+
+    /** Advancement action id for killing an echo of {@code kind}. */
+    private static String killedEchoActionId(NoteKind kind) {
+        return kind == NoteKind.LOVE ? "killed_love_note_echo" : "killed_death_note_echo";
     }
 
     /**

@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.event.DeathNoteGate;
+import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.playermob.compat.ReincarnationRecord;
@@ -130,17 +131,18 @@ public final class RemoteEchoEncounters {
     }
 
     /**
-     * Open a journal for a freshly-spawned <b>Death Note</b> echo. Same journal, same beats, same
-     * Discord story as any remote echo — but the audience is not "whoever is nearest": it is the
-     * cursed target the echo was raised to hunt, and the encounter is stamped with the relay note id
-     * so its ending can be told back to the player who wrote the curse (the cursed welcome book).
+     * Open a journal for a freshly-spawned <b>signed-note</b> echo, of either {@link NoteKind}. Same
+     * journal, same beats, same Discord story as any remote echo — but the audience is not "whoever
+     * is nearest": it is the player the note named, and the encounter is stamped with the relay note
+     * id so its ending can be told back to whoever signed it (their note's welcome book).
      *
      * <p>Unlike {@link #onRemoteEchoSpawned} this does NOT bail when the Discord feed is switched off
      * — the journal is also the raw material for the author's story, which is not a Discord feature.
      * {@link #post} still honours that config, so the feed stays off when it is off.</p>
      */
     public static void onDeathNoteEchoSpawned(PlayerMobEntity mob, UUID authorId, String authorName,
-                                              int deathCarriage, ServerPlayer target, int noteId) {
+                                              int deathCarriage, ServerPlayer target, int noteId,
+                                              NoteKind kind) {
         if (!(mob.level() instanceof ServerLevel level)) return;
         if (target == null) return;
         if (ACTIVE.size() >= MAX_ACTIVE) return;   // outcome still reported by DeathNoteEvents' fallback
@@ -152,8 +154,11 @@ public final class RemoteEchoEncounters {
         enc.log(EchoEvent.SPAWNED);
         enc.lastOnDeck = CarriageDeck.isOnCarriageDeck(Trains.allCarriages(level), mob);
         ACTIVE.put(echoId, enc);
-        LOGGER.info("[DungeonTrain] Death Note echo of '{}' (note {}) spawned — encounter journal opened for {}.",
-                authorName, noteId, target.getGameProfile().getName());
+        // Name the kind: a Love Note journal logged as "Death Note echo" reads as a routing bug to
+        // anyone reading the log, which is exactly the wrong signal when the routing is the new part.
+        LOGGER.info("[DungeonTrain] {} echo of '{}' (note {}) spawned — encounter journal opened for {}.",
+                (kind == null ? NoteKind.DEATH : kind).trophyTitle(), authorName, noteId,
+                target.getGameProfile().getName());
     }
 
     // ---------------- interaction signals ----------------

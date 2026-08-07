@@ -61,9 +61,13 @@ public final class CursedStoryPool {
      * @param landedTs      epoch millis the echo spawned in the target's world, or 0 if unknown
      * @param outcome       {@code "echo_killed_target"} / {@code "target_killed_echo"}, or "" when the
      *                      ending was never reported — the story then says as much
+     * @param kind          which note was signed. Decides which family of prose tells this story
+     *                      ({@code CursedBookFactory.contextFor}); a relay too old to send the field
+     *                      yields {@link NoteKind#DEATH}, which is what every landed note used to be
      */
     public record Story(int id, String targetName, int deathCarriage,
-                        long signedTs, long landedTs, String outcome, Encounter encounter) {}
+                        long signedTs, long landedTs, String outcome, Encounter encounter,
+                        NoteKind kind) {}
 
     /**
      * The journal of the fight itself, as recorded by the target's game and stored on the relay (see
@@ -207,7 +211,8 @@ public final class CursedStoryPool {
             int id = o.get("id").getAsInt();
             if (id <= 0) return null;
             return new Story(id, str(o, "targetName"), o.get("deathCarriage").getAsInt(),
-                    num(o, "ts"), num(o, "usedTs"), str(o, "outcome"), parseEncounter(o));
+                    num(o, "ts"), num(o, "usedTs"), str(o, "outcome"), parseEncounter(o),
+                    NoteKind.fromId(str(o, "kind")));
         } catch (RuntimeException e) {
             return null;
         }

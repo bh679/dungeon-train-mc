@@ -7,6 +7,7 @@ import com.mojang.brigadier.context.CommandContext;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.event.DeathNoteRefreshEvents;
+import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.train.DeathNoteEchoSpawner;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.playermob.compat.ReincarnationRecord;
@@ -89,7 +90,9 @@ public final class EchoEncounterTestCommand {
             .then(Commands.literal("upgrade")
                 .executes(EchoEncounterTestCommand::upgrade))
             .then(Commands.literal("deathnote")
-                .executes(EchoEncounterTestCommand::deathnote))
+                .executes(ctx -> noteEcho(ctx, NoteKind.DEATH)))
+            .then(Commands.literal("lovenote")
+                .executes(ctx -> noteEcho(ctx, NoteKind.LOVE)))
             .then(Commands.literal("dnpull")
                 .executes(EchoEncounterTestCommand::dnpull))
             .then(Commands.literal("finish")
@@ -245,15 +248,19 @@ public final class EchoEncounterTestCommand {
     }
 
     /**
-     * Dev-only diagnostic: spawn a Death Note echo of YOURSELF at your current carriage RIGHT NOW,
-     * via the exact production recipe ({@link DeathNoteEchoSpawner#spawnForTarget}) — isolating the
-     * spawn recipe from the sign→die→respawn→arrival flow. Compare with {@code summon} (a plain
-     * visible echo near you): if {@code summon} appears but {@code deathnote} does not, the bug is in
-     * the {@code DeathNoteEchoSpawner} recipe; if {@code deathnote} appears here, the bug is upstream
-     * in the arming / arrival scan. The chat line reports the {@code spawnForTarget} boolean so success
-     * is visible even if the mob itself is not.
+     * Dev-only diagnostic: spawn a note echo of YOURSELF at your current carriage RIGHT NOW, via the
+     * exact production recipe ({@link DeathNoteEchoSpawner#spawnForTarget}) — isolating the spawn
+     * recipe from the sign→die→respawn→arrival flow. Compare with {@code summon} (a plain visible
+     * echo near you): if {@code summon} appears but this does not, the bug is in the
+     * {@code DeathNoteEchoSpawner} recipe; if this appears, the bug is upstream in the arming /
+     * arrival scan. The chat line reports the {@code spawnForTarget} boolean so success is visible
+     * even if the mob itself is not.
+     *
+     * <p>{@code deathnote} spawns a hostile echo, {@code lovenote} a loving one — the same recipe
+     * with the opposite seeded feeling, which is the only difference between the two mechanics at
+     * spawn time.</p>
      */
-    private static int deathnote(CommandContext<CommandSourceStack> ctx) {
+    private static int noteEcho(CommandContext<CommandSourceStack> ctx, NoteKind kind) {
         CommandSourceStack source = ctx.getSource();
         ServerPlayer player = source.getPlayer();
         if (player == null) {
@@ -265,9 +272,10 @@ public final class EchoEncounterTestCommand {
         int deathCarriage = carriage == null ? 0 : carriage;
         // noteId 0 — a dev spawn has no relay note behind it, so its outcome is reported nowhere.
         boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
-            player.getUUID().toString(), player.getGameProfile().getName(), deathCarriage, 0);
+            player.getUUID().toString(), player.getGameProfile().getName(), deathCarriage, 0, kind);
         source.sendSuccess(() -> Component.literal(
-                "[echotest] deathnote spawnForTarget -> " + (ok ? "TRUE" : "FALSE (deferred/failed)")
+                "[echotest] " + kind.englishTitle() + " spawnForTarget -> "
+                    + (ok ? "TRUE" : "FALSE (deferred/failed)")
                     + " at carriage " + deathCarriage + " (lastCarriageIndex=" + carriage
                     + "). Watch for an 'Echo of " + player.getGameProfile().getName() + "' beside you.")
             .withStyle(ok ? ChatFormatting.AQUA : ChatFormatting.RED), false);

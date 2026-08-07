@@ -5,9 +5,13 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Pure helpers for the "Death Note" curse book: recognising the trigger title and extracting the
- * target player from the pages. Kept dependency-free (no Minecraft types) so the signing rules can be
+ * Pure helpers for the signed note books: recognising a trigger title and extracting the target
+ * player from the pages. Kept dependency-free (no Minecraft types) so the signing rules can be
  * unit-tested without a running server.
+ *
+ * <p>Named for the Death Note it was written for, but the matching rules are shared with the Love
+ * Note — see {@link #matches} and {@link NoteKind#of}. {@link #firstLineTarget} is kind-independent:
+ * both books name their target the same way.</p>
  */
 public final class DeathNoteTitle {
 
@@ -31,9 +35,19 @@ public final class DeathNoteTitle {
      * whitespace. A {@code null}/empty {@code localizedTitles} reduces to English-only matching.
      */
     public static boolean isDeathNoteTitle(String title, Collection<String> localizedTitles) {
+        return matches(title, ENGLISH, localizedTitles);
+    }
+
+    /**
+     * The shared trigger rule, for one note kind: true when {@code title} equals {@code
+     * canonicalEnglish} (that kind's always-accepted English name, already normalized) or any of
+     * {@code localizedTitles}, that kind's translated trigger words. All comparisons ignore case and
+     * whitespace; a {@code null}/empty {@code localizedTitles} reduces to English-only matching.
+     */
+    static boolean matches(String title, String canonicalEnglish, Collection<String> localizedTitles) {
         if (title == null) return false;
         String normalized = normalize(title);
-        if (normalized.equals(ENGLISH)) return true;
+        if (normalized.equals(canonicalEnglish)) return true;
         if (localizedTitles == null) return false;
         for (String candidate : localizedTitles) {
             if (candidate != null && normalize(candidate).equals(normalized)) return true;
