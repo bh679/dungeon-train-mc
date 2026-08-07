@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.PortalSwapPacket;
 import games.brennan.dungeontrain.portal.PortalGeometry;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.ship.ManagedShip;
@@ -16,6 +17,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 
@@ -96,6 +98,11 @@ public final class PortalTransitEvents {
 
                 player.connection.teleport(px, py + shift, pz,
                     player.getYRot(), player.getXRot(), RELATIVE_ALL);
+                // Straight after the position: the renderer has to finish its occlusion rebuild on
+                // this frame or the copy is not drawn on the one the player arrives in. Harmless when
+                // the shift is small enough that vanilla never invalidated the graph in the first
+                // place. See client/portal/ClientPortalSwap.
+                PacketDistributor.sendToPlayer(player, new PortalSwapPacket());
 
                 // Logged because the swap is meant to be invisible: without a trace there is no
                 // way to tell "it worked perfectly" from "it never fired" after the fact, in a

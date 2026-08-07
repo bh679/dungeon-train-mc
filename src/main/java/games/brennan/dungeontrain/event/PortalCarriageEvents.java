@@ -25,6 +25,7 @@ import games.brennan.dungeontrain.portal.PortalSever;
 import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
+import games.brennan.dungeontrain.net.PortalSwapPacket;
 import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
@@ -531,6 +532,11 @@ public final class PortalCarriageEvents {
 
             player.connection.teleport(move.x(), targetY, move.z(),
                 player.getYRot(), player.getXRot(), RELATIVE_ALL);
+            // Straight after the position, so the client's renderer knows this frame is the one to
+            // finish its occlusion rebuild on. Without it the twin's sections — culled behind sealed
+            // bedrock — are missing from the frame the player arrives in, and it flashes. See
+            // client/portal/ClientPortalSwap.
+            PacketDistributor.sendToPlayer(player, new PortalSwapPacket());
             COOLDOWNS.put(player.getUUID(), level.getGameTime() + SWAP_COOLDOWN_TICKS);
 
             LOGGER.info("[DungeonTrain] Portal carriage swap: player={} carriage={} → {} ({}, {}, {}) → ({}, {}, {})",
