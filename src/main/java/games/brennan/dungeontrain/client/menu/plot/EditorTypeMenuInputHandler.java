@@ -532,6 +532,10 @@ public final class EditorTypeMenuInputHandler {
             // see EditorPlotTeleport).
             case "TRACKS" -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.TRACKS, first.modelId(), "");
+            // Portals: same single-name shape as tracks, dispatched through the portals prefix.
+            // Kind tag is the variant's modelId (portal_room).
+            case "PORTALS" -> new NewSourcePickerScreen(
+                NewSourcePickerScreen.Category.PORTALS, first.modelId(), "");
             default -> null;
         };
         if (picker == null) {

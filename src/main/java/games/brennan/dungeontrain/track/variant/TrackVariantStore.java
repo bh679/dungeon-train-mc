@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.track.variant;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
@@ -261,11 +262,12 @@ public final class TrackVariantStore {
 
         Vec3i expected = kind.dims(dims);
         Vec3i size = template.getSize();
-        if (!size.equals(expected)) {
+        if (!boundsMatch(kind, size, expected)) {
             LOGGER.warn(
-                "[DungeonTrain] Track template {}:{} ({}) has bounds {}x{}x{}, expected {}x{}x{} — ignoring.",
+                "[DungeonTrain] Track template {}:{} ({}) has bounds {}x{}x{}, expected {}x{}x{}{} — ignoring.",
                 kind.id(), name, origin, size.getX(), size.getY(), size.getZ(),
-                expected.getX(), expected.getY(), expected.getZ()
+                expected.getX(), expected.getY(), expected.getZ(),
+                kind.freeSizeAboveFloor() ? " (minimum; larger is allowed)" : ""
             );
             return Optional.empty();
         }
@@ -273,12 +275,29 @@ public final class TrackVariantStore {
         return Optional.of(template);
     }
 
+    /**
+     * Whether a loaded template's bounds are acceptable for {@code kind}.
+     *
+     * <p>Normally an exact match. For a {@link TrackKind#freeSizeAboveFloor()} kind
+     * {@code expected} is a <b>floor</b> rather than an exact size — the author may go bigger on
+     * any axis, and only undersize is rejected, because that is the case that breaks something in
+     * world (a portal room narrower than the corridor mouth it has to seal).</p>
+     */
+    private static boolean boundsMatch(TrackKind kind, Vec3i size, Vec3i expected) {
+        if (kind.freeSizeAboveFloor()) {
+            return size.getX() >= PortalRoomLayout.MIN_LENGTH
+                && size.getY() >= expected.getY()
+                && size.getZ() >= expected.getZ();
+        }
+        return size.equals(expected);
+    }
+
     private static Optional<StructureTemplate> filterForDims(
         TrackKind kind, String name, Optional<StructureTemplate> cached, CarriageDims dims
     ) {
         if (cached.isEmpty()) return cached;
         Vec3i expected = kind.dims(dims);
-        if (cached.get().getSize().equals(expected)) return cached;
+        if (boundsMatch(kind, cached.get().getSize(), expected)) return cached;
         LOGGER.warn(
             "[DungeonTrain] Cached track template {}:{} no longer matches dims {}x{}x{} — falling back.",
             kind.id(), name, dims.length(), dims.width(), dims.height()

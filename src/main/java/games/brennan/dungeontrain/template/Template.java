@@ -9,6 +9,11 @@ import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
+import games.brennan.dungeontrain.editor.PortalRoomEditor;
+import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
+import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
+import games.brennan.dungeontrain.portal.PortalRoomLayout;
+import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.editor.TrackEditor;
 import games.brennan.dungeontrain.editor.TrackPlotLocator;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
@@ -77,7 +82,8 @@ public sealed interface Template
             Template.Track,
             Template.Pillar,
             Template.Adjunct,
-            Template.Tunnel {
+            Template.Tunnel,
+            Template.PortalRoom {
 
     /** Stable command-token identifier — used by EditorMenuScreen + commands. */
     String id();
@@ -740,6 +746,68 @@ public sealed interface Template
             } else {
                 TunnelPlacer.placePortalNamed(level, origin, ctx.mirrorX(), name);
             }
+        }
+    }
+
+    /**
+     * A portal's pocket room — the space between a portal group's two twin corridors, which is the
+     * one piece of a portal that is not carriage-shaped and so gets its own editor category rather
+     * than living under Carriages like {@code portal} and {@code portal_middle} do.
+     *
+     * <p>The only template whose <b>length is the author's to choose</b>: height and width are
+     * pinned by the corridor mouth, but the length is the distance walked underneath, which is the
+     * whole point of the portal. {@link #plotSize} reads it back from
+     * {@link PortalRoomSizes}.</p>
+     */
+    record PortalRoom(String name) implements Template {
+        public PortalRoom {
+            Objects.requireNonNull(name, "name");
+        }
+
+        public PortalRoom() { this(TrackKind.DEFAULT_NAME); }
+
+        @Override public String id() { return "portal_room"; }
+
+        @Override public String displayName() { return "portal room / " + name; }
+
+        @Override public TemplateKind kind() { return TemplateKind.PORTAL_ROOM; }
+
+        @Override public boolean isBuiltin() { return TrackKind.DEFAULT_NAME.equals(name); }
+
+        @Override public boolean canPromote() {
+            // No bundled tier today — the built-in room is code, not an nbt.
+            return false;
+        }
+
+        @Override public TemplateStore<PortalRoom> store() { return PortalRoomTemplateStore.adapter(); }
+        @Override public TemplateRegistry<PortalRoom> registry() { return TrackVariantRegistry.adapterForPortalRoom(); }
+
+        @Override public int weight() {
+            return TrackVariantWeights.weightFor(TrackKind.PORTAL_ROOM, name);
+        }
+        @Override public TemplateGate gate() {
+            return TrackVariantWeights.gateFor(TrackKind.PORTAL_ROOM, name);
+        }
+        @Override public String stageId() {
+            String s = TrackVariantWeights.stageIdFor(TrackKind.PORTAL_ROOM, name);
+            return s == null ? "" : s;
+        }
+        @Override public String variantName() { return name; }
+
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            PortalRoomEditor.stampPlot(level, name, dims);
+        }
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return Optional.empty();
+        }
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return PortalRoomEditor.plotOrigin(name, dims);
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return PortalRoomSizes.sizeOf(name, dims);
+        }
+        @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
+            PortalCarriageBuilder.stampRoomAt(level, origin, dims, name, plotSize(dims), /*relight*/ true);
         }
     }
 }

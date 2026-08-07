@@ -20,6 +20,8 @@ import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
+import games.brennan.dungeontrain.editor.PortalRoomEditor;
+import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
 import games.brennan.dungeontrain.editor.EditorWelcome;
@@ -157,6 +159,17 @@ public final class EditorCommand {
             for (TunnelVariant v : TunnelVariant.values()) {
                 builder.suggest(TUNNEL_PREFIX + v.name().toLowerCase(Locale.ROOT));
             }
+            // Shared with /dt editor portals, which addresses its models the same way.
+            builder.suggest(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM.id());
+            return builder.buildFuture();
+        };
+
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_NAME_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (String name : games.brennan.dungeontrain.track.variant.TrackVariantRegistry
+                    .namesFor(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM)) {
+                builder.suggest(name);
+            }
             return builder.buildFuture();
         };
 
@@ -283,6 +296,65 @@ public final class EditorCommand {
 
     private EditorCommand() {}
 
+    /**
+     * Attach the {@code (kind, name)} variant subcommands — mirror, new, reset, weight, and the
+     * three gate nodes — to a category literal.
+     *
+     * <p>Shared by {@code tracks} and {@code portals}: both address their models as a
+     * {@link games.brennan.dungeontrain.track.variant.TrackKind} plus a variant name, so the
+     * handlers are identical and only the command prefix differs. Every node is freshly built per
+     * call — brigadier builders are single-use.</p>
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> attachTrackVariantNodes(
+        LiteralArgumentBuilder<CommandSourceStack> node
+    ) {
+        return node
+            // Explicit (kind, name) mirror toggle — scripting / out-of-plot use.
+            .then(Commands.literal("mirror")
+                .then(Commands.argument("kind", StringArgumentType.word())
+                    .suggests(TRACK_KIND_SUGGESTIONS)
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                        .then(trackMirrorAxisNode("x"))
+                        .then(trackMirrorAxisNode("y"))
+                        .then(trackMirrorAxisNode("z"))
+                        .then(trackMirrorAxisNode("v")))))
+            .then(Commands.literal("new")
+                .then(Commands.argument("kind", StringArgumentType.word())
+                    .suggests(TRACK_KIND_SUGGESTIONS)
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .executes(ctx -> runTrackNewVariant(
+                            ctx.getSource(),
+                            StringArgumentType.getString(ctx, "kind"),
+                            StringArgumentType.getString(ctx, "name"))))))
+            .then(Commands.literal("reset")
+                .then(Commands.argument("kind", StringArgumentType.word())
+                    .suggests(TRACK_KIND_SUGGESTIONS)
+                    .executes(ctx -> runTrackResetActiveVariant(
+                        ctx.getSource(),
+                        StringArgumentType.getString(ctx, "kind")))))
+            .then(Commands.literal("weight")
+                .then(Commands.argument("kind", StringArgumentType.word())
+                    .suggests(TRACK_KIND_SUGGESTIONS)
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                        .then(Commands.literal("inc").executes(ctx -> runTrackWeightAdjust(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "kind"),
+                            StringArgumentType.getString(ctx, "name"), +1)))
+                        .then(Commands.literal("dec").executes(ctx -> runTrackWeightAdjust(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "kind"),
+                            StringArgumentType.getString(ctx, "name"), -1)))
+                        .then(Commands.argument("value",
+                                IntegerArgumentType.integer(TrackVariantWeights.MIN, TrackVariantWeights.MAX))
+                            .executes(ctx -> runTrackWeightSet(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "kind"),
+                                StringArgumentType.getString(ctx, "name"),
+                                IntegerArgumentType.getInteger(ctx, "value")))))))
+            .then(minLevelTrack())
+            .then(maxLevelTrack())
+            .then(phaseTrack());
+    }
+
     public static LiteralArgumentBuilder<CommandSourceStack> build(CommandBuildContext buildContext) {
         return Commands.literal("editor")
             .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES))
@@ -295,52 +367,30 @@ public final class EditorCommand {
                 .then(mirrorAxisNode("y"))
                 .then(mirrorAxisNode("z"))
                 .then(mirrorAxisNode("v")))
-            .then(Commands.literal("tracks")
-                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS))
-                // Explicit (kind, name) mirror toggle — scripting / out-of-plot use.
-                .then(Commands.literal("mirror")
-                    .then(Commands.argument("kind", StringArgumentType.word())
-                        .suggests(TRACK_KIND_SUGGESTIONS)
-                        .then(Commands.argument("name", StringArgumentType.word())
-                            .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
-                            .then(trackMirrorAxisNode("x"))
-                            .then(trackMirrorAxisNode("y"))
-                            .then(trackMirrorAxisNode("z"))
-                            .then(trackMirrorAxisNode("v")))))
-                .then(Commands.literal("new")
-                    .then(Commands.argument("kind", StringArgumentType.word())
-                        .suggests(TRACK_KIND_SUGGESTIONS)
-                        .then(Commands.argument("name", StringArgumentType.word())
-                            .executes(ctx -> runTrackNewVariant(
-                                ctx.getSource(),
-                                StringArgumentType.getString(ctx, "kind"),
-                                StringArgumentType.getString(ctx, "name"))))))
-                .then(Commands.literal("reset")
-                    .then(Commands.argument("kind", StringArgumentType.word())
-                        .suggests(TRACK_KIND_SUGGESTIONS)
-                        .executes(ctx -> runTrackResetActiveVariant(
-                            ctx.getSource(),
-                            StringArgumentType.getString(ctx, "kind")))))
-                .then(Commands.literal("weight")
-                    .then(Commands.argument("kind", StringArgumentType.word())
-                        .suggests(TRACK_KIND_SUGGESTIONS)
-                        .then(Commands.argument("name", StringArgumentType.word())
-                            .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
-                            .then(Commands.literal("inc").executes(ctx -> runTrackWeightAdjust(ctx.getSource(),
-                                StringArgumentType.getString(ctx, "kind"),
-                                StringArgumentType.getString(ctx, "name"), +1)))
-                            .then(Commands.literal("dec").executes(ctx -> runTrackWeightAdjust(ctx.getSource(),
-                                StringArgumentType.getString(ctx, "kind"),
-                                StringArgumentType.getString(ctx, "name"), -1)))
-                            .then(Commands.argument("value",
-                                    IntegerArgumentType.integer(TrackVariantWeights.MIN, TrackVariantWeights.MAX))
-                                .executes(ctx -> runTrackWeightSet(ctx.getSource(),
-                                    StringArgumentType.getString(ctx, "kind"),
-                                    StringArgumentType.getString(ctx, "name"),
-                                    IntegerArgumentType.getInteger(ctx, "value")))))))
-                .then(minLevelTrack())
-                .then(maxLevelTrack())
-                .then(phaseTrack()))
+            .then(attachTrackVariantNodes(Commands.literal("tracks")
+                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS))))
+            // PORTALS takes the same (kind, name) variant subcommands — the pocket room is a
+            // TrackKind under the hood, so weight / gate / new / reset are literally the same
+            // handlers — plus one of its own: length, the axis only a portal room may choose.
+            .then(attachTrackVariantNodes(Commands.literal("portals")
+                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.PORTALS)))
+                .then(Commands.literal("enter")
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomEnter(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "name")))))
+                .then(portalSizeNode("length", PortalRoomEditor.Axis.LENGTH))
+                .then(portalSizeNode("width", PortalRoomEditor.Axis.WIDTH))
+                .then(portalSizeNode("height", PortalRoomEditor.Axis.HEIGHT))
+                // All three at once, in the order the menus label them.
+                .then(Commands.literal("size")
+                    .then(Commands.argument("length", IntegerArgumentType.integer(1, 512))
+                        .then(Commands.argument("width", IntegerArgumentType.integer(1, 512))
+                            .then(Commands.argument("height", IntegerArgumentType.integer(1, 512))
+                                .executes(ctx -> runPortalRoomSizeAll(ctx.getSource(),
+                                    IntegerArgumentType.getInteger(ctx, "length"),
+                                    IntegerArgumentType.getInteger(ctx, "width"),
+                                    IntegerArgumentType.getInteger(ctx, "height"))))))))
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -2588,6 +2638,8 @@ public final class EditorCommand {
                 TunnelEditor.enter(player, tm.variant());
             } else if (head instanceof Template.Track) {
                 TrackEditor.enter(player);
+            } else if (head instanceof Template.PortalRoom rm) {
+                games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, rm.name());
             }
             final Template firstModel = head;
             source.sendSuccess(() -> Component.literal(
@@ -2616,6 +2668,8 @@ public final class EditorCommand {
             TunnelEditor.stampPlot(overworld, tm.variant());
         } else if (model instanceof Template.Track) {
             TrackEditor.stampPlot(overworld, dims);
+        } else if (model instanceof Template.PortalRoom rm) {
+            games.brennan.dungeontrain.editor.PortalRoomEditor.stampPlot(overworld, rm.name(), dims);
         }
     }
 
@@ -2709,6 +2763,19 @@ public final class EditorCommand {
                 source.sendFailure(Component.literal("Unrecognised track-side id '" + id + "'."));
                 return 0;
             }
+        } else if (category == EditorCategory.PORTALS) {
+            // Same "kind.name" shape; one kind, so the prefix is always portal_room and a bare id
+            // means the default room.
+            String prefix = id.contains(".") ? id.substring(0, id.indexOf('.')) : id;
+            String name = id.contains(".")
+                ? id.substring(id.indexOf('.') + 1)
+                : games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME;
+            if (!games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM.id().equals(prefix)) {
+                source.sendFailure(Component.literal("Unrecognised portal id '" + id + "'."));
+                return 0;
+            }
+            origin = games.brennan.dungeontrain.editor.PortalRoomEditor.plotOrigin(name, dims);
+            size = games.brennan.dungeontrain.editor.PortalRoomEditor.plotSize(name, dims);
         } else {
             // Resolve the model by id within the category and read its plot
             // footprint. The dispatch mirrors stampCategoryModel above —
@@ -4718,6 +4785,122 @@ public final class EditorCommand {
         return null;
     }
 
+    /** {@code /dt editor portals enter <name>} — teleport to one room's plot. */
+    private static int runPortalRoomEnter(CommandSourceStack source, String name) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry
+                .find(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name).isEmpty()) {
+            source.sendFailure(Component.literal("Unknown portal room '" + name + "'."));
+            return 0;
+        }
+        games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, name);
+        source.sendSuccess(() -> Component.literal("Editor: entered portal room '" + name + "'."), true);
+        return 1;
+    }
+
+    /**
+     * One {@code <axis> inc|dec|<blocks>} node, shared by length / width / height.
+     *
+     * <p>The bare {@code <blocks>} form takes an absolute value; {@code inc} / {@code dec} step by
+     * one so the menu steppers can be tapped. All three land on
+     * {@link PortalRoomEditor#setSize}, which clamps to what this world's corridor allows.</p>
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> portalSizeNode(
+        String literal, PortalRoomEditor.Axis axis
+    ) {
+        return Commands.literal(literal)
+            .then(Commands.literal("inc").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, +1)))
+            .then(Commands.literal("dec").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, -1)))
+            .then(Commands.argument("blocks", IntegerArgumentType.integer(
+                    PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MAX_LENGTH))
+                .executes(ctx -> runPortalRoomSize(ctx.getSource(), axis,
+                    IntegerArgumentType.getInteger(ctx, "blocks"))));
+    }
+
+    /**
+     * {@code /dt editor portals size <length> <width> <height>} — set the whole box at once.
+     *
+     * <p>Argument bounds are deliberately loose; {@link PortalRoomLayout#clampSize} decides what is
+     * legal for this world and the reply says so when it had to pull a number in. A typed size that
+     * is silently rejected would be worse than one that is visibly clamped.</p>
+     */
+    private static int runPortalRoomSizeAll(CommandSourceStack source, int length, int width, int height) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        if (name == null) {
+            source.sendFailure(Component.literal(
+                "Stand in a portal room plot first — /dt editor portals."));
+            return 0;
+        }
+
+        net.minecraft.core.Vec3i wanted = new net.minecraft.core.Vec3i(length, height, width);
+        net.minecraft.core.Vec3i applied = PortalRoomEditor.setSize(overworld, name, wanted, dims);
+        boolean clamped = !applied.equals(wanted);
+        String note = clamped
+            ? " (clamped from " + length + " " + width + " " + height
+                + " — the room must still seal the corridor mouth and fit its Y lane)"
+            : "";
+        source.sendSuccess(() -> Component.literal(
+            "Portal room '" + name + "' is now " + applied.getX() + " long, " + applied.getZ()
+            + " wide, " + applied.getY() + " tall" + note
+            + ". The plot was reset to the built-in room at that size — /dt save to keep it."
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    /** Nudge one axis of the room plot the player is standing in by {@code delta}. */
+    private static int runPortalRoomSizeStep(CommandSourceStack source, PortalRoomEditor.Axis axis, int delta) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        if (name == null) {
+            source.sendFailure(Component.literal(
+                "Stand in a portal room plot first — /dt editor portals."));
+            return 0;
+        }
+        int current = PortalRoomEditor.axisOf(PortalRoomEditor.plotSize(name, dims), axis);
+        return runPortalRoomSize(source, axis, current + delta);
+    }
+
+    /**
+     * {@code /dt editor portals length|width|height <blocks>} — restamp the room plot the player is
+     * standing in with that axis set.
+     *
+     * <p>Destructive: the box changes size, so the plot goes back to the built-in room at the new
+     * size. Nothing is written to disk until the next {@code /dt save}, which is what makes the
+     * size permanent.</p>
+     */
+    private static int runPortalRoomSize(CommandSourceStack source, PortalRoomEditor.Axis axis, int blocks) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        if (name == null) {
+            source.sendFailure(Component.literal(
+                "Stand in a portal room plot first — /dt editor portals."));
+            return 0;
+        }
+
+        net.minecraft.core.Vec3i applied = PortalRoomEditor.setSize(overworld, name, axis, blocks, dims);
+        int value = PortalRoomEditor.axisOf(applied, axis);
+        String axisName = axis.name().toLowerCase(Locale.ROOT);
+        String note = value == blocks ? ""
+            : " (clamped from " + blocks + " — the room must still seal the corridor mouth and fit its Y lane)";
+        source.sendSuccess(() -> Component.literal(
+            "Portal room '" + name + "' " + axisName + " is now " + value + note
+            + ". The plot was reset to the built-in room at that size — /dt save to keep it."
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
     /**
      * Restamp the editor plot for {@code kind} so it picks up the just-set
      * active-variant marker.
@@ -4739,6 +4922,8 @@ public final class EditorCommand {
                 overworld, TunnelVariant.PORTAL);
             case ADJUNCT_STAIRS -> games.brennan.dungeontrain.editor.PillarEditor.stampPlot(
                 overworld, PillarAdjunct.STAIRS, dims);
+            case PORTAL_ROOM -> games.brennan.dungeontrain.editor.PortalRoomEditor.stampAllPlots(
+                overworld, dims);
         }
     }
 
@@ -4765,6 +4950,8 @@ public final class EditorCommand {
                 overworld, TunnelVariant.PORTAL, name);
             case ADJUNCT_STAIRS -> games.brennan.dungeontrain.editor.PillarEditor.clearPlotAdjunct(
                 overworld, PillarAdjunct.STAIRS, name, dims);
+            case PORTAL_ROOM -> games.brennan.dungeontrain.editor.PortalRoomEditor.clearPlot(
+                overworld, name, dims);
         }
     }
 
@@ -4811,6 +4998,25 @@ public final class EditorCommand {
         java.util.Optional<net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate> sourceTemplate =
             games.brennan.dungeontrain.track.variant.TrackVariantStore.get(overworld, kind, sourceName, dims);
         if (sourceTemplate.isEmpty()) {
+            // A kind whose fallback is code has nothing to copy until somebody has saved one — the
+            // portal room ships no bundled nbt on purpose. Seed the new variant from the built-in
+            // geometry instead, which is the same starting point 'default' has.
+            if (kind.hasBuiltInFallback()) {
+                try {
+                    games.brennan.dungeontrain.editor.PortalRoomEditor.createFromBuiltIn(
+                        overworld, sourceName, key, dims);
+                } catch (java.io.IOException e) {
+                    source.sendFailure(Component.literal("Save failed: " + e.getMessage()));
+                    return 0;
+                }
+                restampPlotForKind(overworld, kind, dims);
+                teleportToPlot(player, overworld, kind, key, dims);
+                source.sendSuccess(() -> Component.literal(
+                    "Created " + kind.id() + ":" + key + " from the built-in room"
+                    + " — teleported to the new plot."
+                ).withStyle(ChatFormatting.GREEN), true);
+                return 1;
+            }
             source.sendFailure(Component.literal(
                 "Cannot duplicate " + kind.id() + ":" + sourceName + " — no template found at expected size."));
             return 0;
@@ -4890,7 +5096,14 @@ public final class EditorCommand {
         // plot doesn't sit in the world after teleport. restampPlotForKind
         // below only re-stamps registered names, so a leftover plot would
         // otherwise stay visible indefinitely.
-        clearPlotForVariant(overworld, kind, name, dims);
+        //
+        // For a cumulatively-packed row (portal rooms) removing a name also shifts every plot
+        // after it, so the whole row has to go, not just this one.
+        if (kind.freeSizeAboveFloor()) {
+            PortalRoomEditor.clearAllPlots(overworld, dims);
+        } else {
+            clearPlotForVariant(overworld, kind, name, dims);
+        }
 
         try {
             games.brennan.dungeontrain.track.variant.TrackVariantStore.delete(kind, name);
@@ -4899,6 +5112,11 @@ public final class EditorCommand {
             return 0;
         }
         games.brennan.dungeontrain.track.variant.TrackVariantRegistry.unregister(kind, name);
+        // Drop the removed room's cached size, or re-creating the same name later would silently
+        // inherit the dead variant's dimensions.
+        if (kind.hasBuiltInFallback()) {
+            games.brennan.dungeontrain.portal.PortalRoomSizes.forget(name);
+        }
         restampPlotForKind(overworld, kind, dims);
         teleportToPlot(player, overworld, kind,
             games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
@@ -4920,8 +5138,10 @@ public final class EditorCommand {
         CarriageDims dims
     ) {
         BlockPos origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(kind, name, dims);
+        // Name-aware: a portal room is as long as its author made it, and the kind-level footprint
+        // would drop the player short of the centre of a longer one.
         net.minecraft.core.Vec3i fp =
-            games.brennan.dungeontrain.editor.TrackSidePlots.footprint(kind, dims);
+            games.brennan.dungeontrain.editor.TrackSidePlots.footprint(kind, name, dims);
         double tx = origin.getX() + fp.getX() / 2.0;
         double ty = origin.getY() + 1.0;
         double tz = origin.getZ() + fp.getZ() / 2.0;

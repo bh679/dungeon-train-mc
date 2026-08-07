@@ -28,6 +28,9 @@ public final class EditorPlotTeleport {
             case "CARRIAGES" -> "dungeontrain editor enter " + modelId;
             case "CONTENTS" -> "dungeontrain editor contents enter " + modelId;
             case "TRACKS" -> trackTeleportCommand(modelId);
+            // Portals address a specific room by name — there is only one kind, so modelId
+            // carries no information the command needs.
+            case "PORTALS" -> "dungeontrain editor portals enter " + modelName;
             // Parts: modelId is the kind tag ("floor"/"walls"/"roof"/"doors"),
             // modelName is the variant name. Server command is
             // {@code /dt editor part enter <kind> <name>}.
@@ -47,8 +50,22 @@ public final class EditorPlotTeleport {
             case "CARRIAGES" -> "dungeontrain editor weight " + modelId + " " + dir;
             case "CONTENTS" -> "dungeontrain editor contents weight " + modelId + " " + dir;
             case "TRACKS" -> "dungeontrain editor tracks weight " + modelId + " " + modelName + " " + dir;
+            case "PORTALS" -> "dungeontrain editor portals weight " + modelId + " " + modelName + " " + dir;
             default -> null;
         };
+    }
+
+    /**
+     * Build the slash command that steps one axis of a portal room's box in {@code dir}
+     * ({@code "inc"} / {@code "dec"}), or {@code null} for any other category.
+     *
+     * <p>Position-resolved: the server reads which plot the player is standing in, so no model id
+     * is spliced in. That is safe because the dimension rows only render while the player is inside
+     * the plot.</p>
+     */
+    public static String dimensionCommandFor(String category, String axis, String dir) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals " + axis + " " + dir;
     }
 
     /**
@@ -63,6 +80,7 @@ public final class EditorPlotTeleport {
             case "CARRIAGES" -> "dungeontrain editor " + sub + " " + modelId + " " + dir;
             case "CONTENTS" -> "dungeontrain editor contents " + sub + " " + modelId + " " + dir;
             case "TRACKS" -> "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName + " " + dir;
+            case "PORTALS" -> "dungeontrain editor portals " + sub + " " + modelId + " " + modelName + " " + dir;
             default -> null;
         };
     }
@@ -80,6 +98,7 @@ public final class EditorPlotTeleport {
             case "CARRIAGES" -> "dungeontrain editor phase " + modelId + " " + phaseToken + " " + action;
             case "CONTENTS" -> "dungeontrain editor contents phase " + modelId + " " + phaseToken + " " + action;
             case "TRACKS" -> "dungeontrain editor tracks phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
+            case "PORTALS" -> "dungeontrain editor portals phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
             default -> null;
         };
     }
@@ -139,6 +158,8 @@ public final class EditorPlotTeleport {
             case "CARRIAGES" -> "dungeontrain editor stage apply carriage " + modelId + " " + stageToken;
             case "CONTENTS" -> "dungeontrain editor stage apply contents " + modelId + " " + stageToken;
             case "TRACKS" -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
+            // Rooms are a TrackKind under the hood, so the stage-apply route is the tracks one.
+            case "PORTALS" -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
             default -> null;
         };
     }

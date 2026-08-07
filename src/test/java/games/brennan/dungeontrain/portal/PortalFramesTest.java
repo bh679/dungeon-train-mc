@@ -257,4 +257,85 @@ final class PortalFramesTest {
         // Ended up in the twin, which does not move with the train.
         assertEquals(TWIN_Y + FEET_Y, py, 1e-9);
     }
+
+    // ---- puppet mirroring -----------------------------------------------------
+
+    @Test
+    @DisplayName("mirror maps a corridor position into the other copy, both directions")
+    void mirrorBothDirections() {
+        PortalFrames f = frames();
+
+        PortalFrames.Move toTwin = f.mirror(CAR_X + 3, CAR_Y + FEET_Y, CAR_Z + WALK_Z);
+        assertNotNull(toTwin);
+        assertEquals(PortalFrames.FRAME_TWIN, toTwin.toFrame());
+        assertEquals(TWIN_X + 3, toTwin.x(), 1e-9);
+        assertEquals(TWIN_Y + FEET_Y, toTwin.y(), 1e-9);
+        assertEquals(TWIN_Z + WALK_Z, toTwin.z(), 1e-9);
+
+        PortalFrames.Move toCarriage = f.mirror(TWIN_X + 6, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z);
+        assertNotNull(toCarriage);
+        assertEquals(PortalFrames.FRAME_CARRIAGE, toCarriage.toFrame());
+        assertEquals(CAR_X + 6, toCarriage.x(), 1e-9);
+        assertEquals(CAR_Y + FEET_Y, toCarriage.y(), 1e-9);
+        assertEquals(CAR_Z + WALK_Z, toCarriage.z(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("mirroring twice returns the original position")
+    void mirrorRoundTrips() {
+        PortalFrames f = frames();
+        PortalFrames.Move there = f.mirror(CAR_X + 2.75, CAR_Y + FEET_Y, CAR_Z + WALK_Z);
+        assertNotNull(there);
+        PortalFrames.Move back = f.mirror(there.x(), there.y(), there.z());
+        assertNotNull(back);
+
+        assertEquals(PortalFrames.FRAME_CARRIAGE, back.toFrame());
+        assertEquals(CAR_X + 2.75, back.x(), 1e-9);
+        assertEquals(CAR_Y + FEET_Y, back.y(), 1e-9);
+        assertEquals(CAR_Z + WALK_Z, back.z(), 1e-9);
+    }
+
+    /**
+     * The property that separates a puppet from a swap: {@link PortalFrames#requiredMove} goes quiet
+     * inside the hysteresis band, but an entity standing there is still visible to someone in the
+     * other copy and must still have a stand-in. A puppet that inherited the band would blink out
+     * across 2.5 blocks of the crossing zone — the exact stretch where both players are most likely
+     * to be looking at each other.
+     */
+    @Test
+    @DisplayName("mirror still answers inside the hysteresis band, where requiredMove stays silent")
+    void mirrorIgnoresTheHysteresisBand() {
+        PortalFrames f = frames();
+        double onTheLine = LAYOUT.midX();
+
+        assertNull(f.requiredMove(CAR_X + onTheLine, CAR_Y + FEET_Y, CAR_Z + WALK_Z));
+
+        PortalFrames.Move puppet = f.mirror(CAR_X + onTheLine, CAR_Y + FEET_Y, CAR_Z + WALK_Z);
+        assertNotNull(puppet);
+        assertEquals(TWIN_X + onTheLine, puppet.x(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("mirror ignores the role — a stand-in is not a swap decision")
+    void mirrorIsRoleAgnostic() {
+        double past = LAYOUT.midX() + SWAP_PAST;
+        PortalFrames.Move entry = frames().mirror(CAR_X + past, CAR_Y + FEET_Y, CAR_Z + WALK_Z);
+        PortalFrames.Move exit = exitFrames().mirror(CAR_X + past, CAR_Y + FEET_Y, CAR_Z + WALK_Z);
+
+        assertNotNull(entry);
+        assertNotNull(exit);
+        assertEquals(entry.toFrame(), exit.toFrame());
+        assertEquals(entry.x(), exit.x(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("mirror returns nothing for a position in neither corridor")
+    void mirrorRejectsOutside() {
+        PortalFrames f = frames();
+        assertNull(f.mirror(CAR_X + 40, CAR_Y + FEET_Y, CAR_Z + WALK_Z));
+        assertNull(f.mirror(CAR_X + 3, CAR_Y + 40, CAR_Z + WALK_Z));
+    }
+
+    /** Just past the band, so the position is unambiguously on one side of the line. */
+    private static final double SWAP_PAST = PortalFrames.SWAP_HYSTERESIS + 0.1;
 }

@@ -126,6 +126,7 @@ public record EditorPlotActionPacket(
                     case CARRIAGES -> dispatchCarriages(sender, overworld, dims, packet);
                     case CONTENTS -> dispatchContents(sender, overworld, dims, packet);
                     case TRACKS -> dispatchTracks(sender, overworld, dims, packet);
+                    case PORTALS -> dispatchPortals(sender, overworld, dims, packet);
                     case ARCHITECTURE -> {} // no models
                 }
             } catch (Throwable t) {
@@ -269,5 +270,31 @@ public record EditorPlotActionPacket(
         // action-bar /dt save flow covers it).
         LOGGER.info("[DungeonTrain] EditorPlotAction: tracks {} {} not yet wired (modelId='{}')",
             packet.action, "model", modelId);
+    }
+
+    // ----- Portals (the pocket room) -----
+
+    private static void dispatchPortals(ServerPlayer sender, ServerLevel overworld, CarriageDims dims,
+                                        EditorPlotActionPacket packet) throws Exception {
+        if (!games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM.id().equals(packet.modelId)) {
+            LOGGER.info("[DungeonTrain] EditorPlotAction: portals {} not wired (modelId='{}')",
+                packet.action, packet.modelId);
+            return;
+        }
+        String name = packet.modelName;
+        String label = "portal room '" + name + "'";
+        switch (packet.action) {
+            case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.PortalRoom(name));
+            case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.PortalRoom(name));
+            case CLEAR -> {
+                games.brennan.dungeontrain.editor.PortalRoomEditor.clearPlot(overworld, name, dims);
+                sender.sendSystemMessage(Component.literal(
+                    "Editor: cleared all blocks in " + label + ".")
+                    .copy().withStyle(ChatFormatting.GREEN));
+            }
+            case ENTER_INSIDE -> games.brennan.dungeontrain.editor.PortalRoomEditor.enter(sender, name, false);
+        }
+        LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} portal room '{}'",
+            sender.getName().getString(), packet.action, name);
     }
 }

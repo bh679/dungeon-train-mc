@@ -409,15 +409,27 @@ public final class VariantOverlayRenderer {
         String excludedKey = excludedContents.isEmpty()
             ? ""
             : String.join(",", new TreeSet<>(excludedContents));
+        // Authored room size — portal rooms only; every other kind's plot is fixed by its kind.
+        // In the key as well as the packet, or a resize would not re-send and the steppers would
+        // keep reading the old numbers.
+        net.minecraft.core.Vec3i roomSize = l.category() == EditorCategory.PORTALS
+            ? PortalRoomEditor.plotSize(modelName, dims)
+            : null;
+        int roomLength = roomSize == null ? EditorStatusPacket.NO_SIZE : roomSize.getX();
+        int roomWidth = roomSize == null ? EditorStatusPacket.NO_SIZE : roomSize.getZ();
+        int roomHeight = roomSize == null ? EditorStatusPacket.NO_SIZE : roomSize.getY();
+
         String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight
             + "|" + minLevel + "|" + maxLevel + "|" + phaseMask + "|" + stageId
-            + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + mirror[3] + "|" + excludedKey;
+            + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + mirror[3] + "|" + excludedKey
+            + "|" + roomLength + "x" + roomHeight + "x" + roomWidth;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
             l.category().displayName(), l.model().displayName(), l.model().id(), modelName,
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
-            mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId));
+            mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId,
+            roomLength, roomWidth, roomHeight));
     }
 
     /**
@@ -662,6 +674,10 @@ public final class VariantOverlayRenderer {
             BlockPos p = l.worldPos();
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
                 .append(':').append(l.name()).append('=').append(l.weight())
+                // Room size in the key too, or a resize would not re-push and the panel's
+                // steppers would keep showing the old numbers.
+                .append('@').append(l.roomLength()).append('x').append(l.roomHeight())
+                .append('x').append(l.roomWidth())
                 .append(l.inPlot() ? "*" : "").append(';');
         }
         String snapshotKey = keyBuf.toString();
@@ -680,7 +696,8 @@ public final class VariantOverlayRenderer {
             entries.add(new EditorPlotLabelsPacket.Entry(
                 l.worldPos(), l.name(), l.weight(),
                 l.category(), l.modelId(), l.modelName(),
-                l.inPlot(), l.isUser(), l.isImported()));
+                l.inPlot(), l.isUser(), l.isImported(),
+                l.roomLength(), l.roomWidth(), l.roomHeight()));
         }
         EditorPlotLabels.Label first = labels.get(0);
         LOGGER.info("[DungeonTrain] EditorPlotLabels: send {} entries (category {}, first '{}' weight={} @ {}) to {}",

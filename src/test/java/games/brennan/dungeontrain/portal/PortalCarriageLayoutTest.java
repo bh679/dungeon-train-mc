@@ -74,4 +74,39 @@ final class PortalCarriageLayoutTest {
         assertEquals(PortalGeometry.COPY_NEAR, l.copyForLocalX(l.midX()));
         assertEquals(PortalGeometry.COPY_FAR, l.copyForLocalX(l.midX() + 0.1));
     }
+
+    /**
+     * The puppet pass asks the level for every entity in a corridor, which needs the volume as a box
+     * rather than as a predicate. Both have to describe the same region: a search box larger than the
+     * containment rule would stand a puppet up for someone the swap says is not in the corridor at
+     * all, and a smaller one would drop them at the walls.
+     */
+    @Test
+    @DisplayName("localBounds and insideCorridor describe the same volume, face by face")
+    void boundsAgreeWithContainment() {
+        double nudge = 1e-6;
+        for (int length : new int[] {7, 9, 16}) {
+            PortalCarriageLayout l = layout(length);
+            PortalCarriageLayout.Bounds b = l.localBounds();
+
+            // Dead centre is in, every face is in, and a hair outside each face is out.
+            double midY = (b.minY() + b.maxY()) / 2, midZ = (b.minZ() + b.maxZ()) / 2;
+            double midX = (b.minX() + b.maxX()) / 2;
+            assertTrue(l.insideCorridor(midX, midY, midZ), "centre at length " + length);
+
+            assertTrue(l.insideCorridor(b.minX(), midY, midZ));
+            assertTrue(l.insideCorridor(b.maxX(), midY, midZ));
+            assertTrue(l.insideCorridor(midX, b.minY(), midZ));
+            assertTrue(l.insideCorridor(midX, b.maxY(), midZ));
+            assertTrue(l.insideCorridor(midX, midY, b.minZ()));
+            assertTrue(l.insideCorridor(midX, midY, b.maxZ()));
+
+            assertTrue(!l.insideCorridor(b.minX() - nudge, midY, midZ));
+            assertTrue(!l.insideCorridor(b.maxX() + nudge, midY, midZ));
+            assertTrue(!l.insideCorridor(midX, b.minY() - nudge, midZ));
+            assertTrue(!l.insideCorridor(midX, b.maxY() + nudge, midZ));
+            assertTrue(!l.insideCorridor(midX, midY, b.minZ() - nudge));
+            assertTrue(!l.insideCorridor(midX, midY, b.maxZ() + nudge));
+        }
+    }
 }

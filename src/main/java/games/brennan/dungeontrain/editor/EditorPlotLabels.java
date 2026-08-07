@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
+import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
@@ -62,12 +63,24 @@ public final class EditorPlotLabels {
         String modelName,
         boolean inPlot,
         boolean isUser,
-        boolean isImported
+        boolean isImported,
+        int roomLength,
+        int roomWidth,
+        int roomHeight
     ) {
+        /** Back-compat shape for every category but PORTALS — no authored size to show. */
+        public Label(BlockPos worldPos, String name, int weight, String category,
+                     String modelId, String modelName,
+                     boolean inPlot, boolean isUser, boolean isImported) {
+            this(worldPos, name, weight, category, modelId, modelName, inPlot, isUser, isImported,
+                EditorPlotLabelsPacket.NO_SIZE, EditorPlotLabelsPacket.NO_SIZE,
+                EditorPlotLabelsPacket.NO_SIZE);
+        }
+
         /** Construct a Label flagged as out-of-plot — the per-category builders use this; the per-player snapshot patches the matching one to inPlot=true. */
         public Label withInPlot(boolean newInPlot) {
             return new Label(worldPos, name, weight, category, modelId, modelName,
-                newInPlot, isUser, isImported);
+                newInPlot, isUser, isImported, roomLength, roomWidth, roomHeight);
         }
     }
 
@@ -84,6 +97,7 @@ public final class EditorPlotLabels {
             case CARRIAGES -> carriageLabels(dims);
             case CONTENTS -> contentsLabels(dims);
             case TRACKS -> trackLabels(dims);
+            case PORTALS -> portalLabels(dims);
             case ARCHITECTURE -> Collections.emptyList();
         };
     }
@@ -180,14 +194,36 @@ public final class EditorPlotLabels {
         return out;
     }
 
+    private static List<Label> portalLabels(CarriageDims dims) {
+        List<Label> out = new ArrayList<>();
+        addTrackKindLabels(out, TrackKind.PORTAL_ROOM, dims, EditorCategory.PORTALS);
+        // A portal room is the one plot whose box the author chooses, so its label carries the
+        // live size for the [-] N [+] rows.
+        for (int i = 0; i < out.size(); i++) {
+            Label l = out.get(i);
+            Vec3i size = PortalRoomSizes.sizeOf(l.modelName(), dims);
+            out.set(i, new Label(l.worldPos(), l.name(), l.weight(), l.category(),
+                l.modelId(), l.modelName(), l.inPlot(), l.isUser(), l.isImported(),
+                size.getX(), size.getZ(), size.getY()));
+        }
+        return out;
+    }
+
     private static void addTrackKindLabels(List<Label> out, TrackKind kind, CarriageDims dims) {
-        Vec3i footprint = TrackSidePlots.footprint(kind, dims);
-        String category = EditorCategory.TRACKS.name();
-        // For TRACKS the modelId is the kind tag (e.g. "tile", "pillar_bottom")
+        addTrackKindLabels(out, kind, dims, EditorCategory.TRACKS);
+    }
+
+    private static void addTrackKindLabels(List<Label> out, TrackKind kind, CarriageDims dims,
+                                           EditorCategory owner) {
+        String category = owner.name();
+        // The modelId is the kind tag (e.g. "tile", "pillar_bottom", "portal_room")
         // — that's what the existing weight commands key on. modelName is the
         // bare variant name segment.
         String modelId = kind.id();
         for (String name : TrackVariantRegistry.namesFor(kind)) {
+            // Per-name footprint: a portal room is as long as its author made it, so the label
+            // anchor has to follow the individual plot rather than a kind-wide size.
+            Vec3i footprint = TrackSidePlots.footprint(kind, name, dims);
             BlockPos origin = TrackSidePlots.plotOrigin(kind, name, dims);
             int w = TrackVariantWeights.weightFor(kind, name);
             Provenance p = provenanceOf(

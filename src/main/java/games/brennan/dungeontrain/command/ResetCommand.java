@@ -174,6 +174,8 @@ public final class ResetCommand {
                 + model.id() + "'.";
             case TUNNEL -> "Tunnel templates have no bundled tier — '/dt reset default' does not apply to '"
                 + model.id() + "'.";
+            case PORTAL_ROOM -> "Portal rooms have no bundled tier — the built-in room is code, not an nbt. "
+                + "Use Remove to delete '" + model.variantName() + "' instead.";
             default -> "'/dt reset default' is not supported for this template kind.";
         };
     }

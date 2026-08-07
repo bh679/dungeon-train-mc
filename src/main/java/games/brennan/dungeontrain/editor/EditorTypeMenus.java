@@ -64,6 +64,7 @@ public final class EditorTypeMenus {
             case CARRIAGES -> carriageMenus(dims);
             case CONTENTS -> contentsMenus(dims);
             case TRACKS -> trackMenus(dims);
+            case PORTALS -> portalMenus(dims);
             case ARCHITECTURE -> Collections.emptyList();
         };
     }
@@ -205,18 +206,54 @@ public final class EditorTypeMenus {
         return out;
     }
 
+    private static List<EditorTypeMenusPacket.Menu> portalMenus(CarriageDims dims) {
+        List<EditorTypeMenusPacket.Menu> out = new ArrayList<>();
+        List<EditorTypeMenusPacket.CategoryButton> categoryBar = buildCategoryBar();
+        List<EditorTypeMenusPacket.TypeTab> typeStrip = buildPortalsTypeStrip();
+        String activeId = EditorCategory.PORTALS.id();
+
+        addTrackKindMenu(out, TrackKind.PORTAL_ROOM, "Portal Room", dims, activeId,
+            categoryBar, typeStrip, EditorCategory.PORTALS);
+        return out;
+    }
+
+    /**
+     * Type tabs for the PORTALS category. One row today — the pocket room. The corridor and the
+     * cart between the corridors are carriage variants and live under CARRIAGES.
+     */
+    private static List<EditorTypeMenusPacket.TypeTab> buildPortalsTypeStrip() {
+        List<EditorTypeMenusPacket.TypeTab> strip = new ArrayList<>();
+        List<String> names = TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM);
+        if (names.isEmpty()) return strip;
+        strip.add(new EditorTypeMenusPacket.TypeTab(
+            "Portal Room", EditorCategory.PORTALS.name(),
+            TrackKind.PORTAL_ROOM.id(), names.get(0)));
+        return strip;
+    }
+
     private static void addTrackKindMenu(
         List<EditorTypeMenusPacket.Menu> out, TrackKind kind, String typeName, CarriageDims dims,
         String activeId,
         List<EditorTypeMenusPacket.CategoryButton> categoryBar,
         List<EditorTypeMenusPacket.TypeTab> typeStrip
     ) {
+        addTrackKindMenu(out, kind, typeName, dims, activeId, categoryBar, typeStrip,
+            EditorCategory.TRACKS);
+    }
+
+    private static void addTrackKindMenu(
+        List<EditorTypeMenusPacket.Menu> out, TrackKind kind, String typeName, CarriageDims dims,
+        String activeId,
+        List<EditorTypeMenusPacket.CategoryButton> categoryBar,
+        List<EditorTypeMenusPacket.TypeTab> typeStrip,
+        EditorCategory owner
+    ) {
         List<String> names = TrackVariantRegistry.namesFor(kind);
         if (names.isEmpty()) return;
         BlockPos firstOrigin = TrackSidePlots.plotOrigin(kind, names.get(0), dims);
-        Vec3i footprint = TrackSidePlots.footprint(kind, dims);
+        Vec3i footprint = TrackSidePlots.footprint(kind, names.get(0), dims);
         BlockPos anchor = anchorForZRow(firstOrigin, footprint);
-        String cat = EditorCategory.TRACKS.name();
+        String cat = owner.name();
         String modelId = kind.id();
         List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
         for (String name : names) {
