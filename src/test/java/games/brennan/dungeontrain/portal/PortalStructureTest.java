@@ -18,7 +18,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class PortalStructureTest {
 
-    private static final CarriageDims DIMS = CarriageDims.DEFAULT;   // length 9
+    private static final CarriageDims DIMS = CarriageDims.DEFAULT;   // carriage length 9
+    /** What the twins are actually spaced by — the corridor's length, 13 at the default dims. */
+    private static final int CORRIDOR = PortalCorridorSize.corridorLength(DIMS);
     private static final BlockPos ORIGIN = new BlockPos(200, -60, -30);
 
     private static PortalStructure withRoomLength(int length) {
@@ -27,12 +29,13 @@ class PortalStructureTest {
     }
 
     @Test
-    @DisplayName("Built-in room: the offset is the old dims.length() + POCKET_LENGTH figure")
-    void builtInRoom_reproducesTheOldConstant() {
+    @DisplayName("Built-in room: the offset is one CORRIDOR plus the built-in room's length")
+    void builtInRoom_spacesTheTwinsByACorridor() {
         PortalStructure s = new PortalStructure(ORIGIN, "default", PortalRoomLayout.builtInSize(DIMS));
-        assertEquals(9 + 11, s.exitTwinOffsetX(DIMS));
-        assertEquals(ORIGIN.offset(20, 0, 0), s.exitOrigin(DIMS));
-        assertEquals(20 + 9, s.spanX(DIMS));
+        assertEquals(13, CORRIDOR, "default dims must give a 13-block corridor");
+        assertEquals(CORRIDOR + 11, s.exitTwinOffsetX(DIMS));
+        assertEquals(ORIGIN.offset(24, 0, 0), s.exitOrigin(DIMS));
+        assertEquals(24 + CORRIDOR, s.spanX(DIMS));
     }
 
     @Test
@@ -41,14 +44,14 @@ class PortalStructureTest {
         PortalStructure shortRoom = withRoomLength(7);
         PortalStructure longRoom = withRoomLength(21);
 
-        assertEquals(9 + 7, shortRoom.exitTwinOffsetX(DIMS));
-        assertEquals(9 + 21, longRoom.exitTwinOffsetX(DIMS));
+        assertEquals(CORRIDOR + 7, shortRoom.exitTwinOffsetX(DIMS));
+        assertEquals(CORRIDOR + 21, longRoom.exitTwinOffsetX(DIMS));
 
         // The room must exactly fill the gap between the two corridors: entry corridor ends at
-        // origin.x + length - 1, exit corridor starts at exitOrigin.x, and the room occupies
+        // origin.x + CORRIDOR - 1, exit corridor starts at exitOrigin.x, and the room occupies
         // everything strictly between.
         for (PortalStructure s : new PortalStructure[]{shortRoom, longRoom}) {
-            int entryEnd = s.origin().getX() + DIMS.length() - 1;
+            int entryEnd = s.origin().getX() + CORRIDOR - 1;
             int exitStart = s.exitOrigin(DIMS).getX();
             assertEquals(s.roomLength(), exitStart - entryEnd - 1,
                 "room of length " + s.roomLength() + " must exactly bridge the two corridors");
@@ -61,7 +64,7 @@ class PortalStructureTest {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
         for (int length : new int[]{PortalRoomLayout.MIN_LENGTH, 11, 21, PortalRoomLayout.MAX_LENGTH}) {
             PortalStructure s = withRoomLength(length);
-            assertEquals(ORIGIN.getX() + DIMS.length(), s.roomOrigin(DIMS, layout).getX());
+            assertEquals(ORIGIN.getX() + CORRIDOR, s.roomOrigin(DIMS, layout).getX());
         }
     }
 

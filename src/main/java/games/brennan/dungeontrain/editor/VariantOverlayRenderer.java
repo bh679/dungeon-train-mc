@@ -257,7 +257,8 @@ public final class VariantOverlayRenderer {
 
                 PartPositionMenuController.update(player, plotVariant, plotOrigin, dims);
 
-                CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(plotVariant, dims);
+                CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(
+                    plotVariant, CarriageEditor.plotDims(plotVariant, dims));
                 if (sidecar.isEmpty()) {
                     clearHoverIfStale(player);
                     continue;
@@ -276,7 +277,7 @@ public final class VariantOverlayRenderer {
                 BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contentsPlot, dims);
                 if (carriageOrigin == null) continue;
                 BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
-                Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
+                Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contentsPlot, dims);
                 CarriageContentsVariantBlocks contentsSidecar = CarriageContentsVariantBlocks.loadFor(
                     contentsPlot, interiorSize);
                 if (contentsSidecar.isEmpty()) {

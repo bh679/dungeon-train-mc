@@ -127,23 +127,34 @@ public final class CarriageContentsStore {
     ) {
         String key = contents.id();
         Optional<StructureTemplate> cached = CACHE.get(key);
-        if (cached != null) return filterForSize(contents, cached, interiorSize);
-        Optional<StructureTemplate> loaded = loadFromConfig(level, contents, interiorSize);
-        if (loaded.isEmpty()) {
-            loaded = loadFromResource(level, contents, interiorSize);
+        if (cached == null) {
+            // Loaded WITHOUT the size gate. The cache is keyed by contents id alone and shared by
+            // every caller, so a verdict that depends on one caller's interior size must not be baked
+            // into it — otherwise a single lookup at the wrong size caches Optional.empty() under
+            // this id and defeats every later lookup at the right one for the rest of the session.
+            // Not hypothetical: `portal` contents are authored against the CORRIDOR's box
+            // (CarriageContentsPlacer.contentsDims), so any sweep over all contents at ordinary
+            // carriage dims would otherwise take them out. The gate is filterForSize, per call.
+            cached = loadFromConfig(level, contents);
+            if (cached.isEmpty()) {
+                cached = loadFromResource(level, contents);
+            }
+            CACHE.put(key, cached);
         }
-        CACHE.put(key, loaded);
-        return loaded;
+        return filterForSize(contents, cached, interiorSize);
     }
 
+    /** The size gate — the only place a contents template is judged against a caller's interior. */
     private static Optional<StructureTemplate> filterForSize(
         CarriageContents contents, Optional<StructureTemplate> cached, Vec3i interiorSize
     ) {
         if (cached.isEmpty()) return cached;
         if (sizeMatches(cached.get().getSize(), interiorSize)) return cached;
+        Vec3i size = cached.get().getSize();
         LOGGER.warn(
-            "[DungeonTrain] Cached contents template {} no longer matches interior size {}x{}x{} — falling back.",
-            contents.id(), interiorSize.getX(), interiorSize.getY(), interiorSize.getZ());
+            "[DungeonTrain] Contents template {} has bounds {}x{}x{}, caller expected interior {}x{}x{} — falling back.",
+            contents.id(), size.getX(), size.getY(), size.getZ(),
+            interiorSize.getX(), interiorSize.getY(), interiorSize.getZ());
         return Optional.empty();
     }
 
@@ -232,47 +243,44 @@ public final class CarriageContentsStore {
         return true;
     }
 
-    private static Optional<StructureTemplate> loadFromConfig(ServerLevel level, CarriageContents contents, Vec3i interiorSize) {
+    private static Optional<StructureTemplate> loadFromConfig(ServerLevel level, CarriageContents contents) {
         Path file = UserContentPaths.findFile(SUBDIR, contents.id() + EXT);
         if (file == null) return Optional.empty();
         try {
             CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
-            return loadAndValidate(level, contents.id(), interiorSize, tag, "config " + file);
+            return load(level, contents.id(), tag, "config " + file);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read config contents template {} at {}: {}", contents.id(), file, e.toString());
             return Optional.empty();
         }
     }
 
-    private static Optional<StructureTemplate> loadFromResource(ServerLevel level, CarriageContents contents, Vec3i interiorSize) {
+    private static Optional<StructureTemplate> loadFromResource(ServerLevel level, CarriageContents contents) {
         String resource = RESOURCE_PREFIX + contents.id() + EXT;
         try (InputStream in = CarriageContentsStore.class.getResourceAsStream(resource)) {
             if (in == null) return Optional.empty();
             CompoundTag tag = NbtIo.readCompressed(in, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
-            return loadAndValidate(level, contents.id(), interiorSize, tag, "bundled " + resource);
+            return load(level, contents.id(), tag, "bundled " + resource);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled contents template {} at {}: {}", contents.id(), resource, e.toString());
             return Optional.empty();
         }
     }
 
-    private static Optional<StructureTemplate> loadAndValidate(
-        ServerLevel level, String id, Vec3i interiorSize, CompoundTag tag, String origin
+    /**
+     * Read a contents template off disk. <b>No size check</b> — that belongs to
+     * {@link #filterForSize}, per caller, because this result is shared through an id-keyed cache.
+     */
+    private static Optional<StructureTemplate> load(
+        ServerLevel level, String id, CompoundTag tag, String origin
     ) {
         StructureTemplate template = new StructureTemplate();
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
         template.load(blocks, tag);
 
         Vec3i size = template.getSize();
-        if (!sizeMatches(size, interiorSize)) {
-            LOGGER.warn(
-                "[DungeonTrain] Contents template {} ({}) has bounds {}x{}x{}, expected interior {}x{}x{} — ignoring.",
-                id, origin, size.getX(), size.getY(), size.getZ(),
-                interiorSize.getX(), interiorSize.getY(), interiorSize.getZ()
-            );
-            return Optional.empty();
-        }
-        LOGGER.info("[DungeonTrain] Loaded contents template {} from {}", id, origin);
+        LOGGER.info("[DungeonTrain] Loaded contents template {} from {} ({}x{}x{})",
+            id, origin, size.getX(), size.getY(), size.getZ());
         return Optional.of(template);
     }
 

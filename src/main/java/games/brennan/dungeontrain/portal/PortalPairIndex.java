@@ -67,8 +67,12 @@ public final class PortalPairIndex {
         }
 
         private int[] localOf(int dx, int dy, int dz) {
+            // The corridor's length, not the carriage's — a corridor runs past its own slot into the
+            // cart (PortalCorridorSize), and bounding this at dims.length() would call the last few
+            // blocks of every corridor "outside", so nothing standing there would be mirrored.
             if (dx < 0 || dy < 0 || dz < 0
-                || dx >= dims.length() || dy >= dims.height() || dz >= dims.width()) {
+                || dx >= PortalCorridorSize.corridorLength(dims)
+                || dy >= dims.height() || dz >= dims.width()) {
                 return null;
             }
             return new int[] {dx, dy, dz};

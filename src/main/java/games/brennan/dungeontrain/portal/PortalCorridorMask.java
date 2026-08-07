@@ -105,13 +105,18 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
         int minY = origin.getY();
         int maxY = origin.getY() + Math.max(dims.height(), size.getY()) - 1;
 
+        // The X spans are the CORRIDOR's length, off the layout — a corridor is longer than the
+        // carriage it is placed in (PortalCorridorSize), and a mask sized to the carriage would leave
+        // each twin's inner tail unprotected for a room copy to overwrite.
+        int corridorLength = layout.length();
+
         return new PortalCorridorMask(List.of(
             // Entry corridor and its seal ring, then the plug behind its dead door.
             new BoundingBox(origin.getX() - plugDepth, minY, minZ,
-                origin.getX() + dims.length() - 1, maxY, maxZ),
+                origin.getX() + corridorLength - 1, maxY, maxZ),
             // Exit corridor and its seal ring, then the plug beyond its dead door.
             new BoundingBox(exit.getX(), minY, minZ,
-                exit.getX() + dims.length() - 1 + plugDepth, maxY, maxZ)));
+                exit.getX() + corridorLength - 1 + plugDepth, maxY, maxZ)));
     }
 
     /**

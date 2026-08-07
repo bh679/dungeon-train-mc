@@ -4,7 +4,10 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
+import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
+import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
@@ -101,6 +104,76 @@ public final class CarriageContentsPlacer {
      * at their minimums; callers should treat a zero-or-negative dimension as
      * "no interior volume" and skip placement.
      */
+    /**
+     * The box {@code contents} is authored against — which is <b>not</b> always the world's carriage
+     * dims.
+     *
+     * <p>The portal corridor's contents are the exception: a corridor runs past its slot into the
+     * cart between a portal's pair, so what stands inside one is measured over
+     * {@link games.brennan.dungeontrain.portal.PortalCorridorSize#corridorDims} — 13×7×7 at the
+     * default, giving an 11×5×5 interior. The contents-side counterpart of
+     * {@link CarriagePlacer#variantDims}, and load-bearing for the same reason: the template's size
+     * gate, the editor plot, and the sidecar's bounds all have to agree on one box or the template is
+     * rejected, the plot is the wrong size, and entries past the carriage's length are dropped.</p>
+     *
+     * <p><b>Feed this the world's carriage dims, never its own output.</b> Every method here that
+     * takes a {@code (contents, dims)} pair resolves the box itself, so callers pass the world's dims
+     * and let it decide — handing one an already-resolved corridor box would grow it a second time.
+     * The box-only methods ({@link #captureTemplate}, {@link #eraseAt}, {@link #discardEntitiesAt})
+     * are the other half of that convention: they have no {@code contents} to resolve from, so their
+     * callers pass the resolved box.</p>
+     */
+    public static CarriageDims contentsDims(CarriageContents contents, CarriageDims dims) {
+        return isPortalContents(contents.id())
+            ? PortalCorridorSize.corridorDims(dims)
+            : dims;
+    }
+
+    /**
+     * True for the portal contents <b>or any sub-variant of it</b>.
+     *
+     * <p>A sub-variant is an alternative filling for the same space — the group picks between the
+     * parent and its members for one slot — so a member of the portal group is authored into a
+     * corridor exactly as its parent is, and has to be measured the same way. Sizing one as a
+     * carriage gives it a plot four blocks short, and a template captured there is rejected by the
+     * size gate the moment it is loaded.</p>
+     *
+     * <p>Walks the whole parent chain rather than checking one level, since groups may nest, and
+     * counts its steps: {@code findParentOf} reads sidecars off disk, and a cycle authored into
+     * them ({@code a}'s parent is {@code b}, {@code b}'s is {@code a}) would otherwise hang the
+     * server on a lookup that runs per placement.</p>
+     *
+     * <p><b>Public because the editor's shell choice reads it too</b>
+     * ({@code CarriageContentsEditor.shellFor}). It used to compare ids directly and so shelled a
+     * sub-variant's corridor-sized plot with a standard carriage — the box rule and the shell rule
+     * were the same question answered twice, and only one of them learned about groups.</p>
+     */
+    public static boolean isPortalContents(CarriageContents contents) {
+        return isPortalContents(contents.id());
+    }
+
+    private static boolean isPortalContents(String id) {
+        String portal = PortalCarriageBuilder.portalContents().id();
+        String current = id;
+        for (int depth = 0; depth <= MAX_GROUP_DEPTH; depth++) {
+            if (current.equals(portal)) return true;
+            Optional<String> parent = CarriageContentsGroupStore.findParentOf(current);
+            if (parent.isEmpty()) return false;
+            current = parent.get();
+        }
+        LOGGER.warn("[DungeonTrain] Contents group chain from '{}' exceeded {} levels — "
+            + "treating as un-nested. Check for a cycle in the group sidecars.", id, MAX_GROUP_DEPTH);
+        return false;
+    }
+
+    /** How far {@link #isPortalContents} will walk a group chain before calling it a cycle. */
+    private static final int MAX_GROUP_DEPTH = 16;
+
+    /** {@link #interiorSize} of the box {@code contents} is authored against. */
+    public static Vec3i interiorSizeFor(CarriageContents contents, CarriageDims dims) {
+        return interiorSize(contentsDims(contents, dims));
+    }
+
     public static Vec3i interiorSize(CarriageDims dims) {
         return new Vec3i(
             Math.max(0, dims.length() - 2),
@@ -220,7 +293,7 @@ public final class CarriageContentsPlacer {
     private static void placeAtInternal(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                          CarriageDims dims, long seed, int carriagePIdx,
                                          boolean placeBlocks, boolean spawnEntities) {
-        Vec3i size = interiorSize(dims);
+        Vec3i size = interiorSizeFor(contents, dims);
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) {
             // Carriage at its minimum dims has zero or negative interior
             // along at least one axis — no room for contents.
@@ -363,7 +436,7 @@ public final class CarriageContentsPlacer {
     private static void applyVariantBlocks(ServerLevel level, BlockPos carriageOrigin,
                                             CarriageContents contents, CarriageDims dims,
                                             long seed, int carriageIndex) {
-        Vec3i size = interiorSize(dims);
+        Vec3i size = interiorSizeFor(contents, dims);
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
         CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
         if (sidecar.isEmpty()) return;
@@ -442,7 +515,7 @@ public final class CarriageContentsPlacer {
         BlockPos origin = interiorOrigin(carriageOrigin);
         // Skip cells already handled by a variant entry — the variant flow
         // already rolled into them.
-        Vec3i size = interiorSize(dims);
+        Vec3i size = interiorSizeFor(contents, dims);
         games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks variants =
             games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks.loadFor(contents, size);
         java.util.Set<BlockPos> variantPositions = new java.util.HashSet<>();
@@ -985,7 +1058,7 @@ public final class CarriageContentsPlacer {
         // .nbt file) still spawn here via spawnEntitiesFromTemplate; only
         // the stochastic per-spawn variant rolls are suppressed.
         if (carriagePIdx == EDITOR_SENTINEL_PIDX) return;
-        Vec3i size = interiorSize(dims);
+        Vec3i size = interiorSizeFor(contents, dims);
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
         CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
         if (sidecar.isEmpty()) return;

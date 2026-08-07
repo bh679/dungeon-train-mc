@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.portal.PortalCarriageLayout;
 import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalClear;
+import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.portal.PortalEditMirror;
 import games.brennan.dungeontrain.portal.PortalFrames;
@@ -253,16 +254,22 @@ public final class PortalCarriageEvents {
                     int carriageIndex = anchorPIdx + slot;
                     if (!PortalCarriageSelection.isPortalCarriage(level, carriageIndex)) continue;
 
-                    // Group layout: [BACK pad | carriage 0 | carriage 1 | … ]. Exact doubles, so the
-                    // mapping neither lurches on a block boundary nor fights the group's jitter.
-                    double originX = bb.minX() + padLen + (double) slot * dims.length();
-                    double originY = bb.minY();
-                    double originZ = bb.minZ();
-
                     // A portal is one group, so both its corridors key on that group's anchor and
                     // the role falls out of which end of the group this one is.
                     PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, groupSize);
                     int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, groupSize);
+
+                    // Group layout: [BACK pad | carriage 0 | carriage 1 | … ]. Exact doubles, so the
+                    // mapping neither lurches on a block boundary nor fights the group's jitter.
+                    //
+                    // The corridor is longer than its slot and the EXIT one is pulled back into the
+                    // cart (PortalCorridorSize), so its frame origin is NOT its slot's. This has to
+                    // match where CarriagePlacer actually stamped the blocks, or the swap plane would
+                    // sit a few blocks off the corridor the player is walking down.
+                    double originX = bb.minX() + padLen + (double) slot * dims.length()
+                        + PortalCorridorSize.originOffsetX(role, dims);
+                    double originY = bb.minY();
+                    double originZ = bb.minZ();
 
                     handlePortalCarriage(level, players, layout, dims, carriageIndex, role, pairKey,
                         group.getValue(), originX, originY, originZ, groupSize, puppets);
@@ -349,7 +356,9 @@ public final class PortalCarriageEvents {
             (int) Math.ceil(box.maxX), (int) Math.ceil(box.maxY), (int) Math.ceil(box.maxZ),
             entry.getX(), entry.getY(), entry.getZ(),
             exit.getX(), exit.getY(), exit.getZ(),
-            dims.length(), dims.height(), dims.width(),
+            // The corridor's length, not the carriage's — the client fades the engine along the
+            // corridor it is actually standing in.
+            PortalCorridorSize.corridorLength(dims), dims.height(), dims.width(),
             TRAIN_AUDIO_FADE_BLOCKS);
 
         for (ServerPlayer player : players) {

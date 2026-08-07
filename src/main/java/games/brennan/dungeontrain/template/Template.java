@@ -291,19 +291,25 @@ public sealed interface Template
             CarriageEditor.stampPlot(level, variant, dims);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
-            return CarriageTemplateStore.getBundled(level, variant, dims);
+            // The variant's own box — `/dt reset default` on the portal corridor is asking for a
+            // 13-long shipped template, not a carriage-sized one.
+            return CarriageTemplateStore.getBundled(
+                level, variant, CarriagePlacer.variantDims(variant, dims));
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
             return CarriageEditor.plotOrigin(variant, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
-            return new Vec3i(dims.length(), dims.height(), dims.width());
+            // The plot's own box: longer than a carriage for the portal corridor, which runs past
+            // its slot into the cart between a portal's pair. See CarriageEditor.plotDims.
+            CarriageDims box = CarriageEditor.plotDims(variant, dims);
+            return new Vec3i(box.length(), box.height(), box.width());
         }
         @Override public void eraseEditorPlot(ServerLevel level, BlockPos origin, CarriageDims dims) {
             // Carriage hardcoded fallback leaves stale air patches that the
             // bundled stamp won't overwrite — explicit eraseAt before the
             // bundled placeInWorld preserves /dt reset default's fidelity.
-            CarriagePlacer.eraseAt(level, origin, dims);
+            CarriagePlacer.eraseAt(level, origin, CarriageEditor.plotDims(variant, dims));
         }
         @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
             CarriagePlacer.placeAt(level, origin, variant, dims);
