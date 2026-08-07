@@ -85,9 +85,33 @@ public final class PortalRoomLayout {
 
     private PortalRoomLayout() {}
 
-    /** The built-in room's full box, shell included. */
+    /**
+     * The built-in room's full box, shell included.
+     *
+     * <p>Its width is its own — {@link #BUILT_IN_INTERIOR_WIDTH} plus a wall each side, held up to
+     * {@link #minWidth} for a world whose carriages are wider than the built-in room ever was.
+     * Deliberately not just {@link #minWidth}: this is also the footprint
+     * {@link games.brennan.dungeontrain.track.variant.TrackKind#dims} reports for
+     * {@code PORTAL_ROOM}, and {@code TrackSidePlots.slotZ} uses that as the editor's plot-slot base
+     * — so tying it to the validation floor would re-pack every track-side editor row the moment
+     * that floor moved.</p>
+     */
     public static Vec3i builtInSize(CarriageDims dims) {
-        return new Vec3i(BUILT_IN_LENGTH, minHeight(dims), minWidth(dims));
+        return new Vec3i(BUILT_IN_LENGTH, minHeight(dims),
+            Math.max(BUILT_IN_INTERIOR_WIDTH + 2, minWidth(dims)));
+    }
+
+    /**
+     * The floor an authored room is validated against, as a box — {@link #MIN_LENGTH} by
+     * {@link #minHeight} by {@link #minWidth}.
+     *
+     * <p>Separate from {@link #builtInSize} on purpose. {@code TrackVariantStore.boundsMatch} used to
+     * validate an authored template against the built-in room's footprint, which quietly made the
+     * built-in room's width the minimum every authored room had to clear — a room could be rejected
+     * for being narrower than a shell it has nothing to do with.</p>
+     */
+    public static Vec3i minSize(CarriageDims dims) {
+        return new Vec3i(MIN_LENGTH, minHeight(dims), minWidth(dims));
     }
 
     /** A room box of {@code length}, at the minimum width and height. */
@@ -114,12 +138,24 @@ public final class PortalRoomLayout {
     }
 
     /**
-     * Smallest legal full room width. 13 at the default dims. Two blocks of room wall either side
-     * of the corridor's cross-section is the minimum that still reads as stepping out into
-     * somewhere else rather than into a wider corridor.
+     * Smallest legal full room width — 11 at the default dims.
+     *
+     * <p>The constraint is coverage rather than taste. {@code sealCorridorMouth} walls off the door
+     * plane by sweeping the <b>room's</b> Z span and skipping the corridor's cross-section, so a
+     * corridor column outside that span is never sealed and never covered either — it opens the twin
+     * structure onto the surrounding rock. Against {@link #roomOrigin}'s centring,
+     * {@code dims.width() + 4} is what holds the containment: it leaves exactly two blocks of room
+     * either side of the corridor — one wall, one interior — at every legal
+     * {@link CarriageDims#width()}, odd or even.</p>
+     *
+     * <p>This also used to floor at {@code BUILT_IN_INTERIOR_WIDTH + 2} (13 at the default dims),
+     * which was the built-in room's own width leaking into the validation floor rather than anything
+     * the seal needed. {@link #builtInSize} still applies it, so the built-in room is unchanged, but
+     * an authored room narrower than the built-in shell is legal now — because nothing breaks when it
+     * is.</p>
      */
     public static int minWidth(CarriageDims dims) {
-        return Math.min(MAX_WIDTH, Math.max(BUILT_IN_INTERIOR_WIDTH + 2, dims.width() + 4));
+        return Math.min(MAX_WIDTH, dims.width() + 4);
     }
 
     /** Clamp an authored length into {@link #MIN_LENGTH}..{@link #MAX_LENGTH}. */
