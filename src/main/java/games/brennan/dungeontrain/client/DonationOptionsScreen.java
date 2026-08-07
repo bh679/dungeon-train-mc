@@ -82,22 +82,27 @@ public final class DonationOptionsScreen extends Screen {
         int bh = 32;
 
         boolean tiers = PaymentLinks.tiersAvailable();
-        // The open-ended options keep their descriptive line above the button; the price points do
-        // not. At three across each column is ~106px, which fits roughly two words — a description
-        // there would wrap into an unreadable stack, so those buttons carry tooltips instead.
-        int modeEach = (rowW - gap) / 2;
-        leftColCenter = rowX + modeEach / 2;
-        rightColCenter = rowX + modeEach + gap + modeEach / 2;
-
         boolean cn = PaymentLinks.useChinaPayment();
         boolean showModes = !tiers || !PaymentLinks.hidesOpenEndedOptions();
-        revolutDescLines = showModes
+
+        // With price points on screen the open-ended options are the fallback for people those
+        // amounts don't suit, so they get a short, narrow row and NO description — a two-line
+        // explanation above each would give them back exactly the weight this removes. Hover
+        // tooltips still answer "no fees?" and "what's Recurring?" at no cost in layout.
+        int modeRowW = tiers ? rowW / 2 : rowW;
+        int modeBh = tiers ? 16 : bh;
+        int modeX = cx - modeRowW / 2;
+        int modeEach = (modeRowW - gap) / 2;
+        leftColCenter = modeX + modeEach / 2;
+        rightColCenter = modeX + modeEach + gap + modeEach / 2;
+
+        // The pre-tier layout keeps its descriptions: there are no tiers there to be secondary to.
+        boolean showDescs = showModes && !tiers;
+        revolutDescLines = showDescs
                 ? this.font.split(Component.translatable("gui.dungeontrain.support.donate_tooltip"), modeEach - 4)
                 : List.of();
-        // Pre-tier the right column is Patreon-or-WeChat; with tiers it is always Recurring
-        // (Patreon), because the audience that can't reach Patreon has no mode row at all.
-        patreonDescLines = showModes
-                ? this.font.split(Component.translatable(!tiers && cn
+        patreonDescLines = showDescs
+                ? this.font.split(Component.translatable(cn
                         ? "gui.dungeontrain.death.narr.donate_cn_desc"
                         : "gui.dungeontrain.death.narr.donate_patreon_desc"), modeEach - 4)
                 : List.of();
@@ -108,7 +113,7 @@ public final class DonationOptionsScreen extends Screen {
         int tierRowH = tiers ? bh + gap : 0;
         int subH = subtitleLines.size() * lineH;
         int descH = descRows * lineH;
-        int modeRowH = showModes ? descH + 4 + bh : 0;
+        int modeRowH = showModes ? descH + 4 + modeBh : 0;
         int blockH = lineH + 6 + subH + 12 + tierRowH + modeRowH + 12 + 20;
         int top = Math.max(20, (this.height - blockH) / 2);
 
@@ -137,12 +142,12 @@ public final class DonationOptionsScreen extends Screen {
         if (showModes) {
             // Left: the custom-amount route (Revolut, no fees). Right: Patreon — or, on the pre-tier
             // layout only, the China payment route where Patreon is unreachable.
-            addRenderableWidget(new ColorTintedButton(rowX, y, modeEach, bh,
+            Button left = new ColorTintedButton(modeX, y, modeEach, modeBh,
                     Component.translatable(tiers
                             ? "gui.dungeontrain.support.financial.custom_amount"
                             : "gui.dungeontrain.death.narr.donate_revolut"),
                     TINT_GREEN[0], TINT_GREEN[1], TINT_GREEN[2],
-                    b -> openLink(revolutUrl(), UiAnalytics.TARGET_DONATE)));
+                    b -> openLink(revolutUrl(), UiAnalytics.TARGET_DONATE));
 
             boolean rightIsCn = !tiers && cn;
             float[] rightTint = rightIsCn ? TINT_BLUE : TINT_ORANGE;
@@ -151,11 +156,20 @@ public final class DonationOptionsScreen extends Screen {
                             : "gui.dungeontrain.death.narr.donate_patreon";
             String rightUrl = rightIsCn ? PaymentLinks.chinaUrl() : OfficialLinks.patreon();
             String rightTarget = rightIsCn ? UiAnalytics.TARGET_DONATE_CN : UiAnalytics.TARGET_PATREON;
-            addRenderableWidget(new ColorTintedButton(rowX + modeEach + gap, y, modeEach, bh,
+            Button right = new ColorTintedButton(modeX + modeEach + gap, y, modeEach, modeBh,
                     Component.translatable(rightLabel),
                     rightTint[0], rightTint[1], rightTint[2],
-                    b -> openLink(rightUrl, rightTarget)));
-            y += bh;
+                    b -> openLink(rightUrl, rightTarget));
+
+            // The descriptions these buttons used to carry are gone in the tier layout, so the
+            // tooltip is now the only place that explains them.
+            if (tiers) {
+                left.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.support.donate_tooltip")));
+                right.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.support.recurring_tooltip")));
+            }
+            addRenderableWidget(left);
+            addRenderableWidget(right);
+            y += modeBh;
         }
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())

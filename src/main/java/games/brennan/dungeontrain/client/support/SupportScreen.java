@@ -60,6 +60,14 @@ public final class SupportScreen extends Screen {
     private static final int MAX_COL_W  = 360;
     private static final int SIDE_MARGIN = 40;
     private static final int BUTTON_H   = 20;
+    /**
+     * Height of the secondary row — Custom Amount and Recurring. Deliberately short: these are the
+     * fallbacks for people the named price points don't fit, and at the tiers' own height they read
+     * as a fourth and fifth equally-weighted choice, which is the opposite of the point.
+     */
+    private static final int SMALL_BUTTON_H = 16;
+    /** How much of the column the secondary row spans (the rest is margin, so it reads as narrower). */
+    private static final int SMALL_ROW_NUM = 1, SMALL_ROW_DEN = 2;
     private static final int BUTTON_GAP = 6;
     private static final int SECTION_GAP = 8;
     private static final int HEADER_GAP = 3;
@@ -98,6 +106,24 @@ public final class SupportScreen extends Screen {
      * analytics target name ({@link UiAnalytics} enum) for click/confirm events.
      */
     private record LinkButton(String labelKey, String url, float[] tint, String tooltipKey, String analyticsTarget) {}
+
+    /**
+     * One row of buttons in a section, with its own height and its own share of the column width —
+     * the two knobs that let the secondary row be visibly secondary rather than just later.
+     * A row narrower than the column is centred within it.
+     */
+    private record ButtonRow(List<LinkButton> buttons, int height, int width) {
+
+        /** A full-width row at the standard button height — every row that isn't being demoted. */
+        static ButtonRow primary(List<LinkButton> buttons, int colW) {
+            return new ButtonRow(buttons, BUTTON_H, colW);
+        }
+
+        /** A short, narrow row: the open-ended options sitting under the price points. */
+        static ButtonRow secondary(List<LinkButton> buttons, int colW) {
+            return new ButtonRow(buttons, SMALL_BUTTON_H, colW * SMALL_ROW_NUM / SMALL_ROW_DEN);
+        }
+    }
 
     /** When this visit started — set once in the constructor (init() reruns on every resize). */
     private final long openedAtMs = System.currentTimeMillis();
@@ -189,7 +215,7 @@ public final class SupportScreen extends Screen {
         y = addSection(y, lh,
                 Component.translatable("gui.dungeontrain.support.financial.header"),
                 Component.translatable(copyKey("gui.dungeontrain.support.financial.desc"), affiliateLink()),
-                financialRows());
+                financialRows(colW));
 
         // Share — text only, no link.
         y = addSection(y, lh,
@@ -222,7 +248,7 @@ public final class SupportScreen extends Screen {
      * Financial section put price points above the open-ended options, and lets the second row
      * simply not exist for the clients that don't get it.</p>
      */
-    private int addSection(int y, int lh, Component header, Component desc, List<List<LinkButton>> rows) {
+    private int addSection(int y, int lh, Component header, Component desc, List<ButtonRow> rows) {
         int headerY = y;
         y += lh + HEADER_GAP;
 
@@ -233,15 +259,17 @@ public final class SupportScreen extends Screen {
         textBlocks.add(new TextBlock(header, headerY, descLines, descY));
 
         boolean anyRow = false;
-        for (List<LinkButton> row : rows) {
-            int n = row.size();
+        for (ButtonRow row : rows) {
+            int n = row.buttons().size();
             if (n == 0) continue;
-            int each = (colW - (n - 1) * BUTTON_GAP) / n;
+            int rowW = Math.min(row.width(), colW);
+            int rowX = colX + (colW - rowW) / 2;
+            int each = (rowW - (n - 1) * BUTTON_GAP) / n;
             for (int i = 0; i < n; i++) {
-                int bx = colX + i * (each + BUTTON_GAP);
-                addRenderableWidget(makeLinkButton(bx, y, each, BUTTON_H, row.get(i)));
+                int bx = rowX + i * (each + BUTTON_GAP);
+                addRenderableWidget(makeLinkButton(bx, y, each, row.height(), row.buttons().get(i)));
             }
-            y += BUTTON_H + BUTTON_GAP;
+            y += row.height() + BUTTON_GAP;
             anyRow = true;
         }
         // Only undo the trailing inter-row gap if a row was actually laid out — a text-only section
@@ -277,21 +305,24 @@ public final class SupportScreen extends Screen {
      * returns the exact layout that shipped before price points existed — see
      * {@link #preTierRow()}.</p>
      */
-    private static List<List<LinkButton>> financialRows() {
-        if (!PaymentLinks.tiersAvailable()) return List.of(preTierRow());
+    private static List<ButtonRow> financialRows(int colW) {
+        if (!PaymentLinks.tiersAvailable()) return List.of(ButtonRow.primary(preTierRow(), colW));
 
         List<LinkButton> tiers = new ArrayList<>();
         for (SupportTier tier : SupportTier.values()) {
             tiers.add(new LinkButton(tier.labelKey(), PaymentLinks.tierUrl(tier), TINT_BLUE,
                     tier.tooltipKey(), tier.analyticsTarget()));
         }
-        if (PaymentLinks.hidesOpenEndedOptions()) return List.of(tiers);
+        ButtonRow tierRow = ButtonRow.primary(tiers, colW);
+        if (PaymentLinks.hidesOpenEndedOptions()) return List.of(tierRow);
 
-        return List.of(tiers, List.of(
+        // Short and narrow: the answer for people the named amounts don't suit, not a fourth option
+        // competing with them. Their tooltips still explain the difference on hover.
+        return List.of(tierRow, ButtonRow.secondary(List.of(
                 new LinkButton("gui.dungeontrain.support.financial.custom_amount", revolutUrl(), TINT_GREEN,
                         "gui.dungeontrain.support.donate_tooltip", UiAnalytics.TARGET_DONATE),
                 new LinkButton("gui.dungeontrain.support.financial.recurring", OfficialLinks.patreon(),
-                        TINT_ORANGE, "gui.dungeontrain.support.recurring_tooltip", UiAnalytics.TARGET_PATREON)));
+                        TINT_ORANGE, "gui.dungeontrain.support.recurring_tooltip", UiAnalytics.TARGET_PATREON)), colW));
     }
 
     /**
