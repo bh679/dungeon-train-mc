@@ -48,6 +48,19 @@ final class PortalTwinLanesTest {
     }
 
     @Test
+    @DisplayName("every lane has a row under its floor to skin, lane 0 included")
+    void everyLaneHasAnUnderside() {
+        // PortalCarriageBuilder writes the Bedrock Lock underside one row below the structure floor,
+        // clamped to what the world can hold. A lane whose floor sits ON that clamp loses the row —
+        // and with it the only thing between a room's floor and the open basement below.
+        for (int lane = 0; lane < PortalTwinLanes.MAX_LANES; lane++) {
+            int twinY = PortalTwinLanes.twinFloorY(DT_MIN_Y, DT_BEDROCK_Y, lane * GROUP_SIZE, GROUP_SIZE);
+            assertTrue(PortalCarriageBuilder.lowestWritableY(DT_MIN_Y, twinY) < twinY,
+                "lane " + lane + " (floor " + twinY + ") has no writable row beneath it");
+        }
+    }
+
+    @Test
     @DisplayName("consecutive groups take consecutive lanes, not all of lane 0")
     void groupsSpreadOverLanes() {
         Set<Integer> heights = new HashSet<>();

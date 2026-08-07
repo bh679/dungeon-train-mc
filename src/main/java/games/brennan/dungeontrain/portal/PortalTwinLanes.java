@@ -30,11 +30,19 @@ public final class PortalTwinLanes {
     private PortalTwinLanes() {}
 
     /**
-     * How far above the build floor the lowest lane's floor sits. One block of clearance, because
-     * blocks cannot be placed below the build floor at all and the structure skin writes one row
-     * under its own floor.
+     * How far above the build floor the lowest lane's floor sits.
+     *
+     * <p><b>Two, so the lowest lane gets an underside like every other lane.</b> A structure's skin
+     * writes one row <i>under</i> its floor — the Bedrock Lock underside — and
+     * {@code PortalCarriageBuilder.lowestWritableY} clamps that row to {@code worldMinY + 1}, since
+     * nothing can be placed lower. At a margin of one those two are the same row, the clamp swallows
+     * the underside, and lane 0 alone ends up with a floor you can break through into open basement
+     * and then out of the world. At two, the underside lands.</p>
+     *
+     * <p>It costs one block of a basement 80 deep, and {@link #usableLanes} accounts for it, so the
+     * lane count is unchanged.</p>
      */
-    public static final int FLOOR_MARGIN = 1;
+    public static final int FLOOR_MARGIN = 2;
 
     /** Distinct heights pairs are spread over, when the basement is deep enough to hold them all. */
     public static final int MAX_LANES = 6;
