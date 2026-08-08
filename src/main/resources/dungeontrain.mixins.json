@@ -19,6 +19,8 @@
     "NoiseBasedChunkGeneratorMixin",
     "ChunkGeneratorDecorationMixin",
     "ChunkGeneratorStructureStateMixin",
+    "WorldGenRegionFloorMixin",
+    "StructureBasementMixin",
     "ChunkStatusSpawnMixin",
     "RandomStateMixin",
     "ServerGamePacketListenerImplSignBookMixin",
