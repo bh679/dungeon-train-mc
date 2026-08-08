@@ -6310,6 +6310,23 @@
       "released_at": null
     },
     {
+      "id": "portal-tunnel-music-fade",
+      "version": "0.539.0",
+      "type": "feat",
+      "title": "The music fades out as you walk into a portal",
+      "summary": "Head down a portal corridor and the soundtrack sinks away with every step, gone by the time you reach the door. Portal rooms are silent \u2014 nothing plays in there, however long you stay. Walk back out onto the train and the music doesn't come blaring back mid-song either; the quiet holds for a while, then a fresh track starts on its own.",
+      "highlights": [
+        "Music fades out over the last stretch of a portal corridor",
+        "Portal rooms are completely silent",
+        "No jarring mid-track resume when you come back to the train"
+      ],
+      "pr": 909,
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "portal-rooms-not-off-the-train",
       "version": "0.539.0",
       "type": "fix",
