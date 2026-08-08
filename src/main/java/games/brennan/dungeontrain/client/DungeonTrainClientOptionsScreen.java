@@ -45,6 +45,7 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
     private static final List<Integer> RESOLUTION_VALUES = List.of(0, 1080, 1440, 2160);
 
     private final Screen parent;
+    private MaxCarriagesSlider maxCarriagesSlider;
 
     public DungeonTrainClientOptionsScreen(Screen parent) {
         // ".client." because gui.dungeontrain.options.title is already taken by the WORLD options screen.
@@ -123,8 +124,8 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
         // describes THIS machine: it is stored client-side and follows the player onto every server.
         // Applies live — the server's appender re-reads the window every tick, so lowering it
         // shortens the train you're standing on within a tick or two, no relog and no reload.
-        addRenderableWidget(new MaxCarriagesSlider(left, y, ROW_W, ROW_H))
-                .setTooltip(tip("gui.dungeontrain.options.max_carriages.tip"));
+        maxCarriagesSlider = addRenderableWidget(new MaxCarriagesSlider(left, y, ROW_W, ROW_H));
+        maxCarriagesSlider.setTooltip(tip("gui.dungeontrain.options.max_carriages.tip"));
         y += ROW_GAP;
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
@@ -146,9 +147,13 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
         private static final int STEPS =
                 1 + (DungeonTrainConfig.MAX_CARRIAGES - DungeonTrainConfig.MIN_CARRIAGES_EXPLICIT + 1);
 
+        /** Last value written to the config, so a drag only writes when it crosses a notch. */
+        private int lastWritten;
+
         MaxCarriagesSlider(int x, int y, int w, int h) {
             super(x, y, w, h, Component.empty(), 0.0);
-            this.value = toSliderValue(ClientDisplayConfig.getMaxCarriages());
+            this.lastWritten = ClientDisplayConfig.getMaxCarriages();
+            this.value = toSliderValue(this.lastWritten);
             updateMessage();
         }
 
@@ -175,32 +180,35 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
         }
 
         /**
-         * Called on every drag tick. Deliberately does NOT persist — see
-         * {@link #onRelease(double, double)}; the label still tracks the drag via
-         * {@code updateMessage}, so the slider feels live while the world stays still.
+         * Persist on every notch the drag crosses, not on release.
+         *
+         * <p>Releasing is not a reliable commit point: {@code AbstractContainerEventHandler}
+         * dispatches {@code mouseReleased} to the widget <b>under the cursor</b>, so a drag that
+         * ends past the end of the track — the most natural way to reach AUTO or 50 — never calls
+         * {@link #onRelease}. Committing here instead means every path that can move the slider
+         * (mouse drag, click, arrow keys) persists, because they all funnel through vanilla's
+         * private {@code setValue}, which calls this whenever the value actually changes.</p>
+         *
+         * <p>The {@code lastWritten} guard keeps this to one small config write per notch crossed
+         * rather than one per drag pixel. The server sync is NOT sent here — that would be a packet
+         * per notch; it goes out on release and on close instead.</p>
          */
         @Override
         protected void applyValue() {
-            // no-op — committed on release
+            int carriages = carriages();
+            if (carriages == lastWritten) return;
+            lastWritten = carriages;
+            ClientDisplayConfig.setMaxCarriages(carriages);
         }
 
         @Override
         public void onRelease(double mouseX, double mouseY) {
             super.onRelease(mouseX, mouseY);
-            commit();
+            sync();
         }
 
-        /** Keyboard arrows move the slider without ever firing onRelease, so commit here too. */
-        @Override
-        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-            boolean handled = super.keyPressed(keyCode, scanCode, modifiers);
-            if (handled) commit();
-            return handled;
-        }
-
-        /** Persist the client-side value and push it to the server so the window resizes now. */
-        private void commit() {
-            ClientDisplayConfig.setMaxCarriages(carriages());
+        /** Push the stored value to the server so the window resizes now. Safe to call repeatedly. */
+        void sync() {
             MaxCarriagesSyncClient.syncNow();
         }
     }
@@ -238,6 +246,20 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
         } else {
             this.minecraft.setScreen(new NetworkConsentScreen(this));
         }
+    }
+
+    /**
+     * Backstop for the max-carriages sync. The value itself is already persisted the moment the
+     * slider crosses a notch; this covers the server push for the paths that never fire the
+     * slider's {@code onRelease} — a drag released past the end of the track, or arrow keys.
+     * Sending one redundant packet on close is cheaper than the window silently not resizing.
+     */
+    @Override
+    public void removed() {
+        if (maxCarriagesSlider != null) {
+            maxCarriagesSlider.sync();
+        }
+        super.removed();
     }
 
     @Override
