@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.perf.PerfTestMode;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
@@ -227,7 +228,12 @@ public final class DevQuickWorldHandler {
         Minecraft mc = Minecraft.getInstance();
         mc.options.tutorialStep = TutorialSteps.NONE;
         mc.options.save();
-        WorldOptions options = WorldOptions.defaultWithRandomSeed();
+        // Perf-test mode pins the seed so every benchmark run lays out an identical world AND an
+        // identical train (DungeonTrainWorldData derives the train's generationSeed from the world
+        // seed). Normal launches keep a random seed.
+        WorldOptions options = PerfTestMode.ENABLED
+                ? new WorldOptions(PerfTestMode.seed(), true, false)
+                : WorldOptions.defaultWithRandomSeed();
         WorldOpenFlows flows = mc.createWorldOpenFlows();
         flows.createFreshLevel(name, settings, options, dtPresetDimensions(), lastScreen);
     }
@@ -236,8 +242,12 @@ public final class DevQuickWorldHandler {
         return registryAccess -> {
             Registry<WorldPreset> presetRegistry =
                     registryAccess.registryOrThrow(Registries.WORLD_PRESET);
-            ResourceKey<WorldPreset> key = DungeonTrainCommonConfig.getDefaultCompatibleTerrain()
-                    ? DT_COMPAT_PRESET : DT_DEFAULT_PRESET;
+            // Flat wins over the compatible-terrain toggle in perf mode: the whole point is to remove
+            // chunk generation from the measurement, and Compatible Terrain is still noise terrain.
+            ResourceKey<WorldPreset> key = PerfTestMode.ENABLED
+                    ? PerfTestMode.FLAT_PRESET
+                    : (DungeonTrainCommonConfig.getDefaultCompatibleTerrain()
+                        ? DT_COMPAT_PRESET : DT_DEFAULT_PRESET);
             Optional<Holder.Reference<WorldPreset>> dt = presetRegistry.getHolder(key);
             if (dt.isPresent()) {
                 return dt.get().value().createWorldDimensions();

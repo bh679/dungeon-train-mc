@@ -423,6 +423,7 @@
   "effect.dungeontrain.warmth_of_the_fire": "爐火暖意",
   "effect.dungeontrain.warmth_of_the_fire.description": "緩慢治療",
   "generator.dungeontrain.dungeon_train": "地牢列車",
+  "generator.dungeontrain.dungeon_train_flat": "地牢列車（超平坦）",
   "generator.dungeontrain.dungeon_train_nether": "地牢列車（地獄）",
   "generator.dungeontrain.dungeon_train_end": "地牢列車（終界）",
   "generator.dungeontrain.dungeon_train_y-64": "地牢列車",

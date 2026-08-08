@@ -433,6 +433,7 @@
   "effect.dungeontrain.warmth_of_the_fire": "Wärme des Feuers",
   "effect.dungeontrain.warmth_of_the_fire.description": "Langsame Heilung",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Superflach)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",
   "generator.dungeontrain.dungeon_train_end": "Dungeon Train (End)",
   "generator.dungeontrain.dungeon_train_y-64": "Dungeon Train",

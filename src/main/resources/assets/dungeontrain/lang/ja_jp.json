@@ -423,6 +423,7 @@
   "effect.dungeontrain.warmth_of_the_fire": "炎の温もり",
   "effect.dungeontrain.warmth_of_the_fire.description": "ゆっくりとした回復",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_flat": "Dungeon Train（フラット）",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train（ネザー）",
   "generator.dungeontrain.dungeon_train_end": "Dungeon Train（ジ・エンド）",
   "generator.dungeontrain.dungeon_train_y-64": "Dungeon Train",

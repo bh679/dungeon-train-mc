@@ -423,6 +423,7 @@
   "effect.dungeontrain.warmth_of_the_fire": "ไออุ่นแห่งกองไฟ",
   "effect.dungeontrain.warmth_of_the_fire.description": "การรักษาแบบช้า",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (พื้นราบ)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (เนเธอร์)",
   "generator.dungeontrain.dungeon_train_end": "Dungeon Train (ดิเอนด์)",
   "generator.dungeontrain.dungeon_train_y-64": "Dungeon Train",

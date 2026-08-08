@@ -114,6 +114,16 @@ neoForge {
                 programArgument '--quickPlayMultiplayer'
                 programArgument quickJoin.toString()
             }
+            // Perf-test mode: ./gradlew runClient -PperfTest [-PperfSeed=<long>]. The dev quick-world
+            // is then created flat (dungeontrain:dungeon_train_flat) with a PINNED seed, and the quiet
+            // game rules are applied on server start. See perf/PerfTestMode. Property rather than env
+            // var for the same daemon-environment reason as relayBaseUrl above.
+            if (project.hasProperty('perfTest')) {
+                systemProperty 'dungeontrain.perfTest', 'true'
+            }
+            if (project.hasProperty('perfSeed')) {
+                systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
+            }
         }
 
         server {
@@ -134,6 +144,17 @@ neoForge {
             // invoking shell's (same reason as relayBaseUrl above).
             if (project.hasProperty('genDetLog')) {
                 systemProperty 'dungeontrain.genDeterminismLog', 'true'
+            }
+            // Perf-test mode on a dedicated server: ./gradlew runServer -PperfTest. This applies the
+            // quiet game rules; the FLAT preset and the pinned seed come from run/server.properties
+            // (level-type=dungeontrain\:dungeon_train_flat + level-seed), because a dedicated server
+            // creates its world from those rather than from the client's quick-world path.
+            // scripts/perf/ writes both.
+            if (project.hasProperty('perfTest')) {
+                systemProperty 'dungeontrain.perfTest', 'true'
+            }
+            if (project.hasProperty('perfSeed')) {
+                systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
             }
         }
 

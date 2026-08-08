@@ -423,6 +423,7 @@
   "effect.dungeontrain.warmth_of_the_fire": "Warmte Van Het Vuur",
   "effect.dungeontrain.warmth_of_the_fire.description": "Langzame Genezing",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Supervlak)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",
   "generator.dungeontrain.dungeon_train_end": "Dungeon Train (End)",
   "generator.dungeontrain.dungeon_train_y-64": "Dungeon Train",

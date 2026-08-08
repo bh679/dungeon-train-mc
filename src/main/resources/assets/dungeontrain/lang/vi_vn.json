@@ -433,6 +433,7 @@
   "effect.dungeontrain.warmth_of_the_fire": "Hơi Ấm Của Ngọn Lửa",
   "effect.dungeontrain.warmth_of_the_fire.description": "Hồi Máu Chậm",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Phẳng)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Địa Ngục)",
   "generator.dungeontrain.dungeon_train_end": "Dungeon Train (Bờ Vực)",
   "generator.dungeontrain.dungeon_train_y-64": "Dungeon Train",
