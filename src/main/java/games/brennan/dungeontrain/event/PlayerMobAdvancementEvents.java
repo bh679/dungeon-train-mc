@@ -53,6 +53,12 @@ import java.util.UUID;
  *       state.</li>
  * </ul>
  *
+ * <p><b>Hallway portals are not the ground.</b> A portal room sits at the world floor, far from any
+ * carriage, so both off-the-train signals here — the Reboarder deck test and the echo void-push —
+ * read a mob that walked through a portal as one that was shoved off a moving train. Both are gated
+ * on {@link PortalCarriageEvents#isInsidePortalStructure}: see {@link #step}'s {@code inPortal} and
+ * {@link #dropPortalEchoStrikes}.</p>
+ *
  * <p>Item give/receive (A Silent Friend / Friends) is captured separately via
  * PlayerMob's {@code PlayerMobSocialHooks} gift seam, forwarded by
  * {@code compat.PlayerMobSocialBridge}.</p>
@@ -165,6 +171,7 @@ public final class PlayerMobAdvancementEvents {
         if (level.getGameTime() % SCAN_PERIOD_TICKS != 0) return;
         long now = level.getGameTime();
         pruneEchoStrikes(now);
+        dropPortalEchoStrikes(level);
         if (RECENT_HITS.isEmpty()) return;
 
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
@@ -179,12 +186,15 @@ public final class PlayerMobAdvancementEvents {
             // null ⇒ unloaded or dead (no live position); otherwise its support.
             Boolean onDeck = (mob != null && mob.isAlive())
                 ? CarriageDeck.isOnCarriageDeck(carriages, mob) : null;
+            boolean inPortal = mob != null && mob.isAlive()
+                && PortalCarriageEvents.isInsidePortalStructure(
+                    level, mob.getX(), mob.getY(), mob.getZ());
 
-            ReboarderStep outcome = step(hit, onDeck, dead, expired);
+            ReboarderStep outcome = step(hit, onDeck, dead, expired, inPortal);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("[DungeonTrain] Reboarder mob={} onDeck={} dead={} expired={} "
-                        + "wasOnTrain={} lastOnDeck={} offScans={} -> {}",
-                    mobUuid, onDeck, dead, expired, hit.wasOnTrain(),
+                        + "inPortal={} wasOnTrain={} lastOnDeck={} offScans={} -> {}",
+                    mobUuid, onDeck, dead, expired, inPortal, hit.wasOnTrain(),
                     hit.lastOnDeck(), hit.offScans(), outcome.decision());
             }
             switch (outcome.decision()) {
@@ -204,12 +214,19 @@ public final class PlayerMobAdvancementEvents {
      * Pure decision for one off-deck scan of a tracked hit — side-effect-free so
      * {@code PlayerMobReboarderTest} can table-test it.
      *
-     * @param onDeck  mob's current carriage support, or {@code null} when it is
-     *                unloaded or dead (no live position to test)
-     * @param dead    the mob exists but is no longer alive
-     * @param expired the push window has elapsed since the strike
+     * @param onDeck   mob's current carriage support, or {@code null} when it is
+     *                 unloaded or dead (no live position to test)
+     * @param dead     the mob exists but is no longer alive
+     * @param expired  the push window has elapsed since the strike
+     * @param inPortal the mob is inside a hallway-portal structure — it walked through a door with
+     *                 the player rather than being shoved off a moving train, so the hit is dropped
+     *                 outright. A portal room sits at the world floor, which every deck test reads
+     *                 as off the train; without this, punching a PlayerMob and then leading it
+     *                 through a portal awards Reboarder.
      */
-    static ReboarderStep step(ReboarderHit hit, Boolean onDeck, boolean dead, boolean expired) {
+    static ReboarderStep step(ReboarderHit hit, Boolean onDeck, boolean dead, boolean expired,
+                              boolean inPortal) {
+        if (inPortal) return new ReboarderStep(ReboarderDecision.DROP, hit);
         if (onDeck != null) {                            // live: we can see where it is
             if (hit.wasOnTrain() && !onDeck) {           // off the carriage deck right now
                 int off = hit.offScans() + 1;
@@ -362,6 +379,27 @@ public final class PlayerMobAdvancementEvents {
     private static void pruneEchoStrikes(long now) {
         if (ECHO_STRIKES.isEmpty()) return;
         ECHO_STRIKES.values().removeIf(s -> now - s.tick() > VOID_PUSH_WINDOW_TICKS);
+    }
+
+    /**
+     * Forget the strike on any echo that has since walked into a hallway portal.
+     *
+     * <p>A {@link games.brennan.dungeontrain.portal.PortalRoomMode#BEDROCKLESS} room is a floating
+     * structure in swept-out void, so an echo that follows a player through a portal and steps off
+     * the edge dies {@code FELL_OUT_OF_WORLD} — indistinguishable, at death time, from being shoved
+     * off the train into the void. It cannot be decided in {@link #onEchoFellToVoid} either: an
+     * out-of-world death happens <em>below</em> the structure box, and a genuine fall from the train
+     * passes through the same XZ columns on its way down. So it is sampled here instead, while the
+     * echo is still alive and still standing in the room.</p>
+     */
+    private static void dropPortalEchoStrikes(ServerLevel level) {
+        if (ECHO_STRIKES.isEmpty()) return;
+        ECHO_STRIKES.entrySet().removeIf(entry -> {
+            Entity echo = level.getEntity(entry.getKey());
+            return echo != null && echo.isAlive()
+                && PortalCarriageEvents.isInsidePortalStructure(
+                    level, echo.getX(), echo.getY(), echo.getZ());
+        });
     }
 
     // ---------------- Logout cleanup ----------------

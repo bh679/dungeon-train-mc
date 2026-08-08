@@ -48,6 +48,18 @@ import java.util.UUID;
  * That state is transient (rebuilt each session); since players always spawn
  * aboard ({@link PlayerJoinEvents}) it re-establishes before they can wander.</p>
  *
+ * <h2>Portal rooms are not "off the train"</h2>
+ * A hallway portal teleports the player to a corridor twin stamped at the world
+ * floor, so on position alone they read as having jumped off — which would grant
+ * {@code left_train} and, on their way back in, {@code returned_to_train}, for
+ * walking through a door. While {@link PortalCarriageEvents#isInsidePortalStructure}
+ * holds, {@link #step} emits nothing and returns the state <em>unchanged</em>.
+ *
+ * <p>Frozen rather than reset, deliberately: the player entered from a carriage,
+ * so the state already says aboard with no departure latched, and picking it back
+ * up on the far side is what makes the whole trip a no-op. Resetting would clear
+ * {@code hasBeenAboard} and cost them a later, genuine {@code returned_to_train}.</p>
+ *
  * <p>Throttled to once every {@link #SCAN_PERIOD_TICKS} ticks per level,
  * matching {@link BoardingProgressEvents} / {@link RoofRunEvents}.</p>
  */
@@ -123,32 +135,20 @@ public final class TrackPresenceEvents {
             boolean offCorridor = !onCarriage
                 && (pz < bedMinZ - OFF_CORRIDOR_MARGIN || pz > bedMaxZ + OFF_CORRIDOR_MARGIN);
 
-            State s = STATES.computeIfAbsent(player.getUUID(), k -> new State());
+            boolean inPortal = PortalCarriageEvents.isInsidePortalStructure(level, px, py, pz);
 
-            if (onTracks) {
+            State before = STATES.getOrDefault(player.getUUID(), State.INITIAL);
+            PresenceStep out = step(before, onCarriage, onTracks, offCorridor, inPortal);
+            STATES.put(player.getUUID(), out.next());
+
+            if (out.landedOnTracks()) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "landed_on_tracks");
             }
-            if (onCarriage || onTracks) {
-                s.wasOnTrainOrTracks = true;
+            if (out.returnedToTrain()) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "returned_to_train");
             }
-
-            if (onCarriage) {
-                s.hasBeenAboard = true;
-                s.offCarriageScans = 0;
-                if (s.leftCarriageSinceAboard) {
-                    ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "returned_to_train");
-                    s.leftCarriageSinceAboard = false;
-                }
-            } else {
-                if (s.hasBeenAboard) {
-                    s.offCarriageScans++;
-                    if (s.offCarriageScans >= OFF_GRACE_SCANS) {
-                        s.leftCarriageSinceAboard = true;
-                    }
-                }
-                if (s.wasOnTrainOrTracks && offCorridor) {
-                    ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "left_train");
-                }
+            if (out.leftTrain()) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "left_train");
             }
         }
 
@@ -185,15 +185,57 @@ public final class TrackPresenceEvents {
         return false;
     }
 
-    /** Mutable per-player transition state for the leave/return state machine. */
-    private static final class State {
-        /** Has been on a carriage or the tracks at least once — latches left_train. */
-        boolean wasOnTrainOrTracks;
-        /** Has been on a carriage at least once — gates the return marker. */
-        boolean hasBeenAboard;
-        /** Consecutive off-carriage scans since last aboard. */
-        int offCarriageScans;
-        /** Departed a carriage (past the grace) and not yet re-boarded. */
-        boolean leftCarriageSinceAboard;
+    /**
+     * Per-player transition state for the leave/return state machine.
+     *
+     * @param wasOnTrainOrTracks      has been on a carriage or the tracks at least once — latches
+     *                                {@code left_train}
+     * @param hasBeenAboard           has been on a carriage at least once — gates the return marker
+     * @param offCarriageScans        consecutive off-carriage scans since last aboard
+     * @param leftCarriageSinceAboard departed a carriage (past the grace) and not yet re-boarded
+     */
+    record State(boolean wasOnTrainOrTracks, boolean hasBeenAboard,
+                 int offCarriageScans, boolean leftCarriageSinceAboard) {
+
+        /** A player nothing has been observed about yet. */
+        static final State INITIAL = new State(false, false, 0, false);
+    }
+
+    /**
+     * Which markers one scan concludes, plus the state to carry into the next. A field is
+     * {@code true} only on the scan that earns it — re-firing an already-granted id would be a
+     * vanilla no-op anyway, but this keeps the decision honest and table-testable.
+     */
+    record PresenceStep(boolean landedOnTracks, boolean returnedToTrain, boolean leftTrain,
+                        State next) {}
+
+    /**
+     * The whole leave/return decision for one scan of one player — pure, so
+     * {@code TrackPresenceStepTest} can table-test it without a Minecraft bootstrap. The three
+     * position reads are supplied by the caller (and verified in-game); this pins only what a given
+     * observation means. Mirrors {@link PlayerMobAdvancementEvents#step}.
+     *
+     * @param inPortal the player is inside a hallway-portal structure — see the class javadoc for
+     *                 why this freezes the state rather than resetting it
+     */
+    static PresenceStep step(State s, boolean onCarriage, boolean onTracks,
+                             boolean offCorridor, boolean inPortal) {
+        if (inPortal) return new PresenceStep(false, false, false, s);
+
+        boolean wasOnTrainOrTracks = s.wasOnTrainOrTracks() || onCarriage || onTracks;
+
+        if (onCarriage) {
+            return new PresenceStep(onTracks, s.leftCarriageSinceAboard(), false,
+                new State(wasOnTrainOrTracks, true, 0, false));
+        }
+
+        int offScans = s.offCarriageScans();
+        boolean left = s.leftCarriageSinceAboard();
+        if (s.hasBeenAboard()) {
+            offScans++;
+            if (offScans >= OFF_GRACE_SCANS) left = true;
+        }
+        return new PresenceStep(onTracks, false, wasOnTrainOrTracks && offCorridor,
+            new State(wasOnTrainOrTracks, s.hasBeenAboard(), offScans, left));
     }
 }

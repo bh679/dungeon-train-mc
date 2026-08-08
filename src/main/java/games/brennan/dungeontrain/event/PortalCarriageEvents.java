@@ -188,9 +188,12 @@ public final class PortalCarriageEvents {
      * them, any copy of that room currently standing, and the clearance a
      * {@link games.brennan.dungeontrain.portal.PortalRoomMode#BEDROCKLESS} room swept around itself.
      *
-     * <p>Read by {@code PortalRoomSpawnGuard} to keep the dark from filling a portal room with
-     * skeletons. The structures live here because this is what stamps and moves them, so the query
-     * lives here too rather than the spawn rule keeping its own idea of where they are.</p>
+     * <p>Two readers, both asking "is this somewhere else": {@code PortalRoomSpawnGuard} keeps the
+     * dark from filling a portal room with skeletons, and the on-train advancement scanners
+     * ({@link TrackPresenceEvents}, {@link PlayerMobAdvancementEvents}) use it to stop a portal
+     * reading as having jumped off the train. The structures live here because this is what stamps
+     * and moves them, so the query lives here too rather than each reader keeping its own idea of
+     * where they are.</p>
      *
      * <p><b>Why the clearance counts.</b> In an ordinary world the swept space is basement void with
      * no floor in it, and nothing spawns on nothing. A Compatible Terrain world has no basement: the
@@ -201,6 +204,17 @@ public final class PortalCarriageEvents {
      * <p>Padded here rather than in {@link #structureBox}, which must not grow: that box is also the
      * occupancy, carry and despawn-protection volume, so widening it by the clearance would have a
      * pair adopting mobs fifty blocks away and dragging them along on every re-stamp.</p>
+     */
+    public static boolean isInsidePortalStructure(ServerLevel level, double x, double y, double z) {
+        // Ahead of the world-data lookup on purpose: the advancement scanners that read this call it
+        // per player per scan, and a world with no portals in it should pay nothing for that.
+        if (STRUCTURES.isEmpty()) return false;
+        return isInsidePortalStructure(DungeonTrainWorldData.get(level).dims(), x, y, z);
+    }
+
+    /**
+     * As {@link #isInsidePortalStructure(ServerLevel, double, double, double)}, for callers that
+     * already hold the world's {@link CarriageDims}.
      */
     public static boolean isInsidePortalStructure(CarriageDims dims, double x, double y, double z) {
         if (STRUCTURES.isEmpty()) return false;
