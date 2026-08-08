@@ -75,6 +75,40 @@ final class PortalRoomModeTest {
     }
 
     @Test
+    @DisplayName("Bedrockless neither tiles nor seals — it is the sealed mode with the seal removed")
+    void bedrocklessRepeatsNothing() {
+        assertSame(PortalRoomMode.BEDROCKLESS, PortalRoomMode.parse("bedrockless"));
+        assertFalse(PortalRoomMode.BEDROCKLESS.tiles());
+        assertFalse(PortalRoomMode.BEDROCKLESS.tilesWholeRoom());
+        assertTrue(PortalRoomMode.BEDROCKLESS.clearsSurroundings());
+    }
+
+    @Test
+    @DisplayName("clearing the surroundings is Bedrockless alone — no other mode writes or sweeps a boundary")
+    void onlyBedrocklessClears() {
+        for (PortalRoomMode m : PortalRoomMode.values()) {
+            assertEquals(m == PortalRoomMode.BEDROCKLESS, m.clearsSurroundings(), m.id());
+        }
+    }
+
+    /**
+     * Stated per mode rather than as {@code tiles() || BEDROCKLESS}, which would only restate the
+     * implementation. Fog used to be gated on {@code tiles()}, and the point of {@code fogs()} being
+     * its own question is that a mode added later has to answer it deliberately — a test that derives
+     * the answer would let the next one through.
+     */
+    @Test
+    @DisplayName("every mode with an edge to hide fogs; Bedrock Lock, which has none, does not")
+    void fogging() {
+        assertFalse(PortalRoomMode.BEDROCK_LOCK.fogs());
+        assertTrue(PortalRoomMode.ENDLESS_REPETITION.fogs());
+        assertTrue(PortalRoomMode.ENDLESS_OPEN.fogs());
+        assertTrue(PortalRoomMode.BEDROCKLESS.fogs());
+        assertEquals(4, PortalRoomMode.values().length,
+            "a new mode must decide for itself whether it fogs — add it to this test");
+    }
+
+    @Test
     @DisplayName("next() cycles through every mode and returns to where it started")
     void nextCycles() {
         PortalRoomMode start = PortalRoomMode.DEFAULT;

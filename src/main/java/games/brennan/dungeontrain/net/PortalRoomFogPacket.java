@@ -27,9 +27,11 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * <p>Sent when the region changes and cleared with a zero {@code radius}. The client eases toward
  * whatever it was last told, so a packet arriving a tick late costs nothing.</p>
  *
- * @param minX   world bounds of the stamped copies, inclusive
- * @param radius the mode's nominal fog distance in blocks — five rooms out; {@code 0} means "no
- *               longer in a room", which is also what a fresh client assumes
+ * @param minX   world bounds of the stamped copies, inclusive — grown by the clearance for a
+ *               Bedrockless room, which owns swept space rather than copies
+ * @param radius the mode's nominal fog distance in blocks — five rooms out for the tiling modes, the
+ *               clearance for Bedrockless; {@code 0} means "no longer in a room", which is also what
+ *               a fresh client assumes
  */
 public record PortalRoomFogPacket(int minX, int minY, int minZ, int maxX, int maxY, int maxZ,
                                   float radius) implements CustomPacketPayload {

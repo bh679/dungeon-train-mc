@@ -157,7 +157,23 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * direction, so a long thin room has to be fogged at the distance that hides its short side.</p>
      */
     public float fogRadius() {
+        // Bedrockless repeats nothing, so "five rooms out" has nothing to count. What it has instead
+        // is the clearance it swept, and fogging at exactly that distance is what puts the fog where
+        // the emptiness ends rather than somewhere inside it.
+        if (mode() == PortalRoomMode.BEDROCKLESS) return PortalRoomLayout.VOID_CLEARANCE;
         return (float) PortalRoomTiling.MAX_RADIUS * Math.min(roomLength(), roomWidth());
+    }
+
+    /**
+     * How far past the room's own extent the fogged region reaches, in blocks.
+     *
+     * <p>Zero for every mode whose fog stops at the copies it has stamped. {@link
+     * PortalRoomMode#BEDROCKLESS} is the one that owns space it did not build in: the region has to
+     * cover the swept clearance, or a player who mines out through the room's shell leaves the fog
+     * while still standing in the void it was hiding.</p>
+     */
+    public int fogPad() {
+        return mode() == PortalRoomMode.BEDROCKLESS ? PortalRoomLayout.VOID_CLEARANCE : 0;
     }
 
     /** How many blocks one copy of this room occupies — what the tiling budget is measured in. */

@@ -60,6 +60,22 @@ public final class PortalRoomLayout {
     public static final int TWIN_LANE_HEIGHT = 12;
 
     /**
+     * How far {@link PortalRoomMode#BEDROCKLESS} sweeps the space around a room, in blocks, on each
+     * horizontal axis.
+     *
+     * <p><b>Horizontal only.</b> There is no vertical counterpart and there must not be one:
+     * {@link #TWIN_LANE_HEIGHT} is the whole distance to the next pair's structure, so a clearance of
+     * this size in Y would delete it. A Bedrockless room's emptiness is a flat void the height of the
+     * structure that sits in it, and the fog — drawn at this same distance — is what keeps its
+     * ceiling out of view.</p>
+     *
+     * <p>Chosen against the fog rather than against the world: it is the radius
+     * {@code PortalStructure.fogRadius} reports for the mode, so the space that was cleared and the
+     * distance a player can see into it are one number. Raising it raises both.</p>
+     */
+    public static final int VOID_CLEARANCE = 50;
+
+    /**
      * Shortest room worth authoring. Below this the two corridor mouths are close enough that the
      * far one is visible from the near one, which is the one thing the baffles exist to prevent.
      */

@@ -40,6 +40,8 @@ class PortalRoomSettingsTest {
             new PortalRoomSettings(PortalRoomMode.BEDROCK_LOCK, PortalRoomCopies.DYNAMIC).toTag());
         assertEquals("endless_open",
             new PortalRoomSettings(PortalRoomMode.ENDLESS_OPEN, PortalRoomCopies.DYNAMIC).toTag());
+        assertEquals("bedrockless",
+            new PortalRoomSettings(PortalRoomMode.BEDROCKLESS, PortalRoomCopies.DYNAMIC).toTag());
     }
 
     @Test
@@ -86,6 +88,7 @@ class PortalRoomSettingsTest {
         assertTrue(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_REPETITION).copiesApply());
         assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_OPEN).copiesApply());
         assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.BEDROCK_LOCK).copiesApply());
+        assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.BEDROCKLESS).copiesApply());
     }
 
     // ---- the seed each copy rolls from ----

@@ -20,7 +20,22 @@ import java.util.Locale;
  *       edge.</li>
  *   <li>{@link #ENDLESS_OPEN} — the same grid, but only the floor and ceiling planes repeat. No side
  *       walls at all, so it reads as an open plain rather than a hall of rooms.</li>
+ *   <li>{@link #BEDROCKLESS} — {@link #BEDROCK_LOCK} with the bedrock taken away: no repetition, and
+ *       nothing at all around the room for {@link PortalRoomLayout#VOID_CLEARANCE} blocks.</li>
  * </ul>
+ *
+ * <h2>Bedrockless is not "the same room, unsealed"</h2>
+ * <p>Twins are stamped in the empty basement under the world's bedrock ({@link PortalTwinLanes}),
+ * which generation never reaches, so the space around a room is <i>already</i> empty in an ordinary
+ * Dungeon Train world — the lock's skin was the only thing standing in it. What Bedrockless adds on
+ * top of not writing that skin is the guarantee: the clearance is swept whatever the room landed in,
+ * which is what makes it hold in a Compatible Terrain world, where the basement does not exist and a
+ * twin sits inside solid rock.</p>
+ *
+ * <p>The clearance is horizontal only. Pairs are spread over Y lanes
+ * {@link PortalRoomLayout#TWIN_LANE_HEIGHT} apart, so clearing the same distance vertically would
+ * empty the lane above and below — the collision the lanes exist to prevent. What a player sees is a
+ * flat void, and with the fog at the same distance its ceiling is never in view.</p>
  *
  * <h2>Why the tiling grid is X and Z but never Y</h2>
  * <p>Portal pairs are spread over Y lanes {@link PortalRoomLayout#TWIN_LANE_HEIGHT} apart, and
@@ -49,7 +64,10 @@ public enum PortalRoomMode {
     ENDLESS_REPETITION("endless_repetition", "Endless Repetition"),
 
     /** Only the floor and ceiling repeat — the walls are open. */
-    ENDLESS_OPEN("endless_open", "Endless Open");
+    ENDLESS_OPEN("endless_open", "Endless Open"),
+
+    /** Sealed in nothing at all: no skin, no repetition, and empty space out to the clearance. */
+    BEDROCKLESS("bedrockless", "Bedrockless");
 
     /** What a variant with no mode tag — or an unreadable one — behaves as. */
     public static final PortalRoomMode DEFAULT = BEDROCK_LOCK;
@@ -75,6 +93,29 @@ public enum PortalRoomMode {
     /** True for the two modes that tile the room around itself. */
     public boolean tiles() {
         return this == ENDLESS_REPETITION || this == ENDLESS_OPEN;
+    }
+
+    /**
+     * True when the room hides its own boundary behind fog.
+     *
+     * <p>Named for what it decides rather than derived from {@link #tiles}, which is what the fog used
+     * to be gated on. That read correctly only while tiling and fogging happened to coincide:
+     * {@link #BEDROCKLESS} repeats nothing and still has an edge worth hiding, and a mode added later
+     * would inherit whichever of the two it did not mean. Both questions get asked by name now.</p>
+     */
+    public boolean fogs() {
+        return tiles() || this == BEDROCKLESS;
+    }
+
+    /**
+     * True when the room is stamped into a swept clearance rather than into whatever it landed in —
+     * {@link #BEDROCKLESS} alone.
+     *
+     * <p>Deliberately not the complement of {@link #BEDROCK_LOCK}'s skin: the tiling modes write
+     * neither, because their boundary is the next copy of the room.</p>
+     */
+    public boolean clearsSurroundings() {
+        return this == BEDROCKLESS;
     }
 
     /**
