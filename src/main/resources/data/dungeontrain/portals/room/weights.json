@@ -24,6 +24,10 @@
     "weight": 1,
     "mode": "endless_repetition/dynamic"
   },
+  "labrynth": {
+    "weight": 31,
+    "mode": "endless_repetition/dynamic"
+  },
   "library_dimension": {
     "weight": 2,
     "mode": "endless_repetition/dynamic"
