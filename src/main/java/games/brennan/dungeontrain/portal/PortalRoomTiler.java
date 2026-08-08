@@ -13,7 +13,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -332,13 +336,105 @@ public final class PortalRoomTiler {
         });
     }
 
-    /** Wall off a face that has nothing beyond it, filling only what the author left as air. */
+    /**
+     * Wall off a face that has nothing beyond it, filling only what the author left as air —
+     * <b>in the room's own blocks</b>.
+     *
+     * <p>The fill used to be {@link PortalCarriageBuilder#POCKET_SHELL}, which is the built-in
+     * room's palette and belongs to nothing else in an authored room. The boundary then read as
+     * walls of polished blackstone brick added into somebody else's library. It is a boundary that
+     * should not be visible as one: what closes the face is what the player would have seen had the
+     * next copy been there.</p>
+     *
+     * <p>Which is knowable exactly, because every copy is the same room. Beyond the {@code +x} face
+     * stands the next copy's {@code -x} wall, and that is block-for-block this copy's own
+     * {@code -x} wall at the same height and the same lateral position — so each cell is filled from
+     * its mirror across the room. Where the mirror is unusable (air, most often, since a room meant
+     * to repeat has its doorways lined up on both faces) the fill falls back to the material the
+     * face itself is made of; see {@link #faceFill}.</p>
+     */
     private static void closeFace(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                   Tile tile, int dx, int dz) {
+        BlockState fallback = faceFill(level, dims, structure, tile, dx, dz);
+        Vec3i size = structure.roomSize();
+        int mirrorX = -dx * (size.getX() - 1);
+        int mirrorZ = -dz * (size.getZ() - 1);
         eachFaceCell(level, dims, structure, tile, dx, dz, /*interiorOnly*/ false, (wall, inner) -> {
             if (!level.getBlockState(wall).isAir()) return;
-            level.setBlock(wall, PortalCarriageBuilder.POCKET_SHELL, Block.UPDATE_ALL);
+            BlockPos mirror = wall.offset(mirrorX, 0, mirrorZ);
+            BlockState mirrored = level.getBlockState(mirror);
+            level.setBlock(wall, usableAsFill(level, mirror, mirrored) ? mirrored : fallback,
+                Block.UPDATE_ALL);
         });
+    }
+
+    /**
+     * What to close a face with when a cell's mirror cannot be copied: the most common usable block
+     * across the face plane and the plane it mirrors onto — the blocks the author put <i>around</i>
+     * the doorway the copies pass through.
+     *
+     * <p>Both planes, because either one alone can come up empty: a room open on the {@code +x}
+     * face is usually open on {@code -x} too, but a room open on one side only would otherwise have
+     * nothing to sample. {@link PortalCarriageBuilder#POCKET_SHELL} remains the last resort, for a
+     * room whose faces carry no solid wall at all.</p>
+     *
+     * <p>Sampled from the world rather than from the saved template on purpose: it costs no template
+     * lookup, and it reads what a Dynamic copy actually rolled rather than what the room was
+     * authored as. A face closed once and sampled again later sees its own fill, which is the same
+     * material — so this is stable under the window sliding back and forth.</p>
+     */
+    private static BlockState faceFill(ServerLevel level, CarriageDims dims,
+                                       PortalStructure structure, Tile tile, int dx, int dz) {
+        Vec3i size = structure.roomSize();
+        int mirrorX = -dx * (size.getX() - 1);
+        int mirrorZ = -dz * (size.getZ() - 1);
+        List<BlockState> seen = new ArrayList<>();
+        eachFaceCell(level, dims, structure, tile, dx, dz, /*interiorOnly*/ false, (wall, inner) -> {
+            BlockState own = level.getBlockState(wall);
+            if (usableAsFill(level, wall, own)) seen.add(own);
+            BlockPos mirror = wall.offset(mirrorX, 0, mirrorZ);
+            BlockState mirrored = level.getBlockState(mirror);
+            if (usableAsFill(level, mirror, mirrored)) seen.add(mirrored);
+        });
+        BlockState common = mostCommon(seen);
+        return common != null ? common : PortalCarriageBuilder.POCKET_SHELL;
+    }
+
+    /**
+     * True when {@code state} may be copied into a wall.
+     *
+     * <p>Three things are refused. <b>Air</b>, which would close nothing. <b>Anything carrying a
+     * block entity</b> — copying a chest's state without its NBT plants empty chests along the
+     * boundary, and it is the same hazard {@link PortalClear} and {@link #stampTile} are both
+     * written around from the other direction. And <b>anything that is not a full block</b>: a
+     * mirrored torch, stair or trapdoor keeps the facing it had on the far wall, so it would hang
+     * off the boundary the wrong way round and leave a hole besides.</p>
+     */
+    private static boolean usableAsFill(ServerLevel level, BlockPos pos, BlockState state) {
+        return !state.isAir()
+            && !state.hasBlockEntity()
+            && state.getFluidState().isEmpty()
+            && state.isCollisionShapeFullBlock(level, pos);
+    }
+
+    /**
+     * The value appearing most often in {@code values}, or null when it is empty. Ties go to
+     * whichever was seen first, so a tick's choice does not depend on hash order.
+     *
+     * <p>Generic and free of Minecraft types so it unit-tests without a NeoForge bootstrap — the
+     * same reason {@link PortalRoomTiling} keeps its geometry pure.</p>
+     */
+    static <T> T mostCommon(List<T> values) {
+        Map<T, Integer> counts = new LinkedHashMap<>();
+        for (T value : values) counts.merge(value, 1, Integer::sum);
+        T best = null;
+        int bestCount = 0;
+        for (Map.Entry<T, Integer> entry : counts.entrySet()) {
+            if (entry.getValue() <= bestCount) continue;
+            best = entry.getKey();
+            bestCount = entry.getValue();
+        }
+        return best;
     }
 
     /** Take a face away — {@link PortalRoomMode#ENDLESS_OPEN} only. */
