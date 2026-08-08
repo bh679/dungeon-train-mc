@@ -6292,6 +6292,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-placed-once",
+      "version": "0.539.0",
+      "type": "fix",
+      "title": "Portal rooms no longer fill up with broken blocks and doubled-up mobs",
+      "summary": "A portal's room was being torn down and rebuilt over and over as the train rolled, instead of being built once. Every rebuild left the room a little more cluttered: pressure plates popped off their supports and their drops stayed floating where they broke, and the room's own mobs were carried over and then spawned again beside themselves. A room is now laid down once, and stays as it was built.",
+      "highlights": [
+        "Fixed: floating dropped items piling up in portal rooms, where blocks had been broken by a rebuild",
+        "Fixed: a portal room's mobs appearing twice over, growing every time the train travelled",
+        "Portal rooms are built once instead of being repeatedly re-laid as the train moves"
+      ],
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
