@@ -6405,6 +6405,23 @@
       "released": true,
       "released_in": "v0.548.0",
       "released_at": "2026-08-08T09:35:11Z"
+    },
+    {
+      "id": "zh-cn-translation-review-2026-08",
+      "version": "0.549.0",
+      "type": "content",
+      "title": "Simplified Chinese: full human translation review",
+      "summary": "\u8001\u672c\u9858 has reviewed Dungeon Train's Simplified Chinese translation end to end. 97 interface lines were rewritten and 18 confirmed, taking \u7b80\u4f53\u4e2d\u6587 to 96.5% human-reviewed \u2014 the menus, consent screens, advancements and shared-carriage messages now read as written Chinese rather than machine translation. Four in-world books were translated for the first time, so every random book you can find now has a Chinese edition, and two more picked up their newest entries.",
+      "highlights": [
+        "97 interface lines rewritten by a human translator, 18 confirmed",
+        "Four in-world books translated into Chinese for the first time \u2014 full coverage",
+        "New drifting-carriage entries added to Quiet Rules and the Train Glossary",
+        "\u7b80\u4f53\u4e2d\u6587 now shows as human-reviewed in the language list"
+      ],
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
