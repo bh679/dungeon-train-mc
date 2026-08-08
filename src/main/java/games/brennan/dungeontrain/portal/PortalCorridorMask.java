@@ -23,14 +23,26 @@ import java.util.List;
  * placed <b>once</b>, when its structure is built, and this is what keeps it that way: every later
  * write that would land inside a corridor is simply skipped, so there is nothing to repair.</p>
  *
- * <p>The masked volume is deliberately a little larger than the corridor's own box. It runs the full
- * width and height of the <i>room</i> across each corridor's X range, because that slab is exactly
- * what {@code PortalCarriageBuilder.stampCorridors} writes: the corridor itself, plus the seal ring
- * that walls off everything around its mouth. A copy stamped over the seal would open a hole into the
- * rock beside the door.</p>
+ * <p><b>Exactly what {@code stampCorridors} writes, and not a block more.</b> That is three volumes
+ * per corridor: the corridor's own box, the plug behind its outer door, and the seal ring — which is
+ * a <i>single</i> plane at the corridor's mouth, filling the room's whole cross-section there.</p>
  *
- * <p>What a player sees is unchanged by any of this: along the train's axis an endless room is broken
- * by a wall with a door in it — the way back — and the room carries on beyond it.</p>
+ * <p>It used to be one slab per corridor instead, the room's full width and height across the
+ * corridor's entire length, sized to the widest thing in it. That reserved a volume nothing ever
+ * wrote into, and reserving it is the same as leaving it empty: a copy landing on the corridor row
+ * put down no floor, no ceiling and no walls over that span, so the aisles either side of a corridor
+ * were void with the corridor hanging in them — and at the default dims a corridor (13) is longer
+ * than the built-in room (11), so the copy that lands on it stamped <i>nothing at all</i>. The seam
+ * carve still opened the way in from the copy next door, which is how a player found it. Masking the
+ * three real volumes lets a copy lay its floor, its ceiling and its own outer walls around the
+ * corridor, so the corridor stands as an object inside the endless room — which is what
+ * {@link PortalRoomMode}'s javadoc has always said it is.</p>
+ *
+ * <p>What a player sees along the train's axis is unchanged: an endless room is broken by a wall with
+ * a door in it — the way back — and the room carries on beyond it. That wall is the seal plane, and
+ * it stays the room's full cross-section on purpose. It is the only thing between the room and the
+ * rock when a copy cannot be stamped at all, which is normal and silent — the budget is spent, or the
+ * chunks are not loaded ({@code PortalRoomTiler.canStamp}).</p>
  */
 public record PortalCorridorMask(List<BoundingBox> boxes) {
 
@@ -98,8 +110,14 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
     }
 
     /**
-     * The mask for {@code structure}: a full-height, full-room-width slab across each corridor's X
-     * range, plus the plug beyond each outer door.
+     * The mask for {@code structure}: three boxes per corridor — the corridor's own box, its plug,
+     * and the single plane its seal ring fills.
+     *
+     * <p>Each is sized off the writer it protects, so the two cannot drift apart:
+     * {@code stampTwin} clears and stamps the corridor's box; {@code plugBeyond} runs one column
+     * proud of it on each side in Z; {@code sealCorridorMouth} sweeps the <b>room's</b> cross-section
+     * at one X. Everything outside those is the room's to build in, which is what puts a floor in the
+     * aisles beside a corridor.</p>
      *
      * @param plugDepth how far a plug reaches past its corridor — {@code PortalCarriageBuilder}'s
      *                  own constant, passed in so the two cannot disagree about it
@@ -111,27 +129,45 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
         BlockPos room = structure.roomOrigin(dims, layout);
         Vec3i size = structure.roomSize();
 
-        // Inclusive bounds, sized to exactly what stampCorridors writes and no further. The seal ring
-        // is the widest of it: it fills the room's own cross-section at each door plane, so the slab
-        // is the room's Z and Y extent — but stopping one short of the next row, or a copy standing
-        // beside the corridors would have its first column silently skipped.
-        int minZ = Math.min(room.getZ(), origin.getZ());
-        int maxZ = Math.max(room.getZ() + size.getZ() - 1, origin.getZ() + dims.width() - 1);
-        int minY = origin.getY();
-        int maxY = origin.getY() + Math.max(dims.height(), size.getY()) - 1;
+        // The corridor's own cross-section. A room is never narrower or shorter than this
+        // (PortalRoomLayout.minWidth / minHeight), so a copy always has room either side of it.
+        int corridorMinZ = origin.getZ();
+        int corridorMaxZ = origin.getZ() + dims.width() - 1;
+        int corridorMinY = origin.getY();
+        int corridorMaxY = origin.getY() + dims.height() - 1;
 
-        // The X spans are the CORRIDOR's length, off the layout — a corridor is longer than the
-        // carriage it is placed in (PortalCorridorSize), and a mask sized to the carriage would leave
-        // each twin's inner tail unprotected for a room copy to overwrite.
+        // The seal ring's, which is the room's — wider and, in a tall room, taller.
+        int roomMinZ = room.getZ();
+        int roomMaxZ = room.getZ() + size.getZ() - 1;
+        // A room's floor is laid at the corridor's, by construction (PortalRoomLayout.roomOrigin), so
+        // this is the same row corridorMinY is — read off the room anyway, since it is the room's
+        // cross-section the seal fills.
+        int roomMinY = room.getY();
+        int roomMaxY = room.getY() + size.getY() - 1;
+
+        // The CORRIDOR's length, off the layout — a corridor is longer than the carriage it is placed
+        // in (PortalCorridorSize), and a box sized to the carriage would leave each twin's inner tail
+        // unprotected for a room copy to overwrite.
         int corridorLength = layout.length();
+        // Each corridor's mouth: the door plane facing the room, which is what the seal ring fills.
+        int entrySealX = origin.getX() + corridorLength - 1;
+        int exitSealX = exit.getX();
 
         return new PortalCorridorMask(List.of(
-            // Entry corridor and its seal ring, then the plug behind its dead door.
-            new BoundingBox(origin.getX() - plugDepth, minY, minZ,
-                origin.getX() + corridorLength - 1, maxY, maxZ),
-            // Exit corridor and its seal ring, then the plug beyond its dead door.
-            new BoundingBox(exit.getX(), minY, minZ,
-                exit.getX() + corridorLength - 1 + plugDepth, maxY, maxZ)));
+            // Entry corridor, the plug behind its dead outer door, and its mouth's seal ring.
+            new BoundingBox(origin.getX(), corridorMinY, corridorMinZ,
+                entrySealX, corridorMaxY, corridorMaxZ),
+            new BoundingBox(origin.getX() - plugDepth, corridorMinY, corridorMinZ - 1,
+                origin.getX() - 1, corridorMaxY, corridorMaxZ + 1),
+            new BoundingBox(entrySealX, roomMinY, roomMinZ,
+                entrySealX, roomMaxY, roomMaxZ),
+            // Exit corridor, the plug beyond its dead outer door, and its mouth's seal ring.
+            new BoundingBox(exitSealX, corridorMinY, corridorMinZ,
+                exit.getX() + corridorLength - 1, corridorMaxY, corridorMaxZ),
+            new BoundingBox(exit.getX() + corridorLength, corridorMinY, corridorMinZ - 1,
+                exit.getX() + corridorLength - 1 + plugDepth, corridorMaxY, corridorMaxZ + 1),
+            new BoundingBox(exitSealX, roomMinY, roomMinZ,
+                exitSealX, roomMaxY, roomMaxZ)));
     }
 
     /**
