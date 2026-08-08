@@ -5,6 +5,10 @@
     {
       "id": "cubes",
       "weight": 1
+    },
+    {
+      "id": "blocks",
+      "weight": 1
     }
   ]
 }

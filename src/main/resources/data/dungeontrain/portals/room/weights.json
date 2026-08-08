@@ -3,6 +3,10 @@
     "weight": 4,
     "mode": "bedrockless"
   },
+  "blocks": {
+    "weight": 1,
+    "mode": "endless_repetition"
+  },
   "book": {
     "weight": 2,
     "mode": "endless_repetition"
