@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.client.ClientNetherBand;
 import games.brennan.dungeontrain.client.ClientVoidBand;
+import games.brennan.dungeontrain.client.sound.ClientPortalMusic;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.sounds.SoundEngine;
 import net.minecraft.sounds.SoundSource;
@@ -24,9 +25,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * handlers ({@code VoidSkyEvents} / {@code NetherFogEvents}) re-apply the {@code MUSIC} volume
  * each tick so the playing channel picks up the new gain.</p>
  *
- * <p>Both factors are {@code 1.0} (a no-op) outside their own band, and the two bands never
- * overlap in world-X, so taking the {@code min} cleanly selects whichever band the player is in
- * and stays a no-op everywhere else. This only affects Overworld music during a band crossing.</p>
+ * <p>A third factor comes from {@link ClientPortalMusic}, which fades the soundtrack out along a
+ * portal corridor so the portal room it opens onto is silent. Unlike the bands it is not keyed on
+ * world-X alone and <i>can</i> share ground with either of them — a portal structure is stamped
+ * under the Overworld wherever the train happens to be. Taking the {@code min} is still the right
+ * rule for that: whichever effect wants the music quietest gets it. Every factor is {@code 1.0}
+ * (a no-op) outside its own region, so this stays a no-op everywhere else.</p>
  */
 @Mixin(SoundEngine.class)
 public abstract class SoundEngineMusicFadeMixin {
@@ -39,7 +43,9 @@ public abstract class SoundEngineMusicFadeMixin {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
         double x = mc.player.getX();
-        double factor = Math.min(ClientVoidBand.musicVolumeFactor(x), ClientNetherBand.musicVolumeFactor(x));
+        double factor = Math.min(
+            Math.min(ClientVoidBand.musicVolumeFactor(x), ClientNetherBand.musicVolumeFactor(x)),
+            ClientPortalMusic.current());
         if (factor < 1.0) {
             cir.setReturnValue((float) (original * factor));
         }
