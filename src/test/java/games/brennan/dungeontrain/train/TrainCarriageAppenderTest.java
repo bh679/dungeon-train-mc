@@ -523,19 +523,19 @@ final class TrainCarriageAppenderTest {
     @Test
     @DisplayName("max carriages: 0 means auto — the render-distance target passes through untouched")
     void maxCarriages_autoSentinelPassesThrough() {
-        assertEquals(20, TrainCarriageAppender.effectiveTargetCount(20, 0));
-        assertEquals(5, TrainCarriageAppender.effectiveTargetCount(5, 0));
-        // Negative can't reach here through the config, but treat it as auto rather
-        // than as a ceiling of -1, which would collapse the train to nothing.
-        assertEquals(20, TrainCarriageAppender.effectiveTargetCount(20, -1));
+        assertEquals(20, TrainCarriageAppender.effectiveTargetCount(20, 0, 0));
+        assertEquals(5, TrainCarriageAppender.effectiveTargetCount(5, 0, 0));
+        // Negatives can't reach here through the config or the packet's sanitizer, but treat
+        // them as auto rather than as a ceiling of -1, which would collapse the train to nothing.
+        assertEquals(20, TrainCarriageAppender.effectiveTargetCount(20, -1, -1));
     }
 
     @Test
     @DisplayName("max carriages below the auto target caps the window")
     void maxCarriages_capsAutoTarget() {
-        assertEquals(8, TrainCarriageAppender.effectiveTargetCount(20, 8));
+        assertEquals(8, TrainCarriageAppender.effectiveTargetCount(20, 8, 0));
         assertEquals(DungeonTrainConfig.MIN_CARRIAGES_EXPLICIT,
-            TrainCarriageAppender.effectiveTargetCount(50, DungeonTrainConfig.MIN_CARRIAGES_EXPLICIT));
+            TrainCarriageAppender.effectiveTargetCount(50, DungeonTrainConfig.MIN_CARRIAGES_EXPLICIT, 0));
     }
 
     @Test
@@ -543,8 +543,8 @@ final class TrainCarriageAppenderTest {
     void maxCarriages_neverRaisesAboveAuto() {
         // The pre-change behaviour returned the configured value here (30), producing a
         // LONGER train than the player's render distance warranted. A maximum must not.
-        assertEquals(12, TrainCarriageAppender.effectiveTargetCount(12, 30));
-        assertEquals(12, TrainCarriageAppender.effectiveTargetCount(12, DungeonTrainConfig.MAX_CARRIAGES));
+        assertEquals(12, TrainCarriageAppender.effectiveTargetCount(12, 30, 0));
+        assertEquals(12, TrainCarriageAppender.effectiveTargetCount(12, DungeonTrainConfig.MAX_CARRIAGES, 0));
     }
 
     @Test
@@ -554,12 +554,44 @@ final class TrainCarriageAppenderTest {
         // so the cap has to be applied afterwards for a setting of 4 to mean anything.
         assertTrue(DungeonTrainConfig.MIN_CARRIAGES_EXPLICIT < DungeonTrainConfig.MIN_CARRIAGES_AUTO_FLOOR);
         assertEquals(4, TrainCarriageAppender.effectiveTargetCount(
-            DungeonTrainConfig.MIN_CARRIAGES_AUTO_FLOOR, 4));
+            DungeonTrainConfig.MIN_CARRIAGES_AUTO_FLOOR, 4, 0));
+        // …and the same holds when it's the PLAYER's own ceiling doing the capping.
+        assertEquals(4, TrainCarriageAppender.effectiveTargetCount(
+            DungeonTrainConfig.MIN_CARRIAGES_AUTO_FLOOR, 0, 4));
     }
 
     @Test
     @DisplayName("max carriages: equal cap and auto target is a no-op")
     void maxCarriages_equalIsNoOp() {
-        assertEquals(15, TrainCarriageAppender.effectiveTargetCount(15, 15));
+        assertEquals(15, TrainCarriageAppender.effectiveTargetCount(15, 15, 15));
+    }
+
+    @Test
+    @DisplayName("player's own max caps the window when the server has none")
+    void maxCarriages_playerCapAlone() {
+        assertEquals(6, TrainCarriageAppender.effectiveTargetCount(30, 0, 6));
+        // A player asking for more than their render distance gives them still gets the auto target.
+        assertEquals(12, TrainCarriageAppender.effectiveTargetCount(12, 0, 40));
+    }
+
+    @Test
+    @DisplayName("server max and player max together: the smaller wins, in both directions")
+    void maxCarriages_smallerCeilingWins() {
+        // Player asks for less than the server allows → the player's number.
+        assertEquals(6, TrainCarriageAppender.effectiveTargetCount(40, 20, 6));
+        // Player asks for MORE than the server allows → the server's number, not the player's.
+        // This is what makes the client-supplied value safe to accept from any client.
+        assertEquals(20, TrainCarriageAppender.effectiveTargetCount(40, 20, 45));
+        // Equal ceilings are unambiguous.
+        assertEquals(20, TrainCarriageAppender.effectiveTargetCount(40, 20, 20));
+    }
+
+    @Test
+    @DisplayName("an un-synced player (no personal max) behaves exactly as before the feature")
+    void maxCarriages_unsyncedPlayerUnchanged() {
+        // MaxCarriagesMirror.get returns 0 for a player who never sent a sync — an older client,
+        // or one whose login packet hasn't landed. That must cost them nothing.
+        assertEquals(20, TrainCarriageAppender.effectiveTargetCount(20, 0, 0));
+        assertEquals(16, TrainCarriageAppender.effectiveTargetCount(20, 16, 0));
     }
 }

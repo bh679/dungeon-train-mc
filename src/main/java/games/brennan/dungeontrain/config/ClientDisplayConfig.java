@@ -72,6 +72,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_RESOLUTION;
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
+    /** This player's own carriage ceiling; {@code 0} = auto. See {@link #getMaxCarriages()}. */
+    public static final ModConfigSpec.IntValue MAX_CARRIAGES;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
@@ -138,6 +140,7 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_MAX_RESOLUTION = pair.getLeft().rideSnapshotMaxResolution;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
+        MAX_CARRIAGES = pair.getLeft().maxCarriages;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
@@ -239,6 +242,18 @@ public final class ClientDisplayConfig {
                         FramerateThrottle.MIN_THROTTLE_FPS, FramerateThrottle.MAX_THROTTLE_FPS);
         b.pop();
 
+        b.push("train");
+        ModConfigSpec.IntValue maxCarriages = b
+                .comment("Your personal ceiling on how many carriages are kept live around you — the main",
+                         "performance knob, since each carriage is a live sub-level. 0 (default) = auto: as many",
+                         "as your render distance warrants. A positive value only ever LOWERS that; it cannot make",
+                         "the train longer than your render distance already allows, and the server's own maximum",
+                         "still wins if it is smaller. Settable range is 0 or 4-50. Client-scope on purpose: it",
+                         "describes this machine, so it follows you into every world and onto every server.",
+                         "Set in-game via Options -> Dungeon Train... -> Max carriages; applies immediately.")
+                .defineInRange("maxCarriages", 0, 0, DungeonTrainConfig.MAX_CARRIAGES);
+        b.pop();
+
         b.push("world");
         ModConfigSpec.BooleanValue deleteWorldOnReboard = b
                 .comment("Delete the old world's save folder when reboarding (creating a fresh world) from the death screen. Dungeon Train is designed around a new world per run, so this defaults on to keep the world list and disk clean. Only auto-generated \"<prefix> <timestamp>\" saves (Dungeon Train / Dev World / World) are ever deleted — renamed or hand-made worlds and editor worlds are always kept. Toggleable in-game via the trash icon next to the reboard button.")
@@ -294,7 +309,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, deleteWorldOnReboard, sharedBooksRead,
+                framerateThrottleEnabled, framerateThrottleFps, maxCarriages, deleteWorldOnReboard, sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode);
     }
 
@@ -570,6 +585,32 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_MAX_RESOLUTION.save();
     }
 
+    // ----- Personal carriage ceiling (Options → Dungeon Train… → Max carriages) -----
+
+    /**
+     * This player's own maximum carriages, or {@code 0} for auto (no personal cap). Synced to the
+     * server on login and on change ({@code MaxCarriagesSyncPacket}); the server applies it as one
+     * ceiling among several — its own {@code numCarriages} maximum still wins when smaller, so this
+     * can only ever shorten the train, never lengthen it past what the server allows.
+     *
+     * <p>Reads {@code 0} pre-load, which is exactly the no-cap behaviour, so a config that never
+     * loads changes nothing.</p>
+     */
+    public static int getMaxCarriages() {
+        int raw = isLoaded() ? MAX_CARRIAGES.get() : 0;
+        return raw <= 0 ? 0 : Math.max(DungeonTrainConfig.MIN_CARRIAGES_EXPLICIT,
+                                       Math.min(DungeonTrainConfig.MAX_CARRIAGES, raw));
+    }
+
+    /** Store this player's carriage ceiling ({@code 0} = auto). Set from Options; no-op pre-load. */
+    public static void setMaxCarriages(int value) {
+        if (!isLoaded()) return;
+        int clamped = value <= 0 ? 0 : Math.max(DungeonTrainConfig.MIN_CARRIAGES_EXPLICIT,
+                                                Math.min(DungeonTrainConfig.MAX_CARRIAGES, value));
+        MAX_CARRIAGES.set(clamped);
+        MAX_CARRIAGES.save();
+    }
+
     // ----- Idle framerate throttle (paused / unfocused / minimised) -----
 
     /**
@@ -723,6 +764,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue rideSnapshotMaxResolution,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
+            ModConfigSpec.IntValue maxCarriages,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,

@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.SableConfig;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.event.MaxCarriagesMirror;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.ship.ManagedShip;
@@ -1718,8 +1719,13 @@ public final class TrainCarriageAppender {
                 LAST_SENT_PIDX.put(uuid, pIdx);
             }
 
+            // Per-player: this player's own ceiling from Options → Dungeon Train (0 when they
+            // have none, or haven't synced yet) narrows the window for THEM only, so two players
+            // on the same train can hold different amounts of it resident.
             int pTargetCount = effectiveTargetCount(
-                autoTargetFromRenderDistance(player, length), configCount);
+                autoTargetFromRenderDistance(player, length),
+                configCount,
+                MaxCarriagesMirror.get(player));
             int pHalfBack = (pTargetCount - 1) / 2;
             int pHalfFront = pTargetCount - pHalfBack - 1;
             int pMaxNeeded = pIdx + pHalfFront;
@@ -3123,8 +3129,10 @@ public final class TrainCarriageAppender {
         int length = dims.length();
 
         int configCount = DungeonTrainConfig.getNumCarriages();
+        // playerMax = 0: no player has joined yet at bootstrap, so only the server ceiling applies.
+        // The per-tick appender narrows to each player's own ceiling once they arrive.
         int rawTargetCount = effectiveTargetCount(
-            bootstrapTargetFromServerViewDistance(level, length), configCount);
+            bootstrapTargetFromServerViewDistance(level, length), configCount, 0);
 
         // Cap to Sable's sub-level tracking range. Sable culls any sub-level
         // farther than {@code SUB_LEVEL_TRACKING_RANGE} blocks (default 320)
@@ -3426,7 +3434,7 @@ public final class TrainCarriageAppender {
     /**
      * Compute the per-player target carriage count from the player's
      * render distance, before the configured maximum is applied by
-     * {@link #effectiveTargetCount(int, int)}. Falls back to the server-wide view distance
+     * {@link #effectiveTargetCount(int, int, int)}. Falls back to the server-wide view distance
      * if the player hasn't reported their setting yet (early-join window),
      * then to a hardcoded 10-chunk floor if even that is unavailable
      * (dedicated server with no setting). Clamps to
@@ -3447,20 +3455,30 @@ public final class TrainCarriageAppender {
     }
 
     /**
-     * Apply the configured carriage <b>maximum</b> to an auto-computed target.
+     * Apply the configured carriage <b>maxima</b> to an auto-computed target. Every ceiling
+     * uses {@code 0} to mean "no cap", and the smallest one that isn't 0 wins.
      *
-     * <p>{@code configMax} is {@link DungeonTrainConfig#getNumCarriages()}: {@code 0}
-     * means auto (no user ceiling), anything else is a ceiling and never a floor. It is
-     * deliberately applied <i>after</i> {@link DungeonTrainConfig#MIN_CARRIAGES_AUTO_FLOOR},
-     * so a player who sets the maximum to 4 gets 4 rather than the auto floor of 5 —
-     * the whole point of the setting is that it can shorten the window below what the
-     * render-distance heuristic would otherwise insist on.</p>
+     * <p>{@code serverMax} is {@link DungeonTrainConfig#getNumCarriages()} — the server's (or
+     * singleplayer world's) ceiling. {@code playerMax} is this player's own ceiling from
+     * {@link games.brennan.dungeontrain.event.MaxCarriagesMirror}, set in Options → Dungeon Train.
+     * Both are ceilings and never floors, so a player asking for a longer train than the server
+     * allows simply gets the server's number — which is what makes the client-supplied value safe
+     * to accept unvalidated beyond a range clamp.</p>
      *
-     * <p>Both target sites route through here so the per-tick window and the bootstrap
-     * eager fill can never disagree about how long the train should be.</p>
+     * <p>They are deliberately applied <i>after</i>
+     * {@link DungeonTrainConfig#MIN_CARRIAGES_AUTO_FLOOR}, so a maximum of 4 yields 4 rather than
+     * the auto floor of 5 — the whole point of the setting is that it can shorten the window below
+     * what the render-distance heuristic would otherwise insist on.</p>
+     *
+     * <p>Both target sites route through here so the per-tick window and the bootstrap eager fill
+     * can never disagree about how long the train should be. The bootstrap site passes
+     * {@code playerMax = 0}: no player exists yet at world load.</p>
      */
-    static int effectiveTargetCount(int autoTarget, int configMax) {
-        return configMax > 0 ? Math.min(autoTarget, configMax) : autoTarget;
+    static int effectiveTargetCount(int autoTarget, int serverMax, int playerMax) {
+        int target = autoTarget;
+        if (serverMax > 0) target = Math.min(target, serverMax);
+        if (playerMax > 0) target = Math.min(target, playerMax);
+        return target;
     }
 
     /**

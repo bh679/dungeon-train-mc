@@ -210,6 +210,7 @@ public final class PlayerJoinEvents {
             NetworkConsentMirror.forget(player.getUUID());
             PoliticalFilterMirror.forget(player.getUUID());
             ContentModeMirror.forget(player.getUUID());
+            MaxCarriagesMirror.forget(player.getUUID());
             SharedBookReadMirror.forget(player.getUUID());
         }
     }

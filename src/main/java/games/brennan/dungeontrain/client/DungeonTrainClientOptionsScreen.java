@@ -4,6 +4,8 @@ import games.brennan.discordpresence.client.NetworkConsentScreen;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.ContentMode;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.Tooltip;
@@ -117,8 +119,90 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                 .setTooltip(tip("gui.dungeontrain.options.snapshot_max_res.tip"));
         y += ROW_GAP;
 
+        // Max carriages — the performance knob. Sits with the other client settings because it
+        // describes THIS machine: it is stored client-side and follows the player onto every server.
+        // Applies live — the server's appender re-reads the window every tick, so lowering it
+        // shortens the train you're standing on within a tick or two, no relog and no reload.
+        addRenderableWidget(new MaxCarriagesSlider(left, y, ROW_W, ROW_H))
+                .setTooltip(tip("gui.dungeontrain.options.max_carriages.tip"));
+        y += ROW_GAP;
+
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(cx - 100, y + 6, 200, ROW_H).build());
+    }
+
+    /**
+     * Auto / 4–50 slider over {@link ClientDisplayConfig#getMaxCarriages()}, shaped after vanilla's
+     * Render Distance slider (which sits a few rows above it on the parent Options screen).
+     *
+     * <p>The leftmost notch is <b>Auto</b> — the {@code 0} sentinel — so the ladder is one notch
+     * longer than the 4–50 range it exposes. Everything writes through on release rather than on
+     * every drag pixel: a mid-drag write would sync a packet per frame and thrash the appender's
+     * window across dozens of intermediate lengths.</p>
+     */
+    private static final class MaxCarriagesSlider extends AbstractSliderButton {
+
+        /** Number of selectable values: Auto, then 4…50 inclusive. */
+        private static final int STEPS =
+                1 + (DungeonTrainConfig.MAX_CARRIAGES - DungeonTrainConfig.MIN_CARRIAGES_EXPLICIT + 1);
+
+        MaxCarriagesSlider(int x, int y, int w, int h) {
+            super(x, y, w, h, Component.empty(), 0.0);
+            this.value = toSliderValue(ClientDisplayConfig.getMaxCarriages());
+            updateMessage();
+        }
+
+        /** Slider position → carriage ceiling. Index 0 is Auto ({@code 0}); the rest are 4…50. */
+        private int carriages() {
+            int index = (int) Math.round(this.value * (STEPS - 1));
+            return index <= 0 ? 0 : DungeonTrainConfig.MIN_CARRIAGES_EXPLICIT + (index - 1);
+        }
+
+        /** Carriage ceiling → slider position. Inverse of {@link #carriages()}. */
+        private static double toSliderValue(int carriages) {
+            if (carriages <= 0) return 0.0;
+            int index = 1 + (carriages - DungeonTrainConfig.MIN_CARRIAGES_EXPLICIT);
+            return (double) index / (STEPS - 1);
+        }
+
+        @Override
+        protected void updateMessage() {
+            int carriages = carriages();
+            setMessage(Component.translatable("gui.dungeontrain.options.max_carriages",
+                    carriages <= 0
+                            ? Component.translatable("gui.dungeontrain.options.max_carriages.auto")
+                            : Component.literal(Integer.toString(carriages))));
+        }
+
+        /**
+         * Called on every drag tick. Deliberately does NOT persist — see
+         * {@link #onRelease(double, double)}; the label still tracks the drag via
+         * {@code updateMessage}, so the slider feels live while the world stays still.
+         */
+        @Override
+        protected void applyValue() {
+            // no-op — committed on release
+        }
+
+        @Override
+        public void onRelease(double mouseX, double mouseY) {
+            super.onRelease(mouseX, mouseY);
+            commit();
+        }
+
+        /** Keyboard arrows move the slider without ever firing onRelease, so commit here too. */
+        @Override
+        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+            boolean handled = super.keyPressed(keyCode, scanCode, modifiers);
+            if (handled) commit();
+            return handled;
+        }
+
+        /** Persist the client-side value and push it to the server so the window resizes now. */
+        private void commit() {
+            ClientDisplayConfig.setMaxCarriages(carriages());
+            MaxCarriagesSyncClient.syncNow();
+        }
     }
 
     private static Component resolutionLabel(int value) {
