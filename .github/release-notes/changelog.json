@@ -6308,6 +6308,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-rooms-not-off-the-train",
+      "version": "0.539.0",
+      "type": "fix",
+      "title": "Walking through a portal no longer counts as leaving the train",
+      "summary": "Stepping through a hallway portal used to look, to the game, exactly like jumping off the side of the train \u2014 so a walk to a portal room and back handed out Off the Rails and Back on Board for using a door. Those awards, and the one for shoving a passenger off the train, now ignore everything that happens beneath the world's bedrock, which is where portal rooms are built. Leaving the train the honest way still earns them, and shoving an echo into the void still earns Into the Void.",
+      "highlights": [
+        "Portal trips no longer award Off the Rails or Back on Board",
+        "Leading a punched passenger through a portal no longer counts as shoving them off the train",
+        "Genuinely leaving the train, and voiding an echo, still earn their advancements"
+      ],
+      "pr": 910,
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
