@@ -17,10 +17,9 @@ import org.slf4j.Logger;
  * re-applying a rule that is already set is a no-op — so it is safe on a world that has been
  * launched in perf mode before.</p>
  *
- * <p>The rules are applied through the command dispatcher rather than by poking
- * {@code GameRules.Key} constants directly. It reads exactly like the {@code /gamerule} lines a
- * human would type, keeps the rule names in {@link PerfTestMode#QUIET_GAME_RULES} as the single
- * source of truth, and avoids a second hard-coded list that could drift out of sync with it.</p>
+ * <p>The rule set itself lives in {@link PerfTestMode#applyQuietRules}, shared with the dev
+ * title-screen button that bakes the same rules into a new world at creation — one typed
+ * implementation, so the two entry points cannot drift apart.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PerfTestModeEvents {
@@ -33,18 +32,9 @@ public final class PerfTestModeEvents {
     public static void onServerStarted(ServerStartedEvent event) {
         if (!PerfTestMode.ENABLED) return;
         MinecraftServer server = event.getServer();
-        for (String[] rule : PerfTestMode.QUIET_GAME_RULES) {
-            String command = "gamerule " + rule[0] + " " + rule[1];
-            try {
-                server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), command);
-            } catch (Exception e) {
-                // A rule that some future MC version renames or drops shouldn't stop the server —
-                // the benchmark is just slightly noisier, and the warning says which one to fix.
-                LOGGER.warn("[DungeonTrain] Perf-test mode: '{}' failed: {}", command, e.toString());
-            }
-        }
+        PerfTestMode.applyQuietRules(server.getGameRules(), server);
         LOGGER.info("[DungeonTrain] Perf-test mode ON — seed={} and {} quiet game rules applied. "
                 + "Flat terrain comes from the world preset (dungeontrain:dungeon_train_flat).",
-            PerfTestMode.seed(), PerfTestMode.QUIET_GAME_RULES.length);
+            PerfTestMode.seed(), PerfTestMode.QUIET_RULE_COUNT);
     }
 }

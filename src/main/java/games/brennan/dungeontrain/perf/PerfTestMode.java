@@ -2,7 +2,10 @@ package games.brennan.dungeontrain.perf;
 
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.levelgen.presets.WorldPreset;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Reproducible-measurement mode for server-tick A/B benchmarking.
@@ -93,24 +96,37 @@ public final class PerfTestMode {
         }
     }
 
+    /** How many rules {@link #applyQuietRules} switches off — for log lines. */
+    public static final int QUIET_RULE_COUNT = 5;
+
     /**
-     * Per-tick background work switched off in perf-test mode, as {@code (rule, value)} pairs
-     * applied by {@link PerfTestModeEvents}.
+     * Switch off the per-tick background work that has nothing to do with the train.
      *
-     * <p>Each of these is a source of tick-to-tick variance that has nothing to do with the train:
-     * daylight and weather drive lighting and precipitation updates, mob spawning adds an unbounded
-     * and seed-sensitive entity population on top of the carriage contents being measured, fire tick
-     * and random ticks scale with loaded chunk count. Removing them is what makes two runs of the
-     * same protocol comparable.</p>
+     * <p>Each of these is a source of tick-to-tick variance that would otherwise sit on top of
+     * whatever is being measured: daylight and weather drive lighting and precipitation updates,
+     * mob spawning adds an unbounded and seed-sensitive entity population alongside the carriage
+     * contents, and fire tick and random ticks scale with loaded chunk count. Removing them is what
+     * makes two runs of the same protocol comparable.</p>
      *
-     * <p>Kept as data rather than a block of imperative setters so the set is visible in one place
-     * and can be asserted in a test.</p>
+     * <p>One typed implementation shared by both entry points, so the set cannot drift between
+     * them:</p>
+     * <ul>
+     *   <li>{@link PerfTestModeEvents} — the {@code -Ddungeontrain.perfTest} path, applied on server
+     *       start. Covers dedicated servers, where the world comes from {@code server.properties}.</li>
+     *   <li>{@code DevQuickWorldHandler} — the dev title-screen button, applied to the fresh
+     *       {@code GameRules} at world <i>creation</i> so the settings are baked into
+     *       {@code level.dat} and survive reopening the world without any JVM flag.</li>
+     * </ul>
+     *
+     * @param rules  the rule set to mutate
+     * @param server passed through so live rule-change listeners fire; {@code null} at world
+     *               creation, when no server exists yet
      */
-    public static final String[][] QUIET_GAME_RULES = {
-        {"doDaylightCycle", "false"},
-        {"doWeatherCycle", "false"},
-        {"doMobSpawning", "false"},
-        {"doFireTick", "false"},
-        {"randomTickSpeed", "0"},
-    };
+    public static void applyQuietRules(GameRules rules, @Nullable MinecraftServer server) {
+        rules.getRule(GameRules.RULE_DAYLIGHT).set(false, server);
+        rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false, server);
+        rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, server);
+        rules.getRule(GameRules.RULE_DOFIRETICK).set(false, server);
+        rules.getRule(GameRules.RULE_RANDOMTICKING).set(0, server);
+    }
 }
