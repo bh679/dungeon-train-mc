@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -23,60 +24,141 @@ class PortalCorridorMaskTest {
     private static final BlockPos ORIGIN = new BlockPos(200, -60, -30);
     private static final int PLUG_DEPTH = 3;
 
+    /** A corridor is longer than the carriage it stands in — 13 at the default dims, not 9. */
+    private static final int CORRIDOR_LENGTH = PortalCorridorSize.corridorLength(DIMS);
+
     private static PortalStructure structure() {
-        return PortalStructure.withMode(ORIGIN, "default", PortalRoomLayout.builtInSize(DIMS),
+        return structure(PortalRoomLayout.builtInSize(DIMS));
+    }
+
+    private static PortalStructure structure(Vec3i roomSize) {
+        return PortalStructure.withMode(ORIGIN, "default", roomSize,
             PortalRoomMode.ENDLESS_REPETITION, PortalRoomTiling.base());
     }
 
     private static PortalCorridorMask mask() {
+        return mask(structure());
+    }
+
+    private static PortalCorridorMask mask(PortalStructure structure) {
         return PortalCorridorMask.forStructure(
-            structure(), DIMS, PortalCarriageBuilder.layoutFor(DIMS), PLUG_DEPTH);
+            structure, DIMS, PortalCarriageBuilder.layoutFor(DIMS), PLUG_DEPTH);
+    }
+
+    /** The two planes the seal ring fills — a corridor's mouth, facing the room. */
+    private static boolean isSealPlane(PortalStructure s, int x) {
+        return x == s.origin().getX() + CORRIDOR_LENGTH - 1 || x == s.exitOrigin(DIMS).getX();
     }
 
     @Test
-    @DisplayName("Both corridors are covered, along their whole length")
+    @DisplayName("Every cell of both corridors is covered, along the CORRIDOR's length")
     void coversBothCorridors() {
         PortalStructure s = structure();
         PortalCorridorMask mask = mask();
-        int y = ORIGIN.getY() + 1;
-        int z = ORIGIN.getZ() + 1;
 
-        for (int dx = 0; dx < DIMS.length(); dx++) {
-            assertTrue(mask.covers(s.origin().getX() + dx, y, z), "entry corridor cell " + dx);
-            assertTrue(mask.covers(s.exitOrigin(DIMS).getX() + dx, y, z), "exit corridor cell " + dx);
+        // The whole box, not one interior sample: a cell missed here is a hole a room copy punches in
+        // a corridor that nothing will ever repair. The length is the corridor's own, which is longer
+        // than the carriage it stands in.
+        for (int dx = 0; dx < CORRIDOR_LENGTH; dx++) {
+            for (int dz = 0; dz < DIMS.width(); dz++) {
+                for (int dy = 0; dy < DIMS.height(); dy++) {
+                    assertTrue(mask.covers(s.origin().getX() + dx, ORIGIN.getY() + dy,
+                        ORIGIN.getZ() + dz), "entry corridor cell " + dx + "," + dy + "," + dz);
+                    assertTrue(mask.covers(s.exitOrigin(DIMS).getX() + dx, ORIGIN.getY() + dy,
+                        ORIGIN.getZ() + dz), "exit corridor cell " + dx + "," + dy + "," + dz);
+                }
+            }
         }
     }
 
     @Test
-    @DisplayName("Both plugs are covered — they are written by the same step and never repaired either")
+    @DisplayName("Both plugs are covered in full — written by the same step, never repaired either")
     void coversBothPlugs() {
         PortalStructure s = structure();
         PortalCorridorMask mask = mask();
-        int y = ORIGIN.getY() + 1;
-        int z = ORIGIN.getZ() + 1;
+        int exitPlugX = s.exitOrigin(DIMS).getX() + CORRIDOR_LENGTH;
 
+        // plugBeyond runs one column proud of the corridor on each side in Z, so the sweep does too.
         for (int d = 1; d <= PLUG_DEPTH; d++) {
-            assertTrue(mask.covers(s.origin().getX() - d, y, z), "entry plug at -" + d);
-            assertTrue(mask.covers(s.exitOrigin(DIMS).getX() + DIMS.length() - 1 + d, y, z),
-                "exit plug at +" + d);
+            for (int dz = -1; dz <= DIMS.width(); dz++) {
+                for (int dy = 0; dy < DIMS.height(); dy++) {
+                    int y = ORIGIN.getY() + dy;
+                    int z = ORIGIN.getZ() + dz;
+                    assertTrue(mask.covers(s.origin().getX() - d, y, z),
+                        "entry plug at -" + d + " (" + dy + "," + dz + ")");
+                    assertTrue(mask.covers(exitPlugX + d - 1, y, z),
+                        "exit plug at +" + d + " (" + dy + "," + dz + ")");
+                }
+            }
         }
     }
 
     @Test
-    @DisplayName("The seal ring is covered: the corridor's slab runs the room's full width and height")
+    @DisplayName("Each corridor's mouth is sealed across the room's full width and height")
     void coversTheSealRing() {
         PortalStructure s = structure();
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
         PortalCorridorMask mask = mask();
         BlockPos room = s.roomOrigin(DIMS, layout);
 
-        // The door plane sits at the corridor's last cell, and the seal fills the room's whole
-        // cross-section there — well outside the corridor's own 7-wide, 7-tall box.
-        int planeX = s.origin().getX() + DIMS.length() - 1;
-        for (int z = room.getZ(); z < room.getZ() + s.roomSize().getZ(); z++) {
-            for (int y = ORIGIN.getY(); y < ORIGIN.getY() + s.roomSize().getY(); y++) {
-                assertTrue(mask.covers(planeX, y, z),
-                    "seal cell at the entry door plane (" + y + ", " + z + ")");
+        // The mouth is the corridor's LAST cell — its own length, not the carriage's. (This test used
+        // to probe dims.length() - 1, four blocks short of it, and passed only because the mask was
+        // once an undifferentiated slab.) The seal fills the room's whole cross-section there, well
+        // outside the corridor's own 7-wide box.
+        int[] planes = {s.origin().getX() + CORRIDOR_LENGTH - 1, s.exitOrigin(DIMS).getX()};
+        for (int planeX : planes) {
+            for (int z = room.getZ(); z < room.getZ() + s.roomSize().getZ(); z++) {
+                for (int y = ORIGIN.getY(); y < ORIGIN.getY() + s.roomSize().getY(); y++) {
+                    assertTrue(mask.covers(planeX, y, z),
+                        "seal cell at door plane " + planeX + " (" + y + ", " + z + ")");
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("The aisles either side of a corridor are the room's to build in, not the corridor's")
+    void leavesTheAislesBesideACorridorFree() {
+        PortalStructure s = structure();
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DIMS);
+        PortalCorridorMask mask = mask();
+        BlockPos room = s.roomOrigin(DIMS, layout);
+
+        // This is the fix, stated: a copy landing on the corridor row has to be able to lay its
+        // floor, its ceiling and its own outer walls beside the corridor. Reserving that space is the
+        // same as leaving it void, which is what a player used to walk into.
+        int[] starts = {s.origin().getX(), s.exitOrigin(DIMS).getX()};
+        for (int start : starts) {
+            for (int dx = 0; dx < CORRIDOR_LENGTH; dx++) {
+                int x = start + dx;
+                if (isSealPlane(s, x)) continue;   // the mouth is walled, deliberately
+                for (int z = room.getZ(); z < room.getZ() + s.roomSize().getZ(); z++) {
+                    boolean besideTheCorridor = z < ORIGIN.getZ()
+                        || z >= ORIGIN.getZ() + DIMS.width();
+                    if (!besideTheCorridor) continue;
+                    for (int y = ORIGIN.getY(); y < ORIGIN.getY() + s.roomSize().getY(); y++) {
+                        assertFalse(mask.covers(x, y, z),
+                            "aisle cell beside a corridor at (" + x + ", " + y + ", " + z + ")");
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("A tall room's space above a corridor is free too, so its interior is not truncated")
+    void leavesTheSpaceAboveACorridorFree() {
+        Vec3i tall = PortalRoomLayout.clampSize(DIMS,
+            PortalRoomLayout.builtInSize(DIMS).offset(0, 3, 0));
+        PortalStructure s = structure(tall);
+        PortalCorridorMask mask = mask(s);
+        int z = ORIGIN.getZ() + 1;   // squarely over the corridor
+
+        for (int y = ORIGIN.getY() + DIMS.height(); y < ORIGIN.getY() + tall.getY(); y++) {
+            for (int dx = 0; dx < CORRIDOR_LENGTH; dx++) {
+                int x = s.origin().getX() + dx;
+                if (isSealPlane(s, x)) continue;
+                assertFalse(mask.covers(x, y, z), "cell above the entry corridor at " + x + ", " + y);
             }
         }
     }
