@@ -1,97 +1,149 @@
 #!/usr/bin/env python3
 """Compare the two arms produced by run-ab.sh.
 
-Reads the `[lodperf]` line each arm emits (one per measurement window) plus the `[lod]` tier
-readout, and prints a side-by-side table.
+Computes true pooled percentiles over the raw per-frame dump, sliced to exactly the measurement
+window each arm recorded. Deliberately does NOT use the sampler's own aggregate `[lodperf]` line
+as the result: that window is anchored to the client's first rendered frame, so its boundaries do
+not line up with the measurement period and can straddle the join and teleport.
 
-Deliberately refuses to report a comparison when an arm produced no measurement window, rather
-than printing a table with a blank in it — a missing arm means the run did not happen, and that
-should read as a failure, not as a result.
+Refuses to print a comparison when an arm is missing or when the two arms did not actually render
+differently — a table with a hole in it, or one comparing two identical configurations, reads as a
+result when it is not one.
 """
 import re
 import sys
 from pathlib import Path
 
-LODPERF = re.compile(
-    r"\[lodperf\] lod=(?P<lod>\w+) frames=(?P<frames>\d+) dropped=(?P<dropped>\d+) "
-    r"windowMs=(?P<window>\d+) p50=(?P<p50>[\d.]+) p95=(?P<p95>[\d.]+) p99=(?P<p99>[\d.]+) "
-    r"max=(?P<max>[\d.]+) meanFps=(?P<fps>[\d.]+) near=(?P<near>\d+) far=(?P<far>\d+) "
-    r"baked=(?P<baked>\d+)"
-)
 LOD_STATE = re.compile(
     r"\[lod\] tracked=(?P<tracked>\d+) near=(?P<near>\d+) far=(?P<far>\d+) "
     r"candidates=(?P<cand>\d+) blocked=(?P<blocked>\d+) baked=(?P<baked>\d+)"
 )
 
 
-def parse_arm(path: Path):
-    if not path.exists():
-        return None
-    windows, tiers = [], []
-    for line in path.read_text(errors="replace").splitlines():
-        m = LODPERF.search(line)
-        if m:
-            windows.append(m.groupdict())
-        m2 = LOD_STATE.search(line)
-        if m2:
-            tiers.append(m2.groupdict())
-    if not windows:
-        return None
-    # The last full window is the measurement one; earlier windows cover join/teleport.
-    return {"window": windows[-1], "all_windows": windows, "tiers": tiers}
+def load_arm(out_dir: Path, arm: str):
+    csv_path = out_dir / f"frames-{arm}.csv"
+    win_path = out_dir / f"window-{arm}.txt"
+    log_path = out_dir / f"client-{arm}.log"
+
+    if not csv_path.exists():
+        return None, f"no frame dump ({csv_path.name})"
+    if not win_path.exists():
+        return None, f"no measurement window ({win_path.name})"
+
+    start_ms, end_ms = (int(x) for x in win_path.read_text().split())
+
+    frames = []
+    lod_flags = set()
+    throttled_frames = 0
+    with csv_path.open() as fh:
+        next(fh, None)  # header
+        for line in fh:
+            parts = line.strip().split(",")
+            if len(parts) != 4:
+                continue
+            try:
+                ts, nanos, lod, throttled = (int(p) for p in parts)
+            except ValueError:
+                continue
+            if start_ms <= ts <= end_ms:
+                frames.append(nanos)
+                lod_flags.add(lod)
+                throttled_frames += throttled
+
+    if not frames:
+        return None, "no frames inside the measurement window"
+
+    # Tier split observed during the window, from the [lod] readout.
+    near = far = baked = 0
+    if log_path.exists():
+        for line in log_path.read_text(errors="replace").splitlines():
+            m = LOD_STATE.search(line)
+            if m:
+                near, far, baked = int(m["near"]), int(m["far"]), int(m["baked"])
+
+    frames.sort()
+    return {
+        "frames": frames,
+        "n": len(frames),
+        "window_s": (end_ms - start_ms) / 1000.0,
+        "lod_flags": lod_flags,
+        "throttled": throttled_frames,
+        "near": near,
+        "far": far,
+        "baked": baked,
+    }, None
 
 
-def fmt_row(label, off, on):
-    return f"  {label:<22} {off:>12} {on:>12}"
+def pct(sorted_vals, p):
+    idx = max(0, min(len(sorted_vals) - 1, int(len(sorted_vals) * p / 100.0 + 0.5) - 1))
+    return sorted_vals[idx] / 1e6
+
+
+def row(label, a, b, fmt="{:.2f}"):
+    return f"  {label:<20} {fmt.format(a):>12} {fmt.format(b):>12}"
 
 
 def main() -> int:
     out_dir = Path(sys.argv[1] if len(sys.argv) > 1 else "build/lodperf")
-    off = parse_arm(out_dir / "client-off.log")
-    on = parse_arm(out_dir / "client-on.log")
+    off, off_err = load_arm(out_dir, "off")
+    on, on_err = load_arm(out_dir, "on")
 
-    missing = [n for n, a in (("off", off), ("on", on)) if a is None]
-    if missing:
-        print(f"INCOMPLETE: no [lodperf] measurement window for arm(s): {', '.join(missing)}")
-        print("The run did not produce a comparable result. Check the client logs in", out_dir)
+    if off is None or on is None:
+        print("INCOMPLETE — no comparable result.")
+        if off is None:
+            print(f"  arm off: {off_err}")
+        if on is None:
+            print(f"  arm on:  {on_err}")
+        print(f"  Logs in {out_dir}")
         return 1
 
-    w_off, w_on = off["window"], on["window"]
-
-    print("Far-carriage render LOD — A/B (client frametime, ms; lower is better)")
+    print("Far-carriage render LOD — A/B")
+    print("Client frametime over the measurement hold, milliseconds (lower is better).")
     print()
-    print(f"  {'':<22} {'LOD OFF':>12} {'LOD ON':>12}")
-    print(fmt_row("frames sampled", w_off["frames"], w_on["frames"]))
-    print(fmt_row("window (ms)", w_off["window"], w_on["window"]))
-    print(fmt_row("p50", w_off["p50"], w_on["p50"]))
-    print(fmt_row("p95", w_off["p95"], w_on["p95"]))
-    print(fmt_row("p99", w_off["p99"], w_on["p99"]))
-    print(fmt_row("worst frame", w_off["max"], w_on["max"]))
-    print(fmt_row("mean fps", w_off["fps"], w_on["fps"]))
+    print(f"  {'':<20} {'LOD OFF':>12} {'LOD ON':>12}")
+    print(row("frames sampled", off["n"], on["n"], "{:.0f}"))
+    print(row("window (s)", off["window_s"], on["window_s"], "{:.1f}"))
+    print(row("p50", pct(off["frames"], 50), pct(on["frames"], 50)))
+    print(row("p95", pct(off["frames"], 95), pct(on["frames"], 95)))
+    print(row("p99", pct(off["frames"], 99), pct(on["frames"], 99)))
+    print(row("worst frame", off["frames"][-1] / 1e6, on["frames"][-1] / 1e6))
+    print(row("mean fps", off["n"] / off["window_s"], on["n"] / on["window_s"], "{:.1f}"))
     print()
-    print(fmt_row("carriages near", w_off["near"], w_on["near"]))
-    print(fmt_row("carriages far", w_off["far"], w_on["far"]))
-    print(fmt_row("baked meshes", w_off["baked"], w_on["baked"]))
+    print(row("carriages near", off["near"], on["near"], "{:.0f}"))
+    print(row("carriages far", off["far"], on["far"], "{:.0f}"))
+    print(row("baked meshes", off["baked"], on["baked"], "{:.0f}"))
+    print()
 
+    # Validity gates. These are the difference between a measurement and a coincidence.
+    #
+    # The throttle gate comes first because it is the one that produced a confident-looking wrong
+    # answer: DT caps the client to 30fps when the window is unfocused, so an unattended run can
+    # report a large "regression" that is entirely the cap, with both tails pinned to it.
     for name, arm in (("off", off), ("on", on)):
-        if int(arm["window"]["dropped"]) > 0:
-            print(f"\n  WARNING: arm {name} dropped {arm['window']['dropped']} samples "
-                  f"(ring overflow) — percentiles are biased toward the start of the window.")
+        if arm["throttled"] > 0:
+            share = 100.0 * arm["throttled"] / arm["n"]
+            print(f"  INVALID: arm {name} had {arm['throttled']} of {arm['n']} measured frames "
+                  f"({share:.0f}%) capped by the idle framerate throttle.")
+            print("  Frametimes are the cap, not the renderer. Disable the throttle for the run.")
+            return 1
 
-    # Sanity gates. A result that passes the arithmetic but fails these is not a real measurement.
-    print()
-    if int(w_off["far"]) != 0 or int(w_off["baked"]) != 0:
-        print("  INVALID: the OFF arm demoted carriages. The toggle did not take effect.")
+    if off["lod_flags"] != {0}:
+        print("  INVALID: the OFF arm reported the LOD active. The launch toggle did not take.")
         return 1
-    if int(w_on["far"]) == 0:
-        print("  INVALID: the ON arm demoted nothing, so the two arms rendered identically.")
-        print("  Any difference below is noise, not the LOD.")
+    if on["lod_flags"] != {1}:
+        print("  INVALID: the ON arm reported the LOD inactive. The launch toggle did not take.")
+        return 1
+    if on["far"] == 0:
+        print("  INVALID: the ON arm never demoted a carriage, so both arms rendered identically.")
+        print("  Any difference above is noise, not the LOD.")
         return 1
 
-    d50 = float(w_off["p50"]) - float(w_on["p50"])
-    d99 = float(w_off["p99"]) - float(w_on["p99"])
-    print(f"  Delta p50: {d50:+.2f} ms   Delta p99: {d99:+.2f} ms   "
-          f"({w_on['far']} of {int(w_on['far']) + int(w_on['near'])} carriages baked)")
+    d50 = pct(off["frames"], 50) - pct(on["frames"], 50)
+    d95 = pct(off["frames"], 95) - pct(on["frames"], 95)
+    d99 = pct(off["frames"], 99) - pct(on["frames"], 99)
+    print(f"  Delta (off - on):  p50 {d50:+.2f} ms   p95 {d95:+.2f} ms   p99 {d99:+.2f} ms")
+    print(f"  Positive = LOD is faster. {on['far']} of "
+          f"{on['far'] + on['near']} carriages were baked in the ON arm.")
     return 0
 
 

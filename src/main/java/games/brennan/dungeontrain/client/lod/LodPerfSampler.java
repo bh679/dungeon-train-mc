@@ -75,6 +75,23 @@ public final class LodPerfSampler {
     private static long lastFrameNanos;
     private static long windowStartMs;
 
+    /**
+     * Optional raw per-frame dump: {@code -Ddungeontrain.lodPerfCsv=<path>} writes one
+     * {@code epochMillis,frameNanos} row per frame.
+     *
+     * <p>This exists because the aggregate {@code [lodperf]} window is anchored to the first
+     * rendered frame, not to whatever moment the harness cares about — so a window boundary can
+     * (and did) fall mid-measurement, leaving the only reported window straddling the join, the
+     * teleport and part of the hold. Timestamped raw samples let the report select exactly the
+     * frames inside the measurement period and compute true pooled percentiles over them, instead
+     * of trusting a window whose bounds nobody controls.</p>
+     */
+    private static final String CSV_PATH = System.getProperty("dungeontrain.lodPerfCsv");
+
+    private static java.io.BufferedWriter csv;
+    private static boolean csvFailed;
+    private static long lastFlushMs;
+
     private LodPerfSampler() {}
 
     @SubscribeEvent
@@ -86,8 +103,10 @@ public final class LodPerfSampler {
         long nowMs = System.currentTimeMillis();
 
         if (lastFrameNanos != 0) {
-            if (count < MAX_SAMPLES) samples[count++] = now - lastFrameNanos;
+            long delta = now - lastFrameNanos;
+            if (count < MAX_SAMPLES) samples[count++] = delta;
             else dropped++;
+            writeCsv(nowMs, delta);
         } else {
             // First frame of the session: no previous timestamp, so there is no delta to record.
             windowStartMs = nowMs;
@@ -127,6 +146,53 @@ public final class LodPerfSampler {
         if (mc.level == null) {
             LOGGER.info("[lodperf] (no level — window discarded)");
         }
+    }
+
+    /**
+     * Append one raw sample. Best-effort: a dump failure disables the dump and logs once, rather
+     * than throwing on the render thread — losing the measurement file is bad, crashing the client
+     * mid-measurement is worse.
+     */
+    private static void writeCsv(long nowMs, long frameNanos) {
+        if (CSV_PATH == null || csvFailed) return;
+        try {
+            if (csv == null) {
+                csv = java.nio.file.Files.newBufferedWriter(java.nio.file.Path.of(CSV_PATH));
+                csv.write("epochMillis,frameNanos,lod,throttled\n");
+                lastFlushMs = nowMs;
+            }
+            csv.write(nowMs + "," + frameNanos
+                + "," + (CarriageLodController.ENABLED ? 1 : 0)
+                + "," + (isThrottled() ? 1 : 0) + "\n");
+            // Flush on a timer so a killed client still leaves a usable file — the harness stops
+            // the JVM without a clean shutdown, so an unflushed tail would be lost.
+            if (nowMs - lastFlushMs >= 1000L) {
+                csv.flush();
+                lastFlushMs = nowMs;
+            }
+        } catch (Exception e) {
+            csvFailed = true;
+            LOGGER.warn("[lodperf] raw dump disabled: {}", e.toString());
+        }
+    }
+
+    /**
+     * Whether DT's idle framerate throttle is capping this frame.
+     *
+     * <p>Recorded per frame because it silently invalidates a frametime comparison: the throttle
+     * caps the client to 30fps whenever the window is unfocused, and an unattended harness window
+     * is <em>always</em> unfocused. An early A/B run measured 47.7 vs 29.3 fps and looked like a
+     * large regression; it was two arms throttled by different amounts, with the tails of both
+     * pinned to the cap. Recording it lets the report reject such a run instead of reporting the
+     * cap as a finding about the LOD.</p>
+     */
+    private static boolean isThrottled() {
+        Minecraft mc = Minecraft.getInstance();
+        return games.brennan.dungeontrain.client.FramerateThrottle.shouldThrottle(
+            mc.isPaused(),
+            mc.isWindowActive(),
+            games.brennan.dungeontrain.config.ClientDisplayConfig.isFramerateThrottleEnabled(),
+            games.brennan.dungeontrain.client.VrCompat.isVivecraftPresent());
     }
 
     /** Nearest-rank percentile over an ascending array. */

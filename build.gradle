@@ -122,6 +122,12 @@ neoForge {
             if (project.hasProperty('lodPerfWindowMs')) {
                 systemProperty 'dungeontrain.lodPerfWindowMs', project.property('lodPerfWindowMs').toString()
             }
+            // -PlodPerfCsv=<path> dumps one timestamped row per frame. The aggregate window is
+            // anchored to the first rendered frame, so its boundaries can land mid-measurement;
+            // raw rows let the report select exactly the frames inside the hold.
+            if (project.hasProperty('lodPerfCsv')) {
+                systemProperty 'dungeontrain.lodPerfCsv', project.property('lodPerfCsv').toString()
+            }
             // -PjoinServer=127.0.0.1:25565 auto-connects on launch, so the harness never has to
             // drive the multiplayer menu.
             if (project.hasProperty('joinServer')) {

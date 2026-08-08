@@ -47,6 +47,32 @@ rcon() { python3 "$REPO_ROOT/scripts/lodperf/rcon.py" 127.0.0.1 "$RCON_PORT" "$R
 
 log() { echo "[lodperf-harness] $*"; }
 
+# Kill the forked game JVMs for THIS worktree only.
+#
+# `kill <gradle-pid>` is not enough: Gradle forks the game as a child JVM that outlives the task
+# process. A surviving client from the previous arm holds the window and audio device, and the
+# next arm's client then stalls during init and never reaches the server — which is exactly how
+# the first attempt at this harness failed.
+#
+# Matched on this worktree's own moddev VM-args file so a sibling worktree's dev client (other
+# sessions do run them on this machine) is never touched.
+kill_game_jvms() { # kill_game_jvms <client|server>
+  local which="$1"
+  local pattern="$REPO_ROOT/build/moddev/${which}RunVmArgs.txt"
+  local pids
+  pids=$(pgrep -f "$pattern" || true)
+  [ -z "$pids" ] && return 0
+  log "killing leftover $which JVM(s): $pids"
+  kill $pids 2>/dev/null || true
+  for _ in $(seq 1 15); do
+    sleep 1
+    pgrep -f "$pattern" >/dev/null || return 0
+  done
+  log "forcing $which JVM(s)"
+  pkill -9 -f "$pattern" 2>/dev/null || true
+  sleep 2
+}
+
 wait_for() { # wait_for <description> <timeout_s> <shell-condition>
   local desc="$1" timeout="$2" cond="$3" waited=0
   while ! eval "$cond"; do
@@ -68,6 +94,31 @@ run_arm() { # run_arm <on|off>
   # Fresh everything. Both arms must start from identical state or the comparison is worthless.
   rm -rf "$SERVER_DIR" "$CLIENT_DIR"
   mkdir -p "$SERVER_DIR" "$CLIENT_DIR"
+
+  # Client settings that decide whether the measurement means anything.
+  #
+  # DT's idle framerate throttle caps the client to 30fps whenever the window is unfocused, and an
+  # unattended harness window is ALWAYS unfocused. Left on, it dominates the result: an early run
+  # reported 47.7 vs 29.3 fps, which was two arms throttled by different amounts with both tails
+  # pinned to the cap, not anything about the LOD. Off for the harness; the report also rejects any
+  # run whose measured frames were throttled.
+  #
+  # maxFps unlimited (260) and vsync off for the same reason at the other end — a refresh-rate cap
+  # would flatten both arms onto the same number and hide a real difference.
+  mkdir -p "$CLIENT_DIR/config"
+  cat > "$CLIENT_DIR/config/dungeontrain-client.toml" <<'EOF'
+[framerateThrottle]
+	enabled = false
+EOF
+  cat > "$CLIENT_DIR/options.txt" <<EOF
+maxFps:260
+enableVsync:false
+pauseOnLostFocus:false
+renderDistance:$VIEW_DISTANCE
+simulationDistance:10
+graphicsMode:1
+fullscreen:false
+EOF
 
   echo "eula=true" > "$SERVER_DIR/eula.txt"
   cat > "$SERVER_DIR/server.properties" <<EOF
@@ -91,18 +142,40 @@ EOF
   wait_for "server ready" 600 "/usr/bin/grep -q 'Done (' '$slog'" || { kill $server_pid 2>/dev/null; return 1; }
   wait_for "rcon up" 120 "rcon 'list' >/dev/null 2>&1" || { kill $server_pid 2>/dev/null; return 1; }
 
-  log "starting client (lod=$arm), auto-joining 127.0.0.1:$SERVER_PORT"
-  ./gradlew runClient \
-    -PgameDir="$CLIENT_DIR" \
-    -PlodEnabled="$([ "$arm" = on ] && echo true || echo false)" \
-    -PlodPerfSample \
-    -PlodPerfWindowMs=$((MEASURE_S * 1000)) \
-    -PjoinServer="127.0.0.1:$SERVER_PORT" \
-    --console=plain > "$clog" 2>&1 &
-  local client_pid=$!
+  # Auto-join is occasionally flaky at client init, so allow one restart. A retry cannot bias the
+  # measurement — the measured window only opens after the join, and the client is fresh either
+  # way — but silently tolerating more than one would hide a real regression in startup.
+  local client_pid="" joined=0
+  for attempt in 1 2; do
+    kill_game_jvms client
+    log "starting client (lod=$arm), auto-joining 127.0.0.1:$SERVER_PORT (attempt $attempt)"
+    ./gradlew runClient \
+      -PgameDir="$CLIENT_DIR" \
+      -PlodEnabled="$([ "$arm" = on ] && echo true || echo false)" \
+      -PlodPerfSample \
+      -PlodPerfWindowMs=10000 \
+      -PlodPerfCsv="$OUT_DIR/frames-$arm.csv" \
+      -PjoinServer="127.0.0.1:$SERVER_PORT" \
+      --console=plain > "$clog" 2>&1 &
+    client_pid=$!
 
-  wait_for "player joined" "$JOIN_TIMEOUT_S" "rcon 'list' 2>/dev/null | /usr/bin/grep -q '$PLAYER'" \
-    || { kill $client_pid $server_pid 2>/dev/null; return 1; }
+    if wait_for "player joined" "$JOIN_TIMEOUT_S" \
+        "rcon 'list' 2>/dev/null | /usr/bin/grep -q '$PLAYER'"; then
+      joined=1
+      break
+    fi
+    log "client did not join on attempt $attempt"
+    kill $client_pid 2>/dev/null || true
+  done
+
+  if [ "$joined" -ne 1 ]; then
+    log "ABORT arm $arm: client never joined"
+    kill_game_jvms client
+    rcon "stop" >/dev/null 2>&1 || true
+    kill $server_pid 2>/dev/null || true
+    kill_game_jvms server
+    return 1
+  fi
 
   rcon "op $PLAYER" >/dev/null || true
   sleep 5
@@ -115,13 +188,19 @@ EOF
   log "/tp +$AHEAD_BLOCKS blocks (4 carriages ahead)"
   rcon "execute as $PLAYER at $PLAYER run tp $PLAYER ~$AHEAD_BLOCKS ~ ~" || true
 
-  # The sampler's window is MEASURE_S, so exactly one [lodperf] line lands after this point.
-  # Start the window cleanly: the tp itself causes a chunk-load spike that belongs to neither arm.
-  sleep 3
-  echo "LODPERF_WINDOW_START $(date -u +%s)" >> "$clog"
+  # Settle briefly: the tp itself causes a chunk-load and mesh-rebuild spike that belongs to
+  # neither arm, and including it would just add the same noise to both.
+  sleep 10
+  # Window bounds in epoch millis. The report slices the raw frame dump to exactly this range —
+  # the sampler's own aggregate window is anchored to the client's first rendered frame, so its
+  # boundaries do not line up with the measurement period and must not be used as the result.
+  local start_ms
+  start_ms=$(python3 -c 'import time; print(int(time.time()*1000))')
   log "measuring for ${MEASURE_S}s"
-  sleep "$((MEASURE_S + 15))"
-  echo "LODPERF_WINDOW_END $(date -u +%s)" >> "$clog"
+  sleep "$MEASURE_S"
+  local end_ms
+  end_ms=$(python3 -c 'import time; print(int(time.time()*1000))')
+  echo "$start_ms $end_ms" > "$OUT_DIR/window-$arm.txt"
 
   log "collecting + shutting down"
   rcon "save-all" >/dev/null 2>&1 || true
@@ -131,9 +210,10 @@ EOF
   rcon "debug stop" >/dev/null 2>&1 || true
 
   kill "$client_pid" 2>/dev/null || true
+  kill_game_jvms client
   rcon "stop" >/dev/null 2>&1 || true
   wait "$server_pid" 2>/dev/null || true
-  wait "$client_pid" 2>/dev/null || true
+  kill_game_jvms server
   sleep 5
   log "arm $arm done"
 }
@@ -145,8 +225,8 @@ main() {
 
   # `off` first: if anything about the harness is broken, it shows up on the arm that exercises
   # the least new code, which makes the failure easier to attribute.
-  run_arm off
-  run_arm on
+  run_arm off || { log "arm off failed — no comparison possible"; exit 1; }
+  run_arm on  || { log "arm on failed — no comparison possible"; exit 1; }
 
   log "=== RESULTS ==="
   python3 "$REPO_ROOT/scripts/lodperf/report.py" "$OUT_DIR" | tee "$OUT_DIR/report.txt"
