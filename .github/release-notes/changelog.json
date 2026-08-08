@@ -6276,6 +6276,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "bedrockless-fog-falloff",
+      "version": "0.539.0",
+      "type": "feat",
+      "title": "The void around a bedrockless portal room closes in as you walk out",
+      "summary": "Some portal rooms are built standing in empty space rather than sealed in rock. Walking off one of those and out into the emptiness used to look exactly like standing still in it \u2014 the same haze at every distance. The fog now thickens the further out you get, until the room you left has vanished and the dark has no edge you can find.",
+      "highlights": [
+        "Fog closes in progressively as you walk away from a bedrockless portal room",
+        "Walk far enough and the room behind you disappears entirely",
+        "Fixed: the fog used to cut out the moment you stepped off the structure, instead of thickening"
+      ],
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

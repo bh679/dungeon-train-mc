@@ -18,9 +18,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ClientPortalRoomFogTest {
 
-    /** A room region 100 blocks across at the world floor, fogging at 65. */
+    /** A room region 100 blocks across at the world floor, fogging flat at 65 — a tiling mode. */
     private static final PortalRoomFogPacket ROOM =
-        new PortalRoomFogPacket(-50, -60, -50, 50, -50, 50, 65.0f);
+        new PortalRoomFogPacket(-50, -60, -50, 50, -50, 50, 65.0f, 0, 0.0f);
+
+    /**
+     * A Bedrockless region: a room 20 blocks across at the origin, with 50 blocks of swept clearance
+     * padded around it, fogging at 50 at the room's walls and closing to 8 at the clearance edge.
+     */
+    private static final PortalRoomFogPacket VOID_ROOM =
+        new PortalRoomFogPacket(-60, -60, -60, 59, -50, 59, 50.0f, 50, 8.0f);
 
     /** What vanilla would have drawn — a render distance well past the room's fog. */
     private static final float VANILLA_FAR = 192.0f;
@@ -152,5 +159,73 @@ class ClientPortalRoomFogTest {
     void farCornerCounts() {
         ClientPortalRoomFog.update(ROOM);
         assertTrue(settled(50.5, -50.5, 50.5) > 60.0f);
+    }
+
+    @Test
+    @DisplayName("inside a Bedrockless room the fog is the room's own distance — the ramp starts at the wall")
+    void bedrocklessInsideTheRoomIsNominal() {
+        ClientPortalRoomFog.update(VOID_ROOM);
+        // Standing in the middle, and standing against the room's own wall: both are "not out in the
+        // void yet", and neither may be fogged any harder than the room asks for.
+        assertEquals(50.0f, settled(0, -55, 0), 0.5f);
+        assertEquals(50.0f, settled(10, -55, 0), 0.5f);
+    }
+
+    @Test
+    @DisplayName("walking out into the clearance closes the fog in, step by step")
+    void bedrocklessRampsAsYouWalkOut() {
+        ClientPortalRoomFog.update(VOID_ROOM);
+        float atWall = settled(10, -55, 0);
+        float quarter = settled(22.5, -55, 0);
+        float half = settled(35, -55, 0);
+        float far = settled(55, -55, 0);
+
+        assertTrue(atWall > quarter && quarter > half && half > far,
+            "fog should tighten with every step out, went "
+                + atWall + " → " + quarter + " → " + half + " → " + far);
+        // Halfway across the clearance is halfway down the ramp: 50 closing toward 8.
+        assertEquals(29.0f, half, 1.0f);
+    }
+
+    @Test
+    @DisplayName("at the edge of the clearance it is a whiteout — the room you left is gone")
+    void bedrocklessBottomsOutAtTheWhiteout() {
+        ClientPortalRoomFog.update(VOID_ROOM);
+        assertEquals(8.0f, settled(59.5, -55, 0), 0.5f);
+        // The far corner is at the end of the walk on both axes, not √2 past it — the swept space is
+        // a box, so the ramp is measured per axis rather than as a diagonal.
+        assertEquals(8.0f, settled(59.5, -55, 59.5), 0.5f);
+    }
+
+    @Test
+    @DisplayName("the ramp measures the walk, not the drop — a Bedrockless void has no vertical term")
+    void bedrocklessIgnoresHeight() {
+        ClientPortalRoomFog.update(VOID_ROOM);
+        // Same spot in the room, floor and ceiling. Pairs sit twelve blocks apart in Y, so there is
+        // no vertical emptiness for a ramp to cross and height must not change the fog.
+        assertEquals(settled(0, -59, 0), settled(0, -50, 0), 0.5f);
+    }
+
+    @Test
+    @DisplayName("out past the swept clearance the fog is gone entirely, ramp or no ramp")
+    void bedrocklessStillReleasesOutsideTheRegion() {
+        ClientPortalRoomFog.update(VOID_ROOM);
+        settled(0, -55, 0);
+        assertEquals(0.0f, settled(900, 80, 900));
+    }
+
+    @Test
+    @DisplayName("a Bedrockless room on a short render distance still ramps rather than being skipped")
+    void bedrocklessRampsInsideAShortRenderDistance() {
+        ClientPortalRoomFog.update(VOID_ROOM);
+        // Render distance 2 chunks: vanilla's plane is 32, already inside the room's nominal 50, so
+        // standing in the room is vanilla's business. The walk out is not — the ramp goes below it.
+        float inRoom = 0.0f;
+        for (int i = 0; i < 400; i++) inRoom = ClientPortalRoomFog.fogDistanceAt(0, -55, 0, 32.0f);
+        assertEquals(0.0f, inRoom, "a room fogging past the far plane has nothing to say");
+
+        float atEdge = 0.0f;
+        for (int i = 0; i < 400; i++) atEdge = ClientPortalRoomFog.fogDistanceAt(59.5, -55, 0, 32.0f);
+        assertEquals(8.0f, atEdge, 0.5f, "the whiteout is well inside 32 blocks and must still draw");
     }
 }
