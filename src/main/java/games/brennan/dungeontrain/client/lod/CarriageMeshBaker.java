@@ -5,7 +5,6 @@ import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexBuffer;
-import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.ClientLevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
@@ -21,6 +20,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3i;
 import org.slf4j.Logger;
@@ -100,15 +100,32 @@ public final class CarriageMeshBaker {
         Collection<PlotChunkHolder> holders = plot.getLoadedChunks();
         if (holders.isEmpty()) return null;
 
+        // Volume comes from vanilla LevelChunkSections, NOT Sable's PlotChunkHolder#getBoundingBox.
+        // That holder box reads as empty on the client (it is maintained for the server's physics
+        // hull), which silently failed every bake — the reconcile sat at candidates=N, blocked=N,
+        // baked=0. Non-empty sections are the authoritative "where are the blocks" answer on
+        // either side, and are plain Minecraft API rather than a Sable internal whose client-side
+        // semantics we would be guessing at.
         Vector3i min = new Vector3i(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
         Vector3i max = new Vector3i(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
         for (PlotChunkHolder holder : holders) {
-            BoundingBox3ic box = holder.getBoundingBox();
-            if (box == null) continue;
-            min.set(Math.min(min.x, box.minX()), Math.min(min.y, box.minY()), Math.min(min.z, box.minZ()));
-            max.set(Math.max(max.x, box.maxX()), Math.max(max.y, box.maxY()), Math.max(max.z, box.maxZ()));
+            LevelChunk chunk = holder.getChunk();
+            if (chunk == null) continue;
+            LevelChunkSection[] sections = chunk.getSections();
+            for (int i = 0; i < sections.length; i++) {
+                if (sections[i] == null || sections[i].hasOnlyAir()) continue;
+                int sectionMinY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(i));
+                min.set(
+                    Math.min(min.x, chunk.getPos().getMinBlockX()),
+                    Math.min(min.y, sectionMinY),
+                    Math.min(min.z, chunk.getPos().getMinBlockZ()));
+                max.set(
+                    Math.max(max.x, chunk.getPos().getMaxBlockX()),
+                    Math.max(max.y, sectionMinY + 15),
+                    Math.max(max.z, chunk.getPos().getMaxBlockZ()));
+            }
         }
-        if (min.x > max.x) return null; // every holder had an empty bounding box
+        if (min.x > max.x) return null; // no non-empty sections yet — not bakeable, retry next tick
 
         // Bake origin: the populated volume's min corner, in plot space. Vertices are stored
         // relative to it, and CarriageMeshRenderer re-bases it against the pose's rotationPoint at
@@ -126,7 +143,7 @@ public final class CarriageMeshBaker {
 
         int quads = 0;
         try {
-            quads = tesselate(mc, sl, holders, bakeOrigin, min, max, builders);
+            quads = tesselate(mc, sl, holders, bakeOrigin, builders);
         } catch (Throwable t) {
             LOGGER.warn("[lod] bake failed for subLevel={} — staying at near tier: {}", sl, t.toString());
             backing.values().forEach(ByteBufferBuilder::close);
@@ -161,8 +178,6 @@ public final class CarriageMeshBaker {
         ClientSubLevel sl,
         Collection<PlotChunkHolder> holders,
         BlockPos bakeOrigin,
-        Vector3i min,
-        Vector3i max,
         Map<RenderType, BufferBuilder> builders
     ) {
         BlockRenderDispatcher dispatcher = mc.getBlockRenderer();
@@ -175,23 +190,22 @@ public final class CarriageMeshBaker {
         for (PlotChunkHolder holder : holders) {
             LevelChunk chunk = holder.getChunk();
             if (chunk == null) continue;
-            BoundingBox3ic box = holder.getBoundingBox();
-            if (box == null) continue;
 
-            int minSection = SectionPos.blockToSectionCoord(Math.max(min.y, box.minY()));
-            int maxSection = SectionPos.blockToSectionCoord(Math.min(max.y, box.maxY()));
+            LevelChunkSection[] sections = chunk.getSections();
+            for (int i = 0; i < sections.length; i++) {
+                if (sections[i] == null || sections[i].hasOnlyAir()) continue;
 
-            for (int sy = minSection; sy <= maxSection; sy++) {
-                SectionPos sectionPos = SectionPos.of(chunk.getPos().x, sy, chunk.getPos().z);
+                SectionPos sectionPos =
+                    SectionPos.of(chunk.getPos().x, chunk.getSectionYFromSectionIndex(i), chunk.getPos().z);
                 RenderChunkRegion region = regionCache.createRegion(sl.getLevel(), sectionPos);
                 if (region == null) continue;
 
-                int x0 = Math.max(box.minX(), sectionPos.minBlockX());
-                int x1 = Math.min(box.maxX(), sectionPos.maxBlockX());
-                int y0 = Math.max(box.minY(), sectionPos.minBlockY());
-                int y1 = Math.min(box.maxY(), sectionPos.maxBlockY());
-                int z0 = Math.max(box.minZ(), sectionPos.minBlockZ());
-                int z1 = Math.min(box.maxZ(), sectionPos.maxBlockZ());
+                int x0 = sectionPos.minBlockX();
+                int x1 = sectionPos.maxBlockX();
+                int y0 = sectionPos.minBlockY();
+                int y1 = sectionPos.maxBlockY();
+                int z0 = sectionPos.minBlockZ();
+                int z1 = sectionPos.maxBlockZ();
 
                 for (int y = y0; y <= y1; y++) {
                     for (int z = z0; z <= z1; z++) {

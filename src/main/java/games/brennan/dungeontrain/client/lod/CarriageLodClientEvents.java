@@ -39,7 +39,9 @@ public final class CarriageLodClientEvents {
     @SubscribeEvent
     public static void onLevelUnload(LevelEvent.Unload event) {
         if (!event.getLevel().isClientSide()) return;
-        CarriageLodController.promoteAll(Minecraft.getInstance().level);
+        // Only the meshes need dealing with. Promoting the sub-levels first would be busywork on
+        // objects that are about to be discarded anyway — and `Minecraft.level` is already
+        // unreliable at this point in a world swap.
         CarriageMeshCache.clear();
         CarriageLodLog.reset();
     }

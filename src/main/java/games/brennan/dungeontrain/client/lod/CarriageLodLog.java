@@ -43,8 +43,13 @@ public final class CarriageLodLog {
         lastFar = far;
         ticksSinceLog = 0;
 
-        LOGGER.debug("[lod] tracked={} near={} far={} baked={} threshold={}",
-            tracked, near, far, CarriageMeshCache.size(), CarriageLodController.farDistanceBlocks);
+        LOGGER.debug("[lod] tracked={} near={} far={} candidates={} blocked={} baked={} maxDist={} threshold={}",
+            tracked, near, far,
+            CarriageLodController.lastCandidates(),
+            CarriageLodController.lastBlocked(),
+            CarriageMeshCache.size(),
+            String.format("%.1f", CarriageLodController.lastMaxDistance()),
+            CarriageLodController.farDistanceBlocks);
     }
 
     /** Forget the last sample so the next one always logs — used when the master switch flips. */

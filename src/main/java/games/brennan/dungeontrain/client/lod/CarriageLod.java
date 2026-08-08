@@ -46,12 +46,15 @@ public final class CarriageLod {
      * in for it — that would blink the carriage out of existence. If the bake cannot be produced
      * (blocks not present yet), the flag is left clear and the carriage stays NEAR; the controller
      * will simply try again next tick. Idempotent.
+     *
+     * @return true if the carriage is now at the far tier; false if it had to stay near.
      */
-    public static void demote(ClientSubLevel sl) {
-        if (!(sl instanceof DtLodRenderable flag)) return;
-        if (flag.dt$isLodFar()) return;
-        if (!CarriageMeshCache.ensureBaked(sl)) return; // no mesh yet — stay NEAR, retry next tick
+    public static boolean demote(ClientSubLevel sl) {
+        if (!(sl instanceof DtLodRenderable flag)) return false;
+        if (flag.dt$isLodFar()) return true;
+        if (!CarriageMeshCache.ensureBaked(sl)) return false; // no mesh yet — stay NEAR, retry next tick
         flag.dt$setLodFar(true);
+        return true;
     }
 
     /**

@@ -67,6 +67,17 @@ public final class CarriageLodController {
     private static volatile int lastTracked;
     private static volatile int lastNear;
     private static volatile int lastFar;
+    /**
+     * Carriages past the threshold on distance alone, and how many of those wanted to demote but
+     * could not get a mesh. Separating these is what makes a {@code far=0} readout diagnosable:
+     * {@code candidates=0} means the threshold is never crossed (a distance or bounds problem),
+     * while {@code candidates>0, blocked>0} means baking is the bottleneck. Without the split the
+     * two look identical from outside.
+     */
+    private static volatile int lastCandidates;
+    private static volatile int lastBlocked;
+    /** Distance to the furthest tracked carriage — sanity-checks the distance maths itself. */
+    private static volatile double lastMaxDistance;
 
     private CarriageLodController() {}
 
@@ -112,7 +123,8 @@ public final class CarriageLodController {
         Vec3 eye = mc.gameRenderer.getMainCamera().getPosition();
         double thresholdSq = farDistanceBlocks * farDistanceBlocks;
 
-        int tracked = 0, near = 0, far = 0;
+        int tracked = 0, near = 0, far = 0, candidates = 0, blocked = 0;
+        double maxDistSq = 0;
         List<ClientSubLevel> subLevels = container.getAllSubLevels();
         for (ClientSubLevel sl : subLevels) {
             if (!(sl instanceof DtLodRenderable flag)) continue;
@@ -127,12 +139,17 @@ public final class CarriageLodController {
                 continue;
             }
 
-            boolean farNow = distanceSqToCentre(sl, eye) > thresholdSq;
+            double distSq = distanceSqToCentre(sl, eye);
+            maxDistSq = Math.max(maxDistSq, distSq);
+            boolean farNow = distSq > thresholdSq;
+            if (farNow) candidates++;
             int ticksFar = farNow ? flag.dt$farTicks() + 1 : 0;
             flag.dt$setFarTicks(ticksFar);
 
             switch (decide(farNow, ticksFar, currentlyFar)) {
-                case DEMOTE -> CarriageLod.demote(sl);
+                case DEMOTE -> {
+                    if (!CarriageLod.demote(sl)) blocked++;
+                }
                 case PROMOTE -> CarriageLod.promote(sl);
                 case NONE -> { }
             }
@@ -143,6 +160,9 @@ public final class CarriageLodController {
         lastTracked = tracked;
         lastNear = near;
         lastFar = far;
+        lastCandidates = candidates;
+        lastBlocked = blocked;
+        lastMaxDistance = Math.sqrt(maxDistSq);
 
         CarriageLodLog.sample(tracked, near, far);
     }
@@ -194,4 +214,7 @@ public final class CarriageLodController {
     public static int lastTracked() { return lastTracked; }
     public static int lastNear() { return lastNear; }
     public static int lastFar() { return lastFar; }
+    public static int lastCandidates() { return lastCandidates; }
+    public static int lastBlocked() { return lastBlocked; }
+    public static double lastMaxDistance() { return lastMaxDistance; }
 }
