@@ -3,12 +3,24 @@
     "weight": 4,
     "mode": "bedrockless"
   },
+  "beamcenter": {
+    "weight": 1,
+    "mode": "bedrockless"
+  },
+  "beamlong": {
+    "weight": 1,
+    "mode": "bedrockless"
+  },
   "blocks": {
     "weight": 1,
     "mode": "endless_repetition"
   },
   "book": {
     "weight": 2,
+    "mode": "endless_repetition"
+  },
+  "cubes": {
+    "weight": 1,
     "mode": "endless_repetition"
   },
   "default": {
@@ -31,6 +43,10 @@
   "library_dimension": {
     "weight": 2,
     "mode": "endless_repetition/dynamic"
+  },
+  "nobeam": {
+    "weight": 1,
+    "mode": "bedrockless"
   },
   "patterns": {
     "weight": 3,
