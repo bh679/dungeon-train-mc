@@ -1,4 +1,8 @@
 {
+  "beam": {
+    "weight": 1,
+    "mode": "bedrockless"
+  },
   "book": {
     "weight": 1,
     "mode": "endless_repetition"
@@ -23,5 +27,9 @@
   "singlepillar": {
     "weight": 1,
     "mode": "endless_open"
+  },
+  "window": {
+    "weight": 1,
+    "mode": "bedrockless"
   }
 }
