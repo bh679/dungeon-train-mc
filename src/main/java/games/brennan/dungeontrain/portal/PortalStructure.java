@@ -165,6 +165,20 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
     }
 
     /**
+     * How far a player can see at the far edge of the fogged region, in blocks — the other end of
+     * {@link #fogRadius}, which is what they see at the room's own walls.
+     *
+     * <p>Equal to {@link #fogRadius} for every mode but {@link PortalRoomMode#BEDROCKLESS}, which is
+     * to say: no ramp, the fog is one distance wherever you stand. That is right for the tiling
+     * modes, whose room repeats — there is no "outside the room" for a ramp to measure from, and a
+     * player at the edge of the stamped copies is looking at more of the same room, not at the void.
+     * Bedrockless is the mode with an outside, and the walk into it is the thing worth dramatising.</p>
+     */
+    public float fogMinRadius() {
+        return mode() == PortalRoomMode.BEDROCKLESS ? PortalRoomLayout.VOID_FOG_MIN : fogRadius();
+    }
+
+    /**
      * How far past the room's own extent the fogged region reaches, in blocks.
      *
      * <p>Zero for every mode whose fog stops at the copies it has stamped. {@link

@@ -76,6 +76,22 @@ public final class PortalRoomLayout {
     public static final int VOID_CLEARANCE = 50;
 
     /**
+     * How far a player can see once they are all the way out at the edge of {@link #VOID_CLEARANCE},
+     * in blocks — the far end of the ramp a {@link PortalRoomMode#BEDROCKLESS} room fogs on.
+     *
+     * <p>The clearance used to be fogged flat: the same fifty blocks standing in the middle of the
+     * room and standing forty-five blocks out in the void, so stepping off a beam into the emptiness
+     * looked exactly like staying on it. The fog closes in with the distance instead, and this is
+     * where it lands — close enough to be a whiteout, so the room a player walked away from is gone
+     * and the void has no visible extent.</p>
+     *
+     * <p>Only the floor of the ramp, never a distance anything is built at: the sweep is still
+     * {@link #VOID_CLEARANCE} on every axis. Lowering this thickens the far end of the walk without
+     * moving a single block.</p>
+     */
+    public static final int VOID_FOG_MIN = 8;
+
+    /**
      * Shortest room worth authoring. Below this the two corridor mouths are close enough that the
      * far one is visible from the near one, which is the one thing the baffles exist to prevent.
      */

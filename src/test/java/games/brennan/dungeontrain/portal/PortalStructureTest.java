@@ -190,6 +190,30 @@ class PortalStructureTest {
     }
 
     @Test
+    @DisplayName("Bedrockless closes to a whiteout at the far edge — the walk out is the point")
+    void bedrockless_rampsToAWhiteout() {
+        PortalStructure s = PortalStructure.withMode(ORIGIN, "default",
+            PortalRoomLayout.builtInSize(DIMS), PortalRoomMode.BEDROCKLESS, null);
+
+        assertEquals((float) PortalRoomLayout.VOID_FOG_MIN, s.fogMinRadius());
+        // A ramp that ends where it started is a flat fog wearing a ramp's clothes. This is the
+        // assertion that the clearance actually reads differently at its two ends.
+        assertTrue(s.fogMinRadius() < s.fogRadius(),
+            "fog must close in across the clearance, went " + s.fogRadius() + " → " + s.fogMinRadius());
+    }
+
+    @Test
+    @DisplayName("Every other mode fogs flat — a repeating room has no outside to ramp into")
+    void otherModes_doNotRamp() {
+        for (PortalRoomMode mode : PortalRoomMode.values()) {
+            if (mode == PortalRoomMode.BEDROCKLESS) continue;
+            PortalStructure s = PortalStructure.withMode(ORIGIN, "default",
+                PortalRoomLayout.builtInSize(DIMS), mode, null);
+            assertEquals(s.fogRadius(), s.fogMinRadius(), mode.id());
+        }
+    }
+
+    @Test
     @DisplayName("The tiling modes are unpadded — their fog stops at the copies actually stamped")
     void tilingModes_padNothing() {
         for (PortalRoomMode mode : PortalRoomMode.values()) {
