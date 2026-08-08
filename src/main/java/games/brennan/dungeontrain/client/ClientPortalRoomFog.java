@@ -75,17 +75,23 @@ public final class ClientPortalRoomFog {
         if (vanillaFar <= 0.0f) return 0.0f;
 
         boolean inside = contains(x, y, z);
+        float radius = inside ? radiusAt(x, z) : 0.0f;
         // A room fogging at further than the player can see anyway has nothing to say, and engaging
         // for it would only add a pointless ease in both directions. Disengage outright rather than
         // returning zero with a live value still cached, which would ease out of a stale distance if
         // the render distance moved again.
-        if (inside && region.radius() >= vanillaFar) {
+        //
+        // Asked of the ramped distance rather than the room's nominal one: a Bedrockless room fogs
+        // at the clearance, which on a short render distance is already past the far plane, and the
+        // whole point of the ramp is what happens as a player walks out of that into eight blocks.
+        // Testing the nominal figure would hand the entire walk to vanilla.
+        if (inside && radius >= vanillaFar) {
             applied = 0.0f;
             return 0.0f;
         }
         if (!inside && applied <= 0.0f) return 0.0f;
 
-        float target = inside ? region.radius() : vanillaFar;
+        float target = inside ? radius : vanillaFar;
         // Engaging: start level with vanilla so this frame changes nothing, then close in.
         if (applied <= 0.0f) applied = vanillaFar;
         applied += (target - applied) * EASE_PER_FRAME;
@@ -95,6 +101,34 @@ public final class ClientPortalRoomFog {
             return 0.0f;
         }
         return applied;
+    }
+
+    /**
+     * How far the room says a player standing here can see — the room's nominal radius at its own
+     * walls, closing toward {@link PortalRoomFogPacket#minRadius} the further out into the swept
+     * clearance they get.
+     *
+     * <p>The room's own box is the region shrunk by the falloff, which is exactly how the server grew
+     * it. A {@code falloff} of zero — every mode but Bedrockless, and all of them before the ramp
+     * existed — is a flat fog and returns before measuring anything.</p>
+     *
+     * <p><b>Chebyshev, not Euclidean.</b> The distance is the larger of the two axis overshoots
+     * rather than the diagonal between them, because the space being crossed is a box: the sweep is
+     * the clearance on each axis independently, so a player standing at a corner of it is at the end
+     * of the walk on both axes and should see the far end of the ramp, not {@code √2} past it.</p>
+     *
+     * <p><b>Y is not in it</b>, for the same reason the clearance has no vertical term — the lanes
+     * pairs are spread over are {@code TWIN_LANE_HEIGHT} apart, so there is no vertical emptiness to
+     * ramp across. A Bedrockless room's void is flat, and the distance worth measuring is the walk.</p>
+     */
+    private static float radiusAt(double x, double z) {
+        PortalRoomFogPacket r = region;
+        if (r.falloff() <= 0) return r.radius();
+
+        double outX = Math.max(0.0, Math.max((r.minX() + r.falloff()) - x, x - (r.maxX() + 1 - r.falloff())));
+        double outZ = Math.max(0.0, Math.max((r.minZ() + r.falloff()) - z, z - (r.maxZ() + 1 - r.falloff())));
+        float t = (float) Math.min(1.0, Math.max(outX, outZ) / r.falloff());
+        return r.radius() + (r.minRadius() - r.radius()) * t;
     }
 
     /**
