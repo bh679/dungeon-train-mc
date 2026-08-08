@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.Trains;
+import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -47,6 +48,23 @@ import java.util.UUID;
  * needed is the per-player latch/grace driving the leave/return transitions.
  * That state is transient (rebuilt each session); since players always spawn
  * aboard ({@link PlayerJoinEvents}) it re-establishes before they can wander.</p>
+ *
+ * <h2>Below the bedrock, none of this counts</h2>
+ * A DT overworld's {@code dimension_type} runs deeper than its terrain does, and
+ * the hallway-portal system stamps its twin corridors and rooms into that empty
+ * basement (see {@link games.brennan.dungeontrain.portal.PortalTwinLanes}). A
+ * player walking through a portal is therefore nowhere near a carriage, and on
+ * position alone reads as having jumped off — which would grant {@code left_train}
+ * and, on the way back in, {@code returned_to_train}, for walking through a door.
+ *
+ * <p>So below {@link WorldFloor#bedrockY(ServerLevel)} — where nothing legitimate
+ * happens, since no terrain reaches there and no player can dig into it —
+ * {@link #step} emits nothing and returns the state <em>unchanged</em>.</p>
+ *
+ * <p>Frozen rather than reset, deliberately: the player entered from a carriage,
+ * so the state already says aboard with no departure latched, and picking it back
+ * up on the far side is what makes the whole trip a no-op. Resetting would clear
+ * {@code hasBeenAboard} and cost them a later, genuine {@code returned_to_train}.</p>
  *
  * <p>Throttled to once every {@link #SCAN_PERIOD_TICKS} ticks per level,
  * matching {@link BoardingProgressEvents} / {@link RoofRunEvents}.</p>
@@ -110,6 +128,7 @@ public final class TrackPresenceEvents {
 
         double bedMinZ = g.trackZMin();
         double bedMaxZ = g.trackZMax() + 1.0; // block width: bed spans [trackZMin, trackZMax+1)
+        int bedrockY = WorldFloor.bedrockY(level);
 
         for (ServerPlayer player : level.players()) {
             double px = player.getX();
@@ -123,32 +142,20 @@ public final class TrackPresenceEvents {
             boolean offCorridor = !onCarriage
                 && (pz < bedMinZ - OFF_CORRIDOR_MARGIN || pz > bedMaxZ + OFF_CORRIDOR_MARGIN);
 
-            State s = STATES.computeIfAbsent(player.getUUID(), k -> new State());
+            boolean belowBedrock = py < bedrockY;
 
-            if (onTracks) {
+            State before = STATES.getOrDefault(player.getUUID(), State.INITIAL);
+            PresenceStep out = step(before, onCarriage, onTracks, offCorridor, belowBedrock);
+            STATES.put(player.getUUID(), out.next());
+
+            if (out.landedOnTracks()) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "landed_on_tracks");
             }
-            if (onCarriage || onTracks) {
-                s.wasOnTrainOrTracks = true;
+            if (out.returnedToTrain()) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "returned_to_train");
             }
-
-            if (onCarriage) {
-                s.hasBeenAboard = true;
-                s.offCarriageScans = 0;
-                if (s.leftCarriageSinceAboard) {
-                    ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "returned_to_train");
-                    s.leftCarriageSinceAboard = false;
-                }
-            } else {
-                if (s.hasBeenAboard) {
-                    s.offCarriageScans++;
-                    if (s.offCarriageScans >= OFF_GRACE_SCANS) {
-                        s.leftCarriageSinceAboard = true;
-                    }
-                }
-                if (s.wasOnTrainOrTracks && offCorridor) {
-                    ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "left_train");
-                }
+            if (out.leftTrain()) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "left_train");
             }
         }
 
@@ -185,15 +192,58 @@ public final class TrackPresenceEvents {
         return false;
     }
 
-    /** Mutable per-player transition state for the leave/return state machine. */
-    private static final class State {
-        /** Has been on a carriage or the tracks at least once — latches left_train. */
-        boolean wasOnTrainOrTracks;
-        /** Has been on a carriage at least once — gates the return marker. */
-        boolean hasBeenAboard;
-        /** Consecutive off-carriage scans since last aboard. */
-        int offCarriageScans;
-        /** Departed a carriage (past the grace) and not yet re-boarded. */
-        boolean leftCarriageSinceAboard;
+    /**
+     * Per-player transition state for the leave/return state machine.
+     *
+     * @param wasOnTrainOrTracks      has been on a carriage or the tracks at least once — latches
+     *                                {@code left_train}
+     * @param hasBeenAboard           has been on a carriage at least once — gates the return marker
+     * @param offCarriageScans        consecutive off-carriage scans since last aboard
+     * @param leftCarriageSinceAboard departed a carriage (past the grace) and not yet re-boarded
+     */
+    record State(boolean wasOnTrainOrTracks, boolean hasBeenAboard,
+                 int offCarriageScans, boolean leftCarriageSinceAboard) {
+
+        /** A player nothing has been observed about yet. */
+        static final State INITIAL = new State(false, false, 0, false);
+    }
+
+    /**
+     * Which markers one scan concludes, plus the state to carry into the next. A field is
+     * {@code true} only on the scan that earns it — re-firing an already-granted id would be a
+     * vanilla no-op anyway, but this keeps the decision honest and table-testable.
+     */
+    record PresenceStep(boolean landedOnTracks, boolean returnedToTrain, boolean leftTrain,
+                        State next) {}
+
+    /**
+     * The whole leave/return decision for one scan of one player — pure, so
+     * {@code TrackPresenceStepTest} can table-test it without a Minecraft bootstrap. The three
+     * position reads are supplied by the caller (and verified in-game); this pins only what a given
+     * observation means. Mirrors {@link PlayerMobAdvancementEvents#step}.
+     *
+     * @param belowBedrock the player is under the world's bedrock layer — the basement the portal
+     *                     system builds in. See the class javadoc for why this freezes the state
+     *                     rather than resetting it.
+     */
+    static PresenceStep step(State s, boolean onCarriage, boolean onTracks,
+                             boolean offCorridor, boolean belowBedrock) {
+        if (belowBedrock) return new PresenceStep(false, false, false, s);
+
+        boolean wasOnTrainOrTracks = s.wasOnTrainOrTracks() || onCarriage || onTracks;
+
+        if (onCarriage) {
+            return new PresenceStep(onTracks, s.leftCarriageSinceAboard(), false,
+                new State(wasOnTrainOrTracks, true, 0, false));
+        }
+
+        int offScans = s.offCarriageScans();
+        boolean left = s.leftCarriageSinceAboard();
+        if (s.hasBeenAboard()) {
+            offScans++;
+            if (offScans >= OFF_GRACE_SCANS) left = true;
+        }
+        return new PresenceStep(onTracks, false, wasOnTrainOrTracks && offCorridor,
+            new State(wasOnTrainOrTracks, s.hasBeenAboard(), offScans, left));
     }
 }
