@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageFootprint;
+import games.brennan.dungeontrain.train.ContentsDespawnController;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainStaticContentsCarrier;
 import games.brennan.dungeontrain.train.Trains;
@@ -290,6 +291,15 @@ public final class TrainTickEvents {
         // so it reacts promptly to players/mobs crossing the freeze boundary. Stacks with the substep
         // tuner above. See PhysicsFreezeController.
         PhysicsFreezeController.reconcile(level, trainsById);
+
+        // Distance gate for DESPAWNING carriage contents mobs — the mirror of the spawn gate in
+        // TrainCarriageAppender. Sweeps the mobs of any carriage group no player has been near for a
+        // few seconds into an on-disk snapshot and restores them when a player comes back, so AI cost
+        // scales with watched carriages rather than train length. Runs AFTER the freeze reconcile on
+        // purpose: a carriage coming back into range is unfrozen by that pass first, and a frozen
+        // carriage's pose is stale, which would make the ship→world restore land in the wrong place.
+        // See ContentsDespawnController.
+        ContentsDespawnController.reconcile(level, trainsById, level.players());
 
         // Re-anchor static carriage-contents entities (End Crystals, paintings, item frames) that
         // Sable's move-driven carry never binds, so they ride the train instead of being left at

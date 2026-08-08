@@ -433,6 +433,7 @@
   "effect.dungeontrain.warmth_of_the_fire": "Тепло огня",
   "effect.dungeontrain.warmth_of_the_fire.description": "Медленное исцеление",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (Суперплоский)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Нижний мир)",
   "generator.dungeontrain.dungeon_train_end": "Dungeon Train (Край)",
   "generator.dungeontrain.dungeon_train_y-64": "Dungeon Train",

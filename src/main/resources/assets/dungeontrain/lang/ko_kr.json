@@ -423,6 +423,7 @@
   "effect.dungeontrain.warmth_of_the_fire": "불의 온기",
   "effect.dungeontrain.warmth_of_the_fire.description": "느린 치유",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_flat": "Dungeon Train (평지)",
   "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (네더)",
   "generator.dungeontrain.dungeon_train_end": "Dungeon Train (엔드)",
   "generator.dungeontrain.dungeon_train_y-64": "Dungeon Train",

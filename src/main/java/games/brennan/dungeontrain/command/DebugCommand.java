@@ -18,6 +18,7 @@ import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.ContentsDespawnController;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -66,6 +67,14 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setPhysicsFreeze(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setPhysicsFreeze(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> physicsFreezeStatus(ctx.getSource()))))
+            // /dungeontrain debug contentsdespawn <on|off|status> — toggles the distance gate that
+            // sweeps carriage contents mobs out of the level while no player is near. `off` restores
+            // every held snapshot over the next few ticks. Drives the Gate 2 matched-toggle A/B
+            // (despawn off vs on, same seed/path — chunk-gen noise cancels).
+            .then(Commands.literal("contentsdespawn")
+                .then(Commands.literal("on").executes(ctx -> setContentsDespawn(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setContentsDespawn(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> contentsDespawnStatus(ctx.getSource()))))
             // /dungeontrain debug gen-timing <on|off|status> — toggles the [gen.timing] chunk-gen
             // attribution profiler (see GenProfiler). Default ON in dev, OFF in prod. Grep [gen.timing]
             // in latest.log while riding to read per-chunk DT gen-cost buckets.
@@ -189,6 +198,23 @@ public final class DebugCommand {
             PhysicsFreezeController.ENABLED ? "ON" : "OFF",
             PhysicsFreezeController.lastResident(), PhysicsFreezeController.lastActive(),
             PhysicsFreezeController.lastFrozen())), false);
+        return 1;
+    }
+
+    private static int setContentsDespawn(CommandSourceStack source, boolean on) {
+        ContentsDespawnController.ENABLED = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Contents-despawn " + (on ? "ON" : "OFF — all held contents restored next tick")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int contentsDespawnStatus(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal(String.format(
+            "[DungeonTrain] Contents-despawn %s — groups=%d away=%d snapshotted=%d entitiesHeld=%d",
+            ContentsDespawnController.ENABLED ? "ON" : "OFF",
+            ContentsDespawnController.lastGroups(), ContentsDespawnController.lastAway(),
+            ContentsDespawnController.lastSnapshotted(), ContentsDespawnController.lastEntitiesHeld())), false);
         return 1;
     }
 

@@ -423,6 +423,7 @@
   "effect.dungeontrain.warmth_of_the_fire": {"author": "老本願", "reviewer": "老本願"},
   "effect.dungeontrain.warmth_of_the_fire.description": {"author": "老本願", "reviewer": "老本願"},
   "generator.dungeontrain.dungeon_train": {"author": "老本願", "reviewer": "老本願"},
+  "generator.dungeontrain.dungeon_train_flat": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "generator.dungeontrain.dungeon_train_nether": {"author": "老本願", "reviewer": "老本願"},
   "generator.dungeontrain.dungeon_train_end": {"author": "老本願", "reviewer": "老本願"},
   "generator.dungeontrain.dungeon_train_y-64": {"author": "老本願", "reviewer": "老本願"},
