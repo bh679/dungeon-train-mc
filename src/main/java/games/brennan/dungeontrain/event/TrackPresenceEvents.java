@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.Trains;
+import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -48,12 +49,17 @@ import java.util.UUID;
  * That state is transient (rebuilt each session); since players always spawn
  * aboard ({@link PlayerJoinEvents}) it re-establishes before they can wander.</p>
  *
- * <h2>Portal rooms are not "off the train"</h2>
- * A hallway portal teleports the player to a corridor twin stamped at the world
- * floor, so on position alone they read as having jumped off — which would grant
- * {@code left_train} and, on their way back in, {@code returned_to_train}, for
- * walking through a door. While {@link PortalCarriageEvents#isInsidePortalStructure}
- * holds, {@link #step} emits nothing and returns the state <em>unchanged</em>.
+ * <h2>Below the bedrock, none of this counts</h2>
+ * A DT overworld's {@code dimension_type} runs deeper than its terrain does, and
+ * the hallway-portal system stamps its twin corridors and rooms into that empty
+ * basement (see {@link games.brennan.dungeontrain.portal.PortalTwinLanes}). A
+ * player walking through a portal is therefore nowhere near a carriage, and on
+ * position alone reads as having jumped off — which would grant {@code left_train}
+ * and, on the way back in, {@code returned_to_train}, for walking through a door.
+ *
+ * <p>So below {@link WorldFloor#bedrockY(ServerLevel)} — where nothing legitimate
+ * happens, since no terrain reaches there and no player can dig into it —
+ * {@link #step} emits nothing and returns the state <em>unchanged</em>.</p>
  *
  * <p>Frozen rather than reset, deliberately: the player entered from a carriage,
  * so the state already says aboard with no departure latched, and picking it back
@@ -122,6 +128,7 @@ public final class TrackPresenceEvents {
 
         double bedMinZ = g.trackZMin();
         double bedMaxZ = g.trackZMax() + 1.0; // block width: bed spans [trackZMin, trackZMax+1)
+        int bedrockY = WorldFloor.bedrockY(level);
 
         for (ServerPlayer player : level.players()) {
             double px = player.getX();
@@ -135,10 +142,10 @@ public final class TrackPresenceEvents {
             boolean offCorridor = !onCarriage
                 && (pz < bedMinZ - OFF_CORRIDOR_MARGIN || pz > bedMaxZ + OFF_CORRIDOR_MARGIN);
 
-            boolean inPortal = PortalCarriageEvents.isInsidePortalStructure(level, px, py, pz);
+            boolean belowBedrock = py < bedrockY;
 
             State before = STATES.getOrDefault(player.getUUID(), State.INITIAL);
-            PresenceStep out = step(before, onCarriage, onTracks, offCorridor, inPortal);
+            PresenceStep out = step(before, onCarriage, onTracks, offCorridor, belowBedrock);
             STATES.put(player.getUUID(), out.next());
 
             if (out.landedOnTracks()) {
@@ -215,12 +222,13 @@ public final class TrackPresenceEvents {
      * position reads are supplied by the caller (and verified in-game); this pins only what a given
      * observation means. Mirrors {@link PlayerMobAdvancementEvents#step}.
      *
-     * @param inPortal the player is inside a hallway-portal structure — see the class javadoc for
-     *                 why this freezes the state rather than resetting it
+     * @param belowBedrock the player is under the world's bedrock layer — the basement the portal
+     *                     system builds in. See the class javadoc for why this freezes the state
+     *                     rather than resetting it.
      */
     static PresenceStep step(State s, boolean onCarriage, boolean onTracks,
-                             boolean offCorridor, boolean inPortal) {
-        if (inPortal) return new PresenceStep(false, false, false, s);
+                             boolean offCorridor, boolean belowBedrock) {
+        if (belowBedrock) return new PresenceStep(false, false, false, s);
 
         boolean wasOnTrainOrTracks = s.wasOnTrainOrTracks() || onCarriage || onTracks;
 

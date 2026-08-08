@@ -12,13 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Pure-logic coverage for {@link TrackPresenceEvents#step} — the leave/return state machine behind
  * <em>Off the Rails</em>, <em>Back on Board</em> and {@code landed_on_tracks}. No Minecraft
- * bootstrap: the four position reads (carriage AABB, rail bed, corridor edge, portal structure) are
+ * bootstrap: the four position reads (carriage AABB, rail bed, corridor edge, bedrock level) are
  * supplied as arguments and verified in-game, so this table pins only what a given observation
  * means. Same style as {@link PlayerMobReboarderTest}.
  *
- * <p>The portal cases are the point of the file: a hallway portal puts the player at the world
- * floor, which reads as off every carriage, and without the gate a round trip through a door awards
- * both markers.</p>
+ * <p>The below-bedrock cases are the point of the file. The hallway-portal system builds its rooms
+ * in the basement under a DT overworld's bedrock, so a player who walks through a portal reads as
+ * off every carriage — and without the gate, a round trip through a door awards both markers.</p>
  */
 final class TrackPresenceStepTest {
 
@@ -40,8 +40,8 @@ final class TrackPresenceStepTest {
         return TrackPresenceEvents.step(s, false, false, true, false);
     }
 
-    /** One scan while inside a hallway-portal structure. */
-    private static PresenceStep inPortal(State s) {
+    /** One scan while under the world's bedrock layer. */
+    private static PresenceStep belowBedrock(State s) {
         return TrackPresenceEvents.step(s, false, false, true, true);
     }
 
@@ -89,13 +89,13 @@ final class TrackPresenceStepTest {
         assertFalse(onCarriage(hop.next()).returnedToTrain());
     }
 
-    // ---- hallway portals ----
+    // ---- below the bedrock ----
 
     @Test
-    @DisplayName("a scan inside a portal grants nothing and changes nothing")
-    void inPortal_isInert() {
+    @DisplayName("a scan below bedrock grants nothing and changes nothing")
+    void belowBedrock_isInert() {
         State before = aboard();
-        PresenceStep out = inPortal(before);
+        PresenceStep out = belowBedrock(before);
         assertFalse(out.landedOnTracks());
         assertFalse(out.returnedToTrain());
         assertFalse(out.leftTrain());
@@ -103,24 +103,24 @@ final class TrackPresenceStepTest {
     }
 
     @Test
-    @DisplayName("the whole round trip through a portal awards neither marker")
+    @DisplayName("the whole round trip below bedrock awards neither marker")
     void portalRoundTrip_awardsNothing() {
         State s = aboard();
-        // Ten scans in the room is five seconds — well past the two-scan grace that would otherwise
+        // Ten scans down there is five seconds — well past the two-scan grace that would otherwise
         // have latched a departure on the way in.
         for (int i = 0; i < 10; i++) {
-            PresenceStep out = inPortal(s);
-            assertFalse(out.leftTrain(), "no Off the Rails while in the room");
+            PresenceStep out = belowBedrock(s);
+            assertFalse(out.leftTrain(), "no Off the Rails while under the world");
             s = out.next();
         }
         PresenceStep back = onCarriage(s);
-        assertFalse(back.returnedToTrain(), "no Back on Board on stepping out of the portal");
+        assertFalse(back.returnedToTrain(), "no Back on Board on climbing out of the basement");
     }
 
     @Test
-    @DisplayName("a portal trip does not cost a later, genuine departure")
+    @DisplayName("a trip below bedrock does not cost a later, genuine departure")
     void portalTrip_leavesTheMachineIntact() {
-        State s = onCarriage(inPortal(aboard()).next()).next();
+        State s = onCarriage(belowBedrock(aboard()).next()).next();
         assertTrue(s.hasBeenAboard(), "freezing must not clear the aboard history");
 
         for (int i = 0; i < GRACE; i++) {

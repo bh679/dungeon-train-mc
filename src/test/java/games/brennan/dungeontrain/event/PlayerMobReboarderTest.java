@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * off-deck decision state machine. No Minecraft bootstrap is needed: the
  * carriage-block support test ({@code isOnCarriageDeck}) is supplied here as the
  * {@code onDeck} argument (and verified in-game), so this table pins exactly how a
- * given (support, dead, expired, inPortal) observation maps to CREDIT / KEEP / DROP.
+ * given (support, dead, expired, belowBedrock) observation maps to CREDIT / KEEP / DROP.
  *
  * <p>Mirrors the registry-free style of {@code TrainPassengerExemptionTest}.
  * Grace is {@code OFF_DECK_GRACE_SCANS = 2}, so an off-deck streak credits on its
@@ -112,23 +112,23 @@ final class PlayerMobReboarderTest {
         assertEquals(ReboarderDecision.DROP, out.decision());
     }
 
-    // ---- hallway portals: walked through a door, not shoved off a train ----
+    // ---- below the bedrock: walked through a portal, not shoved off a train ----
 
     @Test
-    @DisplayName("in a portal room past the grace bound → DROP, not CREDIT")
-    void inPortal_pastGrace_drops() {
-        // Byte-for-byte the CREDIT case above, except the mob is standing in a portal room: a
-        // structure at the world floor, which every carriage-deck test necessarily reads as off.
+    @DisplayName("below bedrock past the grace bound → DROP, not CREDIT")
+    void belowBedrock_pastGrace_drops() {
+        // Byte-for-byte the CREDIT case above, except the mob is under the bedrock: the basement the
+        // portal system builds in, which every carriage-deck test necessarily reads as off.
         ReboarderHit atGrace = new ReboarderHit(P, 0L, true, false, 2);
         ReboarderStep out = PlayerMobAdvancementEvents.step(atGrace, false, false, false, true);
         assertEquals(ReboarderDecision.DROP, out.decision());
     }
 
     @Test
-    @DisplayName("in a portal room outranks the unloaded/dead path too")
-    void inPortal_beatsUnloadedCredit() {
-        // The other route to CREDIT: last seen off-deck, no live position. inPortal is tested first
-        // so a mob that transits and is then unloaded in the room still doesn't credit.
+    @DisplayName("below bedrock outranks the unloaded/dead path too")
+    void belowBedrock_beatsUnloadedCredit() {
+        // The other route to CREDIT: last seen off-deck, no live position. The bedrock test comes
+        // first, so a mob that transits and is then unloaded down there still doesn't credit.
         ReboarderHit lastOff = new ReboarderHit(P, 0L, true, false, 1);
         ReboarderStep out = PlayerMobAdvancementEvents.step(lastOff, null, false, false, true);
         assertEquals(ReboarderDecision.DROP, out.decision());
