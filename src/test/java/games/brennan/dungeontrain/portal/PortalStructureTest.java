@@ -178,6 +178,39 @@ class PortalStructureTest {
     }
 
     @Test
+    @DisplayName("Bedrockless fogs at its clearance and pads its region by the same figure")
+    void bedrockless_fogsAtTheClearance() {
+        PortalStructure s = PortalStructure.withMode(ORIGIN, "default",
+            PortalRoomLayout.builtInSize(DIMS), PortalRoomMode.BEDROCKLESS, null);
+
+        // One number, not two: the space swept and the distance seen into it have to match, or the
+        // fog sits inside the void and its far edge becomes visible.
+        assertEquals((float) PortalRoomLayout.VOID_CLEARANCE, s.fogRadius());
+        assertEquals(PortalRoomLayout.VOID_CLEARANCE, s.fogPad());
+    }
+
+    @Test
+    @DisplayName("The tiling modes are unpadded — their fog stops at the copies actually stamped")
+    void tilingModes_padNothing() {
+        for (PortalRoomMode mode : PortalRoomMode.values()) {
+            if (mode == PortalRoomMode.BEDROCKLESS) continue;
+            assertEquals(0,
+                PortalStructure.withMode(ORIGIN, "default", PortalRoomLayout.builtInSize(DIMS),
+                    mode, null).fogPad(),
+                mode.id());
+        }
+    }
+
+    @Test
+    @DisplayName("An endless room's fog still scales with the room — five rooms out, on the narrow axis")
+    void endlessRoom_fogsFiveRoomsOut() {
+        PortalStructure s = PortalStructure.withMode(ORIGIN, "default",
+            PortalRoomLayout.builtInSize(DIMS), PortalRoomMode.ENDLESS_REPETITION, null);
+        assertEquals((float) PortalRoomTiling.MAX_RADIUS * Math.min(s.roomLength(), s.roomWidth()),
+            s.fogRadius());
+    }
+
+    @Test
     @DisplayName("Rejects null components — a half-built structure would stamp into nowhere")
     void rejectsNull() {
         Vec3i size = PortalRoomLayout.builtInSize(DIMS);

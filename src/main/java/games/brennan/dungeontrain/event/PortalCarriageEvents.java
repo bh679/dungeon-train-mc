@@ -183,17 +183,33 @@ public final class PortalCarriageEvents {
     private PortalCarriageEvents() {}
 
     /**
-     * True when {@code (x, y, z)} is anywhere inside a portal pair's structure — either corridor, the
-     * room between them, or any copy of that room currently standing.
+     * True when {@code (x, y, z)} is anywhere a portal pair owns — either corridor, the room between
+     * them, any copy of that room currently standing, and the clearance a
+     * {@link games.brennan.dungeontrain.portal.PortalRoomMode#BEDROCKLESS} room swept around itself.
      *
      * <p>Read by {@code PortalRoomSpawnGuard} to keep the dark from filling a portal room with
      * skeletons. The structures live here because this is what stamps and moves them, so the query
      * lives here too rather than the spawn rule keeping its own idea of where they are.</p>
+     *
+     * <p><b>Why the clearance counts.</b> In an ordinary world the swept space is basement void with
+     * no floor in it, and nothing spawns on nothing. A Compatible Terrain world has no basement: the
+     * twin is cut into rock, and the sweep leaves a wide unlit cavern with a solid floor right beside
+     * the room — the textbook spawning volume this guard exists for, and one the ordinary structure
+     * box stops well short of.</p>
+     *
+     * <p>Padded here rather than in {@link #structureBox}, which must not grow: that box is also the
+     * occupancy, carry and despawn-protection volume, so widening it by the clearance would have a
+     * pair adopting mobs fifty blocks away and dragging them along on every re-stamp.</p>
      */
     public static boolean isInsidePortalStructure(CarriageDims dims, double x, double y, double z) {
         if (STRUCTURES.isEmpty()) return false;
         for (PortalStructure structure : STRUCTURES.values()) {
-            if (structureBox(dims, structure).contains(x, y, z)) return true;
+            AABB box = structureBox(dims, structure);
+            // Horizontally only, matching the sweep — see PortalRoomLayout#VOID_CLEARANCE for why the
+            // clearance has no vertical term.
+            int pad = structure.fogPad();
+            if (pad > 0) box = box.inflate(pad, 0.0, pad);
+            if (box.contains(x, y, z)) return true;
         }
         return false;
     }
@@ -345,8 +361,9 @@ public final class PortalCarriageEvents {
      * Tell whoever is inside a structure where its corridors are, so the engine sound can follow them
      * through the corridor copy and fade out in the room.
      *
-     * <p>Sent for <b>every</b> room mode, unlike the fog, which only the tiling ones want. The sound
-     * rule is about the corridors and the walk out of them, which every portal has.</p>
+     * <p>Sent for <b>every</b> room mode, unlike the fog, which only the modes with an edge to hide
+     * ask for. The sound rule is about the corridors and the walk out of them, which every portal
+     * has.</p>
      */
     private static void sendTrainAudioFor(List<ServerPlayer> players, CarriageDims dims,
                                           PortalStructure structure, Set<UUID> inStructure) {
@@ -397,16 +414,21 @@ public final class PortalCarriageEvents {
     private static void sendFogFor(List<ServerPlayer> players, CarriageDims dims,
                                    PortalCarriageLayout layout, PortalStructure structure,
                                    Set<UUID> fogged) {
-        if (!structure.mode().tiles()) return;
+        if (!structure.mode().fogs()) return;
 
+        // Bedrockless reaches past its own copies — there are none — into the clearance it swept, so
+        // that mining out through the room's shell does not leave the fog behind while the player is
+        // still standing in the void it was hiding. Every other mode pads by nothing and the bounds
+        // stay what was stamped.
+        int pad = structure.fogPad();
         AABB box = structureBox(dims, structure);
         PortalRoomFogPacket region = new PortalRoomFogPacket(
-            structure.tiledMinX(dims, layout),
+            structure.tiledMinX(dims, layout) - pad,
             structure.origin().getY(),
-            structure.tiledMinZ(dims, layout),
-            structure.tiledMaxX(dims, layout),
+            structure.tiledMinZ(dims, layout) - pad,
+            structure.tiledMaxX(dims, layout) + pad,
             structure.origin().getY() + structure.roomSize().getY(),
-            structure.tiledMaxZ(dims, layout),
+            structure.tiledMaxZ(dims, layout) + pad,
             structure.fogRadius());
 
         for (ServerPlayer player : players) {

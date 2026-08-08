@@ -38,7 +38,9 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProc
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -542,9 +544,11 @@ public final class PortalCarriageBuilder {
         // column one block inside it, which is why nothing may write there in the first place; see
         // PortalCorridorMask#facedBy. Bedrock Lock wraps the room; the endless modes settle its own
         // side walls, which for Endless Open means taking them away so there is somewhere to walk
-        // out to.
+        // out to. Bedrockless writes nothing around the room at all and sweeps the space instead.
         if (structure.mode() == PortalRoomMode.BEDROCK_LOCK) {
             bedrockSkin(level, roomOrigin, roomSize);
+        } else if (structure.mode().clearsSurroundings()) {
+            clearVoidAround(level, structure, dims);
         } else if (structure.mode().tiles()) {
             PortalRoomTiler.refreshFacesAround(level, dims, structure, PortalRoomTiling.Tile.BASE);
         }
@@ -646,6 +650,122 @@ public final class PortalCarriageBuilder {
                 // there is not, and the world's own bedrock is already doing the job.
                 if (belowY < floorY) level.setBlock(pos.set(x, belowY, z), LOCK, Block.UPDATE_ALL);
             }
+        }
+    }
+
+    /**
+     * The box a {@link PortalRoomMode#BEDROCKLESS} room's emptiness fills: the room grown by
+     * {@link PortalRoomLayout#VOID_CLEARANCE} on both horizontal axes, never smaller than the
+     * structure standing in it.
+     *
+     * <p><b>The fog is derived from the same clearance, not from this box.</b>
+     * {@code PortalCarriageEvents} pads the room's own bounds by {@link PortalStructure#fogPad},
+     * which is {@link PortalRoomLayout#VOID_CLEARANCE} — the one figure both sides read, so the space
+     * swept and the space fogged cannot drift apart. Where they differ at all it is because this box
+     * is additionally held open to the structure's footprint, which only makes the swept space the
+     * larger of the two: the fog never claims ground that was not cleared.</p>
+     *
+     * <p>The union with the footprint is not defensive tidiness. A world with long carriages has
+     * corridors and plugs reaching further from the room than the clearance does, and a halo that
+     * stopped short of them would leave the structure poking out of its own void — and, because the
+     * fog reads this box too, would un-fog somebody standing in a corridor.</p>
+     *
+     * <p>See {@link PortalRoomLayout#VOID_CLEARANCE} for why the clearance has no vertical term at
+     * all. What it does have is a <b>floor</b>: the sweep starts at the structure's own floor row and
+     * leaves everything below it, one row shallower than {@link #footprintOf}. Two reasons, and the
+     * second is the one that matters. It gives the emptiness something to stand on, so walking out of
+     * a Bedrockless room is a one-block step down rather than a fall. And in a Compatible Terrain
+     * world — no basement, {@link PortalTwinLanes#FLOOR_MARGIN} putting the lowest lane two rows off
+     * the build floor — the row {@code footprintOf} reaches is inside the world's <i>own</i> bedrock
+     * layer, and sweeping a hundred-block disc of it would open the bottom of the world.</p>
+     */
+    static BoundingBox voidHaloOf(ServerLevel level, PortalStructure structure,
+                                  CarriageDims dims) {
+        PortalCarriageLayout layout = layoutFor(dims);
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        Vec3i roomSize = structure.roomSize();
+        BoundingBox footprint = footprintOf(level, structure, dims);
+        int c = PortalRoomLayout.VOID_CLEARANCE;
+
+        return new BoundingBox(
+            Math.min(footprint.minX(), roomOrigin.getX() - c),
+            structure.origin().getY(),
+            Math.min(footprint.minZ(), roomOrigin.getZ() - c),
+            Math.max(footprint.maxX(), roomOrigin.getX() + roomSize.getX() - 1 + c),
+            footprint.maxY(),
+            Math.max(footprint.maxZ(), roomOrigin.getZ() + roomSize.getZ() - 1 + c));
+    }
+
+    /**
+     * {@code halo} minus {@code footprint}, as up to four disjoint slabs — everything a Bedrockless
+     * room clears, and nothing the structure owns.
+     *
+     * <p><b>Slabs rather than one box and a mask.</b> The corridors, their doors, the seal rings and
+     * the plugs all have to survive, and a mask is a predicate that has to be right; carving the
+     * structure's own box out of the halo geometrically means the clear cannot reach them however the
+     * corridor layout changes. It is also the cheaper shape: the volume the structure occupies is
+     * never walked at all.</p>
+     *
+     * <p>The carve is horizontal, and every slab takes the <b>halo's</b> Y band. The halo is the
+     * shallower of the two boxes — it spares the row under the floor that {@link #footprintOf}
+     * claims — so a slab can never reach below what was asked for, and no slab intersects the
+     * footprint at any height because none of them overlaps it in X or Z to begin with.</p>
+     *
+     * <p>Pure integer geometry with no level, so the covering can be unit-tested: the slabs are
+     * pairwise disjoint, none intersects the footprint, and together they cover every cell of the halo
+     * that the footprint does not.</p>
+     */
+    static List<BoundingBox> voidSlabs(BoundingBox halo, BoundingBox footprint) {
+        List<BoundingBox> slabs = new ArrayList<>(4);
+        int y0 = halo.minY();
+        int y1 = halo.maxY();
+
+        // The two X ends run the halo's full Z, so the corners belong to them and not to the Z sides.
+        if (footprint.minX() > halo.minX()) {
+            slabs.add(new BoundingBox(halo.minX(), y0, halo.minZ(),
+                footprint.minX() - 1, y1, halo.maxZ()));
+        }
+        if (footprint.maxX() < halo.maxX()) {
+            slabs.add(new BoundingBox(footprint.maxX() + 1, y0, halo.minZ(),
+                halo.maxX(), y1, halo.maxZ()));
+        }
+        // The Z sides are therefore only as wide as the footprint.
+        if (footprint.minZ() > halo.minZ()) {
+            slabs.add(new BoundingBox(footprint.minX(), y0, halo.minZ(),
+                footprint.maxX(), y1, footprint.minZ() - 1));
+        }
+        if (footprint.maxZ() < halo.maxZ()) {
+            slabs.add(new BoundingBox(footprint.minX(), y0, footprint.maxZ() + 1,
+                footprint.maxX(), y1, halo.maxZ()));
+        }
+        return slabs;
+    }
+
+    /**
+     * Empty the space around a {@link PortalRoomMode#BEDROCKLESS} room — its answer to
+     * {@link #bedrockSkin}.
+     *
+     * <p><b>Usually free.</b> Twins stand in the basement under the world's bedrock, which generation
+     * never reaches, so in an ordinary Dungeon Train world every section this touches is already air
+     * and {@link PortalClear#clearBox} skips it wholesale on {@code hasOnlyAir}. What it costs is a
+     * few hundred section probes. The world that pays for real is Compatible Terrain, where there is
+     * no basement and the twin is cut into rock — which is exactly the world the mode would otherwise
+     * be a lie in.</p>
+     *
+     * <p><b>The clearance is not part of {@link #footprintOf}, on purpose.</b> Claiming it there would
+     * make {@code eraseTwin} sweep a hundred-block box every time the train drifts far enough to
+     * re-stamp, and make every pair collide with every other pair for tiling purposes. What is left
+     * behind when a structure moves is air, in a basement nothing can reach — so there is nothing to
+     * clean up. The one consequence worth knowing is that another pair's room may later be stamped
+     * inside a void this one swept; that is no worse than the two structures being neighbours
+     * anywhere else, which the Y lanes already make rare.</p>
+     */
+    private static void clearVoidAround(ServerLevel level, PortalStructure structure,
+                                        CarriageDims dims) {
+        BoundingBox halo = voidHaloOf(level, structure, dims);
+        BoundingBox footprint = footprintOf(level, structure, dims);
+        for (BoundingBox slab : voidSlabs(halo, footprint)) {
+            PortalClear.clearBox(level, slab, PortalCorridorMask.NONE);
         }
     }
 
