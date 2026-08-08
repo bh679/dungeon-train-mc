@@ -59,10 +59,26 @@ public final class ClientPortalTrainAudio {
      * one — never {@code null}.
      *
      * <p>Exposed for {@link ClientPortalMusic}, which fades the soundtrack over the same corridors
-     * this fades the engine over. One packet describes the place; two rules read it.</p>
+     * this fades the engine over. One packet describes the place; several rules read it.</p>
      */
     public static PortalTrainAudioPacket region() {
         return region;
+    }
+
+    /**
+     * True when the position is in the portal room — the structure minus its two twin corridors,
+     * which is the room and every tiled copy of it.
+     *
+     * <p>The part of a portal that is somewhere else: the corridors are copies of the carriage the
+     * player walked out of and still carry the engine and the fading soundtrack, while the room
+     * carries neither. Read by {@link PortalCaveAmbienceEvents}, which fills that silence.</p>
+     */
+    public static boolean inRoom(double x, double y, double z) {
+        PortalTrainAudioPacket r = region;
+        if (!r.applies()) return false;
+        if (!withinStructure(r, x, y, z)) return false;
+        return distanceToCorridor(r, r.entryX(), r.entryY(), r.entryZ(), x, y, z) > 0.0
+            && distanceToCorridor(r, r.exitX(), r.exitY(), r.exitZ(), x, y, z) > 0.0;
     }
 
     /**
