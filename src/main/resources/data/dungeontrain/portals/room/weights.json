@@ -25,7 +25,7 @@
     "mode": "endless_repetition/dynamic"
   },
   "labrynth": {
-    "weight": 31,
+    "weight": 5,
     "mode": "endless_repetition/dynamic"
   },
   "library_dimension": {
@@ -33,7 +33,7 @@
     "mode": "endless_repetition/dynamic"
   },
   "patterns": {
-    "weight": 1,
+    "weight": 3,
     "mode": "endless_repetition"
   },
   "singlepillar": {
