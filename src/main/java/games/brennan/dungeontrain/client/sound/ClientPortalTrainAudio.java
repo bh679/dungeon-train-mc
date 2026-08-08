@@ -55,6 +55,17 @@ public final class ClientPortalTrainAudio {
     }
 
     /**
+     * The structure the player is in, or {@link PortalTrainAudioPacket#none()} when they are not in
+     * one — never {@code null}.
+     *
+     * <p>Exposed for {@link ClientPortalMusic}, which fades the soundtrack over the same corridors
+     * this fades the engine over. One packet describes the place; two rules read it.</p>
+     */
+    public static PortalTrainAudioPacket region() {
+        return region;
+    }
+
+    /**
      * The engine volume this position demands — {@code 1} inside a twin corridor, fading to {@code 0}
      * over the fade band beyond its mouth, {@code 0} anywhere else in the structure — or
      * {@link #NOT_APPLICABLE} when the player is not in one.
