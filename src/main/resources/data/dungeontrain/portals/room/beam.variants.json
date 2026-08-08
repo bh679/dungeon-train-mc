@@ -26,6 +26,16 @@
     "1,0,3": { "lockId": 3, "states": [{"state": "minecraft:polished_blackstone", "weight": 3}, "minecraft:sea_lantern", "minecraft:glowstone", "minecraft:shroomlight"] },
     "1,0,5": { "lockId": 3, "states": [{"state": "minecraft:polished_blackstone", "weight": 3}, "minecraft:sea_lantern", "minecraft:glowstone", "minecraft:shroomlight"] },
     "0,5,4": { "lockId": 4, "states": [{"state": "minecraft:polished_blackstone", "weight": 10}, "minecraft:shroomlight"] },
-    "10,5,4": { "lockId": 4, "states": [{"state": "minecraft:polished_blackstone", "weight": 10}, "minecraft:shroomlight"] }
+    "10,5,4": { "lockId": 4, "states": [{"state": "minecraft:polished_blackstone", "weight": 10}, "minecraft:shroomlight"] },
+    "7,0,3": { "lockId": 5, "states": [{"state": "minecraft:polished_blackstone_slab[type=bottom,waterlogged=false]", "half": "bottom"}, {"state": "minecraft:command_block[conditional=false,facing=south]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "7,0,5": { "lockId": 5, "states": [{"state": "minecraft:polished_blackstone_slab[type=bottom,waterlogged=false]", "half": "bottom"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "3,0,5": { "lockId": 5, "states": [{"state": "minecraft:polished_blackstone_slab[type=bottom,waterlogged=false]", "half": "bottom"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "3,0,3": { "lockId": 5, "states": [{"state": "minecraft:polished_blackstone_slab[type=bottom,waterlogged=false]", "half": "bottom"}, {"state": "minecraft:command_block[conditional=false,facing=south]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "6,0,5": { "lockId": 5, "states": [{"state": "minecraft:polished_blackstone_slab[type=bottom,waterlogged=false]", "half": "bottom"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "6,0,3": { "lockId": 5, "states": [{"state": "minecraft:polished_blackstone_slab[type=bottom,waterlogged=false]", "half": "bottom"}, {"state": "minecraft:command_block[conditional=false,facing=south]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "4,0,5": { "lockId": 5, "states": [{"state": "minecraft:polished_blackstone_slab[type=bottom,waterlogged=false]", "half": "bottom"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "4,0,3": { "lockId": 5, "states": [{"state": "minecraft:polished_blackstone_slab[type=bottom,waterlogged=false]", "half": "bottom"}, {"state": "minecraft:command_block[conditional=false,facing=south]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "5,0,5": { "lockId": 5, "states": [{"state": "minecraft:polished_blackstone_slab[type=bottom,waterlogged=false]", "half": "bottom"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "5,0,3": { "lockId": 5, "states": [{"state": "minecraft:polished_blackstone_slab[type=bottom,waterlogged=false]", "half": "bottom"}, {"state": "minecraft:command_block[conditional=false,facing=south]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["south"]}}] }
   }
 }
