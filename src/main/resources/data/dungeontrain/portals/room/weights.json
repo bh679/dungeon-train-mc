@@ -31,5 +31,9 @@
   "window": {
     "weight": 1,
     "mode": "bedrockless"
+  },
+  "window_contents": {
+    "weight": 1,
+    "mode": "bedrockless/exact/fit"
   }
 }
