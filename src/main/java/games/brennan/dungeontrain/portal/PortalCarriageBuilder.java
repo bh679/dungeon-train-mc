@@ -11,7 +11,9 @@ import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsAllowList;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
+import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.TrainMembership;
@@ -86,6 +88,8 @@ import java.util.Set;
  * spawn side (Sable relights the sub-level afterwards) or the light engine in an editor plot.</p>
  */
 public final class PortalCarriageBuilder {
+
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** Corridor shell — walls, floor, ceiling, door planes and baffles. */
     private static final BlockState SHELL = Blocks.STONE_BRICKS.defaultBlockState();
@@ -536,7 +540,8 @@ public final class PortalCarriageBuilder {
         stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
             PortalCorridorMask.NONE, PortalCorridorMask.NONE,
             structure.variantIndexFor(PortalRoomTiling.Tile.BASE), pairKey, PortalRoomTiling.Tile.BASE,
-            PortalRoomMobs.liveCount(level, footprintOf(level, structure, dims), pairKey));
+            PortalRoomMobs.liveCount(level, footprintOf(level, structure, dims), pairKey),
+            structure.settings().contents());
 
         // Before the corridors, so each mode acts on the room as it actually turned out rather than
         // as it was asked for. It does not follow that the corridors repair whatever a mode wrote at
@@ -899,11 +904,85 @@ public final class PortalCarriageBuilder {
                                    String roomName, Vec3i size, boolean relight,
                                    PortalCorridorMask clearMask, PortalCorridorMask writeMask,
                                    int variantIndex, int pairKey, PortalRoomTiling.Tile tile,
-                                   int liveMobCount) {
+                                   int liveMobCount, PortalRoomContents contents) {
         stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask);
+        // Contents first, the room's own authored cells second. Where the two overlap the author's
+        // explicit entry is the one that should stand — and applyRoomVariants evicts a live block
+        // entity before it writes, so a chest this pass just filled cannot spill when it does.
+        applyRoomContents(level, roomOrigin, size, writeMask, variantIndex, pairKey, contents);
         applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex, pairKey, tile,
             liveMobCount);
     }
+
+    /**
+     * Furnish a room from the ordinary contents pool, when its author asked for it.
+     *
+     * <p><b>Off unless asked.</b> {@link PortalRoomContents#OFF} is the default and returns before
+     * rolling anything, so a room authored before this existed stamps exactly as it did.</p>
+     *
+     * <h2>What the roll is a function of</h2>
+     * <p>The world seed and {@code variantIndex} go into the <b>seed</b>; {@code pairKey} is passed
+     * as the carriage index. That split is deliberate and does two jobs at once:</p>
+     * <ul>
+     *   <li>{@code pairKey} is a real carriage index — the entry corridor's — so
+     *       {@code DifficultyProgression.positionTier} inside the contents pass reads the portal's
+     *       actual position on the train, and the furnishing is themed to the stage the player is
+     *       in rather than to a hash.</li>
+     *   <li>{@code variantIndex} carries the copy identity ({@code PortalStructure.variantIndexFor}),
+     *       so Exact copies share a furnishing and Dynamic copies each get their own — for free, and
+     *       always agreeing with the block variants rolled from the same number.</li>
+     * </ul>
+     *
+     * <p><b>Pure, not memoised</b>, exactly like the room's variant pass: a copy that retires and is
+     * re-stamped as the tiling window slides — or a whole structure re-stamped after the train drifts
+     * — reproduces the room the player left, rather than refilling its chests. That property is the
+     * reason the roll may not depend on anything but position.</p>
+     *
+     * <p><b>Ungated</b> ({@code gateCtx} null), for the same reason {@link PortalCorridorContents} is:
+     * the stamp runs from the portal tick handler and there is no spawn context to test a template's
+     * gate against. Contents with a min/max Diff-Level or phase gate are drawn here as if ungated.</p>
+     */
+    private static void applyRoomContents(ServerLevel level, BlockPos roomOrigin, Vec3i size,
+                                          PortalCorridorMask writeMask, int variantIndex, int pairKey,
+                                          PortalRoomContents contents) {
+        PortalRoomContents setting = contents == null ? PortalRoomContents.DEFAULT : contents;
+        if (!setting.furnishes()) return;
+
+        Vec3i interior = new Vec3i(size.getX() - 2, size.getY() - 2, size.getZ() - 2);
+        if (interior.getX() <= 0 || interior.getY() <= 0 || interior.getZ() <= 0) return;
+        BlockPos interiorOrigin = roomOrigin.offset(1, 1, 1);
+
+        long worldSeed = level.getSeed();
+        long rollSeed = worldSeed ^ (variantIndex * CONTENTS_GOLDEN_GAMMA);
+        CarriageContents picked = CarriageContentsRegistry.pick(
+            rollSeed, pairKey, CarriageContentsAllowList.EMPTY, /*gateCtx*/ null);
+
+        Optional<StructureTemplate> template =
+            games.brennan.dungeontrain.editor.CarriageContentsStore.getFitting(level, picked, interior);
+        if (template.isEmpty()) return;
+
+        Vec3i box = template.get().getSize();
+        List<BlockPos> anchors = setting.anchorsIn(interior, box);
+        if (anchors.isEmpty()) {
+            LOGGER.info("[DungeonTrain] Portal room contents '{}' ({}x{}x{}) do not qualify for a "
+                + "{}x{}x{} interior under {} — room left unfurnished.",
+                picked.id(), box.getX(), box.getY(), box.getZ(),
+                interior.getX(), interior.getY(), interior.getZ(), setting.id());
+            return;
+        }
+
+        for (BlockPos anchor : anchors) {
+            CarriageContentsPlacer.placeBlocksAt(level, interiorOrigin.offset(anchor), picked, box,
+                rollSeed, pairKey, writeMask);
+        }
+    }
+
+    /**
+     * The mix {@link #applyRoomContents} folds the copy identity into its seed with — the same
+     * constant {@link PortalCorridorContents} uses, so neighbouring rooms separate rather than
+     * walking in step.
+     */
+    private static final long CONTENTS_GOLDEN_GAMMA = 0x9E3779B97F4A7C15L;
 
     /**
      * Roll and place the room's per-cell variant picks over a stamp that has already landed.
@@ -956,6 +1035,10 @@ public final class PortalCarriageBuilder {
                 level.setBlock(world, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
                 continue;
             }
+            // The contents pass may have put a filled chest in this cell a moment ago. Writing over a
+            // live block entity runs its onRemove and sprays the loot across the floor — the same
+            // hazard PortalClear and PortalRoomTiler.stampTile were both written for. Evict first.
+            PortalClear.clearCell(level, world);
             ContainerContentsPlacement.place(level, world, picked.state(), picked.blockEntityNbt(),
                 plotKey, local, worldSeed, variantIndex, picked.linkedLootPrefabId());
         }

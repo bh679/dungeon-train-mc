@@ -125,23 +125,67 @@ public final class CarriageContentsStore {
     public static synchronized Optional<StructureTemplate> get(
         ServerLevel level, CarriageContents contents, Vec3i interiorSize
     ) {
+        return filterForSize(contents, loadUngated(level, contents), interiorSize);
+    }
+
+    /**
+     * The template for {@code contents} as it is on disk, cached, with <b>no size gate applied</b>.
+     *
+     * <p>The cache is keyed by contents id alone and shared by every caller, so a verdict that
+     * depends on one caller's interior size must not be baked into it — otherwise a single lookup at
+     * the wrong size caches {@code Optional.empty()} under this id and defeats every later lookup at
+     * the right one for the rest of the session. Not hypothetical: {@code portal} contents are
+     * authored against the CORRIDOR's box ({@code CarriageContentsPlacer.contentsDims}), so any sweep
+     * over all contents at ordinary carriage dims would otherwise take them out.</p>
+     *
+     * <p>The gate belongs to the caller, and there are two of them — {@link #filterForSize} for a
+     * carriage, {@link #getFitting} for a portal room.</p>
+     */
+    private static Optional<StructureTemplate> loadUngated(ServerLevel level, CarriageContents contents) {
         String key = contents.id();
         Optional<StructureTemplate> cached = CACHE.get(key);
         if (cached == null) {
-            // Loaded WITHOUT the size gate. The cache is keyed by contents id alone and shared by
-            // every caller, so a verdict that depends on one caller's interior size must not be baked
-            // into it — otherwise a single lookup at the wrong size caches Optional.empty() under
-            // this id and defeats every later lookup at the right one for the rest of the session.
-            // Not hypothetical: `portal` contents are authored against the CORRIDOR's box
-            // (CarriageContentsPlacer.contentsDims), so any sweep over all contents at ordinary
-            // carriage dims would otherwise take them out. The gate is filterForSize, per call.
             cached = loadFromConfig(level, contents);
             if (cached.isEmpty()) {
                 cached = loadFromResource(level, contents);
             }
             CACHE.put(key, cached);
         }
-        return filterForSize(contents, cached, interiorSize);
+        return cached;
+    }
+
+    /**
+     * {@link #get} with the size gate relaxed from "equals" to "fits inside" — the template is
+     * returned whenever it is no bigger than {@code maxInterior} on any axis.
+     *
+     * <p>For the one caller whose box is not a carriage interior: a portal room furnished from the
+     * contents pool ({@link games.brennan.dungeontrain.portal.PortalRoomContents}). A room interior
+     * is larger than the carriage box these templates are authored against — 9×5×11 against 7×5×5 at
+     * the default dims — so the exact gate would reject every one of them, and the room's setting is
+     * precisely the author's instruction to place a smaller furnishing inside a larger space.</p>
+     *
+     * <p><b>Not a loosening of {@link #get}.</b> A carriage must still take only a template authored
+     * at its own interior, or the stamp would leave a band of the shell unfurnished and the
+     * variant sidecar's entries would land at the wrong cells. Where the template goes inside the
+     * larger box is the caller's decision, not this store's — {@code PortalRoomContents.anchorsIn}
+     * makes it.</p>
+     *
+     * <p>Quiet where {@link #filterForSize} warns: a template that does not fit is an ordinary
+     * outcome here (a room may simply be smaller than a given furnishing), not the misconfiguration
+     * a mismatched carriage template is.</p>
+     */
+    public static synchronized Optional<StructureTemplate> getFitting(
+        ServerLevel level, CarriageContents contents, Vec3i maxInterior
+    ) {
+        Optional<StructureTemplate> cached = loadUngated(level, contents);
+        if (cached.isEmpty()) return cached;
+        return fitsWithin(cached.get().getSize(), maxInterior) ? cached : Optional.empty();
+    }
+
+    private static boolean fitsWithin(Vec3i inner, Vec3i outer) {
+        return inner.getX() <= outer.getX()
+            && inner.getY() <= outer.getY()
+            && inner.getZ() <= outer.getZ();
     }
 
     /** The size gate — the only place a contents template is judged against a caller's interior. */

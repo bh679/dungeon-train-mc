@@ -86,6 +86,12 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals copies next";
     }
 
+    /** As {@link #modeCycleCommandFor}, for whether the room is furnished from the contents pool. */
+    public static String roomContentsCycleCommandFor(String category) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals contents next";
+    }
+
     /**
      * Build the slash command that bumps a per-template spawn-gate level bound
      * ({@code sub} = {@code "minlevel"} / {@code "maxlevel"}) of the template

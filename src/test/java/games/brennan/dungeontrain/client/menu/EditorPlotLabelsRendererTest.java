@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -48,13 +49,13 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("A portal room in-plot shows name, weight, L/W/H, Walls, Enter and the action row")
+    @DisplayName("A portal room in-plot shows name, weight, L/W/H, Walls, Contents, Enter and actions")
     void portalInPlot_rowOrder() {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.ENTER, RowKind.ACTION},
+                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(portalInPlot()));
-        assertEquals(8, EditorPlotLabelsRenderer.rowCount(portalInPlot()));
+        assertEquals(9, EditorPlotLabelsRenderer.rowCount(portalInPlot()));
     }
 
     @Test
@@ -100,16 +101,59 @@ class EditorPlotLabelsRendererTest {
     void copiesRowOnlyForRepetition() {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ENTER, RowKind.ACTION},
+                RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS,
+                RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(
                 entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition")));
 
         for (String mode : new String[]{"bedrock_lock", "endless_open"}) {
             assertArrayEquals(
                 new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                    RowKind.HEIGHT, RowKind.MODE, RowKind.ENTER, RowKind.ACTION},
+                    RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ENTER,
+                    RowKind.ACTION},
                 EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, mode)), mode);
         }
+    }
+
+    @Test
+    @DisplayName("Contents shows on every portal room, whatever the walls do — it is not a sub-mode")
+    void roomContentsRowIsNotGatedOnTheWalls() {
+        for (String mode : new String[]{"bedrock_lock", "endless_open", "bedrockless",
+                                        "endless_repetition", "endless_repetition/dynamic/tile"}) {
+            EditorPlotLabelsPacket.Entry e = entry("PORTALS", true, 1, 11, 13, 7, mode);
+            assertTrue(EditorPlotLabelsRenderer.hasRoomContentsRow(e), mode);
+        }
+        // …but only for a portal room, and only from inside the plot — the Walls row's own rule.
+        assertFalse(EditorPlotLabelsRenderer.hasRoomContentsRow(
+            entry("PORTALS", true, 1, 11, 13, 7, EditorPlotLabelsPacket.NO_MODE)));
+    }
+
+    @Test
+    @DisplayName("The Contents row is one button, and inserting it does not shift its neighbours")
+    void roomContentsRowIsOneButton() {
+        EditorPlotLabelsPacket.Entry e =
+            entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition/dynamic/fit");
+        RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
+        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
+        double y = rowCentreY(e, indexOf(rows, RowKind.ROOM_CONTENTS));
+
+        for (double x : new double[]{-halfW + 0.05, 0.0, halfW - 0.05}) {
+            assertEquals(CellKind.ROOM_CONTENTS_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, x, y));
+        }
+        assertEquals(CellKind.COPIES_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
+            rowCentreY(e, indexOf(rows, RowKind.COPIES))));
+        assertEquals(CellKind.BUTTON_ENTER_INSIDE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
+            rowCentreY(e, indexOf(rows, RowKind.ENTER))));
+    }
+
+    @Test
+    @DisplayName("The Contents row reads back what the tag says")
+    void roomContentsLabel() {
+        assertEquals("Contents: Off", EditorPlotLabelsRenderer.roomContentsLabel("bedrock_lock"));
+        assertEquals("Contents: Fit",
+            EditorPlotLabelsRenderer.roomContentsLabel("bedrock_lock/exact/fit"));
+        assertEquals("Contents: Tile",
+            EditorPlotLabelsRenderer.roomContentsLabel("endless_repetition/dynamic/tile"));
     }
 
     @Test

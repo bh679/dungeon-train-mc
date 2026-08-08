@@ -90,7 +90,9 @@ public final class EditorPlotLabelsRenderer {
         /** The whole mode row — one button, clicking it steps to the next mode. */
         MODE_CYCLE,
         /** The sub-mode row — only shown while the mode makes copies. */
-        COPIES_CYCLE
+        COPIES_CYCLE,
+        /** The furnishing row — whether the room takes a contents template, and how it is fitted. */
+        ROOM_CONTENTS_CYCLE
     }
 
     /**
@@ -102,7 +104,7 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ENTER, ACTION, CONTENTS
+        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ROOM_CONTENTS, ENTER, ACTION, CONTENTS
     }
 
     /** The rows {@code entry} shows, top to bottom. */
@@ -118,6 +120,7 @@ public final class EditorPlotLabelsRenderer {
         }
         if (hasModeRow(entry)) buf[n++] = RowKind.MODE;
         if (hasCopiesRow(entry)) buf[n++] = RowKind.COPIES;
+        if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
         if (hasEnterRow(entry)) buf[n++] = RowKind.ENTER;
         if (hasActionRow(entry)) buf[n++] = RowKind.ACTION;
         if (hasContentsButton(entry)) buf[n++] = RowKind.CONTENTS;
@@ -182,6 +185,23 @@ public final class EditorPlotLabelsRenderer {
     public static String copiesLabel(String modeTag) {
         return "Copies: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
             .copies().displayName();
+    }
+
+    /**
+     * Whether the Contents row shows: on every portal room, unlike Copies.
+     *
+     * <p>Furnishing is not a property of the walls — a sealed room can take a contents template as
+     * readily as a repeating one — so it is gated on being a portal room at all, the same condition
+     * as the Walls row, and not on what the Walls row currently says.</p>
+     */
+    public static boolean hasRoomContentsRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry);
+    }
+
+    /** What the Contents row reads, e.g. {@code "Contents: Fit"}. */
+    public static String roomContentsLabel(String modeTag) {
+        return "Contents: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .contents().displayName();
     }
 
     /**
@@ -480,6 +500,7 @@ public final class EditorPlotLabelsRenderer {
             // costs no more clicks than aiming at an arrow for it.
             case MODE -> CellKind.MODE_CYCLE;
             case COPIES -> CellKind.COPIES_CYCLE;
+            case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ENTER -> CellKind.BUTTON_ENTER_INSIDE;
             case ACTION -> actionRowCell(hitX, halfW);
             case CONTENTS -> CellKind.BUTTON_CONTENTS;
@@ -648,6 +669,13 @@ public final class EditorPlotLabelsRenderer {
                     int bg = hovered == CellKind.COPIES_CYCLE ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, copiesLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Contents — whether this room is furnished from the contents pool, and how a
+                // furnishing smaller than the room is fitted into it. Off by default.
+                case ROOM_CONTENTS -> {
+                    int bg = hovered == CellKind.ROOM_CONTENTS_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, roomContentsLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
                 // Enter — full-width button, visible only when the player is already inside the
                 // plot. Clicking dispatches EditorPlotActionPacket(ENTER_INSIDE) so the player
