@@ -74,7 +74,7 @@ public final class ContentsDespawnController {
      * {@code [despawn] restored=} stays non-zero on a steady one-directional ride, raise the grace
      * window rather than this radius.</p>
      */
-    static final double DESPAWN_RADIUS_BLOCKS = 60.0;
+    static final double DESPAWN_RADIUS_BLOCKS = 55.0;
     static final double DESPAWN_RADIUS_SQ = DESPAWN_RADIUS_BLOCKS * DESPAWN_RADIUS_BLOCKS;
 
     /**

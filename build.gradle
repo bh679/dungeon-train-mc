@@ -102,6 +102,18 @@ neoForge {
             if (localRelay) {
                 environment.put('DUNGEONTRAIN_RELAY_BASE_URL', localRelay.toString())
             }
+            // Server-perf-harness seam: ./gradlew runClient -PquickJoin=127.0.0.1:25571 auto-connects
+            // the dev client to a dedicated server instead of stopping at the main menu. The A/B
+            // harness measures the SERVER's [mspt], but the train is player-gated (TrainCarriageAppender
+            // returns early when players.isEmpty()), so a rider has to be aboard for there to be
+            // anything to measure. Property rather than env var for the same daemon-environment reason
+            // as relayBaseUrl above. Do NOT also pass --gameDir; ModDevGradle already supplies it and
+            // MC rejects the duplicate.
+            def quickJoin = project.findProperty('quickJoin')
+            if (quickJoin) {
+                programArgument '--quickPlayMultiplayer'
+                programArgument quickJoin.toString()
+            }
         }
 
         server {
