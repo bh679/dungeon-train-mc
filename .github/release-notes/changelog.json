@@ -6419,9 +6419,9 @@
         "\u7b80\u4f53\u4e2d\u6587 now shows as human-reviewed in the language list"
       ],
       "date": "2026-08-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.549.0",
+      "released_at": "2026-08-08T16:30:12Z"
     }
   ]
 }
