@@ -49,8 +49,8 @@ public final class PortalCarriageSelection {
     /** Slot of the exit corridor within its group. */
     public static final int SLOT_EXIT = 2;
 
-    /** One group in twenty holds a portal, on average. */
-    public static final int DEFAULT_CARRIAGE_EVERY = 20;
+    /** One group in seventeen holds a portal, on average. */
+    public static final int DEFAULT_CARRIAGE_EVERY = 17;
 
     /** Value meaning "no group holds a portal". */
     public static final int CARRIAGE_EVERY_OFF = 0;

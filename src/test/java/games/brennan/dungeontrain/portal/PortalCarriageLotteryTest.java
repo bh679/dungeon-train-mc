@@ -23,7 +23,7 @@ final class PortalCarriageLotteryTest {
     private static final int GROUP = 3;
     private static final long SEED = 0x5DEADBEEFL;
 
-    /** Groups sampled for the rate checks — enough that a 1-in-20 rate has ~1000 hits to count. */
+    /** Groups sampled for the rate checks — enough that a 1-in-17 rate has ~1000 hits to count. */
     private static final int SAMPLE_GROUPS = 20_000;
 
     /**
@@ -36,9 +36,9 @@ final class PortalCarriageLotteryTest {
     @DisplayName("the same carriage in the same world always gets the same verdict")
     void verdictIsStable() {
         for (int i = -5_000; i <= 5_000; i++) {
-            boolean first = PortalCarriageSelection.isPortalPart(i, GROUP, 20, SEED);
+            boolean first = PortalCarriageSelection.isPortalPart(i, GROUP, 17, SEED);
             for (int repeat = 0; repeat < 3; repeat++) {
-                assertEquals(first, PortalCarriageSelection.isPortalPart(i, GROUP, 20, SEED),
+                assertEquals(first, PortalCarriageSelection.isPortalPart(i, GROUP, 17, SEED),
                     "verdict drifted at index " + i);
             }
         }
@@ -48,8 +48,8 @@ final class PortalCarriageLotteryTest {
     @Test
     @DisplayName("two worlds pick different groups")
     void seedChangesTheDraw() {
-        Set<Integer> a = chosenAnchors(SEED, 20, 2_000);
-        Set<Integer> b = chosenAnchors(SEED + 1, 20, 2_000);
+        Set<Integer> a = chosenAnchors(SEED, 17, 2_000);
+        Set<Integer> b = chosenAnchors(SEED + 1, 17, 2_000);
 
         assertFalse(a.isEmpty(), "seed A chose nothing");
         assertFalse(b.isEmpty(), "seed B chose nothing");
@@ -59,7 +59,7 @@ final class PortalCarriageLotteryTest {
     @Test
     @DisplayName("roughly one group in every wins a portal")
     void rateMatchesEvery() {
-        for (int every : new int[] {2, 5, 20, 64}) {
+        for (int every : new int[] {2, 5, 17, 64}) {
             int hits = chosenAnchors(SEED, every, SAMPLE_GROUPS).size();
             double expected = (double) SAMPLE_GROUPS / every;
             // Generous: this guards against a hash that clumps or skews, not against ordinary
@@ -80,7 +80,7 @@ final class PortalCarriageLotteryTest {
         Set<Integer> gaps = new HashSet<>();
         int previous = Integer.MIN_VALUE;
         for (int anchor = 0; anchor < SAMPLE_GROUPS * GROUP; anchor += GROUP) {
-            if (!PortalCarriageSelection.isPortalPart(anchor, GROUP, 20, SEED)) continue;
+            if (!PortalCarriageSelection.isPortalPart(anchor, GROUP, 17, SEED)) continue;
             if (previous != Integer.MIN_VALUE) gaps.add((anchor - previous) / GROUP);
             previous = anchor;
         }
@@ -109,10 +109,10 @@ final class PortalCarriageLotteryTest {
         int behind = 0;
         int ahead = 0;
         for (int group = 1; group <= SAMPLE_GROUPS; group++) {
-            if (PortalCarriageSelection.isPortalPart(-group * GROUP, GROUP, 20, SEED)) behind++;
-            if (PortalCarriageSelection.isPortalPart(group * GROUP, GROUP, 20, SEED)) ahead++;
+            if (PortalCarriageSelection.isPortalPart(-group * GROUP, GROUP, 17, SEED)) behind++;
+            if (PortalCarriageSelection.isPortalPart(group * GROUP, GROUP, 17, SEED)) ahead++;
         }
-        double expected = (double) SAMPLE_GROUPS / 20;
+        double expected = (double) SAMPLE_GROUPS / 17;
         assertTrue(behind > expected * 0.75 && behind < expected * 1.25,
             "behind the origin: " + behind + " of " + SAMPLE_GROUPS + ", expected about " + expected);
         assertTrue(ahead > expected * 0.75 && ahead < expected * 1.25,
