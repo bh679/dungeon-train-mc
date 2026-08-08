@@ -54,18 +54,66 @@ class PortalRoomSettingsTest {
     }
 
     @Test
-    @DisplayName("Every settings pair round-trips through its tag")
+    @DisplayName("Every settings triple round-trips through its tag")
     void roundTrip() {
         for (PortalRoomMode mode : PortalRoomMode.values()) {
             for (PortalRoomCopies copies : PortalRoomCopies.values()) {
-                PortalRoomSettings original = new PortalRoomSettings(mode, copies);
-                PortalRoomSettings back = PortalRoomSettings.parse(original.toTag());
-                assertEquals(mode, back.mode(), original.toTag());
-                // The sub-mode only survives where it means anything; elsewhere it reads as default.
-                assertEquals(original.copiesApply() ? copies : PortalRoomCopies.DEFAULT,
-                    back.copies(), original.toTag());
+                for (PortalRoomContents contents : PortalRoomContents.values()) {
+                    PortalRoomSettings original = new PortalRoomSettings(mode, copies, contents);
+                    PortalRoomSettings back = PortalRoomSettings.parse(original.toTag());
+                    assertEquals(mode, back.mode(), original.toTag());
+                    // The sub-mode only survives where it means anything; elsewhere it reads as default.
+                    assertEquals(original.copiesApply() ? copies : PortalRoomCopies.DEFAULT,
+                        back.copies(), original.toTag());
+                    assertEquals(contents, back.contents(), original.toTag());
+                }
             }
         }
+    }
+
+    @Test
+    @DisplayName("Contents is only written when it changes something")
+    void contentsOmittedAtItsDefault() {
+        assertEquals("bedrock_lock", PortalRoomSettings.DEFAULT.toTag());
+        assertEquals("bedrock_lock/exact/fit",
+            PortalRoomSettings.DEFAULT.withContents(PortalRoomContents.FIT).toTag());
+        assertEquals("endless_repetition/dynamic/tile",
+            new PortalRoomSettings(PortalRoomMode.ENDLESS_REPETITION, PortalRoomCopies.DYNAMIC,
+                PortalRoomContents.TILE).toTag());
+    }
+
+    @Test
+    @DisplayName("Tags written before Contents existed still read, as unfurnished rooms")
+    void shorterTagsStillParse() {
+        // Every tag any earlier version could have written: one segment, or two.
+        assertSame(PortalRoomContents.DEFAULT, PortalRoomSettings.parse("bedrock_lock").contents());
+        assertSame(PortalRoomContents.DEFAULT, PortalRoomSettings.parse("endless_open").contents());
+        PortalRoomSettings twoPart = PortalRoomSettings.parse("endless_repetition/dynamic");
+        assertSame(PortalRoomMode.ENDLESS_REPETITION, twoPart.mode());
+        assertSame(PortalRoomCopies.DYNAMIC, twoPart.copies());
+        assertSame(PortalRoomContents.DEFAULT, twoPart.contents());
+    }
+
+    @Test
+    @DisplayName("A misspelt Contents segment leaves the room unfurnished without losing the rest")
+    void contentsParseIsTotal() {
+        PortalRoomSettings s = PortalRoomSettings.parse("endless_repetition/dynamic/tyle");
+        assertSame(PortalRoomMode.ENDLESS_REPETITION, s.mode());
+        assertSame(PortalRoomCopies.DYNAMIC, s.copies());
+        assertSame(PortalRoomContents.DEFAULT, s.contents());
+    }
+
+    @Test
+    @DisplayName("Setting one control leaves the other two alone")
+    void withersAreIndependent() {
+        PortalRoomSettings all = new PortalRoomSettings(
+            PortalRoomMode.ENDLESS_REPETITION, PortalRoomCopies.DYNAMIC, PortalRoomContents.FIT);
+        assertSame(PortalRoomContents.FIT, all.withMode(PortalRoomMode.BEDROCKLESS).contents());
+        assertSame(PortalRoomCopies.DYNAMIC, all.withMode(PortalRoomMode.BEDROCKLESS).copies());
+        assertSame(PortalRoomContents.FIT, all.withCopies(PortalRoomCopies.EXACT).contents());
+        assertSame(PortalRoomMode.ENDLESS_REPETITION,
+            all.withContents(PortalRoomContents.OFF).mode());
+        assertSame(PortalRoomCopies.DYNAMIC, all.withContents(PortalRoomContents.OFF).copies());
     }
 
     @Test

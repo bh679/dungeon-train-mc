@@ -179,6 +179,8 @@ public final class EditorMenuScreen implements MenuScreen {
             if (modeRow != null) out.add(modeRow);
             CommandMenuEntry copiesRow = copiesRowFor(EditorStatusHudOverlay.roomMode());
             if (copiesRow != null) out.add(copiesRow);
+            CommandMenuEntry contentsRow = roomContentsRowFor(EditorStatusHudOverlay.roomMode());
+            if (contentsRow != null) out.add(contentsRow);
         }
 
         // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases
@@ -360,6 +362,20 @@ public final class EditorMenuScreen implements MenuScreen {
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.copiesLabel(currentMode),
             "dungeontrain editor portals copies next");
+    }
+
+    /**
+     * The Contents row — whether the room is furnished from the ordinary contents pool, and how a
+     * furnishing smaller than the room is fitted into it.
+     *
+     * <p>Shown for every portal room, unlike Copies: furnishing is not a property of the walls, so a
+     * sealed room can take one as readily as a repeating one.</p>
+     */
+    static CommandMenuEntry roomContentsRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.roomContentsLabel(currentMode),
+            "dungeontrain editor portals contents next");
     }
 
     static CommandMenuEntry sizeTripleFor(String axis, String label, int current) {

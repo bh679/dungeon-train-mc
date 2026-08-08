@@ -152,6 +152,7 @@ public final class EditorPlotPanelInputHandler {
             case HEIGHT_TYPE -> openAxisEntry(entry, "height", "Height", entry.roomHeight());
             case MODE_CYCLE -> dispatchModeCycle(entry);
             case COPIES_CYCLE -> dispatchCopiesCycle(entry);
+            case ROOM_CONTENTS_CYCLE -> dispatchRoomContentsCycle(entry);
             case ACTION_SAVE -> dispatchAction(entry, EditorPlotActionPacket.Action.SAVE);
             case ACTION_RESET -> dispatchAction(entry, EditorPlotActionPacket.Action.RESET);
             case ACTION_CLEAR -> dispatchAction(entry, EditorPlotActionPacket.Action.CLEAR);
@@ -202,6 +203,13 @@ public final class EditorPlotPanelInputHandler {
     /** Step the portal room the player is standing in to its next copies sub-mode. */
     private static void dispatchCopiesCycle(EditorPlotLabelsPacket.Entry entry) {
         String cmd = EditorPlotTeleport.copiesCycleCommandFor(entry.category());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /** Step the portal room the player is standing in to the next Contents value. */
+    private static void dispatchRoomContentsCycle(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.roomContentsCycleCommandFor(entry.category());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
