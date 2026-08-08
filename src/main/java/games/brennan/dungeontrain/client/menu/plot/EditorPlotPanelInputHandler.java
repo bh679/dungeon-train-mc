@@ -242,8 +242,26 @@ public final class EditorPlotPanelInputHandler {
      * stacks the contents screen on top so the user lands directly in it.
      */
     private static void openContents(EditorPlotLabelsPacket.Entry entry) {
-        if (!"CARRIAGES".equals(entry.category())) return;
+        CarriageContentsAllowScreen screen = contentsScreenFor(entry);
+        if (screen == null) return;
         CommandMenuState.open();
-        CommandMenuState.drillIn(new CarriageContentsAllowScreen(entry.modelId()));
+        CommandMenuState.drillIn(screen);
+    }
+
+    /**
+     * The allow-list screen for {@code entry}, or null for a category that has no contents pool.
+     *
+     * <p>A carriage is addressed by its variant id ({@code modelId}); a portal room by its name
+     * ({@code modelName}) — {@code modelId} is the kind tag {@code "portal_room"} and is the same
+     * for every room, so using it would point every room's toggles at one shared sidecar.</p>
+     */
+    private static CarriageContentsAllowScreen contentsScreenFor(EditorPlotLabelsPacket.Entry entry) {
+        if ("CARRIAGES".equals(entry.category())) {
+            return CarriageContentsAllowScreen.forCarriage(entry.modelId());
+        }
+        if ("PORTALS".equals(entry.category())) {
+            return CarriageContentsAllowScreen.forPortalRoom(entry.modelName());
+        }
+        return null;
     }
 }

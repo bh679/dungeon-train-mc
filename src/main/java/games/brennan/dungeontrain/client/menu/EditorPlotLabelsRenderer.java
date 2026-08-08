@@ -432,9 +432,21 @@ public final class EditorPlotLabelsRenderer {
             || "PORTALS".equals(c);
     }
 
-    /** Contents button — carriages only, gated on the player being inside the plot. */
+    /**
+     * Contents button — opens the per-template allow-list. Gated on the player being inside the
+     * plot, and on there being a pool for the toggles to steer.
+     *
+     * <p>Carriages always have one. A portal room only has one <b>while its Contents setting is
+     * on</b>: with it Off the room draws nothing, so an allow-list would be a screen full of
+     * toggles that change nothing. The setting rides in the room's own mode tag, already on the
+     * entry, so the button appears and disappears as the Contents row above it is cycled.</p>
+     */
     public static boolean hasContentsButton(EditorPlotLabelsPacket.Entry entry) {
-        return entry.inPlot() && "CARRIAGES".equals(entry.category());
+        if (!entry.inPlot()) return false;
+        if ("CARRIAGES".equals(entry.category())) return true;
+        return hasRoomContentsRow(entry)
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+                .contents().furnishes();
     }
 
     /** True when the weight arrows (interactive [-] / [+]) should render and accept clicks. */

@@ -84,4 +84,41 @@ final class CarriageContentsAllowScreenTest {
     void title_isContents() {
         assertEquals("Contents", new CarriageContentsAllowScreen("standard").title());
     }
+
+    // ---- the portal-room face of the same screen ----
+
+    @Test
+    @DisplayName("forPortalRoom targets the room subcommand, splicing the room NAME")
+    void portalRoom_commandStrings() {
+        CarriageContentsAllowScreen screen = CarriageContentsAllowScreen.forPortalRoom("window_contents");
+        CommandMenuEntry.Toggle row = (CommandMenuEntry.Toggle) screen.entries().get(0);
+        assertEquals("default", row.label());
+        assertEquals("dungeontrain editor portal-room-contents window_contents default on",
+            row.cmdToTurnOn());
+        assertEquals("dungeontrain editor portal-room-contents window_contents default off",
+            row.cmdToTurnOff());
+    }
+
+    @Test
+    @DisplayName("forCarriage is the plain constructor — the carriage command is unchanged")
+    void carriageFactory_matchesConstructor() {
+        CommandMenuEntry.Toggle viaFactory = (CommandMenuEntry.Toggle)
+            CarriageContentsAllowScreen.forCarriage("standard").entries().get(0);
+        CommandMenuEntry.Toggle viaCtor = (CommandMenuEntry.Toggle)
+            new CarriageContentsAllowScreen("standard").entries().get(0);
+        assertEquals(viaCtor.cmdToTurnOn(), viaFactory.cmdToTurnOn());
+        assertEquals(viaCtor.cmdToTurnOff(), viaFactory.cmdToTurnOff());
+        assertEquals("dungeontrain editor carriage-contents standard default on",
+            viaFactory.cmdToTurnOn());
+    }
+
+    @Test
+    @DisplayName("Both faces share the row set and the title — only the subcommand differs")
+    void bothFacesShareEverythingElse() {
+        CarriageContentsAllowScreen room = CarriageContentsAllowScreen.forPortalRoom("book");
+        CarriageContentsAllowScreen carriage = CarriageContentsAllowScreen.forCarriage("standard");
+        assertEquals(carriage.entries().size(), room.entries().size());
+        assertEquals("Contents", room.title());
+        assertEquals("book", room.variantId());
+    }
 }
