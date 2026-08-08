@@ -102,11 +102,45 @@ neoForge {
             if (localRelay) {
                 environment.put('DUNGEONTRAIN_RELAY_BASE_URL', localRelay.toString())
             }
+
+            // ---- Far-carriage LOD A/B harness seams (scripts/lodperf/run-ab.sh) ----
+            // Project properties rather than env vars for the same reason as relayBaseUrl above:
+            // a forked run inherits the Gradle DAEMON's environment, not the invoking shell's.
+
+            // -PlodEnabled=false starts with the LOD off. The in-game toggle is a CLIENT command,
+            // so it can't be driven from a dedicated server's console; the A/B protocol restarts
+            // the client per arm, which makes a launch switch the right shape.
+            if (project.hasProperty('lodEnabled')) {
+                systemProperty 'dungeontrain.lod.enabled', project.property('lodEnabled').toString()
+            }
+            // -PlodPerfSample turns on the [lodperf] frametime percentile sampler.
+            if (project.hasProperty('lodPerfSample')) {
+                systemProperty 'dungeontrain.lodPerfSample', 'true'
+            }
+            // -PlodPerfWindowMs=120000 makes the whole measurement period one window, so each arm
+            // reports one true distribution instead of percentiles-of-percentiles.
+            if (project.hasProperty('lodPerfWindowMs')) {
+                systemProperty 'dungeontrain.lodPerfWindowMs', project.property('lodPerfWindowMs').toString()
+            }
+            // -PjoinServer=127.0.0.1:25565 auto-connects on launch, so the harness never has to
+            // drive the multiplayer menu.
+            if (project.hasProperty('joinServer')) {
+                programArguments.addAll '--quickPlayMultiplayer', project.property('joinServer').toString()
+            }
+            // -PgameDir=<dir> isolates this run's game directory. Required for the harness: client
+            // and server both default to run/, and would otherwise fight over run/logs/latest.log.
+            if (project.hasProperty('gameDir')) {
+                gameDirectory = file(project.property('gameDir').toString())
+            }
         }
 
         server {
             server()
             programArgument '--nogui'
+            // See the client block — the harness needs the server in its own game directory.
+            if (project.hasProperty('gameDir')) {
+                gameDirectory = file(project.property('gameDir').toString())
+            }
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
             // Same local-relay seam as the client above. The SERVER is what fetches the community
             // book + narrative pools (SharedBookRefreshEvents ticks server-side), so verifying that

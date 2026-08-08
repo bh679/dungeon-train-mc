@@ -42,7 +42,23 @@ public final class CarriageLodController {
      * matched-toggle A/B measurement, and as a safety valve. When off, the next reconcile promotes
      * every currently-far carriage back to the full chunk render.
      */
-    public static volatile boolean ENABLED = true;
+    public static volatile boolean ENABLED = initialEnabled();
+
+    /**
+     * Initial state, overridable at launch with {@code -Ddungeontrain.lod.enabled=false}.
+     *
+     * <p>Exists for the A/B harness. The in-game toggle is a <em>client</em> command, so it cannot
+     * be driven from a dedicated server's console — and the measurement protocol restarts both
+     * server and client per arm anyway, which makes a launch-time switch both sufficient and
+     * cleaner than automating keystrokes into the game window. Same property-gated shape as the
+     * {@code genDetLog} worldgen-determinism seam in {@code build.gradle}.</p>
+     *
+     * <p>Absent property → {@code true} (shipped behaviour).</p>
+     */
+    private static boolean initialEnabled() {
+        String prop = System.getProperty("dungeontrain.lod.enabled");
+        return prop == null || Boolean.parseBoolean(prop);
+    }
 
     /**
      * Distance (blocks, world space, camera → carriage centre) beyond which a carriage demotes to
