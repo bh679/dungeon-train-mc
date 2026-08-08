@@ -6342,6 +6342,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "no-mobs-under-bedrock",
+      "version": "0.539.0",
+      "type": "fix",
+      "title": "Monsters no longer spawn in the empty dark below the world",
+      "summary": "Portal rooms are built in an empty basement beneath the world's bedrock, and the game still treated that space as somewhere ordinary monsters could turn up \u2014 on a room's roof, in the gap just outside its walls, or anywhere else down there the dark reached. Nothing arrives on its own below the bedrock now. The mobs a portal room is built with are unaffected, and so is anything you bring down there yourself.",
+      "highlights": [
+        "Fixed: skeletons and zombies gathering around portal rooms, below the world's bedrock",
+        "Nothing spawns of its own accord beneath the bedrock layer",
+        "A portal room's own mobs, and any you lead in yourself, are untouched"
+      ],
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
