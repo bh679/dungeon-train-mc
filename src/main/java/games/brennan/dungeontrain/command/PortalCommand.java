@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.portal.PortalAnchors;
 import games.brennan.dungeontrain.portal.PortalBuilder;
@@ -82,14 +83,11 @@ public final class PortalCommand {
                 .then(Commands.argument("spacing", IntegerArgumentType.integer(PortalAnchors.MIN_SPACING, 100_000))
                     .executes(ctx -> runAuto(ctx.getSource(),
                         IntegerArgumentType.getInteger(ctx, "spacing")))))
+            // On/off only. A portal spans exactly one carriage group — its entry and exit are that
+            // group's first and last carriage — so there is no spacing left to set.
             .then(Commands.literal("carriage")
-                .then(Commands.literal("off")
-                    .executes(ctx -> runCarriage(ctx.getSource(), PortalCarriageSelection.CARRIAGE_EVERY_OFF)))
-                // Minimum 3: each twin is its corridor plus a pocket room, about 24 blocks, so
-                // portals closer than 3 carriages (27 blocks) apart would stamp twins into each other.
-                .then(Commands.argument("every", IntegerArgumentType.integer(3, 64))
-                    .executes(ctx -> runCarriage(ctx.getSource(),
-                        IntegerArgumentType.getInteger(ctx, "every")))))
+                .then(Commands.literal("off").executes(ctx -> runCarriage(ctx.getSource(), false)))
+                .then(Commands.literal("on").executes(ctx -> runCarriage(ctx.getSource(), true))))
             // Rarity, as distinct from the spacing above: 1 accepts every candidate pair the
             // lattice offers (the old dense dev layout), 20 is the shipped default.
             .then(Commands.literal("rarity")
@@ -234,19 +232,20 @@ public final class PortalCommand {
         }
     }
 
-    private static int runCarriage(CommandSourceStack source, int every) {
-        PortalRegistry.get(source.getLevel()).setCarriageEvery(every);
+    /** Carriages already stamped keep their corridor until the rolling window re-places them. */
+    private static final String RESTAMP_NOTE =
+        " Carriages already stamped keep what they have until the rolling window re-places them.";
 
-        if (every == PortalCarriageSelection.CARRIAGE_EVERY_OFF) {
-            source.sendSuccess(() -> Component.literal(
-                "Portal carriages off. Carriages already stamped keep their corridor until the "
-                    + "rolling window re-places them."), true);
+    private static int runCarriage(CommandSourceStack source, boolean enabled) {
+        PortalRegistry.get(source.getLevel()).setCarriagesEnabled(enabled);
+
+        if (!enabled) {
+            source.sendSuccess(() -> Component.literal("Portal carriages off." + RESTAMP_NOTE), true);
             return 1;
         }
 
         source.sendSuccess(() -> Component.literal(
-            "Portal pairs now span " + every + " carriages from entry to exit. How often a pair "
-                + "occurs is set by /dungeontrain portal rarity."), true);
+            "Portal carriages on — " + describeDensity(source) + "." + RESTAMP_NOTE), true);
         return 1;
     }
 
@@ -254,22 +253,36 @@ public final class PortalCommand {
         PortalRegistry.get(source.getLevel()).setOneInGroups(groups);
 
         source.sendSuccess(() -> Component.literal(
-            groups == 1
-                ? "Every candidate pair is now a portal — the dense dev layout."
-                : "Roughly one portal pair per " + groups + " carriage groups. Carriages already "
-                    + "stamped keep their corridor until the rolling window re-places them."), true);
+            (groups == 1
+                ? "Every carriage group is now a portal group — the dense dev layout."
+                : "Roughly one carriage group in " + groups + " is now a portal group.")
+                + RESTAMP_NOTE), true);
         return 1;
+    }
+
+    /**
+     * How often portals occur and how much of the train one takes up, in one phrase — including the
+     * group size, since that is what decides a portal's length and can make portals impossible.
+     */
+    private static String describeDensity(CommandSourceStack source) {
+        int groups = PortalRegistry.get(source.getLevel()).oneInGroups();
+        int groupSize = DungeonTrainConfig.getGroupSize();
+
+        if (groupSize < PortalCarriageSelection.MIN_GROUP_SIZE) {
+            return "but groupSize is " + groupSize + ", so no portals can be placed: a portal needs a "
+                + "group with a first and a last carriage to put its entry and exit in";
+        }
+        return (groups == 1 ? "every carriage group" : "roughly one carriage group in " + groups)
+            + " is a portal, spanning that whole group (" + groupSize + " carriages, entry to exit)";
     }
 
     private static int runList(CommandSourceStack source) {
         PortalRegistry registry = PortalRegistry.get(source.getLevel());
         int spacing = registry.autoSpacing();
-        int every = registry.carriageEvery();
-        int groups = registry.oneInGroups();
-        source.sendSuccess(() -> Component.literal(every == PortalCarriageSelection.CARRIAGE_EVERY_OFF
-            ? "Portal carriages: off"
-            : "Portal carriages: pairs spanning " + every + " carriages, roughly one per "
-                + groups + " group" + (groups == 1 ? "" : "s")), false);
+        boolean enabled = registry.carriagesEnabled();
+        source.sendSuccess(() -> Component.literal(enabled
+            ? "Portal carriages: " + describeDensity(source)
+            : "Portal carriages: off"), false);
         source.sendSuccess(() -> Component.literal(spacing == PortalAnchors.SPACING_OFF
             ? "Auto-spawning: off"
             : "Auto-spawning: every " + spacing + " blocks"), false);

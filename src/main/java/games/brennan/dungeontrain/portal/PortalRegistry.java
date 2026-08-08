@@ -31,7 +31,7 @@ public final class PortalRegistry extends SavedData {
 
     private static final String TAG_PORTALS = "portals";
     private static final String TAG_AUTO_SPACING = "autoSpacing";
-    private static final String TAG_CARRIAGE_EVERY = "carriageEvery";
+    private static final String TAG_CARRIAGES_ENABLED = "carriagesEnabled";
     private static final String TAG_ONE_IN_GROUPS = "oneInGroups";
     private static final String TAG_ORIGIN_X = "originX";
     private static final String TAG_FLOOR_Y = "floorY";
@@ -50,18 +50,15 @@ public final class PortalRegistry extends SavedData {
      */
     private int autoSpacing = DEFAULT_AUTO_SPACING;
 
-    /**
-     * Every nth carriage is a portal corridor. Persisted for the same reason as the spacing above:
-     * a carriage's blocks are re-stamped whenever the rolling window brings it round again, so this
-     * has to give the same answer after a reload or a corridor would quietly become an ordinary
-     * carriage under a player standing in it.
-     */
-    private int carriageEvery = PortalCarriageSelection.DEFAULT_CARRIAGE_EVERY;
+    /** Whether any carriage along the train is a portal corridor at all. */
+    private boolean carriagesEnabled = true;
 
     /**
-     * How rare portal pairs are: on average one pair per this many carriage groups. Persisted for
-     * the same reason as the spacing above — it feeds the same re-stamp-stable verdict, so a world
-     * that forgot it would re-roll which carriages are corridors on every reload.
+     * How rare portal groups are: on average one carriage group in this many. Persisted for the same
+     * reason as the spacing above — a carriage's blocks are re-stamped whenever the rolling window
+     * brings it round again, so a world that forgot this would re-decide which carriages are
+     * corridors on every reload, and one could quietly stop being a portal under a player standing
+     * in it.
      */
     private int oneInGroups = PortalCarriageSelection.DEFAULT_ONE_IN_GROUPS;
 
@@ -125,23 +122,21 @@ public final class PortalRegistry extends SavedData {
     }
 
     /**
-     * Carriages between a portal pair's entry and exit corridor — and so the lattice portal
-     * carriages can land on at all. {@link PortalCarriageSelection#CARRIAGE_EVERY_OFF} for none.
-     *
-     * <p>This is the pair's <i>spacing</i>, not how often pairs occur; that is
-     * {@link #oneInGroups()}.</p>
+     * Whether portal carriages are placed along the train at all. How often they occur is
+     * {@link #oneInGroups()}; how far apart a pair's two carriages sit is not configurable — a
+     * portal spans exactly one carriage group. See {@link PortalCarriageSelection}.
      */
-    public synchronized int carriageEvery() {
-        return carriageEvery;
+    public synchronized boolean carriagesEnabled() {
+        return carriagesEnabled;
     }
 
-    public synchronized void setCarriageEvery(int every) {
-        if (carriageEvery == every) return;
-        carriageEvery = every;
+    public synchronized void setCarriagesEnabled(boolean enabled) {
+        if (carriagesEnabled == enabled) return;
+        carriagesEnabled = enabled;
         setDirty();
     }
 
-    /** On average one portal pair per this many carriage groups. See {@link PortalCarriageSelection}. */
+    /** On average one carriage group in this many is a portal group. See {@link PortalCarriageSelection}. */
     public synchronized int oneInGroups() {
         return oneInGroups;
     }
@@ -167,11 +162,11 @@ public final class PortalRegistry extends SavedData {
         if (tag.contains(TAG_AUTO_SPACING)) {
             data.autoSpacing = tag.getInt(TAG_AUTO_SPACING);
         }
-        if (tag.contains(TAG_CARRIAGE_EVERY)) {
-            data.carriageEvery = tag.getInt(TAG_CARRIAGE_EVERY);
+        if (tag.contains(TAG_CARRIAGES_ENABLED)) {
+            data.carriagesEnabled = tag.getBoolean(TAG_CARRIAGES_ENABLED);
         }
         // Absent in worlds saved before portal rarity existed, which is exactly the case that should
-        // pick up the new default rather than the old every-candidate-pair density.
+        // pick up the new default rather than the old every-group density.
         if (tag.contains(TAG_ONE_IN_GROUPS)) {
             data.oneInGroups = tag.getInt(TAG_ONE_IN_GROUPS);
         }
@@ -203,7 +198,7 @@ public final class PortalRegistry extends SavedData {
     @Override
     public synchronized CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putInt(TAG_AUTO_SPACING, autoSpacing);
-        tag.putInt(TAG_CARRIAGE_EVERY, carriageEvery);
+        tag.putBoolean(TAG_CARRIAGES_ENABLED, carriagesEnabled);
         tag.putInt(TAG_ONE_IN_GROUPS, oneInGroups);
 
         ListTag list = new ListTag();

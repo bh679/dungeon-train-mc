@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,25 +12,24 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Pure-math tests for {@link PortalCarriageSelection} — the rarity gate that thins the portal-carriage
- * lattice down to roughly one pair per {@code oneInGroups} carriage groups.
+ * Pure-math tests for {@link PortalCarriageSelection} — which carriage groups are portal groups, and
+ * which carriages within them carry a corridor.
  */
 final class PortalCarriageSelectionTest {
 
     private static final long SEED = 0x5EEDCAFEL;
-    private static final int EVERY = PortalCarriageSelection.DEFAULT_CARRIAGE_EVERY;
     private static final int GROUP_SIZE = 3;
     private static final int ONE_IN = PortalCarriageSelection.DEFAULT_ONE_IN_GROUPS;
 
     private static boolean isPortal(int index) {
-        return PortalCarriageSelection.isPortalCarriage(SEED, index, EVERY, ONE_IN, GROUP_SIZE);
+        return PortalCarriageSelection.isPortalCarriage(SEED, index, true, ONE_IN, GROUP_SIZE);
     }
 
     /** The ENTRY carriage indices accepted over {@code [-half, half)}. */
     private static List<Integer> acceptedEntries(int half) {
         List<Integer> entries = new ArrayList<>();
         for (int i = -half; i < half; i++) {
-            if (isPortal(i) && PortalCarriageRole.roleFor(i, EVERY) == PortalCarriageRole.ENTRY) {
+            if (isPortal(i) && PortalCarriageRole.roleFor(i, GROUP_SIZE) == PortalCarriageRole.ENTRY) {
                 entries.add(i);
             }
         }
@@ -37,36 +37,73 @@ final class PortalCarriageSelectionTest {
     }
 
     @Test
-    @DisplayName("off means no carriage is a portal, whatever the rarity says")
-    void offWins() {
+    @DisplayName("disabled means no carriage is a portal, whatever the rarity says")
+    void disabledWins() {
         for (int i = -20; i <= 20; i++) {
-            assertFalse(PortalCarriageSelection.isPortalCarriage(
-                SEED, i, PortalCarriageSelection.CARRIAGE_EVERY_OFF, 1, GROUP_SIZE));
+            assertFalse(PortalCarriageSelection.isPortalCarriage(SEED, i, false, 1, GROUP_SIZE));
+        }
+    }
+
+    /**
+     * At group size 1 the first and last carriage of a group are the same one, so an entry and its
+     * exit would collide. There is nowhere for the pair to go, so no portals are placed.
+     */
+    @Test
+    @DisplayName("a group too small to hold a pair gets no portals at all")
+    void groupSizeOneIsDeclined() {
+        for (int i = -50; i <= 50; i++) {
+            assertFalse(PortalCarriageSelection.isPortalCarriage(SEED, i, true, 1, 1),
+                "index " + i + " was made a portal in a group of 1");
         }
     }
 
     @Test
-    @DisplayName("portal carriages still only land on the entry/exit lattice")
-    void staysOnLattice() {
-        for (int i = -200; i <= 200; i++) {
-            if (Math.floorMod(i, EVERY) != 0) {
-                assertFalse(isPortal(i), "index " + i + " is off the lattice but was selected");
+    @DisplayName("at group size 2 the pair is the whole group: entry then exit, nothing between")
+    void groupSizeTwoIsAdjacent() {
+        for (int i = -50; i <= 50; i++) {
+            // rarity 1 selects every group, so every carriage of every group is one role or the other.
+            assertTrue(PortalCarriageSelection.isPortalCarriage(SEED, i, true, 1, 2),
+                "index " + i + " was not a portal at groupSize 2, rarity 1");
+        }
+    }
+
+    @Test
+    @DisplayName("only a group's first and last carriage carry a corridor")
+    void middleCarriagesAreOrdinaryTrain() {
+        for (int i = -300; i <= 300; i++) {
+            int slot = Math.floorMod(i, GROUP_SIZE);
+            if (slot != 0 && slot != GROUP_SIZE - 1) {
+                assertFalse(isPortal(i), "middle-of-group index " + i + " was made a portal");
             }
         }
     }
 
     /**
-     * The invariant the whole design rests on: the gate is applied to the pair, not the carriage, so
-     * an ENTRY and the EXIT it hands off to are accepted or rejected together. A half-accepted pair
-     * would be a corridor that opens into a room with no way back onto the train.
+     * The invariant the whole design rests on: a group is one Sable sub-level, and a pair's room is
+     * anchored to its entry carriage. An exit in a neighbouring group would map into a room that
+     * drifts away from it.
      */
+    @Test
+    @DisplayName("a portal never spans a group boundary")
+    void portalsStayInsideOneGroup() {
+        for (int i = -600; i <= 600; i++) {
+            if (!isPortal(i)) continue;
+            int partner = PortalCarriageRole.partnerIndex(i, GROUP_SIZE);
+            assertEquals(
+                PortalCarriageRole.entryIndexOf(i, GROUP_SIZE),
+                PortalCarriageRole.entryIndexOf(partner, GROUP_SIZE),
+                "portal carriage " + i + " and its partner " + partner + " are in different groups");
+        }
+    }
+
     @Test
     @DisplayName("both carriages of a pair are accepted or rejected together")
     void pairsAreNeverSplit() {
-        for (int i = -400; i <= 400; i += EVERY) {
-            int partner = PortalCarriageRole.partnerIndex(i, EVERY);
-            assertEquals(isPortal(i), isPortal(partner),
-                "index " + i + " and partner " + partner + " disagreed");
+        for (int i = -600; i <= 600; i++) {
+            if (Math.floorMod(i, GROUP_SIZE) != 0) continue;   // walk the entries
+            int exit = PortalCarriageRole.partnerIndex(i, GROUP_SIZE);
+            assertEquals(isPortal(i), isPortal(exit),
+                "entry " + i + " and exit " + exit + " disagreed");
         }
     }
 
@@ -89,9 +126,9 @@ final class PortalCarriageSelectionTest {
     @DisplayName("different world seeds place portals differently")
     void seedChangesTheLayout() {
         boolean differs = false;
-        for (int i = -400; i <= 400; i += EVERY) {
-            if (PortalCarriageSelection.isPortalCarriage(SEED, i, EVERY, ONE_IN, GROUP_SIZE)
-                != PortalCarriageSelection.isPortalCarriage(SEED + 1, i, EVERY, ONE_IN, GROUP_SIZE)) {
+        for (int i = -600; i <= 600; i += GROUP_SIZE) {
+            if (PortalCarriageSelection.isPortalCarriage(SEED, i, true, ONE_IN, GROUP_SIZE)
+                != PortalCarriageSelection.isPortalCarriage(SEED + 1, i, true, ONE_IN, GROUP_SIZE)) {
                 differs = true;
                 break;
             }
@@ -100,54 +137,45 @@ final class PortalCarriageSelectionTest {
     }
 
     @Test
-    @DisplayName("roughly one portal pair per oneInGroups carriage groups")
+    @DisplayName("roughly one carriage group in oneInGroups is a portal group")
     void frequencyMatchesTheSetting() {
-        int half = 100_000;
-        int carriages = half * 2;
-        int pairs = acceptedEntries(half).size();
+        int half = 150_000;
+        int groups = (half * 2) / GROUP_SIZE;
+        int portalGroups = acceptedEntries(half).size();
 
-        double expected = (double) carriages / (ONE_IN * GROUP_SIZE);
+        double expected = (double) groups / ONE_IN;
         // ±15%: the hash is not a perfect uniform generator and the sample, while large, is finite.
-        assertTrue(pairs > expected * 0.85 && pairs < expected * 1.15,
-            "expected about " + Math.round(expected) + " pairs over " + carriages
-                + " carriages, got " + pairs);
+        assertTrue(portalGroups > expected * 0.85 && portalGroups < expected * 1.15,
+            "expected about " + Math.round(expected) + " portal groups out of " + groups
+                + ", got " + portalGroups);
     }
 
     /**
-     * The point of the change was to stop portals arriving on a metronome. A hash that degenerated to
-     * "every nth candidate" would still pass the frequency test above, so check the gaps actually vary.
+     * The point of the rarity change was to stop portals arriving on a metronome. A hash that
+     * degenerated to "every nth group" would still pass the frequency test above, so check the gaps
+     * actually vary.
      */
     @Test
-    @DisplayName("accepted pairs are irregularly spaced, not on a fixed interval")
+    @DisplayName("portal groups are irregularly spaced, not on a fixed interval")
     void spacingIsIrregular() {
-        List<Integer> entries = acceptedEntries(20_000);
-        assertTrue(entries.size() > 20, "not enough pairs to judge spacing: " + entries.size());
+        List<Integer> entries = acceptedEntries(30_000);
+        assertTrue(entries.size() > 20, "not enough portal groups to judge spacing: " + entries.size());
 
-        long distinctGaps = new java.util.HashSet<>(gapsBetween(entries)).size();
-        assertTrue(distinctGaps > 3,
-            "portal pairs fell on a near-fixed interval (" + distinctGaps + " distinct gaps)");
-    }
-
-    private static List<Integer> gapsBetween(List<Integer> entries) {
         List<Integer> gaps = new ArrayList<>();
         for (int i = 1; i < entries.size(); i++) {
             gaps.add(entries.get(i) - entries.get(i - 1));
         }
-        return gaps;
+        assertTrue(new HashSet<>(gaps).size() > 3,
+            "portal groups fell on a near-fixed interval (" + new HashSet<>(gaps).size() + " distinct gaps)");
     }
 
-    /**
-     * Carriage indices go negative when the train extends backwards. {@code floorDiv}/{@code floorMod}
-     * keep the lattice and the pairing symmetric about the origin; {@code /} and {@code %} would not.
-     */
     @Test
     @DisplayName("the backwards half of the train gets portals at the same rate")
     void negativeIndicesBehave() {
-        int half = 60_000;
+        int half = 90_000;
         int behind = 0;
         int ahead = 0;
-        for (int i = -half; i < half; i += EVERY) {
-            if (!isPortal(i) || PortalCarriageRole.roleFor(i, EVERY) != PortalCarriageRole.ENTRY) continue;
+        for (int i : acceptedEntries(half)) {
             if (i < 0) behind++; else ahead++;
         }
         assertTrue(behind > 0 && ahead > 0, "one side of the origin had no portals at all");
@@ -156,34 +184,18 @@ final class PortalCarriageSelectionTest {
     }
 
     /**
-     * {@code /dungeontrain portal rarity 1} is the dev escape hatch — it should hand back exactly the
-     * un-thinned lattice the system had before rarity existed.
+     * {@code /dungeontrain portal rarity 1} is the dev escape hatch — every group becomes a portal
+     * group, so every first and last carriage carries a corridor.
      */
     @Test
-    @DisplayName("rarity 1 restores the old every-nth-carriage layout")
-    void rarityOneAcceptsEveryCandidate() {
+    @DisplayName("rarity 1 makes every group a portal group")
+    void rarityOneAcceptsEveryGroup() {
         for (int i = -200; i <= 200; i++) {
-            boolean onLattice = Math.floorMod(i, EVERY) == 0;
-            assertEquals(onLattice,
-                PortalCarriageSelection.isPortalCarriage(SEED, i, EVERY, 1, GROUP_SIZE),
+            int slot = Math.floorMod(i, GROUP_SIZE);
+            boolean endOfGroup = slot == 0 || slot == GROUP_SIZE - 1;
+            assertEquals(endOfGroup,
+                PortalCarriageSelection.isPortalCarriage(SEED, i, true, 1, GROUP_SIZE),
                 "index " + i);
         }
-    }
-
-    @Test
-    @DisplayName("a bigger group size means more carriages between portals, not more portals")
-    void rarityCountsGroupsNotCarriages() {
-        int half = 60_000;
-        int small = 0;
-        int large = 0;
-        for (int i = -half; i < half; i += EVERY) {
-            if (PortalCarriageRole.roleFor(i, EVERY) != PortalCarriageRole.ENTRY) continue;
-            if (PortalCarriageSelection.isPortalCarriage(SEED, i, EVERY, ONE_IN, 2)) small++;
-            if (PortalCarriageSelection.isPortalCarriage(SEED, i, EVERY, ONE_IN, 6)) large++;
-        }
-        // Groups of 6 are three times as long as groups of 2, so one pair per 20 groups is a third
-        // as many pairs over the same stretch of track.
-        assertTrue(large < small,
-            "larger groups should yield fewer pairs per carriage: " + small + " vs " + large);
     }
 }

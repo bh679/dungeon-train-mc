@@ -164,7 +164,7 @@ public final class PortalCarriageEvents {
 
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;
-        if (PortalRegistry.get(level).carriageEvery() <= PortalCarriageSelection.CARRIAGE_EVERY_OFF) return;
+        if (!PortalRegistry.get(level).carriagesEnabled()) return;
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
@@ -187,9 +187,10 @@ public final class PortalCarriageEvents {
                     double originY = bb.minY();
                     double originZ = bb.minZ();
 
-                    int every = PortalRegistry.get(level).carriageEvery();
-                    PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, every);
-                    int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, every);
+                    // A portal is one whole group, so the pair's key is the group's own anchor index —
+                    // the same value this loop is already iterating on.
+                    PortalCarriageRole role = PortalCarriageRole.roleFor(carriageIndex, groupSize);
+                    int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, groupSize);
 
                     handlePortalCarriage(level, players, layout, dims, carriageIndex, role, pairKey,
                         group.getValue(), originX, originY, originZ);
