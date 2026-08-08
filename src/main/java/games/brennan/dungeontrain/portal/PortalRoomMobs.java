@@ -130,6 +130,33 @@ public final class PortalRoomMobs {
         return doomed.size();
     }
 
+    /**
+     * Take away every mob this pair's room placed, in any copy of it.
+     *
+     * <p>{@link #reapTile}'s counterpart for a structure that is being <b>relocated</b> rather than
+     * shedding one copy. The whole room is about to be erased and stamped again somewhere else, and
+     * the stamp rolls a fresh set of authored mobs — so without this the old set is carried to the
+     * new site by {@code carryStructureOccupants}, spared by {@code clearIntruders} for carrying DT's
+     * contents tag, and left standing beside its own replacement, once per relocation.</p>
+     *
+     * <p>Scoped by the pair mark, so it takes only what this room authored: a villager or pet a
+     * player led into the portal carries no mark and is carried across as before.</p>
+     *
+     * @return how many were removed
+     */
+    public static int reapPair(ServerLevel level, BoundingBox box, int pairKey) {
+        List<Entity> doomed = level.getEntities((Entity) null, AABB.of(box),
+            e -> markedPair(e) == pairKey);
+        for (Entity entity : doomed) {
+            entity.discard();
+        }
+        if (!doomed.isEmpty()) {
+            LOGGER.debug("[DungeonTrain] Portal pair {} relocating — reaped {} authored mobs", pairKey,
+                doomed.size());
+        }
+        return doomed.size();
+    }
+
     /** How many authored mobs this structure currently has standing, across every copy. */
     public static int liveCount(ServerLevel level, BoundingBox structureBox, int pairKey) {
         return level.getEntities((Entity) null, AABB.of(structureBox),

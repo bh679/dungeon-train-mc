@@ -74,6 +74,25 @@ class PortalRoomMobsTest {
     }
 
     @Test
+    @DisplayName("A relocation reaps every copy's mobs, and only this pair's")
+    void relocationReapsThePairNotTheTile() {
+        // reapPair's rule, at the tag level: the pair mark alone, whatever copy placed the mob. A
+        // relocating structure takes its whole room with it — the tiles are about to stop existing —
+        // and the stamp at the new site rolls a fresh set, so anything left marked would stand next
+        // to its own replacement.
+        for (int[] tile : new int[][]{{0, 0}, {4, 1}, {-2, -5}}) {
+            CompoundTag data = marked(6, tile[0], tile[1]);
+            assertEquals(6, PortalRoomMobs.markedPair(data),
+                "a mob placed by copy " + tile[0] + "," + tile[1] + " goes with pair 6's room");
+        }
+
+        // What the carry is for: a villager or pet led in by a player has no mark, and neither does
+        // another pair's mob standing in the box where two structures share a Y lane.
+        assertEquals(Integer.MIN_VALUE, PortalRoomMobs.markedPair(new CompoundTag()));
+        assertEquals(7, PortalRoomMobs.markedPair(marked(7, 0, 0)));
+    }
+
+    @Test
     @DisplayName("The cap admits up to its ceiling and refuses past it")
     void capRefusesPastTheCeiling() {
         assertTrue(PortalRoomMobs.withinCap(0));
