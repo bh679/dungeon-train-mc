@@ -6371,6 +6371,40 @@
       "released": true,
       "released_in": "v0.547.0",
       "released_at": "2026-08-07T08:05:42Z"
+    },
+    {
+      "id": "carriage-contents-despawn",
+      "version": "0.548.0",
+      "type": "perf",
+      "title": "Carriages you've walked away from stop running their mobs",
+      "summary": "A long train used to keep every mob in every carriage you had already passed thinking at full speed, forever. Now, once every player has been more than 55 blocks from a carriage for a few seconds, that carriage's mobs are set aside \u2014 and restored the moment someone comes back, exactly as you left them: villager trades, gear, inventories, names and positions all intact. Half-loot a carriage, wander off, come back, and you'll find what you left rather than a fresh roll. This mostly helps dedicated servers and multiplayer, where mobs on carriages nobody is near were pure overhead. You may occasionally spot mobs in a far-off carriage blink out and reappear as you get closer; that's this at work.",
+      "highlights": [
+        "Mobs on carriages no player is near are stored instead of running AI",
+        "Restored exactly as you left them \u2014 villager trades and half-looted state included",
+        "Server operators can toggle it with /dungeontrain debug contentsdespawn on|off|status"
+      ],
+      "pr": 908,
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "flat-world-type",
+      "version": "0.548.0",
+      "type": "feat",
+      "title": "New \"Dungeon Train (Flat)\" world type",
+      "summary": "Creating a world now offers \"Dungeon Train (Flat)\" alongside the usual Dungeon Train option. The train runs across level ground with no terrain generation at all, which makes it a calm place to build, test contraptions, or just watch the train without the landscape getting in the way. One thing to know before you pick it: because nothing is generated around the track, the shifting terrain bands don't appear either \u2014 no disintegration stretch and no Nether transition. Choose the normal Dungeon Train world type if you want those.",
+      "highlights": [
+        "Pick \"Dungeon Train (Flat)\" from the world type list when creating a world",
+        "Level ground the whole way, with no terrain generation",
+        "Band content (disintegration, Nether transition) does not generate in flat worlds"
+      ],
+      "pr": 908,
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
