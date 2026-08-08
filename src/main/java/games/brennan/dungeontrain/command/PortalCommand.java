@@ -86,10 +86,10 @@ public final class PortalCommand {
             .then(Commands.literal("carriage")
                 .then(Commands.literal("off")
                     .executes(ctx -> runCarriage(ctx.getSource(), PortalCarriageSelection.CARRIAGE_EVERY_OFF)))
-                // Counted in GROUPS, not carriages: a portal is a whole group (entry, one cart,
-                // exit), so 1 means every group holds one. Twins no longer collide at close
-                // spacings because each group takes its own Y lane — see
-                // PortalCarriageEvents.twinFloorY.
+                // Counted in GROUPS, not carriages, and a rate rather than a period: a portal is a
+                // whole group (entry, one cart, exit), and one group in <every> wins one by lottery,
+                // so 1 means every group holds one. Twins no longer collide at close rates because
+                // each group takes its own Y lane — see PortalCarriageEvents.twinFloorY.
                 .then(Commands.argument("every", IntegerArgumentType.integer(1, 64))
                     .executes(ctx -> runCarriage(ctx.getSource(),
                         IntegerArgumentType.getInteger(ctx, "every")))))
@@ -250,8 +250,9 @@ public final class PortalCommand {
         }
 
         source.sendSuccess(() -> Component.literal(
-            "Every " + every + (every == 1 ? "st" : "th") + " carriage group is now a portal: "
-                + "entry corridor, one cart, exit corridor. "
+            (every == 1 ? "Every carriage group is now a portal" : "1 carriage group in " + every
+                + " is now a portal, drawn at random")
+                + ": entry corridor, one cart, exit corridor. "
                 + "Walk the train to find one — the twin is stamped as you approach."), true);
         return 1;
     }
@@ -262,7 +263,7 @@ public final class PortalCommand {
         int every = registry.carriageEvery();
         source.sendSuccess(() -> Component.literal(every == PortalCarriageSelection.CARRIAGE_EVERY_OFF
             ? "Portal carriages: off"
-            : "Portal carriages: every " + every + " carriage groups"), false);
+            : "Portal carriages: 1 carriage group in " + every + ", at random"), false);
         source.sendSuccess(() -> Component.literal(spacing == PortalAnchors.SPACING_OFF
             ? "Auto-spawning: off"
             : "Auto-spawning: every " + spacing + " blocks"), false);
