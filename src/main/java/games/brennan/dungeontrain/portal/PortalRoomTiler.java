@@ -332,13 +332,62 @@ public final class PortalRoomTiler {
         });
     }
 
-    /** Wall off a face that has nothing beyond it, filling only what the author left as air. */
+    /**
+     * Wall off a face that has nothing beyond it, filling only what the author left as air —
+     * <b>in the room's own blocks</b>.
+     *
+     * <p>The fill used to be {@link PortalCarriageBuilder#POCKET_SHELL}, which is the built-in
+     * room's palette and belongs to nothing else in an authored room. The boundary then read as
+     * walls of polished blackstone brick added into somebody else's library. It is a boundary that
+     * should not be visible as one: what closes the face is what the player would have seen had the
+     * next copy been there.</p>
+     *
+     * <p>Which is knowable exactly, because every copy is the same room. Beyond the {@code +x} face
+     * stands the next copy's {@code -x} wall, and that is block-for-block this copy's own
+     * {@code -x} wall at the same height and the same lateral position — so each cell is filled from
+     * its mirror across the room.</p>
+     *
+     * <p><b>A cell whose mirror is not a block is left alone.</b> Nothing is invented to stand in for
+     * it. A room whose faces are open — {@code distantenemies} is a sculk floor, a sculk ceiling and
+     * pillars, with no side walls anywhere, which is what lets you see the enemies it is named for —
+     * has no wall at its boundary either, and that is right: any material picked for it is a column
+     * of blocks the author never put there, standing in the middle of a space that is meant to read
+     * as open. Where a room does have a wall, the mirror finds it and the wall carries on.</p>
+     *
+     * <p>The blackstone around the corridor mouth is a different thing and stays: that is
+     * {@code sealCorridorMouth}, laid once with the twin, and every cell of it is masked out of the
+     * face work below. What had to stop was that same palette repeating out across a room it has
+     * nothing to do with.</p>
+     */
     private static void closeFace(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                   Tile tile, int dx, int dz) {
+        Vec3i size = structure.roomSize();
+        int mirrorX = -dx * (size.getX() - 1);
+        int mirrorZ = -dz * (size.getZ() - 1);
         eachFaceCell(level, dims, structure, tile, dx, dz, /*interiorOnly*/ false, (wall, inner) -> {
             if (!level.getBlockState(wall).isAir()) return;
-            level.setBlock(wall, PortalCarriageBuilder.POCKET_SHELL, Block.UPDATE_ALL);
+            BlockPos mirror = wall.offset(mirrorX, 0, mirrorZ);
+            BlockState mirrored = level.getBlockState(mirror);
+            if (!usableAsFill(level, mirror, mirrored)) return;
+            level.setBlock(wall, mirrored, Block.UPDATE_ALL);
         });
+    }
+
+    /**
+     * True when {@code state} may be copied into a wall.
+     *
+     * <p>Three things are refused. <b>Air</b>, which would close nothing. <b>Anything carrying a
+     * block entity</b> — copying a chest's state without its NBT plants empty chests along the
+     * boundary, and it is the same hazard {@link PortalClear} and {@link #stampTile} are both
+     * written around from the other direction. And <b>anything that is not a full block</b>: a
+     * mirrored torch, stair or trapdoor keeps the facing it had on the far wall, so it would hang
+     * off the boundary the wrong way round and leave a hole besides.</p>
+     */
+    private static boolean usableAsFill(ServerLevel level, BlockPos pos, BlockState state) {
+        return !state.isAir()
+            && !state.hasBlockEntity()
+            && state.getFluidState().isEmpty()
+            && state.isCollisionShapeFullBlock(level, pos);
     }
 
     /** Take a face away — {@link PortalRoomMode#ENDLESS_OPEN} only. */
