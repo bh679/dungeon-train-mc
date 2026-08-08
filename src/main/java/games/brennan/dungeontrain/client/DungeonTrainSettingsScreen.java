@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Mods-menu config screen for Dungeon Train — edit rolling-window carriage
- * count, train speed, spawn Y, the carriage generation mode / group size, and
+ * Mods-menu config screen for Dungeon Train — edit the rolling-window carriage
+ * maximum, train speed, spawn Y, the carriage generation mode / group size, and
  * the PlayerMob spawn rate. Most fields persist to the server config and apply
  * live to any spawned train on the integrated server. The PlayerMob 1-in-N
  * field is two-tier: in a world it sets that world's per-world override
@@ -63,7 +63,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
         int topY = this.height / 2 - 80;
 
         carriagesField = new EditBox(this.font, centerX + 10, topY, FIELD_WIDTH, FIELD_HEIGHT,
-                Component.translatable("gui.dungeontrain.settings.narrate.carriages"));
+                Component.translatable("gui.dungeontrain.settings.narrate.max_carriages"));
         carriagesField.setValue(Integer.toString(DungeonTrainConfig.getNumCarriages()));
         carriagesField.setFilter(DungeonTrainSettingsScreen::isIntegerInput);
         addRenderableWidget(carriagesField);
@@ -147,7 +147,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
 
         graphics.drawCenteredString(this.font, this.title, centerX, topY - 40, 0xFFFFFFFF);
 
-        graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.carriages"), centerX - LABEL_OFFSET, topY + 6, 0xFFFFFFFF);
+        graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.max_carriages"), centerX - LABEL_OFFSET, topY + 6, 0xFFFFFFFF);
         graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.speed"), centerX - LABEL_OFFSET, topY + ROW_GAP + 6, 0xFFFFFFFF);
         graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.train_y"), centerX - LABEL_OFFSET, topY + ROW_GAP * 2 + 6, 0xFFFFFFFF);
         graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.mode"), centerX - LABEL_OFFSET, topY + ROW_GAP * 3 + 6, 0xFFFFFFFF);
@@ -159,7 +159,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
         graphics.drawString(this.font, Component.translatable("gui.dungeontrain.settings.label.compatible_terrain"), centerX - LABEL_OFFSET, topY + ROW_GAP * 7 + 6, 0xFFFFFFFF);
 
         Component rangeHint = Component.translatable("gui.dungeontrain.settings.range_hint",
-                DungeonTrainConfig.MIN_CARRIAGES, DungeonTrainConfig.MAX_CARRIAGES,
+                DungeonTrainConfig.MIN_CARRIAGES_EXPLICIT, DungeonTrainConfig.MAX_CARRIAGES,
                 DungeonTrainConfig.MIN_SPEED, DungeonTrainConfig.MAX_SPEED,
                 DungeonTrainConfig.MIN_TRAIN_Y, DungeonTrainConfig.MAX_TRAIN_Y,
                 CarriageGenerationConfig.MIN_GROUP_SIZE, CarriageGenerationConfig.MAX_GROUP_SIZE,

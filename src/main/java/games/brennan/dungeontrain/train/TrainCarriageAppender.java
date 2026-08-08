@@ -1661,11 +1661,13 @@ public final class TrainCarriageAppender {
         // preview broadcast.
         trainsTouchedThisTick.add(trainId);
 
-        // Target carriage count: per-player, derived from config or each
-        // player's render distance when the config is set to 0 (auto). The
-        // global needed-pIdx range is the union of per-player ranges, so
+        // Target carriage count: per-player, derived from each player's render
+        // distance and then capped by the configured maximum (0 = no user cap).
+        // The global needed-pIdx range is the union of per-player ranges, so
         // players with different rd settings each contribute their own
-        // contribution to the eventual train length.
+        // contribution to the eventual train length — and the cap applies to
+        // every one of them, so one player with a huge render distance can no
+        // longer stretch the train past the configured maximum for everyone.
         int configCount = DungeonTrainConfig.getNumCarriages();
         int globalMaxNeededPIdx = Integer.MIN_VALUE;
         int globalMinNeededPIdx = Integer.MAX_VALUE;
@@ -1716,9 +1718,8 @@ public final class TrainCarriageAppender {
                 LAST_SENT_PIDX.put(uuid, pIdx);
             }
 
-            int pTargetCount = (configCount > 0)
-                ? configCount
-                : autoTargetFromRenderDistance(player, length);
+            int pTargetCount = effectiveTargetCount(
+                autoTargetFromRenderDistance(player, length), configCount);
             int pHalfBack = (pTargetCount - 1) / 2;
             int pHalfFront = pTargetCount - pHalfBack - 1;
             int pMaxNeeded = pIdx + pHalfFront;
@@ -3122,9 +3123,8 @@ public final class TrainCarriageAppender {
         int length = dims.length();
 
         int configCount = DungeonTrainConfig.getNumCarriages();
-        int rawTargetCount = (configCount > 0)
-            ? configCount
-            : bootstrapTargetFromServerViewDistance(level, length);
+        int rawTargetCount = effectiveTargetCount(
+            bootstrapTargetFromServerViewDistance(level, length), configCount);
 
         // Cap to Sable's sub-level tracking range. Sable culls any sub-level
         // farther than {@code SUB_LEVEL_TRACKING_RANGE} blocks (default 320)
@@ -3425,8 +3425,8 @@ public final class TrainCarriageAppender {
 
     /**
      * Compute the per-player target carriage count from the player's
-     * render distance. Used when the {@code numCarriages} config is set
-     * to {@code 0} (auto). Falls back to the server-wide view distance
+     * render distance, before the configured maximum is applied by
+     * {@link #effectiveTargetCount(int, int)}. Falls back to the server-wide view distance
      * if the player hasn't reported their setting yet (early-join window),
      * then to a hardcoded 10-chunk floor if even that is unavailable
      * (dedicated server with no setting). Clamps to
@@ -3444,6 +3444,23 @@ public final class TrainCarriageAppender {
         int target = (rdBlocks * 2) / Math.max(1, carriageLength);
         return Math.max(DungeonTrainConfig.MIN_CARRIAGES_AUTO_FLOOR,
                         Math.min(DungeonTrainConfig.MAX_CARRIAGES, target));
+    }
+
+    /**
+     * Apply the configured carriage <b>maximum</b> to an auto-computed target.
+     *
+     * <p>{@code configMax} is {@link DungeonTrainConfig#getNumCarriages()}: {@code 0}
+     * means auto (no user ceiling), anything else is a ceiling and never a floor. It is
+     * deliberately applied <i>after</i> {@link DungeonTrainConfig#MIN_CARRIAGES_AUTO_FLOOR},
+     * so a player who sets the maximum to 4 gets 4 rather than the auto floor of 5 —
+     * the whole point of the setting is that it can shorten the window below what the
+     * render-distance heuristic would otherwise insist on.</p>
+     *
+     * <p>Both target sites route through here so the per-tick window and the bootstrap
+     * eager fill can never disagree about how long the train should be.</p>
+     */
+    static int effectiveTargetCount(int autoTarget, int configMax) {
+        return configMax > 0 ? Math.min(autoTarget, configMax) : autoTarget;
     }
 
     /**

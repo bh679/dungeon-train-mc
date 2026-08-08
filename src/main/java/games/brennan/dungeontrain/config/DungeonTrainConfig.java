@@ -19,7 +19,7 @@ import org.slf4j.Logger;
  * Registered from {@link games.brennan.dungeontrain.DungeonTrain} constructor.
  *
  * Exposes:
- *   - {@code numCarriages} — rolling-window size, [1, 50]
+ *   - {@code numCarriages} — rolling-window <b>maximum</b>, 0 (auto from render distance) or [4, 50]
  *   - {@code speed} — train speed along +X in blocks/second, [0.0, 20.0]
  *   - {@code trainY} — world Y where new trains spawn, [-64, 320]
  *   - {@code generateTracks} — auto-place world-block tracks under the train
@@ -35,6 +35,15 @@ public final class DungeonTrainConfig {
     public static final int MIN_CARRIAGES = 0;
     public static final int MAX_CARRIAGES = 50;
     public static final int DEFAULT_CARRIAGES = 0;
+    /**
+     * Smallest meaningful explicit maximum. {@code 0} stays the "auto" sentinel, so the
+     * settable set is {@code 0} ∪ {@code [4, 50]}: below four the window can't hold a
+     * RANDOM_GROUPED run plus its flatbed separators, and the appender spends its time
+     * culling what it just placed. Enforced on read ({@link #getNumCarriages()}) and on
+     * write ({@link #setNumCarriages(int)}); the spec range stays 0–50 so configs written
+     * before this floor existed still load.
+     */
+    public static final int MIN_CARRIAGES_EXPLICIT = 4;
     /** Seed value passed to TrainAssembler.spawnTrain when config = 0 (auto). The appender retargets immediately on the first tick. */
     public static final int DEFAULT_CARRIAGES_AUTO_SEED = 15;
     /** Lower bound applied to the auto-from-render-distance computation so very low rd doesn't produce a degenerate train. */
@@ -320,7 +329,10 @@ public final class DungeonTrainConfig {
                 .defineInRange("configVersion", DEFAULT_CONFIG_VERSION, MIN_CONFIG_VERSION, MAX_CONFIG_VERSION);
         b.push("train");
         ModConfigSpec.IntValue numCarriages = b
-                .comment("Carriages visible in the rolling window around each player. Set to 0 to auto-scale to each player's render distance (recommended). Positive values pin the count; e.g. 15 = 5 groups at the default groupSize of 3.")
+                .comment("Maximum carriages in the rolling window around each player — the main performance knob, since each carriage is a live sub-level.",
+                        "0 (default) auto-scales to each player's render distance. A positive value is a CEILING on that auto-scale, never a floor:",
+                        "the window is min(auto, this), so lowering it always reduces load and raising it never lengthens a train beyond what the",
+                        "player's render distance already warrants. Settable range is 0 or 4-50; a stored 1-3 is treated as 4.")
                 .defineInRange("numCarriages", DEFAULT_CARRIAGES, MIN_CARRIAGES, MAX_CARRIAGES);
         ModConfigSpec.DoubleValue speed = b
                 .comment("Train speed along +X in blocks per second.")
@@ -609,8 +621,18 @@ public final class DungeonTrainConfig {
         return Math.min(own, 1.0 - getSharedCarriagePoolChance());
     }
 
+    /**
+     * The configured <b>maximum</b> carriages in each player's rolling window, or
+     * {@code 0} for "auto" (scale from render distance, ceiling {@link #MAX_CARRIAGES}).
+     *
+     * <p>A stored non-zero value below {@link #MIN_CARRIAGES_EXPLICIT} is lifted to that
+     * floor here rather than by a config migration: the spec range still admits 1–3 so
+     * that files written before the floor existed keep loading, and a train that short
+     * is degenerate (the window can't hold a group plus its flatbed separators).</p>
+     */
     public static int getNumCarriages() {
-        return isLoaded() ? NUM_CARRIAGES.get() : DEFAULT_CARRIAGES;
+        int raw = isLoaded() ? NUM_CARRIAGES.get() : DEFAULT_CARRIAGES;
+        return raw <= 0 ? 0 : Math.max(MIN_CARRIAGES_EXPLICIT, Math.min(MAX_CARRIAGES, raw));
     }
 
     public static double getSpeed() {
@@ -851,9 +873,12 @@ public final class DungeonTrainConfig {
         CONFIG_VERSION.save();
     }
 
+    /** Stores a new maximum. {@code 0} (auto) passes through; anything else lands in [4, 50]. */
     public static void setNumCarriages(int value) {
         if (!isLoaded()) return;
-        int clamped = Math.max(MIN_CARRIAGES, Math.min(MAX_CARRIAGES, value));
+        int clamped = value <= MIN_CARRIAGES
+                ? MIN_CARRIAGES
+                : Math.max(MIN_CARRIAGES_EXPLICIT, Math.min(MAX_CARRIAGES, value));
         NUM_CARRIAGES.set(clamped);
         NUM_CARRIAGES.save();
     }

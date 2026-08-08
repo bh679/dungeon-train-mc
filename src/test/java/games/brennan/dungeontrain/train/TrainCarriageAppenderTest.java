@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.TrainCarriageAppender.TrailingId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -510,5 +511,55 @@ final class TrainCarriageAppenderTest {
         // even if the flag were mistakenly true, an inverted window holds nothing
         assertFalse(TrainCarriageAppender.shouldHoldGroupNearPlayer(
             true, 6, 8, Integer.MAX_VALUE, Integer.MIN_VALUE));
+    }
+
+    // ---------------------------------------------------------------
+    // effectiveTargetCount — the configured carriage MAXIMUM applied to
+    // the render-distance-derived target. The setting is a ceiling and
+    // never a floor: that asymmetry is the whole feature, so it is what
+    // these cases pin down.
+    // ---------------------------------------------------------------
+
+    @Test
+    @DisplayName("max carriages: 0 means auto — the render-distance target passes through untouched")
+    void maxCarriages_autoSentinelPassesThrough() {
+        assertEquals(20, TrainCarriageAppender.effectiveTargetCount(20, 0));
+        assertEquals(5, TrainCarriageAppender.effectiveTargetCount(5, 0));
+        // Negative can't reach here through the config, but treat it as auto rather
+        // than as a ceiling of -1, which would collapse the train to nothing.
+        assertEquals(20, TrainCarriageAppender.effectiveTargetCount(20, -1));
+    }
+
+    @Test
+    @DisplayName("max carriages below the auto target caps the window")
+    void maxCarriages_capsAutoTarget() {
+        assertEquals(8, TrainCarriageAppender.effectiveTargetCount(20, 8));
+        assertEquals(DungeonTrainConfig.MIN_CARRIAGES_EXPLICIT,
+            TrainCarriageAppender.effectiveTargetCount(50, DungeonTrainConfig.MIN_CARRIAGES_EXPLICIT));
+    }
+
+    @Test
+    @DisplayName("max carriages above the auto target does NOT lengthen the train — it's a ceiling, not a floor")
+    void maxCarriages_neverRaisesAboveAuto() {
+        // The pre-change behaviour returned the configured value here (30), producing a
+        // LONGER train than the player's render distance warranted. A maximum must not.
+        assertEquals(12, TrainCarriageAppender.effectiveTargetCount(12, 30));
+        assertEquals(12, TrainCarriageAppender.effectiveTargetCount(12, DungeonTrainConfig.MAX_CARRIAGES));
+    }
+
+    @Test
+    @DisplayName("max carriages of 4 wins over the auto floor of 5")
+    void maxCarriages_beatsAutoFloor() {
+        // autoTargetFromRenderDistance already clamps UP to MIN_CARRIAGES_AUTO_FLOOR (5),
+        // so the cap has to be applied afterwards for a setting of 4 to mean anything.
+        assertTrue(DungeonTrainConfig.MIN_CARRIAGES_EXPLICIT < DungeonTrainConfig.MIN_CARRIAGES_AUTO_FLOOR);
+        assertEquals(4, TrainCarriageAppender.effectiveTargetCount(
+            DungeonTrainConfig.MIN_CARRIAGES_AUTO_FLOOR, 4));
+    }
+
+    @Test
+    @DisplayName("max carriages: equal cap and auto target is a no-op")
+    void maxCarriages_equalIsNoOp() {
+        assertEquals(15, TrainCarriageAppender.effectiveTargetCount(15, 15));
     }
 }
