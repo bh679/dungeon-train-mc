@@ -191,6 +191,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_CONTENTS_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomContents c
+                    : games.brennan.dungeontrain.portal.PortalRoomContents.values()) {
+                builder.suggest(c.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> CONTENTS_SUGGESTIONS =
         (ctx, builder) -> {
             for (CarriageContents c : CarriageContentsRegistry.allContents()) {
@@ -427,6 +436,15 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_COPIES_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomCopies(ctx.getSource(),
                             StringArgumentType.getString(ctx, "copies")))))
+                // Whether the room is furnished from the ordinary contents pool, and how a
+                // furnishing smaller than the room is fitted into it. Off by default.
+                .then(Commands.literal("contents")
+                    .then(Commands.literal("next")
+                        .executes(ctx -> runPortalRoomContentsCycle(ctx.getSource())))
+                    .then(Commands.argument("contents", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_CONTENTS_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomContents(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "contents")))))
                 // Sub-variants: one named room standing for several designs, drawn by weight.
                 .then(portalRoomGroupNode()))
             .then(Commands.literal("architecture")
@@ -5326,6 +5344,31 @@ public final class EditorCommand {
         return applyPortalRoomSettings(source, name, current.withCopies(current.copies().next()));
     }
 
+    /** {@code /dt editor portals contents next} — step the Contents setting. */
+    private static int runPortalRoomContentsCycle(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name, current.withContents(current.contents().next()));
+    }
+
+    /** {@code /dt editor portals contents <off|fit|exact|tile>} — set it outright. */
+    private static int runPortalRoomContents(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomContents wanted =
+            games.brennan.dungeontrain.portal.PortalRoomContents.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.literal(
+                "Unknown contents option '" + raw + "'. Try off, fit, exact or tile."));
+            return 0;
+        }
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withContents(wanted));
+    }
+
     /** {@code /dt editor portals copies <exact|dynamic>} — set it outright. */
     private static int runPortalRoomCopies(CommandSourceStack source, String raw) {
         String name = portalRoomPlotUnderPlayer(source);
@@ -5375,8 +5418,9 @@ public final class EditorCommand {
         }
         // The Copies half is only worth reporting when it means anything.
         String copies = settings.copiesApply() ? ", copies: " + settings.copies().displayName() : "";
+        String contents = ", contents: " + settings.contents().displayName();
         source.sendSuccess(() -> Component.literal(
-            "Portal room '" + name + "' walls: " + settings.mode().displayName() + copies
+            "Portal room '" + name + "' walls: " + settings.mode().displayName() + copies + contents
             + ". Portals already standing keep the settings they were built with — this takes effect "
             + "on the next one the train reaches."
         ).withStyle(ChatFormatting.GREEN), true);

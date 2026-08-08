@@ -177,7 +177,10 @@ public final class PortalRoomTiler {
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, structure.roomName(), size,
             /*relight*/ true, clearMask, writeMask, structure.variantIndexFor(tile),
             pairKey, tile,
-            PortalRoomMobs.liveCount(level, PortalCarriageBuilder.footprintOf(level, structure, dims), pairKey));
+            PortalRoomMobs.liveCount(level, PortalCarriageBuilder.footprintOf(level, structure, dims), pairKey),
+            // The structure's own setting, not a fresh read of the variant: a portal already standing
+            // keeps what it was built with, the same promise planStructure makes about the room.
+            structure.settings().contents());
 
         PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
         refreshFacesAround(level, dims, grown, tile);
