@@ -90,6 +90,12 @@ public final class PortalCommand {
                 .then(Commands.argument("every", IntegerArgumentType.integer(3, 64))
                     .executes(ctx -> runCarriage(ctx.getSource(),
                         IntegerArgumentType.getInteger(ctx, "every")))))
+            // Rarity, as distinct from the spacing above: 1 accepts every candidate pair the
+            // lattice offers (the old dense dev layout), 20 is the shipped default.
+            .then(Commands.literal("rarity")
+                .then(Commands.argument("groups", IntegerArgumentType.integer(1, 1000))
+                    .executes(ctx -> runRarity(ctx.getSource(),
+                        IntegerArgumentType.getInteger(ctx, "groups")))))
             .then(Commands.literal("savetemplate").executes(ctx -> runSaveTemplate(ctx.getSource())))
             .then(Commands.literal("list").executes(ctx -> runList(ctx.getSource())))
             .then(Commands.literal("clear").executes(ctx -> runClear(ctx.getSource())))
@@ -239,8 +245,19 @@ public final class PortalCommand {
         }
 
         source.sendSuccess(() -> Component.literal(
-            "Every " + every + (every == 1 ? "st" : "th") + " carriage is now a portal corridor. "
-                + "Walk the train to find one — the twin is stamped as you approach."), true);
+            "Portal pairs now span " + every + " carriages from entry to exit. How often a pair "
+                + "occurs is set by /dungeontrain portal rarity."), true);
+        return 1;
+    }
+
+    private static int runRarity(CommandSourceStack source, int groups) {
+        PortalRegistry.get(source.getLevel()).setOneInGroups(groups);
+
+        source.sendSuccess(() -> Component.literal(
+            groups == 1
+                ? "Every candidate pair is now a portal — the dense dev layout."
+                : "Roughly one portal pair per " + groups + " carriage groups. Carriages already "
+                    + "stamped keep their corridor until the rolling window re-places them."), true);
         return 1;
     }
 
@@ -248,9 +265,11 @@ public final class PortalCommand {
         PortalRegistry registry = PortalRegistry.get(source.getLevel());
         int spacing = registry.autoSpacing();
         int every = registry.carriageEvery();
+        int groups = registry.oneInGroups();
         source.sendSuccess(() -> Component.literal(every == PortalCarriageSelection.CARRIAGE_EVERY_OFF
             ? "Portal carriages: off"
-            : "Portal carriages: every " + every + " carriages"), false);
+            : "Portal carriages: pairs spanning " + every + " carriages, roughly one per "
+                + groups + " group" + (groups == 1 ? "" : "s")), false);
         source.sendSuccess(() -> Component.literal(spacing == PortalAnchors.SPACING_OFF
             ? "Auto-spawning: off"
             : "Auto-spawning: every " + spacing + " blocks"), false);

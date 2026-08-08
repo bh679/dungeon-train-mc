@@ -32,6 +32,7 @@ public final class PortalRegistry extends SavedData {
     private static final String TAG_PORTALS = "portals";
     private static final String TAG_AUTO_SPACING = "autoSpacing";
     private static final String TAG_CARRIAGE_EVERY = "carriageEvery";
+    private static final String TAG_ONE_IN_GROUPS = "oneInGroups";
     private static final String TAG_ORIGIN_X = "originX";
     private static final String TAG_FLOOR_Y = "floorY";
     private static final String TAG_ORIGIN_Z = "originZ";
@@ -56,6 +57,13 @@ public final class PortalRegistry extends SavedData {
      * carriage under a player standing in it.
      */
     private int carriageEvery = PortalCarriageSelection.DEFAULT_CARRIAGE_EVERY;
+
+    /**
+     * How rare portal pairs are: on average one pair per this many carriage groups. Persisted for
+     * the same reason as the spacing above — it feeds the same re-stamp-stable verdict, so a world
+     * that forgot it would re-roll which carriages are corridors on every reload.
+     */
+    private int oneInGroups = PortalCarriageSelection.DEFAULT_ONE_IN_GROUPS;
 
     /**
      * Default anchor spacing for the free-standing portals that generate beside the track.
@@ -117,8 +125,11 @@ public final class PortalRegistry extends SavedData {
     }
 
     /**
-     * Every nth carriage along the train is stamped as a portal corridor, or
-     * {@link PortalCarriageSelection#CARRIAGE_EVERY_OFF} for none.
+     * Carriages between a portal pair's entry and exit corridor — and so the lattice portal
+     * carriages can land on at all. {@link PortalCarriageSelection#CARRIAGE_EVERY_OFF} for none.
+     *
+     * <p>This is the pair's <i>spacing</i>, not how often pairs occur; that is
+     * {@link #oneInGroups()}.</p>
      */
     public synchronized int carriageEvery() {
         return carriageEvery;
@@ -127,6 +138,17 @@ public final class PortalRegistry extends SavedData {
     public synchronized void setCarriageEvery(int every) {
         if (carriageEvery == every) return;
         carriageEvery = every;
+        setDirty();
+    }
+
+    /** On average one portal pair per this many carriage groups. See {@link PortalCarriageSelection}. */
+    public synchronized int oneInGroups() {
+        return oneInGroups;
+    }
+
+    public synchronized void setOneInGroups(int groups) {
+        if (oneInGroups == groups) return;
+        oneInGroups = groups;
         setDirty();
     }
 
@@ -147,6 +169,11 @@ public final class PortalRegistry extends SavedData {
         }
         if (tag.contains(TAG_CARRIAGE_EVERY)) {
             data.carriageEvery = tag.getInt(TAG_CARRIAGE_EVERY);
+        }
+        // Absent in worlds saved before portal rarity existed, which is exactly the case that should
+        // pick up the new default rather than the old every-candidate-pair density.
+        if (tag.contains(TAG_ONE_IN_GROUPS)) {
+            data.oneInGroups = tag.getInt(TAG_ONE_IN_GROUPS);
         }
         if (!tag.contains(TAG_PORTALS)) return data;
 
@@ -177,6 +204,7 @@ public final class PortalRegistry extends SavedData {
     public synchronized CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putInt(TAG_AUTO_SPACING, autoSpacing);
         tag.putInt(TAG_CARRIAGE_EVERY, carriageEvery);
+        tag.putInt(TAG_ONE_IN_GROUPS, oneInGroups);
 
         ListTag list = new ListTag();
         for (PortalGeometry geo : portals) {
