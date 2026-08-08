@@ -78,16 +78,26 @@ public final class ContentsDespawnController {
     static final double DESPAWN_RADIUS_SQ = DESPAWN_RADIUS_BLOCKS * DESPAWN_RADIUS_BLOCKS;
 
     /**
-     * Consecutive ticks beyond the despawn radius before a sweep. 60t = 3s, the same "settled" unit
-     * as {@code CLEAN_TICKS_FOR_SUCCESS} — long enough that neither a player pacing a platform nor a
-     * momentary {@code canonicalPos} jitter can trigger a sweep.
+     * Consecutive ticks beyond the despawn radius before a sweep. 100t = 5s.
      *
-     * <p><b>This is the thrash guard.</b> With a 12-block hysteresis band the geometry cannot stop a
-     * player oscillating across the boundary; this window can, by bounding a full
-     * DESPAWN → RESTORE → DESPAWN cycle at no faster than once per 3s however quickly the player
-     * moves. Raise it if churn ever shows up in the {@code [despawn]} counters.</p>
+     * <p><b>This is the thrash guard</b>, and it is load-bearing: with only a 12-block hysteresis
+     * band the geometry cannot stop a player oscillating across the boundary, so this window is what
+     * bounds a full DESPAWN → RESTORE → DESPAWN cycle however quickly the player moves.</p>
+     *
+     * <p>Raised from 60t after a dev-client ride showed real churn — {@code pIdx=54} swept 7 mobs,
+     * restored 5s later, swept the same 7 again 12s after that, twice inside 33s. A player walking
+     * the length of the train crosses the 12-block band in about 3s, which the old 3s window could
+     * not out-wait. 5s clears the observed 5–7s return times while still sweeping a genuinely
+     * abandoned carriage promptly — negligible against a ride where carriages stay behind the player
+     * for minutes.</p>
+     *
+     * <p>If churn persists at this value, suspect the <i>measurement</i> rather than the window:
+     * distance is taken to {@link TrainTransformProvider#getCanonicalPos}, which sits at the
+     * back-pad edge of a ~37-block group, so one end of a group can be much nearer than its anchor
+     * suggests. The fix would be measuring to the nearest point of the group's AABB, not a longer
+     * grace period.</p>
      */
-    static final int AWAY_GRACE_TICKS = 60;
+    static final int AWAY_GRACE_TICKS = 100;
 
     /**
      * Cap on sweeps per tick. A sweep is the only expensive operation here (one AABB entity query,
