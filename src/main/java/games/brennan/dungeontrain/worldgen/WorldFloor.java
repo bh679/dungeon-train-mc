@@ -61,4 +61,26 @@ public final class WorldFloor {
     public static int basementDepth(ServerLevel level) {
         return bedrockY(level) - level.getMinBuildHeight();
     }
+
+    /**
+     * Whether a write at {@code y} would land in the basement rather than the world.
+     *
+     * <p>The rule world generation is held to: vanilla's own floor test is
+     * {@code y < getMinBuildHeight()}, which in a DT world lets the whole 80-block basement through.
+     * Structures anchored at an <i>absolute</i> low Y — {@code trial_chambers} at −40..−20,
+     * {@code ancient_city} at −27 — resolve straight into it. Below the terrain floor is the portal
+     * system's space, so generation stops here instead.</p>
+     */
+    public static boolean isBelowFloor(int y, int bedrockY) {
+        return y < bedrockY;
+    }
+
+    /**
+     * Whether a structure's whole bounding box sits under the floor — no part of it reaches terrain,
+     * so registering the start would only leave a {@code /locate} target over empty basement. A
+     * structure that straddles the floor keeps its start and is clipped write-by-write instead.
+     */
+    public static boolean entirelyBelowFloor(int boxMaxY, int bedrockY) {
+        return boxMaxY < bedrockY;
+    }
 }
