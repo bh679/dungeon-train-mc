@@ -237,14 +237,18 @@ public final class ContentsDespawnController {
                     }
                     case RESTORE -> {
                         if (restored >= MAX_RESTORES_PER_TICK) break;
-                        int count = ContentsEntitySnapshot.restore(level, carriage);
+                        // Once a restore has been blocked this long the freeze is not going to clear
+                        // on its own, so stop waiting: a mob placed at the carriage's parked pose is
+                        // strictly better than a mob that never comes back.
+                        boolean force = provider.getContentsRestoreDeferredTicks() >= RESTORE_STARVED_WARN_TICKS;
+                        int count = ContentsEntitySnapshot.restore(level, carriage, force);
                         if (count < 0) {
                             // Deferred — almost always a still-frozen carriage whose pose has not
-                            // caught up. Retried next tick; complain only if it never resolves.
+                            // caught up. Retried next tick; complain once when it looks stuck.
                             int deferred = provider.getContentsRestoreDeferredTicks() + 1;
                             provider.setContentsRestoreDeferredTicks(deferred);
                             if (deferred == RESTORE_STARVED_WARN_TICKS) {
-                                LOGGER.warn("[despawn] restore starved for pIdx={} — carriage still frozen after {} ticks",
+                                LOGGER.warn("[despawn] restore starved for pIdx={} — carriage still frozen after {} ticks; forcing next tick",
                                     provider.getPIdx(), RESTORE_STARVED_WARN_TICKS);
                             }
                             break;

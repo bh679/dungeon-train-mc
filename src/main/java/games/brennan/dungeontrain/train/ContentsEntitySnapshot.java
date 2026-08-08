@@ -159,16 +159,22 @@ public record ContentsEntitySnapshot(
      * should be retried next tick.
      *
      * <p><b>Deferred while frozen.</b> A soft-frozen carriage stops advancing its pose
-     * ({@code SableManagedShip.applyTickOutput} early-returns), so {@link ManagedShip#shipToWorld}
-     * would resolve against a stale transform and drop mobs where the carriage used to be. Any
-     * carriage close enough to restore is tracked, so the freeze controller — which runs first each
-     * tick — unfreezes it eagerly and the pose catches up within a tick or two.</p>
+     * ({@code SableManagedShip.applyTickOutput} early-returns). The risk is not the parked pose
+     * itself — a parked carriage is <i>drawn</i> at that pose, so a restore against it lands exactly
+     * where the carriage appears — but the catch-up window right after an unfreeze, where the pose
+     * has not yet been teleported forward and mobs would briefly land behind the carriage. Any
+     * carriage close enough to restore is tracked, so the freeze controller (which runs first each
+     * tick) unfreezes it eagerly and the pose catches up within a tick or two.</p>
+     *
+     * @param force restore even if the carriage is still frozen. The caller sets this once a restore
+     *              has been deferred for long enough to look stuck: a mob placed at the parked pose
+     *              is far better than a mob that never comes back at all.
      */
-    public static int restore(ServerLevel level, Trains.Carriage carriage) {
+    public static int restore(ServerLevel level, Trains.Carriage carriage, boolean force) {
         ManagedShip ship = carriage.ship();
         TrainTransformProvider provider = carriage.provider();
         if (!ship.isResident()) return -1;
-        if (ship instanceof SableManagedShip sable && PhysicsFreeze.isFrozen(sable.subLevel())) {
+        if (!force && ship instanceof SableManagedShip sable && PhysicsFreeze.isFrozen(sable.subLevel())) {
             return -1;
         }
 
