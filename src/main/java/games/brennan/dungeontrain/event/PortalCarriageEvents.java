@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
+import games.brennan.dungeontrain.portal.PortalRoomMobs;
 import games.brennan.dungeontrain.portal.PortalRoomTiler;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalSever;
@@ -500,12 +501,25 @@ public final class PortalCarriageEvents {
 
         // Only the ENTRY carriage places the structure: it fixes where the room sits, and the EXIT
         // twin's position follows from it. An EXIT carriage approached first simply waits.
+        //
+        // This is a rule about the ROLE, not about whether a structure happens to exist yet, and it
+        // used to be written as the latter. The difference is the whole of this class's worst bug:
+        // an EXIT carriage that fell through to ensureStructure measured the drift from ITS OWN
+        // origin, which sits two carriage lengths ahead of the entry's (SLOT_ENTRY 0, SLOT_EXIT 2 —
+        // 18 blocks at the default CarriageDims length, more on a longer one). That offset is
+        // permanent, so most of TWIN_MAX_DRIFT was spent before the train had moved at all: the exit
+        // relocated the whole structure onto its own coordinates a few blocks later, the entry
+        // relocated it back, and the pair re-laid its room over and over at two overlapping spots.
+        // Every re-lay carried the room's mobs to the new site and then spawned a fresh set on top of
+        // them, and re-ran the stamp's shape cascade over blocks that were already standing — which
+        // popped the room's pressure plates and left the drops floating. Anchored on the entry alone,
+        // the drift check measures the one distance it was written for.
         if (structure == null && role != PortalCarriageRole.ENTRY) {
             PortalPuppets.forget(carriageIndex);
             return;
         }
 
-        PortalStructure built = occupied && structure != null
+        PortalStructure built = structure != null && (occupied || role != PortalCarriageRole.ENTRY)
             ? structure
             : ensureStructure(level, dims, pairKey, originX, originY, originZ, groupSize);
         if (built == null) {
@@ -626,6 +640,14 @@ public final class PortalCarriageEvents {
             return existing;
         }
 
+        // Already standing exactly where the plan wants it. Nothing below would move a block, but it
+        // would erase the room and lay an identical one back down in its place — a second placement
+        // over the first, which is the shape of the bug this whole change is about. Cheap, and it
+        // holds whatever a future caller decides to measure drift against.
+        if (existing != null && existing.origin().equals(wanted)) {
+            return existing;
+        }
+
         // Far enough to want a new one, but not while copies of the room are still standing: the
         // erase below would have to sweep all of them in a single tick. The tiler is shedding them a
         // few per tick, faster than the train can travel the drift distance, so this waits rather
@@ -640,6 +662,13 @@ public final class PortalCarriageEvents {
         // Both the carry and the erase read the OLD record, so they cover exactly the box that was
         // written even if the room has since been authored at a different length.
         if (existing != null) {
+            // The room's OWN mobs go with the room, before anything is carried: the stamp below rolls
+            // and spawns a fresh set for the new site, and clearIntruders spares anything carrying
+            // DT's contents tag — so a carried authored mob would simply stand next to its
+            // replacement, once per relocation. What the carry is for is the villager or pet a player
+            // led in, and that has no pair mark, so it is untouched by this.
+            PortalRoomMobs.reapPair(level,
+                PortalCarriageBuilder.footprintOf(level, existing, dims), pairKey);
             carryStructureOccupants(level, dims, existing, wanted);
             PortalCarriageBuilder.eraseTwin(level, existing, dims);
         }
