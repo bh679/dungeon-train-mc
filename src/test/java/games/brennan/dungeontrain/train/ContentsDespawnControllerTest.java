@@ -104,11 +104,14 @@ class ContentsDespawnControllerTest {
     }
 
     @Test
-    void hysteresisBandClearsAGroupFootprint() {
-        // A carriage group's footprint is ~37 blocks. The band has to exceed it, otherwise the
-        // group's far end can be inside one radius while its anchor is outside the other.
-        assertTrue(DESPAWN_RADIUS_BLOCKS - RESTORE_RADIUS_BLOCKS >= 64.0,
-            "hysteresis band must comfortably exceed a group footprint");
+    void graceWindowIsTheThrashGuard() {
+        // At a 12-block band the geometry is narrower than a carriage group's own ~37-block
+        // footprint and takes under a second to cross, so it can no longer prevent churn by itself.
+        // The grace window is what does, which makes it the thing worth pinning down here.
+        assertTrue(DESPAWN_RADIUS_BLOCKS - RESTORE_RADIUS_BLOCKS > 0.0,
+            "there must still be some band, or a single position could both despawn and restore");
+        assertTrue(AWAY_GRACE_TICKS >= 40,
+            "grace window is the only thrash guard at this band width — keep it at least 2s");
     }
 
     @Test
@@ -118,20 +121,23 @@ class ContentsDespawnControllerTest {
         assertEquals(TrainCarriageAppender.SPAWN_RADIUS_BLOCKS, RESTORE_RADIUS_BLOCKS);
     }
 
-    @Test
-    void despawnRadiusExceedsWidestClientTrackingRange() {
-        // 128 blocks = 8 chunks, vanilla's widest mob tracking range, so no client can be tracking a
-        // mob at the moment it is swept.
-        assertTrue(DESPAWN_RADIUS_BLOCKS >= 128.0);
-    }
+    // NOTE: there is deliberately no "despawn radius exceeds client tracking range" test. At 60
+    // blocks the sweep sits INSIDE vanilla mob tracking range (hostiles 128, villagers 160), so a
+    // player looking back can see mobs blink out. That is an accepted trade documented on
+    // DESPAWN_RADIUS_BLOCKS — a weakened version of the old assertion would imply a guarantee the
+    // code no longer makes.
 
     @Test
-    void bandSurvivesWorstCaseClosingSpeed() {
-        // A player cannot cross the band and re-enter the restore radius within the grace window.
-        double bandBlocks = DESPAWN_RADIUS_BLOCKS - RESTORE_RADIUS_BLOCKS;
-        double reachableBlocks = 16.0 * (AWAY_GRACE_TICKS / 20.0);
-        assertTrue(bandBlocks > reachableBlocks,
-            "grace window must be shorter than the time to cross the hysteresis band");
+    void despawnRestoreCycleIsGraceBounded() {
+        // The band is too narrow to bound a cycle by distance, so the bound has to be temporal: a
+        // full DESPAWN -> RESTORE -> DESPAWN round trip costs at least AWAY_GRACE_TICKS ticks no
+        // matter how fast the player moves, because the second despawn re-earns the whole window
+        // from zero.
+        double band = DESPAWN_RADIUS_BLOCKS - RESTORE_RADIUS_BLOCKS;
+        assertEquals(Action.NONE, decide(true, DESPAWN_RADIUS_SQ + 1, true, false, AWAY_GRACE_TICKS - 1),
+            "a player back outside the radius must re-serve the full grace window");
+        assertTrue(band > 0 && AWAY_GRACE_TICKS >= 40,
+            "cycle cost is grace-bounded, not distance-bounded, at this band width");
     }
 
     @Test

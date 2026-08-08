@@ -59,16 +59,33 @@ public final class ContentsDespawnController {
     static final double RESTORE_RADIUS_SQ = RESTORE_RADIUS_BLOCKS * RESTORE_RADIUS_BLOCKS;
 
     /**
-     * Despawn radius. 128 blocks = 8 chunks, the widest vanilla mob client-tracking range, so no
-     * client can be tracking a mob at the moment it is swept — the despawn is never <i>seen</i>.
+     * Despawn radius — how far every player must be before a group's mobs are swept.
+     *
+     * <p>60 blocks is deliberately <i>inside</i> vanilla mob client-tracking range (most hostiles
+     * track at 8 chunks = 128 blocks, villagers at 10 = 160), so unlike a wider radius this sweep is
+     * not structurally invisible: a player who looks back at a carriage 60+ blocks away can see its
+     * mobs blink out, and blink back in on approach. That is an accepted trade — on a straight ride
+     * the swept carriages are behind the player, and reclaiming their AI cost this early is the whole
+     * point of the gate.</p>
+     *
+     * <p>Because the band between this and {@link #RESTORE_RADIUS_BLOCKS} is only 12 blocks — less
+     * than a carriage group's own footprint, and under a second of travel — the geometry no longer
+     * prevents sweep/restore churn on its own. {@link #AWAY_GRACE_TICKS} is what does. If
+     * {@code [despawn] restored=} stays non-zero on a steady one-directional ride, raise the grace
+     * window rather than this radius.</p>
      */
-    static final double DESPAWN_RADIUS_BLOCKS = 128.0;
+    static final double DESPAWN_RADIUS_BLOCKS = 60.0;
     static final double DESPAWN_RADIUS_SQ = DESPAWN_RADIUS_BLOCKS * DESPAWN_RADIUS_BLOCKS;
 
     /**
      * Consecutive ticks beyond the despawn radius before a sweep. 60t = 3s, the same "settled" unit
      * as {@code CLEAN_TICKS_FOR_SUCCESS} — long enough that neither a player pacing a platform nor a
      * momentary {@code canonicalPos} jitter can trigger a sweep.
+     *
+     * <p><b>This is the thrash guard.</b> With a 12-block hysteresis band the geometry cannot stop a
+     * player oscillating across the boundary; this window can, by bounding a full
+     * DESPAWN → RESTORE → DESPAWN cycle at no faster than once per 3s however quickly the player
+     * moves. Raise it if churn ever shows up in the {@code [despawn]} counters.</p>
      */
     static final int AWAY_GRACE_TICKS = 60;
 
