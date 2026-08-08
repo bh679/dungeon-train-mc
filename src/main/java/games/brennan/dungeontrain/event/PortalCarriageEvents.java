@@ -410,6 +410,14 @@ public final class PortalCarriageEvents {
      * mode asked for. A copy can fail to appear — an unloaded chunk, a spent budget, another pair's
      * structure in the way — and a fog reaching past the built edge would be describing a room the
      * player could walk out of.</p>
+     *
+     * <p><b>The test is against the padded region, not the structure.</b> A Bedrockless room's fog
+     * reaches into the clearance it swept, and a player who steps off the structure into that void is
+     * precisely who the fog is for — the ramp thickens it the further out they get. Testing the bare
+     * {@link #structureBox} instead sent {@code none()} at the room's own wall, taking the fog away
+     * at the exact step it should have started closing in. Same inflate as
+     * {@link #isInsidePortalStructure}, and horizontal for the same reason: the clearance has no
+     * vertical term.</p>
      */
     private static void sendFogFor(List<ServerPlayer> players, CarriageDims dims,
                                    PortalCarriageLayout layout, PortalStructure structure,
@@ -422,6 +430,7 @@ public final class PortalCarriageEvents {
         // stay what was stamped.
         int pad = structure.fogPad();
         AABB box = structureBox(dims, structure);
+        if (pad > 0) box = box.inflate(pad, 0.0, pad);
         PortalRoomFogPacket region = new PortalRoomFogPacket(
             structure.tiledMinX(dims, layout) - pad,
             structure.origin().getY(),
@@ -429,7 +438,11 @@ public final class PortalCarriageEvents {
             structure.tiledMaxX(dims, layout) + pad,
             structure.origin().getY() + structure.roomSize().getY(),
             structure.tiledMaxZ(dims, layout) + pad,
-            structure.fogRadius());
+            structure.fogRadius(),
+            // The pad is also the ramp: the fog closes in over exactly the space that was swept, so
+            // the walk into the void and the fog hiding its end are one distance.
+            pad,
+            structure.fogMinRadius());
 
         for (ServerPlayer player : players) {
             if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
