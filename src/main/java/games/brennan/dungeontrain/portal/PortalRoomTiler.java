@@ -355,16 +355,23 @@ public final class PortalRoomTiler {
      */
     private static void closeFace(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                   Tile tile, int dx, int dz) {
-        BlockState fallback = faceFill(level, dims, structure, tile, dx, dz);
         Vec3i size = structure.roomSize();
         int mirrorX = -dx * (size.getX() - 1);
         int mirrorZ = -dz * (size.getZ() - 1);
+        // Held in a cell and filled on first need rather than computed up front: most calls find a
+        // face that is already solid — an authored wall with no doorway in it — and those should
+        // cost nothing beyond the reads eachFaceCell is making anyway.
+        BlockState[] fallback = new BlockState[1];
         eachFaceCell(level, dims, structure, tile, dx, dz, /*interiorOnly*/ false, (wall, inner) -> {
             if (!level.getBlockState(wall).isAir()) return;
             BlockPos mirror = wall.offset(mirrorX, 0, mirrorZ);
             BlockState mirrored = level.getBlockState(mirror);
-            level.setBlock(wall, usableAsFill(level, mirror, mirrored) ? mirrored : fallback,
-                Block.UPDATE_ALL);
+            if (usableAsFill(level, mirror, mirrored)) {
+                level.setBlock(wall, mirrored, Block.UPDATE_ALL);
+                return;
+            }
+            if (fallback[0] == null) fallback[0] = faceFill(level, dims, structure, tile, dx, dz);
+            level.setBlock(wall, fallback[0], Block.UPDATE_ALL);
         });
     }
 
