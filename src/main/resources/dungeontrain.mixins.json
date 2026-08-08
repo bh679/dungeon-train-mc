@@ -61,6 +61,9 @@
     "client.LevelGetShadeMixin",
     "client.ModelBlockRendererUpsideDownMixin",
     "client.MinecraftFramerateThrottleMixin",
+    "client.ClientSubLevelLodMixin",
+    "client.SubLevelRenderDispatcherLodMixin",
+    "client.SubLevelRenderDataLodMixin",
     "client.SoundEngineMusicFadeMixin",
     "client.LanguageSelectEntryLogoMixin"
   ],
