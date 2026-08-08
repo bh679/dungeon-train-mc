@@ -1,9 +1,25 @@
 {
   "beam": {
+    "weight": 4,
+    "mode": "bedrockless"
+  },
+  "beamcenter": {
     "weight": 1,
     "mode": "bedrockless"
   },
+  "beamlong": {
+    "weight": 1,
+    "mode": "bedrockless"
+  },
+  "blocks": {
+    "weight": 1,
+    "mode": "endless_repetition"
+  },
   "book": {
+    "weight": 2,
+    "mode": "endless_repetition"
+  },
+  "cubes": {
     "weight": 1,
     "mode": "endless_repetition"
   },
@@ -20,16 +36,28 @@
     "weight": 1,
     "mode": "endless_repetition/dynamic"
   },
-  "library_dimension": {
-    "weight": 1,
+  "labrynth": {
+    "weight": 5,
     "mode": "endless_repetition/dynamic"
   },
-  "singlepillar": {
+  "library_dimension": {
+    "weight": 2,
+    "mode": "endless_repetition/dynamic"
+  },
+  "nobeam": {
     "weight": 1,
+    "mode": "bedrockless"
+  },
+  "patterns": {
+    "weight": 1,
+    "mode": "endless_repetition"
+  },
+  "singlepillar": {
+    "weight": 2,
     "mode": "endless_open"
   },
   "window": {
-    "weight": 1,
+    "weight": 5,
     "mode": "bedrockless"
   },
   "window_contents": {

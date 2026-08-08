@@ -4,11 +4,19 @@
   "variants": [
     {
       "id": "portalzigzag",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "two",
+      "weight": 3
+    },
+    {
+      "id": "bookportal",
       "weight": 1
+    },
+    {
+      "id": "bookportal2",
+      "weight": 3
     }
   ]
 }

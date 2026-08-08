@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 2,
+  "variants": [
+    {
+      "id": "beamlong",
+      "weight": 2
+    },
+    {
+      "id": "beamcenter",
+      "weight": 1
+    },
+    {
+      "id": "nobeam",
+      "weight": 1
+    }
+  ]
+}

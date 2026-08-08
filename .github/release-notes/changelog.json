@@ -6344,6 +6344,22 @@
       "released_at": null
     },
     {
+      "id": "portal-endless-tunnel-surrounds",
+      "version": "0.539.0",
+      "type": "fix",
+      "title": "The endless portal rooms now carry on past their tunnels",
+      "summary": "In an endless portal room, the tunnels back to the train stand inside the room rather than at its edge \u2014 but the ground gave out around them. Walk round the side of one and the floor simply stopped: open void, with the tunnel hanging in it. The room now continues past its tunnels, laying its own floor, ceiling and walls right up to them, so a tunnel reads as something standing in the hall that you can walk around. Open-walled endless rooms carry their floor and ceiling through in the same way.",
+      "highlights": [
+        "Fixed: void where the floor should be, in the aisles either side of a portal room's tunnels",
+        "An endless room's own walls and ceiling now continue around its tunnels",
+        "The way back to the train is still a wall with a door in it, unchanged"
+      ],
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "no-mobs-under-bedrock",
       "version": "0.539.0",
       "type": "fix",
