@@ -3,8 +3,8 @@
   "selfWeight": 1,
   "variants": [
     {
-      "id": "window_contents",
-      "weight": 4
+      "id": "cubes",
+      "weight": 1
     }
   ]
 }

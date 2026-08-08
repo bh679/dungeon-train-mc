@@ -1,10 +1,10 @@
 {
   "beam": {
-    "weight": 1,
+    "weight": 4,
     "mode": "bedrockless"
   },
   "book": {
-    "weight": 1,
+    "weight": 2,
     "mode": "endless_repetition"
   },
   "default": {
@@ -21,15 +21,19 @@
     "mode": "endless_repetition/dynamic"
   },
   "library_dimension": {
-    "weight": 1,
+    "weight": 2,
     "mode": "endless_repetition/dynamic"
   },
-  "singlepillar": {
+  "patterns": {
     "weight": 1,
+    "mode": "endless_repetition"
+  },
+  "singlepillar": {
+    "weight": 2,
     "mode": "endless_open"
   },
   "window": {
-    "weight": 1,
+    "weight": 5,
     "mode": "bedrockless"
   },
   "window_contents": {
