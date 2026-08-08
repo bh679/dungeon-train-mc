@@ -351,7 +351,12 @@ public final class PortalRoomTiler {
      * {@code -x} wall at the same height and the same lateral position — so each cell is filled from
      * its mirror across the room. Where the mirror is unusable (air, most often, since a room meant
      * to repeat has its doorways lined up on both faces) the fill falls back to the material the
-     * face itself is made of; see {@link #faceFill}.</p>
+     * face itself is made of, and then to the room's floor; see {@link #faceFill}.</p>
+     *
+     * <p>The blackstone around the corridor mouth is a different thing and stays: that is
+     * {@code sealCorridorMouth}, laid once with the twin, and every cell of it is masked out of the
+     * face work below. What had to stop was that same palette repeating out across a room it has
+     * nothing to do with.</p>
      */
     private static void closeFace(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                   Tile tile, int dx, int dz) {
@@ -382,8 +387,17 @@ public final class PortalRoomTiler {
      *
      * <p>Both planes, because either one alone can come up empty: a room open on the {@code +x}
      * face is usually open on {@code -x} too, but a room open on one side only would otherwise have
-     * nothing to sample. {@link PortalCarriageBuilder#POCKET_SHELL} remains the last resort, for a
-     * room whose faces carry no solid wall at all.</p>
+     * nothing to sample.</p>
+     *
+     * <p><b>And the floor when neither face has a wall in it at all.</b> That is not an edge case —
+     * {@code distantenemies} is a sculk floor, a sculk ceiling and pillars, with no side walls
+     * anywhere, which is what lets you see the enemies it is named for. A room like that has no wall
+     * material to find on any face, and closing it in the built-in shell is exactly the polished
+     * blackstone that had no business repeating through somebody's room. Its floor is the room's own
+     * block, so the boundary closes in that instead and reads as more of the same room.</p>
+     *
+     * <p>{@link PortalCarriageBuilder#POCKET_SHELL} survives as the last resort only, for a room with
+     * no usable block anywhere in its walls or its floor.</p>
      *
      * <p>Sampled from the world rather than from the saved template on purpose: it costs no template
      * lookup, and it reads what a Dynamic copy actually rolled rather than what the room was
@@ -404,7 +418,38 @@ public final class PortalRoomTiler {
             if (usableAsFill(level, mirror, mirrored)) seen.add(mirrored);
         });
         BlockState common = mostCommon(seen);
+        if (common != null) return common;
+
+        common = floorFill(level, dims, structure, tile);
         return common != null ? common : PortalCarriageBuilder.POCKET_SHELL;
+    }
+
+    /**
+     * The material of {@code tile}'s floor — what a wall-less room is closed with.
+     *
+     * <p>The floor plane rather than the ceiling because it is the one every room has to have
+     * something in: a player stands on it. Cells the corridors own are skipped, so the base tile's
+     * strip of corridor floor cannot outvote the room's own — it would not, on the count, but the
+     * rule that face work never reads a corridor's blocks is worth keeping whole.</p>
+     */
+    private static BlockState floorFill(ServerLevel level, CarriageDims dims,
+                                        PortalStructure structure, Tile tile) {
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
+        BlockPos origin = structure.tileOrigin(dims, layout, tile);
+        Vec3i size = structure.roomSize();
+        PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
+
+        List<BlockState> seen = new ArrayList<>();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int x = origin.getX(); x < origin.getX() + size.getX(); x++) {
+            for (int z = origin.getZ(); z < origin.getZ() + size.getZ(); z++) {
+                pos.set(x, origin.getY(), z);
+                if (mask.covers(pos)) continue;
+                BlockState state = level.getBlockState(pos);
+                if (usableAsFill(level, pos, state)) seen.add(state);
+            }
+        }
+        return mostCommon(seen);
     }
 
     /**
