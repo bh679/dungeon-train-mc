@@ -659,6 +659,10 @@ public final class TrainAssembler {
             shipyard.delete(ship);
         }
         CarriagePersistenceStore.clear(level);
+        // Same reasoning, for the contents-despawn snapshots: a fresh train must never inherit mobs
+        // swept from the previous one. This also covers the bootstrap path — every server start
+        // rebuilds the train through here — which is what reclaims files a crash left behind.
+        ContentsSnapshotStore.clear(level);
         return trains.size();
     }
 
