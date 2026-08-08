@@ -13,11 +13,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -349,9 +345,14 @@ public final class PortalRoomTiler {
      * <p>Which is knowable exactly, because every copy is the same room. Beyond the {@code +x} face
      * stands the next copy's {@code -x} wall, and that is block-for-block this copy's own
      * {@code -x} wall at the same height and the same lateral position — so each cell is filled from
-     * its mirror across the room. Where the mirror is unusable (air, most often, since a room meant
-     * to repeat has its doorways lined up on both faces) the fill falls back to the material the
-     * face itself is made of, and then to the room's floor; see {@link #faceFill}.</p>
+     * its mirror across the room.</p>
+     *
+     * <p><b>A cell whose mirror is not a block is left alone.</b> Nothing is invented to stand in for
+     * it. A room whose faces are open — {@code distantenemies} is a sculk floor, a sculk ceiling and
+     * pillars, with no side walls anywhere, which is what lets you see the enemies it is named for —
+     * has no wall at its boundary either, and that is right: any material picked for it is a column
+     * of blocks the author never put there, standing in the middle of a space that is meant to read
+     * as open. Where a room does have a wall, the mirror finds it and the wall carries on.</p>
      *
      * <p>The blackstone around the corridor mouth is a different thing and stays: that is
      * {@code sealCorridorMouth}, laid once with the twin, and every cell of it is masked out of the
@@ -363,93 +364,13 @@ public final class PortalRoomTiler {
         Vec3i size = structure.roomSize();
         int mirrorX = -dx * (size.getX() - 1);
         int mirrorZ = -dz * (size.getZ() - 1);
-        // Held in a cell and filled on first need rather than computed up front: most calls find a
-        // face that is already solid — an authored wall with no doorway in it — and those should
-        // cost nothing beyond the reads eachFaceCell is making anyway.
-        BlockState[] fallback = new BlockState[1];
         eachFaceCell(level, dims, structure, tile, dx, dz, /*interiorOnly*/ false, (wall, inner) -> {
             if (!level.getBlockState(wall).isAir()) return;
             BlockPos mirror = wall.offset(mirrorX, 0, mirrorZ);
             BlockState mirrored = level.getBlockState(mirror);
-            if (usableAsFill(level, mirror, mirrored)) {
-                level.setBlock(wall, mirrored, Block.UPDATE_ALL);
-                return;
-            }
-            if (fallback[0] == null) fallback[0] = faceFill(level, dims, structure, tile, dx, dz);
-            level.setBlock(wall, fallback[0], Block.UPDATE_ALL);
+            if (!usableAsFill(level, mirror, mirrored)) return;
+            level.setBlock(wall, mirrored, Block.UPDATE_ALL);
         });
-    }
-
-    /**
-     * What to close a face with when a cell's mirror cannot be copied: the most common usable block
-     * across the face plane and the plane it mirrors onto — the blocks the author put <i>around</i>
-     * the doorway the copies pass through.
-     *
-     * <p>Both planes, because either one alone can come up empty: a room open on the {@code +x}
-     * face is usually open on {@code -x} too, but a room open on one side only would otherwise have
-     * nothing to sample.</p>
-     *
-     * <p><b>And the floor when neither face has a wall in it at all.</b> That is not an edge case —
-     * {@code distantenemies} is a sculk floor, a sculk ceiling and pillars, with no side walls
-     * anywhere, which is what lets you see the enemies it is named for. A room like that has no wall
-     * material to find on any face, and closing it in the built-in shell is exactly the polished
-     * blackstone that had no business repeating through somebody's room. Its floor is the room's own
-     * block, so the boundary closes in that instead and reads as more of the same room.</p>
-     *
-     * <p>{@link PortalCarriageBuilder#POCKET_SHELL} survives as the last resort only, for a room with
-     * no usable block anywhere in its walls or its floor.</p>
-     *
-     * <p>Sampled from the world rather than from the saved template on purpose: it costs no template
-     * lookup, and it reads what a Dynamic copy actually rolled rather than what the room was
-     * authored as. A face closed once and sampled again later sees its own fill, which is the same
-     * material — so this is stable under the window sliding back and forth.</p>
-     */
-    private static BlockState faceFill(ServerLevel level, CarriageDims dims,
-                                       PortalStructure structure, Tile tile, int dx, int dz) {
-        Vec3i size = structure.roomSize();
-        int mirrorX = -dx * (size.getX() - 1);
-        int mirrorZ = -dz * (size.getZ() - 1);
-        List<BlockState> seen = new ArrayList<>();
-        eachFaceCell(level, dims, structure, tile, dx, dz, /*interiorOnly*/ false, (wall, inner) -> {
-            BlockState own = level.getBlockState(wall);
-            if (usableAsFill(level, wall, own)) seen.add(own);
-            BlockPos mirror = wall.offset(mirrorX, 0, mirrorZ);
-            BlockState mirrored = level.getBlockState(mirror);
-            if (usableAsFill(level, mirror, mirrored)) seen.add(mirrored);
-        });
-        BlockState common = mostCommon(seen);
-        if (common != null) return common;
-
-        common = floorFill(level, dims, structure, tile);
-        return common != null ? common : PortalCarriageBuilder.POCKET_SHELL;
-    }
-
-    /**
-     * The material of {@code tile}'s floor — what a wall-less room is closed with.
-     *
-     * <p>The floor plane rather than the ceiling because it is the one every room has to have
-     * something in: a player stands on it. Cells the corridors own are skipped, so the base tile's
-     * strip of corridor floor cannot outvote the room's own — it would not, on the count, but the
-     * rule that face work never reads a corridor's blocks is worth keeping whole.</p>
-     */
-    private static BlockState floorFill(ServerLevel level, CarriageDims dims,
-                                        PortalStructure structure, Tile tile) {
-        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims);
-        BlockPos origin = structure.tileOrigin(dims, layout, tile);
-        Vec3i size = structure.roomSize();
-        PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
-
-        List<BlockState> seen = new ArrayList<>();
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for (int x = origin.getX(); x < origin.getX() + size.getX(); x++) {
-            for (int z = origin.getZ(); z < origin.getZ() + size.getZ(); z++) {
-                pos.set(x, origin.getY(), z);
-                if (mask.covers(pos)) continue;
-                BlockState state = level.getBlockState(pos);
-                if (usableAsFill(level, pos, state)) seen.add(state);
-            }
-        }
-        return mostCommon(seen);
     }
 
     /**
@@ -467,26 +388,6 @@ public final class PortalRoomTiler {
             && !state.hasBlockEntity()
             && state.getFluidState().isEmpty()
             && state.isCollisionShapeFullBlock(level, pos);
-    }
-
-    /**
-     * The value appearing most often in {@code values}, or null when it is empty. Ties go to
-     * whichever was seen first, so a tick's choice does not depend on hash order.
-     *
-     * <p>Generic and free of Minecraft types so it unit-tests without a NeoForge bootstrap — the
-     * same reason {@link PortalRoomTiling} keeps its geometry pure.</p>
-     */
-    static <T> T mostCommon(List<T> values) {
-        Map<T, Integer> counts = new LinkedHashMap<>();
-        for (T value : values) counts.merge(value, 1, Integer::sum);
-        T best = null;
-        int bestCount = 0;
-        for (Map.Entry<T, Integer> entry : counts.entrySet()) {
-            if (entry.getValue() <= bestCount) continue;
-            best = entry.getKey();
-            bestCount = entry.getValue();
-        }
-        return best;
     }
 
     /** Take a face away — {@link PortalRoomMode#ENDLESS_OPEN} only. */
