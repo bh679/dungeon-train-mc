@@ -570,7 +570,8 @@ public final class PortalCarriageBuilder {
 
         stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
             PortalCorridorMask.NONE, PortalCorridorMask.NONE,
-            structure.variantIndexFor(PortalRoomTiling.Tile.BASE), pairKey, PortalRoomTiling.Tile.BASE,
+            structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey), pairKey,
+            PortalRoomTiling.Tile.BASE,
             PortalRoomMobs.liveCount(level, footprintOf(level, structure, dims), pairKey),
             structure.settings().contents());
 
@@ -909,9 +910,9 @@ public final class PortalCarriageBuilder {
      * linked loot prefabs all sat dead on disk. This is the read, done the same way
      * {@code TunnelPlacer} does it for tunnels.</p>
      *
-     * <p>{@code variantIndex} is what makes one copy of a room differ from another under
-     * {@link PortalRoomCopies#DYNAMIC}, and what makes them identical under
-     * {@link PortalRoomCopies#EXACT} — see {@code PortalStructure.variantIndexFor}.</p>
+     * <p>{@code variantIndex} is what makes one pair's room differ from another pair's, and what makes
+     * one copy of a room differ from another under {@link PortalRoomCopies#DYNAMIC} and identical
+     * under {@link PortalRoomCopies#EXACT} — see {@code PortalStructure.variantIndexFor}.</p>
      */
     /**
      * {@link #stampRoomAt} with the two jobs a mask does held apart.
@@ -959,9 +960,10 @@ public final class PortalCarriageBuilder {
      *       {@code DifficultyProgression.positionTier} inside the contents pass reads the portal's
      *       actual position on the train, and the furnishing is themed to the stage the player is
      *       in rather than to a hash.</li>
-     *   <li>{@code variantIndex} carries the copy identity ({@code PortalStructure.variantIndexFor}),
-     *       so Exact copies share a furnishing and Dynamic copies each get their own — for free, and
-     *       always agreeing with the block variants rolled from the same number.</li>
+     *   <li>{@code variantIndex} carries the pair and copy identity
+     *       ({@code PortalStructure.variantIndexFor}), so one portal's furnishing differs from the
+     *       next's, Exact copies within a room share it and Dynamic copies each get their own — for
+     *       free, and always agreeing with the block variants rolled from the same number.</li>
      * </ul>
      *
      * <p><b>Pure, not memoised</b>, exactly like the room's variant pass: a copy that retires and is

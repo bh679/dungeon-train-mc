@@ -175,7 +175,7 @@ public final class PortalRoomTiler {
         PortalCorridorMask clearMask = maskFor(structure, dims, tile);
         PortalCorridorMask writeMask = writeMaskFor(structure, clearMask, origin, size);
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, structure.roomName(), size,
-            /*relight*/ true, clearMask, writeMask, structure.variantIndexFor(tile),
+            /*relight*/ true, clearMask, writeMask, structure.variantIndexFor(tile, pairKey),
             pairKey, tile,
             PortalRoomMobs.liveCount(level, PortalCarriageBuilder.footprintOf(level, structure, dims), pairKey),
             // The structure's own setting, not a fresh read of the variant: a portal already standing

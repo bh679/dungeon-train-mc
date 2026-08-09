@@ -53,7 +53,7 @@
     "mode": "endless_repetition"
   },
   "singlepillar": {
-    "weight": 2,
+    "weight": 50,
     "mode": "endless_open"
   },
   "window": {
