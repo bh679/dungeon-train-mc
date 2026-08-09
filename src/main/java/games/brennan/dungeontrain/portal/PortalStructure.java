@@ -85,14 +85,25 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
     /**
      * The seed index the copy at {@code tile} rolls its block variants and container contents from.
      *
+     * <p><b>{@code pairKey} is in the mix, and has to be.</b> This used to be {@code roomName}'s hash
+     * and nothing else — so every pair on the train that rolled the same room name got byte-identical
+     * variants, chests and furnishing, in every world ever generated. Walking into the tenth portal
+     * showed the first one again. The pair's key is the entry corridor's real carriage index, which
+     * is what makes one portal's room differ from the next's; the name stays in so two different rooms
+     * at the same key still separate.</p>
+     *
      * <p>Under {@link PortalRoomCopies#EXACT} every copy shares the base room's index, so the hall is
      * the same room repeated block for block. Under {@link PortalRoomCopies#DYNAMIC} the index mixes
-     * in the copy's position, so copies differ from one another — but it is a pure function of that
-     * position, so walking back to one finds the room and the chests you left rather than a fresh
-     * roll. That is what stops a sliding window from being a loot machine.</p>
+     * in the copy's position, so copies differ from one another.</p>
+     *
+     * <p><b>Still not a loot machine.</b> Both inputs are fixed for the life of the pair — the key is
+     * its position on the train and the tile is a grid cell — so the index is a pure function of
+     * <i>where</i>, never of <i>when</i>. A copy that retires as the tiling window slides, or a whole
+     * structure re-stamped after the train drifts, reproduces the room and the chests the player left
+     * rather than a fresh roll.</p>
      */
-    public int variantIndexFor(PortalRoomTiling.Tile tile) {
-        int base = roomName.hashCode();
+    public int variantIndexFor(PortalRoomTiling.Tile tile, int pairKey) {
+        int base = Objects.hash(roomName.hashCode(), pairKey);
         if (settings.copies() != PortalRoomCopies.DYNAMIC) return base;
         return Objects.hash(base, tile.x(), tile.z());
     }

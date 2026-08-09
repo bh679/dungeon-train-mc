@@ -26,6 +26,9 @@ class PortalRoomSettingsTest {
     private static final CarriageDims DIMS = CarriageDims.DEFAULT;
     private static final BlockPos ORIGIN = new BlockPos(200, -60, -30);
 
+    /** One pair's key — the entry corridor's carriage index. Held still where it is not the subject. */
+    private static final int PAIR = 47;
+
     private static PortalStructure structure(PortalRoomMode mode, PortalRoomCopies copies) {
         return new PortalStructure(ORIGIN, "default", PortalRoomLayout.builtInSize(DIMS),
             new PortalRoomSettings(mode, copies), PortalRoomTiling.base());
@@ -145,11 +148,11 @@ class PortalRoomSettingsTest {
     @DisplayName("Exact: every copy shares the base room's roll, so the hall is one room repeated")
     void exactGivesEveryCopyTheSameRoll() {
         PortalStructure s = structure(PortalRoomMode.ENDLESS_REPETITION, PortalRoomCopies.EXACT);
-        int base = s.variantIndexFor(PortalRoomTiling.Tile.BASE);
+        int base = s.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR);
         for (PortalRoomTiling.Tile tile : new PortalRoomTiling.Tile[]{
             new PortalRoomTiling.Tile(1, 0), new PortalRoomTiling.Tile(0, 3),
             new PortalRoomTiling.Tile(-4, -2)}) {
-            assertEquals(base, s.variantIndexFor(tile), tile.toString());
+            assertEquals(base, s.variantIndexFor(tile, PAIR), tile.toString());
         }
     }
 
@@ -160,13 +163,13 @@ class PortalRoomSettingsTest {
         Set<Integer> seen = new HashSet<>();
         for (int x = -3; x <= 3; x++) {
             for (int z = -3; z <= 3; z++) {
-                seen.add(s.variantIndexFor(new PortalRoomTiling.Tile(x, z)));
+                seen.add(s.variantIndexFor(new PortalRoomTiling.Tile(x, z), PAIR));
             }
         }
         // 49 positions; a handful of hash collisions would be tolerable, wholesale sameness is not.
         assertTrue(seen.size() > 40, "only " + seen.size() + " distinct rolls across 49 copies");
-        assertNotEquals(s.variantIndexFor(PortalRoomTiling.Tile.BASE),
-            s.variantIndexFor(new PortalRoomTiling.Tile(1, 0)));
+        assertNotEquals(s.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR),
+            s.variantIndexFor(new PortalRoomTiling.Tile(1, 0), PAIR));
     }
 
     @Test
@@ -181,8 +184,38 @@ class PortalRoomSettingsTest {
         PortalStructure second = structure(PortalRoomMode.ENDLESS_REPETITION, PortalRoomCopies.DYNAMIC)
             .withTiling(PortalRoomTiling.base().with(tile));
 
-        assertEquals(first.variantIndexFor(tile), first.variantIndexFor(tile));
-        assertEquals(first.variantIndexFor(tile), second.variantIndexFor(tile));
+        assertEquals(first.variantIndexFor(tile, PAIR), first.variantIndexFor(tile, PAIR));
+        assertEquals(first.variantIndexFor(tile, PAIR), second.variantIndexFor(tile, PAIR));
+    }
+
+    @Test
+    @DisplayName("Two pairs that rolled the same room name still roll different rooms")
+    void differentPairsRollDifferently() {
+        // The bug this pair key was added for: the index used to be the room name's hash and nothing
+        // else, so every portal on the train that drew 'singlepillar' was byte-identical to the last
+        // one — same block variants, same chests, same furnishing.
+        PortalStructure s = structure(PortalRoomMode.ENDLESS_REPETITION, PortalRoomCopies.EXACT);
+
+        Set<Integer> seen = new HashSet<>();
+        for (int pairKey = 0; pairKey < 40; pairKey++) {
+            seen.add(s.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey));
+        }
+        assertTrue(seen.size() > 35, "only " + seen.size() + " distinct rolls across 40 pairs");
+    }
+
+    @Test
+    @DisplayName("A pair's roll depends on where it is, never on when it was stamped")
+    void samePairRollsTheSameEveryStamp() {
+        PortalRoomTiling.Tile tile = new PortalRoomTiling.Tile(-2, 1);
+
+        // The train drifted and the whole structure was re-stamped somewhere else, with a different
+        // set of copies standing. Same pair, so the room the player walks back into is the one they
+        // left — chests included. Re-rolling here would refill them every time the window slid.
+        PortalStructure planned = structure(PortalRoomMode.ENDLESS_REPETITION, PortalRoomCopies.DYNAMIC);
+        PortalStructure reStamped = planned.movedTo(ORIGIN.offset(4096, 0, 0))
+            .withTiling(PortalRoomTiling.base().with(tile));
+
+        assertEquals(planned.variantIndexFor(tile, PAIR), reStamped.variantIndexFor(tile, PAIR));
     }
 
     @Test
@@ -194,7 +227,7 @@ class PortalRoomSettingsTest {
         PortalStructure b = new PortalStructure(ORIGIN, "beta", PortalRoomLayout.builtInSize(DIMS),
             new PortalRoomSettings(PortalRoomMode.ENDLESS_REPETITION, PortalRoomCopies.DYNAMIC),
             PortalRoomTiling.base());
-        assertNotEquals(a.variantIndexFor(PortalRoomTiling.Tile.BASE),
-            b.variantIndexFor(PortalRoomTiling.Tile.BASE));
+        assertNotEquals(a.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR),
+            b.variantIndexFor(PortalRoomTiling.Tile.BASE, PAIR));
     }
 }
