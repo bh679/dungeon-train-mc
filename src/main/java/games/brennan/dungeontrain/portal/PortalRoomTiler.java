@@ -334,11 +334,34 @@ public final class PortalRoomTiler {
         Tile neighbour = tile.offset(dx, dz);
         if (structure.tiling().has(neighbour)) {
             carveSeam(level, dims, structure, tile, dx, dz);
-        } else if (structure.mode().closesOuterFaces()) {
+        } else if (structure.mode().closesOuterFaces() && !vacatedByAMovedExit(structure, tile, dx)) {
             closeFace(level, dims, structure, tile, dx, dz);
         } else {
             openFace(level, dims, structure, tile, dx, dz);
         }
+    }
+
+    /**
+     * True for the one face that must never be walled: the far end of the arrival room, on a pair that
+     * has stood its exit somewhere else.
+     *
+     * <p>That face used to be the corridor's, and so was masked out of all of this. With the exit
+     * moved it is ordinary room again — and the base tile is stamped before anything neighbours it, so
+     * the very first face pass would find no neighbour and <b>wall it</b>, in the room's own blocks.
+     * The seam carve reopens most of it a tick later when the next tile lands, but not all: a close
+     * fills any air cell, while a carve only reopens cells that are open one step in on <i>both</i>
+     * sides, so anything with authored geometry behind it stays bricked up for good. What a player
+     * sees is a portal that sealed its own exit — the exact thing standing the exit elsewhere exists
+     * to avoid.</p>
+     *
+     * <p>Left as the author wrote it instead. The room's own shell is still there; only the doorway
+     * the corridor used to meet is open, and the next tile lands in a tick or two — the tiler fills
+     * nearest-first and this is the nearest tile there is.</p>
+     */
+    private static boolean vacatedByAMovedExit(PortalStructure structure, Tile tile, int dx) {
+        return dx > 0
+            && Tile.BASE.equals(tile)
+            && !Tile.BASE.equals(structure.exitTile());
     }
 
     /**

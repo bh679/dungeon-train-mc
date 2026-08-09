@@ -38,17 +38,17 @@
   "distantenemies": {
     "weight": 1,
     "minLevel": 1,
-    "mode": "endless_repetition/dynamic/off/on:12"
+    "mode": "endless_repetition/dynamic"
   },
   "labrynth": {
     "weight": 5,
     "minLevel": 10,
-    "mode": "endless_repetition/dynamic/off/random:10:10"
+    "mode": "endless_repetition/dynamic"
   },
   "library_dimension": {
     "weight": 2,
     "minLevel": 5,
-    "mode": "endless_repetition/dynamic/off/random:10"
+    "mode": "endless_repetition/dynamic"
   },
   "nobeam": {
     "weight": 1,
