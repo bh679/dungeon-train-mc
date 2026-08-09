@@ -1,0 +1,11 @@
+{
+  "id": "they_won",
+  "title": "They Won",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "They won.\n\n%TARGET% killed you.\nAgain, technically.\nYou were already gone.\n\nCarriage %CARRIAGE%.\n%DAYS% days of waiting.\n\n%STORY%\n\nThey took the note off the body.\nYour handwriting.\nYour name on it.\n\nSomewhere in a world you will never visit, someone has your death note in a chest.\n\nHow does that sit?",
+    "About that name you wrote.\n\n%TARGET%.\n\nStill breathing.\n\nYour echo found them at carriage %CARRIAGE%, %DAYS% days late, and lost.\n\n%GEAR%\nIt had your face.\nIt fought like you.\n\n%STORY%\n\nThat last part might be the problem.\n\n.\n\nBetter luck next life."
+  ]
+}

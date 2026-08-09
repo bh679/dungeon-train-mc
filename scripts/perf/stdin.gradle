@@ -1,0 +1,11 @@
+// Wire the forked runServer JVM's stdin to the Gradle process's stdin, so the harness can type
+// server console commands from a pipe.
+//
+// runServer does NOT forward stdin by default: a piped `stop` never arrives, the wrapper waits
+// forever, and the run hangs. Passing this via `-I stdin.gradle` fixes it without touching the
+// repo's build.gradle.
+allprojects {
+    tasks.configureEach { t ->
+        if (t instanceof JavaExec) { t.standardInput = System.in }
+    }
+}

@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/submitted_love_note",
+  "display": {
+    "icon": { "id": "minecraft:pink_candle" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.lovenote_self_target.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.lovenote_self_target.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "lovenote_self_target" }
+    }
+  },
+  "requirements": [["action"]]
+}

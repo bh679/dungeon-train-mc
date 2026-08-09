@@ -217,4 +217,62 @@ class PaymentLinksTest {
         assertEquals(CN + "?client_reference_id=Steve&locale=zh-TW",
                 PaymentLinks.withLocale(PaymentLinks.withClientReference(CN, "Steve"), "zh-TW"));
     }
+
+    // --- the named price points ---------------------------------------------------------------
+
+    @Test
+    void aTierRidesAsAQuantityOnTheCheckoutRoute() {
+        // The relay multiplies its unit price by qty, so the tier IS the quantity.
+        assertEquals(ROUTE + "?displayname=Steve&locale=en&qty=7",
+                PaymentLinks.withQuantity(
+                        PaymentLinks.withDisplayName(ROUTE, "Steve", "en"),
+                        SupportTier.SERVER_COSTS.quantity()));
+    }
+
+    @Test
+    void everyTierMapsToItsOwnQuantity() {
+        assertEquals(1, SupportTier.HELP_DEV.quantity());
+        assertEquals(3, SupportTier.BIG_FAN.quantity());
+        assertEquals(7, SupportTier.SERVER_COSTS.quantity());
+    }
+
+    @Test
+    void aQuantityBelowOneIsOmittedRatherThanSent() {
+        // The relay would clamp it anyway; leaving the parameter off says "no choice made".
+        assertEquals(ROUTE, PaymentLinks.withQuantity(ROUTE, 0));
+        assertEquals(ROUTE, PaymentLinks.withQuantity(ROUTE, -3));
+    }
+
+    @Test
+    void nullBaseSurvivesQuantity() {
+        assertNull(PaymentLinks.withQuantity(null, 3));
+    }
+
+    // --- who loses the open-ended options -----------------------------------------------------
+
+    @Test
+    void simplifiedChineseLosesTheOpenEndedOptions() {
+        // Revolut and Patreon are both walled in mainland China.
+        assertTrue(PaymentLinks.isSimplifiedChineseLocale("zh_cn"));
+        assertTrue(PaymentLinks.isSimplifiedChineseLocale("lzh"));
+    }
+
+    @Test
+    void traditionalChineseKeepsThem() {
+        // The deliberate difference from useChinaPayment()'s whole-family gate: Taiwan and Hong Kong
+        // players genuinely can use Patreon and Revolut, so this predicate must not take them away.
+        assertFalse(PaymentLinks.isSimplifiedChineseLocale("zh_tw"));
+        assertFalse(PaymentLinks.isSimplifiedChineseLocale("zh_hk"));
+        // ...while the route-offering gate still covers the whole family, unchanged.
+        assertTrue(PaymentLinks.useChinaPayment("zh_tw", CN));
+        assertTrue(PaymentLinks.useChinaPayment("zh_hk", CN));
+    }
+
+    @Test
+    void everyoneElseKeepsTheOpenEndedOptions() {
+        assertFalse(PaymentLinks.isSimplifiedChineseLocale("en_us"));
+        assertFalse(PaymentLinks.isSimplifiedChineseLocale("ja_jp"));
+        assertFalse(PaymentLinks.isSimplifiedChineseLocale(""));
+        assertFalse(PaymentLinks.isSimplifiedChineseLocale(null));
+    }
 }

@@ -13,7 +13,8 @@ shape byte-identical. This gate enforces that:
   3. Every JSON parses and is *shape-identical* to es_es: same object keys, same array
      lengths, equal numbers/booleans/null, and equal structural strings (id / ref / page /
      _translator_note). Only translatable string values may differ.
-  4. The Death Note trigger title is <= 15 characters (Minecraft book-title limit).
+  4. Every trigger-book title (Death Note, Love Note) is <= 15 characters (Minecraft book-title
+     limit) — a longer one can't be typed, so that language silently loses the mechanic.
   5. The localization credit names the locale.
 
 Usage:  validate-locale.py <loc> [<loc> ...]
@@ -39,6 +40,9 @@ SOFT_NUM_KEYS = {"offset"}
 # printf-style tokens MC's format parser recognises ( %s %d %1$s %% … ).
 PLACEHOLDER = re.compile(r"%(?:\d+\$)?[a-zA-Z%]")
 MAX_TITLE_CHARS = 15               # DeathNoteTitleLocalization.VANILLA_MAX_TITLE_CHARS
+# Instruction books whose TITLE is itself the in-game trigger word a player types (NoteKind).
+# Their translated titles must stay typeable, or that language loses the mechanic silently.
+TRIGGER_BOOKS = ("deathnote", "lovenote")
 
 
 def load(path):
@@ -140,7 +144,7 @@ def validate_data(loc, errors):
                 errors.append(f"[{sub}] {rel}: JSON error: {exc}")
                 continue
             compare_shape(ref, cur, f"{sub}/{rel}", errors)
-            if rel.endswith("random_books/deathnote.json"):
+            if any(rel.endswith(f"random_books/{book}.json") for book in TRIGGER_BOOKS):
                 title = cur.get("title", "")
                 if len(title) > MAX_TITLE_CHARS:
                     errors.append(f"[{sub}] {rel}: title {title!r} is {len(title)} chars "

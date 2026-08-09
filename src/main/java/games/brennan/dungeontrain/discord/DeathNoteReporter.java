@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.discord;
 
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import org.slf4j.Logger;
 
@@ -35,14 +36,17 @@ public final class DeathNoteReporter {
      * @param authorSkinRef  optional pre-encoded skin ref for the echo, or "" (spawner encodes from uuid+name)
      * @param freePlay       whether the author died on a Free Play (cheated) run — the curse then only
      *                       spawns for a target who is also in Free Play (provenance match)
+     * @param kind           which book was signed — decides how the echo feels about the target when
+     *                       it arrives (see {@link NoteKind})
      */
     public static void submit(UUID authorId, String authorName, String targetName, String targetUuid,
-                              int deathCarriage, String worldKey, String authorSkinRef, boolean freePlay) {
+                              int deathCarriage, String worldKey, String authorSkinRef, boolean freePlay,
+                              NoteKind kind) {
         try {
             if (authorId == null) return;
             String uuid = authorId.toString().replace("-", "");
             JsonObject payload = buildPayload(uuid, authorName, targetName, targetUuid,
-                    deathCarriage, worldKey, authorSkinRef, freePlay);
+                    deathCarriage, worldKey, authorSkinRef, freePlay, kind);
             RelayOutbox.get().enqueue("/deathnotes/submit", payload.toString());
             LOGGER.debug("[DungeonTrain] DeathNote submit (target {}, carriage {}) queued to the relay outbox.",
                     targetName, deathCarriage);
@@ -67,12 +71,89 @@ public final class DeathNoteReporter {
     }
 
     /**
+     * Report how a landed curse ended, from the TARGET's game — the other half of the author's story
+     * loop (the relay serves it back on {@code /deathnotes/landed}). Write-once on the relay: the first
+     * report wins, so a retry or a second death event can't rewrite the ending. Durable + no-throw.
+     *
+     * @param noteId  the relay note id the echo was spawned from (stamped on the echo at spawn)
+     * @param outcome one of {@link #OUTCOME_ECHO_KILLED_TARGET} / {@link #OUTCOME_TARGET_KILLED_ECHO}
+     */
+    public static void reportOutcome(int noteId, String outcome) {
+        try {
+            if (noteId <= 0 || outcome == null || outcome.isBlank()) return;
+            RelayOutbox.get().enqueue("/deathnotes/outcome", buildOutcomePayload(noteId, outcome).toString());
+            LOGGER.debug("[DungeonTrain] DeathNote outcome {} for note {} queued to the relay outbox.",
+                    outcome, noteId);
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] DeathNote outcome failed to build: {}", t.toString());
+        }
+    }
+
+    /**
+     * Report the full encounter journal for a landed curse — the ordered beats, the gear the echo bore
+     * and claimed, how long it lasted and how it ended — so the author's story book can narrate what
+     * actually happened rather than just naming a carriage. Rides the same write-once
+     * {@code /deathnotes/outcome} endpoint as {@link #reportOutcome}.
+     *
+     * @param noteId    the relay note id the echo was spawned from
+     * @param outcome   the ending, or {@code null} when the encounter produced no verdict (the echo was
+     *                  left behind, or the target died to something else) — the journal still ships
+     * @param encounter the journal object built by {@code CursedEncounterPayload}
+     */
+    public static void reportEncounter(int noteId, String outcome, JsonObject encounter) {
+        try {
+            if (noteId <= 0 || encounter == null) return;
+            JsonObject body = new JsonObject();
+            body.addProperty("id", noteId);
+            if (outcome != null && !outcome.isBlank()) body.addProperty("outcome", outcome);
+            body.add("encounter", encounter);
+            RelayOutbox.get().enqueue("/deathnotes/outcome", body.toString());
+            LOGGER.debug("[DungeonTrain] DeathNote encounter for note {} (ending {}) queued to the relay outbox.",
+                    noteId, outcome == null ? "none" : outcome);
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] DeathNote encounter failed to build: {}", t.toString());
+        }
+    }
+
+    /**
+     * Report that the AUTHOR read note {@code noteId}'s story book — flips the relay's one-way
+     * {@code storyRead} latch so that curse's story is never handed out again (one story per curse).
+     * Durable + idempotent. No-throw.
+     */
+    public static void markStoryRead(int noteId) {
+        try {
+            if (noteId <= 0) return;
+            JsonObject body = new JsonObject();
+            body.addProperty("id", noteId);
+            RelayOutbox.get().enqueue("/deathnotes/story-read", body.toString());
+            LOGGER.debug("[DungeonTrain] DeathNote story-read {} queued to the relay outbox.", noteId);
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] DeathNote story-read failed to build: {}", t.toString());
+        }
+    }
+
+    /** The curse ran its course: the author's echo killed the target it was written for. */
+    public static final String OUTCOME_ECHO_KILLED_TARGET = "echo_killed_target";
+    /** The target fought the echo off — the curse landed but was survived. */
+    public static final String OUTCOME_TARGET_KILLED_ECHO = "target_killed_echo";
+
+    /** Pure assembly of the {@code /deathnotes/outcome} body — package-private for unit tests. */
+    static JsonObject buildOutcomePayload(int noteId, String outcome) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", noteId);
+        body.addProperty("outcome", outcome);
+        return body;
+    }
+
+    /**
      * Pure assembly of the {@code /deathnotes/submit} JSON body — package-private so the shape can be
      * unit-tested without a running server. Matches the relay contract exactly. Null strings emit as "".
      */
     static JsonObject buildPayload(String authorUuid, String authorName, String targetName, String targetUuid,
-                                   int deathCarriage, String worldKey, String authorSkinRef, boolean freePlay) {
+                                   int deathCarriage, String worldKey, String authorSkinRef, boolean freePlay,
+                                   NoteKind kind) {
         JsonObject body = new JsonObject();
+        body.addProperty("kind", (kind == null ? NoteKind.DEATH : kind).id());
         body.addProperty("authorUuid", authorUuid == null ? "" : authorUuid);
         body.addProperty("authorName", authorName == null ? "" : authorName);
         body.addProperty("targetName", targetName == null ? "" : targetName);

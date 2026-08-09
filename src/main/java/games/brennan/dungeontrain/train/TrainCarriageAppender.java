@@ -545,7 +545,11 @@ public final class TrainCarriageAppender {
      * activation radius (32) so mobs aren't already in stasis on first
      * sight.</p>
      */
-    private static final double SPAWN_RADIUS_BLOCKS = 48.0;
+    // Package-private rather than private so ContentsDespawnController can ALIAS it as its restore
+    // radius instead of repeating 48.0. The despawn gate is the mirror image of this one, and a
+    // player walking up to a carriage should see the same distance behaviour whether the contents
+    // are being spawned for the first time or restored after a sweep.
+    static final double SPAWN_RADIUS_BLOCKS = 48.0;
     private static final double SPAWN_RADIUS_SQ = SPAWN_RADIUS_BLOCKS * SPAWN_RADIUS_BLOCKS;
 
     /**
@@ -2868,6 +2872,10 @@ public final class TrainCarriageAppender {
                     }
                     SharedCarriageRegistry.removeSubLevel(shipId);
                 }
+                // Drop any despawn snapshot this group was holding. The group is about to stop
+                // existing, so its swept mobs have nowhere to come back to — leaving the file would
+                // strand it on disk until the next train wipe.
+                ContentsSnapshotStore.delete(level, shipId);
                 // Tear down any force-load ticket on this anchor (mirror + Sable
                 // ticket together) before deleting it.
                 if (forceLoaded != null && forceLoaded.remove(shipId)) {

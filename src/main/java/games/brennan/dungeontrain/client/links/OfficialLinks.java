@@ -77,6 +77,26 @@ public final class OfficialLinks {
      */
     public static String paymentCnCheckout() { return resolve("payment_cn_checkout", null); }
 
+    /**
+     * The checkout route served to <b>every</b> client, backing the three named price points (see
+     * {@link games.brennan.dungeontrain.client.support.SupportTier}). In practice it points at the
+     * same relay route as {@link #paymentCnCheckout()} — that route already offers card alongside
+     * WeChat Pay, so it is China-<i>named</i>, not China-limited.
+     *
+     * <p>It is nevertheless a separate key, because {@code payment_cn_checkout} doubles as the China
+     * route's kill switch: unsetting it to pull the China button must not also strip the price
+     * points from everyone else. The fallback to it exists only so a relay that predates
+     * {@code payment_checkout} still lights the tiers up.</p>
+     *
+     * <p>Relay-only, so a client that cannot reach the relay gets null and both screens fall back to
+     * the open-ended options they have always shown. There is deliberately no baked default: a
+     * Stripe URL guessed offline would be three dead buttons in front of someone trying to pay.</p>
+     */
+    public static String paymentCheckout() {
+        String general = resolve("payment_checkout", null);
+        return general != null ? general : paymentCnCheckout();
+    }
+
     /** Called by the fetcher with the raw relay map; invalid entries are dropped, valid ones kept. */
     static void accept(Map<String, String> raw) {
         relay = sanitize(raw);

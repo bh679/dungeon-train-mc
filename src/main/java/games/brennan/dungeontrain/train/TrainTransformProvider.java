@@ -501,6 +501,79 @@ public final class TrainTransformProvider implements KinematicDriver {
      */
     private volatile boolean spawnedBackward = false;
 
+    /**
+     * Consecutive server ticks this group's anchor has been beyond
+     * {@code ContentsDespawnController.DESPAWN_RADIUS_BLOCKS} from every
+     * player. Reset to 0 the moment any player comes back inside that
+     * radius, so the despawn sweep only fires for a group that has been
+     * genuinely abandoned rather than one a player is pacing past.
+     *
+     * <p>Counterpart to Sable's {@code DtFreezable} inactive-tick counter,
+     * kept here instead because the despawn gate is keyed on the DT group
+     * (one provider) rather than the sub-level.</p>
+     */
+    private volatile int contentsAwayTicks = 0;
+
+    /**
+     * {@code true} while this group's contents mobs are snapshotted to disk
+     * rather than live in the level. Together with
+     * {@link #hasPendingContentsEntitySpawns()} this gives the group's
+     * three-state lifecycle: PENDING (pending array non-null) → LIVE (both
+     * false) ⇄ SNAPSHOT (this true). The spawn gate owns the first edge,
+     * {@code ContentsDespawnController} owns the last pair, and neither
+     * acts on a group in the other's state.
+     */
+    private volatile boolean contentsDespawned = false;
+
+    /**
+     * Entity count in the current snapshot — diagnostics only, surfaced by
+     * the {@code [despawn]} log line and the debug status command so a
+     * held snapshot is visible without reading the file. Zero whenever
+     * {@link #isContentsDespawned()} is false.
+     */
+    private volatile int contentsSnapshotSize = 0;
+
+    public int getContentsAwayTicks() {
+        return contentsAwayTicks;
+    }
+
+    public void setContentsAwayTicks(int ticks) {
+        this.contentsAwayTicks = ticks;
+    }
+
+    public boolean isContentsDespawned() {
+        return contentsDespawned;
+    }
+
+    public void setContentsDespawned(boolean despawned) {
+        this.contentsDespawned = despawned;
+    }
+
+    public int getContentsSnapshotSize() {
+        return contentsSnapshotSize;
+    }
+
+    public void setContentsSnapshotSize(int size) {
+        this.contentsSnapshotSize = size;
+    }
+
+    /**
+     * Consecutive ticks a contents restore has been deferred for this group. A restore is deferred
+     * while the carriage is soft-frozen, because a frozen sub-level stops advancing its pose and the
+     * ship→world conversion would place mobs where the carriage used to be. Normally clears within a
+     * tick or two; a sustained non-zero value is the canary that the freeze and despawn gates
+     * disagree about what counts as near.
+     */
+    private volatile int contentsRestoreDeferredTicks = 0;
+
+    public int getContentsRestoreDeferredTicks() {
+        return contentsRestoreDeferredTicks;
+    }
+
+    public void setContentsRestoreDeferredTicks(int ticks) {
+        this.contentsRestoreDeferredTicks = ticks;
+    }
+
     public boolean isPlacedSuccessfully() {
         return placedSuccessfully;
     }
