@@ -43,6 +43,7 @@ public final class ModFeatures {
         NetherTransitionFeature::new
     );
 
+
     private ModFeatures() {}
 
     /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */

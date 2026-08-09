@@ -2,8 +2,11 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.client.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.perf.PerfTestMode;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -95,6 +98,17 @@ public final class DevQuickWorldHandler {
     private static final ResourceKey<WorldPreset> DT_COMPAT_PRESET = ResourceKey.create(
             Registries.WORLD_PRESET,
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train_compat"));
+
+    /**
+     * Train Builder world: overworld only, 96 blocks tall, and pure void — everything in it
+     * (platform, track, carriages) is stamped once by {@code BuilderWorldSetup} when the client
+     * reports which mode was picked. Deliberately absent from the
+     * {@code minecraft:worldgen/world_preset/normal} tag, so it never shows up in the vanilla
+     * World Type cycle — the builder tiles are its only entry point.
+     */
+    private static final ResourceKey<WorldPreset> DT_BUILDER_PRESET = ResourceKey.create(
+            Registries.WORLD_PRESET,
+            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train_builder"));
 
     private static WeakReference<Button> singleplayerRef = new WeakReference<>(null);
     private static WeakReference<Button> creativeNewWorldRef = new WeakReference<>(null);
@@ -218,26 +232,54 @@ public final class DevQuickWorldHandler {
     }
 
     /**
-     * Create the world a Train Builder mode is edited in: superflat and creative, so the
-     * builder's own work is the only thing in view — but with a <em>random</em> seed, unlike the
-     * perf world, which pins its seed to make benchmark runs comparable. Nothing about building
-     * benefits from an identical world every time.
+     * Create the world a Train Builder mode is edited in: the smallest, quietest world that can
+     * hold what you're building.
+     *
+     * <ul>
+     *   <li><b>No train.</b> {@link PendingWorldChoices} is armed with
+     *       {@code startsWithTrain = false}, which {@code WorldLifecycleEvents} commits into
+     *       {@code DungeonTrainWorldData} on the overworld's Load. That one flag suppresses the
+     *       bootstrap spawn, the track corridor and every band — the builder never wanted a
+     *       train in view, and generating one is pure cost.</li>
+     *   <li><b>One dimension, 100 blocks tall, void</b> apart from a 300×300 platform — see
+     *       {@link #DT_BUILDER_PRESET}.</li>
+     *   <li><b>Always noon</b> (fixed in the dimension type) and <b>no natural mob spawning</b>,
+     *       so nothing wanders into a build and the light never changes under it.</li>
+     *   <li>Random seed — unlike the perf world, nothing here benefits from an identical
+     *       world every run.</li>
+     * </ul>
      *
      * <p>The chosen {@code mode} is not written into the world; the client-side
      * {@link EditorAutoOpenHandler} carries it across the load and acts on arrival.</p>
      */
     public static void launchBuilderWorld(Screen lastScreen, BuilderMode mode) {
         String name = nextWorldName(BUILDER_WORLD_PREFIX);
-        LOGGER.info("Builder world: creating '{}' (flat, creative) for mode '{}'", name, mode.id());
+        LOGGER.info("Builder world: creating '{}' (void platform, creative, no train) for mode '{}'",
+                name, mode.id());
+
+        // isPresent() requires all five fields, so pass defaults for the four we don't care
+        // about — a partial set would be ignored and the world would spawn a train.
+        PendingWorldChoices.set(
+                BuilderWorldLayout.TRAIN_Y,
+                false,
+                CarriageDims.DEFAULT,
+                DungeonTrainConfig.DEFAULT_GENERATION_MODE,
+                DungeonTrainConfig.DEFAULT_GROUP_SIZE);
+
+        GameRules rules = new GameRules();
+        rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, null);
+        rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false, null);
+        rules.getRule(GameRules.RULE_DAYLIGHT).set(false, null);
+
         LevelSettings settings = new LevelSettings(
                 name,
                 GameType.CREATIVE,
                 false,
-                Difficulty.NORMAL,
+                Difficulty.PEACEFUL,
                 true,
-                new GameRules(),
+                rules,
                 WorldDataConfiguration.DEFAULT);
-        openLevel(name, settings, lastScreen, PerfTestMode.FLAT_PRESET, false);
+        openLevel(name, settings, lastScreen, DT_BUILDER_PRESET, false);
     }
 
     /** Lowest unused {@code <prefix><n>}, so repeat launches never reuse or clobber a save. */

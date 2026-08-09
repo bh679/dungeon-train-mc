@@ -2,8 +2,9 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.client.builder.BuilderMode;
-import net.minecraft.ChatFormatting;
+import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.net.BuilderSetupPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
@@ -24,9 +25,9 @@ import org.slf4j.Logger;
  * <ul>
  *   <li>{@link #queueAutoOpen()} — fires the chat command {@code /dungeontrain editor} (the
  *       same command the X-menu "Editor" entry runs).</li>
- *   <li>{@link #queueBuilderStub(BuilderMode)} — posts a "coming soon" line for the chosen
- *       builder mode. The four builder editors are a follow-up task; this is the seam where
- *       each one gets hooked up.</li>
+ *   <li>{@link #queueBuilderSetup(BuilderMode)} — asks the server to build out the Train
+ *       Builder world (platform, track, and this mode's carriages). The mode is a client-side
+ *       choice, so the client is the only one who can tell the server about it.</li>
  * </ul>
  *
  * <p>Defensive reset: {@link TitleScreenLayoutHandler} clears the flag on every
@@ -45,7 +46,7 @@ public final class EditorAutoOpenHandler {
 
     /**
      * What to do once the world is up. A {@code null} {@code builderMode} means the technical
-     * editor; any other value means that builder mode's stub.
+     * editor; any other value means set that builder mode's world up.
      */
     private record PendingAction(BuilderMode builderMode) {
         boolean isEditor() {
@@ -63,8 +64,8 @@ public final class EditorAutoOpenHandler {
         arm(new PendingAction(null), "editor");
     }
 
-    /** Arm the "coming soon" stub for a Train Builder mode once its flat world has loaded. */
-    public static void queueBuilderStub(BuilderMode mode) {
+    /** Arm the world-setup request for a Train Builder mode, to fire once its world has loaded. */
+    public static void queueBuilderSetup(BuilderMode mode) {
         arm(new PendingAction(mode), "builder:" + mode.id());
     }
 
@@ -117,7 +118,7 @@ public final class EditorAutoOpenHandler {
         if (action.isEditor()) {
             dispatchEditor(mc);
         } else {
-            dispatchBuilderStub(mc, action.builderMode());
+            dispatchBuilderSetup(action.builderMode());
         }
     }
 
@@ -140,14 +141,11 @@ public final class EditorAutoOpenHandler {
         mc.player.connection.sendCommand("dungeontrain editor");
     }
 
-    private static void dispatchBuilderStub(Minecraft mc, BuilderMode mode) {
-        LOGGER.info("EditorAutoOpen: builder mode '{}' selected — posting coming-soon stub", mode.id());
-        if (mc.gui == null) {
-            return;
-        }
-        mc.gui.getChat().addMessage(Component.translatable("gui.dungeontrain.builder.coming_soon",
-                        Component.translatable(mode.labelKey()))
-                .withStyle(ChatFormatting.YELLOW));
+    private static void dispatchBuilderSetup(BuilderMode mode) {
+        LOGGER.info("EditorAutoOpen: builder mode '{}' selected — requesting world setup", mode.id());
+        // The server has no record of which tile was clicked, so tell it. It stamps the platform,
+        // the track and this mode's carriages, then stands the player on the result.
+        DungeonTrainNet.sendToServer(new BuilderSetupPacket(mode));
     }
 
     // Intentionally NOT clearing on ClientPlayerNetworkEvent.LoggingOut.

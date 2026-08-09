@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
+import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -73,6 +74,7 @@ public final class TrainBootstrapEvents {
 
         if (!data.startsWithTrain()) {
             LOGGER.info("[DungeonTrain] startsWithTrain=false — skipping bootstrap auto-spawn");
+            anchorBuilderPlatformSpawn(overworld);
             return;
         }
 
@@ -168,6 +170,24 @@ public final class TrainBootstrapEvents {
         target.setDefaultSpawnPos(spawnPos, 180.0F);
         LOGGER.info("[DungeonTrain] World spawn anchored at {} yaw=180 (coarse fallback, corridor +{} Z)",
             spawnPos, SHARED_SPAWN_PERP);
+    }
+
+    /**
+     * Put the world spawn on the Train Builder platform.
+     *
+     * <p>The builder world is void apart from one 300×300 slab at the origin, so vanilla's
+     * spawn search has nothing to find and would drop the player out of the world. Every other
+     * no-train world is left alone — the guard is the {@code dungeontrain:builder} dimension
+     * type, not the train flag, so an ordinary "starts with train: off" survival world keeps
+     * its vanilla spawn.</p>
+     */
+    private static void anchorBuilderPlatformSpawn(ServerLevel overworld) {
+        if (!overworld.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
+            return;
+        }
+        BlockPos spawnPos = BuilderWorldLayout.spawnPos(DungeonTrainWorldData.get(overworld).dims());
+        overworld.setDefaultSpawnPos(spawnPos, 0.0F);
+        LOGGER.info("[DungeonTrain] Builder world — spawn anchored on the platform at {}", spawnPos);
     }
 
     private static ManagedShip findTrain(ServerLevel level) {

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.builder;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;

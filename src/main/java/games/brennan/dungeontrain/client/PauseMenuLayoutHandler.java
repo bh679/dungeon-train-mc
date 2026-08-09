@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.builder.BuilderWorldCheck;
 import games.brennan.dungeontrain.client.menu.PauseMenuActionButton;
 import games.brennan.dungeontrain.net.AbandonRunPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -65,6 +66,13 @@ public final class PauseMenuLayoutHandler {
             return;
         }
         if (!Minecraft.getInstance().hasSingleplayerServer()) {
+            return;
+        }
+        // Train Builder worlds keep vanilla's Save-and-Quit slot untouched: there is no run to
+        // abandon, and "Save and Quit to Title" is exactly what you want when you're done
+        // building. Leaving the takeover out entirely (rather than just hiding the red button)
+        // avoids an empty slot that only fills in when Shift is held.
+        if (BuilderWorldCheck.isBuilderWorld()) {
             return;
         }
 

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.builder;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.client.DevQuickWorldHandler;
 import games.brennan.dungeontrain.client.EditorAutoOpenHandler;
 import games.brennan.dungeontrain.editor.EditorDevMode;
@@ -81,7 +82,7 @@ public final class TrainBuilderScreen extends Screen {
         // Same one-shot as the editor button: force source-tree write-through on for this
         // session so anything the builder saves lands in the working tree on a dev checkout.
         EditorDevMode.queueOnForNextStart();
-        EditorAutoOpenHandler.queueBuilderStub(mode);
+        EditorAutoOpenHandler.queueBuilderSetup(mode);
         DevQuickWorldHandler.launchBuilderWorld(this.lastScreen, mode);
     }
 }

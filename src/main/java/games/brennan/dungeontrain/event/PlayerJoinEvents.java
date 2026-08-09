@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.EditorWelcome;
+import games.brennan.dungeontrain.net.BuilderBoundsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.VoidBandSyncPacket;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
@@ -194,10 +195,18 @@ public final class PlayerJoinEvents {
         // flag) so the client can fade the sky/fog toward the End across the band.
         DungeonTrainWorldData bandData = DungeonTrainWorldData.get(player.serverLevel().getServer().overworld());
         DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(), bandData.startsWithTrain(), bandData.getTrainY()));
+        // Train Builder build volumes — empty (and therefore inert) in every ordinary world.
+        BuilderBoundsPacket.sendTo(player, player.serverLevel().getServer().overworld());
         // If the intro cinematic will play, open the loading screen + freeze the
         // player from world-entry so they don't fall while the train settles.
         CinematicIntroService.armPreloadIfNeeded(player);
-        PENDING.put(player.getUUID(), 0);
+        // Only queue the train-placement retry loop in worlds that actually have a train.
+        // Otherwise every join to an editor or builder world burns MAX_RETRY_TICKS (5 s) of
+        // per-tick lookups that can never succeed, and ends in a timeout log that reads like
+        // a failure rather than "this world has no train by design".
+        if (bandData.startsWithTrain()) {
+            PENDING.put(player.getUUID(), 0);
+        }
     }
 
     @SubscribeEvent

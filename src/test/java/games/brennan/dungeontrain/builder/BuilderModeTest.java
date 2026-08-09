@@ -1,4 +1,4 @@
-package games.brennan.dungeontrain.client.builder;
+package games.brennan.dungeontrain.builder;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

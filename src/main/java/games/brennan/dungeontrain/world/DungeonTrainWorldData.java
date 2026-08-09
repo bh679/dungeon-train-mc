@@ -58,6 +58,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_JOIN_REPORT_POSTED = "joinReportPosted";
     private static final String TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE = "breakBlocksOnContactOverride";
     private static final String TAG_USED_CARRIAGE_IDS = "usedSharedCarriageIds";
+    private static final String TAG_BUILDER_MODE = "builderMode";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -68,6 +69,14 @@ public final class DungeonTrainWorldData extends SavedData {
     private Integer playerMobSpawnOneInOverride;
     /** Per-world override of the behind-the-player PlayerMob spawn percent chance; null = global COMMON default. */
     private Integer playerMobBehindSpawnPercentOverride;
+    /**
+     * Which Train Builder mode this world was created for, or null in any ordinary world.
+     *
+     * <p>The mode is picked on the title screen and exists nowhere else, so without persisting it
+     * a reopened builder world has no way to know how much train it holds — which the client
+     * needs to draw the build bounds.</p>
+     */
+    private String builderMode;
     /** Per-world override of train-on-contact block breaking; null = use the global COMMON default. */
     private Boolean breakBlocksOnContactOverride;
     /** Per-world one-shot: true once the join-info report (DT version + train seed + mods) has been posted to Discord. */
@@ -235,6 +244,10 @@ public final class DungeonTrainWorldData extends SavedData {
         // getIntArray returns an empty array for an absent key, so worlds saved before shared carriages
         // simply start having placed nothing.
         data.usedCarriageIds.loadFrom(tag.getIntArray(TAG_USED_CARRIAGE_IDS));
+        // Absent in every non-builder world (and in builder worlds saved before the stamp ran).
+        if (tag.contains(TAG_BUILDER_MODE)) {
+            data.builderMode = tag.getString(TAG_BUILDER_MODE);
+        }
         return data;
     }
 
@@ -259,7 +272,20 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
         tag.putIntArray(TAG_USED_CARRIAGE_IDS, usedCarriageIds.toIntArray());
+        if (builderMode != null) {
+            tag.putString(TAG_BUILDER_MODE, builderMode);
+        }
         return tag;
+    }
+
+    /** Train Builder mode id, or null in an ordinary world. See {@code BuilderMode#fromId}. */
+    public String builderMode() {
+        return builderMode;
+    }
+
+    public void setBuilderMode(String modeId) {
+        this.builderMode = modeId;
+        setDirty();
     }
 
     public int getTrainY() {

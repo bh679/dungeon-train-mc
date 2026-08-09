@@ -1,4 +1,4 @@
-package games.brennan.dungeontrain.client.builder;
+package games.brennan.dungeontrain.builder;
 
 import java.util.Locale;
 import java.util.Optional;
@@ -29,15 +29,29 @@ import java.util.Optional;
  */
 public enum BuilderMode {
 
-    TRAIN_OUTSIDE("train_outside"),
-    INSIDE_CARRIAGE("inside_carriage"),
-    TRACKS_TUNNELS("tracks_tunnels"),
-    TRAIN_DIMENSIONS("train_dimensions");
+    TRAIN_OUTSIDE("train_outside", BuilderWorldLayout.OUTSIDE_CARRIAGES),
+    INSIDE_CARRIAGE("inside_carriage", BuilderWorldLayout.INSIDE_CARRIAGES),
+    TRACKS_TUNNELS("tracks_tunnels", 0),
+    TRAIN_DIMENSIONS("train_dimensions", 0);
 
     private final String id;
+    private final int carriageCount;
 
-    BuilderMode(String id) {
+    BuilderMode(String id, int carriageCount) {
         this.id = id;
+        this.carriageCount = carriageCount;
+    }
+
+    /**
+     * How many empty carriages get parked on the track when this mode's world is created.
+     *
+     * <p>Shaping the world to the job: <b>Train Outside</b> gets a run of carriages with flatbed
+     * pads so you can judge the silhouette from the platform, <b>Inside Carriage</b> gets exactly
+     * one because that's all you can stand in, and the track/portal modes get none — a train would
+     * only be in the way.</p>
+     */
+    public int carriageCount() {
+        return carriageCount;
     }
 
     /** Stable lower-case token — used in world names, logs, and (later) commands. */
