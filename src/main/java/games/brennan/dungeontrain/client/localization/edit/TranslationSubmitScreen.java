@@ -84,7 +84,7 @@ public final class TranslationSubmitScreen extends Screen {
     }
 
     private boolean canSubmit() {
-        return RelayChatClient.canConnect() && !TranslationOverrides.local().isEmpty();
+        return RelayChatClient.canConnect() && !TranslationOverrides.localFor(locale).isEmpty();
     }
 
     /**
@@ -93,7 +93,7 @@ public final class TranslationSubmitScreen extends Screen {
      * with duplicates of things that are already live.
      */
     private List<TranslationSubmitClient.Unit> buildUnits() {
-        TranslationEdits local = TranslationOverrides.local();
+        TranslationEdits local = TranslationOverrides.localFor(locale);
         List<TranslationSubmitClient.Unit> units = new ArrayList<>();
         for (TranslationUnit unit : TranslationCatalog.forLocale(locale)) {
             if (units.size() >= MAX_UNITS_PER_SUBMISSION) {
@@ -135,7 +135,7 @@ public final class TranslationSubmitScreen extends Screen {
         g.drawCenteredString(font, title, width / 2, MARGIN, 0xFFFFFFFF);
         g.drawCenteredString(font,
             Component.translatable("gui.dungeontrain.translate.submit.subtitle",
-                locale, TranslationOverrides.local().size()),
+                locale, TranslationOverrides.localFor(locale).size()),
             width / 2, MARGIN + font.lineHeight + 2, LABEL_COLOUR);
 
         int y = height / 3 + ROW_GAP * 2;

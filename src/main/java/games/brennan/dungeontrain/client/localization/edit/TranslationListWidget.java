@@ -47,6 +47,8 @@ public final class TranslationListWidget extends AbstractWidget {
     private final Consumer<TranslationUnit> onSelect;
 
     private List<TranslationUnit> units = List.of();
+    /** The overrides for the locale being EDITED, which on a dev build is not the one displayed. */
+    private TranslationEdits edits = TranslationEdits.empty("");
     private int scroll;
 
     public TranslationListWidget(Font font, int x, int y, int width, int height,
@@ -54,6 +56,11 @@ public final class TranslationListWidget extends AbstractWidget {
         super(x, y, width, height, Component.translatable("gui.dungeontrain.translate.list"));
         this.font = font;
         this.onSelect = onSelect;
+    }
+
+    /** The override layer rows render against — set before {@link #setUnits} on every refresh. */
+    public void setEdits(TranslationEdits newEdits) {
+        this.edits = newEdits == null ? TranslationEdits.empty("") : newEdits;
     }
 
     /** Replace the visible rows, keeping the scroll position where it still makes sense. */
@@ -113,10 +120,8 @@ public final class TranslationListWidget extends AbstractWidget {
             g.fill(getX(), rowY, getX() + width - SCROLLBAR_W - 1, rowY + rowH, ROW_ALT);
         }
 
-        String override = TranslationOverrides.merged().lang().get(unit.id());
-        if (unit.type() == TranslationUnit.Type.BOOK) {
-            override = TranslationOverrides.merged().books().get(unit.id());
-        }
+        String override = unit.type() == TranslationUnit.Type.BOOK
+            ? edits.books().get(unit.id()) : edits.lang().get(unit.id());
         boolean edited = override != null;
 
         int textX = getX() + PAD;

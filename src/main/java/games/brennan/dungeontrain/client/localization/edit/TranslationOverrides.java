@@ -57,6 +57,63 @@ public final class TranslationOverrides {
     }
 
     /**
+     * Whether {@code locale} is the one currently installed over the running game.
+     *
+     * <p>False means the editor is working on a language the client is not displaying — the
+     * dev-build case where the UI stays English so it stays readable while the translation being
+     * fixed is, say, Chinese. Edits still save and still submit; they just cannot be seen applied,
+     * because the game is not rendering that language.</p>
+     */
+    public static boolean isLive(String locale) {
+        return locale != null && locale.equals(locale());
+    }
+
+    /** This player's edits for {@code locale} — the live layer, or read from disk if detached. */
+    public static TranslationEdits localFor(String locale) {
+        return isLive(locale)
+            ? local()
+            : TranslationOverrideStore.load(TranslationOverrideStore.Layer.LOCAL, locale);
+    }
+
+    /** Both layers merged for {@code locale}, local winning. */
+    public static TranslationEdits mergedFor(String locale) {
+        if (isLive(locale)) {
+            return merged();
+        }
+        return TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED, locale)
+            .mergedWith(TranslationOverrideStore.load(TranslationOverrideStore.Layer.LOCAL, locale));
+    }
+
+    /** Set (or clear) one lang override for {@code locale}. Applies live only when it is live. */
+    public static boolean setLangFor(String locale, String key, String value) {
+        if (isLive(locale)) {
+            return setLang(key, value);
+        }
+        return saveDetached(locale, TranslationOverrideStore
+            .load(TranslationOverrideStore.Layer.LOCAL, locale).withLang(key, value));
+    }
+
+    /** Set (or clear) one book-field override for {@code locale}. */
+    public static boolean setBookFor(String locale, String id, String value) {
+        if (isLive(locale)) {
+            return setBook(id, value);
+        }
+        return saveDetached(locale, TranslationOverrideStore
+            .load(TranslationOverrideStore.Layer.LOCAL, locale).withBook(id, value));
+    }
+
+    /** Replace the whole local layer for {@code locale} — the import and revert-all paths. */
+    public static boolean replaceLocalFor(String locale, TranslationEdits edits) {
+        TranslationEdits next = edits == null ? TranslationEdits.empty(locale) : edits;
+        return isLive(locale) ? replaceLocal(next) : saveDetached(locale, next);
+    }
+
+    /** Write a locale the overlay is not showing. No install — there is nothing to install onto. */
+    private static boolean saveDetached(String locale, TranslationEdits edits) {
+        return TranslationOverrideStore.save(TranslationOverrideStore.Layer.LOCAL, edits);
+    }
+
+    /**
      * The effective translation for {@code key} — the override if there is one, else what the
      * game would otherwise show. Used by the editor to render the "current" column without
      * having to know which layer supplied it.

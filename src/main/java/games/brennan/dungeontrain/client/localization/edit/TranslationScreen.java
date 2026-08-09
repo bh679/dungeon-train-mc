@@ -160,6 +160,7 @@ public final class TranslationScreen extends Screen {
         if (list == null) {
             return;
         }
+        list.setEdits(TranslationOverrides.mergedFor(locale));
         list.setUnits(visibleUnits());
     }
 
@@ -168,7 +169,7 @@ public final class TranslationScreen extends Screen {
             return List.of();
         }
         String needle = search == null ? "" : search.getValue().trim().toLowerCase(Locale.ROOT);
-        TranslationEdits edits = TranslationOverrides.merged();
+        TranslationEdits edits = TranslationOverrides.mergedFor(locale);
         List<TranslationUnit> out = new ArrayList<>();
         for (TranslationUnit unit : TranslationCatalog.forLocale(locale)) {
             if (!matchesBody(unit) || !matchesState(unit, edits) || !unit.matches(needle)) {
@@ -207,14 +208,14 @@ public final class TranslationScreen extends Screen {
 
     /** Drop every local override for this locale, after the player confirms. */
     private void revertAll() {
-        TranslationEdits local = TranslationOverrides.local();
+        TranslationEdits local = TranslationOverrides.localFor(locale);
         if (local.isEmpty()) {
             return;
         }
         minecraft.setScreen(new net.minecraft.client.gui.screens.ConfirmScreen(
             confirmed -> {
                 if (confirmed) {
-                    TranslationOverrides.replaceLocal(TranslationEdits.empty(locale));
+                    TranslationOverrides.replaceLocalFor(locale, TranslationEdits.empty(locale));
                 }
                 minecraft.setScreen(this);
             },
@@ -233,9 +234,21 @@ public final class TranslationScreen extends Screen {
         if (!isEditable(locale)) {
             return Component.translatable("gui.dungeontrain.translate.source_locale");
         }
+        // Editing a language the client is not rendering (the dev-build case) cannot show its
+        // edits applied, so say so rather than leaving the tester waiting for text that will
+        // never change.
+        if (!TranslationOverrides.isLive(locale)) {
+            // Literal, not a lang key: this can only be reached on a dev build, and a diagnostic
+            // no player can see does not belong in a file all 19 locales have to mirror.
+            return Component.literal(String.format(
+                "%s (dev) — %s shown, %s edited by you. The game is not displaying this language, "
+                    + "so edits won't appear on screen.",
+                locale, list == null ? 0 : list.rowCount(),
+                TranslationOverrides.localFor(locale).size()));
+        }
         return Component.translatable("gui.dungeontrain.translate.subtitle",
             locale, list == null ? 0 : list.rowCount(),
-            TranslationOverrides.local().size());
+            TranslationOverrides.localFor(locale).size());
     }
 
     @Override

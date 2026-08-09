@@ -70,7 +70,7 @@ public final class TranslationImporter {
             int skipped = readCsvFiles(dir, lang);
             skipped += readBookFiles(dir.resolve(BOOKS_DIR), locale, books);
 
-            TranslationEdits current = TranslationOverrides.local();
+            TranslationEdits current = TranslationOverrides.localFor(locale);
             TranslationEdits updated = current;
             int langChanged = 0;
             int bookChanged = 0;
@@ -88,7 +88,7 @@ public final class TranslationImporter {
                     updated = next;
                 }
             }
-            if (langChanged + bookChanged > 0 && !TranslationOverrides.replaceLocal(updated)) {
+            if (langChanged + bookChanged > 0 && !TranslationOverrides.replaceLocalFor(locale, updated)) {
                 return new Result(0, 0, skipped, dir, "save");
             }
             LOGGER.info("[DungeonTrain] Translations: imported {} change(s) for {} from {}",

@@ -59,7 +59,8 @@ public final class TranslationEditScreen extends Screen {
 
         int editorTop = TOP + font.lineHeight * (sourceLines.size() + 2) + GAP * 3;
         int bottomRow = height - MARGIN - ROW_H;
-        int noteHeight = unit.type() == TranslationUnit.Type.BOOK ? font.lineHeight + GAP : 0;
+        int noteHeight = unit.type() == TranslationUnit.Type.BOOK
+            || !TranslationOverrides.isLive(locale) ? font.lineHeight + GAP : 0;
         int editorHeight = Math.max(ROW_H * 2, bottomRow - GAP - noteHeight - editorTop);
 
         editor = new MultiLineEditBox(font, MARGIN, editorTop, contentWidth, editorHeight,
@@ -87,7 +88,7 @@ public final class TranslationEditScreen extends Screen {
 
     /** What the box opens with: this player's override if any, else the shipped translation. */
     private String currentValue() {
-        String override = TranslationScreen.overrideOf(unit, TranslationOverrides.merged());
+        String override = TranslationScreen.overrideOf(unit, TranslationOverrides.mergedFor(locale));
         return override != null ? override : unit.shipped();
     }
 
@@ -97,18 +98,18 @@ public final class TranslationEditScreen extends Screen {
         // it would put the key in the submission and in the "edited" filter for no reason.
         String toStore = value.equals(unit.shipped()) ? "" : value;
         if (unit.type() == TranslationUnit.Type.BOOK) {
-            TranslationOverrides.setBook(unit.id(), toStore);
+            TranslationOverrides.setBookFor(locale, unit.id(), toStore);
         } else {
-            TranslationOverrides.setLang(unit.id(), toStore);
+            TranslationOverrides.setLangFor(locale, unit.id(), toStore);
         }
         close();
     }
 
     private void revert() {
         if (unit.type() == TranslationUnit.Type.BOOK) {
-            TranslationOverrides.setBook(unit.id(), "");
+            TranslationOverrides.setBookFor(locale, unit.id(), "");
         } else {
-            TranslationOverrides.setLang(unit.id(), "");
+            TranslationOverrides.setLangFor(locale, unit.id(), "");
         }
         close();
     }
@@ -134,9 +135,18 @@ public final class TranslationEditScreen extends Screen {
             y += font.lineHeight;
         }
 
-        if (unit.type() == TranslationUnit.Type.BOOK) {
-            g.drawString(font, Component.translatable("gui.dungeontrain.translate.edit.book_note"),
-                MARGIN, height - MARGIN - ROW_H - GAP - font.lineHeight, NOTE_COLOUR, false);
+        Component note = null;
+        if (!TranslationOverrides.isLive(locale)) {
+            // Nothing on screen will change when this saves — the game is rendering another
+            // language entirely.
+            note = Component.literal("Dev: editing " + locale
+                + " while the game runs in English — saving won't change anything on screen.");
+        } else if (unit.type() == TranslationUnit.Type.BOOK) {
+            note = Component.translatable("gui.dungeontrain.translate.edit.book_note");
+        }
+        if (note != null) {
+            g.drawString(font, note, MARGIN, height - MARGIN - ROW_H - GAP - font.lineHeight,
+                NOTE_COLOUR, false);
         }
     }
 

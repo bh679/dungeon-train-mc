@@ -87,7 +87,7 @@ public final class TranslationExporter {
         try {
             Files.createDirectories(dir);
             List<TranslationUnit> units = TranslationCatalog.forLocale(locale);
-            TranslationEdits edits = TranslationOverrides.merged();
+            TranslationEdits edits = TranslationOverrides.mergedFor(locale);
 
             int ui = writeCsv(dir.resolve(DT_CSV), units, edits, true);
             int siblings = writeCsv(dir.resolve(SIBLINGS_CSV), units, edits, false);

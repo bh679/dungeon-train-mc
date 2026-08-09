@@ -24,9 +24,10 @@ import org.slf4j.Logger;
  * above (rather than beside) is what keeps it clear of both the Options row to its right and the
  * credit label immediately below it.</p>
  *
- * <p>Hidden on {@code en_us}: English is the source language, so there is nothing to translate
- * into. That check is the reason this is worth a button at all — the players who see it are
- * exactly the ones playing in a machine-translated locale.</p>
+ * <p>Hidden on {@code en_us} in a release build: English is the source language, so there is
+ * nothing to translate into, and the players who see the button are exactly the ones playing in a
+ * machine-translated locale. A dev build shows it anyway and points it at the dev target locale,
+ * so the editor can be tested without making every button in it unreadable.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class TitleScreenTranslateButton {
@@ -60,9 +61,12 @@ public final class TitleScreenTranslateButton {
         TranslationOutbox.get().flush();
         ApprovedTranslationsFetcher.fetchOnce();
 
-        String locale = mc.getLanguageManager().getSelected();
-        if (!TranslationScreen.isEditable(locale)) {
-            return; // English is the source language — nothing to translate into
+        // On a release build this is the player's own language. On a dev build with the game in
+        // English it is the dev target instead (see TranslationTarget) — the chrome stays readable
+        // while the language under test is not.
+        String target = TranslationTarget.resolveForClient();
+        if (target.isEmpty()) {
+            return; // English on a release build — the source language has nothing to translate
         }
 
         AbstractWidget language = findWidget(event, LANGUAGE_KEY);
@@ -73,14 +77,14 @@ public final class TitleScreenTranslateButton {
 
         SpriteIconButton button = SpriteIconButton.builder(
                 Component.translatable("gui.dungeontrain.translate.button"),
-                b -> mc.setScreen(new TranslationScreen(titleScreen, locale)),
+                b -> mc.setScreen(new TranslationScreen(titleScreen, target)),
                 true)
             .width(BUTTON_SIZE)
             .sprite(EDIT_SPRITE, SPRITE_W, SPRITE_H)
             .build();
         button.setPosition(language.getX(), language.getY() - BUTTON_SIZE - GAP);
         button.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
-            Component.translatable("gui.dungeontrain.translate.button.tooltip", locale)));
+            Component.translatable("gui.dungeontrain.translate.button.tooltip", target)));
         event.addListener(button);
     }
 

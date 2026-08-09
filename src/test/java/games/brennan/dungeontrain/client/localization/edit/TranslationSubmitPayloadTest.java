@@ -101,14 +101,24 @@ class TranslationSubmitPayloadTest {
     }
 
     @Test
-    @DisplayName("429 and 5xx are retryable; other 4xx are poison and get dropped")
+    @DisplayName("429 and 5xx are retryable; a rejected payload is poison and gets dropped")
     void retryClassification() {
         assertTrue(verdict(429, "{}").retryable());
         assertTrue(verdict(503, "{}").retryable());
         assertTrue(verdict(408, "{}").retryable());
         // A payload the relay will never accept must not block the queue behind it.
         assertFalse(verdict(400, "{\"error\":\"bad_locale\"}").retryable());
-        assertFalse(verdict(404, "{}").retryable());
+        assertFalse(verdict(422, "{}").retryable());
+    }
+
+    @Test
+    @DisplayName("a relay that predates the endpoint is retryable, not poison")
+    void endpointMissingIsRetryable() {
+        // The mod and the relay deploy separately, so a client can reach a relay without this
+        // endpoint. Dropping on 404 would bin a translator's work for the gap between deploys.
+        assertTrue(verdict(404, "{\"error\":\"not_found\"}").retryable());
+        assertTrue(verdict(405, "{}").retryable());
+        assertTrue(verdict(501, "{}").retryable());
     }
 
     @Test

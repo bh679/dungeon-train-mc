@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.discordpresence.client.NetworkConsentScreen;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
+import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.ContentMode;
 import net.minecraft.client.gui.components.Button;
@@ -64,13 +65,14 @@ public final class DungeonTrainClientOptionsScreen extends Screen {
                 .setTooltip(tip("gui.dungeontrain.options.editor_settings.tip"));
         y += ROW_GAP;
 
-        // Translation editor. Shown only when the player is on a translatable locale — on en_us
-        // there is no target language, so the row would be a dead end.
-        String locale = this.minecraft.getLanguageManager().getSelected();
-        if (TranslationScreen.isEditable(locale)) {
+        // Translation editor. Shown only when there is a language to edit — on en_us in a release
+        // build there is none and the row would be a dead end; a dev build points it at the dev
+        // target instead so the editor is testable with the UI still in English.
+        String translateTarget = TranslationTarget.resolveForClient();
+        if (!translateTarget.isEmpty()) {
             addRenderableWidget(Button.builder(
                             Component.translatable("gui.dungeontrain.options.translate"),
-                            b -> this.minecraft.setScreen(new TranslationScreen(this, locale)))
+                            b -> this.minecraft.setScreen(new TranslationScreen(this, translateTarget)))
                     .bounds(left, y, ROW_W, ROW_H).build())
                     .setTooltip(tip("gui.dungeontrain.options.translate.tip"));
             y += ROW_GAP;

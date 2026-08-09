@@ -100,16 +100,28 @@ public final class TranslationSubmitClient {
     }
 
     /**
+     * Statuses meaning "this relay predates the endpoint" rather than "this payload is bad".
+     *
+     * <p>The mod and the relay deploy independently, so a client can easily reach a relay that
+     * has not been updated yet. Treating that as poison would silently bin a translator's work
+     * for the gap between the two deploys. {@code RelayOutbox} draws the same distinction with
+     * its {@code BATCH_FALLBACK_STATUSES} for exactly this reason.</p>
+     */
+    private static final java.util.Set<Integer> ENDPOINT_MISSING = java.util.Set.of(404, 405, 501);
+
+    /**
      * Map a response to a verdict. 2xx succeeds (including the relay's dedupe reply, which is a
      * 200 with {@code stored: 0} — a retry of already-stored work must not look like a failure).
-     * 408/429/5xx are transient; every other 4xx is poison.
+     * 408/429/5xx are transient, as is an endpoint the relay does not have yet; every other 4xx
+     * is a payload it will never accept.
      */
     static SendResult interpret(HttpResponse<String> resp) {
         int status = resp.statusCode();
         if (status / 100 == 2) {
             return new SendResult(true, false, storedFrom(resp.body()));
         }
-        boolean retryable = status == 408 || status == 429 || status >= 500;
+        boolean retryable = status == 408 || status == 429 || status >= 500
+            || ENDPOINT_MISSING.contains(status);
         if (!retryable) {
             LOGGER.warn("[DungeonTrain] Translations: relay rejected the submission (HTTP {}); "
                 + "dropping it rather than retrying forever.", status);
