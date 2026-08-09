@@ -185,8 +185,8 @@ public final class EditorMenuScreen implements MenuScreen {
             if (exitsRow != null) out.add(exitsRow);
             CommandMenuEntry exitEveryRow = exitEveryTripleFor(EditorStatusHudOverlay.roomMode());
             if (exitEveryRow != null) out.add(exitEveryRow);
-            CommandMenuEntry exitSealRow = exitMoveTripleFor(EditorStatusHudOverlay.roomMode());
-            if (exitSealRow != null) out.add(exitSealRow);
+            CommandMenuEntry exitMoveRow = exitMoveTripleFor(EditorStatusHudOverlay.roomMode());
+            if (exitMoveRow != null) out.add(exitMoveRow);
         }
 
         // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases

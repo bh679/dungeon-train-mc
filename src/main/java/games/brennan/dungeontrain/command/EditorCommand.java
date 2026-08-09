@@ -5765,7 +5765,7 @@ public final class EditorCommand {
             ? ", exits: " + settings.exits().displayName()
                 + (settings.exits().lays() ? " (every " + settings.exits().every() + ")" : "")
                 + (settings.exits().effectiveMoveChance() > 0
-                    ? ", sealed exit " + settings.exits().moveChance() + "/10" : "")
+                    ? ", moved exit " + settings.exits().moveChance() + "/10" : "")
             : "";
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' walls: " + settings.mode().displayName() + copies + contents

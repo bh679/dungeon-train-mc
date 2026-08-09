@@ -226,12 +226,12 @@ class PortalRoomSettingsTest {
 
         // A room whose walls were changed to a sealed mode keeps its stored value but must not act
         // on it — there would be no copies for the corridors to stand in.
-        PortalRoomSettings sealed = PortalRoomSettings.DEFAULT
+        PortalRoomSettings offMode = PortalRoomSettings.DEFAULT
             .withMode(PortalRoomMode.ENDLESS_REPETITION)
             .withExits(new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 4))
             .withMode(PortalRoomMode.BEDROCK_LOCK);
-        assertEquals(PortalRoomExits.Kind.RANDOM, sealed.exits().kind());
-        assertEquals(PortalRoomExits.Kind.OFF, sealed.effectiveExits().kind());
+        assertEquals(PortalRoomExits.Kind.RANDOM, offMode.exits().kind());
+        assertEquals(PortalRoomExits.Kind.OFF, offMode.effectiveExits().kind());
     }
 
     @Test
