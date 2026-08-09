@@ -28,6 +28,12 @@ GENERATED integer fields (``total_keys``, ``ai_authored``, ``ai_unreviewed``)
 summarizing each sidecar — stamped by stamp-provenance.py, hard-checked by
 check-provenance.py, and rendered in-game as the blue AI-fraction ring around the
 DT logo in the language-selection list.
+
+Those counts answer "how much of this locale is machine-translated"; the in-game
+translation editor needs the finer question "WHICH lines are". That is the shipped
+``localization_provenance/<locale>.json`` manifest (see build_manifest) — the only
+part of this per-line system that enters the jar, and likewise generated, never
+hand-edited.
 """
 import json
 from dataclasses import dataclass
@@ -42,6 +48,9 @@ DEFAULT_AUTHORS_FILE = REPO_ROOT / "localization" / "authors.json"
 DEFAULT_CREDITS_DIR = ASSETS_DIR / "dungeontrain" / "localization_credits"
 # The single generated, shipped translator-credits file (human-grouped) the Credits page reads.
 DEFAULT_CONTRIBUTORS_FILE = DEFAULT_CREDITS_DIR.parent / "translation_contributors.json"
+# Generated, shipped per-locale manifests of which units are AI-authored-and-unreviewed —
+# what the in-game translation editor filters on. See build_manifest.
+DEFAULT_MANIFEST_DIR = ASSETS_DIR / "dungeontrain" / "localization_provenance"
 
 # Long-form narrative book translations (data/, not assets/) — one JSON per book per
 # locale under a locale dir. Tracked per-book, so their sidecars are keyed by the book's
@@ -368,6 +377,148 @@ def write_contributors(path: Path, data: dict) -> None:
     """Write the translator-credits file: indent-2, raw UTF-8 (CJK names), trailing newline."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+# A body whose every unit is AI-authored-and-unreviewed, written instead of listing them
+# all. 17 of the 19 locales are in exactly that state, so this is what keeps the shipped
+# manifests to a few hundred bytes each rather than ~45 KB.
+MANIFEST_ALL = "*"
+
+MANIFEST_NOTE = (
+    "Generated from localization/provenance + localization/narrative_provenance by "
+    "scripts/localization/stamp-provenance.py — do not hand-edit. \"*\" = every unit in "
+    "that body is AI-authored and unreviewed."
+)
+
+
+def ai_unreviewed_keys(prov: dict, authors: dict[str, str]) -> list[str]:
+    """The sidecar's AI-authored-and-unreviewed keys, in sidecar (= lang file) order.
+
+    The per-unit form of ai_counts' third element, and the same predicate: author
+    registered "ai" AND reviewer empty. Tolerant of shape errors, like ai_counts.
+    """
+    out: list[str] = []
+    for key, entry in prov.items():
+        if not isinstance(entry, dict):
+            continue
+        if authors.get(entry.get("author")) == "ai" and not entry.get("reviewer"):
+            out.append(key)
+    return out
+
+
+def compact_flags(total: int, flagged: list[str]) -> str | list[str]:
+    """``flagged`` as the manifest writes it: MANIFEST_ALL when it covers the whole body.
+
+    ``total`` is the body's unit count. An empty body is never "all" — "everything in
+    nothing" would read in-game as "this whole locale is unreviewed machine output".
+    """
+    if total > 0 and len(flagged) == total:
+        return MANIFEST_ALL
+    return flagged
+
+
+def expand_flags(value, units: list[str]) -> list[str]:
+    """The inverse of compact_flags: a manifest value back to an explicit key list.
+
+    ``units`` is the body's full unit list, returned as-is for MANIFEST_ALL.
+    """
+    if value == MANIFEST_ALL:
+        return list(units)
+    return list(value) if isinstance(value, list) else []
+
+
+def build_manifest(locale: str, authors: dict[str, str],
+                   ns_list: list[Namespace] | None = None,
+                   narrative_prov_dir: Path = DEFAULT_NARRATIVE_PROVENANCE_DIR) -> dict:
+    """The canonical shipped manifest for one locale, derived purely from the sidecars.
+
+    Spans BOTH provenance bodies — every lang namespace plus the narrative books — because
+    the in-game editor lists all of them in one screen and needs one lookup. That is why
+    this lives here rather than in either stamp script: both of them rebuild it, and
+    check-provenance.py verifies it, from this single definition.
+
+    A body with no sidecar for this locale is omitted rather than emitted empty (e.g.
+    discordpresence has no zh_cn — its Chinese lives in its own repo), so "absent" stays
+    distinguishable from "nothing needs review".
+    """
+    manifest: dict = {"_note": MANIFEST_NOTE, "locale": locale}
+
+    lang: dict[str, str | list[str]] = {}
+    for ns in ns_list if ns_list is not None else namespaces():
+        prov_path = ns.prov_dir / f"{locale}.json"
+        if not prov_path.is_file():
+            continue
+        prov = load_provenance(prov_path)
+        lang[ns.name] = compact_flags(len(prov), ai_unreviewed_keys(prov, authors))
+    manifest["lang"] = lang
+
+    books_path = narrative_prov_dir / f"{locale}.json"
+    if books_path.is_file():
+        books = load_provenance(books_path)
+        manifest["books"] = compact_flags(len(books), ai_unreviewed_keys(books, authors))
+    return manifest
+
+
+def build_all_manifests(authors: dict[str, str], lang_dir: Path = DEFAULT_LANG_DIR,
+                        ns_list: list[Namespace] | None = None,
+                        narrative_prov_dir: Path = DEFAULT_NARRATIVE_PROVENANCE_DIR
+                        ) -> dict[str, dict]:
+    """locale -> manifest, for every locale that ships a lang file (the credits locale set)."""
+    return {
+        locale: build_manifest(locale, authors, ns_list, narrative_prov_dir)
+        for locale in locales(lang_dir)
+    }
+
+
+def load_manifest(path: Path) -> dict:
+    """Parse a shipped provenance manifest. Raises ValueError on a non-object root."""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: expected a JSON object")
+    return data
+
+
+def write_manifest(path: Path, manifest: dict) -> None:
+    """Write a manifest in the shipped format: indent-2, raw UTF-8, trailing newline."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def refresh_manifests(authors: dict[str, str], lang_dir: Path = DEFAULT_LANG_DIR,
+                      ns_list: list[Namespace] | None = None,
+                      narrative_prov_dir: Path = DEFAULT_NARRATIVE_PROVENANCE_DIR,
+                      manifest_dir: Path = DEFAULT_MANIFEST_DIR) -> list[Path]:
+    """Rebuild every shipped manifest; returns the paths that changed (written or deleted).
+
+    Global by design, and called by BOTH stamp scripts whatever their --locale/--namespace
+    filter: one manifest spans every lang namespace plus the books, so a narrative-only
+    stamp still has to rewrite it. Byte-identical writes are skipped so untouched locales
+    never churn, and a manifest whose locale no longer ships a lang file is deleted rather
+    than left behind as a stale jar asset.
+
+    Lives here rather than in either stamp script because the two cannot import each other
+    (both filenames are hyphenated) — and because a second copy of this logic is exactly how
+    the two bodies would drift apart.
+    """
+    built = build_all_manifests(authors, lang_dir, ns_list, narrative_prov_dir)
+    changed: list[Path] = []
+    for locale, manifest in built.items():
+        path = manifest_dir / f"{locale}.json"
+        if path.is_file():
+            try:
+                if load_manifest(path) == manifest:
+                    continue
+            except (json.JSONDecodeError, ValueError):
+                pass  # unparseable -> rewrite
+        write_manifest(path, manifest)
+        changed.append(path)
+    if manifest_dir.is_dir():
+        for path in sorted(manifest_dir.glob("*.json")):
+            if path.stem not in built:
+                path.unlink()
+                changed.append(path)
+    return changed
 
 
 def write_provenance(path: Path, prov: dict) -> None:
