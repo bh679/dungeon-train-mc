@@ -1,8 +1,12 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+
+import java.util.List;
 
 /**
  * Decides which carriages along the train belong to a portal, and in what part.
@@ -36,6 +40,9 @@ import net.minecraft.server.level.ServerLevel;
  *
  * <p>Mixing the world seed in is what keeps the lottery from being the same lottery everywhere: a
  * seedless hash would put portals at identical group ordinals in every world ever generated.</p>
+ *
+ * <p>The one exception is a dev build with everyone in creative, which keeps the old every-2nd
+ * cadence so a portal is always a short ride away while testing — see {@link #rateFor}.</p>
  */
 public final class PortalCarriageSelection {
 
@@ -49,13 +56,48 @@ public final class PortalCarriageSelection {
     /** Slot of the exit corridor within its group. */
     public static final int SLOT_EXIT = 2;
 
-    /** One group in seventeen holds a portal, on average. */
-    public static final int DEFAULT_CARRIAGE_EVERY = 17;
+    /** One group in twenty holds a portal, on average. */
+    public static final int DEFAULT_CARRIAGE_EVERY = 20;
 
     /** Value meaning "no group holds a portal". */
     public static final int CARRIAGE_EVERY_OFF = 0;
 
+    /**
+     * The cadence a dev build hands a creative player: every 2nd group, as the whole system worked
+     * before the lottery. Finding a portal at the shipped 1-in-20 means riding a long way, which is
+     * a poor loop for testing one; creative on a dev build is exactly the case where that matters
+     * and nobody's play experience is at stake.
+     */
+    public static final int DEV_CREATIVE_EVERY = 2;
+
     private PortalCarriageSelection() {}
+
+    /**
+     * How often groups win a portal, and by which rule.
+     *
+     * @param every     one group in this many, or {@link #CARRIAGE_EVERY_OFF} for none
+     * @param periodic  {@code true} for the fixed every-nth cadence (dev-creative), {@code false}
+     *                  for the seeded lottery that ordinary play uses
+     */
+    public record Rate(int every, boolean periodic) {
+
+        /** No group holds a portal. */
+        public static final Rate OFF = new Rate(CARRIAGE_EVERY_OFF, false);
+
+        /** One group in {@code every}, drawn from the world seed. */
+        public static Rate lottery(int every) {
+            return new Rate(every, false);
+        }
+
+        /** Every {@code every}th group exactly, seed ignored. */
+        public static Rate periodic(int every) {
+            return new Rate(every, true);
+        }
+
+        public boolean isOff() {
+            return every <= CARRIAGE_EVERY_OFF;
+        }
+    }
 
     /**
      * A carriage's slot within its group.
@@ -74,22 +116,25 @@ public final class PortalCarriageSelection {
     }
 
     /**
-     * True if this group won a portal, one group in {@code every} on average.
+     * True if this group won a portal, one group in {@code rate.every()} on average.
      *
      * <p>The draw is a hash of the group's ordinal and the world seed rather than a modulo, so
      * portals arrive at no fixed beat while every reader — the placer, the relay, the tick that
-     * builds the pair — keeps getting the same answer for the same group forever.</p>
+     * builds the pair — keeps getting the same answer for the same group forever. A
+     * {@link Rate#periodic} rate takes the old every-nth cadence instead; see
+     * {@link #DEV_CREATIVE_EVERY} for the one case that uses it.</p>
      */
-    public static boolean isPortalGroup(int carriageIndex, int groupSize, int every, long worldSeed) {
-        if (every <= CARRIAGE_EVERY_OFF) return false;
+    public static boolean isPortalGroup(int carriageIndex, int groupSize, Rate rate, long worldSeed) {
+        if (rate.isOff()) return false;
         // A group too short to hold entry, cart and exit gets no portal at all rather than half of
         // one — an entry corridor whose exit landed in the next group would strand anyone using it.
         if (groupSize < PORTAL_GROUP_SPAN) return false;
         // Every group, without troubling the hash — and the case the group-arithmetic tests use.
-        if (every == 1) return true;
+        if (rate.every() == 1) return true;
 
         long groupIndex = Math.floorDiv((long) carriageIndex, Math.max(1, groupSize));
-        return Math.floorMod(hash(worldSeed, groupIndex), (long) every) == 0L;
+        long draw = rate.periodic() ? groupIndex : hash(worldSeed, groupIndex);
+        return Math.floorMod(draw, (long) rate.every()) == 0L;
     }
 
     /**
@@ -111,12 +156,12 @@ public final class PortalCarriageSelection {
 
     /** True if this carriage is one of a portal's two corridors. */
     public static boolean isPortalCarriage(ServerLevel level, int carriageIndex) {
-        return isPortalCarriage(carriageIndex, DungeonTrainConfig.getGroupSize(), every(level), seed(level));
+        return isPortalCarriage(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level));
     }
 
     /** True if this carriage is the cart between a portal's two corridors. */
     public static boolean isPortalMiddle(ServerLevel level, int carriageIndex) {
-        return isPortalMiddle(carriageIndex, DungeonTrainConfig.getGroupSize(), every(level), seed(level));
+        return isPortalMiddle(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level));
     }
 
     /**
@@ -128,27 +173,57 @@ public final class PortalCarriageSelection {
      * match its twin block-for-block, and the cart between two corridors is sealed space.</p>
      */
     public static boolean isPortalPart(ServerLevel level, int carriageIndex) {
-        return isPortalPart(carriageIndex, DungeonTrainConfig.getGroupSize(), every(level), seed(level));
+        return isPortalPart(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level));
     }
 
-    public static boolean isPortalCarriage(int carriageIndex, int groupSize, int every, long worldSeed) {
-        if (!isPortalGroup(carriageIndex, groupSize, every, worldSeed)) return false;
+    public static boolean isPortalCarriage(int carriageIndex, int groupSize, Rate rate, long worldSeed) {
+        if (!isPortalGroup(carriageIndex, groupSize, rate, worldSeed)) return false;
         int slot = slotOf(carriageIndex, groupSize);
         return slot == SLOT_ENTRY || slot == SLOT_EXIT;
     }
 
-    public static boolean isPortalMiddle(int carriageIndex, int groupSize, int every, long worldSeed) {
-        if (!isPortalGroup(carriageIndex, groupSize, every, worldSeed)) return false;
+    public static boolean isPortalMiddle(int carriageIndex, int groupSize, Rate rate, long worldSeed) {
+        if (!isPortalGroup(carriageIndex, groupSize, rate, worldSeed)) return false;
         return slotOf(carriageIndex, groupSize) == SLOT_MIDDLE;
     }
 
-    public static boolean isPortalPart(int carriageIndex, int groupSize, int every, long worldSeed) {
-        return isPortalCarriage(carriageIndex, groupSize, every, worldSeed)
-            || isPortalMiddle(carriageIndex, groupSize, every, worldSeed);
+    public static boolean isPortalPart(int carriageIndex, int groupSize, Rate rate, long worldSeed) {
+        return isPortalCarriage(carriageIndex, groupSize, rate, worldSeed)
+            || isPortalMiddle(carriageIndex, groupSize, rate, worldSeed);
     }
 
-    private static int every(ServerLevel level) {
-        return PortalRegistry.get(level).carriageEvery();
+    /**
+     * The rate this level is currently drawing at: the world's stored one, unless a dev build has
+     * handed a creative player the dense testing cadence.
+     *
+     * <p><b>Game mode is not a stable input, and that is the price here.</b> Everything else about
+     * the selection is fixed for the life of a world; this one input a player can change at will,
+     * and when they do, groups the rolling window has not stamped yet answer differently — a
+     * corridor re-stamped after the switch can come back an ordinary carriage. That is only
+     * tolerable because it is fenced to dev builds ({@link DungeonTrain#isDevBuild()}, branch is not
+     * {@code main}), where the point of the world is testing. It must never reach a release.</p>
+     *
+     * <p><b>Every player, not any.</b> One carriage has one verdict — the invariant the placer, the
+     * relay and the pair tick all lean on — so the override cannot be per-player. A survival player
+     * sharing a level with a creative one therefore holds the whole level at the normal rate, which
+     * is also the plain reading of "survival is normal even on a dev build". An empty level keeps
+     * the stored rate.</p>
+     */
+    public static Rate rateFor(ServerLevel level) {
+        int stored = PortalRegistry.get(level).carriageEvery();
+        if (stored <= CARRIAGE_EVERY_OFF) return Rate.OFF;
+        return isDevCreative(level) ? Rate.periodic(DEV_CREATIVE_EVERY) : Rate.lottery(stored);
+    }
+
+    /** True on a dev build where at least one player is logged in and all of them are in creative. */
+    public static boolean isDevCreative(ServerLevel level) {
+        if (!DungeonTrain.isDevBuild()) return false;
+        List<ServerPlayer> players = level.players();
+        if (players.isEmpty()) return false;
+        for (ServerPlayer player : players) {
+            if (!player.gameMode.getGameModeForPlayer().isCreative()) return false;
+        }
+        return true;
     }
 
     /**

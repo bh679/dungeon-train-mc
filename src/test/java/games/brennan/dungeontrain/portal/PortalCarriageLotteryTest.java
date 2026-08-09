@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.portal.PortalCarriageSelection.Rate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -23,7 +24,7 @@ final class PortalCarriageLotteryTest {
     private static final int GROUP = 3;
     private static final long SEED = 0x5DEADBEEFL;
 
-    /** Groups sampled for the rate checks — enough that a 1-in-17 rate has ~1000 hits to count. */
+    /** Groups sampled for the rate checks — enough that a 1-in-20 rate has ~1000 hits to count. */
     private static final int SAMPLE_GROUPS = 20_000;
 
     /**
@@ -36,9 +37,9 @@ final class PortalCarriageLotteryTest {
     @DisplayName("the same carriage in the same world always gets the same verdict")
     void verdictIsStable() {
         for (int i = -5_000; i <= 5_000; i++) {
-            boolean first = PortalCarriageSelection.isPortalPart(i, GROUP, 17, SEED);
+            boolean first = PortalCarriageSelection.isPortalPart(i, GROUP, Rate.lottery(20), SEED);
             for (int repeat = 0; repeat < 3; repeat++) {
-                assertEquals(first, PortalCarriageSelection.isPortalPart(i, GROUP, 17, SEED),
+                assertEquals(first, PortalCarriageSelection.isPortalPart(i, GROUP, Rate.lottery(20), SEED),
                     "verdict drifted at index " + i);
             }
         }
@@ -48,8 +49,8 @@ final class PortalCarriageLotteryTest {
     @Test
     @DisplayName("two worlds pick different groups")
     void seedChangesTheDraw() {
-        Set<Integer> a = chosenAnchors(SEED, 17, 2_000);
-        Set<Integer> b = chosenAnchors(SEED + 1, 17, 2_000);
+        Set<Integer> a = chosenAnchors(SEED, 20, 2_000);
+        Set<Integer> b = chosenAnchors(SEED + 1, 20, 2_000);
 
         assertFalse(a.isEmpty(), "seed A chose nothing");
         assertFalse(b.isEmpty(), "seed B chose nothing");
@@ -59,7 +60,7 @@ final class PortalCarriageLotteryTest {
     @Test
     @DisplayName("roughly one group in every wins a portal")
     void rateMatchesEvery() {
-        for (int every : new int[] {2, 5, 17, 64}) {
+        for (int every : new int[] {2, 5, 20, 64}) {
             int hits = chosenAnchors(SEED, every, SAMPLE_GROUPS).size();
             double expected = (double) SAMPLE_GROUPS / every;
             // Generous: this guards against a hash that clumps or skews, not against ordinary
@@ -80,7 +81,7 @@ final class PortalCarriageLotteryTest {
         Set<Integer> gaps = new HashSet<>();
         int previous = Integer.MIN_VALUE;
         for (int anchor = 0; anchor < SAMPLE_GROUPS * GROUP; anchor += GROUP) {
-            if (!PortalCarriageSelection.isPortalPart(anchor, GROUP, 17, SEED)) continue;
+            if (!PortalCarriageSelection.isPortalPart(anchor, GROUP, Rate.lottery(20), SEED)) continue;
             if (previous != Integer.MIN_VALUE) gaps.add((anchor - previous) / GROUP);
             previous = anchor;
         }
@@ -91,10 +92,10 @@ final class PortalCarriageLotteryTest {
     @DisplayName("every=1 gives every group a portal and off gives none")
     void boundariesHold() {
         for (int i = -100; i <= 100; i++) {
-            assertTrue(PortalCarriageSelection.isPortalPart(i, GROUP, 1, SEED),
+            assertTrue(PortalCarriageSelection.isPortalPart(i, GROUP, Rate.lottery(1), SEED),
                 "index " + i + " missed a portal at every=1");
             assertFalse(PortalCarriageSelection.isPortalPart(
-                i, GROUP, PortalCarriageSelection.CARRIAGE_EVERY_OFF, SEED),
+                i, GROUP, Rate.OFF, SEED),
                 "index " + i + " got a portal while off");
         }
     }
@@ -109,14 +110,57 @@ final class PortalCarriageLotteryTest {
         int behind = 0;
         int ahead = 0;
         for (int group = 1; group <= SAMPLE_GROUPS; group++) {
-            if (PortalCarriageSelection.isPortalPart(-group * GROUP, GROUP, 17, SEED)) behind++;
-            if (PortalCarriageSelection.isPortalPart(group * GROUP, GROUP, 17, SEED)) ahead++;
+            if (PortalCarriageSelection.isPortalPart(-group * GROUP, GROUP, Rate.lottery(20), SEED)) behind++;
+            if (PortalCarriageSelection.isPortalPart(group * GROUP, GROUP, Rate.lottery(20), SEED)) ahead++;
         }
-        double expected = (double) SAMPLE_GROUPS / 17;
+        double expected = (double) SAMPLE_GROUPS / 20;
         assertTrue(behind > expected * 0.75 && behind < expected * 1.25,
             "behind the origin: " + behind + " of " + SAMPLE_GROUPS + ", expected about " + expected);
         assertTrue(ahead > expected * 0.75 && ahead < expected * 1.25,
             "ahead of the origin: " + ahead + " of " + SAMPLE_GROUPS + ", expected about " + expected);
+    }
+
+    /**
+     * The dev-creative escape hatch: a periodic rate is the old cadence exactly, so a tester in
+     * creative always has a portal a couple of groups away, and the seed cannot move it.
+     */
+    @Test
+    @DisplayName("a periodic rate lands on every nth group in every world alike")
+    void periodicRateIsTheOldCadence() {
+        for (long seed : new long[] {SEED, 0L, -1L, 12345L}) {
+            for (int group = -40; group <= 40; group++) {
+                int anchor = group * GROUP;
+                assertEquals(group % 2 == 0,
+                    PortalCarriageSelection.isPortalPart(
+                        anchor, GROUP, Rate.periodic(PortalCarriageSelection.DEV_CREATIVE_EVERY), seed),
+                    "group " + group + " at seed " + seed);
+            }
+        }
+    }
+
+    /** Same rate, different rule — otherwise the periodic flag would not be doing anything. */
+    @Test
+    @DisplayName("the lottery does not agree with the cadence at the same rate")
+    void lotteryDiffersFromPeriodicAtTheSameRate() {
+        int disagreements = 0;
+        for (int group = 0; group < 200; group++) {
+            int anchor = group * GROUP;
+            boolean periodic = PortalCarriageSelection.isPortalPart(anchor, GROUP, Rate.periodic(2), SEED);
+            boolean lottery = PortalCarriageSelection.isPortalPart(anchor, GROUP, Rate.lottery(2), SEED);
+            if (periodic != lottery) disagreements++;
+        }
+        assertTrue(disagreements > 20, "only " + disagreements + " of 200 groups differed — the "
+            + "lottery is tracking the cadence");
+    }
+
+    @Test
+    @DisplayName("off is off under either rule")
+    void offIsOffEitherWay() {
+        for (int i = -100; i <= 100; i++) {
+            assertFalse(PortalCarriageSelection.isPortalPart(i, GROUP, Rate.OFF, SEED));
+            assertFalse(PortalCarriageSelection.isPortalPart(
+                i, GROUP, new Rate(PortalCarriageSelection.CARRIAGE_EVERY_OFF, true), SEED));
+        }
     }
 
     /** Anchors of the groups that won a portal, over {@code groups} groups from the origin forwards. */
@@ -124,7 +168,7 @@ final class PortalCarriageLotteryTest {
         Set<Integer> chosen = new HashSet<>();
         for (int group = 0; group < groups; group++) {
             int anchor = group * GROUP;
-            if (PortalCarriageSelection.isPortalPart(anchor, GROUP, every, seed)) chosen.add(anchor);
+            if (PortalCarriageSelection.isPortalPart(anchor, GROUP, Rate.lottery(every), seed)) chosen.add(anchor);
         }
         return chosen;
     }

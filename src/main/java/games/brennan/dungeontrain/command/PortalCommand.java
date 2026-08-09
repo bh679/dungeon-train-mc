@@ -264,6 +264,15 @@ public final class PortalCommand {
         source.sendSuccess(() -> Component.literal(every == PortalCarriageSelection.CARRIAGE_EVERY_OFF
             ? "Portal carriages: off"
             : "Portal carriages: 1 carriage group in " + every + ", at random"), false);
+        // Says so out loud, because otherwise dense portals on a dev build read as the rate being
+        // broken rather than as the testing cadence doing its job.
+        if (PortalCarriageSelection.isDevCreative(source.getLevel())) {
+            source.sendSuccess(() -> Component.literal(
+                "  → dev build, everyone in creative: overridden to every "
+                    + PortalCarriageSelection.DEV_CREATIVE_EVERY + "nd group. Switch to survival for "
+                    + "the real rate.")
+                .withStyle(ChatFormatting.YELLOW), false);
+        }
         source.sendSuccess(() -> Component.literal(spacing == PortalAnchors.SPACING_OFF
             ? "Auto-spawning: off"
             : "Auto-spawning: every " + spacing + " blocks"), false);

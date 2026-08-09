@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.portal.PortalCarriageSelection.Rate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +19,7 @@ final class PortalCarriageRoleTest {
 
     private static final int GROUP = 3;
     /** Every group holds a portal, so the group arithmetic is what is under test and not the lottery. */
-    private static final int EVERY = 1;
+    private static final Rate EVERY = Rate.lottery(1);
     /** One arbitrary world's seed. Which groups it picks is {@link PortalCarriageLotteryTest}'s business. */
     private static final long SEED = 0x5DEADBEEFL;
 
@@ -121,9 +122,9 @@ final class PortalCarriageRoleTest {
     void portalPartIsExactlyTheUnion() {
         for (int every : new int[] {1, 2, 5}) {
             for (int i = -40; i <= 40; i++) {
-                boolean union = PortalCarriageSelection.isPortalCarriage(i, GROUP, every, SEED)
-                    || PortalCarriageSelection.isPortalMiddle(i, GROUP, every, SEED);
-                assertEquals(union, PortalCarriageSelection.isPortalPart(i, GROUP, every, SEED),
+                boolean union = PortalCarriageSelection.isPortalCarriage(i, GROUP, Rate.lottery(every), SEED)
+                    || PortalCarriageSelection.isPortalMiddle(i, GROUP, Rate.lottery(every), SEED);
+                assertEquals(union, PortalCarriageSelection.isPortalPart(i, GROUP, Rate.lottery(every), SEED),
                     "index " + i + " at every=" + every);
             }
         }
@@ -146,8 +147,8 @@ final class PortalCarriageRoleTest {
     void corridorAndMiddleArePartitioned() {
         for (int every : new int[] {1, 2, 5}) {
             for (int i = -40; i <= 40; i++) {
-                boolean corridor = PortalCarriageSelection.isPortalCarriage(i, GROUP, every, SEED);
-                boolean middle = PortalCarriageSelection.isPortalMiddle(i, GROUP, every, SEED);
+                boolean corridor = PortalCarriageSelection.isPortalCarriage(i, GROUP, Rate.lottery(every), SEED);
+                boolean middle = PortalCarriageSelection.isPortalMiddle(i, GROUP, Rate.lottery(every), SEED);
                 assertFalse(corridor && middle, "index " + i + " was both at every=" + every);
             }
         }
@@ -163,10 +164,10 @@ final class PortalCarriageRoleTest {
         for (int every : new int[] {2, 5, 20}) {
             for (long seed : new long[] {SEED, 0L, -1L}) {
                 for (int anchor = -60; anchor <= 60; anchor += GROUP) {
-                    boolean chosen = PortalCarriageSelection.isPortalPart(anchor, GROUP, every, seed);
+                    boolean chosen = PortalCarriageSelection.isPortalPart(anchor, GROUP, Rate.lottery(every), seed);
                     for (int slot = 0; slot < GROUP; slot++) {
                         assertEquals(chosen,
-                            PortalCarriageSelection.isPortalPart(anchor + slot, GROUP, every, seed),
+                            PortalCarriageSelection.isPortalPart(anchor + slot, GROUP, Rate.lottery(every), seed),
                             "slot " + slot + " disagreed with its group at anchor " + anchor
                                 + ", every=" + every + ", seed=" + seed);
                     }
@@ -197,9 +198,9 @@ final class PortalCarriageRoleTest {
     void offSelectsNothing() {
         for (int i = -20; i <= 20; i++) {
             assertFalse(PortalCarriageSelection.isPortalCarriage(
-                i, GROUP, PortalCarriageSelection.CARRIAGE_EVERY_OFF, SEED));
+                i, GROUP, Rate.OFF, SEED));
             assertFalse(PortalCarriageSelection.isPortalMiddle(
-                i, GROUP, PortalCarriageSelection.CARRIAGE_EVERY_OFF, SEED));
+                i, GROUP, Rate.OFF, SEED));
         }
     }
 
