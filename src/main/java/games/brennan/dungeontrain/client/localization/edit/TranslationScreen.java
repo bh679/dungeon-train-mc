@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.localization.edit;
 
+import games.brennan.dungeontrain.client.DungeonTrainLanguages;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
@@ -80,9 +81,22 @@ public final class TranslationScreen extends Screen {
         this.locale = locale == null ? "" : locale.toLowerCase(Locale.ROOT);
     }
 
-    /** True when {@code locale} is something a player can translate into (i.e. not the source). */
+    /**
+     * True when {@code locale} is a language Dungeon Train actually ships a translation for.
+     *
+     * <p>Not merely "anything but {@code en_us}": Minecraft offers dozens of locales the mod has
+     * no lang file for — {@code en_au}, {@code en_gb}, and the joke ones like {@code lol_us} and
+     * {@code en_ud}. A player on those already sees the mod in English, because that is what
+     * vanilla falls back to, so there is nothing there to fix. Pointing the editor at one would
+     * invent a locale the repo does not track and produce submissions nothing could ever apply.
+     * </p>
+     *
+     * <p>Discovered from the resource pack via {@link DungeonTrainLanguages#isTranslated} rather
+     * than hardcoded, so a localization resource pack's locale counts too.</p>
+     */
     public static boolean isEditable(String locale) {
-        return locale != null && !locale.isBlank() && !"en_us".equalsIgnoreCase(locale);
+        return locale != null && !locale.isBlank() && !"en_us".equalsIgnoreCase(locale)
+            && DungeonTrainLanguages.isTranslated(locale);
     }
 
     @Override
