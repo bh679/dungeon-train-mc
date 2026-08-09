@@ -75,6 +75,18 @@ public record EditorStatusPacket(String category, String model, String modelId, 
     /** Sentinel for "this model has no mode" — everything but a portal room. */
     public static final String NO_MODE = "";
 
+    /**
+     * Wire length cap on {@link #roomMode}.
+     *
+     * <p>Sized for the tag rather than guessed at. {@code PortalRoomSettings} packs four settings
+     * into one {@code /}-separated string, and its longest form —
+     * {@code endless_repetition/dynamic/tile/random:64} — is forty-one characters. The cap was 32
+     * when the tag topped out at thirty-one, which left it one setting away from
+     * {@code writeUtf} throwing on a perfectly ordinary room. This has headroom for the next
+     * segment; {@link EditorPlotLabelsPacket} carries the same tag and must keep the same cap.</p>
+     */
+    public static final int MODE_TAG_MAX = 64;
+
     /** {@code maxLevel} sentinel mirroring {@code TemplateGate.ALL} — "no upper level bound". */
     public static final int MAX_LEVEL_ALL = -1;
 
@@ -154,7 +166,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         buf.writeVarInt(roomLength);
         buf.writeVarInt(roomWidth);
         buf.writeVarInt(roomHeight);
-        buf.writeUtf(roomMode == null ? NO_MODE : roomMode, 32);
+        buf.writeUtf(roomMode == null ? NO_MODE : roomMode, MODE_TAG_MAX);
     }
 
     public static EditorStatusPacket decode(FriendlyByteBuf buf) {
@@ -184,7 +196,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         int rl = buf.readVarInt();
         int rw = buf.readVarInt();
         int rh = buf.readVarInt();
-        String mode = buf.readUtf(32);
+        String mode = buf.readUtf(MODE_TAG_MAX);
         return new EditorStatusPacket(c, m, id, name, d, w, minLv, maxLv, phases, pme, mx, my, mz, mv, excluded,
             stageId, rl, rw, rh, mode);
     }

@@ -99,20 +99,101 @@ class EditorPlotLabelsRendererTest {
     @Test
     @DisplayName("Endless Repetition grows a Copies row under Walls; the other modes do not")
     void copiesRowOnlyForRepetition() {
+        // Endless Repetition defaults to laying extra corridors, so it grows the Exits row AND its
+        // spacing stepper as well as Copies.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS,
-                RowKind.ENTER, RowKind.ACTION},
+                RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(
                 entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition")));
 
-        for (String mode : new String[]{"bedrock_lock", "endless_open"}) {
-            assertArrayEquals(
-                new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                    RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ENTER,
-                    RowKind.ACTION},
-                EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, mode)), mode);
+        // Endless Open is endless, so it is asked about Exits — and answers Off, which takes the
+        // spacing stepper with it. It still makes no whole-room copies, so no Copies row.
+        assertArrayEquals(
+            new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.EXITS,
+                RowKind.ENTER, RowKind.ACTION},
+            EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "endless_open")));
+
+        // Bedrock Lock repeats nothing, so it has neither.
+        assertArrayEquals(
+            new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ENTER,
+                RowKind.ACTION},
+            EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock")));
+    }
+
+    @Test
+    @DisplayName("Exits shows for both endless modes and neither sealed one — getting lost is not a wall property")
+    void exitsRowFollowsTheEndlessModes() {
+        for (String mode : new String[]{"endless_repetition", "endless_open"}) {
+            assertTrue(EditorPlotLabelsRenderer.hasExitsRow(
+                entry("PORTALS", true, 1, 11, 13, 7, mode)), mode);
         }
+        for (String mode : new String[]{"bedrock_lock", "bedrockless"}) {
+            assertFalse(EditorPlotLabelsRenderer.hasExitsRow(
+                entry("PORTALS", true, 1, 11, 13, 7, mode)), mode);
+        }
+        // …and only from inside the plot, the Walls row's own rule.
+        assertFalse(EditorPlotLabelsRenderer.hasExitsRow(
+            entry("PORTALS", false, 1, 11, 13, 7, "endless_repetition")));
+    }
+
+    @Test
+    @DisplayName("The spacing stepper is absent at Off — a spacing for nothing is worse than no control")
+    void exitEveryRowHidesWhenNothingIsLaid() {
+        assertTrue(EditorPlotLabelsRenderer.hasExitEveryRow(
+            entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition")));
+        assertTrue(EditorPlotLabelsRenderer.hasExitEveryRow(
+            entry("PORTALS", true, 1, 11, 13, 7, "endless_open/exact/off/random")));
+        assertFalse(EditorPlotLabelsRenderer.hasExitEveryRow(
+            entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition/exact/off/off")));
+        assertFalse(EditorPlotLabelsRenderer.hasExitEveryRow(
+            entry("PORTALS", true, 1, 11, 13, 7, "endless_open")));
+    }
+
+    @Test
+    @DisplayName("The Exits row is one button and its stepper's thirds hit their own cells")
+    void exitsRowsAreHitTestedCorrectly() {
+        EditorPlotLabelsPacket.Entry e =
+            entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition/dynamic/fit");
+        RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
+        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
+
+        double exitsY = rowCentreY(e, indexOf(rows, RowKind.EXITS));
+        for (double x : new double[]{-halfW + 0.05, 0.0, halfW - 0.05}) {
+            assertEquals(CellKind.EXITS_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, x, exitsY));
+        }
+
+        double everyY = rowCentreY(e, indexOf(rows, RowKind.EXIT_EVERY));
+        assertEquals(CellKind.EXIT_EVERY_DEC,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.05, everyY));
+        assertEquals(CellKind.EXIT_EVERY_TYPE,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, everyY));
+        assertEquals(CellKind.EXIT_EVERY_INC,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - 0.05, everyY));
+
+        // And the rows the pair was inserted between still resolve to themselves.
+        assertEquals(CellKind.ROOM_CONTENTS_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
+            rowCentreY(e, indexOf(rows, RowKind.ROOM_CONTENTS))));
+        assertEquals(CellKind.BUTTON_ENTER_INSIDE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
+            rowCentreY(e, indexOf(rows, RowKind.ENTER))));
+    }
+
+    @Test
+    @DisplayName("The Exits labels name the reading, so the same number cannot be read two ways")
+    void exitsLabels() {
+        assertEquals("Exits: On", EditorPlotLabelsRenderer.exitsLabel("endless_repetition"));
+        assertEquals("Exits: Off", EditorPlotLabelsRenderer.exitsLabel("endless_open"));
+        assertEquals("Exits: Random",
+            EditorPlotLabelsRenderer.exitsLabel("endless_repetition/exact/off/random"));
+
+        assertEquals("Every 8", EditorPlotLabelsRenderer.exitEveryLabel("endless_repetition"));
+        assertEquals("Every 12",
+            EditorPlotLabelsRenderer.exitEveryLabel("endless_repetition/exact/off/on:12"));
+        assertEquals("1 in 5",
+            EditorPlotLabelsRenderer.exitEveryLabel("endless_repetition/exact/off/random:5"));
     }
 
     @Test
