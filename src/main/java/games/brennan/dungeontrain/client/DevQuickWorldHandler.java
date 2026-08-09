@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.builder.BuilderMode;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.perf.PerfTestMode;
 import net.minecraft.ChatFormatting;
@@ -82,6 +83,7 @@ public final class DevQuickWorldHandler {
             Component.literal("⏱").withStyle(ChatFormatting.BOLD);
 
     private static final String EDITOR_WORLD_PREFIX = "train editor ";
+    private static final String BUILDER_WORLD_PREFIX = "train builder ";
 
     private static final int GAP = 4;
 
@@ -203,7 +205,7 @@ public final class DevQuickWorldHandler {
     }
 
     static void launchEditorWorld(Screen lastScreen) {
-        String name = nextEditorWorldName();
+        String name = nextWorldName(EDITOR_WORLD_PREFIX);
         LevelSettings settings = new LevelSettings(
                 name,
                 GameType.CREATIVE,
@@ -215,13 +217,37 @@ public final class DevQuickWorldHandler {
         openLevel(name, settings, lastScreen, PerfTestMode.ENABLED);
     }
 
-    private static String nextEditorWorldName() {
+    /**
+     * Create the world a Train Builder mode is edited in: superflat and creative, so the
+     * builder's own work is the only thing in view — but with a <em>random</em> seed, unlike the
+     * perf world, which pins its seed to make benchmark runs comparable. Nothing about building
+     * benefits from an identical world every time.
+     *
+     * <p>The chosen {@code mode} is not written into the world; the client-side
+     * {@link EditorAutoOpenHandler} carries it across the load and acts on arrival.</p>
+     */
+    public static void launchBuilderWorld(Screen lastScreen, BuilderMode mode) {
+        String name = nextWorldName(BUILDER_WORLD_PREFIX);
+        LOGGER.info("Builder world: creating '{}' (flat, creative) for mode '{}'", name, mode.id());
+        LevelSettings settings = new LevelSettings(
+                name,
+                GameType.CREATIVE,
+                false,
+                Difficulty.NORMAL,
+                true,
+                new GameRules(),
+                WorldDataConfiguration.DEFAULT);
+        openLevel(name, settings, lastScreen, PerfTestMode.FLAT_PRESET, false);
+    }
+
+    /** Lowest unused {@code <prefix><n>}, so repeat launches never reuse or clobber a save. */
+    private static String nextWorldName(String prefix) {
         LevelStorageSource source = Minecraft.getInstance().getLevelSource();
         int i = 1;
-        while (source.levelExists(EDITOR_WORLD_PREFIX + i)) {
+        while (source.levelExists(prefix + i)) {
             i++;
         }
-        return EDITOR_WORLD_PREFIX + i;
+        return prefix + i;
     }
 
     private static void launchCreativeWorld(Screen lastScreen) {
@@ -284,34 +310,47 @@ public final class DevQuickWorldHandler {
      *             unchanged; the dev perf button passes {@code true} directly.
      */
     private static void openLevel(String name, LevelSettings settings, Screen lastScreen, boolean perf) {
+        // A perf world is flat AND pinned-seed; those two happen to coincide there but are
+        // independent choices, so the overload below takes them separately.
+        // Flat wins over the compatible-terrain toggle for a perf world: the point is to remove
+        // chunk generation from the measurement, and Compatible Terrain is still noise terrain.
+        ResourceKey<WorldPreset> preset = perf
+                ? PerfTestMode.FLAT_PRESET
+                : (DungeonTrainCommonConfig.getDefaultCompatibleTerrain()
+                    ? DT_COMPAT_PRESET : DT_DEFAULT_PRESET);
+        openLevel(name, settings, lastScreen, preset, perf);
+    }
+
+    /**
+     * @param preset     world preset to generate with; falls back to the vanilla NORMAL
+     *                   dimensions if it isn't in the registry
+     * @param pinnedSeed use {@link PerfTestMode#seed()} instead of a random one. A pinned seed
+     *                   makes every benchmark run lay out an identical world AND an identical
+     *                   train — {@code DungeonTrainWorldData} derives the train's
+     *                   {@code generationSeed} from the world seed, so this one value covers
+     *                   both. Every non-benchmark launch keeps a random seed.
+     */
+    private static void openLevel(String name, LevelSettings settings, Screen lastScreen,
+                                  ResourceKey<WorldPreset> preset, boolean pinnedSeed) {
         Minecraft mc = Minecraft.getInstance();
         mc.options.tutorialStep = TutorialSteps.NONE;
         mc.options.save();
-        // A pinned seed makes every benchmark run lay out an identical world AND an identical train
-        // — DungeonTrainWorldData derives the train's generationSeed from the world seed, so this
-        // one value covers both. Normal launches keep a random seed.
-        WorldOptions options = perf
+        WorldOptions options = pinnedSeed
                 ? new WorldOptions(PerfTestMode.seed(), true, false)
                 : WorldOptions.defaultWithRandomSeed();
         WorldOpenFlows flows = mc.createWorldOpenFlows();
-        flows.createFreshLevel(name, settings, options, dtPresetDimensions(perf), lastScreen);
+        flows.createFreshLevel(name, settings, options, presetDimensions(preset), lastScreen);
     }
 
-    private static Function<RegistryAccess, WorldDimensions> dtPresetDimensions(boolean perf) {
+    private static Function<RegistryAccess, WorldDimensions> presetDimensions(ResourceKey<WorldPreset> key) {
         return registryAccess -> {
             Registry<WorldPreset> presetRegistry =
                     registryAccess.registryOrThrow(Registries.WORLD_PRESET);
-            // Flat wins over the compatible-terrain toggle for a perf world: the point is to remove
-            // chunk generation from the measurement, and Compatible Terrain is still noise terrain.
-            ResourceKey<WorldPreset> key = perf
-                    ? PerfTestMode.FLAT_PRESET
-                    : (DungeonTrainCommonConfig.getDefaultCompatibleTerrain()
-                        ? DT_COMPAT_PRESET : DT_DEFAULT_PRESET);
             Optional<Holder.Reference<WorldPreset>> dt = presetRegistry.getHolder(key);
             if (dt.isPresent()) {
                 return dt.get().value().createWorldDimensions();
             }
-            LOGGER.warn("Quick-world: DT default preset not in registry; falling back to NORMAL.");
+            LOGGER.warn("Quick-world: preset {} not in registry; falling back to NORMAL.", key.location());
             return WorldPresets.createNormalWorldDimensions(registryAccess);
         };
     }

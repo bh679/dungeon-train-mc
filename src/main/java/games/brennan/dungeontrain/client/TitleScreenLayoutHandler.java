@@ -4,8 +4,9 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.CheatModListFetcher;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
+import games.brennan.dungeontrain.client.builder.TrainBuilderMenuButton;
+import games.brennan.dungeontrain.client.builder.TrainBuilderScreen;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
-import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PulsingDiscordButton;
 import games.brennan.dungeontrain.client.localization.LocalizationCredit;
 import games.brennan.dungeontrain.client.localization.LocalizationCreditLabel;
@@ -34,17 +35,20 @@ import java.util.List;
 
 /**
  * Restructures the title screen so the NeoForge "Mods" button slot is replaced
- * by a 50/50 split of <b>Dungeon Train Editor</b> + <b>Discord</b>, and the
+ * by a 50/50 split of <b>Train Builder</b> + <b>Discord</b>, and the
  * vanilla Options/Quit row absorbs the displaced Mods button as a 33/33/33
  * split of <b>Mods | Options | Quit Game</b>.
  *
- * <p>Discord opens {@value #DISCORD_URL} via {@link ConfirmLinkScreen}. The
- * Editor button launches a fresh creative world via
- * {@link DevQuickWorldHandler#launchEditorWorld(Screen)} — which names the
- * world "train editor N" using the lowest unused index — and arms
- * {@link EditorDevMode#queueOnForNextStart()} so editor mode is forced on
- * after the server finishes starting, regardless of the
- * {@code CarriageTemplateStore.sourceTreeAvailable()} gate.</p>
+ * <p>Discord opens the current official invite via {@link ConfirmLinkScreen}.</p>
+ *
+ * <p>The first slot holds a {@link TrainBuilderMenuButton}: normally <b>Train Builder</b>,
+ * opening {@link TrainBuilderScreen}; on a dev build, holding Shift turns it into the old
+ * <b>Train Editor</b> button. The editor path is unchanged — it launches a fresh creative world
+ * via {@link DevQuickWorldHandler#launchEditorWorld(Screen)}, which names the world
+ * "train editor N" using the lowest unused index, and arms
+ * {@link EditorDevMode#queueOnForNextStart()} so editor mode is forced on after the server
+ * finishes starting, regardless of the {@code CarriageTemplateStore.sourceTreeAvailable()}
+ * gate.</p>
  *
  * <p>If any of Mods/Options/Quit can't be located on the title screen (e.g.
  * a third-party mod has already rewritten the menu), this handler logs a
@@ -56,8 +60,6 @@ public final class TitleScreenLayoutHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final Component DISCORD_LABEL = Component.translatable("gui.dungeontrain.discord_button");
-    private static final Component EDITOR_LABEL = Component.translatable("gui.dungeontrain.editor_button");
-
     private static final Component MODS_KEY = Component.translatable("fml.menu.mods");
     private static final Component OPTIONS_KEY = Component.translatable("menu.options");
     private static final Component QUIT_KEY = Component.translatable("menu.quit");
@@ -151,9 +153,13 @@ public final class TitleScreenLayoutHandler {
         quit.setY(rowY);
         quit.setWidth(thirdW);
 
-        DarkTintedButton editor = new DarkTintedButton(slotX, slotY, halfW, slotH,
-                EDITOR_LABEL, b -> openEditor(titleScreen));
-        event.addListener(editor);
+        // Train Builder by default; on a dev build, holding Shift swaps this same widget to the
+        // old Train Editor. The slot is only half a row wide (Discord has the other half), so a
+        // separate Editor button would not fit alongside it.
+        TrainBuilderMenuButton builder = new TrainBuilderMenuButton(slotX, slotY, halfW, slotH,
+                () -> openBuilder(titleScreen),
+                () -> openEditor(titleScreen));
+        event.addListener(builder);
 
         // If the player opted out of the developer welcome popup, keep the
         // Discord affordance gently visible via a pulsing blue border —
@@ -191,6 +197,11 @@ public final class TitleScreenLayoutHandler {
             }
             Minecraft.getInstance().setScreen(parent);
         }, discordUrl, true));
+    }
+
+    private static void openBuilder(Screen parent) {
+        LOGGER.info("TitleScreenLayout: Train Builder button clicked — opening the builder picker");
+        Minecraft.getInstance().setScreen(new TrainBuilderScreen(parent));
     }
 
     private static void openEditor(Screen parent) {

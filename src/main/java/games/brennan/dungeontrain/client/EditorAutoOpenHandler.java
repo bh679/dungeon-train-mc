@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.builder.BuilderMode;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
@@ -11,12 +13,21 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 
 /**
- * One-shot post-world-load auto-opener for the editor.
+ * One-shot post-world-load dispatcher for the title screen's Train Editor / Train Builder
+ * buttons.
  *
- * <p>Armed by the title-screen "Train Editor" button via {@link #queueAutoOpen()};
- * fires the chat command {@code /dungeontrain editor} (the same command the
- * X-menu "Editor" entry runs) on the first client tick where the local player
- * and connection are both ready.</p>
+ * <p>Both buttons create a fresh world and then need to do something once it is actually up.
+ * That "wait for player + level + connection + gameMode, then wait a beat, then act" loop is
+ * the tricky part, so it lives here once and the armed action decides what happens at the end
+ * of it:</p>
+ *
+ * <ul>
+ *   <li>{@link #queueAutoOpen()} — fires the chat command {@code /dungeontrain editor} (the
+ *       same command the X-menu "Editor" entry runs).</li>
+ *   <li>{@link #queueBuilderStub(BuilderMode)} — posts a "coming soon" line for the chosen
+ *       builder mode. The four builder editors are a follow-up task; this is the seam where
+ *       each one gets hooked up.</li>
+ * </ul>
  *
  * <p>Defensive reset: {@link TitleScreenLayoutHandler} clears the flag on every
  * title-screen init — covers the "user bailed back to title before world
@@ -32,31 +43,51 @@ public final class EditorAutoOpenHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final int DISPATCH_DELAY_TICKS = 40; // 2s @ 20Hz
 
-    private static volatile boolean pending = false;
+    /**
+     * What to do once the world is up. A {@code null} {@code builderMode} means the technical
+     * editor; any other value means that builder mode's stub.
+     */
+    private record PendingAction(BuilderMode builderMode) {
+        boolean isEditor() {
+            return builderMode == null;
+        }
+    }
+
+    private static volatile PendingAction pending = null;
     private static int delayTicksRemaining = -1; // -1 = not yet started counting
     private static long waitTickLogCounter = 0;
 
     private EditorAutoOpenHandler() {}
 
     public static void queueAutoOpen() {
-        pending = true;
+        arm(new PendingAction(null), "editor");
+    }
+
+    /** Arm the "coming soon" stub for a Train Builder mode once its flat world has loaded. */
+    public static void queueBuilderStub(BuilderMode mode) {
+        arm(new PendingAction(mode), "builder:" + mode.id());
+    }
+
+    private static void arm(PendingAction action, String describe) {
+        pending = action;
         delayTicksRemaining = -1;
         waitTickLogCounter = 0;
-        LOGGER.info("EditorAutoOpen: armed (pending=true)");
+        LOGGER.info("EditorAutoOpen: armed ({})", describe);
     }
 
     public static void clear() {
-        if (pending) {
+        if (pending != null) {
             LOGGER.info("EditorAutoOpen: cleared while pending (caller={})",
                     Thread.currentThread().getStackTrace()[2]);
         }
-        pending = false;
+        pending = null;
         delayTicksRemaining = -1;
     }
 
     @SubscribeEvent
     public static void onClientTickPost(ClientTickEvent.Post event) {
-        if (!pending) {
+        PendingAction action = pending;
+        if (action == null) {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
@@ -73,16 +104,24 @@ public final class EditorAutoOpenHandler {
         }
         if (delayTicksRemaining < 0) {
             delayTicksRemaining = DISPATCH_DELAY_TICKS;
-            LOGGER.info("EditorAutoOpen: conditions met — dispatching `dungeontrain editor` in {} ticks",
-                    DISPATCH_DELAY_TICKS);
+            LOGGER.info("EditorAutoOpen: conditions met — dispatching in {} ticks", DISPATCH_DELAY_TICKS);
             return;
         }
         if (--delayTicksRemaining > 0) {
             return;
         }
-        pending = false;
+        pending = null;
         delayTicksRemaining = -1;
         waitTickLogCounter = 0;
+
+        if (action.isEditor()) {
+            dispatchEditor(mc);
+        } else {
+            dispatchBuilderStub(mc, action.builderMode());
+        }
+    }
+
+    private static void dispatchEditor(Minecraft mc) {
         LOGGER.info("EditorAutoOpen: dispatching `/dungeontrain editor` now");
 
         // Visible-in-chat dispatch:
@@ -99,6 +138,16 @@ public final class EditorAutoOpenHandler {
             mc.gui.getChat().addRecentChat("/dungeontrain editor");
         }
         mc.player.connection.sendCommand("dungeontrain editor");
+    }
+
+    private static void dispatchBuilderStub(Minecraft mc, BuilderMode mode) {
+        LOGGER.info("EditorAutoOpen: builder mode '{}' selected — posting coming-soon stub", mode.id());
+        if (mc.gui == null) {
+            return;
+        }
+        mc.gui.getChat().addMessage(Component.translatable("gui.dungeontrain.builder.coming_soon",
+                        Component.translatable(mode.labelKey()))
+                .withStyle(ChatFormatting.YELLOW));
     }
 
     // Intentionally NOT clearing on ClientPlayerNetworkEvent.LoggingOut.
