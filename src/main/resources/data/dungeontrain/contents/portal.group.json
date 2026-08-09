@@ -17,6 +17,14 @@
     {
       "id": "bookportal2",
       "weight": 3
+    },
+    {
+      "id": "lit",
+      "weight": 1
+    },
+    {
+      "id": "seats",
+      "weight": 1
     }
   ]
 }
