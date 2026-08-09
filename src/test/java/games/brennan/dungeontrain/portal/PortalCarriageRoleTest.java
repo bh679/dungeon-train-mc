@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.portal.PortalCarriageSelection.Rate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -17,8 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class PortalCarriageRoleTest {
 
     private static final int GROUP = 3;
-    /** Every group holds a portal, so the group arithmetic is what is under test and not the spacing. */
-    private static final int EVERY = 1;
+    /** Every group holds a portal, so the group arithmetic is what is under test and not the lottery. */
+    private static final Rate EVERY = Rate.lottery(1);
+    /** One arbitrary world's seed. Which groups it picks is {@link PortalCarriageLotteryTest}'s business. */
+    private static final long SEED = 0x5DEADBEEFL;
 
     // ---- roles ----------------------------------------------------------------
 
@@ -47,7 +50,7 @@ final class PortalCarriageRoleTest {
             int entry = anchor + PortalCarriageSelection.SLOT_ENTRY;
             int exit = PortalCarriageRole.partnerIndex(entry, GROUP);
             assertEquals(2, exit - entry, "gap at anchor " + anchor);
-            assertTrue(PortalCarriageSelection.isPortalMiddle(entry + 1, GROUP, EVERY),
+            assertTrue(PortalCarriageSelection.isPortalMiddle(entry + 1, GROUP, EVERY, SEED),
                 "the carriage between them should be the middle cart, at anchor " + anchor);
         }
     }
@@ -89,8 +92,8 @@ final class PortalCarriageRoleTest {
             int middles = 0;
             for (int slot = 0; slot < GROUP; slot++) {
                 int index = anchor + slot;
-                if (PortalCarriageSelection.isPortalCarriage(index, GROUP, EVERY)) corridors++;
-                if (PortalCarriageSelection.isPortalMiddle(index, GROUP, EVERY)) middles++;
+                if (PortalCarriageSelection.isPortalCarriage(index, GROUP, EVERY, SEED)) corridors++;
+                if (PortalCarriageSelection.isPortalMiddle(index, GROUP, EVERY, SEED)) middles++;
             }
             assertEquals(2, corridors, "corridors in group at " + anchor);
             assertEquals(1, middles, "middle carts in group at " + anchor);
@@ -108,7 +111,7 @@ final class PortalCarriageRoleTest {
     void portalPartCoversTheWholeGroup() {
         for (int anchor : new int[] {-6, -3, 0, 3, 6}) {
             for (int slot = 0; slot < GROUP; slot++) {
-                assertTrue(PortalCarriageSelection.isPortalPart(anchor + slot, GROUP, EVERY),
+                assertTrue(PortalCarriageSelection.isPortalPart(anchor + slot, GROUP, EVERY, SEED),
                     "slot " + slot + " of the group at " + anchor);
             }
         }
@@ -119,9 +122,9 @@ final class PortalCarriageRoleTest {
     void portalPartIsExactlyTheUnion() {
         for (int every : new int[] {1, 2, 5}) {
             for (int i = -40; i <= 40; i++) {
-                boolean union = PortalCarriageSelection.isPortalCarriage(i, GROUP, every)
-                    || PortalCarriageSelection.isPortalMiddle(i, GROUP, every);
-                assertEquals(union, PortalCarriageSelection.isPortalPart(i, GROUP, every),
+                boolean union = PortalCarriageSelection.isPortalCarriage(i, GROUP, Rate.lottery(every), SEED)
+                    || PortalCarriageSelection.isPortalMiddle(i, GROUP, Rate.lottery(every), SEED);
+                assertEquals(union, PortalCarriageSelection.isPortalPart(i, GROUP, Rate.lottery(every), SEED),
                     "index " + i + " at every=" + every);
             }
         }
@@ -132,11 +135,11 @@ final class PortalCarriageRoleTest {
     @DisplayName("in a larger group only the first three slots are parts")
     void portalPartStopsAtTheGroupsPortal() {
         int groupSize = 5;
-        assertTrue(PortalCarriageSelection.isPortalPart(0, groupSize, EVERY));
-        assertTrue(PortalCarriageSelection.isPortalPart(1, groupSize, EVERY));
-        assertTrue(PortalCarriageSelection.isPortalPart(2, groupSize, EVERY));
-        assertFalse(PortalCarriageSelection.isPortalPart(3, groupSize, EVERY));
-        assertFalse(PortalCarriageSelection.isPortalPart(4, groupSize, EVERY));
+        assertTrue(PortalCarriageSelection.isPortalPart(0, groupSize, EVERY, SEED));
+        assertTrue(PortalCarriageSelection.isPortalPart(1, groupSize, EVERY, SEED));
+        assertTrue(PortalCarriageSelection.isPortalPart(2, groupSize, EVERY, SEED));
+        assertFalse(PortalCarriageSelection.isPortalPart(3, groupSize, EVERY, SEED));
+        assertFalse(PortalCarriageSelection.isPortalPart(4, groupSize, EVERY, SEED));
     }
 
     @Test
@@ -144,24 +147,33 @@ final class PortalCarriageRoleTest {
     void corridorAndMiddleArePartitioned() {
         for (int every : new int[] {1, 2, 5}) {
             for (int i = -40; i <= 40; i++) {
-                boolean corridor = PortalCarriageSelection.isPortalCarriage(i, GROUP, every);
-                boolean middle = PortalCarriageSelection.isPortalMiddle(i, GROUP, every);
+                boolean corridor = PortalCarriageSelection.isPortalCarriage(i, GROUP, Rate.lottery(every), SEED);
+                boolean middle = PortalCarriageSelection.isPortalMiddle(i, GROUP, Rate.lottery(every), SEED);
                 assertFalse(corridor && middle, "index " + i + " was both at every=" + every);
             }
         }
     }
 
+    /**
+     * The lottery draws per group, never per carriage. A group that came up half-selected would put
+     * an entry corridor on a train whose exit was never stamped — a one-way door into a sealed room.
+     */
     @Test
-    @DisplayName("spacing skips whole groups, never splitting a portal across two of them")
-    void spacingLeavesGroupsWhole() {
-        int every = 2;
-        // Group 0 (indices 0..2) holds a portal; group 1 (3..5) does not; group 2 (6..8) does.
-        assertTrue(PortalCarriageSelection.isPortalCarriage(0, GROUP, every));
-        assertTrue(PortalCarriageSelection.isPortalCarriage(2, GROUP, every));
-        assertFalse(PortalCarriageSelection.isPortalCarriage(3, GROUP, every));
-        assertFalse(PortalCarriageSelection.isPortalMiddle(4, GROUP, every));
-        assertFalse(PortalCarriageSelection.isPortalCarriage(5, GROUP, every));
-        assertTrue(PortalCarriageSelection.isPortalCarriage(6, GROUP, every));
+    @DisplayName("the lottery takes whole groups, never splitting a portal across two of them")
+    void lotteryLeavesGroupsWhole() {
+        for (int every : new int[] {2, 5, 20}) {
+            for (long seed : new long[] {SEED, 0L, -1L}) {
+                for (int anchor = -60; anchor <= 60; anchor += GROUP) {
+                    boolean chosen = PortalCarriageSelection.isPortalPart(anchor, GROUP, Rate.lottery(every), seed);
+                    for (int slot = 0; slot < GROUP; slot++) {
+                        assertEquals(chosen,
+                            PortalCarriageSelection.isPortalPart(anchor + slot, GROUP, Rate.lottery(every), seed),
+                            "slot " + slot + " disagreed with its group at anchor " + anchor
+                                + ", every=" + every + ", seed=" + seed);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -173,9 +185,9 @@ final class PortalCarriageRoleTest {
     void tooSmallAGroupGetsNoPortal() {
         for (int groupSize : new int[] {1, 2}) {
             for (int i = -10; i <= 10; i++) {
-                assertFalse(PortalCarriageSelection.isPortalCarriage(i, groupSize, EVERY),
+                assertFalse(PortalCarriageSelection.isPortalCarriage(i, groupSize, EVERY, SEED),
                     "index " + i + " at group size " + groupSize);
-                assertFalse(PortalCarriageSelection.isPortalMiddle(i, groupSize, EVERY),
+                assertFalse(PortalCarriageSelection.isPortalMiddle(i, groupSize, EVERY, SEED),
                     "index " + i + " at group size " + groupSize);
             }
         }
@@ -186,9 +198,9 @@ final class PortalCarriageRoleTest {
     void offSelectsNothing() {
         for (int i = -20; i <= 20; i++) {
             assertFalse(PortalCarriageSelection.isPortalCarriage(
-                i, GROUP, PortalCarriageSelection.CARRIAGE_EVERY_OFF));
+                i, GROUP, Rate.OFF, SEED));
             assertFalse(PortalCarriageSelection.isPortalMiddle(
-                i, GROUP, PortalCarriageSelection.CARRIAGE_EVERY_OFF));
+                i, GROUP, Rate.OFF, SEED));
         }
     }
 
@@ -200,11 +212,11 @@ final class PortalCarriageRoleTest {
     @DisplayName("in a larger group the portal takes the first three slots and no more")
     void largerGroupsKeepTheRestOrdinary() {
         int groupSize = 5;
-        assertTrue(PortalCarriageSelection.isPortalCarriage(0, groupSize, EVERY));
-        assertTrue(PortalCarriageSelection.isPortalMiddle(1, groupSize, EVERY));
-        assertTrue(PortalCarriageSelection.isPortalCarriage(2, groupSize, EVERY));
-        assertFalse(PortalCarriageSelection.isPortalCarriage(3, groupSize, EVERY));
-        assertFalse(PortalCarriageSelection.isPortalMiddle(3, groupSize, EVERY));
-        assertFalse(PortalCarriageSelection.isPortalCarriage(4, groupSize, EVERY));
+        assertTrue(PortalCarriageSelection.isPortalCarriage(0, groupSize, EVERY, SEED));
+        assertTrue(PortalCarriageSelection.isPortalMiddle(1, groupSize, EVERY, SEED));
+        assertTrue(PortalCarriageSelection.isPortalCarriage(2, groupSize, EVERY, SEED));
+        assertFalse(PortalCarriageSelection.isPortalCarriage(3, groupSize, EVERY, SEED));
+        assertFalse(PortalCarriageSelection.isPortalMiddle(3, groupSize, EVERY, SEED));
+        assertFalse(PortalCarriageSelection.isPortalCarriage(4, groupSize, EVERY, SEED));
     }
 }
