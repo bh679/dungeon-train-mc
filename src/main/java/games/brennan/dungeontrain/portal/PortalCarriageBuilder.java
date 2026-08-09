@@ -239,7 +239,38 @@ public final class PortalCarriageBuilder {
         } else {
             stampBuiltIn(level, origin, dims, relight);
         }
+        applyCorridorVariants(level, origin, dims, pairKey);
         if (withContents) stampCorridorContents(level, origin, dims, pairKey);
+    }
+
+    /**
+     * Roll the corridor shell's own authored block variants over the stamp that just landed.
+     *
+     * <p><b>Rolled against the pair's key, not the carriage's index.</b> A crossing is two
+     * carriages at different indices that never see each other, and the variant picker keys on
+     * {@code (worldSeed, index, lockId)} — so feeding it a per-carriage index lets the two halves
+     * of one corridor land on different blocks and tears the crossing open, which is the same trap
+     * {@link #CONTENTS_SEED} documents for the contents pass. {@code pairKey} is a pure function of
+     * the carriage index ({@code PortalCarriageRole.entryIndexOf}), so both stamp sites derive it
+     * identically without either knowing about the other, while still letting different portals
+     * differ from one another.</p>
+     *
+     * <p>Skipped for {@link #NO_PAIR} — the editor plot has no pair to roll against, and showing
+     * the author a resolved roll instead of the master blocks would misrepresent what they are
+     * editing (the plot is captured back into {@code portal.nbt} on save).</p>
+     *
+     * <p>Handed the WORLD's carriage dims, not the corridor's. The sidecar does have to be looked
+     * up at the corridor box — it is longer than a carriage and the size gate would drop every
+     * entry past the carriage's own length — but {@code CarriagePlacer.variantDims} already grows
+     * the portal variant's dims on the way in, and {@link PortalCorridorSize#corridorDims} is not
+     * idempotent (it adds the overrun each time). Passing an already-grown box would stretch it a
+     * second time and miss the template.</p>
+     */
+    private static void applyCorridorVariants(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                              int pairKey) {
+        if (pairKey == NO_PAIR) return;
+        CarriagePlacer.applyVariantBlocks(level, origin, PORTAL_VARIANT, dims,
+            level.getSeed(), pairKey);
     }
 
     /**
@@ -544,7 +575,8 @@ public final class PortalCarriageBuilder {
 
         stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
             PortalCorridorMask.NONE, PortalCorridorMask.NONE,
-            structure.variantIndexFor(PortalRoomTiling.Tile.BASE), pairKey, PortalRoomTiling.Tile.BASE,
+            structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey), pairKey,
+            PortalRoomTiling.Tile.BASE,
             PortalRoomMobs.liveCount(level, footprintOf(level, structure, dims), pairKey),
             structure.settings().contents());
 
@@ -883,9 +915,9 @@ public final class PortalCarriageBuilder {
      * linked loot prefabs all sat dead on disk. This is the read, done the same way
      * {@code TunnelPlacer} does it for tunnels.</p>
      *
-     * <p>{@code variantIndex} is what makes one copy of a room differ from another under
-     * {@link PortalRoomCopies#DYNAMIC}, and what makes them identical under
-     * {@link PortalRoomCopies#EXACT} — see {@code PortalStructure.variantIndexFor}.</p>
+     * <p>{@code variantIndex} is what makes one pair's room differ from another pair's, and what makes
+     * one copy of a room differ from another under {@link PortalRoomCopies#DYNAMIC} and identical
+     * under {@link PortalRoomCopies#EXACT} — see {@code PortalStructure.variantIndexFor}.</p>
      */
     /**
      * {@link #stampRoomAt} with the two jobs a mask does held apart.
@@ -933,9 +965,10 @@ public final class PortalCarriageBuilder {
      *       {@code DifficultyProgression.positionTier} inside the contents pass reads the portal's
      *       actual position on the train, and the furnishing is themed to the stage the player is
      *       in rather than to a hash.</li>
-     *   <li>{@code variantIndex} carries the copy identity ({@code PortalStructure.variantIndexFor}),
-     *       so Exact copies share a furnishing and Dynamic copies each get their own — for free, and
-     *       always agreeing with the block variants rolled from the same number.</li>
+     *   <li>{@code variantIndex} carries the pair and copy identity
+     *       ({@code PortalStructure.variantIndexFor}), so one portal's furnishing differs from the
+     *       next's, Exact copies within a room share it and Dynamic copies each get their own — for
+     *       free, and always agreeing with the block variants rolled from the same number.</li>
      * </ul>
      *
      * <p><b>Pure, not memoised</b>, exactly like the room's variant pass: a copy that retires and is

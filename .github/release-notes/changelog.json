@@ -6409,6 +6409,21 @@
       "released_in": null,
       "released_at": null,
       "pr": 916
+    },
+    {
+      "id": "portal-room-per-portal-rolls",
+      "version": "0.539.0",
+      "type": "fix",
+      "title": "Every portal room is its own room",
+      "summary": "Portal rooms all looked the same. Two portals that drew the same kind of room were identical down to the block \u2014 same walls, same chests, same contents \u2014 so the tenth portal you walked was the first one again. Each portal now rolls its own room, from where it sits on the train. Walk back into one you've already been through and it is still the room you left, chests and all.",
+      "highlights": [
+        "Each portal's room rolls its own blocks, chests and furnishings",
+        "Rooms you have already looted stay looted when you walk back in"
+      ],
+      "date": "2026-08-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
