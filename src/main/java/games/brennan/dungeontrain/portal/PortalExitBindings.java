@@ -46,8 +46,30 @@ public final class PortalExitBindings {
     /** One player's place in one pair's room. */
     private record Key(UUID player, int pairKey) {}
 
+    /** One carriage of one pair — which corridor a follower would be walking into. */
+    private record Lead(int pairKey, PortalCarriageRole role) {}
+
+    /** Who last walked in through a carriage, and until when that still says anything. */
+    private record Trail(UUID player, long expiresAt) {}
+
+    /**
+     * How long after a player walks in that whatever is behind them is still counted as following,
+     * in ticks — ten seconds.
+     *
+     * <p>Sized for the physical story rather than for anything in the code. A villager led into a
+     * corridor crosses the midpoint a second or two after the player it is following, because it is
+     * <i>behind</i> them; a leash-length of ten seconds covers a mob that got stuck on a doorframe
+     * without being so long that the next person through inherits somebody else's followers. And if
+     * somebody else does walk in first, the trail simply re-points to them — which is right, because
+     * they are the leader now.</p>
+     */
+    private static final long FOLLOW_TICKS = 200;
+
     /** Written and read on the server thread; concurrent for the same reason the pair index is. */
     private static final Map<Key, Tile> BOUND = new ConcurrentHashMap<>();
+
+    /** Per carriage, who last walked in through it — see {@link #followerTwinFor}. */
+    private static final Map<Lead, Trail> TRAILS = new ConcurrentHashMap<>();
 
     private PortalExitBindings() {}
 
@@ -144,7 +166,58 @@ public final class PortalExitBindings {
     public static PortalFrames.Origin twinFrameFor(ServerLevel level, PortalStructure structure,
                                                    CarriageDims dims, UUID player, int pairKey,
                                                    PortalCarriageRole role) {
-        BlockPos origin = twinOriginFor(level, structure, dims, player, pairKey, role);
+        return asOrigin(twinOriginFor(level, structure, dims, player, pairKey, role));
+    }
+
+    /** Note that {@code player} has just walked in through this carriage, taking followers with them. */
+    public static void noteInbound(int pairKey, PortalCarriageRole role, UUID player, long gameTime) {
+        if (player == null) return;
+        TRAILS.put(new Lead(pairKey, role), new Trail(player, gameTime + FOLLOW_TICKS));
+    }
+
+    /**
+     * Where anything walking into this carriage's corridor should come out — the copy the last player
+     * through it is bound to, or {@code null} for the original twin.
+     *
+     * <p>Entities have no memory of their own: a villager did not walk out of anything, it was led.
+     * So the answer comes from whoever led it, and it has to be remembered rather than looked up,
+     * because a follower is by definition <b>behind</b> — it crosses the midpoint a second or two
+     * after the player it is following, by which time that player has left the corridor entirely.
+     * Asking "who is standing here now" therefore finds nobody exactly when it matters, and the
+     * villager is left at the original twin while its player is eight rooms away: the parting-company
+     * bug {@link PortalEntityTransit} exists to prevent, one level up.</p>
+     *
+     * <p>The trail names a <i>player</i>, not a place, so the binding is re-resolved — and so
+     * re-validated against the copies actually standing — every time it is read.</p>
+     */
+    public static PortalFrames.Origin followerTwinFor(ServerLevel level, PortalStructure structure,
+                                                      CarriageDims dims, int pairKey,
+                                                      PortalCarriageRole role, long gameTime) {
+        UUID leader = followerFor(pairKey, role, gameTime);
+        return leader == null ? null : twinFrameFor(level, structure, dims, leader, pairKey, role);
+    }
+
+    /**
+     * Who anything walking into this carriage right now counts as following, or {@code null}.
+     *
+     * <p>Split from {@link #followerTwinFor} for the reason {@link #boundOriginFor} is split from
+     * {@link #twinOriginFor}: the leash rule is arithmetic on a tick count and should be testable
+     * without a world. An expired trail is dropped on the way past rather than swept — the map has
+     * one entry per portal carriage a player has walked into, so reading it is when it is cheapest
+     * to notice.</p>
+     */
+    public static UUID followerFor(int pairKey, PortalCarriageRole role, long gameTime) {
+        Lead lead = new Lead(pairKey, role);
+        Trail trail = TRAILS.get(lead);
+        if (trail == null) return null;
+        if (gameTime > trail.expiresAt()) {
+            TRAILS.remove(lead, trail);
+            return null;
+        }
+        return trail.player();
+    }
+
+    private static PortalFrames.Origin asOrigin(BlockPos origin) {
         return origin == null
             ? null
             : new PortalFrames.Origin(origin.getX(), origin.getY(), origin.getZ());
@@ -154,6 +227,7 @@ public final class PortalExitBindings {
     public static void forget(UUID player) {
         if (player == null) return;
         BOUND.keySet().removeIf(key -> key.player().equals(player));
+        TRAILS.values().removeIf(trail -> trail.player().equals(player));
     }
 
     /**
@@ -163,19 +237,20 @@ public final class PortalExitBindings {
      * and a crash-disconnected player would otherwise leave one behind for the life of the server.</p>
      */
     public static void pruneTo(Collection<UUID> present) {
-        if (BOUND.isEmpty()) return;
-        BOUND.keySet().removeIf(key -> !present.contains(key.player()));
+        if (!BOUND.isEmpty()) BOUND.keySet().removeIf(key -> !present.contains(key.player()));
+        if (!TRAILS.isEmpty()) TRAILS.values().removeIf(trail -> !present.contains(trail.player()));
     }
 
     public static void clear() {
         BOUND.clear();
+        TRAILS.clear();
     }
 
     public static boolean isEmpty() {
-        return BOUND.isEmpty();
+        return BOUND.isEmpty() && TRAILS.isEmpty();
     }
 
-    /** How many bindings are live — for tests and for a diagnostic that wants to see the leak. */
+    /** How many <b>bindings</b> are live — for tests and for a diagnostic that wants to see a leak. */
     public static int size() {
         return BOUND.size();
     }

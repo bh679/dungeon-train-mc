@@ -170,6 +170,89 @@ class PortalExitBindingsTest {
             s, DIMS, ALICE, PAIR + 3, PortalCarriageRole.EXIT));
     }
 
+    // ---- the trail a follower walks in on ----
+
+    /**
+     * The trail resolved the way the live path resolves it: who is being followed, then where that
+     * player is bound. Only the chunk check is left out, and that is the one part that genuinely
+     * needs a world.
+     */
+    private static BlockPos follower(PortalStructure s, PortalCarriageRole role, long now) {
+        UUID leader = PortalExitBindings.followerFor(PAIR, role, now);
+        return leader == null ? null : PortalExitBindings.boundOriginFor(s, DIMS, leader, PAIR, role);
+    }
+
+    @Test
+    @DisplayName("Nothing follows anybody until somebody has walked in")
+    void noTrailByDefault() {
+        assertNull(follower(withCopies(exit(FAR)), PortalCarriageRole.EXIT, 0L));
+    }
+
+    @Test
+    @DisplayName("A follower goes where the player who led it went, seconds after they did")
+    void trailOutlivesTheLeader() {
+        PortalStructure s = withCopies(entry(FAR));
+        PortalExitBindings.bind(ALICE, PAIR, FAR);
+        PortalExitBindings.noteInbound(PAIR, PortalCarriageRole.ENTRY, ALICE, 1000L);
+
+        // The villager crosses two seconds later, by which time Alice has long left the corridor —
+        // asking "who is standing here now" would find nobody, which is the whole point.
+        assertEquals(s.exitCopyOrigin(DIMS, entry(FAR)),
+            follower(s, PortalCarriageRole.ENTRY, 1040L));
+    }
+
+    @Test
+    @DisplayName("The leash runs out, so the next person through does not inherit stray followers")
+    void trailExpires() {
+        PortalStructure s = withCopies(entry(FAR));
+        PortalExitBindings.bind(ALICE, PAIR, FAR);
+        PortalExitBindings.noteInbound(PAIR, PortalCarriageRole.ENTRY, ALICE, 1000L);
+
+        assertNotNull(follower(s, PortalCarriageRole.ENTRY, 1200L));
+        assertNull(follower(s, PortalCarriageRole.ENTRY, 1201L));
+    }
+
+    @Test
+    @DisplayName("A trail re-points to whoever walked in most recently — they are the leader now")
+    void trailRePointsToTheLatest() {
+        Tile near = new Tile(-8, 0);
+        PortalStructure s = withCopies(entry(FAR), entry(near));
+        PortalExitBindings.bind(ALICE, PAIR, FAR);
+        PortalExitBindings.bind(BOB, PAIR, near);
+
+        PortalExitBindings.noteInbound(PAIR, PortalCarriageRole.ENTRY, ALICE, 1000L);
+        assertEquals(s.exitCopyOrigin(DIMS, entry(FAR)),
+            follower(s, PortalCarriageRole.ENTRY, 1010L));
+
+        PortalExitBindings.noteInbound(PAIR, PortalCarriageRole.ENTRY, BOB, 1020L);
+        assertEquals(s.exitCopyOrigin(DIMS, entry(near)),
+            follower(s, PortalCarriageRole.ENTRY, 1030L));
+    }
+
+    @Test
+    @DisplayName("A trail names a player, so it re-checks the copy every time rather than a stale place")
+    void trailReResolvesRatherThanRemembersAPlace() {
+        PortalStructure standing = withCopies(entry(FAR));
+        PortalExitBindings.bind(ALICE, PAIR, FAR);
+        PortalExitBindings.noteInbound(PAIR, PortalCarriageRole.ENTRY, ALICE, 1000L);
+        assertNotNull(follower(standing, PortalCarriageRole.ENTRY, 1010L));
+
+        // The copy retired between the player going in and the villager catching up.
+        PortalStructure retired = standing.withExitCopies(PortalExitCopies.NONE);
+        assertNull(follower(retired, PortalCarriageRole.ENTRY, 1010L));
+    }
+
+    @Test
+    @DisplayName("The two carriages of a pair keep separate trails")
+    void trailsArePerRole() {
+        PortalStructure s = withCopies(entry(FAR), exit(FAR));
+        PortalExitBindings.bind(ALICE, PAIR, FAR);
+        PortalExitBindings.noteInbound(PAIR, PortalCarriageRole.ENTRY, ALICE, 1000L);
+
+        assertNotNull(follower(s, PortalCarriageRole.ENTRY, 1010L));
+        assertNull(follower(s, PortalCarriageRole.EXIT, 1010L));
+    }
+
     @Test
     @DisplayName("Leaving drops your bindings and nobody else's")
     void forgetAndPrune() {

@@ -592,7 +592,8 @@ public final class PortalCarriageEvents {
         // corridor decides where things walking IN out of it end up, so a player bound to a copy
         // eight rooms out takes their followers there rather than leaving them at the original twin.
         PortalEntityTransit.run(level, frames, occupants, carriageIndex,
-            leaderBoundTwin(level, players, frames, built, dims, pairKey, role));
+            PortalExitBindings.followerTwinFor(level, built, dims, pairKey, role,
+                level.getGameTime()));
 
         // Stand-ins for whoever is in the other copy, so two players either side of the midpoint can
         // still see each other. Last, so everything is described from where it ended up this tick
@@ -612,32 +613,6 @@ public final class PortalCarriageEvents {
                 inCopyOnly(copy.frames(), PortalCorridorEntities.inCorridors(level, copy.frames())),
                 carriageIndex);
         }
-    }
-
-    /**
-     * Where things walking into this carriage's corridor should come out: the copy whoever is
-     * standing in it is bound to, or {@code null} for the original twin.
-     *
-     * <p>Entities have no memory of their own — a villager did not walk out of anything, it was led.
-     * So the corridor's own occupant supplies the answer, which is the person leading it. First one
-     * found: two players in one corridor pulling a mob to two different copies is a tie with no right
-     * answer, and picking one deterministically beats leaving the mob behind.</p>
-     */
-    private static PortalFrames.Origin leaderBoundTwin(ServerLevel level, List<ServerPlayer> players,
-                                                       PortalFrames frames, PortalStructure structure,
-                                                       CarriageDims dims, int pairKey,
-                                                       PortalCarriageRole role) {
-        if (PortalExitBindings.isEmpty()) return null;
-        for (ServerPlayer player : players) {
-            if (frames.frameAt(player.getX(), player.getY(), player.getZ())
-                != PortalFrames.FRAME_CARRIAGE) {
-                continue;
-            }
-            PortalFrames.Origin bound = PortalExitBindings.twinFrameFor(
-                level, structure, dims, player.getUUID(), pairKey, role);
-            if (bound != null) return bound;
-        }
-        return null;
     }
 
     /**
@@ -686,6 +661,11 @@ public final class PortalCarriageEvents {
             // a player who deliberately walked back to it has asked for.
             if (move.toFrame() == PortalFrames.FRAME_CARRIAGE) {
                 PortalExitBindings.bind(player.getUUID(), pairKey, tile);
+            } else {
+                // Going in: leave a trail, so whatever is following a second behind arrives where
+                // this player did rather than at the original twin. A follower is by definition
+                // behind, so by the time it crosses, this player is no longer here to be asked.
+                PortalExitBindings.noteInbound(pairKey, role, player.getUUID(), level.getGameTime());
             }
 
             // A player who was standing goes to the destination's floor surface rather than to the
