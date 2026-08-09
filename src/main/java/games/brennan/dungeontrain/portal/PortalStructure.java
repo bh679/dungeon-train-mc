@@ -41,15 +41,17 @@ import java.util.Objects;
  * {@link #tiledMinX}..{@link #tiledMaxZ} instead, and the occupancy box and the erase sweep read
  * those.</p>
  *
- * @param origin   world position of the entry twin's minimum corner — the structure's origin
- * @param roomName the {@code portal_room} variant this pair rolled
- * @param roomSize the room's full box, shell included, as stamped (length is the free axis)
- * @param settings what this room does at its walls, and what its copies are, resolved when the pair
- *                 was planned
- * @param tiling   which copies of the room are currently standing
+ * @param origin     world position of the entry twin's minimum corner — the structure's origin
+ * @param roomName   the {@code portal_room} variant this pair rolled
+ * @param roomSize   the room's full box, shell included, as stamped (length is the free axis)
+ * @param settings   what this room does at its walls, and what its copies are, resolved when the
+ *                   pair was planned
+ * @param tiling     which copies of the room are currently standing
+ * @param exitCopies which of the room's extra corridors are currently standing
  */
 public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
-                              PortalRoomSettings settings, PortalRoomTiling tiling) {
+                              PortalRoomSettings settings, PortalRoomTiling tiling,
+                              PortalExitCopies exitCopies, PortalRoomTiling.Tile exitTile) {
 
     public PortalStructure {
         Objects.requireNonNull(origin, "origin");
@@ -57,11 +59,28 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         Objects.requireNonNull(roomSize, "roomSize");
         if (settings == null) settings = PortalRoomSettings.DEFAULT;
         if (tiling == null) tiling = PortalRoomTiling.base();
+        if (exitCopies == null) exitCopies = PortalExitCopies.NONE;
+        if (exitTile == null) exitTile = PortalRoomTiling.Tile.BASE;
     }
 
     /** Back-compat 3-arg form — a default-mode structure with only its base room standing. */
     public PortalStructure(BlockPos origin, String roomName, Vec3i roomSize) {
-        this(origin, roomName, roomSize, PortalRoomSettings.DEFAULT, PortalRoomTiling.base());
+        this(origin, roomName, roomSize, PortalRoomSettings.DEFAULT, PortalRoomTiling.base(),
+            PortalExitCopies.NONE, PortalRoomTiling.Tile.BASE);
+    }
+
+    /** The five-part form this record was before extra corridors existed. */
+    public PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
+                           PortalRoomSettings settings, PortalRoomTiling tiling) {
+        this(origin, roomName, roomSize, settings, tiling, PortalExitCopies.NONE,
+            PortalRoomTiling.Tile.BASE);
+    }
+
+    /** The six-part form, before an exit could stand anywhere but directly opposite. */
+    public PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
+                           PortalRoomSettings settings, PortalRoomTiling tiling,
+                           PortalExitCopies exitCopies) {
+        this(origin, roomName, roomSize, settings, tiling, exitCopies, PortalRoomTiling.Tile.BASE);
     }
 
     /**
@@ -74,12 +93,18 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
     public static PortalStructure withMode(BlockPos origin, String roomName, Vec3i roomSize,
                                            PortalRoomMode mode, PortalRoomTiling tiling) {
         return new PortalStructure(origin, roomName, roomSize,
-            PortalRoomSettings.DEFAULT.withMode(mode), tiling);
+            PortalRoomSettings.DEFAULT.withMode(mode), tiling, PortalExitCopies.NONE,
+            PortalRoomTiling.Tile.BASE);
     }
 
     /** What this room does at its walls. */
     public PortalRoomMode mode() {
         return settings.mode();
+    }
+
+    /** How many extra corridors back to the train this room lays, and how far apart. */
+    public PortalRoomExits exits() {
+        return settings.effectiveExits();
     }
 
     /**
@@ -129,9 +154,38 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         return PortalCorridorSize.corridorLength(dims) + roomLength();
     }
 
-    /** Minimum corner of the exit twin corridor. */
+    /**
+     * Minimum corner of the exit twin corridor — <b>wherever this pair stands it</b>.
+     *
+     * <p>Ordinarily that is directly opposite the room a player arrives in, one corridor plus one
+     * room along. A pair whose {@link PortalRoomExits} said so stands it beside another tile
+     * entirely ({@link #exitTile}), so the far side of the arrival room is just more room and the way
+     * onward is a corridor to go and find.</p>
+     *
+     * <p><b>Decided once, when the pair is planned.</b> {@link PortalStructure}'s own warning is that
+     * this position feeds {@code PortalFrames} and must not shift under a player standing in it —
+     * that is about shifting it per tick, as the tiling grows. This offset is fixed for the life of
+     * the structure and survives a relocation ({@link #movedTo}), so every reader still agrees with
+     * every other, which is the property that warning is really protecting.</p>
+     */
     public BlockPos exitOrigin(CarriageDims dims) {
-        return origin.offset(exitTwinOffsetX(dims), 0, 0);
+        return origin.offset(
+            exitTwinOffsetX(dims) + exitTile.x() * roomLength(), 0, exitTile.z() * roomWidth());
+    }
+
+    /**
+     * The coordinate frame the exit corridor is stamped and masked from — this structure moved so
+     * that its <i>base</i> arrangement lands on {@link #exitTile}.
+     *
+     * <p>What makes a moved exit cost nothing downstream: {@code stampCorridorHalf} and
+     * {@link PortalCorridorMask#forCorridor} both read a structure's own {@code exitOrigin} and
+     * {@code roomOrigin}, and handing them this shadow gets the corridor <i>and its seal ring against
+     * the right room</i> without either learning that exits can move. The seal ring is the part that
+     * would otherwise be silently wrong: it fills the room's cross-section at the mouth, and the room
+     * at the mouth is no longer the base one.</p>
+     */
+    public PortalStructure exitShadow() {
+        return shadowAt(exitTile);
     }
 
     /** Minimum corner of the room box, centred on the corridor's doorway line. */
@@ -240,13 +294,71 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
             Math.floorDiv((int) Math.floor(worldZ) - room.getZ(), roomWidth()));
     }
 
-    /** The same structure relocated — same room, same settings, back to just its base tile. */
+    /**
+     * The same structure relocated — same room, same settings, back to just its base tile.
+     *
+     * <p>{@link #exitTile} comes along. Where a pair stands its exit is part of what it <i>is</i>,
+     * decided when it was planned, like the room it rolled — not part of what is currently standing.
+     * A pair re-stamped further down the track has to be the same portal a player walked out of.</p>
+     */
     public PortalStructure movedTo(BlockPos newOrigin) {
-        return new PortalStructure(newOrigin, roomName, roomSize, settings, PortalRoomTiling.base());
+        return new PortalStructure(newOrigin, roomName, roomSize, settings, PortalRoomTiling.base(),
+            PortalExitCopies.NONE, exitTile);
     }
 
     /** The same structure with a different set of room copies standing. */
     public PortalStructure withTiling(PortalRoomTiling newTiling) {
-        return new PortalStructure(origin, roomName, roomSize, settings, newTiling);
+        return new PortalStructure(origin, roomName, roomSize, settings, newTiling, exitCopies,
+            exitTile);
+    }
+
+    /** The same structure with a different set of extra corridors standing. */
+    public PortalStructure withExitCopies(PortalExitCopies newCopies) {
+        return new PortalStructure(origin, roomName, roomSize, settings, tiling, newCopies, exitTile);
+    }
+
+    /** The same structure standing its exit beside a different tile. */
+    public PortalStructure withExitTile(PortalRoomTiling.Tile newExitTile) {
+        return new PortalStructure(origin, roomName, roomSize, settings, tiling, exitCopies,
+            newExitTile);
+    }
+
+    /**
+     * This structure translated so that its <b>room slot lands on {@code tile}</b> — the geometry an
+     * extra corridor at that tile is stamped from.
+     *
+     * <p>The whole of {@link PortalExitSites}' placement rule rests on one identity:
+     * {@link PortalRoomLayout#roomOrigin} derives the room from the entry origin by translation
+     * alone, so a structure moved by a whole number of tiles has its room exactly on that tile, and
+     * its two corridors exactly where a copy's corridors belong. {@link #origin} is then where an
+     * {@link PortalCarriageRole#ENTRY} copy goes and {@link #exitOrigin} where an
+     * {@link PortalCarriageRole#EXIT} copy goes — which is why nothing about a copy's position, seal
+     * ring, plug or mask has to be re-derived: every routine that lays the base pair works on the
+     * shadow unchanged.</p>
+     *
+     * <p>The shadow carries no tiling and no copies of its own. It is a coordinate frame, not a
+     * second structure — never store one.</p>
+     *
+     * <p><b>And it carries no exit offset.</b> A shadow's job is to say "here is the base arrangement,
+     * moved onto this tile", so it has to start from the base arrangement. Letting {@link #exitTile}
+     * through would offset it a second time — every extra corridor would land a tile's worth away
+     * from where the mask says it is, in a pair that had moved its exit and nowhere else, which is
+     * exactly the kind of bug that only shows up in one setting.</p>
+     */
+    public PortalStructure shadowAt(PortalRoomTiling.Tile tile) {
+        PortalStructure unmoved = PortalRoomTiling.Tile.BASE.equals(exitTile)
+            ? this
+            : withExitTile(PortalRoomTiling.Tile.BASE);
+        if (PortalRoomTiling.Tile.BASE.equals(tile)) return unmoved;
+        return new PortalStructure(
+            origin.offset(tile.x() * roomLength(), 0, tile.z() * roomWidth()),
+            roomName, roomSize, settings, PortalRoomTiling.base(), PortalExitCopies.NONE,
+            PortalRoomTiling.Tile.BASE);
+    }
+
+    /** Minimum corner of the corridor an extra {@code role} copy anchored at {@code tile} occupies. */
+    public BlockPos exitCopyOrigin(CarriageDims dims, PortalExitSites.Site site) {
+        PortalStructure shadow = shadowAt(site.tile());
+        return site.role() == PortalCarriageRole.ENTRY ? shadow.origin() : shadow.exitOrigin(dims);
     }
 }

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Pure-math tests for {@link PortalFrames} — the carriage↔twin mapping that replaces the
@@ -334,6 +335,73 @@ final class PortalFramesTest {
         PortalFrames f = frames();
         assertNull(f.mirror(CAR_X + 40, CAR_Y + FEET_Y, CAR_Z + WALK_Z));
         assertNull(f.mirror(CAR_X + 3, CAR_Y + 40, CAR_Z + WALK_Z));
+    }
+
+    // ---- redirect: arriving in a copy of the twin instead of the original ------
+
+    /** A copy of the twin eleven rooms along and two across — the shape a bound tile resolves to. */
+    private static final PortalFrames.Origin COPY =
+        new PortalFrames.Origin(TWIN_X + 88, TWIN_Y, TWIN_Z + 26);
+
+    @Test
+    @DisplayName("An inbound move lands in the copy, offset by exactly the two origins' difference")
+    void redirectMovesInboundByTheOriginOffset() {
+        PortalFrames f = frames();
+        PortalFrames.Move direct = f.requiredMove(CAR_X + LAYOUT.midX() + SWAP_PAST,
+            CAR_Y + FEET_Y, CAR_Z + WALK_Z);
+        assertNotNull(direct);
+        assertEquals(PortalFrames.FRAME_TWIN, direct.toFrame());
+
+        PortalFrames.Move sent = f.redirectedTo(direct, COPY);
+        assertEquals(PortalFrames.FRAME_TWIN, sent.toFrame());
+        assertEquals(direct.x() + (COPY.x() - TWIN_X), sent.x(), 1e-9);
+        assertEquals(direct.z() + (COPY.z() - TWIN_Z), sent.z(), 1e-9);
+        // The copies of a pair share one Y lane, so a redirect never moves anybody vertically.
+        assertEquals(direct.y(), sent.y(), 1e-9);
+
+        // And the local offset the whole illusion rests on is preserved: the player stands at the
+        // same place in the copy as they would have in the original.
+        assertEquals(direct.x() - TWIN_X, sent.x() - COPY.x(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("An outbound move is never redirected — the carriage is where the carriage is")
+    void redirectLeavesOutboundAlone() {
+        PortalFrames f = frames();
+        PortalFrames.Move out = f.requiredMove(TWIN_X + LAYOUT.midX() - SWAP_PAST,
+            TWIN_Y + FEET_Y, TWIN_Z + WALK_Z);
+        assertNotNull(out);
+        assertEquals(PortalFrames.FRAME_CARRIAGE, out.toFrame());
+        assertSame(out, f.redirectedTo(out, COPY));
+    }
+
+    @Test
+    @DisplayName("No override, and no move at all, both mean the original twin as always")
+    void redirectIsTotal() {
+        PortalFrames f = frames();
+        PortalFrames.Move direct = f.requiredMove(CAR_X + LAYOUT.midX() + SWAP_PAST,
+            CAR_Y + FEET_Y, CAR_Z + WALK_Z);
+        assertSame(direct, f.redirectedTo(direct, null));
+        assertNull(f.redirectedTo(null, COPY));
+    }
+
+    @Test
+    @DisplayName("A grounded arrival is placed on the copy's own floor, not the original's")
+    void floorSurfaceFollowsTheRedirect() {
+        PortalFrames f = frames();
+        // Same lane today, so the two agree — the point is that the override is what is asked.
+        assertEquals(TWIN_Y + LAYOUT.floorY() + 1, f.floorSurfaceY(PortalFrames.FRAME_TWIN), 1e-9);
+        assertEquals(COPY.y() + LAYOUT.floorY() + 1,
+            f.floorSurfaceY(PortalFrames.FRAME_TWIN, COPY), 1e-9);
+
+        // A copy on a different lane would be followed rather than ignored.
+        PortalFrames.Origin lower = new PortalFrames.Origin(COPY.x(), COPY.y() - 12, COPY.z());
+        assertEquals(lower.y() + LAYOUT.floorY() + 1,
+            f.floorSurfaceY(PortalFrames.FRAME_TWIN, lower), 1e-9);
+
+        // The carriage half is never overridden.
+        assertEquals(f.floorSurfaceY(PortalFrames.FRAME_CARRIAGE),
+            f.floorSurfaceY(PortalFrames.FRAME_CARRIAGE, COPY), 1e-9);
     }
 
     /** Just past the band, so the position is unambiguously on one side of the line. */

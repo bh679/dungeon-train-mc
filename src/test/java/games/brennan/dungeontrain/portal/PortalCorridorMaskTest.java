@@ -3,10 +3,13 @@ package games.brennan.dungeontrain.portal;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -260,5 +263,107 @@ class PortalCorridorMaskTest {
         assertTrue(PortalCorridorMask.NONE.isEmpty());
         assertFalse(PortalCorridorMask.NONE.covers(0, 0, 0));
         assertFalse(PortalCorridorMask.NONE.covers(ORIGIN));
+    }
+
+    // ---- one corridor at a time, for the extra corridors an endless room lays ----
+
+    @Test
+    @DisplayName("The two halves union to exactly the pair's mask — the split changed nothing")
+    void perCorridorHalvesUnionToThePair() {
+        PortalStructure s = structure();
+        PortalCorridorMask pair = mask();
+        PortalCorridorMask halves = corridor(s, PortalCarriageRole.ENTRY)
+            .plus(corridor(s, PortalCarriageRole.EXIT));
+
+        // Cell by cell over everything the structure spans, plus the plugs and a margin either side:
+        // the point of the split is that a copy can be masked on its own, and it is only safe if the
+        // two together are still the box the pair always had.
+        BoundingBox span = new BoundingBox(
+            s.origin().getX() - PLUG_DEPTH - 2, ORIGIN.getY() - 1, s.roomOrigin(DIMS, layout()).getZ() - 2,
+            s.origin().getX() + s.spanX(DIMS) + PLUG_DEPTH + 2, ORIGIN.getY() + DIMS.height() + 1,
+            s.roomOrigin(DIMS, layout()).getZ() + s.roomWidth() + 2);
+        for (int x = span.minX(); x <= span.maxX(); x++) {
+            for (int y = span.minY(); y <= span.maxY(); y++) {
+                for (int z = span.minZ(); z <= span.maxZ(); z++) {
+                    assertTrue(pair.covers(x, y, z) == halves.covers(x, y, z),
+                        "disagreement at " + x + "," + y + "," + z);
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("An entry copy is masked on the low-X side of its tile, an exit copy on the high-X side")
+    void aCopySitsBesideItsAnchorTile() {
+        PortalStructure s = structure();
+        PortalRoomTiling.Tile anchor = new PortalRoomTiling.Tile(8, 0);
+        PortalStructure shadow = s.shadowAt(anchor);
+
+        // The identity the whole feature rests on: the shadow's ROOM slot is the anchor tile.
+        assertEquals(s.tileOrigin(DIMS, layout(), anchor), shadow.roomOrigin(DIMS, layout()));
+
+        int y = ORIGIN.getY() + 1;
+        int z = shadow.origin().getZ() + 1;
+        int tileMinX = shadow.roomOrigin(DIMS, layout()).getX();
+
+        // Entry: the corridor runs up to the tile, its mouth one block short of it.
+        PortalCorridorMask entry = corridor(shadow, PortalCarriageRole.ENTRY);
+        assertTrue(entry.covers(tileMinX - 1, y, z), "the entry copy's mouth faces its tile");
+        assertTrue(entry.covers(tileMinX - CORRIDOR_LENGTH, y, z), "the entry copy's far end");
+        assertFalse(entry.covers(tileMinX + 1, y, z), "an entry copy never reaches into its own tile");
+
+        // Exit: the corridor starts where the tile ends.
+        PortalCorridorMask exit = corridor(shadow, PortalCarriageRole.EXIT);
+        int tileMaxX = tileMinX + s.roomLength() - 1;
+        assertTrue(exit.covers(tileMaxX + 1, y, z), "the exit copy's mouth faces its tile");
+        assertTrue(exit.covers(tileMaxX + CORRIDOR_LENGTH, y, z), "the exit copy's far end");
+        assertFalse(exit.covers(tileMinX + 1, y, z), "an exit copy never reaches into its own tile");
+    }
+
+    @Test
+    @DisplayName("A copy's mask is the pair's mask, moved — it is the same corridor somewhere else")
+    void aCopyIsThePairTranslated() {
+        PortalStructure s = structure();
+        PortalRoomTiling.Tile anchor = new PortalRoomTiling.Tile(3, -2);
+        int dx = anchor.x() * s.roomLength();
+        int dz = anchor.z() * s.roomWidth();
+
+        for (PortalCarriageRole role : PortalCarriageRole.values()) {
+            PortalCorridorMask here = corridor(s, role);
+            PortalCorridorMask there = corridor(s.shadowAt(anchor), role);
+            BoundingBox a = here.bounds();
+            BoundingBox b = there.bounds();
+            assertEquals(a.minX() + dx, b.minX(), role.name());
+            assertEquals(a.maxX() + dx, b.maxX(), role.name());
+            assertEquals(a.minZ() + dz, b.minZ(), role.name());
+            assertEquals(a.maxZ() + dz, b.maxZ(), role.name());
+            assertEquals(a.minY(), b.minY(), role.name());
+            assertEquals(a.maxY(), b.maxY(), role.name());
+        }
+    }
+
+    @Test
+    @DisplayName("Unioning masks keeps both, and the union with nothing is the original")
+    void unionKeepsBoth() {
+        PortalStructure s = structure();
+        PortalCorridorMask entry = corridor(s, PortalCarriageRole.ENTRY);
+        assertSame(entry, entry.plus(PortalCorridorMask.NONE));
+        assertSame(entry, PortalCorridorMask.NONE.plus(entry));
+
+        PortalCorridorMask far = corridor(s.shadowAt(new PortalRoomTiling.Tile(6, 0)),
+            PortalCarriageRole.EXIT);
+        PortalCorridorMask both = entry.plus(far);
+        int y = ORIGIN.getY() + 1;
+        int z = s.origin().getZ() + 1;
+        assertTrue(both.covers(s.origin().getX(), y, z), "the union kept the near corridor");
+        assertTrue(both.covers(far.bounds().minX(), y, z), "the union kept the far one");
+    }
+
+    private static PortalCarriageLayout layout() {
+        return PortalCarriageBuilder.layoutFor(DIMS);
+    }
+
+    private static PortalCorridorMask corridor(PortalStructure structure, PortalCarriageRole role) {
+        return PortalCorridorMask.forCorridor(structure, DIMS, layout(), PLUG_DEPTH, role);
     }
 }

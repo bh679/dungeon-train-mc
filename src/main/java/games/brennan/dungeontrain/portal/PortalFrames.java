@@ -154,6 +154,43 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
     }
 
     /**
+     * The same move, but landing in a different copy of the twin corridor.
+     *
+     * <p>What {@link PortalExitBindings} needs: a player who left the room through an extra corridor
+     * eight rooms out should walk back in to that corridor rather than to the original. Every copy is
+     * stamped from this same layout and stands on the same Y lane, so "a different copy" is a
+     * translation in X and Z of a destination this record has already worked out — the side rule, the
+     * hysteresis band and the preserved local offset all still apply, unchanged, because none of them
+     * is a question about <i>which</i> twin.</p>
+     *
+     * <p><b>Inbound only.</b> A move back to the carriage is returned untouched: the carriage is
+     * where it is, and there is nothing to redirect it to. So is a null move, and a null override —
+     * both mean "the original twin, as always", which is what makes a stale binding harmless.</p>
+     */
+    public Move redirectedTo(Move move, Origin twinOverride) {
+        if (move == null || twinOverride == null || move.toFrame() != FRAME_TWIN) return move;
+        return new Move(move.toFrame(),
+            move.x() + (twinOverride.x() - twin.x()),
+            move.y() + (twinOverride.y() - twin.y()),
+            move.z() + (twinOverride.z() - twin.z()));
+    }
+
+    /**
+     * The floor surface of the copy a move was redirected into, or of this frame's own twin when it
+     * was not.
+     *
+     * <p>{@link #floorSurfaceY} reads the frame's origin, which is still the original twin's — and a
+     * grounded player is placed on the destination's floor rather than at their carried-across local
+     * Y, so asking the wrong corridor would drop them by however far the two lanes differ. They never
+     * do differ today (every copy of a pair shares one Y lane), which is exactly why this is worth
+     * routing through one method: it is a silent failure the moment that stops being true.</p>
+     */
+    public double floorSurfaceY(int frame, Origin twinOverride) {
+        if (frame != FRAME_TWIN || twinOverride == null) return floorSurfaceY(frame);
+        return twinOverride.y() + layout.floorY() + 1;
+    }
+
+    /**
      * Where a position in one corridor appears in the <b>other</b> one, or {@code null} if it is in
      * neither.
      *

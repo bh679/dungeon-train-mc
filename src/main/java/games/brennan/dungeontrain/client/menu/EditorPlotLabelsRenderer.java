@@ -92,7 +92,17 @@ public final class EditorPlotLabelsRenderer {
         /** The sub-mode row — only shown while the mode makes copies. */
         COPIES_CYCLE,
         /** The furnishing row — whether the room takes a contents template, and how it is fitted. */
-        ROOM_CONTENTS_CYCLE
+        ROOM_CONTENTS_CYCLE,
+        /** The extra-corridors row — only shown while the walls repeat. */
+        EXITS_CYCLE,
+        /** The stepper for how far apart those extra corridors go. */
+        EXIT_EVERY_DEC,
+        EXIT_EVERY_INC,
+        EXIT_EVERY_TYPE,
+        /** The stepper for how often the base pair's exit is walled off. */
+        EXIT_MOVE_DEC,
+        EXIT_MOVE_INC,
+        EXIT_MOVE_TYPE
     }
 
     /**
@@ -104,7 +114,8 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ROOM_CONTENTS, ENTER, ACTION, CONTENTS
+        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ROOM_CONTENTS, EXITS, EXIT_EVERY,
+        EXIT_MOVE, ENTER, ACTION, CONTENTS
     }
 
     /** The rows {@code entry} shows, top to bottom. */
@@ -121,6 +132,9 @@ public final class EditorPlotLabelsRenderer {
         if (hasModeRow(entry)) buf[n++] = RowKind.MODE;
         if (hasCopiesRow(entry)) buf[n++] = RowKind.COPIES;
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
+        if (hasExitsRow(entry)) buf[n++] = RowKind.EXITS;
+        if (hasExitEveryRow(entry)) buf[n++] = RowKind.EXIT_EVERY;
+        if (hasExitMoveRow(entry)) buf[n++] = RowKind.EXIT_MOVE;
         if (hasEnterRow(entry)) buf[n++] = RowKind.ENTER;
         if (hasActionRow(entry)) buf[n++] = RowKind.ACTION;
         if (hasContentsButton(entry)) buf[n++] = RowKind.CONTENTS;
@@ -202,6 +216,72 @@ public final class EditorPlotLabelsRenderer {
     public static String roomContentsLabel(String modeTag) {
         return "Contents: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
             .contents().displayName();
+    }
+
+    /**
+     * Whether the Exits row shows: only while the walls repeat, since only an endless room has
+     * anywhere to put an extra way back to the train.
+     *
+     * <p>Both endless modes, unlike Copies — an Endless Open room is asked the question too, it just
+     * answers Off by default.</p>
+     */
+    public static boolean hasExitsRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry)
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+                .exitsApply();
+    }
+
+    /** What the Exits row reads, e.g. {@code "Exits: Random"}. */
+    public static String exitsLabel(String modeTag) {
+        return "Exits: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .exits().displayName();
+    }
+
+    /**
+     * Whether the spacing stepper shows: only when Exits is showing and is laying corridors.
+     *
+     * <p>Absent rather than dimmed at Off, on the same reasoning the Copies row is absent under a
+     * mode that makes no copies — a control with nothing on the other end of it is worse than no
+     * control.</p>
+     */
+    public static boolean hasExitEveryRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasExitsRow(entry)
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+                .exits().lays();
+    }
+
+    /**
+     * What the spacing stepper reads.
+     *
+     * <p>Worded to the reading it is under, because the same number means two different things:
+     * {@code On} spaces a lattice, {@code Random} sets odds. "Every 8" and "1 in 8" are the shortest
+     * honest way to say which one is in force.</p>
+     */
+    public static String exitEveryLabel(String modeTag) {
+        games.brennan.dungeontrain.portal.PortalRoomExits exits =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).exits();
+        return exits.kind() == games.brennan.dungeontrain.portal.PortalRoomExits.Kind.RANDOM
+            ? "1 in " + exits.every()
+            : "Every " + exits.every();
+    }
+
+    /**
+     * Whether the moved-exit stepper shows: only under Random.
+     *
+     * <p>Walling off the way straight back out is only fair when there is something unpredictable to
+     * go and find. Under the lattice a player could work the walk out in advance; under Off it would
+     * wall the only way onward there is.</p>
+     */
+    public static boolean hasExitMoveRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasExitsRow(entry)
+            && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+                .exits().movesApply();
+    }
+
+    /** What the moved-exit stepper reads, e.g. {@code "Moved exit: 7/10"}. */
+    public static String exitMoveLabel(String modeTag) {
+        return "Moved exit: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .exits().moveChance() + "/10";
     }
 
     /**
@@ -395,6 +475,15 @@ public final class EditorPlotLabelsRenderer {
         if (hasCopiesRow(entry)) {
             w = Math.max(w, measure.applyAsInt(copiesLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
+        if (hasExitsRow(entry)) {
+            w = Math.max(w, measure.applyAsInt(exitsLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
+        }
+        if (hasExitMoveRow(entry)) {
+            // The longest of the portal-room labels after Walls — the arrows either side leave it
+            // only the middle third, so the panel has to be sized for it or it clips.
+            w = Math.max(w, measure.applyAsInt(exitMoveLabel(entry.roomMode())) * 3 * TEXT_SCALE
+                + 2 * PAD_X);
+        }
         return w / 2.0;
     }
 
@@ -501,6 +590,11 @@ public final class EditorPlotLabelsRenderer {
             case MODE -> CellKind.MODE_CYCLE;
             case COPIES -> CellKind.COPIES_CYCLE;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
+            case EXITS -> CellKind.EXITS_CYCLE;
+            case EXIT_EVERY -> stepperCell(hitX, halfW,
+                CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC, CellKind.EXIT_EVERY_TYPE);
+            case EXIT_MOVE -> stepperCell(hitX, halfW,
+                CellKind.EXIT_MOVE_DEC, CellKind.EXIT_MOVE_INC, CellKind.EXIT_MOVE_TYPE);
             case ENTER -> CellKind.BUTTON_ENTER_INSIDE;
             case ACTION -> actionRowCell(hitX, halfW);
             case CONTENTS -> CellKind.BUTTON_CONTENTS;
@@ -676,6 +770,39 @@ public final class EditorPlotLabelsRenderer {
                     int bg = hovered == CellKind.ROOM_CONTENTS_CYCLE ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, roomContentsLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Exits — how many extra ways back to the train this room scatters through its
+                // copies. Only an endless room has anywhere to put one.
+                case EXITS -> {
+                    int bg = hovered == CellKind.EXITS_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, exitsLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // How far apart those go. Same [-] N [+] geometry as the dimension rows, and the
+                // number types on its own for the same reason: stepping 8 → 40 is thirty-two taps.
+                case EXIT_EVERY -> {
+                    drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY, hovered,
+                        CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC);
+                    if (hovered == CellKind.EXIT_EVERY_TYPE) {
+                        double third = (halfW * 2.0) / 3.0;
+                        drawQuad(ps, buffer, -halfW + third + 0.005, rBot + 0.005,
+                            halfW - third - 0.005, rTop - 0.005, HOVER_COLOR);
+                    }
+                    drawCenteredText(ps, buffer, font, exitEveryLabel(entry.roomMode()),
+                        0, rCY, WEIGHT_COLOR);
+                }
+                // How often this room walls off the base pair's exit, so the only ways onward are
+                // the copies. Random only — the lattice is predictable enough to walk.
+                case EXIT_MOVE -> {
+                    drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY, hovered,
+                        CellKind.EXIT_MOVE_DEC, CellKind.EXIT_MOVE_INC);
+                    if (hovered == CellKind.EXIT_MOVE_TYPE) {
+                        double third = (halfW * 2.0) / 3.0;
+                        drawQuad(ps, buffer, -halfW + third + 0.005, rBot + 0.005,
+                            halfW - third - 0.005, rTop - 0.005, HOVER_COLOR);
+                    }
+                    drawCenteredText(ps, buffer, font, exitMoveLabel(entry.roomMode()),
+                        0, rCY, WEIGHT_COLOR);
                 }
                 // Enter — full-width button, visible only when the player is already inside the
                 // plot. Clicking dispatches EditorPlotActionPacket(ENTER_INSIDE) so the player

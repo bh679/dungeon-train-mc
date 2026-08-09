@@ -181,6 +181,12 @@ public final class EditorMenuScreen implements MenuScreen {
             if (copiesRow != null) out.add(copiesRow);
             CommandMenuEntry contentsRow = roomContentsRowFor(EditorStatusHudOverlay.roomMode());
             if (contentsRow != null) out.add(contentsRow);
+            CommandMenuEntry exitsRow = exitsRowFor(EditorStatusHudOverlay.roomMode());
+            if (exitsRow != null) out.add(exitsRow);
+            CommandMenuEntry exitEveryRow = exitEveryTripleFor(EditorStatusHudOverlay.roomMode());
+            if (exitEveryRow != null) out.add(exitEveryRow);
+            CommandMenuEntry exitMoveRow = exitMoveTripleFor(EditorStatusHudOverlay.roomMode());
+            if (exitMoveRow != null) out.add(exitMoveRow);
         }
 
         // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases
@@ -376,6 +382,68 @@ public final class EditorMenuScreen implements MenuScreen {
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.roomContentsLabel(currentMode),
             "dungeontrain editor portals contents next");
+    }
+
+    /**
+     * The Exits row, or null unless the walls repeat — only an endless room has anywhere to put an
+     * extra way back to the train.
+     *
+     * <p>Shown for <b>both</b> endless modes, unlike Copies. What Copies describes is what an
+     * appended tile contains, which Endless Open decides for itself; getting lost is not a property
+     * of the walls, so an Endless Open room is asked the question too — it just answers Off by
+     * default.</p>
+     */
+    static CommandMenuEntry exitsRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        if (!games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode).exitsApply()) {
+            return null;
+        }
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.exitsLabel(currentMode),
+            "dungeontrain editor portals exits next");
+    }
+
+    /**
+     * The stepper for the {@code X} in "every X tiles" / "one tile in X", or null when Exits is not
+     * showing or is set to Off.
+     *
+     * <p>Hidden rather than greyed out at Off, because a spacing for corridors that are not being
+     * laid is a control with nothing on the other end of it — the same reason the Copies row is
+     * absent rather than dimmed under a mode that makes no copies.</p>
+     */
+    static CommandMenuEntry exitEveryTripleFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode);
+        if (!settings.exitsApply() || !settings.exits().lays()) return null;
+
+        String prefix = "dungeontrain editor portals exitevery";
+        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
+        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
+            EditorPlotLabelsRenderer.exitEveryLabel(currentMode), "tiles", prefix);
+        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
+        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+    }
+
+    /**
+     * The moved-exit stepper, or null unless Exits is set to Random.
+     *
+     * <p>Random alone: walling off the way straight back out is only fair when there is something
+     * unpredictable to go and find. Under the lattice a player could work out the walk in advance,
+     * and under Off it would wall the only way onward there is.</p>
+     */
+    static CommandMenuEntry exitMoveTripleFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode);
+        if (!settings.exitsApply() || !settings.exits().movesApply()) return null;
+
+        String prefix = "dungeontrain editor portals exitmove";
+        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
+        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
+            EditorPlotLabelsRenderer.exitMoveLabel(currentMode), "0-10", prefix);
+        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
+        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
     }
 
     static CommandMenuEntry sizeTripleFor(String axis, String label, int current) {

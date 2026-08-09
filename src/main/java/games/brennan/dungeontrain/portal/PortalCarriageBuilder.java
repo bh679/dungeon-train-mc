@@ -161,9 +161,53 @@ public final class PortalCarriageBuilder {
     /**
      * The volume this structure's two corridors own — see {@link PortalCorridorMask}. Built here
      * because {@code PLUG_DEPTH} is this class's business and nothing else should be guessing it.
+     *
+     * <p>The pair's own corridors only. An endless room's <b>extra</b> corridors are
+     * {@link #exitCopyMask}'s business, and the two are unioned at the call site rather than here so
+     * that a caller which genuinely means "the base pair" — the erase of a structure that has already
+     * drained, say — is not quietly handed a mask that spares copies which are no longer there.</p>
      */
     public static PortalCorridorMask corridorMask(PortalStructure structure, CarriageDims dims) {
         return PortalCorridorMask.forStructure(structure, dims, layoutFor(dims), PLUG_DEPTH);
+    }
+
+    /**
+     * How far a plug reaches past its corridor.
+     *
+     * <p>Exposed rather than duplicated: {@link PortalExitCopyTiler} has to size a copy's erase to
+     * exactly what {@link #stampCorridorHalf} wrote, and a second copy of this number is a second
+     * chance for the two to disagree — which shows up as a ring of plug blocks left standing where a
+     * corridor used to be.</p>
+     */
+    public static int plugDepth() {
+        return PLUG_DEPTH;
+    }
+
+    /**
+     * The volume this structure's <b>extra</b> corridors own — one
+     * {@link PortalCorridorMask#forCorridor} per standing {@link PortalExitSites.Site}, unioned.
+     *
+     * <p>Every write the endless tiling makes has to skip these for exactly the reason it skips the
+     * base pair's ({@link PortalCorridorMask}'s javadoc): a copy is laid <b>once</b>, and every room
+     * copy stamped afterwards is built around it rather than over it and repaired. The difference is
+     * only that this set changes over a visit — a copy appears with its anchor tile and retires long
+     * after it — so it is read fresh from the structure each time rather than fixed at build.</p>
+     */
+    public static PortalCorridorMask exitCopyMask(PortalStructure structure, CarriageDims dims) {
+        PortalExitCopies copies = structure.exitCopies();
+        if (copies.isEmpty()) return PortalCorridorMask.NONE;
+        PortalCarriageLayout layout = layoutFor(dims);
+        PortalCorridorMask mask = PortalCorridorMask.NONE;
+        for (PortalExitSites.Site site : copies.sites()) {
+            mask = mask.plus(PortalCorridorMask.forCorridor(
+                structure.shadowAt(site.tile()), dims, layout, PLUG_DEPTH, site.role()));
+        }
+        return mask;
+    }
+
+    /** Everything any corridor of this structure owns: the base pair and every standing copy. */
+    public static PortalCorridorMask allCorridorMask(PortalStructure structure, CarriageDims dims) {
+        return corridorMask(structure, dims).plus(exitCopyMask(structure, dims));
     }
 
     /**
@@ -539,10 +583,18 @@ public final class PortalCarriageBuilder {
                                                 games.brennan.dungeontrain.template.GateContext gateCtx) {
         String roomName = TrackVariantRegistry.pickName(
             TrackKind.PORTAL_ROOM, level.getSeed(), pairKey, gateCtx);
+        PortalRoomSettings settings = PortalRoomSettings.of(roomName);
+        // Where this pair stands its exit, decided here with everything else about the pair and then
+        // carried on the record — the same promise the mode and the room name make. Re-deciding it
+        // per tick, or per re-stamp, would move a player's way out from under them.
+        PortalRoomTiling.Tile exitTile = PortalExitSites.relocatedExitTile(
+            settings.effectiveExits(),
+            PortalExitSites.seedFor(level.getSeed(), pairKey, roomName),
+            PortalRoomTiling.MAX_RADIUS);
         return new PortalStructure(entryOrigin, roomName,
             PortalRoomTemplateStore.sizeOf(level, roomName, dims),
-            PortalRoomSettings.of(roomName),
-            PortalRoomTiling.base());
+            settings,
+            PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile);
     }
 
     /**
@@ -613,26 +665,96 @@ public final class PortalCarriageBuilder {
      */
     public static void stampCorridors(ServerLevel level, PortalStructure structure,
                                       CarriageDims dims, int pairKey) {
+        // Each half off its own coordinate frame — see PortalCorridorMask#forStructure. The entry
+        // always stands beside the base room; the exit stands beside whichever tile this pair put it
+        // at, and needs that tile's room for its seal ring.
+        stampCorridorHalf(level, structure, structure, dims, pairKey, PortalCarriageRole.ENTRY);
+        stampCorridorHalf(level, structure.exitShadow(), structure, dims, pairKey,
+            PortalCarriageRole.EXIT);
+    }
+
+    /**
+     * Lay one end of a pair: the corridor, the seal ring around its mouth, and the plug beyond its
+     * dead outer door.
+     *
+     * <p>Split out of {@link #stampCorridors} because an endless room's <b>extra</b> corridors are
+     * single corridors rather than pairs — an {@link PortalExitSites.Site} carries one role — and a
+     * copy is nothing but this same call on the structure translated onto its anchor tile
+     * ({@link PortalStructure#shadowAt}). Everything a copy needs is therefore written by the code
+     * that writes the original, which is what keeps a copy block-identical to the carriage it will
+     * hand a player back to. See {@link #stampExitCopy}.</p>
+     *
+     * <p>Both halves take the <b>pair's</b> key rather than a carriage index, so every corridor in a
+     * pair — copies included — rolls the same block variants and the same corridor contents, and the
+     * crossing shows no seam whichever one a player walks through.</p>
+     *
+     * <p>{@code base} is the pair's own structure, of which {@code structure} may be a
+     * {@link PortalStructure#shadowAt shadow} — the same object for an entry, a translated one for a
+     * moved exit or a copy. It is only ever read from: the seal ring copies the room's own wall out
+     * of the base room, which is the one copy of the room guaranteed to be standing when a corridor
+     * is laid. See {@link #sealFillSource}.</p>
+     */
+    public static void stampCorridorHalf(ServerLevel level, PortalStructure structure,
+                                         PortalStructure base, CarriageDims dims, int pairKey,
+                                         PortalCarriageRole role) {
         PortalCarriageLayout layout = layoutFor(dims);
-        BlockPos entryOrigin = structure.origin();
-        BlockPos exitOrigin = structure.exitOrigin(dims);
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
+        boolean entry = role == PortalCarriageRole.ENTRY;
+        BlockPos corridorOrigin = entry ? structure.origin() : structure.exitOrigin(dims);
 
-        // Both twins take the pair's key, so both match the carriages they mirror — and each other.
-        stampTwin(level, entryOrigin, dims, pairKey);
-        stampTwin(level, exitOrigin, dims, pairKey);
+        stampTwin(level, corridorOrigin, dims, pairKey);
 
-        // Seal the ring around each corridor mouth. The room's shell is wider and taller than a
+        // Seal the ring around the corridor mouth. The room's shell is wider and taller than a
         // corridor, so everything it does not already cover at the door plane has to be walled off,
-        // leaving that plane — and the door hanging in it — untouched.
-        sealCorridorMouth(level, entryOrigin.getX() + layout.length() - 1, entryOrigin, dims,
-            roomOrigin, roomSize);
-        sealCorridorMouth(level, exitOrigin.getX(), exitOrigin, dims, roomOrigin, roomSize);
+        // leaving that plane — and the door hanging in it — untouched. The mouth is the far end of an
+        // entry corridor and the near end of an exit one.
+        int sealX = entry ? corridorOrigin.getX() + layout.length() - 1 : corridorOrigin.getX();
+        sealCorridorMouth(level, sealX, corridorOrigin, dims, roomOrigin, roomSize,
+            base.roomOrigin(dims, layout), role);
 
-        // Dead space behind the door that leads nowhere, at each outer end.
-        plugBeyond(level, entryOrigin.offset(-PLUG_DEPTH, 0, 0), PLUG_DEPTH, dims);
-        plugBeyond(level, exitOrigin.offset(layout.length(), 0, 0), PLUG_DEPTH, dims);
+        // Dead space behind the door that leads nowhere, at the other end.
+        BlockPos plugFrom = entry
+            ? corridorOrigin.offset(-PLUG_DEPTH, 0, 0)
+            : corridorOrigin.offset(layout.length(), 0, 0);
+        plugBeyond(level, plugFrom, PLUG_DEPTH, dims);
+    }
+
+    /**
+     * Lay one of an endless room's extra corridors — the way back to the train that
+     * {@link PortalRoomExits} scatters through the tiling.
+     *
+     * <p>Nothing here is new geometry. The site's anchor tile names a copy of the room, the shadow
+     * structure puts the pair's own layout onto that copy, and one half of it is stamped: an
+     * {@link PortalCarriageRole#ENTRY} site lays the corridor on the low-X side of the tile, an
+     * {@link PortalCarriageRole#EXIT} site the one on the high-X side, each with the seal ring and
+     * plug the original has. That is what makes a copy indistinguishable from the original both to
+     * look at and to walk through — and it is why {@link PortalExitTransit} can hand a player back to
+     * the train from one with nothing but a change of origin.</p>
+     */
+    public static void stampExitCopy(ServerLevel level, PortalStructure structure, CarriageDims dims,
+                                     int pairKey, PortalExitSites.Site site) {
+        PortalStructure shadow = structure.shadowAt(site.tile());
+        PortalCarriageLayout layout = layoutFor(dims);
+
+        // Sweep the volume through PortalClear FIRST, block entity by block entity.
+        //
+        // A copy is laid into a room that is already standing and may be furnished — the shipped
+        // `book` and `library_dimension` rooms are shelves and lecterns and chests — and the writes
+        // below are ordinary setBlocks. Breaking a container that way DROPS ITS CONTENTS, so laying
+        // one copy through a library left a heap of books on the floor. PortalClear evicts the block
+        // entity instead of breaking it, which is the same reason the seam carve goes through
+        // clearCell rather than setBlock.
+        //
+        // Each of the mask's three boxes, never their bounding box: that would take the room's floor
+        // out of the aisles either side of the corridor, which is exactly the bug PortalCorridorMask
+        // was narrowed to fix.
+        for (BoundingBox box : PortalCorridorMask
+                .forCorridor(shadow, dims, layout, PLUG_DEPTH, site.role()).boxes()) {
+            PortalClear.clearBox(level, box, PortalCorridorMask.NONE);
+        }
+
+        stampCorridorHalf(level, shadow, structure, dims, pairKey, site.role());
     }
 
     /**
@@ -859,6 +981,21 @@ public final class PortalCarriageBuilder {
             structure.tiledMinZ(dims, layout) - 1);
         int maxZ = Math.max(Math.max(origin.getZ() + dims.width(), roomOrigin.getZ() + roomSize.getZ()),
             structure.tiledMaxZ(dims, layout) + 1);
+
+        // Every corridor this structure owns, wherever it stands. An extra corridor outlives the tile
+        // it is anchored to (PortalExitCopies), and the pair's own exit can be beside another tile
+        // entirely (PortalStructure#exitTile) — so neither is bounded by the tiled rectangle or by
+        // the contiguous span the terms above assume. Something outside the footprint is something
+        // the erase never reaches and another pair may stamp into. Read off the same masks that place
+        // them, so the two cannot disagree about where they are.
+        BoundingBox corridors = allCorridorMask(structure, dims).bounds();
+        if (corridors != null) {
+            minX = Math.min(minX, corridors.minX() - PLUG_DEPTH);
+            maxX = Math.max(maxX, corridors.maxX() + PLUG_DEPTH);
+            minZ = Math.min(minZ, corridors.minZ() - 1);
+            maxZ = Math.max(maxZ, corridors.maxZ() + 1);
+        }
+
         // One row below the floor as well as one past the top: Bedrock Lock skins both.
         int minY = lowestWritableY(level.getMinBuildHeight(), origin.getY());
         int maxY = origin.getY() + Math.max(dims.height(), roomSize.getY());
@@ -1325,14 +1462,29 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * Wall off everything in a corridor's door plane that the room's own shell does not cover.
+     * Wall off everything in a corridor's door plane that the room's own shell does not cover,
+     * <b>in the room's own blocks</b>.
      *
      * <p>Only cells <b>outside</b> the corridor's cross-section are written — the corridor's own
      * blocks, doorway included, are never touched. That is what keeps a twin block-identical to its
      * carriage regardless of what the room is authored as.</p>
+     *
+     * <p>The fill used to be {@link #POCKET_SHELL}, which is the built-in room's palette and belongs
+     * to nothing else in an authored one. A corridor's mouth then read as a slab of polished
+     * blackstone dropped into somebody else's library — roughly fifty blocks of it per corridor, and
+     * an endless room on {@link PortalRoomExits.Kind#RANDOM} scatters a corridor every few tiles.
+     * {@link PortalRoomTiler#closeFace} had exactly this problem at the tiling boundary and solved it
+     * the same way: what closes a face should be what the player would have seen had the room simply
+     * carried on. See {@link #sealFillFor} for the three tiers.</p>
+     *
+     * <p><b>The plane still fills the room's whole cross-section and is still solid.</b> It is the
+     * only thing between the room and the basement rock when the next copy is never stamped — the
+     * budget is spent, or the chunks are not loaded — which {@link PortalCorridorMask}'s javadoc
+     * records at length. Only the material changed.</p>
      */
     private static void sealCorridorMouth(ServerLevel level, int planeX, BlockPos corridorOrigin,
-                                          CarriageDims dims, BlockPos roomOrigin, Vec3i roomSize) {
+                                          CarriageDims dims, BlockPos roomOrigin, Vec3i roomSize,
+                                          BlockPos baseRoomOrigin, PortalCarriageRole role) {
         int floorY = roomOrigin.getY();
         int ceilingY = floorY + roomSize.getY() - 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -1342,9 +1494,75 @@ public final class PortalCarriageBuilder {
                     && z < corridorOrigin.getZ() + dims.width()
                     && y < floorY + dims.height();
                 if (coveredByCorridor) continue;
-                level.setBlock(pos.set(planeX, y, z), y == floorY ? POCKET_FLOOR : POCKET_SHELL,
-                    Block.UPDATE_ALL);
+                BlockState fill = sealFillFor(level, baseRoomOrigin, roomOrigin, roomSize, role,
+                    y, z, floorY);
+                level.setBlock(pos.set(planeX, y, z), fill, Block.UPDATE_ALL);
             }
         }
+    }
+
+    /**
+     * What one cell of a seal plane is made of, in three tiers.
+     *
+     * <ol>
+     *   <li><b>The room's own wall beside it</b> — the end column the plane stands one block outside
+     *       of. Where a room has a wall, the wall carries on and the boundary stops being visible as
+     *       one.</li>
+     *   <li><b>The room's floor in that column</b>, when it has no wall there. {@code distantenemies}
+     *       is a sculk floor, a sculk ceiling and pillars, with open sides on purpose — so it gets a
+     *       plane of its own sculk rather than of a palette it has nothing to do with. This does
+     *       invent a wall the author never drew, which is unavoidable: unlike
+     *       {@link PortalRoomTiler#closeFace}, this plane cannot be left open.</li>
+     *   <li><b>The built-in palette</b>, exactly as before, if neither is a block that can stand in a
+     *       wall. Never reached by any shipped room, and here so that no path can leave air.</li>
+     * </ol>
+     *
+     * <p>Each candidate is gated by {@link PortalRoomTiler#usableAsFill} — the same test the face
+     * fill uses, and for the same reasons: air closes nothing, a copied block entity plants empty
+     * chests along the boundary, and a copied stair or torch keeps the facing it had and leaves a
+     * hole besides.</p>
+     */
+    private static BlockState sealFillFor(ServerLevel level, BlockPos baseRoomOrigin,
+                                          BlockPos roomOrigin, Vec3i roomSize,
+                                          PortalCarriageRole role, int y, int z, int floorY) {
+        BlockPos wall = sealFillSource(baseRoomOrigin, roomOrigin, roomSize, role, y, z);
+        BlockState wallState = level.getBlockState(wall);
+        if (PortalRoomTiler.usableAsFill(level, wall, wallState)) return wallState;
+
+        BlockPos floor = wall.atY(baseRoomOrigin.getY());
+        BlockState floorState = level.getBlockState(floor);
+        if (PortalRoomTiler.usableAsFill(level, floor, floorState)) return floorState;
+
+        return y == floorY ? POCKET_FLOOR : POCKET_SHELL;
+    }
+
+    /**
+     * Which cell of the <b>base</b> room a seal cell copies — the whole of the rule, as integer
+     * geometry, so it is testable without a live level.
+     *
+     * <p><b>Which column.</b> A seal plane sits one block outside the room box: an
+     * {@link PortalCarriageRole#ENTRY} mouth at {@code roomOrigin.x - 1}, an
+     * {@link PortalCarriageRole#EXIT} mouth at {@code roomOrigin.x + roomSize.x}. So the wall it
+     * should carry on is the room's own end column on that side — local X {@code 0} for an entry,
+     * {@code roomSize.x - 1} for an exit. Same {@code y} and {@code z}, so a room whose walls change
+     * with height or across its width is copied faithfully rather than averaged.</p>
+     *
+     * <p><b>Why the base room and not this one.</b> {@code roomOrigin} may belong to a
+     * {@link PortalStructure#shadowAt shadow} — a copy's anchor tile, or the tile a pair stood its
+     * exit beside — and a shadow's room is not always standing when its corridor is laid.
+     * {@code stampPairStructure} stamps the base room and <i>then</i> the corridors, so a pair whose
+     * exit has moved seals against a tile the tiling has not reached yet; reading beside it would
+     * copy raw basement rock. Every tile is the same room, which is the argument
+     * {@link PortalRoomTiler#closeFace} already makes, so the base room answers for all of them and
+     * is the one copy guaranteed to be there. The shadow differs from it by a pure X/Z translation,
+     * which is all this subtracts.</p>
+     */
+    static BlockPos sealFillSource(BlockPos baseRoomOrigin, BlockPos roomOrigin, Vec3i roomSize,
+                                   PortalCarriageRole role, int y, int z) {
+        int localX = role == PortalCarriageRole.ENTRY ? 0 : roomSize.getX() - 1;
+        return new BlockPos(
+            baseRoomOrigin.getX() + localX,
+            y - (roomOrigin.getY() - baseRoomOrigin.getY()),
+            z - (roomOrigin.getZ() - baseRoomOrigin.getZ()));
     }
 }

@@ -139,7 +139,7 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             buf.writeVarInt(e.roomLength());
             buf.writeVarInt(e.roomWidth());
             buf.writeVarInt(e.roomHeight());
-            buf.writeUtf(e.roomMode(), 32);
+            buf.writeUtf(e.roomMode(), EditorStatusPacket.MODE_TAG_MAX);
         }
     }
 
@@ -160,7 +160,7 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             int roomLength = buf.readVarInt();
             int roomWidth = buf.readVarInt();
             int roomHeight = buf.readVarInt();
-            String roomMode = buf.readUtf(32);
+            String roomMode = buf.readUtf(EditorStatusPacket.MODE_TAG_MAX);
             out.add(new Entry(pos, name, weight, category, modelId, modelName,
                 inPlot, isUser, isImported, roomLength, roomWidth, roomHeight, roomMode));
         }

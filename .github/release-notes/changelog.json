@@ -6686,6 +6686,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-extra-exits",
+      "version": "0.552.0",
+      "type": "feat",
+      "title": "More ways out of an endless portal room",
+      "summary": "The rooms behind a portal that repeat forever used to have exactly one way back to the train, however far you wandered. They can now scatter extra corridors through themselves, so there is usually another way out somewhere near you. Walk back in through one and you return to where you left, rather than to the start. Some rooms hide the way onward as well: the door directly opposite the one you arrived by may be nothing but more room, and the real one is somewhere else in the maze. Corridor doorways are also built from the room's own walls now, instead of the slab of polished blackstone they used to bring with them.",
+      "highlights": [
+        "Endless portal rooms scatter extra ways back to the train",
+        "Walking back in returns you to the corridor you came out of, not to the start",
+        "Some rooms stand their way onward somewhere other than directly opposite",
+        "Corridor doorways are built from the room's own walls, not polished blackstone",
+        "Portal rooms no longer spill the contents of their bookshelves and chests onto the floor"
+      ],
+      "pr": 928,
+      "date": "2026-08-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

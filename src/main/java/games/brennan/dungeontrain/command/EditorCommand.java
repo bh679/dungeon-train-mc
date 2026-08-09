@@ -200,6 +200,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_EXITS_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomExits.Kind k
+                    : games.brennan.dungeontrain.portal.PortalRoomExits.Kind.values()) {
+                builder.suggest(k.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> CONTENTS_SUGGESTIONS =
         (ctx, builder) -> {
             for (CarriageContents c : CarriageContentsRegistry.allContents()) {
@@ -445,6 +454,38 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_CONTENTS_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomContents(ctx.getSource(),
                             StringArgumentType.getString(ctx, "contents")))))
+                // How many extra ways back to the train an endless room scatters through its copies.
+                // Means nothing under the modes that do not repeat.
+                .then(Commands.literal("exits")
+                    .then(Commands.literal("next")
+                        .executes(ctx -> runPortalRoomExitsCycle(ctx.getSource())))
+                    .then(Commands.argument("exits", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_EXITS_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomExits(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "exits")))))
+                // The X both readings of Exits are measured in — every X tiles, or one tile in X.
+                .then(Commands.literal("exitevery")
+                    .then(Commands.literal("inc")
+                        .executes(ctx -> runPortalRoomExitEveryStep(ctx.getSource(), +1)))
+                    .then(Commands.literal("dec")
+                        .executes(ctx -> runPortalRoomExitEveryStep(ctx.getSource(), -1)))
+                    .then(Commands.argument("tiles", IntegerArgumentType.integer(
+                            games.brennan.dungeontrain.portal.PortalRoomExits.MIN_EVERY,
+                            games.brennan.dungeontrain.portal.PortalRoomExits.MAX_EVERY))
+                        .executes(ctx -> runPortalRoomExitEvery(ctx.getSource(),
+                            IntegerArgumentType.getInteger(ctx, "tiles")))))
+                // How often a Random room walls off the base pair's exit, so the only ways onward
+                // are the copies. 0 never, 10 always.
+                .then(Commands.literal("exitmove")
+                    .then(Commands.literal("inc")
+                        .executes(ctx -> runPortalRoomExitMoveStep(ctx.getSource(), +1)))
+                    .then(Commands.literal("dec")
+                        .executes(ctx -> runPortalRoomExitMoveStep(ctx.getSource(), -1)))
+                    .then(Commands.argument("chance", IntegerArgumentType.integer(
+                            games.brennan.dungeontrain.portal.PortalRoomExits.MOVE_NEVER,
+                            games.brennan.dungeontrain.portal.PortalRoomExits.MOVE_ALWAYS))
+                        .executes(ctx -> runPortalRoomExitMove(ctx.getSource(),
+                            IntegerArgumentType.getInteger(ctx, "chance")))))
                 // Sub-variants: one named room standing for several designs, drawn by weight.
                 .then(portalRoomGroupNode()))
             .then(Commands.literal("architecture")
@@ -5579,6 +5620,81 @@ public final class EditorCommand {
         return applyPortalRoomSettings(source, name, current.withContents(current.contents().next()));
     }
 
+    /** {@code /dt editor portals exits next} — step On → Random → Off, keeping the spacing. */
+    private static int runPortalRoomExitsCycle(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name, current.withExits(current.exits().next()));
+    }
+
+    /** {@code /dt editor portals exits <on|random|off>} — set it outright, keeping the spacing. */
+    private static int runPortalRoomExits(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomExits.Kind wanted =
+            games.brennan.dungeontrain.portal.PortalRoomExits.Kind.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.literal(
+                "Unknown exits option '" + raw + "'. Try on, random or off."));
+            return 0;
+        }
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name,
+            current.withExits(current.exits().withKind(wanted)));
+    }
+
+    /** Nudge the Exits spacing of the room plot the player is standing in by {@code delta}. */
+    private static int runPortalRoomExitEveryStep(CommandSourceStack source, int delta) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return runPortalRoomExitEvery(source, current.exits().every() + delta);
+    }
+
+    /**
+     * {@code /dt editor portals exitevery <tiles>} — set the X both readings of Exits measure in.
+     *
+     * <p>Clamped rather than rejected, the way the size commands are: a number the author typed and
+     * meant should land on the nearest legal one with the reply saying so, not vanish.</p>
+     */
+    private static int runPortalRoomExitEvery(CommandSourceStack source, int tiles) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name,
+            current.withExits(current.exits().withEvery(tiles)));
+    }
+
+    /** Nudge how often the room walls off its exit, by {@code delta}. */
+    private static int runPortalRoomExitMoveStep(CommandSourceStack source, int delta) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return runPortalRoomExitMove(source, current.exits().moveChance() + delta);
+    }
+
+    /**
+     * {@code /dt editor portals exitmove <0-10>} — how often this room walls off the base pair's
+     * exit, so the only ways onward are the scattered copies. 0 never, 10 always.
+     *
+     * <p>Clamped rather than rejected, like the other numeric portal settings.</p>
+     */
+    private static int runPortalRoomExitMove(CommandSourceStack source, int chance) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        games.brennan.dungeontrain.portal.PortalRoomSettings current =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return applyPortalRoomSettings(source, name,
+            current.withExits(current.exits().withMoveChance(chance)));
+    }
+
     /** {@code /dt editor portals contents <off|fit|exact|tile>} — set it outright. */
     private static int runPortalRoomContents(CommandSourceStack source, String raw) {
         String name = portalRoomPlotUnderPlayer(source);
@@ -5642,15 +5758,43 @@ public final class EditorCommand {
                 "Could not save the settings for portal room '" + name + "': " + e.getMessage()));
             return 0;
         }
-        // The Copies half is only worth reporting when it means anything.
+        // The Copies and Exits halves are only worth reporting when they mean anything.
         String copies = settings.copiesApply() ? ", copies: " + settings.copies().displayName() : "";
         String contents = ", contents: " + settings.contents().displayName();
+        String exits = settings.exitsApply()
+            ? ", exits: " + settings.exits().displayName()
+                + (settings.exits().lays() ? " (every " + settings.exits().every() + ")" : "")
+                + (settings.exits().effectiveMoveChance() > 0
+                    ? ", moved exit " + settings.exits().moveChance() + "/10" : "")
+            : "";
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' walls: " + settings.mode().displayName() + copies + contents
+            + exits
             + ". Portals already standing keep the settings they were built with — this takes effect "
-            + "on the next one the train reaches."
+            + "on the next one the train reaches." + subVariantNote(name)
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
+    }
+
+    /**
+     * A note naming this room's sub-variants, or empty when it has none.
+     *
+     * <p>A sub-variant is a room in its own right: the draw resolves a group to a <b>member</b> and
+     * the settings are read from that member's name, so a member keeps whatever it says at its own
+     * walls and a parent's settings never reach it. That is the intended design — each design
+     * decides its own boundary — but from inside the editor it looks indistinguishable from the
+     * setting not having applied, because the parent's plot is the one you were standing in. Saying
+     * so here answers it exactly where the confusion happens.</p>
+     */
+    private static String subVariantNote(String name) {
+        var group = games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(
+            games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name);
+        if (group.isEmpty() || group.get().members().isEmpty()) return "";
+        String members = group.get().members().stream()
+            .map(games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member::id)
+            .collect(java.util.stream.Collectors.joining(", "));
+        return " Its sub-variants (" + members + ") keep their own settings — set them in their"
+            + " own plots.";
     }
 
     /** The portal room plot the player is standing in, or null with the reason already reported. */

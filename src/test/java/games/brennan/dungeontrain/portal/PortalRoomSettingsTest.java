@@ -133,6 +133,107 @@ class PortalRoomSettingsTest {
             PortalRoomSettings.parse("endless_repetition/dinamic").copies());
     }
 
+    // ---- extra corridors ----
+
+    @Test
+    @DisplayName("An unsaid Exits segment means what the mode wants, not a fixed value")
+    void exitsDefaultComesFromTheMode() {
+        // The shipped labrynth room's tag, written long before this setting existed. It has to pick
+        // up its extra corridors without anybody editing weights.json.
+        assertEquals(PortalRoomExits.Kind.ON,
+            PortalRoomSettings.parse("endless_repetition/dynamic").exits().kind());
+        assertEquals(PortalRoomExits.DEFAULT_EVERY,
+            PortalRoomSettings.parse("endless_repetition/dynamic").exits().every());
+        // Endless Open has sightlines across it, so the way back stays visible and it lays none.
+        assertEquals(PortalRoomExits.Kind.OFF,
+            PortalRoomSettings.parse("endless_open").exits().kind());
+        assertEquals(PortalRoomExits.Kind.OFF, PortalRoomSettings.parse("bedrock_lock").exits().kind());
+    }
+
+    @Test
+    @DisplayName("Exits is only written when it differs from what its mode would have done anyway")
+    void exitsOmittedAtItsModeDefault() {
+        PortalRoomSettings repeating = PortalRoomSettings.DEFAULT
+            .withMode(PortalRoomMode.ENDLESS_REPETITION);
+        assertEquals("endless_repetition", repeating.toTag());
+        assertEquals("endless_repetition/exact/off/off",
+            repeating.withExits(PortalRoomExits.OFF).toTag());
+        assertEquals("endless_repetition/exact/off/random:5",
+            repeating.withExits(new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 5)).toTag());
+        // The other way round: an Endless Open room that does lay them has to say so.
+        assertEquals("endless_open/exact/off/on",
+            PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_OPEN)
+                .withExits(PortalRoomExits.ON).toTag());
+    }
+
+    @Test
+    @DisplayName("Every four-part settings tag round-trips")
+    void exitsRoundTrip() {
+        for (PortalRoomMode mode : PortalRoomMode.values()) {
+            for (PortalRoomExits.Kind kind : PortalRoomExits.Kind.values()) {
+                for (int every : new int[]{PortalRoomExits.MIN_EVERY, 8, 13, PortalRoomExits.MAX_EVERY}) {
+                    PortalRoomSettings original = PortalRoomSettings.DEFAULT.withMode(mode)
+                        .withExits(new PortalRoomExits(kind, every));
+                    PortalRoomSettings back = PortalRoomSettings.parse(original.toTag());
+                    assertEquals(mode, back.mode(), original.toTag());
+                    // Exits only survives where it means anything; elsewhere it reads as the mode's.
+                    PortalRoomExits wrote = original.effectiveExits();
+                    PortalRoomExits read = back.effectiveExits();
+                    assertEquals(wrote.kind(), read.kind(), original.toTag());
+                    // A spacing is only carried when something is being spaced — Off drops it on
+                    // purpose, so there is nothing to compare there.
+                    if (wrote.lays()) assertEquals(wrote.every(), read.every(), original.toTag());
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("A misspelt Exits segment keeps the rest of the tag")
+    void exitsParseIsTotal() {
+        PortalRoomSettings s = PortalRoomSettings.parse("endless_repetition/dynamic/tile/randm:nine");
+        assertSame(PortalRoomMode.ENDLESS_REPETITION, s.mode());
+        assertSame(PortalRoomCopies.DYNAMIC, s.copies());
+        assertSame(PortalRoomContents.TILE, s.contents());
+        assertEquals(PortalRoomExits.Kind.ON, s.exits().kind());
+        assertEquals(PortalRoomExits.DEFAULT_EVERY, s.exits().every());
+    }
+
+    @Test
+    @DisplayName("Changing the walls re-derives an inherited Exits but never overrides a chosen one")
+    void withModeReDerivesOnlyAnInheritedExits() {
+        // Never set: Endless Repetition's own default, so switching walls should take Endless Open's.
+        PortalRoomSettings inherited = PortalRoomSettings.DEFAULT
+            .withMode(PortalRoomMode.ENDLESS_REPETITION);
+        assertEquals(PortalRoomExits.Kind.ON, inherited.exits().kind());
+        assertEquals(PortalRoomExits.Kind.OFF,
+            inherited.withMode(PortalRoomMode.ENDLESS_OPEN).exits().kind());
+
+        // Actually chosen: it survives the switch, spacing and all.
+        PortalRoomSettings chosen = inherited.withExits(new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 12));
+        PortalRoomSettings moved = chosen.withMode(PortalRoomMode.ENDLESS_OPEN);
+        assertEquals(PortalRoomExits.Kind.RANDOM, moved.exits().kind());
+        assertEquals(12, moved.exits().every());
+    }
+
+    @Test
+    @DisplayName("Both endless modes have an Exits control; the sealed ones have nothing to put one in")
+    void exitsApplyToBothEndlessModes() {
+        assertTrue(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_REPETITION).exitsApply());
+        assertTrue(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_OPEN).exitsApply());
+        assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.BEDROCK_LOCK).exitsApply());
+        assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.BEDROCKLESS).exitsApply());
+
+        // A room whose walls were changed to a sealed mode keeps its stored value but must not act
+        // on it — there would be no copies for the corridors to stand in.
+        PortalRoomSettings offMode = PortalRoomSettings.DEFAULT
+            .withMode(PortalRoomMode.ENDLESS_REPETITION)
+            .withExits(new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 4))
+            .withMode(PortalRoomMode.BEDROCK_LOCK);
+        assertEquals(PortalRoomExits.Kind.RANDOM, offMode.exits().kind());
+        assertEquals(PortalRoomExits.Kind.OFF, offMode.effectiveExits().kind());
+    }
+
     @Test
     @DisplayName("Only Endless Repetition makes copies, so only it has a Copies control")
     void copiesApplyOnlyToRepetition() {

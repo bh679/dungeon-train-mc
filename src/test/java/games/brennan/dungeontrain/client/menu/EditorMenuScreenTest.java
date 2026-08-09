@@ -297,6 +297,66 @@ final class EditorMenuScreenTest {
     }
 
     @Test
+    @DisplayName("portals: the Exits row and its spacing stepper route through the portals prefix")
+    void portals_exitsCommands() {
+        CommandMenuEntry exits = EditorMenuScreen.exitsRowFor("endless_repetition");
+        assertEquals("Exits: On", assertInstanceOf(CommandMenuEntry.Stay.class, exits).label());
+        assertEquals("dungeontrain editor portals exits next", commandFor(exits));
+
+        CommandMenuEntry.Triple every = (CommandMenuEntry.Triple)
+            EditorMenuScreen.exitEveryTripleFor("endless_repetition");
+        assertEquals("Every 8", every.middleEntry().label());
+        assertEquals("dungeontrain editor portals exitevery dec", commandFor(every.leftEntry()));
+        assertEquals("dungeontrain editor portals exitevery inc", commandFor(every.rightEntry()));
+        assertEquals("dungeontrain editor portals exitevery", typePrefixFor(every.middleEntry()));
+
+        // Random reads the same number the other way round, so the row cannot be misread.
+        assertEquals("1 in 5", ((CommandMenuEntry.Triple)
+            EditorMenuScreen.exitEveryTripleFor("endless_repetition/exact/off/random:5"))
+            .middleEntry().label());
+    }
+
+    @Test
+    @DisplayName("portals: the moved-exit stepper shows under Random alone")
+    void portals_exitMoveCommands() {
+        CommandMenuEntry.Triple move = (CommandMenuEntry.Triple)
+            EditorMenuScreen.exitMoveTripleFor("endless_repetition/exact/off/random:8:7");
+        assertEquals("Moved exit: 7/10", move.middleEntry().label());
+        assertEquals("dungeontrain editor portals exitmove dec", commandFor(move.leftEntry()));
+        assertEquals("dungeontrain editor portals exitmove inc", commandFor(move.rightEntry()));
+        assertEquals("dungeontrain editor portals exitmove", typePrefixFor(move.middleEntry()));
+
+        // It still shows at zero — that is the dial's own "never", not an absent control.
+        assertEquals("Moved exit: 0/10", ((CommandMenuEntry.Triple)
+            EditorMenuScreen.exitMoveTripleFor("endless_repetition/exact/off/random")).
+            middleEntry().label());
+
+        // …but never under the lattice, under Off, or on a room with no Exits control at all.
+        assertNull(EditorMenuScreen.exitMoveTripleFor("endless_repetition"));
+        assertNull(EditorMenuScreen.exitMoveTripleFor("endless_repetition/exact/off/off"));
+        assertNull(EditorMenuScreen.exitMoveTripleFor("bedrock_lock"));
+        assertNull(EditorMenuScreen.exitMoveTripleFor(
+            games.brennan.dungeontrain.net.EditorStatusPacket.NO_MODE));
+    }
+
+    @Test
+    @DisplayName("Exits is absent for a sealed room, and its spacing is absent when nothing is laid")
+    void portals_exitsRowsAbsentWhereTheyMeanNothing() {
+        // Only an endless room has anywhere to put an extra way back to the train.
+        assertNull(EditorMenuScreen.exitsRowFor("bedrock_lock"));
+        assertNull(EditorMenuScreen.exitsRowFor("bedrockless"));
+        assertNull(EditorMenuScreen.exitsRowFor(
+            games.brennan.dungeontrain.net.EditorStatusPacket.NO_MODE));
+
+        // Endless Open is asked the question and answers Off, which takes the spacing with it.
+        assertEquals("Exits: Off",
+            assertInstanceOf(CommandMenuEntry.Stay.class,
+                EditorMenuScreen.exitsRowFor("endless_open")).label());
+        assertNull(EditorMenuScreen.exitEveryTripleFor("endless_open"));
+        assertNull(EditorMenuScreen.exitEveryTripleFor("endless_repetition/exact/off/off"));
+    }
+
+    @Test
     @DisplayName("portals: New and Remove use the portals prefix, not the tracks one")
     void portals_newAndRemove() {
         CommandMenuEntry newEntry = EditorMenuScreen.newEntryFor("portals", "portal_room", "portal room / default");
