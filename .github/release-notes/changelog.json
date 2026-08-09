@@ -6435,9 +6435,9 @@
       ],
       "pr": 918,
       "date": "2026-08-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.551.0",
+      "released_at": "2026-08-09T08:49:33Z"
     },
     {
       "id": "esc-menu-discord-support",
@@ -6451,9 +6451,9 @@
       ],
       "pr": 922,
       "date": "2026-08-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.551.0",
+      "released_at": "2026-08-09T08:49:33Z"
     }
   ]
 }
