@@ -53,6 +53,13 @@ public final class TitleScreenTranslateButton {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
+
+        // The title screen is where a client with no world loaded does its relay work, so it is
+        // where both halves of the translation exchange happen. Unconditional: a player who
+        // submitted in German and then switched to English still has a queue to drain.
+        TranslationOutbox.get().flush();
+        ApprovedTranslationsFetcher.fetchOnce();
+
         String locale = mc.getLanguageManager().getSelected();
         if (!TranslationScreen.isEditable(locale)) {
             return; // English is the source language — nothing to translate into

@@ -134,12 +134,17 @@ public final class TranslationScreen extends Screen {
      * doorway, and the row grows as those land.
      */
     private void layoutBottomRow(int y, int contentWidth) {
-        int buttons = 3;
+        int buttons = 4;
         int buttonWidth = (contentWidth - GAP * (buttons - 1)) / buttons;
         int x = MARGIN;
         addRenderableWidget(Button.builder(
             Component.translatable("gui.dungeontrain.translate.files"),
             b -> minecraft.setScreen(new TranslationFilesScreen(this, locale)))
+            .bounds(x, y, buttonWidth, ROW_H).build());
+        x += buttonWidth + GAP;
+        addRenderableWidget(Button.builder(
+            Component.translatable("gui.dungeontrain.translate.submit"),
+            b -> minecraft.setScreen(new TranslationSubmitScreen(this, locale)))
             .bounds(x, y, buttonWidth, ROW_H).build());
         x += buttonWidth + GAP;
         addRenderableWidget(Button.builder(

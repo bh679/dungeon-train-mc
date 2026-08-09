@@ -1109,5 +1109,15 @@
   "gui.dungeontrain.translate.files.exported": "Exported %s line(s) and %s book(s).",
   "gui.dungeontrain.translate.files.imported": "Imported %s line(s) and %s book field(s).",
   "gui.dungeontrain.translate.files.nothing": "Nothing to import — put your files in the import folder first.",
-  "gui.dungeontrain.translate.files.failed": "That didn't work — see the log for details."
+  "gui.dungeontrain.translate.files.failed": "That didn't work — see the log for details.",
+  "gui.dungeontrain.translate.submit": "Send In…",
+  "gui.dungeontrain.translate.submit.title": "Send Your Translation In",
+  "gui.dungeontrain.translate.submit.subtitle": "%s — %s edit(s) ready to send",
+  "gui.dungeontrain.translate.submit.name": "Name to credit you by (optional)",
+  "gui.dungeontrain.translate.submit.send": "Send for Review",
+  "gui.dungeontrain.translate.submit.note": "Your edits go to Brennan for review. Once accepted they ship to everyone playing in this language, and you're credited in-game.",
+  "gui.dungeontrain.translate.submit.no_consent": "Sending needs the internet connection turned on in Dungeon Train Options. Your edits still work on this computer without it.",
+  "gui.dungeontrain.translate.submit.queued": "Sent %s edit(s) for review. Thank you!",
+  "gui.dungeontrain.translate.submit.nothing": "Nothing to send yet — edit something first.",
+  "gui.dungeontrain.translate.submit.pending": "%s submission(s) still waiting to send."
 }
