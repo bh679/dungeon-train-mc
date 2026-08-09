@@ -283,6 +283,21 @@ public final class PortalCarriageSelection {
         return isPortalPart(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level));
     }
 
+    /**
+     * True if the group this carriage belongs to holds a portal — <b>including</b> any ordinary slots
+     * beyond the entry/middle/exit three.
+     *
+     * <p>The predicate for things that must stay out of a portal group entirely rather than merely off
+     * its corridors — PlayerMob spawning, which is the one placement path that puts a live, <em>mobile</em>
+     * entity on the train. At the default group size of three this and {@link #isPortalPart} agree, since
+     * the portal fills the group; they part company only when {@code groupSize} exceeds
+     * {@link #PORTAL_GROUP_SPAN}, and there the group-level answer is the one that holds: a mob in slot 3
+     * marches along the train and walks itself into the corridor regardless.</p>
+     */
+    public static boolean isPortalGroup(ServerLevel level, int carriageIndex) {
+        return isPortalGroup(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level));
+    }
+
     public static boolean isPortalCarriage(int carriageIndex, int groupSize, Rate rate, long worldSeed) {
         if (!isPortalGroup(carriageIndex, groupSize, rate, worldSeed)) return false;
         int slot = slotOf(carriageIndex, groupSize);
