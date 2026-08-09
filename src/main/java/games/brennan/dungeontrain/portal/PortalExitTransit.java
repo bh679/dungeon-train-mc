@@ -53,6 +53,15 @@ public final class PortalExitTransit {
     private PortalExitTransit() {}
 
     /**
+     * One live copy: which site it is, and the pairing that carries somebody out of it.
+     *
+     * <p>The site travels with the frames because leaving through a copy is what binds a player to
+     * its tile ({@link PortalExitBindings}) — the caller has to know <i>which</i> copy fired, not
+     * merely that one did.</p>
+     */
+    public record Copy(Site site, PortalFrames frames) {}
+
+    /**
      * A frame for every standing copy of {@code role} that somebody is near, pairing it with the
      * carriage this call is for.
      *
@@ -61,21 +70,21 @@ public final class PortalExitTransit {
      * originals do. {@code handlePortalCarriage} runs once per carriage, so each call picks up its
      * own half and the two never contend for the same copy.</p>
      */
-    public static List<PortalFrames> framesFor(PortalStructure structure, CarriageDims dims,
-                                               PortalCarriageLayout layout, PortalCarriageRole role,
-                                               PortalFrames.Origin carriage,
-                                               List<ServerPlayer> players) {
+    public static List<Copy> framesFor(PortalStructure structure, CarriageDims dims,
+                                       PortalCarriageLayout layout, PortalCarriageRole role,
+                                       PortalFrames.Origin carriage,
+                                       List<ServerPlayer> players) {
         PortalExitCopies copies = structure.exitCopies();
         if (copies.isEmpty() || players.isEmpty()) return List.of();
 
-        List<PortalFrames> out = new ArrayList<>();
+        List<Copy> out = new ArrayList<>();
         for (Site site : copies.sites()) {
             if (site.role() != role) continue;
             BlockPos origin = structure.exitCopyOrigin(dims, site);
             PortalFrames frames = new PortalFrames(layout, carriage,
                 new PortalFrames.Origin(origin.getX(), origin.getY(), origin.getZ()), role);
             if (!anyPlayerNear(frames, players)) continue;
-            out.add(frames);
+            out.add(new Copy(site, frames));
         }
         return out;
     }

@@ -42,11 +42,28 @@ public final class PortalEntityTransit {
     /** Move every entity in the pair's corridors that is on the wrong side of its midpoint. */
     public static void run(ServerLevel level, PortalFrames frames, List<Entity> entities,
                            int carriageIndex) {
+        run(level, frames, entities, carriageIndex, null);
+    }
+
+    /**
+     * As {@link #run(ServerLevel, PortalFrames, List, int)}, but landing anything walking <b>in</b>
+     * at {@code twinOverride} instead of the frame's own twin.
+     *
+     * <p>What makes a led villager arrive where its player does. A player who came out through an
+     * extra corridor eight rooms out walks back in to that corridor ({@link PortalExitBindings});
+     * without the same override here the villager behind them goes to the original twin instead, and
+     * the two part company inside a room that is supposed to be one place — which is the exact bug
+     * this class exists to prevent, reappearing one level up.</p>
+     *
+     * <p>Null means the original twin, so the ordinary call above is this one with nothing to say.</p>
+     */
+    public static void run(ServerLevel level, PortalFrames frames, List<Entity> entities,
+                           int carriageIndex, PortalFrames.Origin twinOverride) {
         for (Entity entity : entities) {
             if (!eligible(entity)) continue;
 
             double x = entity.getX(), y = entity.getY(), z = entity.getZ();
-            PortalFrames.Move move = frames.requiredMove(x, y, z);
+            PortalFrames.Move move = frames.redirectedTo(frames.requiredMove(x, y, z), twinOverride);
             if (move == null) continue;
 
             // Same one-way gate the player swap carries, and for the same reason: a severed corridor
@@ -62,7 +79,9 @@ public final class PortalEntityTransit {
             // carried-across local Y, for the reason the player swap does it: the two frames' block
             // grids differ by the ship's fractional pose, and a fraction inside the floor of a twin
             // that hangs in open air is resolved by dropping through it.
-            double targetY = entity.onGround() ? frames.floorSurfaceY(move.toFrame()) : move.y();
+            double targetY = entity.onGround()
+                ? frames.floorSurfaceY(move.toFrame(), twinOverride)
+                : move.y();
 
             Vec3 velocity = entity.getDeltaMovement();
             entity.teleportTo(move.x(), targetY, move.z());
