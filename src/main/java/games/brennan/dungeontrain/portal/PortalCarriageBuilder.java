@@ -239,7 +239,38 @@ public final class PortalCarriageBuilder {
         } else {
             stampBuiltIn(level, origin, dims, relight);
         }
+        applyCorridorVariants(level, origin, dims, pairKey);
         if (withContents) stampCorridorContents(level, origin, dims, pairKey);
+    }
+
+    /**
+     * Roll the corridor shell's own authored block variants over the stamp that just landed.
+     *
+     * <p><b>Rolled against the pair's key, not the carriage's index.</b> A crossing is two
+     * carriages at different indices that never see each other, and the variant picker keys on
+     * {@code (worldSeed, index, lockId)} — so feeding it a per-carriage index lets the two halves
+     * of one corridor land on different blocks and tears the crossing open, which is the same trap
+     * {@link #CONTENTS_SEED} documents for the contents pass. {@code pairKey} is a pure function of
+     * the carriage index ({@code PortalCarriageRole.entryIndexOf}), so both stamp sites derive it
+     * identically without either knowing about the other, while still letting different portals
+     * differ from one another.</p>
+     *
+     * <p>Skipped for {@link #NO_PAIR} — the editor plot has no pair to roll against, and showing
+     * the author a resolved roll instead of the master blocks would misrepresent what they are
+     * editing (the plot is captured back into {@code portal.nbt} on save).</p>
+     *
+     * <p>Handed the WORLD's carriage dims, not the corridor's. The sidecar does have to be looked
+     * up at the corridor box — it is longer than a carriage and the size gate would drop every
+     * entry past the carriage's own length — but {@code CarriagePlacer.variantDims} already grows
+     * the portal variant's dims on the way in, and {@link PortalCorridorSize#corridorDims} is not
+     * idempotent (it adds the overrun each time). Passing an already-grown box would stretch it a
+     * second time and miss the template.</p>
+     */
+    private static void applyCorridorVariants(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                              int pairKey) {
+        if (pairKey == NO_PAIR) return;
+        CarriagePlacer.applyVariantBlocks(level, origin, PORTAL_VARIANT, dims,
+            level.getSeed(), pairKey);
     }
 
     /**
