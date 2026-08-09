@@ -5771,9 +5771,30 @@ public final class EditorCommand {
             "Portal room '" + name + "' walls: " + settings.mode().displayName() + copies + contents
             + exits
             + ". Portals already standing keep the settings they were built with — this takes effect "
-            + "on the next one the train reaches."
+            + "on the next one the train reaches." + subVariantNote(name)
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
+    }
+
+    /**
+     * A note naming this room's sub-variants, or empty when it has none.
+     *
+     * <p>A sub-variant is a room in its own right: the draw resolves a group to a <b>member</b> and
+     * the settings are read from that member's name, so a member keeps whatever it says at its own
+     * walls and a parent's settings never reach it. That is the intended design — each design
+     * decides its own boundary — but from inside the editor it looks indistinguishable from the
+     * setting not having applied, because the parent's plot is the one you were standing in. Saying
+     * so here answers it exactly where the confusion happens.</p>
+     */
+    private static String subVariantNote(String name) {
+        var group = games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(
+            games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name);
+        if (group.isEmpty() || group.get().members().isEmpty()) return "";
+        String members = group.get().members().stream()
+            .map(games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member::id)
+            .collect(java.util.stream.Collectors.joining(", "));
+        return " Its sub-variants (" + members + ") keep their own settings — set them in their"
+            + " own plots.";
     }
 
     /** The portal room plot the player is standing in, or null with the reason already reported. */

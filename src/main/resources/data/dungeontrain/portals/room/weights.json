@@ -18,7 +18,7 @@
     "mode": "endless_repetition"
   },
   "book": {
-    "weight": 2,
+    "weight": 1,
     "minLevel": 3,
     "mode": "endless_repetition"
   },
@@ -38,17 +38,17 @@
   "distantenemies": {
     "weight": 1,
     "minLevel": 1,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic/off/on:12"
   },
   "labrynth": {
-    "weight": 5,
+    "weight": 30,
     "minLevel": 10,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic/off/random:10:10"
   },
   "library_dimension": {
     "weight": 2,
     "minLevel": 5,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic/off/random:10"
   },
   "nobeam": {
     "weight": 1,
@@ -77,5 +77,9 @@
   "window_contents": {
     "weight": 1,
     "mode": "bedrockless/exact/fit"
+  },
+  "zombies": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
   }
 }
