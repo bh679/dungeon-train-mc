@@ -299,11 +299,16 @@ public final class CarriagePlacer {
         boolean nbtBacked = "stored".equals(base) || overlay != null;
         if (nbtBacked) {
             applyVariantBlocks(level, origin, variant, dims, config, carriageIndex);
-        } else if ("legacy".equals(base)) {
+        } else {
+            // Warn for EVERY base that drops a non-empty sidecar, not just "legacy". stampBase also
+            // returns "portal", "portal_middle" and null, and all three used to fall through both
+            // arms in silence — which is how a 264-cell portal sidecar sat unapplied without ever
+            // saying so. If a sidecar was authored and nothing laid it, that is worth a line.
             CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
             if (!sidecar.isEmpty()) {
-                LOGGER.warn("[DungeonTrain] Variant sidecar for '{}' ignored — built-in using hardcoded fallback.",
-                    variant.id());
+                LOGGER.warn("[DungeonTrain] Variant sidecar for '{}' ignored — {} basis has no "
+                        + "per-position overlay ({} cells dropped).",
+                    variant.id(), base == null ? "absent" : base, sidecar.entries().size());
             }
         }
 
@@ -549,10 +554,30 @@ public final class CarriagePlacer {
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
+        applyVariantBlocks(level, origin, variant, dims, config.seed(), carriageIndex);
+    }
+
+    /**
+     * Resolve and lay a variant's template sidecar over an already-stamped shell, rolled at an
+     * explicit {@code (seed, index)}.
+     *
+     * <p><b>Public because the portal corridor needs the same three behaviours and must not
+     * reimplement them:</b> the placeholder→air translation, the lock-aware
+     * {@code RotationApplier} call, and the {@code ContainerContentsPlacement} hand-off that lets a
+     * picked chest roll its pool. A corridor cannot reuse the {@code CarriageGenerationConfig}
+     * overload because it does not roll against its own carriage index — both halves of a crossing
+     * have to resolve identically and neither knows about the other, so
+     * {@code PortalCarriageBuilder} passes the pair's key instead. See
+     * {@code PortalCarriageBuilder.stampCorridorFrom}.</p>
+     */
+    public static void applyVariantBlocks(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, long seed, int carriageIndex
+    ) {
         CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
         if (sidecar.isEmpty()) return;
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
-            VariantState picked = sidecar.resolve(e.localPos(), config.seed(), carriageIndex);
+            VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
             if (picked == null) continue;
             BlockPos world = origin.offset(e.localPos());
             if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
@@ -560,11 +585,11 @@ public final class CarriagePlacer {
             } else {
                 BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
                     picked.state(), picked.rotation(), picked.half(),
-                    e.localPos(), config.seed(), carriageIndex,
+                    e.localPos(), seed, carriageIndex,
                     sidecar.lockIdAt(e.localPos()));
                 games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                     level, world, rotated, picked.blockEntityNbt(),
-                    "carriage:" + variant.id(), e.localPos(), config.seed(), carriageIndex,
+                    "carriage:" + variant.id(), e.localPos(), seed, carriageIndex,
                     picked.linkedLootPrefabId());
             }
         }
