@@ -99,6 +99,16 @@ public final class CategoryTemplatesScreen implements MenuScreen {
                         model.id().equals(activeId)));
                 }
             }
+            case "portals" -> {
+                for (Template model : EditorCategory.PORTALS.models()) {
+                    String command = trackEnterCommandFor(model);
+                    if (command == null) continue;
+                    out.add(new CommandMenuEntry.Run(
+                        model.displayName(),
+                        command,
+                        model.variantName().equals(EditorStatusHudOverlay.modelName())));
+                }
+            }
             default -> {
                 // Unknown category — nothing to list, just show Back.
             }
@@ -125,6 +135,9 @@ public final class CategoryTemplatesScreen implements MenuScreen {
         if (model instanceof Template.Tunnel tm) {
             return "dungeontrain editor enter tunnel_"
                 + tm.variant().name().toLowerCase(Locale.ROOT);
+        }
+        if (model instanceof Template.PortalRoom rm) {
+            return "dungeontrain editor portals enter " + rm.name();
         }
         return null;
     }

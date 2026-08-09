@@ -6454,6 +6454,222 @@
       "released": true,
       "released_in": "v0.551.0",
       "released_at": "2026-08-09T08:49:33Z"
+    },
+    {
+      "id": "portal-sever-on-shell-break",
+      "version": "0.539.0",
+      "type": "feat",
+      "title": "Breaking into a portal corridor closes it for good",
+      "summary": "Dig through the outer wall of a portal corridor past the halfway point and the portal breaks \u2014 glass shatters, a beacon dies away, and that portal never takes you through again. You can always still walk back out of a portal room, so a broken portal can strand nothing and nobody.",
+      "highlights": [
+        "Breaking a portal corridor's outer wall past the halfway point permanently closes it",
+        "Both ends of a portal close together \u2014 one hole shuts the whole thing",
+        "The way back out always works, so you can never be trapped in a portal room",
+        "Digging inside a portal room, or before the halfway point, is safe"
+      ],
+      "pr": 899,
+      "date": "2026-08-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-swap-no-flash",
+      "version": "0.539.0",
+      "type": "fix",
+      "title": "Portal transitions no longer flash",
+      "summary": "Stepping through a portal corridor used to flash the world for a moment on the other side \u2014 sometimes a wash of pale sky, sometimes the skybox showing through where the room should be. The arrival is now drawn properly, so walking a portal looks like walking through a doorway.",
+      "highlights": [
+        "No flash on arriving in a portal room, in either direction",
+        "Endless portal rooms no longer white out as their fog comes in"
+      ],
+      "pr": 902,
+      "date": "2026-08-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-enemies-and-varied-corridors",
+      "version": "0.539.0",
+      "type": "feat",
+      "title": "Portal rooms can hold enemies, and no two corridors are alike",
+      "summary": "Step through a portal and the corridor you walk isn't always the same one \u2014 each portal furnishes its own. The pocket room beyond can be home to something, too: rooms are authored with the creatures that live in them, and an endless room keeps them coming as it unfolds around you.",
+      "highlights": [
+        "Portal rooms can be home to creatures, placed by whoever built the room",
+        "Each portal's corridors are furnished from their own set, so no two portals read the same"
+      ],
+      "pr": 903,
+      "date": "2026-08-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "bedrockless-fog-falloff",
+      "version": "0.539.0",
+      "type": "feat",
+      "title": "The void around a bedrockless portal room closes in as you walk out",
+      "summary": "Some portal rooms are built standing in empty space rather than sealed in rock. Walking off one of those and out into the emptiness used to look exactly like standing still in it \u2014 the same haze at every distance. The fog now thickens the further out you get, until the room you left has vanished and the dark has no edge you can find.",
+      "highlights": [
+        "Fog closes in progressively as you walk away from a bedrockless portal room",
+        "Walk far enough and the room behind you disappears entirely",
+        "Fixed: the fog used to cut out the moment you stepped off the structure, instead of thickening"
+      ],
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-placed-once",
+      "version": "0.539.0",
+      "type": "fix",
+      "title": "Portal rooms no longer fill up with broken blocks and doubled-up mobs",
+      "summary": "A portal's room was being torn down and rebuilt over and over as the train rolled, instead of being built once. Every rebuild left the room a little more cluttered: pressure plates popped off their supports and their drops stayed floating where they broke, and the room's own mobs were carried over and then spawned again beside themselves. A room is now laid down once, and stays as it was built.",
+      "highlights": [
+        "Fixed: floating dropped items piling up in portal rooms, where blocks had been broken by a rebuild",
+        "Fixed: a portal room's mobs appearing twice over, growing every time the train travelled",
+        "Portal rooms are built once instead of being repeatedly re-laid as the train moves"
+      ],
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-tunnel-music-fade",
+      "version": "0.539.0",
+      "type": "feat",
+      "title": "The music fades out as you walk into a portal",
+      "summary": "Head down a portal corridor and the soundtrack sinks away with every step, gone by the time you reach the door. Portal rooms are silent \u2014 nothing plays in there, however long you stay. Walk back out onto the train and the music doesn't come blaring back mid-song either; the quiet holds for a while, then a fresh track starts on its own.",
+      "highlights": [
+        "Music fades out over the last stretch of a portal corridor",
+        "Portal rooms are completely silent",
+        "No jarring mid-track resume when you come back to the train"
+      ],
+      "pr": 909,
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-rooms-not-off-the-train",
+      "version": "0.539.0",
+      "type": "fix",
+      "title": "Walking through a portal no longer counts as leaving the train",
+      "summary": "Stepping through a hallway portal used to look, to the game, exactly like jumping off the side of the train \u2014 so a walk to a portal room and back handed out Off the Rails and Back on Board for using a door. Those awards, and the one for shoving a passenger off the train, now ignore everything that happens beneath the world's bedrock, which is where portal rooms are built. Leaving the train the honest way still earns them, and shoving an echo into the void still earns Into the Void.",
+      "highlights": [
+        "Portal trips no longer award Off the Rails or Back on Board",
+        "Leading a punched passenger through a portal no longer counts as shoving them off the train",
+        "Genuinely leaving the train, and voiding an echo, still earn their advancements"
+      ],
+      "pr": 910,
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-endless-tunnel-surrounds",
+      "version": "0.539.0",
+      "type": "fix",
+      "title": "The endless portal rooms now carry on past their tunnels",
+      "summary": "In an endless portal room, the tunnels back to the train stand inside the room rather than at its edge \u2014 but the ground gave out around them. Walk round the side of one and the floor simply stopped: open void, with the tunnel hanging in it. The room now continues past its tunnels, laying its own floor, ceiling and walls right up to them, so a tunnel reads as something standing in the hall that you can walk around. Open-walled endless rooms carry their floor and ceiling through in the same way.",
+      "highlights": [
+        "Fixed: void where the floor should be, in the aisles either side of a portal room's tunnels",
+        "An endless room's own walls and ceiling now continue around its tunnels",
+        "The way back to the train is still a wall with a door in it, unchanged"
+      ],
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "no-mobs-under-bedrock",
+      "version": "0.539.0",
+      "type": "fix",
+      "title": "Monsters no longer spawn in the empty dark below the world",
+      "summary": "Portal rooms are built in an empty basement beneath the world's bedrock, and the game still treated that space as somewhere ordinary monsters could turn up \u2014 on a room's roof, in the gap just outside its walls, or anywhere else down there the dark reached. Nothing arrives on its own below the bedrock now. The mobs a portal room is built with are unaffected, and so is anything you bring down there yourself.",
+      "highlights": [
+        "Fixed: skeletons and zombies gathering around portal rooms, below the world's bedrock",
+        "Nothing spawns of its own accord beneath the bedrock layer",
+        "A portal room's own mobs, and any you lead in yourself, are untouched"
+      ],
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "nothing-generates-under-bedrock",
+      "version": "0.539.0",
+      "type": "fix",
+      "title": "Nothing generates in the empty space beneath the world",
+      "summary": "The space under the world's bedrock is kept clear for portal rooms, but structures anchored at a fixed depth \u2014 trial chambers, ancient cities \u2014 were resolving into it and building there anyway: sealed beneath the bedrock, impossible to reach, and pointed at by /locate as though you could go and find them. Nothing generates below the bedrock now, and a structure that straddles it keeps only the part that reaches real ground.",
+      "highlights": [
+        "Fixed: trial chambers and ancient cities generating below the world's bedrock, out of reach",
+        "/locate no longer sends you after a structure buried under the bedrock",
+        "The space beneath the bedrock stays clear for portal rooms"
+      ],
+      "pr": 911,
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-cave-noises",
+      "version": "0.539.0",
+      "type": "feat",
+      "title": "Cave noises carry through the portal rooms",
+      "summary": "A portal room is meant to feel a long way from the train: the soundtrack fades out as you walk the tunnel and there is none at all once you are inside. That left the rooms completely silent, which read as nothing there rather than somewhere else. The old familiar cave noises now turn up while you are in a portal room \u2014 the same distant groans and drips you get deep underground, drifting in from somewhere past the walls every half-minute to a few minutes. They stop at the room: the tunnels back to the train still carry the engine and the last of the music, and nothing follows you back aboard.",
+      "highlights": [
+        "Cave noises now play while you are inside a portal room",
+        "They come and go on their own, roughly every 30 seconds to 3 minutes",
+        "The tunnels back to the train are unchanged \u2014 engine and fading music as before",
+        "Controlled by the Ambient volume slider, like cave noises anywhere else"
+      ],
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 916
+    },
+    {
+      "id": "portal-room-per-portal-rolls",
+      "version": "0.539.0",
+      "type": "fix",
+      "title": "Every portal room is its own room",
+      "summary": "Portal rooms all looked the same. Two portals that drew the same kind of room were identical down to the block \u2014 same walls, same chests, same contents \u2014 so the tenth portal you walked was the first one again. Each portal now rolls its own room, from where it sits on the train. Walk back into one you've already been through and it is still the room you left, chests and all.",
+      "highlights": [
+        "Each portal's room rolls its own blocks, chests and furnishings",
+        "Rooms you have already looted stay looted when you walk back in"
+      ],
+      "date": "2026-08-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-stage-gating",
+      "version": "0.539.0",
+      "type": "feat",
+      "title": "Portal rooms are themed to how far you have travelled",
+      "summary": "The room behind a portal is no longer drawn from the whole pool every time. Each room \u2014 and each of its sub-variants \u2014 can now be limited to a stretch of the run, so early portals open onto different places than late ones. Comes with a batch of authored rooms: a new zombie room, furnished starting rooms with loot chests and mobs, and reworked beam and sculk rooms.",
+      "highlights": [
+        "Portal rooms are drawn to match your progress through the run",
+        "New zombie portal room",
+        "The starting portal rooms are furnished with loot chests, mobs and more block variety",
+        "Reworked beam and sculk rooms"
+      ],
+      "pr": 924,
+      "date": "2026-08-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

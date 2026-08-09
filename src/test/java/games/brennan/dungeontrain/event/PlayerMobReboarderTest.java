@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * off-deck decision state machine. No Minecraft bootstrap is needed: the
  * carriage-block support test ({@code isOnCarriageDeck}) is supplied here as the
  * {@code onDeck} argument (and verified in-game), so this table pins exactly how a
- * given (support, dead, expired) observation maps to CREDIT / KEEP / DROP.
+ * given (support, dead, expired, belowBedrock) observation maps to CREDIT / KEEP / DROP.
  *
  * <p>Mirrors the registry-free style of {@code TrainPassengerExemptionTest}.
  * Grace is {@code OFF_DECK_GRACE_SCANS = 2}, so an off-deck streak credits on its
@@ -37,7 +37,7 @@ final class PlayerMobReboarderTest {
     @Test
     @DisplayName("alive & off-deck within grace → KEEP, off-streak grows, lastOnDeck clears")
     void offDeck_withinGrace_keeps() {
-        ReboarderStep out = PlayerMobAdvancementEvents.step(fresh(), false, false, false);
+        ReboarderStep out = PlayerMobAdvancementEvents.step(fresh(), false, false, false, false);
         assertEquals(ReboarderDecision.KEEP, out.decision());
         assertEquals(1, out.next().offScans());
         assertFalse(out.next().lastOnDeck());
@@ -48,7 +48,7 @@ final class PlayerMobReboarderTest {
     void offDeck_pastGrace_credits() {
         // offScans at the grace bound (2); the next off sample makes 3 (> 2).
         ReboarderHit atGrace = new ReboarderHit(P, 0L, true, false, 2);
-        ReboarderStep out = PlayerMobAdvancementEvents.step(atGrace, false, false, false);
+        ReboarderStep out = PlayerMobAdvancementEvents.step(atGrace, false, false, false, false);
         assertEquals(ReboarderDecision.CREDIT, out.decision());
     }
 
@@ -58,7 +58,7 @@ final class PlayerMobReboarderTest {
     @DisplayName("alive & on-deck → KEEP, off-streak resets, lastOnDeck set")
     void onDeck_resets() {
         ReboarderHit offByOne = new ReboarderHit(P, 0L, true, false, 1);
-        ReboarderStep out = PlayerMobAdvancementEvents.step(offByOne, true, false, false);
+        ReboarderStep out = PlayerMobAdvancementEvents.step(offByOne, true, false, false, false);
         assertEquals(ReboarderDecision.KEEP, out.decision());
         assertEquals(0, out.next().offScans());
         assertTrue(out.next().lastOnDeck());
@@ -67,7 +67,7 @@ final class PlayerMobReboarderTest {
     @Test
     @DisplayName("alive & on-deck but window expired → DROP (never left in time)")
     void onDeck_expired_drops() {
-        ReboarderStep out = PlayerMobAdvancementEvents.step(fresh(), true, false, true);
+        ReboarderStep out = PlayerMobAdvancementEvents.step(fresh(), true, false, true, false);
         assertEquals(ReboarderDecision.DROP, out.decision());
     }
 
@@ -77,7 +77,7 @@ final class PlayerMobReboarderTest {
     @DisplayName("off-deck but was not on the train at strike → KEEP, never credits")
     void notOnTrain_neverCredits() {
         ReboarderHit notAboard = new ReboarderHit(P, 0L, false, false, 5);
-        ReboarderStep out = PlayerMobAdvancementEvents.step(notAboard, false, false, false);
+        ReboarderStep out = PlayerMobAdvancementEvents.step(notAboard, false, false, false, false);
         assertEquals(ReboarderDecision.KEEP, out.decision());
     }
 
@@ -87,28 +87,50 @@ final class PlayerMobReboarderTest {
     @DisplayName("unloaded after last seen off-deck → CREDIT (fell off, then chunk unloaded)")
     void unloaded_lastOffDeck_credits() {
         ReboarderHit lastOff = new ReboarderHit(P, 0L, true, false, 1);
-        ReboarderStep out = PlayerMobAdvancementEvents.step(lastOff, null, false, false);
+        ReboarderStep out = PlayerMobAdvancementEvents.step(lastOff, null, false, false, false);
         assertEquals(ReboarderDecision.CREDIT, out.decision());
     }
 
     @Test
     @DisplayName("dead while last seen on-deck → DROP (killed on the deck, not pushed off)")
     void dead_lastOnDeck_drops() {
-        ReboarderStep out = PlayerMobAdvancementEvents.step(fresh(), null, true, false);
+        ReboarderStep out = PlayerMobAdvancementEvents.step(fresh(), null, true, false, false);
         assertEquals(ReboarderDecision.DROP, out.decision());
     }
 
     @Test
     @DisplayName("unloaded while last seen on-deck, window open → KEEP (wait for reload)")
     void unloaded_lastOnDeck_open_keeps() {
-        ReboarderStep out = PlayerMobAdvancementEvents.step(fresh(), null, false, false);
+        ReboarderStep out = PlayerMobAdvancementEvents.step(fresh(), null, false, false, false);
         assertEquals(ReboarderDecision.KEEP, out.decision());
     }
 
     @Test
     @DisplayName("unloaded while last seen on-deck, window expired → DROP")
     void unloaded_lastOnDeck_expired_drops() {
-        ReboarderStep out = PlayerMobAdvancementEvents.step(fresh(), null, false, true);
+        ReboarderStep out = PlayerMobAdvancementEvents.step(fresh(), null, false, true, false);
+        assertEquals(ReboarderDecision.DROP, out.decision());
+    }
+
+    // ---- below the bedrock: walked through a portal, not shoved off a train ----
+
+    @Test
+    @DisplayName("below bedrock past the grace bound → DROP, not CREDIT")
+    void belowBedrock_pastGrace_drops() {
+        // Byte-for-byte the CREDIT case above, except the mob is under the bedrock: the basement the
+        // portal system builds in, which every carriage-deck test necessarily reads as off.
+        ReboarderHit atGrace = new ReboarderHit(P, 0L, true, false, 2);
+        ReboarderStep out = PlayerMobAdvancementEvents.step(atGrace, false, false, false, true);
+        assertEquals(ReboarderDecision.DROP, out.decision());
+    }
+
+    @Test
+    @DisplayName("below bedrock outranks the unloaded/dead path too")
+    void belowBedrock_beatsUnloadedCredit() {
+        // The other route to CREDIT: last seen off-deck, no live position. The bedrock test comes
+        // first, so a mob that transits and is then unloaded down there still doesn't credit.
+        ReboarderHit lastOff = new ReboarderHit(P, 0L, true, false, 1);
+        ReboarderStep out = PlayerMobAdvancementEvents.step(lastOff, null, false, false, true);
         assertEquals(ReboarderDecision.DROP, out.decision());
     }
 }

@@ -74,8 +74,38 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
         String modelName,
         boolean inPlot,
         boolean isUser,
-        boolean isImported
-    ) {}
+        boolean isImported,
+        int roomLength,
+        int roomWidth,
+        int roomHeight,
+        String roomMode
+    ) {
+        /** Back-compat shape for every category but PORTALS — no authored size or mode to show. */
+        public Entry(BlockPos worldPos, String name, int weight, String category,
+                     String modelId, String modelName,
+                     boolean inPlot, boolean isUser, boolean isImported) {
+            this(worldPos, name, weight, category, modelId, modelName,
+                inPlot, isUser, isImported, NO_SIZE, NO_SIZE, NO_SIZE, NO_MODE);
+        }
+
+        /** Back-compat shape from before portal rooms carried a mode. */
+        public Entry(BlockPos worldPos, String name, int weight, String category,
+                     String modelId, String modelName,
+                     boolean inPlot, boolean isUser, boolean isImported,
+                     int roomLength, int roomWidth, int roomHeight) {
+            this(worldPos, name, weight, category, modelId, modelName,
+                inPlot, isUser, isImported, roomLength, roomWidth, roomHeight, NO_MODE);
+        }
+    }
+
+    /**
+     * Sentinel for "this model has no authored size" — every category but portal rooms, whose plot
+     * box the author chooses rather than the kind fixing it.
+     */
+    public static final int NO_SIZE = -1;
+
+    /** Sentinel for "this model has no mode row" — everything but a portal room. */
+    public static final String NO_MODE = "";
 
     public static final Type<EditorPlotLabelsPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_plot_labels"));
@@ -106,6 +136,10 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             buf.writeBoolean(e.inPlot());
             buf.writeBoolean(e.isUser());
             buf.writeBoolean(e.isImported());
+            buf.writeVarInt(e.roomLength());
+            buf.writeVarInt(e.roomWidth());
+            buf.writeVarInt(e.roomHeight());
+            buf.writeUtf(e.roomMode(), 32);
         }
     }
 
@@ -123,8 +157,12 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             boolean inPlot = buf.readBoolean();
             boolean isUser = buf.readBoolean();
             boolean isImported = buf.readBoolean();
+            int roomLength = buf.readVarInt();
+            int roomWidth = buf.readVarInt();
+            int roomHeight = buf.readVarInt();
+            String roomMode = buf.readUtf(32);
             out.add(new Entry(pos, name, weight, category, modelId, modelName,
-                inPlot, isUser, isImported));
+                inPlot, isUser, isImported, roomLength, roomWidth, roomHeight, roomMode));
         }
         return new EditorPlotLabelsPacket(out);
     }

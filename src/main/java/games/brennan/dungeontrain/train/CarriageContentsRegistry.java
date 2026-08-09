@@ -299,6 +299,27 @@ public final class CarriageContentsRegistry {
     private static final String SELF_TOKEN = "<self>";
 
     /**
+     * Draw a sub-variant of a parent that is already known, rather than one that was just picked.
+     *
+     * <p>{@link #pick} is the only other way into a group roll, and it starts by choosing a parent
+     * from the world's contents pool. A portal corridor has no such choice to make — it is always
+     * the {@code portal} contents — but it still wants that parent's sub-variants. Without this it
+     * stamped {@code portal.nbt} and nothing else, because the group is only ever consulted on the
+     * pick path.</p>
+     *
+     * <p>{@code seed} decides the draw. The caller owns it, because the caller is what knows which
+     * copies of a thing must agree: a corridor and its underground twin are stamped by two separate
+     * calls and have to land on the same member or the crossing shows a seam, so they pass a seed
+     * derived from the portal pair rather than from either call site.</p>
+     *
+     * <p>Returns {@code parent} unchanged when it has no group sidecar.</p>
+     */
+    public static CarriageContents resolveSubVariant(CarriageContents parent, long seed,
+                                                     GateContext gateCtx) {
+        return resolveGroup(parent, new Random(seed), CarriageContentsAllowList.EMPTY, gateCtx);
+    }
+
+    /**
      * If {@code picked} has a group sidecar, draw one of its weighted members.
      * The pool is the synthetic self ({@link #SELF_WEIGHT}) + every explicit
      * member. The per-carriage-variant allow-list is NOT consulted at this

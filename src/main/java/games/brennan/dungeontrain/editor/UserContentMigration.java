@@ -54,6 +54,7 @@ public final class UserContentMigration {
         "pillars",
         "tunnels",
         "tracks",
+        "portals",
         "prefabs/loot",
         "prefabs/block_variants"
     );
