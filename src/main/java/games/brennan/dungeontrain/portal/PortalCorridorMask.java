@@ -158,8 +158,13 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
      */
     public static PortalCorridorMask forStructure(PortalStructure structure, CarriageDims dims,
                                                   PortalCarriageLayout layout, int plugDepth) {
+        // Each half off its own coordinate frame. The entry always stands beside the base room; the
+        // exit stands beside whichever tile this pair put it at, and its seal ring has to fill THAT
+        // room's cross-section rather than the base one's. Reading both off the same structure was
+        // right only while an exit could not move.
         return forCorridor(structure, dims, layout, plugDepth, PortalCarriageRole.ENTRY)
-            .plus(forCorridor(structure, dims, layout, plugDepth, PortalCarriageRole.EXIT));
+            .plus(forCorridor(structure.exitShadow(), dims, layout, plugDepth,
+                PortalCarriageRole.EXIT));
     }
 
     /**

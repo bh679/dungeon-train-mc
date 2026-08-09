@@ -105,9 +105,9 @@ public final class EditorPlotTeleport {
     }
 
     /** As {@link #dimensionCommandFor}, for how often the base pair's exit is walled off. */
-    public static String exitSealCommandFor(String category, String dir) {
+    public static String exitMoveCommandFor(String category, String dir) {
         if (!"PORTALS".equals(category)) return null;
-        return "dungeontrain editor portals exitseal " + dir;
+        return "dungeontrain editor portals exitmove " + dir;
     }
 
     /**

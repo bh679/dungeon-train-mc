@@ -583,10 +583,18 @@ public final class PortalCarriageBuilder {
                                                 games.brennan.dungeontrain.template.GateContext gateCtx) {
         String roomName = TrackVariantRegistry.pickName(
             TrackKind.PORTAL_ROOM, level.getSeed(), pairKey, gateCtx);
+        PortalRoomSettings settings = PortalRoomSettings.of(roomName);
+        // Where this pair stands its exit, decided here with everything else about the pair and then
+        // carried on the record — the same promise the mode and the room name make. Re-deciding it
+        // per tick, or per re-stamp, would move a player's way out from under them.
+        PortalRoomTiling.Tile exitTile = PortalExitSites.relocatedExitTile(
+            settings.effectiveExits(),
+            PortalExitSites.seedFor(level.getSeed(), pairKey, roomName),
+            PortalRoomTiling.MAX_RADIUS);
         return new PortalStructure(entryOrigin, roomName,
             PortalRoomTemplateStore.sizeOf(level, roomName, dims),
-            PortalRoomSettings.of(roomName),
-            PortalRoomTiling.base());
+            settings,
+            PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile);
     }
 
     /**
@@ -640,61 +648,6 @@ public final class PortalCarriageBuilder {
         }
 
         stampCorridors(level, structure, dims, pairKey);
-        sealOpposingDoorway(level, structure, dims, pairKey);
-    }
-
-    /**
-     * Wall off the way straight back out, for the portals {@link PortalRoomExits} says should make a
-     * player go and find one of the scattered copies instead — see
-     * {@link PortalExitSites#sealsOpposingDoor}.
-     *
-     * <h2>The wall goes in the room, never in the corridor</h2>
-     * <p>The obvious move — bricking up the exit twin's own doorway — would break the one thing the
-     * whole crossing rests on: a twin is <b>block-identical to the carriage it mirrors</b>, and a
-     * player who crossed into a corridor that did not match the one they left would see the seam. So
-     * the wall goes one block further out, in the room's own end column facing the corridor's mouth.
-     * That cell is already the corridor's by every rule that matters — {@link
-     * PortalCorridorMask#facedBy} calls it so, and {@code PortalRoomTiler.eachFaceCell} skips it, so
-     * the tiler's face work will not quietly undo this. It sits in the base tile, which is stamped
-     * once and never re-stamped by the sliding window, so no room copy overwrites it either.</p>
-     *
-     * <p><b>The entry corridor is never sealed.</b> Whatever a room does at its far end, the way a
-     * player came in is still open behind them — this is meant to commit somebody to exploring, not
-     * to trap them. Somebody who walks in from the train through the <i>exit</i> carriage arrives in
-     * the exit twin, opens its door and meets this wall; they can turn round and walk back across the
-     * midpoint onto the train, so that end is blocked rather than closed.</p>
-     *
-     * <p>Filled in the seal ring's own materials, because the ring immediately around this column
-     * already is that: it reads as the doorway having been bricked up, which is what happened.</p>
-     */
-    private static void sealOpposingDoorway(ServerLevel level, PortalStructure structure,
-                                            CarriageDims dims, int pairKey) {
-        if (!structure.mode().tiles()) return;
-        long seed = PortalExitSites.seedFor(level.getSeed(), pairKey, structure.roomName());
-        if (!PortalExitSites.sealsOpposingDoor(structure.exits(), seed)) return;
-
-        BlockPos exit = structure.exitOrigin(dims);
-        // One block into the room from the exit corridor's mouth, across the corridor's own
-        // cross-section — exactly the aperture sealCorridorMouth leaves open.
-        int planeX = exit.getX() - 1;
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for (int dz = 0; dz < dims.width(); dz++) {
-            for (int dy = 0; dy < dims.height(); dy++) {
-                int y = exit.getY() + dy;
-                // Evict before writing rather than clearing to air first: an authored shelf or chest
-                // standing in this column would otherwise break and drop, and a cell that becomes air
-                // even for an instant takes whatever was standing on it with it. Same rule
-                // applyRoomVariants learned the hard way.
-                pos.set(planeX, y, exit.getZ() + dz);
-                BlockState state = level.getBlockState(pos);
-                if (state.hasBlockEntity()) {
-                    SilentBlockOps.evictBlockEntity(level.getChunkAt(pos), pos);
-                }
-                level.setBlock(pos, dy == 0 ? POCKET_FLOOR : POCKET_SHELL, Block.UPDATE_ALL);
-            }
-        }
-        LOGGER.info("[DungeonTrain] Portal pair {} sealed its exit — the way on is one of the copies",
-            pairKey);
     }
 
     /**
@@ -712,8 +665,11 @@ public final class PortalCarriageBuilder {
      */
     public static void stampCorridors(ServerLevel level, PortalStructure structure,
                                       CarriageDims dims, int pairKey) {
+        // Each half off its own coordinate frame — see PortalCorridorMask#forStructure. The entry
+        // always stands beside the base room; the exit stands beside whichever tile this pair put it
+        // at, and needs that tile's room for its seal ring.
         stampCorridorHalf(level, structure, dims, pairKey, PortalCarriageRole.ENTRY);
-        stampCorridorHalf(level, structure, dims, pairKey, PortalCarriageRole.EXIT);
+        stampCorridorHalf(level, structure.exitShadow(), dims, pairKey, PortalCarriageRole.EXIT);
     }
 
     /**
@@ -1017,16 +973,18 @@ public final class PortalCarriageBuilder {
         int maxZ = Math.max(Math.max(origin.getZ() + dims.width(), roomOrigin.getZ() + roomSize.getZ()),
             structure.tiledMaxZ(dims, layout) + 1);
 
-        // An extra corridor outlives the tile it is anchored to (PortalExitCopies), so it can stand
-        // outside the tiled bounds — and something outside the footprint is something the erase never
-        // reaches and another pair may stamp into. Read off the same masks that place it, so the two
-        // cannot disagree about where it is.
-        BoundingBox copies = exitCopyMask(structure, dims).bounds();
-        if (copies != null) {
-            minX = Math.min(minX, copies.minX() - 1);
-            maxX = Math.max(maxX, copies.maxX() + 1);
-            minZ = Math.min(minZ, copies.minZ() - 1);
-            maxZ = Math.max(maxZ, copies.maxZ() + 1);
+        // Every corridor this structure owns, wherever it stands. An extra corridor outlives the tile
+        // it is anchored to (PortalExitCopies), and the pair's own exit can be beside another tile
+        // entirely (PortalStructure#exitTile) — so neither is bounded by the tiled rectangle or by
+        // the contiguous span the terms above assume. Something outside the footprint is something
+        // the erase never reaches and another pair may stamp into. Read off the same masks that place
+        // them, so the two cannot disagree about where they are.
+        BoundingBox corridors = allCorridorMask(structure, dims).bounds();
+        if (corridors != null) {
+            minX = Math.min(minX, corridors.minX() - PLUG_DEPTH);
+            maxX = Math.max(maxX, corridors.maxX() + PLUG_DEPTH);
+            minZ = Math.min(minZ, corridors.minZ() - 1);
+            maxZ = Math.max(maxZ, corridors.maxZ() + 1);
         }
 
         // One row below the floor as well as one past the top: Bedrock Lock skins both.

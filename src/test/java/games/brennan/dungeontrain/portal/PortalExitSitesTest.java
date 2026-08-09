@@ -218,17 +218,17 @@ class PortalExitSitesTest {
         }
     }
 
-    // ---- the sealed exit ----
+    // ---- the moved exit ----
 
-    private static PortalRoomExits sealed(int chance) {
+    private static PortalRoomExits moved(int chance) {
         return new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 8, chance);
     }
 
-    /** How many of a run of pairs seal their exit at this setting. */
-    private static int sealedOutOf(PortalRoomExits exits, int pairs) {
+    /** How many of a run of pairs stand their exit elsewhere at this setting. */
+    private static int movedOutOf(PortalRoomExits exits, int pairs) {
         int n = 0;
         for (int pairKey = 0; pairKey < pairs; pairKey++) {
-            if (PortalExitSites.sealsOpposingDoor(exits,
+            if (PortalExitSites.movesExit(exits,
                     PortalExitSites.seedFor(1234567L, pairKey, "labrynth"))) {
                 n++;
             }
@@ -237,63 +237,147 @@ class PortalExitSitesTest {
     }
 
     @Test
-    @DisplayName("Nought never seals and ten always does — the two ends of the dial are absolute")
+    @DisplayName("Nought never moves it and ten always does — the two ends of the dial are absolute")
     void theEndsOfTheScaleAreAbsolute() {
-        assertEquals(0, sealedOutOf(sealed(PortalRoomExits.SEAL_NEVER), 400));
-        assertEquals(400, sealedOutOf(sealed(PortalRoomExits.SEAL_ALWAYS), 400));
-        assertFalse(PortalExitSites.sealsOpposingDoor(null, SEED));
+        assertEquals(0, movedOutOf(moved(PortalRoomExits.MOVE_NEVER), 400));
+        assertEquals(400, movedOutOf(moved(PortalRoomExits.MOVE_ALWAYS), 400));
+        assertFalse(PortalExitSites.movesExit(null, SEED));
     }
 
     @Test
     @DisplayName("In between, the rate follows the dial")
     void theRateFollowsTheDial() {
         int pairs = 600;
-        int low = sealedOutOf(sealed(3), pairs);
-        int high = sealedOutOf(sealed(7), pairs);
-        assertTrue(low > pairs * 0.20 && low < pairs * 0.40, "3/10 sealed " + low + "/" + pairs);
-        assertTrue(high > pairs * 0.60 && high < pairs * 0.80, "7/10 sealed " + high + "/" + pairs);
+        int low = movedOutOf(moved(3), pairs);
+        int high = movedOutOf(moved(7), pairs);
+        assertTrue(low > pairs * 0.20 && low < pairs * 0.40, "3/10 moved " + low + "/" + pairs);
+        assertTrue(high > pairs * 0.60 && high < pairs * 0.80, "7/10 moved " + high + "/" + pairs);
         assertTrue(high > low);
     }
 
     @Test
-    @DisplayName("Only Random seals — the lattice is a walk you could work out in advance")
-    void onlyRandomSeals() {
+    @DisplayName("Only Random moves the exit — the lattice is a walk you could work out in advance")
+    void onlyRandomMovesTheExit() {
         for (PortalRoomExits.Kind kind : new PortalRoomExits.Kind[]{
                 PortalRoomExits.Kind.ON, PortalRoomExits.Kind.OFF}) {
-            assertEquals(0, sealedOutOf(new PortalRoomExits(kind, 8, PortalRoomExits.SEAL_ALWAYS), 200),
+            assertEquals(0, movedOutOf(new PortalRoomExits(kind, 8, PortalRoomExits.MOVE_ALWAYS), 200),
                 kind.name());
         }
     }
 
     @Test
     @DisplayName("A portal's answer never changes — walking out and back cannot re-roll it")
-    void sealIsFixedForThePair() {
+    void moveIsFixedForThePair() {
         long seed = PortalExitSites.seedFor(1234567L, 47, "labrynth");
-        boolean first = PortalExitSites.sealsOpposingDoor(sealed(5), seed);
+        boolean first = PortalExitSites.movesExit(moved(5), seed);
         for (int i = 0; i < 50; i++) {
-            assertEquals(first, PortalExitSites.sealsOpposingDoor(sealed(5), seed));
+            assertEquals(first, PortalExitSites.movesExit(moved(5), seed));
         }
         // And it is the pair that decides, not the room's other settings: changing the spacing must
-        // not silently open a sealed portal.
-        assertEquals(first, PortalExitSites.sealsOpposingDoor(
+        // not silently move a portal's exit back.
+        assertEquals(first, PortalExitSites.movesExit(
             new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 3, 5), seed));
     }
 
     @Test
-    @DisplayName("The seal draw does not track the site draws — they are salted apart")
-    void sealDoesNotCorrelateWithSites() {
-        // If the two shared a draw, every sealed portal would have the same site map shape as every
+    @DisplayName("The move draw does not track the site draws — they are salted apart")
+    void moveDoesNotCorrelateWithSites() {
+        // If the two shared a draw, every moved-exit portal would have the same site map shape as every
         // other, which would read as a pattern rather than as chance.
         int agree = 0;
         int pairs = 300;
         for (int pairKey = 0; pairKey < pairs; pairKey++) {
             long seed = PortalExitSites.seedFor(1234567L, pairKey, "labrynth");
-            boolean seals = PortalExitSites.sealsOpposingDoor(sealed(5), seed);
+            boolean moves = PortalExitSites.movesExit(moved(5), seed);
             boolean siteAtOneOne = !PortalExitSites.owedAt(random(2), new Tile(1, 1), seed).isEmpty();
-            if (seals == siteAtOneOne) agree++;
+            if (moves == siteAtOneOne) agree++;
         }
         double rate = agree / (double) pairs;
         assertTrue(rate > 0.35 && rate < 0.65, "the two draws agreed " + rate + " of the time");
+    }
+
+    // ---- where a moved exit lands ----
+
+    @Test
+    @DisplayName("A moved exit goes to a tile these same rules already owe an exit at")
+    void relocatedExitFollowsTheExistingRules() {
+        PortalRoomExits exits = new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 4,
+            PortalRoomExits.MOVE_ALWAYS);
+        int checked = 0;
+        for (int pairKey = 0; pairKey < 200; pairKey++) {
+            long seed = PortalExitSites.seedFor(1234567L, pairKey, "labrynth");
+            Tile tile = PortalExitSites.relocatedExitTile(exits, seed, PortalRoomTiling.MAX_RADIUS);
+            if (Tile.BASE.equals(tile)) continue;
+            checked++;
+            // No placement rule of its own: the tile it picks is one the site rules own.
+            assertTrue(PortalExitSites.owedAt(exits, tile, seed)
+                    .contains(new Site(tile, PortalCarriageRole.EXIT)),
+                "tile " + tile + " is not a site these rules owe an exit at");
+        }
+        assertTrue(checked > 150, "only " + checked + " pairs moved their exit at 10/10");
+    }
+
+    @Test
+    @DisplayName("It takes the nearest such tile, so the walk is the shortest the rules allow")
+    void relocatedExitTakesTheNearest() {
+        PortalRoomExits exits = new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 4,
+            PortalRoomExits.MOVE_ALWAYS);
+        for (int pairKey = 0; pairKey < 120; pairKey++) {
+            long seed = PortalExitSites.seedFor(1234567L, pairKey, "labrynth");
+            Tile chosen = PortalExitSites.relocatedExitTile(exits, seed, PortalRoomTiling.MAX_RADIUS);
+            if (Tile.BASE.equals(chosen)) continue;
+            int ring = Math.max(Math.abs(chosen.x()), Math.abs(chosen.z()));
+            // Nothing owed on any nearer ring.
+            for (int x = -ring + 1; x <= ring - 1; x++) {
+                for (int z = -ring + 1; z <= ring - 1; z++) {
+                    Tile nearer = new Tile(x, z);
+                    assertTrue(!PortalExitSites.owedAt(exits, nearer, seed)
+                            .contains(new Site(nearer, PortalCarriageRole.EXIT)),
+                        "a nearer exit site at " + nearer + " was passed over for " + chosen);
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Nothing owed in range means the exit stays where it has always been")
+    void relocatedExitFallsBackToBase() {
+        // Off owes nothing anywhere.
+        assertEquals(Tile.BASE, PortalExitSites.relocatedExitTile(
+            new PortalRoomExits(PortalRoomExits.Kind.OFF, 4, PortalRoomExits.MOVE_ALWAYS),
+            SEED, PortalRoomTiling.MAX_RADIUS));
+        // A dial at zero never moves it, however thickly the copies are scattered.
+        assertEquals(Tile.BASE, PortalExitSites.relocatedExitTile(
+            new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 2, PortalRoomExits.MOVE_NEVER),
+            SEED, PortalRoomTiling.MAX_RADIUS));
+        // And a radius with nothing inside it falls back rather than reaching further.
+        assertEquals(Tile.BASE, PortalExitSites.relocatedExitTile(
+            new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 4, PortalRoomExits.MOVE_ALWAYS),
+            SEED, 0));
+        assertEquals(Tile.BASE, PortalExitSites.relocatedExitTile(null, SEED, 5));
+    }
+
+    @Test
+    @DisplayName("Under the lattice a moved exit lands on a lattice point")
+    void relocatedExitUnderOn() {
+        // ON never moves an exit today (movesApply is Random-only), but the placement rule itself
+        // must still answer sensibly if that gate is ever widened.
+        PortalRoomExits lattice = new PortalRoomExits(PortalRoomExits.Kind.ON, 2, 0);
+        Tile tile = PortalExitSites.relocatedExitTile(lattice, SEED, PortalRoomTiling.MAX_RADIUS);
+        assertEquals(Tile.BASE, tile, "ON does not move its exit");
+    }
+
+    @Test
+    @DisplayName("A pair's exit stands in the same place every time it is asked")
+    void relocatedExitIsStable() {
+        PortalRoomExits exits = new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 4,
+            PortalRoomExits.MOVE_ALWAYS);
+        long seed = PortalExitSites.seedFor(1234567L, 47, "labrynth");
+        Tile first = PortalExitSites.relocatedExitTile(exits, seed, PortalRoomTiling.MAX_RADIUS);
+        for (int i = 0; i < 30; i++) {
+            assertEquals(first,
+                PortalExitSites.relocatedExitTile(exits, seed, PortalRoomTiling.MAX_RADIUS));
+        }
     }
 
     @Test

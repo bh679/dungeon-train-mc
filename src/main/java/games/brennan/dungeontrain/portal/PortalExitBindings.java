@@ -171,6 +171,21 @@ public final class PortalExitBindings {
      * Sable worldgen deadlock, and the cost of saying no is only that the player lands where they
      * always used to.</p>
      */
+    /**
+     * True when it is safe to put somebody in the corridor whose origin is {@code origin}.
+     *
+     * <p>Public because more than one thing needs to ask now. The original twin never has to — it is
+     * stamped in the carriage's own chunk columns, which is the guarantee the crossing rests on — but
+     * a copy is somewhere else, and so is a pair's own exit once {@link PortalRoomExits} has stood it
+     * beside another tile.</p>
+     */
+    public static boolean corridorLoaded(ServerLevel level, PortalFrames.Origin origin,
+                                         CarriageDims dims) {
+        if (origin == null) return false;
+        return chunksLoaded(level,
+            BlockPos.containing(origin.x(), origin.y(), origin.z()), dims);
+    }
+
     private static boolean chunksLoaded(ServerLevel level, BlockPos origin, CarriageDims dims) {
         if (level == null) return false;
         int length = PortalCorridorSize.corridorLength(dims);

@@ -57,8 +57,8 @@ public final class PortalExitSites {
     private static final long SALT_PRESENT = 0x5DEECE66DL;
     private static final long SALT_ROLE = 0x2545F4914F6CDD1DL;
 
-    /** And the sealed-exit roll from correlating with either — it is asked of the pair, not a tile. */
-    private static final long SALT_SEAL = 0x8EBC6AF09C88C6E3L;
+    /** And the moved-exit roll from correlating with either — it is asked of the pair, not a tile. */
+    private static final long SALT_MOVE = 0x8EBC6AF09C88C6E3L;
 
     /** Odd constants, so the tile coordinates cannot collapse onto each other before mixing. */
     private static final long PRIME_X = 0x9E3779B97F4A7C15L;
@@ -125,25 +125,73 @@ public final class PortalExitSites {
     }
 
     /**
-     * Whether this portal walls off the base pair's exit, so the only ways onward are the copies a
-     * player has to go and find.
+     * Whether this portal stands its <b>real</b> exit corridor somewhere other than directly opposite
+     * the room a player arrives in.
      *
      * <p>One draw per <b>pair</b>, not per tile: it is a fact about this portal, decided once and
-     * true for as long as it stands. A room that re-rolled it would open and close its own exit
-     * behind a player's back, which reads as a fault rather than a mechanic — and the structure is
-     * re-stamped from scratch every time the train drifts far enough, so "decided once" has to mean
-     * "a pure function of the pair" rather than "remembered".</p>
+     * true for as long as it stands. A room that re-rolled it would move its own way out behind a
+     * player's back, which reads as a fault rather than a mechanic — and the structure is re-stamped
+     * from scratch every time the train drifts far enough, so "decided once" has to mean "a pure
+     * function of the pair" rather than "remembered".</p>
      *
-     * <p>Only under {@link PortalRoomExits.Kind#RANDOM}, and never at {@code 0}. Sealing the way out
-     * is only fair when there is something unpredictable to find; see
-     * {@link PortalRoomExits#sealsApply}.</p>
+     * <p>Only under {@link PortalRoomExits.Kind#RANDOM}, and never at {@code 0}. Hiding the way
+     * onward is only fair when there is something unpredictable to find; see
+     * {@link PortalRoomExits#movesApply}.</p>
      */
-    public static boolean sealsOpposingDoor(PortalRoomExits exits, long seed) {
+    public static boolean movesExit(PortalRoomExits exits, long seed) {
         if (exits == null) return false;
-        int chance = exits.effectiveSealChance();
-        if (chance <= PortalRoomExits.SEAL_NEVER) return false;
-        if (chance >= PortalRoomExits.SEAL_ALWAYS) return true;
-        return Math.floorMod(mix(seed ^ SALT_SEAL), PortalRoomExits.SEAL_ALWAYS) < chance;
+        int chance = exits.effectiveMoveChance();
+        if (chance <= PortalRoomExits.MOVE_NEVER) return false;
+        if (chance >= PortalRoomExits.MOVE_ALWAYS) return true;
+        return Math.floorMod(mix(seed ^ SALT_MOVE), PortalRoomExits.MOVE_ALWAYS) < chance;
+    }
+
+    /**
+     * Which tile this pair's real exit corridor stands beside — {@link Tile#BASE} for the ordinary
+     * arrangement, directly opposite the room a player arrives in.
+     *
+     * <p><b>It follows the rules that already exist.</b> The exit does not get a placement rule of
+     * its own: it goes to the nearest tile this setting <i>already owes an exit corridor at</i>, by
+     * the same lattice or one-in-X roll that scatters the copies. So there is one thing to reason
+     * about rather than two, the density knob tunes both together, and a room tuned to scatter
+     * corridors thickly finds its exit sooner without anybody wiring that up.</p>
+     *
+     * <p>Nearest first, ties broken on coordinates, so the answer is deterministic rather than
+     * dependent on iteration order — the exit is somewhere a player has to look for, not somewhere
+     * that changes.</p>
+     *
+     * <p><b>Bounded by {@code radius}</b>, and {@link Tile#BASE} when nothing is owed inside it. Past
+     * the tiling window the exit's room is not built at all, so its mouth would open onto the empty
+     * basement — a way out that drops you out of the world is worse than one that is simply where it
+     * has always been.</p>
+     */
+    public static Tile relocatedExitTile(PortalRoomExits exits, long seed, int radius) {
+        if (exits == null || !movesExit(exits, seed)) return Tile.BASE;
+        for (int ring = 1; ring <= radius; ring++) {
+            Tile found = firstExitOnRing(exits, seed, ring);
+            if (found != null) return found;
+        }
+        return Tile.BASE;
+    }
+
+    /**
+     * The first tile on the Chebyshev ring at {@code ring} that owes an exit corridor, scanned in a
+     * fixed coordinate order so two runs agree.
+     *
+     * <p>Ring by ring rather than a sorted sweep of the whole square: it stops at the first hit, and
+     * for a densely scattered room that is almost always ring one.</p>
+     */
+    private static Tile firstExitOnRing(PortalRoomExits exits, long seed, int ring) {
+        for (int x = -ring; x <= ring; x++) {
+            for (int z = -ring; z <= ring; z++) {
+                if (Math.max(Math.abs(x), Math.abs(z)) != ring) continue;
+                Tile tile = new Tile(x, z);
+                if (owedAt(exits, tile, seed).contains(new Site(tile, PortalCarriageRole.EXIT))) {
+                    return tile;
+                }
+            }
+        }
+        return null;
     }
 
     /**

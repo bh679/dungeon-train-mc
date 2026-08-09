@@ -656,6 +656,17 @@ public final class PortalCarriageEvents {
                 continue;
             }
 
+            // Nor into a corridor the world has not got loaded. The original twin is safe by
+            // construction — it sits in the carriage's own chunk columns — but a pair that stood its
+            // exit beside another tile, or a player bound to a copy, can be sent somewhere a long way
+            // off. Refusing means they walk through the carriage as though it were an ordinary one;
+            // teleporting them anyway means dropping them through a floor that has not arrived.
+            if (move.toFrame() == PortalFrames.FRAME_TWIN
+                && !PortalExitBindings.corridorLoaded(level,
+                    boundTwin != null ? boundTwin : frames.twin(), dims)) {
+                continue;
+            }
+
             // Coming out: remember which copy of the room they left from. BASE clears the binding,
             // so a trip back through the original twin puts them at the start again — which is what
             // a player who deliberately walked back to it has asked for.
@@ -883,14 +894,14 @@ public final class PortalCarriageEvents {
         int maxZ = Math.max(origin.getZ() + dims.width() + slackZ,
             structure.tiledMaxZ(dims, layout) + 2);
 
-        // Read off the masks that place the copies, so this cannot disagree with them about where
-        // one is.
-        BoundingBox copies = PortalCarriageBuilder.exitCopyMask(structure, dims).bounds();
-        if (copies != null) {
-            minX = Math.min(minX, copies.minX() - 1);
-            maxX = Math.max(maxX, copies.maxX() + 2);
-            minZ = Math.min(minZ, copies.minZ() - 1);
-            maxZ = Math.max(maxZ, copies.maxZ() + 2);
+        // Read off the masks that place them, so this cannot disagree about where a corridor is —
+        // the extra copies, and the pair's own exit when it stands beside another tile entirely.
+        BoundingBox corridors = PortalCarriageBuilder.allCorridorMask(structure, dims).bounds();
+        if (corridors != null) {
+            minX = Math.min(minX, corridors.minX() - 1);
+            maxX = Math.max(maxX, corridors.maxX() + 2);
+            minZ = Math.min(minZ, corridors.minZ() - 1);
+            maxZ = Math.max(maxZ, corridors.maxZ() + 2);
         }
 
         return new AABB(minX, origin.getY() - 1, minZ,

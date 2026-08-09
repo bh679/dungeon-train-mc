@@ -30,11 +30,18 @@ import java.util.Locale;
  * the encoding, and this class owns its own segment's grammar: {@code on}, {@code random:12},
  * {@code off}.</p>
  *
+ * <h2>The exit can stand somewhere else</h2>
+ * <p>{@link #moveChance} is a separate 0..10 dial: how often a portal puts its <b>real</b> exit
+ * corridor somewhere other than directly opposite the room you arrive in, so the way onward is a
+ * corridor you have to go and find. Where it lands follows the rules above rather than a second rule
+ * of its own — the nearest tile these settings already owe an exit at; see
+ * {@link PortalExitSites#relocatedExitTile}.</p>
+ *
  * @param kind        how copies are chosen
  * @param every       the {@code X} in "every X tiles" / "one tile in X"
- * @param sealChance  how often a {@link Kind#RANDOM} room walls off the base pair's exit, 0..10
+ * @param moveChance  how often a {@link Kind#RANDOM} room stands its real exit elsewhere, 0..10
  */
-public record PortalRoomExits(Kind kind, int every, int sealChance) {
+public record PortalRoomExits(Kind kind, int every, int moveChance) {
 
     /** How the extra corridors are chosen. */
     public enum Kind {
@@ -132,31 +139,31 @@ public record PortalRoomExits(Kind kind, int every, int sealChance) {
     public static final int ENTRY_SHARE = 25;
 
     /**
-     * The top of the sealed-exit scale: {@code 0} never, {@code SEAL_ALWAYS} always.
+     * The top of the moved-exit scale: {@code 0} never, {@code MOVE_ALWAYS} always.
      *
      * <p>Ten rather than a hundred because it is a dial an author turns, not a probability they
      * calculate — "seven out of ten portals" is a sentence, "70%" invites tuning it to 68.</p>
      */
-    public static final int SEAL_ALWAYS = 10;
+    public static final int MOVE_ALWAYS = 10;
 
-    /** What a room says about sealing when it says nothing: never. */
-    public static final int SEAL_NEVER = 0;
+    /** What a room says about moving its exit when it says nothing: never. */
+    public static final int MOVE_NEVER = 0;
 
     /** What every room behaved as before this existed: no extra corridors. */
-    public static final PortalRoomExits OFF = new PortalRoomExits(Kind.OFF, DEFAULT_EVERY, SEAL_NEVER);
+    public static final PortalRoomExits OFF = new PortalRoomExits(Kind.OFF, DEFAULT_EVERY, MOVE_NEVER);
 
     /** The lattice at its default spacing — what an Endless Repetition room gets when it says nothing. */
-    public static final PortalRoomExits ON = new PortalRoomExits(Kind.ON, DEFAULT_EVERY, SEAL_NEVER);
+    public static final PortalRoomExits ON = new PortalRoomExits(Kind.ON, DEFAULT_EVERY, MOVE_NEVER);
 
     public PortalRoomExits {
         if (kind == null) kind = Kind.ON;
         every = clampEvery(every);
-        sealChance = clampSeal(sealChance);
+        moveChance = clampMove(moveChance);
     }
 
-    /** The pair this record was before the sealed exit existed — never seals. */
+    /** The pair this record was before the moved exit existed — its exit never moves. */
     public PortalRoomExits(Kind kind, int every) {
-        this(kind, every, SEAL_NEVER);
+        this(kind, every, MOVE_NEVER);
     }
 
     /** {@code every} brought inside {@link #MIN_EVERY}..{@link #MAX_EVERY}. */
@@ -164,9 +171,9 @@ public record PortalRoomExits(Kind kind, int every, int sealChance) {
         return Math.max(MIN_EVERY, Math.min(MAX_EVERY, every));
     }
 
-    /** {@code sealChance} brought inside {@link #SEAL_NEVER}..{@link #SEAL_ALWAYS}. */
-    public static int clampSeal(int chance) {
-        return Math.max(SEAL_NEVER, Math.min(SEAL_ALWAYS, chance));
+    /** {@code moveChance} brought inside {@link #MOVE_NEVER}..{@link #MOVE_ALWAYS}. */
+    public static int clampMove(int chance) {
+        return Math.max(MOVE_NEVER, Math.min(MOVE_ALWAYS, chance));
     }
 
     /** True when this lays any copies at all. */
@@ -175,20 +182,20 @@ public record PortalRoomExits(Kind kind, int every, int sealChance) {
     }
 
     /**
-     * True when the sealed-exit control means anything here — {@link Kind#RANDOM} alone.
+     * True when the moved-exit control means anything here — {@link Kind#RANDOM} alone.
      *
-     * <p>Sealing the way straight back out is only fair when there is something unpredictable to go
+     * <p>Standing the exit somewhere else is only fair when there is something unpredictable to go
      * and find. Under {@link Kind#ON} the copies are a lattice, so a walled exit would send a player
      * on a walk whose length they could work out in advance; under {@link Kind#OFF} it would wall the
      * only way onward there is.</p>
      */
-    public boolean sealsApply() {
+    public boolean movesApply() {
         return kind == Kind.RANDOM;
     }
 
     /** How often this room walls off the base pair's exit, 0..10, or 0 where the control is moot. */
-    public int effectiveSealChance() {
-        return sealsApply() ? sealChance : SEAL_NEVER;
+    public int effectiveMoveChance() {
+        return movesApply() ? moveChance : MOVE_NEVER;
     }
 
     /**
@@ -201,13 +208,13 @@ public record PortalRoomExits(Kind kind, int every, int sealChance) {
         String text = segment.trim();
         if (text.isEmpty()) return ON;
 
-        // kind[:every[:seal]] — every part after the first is optional, so every tag written before
+        // kind[:every[:move]] — every part after the first is optional, so every tag written before
         // that part existed still reads, to the default for the ones it does not name.
         String[] parts = text.split(SPACING_SEPARATOR, -1);
         return new PortalRoomExits(
             Kind.parse(parts[0]),
             parts.length > 1 ? parseInt(parts[1], DEFAULT_EVERY) : DEFAULT_EVERY,
-            parts.length > 2 ? parseInt(parts[2], SEAL_NEVER) : SEAL_NEVER);
+            parts.length > 2 ? parseInt(parts[2], MOVE_NEVER) : MOVE_NEVER);
     }
 
     /** A number from the tag, or {@code fallback} when it is missing or not a number. */
@@ -224,18 +231,18 @@ public record PortalRoomExits(Kind kind, int every, int sealChance) {
      *
      * <p>Each trailing part is written only when it would change something, so a room that simply
      * wants copies round-trips as the bare {@code on} it reads most clearly as, and every tag written
-     * before the sealed exit existed is re-written unchanged. {@link Kind#OFF} drops both — spacing
-     * nothing, and sealing the way out of a room with no other way out, are not settings.</p>
+     * before the moved exit existed is re-written unchanged. {@link Kind#OFF} drops both — spacing
+     * nothing, and moving the only way out of a room to somewhere it cannot go, are not settings.</p>
      *
-     * <p>The parts are positional, so a seal cannot be written without a spacing in front of it; at
+     * <p>The parts are positional, so a move cannot be written without a spacing in front of it; at
      * its default the spacing goes in as the placeholder, which {@link #parse} reads back as the same
      * default.</p>
      */
     public String id() {
         if (!lays()) return kind.id();
-        int seal = effectiveSealChance();
-        if (seal != SEAL_NEVER) {
-            return kind.id() + SPACING_SEPARATOR + every + SPACING_SEPARATOR + seal;
+        int move = effectiveMoveChance();
+        if (move != MOVE_NEVER) {
+            return kind.id() + SPACING_SEPARATOR + every + SPACING_SEPARATOR + move;
         }
         if (every == DEFAULT_EVERY) return kind.id();
         return kind.id() + SPACING_SEPARATOR + every;
@@ -246,20 +253,20 @@ public record PortalRoomExits(Kind kind, int every, int sealChance) {
         return kind.displayName();
     }
 
-    /** The kind after this one, wrapping, at the same spacing and seal. */
+    /** The kind after this one, wrapping, at the same spacing and move chance. */
     public PortalRoomExits next() {
-        return new PortalRoomExits(kind.next(), every, sealChance);
+        return new PortalRoomExits(kind.next(), every, moveChance);
     }
 
     public PortalRoomExits withKind(Kind newKind) {
-        return new PortalRoomExits(newKind, every, sealChance);
+        return new PortalRoomExits(newKind, every, moveChance);
     }
 
     public PortalRoomExits withEvery(int newEvery) {
-        return new PortalRoomExits(kind, newEvery, sealChance);
+        return new PortalRoomExits(kind, newEvery, moveChance);
     }
 
-    public PortalRoomExits withSealChance(int newChance) {
+    public PortalRoomExits withMoveChance(int newChance) {
         return new PortalRoomExits(kind, every, newChance);
     }
 }

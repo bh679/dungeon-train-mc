@@ -100,9 +100,9 @@ public final class EditorPlotLabelsRenderer {
         EXIT_EVERY_INC,
         EXIT_EVERY_TYPE,
         /** The stepper for how often the base pair's exit is walled off. */
-        EXIT_SEAL_DEC,
-        EXIT_SEAL_INC,
-        EXIT_SEAL_TYPE
+        EXIT_MOVE_DEC,
+        EXIT_MOVE_INC,
+        EXIT_MOVE_TYPE
     }
 
     /**
@@ -115,7 +115,7 @@ public final class EditorPlotLabelsRenderer {
      */
     public enum RowKind {
         NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, ROOM_CONTENTS, EXITS, EXIT_EVERY,
-        EXIT_SEAL, ENTER, ACTION, CONTENTS
+        EXIT_MOVE, ENTER, ACTION, CONTENTS
     }
 
     /** The rows {@code entry} shows, top to bottom. */
@@ -134,7 +134,7 @@ public final class EditorPlotLabelsRenderer {
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
         if (hasExitsRow(entry)) buf[n++] = RowKind.EXITS;
         if (hasExitEveryRow(entry)) buf[n++] = RowKind.EXIT_EVERY;
-        if (hasExitSealRow(entry)) buf[n++] = RowKind.EXIT_SEAL;
+        if (hasExitMoveRow(entry)) buf[n++] = RowKind.EXIT_MOVE;
         if (hasEnterRow(entry)) buf[n++] = RowKind.ENTER;
         if (hasActionRow(entry)) buf[n++] = RowKind.ACTION;
         if (hasContentsButton(entry)) buf[n++] = RowKind.CONTENTS;
@@ -266,22 +266,22 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /**
-     * Whether the sealed-exit stepper shows: only under Random.
+     * Whether the moved-exit stepper shows: only under Random.
      *
      * <p>Walling off the way straight back out is only fair when there is something unpredictable to
      * go and find. Under the lattice a player could work the walk out in advance; under Off it would
      * wall the only way onward there is.</p>
      */
-    public static boolean hasExitSealRow(EditorPlotLabelsPacket.Entry entry) {
+    public static boolean hasExitMoveRow(EditorPlotLabelsPacket.Entry entry) {
         return hasExitsRow(entry)
             && games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
-                .exits().sealsApply();
+                .exits().movesApply();
     }
 
-    /** What the sealed-exit stepper reads, e.g. {@code "Sealed exit: 7/10"}. */
-    public static String exitSealLabel(String modeTag) {
-        return "Sealed exit: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .exits().sealChance() + "/10";
+    /** What the moved-exit stepper reads, e.g. {@code "Moved exit: 7/10"}. */
+    public static String exitMoveLabel(String modeTag) {
+        return "Moved exit: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .exits().moveChance() + "/10";
     }
 
     /**
@@ -478,10 +478,10 @@ public final class EditorPlotLabelsRenderer {
         if (hasExitsRow(entry)) {
             w = Math.max(w, measure.applyAsInt(exitsLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
-        if (hasExitSealRow(entry)) {
+        if (hasExitMoveRow(entry)) {
             // The longest of the portal-room labels after Walls — the arrows either side leave it
             // only the middle third, so the panel has to be sized for it or it clips.
-            w = Math.max(w, measure.applyAsInt(exitSealLabel(entry.roomMode())) * 3 * TEXT_SCALE
+            w = Math.max(w, measure.applyAsInt(exitMoveLabel(entry.roomMode())) * 3 * TEXT_SCALE
                 + 2 * PAD_X);
         }
         return w / 2.0;
@@ -593,8 +593,8 @@ public final class EditorPlotLabelsRenderer {
             case EXITS -> CellKind.EXITS_CYCLE;
             case EXIT_EVERY -> stepperCell(hitX, halfW,
                 CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC, CellKind.EXIT_EVERY_TYPE);
-            case EXIT_SEAL -> stepperCell(hitX, halfW,
-                CellKind.EXIT_SEAL_DEC, CellKind.EXIT_SEAL_INC, CellKind.EXIT_SEAL_TYPE);
+            case EXIT_MOVE -> stepperCell(hitX, halfW,
+                CellKind.EXIT_MOVE_DEC, CellKind.EXIT_MOVE_INC, CellKind.EXIT_MOVE_TYPE);
             case ENTER -> CellKind.BUTTON_ENTER_INSIDE;
             case ACTION -> actionRowCell(hitX, halfW);
             case CONTENTS -> CellKind.BUTTON_CONTENTS;
@@ -793,15 +793,15 @@ public final class EditorPlotLabelsRenderer {
                 }
                 // How often this room walls off the base pair's exit, so the only ways onward are
                 // the copies. Random only — the lattice is predictable enough to walk.
-                case EXIT_SEAL -> {
+                case EXIT_MOVE -> {
                     drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY, hovered,
-                        CellKind.EXIT_SEAL_DEC, CellKind.EXIT_SEAL_INC);
-                    if (hovered == CellKind.EXIT_SEAL_TYPE) {
+                        CellKind.EXIT_MOVE_DEC, CellKind.EXIT_MOVE_INC);
+                    if (hovered == CellKind.EXIT_MOVE_TYPE) {
                         double third = (halfW * 2.0) / 3.0;
                         drawQuad(ps, buffer, -halfW + third + 0.005, rBot + 0.005,
                             halfW - third - 0.005, rTop - 0.005, HOVER_COLOR);
                     }
-                    drawCenteredText(ps, buffer, font, exitSealLabel(entry.roomMode()),
+                    drawCenteredText(ps, buffer, font, exitMoveLabel(entry.roomMode()),
                         0, rCY, WEIGHT_COLOR);
                 }
                 // Enter — full-width button, visible only when the player is already inside the

@@ -182,33 +182,33 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("Random grows a sealed-exit stepper under the spacing; the lattice does not")
-    void exitSealRowOnlyUnderRandom() {
+    @DisplayName("Random grows a moved-exit stepper under the spacing; the lattice does not")
+    void exitMoveRowOnlyUnderRandom() {
         EditorPlotLabelsPacket.Entry random =
             entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition/dynamic/off/random:4:6");
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.ROOM_CONTENTS,
-                RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.EXIT_SEAL, RowKind.ENTER, RowKind.ACTION},
+                RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.EXIT_MOVE, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(random));
-        assertEquals("Sealed exit: 6/10", EditorPlotLabelsRenderer.exitSealLabel(random.roomMode()));
+        assertEquals("Moved exit: 6/10", EditorPlotLabelsRenderer.exitMoveLabel(random.roomMode()));
 
-        // The lattice is a walk a player could work out in advance, so it never seals.
-        assertFalse(EditorPlotLabelsRenderer.hasExitSealRow(
+        // The lattice is a walk a player could work out in advance, so its exit never moves.
+        assertFalse(EditorPlotLabelsRenderer.hasExitMoveRow(
             entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition")));
-        assertFalse(EditorPlotLabelsRenderer.hasExitSealRow(
+        assertFalse(EditorPlotLabelsRenderer.hasExitMoveRow(
             entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition/exact/off/off")));
-        assertFalse(EditorPlotLabelsRenderer.hasExitSealRow(
+        assertFalse(EditorPlotLabelsRenderer.hasExitMoveRow(
             entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock")));
 
         // Its thirds hit their own cells, and the row above still resolves to itself.
         RowKind[] rows = EditorPlotLabelsRenderer.rows(random);
         double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
-        double y = rowCentreY(random, indexOf(rows, RowKind.EXIT_SEAL));
-        assertEquals(CellKind.EXIT_SEAL_DEC,
+        double y = rowCentreY(random, indexOf(rows, RowKind.EXIT_MOVE));
+        assertEquals(CellKind.EXIT_MOVE_DEC,
             EditorPlotLabelsRenderer.cellAt(random, halfW, -halfW + 0.05, y));
-        assertEquals(CellKind.EXIT_SEAL_TYPE, EditorPlotLabelsRenderer.cellAt(random, halfW, 0.0, y));
-        assertEquals(CellKind.EXIT_SEAL_INC,
+        assertEquals(CellKind.EXIT_MOVE_TYPE, EditorPlotLabelsRenderer.cellAt(random, halfW, 0.0, y));
+        assertEquals(CellKind.EXIT_MOVE_INC,
             EditorPlotLabelsRenderer.cellAt(random, halfW, halfW - 0.05, y));
         assertEquals(CellKind.EXIT_EVERY_TYPE, EditorPlotLabelsRenderer.cellAt(random, halfW, 0.0,
             rowCentreY(random, indexOf(rows, RowKind.EXIT_EVERY))));

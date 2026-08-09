@@ -151,6 +151,14 @@ public final class PortalExitCopyTiler {
         for (Tile tile : structure.tiling().tiles()) {
             for (Site site : PortalExitSites.owedAt(structure.exits(), tile, seed)) {
                 if (standing.has(site)) continue;
+                // Never a copy where the pair's REAL exit already stands. A moved exit goes to a site
+                // these same rules chose (PortalExitSites#relocatedExitTile), so the rules owe a copy
+                // there too — and one laid there would be tracked as a copy and eventually retired,
+                // erasing the only way onward.
+                if (site.role() == PortalCarriageRole.EXIT
+                    && site.tile().equals(structure.exitTile())) {
+                    continue;
+                }
                 if (site.chebyshevTo(centre) > radius) continue;
                 if (best != null && nearestTo(centre).compare(site, best) >= 0) continue;
                 if (!canStamp(level, dims, structure, site, neighbours)) continue;

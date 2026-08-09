@@ -476,15 +476,15 @@ public final class EditorCommand {
                             IntegerArgumentType.getInteger(ctx, "tiles")))))
                 // How often a Random room walls off the base pair's exit, so the only ways onward
                 // are the copies. 0 never, 10 always.
-                .then(Commands.literal("exitseal")
+                .then(Commands.literal("exitmove")
                     .then(Commands.literal("inc")
-                        .executes(ctx -> runPortalRoomExitSealStep(ctx.getSource(), +1)))
+                        .executes(ctx -> runPortalRoomExitMoveStep(ctx.getSource(), +1)))
                     .then(Commands.literal("dec")
-                        .executes(ctx -> runPortalRoomExitSealStep(ctx.getSource(), -1)))
+                        .executes(ctx -> runPortalRoomExitMoveStep(ctx.getSource(), -1)))
                     .then(Commands.argument("chance", IntegerArgumentType.integer(
-                            games.brennan.dungeontrain.portal.PortalRoomExits.SEAL_NEVER,
-                            games.brennan.dungeontrain.portal.PortalRoomExits.SEAL_ALWAYS))
-                        .executes(ctx -> runPortalRoomExitSeal(ctx.getSource(),
+                            games.brennan.dungeontrain.portal.PortalRoomExits.MOVE_NEVER,
+                            games.brennan.dungeontrain.portal.PortalRoomExits.MOVE_ALWAYS))
+                        .executes(ctx -> runPortalRoomExitMove(ctx.getSource(),
                             IntegerArgumentType.getInteger(ctx, "chance")))))
                 // Sub-variants: one named room standing for several designs, drawn by weight.
                 .then(portalRoomGroupNode()))
@@ -5672,27 +5672,27 @@ public final class EditorCommand {
     }
 
     /** Nudge how often the room walls off its exit, by {@code delta}. */
-    private static int runPortalRoomExitSealStep(CommandSourceStack source, int delta) {
+    private static int runPortalRoomExitMoveStep(CommandSourceStack source, int delta) {
         String name = portalRoomPlotUnderPlayer(source);
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return runPortalRoomExitSeal(source, current.exits().sealChance() + delta);
+        return runPortalRoomExitMove(source, current.exits().moveChance() + delta);
     }
 
     /**
-     * {@code /dt editor portals exitseal <0-10>} — how often this room walls off the base pair's
+     * {@code /dt editor portals exitmove <0-10>} — how often this room walls off the base pair's
      * exit, so the only ways onward are the scattered copies. 0 never, 10 always.
      *
      * <p>Clamped rather than rejected, like the other numeric portal settings.</p>
      */
-    private static int runPortalRoomExitSeal(CommandSourceStack source, int chance) {
+    private static int runPortalRoomExitMove(CommandSourceStack source, int chance) {
         String name = portalRoomPlotUnderPlayer(source);
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
         return applyPortalRoomSettings(source, name,
-            current.withExits(current.exits().withSealChance(chance)));
+            current.withExits(current.exits().withMoveChance(chance)));
     }
 
     /** {@code /dt editor portals contents <off|fit|exact|tile>} — set it outright. */
@@ -5764,8 +5764,8 @@ public final class EditorCommand {
         String exits = settings.exitsApply()
             ? ", exits: " + settings.exits().displayName()
                 + (settings.exits().lays() ? " (every " + settings.exits().every() + ")" : "")
-                + (settings.exits().effectiveSealChance() > 0
-                    ? ", sealed exit " + settings.exits().sealChance() + "/10" : "")
+                + (settings.exits().effectiveMoveChance() > 0
+                    ? ", sealed exit " + settings.exits().moveChance() + "/10" : "")
             : "";
         source.sendSuccess(() -> Component.literal(
             "Portal room '" + name + "' walls: " + settings.mode().displayName() + copies + contents

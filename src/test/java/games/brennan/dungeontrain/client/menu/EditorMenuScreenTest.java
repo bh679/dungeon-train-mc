@@ -317,25 +317,25 @@ final class EditorMenuScreenTest {
     }
 
     @Test
-    @DisplayName("portals: the sealed-exit stepper shows under Random alone")
-    void portals_exitSealCommands() {
-        CommandMenuEntry.Triple seal = (CommandMenuEntry.Triple)
-            EditorMenuScreen.exitSealTripleFor("endless_repetition/exact/off/random:8:7");
-        assertEquals("Sealed exit: 7/10", seal.middleEntry().label());
-        assertEquals("dungeontrain editor portals exitseal dec", commandFor(seal.leftEntry()));
-        assertEquals("dungeontrain editor portals exitseal inc", commandFor(seal.rightEntry()));
-        assertEquals("dungeontrain editor portals exitseal", typePrefixFor(seal.middleEntry()));
+    @DisplayName("portals: the moved-exit stepper shows under Random alone")
+    void portals_exitMoveCommands() {
+        CommandMenuEntry.Triple move = (CommandMenuEntry.Triple)
+            EditorMenuScreen.exitMoveTripleFor("endless_repetition/exact/off/random:8:7");
+        assertEquals("Moved exit: 7/10", move.middleEntry().label());
+        assertEquals("dungeontrain editor portals exitmove dec", commandFor(move.leftEntry()));
+        assertEquals("dungeontrain editor portals exitmove inc", commandFor(move.rightEntry()));
+        assertEquals("dungeontrain editor portals exitmove", typePrefixFor(move.middleEntry()));
 
         // It still shows at zero — that is the dial's own "never", not an absent control.
-        assertEquals("Sealed exit: 0/10", ((CommandMenuEntry.Triple)
-            EditorMenuScreen.exitSealTripleFor("endless_repetition/exact/off/random")).
+        assertEquals("Moved exit: 0/10", ((CommandMenuEntry.Triple)
+            EditorMenuScreen.exitMoveTripleFor("endless_repetition/exact/off/random")).
             middleEntry().label());
 
         // …but never under the lattice, under Off, or on a room with no Exits control at all.
-        assertNull(EditorMenuScreen.exitSealTripleFor("endless_repetition"));
-        assertNull(EditorMenuScreen.exitSealTripleFor("endless_repetition/exact/off/off"));
-        assertNull(EditorMenuScreen.exitSealTripleFor("bedrock_lock"));
-        assertNull(EditorMenuScreen.exitSealTripleFor(
+        assertNull(EditorMenuScreen.exitMoveTripleFor("endless_repetition"));
+        assertNull(EditorMenuScreen.exitMoveTripleFor("endless_repetition/exact/off/off"));
+        assertNull(EditorMenuScreen.exitMoveTripleFor("bedrock_lock"));
+        assertNull(EditorMenuScreen.exitMoveTripleFor(
             games.brennan.dungeontrain.net.EditorStatusPacket.NO_MODE));
     }
 

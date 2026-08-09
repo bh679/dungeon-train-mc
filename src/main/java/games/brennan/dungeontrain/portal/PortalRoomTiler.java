@@ -147,8 +147,12 @@ public final class PortalRoomTiler {
         // to it — and walking back in to a doorway with nothing beyond it means stepping out of the
         // door into the empty basement and falling out of the world. The corridor and the room it
         // faces are one thing to keep or drop, so they are kept together.
+        // Also spared: the room this pair's own exit corridor opens into, when it stands somewhere
+        // other than beside the base tile. That corridor is the way onward, and a mouth opening onto
+        // the empty basement is a way onward that drops you out of the world.
         Tile stale = tiling.nextToRemove(centre, radius,
             candidate -> !standingIn.contains(candidate)
+                && !candidate.equals(structure.exitTile())
                 && !PortalExitBindings.anyBoundTo(pairKey, candidate));
         if (stale != null) return eraseTile(level, dims, structure, stale, pairKey);
 
@@ -245,10 +249,10 @@ public final class PortalRoomTiler {
      */
     private static PortalCorridorMask maskFor(PortalStructure structure, CarriageDims dims,
                                               Tile tile) {
-        PortalCorridorMask pair = tile.z() == 0
-            ? PortalCarriageBuilder.corridorMask(structure, dims)
-            : PortalCorridorMask.NONE;
-        return pair.plus(PortalCarriageBuilder.exitCopyMask(structure, dims));
+        // Every tile, not just the corridor row. That shortcut was right only while both corridors
+        // stood on row zero; a pair that moved its exit (PortalRoomExits) can have it beside any tile
+        // at all, and a copy stamped over it would fill the only way onward with wall.
+        return PortalCarriageBuilder.allCorridorMask(structure, dims);
     }
 
     // ---------- erasing ----------
