@@ -6422,6 +6422,22 @@
       "released": true,
       "released_in": "v0.549.0",
       "released_at": "2026-08-08T16:30:12Z"
+    },
+    {
+      "id": "modrec-responses-explorer",
+      "version": "0.550.0",
+      "type": "feat",
+      "title": "Your mod recommendations reach the creator",
+      "summary": "When you recommend a mod on the death screen \u2014 or ask for one that isn't supported yet \u2014 the reason you write is now sent along with it, so Brennan can actually read why. Requests keep the name you typed, which is the only name they have.",
+      "highlights": [
+        "The mod you name and the reason you give travel together, instead of the reason living only in a Discord channel",
+        "Asking for a mod that isn't supported now records what you asked for, not just that you asked"
+      ],
+      "pr": 918,
+      "date": "2026-08-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
