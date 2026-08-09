@@ -39,7 +39,7 @@ public record PortalExitCopies(Set<Site> sites) {
     }
 
     public PortalExitCopies {
-        sites = Set.copyOf(new LinkedHashSet<>(sites));
+        sites = Set.copyOf(sites);
     }
 
     public boolean has(Site site) {

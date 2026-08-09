@@ -9,6 +9,7 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.slf4j.Logger;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Set;
 
 /**
@@ -82,7 +83,7 @@ public final class PortalExitCopyTiler {
 
         Tile centre = standingIn.iterator().next();
 
-        Site next = nextToAdd(level, dims, structure, neighbours, pairKey);
+        Site next = nextToAdd(level, dims, structure, centre, neighbours, pairKey);
         if (next != null) return stamp(level, dims, structure, next, pairKey);
 
         Site stale = standing.nextToRemove(centre, radius, reachOf(structure, dims));
@@ -117,25 +118,37 @@ public final class PortalExitCopyTiler {
     }
 
     /**
-     * The next copy to lay: the first site owed by a standing tile that is not up yet and can be
-     * built, or {@code null}.
+     * The next copy to lay: the nearest site to {@code centre} that a standing tile owes, is not up
+     * yet, and can be built — or {@code null}.
      *
-     * <p>Ordered by the resident set's own iteration, which {@code PortalRoomTiling} fills
-     * nearest-first — so copies near the player go up before distant ones without this having to sort
-     * anything.</p>
+     * <p><b>Nearest first, explicitly.</b> {@code PortalRoomTiling} fills its window nearest-first,
+     * but its resident set is a {@code Set.copyOf} and so has no order to inherit — iterating it and
+     * taking the first hit would lay a copy five rooms away before one the player is walking towards.
+     * Ties break on coordinates and role so a tick's choice is deterministic rather than dependent on
+     * the set's hash order.</p>
      */
     private static Site nextToAdd(ServerLevel level, CarriageDims dims, PortalStructure structure,
-                                  Collection<PortalStructure> neighbours, int pairKey) {
+                                  Tile centre, Collection<PortalStructure> neighbours, int pairKey) {
         PortalExitCopies standing = structure.exitCopies();
         long seed = PortalExitSites.seedFor(level.getSeed(), pairKey, structure.roomName());
+        Site best = null;
         for (Tile tile : structure.tiling().tiles()) {
             for (Site site : PortalExitSites.owedAt(structure.exits(), tile, seed)) {
                 if (standing.has(site)) continue;
+                if (best != null && nearestTo(centre).compare(site, best) >= 0) continue;
                 if (!canStamp(level, dims, structure, site, neighbours)) continue;
-                return site;
+                best = site;
             }
         }
-        return null;
+        return best;
+    }
+
+    /** Nearest first, ties broken on coordinates and role so a tick's choice is deterministic. */
+    private static Comparator<Site> nearestTo(Tile centre) {
+        return Comparator.comparingInt((Site s) -> s.chebyshevTo(centre))
+            .thenComparingInt(s -> s.tile().x())
+            .thenComparingInt(s -> s.tile().z())
+            .thenComparing(Site::role);
     }
 
     private static PortalStructure stamp(ServerLevel level, CarriageDims dims,
