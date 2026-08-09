@@ -53,6 +53,15 @@ public final class PauseMenuLinksHandler {
     private static final Component DISCORD_LABEL = Component.translatable("gui.dungeontrain.discord_button");
     private static final Component SUPPORT_LABEL = Component.translatable("gui.dungeontrain.support.button");
 
+    /**
+     * Whether the swap has already been reported this session. Unlike the title screen, the pause
+     * menu is rebuilt every time a player presses ESC (and again on every window resize), so an
+     * unconditional log line would bury the rest of the client log in identical entries. The
+     * warning path stays unconditional on purpose — a menu that stops being found part-way through
+     * a session is exactly the thing worth seeing repeated.
+     */
+    private static boolean loggedSwap;
+
     private PauseMenuLinksHandler() {}
 
     @SubscribeEvent
@@ -91,9 +100,8 @@ public final class PauseMenuLinksHandler {
         event.removeListener(feedback);
         event.removeListener(reportBugs);
 
-        event.addListener(Button.builder(DISCORD_LABEL, b -> openDiscord(pauseScreen))
-                .bounds(discordX, discordY, discordW, discordH)
-                .build());
+        event.addListener(new DarkTintedButton(discordX, discordY, discordW, discordH,
+                DISCORD_LABEL, b -> openDiscord(pauseScreen)));
 
         event.addListener(new DarkTintedButton(supportX, supportY, supportW, supportH, SUPPORT_LABEL, b -> {
             // The headline funnel metric, same as on the title screen: how many players
@@ -102,7 +110,10 @@ public final class PauseMenuLinksHandler {
             Minecraft.getInstance().setScreen(new SupportScreen(pauseScreen));
         }));
 
-        LOGGER.info("PauseMenuLinks: replaced Feedback/Report Bugs with Discord + Support the Mod.");
+        if (!loggedSwap) {
+            loggedSwap = true;
+            LOGGER.info("PauseMenuLinks: replaced Feedback/Report Bugs with Discord + Support the Mod.");
+        }
     }
 
     private static void openDiscord(Screen parent) {
