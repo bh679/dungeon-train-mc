@@ -12,7 +12,8 @@
     },
     {
       "id": "nobeam",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 5
     }
   ]
 }
