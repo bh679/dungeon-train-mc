@@ -27,7 +27,7 @@
     "mode": "endless_repetition"
   },
   "default": {
-    "weight": 2,
+    "weight": 1,
     "phases": [
       "OVERWORLD",
       "NETHER",
