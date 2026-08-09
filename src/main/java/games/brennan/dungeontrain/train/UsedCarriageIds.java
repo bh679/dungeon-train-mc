@@ -67,6 +67,19 @@ public final class UsedCarriageIds {
         for (int id : serialized) add(id);
     }
 
+    /**
+     * Forget every placed id, making the whole shared pool eligible again. Used when an operator resets
+     * the train ({@code /dt spawn}) — the fresh train starts a fresh run, so the previous train's
+     * exclusions shouldn't keep community builds off it.
+     *
+     * @return how many ids were forgotten (0 when already empty, so callers can skip marking dirty)
+     */
+    public int clear() {
+        int had = ids.size();
+        ids.clear();
+        return had;
+    }
+
     public int size() {
         return ids.size();
     }

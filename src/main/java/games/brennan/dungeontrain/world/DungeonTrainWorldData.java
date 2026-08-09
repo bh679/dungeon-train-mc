@@ -424,6 +424,18 @@ public final class DungeonTrainWorldData extends SavedData {
         return usedCarriageIds.recent(limit);
     }
 
+    /**
+     * Forget every already-placed shared carriage, so the whole relay pool is eligible again. Called
+     * when an operator resets the train with {@code /dt spawn}.
+     *
+     * @return how many ids were forgotten (a no-op on an empty list leaves the save clean)
+     */
+    public int clearUsedCarriageIds() {
+        int cleared = usedCarriageIds.clear();
+        if (cleared > 0) setDirty();
+        return cleared;
+    }
+
     private static int clampY(int y) {
         return Math.max(DungeonTrainConfig.MIN_TRAIN_Y, Math.min(DungeonTrainConfig.MAX_TRAIN_Y, y));
     }

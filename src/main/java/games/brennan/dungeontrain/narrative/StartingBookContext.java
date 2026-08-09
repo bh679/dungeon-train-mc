@@ -41,7 +41,39 @@ public enum StartingBookContext {
     NETHER("nether"),
 
     /** Dimension-routed welcome pool for runs that start in the End. */
-    END("end");
+    END("end"),
+
+    /**
+     * A Death Note curse of this player's has landed in its target's world and the ending was never
+     * reported (the target logged out, the echo unloaded) — the story is told without one. Also the
+     * fallback when an outcome-specific cursed pool below is empty.
+     */
+    CURSED("cursed"),
+
+    /** A landed curse that ran its course: the author's echo killed the target. */
+    CURSED_FULFILLED("cursed_fulfilled"),
+
+    /** A landed curse that was survived: the target killed the author's echo. */
+    CURSED_DEFIED("cursed_defied"),
+
+    /**
+     * A Love Note of this player's has landed in its target's world and no ending was reported.
+     *
+     * <p>Note this is the <b>good</b> ending, and the mirror image of {@link #CURSED}: for a curse,
+     * "no outcome" means nobody knows how the fight went; for a Love Note it means there was no
+     * fight — the echo found them, gave them what it carried, and they parted. Also the fallback
+     * when an outcome-specific loved pool below is empty.</p>
+     */
+    LOVED("loved"),
+
+    /** A landed Love Note the target refused: they killed the echo that came to love them. */
+    LOVED_BETRAYED("loved_betrayed"),
+
+    /**
+     * A landed Love Note that ended in the target's death. Only reachable when the target attacked
+     * the echo first and it defended itself — a loving echo never opens hostilities.
+     */
+    LOVED_TURNED("loved_turned");
 
     /** Folder name relative to {@code .../starting_books/}. Empty for DEFAULT. */
     private final String folderName;
@@ -132,7 +164,36 @@ public enum StartingBookContext {
         return switch (this) {
             case NETHER -> Optional.of("nether_starting_books");
             case END -> Optional.of("end_starting_books");
+            // The cursed folders are earned by cursing another player and having it land, not by
+            // playing on — so they must not hold the grand-slam "read every starting book" hostage.
+            // Declaring a set id is how a folder opts out of it (and into the per-installation
+            // seen-store the cursed cycle uses); no advancement listens for this id.
+            case CURSED, CURSED_FULFILLED, CURSED_DEFIED -> Optional.of("cursed_starting_books");
+            // Likewise the loved folders — earned by someone else reaching your Love Note's target,
+            // not by playing on. Their own set id, so the two note cycles don't share a seen-store.
+            case LOVED, LOVED_BETRAYED, LOVED_TURNED -> Optional.of("loved_starting_books");
             default -> Optional.empty();
         };
+    }
+
+    /** True for the three cursed pools — the Death Note story books, routed by {@code CursedBookFactory}. */
+    public boolean isCursed() {
+        return this == CURSED || this == CURSED_FULFILLED || this == CURSED_DEFIED;
+    }
+
+    /** True for the three loved pools — the Love Note story books, routed by {@code CursedBookFactory}. */
+    public boolean isLoved() {
+        return this == LOVED || this == LOVED_BETRAYED || this == LOVED_TURNED;
+    }
+
+    /**
+     * True for any signed-note story pool, of either {@link NoteKind}. These six share the rules
+     * that separate them from the lifecycle pools: they are <em>earned</em> rather than reached by
+     * playing on, they never fall through to {@link #DEFAULT} (handing out an ordinary welcome book
+     * in place of a note's story would be worse than handing out nothing), and they sit out the
+     * collection milestones.
+     */
+    public boolean isNoteStory() {
+        return isCursed() || isLoved();
     }
 }
