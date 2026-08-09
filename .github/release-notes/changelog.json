@@ -6438,6 +6438,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "esc-menu-discord-support",
+      "version": "0.551.0",
+      "type": "feat",
+      "title": "Discord and Support the Mod are now in the pause menu",
+      "summary": "The two links that used to live only on the main menu are now a keypress away mid-run. Press Esc and you'll find Discord and Support the Mod where Minecraft's Feedback and Report Bugs buttons used to sit \u2014 bug reports for Dungeon Train go through the mod's own report form on the death screen, so those vanilla links were pointing at the wrong place anyway.",
+      "highlights": [
+        "Discord invite reachable from the in-game Esc menu",
+        "Support the Mod reachable without quitting to the main menu"
+      ],
+      "pr": 922,
+      "date": "2026-08-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

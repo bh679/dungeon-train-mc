@@ -49,6 +49,10 @@ public final class UiAnalytics {
     // The death-screen "support the line" donation page. Must stay in lock-step with the relay's
     // ui-events.js SURFACES whitelist, or click/confirm events 400 silently.
     public static final String SURFACE_DEATH_SCREEN = "death_screen";
+    // The in-game ESC menu's Discord / Support the Mod row (PauseMenuLinksHandler). Kept apart from
+    // title_screen so the funnel can tell a mid-run tap from a main-menu one — they are very
+    // different moments. Same lock-step rule with ui-events.js SURFACES.
+    public static final String SURFACE_PAUSE_MENU = "pause_menu";
     // Targets
     public static final String TARGET_PAGE = "page";
     public static final String TARGET_SUPPORT = "support";
