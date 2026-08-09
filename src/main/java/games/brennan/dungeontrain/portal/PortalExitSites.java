@@ -57,6 +57,9 @@ public final class PortalExitSites {
     private static final long SALT_PRESENT = 0x5DEECE66DL;
     private static final long SALT_ROLE = 0x2545F4914F6CDD1DL;
 
+    /** And the sealed-exit roll from correlating with either — it is asked of the pair, not a tile. */
+    private static final long SALT_SEAL = 0x8EBC6AF09C88C6E3L;
+
     /** Odd constants, so the tile coordinates cannot collapse onto each other before mixing. */
     private static final long PRIME_X = 0x9E3779B97F4A7C15L;
     private static final long PRIME_Z = 0xC2B2AE3D27D4EB4FL;
@@ -119,6 +122,28 @@ public final class PortalExitSites {
     /** One draw for a tile, from a seed and a salt. */
     private static long roll(long seed, Tile tile, long salt) {
         return mix(seed ^ (tile.x() * PRIME_X) ^ (tile.z() * PRIME_Z) ^ salt);
+    }
+
+    /**
+     * Whether this portal walls off the base pair's exit, so the only ways onward are the copies a
+     * player has to go and find.
+     *
+     * <p>One draw per <b>pair</b>, not per tile: it is a fact about this portal, decided once and
+     * true for as long as it stands. A room that re-rolled it would open and close its own exit
+     * behind a player's back, which reads as a fault rather than a mechanic — and the structure is
+     * re-stamped from scratch every time the train drifts far enough, so "decided once" has to mean
+     * "a pure function of the pair" rather than "remembered".</p>
+     *
+     * <p>Only under {@link PortalRoomExits.Kind#RANDOM}, and never at {@code 0}. Sealing the way out
+     * is only fair when there is something unpredictable to find; see
+     * {@link PortalRoomExits#sealsApply}.</p>
+     */
+    public static boolean sealsOpposingDoor(PortalRoomExits exits, long seed) {
+        if (exits == null) return false;
+        int chance = exits.effectiveSealChance();
+        if (chance <= PortalRoomExits.SEAL_NEVER) return false;
+        if (chance >= PortalRoomExits.SEAL_ALWAYS) return true;
+        return Math.floorMod(mix(seed ^ SALT_SEAL), PortalRoomExits.SEAL_ALWAYS) < chance;
     }
 
     /**

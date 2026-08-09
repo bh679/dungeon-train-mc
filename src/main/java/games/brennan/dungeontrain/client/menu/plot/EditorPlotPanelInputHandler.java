@@ -157,6 +157,9 @@ public final class EditorPlotPanelInputHandler {
             case EXIT_EVERY_DEC -> dispatchExitEvery(entry, "dec");
             case EXIT_EVERY_INC -> dispatchExitEvery(entry, "inc");
             case EXIT_EVERY_TYPE -> openExitEveryEntry(entry);
+            case EXIT_SEAL_DEC -> dispatchExitSeal(entry, "dec");
+            case EXIT_SEAL_INC -> dispatchExitSeal(entry, "inc");
+            case EXIT_SEAL_TYPE -> openExitSealEntry(entry);
             case ACTION_SAVE -> dispatchAction(entry, EditorPlotActionPacket.Action.SAVE);
             case ACTION_RESET -> dispatchAction(entry, EditorPlotActionPacket.Action.RESET);
             case ACTION_CLEAR -> dispatchAction(entry, EditorPlotActionPacket.Action.CLEAR);
@@ -245,6 +248,22 @@ public final class EditorPlotPanelInputHandler {
             .exits().every();
         CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
             "exitevery", "Exits", "tiles", current));
+    }
+
+    /** Nudge how often the room walls off the base pair's exit. */
+    private static void dispatchExitSeal(EditorPlotLabelsPacket.Entry entry, String dir) {
+        String cmd = EditorPlotTeleport.exitSealCommandFor(entry.category(), dir);
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /** Open the typing field for the sealed-exit chance, prefilled from the room's own tag. */
+    private static void openExitSealEntry(EditorPlotLabelsPacket.Entry entry) {
+        if (!"PORTALS".equals(entry.category())) return;
+        int current = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
+            .exits().sealChance();
+        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
+            "exitseal", "Sealed exit", "0-10", current));
     }
 
     /** Step one axis of the portal room the player is standing in. */

@@ -218,6 +218,84 @@ class PortalExitSitesTest {
         }
     }
 
+    // ---- the sealed exit ----
+
+    private static PortalRoomExits sealed(int chance) {
+        return new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 8, chance);
+    }
+
+    /** How many of a run of pairs seal their exit at this setting. */
+    private static int sealedOutOf(PortalRoomExits exits, int pairs) {
+        int n = 0;
+        for (int pairKey = 0; pairKey < pairs; pairKey++) {
+            if (PortalExitSites.sealsOpposingDoor(exits,
+                    PortalExitSites.seedFor(1234567L, pairKey, "labrynth"))) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    @Test
+    @DisplayName("Nought never seals and ten always does — the two ends of the dial are absolute")
+    void theEndsOfTheScaleAreAbsolute() {
+        assertEquals(0, sealedOutOf(sealed(PortalRoomExits.SEAL_NEVER), 400));
+        assertEquals(400, sealedOutOf(sealed(PortalRoomExits.SEAL_ALWAYS), 400));
+        assertFalse(PortalExitSites.sealsOpposingDoor(null, SEED));
+    }
+
+    @Test
+    @DisplayName("In between, the rate follows the dial")
+    void theRateFollowsTheDial() {
+        int pairs = 600;
+        int low = sealedOutOf(sealed(3), pairs);
+        int high = sealedOutOf(sealed(7), pairs);
+        assertTrue(low > pairs * 0.20 && low < pairs * 0.40, "3/10 sealed " + low + "/" + pairs);
+        assertTrue(high > pairs * 0.60 && high < pairs * 0.80, "7/10 sealed " + high + "/" + pairs);
+        assertTrue(high > low);
+    }
+
+    @Test
+    @DisplayName("Only Random seals — the lattice is a walk you could work out in advance")
+    void onlyRandomSeals() {
+        for (PortalRoomExits.Kind kind : new PortalRoomExits.Kind[]{
+                PortalRoomExits.Kind.ON, PortalRoomExits.Kind.OFF}) {
+            assertEquals(0, sealedOutOf(new PortalRoomExits(kind, 8, PortalRoomExits.SEAL_ALWAYS), 200),
+                kind.name());
+        }
+    }
+
+    @Test
+    @DisplayName("A portal's answer never changes — walking out and back cannot re-roll it")
+    void sealIsFixedForThePair() {
+        long seed = PortalExitSites.seedFor(1234567L, 47, "labrynth");
+        boolean first = PortalExitSites.sealsOpposingDoor(sealed(5), seed);
+        for (int i = 0; i < 50; i++) {
+            assertEquals(first, PortalExitSites.sealsOpposingDoor(sealed(5), seed));
+        }
+        // And it is the pair that decides, not the room's other settings: changing the spacing must
+        // not silently open a sealed portal.
+        assertEquals(first, PortalExitSites.sealsOpposingDoor(
+            new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 3, 5), seed));
+    }
+
+    @Test
+    @DisplayName("The seal draw does not track the site draws — they are salted apart")
+    void sealDoesNotCorrelateWithSites() {
+        // If the two shared a draw, every sealed portal would have the same site map shape as every
+        // other, which would read as a pattern rather than as chance.
+        int agree = 0;
+        int pairs = 300;
+        for (int pairKey = 0; pairKey < pairs; pairKey++) {
+            long seed = PortalExitSites.seedFor(1234567L, pairKey, "labrynth");
+            boolean seals = PortalExitSites.sealsOpposingDoor(sealed(5), seed);
+            boolean siteAtOneOne = !PortalExitSites.owedAt(random(2), new Tile(1, 1), seed).isEmpty();
+            if (seals == siteAtOneOne) agree++;
+        }
+        double rate = agree / (double) pairs;
+        assertTrue(rate > 0.35 && rate < 0.65, "the two draws agreed " + rate + " of the time");
+    }
+
     @Test
     @DisplayName("A site knows how far it is from the window's centre, on the Chebyshev the window uses")
     void chebyshevMatchesTheWindow() {

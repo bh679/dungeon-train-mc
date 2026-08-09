@@ -104,6 +104,12 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals exitevery " + dir;
     }
 
+    /** As {@link #dimensionCommandFor}, for how often the base pair's exit is walled off. */
+    public static String exitSealCommandFor(String category, String dir) {
+        if (!"PORTALS".equals(category)) return null;
+        return "dungeontrain editor portals exitseal " + dir;
+    }
+
     /**
      * Build the slash command that bumps a per-template spawn-gate level bound
      * ({@code sub} = {@code "minlevel"} / {@code "maxlevel"}) of the template

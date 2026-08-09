@@ -640,6 +640,61 @@ public final class PortalCarriageBuilder {
         }
 
         stampCorridors(level, structure, dims, pairKey);
+        sealOpposingDoorway(level, structure, dims, pairKey);
+    }
+
+    /**
+     * Wall off the way straight back out, for the portals {@link PortalRoomExits} says should make a
+     * player go and find one of the scattered copies instead — see
+     * {@link PortalExitSites#sealsOpposingDoor}.
+     *
+     * <h2>The wall goes in the room, never in the corridor</h2>
+     * <p>The obvious move — bricking up the exit twin's own doorway — would break the one thing the
+     * whole crossing rests on: a twin is <b>block-identical to the carriage it mirrors</b>, and a
+     * player who crossed into a corridor that did not match the one they left would see the seam. So
+     * the wall goes one block further out, in the room's own end column facing the corridor's mouth.
+     * That cell is already the corridor's by every rule that matters — {@link
+     * PortalCorridorMask#facedBy} calls it so, and {@code PortalRoomTiler.eachFaceCell} skips it, so
+     * the tiler's face work will not quietly undo this. It sits in the base tile, which is stamped
+     * once and never re-stamped by the sliding window, so no room copy overwrites it either.</p>
+     *
+     * <p><b>The entry corridor is never sealed.</b> Whatever a room does at its far end, the way a
+     * player came in is still open behind them — this is meant to commit somebody to exploring, not
+     * to trap them. Somebody who walks in from the train through the <i>exit</i> carriage arrives in
+     * the exit twin, opens its door and meets this wall; they can turn round and walk back across the
+     * midpoint onto the train, so that end is blocked rather than closed.</p>
+     *
+     * <p>Filled in the seal ring's own materials, because the ring immediately around this column
+     * already is that: it reads as the doorway having been bricked up, which is what happened.</p>
+     */
+    private static void sealOpposingDoorway(ServerLevel level, PortalStructure structure,
+                                            CarriageDims dims, int pairKey) {
+        if (!structure.mode().tiles()) return;
+        long seed = PortalExitSites.seedFor(level.getSeed(), pairKey, structure.roomName());
+        if (!PortalExitSites.sealsOpposingDoor(structure.exits(), seed)) return;
+
+        BlockPos exit = structure.exitOrigin(dims);
+        // One block into the room from the exit corridor's mouth, across the corridor's own
+        // cross-section — exactly the aperture sealCorridorMouth leaves open.
+        int planeX = exit.getX() - 1;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int dz = 0; dz < dims.width(); dz++) {
+            for (int dy = 0; dy < dims.height(); dy++) {
+                int y = exit.getY() + dy;
+                // Evict before writing rather than clearing to air first: an authored shelf or chest
+                // standing in this column would otherwise break and drop, and a cell that becomes air
+                // even for an instant takes whatever was standing on it with it. Same rule
+                // applyRoomVariants learned the hard way.
+                pos.set(planeX, y, exit.getZ() + dz);
+                BlockState state = level.getBlockState(pos);
+                if (state.hasBlockEntity()) {
+                    SilentBlockOps.evictBlockEntity(level.getChunkAt(pos), pos);
+                }
+                level.setBlock(pos, dy == 0 ? POCKET_FLOOR : POCKET_SHELL, Block.UPDATE_ALL);
+            }
+        }
+        LOGGER.info("[DungeonTrain] Portal pair {} sealed its exit — the way on is one of the copies",
+            pairKey);
     }
 
     /**

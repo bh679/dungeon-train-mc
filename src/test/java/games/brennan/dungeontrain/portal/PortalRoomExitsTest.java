@@ -91,4 +91,78 @@ class PortalRoomExitsTest {
     void entryShareIsAMinority() {
         assertEquals(25, PortalRoomExits.ENTRY_SHARE);
     }
+
+    // ---- the sealed exit ----
+
+    @Test
+    @DisplayName("The seal is written as a third part, and read back off it")
+    void sealRoundTrips() {
+        PortalRoomExits sealed = new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 12, 7);
+        assertEquals("random:12:7", sealed.id());
+
+        PortalRoomExits back = PortalRoomExits.parse("random:12:7");
+        assertSame(PortalRoomExits.Kind.RANDOM, back.kind());
+        assertEquals(12, back.every());
+        assertEquals(7, back.sealChance());
+    }
+
+    @Test
+    @DisplayName("A default spacing is written as a placeholder so the seal has somewhere to sit")
+    void sealForcesTheSpacingToBeWritten() {
+        // The parts are positional, so the seal cannot be written without a spacing in front of it.
+        PortalRoomExits sealed = new PortalRoomExits(
+            PortalRoomExits.Kind.RANDOM, PortalRoomExits.DEFAULT_EVERY, 3);
+        assertEquals("random:8:3", sealed.id());
+        assertEquals(3, PortalRoomExits.parse(sealed.id()).sealChance());
+    }
+
+    @Test
+    @DisplayName("Every tag written before the seal existed still reads, as a room that never seals")
+    void shorterSegmentsStillParse() {
+        assertEquals(PortalRoomExits.SEAL_NEVER, PortalRoomExits.parse("random").sealChance());
+        assertEquals(PortalRoomExits.SEAL_NEVER, PortalRoomExits.parse("random:12").sealChance());
+        assertEquals(PortalRoomExits.SEAL_NEVER, PortalRoomExits.parse("on").sealChance());
+        // …and the two-arg form the record had before it grew the third component.
+        assertEquals(PortalRoomExits.SEAL_NEVER,
+            new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 12).sealChance());
+    }
+
+    @Test
+    @DisplayName("The seal is dropped where it means nothing — under On, under Off, and at zero")
+    void sealOmittedWhereItMeansNothing() {
+        assertEquals("random:12", new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 12, 0).id());
+        // On is a lattice a player can work out in advance, so it never seals.
+        assertEquals("on:12", new PortalRoomExits(PortalRoomExits.Kind.ON, 12, 9).id());
+        // Off has no other way onward to send them to.
+        assertEquals("off", new PortalRoomExits(PortalRoomExits.Kind.OFF, 12, 9).id());
+        assertEquals(0, new PortalRoomExits(PortalRoomExits.Kind.ON, 12, 9).effectiveSealChance());
+        assertFalse(new PortalRoomExits(PortalRoomExits.Kind.ON, 12, 9).sealsApply());
+        assertTrue(new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 12, 9).sealsApply());
+    }
+
+    @Test
+    @DisplayName("The seal is clamped to the scale, and an unreadable one keeps the rest of the tag")
+    void sealIsClampedAndTotal() {
+        assertEquals(PortalRoomExits.SEAL_NEVER,
+            new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 8, -4).sealChance());
+        assertEquals(PortalRoomExits.SEAL_ALWAYS,
+            new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 8, 99).sealChance());
+        assertEquals(PortalRoomExits.SEAL_ALWAYS, PortalRoomExits.parse("random:8:99").sealChance());
+
+        PortalRoomExits typo = PortalRoomExits.parse("random:12:lots");
+        assertSame(PortalRoomExits.Kind.RANDOM, typo.kind());
+        assertEquals(12, typo.every());
+        assertEquals(PortalRoomExits.SEAL_NEVER, typo.sealChance());
+    }
+
+    @Test
+    @DisplayName("Cycling and re-spacing carry the seal along")
+    void withersCarryTheSeal() {
+        PortalRoomExits sealed = new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 12, 7);
+        assertEquals(7, sealed.next().sealChance());
+        assertEquals(7, sealed.withEvery(3).sealChance());
+        assertEquals(7, sealed.withKind(PortalRoomExits.Kind.ON).sealChance());
+        assertEquals(2, sealed.withSealChance(2).sealChance());
+        assertEquals(12, sealed.withSealChance(2).every());
+    }
 }

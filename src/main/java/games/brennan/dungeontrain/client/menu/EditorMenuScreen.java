@@ -185,6 +185,8 @@ public final class EditorMenuScreen implements MenuScreen {
             if (exitsRow != null) out.add(exitsRow);
             CommandMenuEntry exitEveryRow = exitEveryTripleFor(EditorStatusHudOverlay.roomMode());
             if (exitEveryRow != null) out.add(exitEveryRow);
+            CommandMenuEntry exitSealRow = exitSealTripleFor(EditorStatusHudOverlay.roomMode());
+            if (exitSealRow != null) out.add(exitSealRow);
         }
 
         // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases
@@ -419,6 +421,27 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
         CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
             EditorPlotLabelsRenderer.exitEveryLabel(currentMode), "tiles", prefix);
+        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
+        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+    }
+
+    /**
+     * The sealed-exit stepper, or null unless Exits is set to Random.
+     *
+     * <p>Random alone: walling off the way straight back out is only fair when there is something
+     * unpredictable to go and find. Under the lattice a player could work out the walk in advance,
+     * and under Off it would wall the only way onward there is.</p>
+     */
+    static CommandMenuEntry exitSealTripleFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode);
+        if (!settings.exitsApply() || !settings.exits().sealsApply()) return null;
+
+        String prefix = "dungeontrain editor portals exitseal";
+        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
+        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
+            EditorPlotLabelsRenderer.exitSealLabel(currentMode), "0-10", prefix);
         CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
         return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
     }
