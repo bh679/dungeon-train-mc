@@ -1325,7 +1325,19 @@ public final class EditorCommand {
                             .then(Commands.argument("stage", StringArgumentType.word()).suggests(STAGE_OR_CUSTOM_SUGGESTIONS)
                                 .executes(c -> applyTrackStage(c.getSource(),
                                     StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
-                                    StringArgumentType.getString(c, "stage"))))))));
+                                    StringArgumentType.getString(c, "stage")))))))
+                // A track-side sub-variant (today: a portal room's). Kind-qualified like `tracks`
+                // above, and a toggle like `contents-group` — a member may carry more than one link.
+                .then(Commands.literal("tracks-group")
+                    .then(Commands.argument("kind", StringArgumentType.word()).suggests(TRACK_KIND_SUGGESTIONS)
+                        .then(Commands.argument("parent", StringArgumentType.word()).suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                            .then(Commands.argument("child", StringArgumentType.word()).suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                                .then(Commands.argument("stage", StringArgumentType.word()).suggests(STAGE_OR_CUSTOM_SUGGESTIONS)
+                                    .executes(c -> applyTrackGroupMemberStage(c.getSource(),
+                                        StringArgumentType.getString(c, "kind"),
+                                        StringArgumentType.getString(c, "parent"),
+                                        StringArgumentType.getString(c, "child"),
+                                        StringArgumentType.getString(c, "stage")))))))));
     }
 
     /** Gate editor for a stage — read-modify-write its {@link TemplateGate} via {@code StageStore}. */
@@ -2000,13 +2012,19 @@ public final class EditorCommand {
         }
     }
 
-    /** Report the resulting Stage-link set after a group-member toggle / clear. */
+    /** Report the resulting Stage-link set after a contents group-member toggle / clear. */
     private static void groupMemberStageApplySuccess(CommandSourceStack source, String id, java.util.List<String> stageIds) {
+        groupMemberStageApplySuccess(source, "contents group", id, stageIds);
+    }
+
+    /** As above, naming the template layer the member belongs to ({@code "contents group"}, {@code "portal_room group"}, …). */
+    private static void groupMemberStageApplySuccess(CommandSourceStack source, String what, String id,
+                                                     java.util.List<String> stageIds) {
         if (stageIds.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("Editor: detached contents group " + id
+            source.sendSuccess(() -> Component.literal("Editor: detached " + what + " " + id
                 + " to Custom (no Stage links).").withStyle(ChatFormatting.GREEN), true);
         } else {
-            source.sendSuccess(() -> Component.literal("Editor: contents group " + id + " → Stage"
+            source.sendSuccess(() -> Component.literal("Editor: " + what + " " + id + " → Stage"
                 + (stageIds.size() == 1 ? " '" + stageIds.get(0) + "'"
                     : "s [" + String.join(", ", stageIds) + "]") + ".").withStyle(ChatFormatting.GREEN), true);
         }
@@ -4969,6 +4987,11 @@ public final class EditorCommand {
                                 StringArgumentType.getString(ctx, "parent"),
                                 StringArgumentType.getString(ctx, "child"),
                                 IntegerArgumentType.getInteger(ctx, "value")))))))
+            // Per-member spawn gate (min/max Diff-Level + phase) — the Sub-Variants companion's gate
+            // cells dispatch these, exactly as they do for a contents group member.
+            .then(minLevelTrackGroup(PORTAL_ROOM_KIND, PORTAL_ROOM_NAME_SUGGESTIONS))
+            .then(maxLevelTrackGroup(PORTAL_ROOM_KIND, PORTAL_ROOM_NAME_SUGGESTIONS))
+            .then(phaseTrackGroup(PORTAL_ROOM_KIND, PORTAL_ROOM_NAME_SUGGESTIONS))
             .then(Commands.literal("remove")
                 .then(Commands.argument("parent", StringArgumentType.word())
                     .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
@@ -5029,6 +5052,186 @@ public final class EditorCommand {
         }
         source.sendSuccess(() -> Component.literal(message).withStyle(ChatFormatting.GREEN), true);
         return 1;
+    }
+
+    // ---------- track-side group members: per-member gate + Stage links ----------
+    //
+    // Keyed on (kind, parent, member) rather than hardcoded to the portal room, because the sidecar,
+    // the gate fields and the resolver (TrackVariantRegistry.resolveGroup) are all TrackKind-generic
+    // already — the portal room is simply the only kind with a group today. The nodes below are
+    // attached under `editor portals group …` with the kind bound; another kind that grows groups
+    // attaches the same builders with its own kind and suggestions.
+
+    private static LiteralArgumentBuilder<CommandSourceStack> minLevelTrackGroup(
+            games.brennan.dungeontrain.track.variant.TrackKind kind, SuggestionProvider<CommandSourceStack> sug) {
+        return Commands.literal("minlevel")
+            .then(Commands.argument("parent", StringArgumentType.word()).suggests(sug)
+                .then(Commands.argument("child", StringArgumentType.word()).suggests(sug)
+                    .then(Commands.literal("inc").executes(c -> applyTrackGroupMemberGate(c.getSource(), kind,
+                        StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                        g -> g.withMinLevel(g.minLevel() + 1))))
+                    .then(Commands.literal("dec").executes(c -> applyTrackGroupMemberGate(c.getSource(), kind,
+                        StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                        g -> g.withMinLevel(g.minLevel() - 1))))
+                    .then(Commands.argument("value", IntegerArgumentType.integer(0, TemplateGate.MAX_LEVEL))
+                        .executes(c -> applyTrackGroupMemberGate(c.getSource(), kind,
+                            StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                            g -> g.withMinLevel(IntegerArgumentType.getInteger(c, "value")))))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> maxLevelTrackGroup(
+            games.brennan.dungeontrain.track.variant.TrackKind kind, SuggestionProvider<CommandSourceStack> sug) {
+        return Commands.literal("maxlevel")
+            .then(Commands.argument("parent", StringArgumentType.word()).suggests(sug)
+                .then(Commands.argument("child", StringArgumentType.word()).suggests(sug)
+                    .then(Commands.literal("inc").executes(c -> applyTrackGroupMemberGate(c.getSource(), kind,
+                        StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                        EditorCommand::maxLevelInc)))
+                    .then(Commands.literal("dec").executes(c -> applyTrackGroupMemberGate(c.getSource(), kind,
+                        StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                        EditorCommand::maxLevelDec)))
+                    .then(Commands.argument("value", IntegerArgumentType.integer(TemplateGate.ALL, TemplateGate.MAX_LEVEL))
+                        .executes(c -> applyTrackGroupMemberGate(c.getSource(), kind,
+                            StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                            g -> g.withMaxLevel(IntegerArgumentType.getInteger(c, "value")))))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> phaseTrackGroup(
+            games.brennan.dungeontrain.track.variant.TrackKind kind, SuggestionProvider<CommandSourceStack> sug) {
+        return Commands.literal("phase")
+            .then(Commands.argument("parent", StringArgumentType.word()).suggests(sug)
+                .then(Commands.argument("child", StringArgumentType.word()).suggests(sug)
+                    .then(Commands.argument("phase", StringArgumentType.word()).suggests(PHASE_SUGGESTIONS)
+                        .then(Commands.literal("on").executes(c -> applyTrackGroupMemberGate(c.getSource(), kind,
+                            StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                            g -> togglePhase(g, StringArgumentType.getString(c, "phase"), true))))
+                        .then(Commands.literal("off").executes(c -> applyTrackGroupMemberGate(c.getSource(), kind,
+                            StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                            g -> togglePhase(g, StringArgumentType.getString(c, "phase"), false))))
+                        .then(Commands.literal("others").executes(c -> applyTrackGroupMemberGate(c.getSource(), kind,
+                            StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
+                            g -> toggleOtherPhases(g, StringArgumentType.getString(c, "phase"))))))));
+    }
+
+    /** Registered variant name of {@code kind}, or null after sending the failure message. */
+    private static String parseTrackVariantName(CommandSourceStack source,
+                                                games.brennan.dungeontrain.track.variant.TrackKind kind, String raw) {
+        java.util.Optional<String> found = TrackVariantRegistry.find(kind, raw);
+        if (found.isEmpty()) {
+            source.sendFailure(Component.literal("Unknown " + kind.id() + " variant '" + raw + "'.")
+                .withStyle(ChatFormatting.RED));
+            return null;
+        }
+        return found.get();
+    }
+
+    /**
+     * The member {@code memberRaw} of {@code parentRaw}'s group, or {@code null} after sending the
+     * failure message. Shared by the gate and Stage editors below, which fail on the same three
+     * things: an unregistered name either side, and a name that is not actually in the group.
+     */
+    private static games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member resolveTrackGroupMember(
+            CommandSourceStack source, games.brennan.dungeontrain.track.variant.TrackKind kind,
+            String parent, String member) {
+        java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> group =
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(kind, parent);
+        if (group.isEmpty()) {
+            source.sendFailure(Component.literal("No " + kind.id() + " group defined for '" + parent + "'.")
+                .withStyle(ChatFormatting.YELLOW));
+            return null;
+        }
+        java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member> m =
+            group.get().member(member);
+        if (m.isEmpty()) {
+            source.sendFailure(Component.literal("'" + member + "' is not a member of group '"
+                + parent + "'.").withStyle(ChatFormatting.YELLOW));
+            return null;
+        }
+        return m.get();
+    }
+
+    /**
+     * Read-modify-write a track-side group <em>member</em>'s spawn {@link TemplateGate} in
+     * {@code parentRaw}'s {@code .group.json}. The exact contract
+     * {@link #applyGroupMemberGate} has for contents: editing the inline gate detaches every Stage
+     * link, snapshotting the first linked Stage's gate so the band survives. The UI routes linked
+     * rows to the Stage picker rather than here, so this normally only fires on Custom members.
+     */
+    private static int applyTrackGroupMemberGate(CommandSourceStack source,
+                                                 games.brennan.dungeontrain.track.variant.TrackKind kind,
+                                                 String parentRaw, String memberRaw,
+                                                 java.util.function.UnaryOperator<TemplateGate> op) {
+        String parent = parseTrackVariantName(source, kind, parentRaw);
+        if (parent == null) return 0;
+        String member = parseTrackVariantName(source, kind, memberRaw);
+        if (member == null) return 0;
+        games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member m =
+            resolveTrackGroupMember(source, kind, parent, member);
+        if (m == null) return 0;
+        try {
+            String baseStage = m.stageIds().isEmpty() ? null : m.stageIds().get(0);
+            TemplateGate next = op.apply(
+                games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), baseStage));
+            saveTrackGroupMember(kind, parent, new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(
+                m.id(), m.weight(), next, java.util.List.of()));
+            gateSuccess(source, parent + ":" + member, next,
+                games.brennan.dungeontrain.editor.TrackVariantGroupStore.fileFor(kind, parent).toString());
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, kind.id() + " group", parent + ":" + member, t);
+        }
+    }
+
+    /**
+     * Toggle a track-side group member's Stage links — the same union semantics
+     * {@link #applyGroupMemberStage} documents for contents: an already-linked id is removed,
+     * otherwise added, and {@code custom}/blank clears them all (snapshotting the gate inline when
+     * exactly one link was present, so a single-link detach keeps its band).
+     */
+    private static int applyTrackGroupMemberStage(CommandSourceStack source, String kindRaw,
+                                                  String parentRaw, String memberRaw, String stageToken) {
+        games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, kindRaw);
+        if (kind == null) return 0;
+        String parent = parseTrackVariantName(source, kind, parentRaw);
+        if (parent == null) return 0;
+        String member = parseTrackVariantName(source, kind, memberRaw);
+        if (member == null) return 0;
+        games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member m =
+            resolveTrackGroupMember(source, kind, parent, member);
+        if (m == null) return 0;
+        String link = resolveStageLink(source, stageToken);  // null = custom/clear, id = toggle, INVALID = reported
+        if (link == INVALID_STAGE) return 0;
+        try {
+            games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member updated;
+            if (link == null) {
+                TemplateGate inline = m.gate();
+                if (m.stageIds().size() == 1) {
+                    inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, m.stageIds().get(0));
+                }
+                updated = new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(
+                    m.id(), m.weight(), inline, java.util.List.of());
+            } else {
+                updated = m.withStageToggled(link);
+            }
+            saveTrackGroupMember(kind, parent, updated);
+            groupMemberStageApplySuccess(source, kind.id() + " group", parent + ":" + member, updated.stageIds());
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, kind.id() + " group stage", parent + ":" + member, t);
+        }
+    }
+
+    /**
+     * Write one updated member back into its parent's sidecar. Deliberately NOT the
+     * {@link #savePortalRoomGroup} path: that relayouts the plot row because membership decides where
+     * a plot sits, and a gate or Stage edit changes neither membership nor plot order.
+     */
+    private static void saveTrackGroupMember(games.brennan.dungeontrain.track.variant.TrackKind kind, String parent,
+                                             games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member updated)
+            throws IOException {
+        games.brennan.dungeontrain.track.variant.TrackVariantGroup group =
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(kind, parent).orElseThrow();
+        games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(kind, parent, group.withMember(updated));
     }
 
     /**

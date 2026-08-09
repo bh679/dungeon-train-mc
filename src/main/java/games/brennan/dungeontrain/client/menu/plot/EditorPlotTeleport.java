@@ -149,6 +149,33 @@ public final class EditorPlotTeleport {
     }
 
     /**
+     * {@link #groupMemberLevelCommandFor} for a portal room's sub-variants. The room's group verbs
+     * live under {@code editor portals group …} with the kind implied, matching
+     * {@link #portalRoomGroupWeightCommandFor}.
+     */
+    public static String portalRoomGroupLevelCommandFor(String parentId, String memberId, String sub, String dir) {
+        return "dungeontrain editor portals group " + sub + " " + parentId + " " + memberId + " " + dir;
+    }
+
+    /** {@link #groupMemberPhaseCommandFor} for a portal room's sub-variants. */
+    public static String portalRoomGroupPhaseCommandFor(String parentId, String memberId,
+                                                        String phaseToken, String action) {
+        return "dungeontrain editor portals group phase " + parentId + " " + memberId
+            + " " + phaseToken + " " + action;
+    }
+
+    /**
+     * {@link #groupMemberStageApplyCommandFor} for a track-side sub-variant. Unlike the group gate
+     * verbs this one is kind-qualified — it hangs off the shared {@code stage apply} node, which
+     * spans every category, so the kind cannot be implied by the command path.
+     */
+    public static String trackGroupMemberStageApplyCommandFor(String kindId, String parentId, String memberId,
+                                                              String stageToken) {
+        return "dungeontrain editor stage apply tracks-group " + kindId + " " + parentId + " "
+            + memberId + " " + stageToken;
+    }
+
+    /**
      * Build the slash command bumping a group <em>member</em>'s spawn-gate level bound
      * ({@code sub} = {@code minlevel}/{@code maxlevel}) in {@code dir} ({@code inc}/{@code dec}).
      * The member ({@code memberId}) lives in {@code parentId}'s {@code .group.json} sidecar. Mirrors

@@ -354,8 +354,12 @@ public final class EditorTypeMenuInputHandler {
     private static void openStagePicker(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant) {
         if (isSubVariants(menu)) {
             String parentId = menu.variants().get(0).modelId();
-            CommandMenuState.openAt(games.brennan.dungeontrain.client.menu.StagePickerScreen
-                .forGroupMember(parentId, variant.modelId(), variant.stageIds()));
+            CommandMenuState.openAt(isPortalRoom(variant)
+                ? games.brennan.dungeontrain.client.menu.StagePickerScreen.forTrackGroupMember(
+                    games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM.id(),
+                    parentId, variant.modelId(), variant.stageIds())
+                : games.brennan.dungeontrain.client.menu.StagePickerScreen.forGroupMember(
+                    parentId, variant.modelId(), variant.stageIds()));
             return;
         }
         CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.StagePickerScreen(
@@ -441,7 +445,11 @@ public final class EditorTypeMenuInputHandler {
         String dir = shift ? "dec" : "inc";
         if (isSubVariants(menu)) {
             String parentId = menu.variants().get(0).modelId();
-            String cmd = EditorPlotTeleport.groupMemberLevelCommandFor(parentId, variant.modelId(), sub, dir);
+            // Portal rooms carry the same panel one template layer up — same parent/member shape,
+            // different command prefix (as in the WEIGHT case above).
+            String cmd = isPortalRoom(variant)
+                ? EditorPlotTeleport.portalRoomGroupLevelCommandFor(parentId, variant.modelId(), sub, dir)
+                : EditorPlotTeleport.groupMemberLevelCommandFor(parentId, variant.modelId(), sub, dir);
             LOGGER.debug("[DungeonTrain] EditorTypeMenu group {} : {}", sub, cmd);
             CommandRunner.run(cmd);
             return;
@@ -465,8 +473,11 @@ public final class EditorTypeMenuInputHandler {
         String action = shift ? "others" : (on ? "off" : "on");
         if (isSubVariants(menu)) {
             String parentId = menu.variants().get(0).modelId();
-            String cmd = EditorPlotTeleport.groupMemberPhaseCommandFor(
-                parentId, variant.modelId(), PHASE_TOKENS[slot], action);
+            String cmd = isPortalRoom(variant)
+                ? EditorPlotTeleport.portalRoomGroupPhaseCommandFor(
+                    parentId, variant.modelId(), PHASE_TOKENS[slot], action)
+                : EditorPlotTeleport.groupMemberPhaseCommandFor(
+                    parentId, variant.modelId(), PHASE_TOKENS[slot], action);
             LOGGER.debug("[DungeonTrain] EditorTypeMenu group phase {} {}: {}", PHASE_TOKENS[slot], action, cmd);
             CommandRunner.run(cmd);
             return;
@@ -482,6 +493,15 @@ public final class EditorTypeMenuInputHandler {
     private static boolean isSubVariants(EditorTypeMenusPacket.Menu menu) {
         return games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
             .equals(menu.typeName());
+    }
+
+    /**
+     * True when a Sub-Variants row belongs to a portal room rather than a contents variant. The two
+     * share the panel and its cells but not their command prefixes, so every group-edit dispatch has
+     * to pick one. Category is the discriminator the server already sets on the row.
+     */
+    private static boolean isPortalRoom(EditorTypeMenusPacket.Variant variant) {
+        return "PORTALS".equals(variant.category());
     }
 
     /**

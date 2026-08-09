@@ -1,6 +1,8 @@
 {
   "beam": {
     "weight": 4,
+    "minLevel": 1,
+    "maxLevel": 20,
     "mode": "bedrockless"
   },
   "beamcenter": {
@@ -17,6 +19,7 @@
   },
   "book": {
     "weight": 2,
+    "minLevel": 3,
     "mode": "endless_repetition"
   },
   "cubes": {
@@ -34,14 +37,17 @@
   },
   "distantenemies": {
     "weight": 1,
+    "minLevel": 1,
     "mode": "endless_repetition/dynamic"
   },
   "labrynth": {
     "weight": 5,
+    "minLevel": 10,
     "mode": "endless_repetition/dynamic"
   },
   "library_dimension": {
     "weight": 2,
+    "minLevel": 5,
     "mode": "endless_repetition/dynamic"
   },
   "nobeam": {
@@ -50,14 +56,18 @@
   },
   "patterns": {
     "weight": 1,
+    "minLevel": 5,
     "mode": "endless_repetition"
   },
   "singlepillar": {
     "weight": 2,
+    "minLevel": 2,
+    "maxLevel": 40,
     "mode": "endless_open"
   },
   "window": {
     "weight": 5,
+    "maxLevel": 10,
     "mode": "bedrockless"
   },
   "window_contents": {
