@@ -57,10 +57,15 @@ final class PortalCarriageLotteryTest {
         assertFalse(a.equals(b), "both worlds chose exactly the same groups");
     }
 
+    /**
+     * The rate the command promises is the one that survives the gap rule, not the raw draw — the
+     * threshold is solved backwards from it for exactly this reason. Rates denser than the gap can
+     * carry (below about 1 in 12) are excluded here; {@link #clampedRatesLandOnTheGap} covers those.
+     */
     @Test
-    @DisplayName("roughly one group in every wins a portal")
+    @DisplayName("roughly one group in every wins a portal, after the gap rule has taken its cut")
     void rateMatchesEvery() {
-        for (int every : new int[] {2, 5, 20, 64}) {
+        for (int every : new int[] {15, 20, 30, 64}) {
             int hits = chosenAnchors(SEED, every, SAMPLE_GROUPS).size();
             double expected = (double) SAMPLE_GROUPS / every;
             // Generous: this guards against a hash that clumps or skews, not against ordinary
@@ -73,19 +78,75 @@ final class PortalCarriageLotteryTest {
 
     /**
      * The point of the change. On the old rule the gap between portals was always the same number,
-     * so a player who had seen two knew where the third was.
+     * so a player who had seen two knew where the third was. The minimum gap puts a floor under the
+     * spacing without restoring that.
      */
     @Test
     @DisplayName("the gaps between portals vary rather than repeating a fixed period")
     void gapsAreNotAFixedPeriod() {
+        Set<Integer> gaps = groupGaps(SEED, 15);
+        assertTrue(gaps.size() > 10, "only " + gaps.size() + " distinct gap lengths — that reads as a cadence");
+    }
+
+    /**
+     * Walking out of an exit corridor and straight into the next entry hands the player the
+     * machinery. The rule that prevents it is local — a group looks at the four draws behind it and
+     * nothing further — so this checks the guarantee actually holds over a long run rather than
+     * trusting the argument.
+     */
+    @Test
+    @DisplayName("no two portals ever land closer than the minimum gap")
+    void portalsAreNeverCloserThanTheMinimumGap() {
+        for (int every : new int[] {15, 20, 30}) {
+            for (long seed : new long[] {SEED, 0L, -1L}) {
+                int smallest = groupGaps(seed, every).stream().mapToInt(Integer::intValue).min().orElse(Integer.MAX_VALUE);
+                assertTrue(smallest >= PortalCarriageSelection.MIN_GROUP_GAP,
+                    "every=" + every + " seed=" + seed + " put two portals " + smallest + " groups apart");
+            }
+        }
+    }
+
+    /** The origin is where the group ordinal changes sign — the gap must not open up across it. */
+    @Test
+    @DisplayName("the minimum gap holds across the origin too")
+    void minimumGapHoldsThroughNegativeIndices() {
+        int previous = Integer.MIN_VALUE;
+        for (int group = -2_000; group <= 2_000; group++) {
+            if (!PortalCarriageSelection.isPortalPart(group * GROUP, GROUP, Rate.lottery(15), SEED)) continue;
+            if (previous != Integer.MIN_VALUE) {
+                assertTrue(group - previous >= PortalCarriageSelection.MIN_GROUP_GAP,
+                    "groups " + previous + " and " + group + " are too close");
+            }
+            previous = group;
+        }
+    }
+
+    /**
+     * A rate denser than the gap can carry has one honest answer: as dense as the gap permits. The
+     * alternative is quietly delivering something else and looking broken.
+     */
+    @Test
+    @DisplayName("a rate denser than the gap allows lands on exactly every nth group")
+    void clampedRatesLandOnTheGap() {
+        assertTrue(PortalCarriageSelection.isGapClamped(5), "1-in-5 should be clamped by the gap");
+        for (int group = 0; group < 500; group++) {
+            assertEquals(group % PortalCarriageSelection.MIN_GROUP_GAP == 0,
+                PortalCarriageSelection.isPortalPart(group * GROUP, GROUP, Rate.lottery(5), SEED),
+                "group " + group);
+        }
+        assertFalse(PortalCarriageSelection.isGapClamped(15), "1-in-15 is reachable and must not clamp");
+    }
+
+    /** Distinct gap lengths, in groups, between consecutive portals over the sample. */
+    private static Set<Integer> groupGaps(long seed, int every) {
         Set<Integer> gaps = new HashSet<>();
         int previous = Integer.MIN_VALUE;
-        for (int anchor = 0; anchor < SAMPLE_GROUPS * GROUP; anchor += GROUP) {
-            if (!PortalCarriageSelection.isPortalPart(anchor, GROUP, Rate.lottery(20), SEED)) continue;
-            if (previous != Integer.MIN_VALUE) gaps.add((anchor - previous) / GROUP);
-            previous = anchor;
+        for (int group = 0; group < SAMPLE_GROUPS; group++) {
+            if (!PortalCarriageSelection.isPortalPart(group * GROUP, GROUP, Rate.lottery(every), seed)) continue;
+            if (previous != Integer.MIN_VALUE) gaps.add(group - previous);
+            previous = group;
         }
-        assertTrue(gaps.size() > 10, "only " + gaps.size() + " distinct gap lengths — that reads as a cadence");
+        return gaps;
     }
 
     @Test

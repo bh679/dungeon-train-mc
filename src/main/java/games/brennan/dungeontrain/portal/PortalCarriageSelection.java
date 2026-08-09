@@ -41,6 +41,9 @@ import java.util.List;
  * <p>Mixing the world seed in is what keeps the lottery from being the same lottery everywhere: a
  * seedless hash would put portals at identical group ordinals in every world ever generated.</p>
  *
+ * <p>Two portals are never closer than {@link #MIN_GROUP_GAP} groups, so the lottery reads as
+ * sporadic rather than clumpy — an unconstrained draw puts two back to back often enough to notice.</p>
+ *
  * <p>The one exception is a dev build with everyone in creative, which keeps the old every-2nd
  * cadence so a portal is always a short ride away while testing — see {@link #rateFor}.</p>
  */
@@ -56,11 +59,24 @@ public final class PortalCarriageSelection {
     /** Slot of the exit corridor within its group. */
     public static final int SLOT_EXIT = 2;
 
-    /** One group in twenty holds a portal, on average. */
-    public static final int DEFAULT_CARRIAGE_EVERY = 20;
+    /** One group in fifteen holds a portal, on average. */
+    public static final int DEFAULT_CARRIAGE_EVERY = 15;
 
     /** Value meaning "no group holds a portal". */
     public static final int CARRIAGE_EVERY_OFF = 0;
+
+    /**
+     * Groups two portals must be apart, at the least.
+     *
+     * <p>An unconstrained lottery clumps: a rate of one in fifteen still puts two portals back to
+     * back now and then, and a player who walks out of one exit corridor into the next entry has
+     * been handed the machinery rather than a surprise. The gap costs nothing to enforce and buys
+     * the sporadic feel the lottery was for.</p>
+     *
+     * <p>Five is also a ceiling on density: no lottery rate can average denser than one group in
+     * about twelve while honouring it — see {@link #drawThreshold}.</p>
+     */
+    public static final int MIN_GROUP_GAP = 5;
 
     /**
      * The cadence a dev build hands a creative player: every 2nd group, as the whole system worked
@@ -133,8 +149,99 @@ public final class PortalCarriageSelection {
         if (rate.every() == 1) return true;
 
         long groupIndex = Math.floorDiv((long) carriageIndex, Math.max(1, groupSize));
-        long draw = rate.periodic() ? groupIndex : hash(worldSeed, groupIndex);
-        return Math.floorMod(draw, (long) rate.every()) == 0L;
+
+        // The dev-creative cadence is deliberately dense and already evenly spaced, so it skips the
+        // gap rule outright — five apart is the opposite of what it is for.
+        if (rate.periodic()) return Math.floorMod(groupIndex, (long) rate.every()) == 0L;
+
+        // Denser than the gap can carry, so the draw is a certainty — and a certainty cannot go
+        // through the suppression below, where every group would be knocked out by the one behind it
+        // and the train would end up with no portals at all. Space them by the gap directly instead:
+        // the densest arrangement the constraint permits, which is what such a rate is asking for.
+        if (drawThreshold(rate.every()) >= DRAW_PRECISION) {
+            return Math.floorMod(groupIndex, (long) MIN_GROUP_GAP) == 0L;
+        }
+
+        if (!drewHit(worldSeed, groupIndex, rate.every())) return false;
+
+        // Suppressed by any hit in the four groups behind it, so two portals can never land within
+        // MIN_GROUP_GAP: were they to, the earlier one's hit would sit inside the later one's window
+        // and would have taken it out. Earlier wins.
+        //
+        // Deliberately looking at raw HITS rather than at whether those groups were themselves
+        // chosen — that would recurse back down the train with no floor, and this has to answer
+        // from the group's own ordinal alone, the same on every reload and for every reader.
+        for (long back = 1; back < MIN_GROUP_GAP; back++) {
+            if (drewHit(worldSeed, groupIndex - back, rate.every())) return false;
+        }
+        return true;
+    }
+
+    /**
+     * True if {@code every} is denser than {@link #MIN_GROUP_GAP} allows, so the realised spacing
+     * will be every {@code MIN_GROUP_GAP}th group rather than the rate that was asked for. The
+     * command says so out loud — a setting that quietly does something else reads as a bug.
+     */
+    public static boolean isGapClamped(int every) {
+        return every > 1 && drawThreshold(every) >= DRAW_PRECISION;
+    }
+
+    /** One group's raw draw, before the gap rule takes any of them back out. */
+    private static boolean drewHit(long worldSeed, long groupIndex, int every) {
+        return Math.floorMod(hash(worldSeed, groupIndex), DRAW_PRECISION) < drawThreshold(every);
+    }
+
+    /** Denominator the draw is taken against. A millionth of a group is finer than anyone can feel. */
+    private static final long DRAW_PRECISION = 1_000_000L;
+
+    /** Rates the command accepts (1–64), solved once at class init rather than per call. */
+    private static final int MAX_TABULATED_EVERY = 64;
+
+    private static final long[] DRAW_THRESHOLDS = tabulateThresholds();
+
+    /**
+     * How often a group must draw a hit for one in {@code every} to <b>survive</b> the gap rule.
+     *
+     * <p>Suppression thins the draw, so hitting at one in fifteen and dropping everything inside the
+     * gap would realise about one in twenty and make the number in the command a lie. The raw rate
+     * is therefore solved from the wanted one: a hit survives when the {@code MIN_GROUP_GAP - 1}
+     * groups behind it all missed, so</p>
+     *
+     * <pre>   p · (1 − p)^(gap−1) = 1 / every</pre>
+     *
+     * <p>which the fixed point {@code p ← target / (1 − p)^(gap−1)} settles at in a few dozen steps.</p>
+     *
+     * <p><b>Rates the gap cannot reach.</b> That left-hand side peaks around 0.082 — one group in
+     * roughly twelve — so anything denser is simply not achievable while keeping portals five apart.
+     * Those clamp to a certain hit, which the gap then thins to exactly every fifth group: as dense
+     * as the constraint permits, and an honest answer rather than a silent near-miss.</p>
+     */
+    private static long drawThreshold(int every) {
+        if (every >= 0 && every <= MAX_TABULATED_EVERY) return DRAW_THRESHOLDS[every];
+        return solveThreshold(every);
+    }
+
+    private static long[] tabulateThresholds() {
+        long[] thresholds = new long[MAX_TABULATED_EVERY + 1];
+        for (int every = 0; every <= MAX_TABULATED_EVERY; every++) {
+            thresholds[every] = solveThreshold(every);
+        }
+        return thresholds;
+    }
+
+    private static long solveThreshold(int every) {
+        if (every <= CARRIAGE_EVERY_OFF) return 0L;
+
+        double target = 1.0 / every;
+        double p = target;
+        for (int step = 0; step < 64; step++) {
+            double next = target / Math.pow(1.0 - p, MIN_GROUP_GAP - 1);
+            // Diverged past certainty: this rate is denser than the gap allows, so draw every time
+            // and let the gap alone space them.
+            if (!(next < 1.0)) return DRAW_PRECISION;
+            p = next;
+        }
+        return Math.round(p * DRAW_PRECISION);
     }
 
     /**
