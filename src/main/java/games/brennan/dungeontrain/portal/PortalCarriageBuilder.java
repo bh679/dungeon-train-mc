@@ -714,7 +714,27 @@ public final class PortalCarriageBuilder {
      */
     public static void stampExitCopy(ServerLevel level, PortalStructure structure, CarriageDims dims,
                                      int pairKey, PortalExitSites.Site site) {
-        stampCorridorHalf(level, structure.shadowAt(site.tile()), dims, pairKey, site.role());
+        PortalStructure shadow = structure.shadowAt(site.tile());
+        PortalCarriageLayout layout = layoutFor(dims);
+
+        // Sweep the volume through PortalClear FIRST, block entity by block entity.
+        //
+        // A copy is laid into a room that is already standing and may be furnished — the shipped
+        // `book` and `library_dimension` rooms are shelves and lecterns and chests — and the writes
+        // below are ordinary setBlocks. Breaking a container that way DROPS ITS CONTENTS, so laying
+        // one copy through a library left a heap of books on the floor. PortalClear evicts the block
+        // entity instead of breaking it, which is the same reason the seam carve goes through
+        // clearCell rather than setBlock.
+        //
+        // Each of the mask's three boxes, never their bounding box: that would take the room's floor
+        // out of the aisles either side of the corridor, which is exactly the bug PortalCorridorMask
+        // was narrowed to fix.
+        for (BoundingBox box : PortalCorridorMask
+                .forCorridor(shadow, dims, layout, PLUG_DEPTH, site.role()).boxes()) {
+            PortalClear.clearBox(level, box, PortalCorridorMask.NONE);
+        }
+
+        stampCorridorHalf(level, shadow, dims, pairKey, site.role());
     }
 
     /**

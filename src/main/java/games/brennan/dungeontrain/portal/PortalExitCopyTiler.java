@@ -83,7 +83,7 @@ public final class PortalExitCopyTiler {
 
         Tile centre = standingIn.iterator().next();
 
-        Site next = nextToAdd(level, dims, structure, centre, neighbours, pairKey);
+        Site next = nextToAdd(level, dims, structure, centre, radius, neighbours, pairKey);
         if (next != null) return stamp(level, dims, structure, next, pairKey);
 
         Site stale = standing.nextToRemove(centre, radius, reachOf(structure, dims));
@@ -118,23 +118,35 @@ public final class PortalExitCopyTiler {
     }
 
     /**
-     * The next copy to lay: the nearest site to {@code centre} that a standing tile owes, is not up
-     * yet, and can be built — or {@code null}.
+     * The next copy to lay: the nearest site to {@code centre} that a standing tile owes, is inside
+     * {@code radius}, is not up yet, and can be built — or {@code null}.
      *
      * <p><b>Nearest first, explicitly.</b> {@code PortalRoomTiling} fills its window nearest-first,
      * but its resident set is a {@code Set.copyOf} and so has no order to inherit — iterating it and
      * taking the first hit would lay a copy five rooms away before one the player is walking towards.
      * Ties break on coordinates and role so a tick's choice is deterministic rather than dependent on
      * the set's hash order.</p>
+     *
+     * <p><b>The radius is the fix for a thrash, not a nicety.</b> "Owed by a standing tile" and
+     * "inside the window" come apart the moment the window shrinks: a player who steps back onto the
+     * train drops the radius to {@link PortalRoomTiling#APPROACH_RADIUS}, while the tiles themselves
+     * retire only one per tick, so distant tiles stay resident for a while. Without this check those
+     * tiles kept owing copies that {@link PortalExitCopies#nextToRemove} immediately retired again —
+     * observed live at one full corridor stamp and erase every tick, 113 of them at a single site in
+     * a five-minute session. Adding inside {@code radius} and removing beyond
+     * {@code radius + reach} leaves the reach as a hysteresis band between the two rules, which is
+     * what stops them arguing.</p>
      */
     private static Site nextToAdd(ServerLevel level, CarriageDims dims, PortalStructure structure,
-                                  Tile centre, Collection<PortalStructure> neighbours, int pairKey) {
+                                  Tile centre, int radius, Collection<PortalStructure> neighbours,
+                                  int pairKey) {
         PortalExitCopies standing = structure.exitCopies();
         long seed = PortalExitSites.seedFor(level.getSeed(), pairKey, structure.roomName());
         Site best = null;
         for (Tile tile : structure.tiling().tiles()) {
             for (Site site : PortalExitSites.owedAt(structure.exits(), tile, seed)) {
                 if (standing.has(site)) continue;
+                if (site.chebyshevTo(centre) > radius) continue;
                 if (best != null && nearestTo(centre).compare(site, best) >= 0) continue;
                 if (!canStamp(level, dims, structure, site, neighbours)) continue;
                 best = site;
