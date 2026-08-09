@@ -35,6 +35,10 @@ public final class TranslationScreen extends Screen {
     private static final int GAP = 4;
     private static final int TOP = 30;
     private static final int SUBTITLE_COLOUR = 0xFFA0A0A0;
+    /** Share of the width the "sent in" column takes; the strings pane keeps the rest. */
+    private static final int SENT_COLUMN_PERCENT = 20;
+    /** Floor so the column stays legible at a small GUI scale, where 20% is barely a word. */
+    private static final int SENT_COLUMN_MIN_W = 90;
 
     /** Which units the list shows. Declaration order is the order the cycle button offers. */
     private enum StateFilter {
@@ -165,20 +169,22 @@ public final class TranslationScreen extends Screen {
                     refresh();
                 }));
 
-        // The SENT view splits the width: submissions on the right, the picked one's strings on
-        // the left. Every other filter gives the whole width to the catalog list.
+        // The SENT view splits the width: submissions down a narrow right column, the picked
+        // one's strings taking the rest. Every other filter gives the whole width to the catalog
+        // list. The strings are what gets read and edited, so they keep the room.
         boolean split = stateFilter == StateFilter.SENT;
         int listHeight = Math.max(ROW_H, listBottom - listTop);
-        int leftWidth = split ? (contentWidth - GAP) / 2 : contentWidth;
+        int sentWidth = split
+            ? Math.max(SENT_COLUMN_MIN_W, (contentWidth - GAP) * SENT_COLUMN_PERCENT / 100) : 0;
+        int leftWidth = split ? Math.max(ROW_H, contentWidth - GAP - sentWidth) : contentWidth;
 
         list = new TranslationListWidget(font, MARGIN, listTop, leftWidth, listHeight,
             this::openEditor);
         addRenderableWidget(list);
 
         if (split) {
-            int sentX = MARGIN + leftWidth + GAP;
-            sentList = new TranslationSubmissionList(font, sentX, listTop,
-                contentWidth - leftWidth - GAP, listHeight, this::openSubmission);
+            sentList = new TranslationSubmissionList(font, MARGIN + leftWidth + GAP, listTop,
+                sentWidth, listHeight, this::openSubmission);
             addRenderableWidget(sentList);
             TranslationSubmissionsClient.fetch(this::onHistory);
         } else {
