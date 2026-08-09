@@ -1,10 +1,10 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 27,
+  "selfWeight": 1,
   "variants": [
     {
       "id": "paths",
-      "weight": 1
+      "weight": 51
     }
   ]
 }
