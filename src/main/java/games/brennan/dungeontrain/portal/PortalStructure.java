@@ -41,15 +41,17 @@ import java.util.Objects;
  * {@link #tiledMinX}..{@link #tiledMaxZ} instead, and the occupancy box and the erase sweep read
  * those.</p>
  *
- * @param origin   world position of the entry twin's minimum corner — the structure's origin
- * @param roomName the {@code portal_room} variant this pair rolled
- * @param roomSize the room's full box, shell included, as stamped (length is the free axis)
- * @param settings what this room does at its walls, and what its copies are, resolved when the pair
- *                 was planned
- * @param tiling   which copies of the room are currently standing
+ * @param origin     world position of the entry twin's minimum corner — the structure's origin
+ * @param roomName   the {@code portal_room} variant this pair rolled
+ * @param roomSize   the room's full box, shell included, as stamped (length is the free axis)
+ * @param settings   what this room does at its walls, and what its copies are, resolved when the
+ *                   pair was planned
+ * @param tiling     which copies of the room are currently standing
+ * @param exitCopies which of the room's extra corridors are currently standing
  */
 public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
-                              PortalRoomSettings settings, PortalRoomTiling tiling) {
+                              PortalRoomSettings settings, PortalRoomTiling tiling,
+                              PortalExitCopies exitCopies) {
 
     public PortalStructure {
         Objects.requireNonNull(origin, "origin");
@@ -57,11 +59,19 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         Objects.requireNonNull(roomSize, "roomSize");
         if (settings == null) settings = PortalRoomSettings.DEFAULT;
         if (tiling == null) tiling = PortalRoomTiling.base();
+        if (exitCopies == null) exitCopies = PortalExitCopies.NONE;
     }
 
     /** Back-compat 3-arg form — a default-mode structure with only its base room standing. */
     public PortalStructure(BlockPos origin, String roomName, Vec3i roomSize) {
-        this(origin, roomName, roomSize, PortalRoomSettings.DEFAULT, PortalRoomTiling.base());
+        this(origin, roomName, roomSize, PortalRoomSettings.DEFAULT, PortalRoomTiling.base(),
+            PortalExitCopies.NONE);
+    }
+
+    /** The five-part form this record was before extra corridors existed. */
+    public PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
+                           PortalRoomSettings settings, PortalRoomTiling tiling) {
+        this(origin, roomName, roomSize, settings, tiling, PortalExitCopies.NONE);
     }
 
     /**
@@ -74,12 +84,17 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
     public static PortalStructure withMode(BlockPos origin, String roomName, Vec3i roomSize,
                                            PortalRoomMode mode, PortalRoomTiling tiling) {
         return new PortalStructure(origin, roomName, roomSize,
-            PortalRoomSettings.DEFAULT.withMode(mode), tiling);
+            PortalRoomSettings.DEFAULT.withMode(mode), tiling, PortalExitCopies.NONE);
     }
 
     /** What this room does at its walls. */
     public PortalRoomMode mode() {
         return settings.mode();
+    }
+
+    /** How many extra corridors back to the train this room lays, and how far apart. */
+    public PortalRoomExits exits() {
+        return settings.effectiveExits();
     }
 
     /**
@@ -242,11 +257,44 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
 
     /** The same structure relocated — same room, same settings, back to just its base tile. */
     public PortalStructure movedTo(BlockPos newOrigin) {
-        return new PortalStructure(newOrigin, roomName, roomSize, settings, PortalRoomTiling.base());
+        return new PortalStructure(newOrigin, roomName, roomSize, settings, PortalRoomTiling.base(),
+            PortalExitCopies.NONE);
     }
 
     /** The same structure with a different set of room copies standing. */
     public PortalStructure withTiling(PortalRoomTiling newTiling) {
-        return new PortalStructure(origin, roomName, roomSize, settings, newTiling);
+        return new PortalStructure(origin, roomName, roomSize, settings, newTiling, exitCopies);
+    }
+
+    /** The same structure with a different set of extra corridors standing. */
+    public PortalStructure withExitCopies(PortalExitCopies newCopies) {
+        return new PortalStructure(origin, roomName, roomSize, settings, tiling, newCopies);
+    }
+
+    /**
+     * This structure translated so that its <b>room slot lands on {@code tile}</b> — the geometry an
+     * extra corridor at that tile is stamped from.
+     *
+     * <p>The whole of {@link PortalExitSites}' placement rule rests on one identity:
+     * {@link PortalRoomLayout#roomOrigin} derives the room from the entry origin by translation
+     * alone, so a structure moved by a whole number of tiles has its room exactly on that tile, and
+     * its two corridors exactly where a copy's corridors belong. {@link #origin} is then where an
+     * {@link PortalCarriageRole#ENTRY} copy goes and {@link #exitOrigin} where an
+     * {@link PortalCarriageRole#EXIT} copy goes — which is why nothing about a copy's position, seal
+     * ring, plug or mask has to be re-derived: every routine that lays the base pair works on the
+     * shadow unchanged.</p>
+     *
+     * <p>The shadow carries no tiling and no copies of its own. It is a coordinate frame, not a
+     * second structure — never store one.</p>
+     */
+    public PortalStructure shadowAt(PortalRoomTiling.Tile tile) {
+        if (PortalRoomTiling.Tile.BASE.equals(tile)) return this;
+        return movedTo(origin.offset(tile.x() * roomLength(), 0, tile.z() * roomWidth()));
+    }
+
+    /** Minimum corner of the corridor an extra {@code role} copy anchored at {@code tile} occupies. */
+    public BlockPos exitCopyOrigin(CarriageDims dims, PortalExitSites.Site site) {
+        PortalStructure shadow = shadowAt(site.tile());
+        return site.role() == PortalCarriageRole.ENTRY ? shadow.origin() : shadow.exitOrigin(dims);
     }
 }

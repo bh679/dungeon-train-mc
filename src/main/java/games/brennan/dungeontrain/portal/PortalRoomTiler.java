@@ -87,9 +87,13 @@ public final class PortalRoomTiler {
      * <p>False while copies are still standing, so {@code eraseTwin} never has to sweep more than the
      * base structure's own box. Correctness does not depend on this — the erase reads the tiled
      * bounds anyway — only the cost does.</p>
+     *
+     * <p>Extra corridors are counted too, and there the cost argument is sharper: a copy can stand
+     * many tiles outside the tiled bounds ({@link PortalExitCopies}), so a structure re-stamped with
+     * one still up would have to sweep the whole span the player walked.</p>
      */
     public static boolean drainedEnoughToRestamp(PortalStructure structure) {
-        return structure.tiling().isBaseOnly();
+        return structure.tiling().isBaseOnly() && structure.exitCopies().isEmpty();
     }
 
     /**
@@ -108,6 +112,15 @@ public final class PortalRoomTiler {
     public static PortalStructure tick(ServerLevel level, CarriageDims dims,
                                        PortalStructure structure, Set<Tile> standingIn, int radius,
                                        Collection<PortalStructure> neighbours, int pairKey) {
+        // The extra corridors get first refusal on the tick's one piece of work. There are few of
+        // them beside the tiles — a whole window owes a handful — and a player walking steadily keeps
+        // finding a tile to append, so tiles going first would starve the copies indefinitely and the
+        // way out would never appear. A short pause in the window's growth costs nothing: the fog is
+        // clamped to what has been built, so what is not there yet is not visible either.
+        PortalStructure withCopies = PortalExitCopyTiler.tick(
+            level, dims, structure, standingIn, radius, neighbours, pairKey);
+        if (withCopies != structure) return withCopies;
+
         if (!structure.mode().tiles()) {
             // A room that does not tile should have nothing standing. It can still get here carrying
             // copies if its variant's mode was changed between one visit and the next.
@@ -212,18 +225,24 @@ public final class PortalRoomTiler {
     }
 
     /**
-     * What this copy must not write into: the corridors, when it sits on the row that runs through
-     * them, and nothing at all on every other row.
+     * What this copy must not write into: the pair's corridors, when it sits on the row that runs
+     * through them, plus every extra corridor standing anywhere.
      *
      * <p>This is what lets a twin be placed <b>once</b>, when its structure is built. The copy is
      * stamped around it rather than over it, so there is never anything to repair — no re-laying the
      * corridors each time a copy on that row appears, retires, or has a seam carved through it.</p>
+     *
+     * <p>The row test covers the pair alone. An extra corridor ({@link PortalRoomExits}) can stand on
+     * any row at all, so its mask is added unconditionally — a room copy appearing beside one has to
+     * be built around it exactly as the corridor row's is around the originals, or the stamp would
+     * fill a working way back to the train with wall.</p>
      */
     private static PortalCorridorMask maskFor(PortalStructure structure, CarriageDims dims,
                                               Tile tile) {
-        return tile.z() == 0
+        PortalCorridorMask pair = tile.z() == 0
             ? PortalCarriageBuilder.corridorMask(structure, dims)
             : PortalCorridorMask.NONE;
+        return pair.plus(PortalCarriageBuilder.exitCopyMask(structure, dims));
     }
 
     // ---------- erasing ----------
@@ -427,7 +446,9 @@ public final class PortalRoomTiler {
         // Masked here rather than in each of the three face operations, so none of them can forget:
         // a face along X from the base room runs straight into a door plane, and the door is placed
         // once and must survive. Two cells short of it, not one — see the facedBy check below.
-        PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
+        // Extra corridors are in the mask for the same reason and with the same force: a face closing
+        // across one of their door planes would brick up a way out that a player can see.
+        PortalCorridorMask mask = PortalCarriageBuilder.allCorridorMask(structure, dims);
 
         int x0 = origin.getX();
         int x1 = x0 + size.getX() - 1;
@@ -498,7 +519,10 @@ public final class PortalRoomTiler {
      * from inside the portal loop, which is the shape of the Sable worldgen deadlock — and the cost of
      * saying no is only that a copy does not appear, which the fog clamp already hides.</p>
      */
-    private static boolean chunksLoaded(ServerLevel level, BoundingBox box) {
+    // Package-private rather than private: PortalExitCopyTiler asks the same question of an extra
+    // corridor's box, and the answer has to be the same one — a second implementation is a second
+    // chance to force a load on the server tick.
+    static boolean chunksLoaded(ServerLevel level, BoundingBox box) {
         int minChunkX = SectionPos.blockToSectionCoord(box.minX());
         int maxChunkX = SectionPos.blockToSectionCoord(box.maxX());
         int minChunkZ = SectionPos.blockToSectionCoord(box.minZ());

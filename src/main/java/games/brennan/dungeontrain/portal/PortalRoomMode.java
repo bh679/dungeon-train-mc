@@ -135,6 +135,34 @@ public enum PortalRoomMode {
     }
 
     /**
+     * True when the Exits control applies at all — only a room that repeats has anywhere to put an
+     * extra way back to the train.
+     *
+     * <p>Both tiling modes, unlike {@code PortalRoomSettings.copiesApply}, which is
+     * {@link #tilesWholeRoom} — what Copies describes is what an appended tile <i>contains</i>, which
+     * {@link #ENDLESS_OPEN} decides for itself. Getting lost is not a property of the walls, so a
+     * question about the way out is asked of any endless room.</p>
+     */
+    public boolean exitsApply() {
+        return tiles();
+    }
+
+    /**
+     * What a room of this mode does about extra corridors when its variant says nothing.
+     *
+     * <p>{@link #ENDLESS_REPETITION} is a hall of identical rooms, which is the shape a player gets
+     * lost in, so it lays them by default. {@link #ENDLESS_OPEN} has sightlines across it — the way
+     * back stays visible from a long way off — so a corridor standing in the middle of the plain is
+     * furniture nobody asked for, and it defaults to none.</p>
+     *
+     * <p>Answered here rather than in {@link PortalRoomExits} because it is a statement about what a
+     * <i>mode</i> wants, the same way {@link #closesOuterFaces} and {@link #fogs} are.</p>
+     */
+    public PortalRoomExits defaultExits() {
+        return this == ENDLESS_REPETITION ? PortalRoomExits.ON : PortalRoomExits.OFF;
+    }
+
+    /**
      * The mode named by {@code id}, or {@link #DEFAULT} when it is null, blank or unrecognised.
      *
      * <p>Deliberately total rather than throwing. The tag is free text on disk, and a room whose mode

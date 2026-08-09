@@ -73,6 +73,40 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
     }
 
     /**
+     * This mask unioned with another.
+     *
+     * <p>What an endless room's extra corridors need: every copy standing near a tile protects its
+     * own three volumes, and the tile has to be stamped around all of them at once. Kept a union for
+     * the same reason {@link #plus(BoundingBox)} is — the corridor row's tile needs the base pair's
+     * boxes as well as any copy's.</p>
+     */
+    public PortalCorridorMask plus(PortalCorridorMask other) {
+        if (other == null || other.isEmpty()) return this;
+        if (isEmpty()) return other;
+        List<BoundingBox> grown = new java.util.ArrayList<>(boxes.size() + other.boxes.size());
+        grown.addAll(boxes);
+        grown.addAll(other.boxes);
+        return new PortalCorridorMask(grown);
+    }
+
+    /** True when any of this mask's boxes overlaps {@code box}. */
+    public boolean intersects(BoundingBox box) {
+        for (int i = 0; i < boxes.size(); i++) {
+            if (boxes.get(i).intersects(box)) return true;
+        }
+        return false;
+    }
+
+    /** The smallest box containing everything this mask protects, or {@code null} when it is empty. */
+    public BoundingBox bounds() {
+        BoundingBox all = null;
+        for (BoundingBox box : boxes) {
+            all = all == null ? box : all.encapsulate(box);
+        }
+        return all;
+    }
+
+    /**
      * True when {@code (x, y, z)} belongs to a corridor and must be left alone.
      *
      * <p>Compares the bounds directly rather than through {@code BoundingBox.isInside(Vec3i)}, which
@@ -124,17 +158,36 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
      */
     public static PortalCorridorMask forStructure(PortalStructure structure, CarriageDims dims,
                                                   PortalCarriageLayout layout, int plugDepth) {
-        BlockPos origin = structure.origin();
-        BlockPos exit = structure.exitOrigin(dims);
+        return forCorridor(structure, dims, layout, plugDepth, PortalCarriageRole.ENTRY)
+            .plus(forCorridor(structure, dims, layout, plugDepth, PortalCarriageRole.EXIT));
+    }
+
+    /**
+     * The three boxes one end of a pair owns: the corridor's own box, the plug beyond its dead outer
+     * door, and the single plane its seal ring fills at its mouth.
+     *
+     * <p>Split out of {@link #forStructure} so an endless room's <b>extra</b> corridors can be
+     * masked. A copy is one corridor, not a pair — {@link PortalExitSites.Site} carries a role — and
+     * it is stamped from the same structure translated onto its anchor tile
+     * ({@link PortalStructure#shadowAt}), so passing that shadow here produces exactly the boxes
+     * {@code stampCorridorHalf} writes at exactly the place it writes them. The two cannot drift
+     * apart because they are the same geometry read twice.</p>
+     */
+    public static PortalCorridorMask forCorridor(PortalStructure structure, CarriageDims dims,
+                                                 PortalCarriageLayout layout, int plugDepth,
+                                                 PortalCarriageRole role) {
+        BlockPos corridor = role == PortalCarriageRole.ENTRY
+            ? structure.origin()
+            : structure.exitOrigin(dims);
         BlockPos room = structure.roomOrigin(dims, layout);
         Vec3i size = structure.roomSize();
 
         // The corridor's own cross-section. A room is never narrower or shorter than this
         // (PortalRoomLayout.minWidth / minHeight), so a copy always has room either side of it.
-        int corridorMinZ = origin.getZ();
-        int corridorMaxZ = origin.getZ() + dims.width() - 1;
-        int corridorMinY = origin.getY();
-        int corridorMaxY = origin.getY() + dims.height() - 1;
+        int corridorMinZ = corridor.getZ();
+        int corridorMaxZ = corridor.getZ() + dims.width() - 1;
+        int corridorMinY = corridor.getY();
+        int corridorMaxY = corridor.getY() + dims.height() - 1;
 
         // The seal ring's, which is the room's — wider and, in a tall room, taller.
         int roomMinZ = room.getZ();
@@ -149,25 +202,20 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
         // in (PortalCorridorSize), and a box sized to the carriage would leave each twin's inner tail
         // unprotected for a room copy to overwrite.
         int corridorLength = layout.length();
-        // Each corridor's mouth: the door plane facing the room, which is what the seal ring fills.
-        int entrySealX = origin.getX() + corridorLength - 1;
-        int exitSealX = exit.getX();
+        int minX = corridor.getX();
+        int maxX = minX + corridorLength - 1;
+        // The mouth is the door plane facing the room: the far end of an entry corridor, the near end
+        // of an exit one. The plug is always at the other end, behind the door that leads nowhere.
+        boolean entry = role == PortalCarriageRole.ENTRY;
+        int sealX = entry ? maxX : minX;
+        int plugMinX = entry ? minX - plugDepth : maxX + 1;
+        int plugMaxX = entry ? minX - 1 : maxX + plugDepth;
 
         return new PortalCorridorMask(List.of(
-            // Entry corridor, the plug behind its dead outer door, and its mouth's seal ring.
-            new BoundingBox(origin.getX(), corridorMinY, corridorMinZ,
-                entrySealX, corridorMaxY, corridorMaxZ),
-            new BoundingBox(origin.getX() - plugDepth, corridorMinY, corridorMinZ - 1,
-                origin.getX() - 1, corridorMaxY, corridorMaxZ + 1),
-            new BoundingBox(entrySealX, roomMinY, roomMinZ,
-                entrySealX, roomMaxY, roomMaxZ),
-            // Exit corridor, the plug beyond its dead outer door, and its mouth's seal ring.
-            new BoundingBox(exitSealX, corridorMinY, corridorMinZ,
-                exit.getX() + corridorLength - 1, corridorMaxY, corridorMaxZ),
-            new BoundingBox(exit.getX() + corridorLength, corridorMinY, corridorMinZ - 1,
-                exit.getX() + corridorLength - 1 + plugDepth, corridorMaxY, corridorMaxZ + 1),
-            new BoundingBox(exitSealX, roomMinY, roomMinZ,
-                exitSealX, roomMaxY, roomMaxZ)));
+            new BoundingBox(minX, corridorMinY, corridorMinZ, maxX, corridorMaxY, corridorMaxZ),
+            new BoundingBox(plugMinX, corridorMinY, corridorMinZ - 1,
+                plugMaxX, corridorMaxY, corridorMaxZ + 1),
+            new BoundingBox(sealX, roomMinY, roomMinZ, sealX, roomMaxY, roomMaxZ)));
     }
 
     /**

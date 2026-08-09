@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.portal.PortalClear;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.portal.PortalEditMirror;
+import games.brennan.dungeontrain.portal.PortalExitTransit;
 import games.brennan.dungeontrain.portal.PortalFrames;
 import games.brennan.dungeontrain.portal.PortalCorridorEntities;
 import games.brennan.dungeontrain.portal.PortalEntityTransit;
@@ -46,6 +47,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -560,11 +562,57 @@ public final class PortalCarriageEvents {
         // and for PortalPuppetAttack, which needs the frames to measure a hit through the mirror.
         publishPairing(carriageIndex, ship, dims, originX, originY, originZ, twinOrigin, frames);
 
+        swapPlayers(level, players, frames, carriageIndex, /*copyOnly*/ false);
+
+        // Everything anywhere in the structure — both twin corridors and the pocket room between
+        // them — is noted as being in a portal room, so vanilla's despawn rule leaves it alone. The
+        // corridor scan below would miss the room, which is most of where things actually stand.
+        protectStructureOccupants(level, dims, built);
+
+        // One scan of the corridors, shared by the two things that act on their occupants — so a mob
+        // that transits is necessarily a mob that had a puppet, and neither can see an entity the
+        // other missed.
+        List<Entity> occupants = PortalCorridorEntities.inCorridors(level, frames);
+
+        // Everything that is not a player crosses the midpoint on the same rule players do. Without
+        // this a corridor is only half a portal: a villager followed in would stay behind on the
+        // train, and a thrown ender pearl would land in the copy its thrower had just left.
+        PortalEntityTransit.run(level, frames, occupants, carriageIndex);
+
+        // Stand-ins for whoever is in the other copy, so two players either side of the midpoint can
+        // still see each other. Last, so everything is described from where it ended up this tick
+        // rather than where it was about to leave.
+        PortalPuppets.gather(level, players, frames, ship, carriageIndex, occupants, puppets);
+
+        // The endless modes may have scattered further copies of this carriage's corridor through the
+        // room (PortalRoomExits). Each is the same pairing at a different origin, so the same swap
+        // runs again once per copy — outbound only, because walking in from the train always leads to
+        // the original twin. Deliberately after the puppets: a copy has none, and gathering them per
+        // copy would multiply that cost by however many are standing.
+        for (PortalFrames copy : PortalExitTransit.framesFor(
+                built, dims, layout, role, frames.carriage(), players)) {
+            swapPlayers(level, players, copy, carriageIndex, /*copyOnly*/ true);
+            PortalEntityTransit.run(level, copy,
+                inCopyOnly(copy, PortalCorridorEntities.inCorridors(level, copy)), carriageIndex);
+        }
+    }
+
+    /**
+     * Move every player this pairing says is on the wrong side of its midpoint.
+     *
+     * <p>{@code copyOnly} is the guard {@link PortalExitTransit} exists to describe: an extra
+     * corridor's frame covers the carriage as well, and a player standing on the train sits inside
+     * every copy's frame at once. Without it they would be flung to a different copy every tick.</p>
+     */
+    private static void swapPlayers(ServerLevel level, List<ServerPlayer> players,
+                                    PortalFrames frames, int carriageIndex, boolean copyOnly) {
         for (ServerPlayer player : players) {
             if (player.isPassenger()) continue;
             if (onCooldown(player, level.getGameTime())) continue;
 
             double px = player.getX(), py = player.getY(), pz = player.getZ();
+            if (copyOnly && !PortalExitTransit.inCopy(frames, px, py, pz)) continue;
+
             PortalFrames.Move move = frames.requiredMove(px, py, pz);
             if (move == null) continue;
 
@@ -590,31 +638,28 @@ public final class PortalCarriageEvents {
             PacketDistributor.sendToPlayer(player, new PortalSwapPacket());
             COOLDOWNS.put(player.getUUID(), level.getGameTime() + SWAP_COOLDOWN_TICKS);
 
-            LOGGER.info("[DungeonTrain] Portal carriage swap: player={} carriage={} → {} ({}, {}, {}) → ({}, {}, {})",
-                player.getName().getString(), carriageIndex,
+            LOGGER.info("[DungeonTrain] Portal carriage swap: player={} carriage={}{} → {} ({}, {}, {}) → ({}, {}, {})",
+                player.getName().getString(), carriageIndex, copyOnly ? " (exit copy)" : "",
                 move.toFrame() == PortalFrames.FRAME_TWIN ? "TWIN" : "CARRIAGE",
                 fmt(px), fmt(py), fmt(pz), fmt(move.x()), fmt(targetY), fmt(move.z()));
         }
+    }
 
-        // Everything anywhere in the structure — both twin corridors and the pocket room between
-        // them — is noted as being in a portal room, so vanilla's despawn rule leaves it alone. The
-        // corridor scan below would miss the room, which is most of where things actually stand.
-        protectStructureOccupants(level, dims, built);
-
-        // One scan of the corridors, shared by the two things that act on their occupants — so a mob
-        // that transits is necessarily a mob that had a puppet, and neither can see an entity the
-        // other missed.
-        List<Entity> occupants = PortalCorridorEntities.inCorridors(level, frames);
-
-        // Everything that is not a player crosses the midpoint on the same rule players do. Without
-        // this a corridor is only half a portal: a villager followed in would stay behind on the
-        // train, and a thrown ender pearl would land in the copy its thrower had just left.
-        PortalEntityTransit.run(level, frames, occupants, carriageIndex);
-
-        // Stand-ins for whoever is in the other copy, so two players either side of the midpoint can
-        // still see each other. Last, so everything is described from where it ended up this tick
-        // rather than where it was about to leave.
-        PortalPuppets.gather(level, players, frames, ship, carriageIndex, occupants, puppets);
+    /**
+     * Only the entities actually standing in the copy, never the carriage half its frame also covers.
+     *
+     * <p>The entity equivalent of {@code swapPlayers}' {@code copyOnly}: a villager riding the train
+     * is inside every copy's frame, and left in the list it would be carried down into a corridor at
+     * the bottom of the world.</p>
+     */
+    private static List<Entity> inCopyOnly(PortalFrames copy, List<Entity> occupants) {
+        List<Entity> out = new ArrayList<>(occupants.size());
+        for (Entity entity : occupants) {
+            if (PortalExitTransit.inCopy(copy, entity.getX(), entity.getY(), entity.getZ())) {
+                out.add(entity);
+            }
+        }
+        return out;
     }
 
     /**
@@ -769,6 +814,12 @@ public final class PortalCarriageEvents {
      * box would be stranded in mid-air at the world floor the moment the structure moved. So the box
      * takes the union of the corridor span and the tiled rectangle; when nothing is tiled those are
      * the same thing and this is the box it always was.</p>
+     *
+     * <p><b>And so do the extra corridors.</b> One of those outlives the tile it is anchored to
+     * ({@link games.brennan.dungeontrain.portal.PortalExitCopies}), so it can stand well outside the
+     * tiled rectangle — and a player who walks into one that fell outside this box would not be
+     * counted as inside the structure at all, which is what stops it being re-stamped out from under
+     * them.</p>
      */
     private static AABB structureBox(CarriageDims dims, PortalStructure structure) {
         BlockPos origin = structure.origin();
@@ -779,13 +830,25 @@ public final class PortalCarriageEvents {
         // slack the built-in room was tuned with.
         int slackZ = Math.max(POCKET_ROOM_SLACK, (room.getZ() - dims.width()) / 2 + 1);
         int slackY = Math.max(POCKET_ROOM_SLACK, room.getY() - dims.height() + 1);
-        return new AABB(
-            Math.min(origin.getX() - 1, structure.tiledMinX(dims, layout) - 1),
-            origin.getY() - 1,
-            Math.min(origin.getZ() - slackZ, structure.tiledMinZ(dims, layout) - 1),
-            Math.max(origin.getX() + span + 1, structure.tiledMaxX(dims, layout) + 2),
-            origin.getY() + dims.height() + slackY,
-            Math.max(origin.getZ() + dims.width() + slackZ, structure.tiledMaxZ(dims, layout) + 2));
+
+        int minX = Math.min(origin.getX() - 1, structure.tiledMinX(dims, layout) - 1);
+        int maxX = Math.max(origin.getX() + span + 1, structure.tiledMaxX(dims, layout) + 2);
+        int minZ = Math.min(origin.getZ() - slackZ, structure.tiledMinZ(dims, layout) - 1);
+        int maxZ = Math.max(origin.getZ() + dims.width() + slackZ,
+            structure.tiledMaxZ(dims, layout) + 2);
+
+        // Read off the masks that place the copies, so this cannot disagree with them about where
+        // one is.
+        BoundingBox copies = PortalCarriageBuilder.exitCopyMask(structure, dims).bounds();
+        if (copies != null) {
+            minX = Math.min(minX, copies.minX() - 1);
+            maxX = Math.max(maxX, copies.maxX() + 2);
+            minZ = Math.min(minZ, copies.minZ() - 1);
+            maxZ = Math.max(maxZ, copies.maxZ() + 2);
+        }
+
+        return new AABB(minX, origin.getY() - 1, minZ,
+            maxX, origin.getY() + dims.height() + slackY, maxZ);
     }
 
     /**
