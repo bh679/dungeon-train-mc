@@ -106,6 +106,11 @@ class PortalRoomMobsTest {
     void shippedRoomStillHasItsMobs() throws Exception {
         // The room that prompted this work. A re-save that silently dropped the entity entries would
         // look exactly like the spawn being broken again, so pin the data rather than the code alone.
+        //
+        // Pinned at ONE since the room's 2026-08-09 editing pass, down from two: the ceiling cell
+        // 5,5,6 that carried the second warden was deleted in-world (that position reads
+        // minecraft:air in distantenemies.nbt now), so its variant entry went with the block rather
+        // than being dropped on save. The floor warden at 5,1,6, on sculk, is the one that remains.
         try (InputStream in = PortalRoomMobsTest.class.getResourceAsStream(
                 "/data/dungeontrain/portals/room/distantenemies.variants.json")) {
             assertNotNull(in, "distantenemies.variants.json must ship");
@@ -123,7 +128,7 @@ class PortalRoomMobsTest {
                     if (state.getAsJsonObject().has("entity")) mobCells++;
                 }
             }
-            assertEquals(2, mobCells, "distantenemies is authored with two mob cells");
+            assertEquals(1, mobCells, "distantenemies is authored with one mob cell");
         }
     }
 }
