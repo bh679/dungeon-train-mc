@@ -106,7 +106,11 @@ public final class TranslationOverrides {
         return apply(updated);
     }
 
-    /** Set (or clear) one book-field override. Persisted, but applied only by the server side. */
+    /**
+     * Set (or clear) one book-field override. Book prose is server-owned, so this persists the
+     * edit and then asks the integrated server to reload — in single-player that makes the change
+     * visible without leaving the world; on a remote server it is a no-op.
+     */
     public static boolean setBook(String id, String value) {
         TranslationEdits updated;
         synchronized (TranslationOverrides.class) {
@@ -115,7 +119,11 @@ public final class TranslationOverrides {
                 return true;
             }
         }
-        return apply(updated);
+        if (!apply(updated)) {
+            return false;
+        }
+        IntegratedProseReload.requestIfHosting();
+        return true;
     }
 
     /** Replace this player's whole local layer at once — the import and revert-all paths. */
