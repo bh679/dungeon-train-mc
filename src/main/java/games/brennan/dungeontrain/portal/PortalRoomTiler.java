@@ -142,8 +142,14 @@ public final class PortalRoomTiler {
             candidate -> canStamp(level, dims, structure, candidate, neighbours));
         if (next != null) return stampTile(level, dims, structure, next, pairKey);
 
+        // Spared as well as the tile somebody is standing in: the room a bound extra corridor opens
+        // into. That corridor is held past the window (PortalExitCopies) so a player can walk back in
+        // to it — and walking back in to a doorway with nothing beyond it means stepping out of the
+        // door into the empty basement and falling out of the world. The corridor and the room it
+        // faces are one thing to keep or drop, so they are kept together.
         Tile stale = tiling.nextToRemove(centre, radius,
-            candidate -> !standingIn.contains(candidate));
+            candidate -> !standingIn.contains(candidate)
+                && !PortalExitBindings.anyBoundTo(pairKey, candidate));
         if (stale != null) return eraseTile(level, dims, structure, stale, pairKey);
 
         return structure;

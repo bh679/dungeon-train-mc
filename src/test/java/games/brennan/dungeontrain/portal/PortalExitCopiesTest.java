@@ -114,6 +114,26 @@ class PortalExitCopiesTest {
     }
 
     @Test
+    @DisplayName("A copy somebody is relying on is held however far outside the window it falls")
+    void aBoundCopyIsSpared() {
+        // The live failure this predicate exists for: stepping onto the train empties the room, the
+        // radius collapses to APPROACH_RADIUS, and the copy the player walked out of one tick ago is
+        // retired before they can walk back in — so the way back always led to the original.
+        PortalExitCopies standing = PortalExitCopies.NONE.with(exitAt(0, 8)).with(exitAt(0, -8));
+        int approach = PortalRoomTiling.APPROACH_RADIUS;
+
+        // Unspared, both are due to go the moment the window collapses.
+        assertNotNull(standing.nextToRemove(Tile.BASE, approach, REACH));
+
+        // Spared, the bound one is passed over and its neighbour goes instead.
+        assertEquals(exitAt(0, -8), standing.nextToRemove(Tile.BASE, approach, REACH,
+            site -> !site.tile().equals(new Tile(0, 8))));
+
+        // And with every standing copy bound, there is simply nothing to retire.
+        assertNull(standing.nextToRemove(Tile.BASE, approach, REACH, site -> false));
+    }
+
+    @Test
     @DisplayName("Draining ignores the window and sheds everything from the outside in")
     void drainingShedsEverything() {
         PortalExitCopies standing = PortalExitCopies.NONE

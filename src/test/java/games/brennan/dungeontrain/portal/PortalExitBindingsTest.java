@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -251,6 +252,26 @@ class PortalExitBindingsTest {
 
         assertNotNull(follower(s, PortalCarriageRole.ENTRY, 1010L));
         assertNull(follower(s, PortalCarriageRole.EXIT, 1010L));
+    }
+
+    @Test
+    @DisplayName("A bound tile is flagged as in use, so the window cannot retire it under anybody")
+    void anyBoundToKeepsACopyAlive() {
+        assertFalse(PortalExitBindings.anyBoundTo(PAIR, FAR));
+
+        PortalExitBindings.bind(ALICE, PAIR, FAR);
+        assertTrue(PortalExitBindings.anyBoundTo(PAIR, FAR));
+        // Another pair's tile of the same name is a different place entirely.
+        assertFalse(PortalExitBindings.anyBoundTo(PAIR + 3, FAR));
+        assertFalse(PortalExitBindings.anyBoundTo(PAIR, new Tile(0, 8)));
+        assertFalse(PortalExitBindings.anyBoundTo(PAIR, null));
+
+        // Bob's binding keeps his own tile alive after Alice comes back through the original.
+        PortalExitBindings.bind(BOB, PAIR, FAR);
+        PortalExitBindings.bind(ALICE, PAIR, Tile.BASE);
+        assertTrue(PortalExitBindings.anyBoundTo(PAIR, FAR));
+        PortalExitBindings.bind(BOB, PAIR, Tile.BASE);
+        assertFalse(PortalExitBindings.anyBoundTo(PAIR, FAR));
     }
 
     @Test

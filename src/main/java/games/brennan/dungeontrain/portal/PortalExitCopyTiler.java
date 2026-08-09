@@ -86,7 +86,12 @@ public final class PortalExitCopyTiler {
         Site next = nextToAdd(level, dims, structure, centre, radius, neighbours, pairKey);
         if (next != null) return stamp(level, dims, structure, next, pairKey);
 
-        Site stale = standing.nextToRemove(centre, radius, reachOf(structure, dims));
+        // A copy somebody is bound to stays, however far outside the window it has fallen. Stepping
+        // onto the train empties the room, which collapses the radius to APPROACH_RADIUS and would
+        // otherwise retire the copy they had just that second walked out of — so the way back in
+        // would always lead to the original, and the binding could never do its job.
+        Site stale = standing.nextToRemove(centre, radius, reachOf(structure, dims),
+            site -> !PortalExitBindings.anyBoundTo(pairKey, site.tile()));
         if (stale != null) return erase(level, dims, structure, stale);
 
         return structure;

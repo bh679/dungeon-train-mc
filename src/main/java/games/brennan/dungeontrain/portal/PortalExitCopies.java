@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.portal.PortalRoomTiling.Tile;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Which of an endless room's extra corridors are currently standing — the {@link PortalRoomTiling}
@@ -80,12 +81,29 @@ public record PortalExitCopies(Set<Site> sites) {
      * player sheds what they have left behind rather than what is beside them.</p>
      */
     public Site nextToRemove(Tile centre, int radius, int reach) {
+        return nextToRemove(centre, radius, reach, site -> true);
+    }
+
+    /**
+     * As {@link #nextToRemove(Tile, int, int)}, but never offering up a copy {@code removable}
+     * rejects.
+     *
+     * <p>How a copy somebody is still relying on is held. When a player steps back onto the train the
+     * room has nobody in it, so the window collapses to {@link PortalRoomTiling#APPROACH_RADIUS} and
+     * every distant copy falls outside it at once — the one they just walked out of included, in the
+     * very same tick they walked out of it. Without this, walking back in always lands at the
+     * original twin and {@link PortalExitBindings} can never do the one thing it is for. The mirror
+     * of {@link PortalRoomTiling#nextToRemove(Tile, int, java.util.function.Predicate)} sparing the
+     * tile a player is standing in, for the same kind of reason.</p>
+     */
+    public Site nextToRemove(Tile centre, int radius, int reach, Predicate<Site> removable) {
         int hold = radius + Math.max(0, reach);
         Comparator<Site> order = orderFarthestFrom(centre);
         Site worst = null;
         for (Site site : sites) {
             if (site.chebyshevTo(centre) <= hold) continue;
             if (worst != null && order.compare(site, worst) <= 0) continue;
+            if (!removable.test(site)) continue;
             worst = site;
         }
         return worst;

@@ -95,6 +95,30 @@ public final class PortalExitBindings {
     }
 
     /**
+     * True when anybody is relying on the corridors at {@code tile} still being there.
+     *
+     * <p>What stops the sliding window pulling the rug out. The moment a player steps back onto the
+     * train the room has nobody in it, so the window collapses to
+     * {@link PortalRoomTiling#APPROACH_RADIUS} and every distant copy is due to retire — including
+     * the one they just walked out of, in the very same tick. Observed live: out through the copy at
+     * tile (0, 8) and back in one second later to the original twin, because by then the copy was
+     * gone. Sparing a bound copy is what makes "walk back in and you are where you left" survive the
+     * walk to the train and back.</p>
+     *
+     * <p>It is bounded by the same thing everything else is: a pair stops being active once nobody
+     * is near either of its carriages, and a draining structure sheds bound copies along with the
+     * rest — at which point the binding goes stale on its own and the next visit starts at the
+     * original. Riding away is what clears it, not walking a few steps.</p>
+     */
+    public static boolean anyBoundTo(int pairKey, Tile tile) {
+        if (tile == null || BOUND.isEmpty()) return false;
+        for (Map.Entry<Key, Tile> entry : BOUND.entrySet()) {
+            if (entry.getKey().pairKey() == pairKey && tile.equals(entry.getValue())) return true;
+        }
+        return false;
+    }
+
+    /**
      * Where this player should arrive when they walk into the {@code role} carriage of this pair —
      * or {@code null} to mean "the original twin, as always".
      *
