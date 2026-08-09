@@ -1135,5 +1135,6 @@
   "gui.dungeontrain.translate.sent.accepted": "採用",
   "gui.dungeontrain.translate.sent.partial": "%s/%s 件採用",
   "gui.dungeontrain.translate.sent.rejected": "不採用",
-  "gui.dungeontrain.translate.submit.blocked.nothing_new": "編集したものはすべて送信済みです。"
+  "gui.dungeontrain.translate.submit.blocked.nothing_new": "編集したものはすべて送信済みです。",
+  "gui.dungeontrain.translate.filter.sent": "送信済み"
 }

@@ -1135,5 +1135,6 @@
   "gui.dungeontrain.translate.sent.accepted": "รับแล้ว",
   "gui.dungeontrain.translate.sent.partial": "รับ %s/%s",
   "gui.dungeontrain.translate.sent.rejected": "ไม่ได้ใช้",
-  "gui.dungeontrain.translate.submit.blocked.nothing_new": "ทุกอย่างที่คุณแก้ไขถูกส่งไปแล้ว"
+  "gui.dungeontrain.translate.submit.blocked.nothing_new": "ทุกอย่างที่คุณแก้ไขถูกส่งไปแล้ว",
+  "gui.dungeontrain.translate.filter.sent": "ส่งแล้ว"
 }

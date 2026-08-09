@@ -11,8 +11,10 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * The translation editor's list screen: every editable string for the language the player is
@@ -43,6 +45,13 @@ public final class TranslationScreen extends Screen {
          * has already fixed — so a line vanishes from the list once they have corrected it.
          */
         TODO("todo"),
+        /**
+         * Not a filter over the catalog at all: it swaps the screen into a two-pane view of what
+         * this player has sent in, with the submissions down the right and the picked one's
+         * strings on the left. It lives in this cycle because "what have I sent?" is the same
+         * question as "what still needs doing?", asked from the other end.
+         */
+        SENT("sent"),
         ALL("all");
 
         final String key;
@@ -78,8 +87,11 @@ public final class TranslationScreen extends Screen {
 
     private EditBox search;
     private TranslationListWidget list;
+    private TranslationSubmissionList sentList;
     private StateFilter stateFilter = StateFilter.AI_UNREVIEWED;
     private BodyFilter bodyFilter = BodyFilter.ALL;
+    /** The strings of the submission currently picked in the SENT view. */
+    private List<TranslationSubmissionsClient.SentUnit> sentUnits = List.of();
 
     public TranslationScreen(Screen parent, String locale) {
         super(Component.translatable("gui.dungeontrain.translate.title"));
@@ -133,8 +145,14 @@ public final class TranslationScreen extends Screen {
             .create(MARGIN, TOP + ROW_H + GAP, filterWidth, ROW_H,
                 Component.translatable("gui.dungeontrain.translate.filter"),
                 (button, value) -> {
+                    boolean wasSplit = stateFilter == StateFilter.SENT;
                     stateFilter = value;
-                    refresh();
+                    if (wasSplit != (value == StateFilter.SENT)) {
+                        // The pane count changed: vanilla's rebuildWidgets re-runs init() for us.
+                        rebuildWidgets();
+                    } else {
+                        refresh();
+                    }
                 }));
         addRenderableWidget(CycleButton.<BodyFilter>builder(BodyFilter::label)
             .withValues(BodyFilter.values())
@@ -147,12 +165,78 @@ public final class TranslationScreen extends Screen {
                     refresh();
                 }));
 
-        list = new TranslationListWidget(font, MARGIN, listTop, contentWidth,
-            Math.max(ROW_H, listBottom - listTop), this::openEditor);
+        // The SENT view splits the width: submissions on the right, the picked one's strings on
+        // the left. Every other filter gives the whole width to the catalog list.
+        boolean split = stateFilter == StateFilter.SENT;
+        int listHeight = Math.max(ROW_H, listBottom - listTop);
+        int leftWidth = split ? (contentWidth - GAP) / 2 : contentWidth;
+
+        list = new TranslationListWidget(font, MARGIN, listTop, leftWidth, listHeight,
+            this::openEditor);
         addRenderableWidget(list);
+
+        if (split) {
+            int sentX = MARGIN + leftWidth + GAP;
+            sentList = new TranslationSubmissionList(font, sentX, listTop,
+                contentWidth - leftWidth - GAP, listHeight, this::openSubmission);
+            addRenderableWidget(sentList);
+            TranslationSubmissionsClient.fetch(this::onHistory);
+        } else {
+            sentList = null;
+        }
 
         layoutBottomRow(bottomRow, contentWidth);
         refresh();
+    }
+
+    /** Merge the relay's history with the local outbox, newest first, and open on the newest. */
+    private void onHistory(List<TranslationSubmission> fromRelay) {
+        if (sentList == null) {
+            return;
+        }
+        List<TranslationSubmission> all = new ArrayList<>(TranslationOutbox.get().queued());
+        all.addAll(fromRelay);
+        all.sort((a, b) -> Long.compare(b.submittedAtMs(), a.submittedAtMs()));
+        sentList.setRows(all);
+        sentList.selectFirst();
+    }
+
+    /**
+     * Show one submission's strings in the left pane. A queued submission has no relay-side units
+     * yet, so it opens empty — which is the truth: the relay has not seen it.
+     */
+    private void openSubmission(TranslationSubmission submission) {
+        sentUnits = List.of();
+        refresh();
+        if (!submission.queued()) {
+            TranslationSubmissionsClient.fetchUnits(submission.submittedAtMs(), units -> {
+                sentUnits = units;
+                refresh();
+            });
+        }
+    }
+
+    /**
+     * The catalog units of the picked submission, looked up by id so they open in the normal
+     * editor. A string whose key has since been removed from the mod is dropped rather than
+     * faked — there is nothing left to edit.
+     */
+    private List<TranslationUnit> sentUnitRows(String needle) {
+        if (sentUnits.isEmpty()) {
+            return List.of();
+        }
+        Map<String, TranslationUnit> byId = new LinkedHashMap<>();
+        for (TranslationUnit unit : TranslationCatalog.forLocale(locale)) {
+            byId.put(unit.id(), unit);
+        }
+        List<TranslationUnit> out = new ArrayList<>();
+        for (TranslationSubmissionsClient.SentUnit sent : sentUnits) {
+            TranslationUnit unit = byId.get(sent.unitId());
+            if (unit != null && unit.matches(needle)) {
+                out.add(unit);
+            }
+        }
+        return out;
     }
 
     /**
@@ -175,7 +259,8 @@ public final class TranslationScreen extends Screen {
      */
     private static List<StateFilter> offeredStates() {
         List<StateFilter> out = new ArrayList<>(
-            List.of(StateFilter.AI_UNREVIEWED, StateFilter.EDITED, StateFilter.TODO));
+            List.of(StateFilter.AI_UNREVIEWED, StateFilter.EDITED, StateFilter.TODO,
+                StateFilter.SENT));
         if (TranslationContributor.hasApprovedTranslation()) {
             out.add(StateFilter.ALL);
         }
@@ -221,6 +306,9 @@ public final class TranslationScreen extends Screen {
             return List.of();
         }
         String needle = search == null ? "" : search.getValue().trim().toLowerCase(Locale.ROOT);
+        if (stateFilter == StateFilter.SENT) {
+            return sentUnitRows(needle);
+        }
         TranslationEdits edits = TranslationOverrides.mergedFor(locale);
         List<TranslationUnit> out = new ArrayList<>();
         for (TranslationUnit unit : TranslationCatalog.forLocale(locale)) {
@@ -244,6 +332,7 @@ public final class TranslationScreen extends Screen {
         return switch (stateFilter) {
             case ALL -> true;
             case TODO -> unit.aiUnreviewed() && overrideOf(unit, edits) == null;
+            case SENT -> true; // handled in visibleUnits — the rows come from the relay, not the catalog
             case AI_UNREVIEWED -> unit.aiUnreviewed();
             case EDITED -> overrideOf(unit, edits) != null;
         };

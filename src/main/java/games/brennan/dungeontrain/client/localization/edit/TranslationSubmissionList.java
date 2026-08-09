@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * The "what you have sent in" panel: one row per submission, newest first.
@@ -33,21 +34,43 @@ public final class TranslationSubmissionList extends AbstractWidget {
     private static final int DATE_COLOUR = 0xFFFFFFFF;
     private static final int CREDIT_COLOUR = 0xFFA0A0A0;
 
+    private static final int ROW_SELECTED = 0x55FFFFFF;
+    private static final int ROW_HOVER = 0x33FFFFFF;
+
     private final Font font;
+    /** Null when rows are read-only; set when picking a submission opens its contents. */
+    private final Consumer<TranslationSubmission> onSelect;
+
     private List<TranslationSubmission> rows = List.of();
     private int scroll;
     private boolean loading = true;
+    private int selected = -1;
 
     public TranslationSubmissionList(Font font, int x, int y, int width, int height) {
+        this(font, x, y, width, height, null);
+    }
+
+    public TranslationSubmissionList(Font font, int x, int y, int width, int height,
+                                     Consumer<TranslationSubmission> onSelect) {
         super(x, y, width, height, Component.translatable("gui.dungeontrain.translate.sent.title"));
         this.font = font;
+        this.onSelect = onSelect;
     }
 
     /** Replace the rows. Ends the loading state even when the list comes back empty. */
     public void setRows(List<TranslationSubmission> newRows) {
         this.rows = newRows == null ? List.of() : newRows;
         this.loading = false;
+        this.selected = -1;
         this.scroll = Mth.clamp(scroll, 0, maxScroll());
+    }
+
+    /** Select the first row and report it — how the drill-down opens on something to look at. */
+    public void selectFirst() {
+        if (onSelect != null && !rows.isEmpty()) {
+            selected = 0;
+            onSelect.accept(rows.get(0));
+        }
     }
 
     private int rowHeight() {
@@ -83,15 +106,21 @@ public final class TranslationSubmissionList extends AbstractWidget {
         int first = Math.max(0, scroll / rowH);
         int last = Math.min(rows.size() - 1, (scroll + height) / rowH);
         for (int i = first; i <= last; i++) {
-            renderRow(g, rows.get(i), i, getY() + i * rowH - scroll, rowH, textWidth);
+            renderRow(g, rows.get(i), i, getY() + i * rowH - scroll, rowH, textWidth, mouseX, mouseY);
         }
         g.disableScissor();
         renderScrollbar(g);
     }
 
     private void renderRow(GuiGraphics g, TranslationSubmission row, int index, int rowY, int rowH,
-                           int textWidth) {
-        if ((index & 1) == 1) {
+                           int textWidth, int mouseX, int mouseY) {
+        boolean hovered = onSelect != null && isMouseOver(mouseX, mouseY)
+            && mouseY >= rowY && mouseY < rowY + rowH;
+        if (index == selected) {
+            g.fill(getX(), rowY, getX() + width - SCROLLBAR_W - 1, rowY + rowH, ROW_SELECTED);
+        } else if (hovered) {
+            g.fill(getX(), rowY, getX() + width - SCROLLBAR_W - 1, rowY + rowH, ROW_HOVER);
+        } else if ((index & 1) == 1) {
             g.fill(getX(), rowY, getX() + width - SCROLLBAR_W - 1, rowY + rowH, ROW_ALT);
         }
         int textX = getX() + PAD;
@@ -121,6 +150,22 @@ public final class TranslationSubmissionList extends AbstractWidget {
         int thumbH = Math.max(12, (int) ((long) height * height / totalHeight()));
         int thumbY = getY() + (int) ((long) (height - thumbH) * scroll / max);
         g.fill(trackX, thumbY, trackX + SCROLLBAR_W, thumbY + thumbH, SCROLLBAR);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (onSelect == null || !visible || !active || button != 0
+            || !isMouseOver(mouseX, mouseY) || rows.isEmpty()) {
+            return false;
+        }
+        int index = (int) ((mouseY - getY() + scroll) / rowHeight());
+        if (index < 0 || index >= rows.size()) {
+            return false;
+        }
+        selected = index;
+        playDownSound(net.minecraft.client.Minecraft.getInstance().getSoundManager());
+        onSelect.accept(rows.get(index));
+        return true;
     }
 
     @Override

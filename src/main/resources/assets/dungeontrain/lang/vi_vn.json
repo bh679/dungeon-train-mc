@@ -1152,5 +1152,6 @@
   "gui.dungeontrain.translate.sent.accepted": "Đã nhận",
   "gui.dungeontrain.translate.sent.partial": "Đã nhận %s/%s",
   "gui.dungeontrain.translate.sent.rejected": "Không dùng",
-  "gui.dungeontrain.translate.submit.blocked.nothing_new": "Mọi thứ bạn đã sửa đều đã được gửi đi."
+  "gui.dungeontrain.translate.submit.blocked.nothing_new": "Mọi thứ bạn đã sửa đều đã được gửi đi.",
+  "gui.dungeontrain.translate.filter.sent": "Đã gửi"
 }

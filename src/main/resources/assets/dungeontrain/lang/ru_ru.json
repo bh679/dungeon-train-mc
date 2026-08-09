@@ -1152,5 +1152,6 @@
   "gui.dungeontrain.translate.sent.accepted": "Принято",
   "gui.dungeontrain.translate.sent.partial": "Принято: %s/%s",
   "gui.dungeontrain.translate.sent.rejected": "Не использовано",
-  "gui.dungeontrain.translate.submit.blocked.nothing_new": "Всё, что вы изменили, уже отправлено."
+  "gui.dungeontrain.translate.submit.blocked.nothing_new": "Всё, что вы изменили, уже отправлено.",
+  "gui.dungeontrain.translate.filter.sent": "Отправлено"
 }

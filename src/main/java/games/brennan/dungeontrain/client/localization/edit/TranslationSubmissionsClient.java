@@ -91,6 +91,86 @@ public final class TranslationSubmissionsClient {
         mc.execute(() -> onResult.accept(result));
     }
 
+    /**
+     * Fetch one submission's units — the drill-down behind picking a row in the "sent in" view.
+     *
+     * <p>Returns the player's own text back with the one thing they do not have: the per-unit
+     * verdict. Calls back with an empty list on any failure, so the pane says "nothing" rather
+     * than hanging on a spinner.</p>
+     */
+    public static void fetchUnits(long ts, Consumer<List<SentUnit>> onResult) {
+        Minecraft mc = Minecraft.getInstance();
+        UUID uuid = mc != null && mc.getUser() != null ? mc.getUser().getProfileId() : null;
+        if (uuid == null || ts <= 0 || !RelayChatClient.canConnect()) {
+            deliverUnits(mc, onResult, List.of());
+            return;
+        }
+        try {
+            String url = DungeonTrain.relayBaseUrl() + "/translations/mine?uuid="
+                + uuid.toString().replace("-", "") + "&ts=" + ts;
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                .timeout(REQUEST_TIMEOUT)
+                .header("Accept", "application/json")
+                .GET()
+                .build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                .whenComplete((resp, err) -> {
+                    List<SentUnit> out = List.of();
+                    try {
+                        if (err == null && resp != null && resp.statusCode() / 100 == 2) {
+                            out = parseUnits(resp.body());
+                        }
+                    } catch (Throwable t) {
+                        LOGGER.debug("[DungeonTrain] Translations: unit parse failed — {}", t.toString());
+                    }
+                    deliverUnits(mc, onResult, out);
+                });
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] Translations: unit request could not start — {}", t.toString());
+            deliverUnits(mc, onResult, List.of());
+        }
+    }
+
+    /** One string inside a submission, as the relay has it now. */
+    public record SentUnit(String type, String namespace, String unitId, String source,
+                           String value, String flag) {
+
+        public boolean isBook() {
+            return "book".equals(type);
+        }
+    }
+
+    static List<SentUnit> parseUnits(String body) {
+        List<SentUnit> out = new ArrayList<>();
+        JsonElement root = JsonParser.parseString(body);
+        if (!root.isJsonObject()) {
+            return out;
+        }
+        JsonObject obj = root.getAsJsonObject();
+        if (!obj.has("ok") || !obj.get("ok").getAsBoolean()
+            || !obj.has("units") || !obj.get("units").isJsonArray()) {
+            return out;
+        }
+        for (JsonElement el : obj.getAsJsonArray("units")) {
+            if (!el.isJsonObject()) {
+                continue;
+            }
+            JsonObject row = el.getAsJsonObject();
+            out.add(new SentUnit(stringOf(row, "unitType"), stringOf(row, "namespace"),
+                stringOf(row, "unitId"), stringOf(row, "source"), stringOf(row, "value"),
+                stringOf(row, "flag")));
+        }
+        return out;
+    }
+
+    private static void deliverUnits(Minecraft mc, Consumer<List<SentUnit>> onResult,
+                                     List<SentUnit> result) {
+        if (mc == null) {
+            return;
+        }
+        mc.execute(() -> onResult.accept(result));
+    }
+
     /** Parse {@code {ok, submissions:[{ts, locale, translator, units, approved, …}]}}. */
     static List<TranslationSubmission> parse(String body) {
         List<TranslationSubmission> out = new ArrayList<>();

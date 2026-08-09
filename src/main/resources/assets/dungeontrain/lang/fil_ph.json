@@ -1135,5 +1135,6 @@
   "gui.dungeontrain.translate.sent.accepted": "Tinanggap",
   "gui.dungeontrain.translate.sent.partial": "%s/%s tinanggap",
   "gui.dungeontrain.translate.sent.rejected": "Hindi ginamit",
-  "gui.dungeontrain.translate.submit.blocked.nothing_new": "Naipadala na ang lahat ng inedit mo."
+  "gui.dungeontrain.translate.submit.blocked.nothing_new": "Naipadala na ang lahat ng inedit mo.",
+  "gui.dungeontrain.translate.filter.sent": "Naipadala"
 }

@@ -1152,5 +1152,6 @@
   "gui.dungeontrain.translate.sent.accepted": "Aceite",
   "gui.dungeontrain.translate.sent.partial": "%s/%s aceites",
   "gui.dungeontrain.translate.sent.rejected": "Não usado",
-  "gui.dungeontrain.translate.submit.blocked.nothing_new": "Tudo o que editaste já foi enviado."
+  "gui.dungeontrain.translate.submit.blocked.nothing_new": "Tudo o que editaste já foi enviado.",
+  "gui.dungeontrain.translate.filter.sent": "Enviado"
 }
