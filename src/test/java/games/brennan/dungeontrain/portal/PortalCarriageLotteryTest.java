@@ -224,6 +224,48 @@ final class PortalCarriageLotteryTest {
         }
     }
 
+    /**
+     * The group is wider than the portal, and the difference matters to anything that must stay out of
+     * a portal group altogether rather than merely off its corridors.
+     *
+     * <p>PlayerMob spawning is that caller: a mob marches the length of the train, so one placed in an
+     * ordinary slot of a portal group walks itself into a corridor under its own steam. It therefore
+     * gates on {@link PortalCarriageSelection#isPortalGroup}, and simplifying that to
+     * {@code isPortalPart} — which looks equivalent at the shipped group size of three, where the
+     * portal fills the group — would quietly reopen the hole for anyone running a larger one. This
+     * pins the two predicates apart so that edit fails here.</p>
+     */
+    @Test
+    @DisplayName("a portal group is wider than the portal when the group size is")
+    void portalGroupCoversTheSlotsBeyondThePortal() {
+        int wideGroup = 5;                       // > PORTAL_GROUP_SPAN, so slots 3 and 4 are ordinary
+        Rate rate = Rate.periodic(2);            // deterministic: group 0 wins, group 1 does not
+
+        for (int slot = 0; slot < wideGroup; slot++) {
+            assertTrue(PortalCarriageSelection.isPortalGroup(slot, wideGroup, rate, SEED),
+                "slot " + slot + " of a winning group should be in a portal group");
+        }
+
+        for (int slot = 0; slot < PortalCarriageSelection.PORTAL_GROUP_SPAN; slot++) {
+            assertTrue(PortalCarriageSelection.isPortalPart(slot, wideGroup, rate, SEED),
+                "slot " + slot + " is entry/middle/exit and should be a portal part");
+        }
+        for (int slot = PortalCarriageSelection.PORTAL_GROUP_SPAN; slot < wideGroup; slot++) {
+            assertFalse(PortalCarriageSelection.isPortalPart(slot, wideGroup, rate, SEED),
+                "slot " + slot + " is an ordinary carriage and should not be a portal part");
+        }
+
+        // A group that lost the draw is neither, so the distinction above is about the portal's width
+        // and not about isPortalGroup simply answering true everywhere.
+        for (int slot = 0; slot < wideGroup; slot++) {
+            int index = wideGroup + slot;
+            assertFalse(PortalCarriageSelection.isPortalGroup(index, wideGroup, rate, SEED),
+                "index " + index + " is in a group that lost the draw");
+            assertFalse(PortalCarriageSelection.isPortalPart(index, wideGroup, rate, SEED),
+                "index " + index + " is in a group that lost the draw");
+        }
+    }
+
     /** Anchors of the groups that won a portal, over {@code groups} groups from the origin forwards. */
     private static Set<Integer> chosenAnchors(long seed, int every, int groups) {
         Set<Integer> chosen = new HashSet<>();
