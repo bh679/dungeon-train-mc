@@ -1118,6 +1118,8 @@
   "gui.dungeontrain.translate.submit.note": "Your edits go to Brennan for review. Once accepted they ship to everyone playing in this language, and you're credited in-game.",
   "gui.dungeontrain.translate.submit.no_consent": "Sending needs the internet connection turned on in Dungeon Train Options. Your edits still work on this computer without it.",
   "gui.dungeontrain.translate.submit.queued": "Sent %s edit(s) for review. Thank you!",
-  "gui.dungeontrain.translate.submit.nothing": "Nothing to send yet — edit something first.",
-  "gui.dungeontrain.translate.submit.pending": "%s submission(s) still waiting to send."
+  "gui.dungeontrain.translate.submit.pending": "%s submission(s) still waiting to send.",
+  "gui.dungeontrain.translate.submit.credit": "Credit me in the game's credits",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "Nothing to send yet — fix a translation first.",
+  "gui.dungeontrain.translate.submit.blocked.consent": "Turn the internet connection on in Dungeon Train Options to send."
 }

@@ -1135,6 +1135,8 @@
   "gui.dungeontrain.translate.submit.note": "Chỉnh sửa của bạn sẽ được gửi cho Brennan duyệt. Khi được chấp nhận, mọi người chơi bằng ngôn ngữ này đều nhận được, và bạn được ghi công trong trò chơi.",
   "gui.dungeontrain.translate.submit.no_consent": "Việc gửi cần bật kết nối internet trong Tùy chọn Dungeon Train. Không bật thì chỉnh sửa của bạn vẫn hoạt động trên máy này.",
   "gui.dungeontrain.translate.submit.queued": "Đã gửi %s chỉnh sửa để duyệt. Cảm ơn bạn!",
-  "gui.dungeontrain.translate.submit.nothing": "Chưa có gì để gửi — hãy chỉnh sửa gì đó trước.",
-  "gui.dungeontrain.translate.submit.pending": "%s lượt gửi vẫn đang chờ."
+  "gui.dungeontrain.translate.submit.pending": "%s lượt gửi vẫn đang chờ.",
+  "gui.dungeontrain.translate.submit.credit": "Ghi tên tôi trong phần ghi công của trò chơi",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "Chưa có gì để gửi — hãy sửa một bản dịch trước.",
+  "gui.dungeontrain.translate.submit.blocked.consent": "Bật kết nối internet trong Tùy chọn Dungeon Train để gửi."
 }

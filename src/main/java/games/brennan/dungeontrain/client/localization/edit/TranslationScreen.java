@@ -100,8 +100,14 @@ public final class TranslationScreen extends Screen {
         addRenderableWidget(search);
 
         int filterWidth = (contentWidth - GAP) / 2;
+        List<StateFilter> states = offeredStates();
+        if (!states.contains(stateFilter)) {
+            // A selection carried over from a session where it was unlocked. Without this the gate
+            // is bypassed simply by reopening the screen.
+            stateFilter = StateFilter.AI_UNREVIEWED;
+        }
         addRenderableWidget(CycleButton.<StateFilter>builder(StateFilter::label)
-            .withValues(StateFilter.values())
+            .withValues(states)
             .withInitialValue(stateFilter)
             .displayOnlyValue()
             .create(MARGIN, TOP + ROW_H + GAP, filterWidth, ROW_H,
@@ -127,6 +133,22 @@ public final class TranslationScreen extends Screen {
 
         layoutBottomRow(bottomRow, contentWidth);
         refresh();
+    }
+
+    /**
+     * The state filters this player is offered.
+     *
+     * <p>Browsing every string unfiltered turns the editor into a way to read the game's text out
+     * of context, so it is not offered to everyone — it unlocks once the player has had a
+     * translation accepted, which is the cheapest honest proof they are here to translate. Fails
+     * closed: no verdict, no unlock.</p>
+     */
+    private static List<StateFilter> offeredStates() {
+        List<StateFilter> out = new ArrayList<>(List.of(StateFilter.AI_UNREVIEWED, StateFilter.EDITED));
+        if (TranslationContributor.hasApprovedTranslation()) {
+            out.add(StateFilter.ALL);
+        }
+        return out;
     }
 
     /**

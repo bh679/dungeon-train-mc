@@ -1135,6 +1135,8 @@
   "gui.dungeontrain.translate.submit.note": "Twoje zmiany trafią do Brennana do sprawdzenia. Po przyjęciu otrzymają je wszyscy grający w tym języku, a ty zostaniesz wymieniony w grze.",
   "gui.dungeontrain.translate.submit.no_consent": "Wysyłka wymaga włączonego połączenia z internetem w opcjach Dungeon Train. Bez niego twoje zmiany i tak działają na tym komputerze.",
   "gui.dungeontrain.translate.submit.queued": "Wysłano zmiany do sprawdzenia: %s. Dziękujemy!",
-  "gui.dungeontrain.translate.submit.nothing": "Nie ma jeszcze czego wysłać — najpierw coś zmień.",
-  "gui.dungeontrain.translate.submit.pending": "Wysyłki wciąż oczekujące: %s."
+  "gui.dungeontrain.translate.submit.pending": "Wysyłki wciąż oczekujące: %s.",
+  "gui.dungeontrain.translate.submit.credit": "Wymień mnie w napisach końcowych",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "Nie ma jeszcze czego wysłać — najpierw popraw jakieś tłumaczenie.",
+  "gui.dungeontrain.translate.submit.blocked.consent": "Włącz połączenie z internetem w opcjach Dungeon Train, aby wysłać."
 }

@@ -1118,6 +1118,8 @@
   "gui.dungeontrain.translate.submit.note": "수정 사항은 Brennan이 검토합니다. 채택되면 이 언어로 플레이하는 모두에게 전달되고, 게임 안에 이름이 올라갑니다.",
   "gui.dungeontrain.translate.submit.no_consent": "보내려면 Dungeon Train 옵션에서 인터넷 연결을 켜야 합니다. 켜지 않아도 이 컴퓨터에서는 수정이 그대로 적용됩니다.",
   "gui.dungeontrain.translate.submit.queued": "수정 %s개를 검토 요청했습니다. 감사합니다!",
-  "gui.dungeontrain.translate.submit.nothing": "아직 보낼 것이 없습니다 — 먼저 무언가를 수정하세요.",
-  "gui.dungeontrain.translate.submit.pending": "%s건의 전송이 아직 대기 중입니다."
+  "gui.dungeontrain.translate.submit.pending": "%s건의 전송이 아직 대기 중입니다.",
+  "gui.dungeontrain.translate.submit.credit": "게임 크레딧에 내 이름 넣기",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "아직 보낼 것이 없습니다 — 먼저 번역을 고쳐 주세요.",
+  "gui.dungeontrain.translate.submit.blocked.consent": "보내려면 Dungeon Train 옵션에서 인터넷 연결을 켜 주세요."
 }

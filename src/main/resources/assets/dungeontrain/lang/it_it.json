@@ -1135,6 +1135,8 @@
   "gui.dungeontrain.translate.submit.note": "Le tue modifiche vanno a Brennan per la revisione. Una volta accettate arrivano a tutti quelli che giocano in questa lingua, e vieni accreditato nel gioco.",
   "gui.dungeontrain.translate.submit.no_consent": "Per inviare serve la connessione a internet attiva nelle opzioni di Dungeon Train. Le tue modifiche funzionano comunque su questo computer senza di essa.",
   "gui.dungeontrain.translate.submit.queued": "Inviate %s modifiche per la revisione. Grazie!",
-  "gui.dungeontrain.translate.submit.nothing": "Non c'è ancora niente da inviare: modifica prima qualcosa.",
-  "gui.dungeontrain.translate.submit.pending": "%s invio/invii ancora in attesa."
+  "gui.dungeontrain.translate.submit.pending": "%s invio/invii ancora in attesa.",
+  "gui.dungeontrain.translate.submit.credit": "Accreditami nei crediti del gioco",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "Non c'è ancora niente da inviare: correggi prima una traduzione.",
+  "gui.dungeontrain.translate.submit.blocked.consent": "Attiva la connessione a internet nelle opzioni di Dungeon Train per inviare."
 }

@@ -4,7 +4,9 @@ import games.brennan.dungeontrain.client.chat.RelayChatClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -19,14 +21,17 @@ import java.util.UUID;
  * Sends this player's edits to the relay so they can be reviewed and, once approved, shipped to
  * everyone else playing in this language.
  *
- * <p>Asks for a name because that is what gets credited: an accepted translation is stamped into
- * {@code localization/authors.json} and the shipped {@code translation_contributors.json}, which
- * is what puts a translator on the in-game Credits page. The field is optional — a contribution
- * without a name is still worth having.</p>
+ * <p>Crediting is a yes/no, not a text box to remember to fill in: the checkbox is on and the name
+ * is already filled from the player's Minecraft username. It stays editable because a community
+ * translator's credited name is usually not their username — {@code 老本願} and {@code 阿世xAsh}
+ * are the names on the Credits page, and those are what land in
+ * {@code localization/authors.json}. Unticking submits genuinely anonymously (an empty
+ * {@code translator}), not a blank name field.</p>
  *
- * <p>Submitting is gated on the same network consent as menu chat: it carries player-authored
- * text and a uuid. Editing and applying locally are not gated, so with consent off the screen
- * explains why the button is disabled rather than hiding the feature.</p>
+ * <p>Submitting is gated on the same network consent as menu chat, since it carries
+ * player-authored text and a uuid. Editing and applying locally are not gated — so when Send is
+ * unavailable the screen names the reason rather than leaving the player to guess at a greyed-out
+ * button.</p>
  */
 public final class TranslationSubmitScreen extends Screen {
 
@@ -44,6 +49,7 @@ public final class TranslationSubmitScreen extends Screen {
     private final TranslationScreen parent;
     private final String locale;
 
+    private Checkbox creditBox;
     private EditBox nameBox;
     private Button submitButton;
     private Component status = CommonComponents.EMPTY;
@@ -60,22 +66,33 @@ public final class TranslationSubmitScreen extends Screen {
         int left = width / 2 - ROW_W / 2;
         int y = height / 3;
 
+        creditBox = Checkbox.builder(
+                Component.translatable("gui.dungeontrain.translate.submit.credit"), this.font)
+            .pos(left, y)
+            .selected(true)
+            .onValueChange((box, checked) -> updateNameBoxState())
+            .build();
+        addRenderableWidget(creditBox);
+        y += ROW_GAP;
+
         nameBox = new EditBox(font, left, y, ROW_W, ROW_H,
             Component.translatable("gui.dungeontrain.translate.submit.name"));
         nameBox.setHint(Component.translatable("gui.dungeontrain.translate.submit.name"));
         nameBox.setMaxLength(MAX_NAME_CHARS);
-        nameBox.setValue(TranslatorName.get());
+        nameBox.setValue(defaultName());
         addRenderableWidget(nameBox);
         y += ROW_GAP;
 
         submitButton = addRenderableWidget(Button.builder(
             Component.translatable("gui.dungeontrain.translate.submit.send"), b -> send())
             .bounds(left, y, ROW_W, ROW_H).build());
-        submitButton.active = canSubmit();
         y += ROW_GAP + ROW_GAP;
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
             .bounds(left, y, ROW_W, ROW_H).build());
+
+        updateNameBoxState();
+        updateSubmitState();
 
         Component note = RelayChatClient.canConnect()
             ? Component.translatable("gui.dungeontrain.translate.submit.note")
@@ -83,8 +100,43 @@ public final class TranslationSubmitScreen extends Screen {
         noteLines = font.split(FormattedText.of(note.getString()), ROW_W + 60);
     }
 
-    private boolean canSubmit() {
-        return RelayChatClient.canConnect() && !TranslationOverrides.localFor(locale).isEmpty();
+    /**
+     * The name to credit: the one they used last, else their Minecraft username. Prefilling is
+     * what stops an "(optional)" field reading as a required one.
+     */
+    private String defaultName() {
+        String remembered = TranslatorName.get();
+        if (!remembered.isEmpty()) {
+            return remembered;
+        }
+        return minecraft.getUser() != null ? minecraft.getUser().getName() : "";
+    }
+
+    private void updateNameBoxState() {
+        boolean credit = creditBox.selected();
+        nameBox.setEditable(credit);
+        nameBox.active = credit;
+        nameBox.visible = credit;
+    }
+
+    /**
+     * Enable Send, or say why not. The reported confusion was a disabled button with an
+     * "(optional)" field next to it, which reads as "the field is the problem" — it never was.
+     */
+    private void updateSubmitState() {
+        boolean hasEdits = !TranslationOverrides.localFor(locale).isEmpty();
+        boolean consent = RelayChatClient.canConnect();
+        submitButton.active = hasEdits && consent;
+        if (submitButton.active) {
+            submitButton.setTooltip(null);
+        } else {
+            submitButton.setTooltip(Tooltip.create(hasEdits
+                ? Component.translatable("gui.dungeontrain.translate.submit.blocked.consent")
+                : Component.translatable("gui.dungeontrain.translate.submit.blocked.no_edits")));
+            status = hasEdits
+                ? Component.translatable("gui.dungeontrain.translate.submit.blocked.consent")
+                : Component.translatable("gui.dungeontrain.translate.submit.blocked.no_edits");
+        }
     }
 
     /**
@@ -115,11 +167,15 @@ public final class TranslationSubmitScreen extends Screen {
         UUID uuid = minecraft.getUser() != null ? minecraft.getUser().getProfileId() : null;
         List<TranslationSubmitClient.Unit> units = buildUnits();
         if (uuid == null || units.isEmpty()) {
-            status = Component.translatable("gui.dungeontrain.translate.submit.nothing");
+            status = Component.translatable("gui.dungeontrain.translate.submit.blocked.no_edits");
             return;
         }
-        String name = nameBox.getValue().trim();
-        TranslatorName.set(name);
+        // Unticked means anonymous: an empty translator, which the relay stores as-is. The name is
+        // still remembered, so ticking the box next time brings it back rather than starting over.
+        String name = creditBox.selected() ? nameBox.getValue().trim() : "";
+        if (creditBox.selected()) {
+            TranslatorName.set(name);
+        }
         TranslationOutbox.get().submit(TranslationSubmitClient
             .buildPayload(uuid.toString().replace("-", ""), name, locale, units).toString());
 
@@ -127,6 +183,7 @@ public final class TranslationSubmitScreen extends Screen {
         // "sent for review", with the count the player can check against their edits.
         status = Component.translatable("gui.dungeontrain.translate.submit.queued", units.size());
         submitButton.active = false;
+        submitButton.setTooltip(null);
     }
 
     @Override
@@ -138,7 +195,7 @@ public final class TranslationSubmitScreen extends Screen {
                 locale, TranslationOverrides.localFor(locale).size()),
             width / 2, MARGIN + font.lineHeight + 2, LABEL_COLOUR);
 
-        int y = height / 3 + ROW_GAP * 2;
+        int y = height / 3 + ROW_GAP * 3;
         for (FormattedCharSequence line : noteLines) {
             g.drawCenteredString(font, line, width / 2, y, NOTE_COLOUR);
             y += font.lineHeight;

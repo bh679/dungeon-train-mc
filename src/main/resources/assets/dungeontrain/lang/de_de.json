@@ -1135,6 +1135,8 @@
   "gui.dungeontrain.translate.submit.note": "Deine Änderungen gehen zur Prüfung an Brennan. Sobald sie angenommen sind, erhalten alle in dieser Sprache sie — und du wirst im Spiel genannt.",
   "gui.dungeontrain.translate.submit.no_consent": "Zum Senden muss die Internetverbindung in den Dungeon-Train-Optionen aktiviert sein. Deine Änderungen funktionieren auch ohne sie auf diesem Rechner.",
   "gui.dungeontrain.translate.submit.queued": "%s Änderung(en) zur Prüfung gesendet. Danke!",
-  "gui.dungeontrain.translate.submit.nothing": "Noch nichts zu senden — bearbeite zuerst etwas.",
-  "gui.dungeontrain.translate.submit.pending": "%s Einsendung(en) warten noch auf den Versand."
+  "gui.dungeontrain.translate.submit.pending": "%s Einsendung(en) warten noch auf den Versand.",
+  "gui.dungeontrain.translate.submit.credit": "Nenne mich in den Danksagungen",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "Noch nichts zu senden — korrigiere zuerst eine Übersetzung.",
+  "gui.dungeontrain.translate.submit.blocked.consent": "Schalte die Internetverbindung in den Dungeon-Train-Optionen ein, um zu senden."
 }

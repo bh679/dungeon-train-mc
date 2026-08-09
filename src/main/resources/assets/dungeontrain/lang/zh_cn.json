@@ -1132,6 +1132,8 @@
   "gui.dungeontrain.translate.submit.note": "你的修改会交给 Brennan 审核。一旦采用，所有使用这个语言的玩家都会收到，你也会出现在游戏内的鸣谢中。",
   "gui.dungeontrain.translate.submit.no_consent": "提交需要在地牢列车选项中开启网络连接。不开启时，你的修改在这台电脑上仍然有效。",
   "gui.dungeontrain.translate.submit.queued": "已提交 %s 处修改等待审核。谢谢！",
-  "gui.dungeontrain.translate.submit.nothing": "还没有可提交的内容 — 请先做些修改。",
-  "gui.dungeontrain.translate.submit.pending": "还有 %s 项提交等待发送。"
+  "gui.dungeontrain.translate.submit.pending": "还有 %s 项提交等待发送。",
+  "gui.dungeontrain.translate.submit.credit": "在游戏鸣谢中署上我的名字",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "还没有可提交的内容 — 请先修改一条翻译。",
+  "gui.dungeontrain.translate.submit.blocked.consent": "请在地牢列车选项中开启网络连接后再提交。"
 }

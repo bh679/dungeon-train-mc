@@ -1135,6 +1135,8 @@
   "gui.dungeontrain.translate.submit.note": "As tuas edições vão para o Brennan rever. Depois de aceites, chegam a toda a gente que joga neste idioma, e és creditado no jogo.",
   "gui.dungeontrain.translate.submit.no_consent": "Enviar precisa da ligação à internet ativada nas opções do Dungeon Train. As tuas edições continuam a funcionar neste computador sem ela.",
   "gui.dungeontrain.translate.submit.queued": "Enviadas %s edição(ões) para revisão. Obrigado!",
-  "gui.dungeontrain.translate.submit.nothing": "Ainda não há nada para enviar — edita algo primeiro.",
-  "gui.dungeontrain.translate.submit.pending": "%s envio(s) ainda a aguardar."
+  "gui.dungeontrain.translate.submit.pending": "%s envio(s) ainda a aguardar.",
+  "gui.dungeontrain.translate.submit.credit": "Creditar-me nos créditos do jogo",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "Ainda não há nada para enviar — corrige primeiro uma tradução.",
+  "gui.dungeontrain.translate.submit.blocked.consent": "Liga a ligação à internet nas opções do Dungeon Train para enviar."
 }

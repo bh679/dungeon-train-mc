@@ -1118,6 +1118,8 @@
   "gui.dungeontrain.translate.submit.note": "Perubahanmu dikirim ke Brennan untuk ditinjau. Setelah diterima, semua pemain yang memakai bahasa ini mendapatkannya, dan namamu dicantumkan di dalam game.",
   "gui.dungeontrain.translate.submit.no_consent": "Mengirim butuh koneksi internet yang aktif di Opsi Dungeon Train. Perubahanmu tetap bekerja di komputer ini tanpa itu.",
   "gui.dungeontrain.translate.submit.queued": "%s perubahan dikirim untuk ditinjau. Terima kasih!",
-  "gui.dungeontrain.translate.submit.nothing": "Belum ada yang bisa dikirim — ubah sesuatu dulu.",
-  "gui.dungeontrain.translate.submit.pending": "%s kiriman masih menunggu."
+  "gui.dungeontrain.translate.submit.pending": "%s kiriman masih menunggu.",
+  "gui.dungeontrain.translate.submit.credit": "Cantumkan namaku di kredit game",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "Belum ada yang bisa dikirim — perbaiki dulu sebuah terjemahan.",
+  "gui.dungeontrain.translate.submit.blocked.consent": "Aktifkan koneksi internet di Opsi Dungeon Train untuk mengirim."
 }

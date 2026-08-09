@@ -1118,6 +1118,8 @@
   "gui.dungeontrain.translate.submit.note": "Je bewerkingen gaan naar Brennan ter beoordeling. Eenmaal geaccepteerd krijgt iedereen die in deze taal speelt ze, en word je in het spel vermeld.",
   "gui.dungeontrain.translate.submit.no_consent": "Insturen vereist dat de internetverbinding aanstaat in de Dungeon Train-opties. Je bewerkingen werken zonder dat gewoon op deze computer.",
   "gui.dungeontrain.translate.submit.queued": "%s bewerking(en) ingestuurd ter beoordeling. Bedankt!",
-  "gui.dungeontrain.translate.submit.nothing": "Nog niets om te versturen — bewerk eerst iets.",
-  "gui.dungeontrain.translate.submit.pending": "%s inzending(en) wachten nog."
+  "gui.dungeontrain.translate.submit.pending": "%s inzending(en) wachten nog.",
+  "gui.dungeontrain.translate.submit.credit": "Vermeld mij in de aftiteling",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "Nog niets om te versturen — verbeter eerst een vertaling.",
+  "gui.dungeontrain.translate.submit.blocked.consent": "Zet de internetverbinding aan in de Dungeon Train-opties om te versturen."
 }

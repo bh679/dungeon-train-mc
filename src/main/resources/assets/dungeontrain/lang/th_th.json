@@ -1118,6 +1118,8 @@
   "gui.dungeontrain.translate.submit.note": "การแก้ไขของคุณจะส่งให้ Brennan ตรวจ เมื่อรับแล้วทุกคนที่เล่นภาษานี้จะได้รับ และคุณจะได้เครดิตในเกม",
   "gui.dungeontrain.translate.submit.no_consent": "การส่งต้องเปิดการเชื่อมต่ออินเทอร์เน็ตในตัวเลือก Dungeon Train การแก้ไขของคุณยังใช้ได้บนเครื่องนี้แม้ไม่เปิด",
   "gui.dungeontrain.translate.submit.queued": "ส่ง %s การแก้ไขเพื่อตรวจแล้ว ขอบคุณ!",
-  "gui.dungeontrain.translate.submit.nothing": "ยังไม่มีอะไรให้ส่ง — แก้ไขบางอย่างก่อน",
-  "gui.dungeontrain.translate.submit.pending": "ยังมี %s รายการรอส่ง"
+  "gui.dungeontrain.translate.submit.pending": "ยังมี %s รายการรอส่ง",
+  "gui.dungeontrain.translate.submit.credit": "ใส่ชื่อฉันในเครดิตของเกม",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "ยังไม่มีอะไรให้ส่ง — แก้คำแปลสักรายการก่อน",
+  "gui.dungeontrain.translate.submit.blocked.consent": "เปิดการเชื่อมต่ออินเทอร์เน็ตในตัวเลือก Dungeon Train เพื่อส่ง"
 }

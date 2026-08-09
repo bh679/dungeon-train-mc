@@ -1118,6 +1118,8 @@
   "gui.dungeontrain.translate.submit.note": "編集内容は Brennan が確認します。採用されるとこの言語でプレイしている全員に届き、ゲーム内で名前が掲載されます。",
   "gui.dungeontrain.translate.submit.no_consent": "送信には Dungeon Train オプションでインターネット接続を有効にする必要があります。無効でも、このコンピューターでは編集がそのまま使えます。",
   "gui.dungeontrain.translate.submit.queued": "%s 件の編集を送信しました。ありがとうございます！",
-  "gui.dungeontrain.translate.submit.nothing": "まだ送るものがありません — 先に何か編集してください。",
-  "gui.dungeontrain.translate.submit.pending": "%s 件の送信がまだ待機中です。"
+  "gui.dungeontrain.translate.submit.pending": "%s 件の送信がまだ待機中です。",
+  "gui.dungeontrain.translate.submit.credit": "ゲームのクレジットに名前を載せる",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "まだ送るものがありません — 先に翻訳を修正してください。",
+  "gui.dungeontrain.translate.submit.blocked.consent": "送信するには Dungeon Train オプションでインターネット接続を有効にしてください。"
 }

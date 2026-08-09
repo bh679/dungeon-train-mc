@@ -1118,6 +1118,8 @@
   "gui.dungeontrain.translate.submit.note": "Tes modifications partent chez Brennan pour relecture. Une fois acceptées, elles arrivent à tous ceux qui jouent dans cette langue, et tu es crédité dans le jeu.",
   "gui.dungeontrain.translate.submit.no_consent": "L'envoi nécessite la connexion internet activée dans les options de Dungeon Train. Tes modifications fonctionnent quand même sur cet ordinateur sans elle.",
   "gui.dungeontrain.translate.submit.queued": "%s modification(s) envoyées pour relecture. Merci !",
-  "gui.dungeontrain.translate.submit.nothing": "Rien à envoyer pour l'instant — modifie d'abord quelque chose.",
-  "gui.dungeontrain.translate.submit.pending": "%s envoi(s) encore en attente."
+  "gui.dungeontrain.translate.submit.pending": "%s envoi(s) encore en attente.",
+  "gui.dungeontrain.translate.submit.credit": "Me créditer dans les crédits du jeu",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "Rien à envoyer pour l'instant — corrige d'abord une traduction.",
+  "gui.dungeontrain.translate.submit.blocked.consent": "Active la connexion internet dans les options de Dungeon Train pour envoyer."
 }

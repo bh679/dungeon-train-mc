@@ -1122,8 +1122,10 @@
       "gui.dungeontrain.translate.submit.note",
       "gui.dungeontrain.translate.submit.no_consent",
       "gui.dungeontrain.translate.submit.queued",
-      "gui.dungeontrain.translate.submit.nothing",
-      "gui.dungeontrain.translate.submit.pending"
+      "gui.dungeontrain.translate.submit.pending",
+      "gui.dungeontrain.translate.submit.credit",
+      "gui.dungeontrain.translate.submit.blocked.no_edits",
+      "gui.dungeontrain.translate.submit.blocked.consent"
     ],
     "adventureitemnames": "*",
     "playermob": "*",

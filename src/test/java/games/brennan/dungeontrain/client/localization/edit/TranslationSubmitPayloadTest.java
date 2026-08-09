@@ -8,6 +8,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -127,6 +128,27 @@ class TranslationSubmitPayloadTest {
         var r = verdict(200, "not json");
         assertTrue(r.ok());
         assertEquals(0, r.stored());
+    }
+
+    // ---- contributor unlock ---------------------------------------------------
+
+    @Test
+    @DisplayName("an approved count above zero unlocks; zero does not")
+    void unlockParse() {
+        assertEquals(2, TranslationContributor.parseApproved("{\"ok\":true,\"approved\":2}"));
+        assertEquals(0, TranslationContributor.parseApproved("{\"ok\":true,\"approved\":0}"));
+    }
+
+    @Test
+    @DisplayName("anything unparseable leaves the unlock alone rather than granting it")
+    void unlockFailsClosed() {
+        // Every one of these is reachable in the wild: a relay that predates the endpoint, an
+        // error body, a proxy's HTML. None of them may unlock the unfiltered browse.
+        assertNull(TranslationContributor.parseApproved("{\"error\":\"not_found\"}"));
+        assertNull(TranslationContributor.parseApproved("{\"ok\":false,\"approved\":9}"));
+        assertNull(TranslationContributor.parseApproved("{\"ok\":true}"));
+        assertNull(TranslationContributor.parseApproved("{\"ok\":true,\"approved\":\"lots\"}"));
+        assertNull(TranslationContributor.parseApproved("[]"));
     }
 
     /** Minimal {@link java.net.http.HttpResponse} — only status and body are ever read. */

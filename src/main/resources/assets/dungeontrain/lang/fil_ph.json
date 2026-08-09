@@ -1118,6 +1118,8 @@
   "gui.dungeontrain.translate.submit.note": "Pupunta ang mga edit mo kay Brennan para suriin. Kapag tinanggap, mapupunta ito sa lahat ng naglalaro sa wikang ito, at makikilala ka sa loob ng laro.",
   "gui.dungeontrain.translate.submit.no_consent": "Kailangang naka-on ang internet connection sa Dungeon Train Options para makapagpadala. Gumagana pa rin ang mga edit mo sa computer na ito kahit wala ito.",
   "gui.dungeontrain.translate.submit.queued": "Naipadala ang %s edit para suriin. Salamat!",
-  "gui.dungeontrain.translate.submit.nothing": "Wala pang maipapadala — mag-edit muna.",
-  "gui.dungeontrain.translate.submit.pending": "%s pagpapadala ang naghihintay pa."
+  "gui.dungeontrain.translate.submit.pending": "%s pagpapadala ang naghihintay pa.",
+  "gui.dungeontrain.translate.submit.credit": "Isama ako sa credits ng laro",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "Wala pang maipapadala — ayusin muna ang isang salin.",
+  "gui.dungeontrain.translate.submit.blocked.consent": "Buksan ang internet connection sa Dungeon Train Options para makapagpadala."
 }

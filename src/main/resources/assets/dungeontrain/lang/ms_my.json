@@ -1118,6 +1118,8 @@
   "gui.dungeontrain.translate.submit.note": "Suntingan anda dihantar kepada Brennan untuk disemak. Setelah diterima, semua pemain dalam bahasa ini mendapatnya, dan nama anda dikreditkan dalam permainan.",
   "gui.dungeontrain.translate.submit.no_consent": "Penghantaran memerlukan sambungan internet dihidupkan dalam Pilihan Dungeon Train. Suntingan anda tetap berfungsi pada komputer ini tanpanya.",
   "gui.dungeontrain.translate.submit.queued": "%s suntingan dihantar untuk semakan. Terima kasih!",
-  "gui.dungeontrain.translate.submit.nothing": "Belum ada apa-apa untuk dihantar — sunting sesuatu dahulu.",
-  "gui.dungeontrain.translate.submit.pending": "%s penghantaran masih menunggu."
+  "gui.dungeontrain.translate.submit.pending": "%s penghantaran masih menunggu.",
+  "gui.dungeontrain.translate.submit.credit": "Kreditkan nama saya dalam kredit permainan",
+  "gui.dungeontrain.translate.submit.blocked.no_edits": "Belum ada apa-apa untuk dihantar — betulkan satu terjemahan dahulu.",
+  "gui.dungeontrain.translate.submit.blocked.consent": "Hidupkan sambungan internet dalam Pilihan Dungeon Train untuk menghantar."
 }

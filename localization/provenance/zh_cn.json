@@ -1132,6 +1132,8 @@
   "gui.dungeontrain.translate.submit.note": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.translate.submit.no_consent": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.translate.submit.queued": {"author": "Opus 5 (Claude)", "reviewer": ""},
-  "gui.dungeontrain.translate.submit.nothing": {"author": "Opus 5 (Claude)", "reviewer": ""},
-  "gui.dungeontrain.translate.submit.pending": {"author": "Opus 5 (Claude)", "reviewer": ""}
+  "gui.dungeontrain.translate.submit.pending": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.submit.credit": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.submit.blocked.no_edits": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.submit.blocked.consent": {"author": "Opus 5 (Claude)", "reviewer": ""}
 }
