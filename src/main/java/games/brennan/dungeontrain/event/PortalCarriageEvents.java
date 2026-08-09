@@ -801,8 +801,14 @@ public final class PortalCarriageEvents {
 
         PortalCarriageBuilder.stampPairStructure(level, planned, dims, pairKey);
         STRUCTURES.put(pairKey, planned);
-        LOGGER.info("[DungeonTrain] Stamped portal pair {} at {} (room '{}' {} long, entry carriage at {}, {}, {})",
-            pairKey, wanted, planned.roomName(), planned.roomLength(),
+        // Where the exit stands, but only when it is not the ordinary place. A pair that moved it
+        // (PortalRoomExits) is a portal a player has to search, and that is worth being able to see
+        // in a log without walking the room — it is also the only outward sign the setting fired.
+        String exit = PortalRoomTiling.Tile.BASE.equals(planned.exitTile())
+            ? ""
+            : ", exit moved to tile " + planned.exitTile().x() + "," + planned.exitTile().z();
+        LOGGER.info("[DungeonTrain] Stamped portal pair {} at {} (room '{}' {} long{}, entry carriage at {}, {}, {})",
+            pairKey, wanted, planned.roomName(), planned.roomLength(), exit,
             fmt(originX), fmt(originY), fmt(originZ));
         return planned;
     }
