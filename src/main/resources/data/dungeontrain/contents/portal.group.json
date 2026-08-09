@@ -25,6 +25,10 @@
     {
       "id": "seats",
       "weight": 1
+    },
+    {
+      "id": "zigzagportal",
+      "weight": 1
     }
   ]
 }
