@@ -199,6 +199,17 @@ public final class PortalClear {
      *
      * <p>Keeps {@code UPDATE_ALL} rather than writing through the section, because the callers rely
      * on the neighbour and lighting updates a face becoming open should produce.</p>
+     *
+     * <p><b>Not drop-free, unlike the rest of this class.</b> {@code UPDATE_ALL} runs the shape
+     * cascade, and {@code Level.markAndNotifyBlock} strips {@code UPDATE_SUPPRESS_DROPS} out of the
+     * subflags it passes down — so anything <i>supported by</i> this cell is routed through
+     * {@code Block.updateOrDestroy -> destroyBlock(dropBlock = true)} and <b>breaks, dropping as an
+     * item</b>. Only use this where the neighbour updates are the point. To blank a cell that
+     * something may be standing on, use {@link SilentBlockOps#setBlockSilentNoCascade}; to replace one,
+     * evict its block entity and write the new state straight over it, as
+     * {@code PortalCarriageBuilder.applyRoomVariants} does. That method learned this the hard way: it
+     * cleared every authored cell through here first, and knocked the pressure plates off the floor of
+     * every singlepillar room it stamped.</p>
      */
     public static void clearCell(ServerLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
