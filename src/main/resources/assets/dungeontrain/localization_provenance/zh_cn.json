@@ -95,7 +95,19 @@
       "gui.dungeontrain.translate.submit.credit",
       "gui.dungeontrain.translate.submit.blocked.no_edits",
       "gui.dungeontrain.translate.submit.blocked.consent",
-      "gui.dungeontrain.translate.filter.todo"
+      "gui.dungeontrain.translate.filter.todo",
+      "gui.dungeontrain.translate.sent.title",
+      "gui.dungeontrain.translate.sent.narration",
+      "gui.dungeontrain.translate.sent.loading",
+      "gui.dungeontrain.translate.sent.empty",
+      "gui.dungeontrain.translate.sent.units",
+      "gui.dungeontrain.translate.sent.anonymous",
+      "gui.dungeontrain.translate.sent.queued",
+      "gui.dungeontrain.translate.sent.waiting",
+      "gui.dungeontrain.translate.sent.held",
+      "gui.dungeontrain.translate.sent.accepted",
+      "gui.dungeontrain.translate.sent.partial",
+      "gui.dungeontrain.translate.sent.rejected"
     ],
     "adventureitemnames": [],
     "playermob": []

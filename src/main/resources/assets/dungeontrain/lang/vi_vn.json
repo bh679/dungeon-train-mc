@@ -1127,7 +1127,7 @@
   "gui.dungeontrain.translate.files.imported": "Đã nhập %s dòng và %s trường sách.",
   "gui.dungeontrain.translate.files.nothing": "Không có gì để nhập — hãy đặt tệp của bạn vào thư mục nhập trước.",
   "gui.dungeontrain.translate.files.failed": "Không thành công — xem nhật ký để biết chi tiết.",
-  "gui.dungeontrain.translate.submit": "Gửi đi…",
+  "gui.dungeontrain.translate.submit": "Gửi",
   "gui.dungeontrain.translate.submit.title": "Gửi bản dịch của bạn",
   "gui.dungeontrain.translate.submit.subtitle": "%s — %s chỉnh sửa sẵn sàng gửi",
   "gui.dungeontrain.translate.submit.name": "Tên để ghi công bạn (tùy chọn)",
@@ -1139,5 +1139,17 @@
   "gui.dungeontrain.translate.submit.credit": "Ghi tên tôi trong phần ghi công của trò chơi",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Chưa có gì để gửi — hãy sửa một bản dịch trước.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Bật kết nối internet trong Tùy chọn Dungeon Train để gửi.",
-  "gui.dungeontrain.translate.filter.todo": "Chưa làm"
+  "gui.dungeontrain.translate.filter.todo": "Chưa làm",
+  "gui.dungeontrain.translate.sent.title": "Những gì bạn đã gửi",
+  "gui.dungeontrain.translate.sent.narration": "%s lượt gửi",
+  "gui.dungeontrain.translate.sent.loading": "Đang kiểm tra…",
+  "gui.dungeontrain.translate.sent.empty": "Chưa gửi gì cả.",
+  "gui.dungeontrain.translate.sent.units": "%s thay đổi",
+  "gui.dungeontrain.translate.sent.anonymous": "Ẩn danh",
+  "gui.dungeontrain.translate.sent.queued": "Đang chờ gửi",
+  "gui.dungeontrain.translate.sent.waiting": "Đang chờ duyệt",
+  "gui.dungeontrain.translate.sent.held": "Tạm giữ để duyệt",
+  "gui.dungeontrain.translate.sent.accepted": "Đã nhận",
+  "gui.dungeontrain.translate.sent.partial": "Đã nhận %s/%s",
+  "gui.dungeontrain.translate.sent.rejected": "Không dùng"
 }

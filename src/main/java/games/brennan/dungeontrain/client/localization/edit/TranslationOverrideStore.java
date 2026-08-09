@@ -46,7 +46,14 @@ public final class TranslationOverrideStore {
         /** What this player edited in the in-game editor. */
         LOCAL("local"),
         /** What the relay has approved for this locale, cached from the last successful fetch. */
-        APPROVED("approved");
+        APPROVED("approved"),
+        /**
+         * A snapshot of {@link #LOCAL} as it was when the player last pressed Submit. Not an
+         * override layer — it is never applied — but it shares the shape exactly, so comparing it
+         * to LOCAL answers "is there finished work the relay has not seen?" without a second
+         * format to maintain.
+         */
+        SUBMITTED("submitted");
 
         private final String dirName;
 

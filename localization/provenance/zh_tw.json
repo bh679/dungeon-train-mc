@@ -1136,5 +1136,17 @@
   "gui.dungeontrain.translate.submit.credit": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.translate.submit.blocked.no_edits": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.translate.submit.blocked.consent": {"author": "Opus 5 (Claude)", "reviewer": ""},
-  "gui.dungeontrain.translate.filter.todo": {"author": "Opus 5 (Claude)", "reviewer": ""}
+  "gui.dungeontrain.translate.filter.todo": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.sent.title": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.sent.narration": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.sent.loading": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.sent.empty": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.sent.units": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.sent.anonymous": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.sent.queued": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.sent.waiting": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.sent.held": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.sent.accepted": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.sent.partial": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.sent.rejected": {"author": "Opus 5 (Claude)", "reviewer": ""}
 }

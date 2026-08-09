@@ -1110,7 +1110,7 @@
   "gui.dungeontrain.translate.files.imported": "%s줄과 책 항목 %s개를 가져왔습니다.",
   "gui.dungeontrain.translate.files.nothing": "가져올 것이 없습니다 — 먼저 가져오기 폴더에 파일을 넣어 주세요.",
   "gui.dungeontrain.translate.files.failed": "실패했습니다 — 자세한 내용은 로그를 확인하세요.",
-  "gui.dungeontrain.translate.submit": "보내기…",
+  "gui.dungeontrain.translate.submit": "보내기",
   "gui.dungeontrain.translate.submit.title": "번역 보내기",
   "gui.dungeontrain.translate.submit.subtitle": "%s — 보낼 수정 %s개",
   "gui.dungeontrain.translate.submit.name": "표기할 이름 (선택)",
@@ -1122,5 +1122,17 @@
   "gui.dungeontrain.translate.submit.credit": "게임 크레딧에 내 이름 넣기",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "아직 보낼 것이 없습니다 — 먼저 번역을 고쳐 주세요.",
   "gui.dungeontrain.translate.submit.blocked.consent": "보내려면 Dungeon Train 옵션에서 인터넷 연결을 켜 주세요.",
-  "gui.dungeontrain.translate.filter.todo": "아직 안 함"
+  "gui.dungeontrain.translate.filter.todo": "아직 안 함",
+  "gui.dungeontrain.translate.sent.title": "보낸 내역",
+  "gui.dungeontrain.translate.sent.narration": "%s건의 제출",
+  "gui.dungeontrain.translate.sent.loading": "확인 중…",
+  "gui.dungeontrain.translate.sent.empty": "아직 보낸 것이 없습니다.",
+  "gui.dungeontrain.translate.sent.units": "%s개 변경",
+  "gui.dungeontrain.translate.sent.anonymous": "익명",
+  "gui.dungeontrain.translate.sent.queued": "전송 대기 중",
+  "gui.dungeontrain.translate.sent.waiting": "검토 대기 중",
+  "gui.dungeontrain.translate.sent.held": "검토 보류",
+  "gui.dungeontrain.translate.sent.accepted": "채택됨",
+  "gui.dungeontrain.translate.sent.partial": "%s/%s 채택",
+  "gui.dungeontrain.translate.sent.rejected": "미사용"
 }

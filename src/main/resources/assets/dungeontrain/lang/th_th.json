@@ -1110,7 +1110,7 @@
   "gui.dungeontrain.translate.files.imported": "นำเข้าแล้ว %s บรรทัด และ %s ช่องข้อมูลหนังสือ",
   "gui.dungeontrain.translate.files.nothing": "ไม่มีอะไรให้นำเข้า — วางไฟล์ของคุณในโฟลเดอร์นำเข้าก่อน",
   "gui.dungeontrain.translate.files.failed": "ไม่สำเร็จ — ดูรายละเอียดในบันทึก",
-  "gui.dungeontrain.translate.submit": "ส่ง…",
+  "gui.dungeontrain.translate.submit": "ส่ง",
   "gui.dungeontrain.translate.submit.title": "ส่งคำแปลของคุณ",
   "gui.dungeontrain.translate.submit.subtitle": "%s — มี %s การแก้ไขพร้อมส่ง",
   "gui.dungeontrain.translate.submit.name": "ชื่อที่จะใช้ให้เครดิต (ไม่บังคับ)",
@@ -1122,5 +1122,17 @@
   "gui.dungeontrain.translate.submit.credit": "ใส่ชื่อฉันในเครดิตของเกม",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "ยังไม่มีอะไรให้ส่ง — แก้คำแปลสักรายการก่อน",
   "gui.dungeontrain.translate.submit.blocked.consent": "เปิดการเชื่อมต่ออินเทอร์เน็ตในตัวเลือก Dungeon Train เพื่อส่ง",
-  "gui.dungeontrain.translate.filter.todo": "ยังไม่ได้ทำ"
+  "gui.dungeontrain.translate.filter.todo": "ยังไม่ได้ทำ",
+  "gui.dungeontrain.translate.sent.title": "สิ่งที่คุณส่งไป",
+  "gui.dungeontrain.translate.sent.narration": "การส่ง %s ครั้ง",
+  "gui.dungeontrain.translate.sent.loading": "กำลังตรวจสอบ…",
+  "gui.dungeontrain.translate.sent.empty": "ยังไม่ได้ส่งอะไร",
+  "gui.dungeontrain.translate.sent.units": "%s การเปลี่ยนแปลง",
+  "gui.dungeontrain.translate.sent.anonymous": "ไม่ระบุชื่อ",
+  "gui.dungeontrain.translate.sent.queued": "รอส่ง",
+  "gui.dungeontrain.translate.sent.waiting": "รอการตรวจ",
+  "gui.dungeontrain.translate.sent.held": "พักไว้เพื่อตรวจ",
+  "gui.dungeontrain.translate.sent.accepted": "รับแล้ว",
+  "gui.dungeontrain.translate.sent.partial": "รับ %s/%s",
+  "gui.dungeontrain.translate.sent.rejected": "ไม่ได้ใช้"
 }

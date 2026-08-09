@@ -108,6 +108,44 @@ public final class TranslationOverrides {
         return isLive(locale) ? replaceLocal(next) : saveDetached(locale, next);
     }
 
+    /**
+     * Whether this player has edits the relay has not been sent yet — the cue the Submit button
+     * turns green on.
+     *
+     * <p>Compares the local layer against the snapshot taken at the last Submit, so a value the
+     * player has since changed again counts as unsubmitted even though its key was sent before.
+     * Reverting an edit does not: an override that no longer exists is not outstanding work.</p>
+     */
+    public static boolean hasUnsubmittedChanges(String locale) {
+        TranslationEdits local = localFor(locale);
+        if (local.isEmpty()) {
+            return false;
+        }
+        TranslationEdits sent = TranslationOverrideStore.load(
+            TranslationOverrideStore.Layer.SUBMITTED, locale);
+        return differs(local.lang(), sent.lang()) || differs(local.books(), sent.books());
+    }
+
+    private static boolean differs(Map<String, String> local, Map<String, String> sent) {
+        for (Map.Entry<String, String> entry : local.entrySet()) {
+            if (!entry.getValue().equals(sent.get(entry.getKey()))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Record that the current local edits have been handed to the outbox.
+     *
+     * <p>Written at queue time rather than on delivery: the outbox owns delivery and retries, and
+     * the player has done their part. The screen still reports anything left waiting to send, so
+     * nothing is hidden by this.</p>
+     */
+    public static void markSubmitted(String locale) {
+        TranslationOverrideStore.save(TranslationOverrideStore.Layer.SUBMITTED, localFor(locale));
+    }
+
     /** Write a locale the overlay is not showing. No install — there is nothing to install onto. */
     private static boolean saveDetached(String locale, TranslationEdits edits) {
         return TranslationOverrideStore.save(TranslationOverrideStore.Layer.LOCAL, edits);

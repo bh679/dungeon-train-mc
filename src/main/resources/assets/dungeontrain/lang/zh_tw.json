@@ -1124,7 +1124,7 @@
   "gui.dungeontrain.translate.files.imported": "已匯入 %s 行、%s 處書籍內容。",
   "gui.dungeontrain.translate.files.nothing": "沒有可匯入的內容 — 請先把檔案放進匯入資料夾。",
   "gui.dungeontrain.translate.files.failed": "沒有成功 — 詳情請見紀錄。",
-  "gui.dungeontrain.translate.submit": "送出…",
+  "gui.dungeontrain.translate.submit": "送出",
   "gui.dungeontrain.translate.submit.title": "送出你的翻譯",
   "gui.dungeontrain.translate.submit.subtitle": "%s — %s 處修改可送出",
   "gui.dungeontrain.translate.submit.name": "署名（選填）",
@@ -1136,5 +1136,17 @@
   "gui.dungeontrain.translate.submit.credit": "在遊戲致謝中署上我的名字",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "還沒有可送出的內容 — 請先修改一條翻譯。",
   "gui.dungeontrain.translate.submit.blocked.consent": "請在地牢列車選項中開啟網路連線後再送出。",
-  "gui.dungeontrain.translate.filter.todo": "尚未處理"
+  "gui.dungeontrain.translate.filter.todo": "尚未處理",
+  "gui.dungeontrain.translate.sent.title": "你送出過的",
+  "gui.dungeontrain.translate.sent.narration": "%s 次送出",
+  "gui.dungeontrain.translate.sent.loading": "正在查詢…",
+  "gui.dungeontrain.translate.sent.empty": "還沒有送出過內容。",
+  "gui.dungeontrain.translate.sent.units": "%s 處修改",
+  "gui.dungeontrain.translate.sent.anonymous": "匿名",
+  "gui.dungeontrain.translate.sent.queued": "等待傳送",
+  "gui.dungeontrain.translate.sent.waiting": "等待審核",
+  "gui.dungeontrain.translate.sent.held": "已暫緩審核",
+  "gui.dungeontrain.translate.sent.accepted": "已採用",
+  "gui.dungeontrain.translate.sent.partial": "已採用 %s/%s",
+  "gui.dungeontrain.translate.sent.rejected": "未採用"
 }

@@ -36,9 +36,12 @@ import java.util.UUID;
 public final class TranslationSubmitScreen extends Screen {
 
     private static final int MARGIN = 16;
-    private static final int ROW_W = 260;
     private static final int ROW_H = 20;
     private static final int ROW_GAP = 24;
+    private static final int GAP = 8;
+    private static final int TOP = 44;
+    /** Widest the form column gets; past this it stops growing and the list takes the rest. */
+    private static final int FORM_MAX_W = 260;
     private static final int LABEL_COLOUR = 0xFFA0A0A0;
     private static final int NOTE_COLOUR = 0xFFD8A657;
     private static final int OK_COLOUR = 0xFF7FDD7F;
@@ -52,8 +55,12 @@ public final class TranslationSubmitScreen extends Screen {
     private Checkbox creditBox;
     private EditBox nameBox;
     private Button submitButton;
+    private TranslationSubmissionList sentList;
     private Component status = CommonComponents.EMPTY;
     private List<FormattedCharSequence> noteLines = List.of();
+    private int noteX;
+    private int noteY;
+    private int noteWidth;
 
     public TranslationSubmitScreen(TranslationScreen parent, String locale) {
         super(Component.translatable("gui.dungeontrain.translate.submit.title"));
@@ -63,8 +70,21 @@ public final class TranslationSubmitScreen extends Screen {
 
     @Override
     protected void init() {
-        int left = width / 2 - ROW_W / 2;
-        int y = height / 3;
+        // Two columns: the form on the left, the history on the right. The note used to sit under
+        // a centred form and ran straight into the Done button when it wrapped to three lines;
+        // giving it a column of its own and a fixed slot is what stops that recurring.
+        int content = width - MARGIN * 2;
+        int formW = Math.min(FORM_MAX_W, (content - GAP) / 2);
+        int left = MARGIN;
+        int listX = left + formW + GAP;
+        int listW = Math.max(80, width - MARGIN - listX);
+        int bottomRow = height - MARGIN - ROW_H;
+        int y = TOP;
+
+        sentList = new TranslationSubmissionList(font, listX, TOP, listW,
+            Math.max(ROW_H, bottomRow - GAP - TOP));
+        addRenderableWidget(sentList);
+        TranslationSubmissionsClient.fetch(this::onHistory);
 
         creditBox = Checkbox.builder(
                 Component.translatable("gui.dungeontrain.translate.submit.credit"), this.font)
@@ -75,7 +95,7 @@ public final class TranslationSubmitScreen extends Screen {
         addRenderableWidget(creditBox);
         y += ROW_GAP;
 
-        nameBox = new EditBox(font, left, y, ROW_W, ROW_H,
+        nameBox = new EditBox(font, left, y, formW, ROW_H,
             Component.translatable("gui.dungeontrain.translate.submit.name"));
         nameBox.setHint(Component.translatable("gui.dungeontrain.translate.submit.name"));
         nameBox.setMaxLength(MAX_NAME_CHARS);
@@ -85,11 +105,16 @@ public final class TranslationSubmitScreen extends Screen {
 
         submitButton = addRenderableWidget(Button.builder(
             Component.translatable("gui.dungeontrain.translate.submit.send"), b -> send())
-            .bounds(left, y, ROW_W, ROW_H).build());
-        y += ROW_GAP + ROW_GAP;
+            .bounds(left, y, formW, ROW_H).build());
+        y += ROW_GAP;
+
+        // The note gets the rest of the column, and Done keeps its own reserved row at the bottom.
+        noteX = left;
+        noteY = y;
+        noteWidth = formW;
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-            .bounds(left, y, ROW_W, ROW_H).build());
+            .bounds(left, bottomRow, formW, ROW_H).build());
 
         updateNameBoxState();
         updateSubmitState();
@@ -97,7 +122,22 @@ public final class TranslationSubmitScreen extends Screen {
         Component note = RelayChatClient.canConnect()
             ? Component.translatable("gui.dungeontrain.translate.submit.note")
             : Component.translatable("gui.dungeontrain.translate.submit.no_consent");
-        noteLines = font.split(FormattedText.of(note.getString()), ROW_W + 60);
+        noteLines = font.split(FormattedText.of(note.getString()), noteWidth);
+    }
+
+    /**
+     * Merge the relay's history with anything still in the local outbox, newest first. Queued
+     * work belongs in the list: a translator who pressed Submit while offline should see it,
+     * not an empty panel that reads as "nothing was sent".
+     */
+    private void onHistory(List<TranslationSubmission> fromRelay) {
+        if (sentList == null) {
+            return;
+        }
+        List<TranslationSubmission> all = new ArrayList<>(TranslationOutbox.get().queued());
+        all.addAll(fromRelay);
+        all.sort((a, b) -> Long.compare(b.submittedAtMs(), a.submittedAtMs()));
+        sentList.setRows(all);
     }
 
     /**
@@ -181,9 +221,13 @@ public final class TranslationSubmitScreen extends Screen {
 
         // Queued, not delivered — the outbox owns delivery and retries, so the honest report is
         // "sent for review", with the count the player can check against their edits.
+        TranslationOverrides.markSubmitted(locale);
         status = Component.translatable("gui.dungeontrain.translate.submit.queued", units.size());
         submitButton.active = false;
         submitButton.setTooltip(null);
+        // The row the player just created should appear without reopening the screen.
+        onHistory(List.of());
+        TranslationSubmissionsClient.fetch(this::onHistory);
     }
 
     @Override
@@ -194,21 +238,28 @@ public final class TranslationSubmitScreen extends Screen {
             Component.translatable("gui.dungeontrain.translate.submit.subtitle",
                 locale, TranslationOverrides.localFor(locale).size()),
             width / 2, MARGIN + font.lineHeight + 2, LABEL_COLOUR);
+        if (sentList != null) {
+            g.drawString(font, Component.translatable("gui.dungeontrain.translate.sent.title"),
+                sentList.getX(), TOP - font.lineHeight - 2, LABEL_COLOUR, false);
+        }
 
-        int y = height / 3 + ROW_GAP * 3;
+        int y = noteY;
         for (FormattedCharSequence line : noteLines) {
-            g.drawCenteredString(font, line, width / 2, y, NOTE_COLOUR);
+            g.drawString(font, line, noteX, y, NOTE_COLOUR, false);
             y += font.lineHeight;
         }
+        y += font.lineHeight;
         if (status != CommonComponents.EMPTY) {
-            g.drawCenteredString(font, status, width / 2, height - MARGIN - font.lineHeight * 2,
-                OK_COLOUR);
+            for (FormattedCharSequence line : font.split(status, noteWidth)) {
+                g.drawString(font, line, noteX, y, OK_COLOUR, false);
+                y += font.lineHeight;
+            }
         }
         int queued = TranslationOutbox.get().pendingCount();
         if (queued > 0) {
-            g.drawCenteredString(font,
+            g.drawString(font,
                 Component.translatable("gui.dungeontrain.translate.submit.pending", queued),
-                width / 2, height - MARGIN - font.lineHeight, LABEL_COLOUR);
+                noteX, y, LABEL_COLOUR, false);
         }
     }
 

@@ -76,6 +76,31 @@ public final class TranslationOutbox {
         flush();
     }
 
+    /**
+     * Everything still waiting to go, as list rows.
+     *
+     * <p>Read back out of each item's stored body rather than kept as separate fields: the body
+     * is the exact JSON the relay will receive, so it is already the authoritative record of what
+     * was submitted, and a second copy could only drift from it.</p>
+     */
+    public synchronized List<TranslationSubmission> queued() {
+        load();
+        List<TranslationSubmission> out = new ArrayList<>();
+        for (Item item : pending.values()) {
+            try {
+                JsonObject body = JsonParser.parseString(item.body()).getAsJsonObject();
+                out.add(TranslationSubmission.queued(
+                    item.createdAtMs(),
+                    body.has("locale") ? body.get("locale").getAsString() : "",
+                    body.has("translator") ? body.get("translator").getAsString() : "",
+                    body.has("units") ? body.getAsJsonArray("units").size() : 0));
+            } catch (Exception e) {
+                LOGGER.debug("[DungeonTrain] Translations: unreadable queued item — {}", e.toString());
+            }
+        }
+        return out;
+    }
+
     /** How many submissions are still waiting — the screen shows this. */
     public synchronized int pendingCount() {
         load();

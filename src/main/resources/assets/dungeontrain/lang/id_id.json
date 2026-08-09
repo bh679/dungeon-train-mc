@@ -1110,7 +1110,7 @@
   "gui.dungeontrain.translate.files.imported": "%s baris dan %s bidang buku diimpor.",
   "gui.dungeontrain.translate.files.nothing": "Tidak ada yang diimpor — taruh berkasmu di folder impor dulu.",
   "gui.dungeontrain.translate.files.failed": "Itu tidak berhasil — lihat log untuk detailnya.",
-  "gui.dungeontrain.translate.submit": "Kirim…",
+  "gui.dungeontrain.translate.submit": "Kirim",
   "gui.dungeontrain.translate.submit.title": "Kirim terjemahanmu",
   "gui.dungeontrain.translate.submit.subtitle": "%s — %s perubahan siap dikirim",
   "gui.dungeontrain.translate.submit.name": "Nama untuk mencantumkanmu (opsional)",
@@ -1122,5 +1122,17 @@
   "gui.dungeontrain.translate.submit.credit": "Cantumkan namaku di kredit game",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Belum ada yang bisa dikirim — perbaiki dulu sebuah terjemahan.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Aktifkan koneksi internet di Opsi Dungeon Train untuk mengirim.",
-  "gui.dungeontrain.translate.filter.todo": "Belum dikerjakan"
+  "gui.dungeontrain.translate.filter.todo": "Belum dikerjakan",
+  "gui.dungeontrain.translate.sent.title": "Yang sudah kamu kirim",
+  "gui.dungeontrain.translate.sent.narration": "%s kiriman",
+  "gui.dungeontrain.translate.sent.loading": "Memeriksa…",
+  "gui.dungeontrain.translate.sent.empty": "Belum ada yang dikirim.",
+  "gui.dungeontrain.translate.sent.units": "%s perubahan",
+  "gui.dungeontrain.translate.sent.anonymous": "Anonim",
+  "gui.dungeontrain.translate.sent.queued": "Menunggu dikirim",
+  "gui.dungeontrain.translate.sent.waiting": "Menunggu ditinjau",
+  "gui.dungeontrain.translate.sent.held": "Ditahan untuk ditinjau",
+  "gui.dungeontrain.translate.sent.accepted": "Diterima",
+  "gui.dungeontrain.translate.sent.partial": "%s/%s diterima",
+  "gui.dungeontrain.translate.sent.rejected": "Tidak dipakai"
 }

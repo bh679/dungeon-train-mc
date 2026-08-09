@@ -1110,7 +1110,7 @@
   "gui.dungeontrain.translate.files.imported": "Imported %s line(s) and %s book field(s).",
   "gui.dungeontrain.translate.files.nothing": "Nothing to import — put your files in the import folder first.",
   "gui.dungeontrain.translate.files.failed": "That didn't work — see the log for details.",
-  "gui.dungeontrain.translate.submit": "Send In…",
+  "gui.dungeontrain.translate.submit": "Submit",
   "gui.dungeontrain.translate.submit.title": "Send Your Translation In",
   "gui.dungeontrain.translate.submit.subtitle": "%s — %s edit(s) ready to send",
   "gui.dungeontrain.translate.submit.name": "Name to credit you by (optional)",
@@ -1122,5 +1122,17 @@
   "gui.dungeontrain.translate.submit.credit": "Credit me in the game's credits",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Nothing to send yet — fix a translation first.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Turn the internet connection on in Dungeon Train Options to send.",
-  "gui.dungeontrain.translate.filter.todo": "Still to do"
+  "gui.dungeontrain.translate.filter.todo": "Still to do",
+  "gui.dungeontrain.translate.sent.title": "What you've sent in",
+  "gui.dungeontrain.translate.sent.narration": "%s submission(s)",
+  "gui.dungeontrain.translate.sent.loading": "Checking…",
+  "gui.dungeontrain.translate.sent.empty": "Nothing sent in yet.",
+  "gui.dungeontrain.translate.sent.units": "%s change(s)",
+  "gui.dungeontrain.translate.sent.anonymous": "Anonymous",
+  "gui.dungeontrain.translate.sent.queued": "Waiting to send",
+  "gui.dungeontrain.translate.sent.waiting": "Waiting for review",
+  "gui.dungeontrain.translate.sent.held": "Held for review",
+  "gui.dungeontrain.translate.sent.accepted": "Accepted",
+  "gui.dungeontrain.translate.sent.partial": "%s/%s accepted",
+  "gui.dungeontrain.translate.sent.rejected": "Not used"
 }

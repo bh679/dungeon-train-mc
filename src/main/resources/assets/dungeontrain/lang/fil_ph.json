@@ -1110,7 +1110,7 @@
   "gui.dungeontrain.translate.files.imported": "Na-import ang %s linya at %s field ng libro.",
   "gui.dungeontrain.translate.files.nothing": "Walang ma-import — ilagay muna ang iyong mga file sa import folder.",
   "gui.dungeontrain.translate.files.failed": "Hindi ito gumana — tingnan ang log para sa detalye.",
-  "gui.dungeontrain.translate.submit": "Ipadala…",
+  "gui.dungeontrain.translate.submit": "Ipadala",
   "gui.dungeontrain.translate.submit.title": "Ipadala ang iyong salin",
   "gui.dungeontrain.translate.submit.subtitle": "%s — %s edit na handang ipadala",
   "gui.dungeontrain.translate.submit.name": "Pangalang gagamitin sa pagkilala sa iyo (opsyonal)",
@@ -1122,5 +1122,17 @@
   "gui.dungeontrain.translate.submit.credit": "Isama ako sa credits ng laro",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Wala pang maipapadala — ayusin muna ang isang salin.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Buksan ang internet connection sa Dungeon Train Options para makapagpadala.",
-  "gui.dungeontrain.translate.filter.todo": "Gagawin pa"
+  "gui.dungeontrain.translate.filter.todo": "Gagawin pa",
+  "gui.dungeontrain.translate.sent.title": "Naipadala mo na",
+  "gui.dungeontrain.translate.sent.narration": "%s pagpapadala",
+  "gui.dungeontrain.translate.sent.loading": "Tinitingnan…",
+  "gui.dungeontrain.translate.sent.empty": "Wala pang naipapadala.",
+  "gui.dungeontrain.translate.sent.units": "%s pagbabago",
+  "gui.dungeontrain.translate.sent.anonymous": "Anonimo",
+  "gui.dungeontrain.translate.sent.queued": "Naghihintay maipadala",
+  "gui.dungeontrain.translate.sent.waiting": "Naghihintay ng pagsusuri",
+  "gui.dungeontrain.translate.sent.held": "Nakabinbin sa pagsusuri",
+  "gui.dungeontrain.translate.sent.accepted": "Tinanggap",
+  "gui.dungeontrain.translate.sent.partial": "%s/%s tinanggap",
+  "gui.dungeontrain.translate.sent.rejected": "Hindi ginamit"
 }

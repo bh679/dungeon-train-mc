@@ -1124,7 +1124,7 @@
   "gui.dungeontrain.translate.files.imported": "已导入 %s 行、%s 处书籍内容。",
   "gui.dungeontrain.translate.files.nothing": "没有可导入的内容 — 请先把文件放进导入文件夹。",
   "gui.dungeontrain.translate.files.failed": "没有成功 — 详情见日志。",
-  "gui.dungeontrain.translate.submit": "提交…",
+  "gui.dungeontrain.translate.submit": "提交",
   "gui.dungeontrain.translate.submit.title": "提交你的翻译",
   "gui.dungeontrain.translate.submit.subtitle": "%s — %s 处修改可提交",
   "gui.dungeontrain.translate.submit.name": "署名（可选）",
@@ -1136,5 +1136,17 @@
   "gui.dungeontrain.translate.submit.credit": "在游戏鸣谢中署上我的名字",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "还没有可提交的内容 — 请先修改一条翻译。",
   "gui.dungeontrain.translate.submit.blocked.consent": "请在地牢列车选项中开启网络连接后再提交。",
-  "gui.dungeontrain.translate.filter.todo": "尚未处理"
+  "gui.dungeontrain.translate.filter.todo": "尚未处理",
+  "gui.dungeontrain.translate.sent.title": "你提交过的",
+  "gui.dungeontrain.translate.sent.narration": "%s 次提交",
+  "gui.dungeontrain.translate.sent.loading": "正在查询…",
+  "gui.dungeontrain.translate.sent.empty": "还没有提交过内容。",
+  "gui.dungeontrain.translate.sent.units": "%s 处修改",
+  "gui.dungeontrain.translate.sent.anonymous": "匿名",
+  "gui.dungeontrain.translate.sent.queued": "等待发送",
+  "gui.dungeontrain.translate.sent.waiting": "等待审核",
+  "gui.dungeontrain.translate.sent.held": "已暂缓审核",
+  "gui.dungeontrain.translate.sent.accepted": "已采用",
+  "gui.dungeontrain.translate.sent.partial": "已采用 %s/%s",
+  "gui.dungeontrain.translate.sent.rejected": "未采用"
 }

@@ -1127,7 +1127,7 @@
   "gui.dungeontrain.translate.files.imported": "%s Zeile(n) und %s Buchfeld(er) importiert.",
   "gui.dungeontrain.translate.files.nothing": "Nichts zu importieren — lege deine Dateien zuerst in den Import-Ordner.",
   "gui.dungeontrain.translate.files.failed": "Das hat nicht geklappt — Details stehen im Log.",
-  "gui.dungeontrain.translate.submit": "Einsenden…",
+  "gui.dungeontrain.translate.submit": "Einsenden",
   "gui.dungeontrain.translate.submit.title": "Deine Übersetzung einsenden",
   "gui.dungeontrain.translate.submit.subtitle": "%s — %s Änderung(en) bereit zum Senden",
   "gui.dungeontrain.translate.submit.name": "Name für die Danksagung (optional)",
@@ -1139,5 +1139,17 @@
   "gui.dungeontrain.translate.submit.credit": "Nenne mich in den Danksagungen",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Noch nichts zu senden — korrigiere zuerst eine Übersetzung.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Schalte die Internetverbindung in den Dungeon-Train-Optionen ein, um zu senden.",
-  "gui.dungeontrain.translate.filter.todo": "Noch zu tun"
+  "gui.dungeontrain.translate.filter.todo": "Noch zu tun",
+  "gui.dungeontrain.translate.sent.title": "Von dir eingesendet",
+  "gui.dungeontrain.translate.sent.narration": "%s Einsendung(en)",
+  "gui.dungeontrain.translate.sent.loading": "Wird geprüft…",
+  "gui.dungeontrain.translate.sent.empty": "Noch nichts eingesendet.",
+  "gui.dungeontrain.translate.sent.units": "%s Änderung(en)",
+  "gui.dungeontrain.translate.sent.anonymous": "Anonym",
+  "gui.dungeontrain.translate.sent.queued": "Wartet auf Versand",
+  "gui.dungeontrain.translate.sent.waiting": "Wartet auf Prüfung",
+  "gui.dungeontrain.translate.sent.held": "Zur Prüfung zurückgestellt",
+  "gui.dungeontrain.translate.sent.accepted": "Angenommen",
+  "gui.dungeontrain.translate.sent.partial": "%s/%s angenommen",
+  "gui.dungeontrain.translate.sent.rejected": "Nicht verwendet"
 }

@@ -1127,7 +1127,7 @@
   "gui.dungeontrain.translate.files.imported": "Загружено строк: %s, полей книг: %s.",
   "gui.dungeontrain.translate.files.nothing": "Загружать нечего — сначала положите файлы в папку импорта.",
   "gui.dungeontrain.translate.files.failed": "Не получилось — подробности в журнале.",
-  "gui.dungeontrain.translate.submit": "Отправить…",
+  "gui.dungeontrain.translate.submit": "Отправить",
   "gui.dungeontrain.translate.submit.title": "Отправьте свой перевод",
   "gui.dungeontrain.translate.submit.subtitle": "%s — правок готово к отправке: %s",
   "gui.dungeontrain.translate.submit.name": "Имя для упоминания (необязательно)",
@@ -1139,5 +1139,17 @@
   "gui.dungeontrain.translate.submit.credit": "Указать меня в титрах игры",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Пока нечего отправлять — сначала исправьте перевод.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Чтобы отправить, включите интернет-соединение в настройках Dungeon Train.",
-  "gui.dungeontrain.translate.filter.todo": "Ещё не сделано"
+  "gui.dungeontrain.translate.filter.todo": "Ещё не сделано",
+  "gui.dungeontrain.translate.sent.title": "Что вы отправили",
+  "gui.dungeontrain.translate.sent.narration": "Отправок: %s",
+  "gui.dungeontrain.translate.sent.loading": "Проверка…",
+  "gui.dungeontrain.translate.sent.empty": "Пока ничего не отправлено.",
+  "gui.dungeontrain.translate.sent.units": "Изменений: %s",
+  "gui.dungeontrain.translate.sent.anonymous": "Анонимно",
+  "gui.dungeontrain.translate.sent.queued": "Ожидает отправки",
+  "gui.dungeontrain.translate.sent.waiting": "Ожидает проверки",
+  "gui.dungeontrain.translate.sent.held": "Отложено на проверку",
+  "gui.dungeontrain.translate.sent.accepted": "Принято",
+  "gui.dungeontrain.translate.sent.partial": "Принято: %s/%s",
+  "gui.dungeontrain.translate.sent.rejected": "Не использовано"
 }

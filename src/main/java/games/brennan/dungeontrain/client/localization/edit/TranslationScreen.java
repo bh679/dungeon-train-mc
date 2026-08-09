@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.localization.edit;
 
 import games.brennan.dungeontrain.client.DungeonTrainLanguages;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
@@ -35,15 +36,13 @@ public final class TranslationScreen extends Screen {
 
     /** Which units the list shows. Declaration order is the order the cycle button offers. */
     private enum StateFilter {
-        /**
-         * The working queue: machine translation nobody has reviewed, minus whatever this player
-         * has already fixed. The default, because it is what a translator is actually working
-         * down — a line they have just corrected disappearing from the list is the point.
-         */
-        TODO("todo"),
-        /** Everything unreviewed, including this player's own fixes — for re-checking your work. */
         AI_UNREVIEWED("ai_unreviewed"),
         EDITED("edited"),
+        /**
+         * The working queue: machine translation nobody has reviewed, minus whatever this player
+         * has already fixed — so a line vanishes from the list once they have corrected it.
+         */
+        TODO("todo"),
         ALL("all");
 
         final String key;
@@ -79,7 +78,7 @@ public final class TranslationScreen extends Screen {
 
     private EditBox search;
     private TranslationListWidget list;
-    private StateFilter stateFilter = StateFilter.TODO;
+    private StateFilter stateFilter = StateFilter.AI_UNREVIEWED;
     private BodyFilter bodyFilter = BodyFilter.ALL;
 
     public TranslationScreen(Screen parent, String locale) {
@@ -125,7 +124,7 @@ public final class TranslationScreen extends Screen {
         if (!states.contains(stateFilter)) {
             // A selection carried over from a session where it was unlocked. Without this the gate
             // is bypassed simply by reopening the screen.
-            stateFilter = StateFilter.TODO;
+            stateFilter = StateFilter.AI_UNREVIEWED;
         }
         addRenderableWidget(CycleButton.<StateFilter>builder(StateFilter::label)
             .withValues(states)
@@ -157,6 +156,16 @@ public final class TranslationScreen extends Screen {
     }
 
     /**
+     * The Submit doorway's label, green while there is work the relay has not seen yet — the one
+     * cue that says "you have finished edits sitting on this machine doing nobody any good".
+     */
+    private Component submitLabel() {
+        Component label = Component.translatable("gui.dungeontrain.translate.submit");
+        return TranslationOverrides.hasUnsubmittedChanges(locale)
+            ? label.copy().withStyle(ChatFormatting.GREEN) : label;
+    }
+
+    /**
      * The state filters this player is offered.
      *
      * <p>Browsing every string unfiltered turns the editor into a way to read the game's text out
@@ -166,7 +175,7 @@ public final class TranslationScreen extends Screen {
      */
     private static List<StateFilter> offeredStates() {
         List<StateFilter> out = new ArrayList<>(
-            List.of(StateFilter.TODO, StateFilter.AI_UNREVIEWED, StateFilter.EDITED));
+            List.of(StateFilter.AI_UNREVIEWED, StateFilter.EDITED, StateFilter.TODO));
         if (TranslationContributor.hasApprovedTranslation()) {
             out.add(StateFilter.ALL);
         }
@@ -186,8 +195,7 @@ public final class TranslationScreen extends Screen {
             b -> minecraft.setScreen(new TranslationFilesScreen(this, locale)))
             .bounds(x, y, buttonWidth, ROW_H).build());
         x += buttonWidth + GAP;
-        addRenderableWidget(Button.builder(
-            Component.translatable("gui.dungeontrain.translate.submit"),
+        addRenderableWidget(Button.builder(submitLabel(),
             b -> minecraft.setScreen(new TranslationSubmitScreen(this, locale)))
             .bounds(x, y, buttonWidth, ROW_H).build());
         x += buttonWidth + GAP;

@@ -1110,7 +1110,7 @@
   "gui.dungeontrain.translate.files.imported": "%s 行と %s 個の本の項目を取り込みました。",
   "gui.dungeontrain.translate.files.nothing": "取り込むものがありません — まずインポートフォルダーにファイルを置いてください。",
   "gui.dungeontrain.translate.files.failed": "うまくいきませんでした — 詳細はログをご覧ください。",
-  "gui.dungeontrain.translate.submit": "送信…",
+  "gui.dungeontrain.translate.submit": "送信",
   "gui.dungeontrain.translate.submit.title": "翻訳を送る",
   "gui.dungeontrain.translate.submit.subtitle": "%s — 送信できる編集 %s 件",
   "gui.dungeontrain.translate.submit.name": "クレジットに載せる名前（任意）",
@@ -1122,5 +1122,17 @@
   "gui.dungeontrain.translate.submit.credit": "ゲームのクレジットに名前を載せる",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "まだ送るものがありません — 先に翻訳を修正してください。",
   "gui.dungeontrain.translate.submit.blocked.consent": "送信するには Dungeon Train オプションでインターネット接続を有効にしてください。",
-  "gui.dungeontrain.translate.filter.todo": "未対応"
+  "gui.dungeontrain.translate.filter.todo": "未対応",
+  "gui.dungeontrain.translate.sent.title": "送信したもの",
+  "gui.dungeontrain.translate.sent.narration": "%s 件の送信",
+  "gui.dungeontrain.translate.sent.loading": "確認中…",
+  "gui.dungeontrain.translate.sent.empty": "まだ何も送信していません。",
+  "gui.dungeontrain.translate.sent.units": "%s 件の変更",
+  "gui.dungeontrain.translate.sent.anonymous": "匿名",
+  "gui.dungeontrain.translate.sent.queued": "送信待ち",
+  "gui.dungeontrain.translate.sent.waiting": "確認待ち",
+  "gui.dungeontrain.translate.sent.held": "確認のため保留中",
+  "gui.dungeontrain.translate.sent.accepted": "採用",
+  "gui.dungeontrain.translate.sent.partial": "%s/%s 件採用",
+  "gui.dungeontrain.translate.sent.rejected": "不採用"
 }

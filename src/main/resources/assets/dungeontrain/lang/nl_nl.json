@@ -1110,7 +1110,7 @@
   "gui.dungeontrain.translate.files.imported": "%s regel(s) en %s boekveld(en) geïmporteerd.",
   "gui.dungeontrain.translate.files.nothing": "Niets te importeren — zet je bestanden eerst in de importmap.",
   "gui.dungeontrain.translate.files.failed": "Dat werkte niet — zie het logboek voor details.",
-  "gui.dungeontrain.translate.submit": "Insturen…",
+  "gui.dungeontrain.translate.submit": "Insturen",
   "gui.dungeontrain.translate.submit.title": "Stuur je vertaling in",
   "gui.dungeontrain.translate.submit.subtitle": "%s — %s bewerking(en) klaar om te versturen",
   "gui.dungeontrain.translate.submit.name": "Naam om je mee te vermelden (optioneel)",
@@ -1122,5 +1122,17 @@
   "gui.dungeontrain.translate.submit.credit": "Vermeld mij in de aftiteling",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Nog niets om te versturen — verbeter eerst een vertaling.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Zet de internetverbinding aan in de Dungeon Train-opties om te versturen.",
-  "gui.dungeontrain.translate.filter.todo": "Nog te doen"
+  "gui.dungeontrain.translate.filter.todo": "Nog te doen",
+  "gui.dungeontrain.translate.sent.title": "Wat je hebt ingestuurd",
+  "gui.dungeontrain.translate.sent.narration": "%s inzending(en)",
+  "gui.dungeontrain.translate.sent.loading": "Controleren…",
+  "gui.dungeontrain.translate.sent.empty": "Nog niets ingestuurd.",
+  "gui.dungeontrain.translate.sent.units": "%s wijziging(en)",
+  "gui.dungeontrain.translate.sent.anonymous": "Anoniem",
+  "gui.dungeontrain.translate.sent.queued": "Wacht op versturen",
+  "gui.dungeontrain.translate.sent.waiting": "Wacht op beoordeling",
+  "gui.dungeontrain.translate.sent.held": "Aangehouden voor beoordeling",
+  "gui.dungeontrain.translate.sent.accepted": "Geaccepteerd",
+  "gui.dungeontrain.translate.sent.partial": "%s/%s geaccepteerd",
+  "gui.dungeontrain.translate.sent.rejected": "Niet gebruikt"
 }
