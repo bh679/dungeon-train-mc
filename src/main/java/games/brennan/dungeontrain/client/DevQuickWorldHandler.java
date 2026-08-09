@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.perf.PerfTestMode;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
@@ -40,7 +41,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * TitleScreen first-row layout. Always installs three replacement widgets in
+ * TitleScreen first-row layout. Always installs four replacement widgets in
  * the vanilla Singleplayer slot and toggles their visibility based on
  * {@link VersionInfo#BRANCH} + Shift modifier. Vanilla Singleplayer is always
  * hidden — the settings icon is the single entry point into
@@ -50,10 +51,15 @@ import java.util.function.Function;
  * <pre>
  *   Branch | Shift | First row
  *   -------+-------+------------------------------------------------
- *   main   | any   | [ New World (survival, DT preset) | settings ]
- *   dev    | no    | [ New World (creative, DT preset) ]
- *   dev    | yes   | [ New World (survival, DT preset) | settings ]
+ *   main   | any   | [ New World (survival, DT preset) | ⚙ settings ]
+ *   dev    | no    | [ New World (creative, DT preset) | ⏱ perf world ]
+ *   dev    | yes   | [ New World (survival, DT preset) | ⚙ settings ]
  * </pre>
+ *
+ * <p>Both rows share one wide+square split, so the layout doesn't shift when the
+ * shift modifier swaps them — only the square's occupant changes. The ⏱ button
+ * creates a superflat, pinned-seed, quiet world for benchmarking without needing
+ * {@code -PperfTest} on the command line; see {@link PerfTestMode}.</p>
  *
  * <p>"main" is decided at build time by commit-hash equivalence with the
  * local {@code main} ref, so worktrees built straight off main also register
@@ -67,6 +73,13 @@ public final class DevQuickWorldHandler {
     private static final Component NEW_WORLD_LABEL = Component.translatable("gui.dungeontrain.new_world");
     private static final Component SETTINGS_ICON_LABEL =
             Component.literal("⚙").withStyle(ChatFormatting.BOLD);
+    /**
+     * Dev-row perf-world button. A literal glyph rather than a translatable key for the same reason
+     * as the settings icon above: this row only exists on dev builds, so a lang key would cost a
+     * string in all 20 locales (plus its provenance stamp) for a button no player ever sees.
+     */
+    private static final Component PERF_ICON_LABEL =
+            Component.literal("⏱").withStyle(ChatFormatting.BOLD);
 
     private static final String EDITOR_WORLD_PREFIX = "train editor ";
 
@@ -83,6 +96,7 @@ public final class DevQuickWorldHandler {
 
     private static WeakReference<Button> singleplayerRef = new WeakReference<>(null);
     private static WeakReference<Button> creativeNewWorldRef = new WeakReference<>(null);
+    private static WeakReference<Button> perfNewWorldRef = new WeakReference<>(null);
     private static WeakReference<Button> survivalNewWorldRef = new WeakReference<>(null);
     private static WeakReference<Button> settingsIconRef = new WeakReference<>(null);
     private static WeakReference<Screen> screenRef = new WeakReference<>(null);
@@ -109,9 +123,16 @@ public final class DevQuickWorldHandler {
         int iconW = spH; // square button (~10% of vanilla 200px width)
         int wideW = spW - iconW - GAP;
 
+        // Dev row uses the SAME wide+square split as the survival row, so the two rows line up
+        // whichever is showing — only the square's occupant differs (perf world vs settings).
         Button creativeNewWorld = Button.builder(NEW_WORLD_LABEL,
                         b -> launchCreativeWorld(titleScreen))
-                .bounds(spX, spY, spW, spH)
+                .bounds(spX, spY, wideW, spH)
+                .build();
+
+        Button perfNewWorld = Button.builder(PERF_ICON_LABEL,
+                        b -> launchPerfWorld(titleScreen))
+                .bounds(spX + wideW + GAP, spY, iconW, spH)
                 .build();
 
         Button survivalNewWorld = Button.builder(NEW_WORLD_LABEL,
@@ -123,11 +144,13 @@ public final class DevQuickWorldHandler {
                 spX + wideW + GAP, spY, iconW, spH, titleScreen);
 
         event.addListener(creativeNewWorld);
+        event.addListener(perfNewWorld);
         event.addListener(survivalNewWorld);
         event.addListener(settingsIcon);
 
         singleplayerRef = new WeakReference<>(singleplayer);
         creativeNewWorldRef = new WeakReference<>(creativeNewWorld);
+        perfNewWorldRef = new WeakReference<>(perfNewWorld);
         survivalNewWorldRef = new WeakReference<>(survivalNewWorld);
         settingsIconRef = new WeakReference<>(settingsIcon);
         screenRef = new WeakReference<>(titleScreen);
@@ -146,14 +169,18 @@ public final class DevQuickWorldHandler {
     private static void applyVisibility(FirstRowMode mode) {
         Button sp = singleplayerRef.get();
         Button creative = creativeNewWorldRef.get();
+        Button perf = perfNewWorldRef.get();
         Button survival = survivalNewWorldRef.get();
         Button settings = settingsIconRef.get();
-        if (sp == null || creative == null || survival == null || settings == null) {
+        if (sp == null || creative == null || perf == null || survival == null || settings == null) {
             return;
         }
         sp.visible = false;
         boolean showRow = mode == FirstRowMode.SURVIVAL_ROW;
         creative.visible = !showRow;
+        // Perf world is a dev-only affordance — it rides with the creative row and is never offered
+        // on main builds or behind the shift modifier.
+        perf.visible = !showRow;
         survival.visible = showRow;
         settings.visible = showRow;
     }
@@ -185,7 +212,7 @@ public final class DevQuickWorldHandler {
                 true,
                 new GameRules(),
                 WorldDataConfiguration.DEFAULT);
-        openLevel(name, settings, lastScreen);
+        openLevel(name, settings, lastScreen, PerfTestMode.ENABLED);
     }
 
     private static String nextEditorWorldName() {
@@ -207,7 +234,35 @@ public final class DevQuickWorldHandler {
                 true,
                 new GameRules(),
                 WorldDataConfiguration.DEFAULT);
-        openLevel(name, settings, lastScreen);
+        openLevel(name, settings, lastScreen, PerfTestMode.ENABLED);
+    }
+
+    /**
+     * Create a world for performance measurement: superflat, pinned seed, and the quiet game rules
+     * baked in — without needing {@code -PperfTest} on the command line, so a session can make both
+     * normal and perf worlds without relaunching Gradle.
+     *
+     * <p>Everything that makes it a perf world (preset, seed, rules) is written into the world at
+     * creation, so reopening it later from the world list keeps all three with no flag set.</p>
+     *
+     * <p>Creative, matching the neighbouring dev button. Note when reading numbers from it: hostile
+     * mobs do not target creative players, so mob targeting and pathfinding cost less here than in a
+     * real session — {@code /gamemode survival} in-world if a measurement depends on that. The
+     * {@code scripts/perf/} dedicated-server harness already runs survival.</p>
+     */
+    private static void launchPerfWorld(Screen lastScreen) {
+        String name = "Perf World " + System.currentTimeMillis();
+        GameRules rules = new GameRules();
+        PerfTestMode.applyQuietRules(rules, null);   // no server yet — world is still being created
+        LevelSettings settings = new LevelSettings(
+                name,
+                GameType.CREATIVE,
+                false,
+                Difficulty.NORMAL,
+                true,
+                rules,
+                WorldDataConfiguration.DEFAULT);
+        openLevel(name, settings, lastScreen, true);
     }
 
     private static void launchSurvivalWorld(Screen lastScreen) {
@@ -220,24 +275,38 @@ public final class DevQuickWorldHandler {
                 false,
                 new GameRules(),
                 WorldDataConfiguration.DEFAULT);
-        openLevel(name, settings, lastScreen);
+        openLevel(name, settings, lastScreen, PerfTestMode.ENABLED);
     }
 
-    private static void openLevel(String name, LevelSettings settings, Screen lastScreen) {
+    /**
+     * @param perf create this world for performance measurement — superflat and pinned-seed. The
+     *             other callers pass {@link PerfTestMode#ENABLED} so the JVM-property path is
+     *             unchanged; the dev perf button passes {@code true} directly.
+     */
+    private static void openLevel(String name, LevelSettings settings, Screen lastScreen, boolean perf) {
         Minecraft mc = Minecraft.getInstance();
         mc.options.tutorialStep = TutorialSteps.NONE;
         mc.options.save();
-        WorldOptions options = WorldOptions.defaultWithRandomSeed();
+        // A pinned seed makes every benchmark run lay out an identical world AND an identical train
+        // — DungeonTrainWorldData derives the train's generationSeed from the world seed, so this
+        // one value covers both. Normal launches keep a random seed.
+        WorldOptions options = perf
+                ? new WorldOptions(PerfTestMode.seed(), true, false)
+                : WorldOptions.defaultWithRandomSeed();
         WorldOpenFlows flows = mc.createWorldOpenFlows();
-        flows.createFreshLevel(name, settings, options, dtPresetDimensions(), lastScreen);
+        flows.createFreshLevel(name, settings, options, dtPresetDimensions(perf), lastScreen);
     }
 
-    private static Function<RegistryAccess, WorldDimensions> dtPresetDimensions() {
+    private static Function<RegistryAccess, WorldDimensions> dtPresetDimensions(boolean perf) {
         return registryAccess -> {
             Registry<WorldPreset> presetRegistry =
                     registryAccess.registryOrThrow(Registries.WORLD_PRESET);
-            ResourceKey<WorldPreset> key = DungeonTrainCommonConfig.getDefaultCompatibleTerrain()
-                    ? DT_COMPAT_PRESET : DT_DEFAULT_PRESET;
+            // Flat wins over the compatible-terrain toggle for a perf world: the point is to remove
+            // chunk generation from the measurement, and Compatible Terrain is still noise terrain.
+            ResourceKey<WorldPreset> key = perf
+                    ? PerfTestMode.FLAT_PRESET
+                    : (DungeonTrainCommonConfig.getDefaultCompatibleTerrain()
+                        ? DT_COMPAT_PRESET : DT_DEFAULT_PRESET);
             Optional<Holder.Reference<WorldPreset>> dt = presetRegistry.getHolder(key);
             if (dt.isPresent()) {
                 return dt.get().value().createWorldDimensions();
@@ -256,6 +325,7 @@ public final class DevQuickWorldHandler {
     private static void clearRefs() {
         singleplayerRef = new WeakReference<>(null);
         creativeNewWorldRef = new WeakReference<>(null);
+        perfNewWorldRef = new WeakReference<>(null);
         survivalNewWorldRef = new WeakReference<>(null);
         settingsIconRef = new WeakReference<>(null);
         screenRef = new WeakReference<>(null);

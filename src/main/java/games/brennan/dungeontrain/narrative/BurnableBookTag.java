@@ -27,6 +27,8 @@ import net.minecraft.world.item.ItemStack;
  *       explicit intent.</li>
  *   <li>{@link DeathNoteBookTag} — the written book dropped when a player signs a book titled
  *       "Death Note" (the curse mechanic). Burns with the SOUL variant. Unconditional.</li>
+ *   <li>{@link LoveNoteBookTag} — the written book dropped when a player signs a book titled
+ *       "Love Note" (the curse's mirror). Burns with the LOVE variant. Unconditional.</li>
  *   <li>{@link RandomBookTag} — books that spawn in train chests via
  *       {@link RandomBookFactory}. Burn on close + any drop, but ONLY
  *       after a player has held the stack at least once (the
@@ -89,6 +91,7 @@ public final class BurnableBookTag {
         if (SharedBookTag.isSharedBook(stack)) return true;
         if (LetterBookTag.isLetter(stack)) return true;
         if (DeathNoteBookTag.isDeathNote(stack)) return true;
+        if (LoveNoteBookTag.isLoveNote(stack)) return true;
         if (RandomBookTag.read(stack).isPresent() && RandomBookTag.isHeld(stack)) return true;
         if (PlayerWrittenBookTag.isPlayerWritten(stack)) return true;
         if (SharedBookFoundTag.isFound(stack) && SharedBookFoundTag.isHeld(stack)) return true;

@@ -35,6 +35,29 @@ class OfficialLinksTest {
                 "default direct-donation amount should be $25 AUD (2500 cents)");
     }
 
+    // --- the checkout route behind the named price points ------------------------------------
+
+    @Test
+    void noCheckoutRouteServedMeansNoPricePoints() {
+        // Relay-only with no baked default: three buttons that lead nowhere would be worse than the
+        // open-ended options they replace, so both screens degrade instead.
+        assertNull(OfficialLinks.paymentCheckout());
+    }
+
+    @Test
+    void theGeneralCheckoutKeyWinsOverTheChinaOne() {
+        OfficialLinks.accept(Map.of(
+                "payment_checkout", "https://relay.example/cap/pay/cn",
+                "payment_cn_checkout", "https://relay.example/othercap/pay/cn"));
+        assertEquals("https://relay.example/cap/pay/cn", OfficialLinks.paymentCheckout());
+    }
+
+    @Test
+    void aRelayPredatingTheGeneralKeyStillLightsUpThePricePoints() {
+        OfficialLinks.accept(Map.of("payment_cn_checkout", "https://relay.example/cap/pay/cn"));
+        assertEquals("https://relay.example/cap/pay/cn", OfficialLinks.paymentCheckout());
+    }
+
     @Test
     void relayOverlayReplacesOnlyServedKeys() {
         OfficialLinks.accept(Map.of("discord", "https://discord.gg/rotated"));

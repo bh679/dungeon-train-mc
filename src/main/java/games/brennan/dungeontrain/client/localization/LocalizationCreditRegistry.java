@@ -97,18 +97,39 @@ public final class LocalizationCreditRegistry {
     private static final Metric RING_METRIC = Metric.AI_UNREVIEWED;
 
     /**
+     * How much of a locale may still be AI-authored-and-unreviewed while the locale still counts
+     * as human-reviewed. A translator's pass lands as one wave; English keys added afterwards sit
+     * unreviewed until the next wave, so demanding 100% would flag a thoroughly reviewed locale as
+     * machine-translated over a handful of new lines.
+     */
+    private static final double REVIEWED_UNREVIEWED_MAX = 0.10;
+
+    /**
      * The locale's AI-translation fraction per {@link #RING_METRIC}, in {@code [0, 1]} — empty
      * when no loaded credit for that locale carries the generated count fields (older packs,
      * hand-made overrides). Drives the blue AI-fraction ring around the Dungeon Train logo in
      * the language-selection list.
+     */
+    public static synchronized OptionalDouble aiFraction(String localeCode) {
+        LocalizationCredit.AiCounts best = bestCounts(localeCode);
+        if (best == null) {
+            return OptionalDouble.empty();
+        }
+        return OptionalDouble.of(RING_METRIC == Metric.AI_UNREVIEWED
+            ? best.unreviewedFraction() : best.authoredFraction());
+    }
+
+    /**
+     * The most authoritative generated counts for {@code localeCode}, or {@code null} if no loaded
+     * credit for it carries them.
      *
      * <p>When several credit files match the locale (one per contributor is legal), the counts
      * with the greatest {@code totalKeys} win, tie-broken by the greatest numerator — so the most
      * complete data survives a stale third-party file coexisting with the shipped one.</p>
      */
-    public static synchronized OptionalDouble aiFraction(String localeCode) {
+    private static LocalizationCredit.AiCounts bestCounts(String localeCode) {
         if (localeCode == null || localeCode.isEmpty()) {
-            return OptionalDouble.empty();
+            return null;
         }
         LocalizationCredit.AiCounts best = null;
         for (LocalizationCredit credit : CREDITS.values()) {
@@ -123,11 +144,7 @@ public final class LocalizationCreditRegistry {
                 best = counts;
             }
         }
-        if (best == null) {
-            return OptionalDouble.empty();
-        }
-        return OptionalDouble.of(RING_METRIC == Metric.AI_UNREVIEWED
-            ? best.unreviewedFraction() : best.authoredFraction());
+        return best;
     }
 
     private static int numerator(LocalizationCredit.AiCounts counts) {
@@ -135,9 +152,15 @@ public final class LocalizationCreditRegistry {
     }
 
     /**
-     * Whether {@code localeCode}'s translation is human-reviewed — {@code true} if any loaded
-     * credit for that locale carries {@code "human_reviewed": true}. Used to render the language's
+     * Whether {@code localeCode}'s translation is human-reviewed. Used to render the language's
      * Dungeon Train logo at full (vs faded) opacity in the language-selection list.
+     *
+     * <p>True on either of two independent signals: any loaded credit for the locale asserts
+     * {@code "human_reviewed": true}, or the generated counts show at most
+     * {@link #REVIEWED_UNREVIEWED_MAX} of its lines still AI-authored with no reviewer. The
+     * derived route means a locale a translator has actually worked through reads as reviewed
+     * without anyone remembering to flip a hand-maintained flag; the explicit flag stays
+     * authoritative on its own for packs that ship no counts.</p>
      */
     public static synchronized boolean isHumanReviewed(String localeCode) {
         if (localeCode == null || localeCode.isEmpty()) {
@@ -148,7 +171,16 @@ public final class LocalizationCreditRegistry {
                 return true;
             }
         }
-        return false;
+        return meetsReviewedCoverage(bestCounts(localeCode));
+    }
+
+    /**
+     * Whether {@code counts} clear {@link #REVIEWED_UNREVIEWED_MAX} — the coverage half of
+     * {@link #isHumanReviewed}, split out so the threshold is testable without a ResourceManager.
+     * Absent counts never qualify: no data is not evidence of review.
+     */
+    static boolean meetsReviewedCoverage(LocalizationCredit.AiCounts counts) {
+        return counts != null && counts.unreviewedFraction() <= REVIEWED_UNREVIEWED_MAX;
     }
 
     private static LocalizationCredit parse(InputStream in, ResourceLocation id) throws ParseException {

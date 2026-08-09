@@ -147,14 +147,15 @@ public record CarriageWeights(Map<String, TemplateMeta> byId) {
      * map to {@code config/dungeontrain/user/weights.json}. The new weight takes
      * effect for the next carriage that spawns — existing carriages in the
      * rolling window keep their variants until they scroll out and are
-     * replaced. Returns the clamped value that was stored.
+     * replaced. The entry's inline gate and its Stage link are preserved.
+     * Returns the clamped value that was stored.
      */
     public static synchronized int set(String id, int value) throws IOException {
         String key = id.toLowerCase(Locale.ROOT);
         int clamped = clamp(value);
         Map<String, TemplateMeta> next = new HashMap<>(current.byId());
         TemplateMeta prev = next.get(key);
-        next.put(key, new TemplateMeta(clamped, prev == null ? TemplateGate.DEFAULT : prev.gate()));
+        next.put(key, TemplateMeta.mergeWeight(prev, clamped));
         current = new CarriageWeights(next);
         writeConfig(current);
         trySaveToSource(current);
@@ -164,16 +165,19 @@ public record CarriageWeights(Map<String, TemplateMeta> byId) {
     }
 
     /**
-     * Update the spawn {@link TemplateGate gate} (min/max Diff-Level + phase set) for {@code id},
-     * preserving its current weight, and persist. The gate takes effect for the next carriage that
-     * spawns. Returns the stored gate.
+     * Update the <b>inline</b> spawn {@link TemplateGate gate} (min/max Diff-Level + phase set) for
+     * {@code id}, preserving its current weight and its Stage link, and persist. The gate takes
+     * effect for the next carriage that spawns. Returns the stored gate.
+     *
+     * <p>On a Stage-linked entry the inline gate is only the detach snapshot — the effective gate
+     * still resolves from the Stage, so the edit is inert until {@link #setStage} detaches the
+     * entry to Custom.</p>
      */
     public static synchronized TemplateGate setGate(String id, TemplateGate gate) throws IOException {
         String key = id.toLowerCase(Locale.ROOT);
         Map<String, TemplateMeta> next = new HashMap<>(current.byId());
         TemplateMeta prev = next.get(key);
-        int weight = prev == null ? DEFAULT : prev.weight();
-        next.put(key, new TemplateMeta(weight, gate));
+        next.put(key, TemplateMeta.mergeGate(prev, gate, DEFAULT));
         current = new CarriageWeights(next);
         writeConfig(current);
         trySaveToSource(current);

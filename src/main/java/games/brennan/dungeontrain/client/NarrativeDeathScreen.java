@@ -8,6 +8,13 @@ import games.brennan.discordpresence.survey.SurveyRegistry;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
+import games.brennan.dungeontrain.client.support.FundingGoals;
+import games.brennan.dungeontrain.net.relay.DonationSummaryClient.Goal;
+import games.brennan.dungeontrain.client.modrec.ModRecPage;
+import games.brennan.dungeontrain.client.modrec.ModRecState;
+import games.brennan.dungeontrain.modrec.ModRoster;
+import games.brennan.dungeontrain.net.ModRecommendPacket;
+import games.brennan.dungeontrain.net.relay.ModPopularityClient;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.relay.DonationSummaryClient;
@@ -46,6 +53,7 @@ import net.minecraft.resources.ResourceLocation;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
+import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -87,7 +95,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class NarrativeDeathScreen extends Screen {
 
-    private enum Kind { FALL, DEEDS, GEAR, LIVES, SURVEY, DONATE, PLATFORM }
+    private enum Kind { FALL, DEEDS, GEAR, LIVES, SURVEY, MODREC, DONATE, PLATFORM }
 
     private record Page(Kind kind, SurveyQuestionPayload.Entry survey) {
         static Page of(Kind k) { return new Page(k, null); }
@@ -161,6 +169,16 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int BTN_DONE_TEXT  = 0xCCFFFFFF;
     // Dark-orange tint for the monthly-cost figure — signals money going OUT (a cost, not raised).
     private static final int COST           = 0xFFE07B39;
+    // Ticked-off funding goals above the ledger grid: the primary green, muted so a line of past
+    // wins reads as settled background rather than competing with the Contribute button.
+    private static final int GOAL_DONE      = 0xFF6E9973;
+    // A funded goal's figure — the blue of the shift-modified buttons, brightened for tile text.
+    // Deliberately NOT the cost orange: this bill is settled, not one still being asked for.
+    private static final int GOAL_MET       = 0xFF7B93D8;
+    // The ✓ on a paid-off tile, and the progress bar along the bottom of the current goal's tile.
+    private static final int GOAL_CHECK     = 0xFF6DBF7A;
+    private static final int GOAL_BAR_FILL  = 0xFF5C9162;
+    private static final int GOAL_BAR_TRACK = 0x33FFFFFF;
     private static final int SCORE_BG       = 0xFF1A1813;
     private static final int SCORE_BORDER   = 0xFF4A443C;
     private static final int SCORE_TEXT     = 0xFFCDBB95;
@@ -230,6 +248,13 @@ public final class NarrativeDeathScreen extends Screen {
     // death (a new death = new screen instance = fresh pick). -1 = not yet picked.
     private int surveyIntro2Choice = -1;
     private EditBox commentBox;
+    // ---- Mod Recommendations (MODREC) page ----
+    // Built once per screen from the loaded mod list minus Dungeon Train's own roster; null until
+    // init() runs, and left empty (page absent) when the player runs nothing of their own.
+    private ModRecState modRec;
+    private ModRecPage modRecPage;
+    private EditBox modCommentBox;   // "why would you recommend it?" — required before Send
+    private EditBox modNameBox;      // the requested mod's name; only for the "not installed" tile
     private boolean opened = false;
     private boolean photoSent = false;
     private boolean gallerySent = false;
@@ -321,6 +346,11 @@ public final class NarrativeDeathScreen extends Screen {
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
             list.add(Page.survey(e));
         }
+        // "The recommendations" — only for players running mods that aren't ours. On a clean
+        // Dungeon Train / modpack install there is nothing to ask about and the page never exists.
+        if (modRec != null && !modRec.isEmpty()) {
+            list.add(Page.of(Kind.MODREC));
+        }
         // "Support the line" — the donation ledger, just before the platform send-off. Always in
         // the list (so the platform button can always reach it); whether it appears in the normal
         // Next-Screen flow is gated by donateInFlow (see shouldShowDonate).
@@ -360,6 +390,14 @@ public final class NarrativeDeathScreen extends Screen {
         // Freeze the gallery for as long as the death screen is up: no flush / eviction / texture
         // release may run while we're blitting these photos (a released texture would blank a page).
         RideSnapshotGallery.freeze();
+        // Built once per death, before buildPages() decides whether the MODREC page exists at all.
+        // init() re-runs on every rebuildWidgets (page swap, late survey arrival), so guarding on
+        // null is what keeps the player's selection, typed comment and sent tiles across pages.
+        if (modRec == null) {
+            modRec = new ModRecState(ModRoster.leftovers(loadedMods()));
+            modRecPage = new ModRecPage(this.font, this::fade);
+            if (!modRec.isEmpty()) kickModPopularityFetch();
+        }
         pages = buildPages();
         donateInFlow = shouldShowDonate();
         donateReturnPage = -1;
@@ -374,6 +412,8 @@ public final class NarrativeDeathScreen extends Screen {
         donateScroll = 0f;
         donateScrollTarget = 0f;
         commentBox = null;
+        modCommentBox = null;
+        modNameBox = null;
         LOGGER.info("[DungeonTrain] NarrativeDeathScreen: page {}/{}, surveyQuestions={}, statsCached={}",
                 currentPage, pages.size(), lastSurveyCount, DeathStatsCache.get() != null);
 
@@ -402,6 +442,28 @@ public final class NarrativeDeathScreen extends Screen {
             }
             commentBox.setHint(Component.translatable(hintKey));
             addRenderableWidget(commentBox);
+        }
+
+        if (p.kind() == Kind.MODREC && modRec != null) {
+            // Both boxes exist for the whole page; drawModRec positions them and hides them when
+            // nothing is selected. The state — not the widget — is the source of truth for Send, so
+            // a rebuild mid-page restores whatever was typed.
+            modRecPage.resetScroll();
+            modNameBox = new EditBox(this.font, 0, 0, 100, 16,
+                    Component.translatable("gui.dungeontrain.death.modrec.name"));
+            modNameBox.setMaxLength(ModRecState.MAX_NAME);
+            modNameBox.setHint(Component.translatable("gui.dungeontrain.death.modrec.name"));
+            modNameBox.setValue(modRec.requestedName());
+            modNameBox.setResponder(modRec::setRequestedName);
+            addRenderableWidget(modNameBox);
+
+            modCommentBox = new EditBox(this.font, 0, 0, 100, 16,
+                    Component.translatable("gui.dungeontrain.death.modrec.why"));
+            modCommentBox.setMaxLength(ModRecState.MAX_COMMENT);
+            modCommentBox.setHint(Component.translatable("gui.dungeontrain.death.modrec.why"));
+            modCommentBox.setValue(modRec.comment());
+            modCommentBox.setResponder(modRec::setComment);
+            addRenderableWidget(modCommentBox);
         }
 
         // First appearance: fade the opening page's UI up over its photo instead
@@ -558,6 +620,10 @@ public final class NarrativeDeathScreen extends Screen {
         // during the hold and at the tail of each fade. The photo + vignette above
         // (drawn with fill, which has no such quirk) keep showing.
         if (commentBox != null) commentBox.visible = settled();
+        // The MODREC input boxes only exist while a tile is selected — and the name box only for
+        // the "not installed" tile. Hidden boxes are also moved off-layout by drawModRec.
+        if (modCommentBox != null) modCommentBox.visible = settled() && modRec.selected() != null;
+        if (modNameBox != null) modNameBox.visible = settled() && modRec.isRequesting();
         if (uiAlpha > UI_EPS) {
             drawTopBar(g, mouseX, mouseY);
 
@@ -568,6 +634,7 @@ public final class NarrativeDeathScreen extends Screen {
                 case GEAR -> y = drawGear(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
                 case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
                 case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
+                case MODREC -> y = drawModRec(g, left, contentW, cx, y, mouseX, mouseY);
                 case DONATE -> y = drawDonate(g, left, contentW, cx, y);
                 case PLATFORM -> y = drawPlatform(g, narr, left, contentW, cx, y);
             }
@@ -653,7 +720,7 @@ public final class NarrativeDeathScreen extends Screen {
             case DEEDS    -> List.of(SnapshotTag.COMBAT, SnapshotTag.SCENIC);
             case GEAR     -> List.of(SnapshotTag.GEAR, SnapshotTag.SCENIC);
             case LIVES    -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
-            case SURVEY, DONATE, PLATFORM -> List.of();
+            case SURVEY, MODREC, DONATE, PLATFORM -> List.of();
         };
     }
 
@@ -671,6 +738,7 @@ public final class NarrativeDeathScreen extends Screen {
             case GEAR -> UiAnalytics.PAGE_GEAR;
             case LIVES -> UiAnalytics.PAGE_LIVES;
             case SURVEY -> UiAnalytics.PAGE_SURVEY;
+            case MODREC -> UiAnalytics.PAGE_MODREC;
             case DONATE -> UiAnalytics.PAGE_DONATE;
             case PLATFORM -> UiAnalytics.PAGE_PLATFORM;
         };
@@ -1297,6 +1365,46 @@ public final class NarrativeDeathScreen extends Screen {
      * leaderboard, and a green Donate button. Reads {@link DonationSummaryCache} live each frame;
      * a late fetch simply fills in. Kept graceful when the summary is null (loading / offline).
      */
+    /**
+     * "The recommendations" — the grid of mods the player runs that aren't ours, and the ask.
+     * Layout and hit-testing live in {@link ModRecPage}; this method contributes the page's chrome
+     * (kicker, train, heading) and parks the two {@link EditBox} widgets where the page put them.
+     */
+    private int drawModRec(GuiGraphics g, int left, int w, int cx, int y, int mouseX, int mouseY) {
+        drawKicker(g, cx, y, "gui.dungeontrain.death.modrec.kicker");
+        y += 14;
+        drawTrain(g, left, w, y, currentPage);
+        y += 46;
+        // The heading changes once something has been sent, so a second pass reads as an invitation
+        // to keep going rather than a repeat of the same question.
+        y = drawQuestion(g, Component.translatable(modRec.sentCount() > 0
+                ? "gui.dungeontrain.death.modrec.more"
+                : "gui.dungeontrain.death.modrec.ask").getString(), cx, w, y);
+        y += 4;
+
+        int below = modRecPage.draw(g, modRec, left, w, cx, y, this.height - 28, mouseX, mouseY);
+
+        // Park the widgets. An unused box is moved off-screen as well as hidden: an invisible
+        // EditBox still owns its rect for focus/click purposes, and a stale one under the grid
+        // would swallow tile clicks.
+        placeBox(modNameBox, modRecPage.commentBoxX(), modRecPage.nameBoxY(), modRecPage.commentBoxW());
+        placeBox(modCommentBox, modRecPage.commentBoxX(), modRecPage.commentBoxY(), modRecPage.commentBoxW());
+        return below;
+    }
+
+    /** Position an optional EditBox, or park it off-screen when the page gave it no slot (y &lt; 0). */
+    private void placeBox(EditBox box, int x, int y, int w) {
+        if (box == null) return;
+        if (y < 0) {
+            box.setX(-1000);
+            box.setY(-1000);
+            return;
+        }
+        box.setX(x);
+        box.setY(y);
+        box.setWidth(w);
+    }
+
     private int drawDonate(GuiGraphics g, int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_donate");
         y += 14;
@@ -1316,25 +1424,75 @@ public final class NarrativeDeathScreen extends Screen {
             return y + 28;
         }
 
+        // The ask, and whether the server bill behind it is already paid for this month. Once it is,
+        // the grid re-orders: the new goal's COST leads, the server bill drops to the third slot
+        // and turns blue — a bill that is settled, not one still being asked for.
+        Goal activeGoal = FundingGoals.active(s.goals(), s.activeGoalId());
+        Goal serverCosts = FundingGoals.byId(s.goals(), FundingGoals.RUNNING_COSTS);
+        boolean serverCostsMet = serverCosts != null && serverCosts.complete()
+                && activeGoal != null && !FundingGoals.RUNNING_COSTS.equals(activeGoal.id());
+
+        // Any OTHER goal already funded — one the grid has no slot for — ticked off on one line
+        // above it. Usually empty: with the standard two-rung ladder the blue server-costs tile is
+        // the completion marker, and no line is drawn (nor vertical space taken).
+        List<Goal> done = FundingGoals.completed(s.goals(),
+                List.of(activeGoal == null ? "" : activeGoal.id(), FundingGoals.RUNNING_COSTS));
+        if (!done.isEmpty()) {
+            MutableComponent line = Component.empty();
+            for (int i = 0; i < done.size(); i++) {
+                if (i > 0) line.append(Component.literal(" · "));
+                line.append(Component.literal("✓ ")).append(FundingGoals.label(done.get(i)));
+            }
+            y = drawCentered(g, line, cx, w, y, GOAL_DONE);
+            y += 4;
+        }
+
         // Two columns below the narration: the money on the left (explicitly labelled costs, the
-        // cost figure tinted orange), the supporters' names scrolling down the right side. The
+        // cost figures tinted orange), the supporters' names scrolling down the right side. The
         // Contribute button sits in the fourth (bottom-right) tile slot.
         int gap = 10;
         int colW = (w - gap) / 2;
         int rightX = left + colW + gap;
 
-        // ---- Left block: 2x2 grid — monthly cost / costs covered / raised / [Contribute] ----
+        // ---- Left block: 2x2 grid, the first slot leading with whatever is being asked for ----
         int cellGap = 4;
         int cellW = (colW - cellGap) / 2;
         int lc0 = left + cellW / 2;
         int lc1 = left + cellW + cellGap + cellW / 2;
-        costTile(g, lc0, y, cellW, s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—",
-                "gui.dungeontrain.death.narr.lbl_running_cost", "gui.dungeontrain.death.narr.tip_monthly_cost", COST);
-        costTile(g, lc1, y, cellW, s.percentCovered() >= 0 ? s.percentCovered() + "%" : "—",
-                "gui.dungeontrain.death.narr.lbl_covered", "gui.dungeontrain.death.narr.tip_covered", VALUE);
         int ly = y + 30;
-        costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
-                "gui.dungeontrain.death.narr.lbl_raised_month", "gui.dungeontrain.death.narr.tip_raised", VALUE);
+        String costValue = s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—";
+        if (serverCostsMet) {
+            // Slot 1: the new goal, as a COST — what the next thing needs per month, not a
+            // percentage. The progress against it reads off the raised figure beside it.
+            costTile(g, lc0, y, cellW, fmtUsd(activeGoal.targetAud()),
+                    FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), COST);
+            // Slot 2: raised. Slot 3: the settled server bill, blue and renamed — it is no longer
+            // the ask, it is the thing this month's support already paid off.
+            costTile(g, lc1, y, cellW, fmtUsd(s.monthlyRaisedUsd()),
+                    "gui.dungeontrain.death.narr.lbl_raised_month",
+                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
+            checkedCostTile(g, lc0, ly, cellW, costValue,
+                    "gui.dungeontrain.death.narr.lbl_server_cost",
+                    "gui.dungeontrain.death.narr.tip_monthly_cost", GOAL_MET);
+            // Each rung's progress along the foot of its own tile: the new goal part-filled, the
+            // server bill full — the same bar in both, so one reads as the continuation of the other.
+            drawTileProgress(g, lc0, y, cellW, activeGoal.percent());
+            drawTileProgress(g, lc0, ly, cellW, serverCosts.percent());
+        } else {
+            // Nothing covered yet: the bill leads, with progress toward it beside it — the layout
+            // this page has always had. The percentage is the first rung's when a ladder is served,
+            // else the flat coverage figure from a relay that predates goals.
+            costTile(g, lc0, y, cellW, costValue,
+                    "gui.dungeontrain.death.narr.lbl_running_cost",
+                    "gui.dungeontrain.death.narr.tip_monthly_cost", COST);
+            int percent = activeGoal != null ? activeGoal.percent() : s.percentCovered();
+            costTile(g, lc1, y, cellW, percent >= 0 ? percent + "%" : "—",
+                    Component.translatable("gui.dungeontrain.death.narr.lbl_covered"),
+                    "gui.dungeontrain.death.narr.tip_covered", VALUE);
+            costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
+                    "gui.dungeontrain.death.narr.lbl_raised_month",
+                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
+        }
         // Contribute button in place of the old "your total" tile.
         donateRect = drawBevel(g, lc1 - cellW / 2, ly, cellW, 26,
                 Component.translatable("gui.dungeontrain.death.narr.donate_button"),
@@ -1377,8 +1535,68 @@ public final class NarrativeDeathScreen extends Screen {
     /** A cost/stat tile plus its hover-tooltip region (rendered when the page is settled). */
     private void costTile(GuiGraphics g, int centerX, int y, int cw, String value,
                           String labelKey, String tipKey, int valueColor) {
-        drawCell(g, centerX, y, value, labelKey, cw, valueColor);
+        costTile(g, centerX, y, cw, value, Component.translatable(labelKey), tipKey, valueColor);
+    }
+
+    /**
+     * As above, for a label that is not a translation key — a relay-served funding goal this jar
+     * has no translation for renders its English label verbatim rather than not at all.
+     */
+    private void costTile(GuiGraphics g, int centerX, int y, int cw, String value,
+                          Component label, String tipKey, int valueColor) {
+        drawCell(g, centerX, y, value, label, cw, valueColor);
         donateTips.add(new TileTip(new Rect(centerX - cw / 2, y, cw, 26), tipKey));
+    }
+
+    /**
+     * A tile whose label carries a green ✓ — this one is paid off. The tick is its own string
+     * rather than a styled sibling of the label so it honours {@link #fade}; a Style colour would
+     * ignore the page's alpha and pop in ahead of everything around it.
+     */
+    private void checkedCostTile(GuiGraphics g, int centerX, int y, int cw, String value,
+                                 String labelKey, String tipKey, int valueColor) {
+        Component label = Component.translatable(labelKey);
+        int ch = 26;
+        int x = centerX - cw / 2;
+        g.fill(x, y, x + cw, y + ch, fade(TILE_BG));
+        drawBorder(g, x, y, cw, ch, TILE_BORDER);
+        drawCenteredStr(g, value, centerX, y + 4, valueColor);
+        int startX = centerX - (CHECK_W + this.font.width(label)) / 2;
+        int ly = y + 4 + this.font.lineHeight + 1;
+        drawCheckGlyph(g, startX, ly + 1);
+        g.drawString(this.font, label, startX + CHECK_W, ly, fade(LABEL), false);
+        donateTips.add(new TileTip(new Rect(x, y, cw, ch), tipKey));
+    }
+
+    /** Advance of {@link #drawCheckGlyph}: the 8px mark plus the gap before the label. */
+    private static final int CHECK_W = 11;
+
+    /**
+     * A chunky ✓, drawn as 2×2 pixel blocks rather than the font's glyph — at this size the
+     * typeset tick is a hairline that disappears against the tile. Blocks also mean {@link #fade}
+     * applies (fills honour it where a glyph's Style colour would not), so it fades in with the
+     * rest of the page.
+     */
+    private void drawCheckGlyph(GuiGraphics g, int x, int y) {
+        int c = fade(GOAL_CHECK);
+        // Short stroke down-right into the elbow, then the long stroke back up.
+        for (int i = 0; i < 3; i++) g.fill(x + i, y + 2 + i, x + i + 2, y + 4 + i, c);
+        for (int i = 0; i < 4; i++) g.fill(x + 3 + i, y + 3 - i, x + 5 + i, y + 5 - i, c);
+    }
+
+    /**
+     * Progress toward the current goal, as a 2px bar along the foot of its tile (inside the
+     * border, under the label). Clamped to 0–100: a relay that reports an over-funded rung fills
+     * the bar rather than overrunning the tile.
+     */
+    private void drawTileProgress(GuiGraphics g, int centerX, int y, int cw, int percent) {
+        int x0 = centerX - cw / 2 + 1;
+        int x1 = centerX + cw / 2 - 1;
+        int top = y + 26 - 3;
+        g.fill(x0, top, x1, top + 2, fade(GOAL_BAR_TRACK));
+        int p = Math.max(0, Math.min(100, percent));
+        int filled = Math.round((x1 - x0) * (p / 100f));
+        if (filled > 0) g.fill(x0, top, x0 + filled, top + 2, fade(GOAL_BAR_FILL));
     }
 
     private int drawPlatform(GuiGraphics g, DeathNarrative n, int left, int w, int cx, int y) {
@@ -1625,6 +1843,23 @@ public final class NarrativeDeathScreen extends Screen {
                 openDonateLink();
                 return true;
             }
+            if (page.kind() == Kind.MODREC && modRec != null) {
+                if (modRecPage.sendAt(mx, my)) { sendModRecommendation(); return true; }
+                String modId = modRecPage.tileAt(mx, my);
+                if (modId != null) {
+                    modRec.toggle(modId);
+                    // The state cleared the text; the widgets have to follow, or the old comment
+                    // would re-arm Send for the newly selected mod.
+                    if (modCommentBox != null) modCommentBox.setValue(modRec.comment());
+                    if (modNameBox != null) modNameBox.setValue(modRec.requestedName());
+                    // Deliberately NOT focused here: vanilla EditBox hides its hint while focused
+                    // (EditBox#renderWidget), so auto-focusing would swallow the "Why would you
+                    // recommend this?" prompt at exactly the moment the player needs to read it.
+                    // They click the box to start typing.
+                    this.setFocused(null);
+                    return true;
+                }
+            }
             if (page.kind() == Kind.SURVEY && page.survey() != null) {
                 String qid = page.survey().id();
                 for (int i = 0; i < scoreRects.size(); i++) {
@@ -1649,6 +1884,11 @@ public final class NarrativeDeathScreen extends Screen {
                 && advViewport != null && advViewport.has(mx, my) && gearAdvMaxScroll > 0) {
             int step = SLOT + 4;  // one cell per notch
             gearAdvScroll = Math.max(0, Math.min(gearAdvMaxScroll, gearAdvScroll - (int) Math.round(dy) * step));
+            return true;
+        }
+        // Vertical-scroll the MODREC tile grid when the cursor is over it.
+        if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.MODREC && modRecPage != null
+                && modRecPage.scroll(mx, my, dy)) {
             return true;
         }
         // Vertical-scroll the DONATE supporter list when the cursor is over its viewport. The wheel
@@ -1772,6 +2012,47 @@ public final class NarrativeDeathScreen extends Screen {
         Minecraft.getInstance().setScreen(new RideGalleryScreen(this));
     }
 
+    /** Every mod the loader has, as the roster's {@code (modId, displayName)} pairs. */
+    private static List<ModRoster.LoadedMod> loadedMods() {
+        List<ModRoster.LoadedMod> out = new ArrayList<>();
+        try {
+            for (var info : ModList.get().getMods()) {
+                out.add(new ModRoster.LoadedMod(info.getModId(), info.getDisplayName()));
+            }
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] could not read the loaded mod list: {}", t.toString());
+        }
+        return out;
+    }
+
+    /**
+     * Kick the anonymous popularity fetch that orders the recommendations grid. Sends nothing about
+     * the player; a failure simply leaves the grid alphabetical (see {@link ModPopularityClient}).
+     */
+    private void kickModPopularityFetch() {
+        ModPopularityClient.fetch(byModId -> Minecraft.getInstance().execute(() -> {
+            if (modRec != null) modRec.setPopularity(byModId);
+        }));
+    }
+
+    /**
+     * Send the selected recommendation and sink its tile. Fires only from the live Send button, so
+     * the comment (and, for a request, the typed name) are already non-blank — but re-check rather
+     * than trust the drawn state, since a rebuild between draw and click could stale it.
+     */
+    private void sendModRecommendation() {
+        if (modRec == null || !modRec.canSend()) return;
+        boolean requested = modRec.isRequesting();
+        String modId = requested ? "" : modRec.selected();
+        String name = modRec.selectedName();
+        DungeonTrainNet.sendToServer(new ModRecommendPacket(modId, name, modRec.comment().trim(), requested));
+        UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_MOD_RECOMMEND);
+        modRec.markSent();
+        if (modCommentBox != null) modCommentBox.setValue("");
+        if (modNameBox != null) modNameBox.setValue("");
+        this.setFocused(null);
+    }
+
     /**
      * Kick the one-shot donation-summary fetch when the screen opens. Also nudges the official-links
      * overlay so the donate URL is live (it falls back to the baked Revolut link otherwise). The
@@ -1874,12 +2155,16 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private void drawCell(GuiGraphics g, int centerX, int y, String value, String labelKey, int cw, int valueColor) {
+        drawCell(g, centerX, y, value, Component.translatable(labelKey), cw, valueColor);
+    }
+
+    private void drawCell(GuiGraphics g, int centerX, int y, String value, Component label, int cw, int valueColor) {
         int ch = 26;
         int x = centerX - cw / 2;
         g.fill(x, y, x + cw, y + ch, fade(TILE_BG));
         drawBorder(g, x, y, cw, ch, TILE_BORDER);
         drawCenteredStr(g, value, centerX, y + 4, valueColor);
-        drawCenteredStr(g, Component.translatable(labelKey), centerX, y + 4 + this.font.lineHeight + 1, LABEL);
+        drawCenteredStr(g, label, centerX, y + 4 + this.font.lineHeight + 1, LABEL);
     }
 
     /** The portrait subject's name, centered under the figure and shrunk to fit {@code maxW}. */

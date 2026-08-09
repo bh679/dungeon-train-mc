@@ -18,8 +18,64 @@ This folder is partitioned by **lifecycle context** via subfolders. The subfolde
 | `new_world/` | `NEW_WORLD` | Player has played the mod before (gamedir marker present) but this world has no other welcomed players yet. |
 | `joined_world/` | `JOINED_WORLD` | First login on a multiplayer world where at least one other player has already been welcomed. |
 | `respawn/` | `RESPAWN` | Every non-End-conquered respawn. RESPAWN pool **cycles** — each (book, variantIndex) tuple is only shown once per world until exhausted; then widens permanently to RESPAWN + DEFAULT. |
+| `nether/` | `NETHER` | First login of a run that *starts* in the Nether. Per-installation playlist — each (book, variant) shown once, then falls through to the lifecycle welcome. |
+| `end/` | `END` | Same, for runs that start in the End. |
+| `cursed/` | `CURSED` | A Death Note curse **this player wrote** has landed in its target's world, and the ending was never reported. Also the fallback when an outcome folder below is empty. |
+| `cursed_fulfilled/` | `CURSED_FULFILLED` | …and the author's echo killed the target. |
+| `cursed_defied/` | `CURSED_DEFIED` | …and the target killed the author's echo. |
+| `loved/` | `LOVED` | A **Love Note** this player wrote has landed and the ending was never reported. Unlike `cursed/`, this is the *good* ending — no ending reported means there was no fight. Also the fallback when an outcome folder below is empty. |
+| `loved_betrayed/` | `LOVED_BETRAYED` | …and the target killed the echo that came to love them. |
+| `loved_turned/` | `LOVED_TURNED` | …and the echo killed the target. Only reachable when the target attacked first and it defended itself. |
 
-Fallback rule: an empty or zero-weight context pool falls through to DEFAULT. So if you ship no `respawn/` books, every respawn rolls from DEFAULT.
+Fallback rule: an empty or zero-weight context pool falls through to DEFAULT. So if you ship no `respawn/` books, every respawn rolls from DEFAULT. **The six note-story folders are the exception** — they never fall through to DEFAULT (an outcome folder falls back to its own kind's no-outcome pool, `cursed/` or `loved/`, and if that is empty too the strike is simply skipped), because handing out a cheerful welcome book in place of a note's story would be worse than handing out nothing. A curse never falls back to love prose, or the reverse.
+
+### The note-story folders in detail
+
+Note-story books are the only starting books that are *earned*, and the only ones written as templates. Everything below applies to both kinds; `CursedBookFactory` serves both, routing on `NoteKind` + outcome.
+
+- **When:** the author's next welcome strike after the note lands, **and** mid-life as they cross from one cart into the next if it lands while they're already playing.
+- **One story per note:** reading the book retires that note's story permanently. An unread book just burns and the same story is offered again at the next strike. A player with several landed notes gets one book per strike, oldest first.
+- **Cycling:** the variant shown is one this installation hasn't seen before where possible, so a serial author gets fresh prose each time. The two kinds keep **separate** seen-stores (`cursed_starting_books` / `loved_starting_books`), so a curser's history never consumes a lover's fresh prose.
+- **Not part of any collection milestone** — see `StartingBookContext.achievementSetId()`. Don't write one assuming players will "collect" it.
+- **Voice, cursed:** the reader is the *curser*. They wrote a name in a book and the name came true. Don't congratulate them, and don't scold them — the corpus's warm-unreliable narrator has more than enough room to sit with what they did.
+- **Voice, loved:** the reader wrote a name *kindly* and then died before anything came of it. These sit with **love they weren't there for**: something with their face was good to someone on their behalf, in a world they will never see, and all they get is the report. `loved/` should be the warmest thing the mod says to a player and should still ache. `loved_turned/` must neither blame the author nor let them off — the target swung first.
+
+Code: `narrative/CursedBookFactory` (routing + tokens, both kinds), `narrative/CursedStoryPool` (what landed, carrying its `NoteKind`), `event/StartingBookEvents.fireCursedStrike`.
+
+---
+
+## 1b. Tokens — note-story books only
+
+A note-story variant (cursed or loved) is a **template**. These tokens are substituted (everywhere they appear, in the body **and** the title) before the book is built:
+
+| Token | Becomes | Notes |
+|---|---|---|
+| `%TARGET%` | The name the author wrote on page one | Falls back to `someone` when the relay has no name |
+| `%CARRIAGE%` | The carriage the author died at, where their echo lay in wait | Can be negative (behind the origin) |
+| `%DAYS%` | Whole days the echo waited between the author's death and finding its target | `0` when unknown or under a day — write it so "0 days" still reads ("%DAYS% days later" → prefer "after %DAYS% days" phrasings that survive zero, or avoid the token) |
+| `%STORY%` | The whole encounter as second-person prose — gear, beats and ending in one block | Can run to several sentences, so give it its own page. Vanishes cleanly when the note has no journal (older relay, target logged out) — don't write punctuation that dangles without it |
+| `%GEAR%` | Just the gear the echo was still carrying, as its own sentence | Renders like "It still carried a netherite axe." — put it on its own line, not mid-sentence |
+| `%ENDING%` | Just the closing line of the encounter | Use when you want the ending without the full `%STORY%` block |
+
+Tokens are literal — no spacing or case variants. `%target%` will NOT substitute.
+
+Remember the 32-char title clamp applies **after** substitution: `Cursed: %TARGET%` can overflow with a 16-char username. Prefer tokens in the body.
+
+Preview any note-story variant in-game without owning a landed note. Note the command lives under
+`/dungeontrain` — `NarrativeCommand.build()` is attached as a child of `TrainCommand`, so a bare
+`/narrative …` is "Unknown or incomplete command":
+
+```
+/dungeontrain narrative startingbook fire cursed
+/dungeontrain narrative startingbook fire cursed_fulfilled
+/dungeontrain narrative startingbook fire cursed_defied
+/dungeontrain narrative startingbook fire loved
+/dungeontrain narrative startingbook fire loved_betrayed
+/dungeontrain narrative startingbook fire loved_turned
+```
+
+That fires against a stub story (your own name, your current carriage, 3 days) and consumes nothing.
+The loved contexts stub gift beats rather than blows, since a Love Note echo never opens hostilities.
 
 **Pick the right subfolder before drafting.** A book about "joining your friend's world" belongs in `joined_world/`. A book about "ahhh a brand new world" belongs in `new_world/`. A book about "back from the dead" belongs in `respawn/`. A generic welcome belongs in the root (DEFAULT).
 
