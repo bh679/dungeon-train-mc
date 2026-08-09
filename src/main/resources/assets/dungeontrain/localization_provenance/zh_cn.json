@@ -107,7 +107,8 @@
       "gui.dungeontrain.translate.sent.held",
       "gui.dungeontrain.translate.sent.accepted",
       "gui.dungeontrain.translate.sent.partial",
-      "gui.dungeontrain.translate.sent.rejected"
+      "gui.dungeontrain.translate.sent.rejected",
+      "gui.dungeontrain.translate.submit.blocked.nothing_new"
     ],
     "adventureitemnames": [],
     "playermob": []

@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.locale.Language;
 import org.slf4j.Logger;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -109,41 +110,66 @@ public final class TranslationOverrides {
     }
 
     /**
-     * Whether this player has edits the relay has not been sent yet — the cue the Submit button
-     * turns green on.
+     * Only the edits the relay has not been sent yet — what a Submit should actually carry.
      *
-     * <p>Compares the local layer against the snapshot taken at the last Submit, so a value the
-     * player has since changed again counts as unsubmitted even though its key was sent before.
-     * Reverting an edit does not: an override that no longer exists is not outstanding work.</p>
+     * <p>Compares the local layer against the snapshot taken at the last Submit. A value the
+     * player has since changed again counts as unsubmitted even though its key was sent before;
+     * one they have reverted does not, because an override that no longer exists is not
+     * outstanding work.</p>
+     *
+     * <p>The relay dedupes by content hash anyway, so resending was never going to create
+     * duplicate rows — but sending two hundred unchanged strings to have the server throw away
+     * a hundred and ninety-nine of them is wasted bandwidth on both ends, and it makes the "N
+     * edit(s) ready to send" count in front of the player a lie.</p>
      */
-    public static boolean hasUnsubmittedChanges(String locale) {
+    public static TranslationEdits unsubmittedFor(String locale) {
         TranslationEdits local = localFor(locale);
         if (local.isEmpty()) {
-            return false;
+            return local;
         }
         TranslationEdits sent = TranslationOverrideStore.load(
             TranslationOverrideStore.Layer.SUBMITTED, locale);
-        return differs(local.lang(), sent.lang()) || differs(local.books(), sent.books());
+        return new TranslationEdits(locale,
+            onlyChanged(local.lang(), sent.lang()), onlyChanged(local.books(), sent.books()));
     }
 
-    private static boolean differs(Map<String, String> local, Map<String, String> sent) {
+    /** Whether anything is outstanding — the cue the Submit button turns green on. */
+    public static boolean hasUnsubmittedChanges(String locale) {
+        return !unsubmittedFor(locale).isEmpty();
+    }
+
+    private static Map<String, String> onlyChanged(Map<String, String> local,
+                                                   Map<String, String> sent) {
+        Map<String, String> out = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : local.entrySet()) {
             if (!entry.getValue().equals(sent.get(entry.getKey()))) {
-                return true;
+                out.put(entry.getKey(), entry.getValue());
             }
         }
-        return false;
+        return out;
     }
 
     /**
-     * Record that the current local edits have been handed to the outbox.
+     * Record that {@code sent} has been handed to the outbox, on top of whatever was already
+     * submitted before.
+     *
+     * <p>Takes what actually went rather than snapshotting the whole local layer, because a
+     * submission is capped at the relay's per-call unit limit. Marking everything sent when only
+     * the first two hundred went would strand the remainder as permanently "already submitted",
+     * and a translator would have no way to tell.</p>
      *
      * <p>Written at queue time rather than on delivery: the outbox owns delivery and retries, and
      * the player has done their part. The screen still reports anything left waiting to send, so
      * nothing is hidden by this.</p>
      */
-    public static void markSubmitted(String locale) {
-        TranslationOverrideStore.save(TranslationOverrideStore.Layer.SUBMITTED, localFor(locale));
+    public static void markSubmitted(String locale, TranslationEdits sent) {
+        if (sent == null || sent.isEmpty()) {
+            return;
+        }
+        TranslationEdits previous = TranslationOverrideStore.load(
+            TranslationOverrideStore.Layer.SUBMITTED, locale);
+        TranslationOverrideStore.save(
+            TranslationOverrideStore.Layer.SUBMITTED, previous.mergedWith(sent));
     }
 
     /** Write a locale the overlay is not showing. No install — there is nothing to install onto. */

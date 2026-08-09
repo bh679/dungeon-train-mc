@@ -205,6 +205,54 @@ class TranslationRoundTripTest {
         assertTrue(edits.withLang("a", "").isEmpty());
     }
 
+    // ---- what a resubmit carries ----------------------------------------------
+    //
+    // TranslationOverrides.unsubmittedFor is the same set difference, but it reads its two sides
+    // off disk. These pin the rule itself: only a value that differs from what was sent goes.
+
+    private static java.util.Map<String, String> outstanding(TranslationEdits local,
+                                                             TranslationEdits sent) {
+        java.util.Map<String, String> out = new java.util.LinkedHashMap<>();
+        local.lang().forEach((key, value) -> {
+            if (!value.equals(sent.lang().get(key))) {
+                out.put(key, value);
+            }
+        });
+        return out;
+    }
+
+    @Test
+    @DisplayName("an edit already sent is not sent again")
+    void alreadySentIsNotResent() {
+        TranslationEdits local = TranslationEdits.empty("de_de").withLang("a", "Alpha");
+        assertTrue(outstanding(local, local).isEmpty());
+    }
+
+    @Test
+    @DisplayName("re-editing a key that was already sent makes it outstanding again")
+    void reEditedIsOutstandingAgain() {
+        TranslationEdits sent = TranslationEdits.empty("de_de").withLang("a", "Alpha");
+        TranslationEdits local = sent.withLang("a", "Alpha II");
+        assertEquals(java.util.Map.of("a", "Alpha II"), outstanding(local, sent));
+    }
+
+    @Test
+    @DisplayName("only the new keys go when some were sent before")
+    void onlyNewKeysGo() {
+        TranslationEdits sent = TranslationEdits.empty("de_de").withLang("a", "Alpha");
+        TranslationEdits local = sent.withLang("b", "Beta");
+        assertEquals(java.util.Map.of("b", "Beta"), outstanding(local, sent));
+    }
+
+    @Test
+    @DisplayName("reverting an edit leaves nothing outstanding")
+    void revertedIsNotOutstanding() {
+        // An override that no longer exists is not work waiting to be sent — the relay keeps
+        // whatever it already has, and there is nothing here to tell it.
+        TranslationEdits sent = TranslationEdits.empty("de_de").withLang("a", "Alpha");
+        assertTrue(outstanding(TranslationEdits.empty("de_de"), sent).isEmpty());
+    }
+
     @Test
     @DisplayName("local edits win over the relay-approved layer")
     void localBeatsApproved() {

@@ -1134,5 +1134,6 @@
   "gui.dungeontrain.translate.sent.held": "Aangehouden voor beoordeling",
   "gui.dungeontrain.translate.sent.accepted": "Geaccepteerd",
   "gui.dungeontrain.translate.sent.partial": "%s/%s geaccepteerd",
-  "gui.dungeontrain.translate.sent.rejected": "Niet gebruikt"
+  "gui.dungeontrain.translate.sent.rejected": "Niet gebruikt",
+  "gui.dungeontrain.translate.submit.blocked.nothing_new": "Alles wat je hebt bewerkt is al ingestuurd."
 }

@@ -1148,5 +1148,6 @@
   "gui.dungeontrain.translate.sent.held": "已暫緩審核",
   "gui.dungeontrain.translate.sent.accepted": "已採用",
   "gui.dungeontrain.translate.sent.partial": "已採用 %s/%s",
-  "gui.dungeontrain.translate.sent.rejected": "未採用"
+  "gui.dungeontrain.translate.sent.rejected": "未採用",
+  "gui.dungeontrain.translate.submit.blocked.nothing_new": "你修改過的內容都已經送出過了。"
 }

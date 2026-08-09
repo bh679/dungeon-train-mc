@@ -1134,5 +1134,6 @@
   "gui.dungeontrain.translate.sent.held": "Ditahan untuk ditinjau",
   "gui.dungeontrain.translate.sent.accepted": "Diterima",
   "gui.dungeontrain.translate.sent.partial": "%s/%s diterima",
-  "gui.dungeontrain.translate.sent.rejected": "Tidak dipakai"
+  "gui.dungeontrain.translate.sent.rejected": "Tidak dipakai",
+  "gui.dungeontrain.translate.submit.blocked.nothing_new": "Semua yang kamu ubah sudah dikirim."
 }

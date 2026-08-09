@@ -1134,5 +1134,6 @@
   "gui.dungeontrain.translate.sent.held": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.translate.sent.accepted": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.translate.sent.partial": {"author": "Opus 5 (Claude)", "reviewer": ""},
-  "gui.dungeontrain.translate.sent.rejected": {"author": "Opus 5 (Claude)", "reviewer": ""}
+  "gui.dungeontrain.translate.sent.rejected": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.translate.submit.blocked.nothing_new": {"author": "Opus 5 (Claude)", "reviewer": ""}
 }

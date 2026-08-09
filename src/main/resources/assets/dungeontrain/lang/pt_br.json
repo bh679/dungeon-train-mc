@@ -1151,5 +1151,6 @@
   "gui.dungeontrain.translate.sent.held": "Retido para revisão",
   "gui.dungeontrain.translate.sent.accepted": "Aceito",
   "gui.dungeontrain.translate.sent.partial": "%s/%s aceitas",
-  "gui.dungeontrain.translate.sent.rejected": "Não usado"
+  "gui.dungeontrain.translate.sent.rejected": "Não usado",
+  "gui.dungeontrain.translate.submit.blocked.nothing_new": "Tudo o que você editou já foi enviado."
 }

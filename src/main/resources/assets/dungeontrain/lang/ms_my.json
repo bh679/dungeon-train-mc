@@ -1134,5 +1134,6 @@
   "gui.dungeontrain.translate.sent.held": "Ditahan untuk semakan",
   "gui.dungeontrain.translate.sent.accepted": "Diterima",
   "gui.dungeontrain.translate.sent.partial": "%s/%s diterima",
-  "gui.dungeontrain.translate.sent.rejected": "Tidak digunakan"
+  "gui.dungeontrain.translate.sent.rejected": "Tidak digunakan",
+  "gui.dungeontrain.translate.submit.blocked.nothing_new": "Semua yang anda sunting telah pun dihantar."
 }

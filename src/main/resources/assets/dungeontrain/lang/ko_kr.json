@@ -1134,5 +1134,6 @@
   "gui.dungeontrain.translate.sent.held": "검토 보류",
   "gui.dungeontrain.translate.sent.accepted": "채택됨",
   "gui.dungeontrain.translate.sent.partial": "%s/%s 채택",
-  "gui.dungeontrain.translate.sent.rejected": "미사용"
+  "gui.dungeontrain.translate.sent.rejected": "미사용",
+  "gui.dungeontrain.translate.submit.blocked.nothing_new": "수정한 내용은 모두 이미 보냈습니다."
 }

@@ -164,50 +164,65 @@ public final class TranslationSubmitScreen extends Screen {
      * "(optional)" field next to it, which reads as "the field is the problem" — it never was.
      */
     private void updateSubmitState() {
-        boolean hasEdits = !TranslationOverrides.localFor(locale).isEmpty();
+        boolean outstanding = TranslationOverrides.hasUnsubmittedChanges(locale);
+        boolean anyEdits = !TranslationOverrides.localFor(locale).isEmpty();
         boolean consent = RelayChatClient.canConnect();
-        submitButton.active = hasEdits && consent;
+        submitButton.active = outstanding && consent;
         if (submitButton.active) {
             submitButton.setTooltip(null);
-        } else {
-            submitButton.setTooltip(Tooltip.create(hasEdits
-                ? Component.translatable("gui.dungeontrain.translate.submit.blocked.consent")
-                : Component.translatable("gui.dungeontrain.translate.submit.blocked.no_edits")));
-            status = hasEdits
-                ? Component.translatable("gui.dungeontrain.translate.submit.blocked.consent")
-                : Component.translatable("gui.dungeontrain.translate.submit.blocked.no_edits");
+            return;
         }
+        // Three distinct dead ends, and telling them apart is the whole point: nothing edited yet,
+        // everything already sent, or the connection is off.
+        Component reason;
+        if (!outstanding) {
+            reason = Component.translatable(anyEdits
+                ? "gui.dungeontrain.translate.submit.blocked.nothing_new"
+                : "gui.dungeontrain.translate.submit.blocked.no_edits");
+        } else {
+            reason = Component.translatable("gui.dungeontrain.translate.submit.blocked.consent");
+        }
+        submitButton.setTooltip(Tooltip.create(reason));
+        status = reason;
     }
 
+    /** What one Submit will carry: the units, and the same set as edits to record afterwards. */
+    private record Outgoing(List<TranslationSubmitClient.Unit> units, TranslationEdits edits) {}
+
     /**
-     * Turn the player's local overrides into units. Only their own edits go — the relay-approved
-     * layer is other people's work already in the system, and resubmitting it would spam the queue
-     * with duplicates of things that are already live.
+     * The units this Submit should send: only edits the relay has not already been given.
+     *
+     * <p>Two exclusions, for different reasons. The relay-approved layer never goes — that is
+     * other people's accepted work, and resending it would fill the review queue with duplicates
+     * of things already live. Already-submitted edits never go either, so pressing Submit twice
+     * sends the second time only what changed in between.</p>
      */
-    private List<TranslationSubmitClient.Unit> buildUnits() {
-        TranslationEdits local = TranslationOverrides.localFor(locale);
+    private Outgoing buildOutgoing() {
+        TranslationEdits outstanding = TranslationOverrides.unsubmittedFor(locale);
         List<TranslationSubmitClient.Unit> units = new ArrayList<>();
+        TranslationEdits sending = TranslationEdits.empty(locale);
         for (TranslationUnit unit : TranslationCatalog.forLocale(locale)) {
             if (units.size() >= MAX_UNITS_PER_SUBMISSION) {
-                break;
+                break; // the relay rejects a bigger batch; the rest stays outstanding for next time
             }
-            String value = unit.type() == TranslationUnit.Type.BOOK
-                ? local.books().get(unit.id()) : local.lang().get(unit.id());
+            boolean book = unit.type() == TranslationUnit.Type.BOOK;
+            String value = book ? outstanding.books().get(unit.id()) : outstanding.lang().get(unit.id());
             if (value == null) {
                 continue;
             }
-            units.add(new TranslationSubmitClient.Unit(
-                unit.type() == TranslationUnit.Type.BOOK ? "book" : "lang",
+            units.add(new TranslationSubmitClient.Unit(book ? "book" : "lang",
                 unit.namespace(), unit.id(), unit.source(), value));
+            sending = book ? sending.withBook(unit.id(), value) : sending.withLang(unit.id(), value);
         }
-        return units;
+        return new Outgoing(units, sending);
     }
 
     private void send() {
         UUID uuid = minecraft.getUser() != null ? minecraft.getUser().getProfileId() : null;
-        List<TranslationSubmitClient.Unit> units = buildUnits();
+        Outgoing outgoing = buildOutgoing();
+        List<TranslationSubmitClient.Unit> units = outgoing.units();
         if (uuid == null || units.isEmpty()) {
-            status = Component.translatable("gui.dungeontrain.translate.submit.blocked.no_edits");
+            status = Component.translatable("gui.dungeontrain.translate.submit.blocked.nothing_new");
             return;
         }
         // Unticked means anonymous: an empty translator, which the relay stores as-is. The name is
@@ -221,7 +236,7 @@ public final class TranslationSubmitScreen extends Screen {
 
         // Queued, not delivered — the outbox owns delivery and retries, so the honest report is
         // "sent for review", with the count the player can check against their edits.
-        TranslationOverrides.markSubmitted(locale);
+        TranslationOverrides.markSubmitted(locale, outgoing.edits());
         status = Component.translatable("gui.dungeontrain.translate.submit.queued", units.size());
         submitButton.active = false;
         submitButton.setTooltip(null);
@@ -236,7 +251,7 @@ public final class TranslationSubmitScreen extends Screen {
         g.drawCenteredString(font, title, width / 2, MARGIN, 0xFFFFFFFF);
         g.drawCenteredString(font,
             Component.translatable("gui.dungeontrain.translate.submit.subtitle",
-                locale, TranslationOverrides.localFor(locale).size()),
+                locale, TranslationOverrides.unsubmittedFor(locale).size()),
             width / 2, MARGIN + font.lineHeight + 2, LABEL_COLOUR);
         if (sentList != null) {
             g.drawString(font, Component.translatable("gui.dungeontrain.translate.sent.title"),

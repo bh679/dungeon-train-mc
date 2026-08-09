@@ -1151,5 +1151,6 @@
   "gui.dungeontrain.translate.sent.held": "Zur Prüfung zurückgestellt",
   "gui.dungeontrain.translate.sent.accepted": "Angenommen",
   "gui.dungeontrain.translate.sent.partial": "%s/%s angenommen",
-  "gui.dungeontrain.translate.sent.rejected": "Nicht verwendet"
+  "gui.dungeontrain.translate.sent.rejected": "Nicht verwendet",
+  "gui.dungeontrain.translate.submit.blocked.nothing_new": "Alles, was du bearbeitet hast, wurde bereits eingesendet."
 }
