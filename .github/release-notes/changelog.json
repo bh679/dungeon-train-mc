@@ -6670,6 +6670,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-furnishing-breaks-plates",
+      "version": "0.552.0",
+      "type": "fix",
+      "title": "Portal rooms stop breaking their own furnishings",
+      "summary": "Furnishing a portal room knocked loose whatever was resting on the floor it was decorating. The single-pillar room showed it worst: the ring of pressure plates around the pillar was broken off and left lying on the floor as items, every time, alongside a fresh set of plates. Rooms are now furnished without disturbing anything standing on them.",
+      "highlights": [
+        "Portal rooms no longer scatter broken pieces of their own furnishings across the floor",
+        "Furnishing a room takes half the block updates it used to"
+      ],
+      "pr": 927,
+      "date": "2026-08-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
