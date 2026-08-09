@@ -30,6 +30,8 @@ import games.brennan.dungeontrain.net.PortalSwapPacket;
 import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
+import games.brennan.dungeontrain.template.GateContext;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -633,9 +635,18 @@ public final class PortalCarriageEvents {
         int twinY = PortalTwinLanes.twinFloorY(worldMinY, bedrockY, pairKey, groupSize);
         BlockPos wanted = BlockPos.containing(originX, twinY, originZ);
 
-        // Which room this pair rolls, and how big it is. Deterministic on the pair key, so a
-        // re-stamp relocates the same room rather than swapping it for another one.
-        PortalStructure planned = PortalCarriageBuilder.planStructure(level, dims, wanted, pairKey);
+        // Which room this pair rolls, and how big it is.
+        //
+        // A pair rolls its room ONCE, gated on where its entry carriage was when it first needed one:
+        // the Diff-Level and dimension of that carriage decide which rooms (and which of their
+        // sub-variants) are eligible, exactly as they do for a carriage or a track tile. A relocation
+        // deliberately does NOT re-plan — the gate context travels with the train, so re-planning
+        // further down the track could swap a player's room for a different one mid-visit. Relocating
+        // keeps the room and the mode it was built with and only moves them.
+        PortalStructure planned = existing != null
+            ? existing.movedTo(wanted)
+            : PortalCarriageBuilder.planStructure(level, dims, wanted, pairKey,
+                GateContext.forCarriageAtWorldX(level, Mth.floor(originX), pairKey, dims.length()));
 
         // A world too shallow to hold the structure between its floor and the carriage gets no twin,
         // rather than one stamped through the train — or, in a world with a basement, one that would

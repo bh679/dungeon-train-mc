@@ -3,9 +3,11 @@ package games.brennan.dungeontrain.portal;
 import games.brennan.dungeontrain.editor.TrackVariantGroupStore;
 import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.template.TemplateGate;
+import games.brennan.dungeontrain.template.TemplateMeta;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantGroup;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +41,9 @@ final class PortalRoomSubVariantTest {
     void cleanSlate() {
         TrackVariantRegistry.clear();
         TrackVariantGroupStore.clearCache();
+        // Weights carry the per-room gate the top-level pool filters on; start from a blank table so
+        // the shipped weights.json cannot decide these answers either.
+        TrackVariantWeights.clear();
         // The mod ships a real group sidecar for 'default' (portals/room/default.group.json), and
         // 'default' is in every pool as the synthetic fallback — so without this the classpath copy
         // would leak its members into these fixtures and the answers would depend on shipped
@@ -150,6 +155,39 @@ final class PortalRoomSubVariantTest {
         GateContext nether = new GateContext(1, TrainPhase.NETHER);
         assertTrue(namesPickedOver(5L, nether).contains("library_nether"),
             "and must be drawn where its gate allows");
+    }
+
+    @Test
+    @DisplayName("a room gated out of this context is dropped from the top-level pool")
+    void gatedRoomsAreFilteredOut() {
+        TrackVariantRegistry.register(KIND, "library");
+        TrackVariantRegistry.register(KIND, "hellhall");
+        TrackVariantWeights.injectForTesting(KIND, "library", TemplateMeta.of(1));
+        TrackVariantWeights.injectForTesting(KIND, "hellhall", new TemplateMeta(1,
+            new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER))));
+
+        assertEquals(Set.of("library"), namesPickedOver(31L, new GateContext(1, TrainPhase.OVERWORLD)),
+            "a NETHER-only room must not be drawn in the overworld");
+        assertTrue(namesPickedOver(31L, new GateContext(1, TrainPhase.NETHER)).contains("hellhall"),
+            "and must be drawn where its gate allows");
+    }
+
+    @Test
+    @DisplayName("when every room is gated out the pool falls back ungated — a pair always gets a room")
+    void allGatedOutFallsBackToUngatedPool() {
+        TrackVariantRegistry.register(KIND, "hellhall");
+        TrackVariantWeights.injectForTesting(KIND, "hellhall", new TemplateMeta(1,
+            new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER))));
+        // 'default' is in the pool too and is ungated, so gate it out as well to empty the pool.
+        TrackVariantWeights.injectForTesting(KIND, TrackKind.DEFAULT_NAME, new TemplateMeta(1,
+            new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER))));
+
+        for (int pair = 0; pair < 20; pair++) {
+            String picked = TrackVariantRegistry.pickName(KIND, 77L, pair,
+                new GateContext(1, TrainPhase.OVERWORLD));
+            assertTrue("hellhall".equals(picked) || TrackKind.DEFAULT_NAME.equals(picked),
+                "an emptied pool falls back to the ungated one rather than failing, got " + picked);
+        }
     }
 
     @Test

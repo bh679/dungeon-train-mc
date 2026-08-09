@@ -154,6 +154,32 @@ final class TrackVariantGroupTest {
     }
 
     @Test
+    @DisplayName("withStageToggled: adds when absent, removes when present, normalises the id")
+    void member_stageToggle() {
+        TrackVariantGroup.Member m = new TrackVariantGroup.Member("library_tall", 1);
+        assertFalse(m.isStageLinked());
+
+        TrackVariantGroup.Member linked = m.withStageToggled("Nether");
+        assertEquals(List.of("nether"), linked.stageIds(), "the id is lower-cased on the way in");
+        assertTrue(linked.isStageLinked());
+        assertFalse(m.isStageLinked(), "the original is untouched");
+
+        // A second, different stage is a union — the first link stays and order is preserved.
+        TrackVariantGroup.Member two = linked.withStageToggled("late");
+        assertEquals(List.of("nether", "late"), two.stageIds());
+
+        // Toggling one back off leaves the other, and does not disturb weight or inline gate.
+        TrackVariantGroup.Member back = two.withStageToggled("nether");
+        assertEquals(List.of("late"), back.stageIds());
+        assertEquals(1, back.weight());
+        assertEquals(TemplateGate.DEFAULT, back.gate());
+
+        // Blank / null are no-ops rather than an empty link.
+        assertEquals(two, two.withStageToggled(null));
+        assertEquals(two, two.withStageToggled("  "));
+    }
+
+    @Test
     @DisplayName("withMember / withoutMember are copies, never mutations")
     void immutableUpdates() {
         TrackVariantGroup g = group("a", "1");

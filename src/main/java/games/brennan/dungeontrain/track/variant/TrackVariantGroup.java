@@ -97,6 +97,21 @@ public record TrackVariantGroup(int selfWeight, List<Member> members) {
         public Member withGate(TemplateGate newGate) { return new Member(id, weight, newGate, stageIds); }
         public Member withStages(List<String> newStageIds) { return new Member(id, weight, gate, newStageIds); }
 
+        /**
+         * New member with {@code stageId} toggled — added (appended) when absent, removed when
+         * present. Blank / null id is a no-op. Order of the remaining links is preserved. Mirrors
+         * {@code CarriageContentsGroup.Member.withStageToggled}: a sub-variant's links are a union,
+         * so the editor edits them one at a time rather than replacing the set.
+         */
+        public Member withStageToggled(String stageId) {
+            if (stageId == null) return this;
+            String s = stageId.trim().toLowerCase(Locale.ROOT);
+            if (s.isEmpty()) return this;
+            List<String> next = new ArrayList<>(stageIds);
+            if (!next.remove(s)) next.add(s);
+            return new Member(id, weight, gate, next);
+        }
+
         private static List<String> normalizeStages(List<String> in) {
             if (in == null || in.isEmpty()) return Collections.emptyList();
             java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>();

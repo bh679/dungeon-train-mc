@@ -390,9 +390,19 @@ public final class EditorTypeMenus {
         for (games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member m : members) {
             EditorPlotLabels.Provenance prov = EditorPlotLabels.provenanceOf(
                 games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, m.id()));
+            // Same gate + Stage fields the Sub-Variants companion sends for these members, so the two
+            // row builders cannot drift apart. The nav strip draws them as name chips today; the
+            // fields cost nothing and are what a chip would need to show a Stage tint later.
+            String primaryStage = m.stageIds().isEmpty() ? null : m.stageIds().get(0);
+            games.brennan.dungeontrain.template.TemplateGate g =
+                StageStore.effectiveGate(m.gate(), primaryStage);
             out.add(new EditorTypeMenusPacket.Variant(
-                m.id(), m.weight(), category, modelId, m.id(),
-                prov.isUser(), prov.isImported()));
+                m.id(), m.weight(),
+                g.minLevel(), g.maxLevel(),
+                games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
+                category, modelId, m.id(),
+                prov.isUser(), prov.isImported(),
+                java.util.List.of(), m.stageIds()));
         }
         return out;
     }

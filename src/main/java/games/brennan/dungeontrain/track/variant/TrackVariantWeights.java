@@ -227,6 +227,19 @@ public final class TrackVariantWeights {
         for (TrackKind k : TrackKind.values()) CURRENT.put(k, Map.of());
     }
 
+    /**
+     * Test-only seam — set one entry in memory without writing the config file, so gate-aware
+     * selection can be unit-tested without a Forge bootstrap. Mirrors
+     * {@code TrackVariantGroupStore.injectForTesting}. Do NOT call from production code: the real
+     * setters persist, and a caller that skipped that would lose the edit on the next reload.
+     */
+    public static synchronized void injectForTesting(TrackKind kind, String name, TemplateMeta meta) {
+        if (kind == null || name == null || meta == null) return;
+        Map<String, TemplateMeta> next = new HashMap<>(CURRENT.get(kind));
+        next.put(name.toLowerCase(Locale.ROOT), meta);
+        CURRENT.put(kind, Map.copyOf(next));
+    }
+
     public static Path configPath(TrackKind kind) {
         return FMLPaths.CONFIGDIR.get().resolve(kind.configSubdir()).resolve(TrackKind.WEIGHTS_FILE);
     }

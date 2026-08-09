@@ -1135,8 +1135,20 @@ public final class VariantOverlayRenderer {
             for (var m : groupOpt.get().members()) {
                 EditorPlotLabels.Provenance prov = EditorPlotLabels.provenanceOf(
                     games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, m.id()));
+                // Members carry a per-member spawn gate + zero-or-more Stage links, same as a contents
+                // group member — surface the same gate/Stage cells. When linked the renderer draws a
+                // Stage chip in place of min/max/phase, so the gate behind it is only visible for
+                // Custom members. The leading "(default)" self-row above stays weight-only.
+                String primaryStage = m.stageIds().isEmpty() ? null : m.stageIds().get(0);
+                games.brennan.dungeontrain.template.TemplateGate g =
+                    StageStore.effectiveGate(m.gate(), primaryStage);
                 rows.add(new EditorTypeMenusPacket.Variant(
-                    m.id(), m.weight(), cat, m.id(), m.id(), prov.isUser(), prov.isImported()));
+                    m.id(), m.weight(),
+                    g.minLevel(), g.maxLevel(),
+                    games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
+                    cat, m.id(), m.id(),
+                    prov.isUser(), prov.isImported(),
+                    java.util.List.of(), m.stageIds()));
             }
         }
 

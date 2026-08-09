@@ -490,19 +490,24 @@ public final class PortalCarriageBuilder {
      * Decide what a pair's structure is before building it: which room variant it rolls, how big
      * that room turns out to be, and what it does at its walls.
      *
-     * <p>The name is a pure function of the world seed and the pair's key, so a pair keeps the same
-     * room for the life of the world — re-stamping it further down the track relocates it rather
-     * than re-rolling it. The size is read off the authored template, or the built-in room's when
-     * nothing has been authored.</p>
+     * <p>The name is a pure function of the world seed, the pair's key and {@code gateCtx}, so a pair
+     * keeps the same room for as long as it stands where it was planned. It is <b>not</b> pure in the
+     * seed and key alone any more: {@code gateCtx} carries the Diff-Level and dimension of the entry
+     * carriage, which move with the train. Callers that re-stamp an existing pair further down the
+     * track must therefore <b>relocate</b> it ({@link PortalStructure#movedTo}) rather than call this
+     * again — re-planning at the new position could roll a different room out from under a player.
+     * A {@code null} {@code gateCtx} skips gating entirely (editor previews / tests). The size is read
+     * off the authored template, or the built-in room's when nothing has been authored.</p>
      *
      * <p>The {@link PortalRoomSettings settings} are read here and then carried on the record rather
      * than looked up per tick, so an author saving a different mode while somebody is standing in the
      * room cannot change the walls around them mid-visit.</p>
      */
     public static PortalStructure planStructure(ServerLevel level, CarriageDims dims,
-                                                BlockPos entryOrigin, int pairKey) {
+                                                BlockPos entryOrigin, int pairKey,
+                                                games.brennan.dungeontrain.template.GateContext gateCtx) {
         String roomName = TrackVariantRegistry.pickName(
-            TrackKind.PORTAL_ROOM, level.getSeed(), pairKey);
+            TrackKind.PORTAL_ROOM, level.getSeed(), pairKey, gateCtx);
         return new PortalStructure(entryOrigin, roomName,
             PortalRoomTemplateStore.sizeOf(level, roomName, dims),
             PortalRoomSettings.of(roomName),
