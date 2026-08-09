@@ -1097,5 +1097,17 @@
   "gui.dungeontrain.translate.edit.source_ai": "English — current translation is AI, unreviewed",
   "gui.dungeontrain.translate.edit.save": "Save",
   "gui.dungeontrain.translate.edit.revert": "Use Shipped",
-  "gui.dungeontrain.translate.edit.book_note": "Book text changes apply in single-player worlds you host."
+  "gui.dungeontrain.translate.edit.book_note": "Book text changes apply in single-player worlds you host.",
+  "gui.dungeontrain.translate.files": "Files…",
+  "gui.dungeontrain.translate.files.title": "Translate Outside the Game",
+  "gui.dungeontrain.translate.files.subtitle": "Language: %s",
+  "gui.dungeontrain.translate.files.export": "Export for Editing",
+  "gui.dungeontrain.translate.files.export.tip": "Write the text to CSV and JSON files you can open in a spreadsheet or text editor.",
+  "gui.dungeontrain.translate.files.import": "Import Changes",
+  "gui.dungeontrain.translate.files.import.tip": "Read back any files you put in the import folder and apply them as your edits.",
+  "gui.dungeontrain.translate.files.open": "Open Folder",
+  "gui.dungeontrain.translate.files.exported": "Exported %s line(s) and %s book(s).",
+  "gui.dungeontrain.translate.files.imported": "Imported %s line(s) and %s book field(s).",
+  "gui.dungeontrain.translate.files.nothing": "Nothing to import — put your files in the import folder first.",
+  "gui.dungeontrain.translate.files.failed": "That didn't work — see the log for details."
 }

@@ -134,13 +134,20 @@ public final class TranslationScreen extends Screen {
      * doorway, and the row grows as those land.
      */
     private void layoutBottomRow(int y, int contentWidth) {
-        int buttons = 2;
+        int buttons = 3;
         int buttonWidth = (contentWidth - GAP * (buttons - 1)) / buttons;
+        int x = MARGIN;
+        addRenderableWidget(Button.builder(
+            Component.translatable("gui.dungeontrain.translate.files"),
+            b -> minecraft.setScreen(new TranslationFilesScreen(this, locale)))
+            .bounds(x, y, buttonWidth, ROW_H).build());
+        x += buttonWidth + GAP;
         addRenderableWidget(Button.builder(
             Component.translatable("gui.dungeontrain.translate.revert_all"), b -> revertAll())
-            .bounds(MARGIN, y, buttonWidth, ROW_H).build());
+            .bounds(x, y, buttonWidth, ROW_H).build());
+        x += buttonWidth + GAP;
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-            .bounds(MARGIN + buttonWidth + GAP, y, buttonWidth, ROW_H).build());
+            .bounds(x, y, buttonWidth, ROW_H).build());
     }
 
     /** Rebuild the visible rows from the catalog, the current filters and the search text. */
