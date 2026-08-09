@@ -406,10 +406,16 @@ public final class PortalRoomTiler {
      * of blocks the author never put there, standing in the middle of a space that is meant to read
      * as open. Where a room does have a wall, the mirror finds it and the wall carries on.</p>
      *
-     * <p>The blackstone around the corridor mouth is a different thing and stays: that is
-     * {@code sealCorridorMouth}, laid once with the twin, and every cell of it is masked out of the
-     * face work below. What had to stop was that same palette repeating out across a room it has
-     * nothing to do with.</p>
+     * <p>The corridor mouth now follows the same rule rather than being exempt from it. It used to
+     * keep its own ring of polished blackstone — {@code PortalCarriageBuilder.sealCorridorMouth},
+     * laid once with the twin and masked out of the face work below — on the grounds that a way back
+     * to the train may look like one. Fifty blocks of it per corridor, and an endless room scattering
+     * corridors every few tiles, settled that: it is the same palette repeating out across a room it
+     * has nothing to do with, only concentrated. Both boundaries are now built from the room.</p>
+     *
+     * <p>Which makes the seal plane a legal <b>source</b> for the fill here, not merely a masked
+     * destination: the outer faces of the tiles at {@code (±1, 0)} mirror onto it, so they inherit
+     * whatever the mouth was built from — the room's own wall, now, rather than blackstone.</p>
      */
     private static void closeFace(ServerLevel level, CarriageDims dims, PortalStructure structure,
                                   Tile tile, int dx, int dz) {
@@ -434,8 +440,12 @@ public final class PortalRoomTiler {
      * written around from the other direction. And <b>anything that is not a full block</b>: a
      * mirrored torch, stair or trapdoor keeps the facing it had on the far wall, so it would hang
      * off the boundary the wrong way round and leave a hole besides.</p>
+     *
+     * <p>Shared with {@code PortalCarriageBuilder.sealFillFor}, which fills a corridor's mouth from
+     * the room's own blocks on the same terms. One test rather than two, so the two boundaries
+     * cannot come to disagree about what may stand in a wall.</p>
      */
-    private static boolean usableAsFill(ServerLevel level, BlockPos pos, BlockState state) {
+    static boolean usableAsFill(ServerLevel level, BlockPos pos, BlockState state) {
         return !state.isAir()
             && !state.hasBlockEntity()
             && state.getFluidState().isEmpty()

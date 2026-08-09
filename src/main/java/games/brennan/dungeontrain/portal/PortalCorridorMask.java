@@ -42,7 +42,9 @@ import java.util.List;
  * a door in it — the way back — and the room carries on beyond it. That wall is the seal plane, and
  * it stays the room's full cross-section on purpose. It is the only thing between the room and the
  * rock when a copy cannot be stamped at all, which is normal and silent — the budget is spent, or the
- * chunks are not loaded ({@code PortalRoomTiler.canStamp}).</p>
+ * chunks are not loaded ({@code PortalRoomTiler.canStamp}). What it is <i>made of</i> is the room's
+ * own wall rather than a palette of its own — {@code PortalCarriageBuilder.sealFillFor} — so the
+ * wall reads as the room's, and only the door in it says anything.</p>
  */
 public record PortalCorridorMask(List<BoundingBox> boxes) {
 
