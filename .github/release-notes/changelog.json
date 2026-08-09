@@ -6391,6 +6391,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-cave-noises",
+      "version": "0.539.0",
+      "type": "feat",
+      "title": "Cave noises carry through the portal rooms",
+      "summary": "A portal room is meant to feel a long way from the train: the soundtrack fades out as you walk the tunnel and there is none at all once you are inside. That left the rooms completely silent, which read as nothing there rather than somewhere else. The old familiar cave noises now turn up while you are in a portal room \u2014 the same distant groans and drips you get deep underground, drifting in from somewhere past the walls every half-minute to a few minutes. They stop at the room: the tunnels back to the train still carry the engine and the last of the music, and nothing follows you back aboard.",
+      "highlights": [
+        "Cave noises now play while you are inside a portal room",
+        "They come and go on their own, roughly every 30 seconds to 3 minutes",
+        "The tunnels back to the train are unchanged \u2014 engine and fading music as before",
+        "Controlled by the Ambient volume slider, like cave noises anywhere else"
+      ],
+      "date": "2026-08-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 916
     }
   ]
 }
