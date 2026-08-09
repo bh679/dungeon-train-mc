@@ -1115,9 +1115,9 @@
   "gui.dungeontrain.translate.files": "文件…",
   "gui.dungeontrain.translate.files.title": "在游戏外翻译",
   "gui.dungeontrain.translate.files.subtitle": "语言：%s",
-  "gui.dungeontrain.translate.files.export": "导出以便编辑",
+  "gui.dungeontrain.translate.files.export": "导出",
   "gui.dungeontrain.translate.files.export.tip": "把文本写成 CSV 和 JSON 文件，可用表格软件或文本编辑器打开。",
-  "gui.dungeontrain.translate.files.import": "导入修改",
+  "gui.dungeontrain.translate.files.import": "导入",
   "gui.dungeontrain.translate.files.import.tip": "读取你放进导入文件夹的文件，并作为你的修改应用。",
   "gui.dungeontrain.translate.files.open": "打开文件夹",
   "gui.dungeontrain.translate.files.exported": "已导出 %s 行、%s 本书。",
@@ -1135,5 +1135,6 @@
   "gui.dungeontrain.translate.submit.pending": "还有 %s 项提交等待发送。",
   "gui.dungeontrain.translate.submit.credit": "在游戏鸣谢中署上我的名字",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "还没有可提交的内容 — 请先修改一条翻译。",
-  "gui.dungeontrain.translate.submit.blocked.consent": "请在地牢列车选项中开启网络连接后再提交。"
+  "gui.dungeontrain.translate.submit.blocked.consent": "请在地牢列车选项中开启网络连接后再提交。",
+  "gui.dungeontrain.translate.filter.todo": "尚未处理"
 }

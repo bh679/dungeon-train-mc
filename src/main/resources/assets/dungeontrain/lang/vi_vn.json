@@ -1118,9 +1118,9 @@
   "gui.dungeontrain.translate.files": "Tệp…",
   "gui.dungeontrain.translate.files.title": "Dịch bên ngoài trò chơi",
   "gui.dungeontrain.translate.files.subtitle": "Ngôn ngữ: %s",
-  "gui.dungeontrain.translate.files.export": "Xuất ra để chỉnh sửa",
+  "gui.dungeontrain.translate.files.export": "Xuất",
   "gui.dungeontrain.translate.files.export.tip": "Ghi văn bản ra các tệp CSV và JSON mà bạn có thể mở bằng bảng tính hoặc trình soạn thảo văn bản.",
-  "gui.dungeontrain.translate.files.import": "Nhập thay đổi",
+  "gui.dungeontrain.translate.files.import": "Nhập",
   "gui.dungeontrain.translate.files.import.tip": "Đọc các tệp bạn đặt trong thư mục nhập và áp dụng như chỉnh sửa của bạn.",
   "gui.dungeontrain.translate.files.open": "Mở thư mục",
   "gui.dungeontrain.translate.files.exported": "Đã xuất %s dòng và %s cuốn sách.",
@@ -1138,5 +1138,6 @@
   "gui.dungeontrain.translate.submit.pending": "%s lượt gửi vẫn đang chờ.",
   "gui.dungeontrain.translate.submit.credit": "Ghi tên tôi trong phần ghi công của trò chơi",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Chưa có gì để gửi — hãy sửa một bản dịch trước.",
-  "gui.dungeontrain.translate.submit.blocked.consent": "Bật kết nối internet trong Tùy chọn Dungeon Train để gửi."
+  "gui.dungeontrain.translate.submit.blocked.consent": "Bật kết nối internet trong Tùy chọn Dungeon Train để gửi.",
+  "gui.dungeontrain.translate.filter.todo": "Chưa làm"
 }

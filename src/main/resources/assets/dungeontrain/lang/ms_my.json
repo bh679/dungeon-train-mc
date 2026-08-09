@@ -1101,9 +1101,9 @@
   "gui.dungeontrain.translate.files": "Fail…",
   "gui.dungeontrain.translate.files.title": "Terjemah di luar permainan",
   "gui.dungeontrain.translate.files.subtitle": "Bahasa: %s",
-  "gui.dungeontrain.translate.files.export": "Eksport untuk disunting",
+  "gui.dungeontrain.translate.files.export": "Eksport",
   "gui.dungeontrain.translate.files.export.tip": "Menulis teks ke fail CSV dan JSON yang boleh anda buka dalam hamparan atau penyunting teks.",
-  "gui.dungeontrain.translate.files.import": "Import perubahan",
+  "gui.dungeontrain.translate.files.import": "Import",
   "gui.dungeontrain.translate.files.import.tip": "Membaca fail yang anda letak dalam folder import dan menerapkannya sebagai suntingan anda.",
   "gui.dungeontrain.translate.files.open": "Buka folder",
   "gui.dungeontrain.translate.files.exported": "%s baris dan %s buku dieksport.",
@@ -1121,5 +1121,6 @@
   "gui.dungeontrain.translate.submit.pending": "%s penghantaran masih menunggu.",
   "gui.dungeontrain.translate.submit.credit": "Kreditkan nama saya dalam kredit permainan",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Belum ada apa-apa untuk dihantar — betulkan satu terjemahan dahulu.",
-  "gui.dungeontrain.translate.submit.blocked.consent": "Hidupkan sambungan internet dalam Pilihan Dungeon Train untuk menghantar."
+  "gui.dungeontrain.translate.submit.blocked.consent": "Hidupkan sambungan internet dalam Pilihan Dungeon Train untuk menghantar.",
+  "gui.dungeontrain.translate.filter.todo": "Belum dibuat"
 }

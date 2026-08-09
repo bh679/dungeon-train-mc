@@ -94,7 +94,8 @@
       "gui.dungeontrain.translate.submit.pending",
       "gui.dungeontrain.translate.submit.credit",
       "gui.dungeontrain.translate.submit.blocked.no_edits",
-      "gui.dungeontrain.translate.submit.blocked.consent"
+      "gui.dungeontrain.translate.submit.blocked.consent",
+      "gui.dungeontrain.translate.filter.todo"
     ],
     "adventureitemnames": [],
     "playermob": []

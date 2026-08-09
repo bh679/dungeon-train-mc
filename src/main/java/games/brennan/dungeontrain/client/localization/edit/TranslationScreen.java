@@ -33,8 +33,15 @@ public final class TranslationScreen extends Screen {
     private static final int TOP = 30;
     private static final int SUBTITLE_COLOUR = 0xFFA0A0A0;
 
-    /** Which units the list shows. */
+    /** Which units the list shows. Declaration order is the order the cycle button offers. */
     private enum StateFilter {
+        /**
+         * The working queue: machine translation nobody has reviewed, minus whatever this player
+         * has already fixed. The default, because it is what a translator is actually working
+         * down — a line they have just corrected disappearing from the list is the point.
+         */
+        TODO("todo"),
+        /** Everything unreviewed, including this player's own fixes — for re-checking your work. */
         AI_UNREVIEWED("ai_unreviewed"),
         EDITED("edited"),
         ALL("all");
@@ -72,7 +79,7 @@ public final class TranslationScreen extends Screen {
 
     private EditBox search;
     private TranslationListWidget list;
-    private StateFilter stateFilter = StateFilter.AI_UNREVIEWED;
+    private StateFilter stateFilter = StateFilter.TODO;
     private BodyFilter bodyFilter = BodyFilter.ALL;
 
     public TranslationScreen(Screen parent, String locale) {
@@ -118,7 +125,7 @@ public final class TranslationScreen extends Screen {
         if (!states.contains(stateFilter)) {
             // A selection carried over from a session where it was unlocked. Without this the gate
             // is bypassed simply by reopening the screen.
-            stateFilter = StateFilter.AI_UNREVIEWED;
+            stateFilter = StateFilter.TODO;
         }
         addRenderableWidget(CycleButton.<StateFilter>builder(StateFilter::label)
             .withValues(states)
@@ -158,7 +165,8 @@ public final class TranslationScreen extends Screen {
      * closed: no verdict, no unlock.</p>
      */
     private static List<StateFilter> offeredStates() {
-        List<StateFilter> out = new ArrayList<>(List.of(StateFilter.AI_UNREVIEWED, StateFilter.EDITED));
+        List<StateFilter> out = new ArrayList<>(
+            List.of(StateFilter.TODO, StateFilter.AI_UNREVIEWED, StateFilter.EDITED));
         if (TranslationContributor.hasApprovedTranslation()) {
             out.add(StateFilter.ALL);
         }
@@ -227,6 +235,7 @@ public final class TranslationScreen extends Screen {
     private boolean matchesState(TranslationUnit unit, TranslationEdits edits) {
         return switch (stateFilter) {
             case ALL -> true;
+            case TODO -> unit.aiUnreviewed() && overrideOf(unit, edits) == null;
             case AI_UNREVIEWED -> unit.aiUnreviewed();
             case EDITED -> overrideOf(unit, edits) != null;
         };

@@ -1118,9 +1118,9 @@
   "gui.dungeontrain.translate.files": "Файлы…",
   "gui.dungeontrain.translate.files.title": "Перевод вне игры",
   "gui.dungeontrain.translate.files.subtitle": "Язык: %s",
-  "gui.dungeontrain.translate.files.export": "Выгрузить для правки",
+  "gui.dungeontrain.translate.files.export": "Выгрузить",
   "gui.dungeontrain.translate.files.export.tip": "Записывает тексты в файлы CSV и JSON, которые можно открыть в таблице или текстовом редакторе.",
-  "gui.dungeontrain.translate.files.import": "Загрузить изменения",
+  "gui.dungeontrain.translate.files.import": "Загрузить",
   "gui.dungeontrain.translate.files.import.tip": "Читает файлы из папки импорта и применяет их как ваши правки.",
   "gui.dungeontrain.translate.files.open": "Открыть папку",
   "gui.dungeontrain.translate.files.exported": "Выгружено строк: %s, книг: %s.",
@@ -1138,5 +1138,6 @@
   "gui.dungeontrain.translate.submit.pending": "Отправок ещё в очереди: %s.",
   "gui.dungeontrain.translate.submit.credit": "Указать меня в титрах игры",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Пока нечего отправлять — сначала исправьте перевод.",
-  "gui.dungeontrain.translate.submit.blocked.consent": "Чтобы отправить, включите интернет-соединение в настройках Dungeon Train."
+  "gui.dungeontrain.translate.submit.blocked.consent": "Чтобы отправить, включите интернет-соединение в настройках Dungeon Train.",
+  "gui.dungeontrain.translate.filter.todo": "Ещё не сделано"
 }

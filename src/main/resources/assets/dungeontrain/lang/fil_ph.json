@@ -1101,9 +1101,9 @@
   "gui.dungeontrain.translate.files": "Mga file…",
   "gui.dungeontrain.translate.files.title": "Magsalin sa labas ng laro",
   "gui.dungeontrain.translate.files.subtitle": "Wika: %s",
-  "gui.dungeontrain.translate.files.export": "I-export para i-edit",
+  "gui.dungeontrain.translate.files.export": "I-export",
   "gui.dungeontrain.translate.files.export.tip": "Isusulat ang teksto sa mga CSV at JSON file na puwede mong buksan sa spreadsheet o text editor.",
-  "gui.dungeontrain.translate.files.import": "Mag-import ng mga pagbabago",
+  "gui.dungeontrain.translate.files.import": "I-import",
   "gui.dungeontrain.translate.files.import.tip": "Babasahin ang mga file sa import folder at gagamitin bilang mga edit mo.",
   "gui.dungeontrain.translate.files.open": "Buksan ang folder",
   "gui.dungeontrain.translate.files.exported": "Na-export ang %s linya at %s libro.",
@@ -1121,5 +1121,6 @@
   "gui.dungeontrain.translate.submit.pending": "%s pagpapadala ang naghihintay pa.",
   "gui.dungeontrain.translate.submit.credit": "Isama ako sa credits ng laro",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Wala pang maipapadala — ayusin muna ang isang salin.",
-  "gui.dungeontrain.translate.submit.blocked.consent": "Buksan ang internet connection sa Dungeon Train Options para makapagpadala."
+  "gui.dungeontrain.translate.submit.blocked.consent": "Buksan ang internet connection sa Dungeon Train Options para makapagpadala.",
+  "gui.dungeontrain.translate.filter.todo": "Gagawin pa"
 }

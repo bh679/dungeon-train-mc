@@ -1101,9 +1101,9 @@
   "gui.dungeontrain.translate.files": "Bestanden…",
   "gui.dungeontrain.translate.files.title": "Buiten het spel vertalen",
   "gui.dungeontrain.translate.files.subtitle": "Taal: %s",
-  "gui.dungeontrain.translate.files.export": "Exporteren om te bewerken",
+  "gui.dungeontrain.translate.files.export": "Exporteren",
   "gui.dungeontrain.translate.files.export.tip": "Schrijft de teksten naar CSV- en JSON-bestanden die je in een spreadsheet of teksteditor kunt openen.",
-  "gui.dungeontrain.translate.files.import": "Wijzigingen importeren",
+  "gui.dungeontrain.translate.files.import": "Importeren",
   "gui.dungeontrain.translate.files.import.tip": "Leest de bestanden uit de importmap en past ze toe als jouw bewerkingen.",
   "gui.dungeontrain.translate.files.open": "Map openen",
   "gui.dungeontrain.translate.files.exported": "%s regel(s) en %s boek(en) geëxporteerd.",
@@ -1121,5 +1121,6 @@
   "gui.dungeontrain.translate.submit.pending": "%s inzending(en) wachten nog.",
   "gui.dungeontrain.translate.submit.credit": "Vermeld mij in de aftiteling",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Nog niets om te versturen — verbeter eerst een vertaling.",
-  "gui.dungeontrain.translate.submit.blocked.consent": "Zet de internetverbinding aan in de Dungeon Train-opties om te versturen."
+  "gui.dungeontrain.translate.submit.blocked.consent": "Zet de internetverbinding aan in de Dungeon Train-opties om te versturen.",
+  "gui.dungeontrain.translate.filter.todo": "Nog te doen"
 }

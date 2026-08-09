@@ -27,6 +27,7 @@ public final class TranslationFilesScreen extends Screen {
     private static final int ROW_W = 240;
     private static final int ROW_H = 20;
     private static final int ROW_GAP = 24;
+    private static final int GAP = 4;
     private static final int LABEL_COLOUR = 0xFFA0A0A0;
     private static final int OK_COLOUR = 0xFF7FDD7F;
     private static final int ERROR_COLOUR = 0xFFDD7F7F;
@@ -36,6 +37,8 @@ public final class TranslationFilesScreen extends Screen {
 
     private Component status = CommonComponents.EMPTY;
     private boolean statusIsError;
+    /** Set during layout so the status line lands in the gap rather than under a button. */
+    private int statusY;
 
     public TranslationFilesScreen(Screen parent, String locale) {
         super(Component.translatable("gui.dungeontrain.translate.files.title"));
@@ -46,29 +49,34 @@ public final class TranslationFilesScreen extends Screen {
     @Override
     protected void init() {
         int left = width / 2 - ROW_W / 2;
+        int half = (ROW_W - GAP) / 2;
+        // Narrower and centred: Open Folder and Done are single actions, and giving them the full
+        // width made them read as equals of the export/import pair rather than what follows it.
+        int narrow = ROW_W / 2;
+        int narrowLeft = width / 2 - narrow / 2;
         int y = height / 3;
 
+        // The round trip, side by side — they are the two halves of one workflow.
         addRenderableWidget(Button.builder(
             Component.translatable("gui.dungeontrain.translate.files.export"), b -> runExport())
-            .bounds(left, y, ROW_W, ROW_H).build())
+            .bounds(left, y, half, ROW_H).build())
             .setTooltip(net.minecraft.client.gui.components.Tooltip.create(
                 Component.translatable("gui.dungeontrain.translate.files.export.tip")));
-        y += ROW_GAP;
-
         addRenderableWidget(Button.builder(
             Component.translatable("gui.dungeontrain.translate.files.import"), b -> runImport())
-            .bounds(left, y, ROW_W, ROW_H).build())
+            .bounds(left + half + GAP, y, half, ROW_H).build())
             .setTooltip(net.minecraft.client.gui.components.Tooltip.create(
                 Component.translatable("gui.dungeontrain.translate.files.import.tip")));
         y += ROW_GAP;
 
         addRenderableWidget(Button.builder(
             Component.translatable("gui.dungeontrain.translate.files.open"), b -> openFolder())
-            .bounds(left, y, ROW_W, ROW_H).build());
+            .bounds(narrowLeft, y, narrow, ROW_H).build());
+        statusY = y + ROW_GAP;
         y += ROW_GAP + ROW_GAP;
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-            .bounds(left, y, ROW_W, ROW_H).build());
+            .bounds(narrowLeft, y, narrow, ROW_H).build());
     }
 
     private void runExport() {
@@ -126,7 +134,7 @@ public final class TranslationFilesScreen extends Screen {
             Component.translatable("gui.dungeontrain.translate.files.subtitle", locale),
             width / 2, MARGIN + font.lineHeight + 2, LABEL_COLOUR);
         if (status != CommonComponents.EMPTY) {
-            g.drawCenteredString(font, status, width / 2, height / 3 + ROW_GAP * 3,
+            g.drawCenteredString(font, status, width / 2, statusY,
                 statusIsError ? ERROR_COLOUR : OK_COLOUR);
         }
     }

@@ -1115,9 +1115,9 @@
   "gui.dungeontrain.translate.files": "檔案…",
   "gui.dungeontrain.translate.files.title": "在遊戲外翻譯",
   "gui.dungeontrain.translate.files.subtitle": "語言：%s",
-  "gui.dungeontrain.translate.files.export": "匯出以便編輯",
+  "gui.dungeontrain.translate.files.export": "匯出",
   "gui.dungeontrain.translate.files.export.tip": "把文字寫成 CSV 與 JSON 檔案，可用試算表或文字編輯器開啟。",
-  "gui.dungeontrain.translate.files.import": "匯入修改",
+  "gui.dungeontrain.translate.files.import": "匯入",
   "gui.dungeontrain.translate.files.import.tip": "讀取你放進匯入資料夾的檔案，並套用為你的修改。",
   "gui.dungeontrain.translate.files.open": "開啟資料夾",
   "gui.dungeontrain.translate.files.exported": "已匯出 %s 行、%s 本書。",
@@ -1135,5 +1135,6 @@
   "gui.dungeontrain.translate.submit.pending": "還有 %s 項送出等待中。",
   "gui.dungeontrain.translate.submit.credit": "在遊戲致謝中署上我的名字",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "還沒有可送出的內容 — 請先修改一條翻譯。",
-  "gui.dungeontrain.translate.submit.blocked.consent": "請在地牢列車選項中開啟網路連線後再送出。"
+  "gui.dungeontrain.translate.submit.blocked.consent": "請在地牢列車選項中開啟網路連線後再送出。",
+  "gui.dungeontrain.translate.filter.todo": "尚未處理"
 }

@@ -1118,9 +1118,9 @@
   "gui.dungeontrain.translate.files": "File…",
   "gui.dungeontrain.translate.files.title": "Tradurre fuori dal gioco",
   "gui.dungeontrain.translate.files.subtitle": "Lingua: %s",
-  "gui.dungeontrain.translate.files.export": "Esporta per modificare",
+  "gui.dungeontrain.translate.files.export": "Esporta",
   "gui.dungeontrain.translate.files.export.tip": "Scrive i testi in file CSV e JSON che puoi aprire in un foglio di calcolo o in un editor di testo.",
-  "gui.dungeontrain.translate.files.import": "Importa modifiche",
+  "gui.dungeontrain.translate.files.import": "Importa",
   "gui.dungeontrain.translate.files.import.tip": "Rilegge i file messi nella cartella di importazione e li applica come tue modifiche.",
   "gui.dungeontrain.translate.files.open": "Apri cartella",
   "gui.dungeontrain.translate.files.exported": "Esportate %s riga/righe e %s libro/libri.",
@@ -1138,5 +1138,6 @@
   "gui.dungeontrain.translate.submit.pending": "%s invio/invii ancora in attesa.",
   "gui.dungeontrain.translate.submit.credit": "Accreditami nei crediti del gioco",
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Non c'è ancora niente da inviare: correggi prima una traduzione.",
-  "gui.dungeontrain.translate.submit.blocked.consent": "Attiva la connessione a internet nelle opzioni di Dungeon Train per inviare."
+  "gui.dungeontrain.translate.submit.blocked.consent": "Attiva la connessione a internet nelle opzioni di Dungeon Train per inviare.",
+  "gui.dungeontrain.translate.filter.todo": "Ancora da fare"
 }
