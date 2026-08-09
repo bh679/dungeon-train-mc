@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.playermob.compat.TrainConfinement;
 import net.minecraft.core.BlockPos;
@@ -64,6 +65,11 @@ public final class PlayerMobBehindSpawner {
 
         // One full group behind, toward where the player came from (against their travel direction).
         int behindAnchor = anchor - travelDir * groupSize;
+        // A portal group is not somewhere a PlayerMob may stand — see PlayerMobGroupSpawner's class
+        // javadoc. Skipped rather than nudged to a neighbouring group: "exactly one group behind" is
+        // the whole shape of this feature, and the behind-spawn is a percent-gated bonus that already
+        // does nothing most of the time, so dropping this one costs nothing.
+        if (PortalCarriageSelection.isPortalGroup(level, behindAnchor)) return;
         Trains.Carriage behindGroup = groupWithAnchor(groups, behindAnchor);
         if (behindGroup == null) return;                   // player at the trailing edge — nothing one group back
 
