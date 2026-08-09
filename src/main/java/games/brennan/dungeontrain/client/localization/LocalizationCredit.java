@@ -14,10 +14,13 @@ import java.util.Optional;
  * same code the pack's own {@code lang/<locale>.json} override uses. Credits
  * only ever surface for the client's currently selected locale.</p>
  *
- * <p>{@code humanReviewed} records whether this locale's translation has been
+ * <p>{@code humanReviewed} asserts that this locale's translation has been
  * proofread by a human (optional {@code human_reviewed} field, default
- * {@code false}). It drives the full-vs-faded Dungeon Train logo in the
- * language-selection list — see {@code LanguageSelectEntryLogoMixin}.</p>
+ * {@code false}). It is one of the two signals behind the full-vs-faded Dungeon
+ * Train logo in the language-selection list — the other being a high enough
+ * reviewed fraction in {@code aiCounts}. See
+ * {@link LocalizationCreditRegistry#isHumanReviewed} and
+ * {@code LanguageSelectEntryLogoMixin}.</p>
  *
  * <p>{@code aiCounts} carries the GENERATED per-locale AI-translation summary
  * (optional {@code total_keys} / {@code ai_authored} / {@code ai_unreviewed}
