@@ -6228,6 +6228,234 @@
       "released_at": "2026-08-05T13:59:27Z"
     },
     {
+      "id": "cursed-book-death-note-story",
+      "version": "0.539.0",
+      "type": "feat",
+      "title": "Cursed books \u2014 find out what your Death Note did",
+      "summary": "Sign a Death Note, die, and your echo goes hunting in a world you will never see. Until now that was the end of it for you. Now, once your curse actually lands, the next lightning strike brings you a black-violet book telling the story of it: who it found, the carriage it waited at, how long it waited, what it was still carrying, how the fight went, and how it ended. One story per curse \u2014 read it and it is gone; ignore it and it comes back next life.",
+      "highlights": [
+        "A cursed welcome book, delivered when one of your Death Note curses lands",
+        "The whole encounter, not just the outcome: gear, the beats of the fight, and who walked away",
+        "Three books, one per ending \u2014 your echo won, they won, or nobody ever found out",
+        "Delivered at your next spawn, or between carts if the curse lands mid-run",
+        "Death Note echo encounters now post their story to the Discord feed like any other echo"
+      ],
+      "date": "2026-08-06",
+      "released": true,
+      "released_in": "v0.539.0",
+      "released_at": "2026-08-06T07:11:55Z"
+    },
+    {
+      "id": "where-the-writing-goes",
+      "version": "0.540.0",
+      "type": "content",
+      "title": "New found book: Where the Writing Goes",
+      "summary": "A new book to find in the train's chests. Eight passengers, eight separate accounts, all circling the same discovery: they kept writing books that burned, until each of them worked out what a lectern does with a book you write on it.",
+      "highlights": [
+        "Eight complete variants \u2014 each spawn gives you one, and you won't be shown the same one twice until you've seen them all.",
+        "No mechanics change: this is writing about the lectern letters the mod already has, from the point of view of people finding them out the hard way."
+      ],
+      "date": "2026-08-06",
+      "released": true,
+      "released_in": "v0.540.0",
+      "released_at": "2026-08-06T15:34:51Z"
+    },
+    {
+      "id": "where-the-writing-goes-translations",
+      "version": "0.541.0",
+      "type": "content",
+      "title": "Where the Writing Goes, in 19 languages",
+      "summary": "The found book added last release is now readable in every language the mod supports \u2014 all eight accounts, translated.",
+      "highlights": [
+        "Machine-translated (Opus 5) and marked as such in the translation credits, so a human translator can review it later."
+      ],
+      "date": "2026-08-06",
+      "released": true,
+      "released_in": "v0.543.0",
+      "released_at": "2026-08-07T03:06:04Z"
+    },
+    {
+      "id": "train-reset-drifting-carriage-handback",
+      "version": "0.542.0",
+      "type": "fix",
+      "title": "Resetting the train no longer strands drifting carriages",
+      "summary": "Spawning a fresh train used to quietly abandon any drifting carriages riding on the old one: edits you'd made to them were lost along with the deleted train, and the builds stayed locked to your world for up to an hour before anyone else could receive them. They're now handed back properly before the old train is taken apart. The reset command itself also got two fixes \u2014 it always places the new train on the track now, instead of wherever you happened to be standing, and it can no longer leave you with no train at all.",
+      "highlights": [
+        "Edits you made to a drifting carriage survive a train reset instead of vanishing with the old train.",
+        "Drifting carriage builds return to the pool straight away, rather than staying locked to your world until they time out.",
+        "The train always spawns on the track, and you're set down on the flatbed once it settles.",
+        "Removed the carriage count from the spawn command \u2014 passing zero deleted your train and then refused to build a new one. Set the window with '/dungeontrain carriages' instead."
+      ],
+      "pr": 885,
+      "date": "2026-08-07",
+      "released": true,
+      "released_in": "v0.543.0",
+      "released_at": "2026-08-07T03:06:04Z"
+    },
+    {
+      "id": "love-note-book",
+      "version": "0.543.0",
+      "type": "feat",
+      "title": "Love Notes \u2014 an echo that comes back loving you",
+      "summary": "The Death Note has a mirror. Sign a book titled \"Love Note\" naming another player and it burns away in pink flame instead of soul-fire. When you later die, an echo of you waits for them at the carriage depth you fell at \u2014 and greets them instead of hunting them. It hands over what it is carrying, steps in when something attacks them, and never once raises a hand to them. Same book and quill, same price (you still have to die first), opposite intent.",
+      "highlights": [
+        "The echo arrives with the highest possible regard for the one you named: it greets rather than attacks, gives them what it has, and defends them even when badly outmatched.",
+        "Once your Love Note lands, your next lightning strike brings you its story \u2014 how they took it, and whether they took it at all.",
+        "A new advancement, Loved Back, for giving something back to the echo that came all that way for you.",
+        "Every language has its own Love Note title, and naming your book that works too."
+      ],
+      "pr": 884,
+      "date": "2026-08-07",
+      "released": true,
+      "released_in": "v0.543.0",
+      "released_at": "2026-08-07T03:06:04Z"
+    },
+    {
+      "id": "mod-recommendations-death-screen",
+      "version": "0.544.0",
+      "type": "feat",
+      "title": "Recommend your favourite mods from the death screen",
+      "summary": "If you play with mods beyond Dungeon Train and its modpack, the death screen now has a new page asking which of them you'd recommend to the creator. Your mods appear as a grid, ordered by how many other Dungeon Train players run them. Pick one, say why in a line, and send \u2014 then pick another, as many as you like. There's also a tile for naming a mod you don't have but wish the train supported. Nothing is sent unless you write something, and the page only ever appears if you're running mods of your own.",
+      "highlights": [
+        "New death-screen page: recommend the mods you play with",
+        "Your mods are ranked by how many other players run them",
+        "Ask for a mod you don't have yet",
+        "Only appears if you run mods outside Dungeon Train and its modpack"
+      ],
+      "date": "2026-08-07",
+      "released": true,
+      "released_in": "v0.545.0",
+      "released_at": "2026-08-07T04:53:07Z"
+    },
+    {
+      "id": "support-funding-goals",
+      "version": "0.545.0",
+      "type": "feat",
+      "title": "Death screen financial numbers updated",
+      "summary": "The support page's figures have been reworked.",
+      "date": "2026-08-07",
+      "released": true,
+      "released_in": "v0.545.0",
+      "released_at": "2026-08-07T04:53:07Z"
+    },
+    {
+      "id": "stage-link-survives-weight-edit",
+      "version": "0.546.0",
+      "type": "fix",
+      "title": "Editing a weight no longer unlinks a template from its Stage",
+      "summary": "In the in-world editor, changing the weight of a carriage, contents, or track-side variant that was linked to a Stage silently detached it \u2014 the row quietly stopped following its Stage and froze on whatever stale spawn gate had been snapshotted. Weight and gate edits now keep the Stage link.",
+      "highlights": [
+        "Affects all three weight editors: carriages, carriage contents, and track-side variants.",
+        "Templates already unlinked by this bug cannot be recovered automatically \u2014 the link is gone from disk and needs setting again in the editor.",
+        "Editing a spawn gate by command on a Stage-linked template now warns that the inline gate won't take effect until you detach the template to Custom."
+      ],
+      "date": "2026-08-07",
+      "released": true,
+      "released_in": "v0.547.0",
+      "released_at": "2026-08-07T08:05:42Z"
+    },
+    {
+      "id": "payment-pricing-tiers",
+      "version": "0.547.0",
+      "type": "feat",
+      "title": "Pick an amount: three price points on the support pages",
+      "summary": "The Ways to Help page and the death-screen Contribute window now lead with three named amounts instead of asking you to invent one \u2014 $10 Help The Dev, $30 A Big Fan, and $70 Server Costs, which covers a whole month of running the servers. Each opens a checkout with your player name already filled in. Giving a custom amount or setting up a monthly pledge on Patreon are both still there, tucked underneath.",
+      "highlights": [
+        "Three named amounts on both support screens: $10, $30 and $70 AUD",
+        "$70 covers a full month of Dungeon Train's server costs",
+        "Custom Amount and Recurring are still available below the three amounts",
+        "Translated into all 19 languages"
+      ],
+      "pr": 891,
+      "date": "2026-08-07",
+      "released": true,
+      "released_in": "v0.547.0",
+      "released_at": "2026-08-07T08:05:42Z"
+    },
+    {
+      "id": "carriage-contents-despawn",
+      "version": "0.548.0",
+      "type": "perf",
+      "title": "Carriages you've walked away from stop running their mobs",
+      "summary": "A long train used to keep every mob in every carriage you had already passed thinking at full speed, forever. Now, once every player has been more than 55 blocks from a carriage for a few seconds, that carriage's mobs are set aside \u2014 and restored the moment someone comes back, exactly as you left them: villager trades, gear, inventories, names and positions all intact. Half-loot a carriage, wander off, come back, and you'll find what you left rather than a fresh roll. This mostly helps dedicated servers and multiplayer, where mobs on carriages nobody is near were pure overhead. You may occasionally spot mobs in a far-off carriage blink out and reappear as you get closer; that's this at work.",
+      "highlights": [
+        "Mobs on carriages no player is near are stored instead of running AI",
+        "Restored exactly as you left them \u2014 villager trades and half-looted state included",
+        "Server operators can toggle it with /dungeontrain debug contentsdespawn on|off|status"
+      ],
+      "pr": 908,
+      "date": "2026-08-08",
+      "released": true,
+      "released_in": "v0.548.0",
+      "released_at": "2026-08-08T09:35:11Z"
+    },
+    {
+      "id": "flat-world-type",
+      "version": "0.548.0",
+      "type": "feat",
+      "title": "New \"Dungeon Train (Flat)\" world type",
+      "summary": "Creating a world now offers \"Dungeon Train (Flat)\" alongside the usual Dungeon Train option. The train runs across level ground with no terrain generation at all, which makes it a calm place to build, test contraptions, or just watch the train without the landscape getting in the way. One thing to know before you pick it: because nothing is generated around the track, the shifting terrain bands don't appear either \u2014 no disintegration stretch and no Nether transition. Choose the normal Dungeon Train world type if you want those.",
+      "highlights": [
+        "Pick \"Dungeon Train (Flat)\" from the world type list when creating a world",
+        "Level ground the whole way, with no terrain generation",
+        "Band content (disintegration, Nether transition) does not generate in flat worlds"
+      ],
+      "pr": 908,
+      "date": "2026-08-08",
+      "released": true,
+      "released_in": "v0.548.0",
+      "released_at": "2026-08-08T09:35:11Z"
+    },
+    {
+      "id": "zh-cn-translation-review-2026-08",
+      "version": "0.549.0",
+      "type": "content",
+      "title": "Simplified Chinese: full human translation review",
+      "summary": "\u8001\u672c\u9858 has reviewed Dungeon Train's Simplified Chinese translation end to end. 97 interface lines were rewritten and 18 confirmed, taking \u7b80\u4f53\u4e2d\u6587 to 96.5% human-reviewed \u2014 the menus, consent screens, advancements and shared-carriage messages now read as written Chinese rather than machine translation. Four in-world books were translated for the first time, so every random book you can find now has a Chinese edition, and two more picked up their newest entries.",
+      "highlights": [
+        "97 interface lines rewritten by a human translator, 18 confirmed",
+        "Four in-world books translated into Chinese for the first time \u2014 full coverage",
+        "New drifting-carriage entries added to Quiet Rules and the Train Glossary",
+        "\u7b80\u4f53\u4e2d\u6587 now shows as human-reviewed in the language list"
+      ],
+      "date": "2026-08-08",
+      "released": true,
+      "released_in": "v0.549.0",
+      "released_at": "2026-08-08T16:30:12Z"
+    },
+    {
+      "id": "modrec-responses-explorer",
+      "version": "0.550.0",
+      "type": "feat",
+      "title": "Your mod recommendations reach the creator",
+      "summary": "When you recommend a mod on the death screen \u2014 or ask for one that isn't supported yet \u2014 the reason you write is now sent along with it, so Brennan can actually read why. Requests keep the name you typed, which is the only name they have.",
+      "highlights": [
+        "The mod you name and the reason you give travel together, instead of the reason living only in a Discord channel",
+        "Asking for a mod that isn't supported now records what you asked for, not just that you asked"
+      ],
+      "pr": 918,
+      "date": "2026-08-09",
+      "released": true,
+      "released_in": "v0.551.0",
+      "released_at": "2026-08-09T08:49:33Z"
+    },
+    {
+      "id": "esc-menu-discord-support",
+      "version": "0.551.0",
+      "type": "feat",
+      "title": "Discord and Support the Mod are now in the pause menu",
+      "summary": "The two links that used to live only on the main menu are now a keypress away mid-run. Press Esc and you'll find Discord and Support the Mod where Minecraft's Feedback and Report Bugs buttons used to sit \u2014 bug reports for Dungeon Train go through the mod's own report form on the death screen, so those vanilla links were pointing at the wrong place anyway.",
+      "highlights": [
+        "Discord invite reachable from the in-game Esc menu",
+        "Support the Mod reachable without quitting to the main menu"
+      ],
+      "pr": 922,
+      "date": "2026-08-09",
+      "released": true,
+      "released_in": "v0.551.0",
+      "released_at": "2026-08-09T08:49:33Z"
+    },
+    {
       "id": "portal-sever-on-shell-break",
       "version": "0.539.0",
       "type": "feat",
@@ -6438,6 +6666,22 @@
         "Reworked beam and sculk rooms"
       ],
       "pr": 924,
+      "date": "2026-08-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-furnishing-breaks-plates",
+      "version": "0.552.0",
+      "type": "fix",
+      "title": "Portal rooms stop breaking their own furnishings",
+      "summary": "Furnishing a portal room knocked loose whatever was resting on the floor it was decorating. The single-pillar room showed it worst: the ring of pressure plates around the pillar was broken off and left lying on the floor as items, every time, alongside a fresh set of plates. Rooms are now furnished without disturbing anything standing on them.",
+      "highlights": [
+        "Portal rooms no longer scatter broken pieces of their own furnishings across the floor",
+        "Furnishing a room takes half the block updates it used to"
+      ],
+      "pr": 927,
       "date": "2026-08-09",
       "released": false,
       "released_in": null,

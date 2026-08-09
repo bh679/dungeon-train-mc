@@ -141,15 +141,16 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
     /**
      * Update the weight for {@code id} in-memory and persist the full weights
      * map to {@code config/dungeontrain/user/contents/weights.json}. The new weight
-     * takes effect for the next carriage that spawns. Returns the clamped
-     * value that was stored.
+     * takes effect for the next carriage that spawns. The entry's inline gate
+     * and its Stage link are preserved. Returns the clamped value that was
+     * stored.
      */
     public static synchronized int set(String id, int value) throws IOException {
         String key = id.toLowerCase(Locale.ROOT);
         int clamped = clamp(value);
         Map<String, TemplateMeta> next = new HashMap<>(current.byId());
         TemplateMeta prev = next.get(key);
-        next.put(key, new TemplateMeta(clamped, prev == null ? TemplateGate.DEFAULT : prev.gate()));
+        next.put(key, TemplateMeta.mergeWeight(prev, clamped));
         current = new CarriageContentsWeights(next);
         writeConfig(current);
         trySaveToSource(current);
@@ -159,15 +160,16 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
     }
 
     /**
-     * Update the spawn {@link TemplateGate gate} (min/max Diff-Level + phase set) for {@code id},
-     * preserving its current weight, and persist. Returns the stored gate.
+     * Update the <b>inline</b> spawn {@link TemplateGate gate} (min/max Diff-Level + phase set) for
+     * {@code id}, preserving its current weight and its Stage link, and persist. Returns the stored
+     * gate. On a Stage-linked entry the inline gate is the detach snapshot, so the edit is inert
+     * until {@link #setStage} detaches the entry to Custom.
      */
     public static synchronized TemplateGate setGate(String id, TemplateGate gate) throws IOException {
         String key = id.toLowerCase(Locale.ROOT);
         Map<String, TemplateMeta> next = new HashMap<>(current.byId());
         TemplateMeta prev = next.get(key);
-        int weight = prev == null ? DEFAULT : prev.weight();
-        next.put(key, new TemplateMeta(weight, gate));
+        next.put(key, TemplateMeta.mergeGate(prev, gate, DEFAULT));
         current = new CarriageContentsWeights(next);
         writeConfig(current);
         trySaveToSource(current);

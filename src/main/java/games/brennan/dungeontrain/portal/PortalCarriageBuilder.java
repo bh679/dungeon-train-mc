@@ -1178,20 +1178,39 @@ public final class PortalCarriageBuilder {
             if (picked.isMob()) {
                 // The cell itself still has to go: a mob entry carries a COMMAND_BLOCK sentinel as
                 // its state so every block applier blanks it without a special case.
-                level.setBlock(world, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+                //
+                // No-cascade: this cell really does become air, and an UPDATE_ALL air write breaks
+                // whatever was standing on it with drops — see the eviction note further down. An
+                // authored block left unsupported here simply stays put, which is the right trade for
+                // a room the author built.
+                SilentBlockOps.setBlockSilentNoCascade(level, world, Blocks.AIR.defaultBlockState(), null);
                 if (PortalRoomMobs.spawn(level, world, picked, pairKey, tile, worldSeed, live)) {
                     live++;
                 }
                 continue;
             }
             if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
-                level.setBlock(world, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+                // No-cascade, for the same reason as the mob branch above.
+                SilentBlockOps.setBlockSilentNoCascade(level, world, Blocks.AIR.defaultBlockState(), null);
                 continue;
             }
             // The contents pass may have put a filled chest in this cell a moment ago. Writing over a
             // live block entity runs its onRemove and sprays the loot across the floor — the same
             // hazard PortalClear and PortalRoomTiler.stampTile were both written for. Evict first.
-            PortalClear.clearCell(level, world);
+            //
+            // The eviction, and NOT a clear to air. This used to call PortalClear.clearCell, which
+            // writes AIR with UPDATE_ALL; markAndNotifyBlock strips UPDATE_SUPPRESS_DROPS out of the
+            // cascade subflags, so every block standing on a cell — and this walks the whole floor —
+            // went through Block.updateOrDestroy -> destroyBlock(dropBlock = true) and BROKE, dropping
+            // as an item. singlepillar's eight pressure plates did exactly that on every stamp: knocked
+            // off by their own floor cells, then put back by their own entries further down the sidecar,
+            // so the room ended up holding the plates AND eight plate items. Never letting the cell
+            // become air is the fix; the write below replaces it in one step.
+            //
+            // evictBlockEntity rather than leaving it to setBlockSilent's removeBlockEntity: this one
+            // promotes a PENDING block entity to live before dropping it, which is the whole point of
+            // the eviction here — a freshly stamped chest's NBT has not been promoted yet.
+            SilentBlockOps.evictBlockEntity(level.getChunkAt(world), world);
             ContainerContentsPlacement.place(level, world, picked.state(), picked.blockEntityNbt(),
                 plotKey, local, worldSeed, variantIndex, picked.linkedLootPrefabId());
         }

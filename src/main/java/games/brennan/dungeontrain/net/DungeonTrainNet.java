@@ -112,6 +112,11 @@ public final class DungeonTrainNet {
         registrar.playToClient(OpenLetterEditorPacket.TYPE, OpenLetterEditorPacket.STREAM_CODEC, OpenLetterEditorPacket::handle);
         registrar.playToServer(LetterDraftToLecternPacket.TYPE, LetterDraftToLecternPacket.STREAM_CODEC, LetterDraftToLecternPacket::handle);
 
+        // Mod recommendation: the death screen's Mod Recommendations page sends one mod + comment per
+        // submit (or a typed name, for a mod the player doesn't have); server consent-gates, posts it
+        // to the Discord survey channel and queues a text-free telemetry event.
+        registrar.playToServer(ModRecommendPacket.TYPE, ModRecommendPacket.STREAM_CODEC, ModRecommendPacket::handle);
+
         // Death-screen run-stats snapshot, server → dying player on LivingDeathEvent.
         registrar.playToClient(DeathStatsPacket.TYPE, DeathStatsPacket.STREAM_CODEC, DeathStatsPacket::handle);
         // Scenic ride photo for the top-level death report, client → server when the death screen opens.

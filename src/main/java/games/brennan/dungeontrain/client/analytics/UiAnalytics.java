@@ -49,6 +49,10 @@ public final class UiAnalytics {
     // The death-screen "support the line" donation page. Must stay in lock-step with the relay's
     // ui-events.js SURFACES whitelist, or click/confirm events 400 silently.
     public static final String SURFACE_DEATH_SCREEN = "death_screen";
+    // The in-game ESC menu's Discord / Support the Mod row (PauseMenuLinksHandler). Kept apart from
+    // title_screen so the funnel can tell a mid-run tap from a main-menu one — they are very
+    // different moments. Same lock-step rule with ui-events.js SURFACES.
+    public static final String SURFACE_PAUSE_MENU = "pause_menu";
     // Targets
     public static final String TARGET_PAGE = "page";
     public static final String TARGET_SUPPORT = "support";
@@ -58,6 +62,14 @@ public final class UiAnalytics {
     // Patreon's slot — see PaymentLinks. Separate from TARGET_DONATE so the funnel can show whether
     // the China route converts. Lock-step with ui-events.js TARGETS.
     public static final String TARGET_DONATE_CN = "donate_cn";
+    // The three named price points, on both the Support page and the death-screen Contribute window
+    // (see SupportTier, which owns the mapping). Named for the tier's identity rather than its
+    // amount: the amount is a quantity multiplier the operator can re-price without a mod release,
+    // so a target called "donate_30" would quietly start meaning something else the day it changed.
+    // Lock-step with ui-events.js TARGETS.
+    public static final String TARGET_DONATE_HELP_DEV = "donate_help_dev";
+    public static final String TARGET_DONATE_BIG_FAN = "donate_big_fan";
+    public static final String TARGET_DONATE_SERVER_COSTS = "donate_server_costs";
     // The Adult / Kid answer on the first-launch consent card (and on any later re-ask). Lock-step
     // with the relay's ui-events.js TARGETS whitelist, or these 400 silently.
     public static final String TARGET_CONTENT_MODE_ADULT = "content_mode_adult";
@@ -69,15 +81,19 @@ public final class UiAnalytics {
     public static final String TARGET_BOARD_ANEW = "board_anew";  // "Board anew" — start the next run
     public static final String TARGET_LEAVE = "leave";           // "Leave" — back to title / quit
     public static final String TARGET_CHIP = "chip";             // the "$" top-bar chip → donate page
+    // A mod recommendation was sent from the MODREC page. The mod itself is NOT a funnel dimension —
+    // which mods get recommended is counted by /telemetry/mod-rec, this is only the button press.
+    public static final String TARGET_MOD_RECOMMEND = "mod_recommend";
 
     // Death-screen page identities (the {@code page} dimension on open / page_time / survey_answer).
-    // Lock-step with ui-events.js PAGES. The seven paginated death-screen pages, plus the full-screen
+    // Lock-step with ui-events.js PAGES. The eight paginated death-screen pages, plus the full-screen
     // Contribute (donate-options) window that layers over the DONATE page.
     public static final String PAGE_FALL = "fall";
     public static final String PAGE_DEEDS = "deeds";
     public static final String PAGE_GEAR = "gear";
     public static final String PAGE_LIVES = "lives";
     public static final String PAGE_SURVEY = "survey";
+    public static final String PAGE_MODREC = "modrec";
     public static final String PAGE_DONATE = "donate";
     public static final String PAGE_PLATFORM = "platform";
     public static final String PAGE_CONTRIBUTE = "contribute";

@@ -108,18 +108,18 @@ public final class TrackVariantWeights {
         return m == null ? null : m.mode();
     }
 
-    /** Update one weight on disk and in memory, keeping the entry's gate. Returns the clamped value. */
+    /**
+     * Update one weight on disk and in memory, keeping the entry's inline gate, its Stage link
+     * <b>and</b> its mode tag. Returns the clamped value.
+     */
     public static synchronized int set(TrackKind kind, String name, int value) throws IOException {
         String key = name.toLowerCase(Locale.ROOT);
         int clamped = clamp(value);
         Map<String, TemplateMeta> next = new HashMap<>(CURRENT.get(kind));
         TemplateMeta prev = next.get(key);
-        // Mode carried through explicitly: these setters rebuild the entry from parts, so anything
-        // not named here is silently dropped — and a room would lose its mode on a weight tweak.
-        next.put(key, new TemplateMeta(clamped,
-            prev == null ? TemplateGate.DEFAULT : prev.gate(),
-            null,
-            prev == null ? null : prev.mode()));
+        // mergeWeight copies prev via withWeight, so the gate, the Stage link and the mode tag all
+        // survive a weight tweak — rebuilding the record from parts here would drop them.
+        next.put(key, TemplateMeta.mergeWeight(prev, clamped));
         CURRENT.put(kind, next);
         writeConfig(kind, next);
         trySaveToSource(kind, next);
@@ -129,15 +129,16 @@ public final class TrackVariantWeights {
     }
 
     /**
-     * Update the spawn {@link TemplateGate gate} for {@code (kind, name)}, preserving its weight, and
-     * persist. Returns the stored gate.
+     * Update the inline spawn {@link TemplateGate gate} for {@code (kind, name)}, preserving its
+     * weight and its Stage link, and persist. Returns the stored gate. On a Stage-linked entry the
+     * inline gate is the detach snapshot, so the edit is inert until the entry is detached —
+     * {@link #setStage} is the way to change which gate actually applies.
      */
     public static synchronized TemplateGate setGate(TrackKind kind, String name, TemplateGate gate) throws IOException {
         String key = name.toLowerCase(Locale.ROOT);
         Map<String, TemplateMeta> next = new HashMap<>(CURRENT.get(kind));
         TemplateMeta prev = next.get(key);
-        int weight = prev == null ? DEFAULT : prev.weight();
-        next.put(key, new TemplateMeta(weight, gate, null, prev == null ? null : prev.mode()));
+        next.put(key, TemplateMeta.mergeGate(prev, gate, DEFAULT));
         CURRENT.put(kind, next);
         writeConfig(kind, next);
         trySaveToSource(kind, next);

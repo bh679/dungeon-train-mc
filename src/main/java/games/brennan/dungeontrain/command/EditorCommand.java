@@ -1146,7 +1146,8 @@ public final class EditorCommand {
         try {
             TemplateGate next = op.apply(CarriageWeights.current().gateFor(variant.id()));
             CarriageWeights.setGate(variant.id(), next);
-            gateSuccess(source, variant.id(), next, CarriageWeights.configPath().toString());
+            gateSuccess(source, variant.id(), next, CarriageWeights.configPath().toString(),
+                CarriageWeights.current().stageIdFor(variant.id()));
             return 1;
         } catch (Throwable t) {
             return gateFail(source, "carriage", variant.id(), t);
@@ -1159,7 +1160,8 @@ public final class EditorCommand {
         try {
             TemplateGate next = op.apply(CarriageContentsWeights.current().gateFor(contents.id()));
             CarriageContentsWeights.setGate(contents.id(), next);
-            gateSuccess(source, contents.id(), next, CarriageContentsWeights.configPath().toString());
+            gateSuccess(source, contents.id(), next, CarriageContentsWeights.configPath().toString(),
+                CarriageContentsWeights.current().stageIdFor(contents.id()));
             return 1;
         } catch (Throwable t) {
             return gateFail(source, "contents", contents.id(), t);
@@ -1176,14 +1178,21 @@ public final class EditorCommand {
         try {
             TemplateGate next = op.apply(TrackVariantWeights.gateFor(kind, name));
             TrackVariantWeights.setGate(kind, name, next);
-            gateSuccess(source, kind.id() + ":" + name, next, TrackVariantWeights.configPath(kind).toString());
+            gateSuccess(source, kind.id() + ":" + name, next, TrackVariantWeights.configPath(kind).toString(),
+                TrackVariantWeights.stageIdFor(kind, name));
             return 1;
         } catch (Throwable t) {
             return gateFail(source, "track", kind.id() + ":" + name, t);
         }
     }
 
-    private static void gateSuccess(CommandSourceStack source, String id, TemplateGate g, String path) {
+    /**
+     * Report a stored gate. {@code linkedStage} is the Stage the target is linked to, or null when
+     * it is Custom — on a linked entry the write lands in the inline detach snapshot and the
+     * effective gate still comes from the Stage, so say so rather than reporting a bare success.
+     */
+    private static void gateSuccess(CommandSourceStack source, String id, TemplateGate g, String path,
+                                    String linkedStage) {
         String maxStr = g.maxLevel() == TemplateGate.ALL ? "all" : Integer.toString(g.maxLevel());
         StringBuilder phases = new StringBuilder();
         if (g.phases().size() == TrainPhase.values().length) {
@@ -1200,6 +1209,13 @@ public final class EditorCommand {
             "Editor: gate " + id + " — level " + g.minLevel() + ".." + maxStr
                 + ", phases [" + phaseStr + "] (saved to " + path + ")."
         ).withStyle(ChatFormatting.GREEN), true);
+        if (linkedStage != null) {
+            source.sendSuccess(() -> Component.literal(
+                "  Note: '" + id + "' is linked to Stage '" + linkedStage + "' — this inline gate is"
+                    + " stored as its detach snapshot and won't take effect until you detach it to"
+                    + " Custom (/dungeontrain editor stage …)."
+            ).withStyle(ChatFormatting.YELLOW), false);
+        }
     }
 
     private static int gateFail(CommandSourceStack source, String what, String id, Throwable t) {
@@ -1382,8 +1398,9 @@ public final class EditorCommand {
                 .orElse(TemplateGate.DEFAULT);
             TemplateGate next = op.apply(current);
             games.brennan.dungeontrain.editor.StageStore.setGate(id, next);
+            // A Stage's own gate — nothing upstream to be linked to, so no detach note.
             gateSuccess(source, "stage:" + id, next,
-                games.brennan.dungeontrain.editor.StageStore.configPath().toString());
+                games.brennan.dungeontrain.editor.StageStore.configPath().toString(), null);
             return 1;
         } catch (Throwable t) {
             return gateFail(source, "stage", id, t);
@@ -1985,8 +2002,9 @@ public final class EditorCommand {
             CarriageContentsGroup.Member updated = new CarriageContentsGroup.Member(
                 m.id(), m.weight(), next, java.util.List.of());
             CarriageContentsGroupStore.save(parent.id(), existing.get().withMember(updated));
+            // The member was just detached to Custom above (by design), so it is unlinked now.
             gateSuccess(source, parent.id() + ":" + member.id(), next,
-                CarriageContentsGroupStore.fileForId(parent.id()).toString());
+                CarriageContentsGroupStore.fileForId(parent.id()).toString(), null);
             return 1;
         } catch (Throwable t) {
             return gateFail(source, "contents group", parent.id() + ":" + member.id(), t);
@@ -5203,8 +5221,9 @@ public final class EditorCommand {
                 games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), baseStage));
             saveTrackGroupMember(kind, parent, new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(
                 m.id(), m.weight(), next, java.util.List.of()));
+            // The member was just detached to Custom above (by design), so it is unlinked now.
             gateSuccess(source, parent + ":" + member, next,
-                games.brennan.dungeontrain.editor.TrackVariantGroupStore.fileFor(kind, parent).toString());
+                games.brennan.dungeontrain.editor.TrackVariantGroupStore.fileFor(kind, parent).toString(), null);
             return 1;
         } catch (Throwable t) {
             return gateFail(source, kind.id() + " group", parent + ":" + member, t);
@@ -5378,6 +5397,10 @@ public final class EditorCommand {
                 // Save first so the freshly-registered plot stamps the parent's room rather than the
                 // built-in one, then register inside a relayout — the new slot shifts the row.
                 games.brennan.dungeontrain.editor.PortalRoomTemplateStore.save(key, src.get());
+                // The geometry alone isn't the room: without the parent's variant-blocks sidecar
+                // the sub-variant stamps as a plain box, because applyRoomVariants early-outs on
+                // an empty sidecar. Inside this try so a failure rolls the membership back too.
+                copyTrackVariantSidecar(PORTAL_ROOM_KIND, parent, key, dims);
                 net.minecraft.core.Vec3i inherited =
                     games.brennan.dungeontrain.portal.PortalRoomSizes.sizeOf(parent, dims);
                 games.brennan.dungeontrain.editor.PortalRoomEditor.relayout(overworld, dims, () -> {
@@ -5889,6 +5912,34 @@ public final class EditorCommand {
     }
 
     /**
+     * Mirror {@code (kind, sourceName)}'s variant-blocks sidecar onto {@code targetName} so a
+     * duplicate keeps the per-cell "pick from these alternatives" authoring data — the cells,
+     * their lock-group ids, and the mirror flags. Same job as
+     * {@code CarriageEditor.duplicate} / {@code CarriageContentsEditor.duplicate} do for
+     * carriages. No-op when the source has nothing worth persisting (e.g. duplicating the
+     * synthetic "default"); a mirror-only sidecar still copies, since axis toggles are authoring
+     * data too.
+     *
+     * <p>The footprint comes from {@link games.brennan.dungeontrain.editor.TrackSidePlots#footprint(
+     * games.brennan.dungeontrain.track.variant.TrackKind, String, CarriageDims)} rather than
+     * {@code kind.dims(dims)}: a portal room is whatever size its author made it, and the
+     * kind-level box would send every cell above that floor through
+     * {@code TrackVariantBlocks.parse}'s bounds check and out of the copy.</p>
+     */
+    private static void copyTrackVariantSidecar(
+        games.brennan.dungeontrain.track.variant.TrackKind kind, String sourceName,
+        String targetName, CarriageDims dims
+    ) throws IOException {
+        net.minecraft.core.Vec3i footprint =
+            games.brennan.dungeontrain.editor.TrackSidePlots.footprint(kind, sourceName, dims);
+        games.brennan.dungeontrain.track.variant.TrackVariantBlocks sourceSidecar =
+            games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(kind, sourceName, footprint);
+        if (sourceSidecar.isEmpty() && sourceSidecar.isDefaultMirror()) return;
+        games.brennan.dungeontrain.track.variant.TrackVariantBlocks.copyOf(sourceSidecar)
+            .save(kind, targetName);
+    }
+
+    /**
      * {@code /dt editor tracks new <kind> <name>} — duplicate the kind's
      * current active variant under {@code name}, register it, swap the
      * editor's active marker to it, and restamp the plot so the player sees
@@ -5962,24 +6013,8 @@ public final class EditorCommand {
             return 0;
         }
 
-        // Mirror the source variant's variant-blocks sidecar onto the new
-        // variant so the duplicate keeps the per-cell "pick from these
-        // alternatives" authoring data. Same shape as CarriageEditor.duplicate
-        // and CarriageContentsEditor.duplicate. No-op when the source has no
-        // sidecar (e.g. duplicating the synthetic "default").
         try {
-            net.minecraft.core.Vec3i expectedSize = kind.dims(dims);
-            games.brennan.dungeontrain.track.variant.TrackVariantBlocks sourceSidecar =
-                games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(kind, sourceName, expectedSize);
-            if (!sourceSidecar.isEmpty()) {
-                games.brennan.dungeontrain.track.variant.TrackVariantBlocks copy =
-                    games.brennan.dungeontrain.track.variant.TrackVariantBlocks.emptyFor(kind);
-                copy.setMirrorAxes(sourceSidecar.mirrorX(), sourceSidecar.mirrorY(), sourceSidecar.mirrorZ());
-                for (games.brennan.dungeontrain.editor.CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
-                    copy.put(e.localPos(), e.states());
-                }
-                copy.save(kind, key);
-            }
+            copyTrackVariantSidecar(kind, sourceName, key, dims);
         } catch (java.io.IOException e) {
             source.sendFailure(Component.literal(
                 "Variant sidecar copy failed: " + e.getMessage()).withStyle(ChatFormatting.RED));

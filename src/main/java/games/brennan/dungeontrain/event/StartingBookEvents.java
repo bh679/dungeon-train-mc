@@ -6,8 +6,14 @@ import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.narrative.BookReadMarkerTag;
 import games.brennan.dungeontrain.narrative.BookVoteTag;
+import games.brennan.dungeontrain.discord.DeathNoteReporter;
 import games.brennan.dungeontrain.narrative.BurnableBookTag;
+import games.brennan.dungeontrain.narrative.CursedBookFactory;
+import games.brennan.dungeontrain.narrative.CursedStoryPool;
+import games.brennan.dungeontrain.narrative.CursedStoryTag;
 import games.brennan.dungeontrain.narrative.DeathNoteBookTag;
+import games.brennan.dungeontrain.narrative.LoveNoteBookTag;
+import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.narrative.LetterBookTag;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
@@ -55,6 +61,7 @@ import org.joml.Vector3f;
 import org.slf4j.Logger;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -146,16 +153,27 @@ public final class StartingBookEvents {
     private static final int BURN_DURATION_TICKS = 60;
 
     /**
-     * Which flame a burning book renders. {@link #SOUL} (a Death Note curse) takes precedence over
-     * any vote; a book the player voted on burns {@link #APPROVED} green or {@link #REJECTED} red
-     * (flame-dust tint only — the client-only ghost fire block stays the vanilla orange, since no
-     * green/red fire block exists); everything else is the {@link #DEFAULT} orange burn.
+     * Which flame a burning book renders. {@link #SOUL} (a Death Note curse) and {@link #LOVE} (its
+     * mirror, the Love Note) take precedence over any vote; a book the player voted on burns
+     * {@link #APPROVED} green or {@link #REJECTED} red. All three tints are flame-dust only — the
+     * client-only ghost fire block stays vanilla orange, since no green/red/pink fire block exists
+     * (SOUL is the exception: soul fire is a real block). Everything else is the {@link #DEFAULT}
+     * orange burn.
      */
-    enum FlameVariant { DEFAULT, SOUL, APPROVED, REJECTED }
+    enum FlameVariant { DEFAULT, SOUL, LOVE, APPROVED, REJECTED }
+
+    /**
+     * Tint of the cursed strike — a dim violet rather than the welcome strike's random vibrant hue.
+     * Paired with the soul-escape sound in {@link #strike}, it tells the player before they pick the
+     * book up that this one is not a welcome.
+     */
+    private static final Vector3f CURSED_STRIKE_COLOR = new Vector3f(0.42f, 0.16f, 0.62f);
 
     /** Flame dust tints for voted burns (approved green / rejected red). */
     private static final Vector3f APPROVED_FLAME_COLOR = new Vector3f(0.30f, 0.78f, 0.30f);
     private static final Vector3f REJECTED_FLAME_COLOR = new Vector3f(0.86f, 0.22f, 0.18f);
+    /** Flame dust tint for a Love Note burn — warm pink, the counterpart to the curse's soul fire. */
+    private static final Vector3f LOVE_FLAME_COLOR = new Vector3f(0.96f, 0.45f, 0.68f);
 
     /** Tracking entry for one in-progress book burn. */
     private static final class BurnState {
@@ -177,6 +195,20 @@ public final class StartingBookEvents {
         /** Soul-only conditions (ghost soul-fire block, soul sounds) — vote tints don't change these. */
         boolean soul() {
             return variant == FlameVariant.SOUL;
+        }
+
+        /** A Love Note burn — pink dust and a chime rather than the curse's soul fire. */
+        boolean love() {
+            return variant == FlameVariant.LOVE;
+        }
+
+        /**
+         * Variants rendered as colored dust rather than a real flame particle. These are mixed 50:50
+         * with the vanilla orange flame so the fire still reads as FIRE — just tinted.
+         */
+        boolean tinted() {
+            return variant == FlameVariant.APPROVED || variant == FlameVariant.REJECTED
+                || variant == FlameVariant.LOVE;
         }
     }
 
@@ -312,9 +344,9 @@ public final class StartingBookEvents {
             // other tick so we don't flood the particle queue at long
             // distances when several books are burning simultaneously.
             if (itemEntity.tickCount % 2 == 0) {
-                if (state.variant == FlameVariant.APPROVED || state.variant == FlameVariant.REJECTED) {
-                    // Voted burns: colored dust mixed 50:50 with the vanilla orange flame, so the
-                    // fire still reads as FIRE — just tinted by the verdict.
+                if (state.tinted()) {
+                    // Tinted burns: colored dust mixed 50:50 with the vanilla orange flame, so the
+                    // fire still reads as FIRE — just tinted by the verdict (or by love).
                     itemLevel.sendParticles(flameParticle(state.variant),
                         itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
                         2, 0.12, 0.08, 0.12, 0.02);
@@ -326,7 +358,7 @@ public final class StartingBookEvents {
                         itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
                         3, 0.12, 0.08, 0.12, 0.02);
                 }
-                itemLevel.sendParticles(state.soul() ? ParticleTypes.SOUL : ParticleTypes.SMOKE,
+                itemLevel.sendParticles(companionParticle(state),
                     itemEntity.getX(), itemEntity.getY() + 0.3, itemEntity.getZ(),
                     1, 0.08, 0.05, 0.08, 0.01);
             }
@@ -361,11 +393,15 @@ public final class StartingBookEvents {
                 if (state.soul()) {
                     itemLevel.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
                         SoundEvents.SOUL_ESCAPE, SoundSource.BLOCKS, 0.6f, 1.2f);
+                } else if (state.love()) {
+                    itemLevel.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
+                        SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 0.6f, 1.2f);
                 } else {
                     itemLevel.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
                         SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.6f, 1.2f);
                 }
-                itemLevel.sendParticles(state.soul() ? ParticleTypes.SOUL : ParticleTypes.LARGE_SMOKE,
+                itemLevel.sendParticles(state.soul() ? ParticleTypes.SOUL
+                        : state.love() ? ParticleTypes.HEART : ParticleTypes.LARGE_SMOKE,
                     itemEntity.getX(), itemEntity.getY() + 0.2, itemEntity.getZ(),
                     8, 0.2, 0.1, 0.2, 0.02);
                 itemEntity.discard();
@@ -375,11 +411,14 @@ public final class StartingBookEvents {
     }
 
     /**
-     * The burn flame for {@code stack}: Death Note soul burn takes precedence, then the player's
-     * stamped 👍/👎 vote ({@link BookVoteTag}, green/red), else the default orange.
+     * The burn flame for {@code stack}: the note burns (Death Note soul / Love Note pink) take
+     * precedence, then the player's stamped 👍/👎 vote ({@link BookVoteTag}, green/red), else the
+     * default orange.
      */
     private static FlameVariant flameVariantOf(ItemStack stack) {
-        if (DeathNoteBookTag.isDeathNote(stack)) return FlameVariant.SOUL;
+        // A cursed story book burns like the Death Note it came from — same curse, same soul fire.
+        if (DeathNoteBookTag.isDeathNote(stack) || CursedStoryTag.isCursedBook(stack)) return FlameVariant.SOUL;
+        if (LoveNoteBookTag.isLoveNote(stack)) return FlameVariant.LOVE;
         OptionalInt vote = BookVoteTag.read(stack);
         if (vote.isPresent()) {
             return vote.getAsInt() == 1 ? FlameVariant.APPROVED : FlameVariant.REJECTED;
@@ -387,14 +426,24 @@ public final class StartingBookEvents {
         return FlameVariant.DEFAULT;
     }
 
-    /** The per-flavor ambient flame particle — vote tints ride colored dust (no green/red flame exists). */
+    /** The per-flavor ambient flame particle — tints ride colored dust (no green/red/pink flame exists). */
     private static ParticleOptions flameParticle(FlameVariant variant) {
         return switch (variant) {
             case SOUL -> ParticleTypes.SOUL_FIRE_FLAME;
+            case LOVE -> new DustParticleOptions(LOVE_FLAME_COLOR, 1.0F);
             case APPROVED -> new DustParticleOptions(APPROVED_FLAME_COLOR, 1.0F);
             case REJECTED -> new DustParticleOptions(REJECTED_FLAME_COLOR, 1.0F);
             case DEFAULT -> ParticleTypes.FLAME;
         };
+    }
+
+    /**
+     * The wisp trailing the flame: souls for a curse, hearts for a Love Note, plain smoke otherwise.
+     */
+    private static ParticleOptions companionParticle(BurnState state) {
+        if (state.soul()) return ParticleTypes.SOUL;
+        if (state.love()) return ParticleTypes.HEART;
+        return ParticleTypes.SMOKE;
     }
 
     /**
@@ -507,6 +556,19 @@ public final class StartingBookEvents {
             games.brennan.dungeontrain.event.AchievementEvents.notifyStoryProgress(player);
         });
 
+        // One story per curse: reading it retires it. Latched locally (per-installation, so it
+        // survives the fresh-seed world every death creates) AND on the relay, and dropped from the
+        // in-memory pool so the next strike moves on to the next curse. A book that is closed without
+        // being opened never reaches here — StartingBookClosedPacket only fires for a book screen the
+        // player actually had open — so an ignored story is offered again.
+        CursedStoryTag.read(stack).ifPresent(noteId -> {
+            CursedStoryPool.consume(player.getUUID(), noteId);
+            PlayerPlayedMarker.markCursedStoryRead(player.getUUID(), noteId);
+            DeathNoteReporter.markStoryRead(noteId);
+            LOGGER.info("[DungeonTrain] CursedBook: {} read the story of curse {} — retired",
+                player.getName().getString(), noteId);
+        });
+
         ItemEntity dropped = player.drop(stack, /*dropAround*/ false, /*includeThrowerName*/ false);
         if (dropped == null) {
             // Player.drop returned null (e.g. dropped in creative with
@@ -559,8 +621,9 @@ public final class StartingBookEvents {
         // burning book mid-burn and stash it. Matches the close-handler
         // behaviour from the earlier inline-registration code path.
         // A signed "Death Note" curse book burns with the SOUL variant (ghostly soul-fire + a soul
-        // sound) instead of the normal fire — see DeathNoteBookTag; otherwise a book the player
-        // voted on burns with a green (approved) or red (rejected) flame tint. Soul wins.
+        // sound) and a "Love Note" with the pink LOVE variant instead of the normal fire — see
+        // DeathNoteBookTag / LoveNoteBookTag; otherwise a book the player voted on burns with a
+        // green (approved) or red (rejected) flame tint. The note burns win.
         FlameVariant variant = flameVariantOf(stack);
         item.setPickUpDelay(BURN_DURATION_TICKS);
         BURN_ENTITIES.put(item.getUUID(), new BurnState(BURN_DURATION_TICKS, variant));
@@ -572,6 +635,9 @@ public final class StartingBookEvents {
         if (variant == FlameVariant.SOUL) {
             level.playSound(null, item.getX(), item.getY(), item.getZ(),
                 SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 0.6f, 1.5f);
+        } else if (variant == FlameVariant.LOVE) {
+            level.playSound(null, item.getX(), item.getY(), item.getZ(),
+                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.6f, 1.5f);
         } else {
             level.playSound(null, item.getX(), item.getY(), item.getZ(),
                 SoundEvents.FIRE_AMBIENT, SoundSource.PLAYERS, 0.6f, 1.5f);
@@ -664,6 +730,13 @@ public final class StartingBookEvents {
      * variant seen when {@code markSeen} is true — the real login/respawn
      * caller passes true, while {@link #forceFireForTest} passes false for a
      * non-consuming preview; every other context does a plain weighted roll.</p>
+     *
+     * <p>One thing outranks {@code context} on the real path: an unread story
+     * from a Death Note curse of this player's that has landed in someone
+     * else's world. Then the strike delivers the cursed book instead (violet,
+     * soul-sounded) — see {@link #rollCursedStory}. If no cursed book can be
+     * built the normal welcome rolls as usual, so a missing cursed pool costs
+     * the player nothing.</p>
      */
     private static void fireLightningAndDropBook(ServerPlayer player, StartingBookContext context, boolean markSeen) {
         if (StartingBookRegistry.count() == 0) {
@@ -674,6 +747,21 @@ public final class StartingBookEvents {
         long seed = player.serverLevel().getGameTime()
             ^ player.getUUID().getLeastSignificantBits()
             ^ (player.getUUID().getMostSignificantBits() << 1);
+
+        // A curse of theirs that has landed takes this strike. Real path only: the preview command
+        // (markSeen=false) must be able to fire any context without eating a story.
+        if (markSeen) {
+            Optional<ItemStack> cursed = rollCursedStory(player, seed);
+            if (cursed.isPresent()) {
+                Vec3 pos = strike(player, cursed.get(), CURSED_STRIKE_COLOR, /*cursed*/ true);
+                markWelcomed(player);
+                LOGGER.info("[DungeonTrain] StartingBook: CURSED strike for {} ({}) at ({}, {}, {})",
+                    player.getName().getString(), player.getUUID(),
+                    String.format("%.1f", pos.x), String.format("%.1f", pos.y), String.format("%.1f", pos.z));
+                return;
+            }
+        }
+
         // Respawn cycles through the RESPAWN pool until exhausted, then
         // widens to RESPAWN + DEFAULT — needs world state for the
         // seen-set. Other contexts just roll their (context, fallback)
@@ -705,30 +793,88 @@ public final class StartingBookEvents {
             return;
         }
         ItemStack book = bookOpt.get();
-        ServerLevel level = player.serverLevel();
+        Vector3f color = randomVibrantColor(player.serverLevel().random);
+        Vec3 landPos = strike(player, book, color, /*cursed*/ false);
 
-        Vec3 landPos = computeStrikePos(player);
-        Vector3f color = randomVibrantColor(level.random);
-
-        spawnColoredLightningColumn(level, landPos, color);
-        spawnVisualLightning(level, landPos);
-        spawnBookEntity(level, landPos, book);
-
-        // Both marks are idempotent — safe on respawn-path re-fires.
-        ServerLevel overworld = overworldOf(player);
-        if (overworld != null) {
-            NarrativeProgressData.get(overworld).markStartingBookReceived(player.getUUID());
-        }
-        PlayerPlayedMarker.markPlayed(player.getUUID());
-        // The strike just marked a starting-book variant as seen (inside
-        // rollForRespawn). Re-evaluate the all-starting-books milestone —
-        // vanilla advancement dedupe ensures one-grant semantics.
-        games.brennan.dungeontrain.event.AchievementEvents.notifyStoryProgress(player);
+        markWelcomed(player);
 
         LOGGER.info("[DungeonTrain] StartingBook: lightning strike for {} ({}) ctx={} at ({}, {}, {}) color=({}, {}, {})",
             player.getName().getString(), player.getUUID(), context,
             String.format("%.1f", landPos.x), String.format("%.1f", landPos.y), String.format("%.1f", landPos.z),
             String.format("%.2f", color.x), String.format("%.2f", color.y), String.format("%.2f", color.z));
+    }
+
+    /**
+     * Record that {@code player} has now been welcomed:
+     * {@link NarrativeProgressData#markStartingBookReceived} (per-world, suppresses the next
+     * plain-login give) and {@link PlayerPlayedMarker#markPlayed} (per-installation, switches the
+     * next world's context from DEFAULT to NEW_WORLD). Both are idempotent, so respawn-path re-fires
+     * are safe. Also re-evaluates the all-starting-books milestone, since the roll may just have
+     * marked a variant seen — vanilla advancement dedupe gives one-grant semantics.
+     */
+    private static void markWelcomed(ServerPlayer player) {
+        ServerLevel overworld = overworldOf(player);
+        if (overworld != null) {
+            NarrativeProgressData.get(overworld).markStartingBookReceived(player.getUUID());
+        }
+        PlayerPlayedMarker.markPlayed(player.getUUID());
+        AchievementEvents.notifyStoryProgress(player);
+    }
+
+    /**
+     * Fire a stand-alone cursed strike mid-life — used when a curse of the player's lands while they
+     * are already playing, delivered as they cross from one cart into the next (see
+     * {@code DeathNoteRefreshEvents}). No-op when there is no unread story or no cursed book is
+     * authored; deliberately does NOT touch the welcome marks, because this is not a welcome.
+     *
+     * @return true when a strike actually fired
+     */
+    public static boolean fireCursedStrike(ServerPlayer player) {
+        long seed = player.serverLevel().getGameTime()
+            ^ player.getUUID().getLeastSignificantBits()
+            ^ (player.getUUID().getMostSignificantBits() << 1);
+        Optional<ItemStack> cursed = rollCursedStory(player, seed);
+        if (cursed.isEmpty()) return false;
+        Vec3 pos = strike(player, cursed.get(), CURSED_STRIKE_COLOR, /*cursed*/ true);
+        LOGGER.info("[DungeonTrain] StartingBook: CURSED strike (between carts) for {} at ({}, {}, {})",
+            player.getName().getString(),
+            String.format("%.1f", pos.x), String.format("%.1f", pos.y), String.format("%.1f", pos.z));
+        return true;
+    }
+
+    /**
+     * Build the book for this player's oldest unread landed curse, or empty when they have none (the
+     * common case) or no cursed book is authored for its outcome. The picked variant is marked seen
+     * per-installation so a player who curses repeatedly gets fresh prose; the STORY itself is only
+     * retired when the book is actually read ({@link #handleStartingBookClosed}) — an unopened book
+     * burns and the same story is offered again at the next strike.
+     */
+    private static Optional<ItemStack> rollCursedStory(ServerPlayer player, long seed) {
+        UUID uuid = player.getUUID();
+        Optional<CursedStoryPool.Story> story = CursedStoryPool.peek(uuid);
+        if (story.isEmpty()) return Optional.empty();
+        return CursedBookFactory.roll(seed, story.get(),
+            PlayerPlayedMarker.seenDimensionVariants(uuid),
+            key -> PlayerPlayedMarker.markDimensionVariantSeen(uuid, key));
+    }
+
+    /**
+     * Spawn the strike itself — tinted particle column, visual-only bolt, and the book — at a point
+     * {@value #STRIKE_DISTANCE} blocks in front of {@code player}. A {@code cursed} strike adds the
+     * soul-escape sound the Death Note burn uses, so the moment reads as the curse coming home rather
+     * than as an ordinary welcome. Returns the strike position (for logging).
+     */
+    private static Vec3 strike(ServerPlayer player, ItemStack book, Vector3f color, boolean cursed) {
+        ServerLevel level = player.serverLevel();
+        Vec3 landPos = computeStrikePos(player);
+        spawnColoredLightningColumn(level, landPos, color);
+        spawnVisualLightning(level, landPos);
+        if (cursed) {
+            level.playSound(null, landPos.x, landPos.y, landPos.z,
+                SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 0.8f, 0.7f);
+        }
+        spawnBookEntity(level, landPos, book);
+        return landPos;
     }
 
     /**
@@ -817,9 +963,61 @@ public final class StartingBookEvents {
      * — testers want to fire as often as they like. For NETHER/END this is a
      * non-consuming preview: it shows the next unseen book but does NOT mark
      * the per-installation seen-set, so it won't disturb the real cycle.
+     *
+     * <p>The cursed contexts preview against a STUB story (see {@link #stubStory}) rather than the
+     * player's real pool, so a tester can read the prose of each outcome — tokens filled — without
+     * owning a landed curse and without spending a real one. The book carries no
+     * {@link CursedStoryTag}, so reading it retires nothing.</p>
      */
     public static void forceFireForTest(ServerPlayer player, StartingBookContext context) {
+        if (context.isNoteStory()) {
+            long seed = player.serverLevel().getGameTime() ^ player.getUUID().getLeastSignificantBits();
+            Optional<ItemStack> book = CursedBookFactory.roll(seed, stubStory(player, context),
+                PlayerPlayedMarker.seenDimensionVariants(player.getUUID()), key -> { });
+            if (book.isEmpty()) {
+                LOGGER.warn("[DungeonTrain] StartingBook: no cursed books authored for {} — nothing to preview",
+                    context);
+                return;
+            }
+            strike(player, book.get(), CURSED_STRIKE_COLOR, /*cursed*/ true);
+            return;
+        }
         fireLightningAndDropBook(player, context, /*markSeen*/ false);
+    }
+
+    /**
+     * A fake landed curse for the cursed-book preview: id 0 (so nothing is stamped or retired), the
+     * tester's own name as the target, their current carriage, and an ending matching the previewed
+     * folder. Three days of waiting is arbitrary — enough for {@code %DAYS%} to render as a real
+     * number rather than a suspicious zero.
+     */
+    private static CursedStoryPool.Story stubStory(ServerPlayer player, StartingBookContext context) {
+        Integer carriage = games.brennan.dungeontrain.train.TrainCarriageAppender
+            .lastCarriageIndex(player.getUUID());
+        String outcome = switch (context) {
+            case CURSED_FULFILLED, LOVED_TURNED -> DeathNoteReporter.OUTCOME_ECHO_KILLED_TARGET;
+            case CURSED_DEFIED, LOVED_BETRAYED -> DeathNoteReporter.OUTCOME_TARGET_KILLED_ECHO;
+            default -> "";
+        };
+        long now = System.currentTimeMillis();
+        long threeDays = 3L * 24L * 60L * 60L * 1000L;
+        // A representative journal so %STORY% / %GEAR% / %ENDING% render in the preview instead of
+        // silently collapsing — the shape a real encounter produces, with a plausible fight in it.
+        String end = switch (context) {
+            case CURSED_FULFILLED, LOVED_TURNED -> "YOU_SLAIN_BY_ECHO";
+            case CURSED_DEFIED, LOVED_BETRAYED -> "ECHO_SLAIN_BY_YOU";
+            default -> "LEFT_BEHIND";
+        };
+        // A loved preview shows the beats a Love Note actually produces — gifts, not blows — so the
+        // %STORY% token renders something representative rather than a fight the echo never picks.
+        List<String> beats = context.isLoved()
+            ? List.of("SPAWNED", "MET", "EYE_CONTACT", "RECEIVED_GIFT", "GAVE_GIFT")
+            : List.of("SPAWNED", "MET", "EYE_CONTACT", "PLAYER_STRUCK_ECHO", "ECHO_STRUCK_PLAYER");
+        CursedStoryPool.Encounter encounter = new CursedStoryPool.Encounter(
+            beats, List.of("a diamond axe", "an iron chestplate"), List.of(), end, 74L);
+        return new CursedStoryPool.Story(0, player.getGameProfile().getName(),
+            carriage == null ? 0 : carriage, now - threeDays, now, outcome, encounter,
+            context.isLoved() ? NoteKind.LOVE : NoteKind.DEATH);
     }
 
     /**

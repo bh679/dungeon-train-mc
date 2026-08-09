@@ -4,6 +4,9 @@ import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.discord.DeathNoteReporter;
+import games.brennan.dungeontrain.event.DeathNoteGate;
+import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.playermob.compat.ReincarnationRecord;
@@ -125,6 +128,37 @@ public final class RemoteEchoEncounters {
         ACTIVE.put(echoId, enc);
         LOGGER.info("[DungeonTrain] Remote echo of '{}' spawned (id={}) — encounter journal opened for {}.",
                 record.name(), echoId, player.getGameProfile().getName());
+    }
+
+    /**
+     * Open a journal for a freshly-spawned <b>signed-note</b> echo, of either {@link NoteKind}. Same
+     * journal, same beats, same Discord story as any remote echo — but the audience is not "whoever
+     * is nearest": it is the player the note named, and the encounter is stamped with the relay note
+     * id so its ending can be told back to whoever signed it (their note's welcome book).
+     *
+     * <p>Unlike {@link #onRemoteEchoSpawned} this does NOT bail when the Discord feed is switched off
+     * — the journal is also the raw material for the author's story, which is not a Discord feature.
+     * {@link #post} still honours that config, so the feed stays off when it is off.</p>
+     */
+    public static void onDeathNoteEchoSpawned(PlayerMobEntity mob, UUID authorId, String authorName,
+                                              int deathCarriage, ServerPlayer target, int noteId,
+                                              NoteKind kind) {
+        if (!(mob.level() instanceof ServerLevel level)) return;
+        if (target == null) return;
+        if (ACTIVE.size() >= MAX_ACTIVE) return;   // outcome still reported by DeathNoteEvents' fallback
+        EchoItemHighlights.Highlights highlights = EchoItemHighlights.snapshot(mob, HIGHLIGHT_ITEM_COUNT);
+        UUID echoId = mob.getUUID();
+        EchoEncounter enc = new EchoEncounter(echoId, level.dimension(), authorId, authorName,
+                target.getUUID(), deathCarriage, level.getGameTime(), highlights);
+        enc.deathNoteId = noteId;
+        enc.log(EchoEvent.SPAWNED);
+        enc.lastOnDeck = CarriageDeck.isOnCarriageDeck(Trains.allCarriages(level), mob);
+        ACTIVE.put(echoId, enc);
+        // Name the kind: a Love Note journal logged as "Death Note echo" reads as a routing bug to
+        // anyone reading the log, which is exactly the wrong signal when the routing is the new part.
+        LOGGER.info("[DungeonTrain] {} echo of '{}' (note {}) spawned — encounter journal opened for {}.",
+                (kind == null ? NoteKind.DEATH : kind).trophyTitle(), authorName, noteId,
+                target.getGameProfile().getName());
     }
 
     // ---------------- interaction signals ----------------
@@ -400,6 +434,9 @@ public final class RemoteEchoEncounters {
      * encounter that never requested a photo (never saw the echo) posts immediately, unchanged.
      */
     private static void finishEncounter(ServerLevel level, EchoEncounter enc, EndReason reason) {
+        // Report the curse's story before any photo hold — the author's book is text, and holding it
+        // for a screenshot that may never arrive would only delay the relay write.
+        reportCurseEncounter(level, enc, reason);
         boolean awaitingPhoto = enc.photo == null && enc.lastPhotoRequestTick != Long.MIN_VALUE;
         if (awaitingPhoto && PENDING_POST.size() < MAX_PENDING_POST) {
             PENDING_POST.put(enc.echoId,
@@ -407,6 +444,40 @@ public final class RemoteEchoEncounters {
             return;
         }
         postSafely(level, enc, reason);
+    }
+
+    /**
+     * When {@code enc} is a Death Note echo's journal, ship it to the relay against that curse so the
+     * AUTHOR can be told what their curse did. Sends the ending too when the encounter produced one —
+     * an echo left behind, or a target who died to something else, ships the journal with no verdict
+     * and their story book says as much.
+     *
+     * <p>Gated on the target's relay consent, exactly like every other Death Note call, and skipped
+     * entirely for ordinary remote echoes. Best-effort and no-throw: a failed report costs the author
+     * their story, not the encounter.</p>
+     */
+    private static void reportCurseEncounter(ServerLevel level, EchoEncounter enc, EndReason reason) {
+        if (enc.deathNoteId <= 0) return;
+        try {
+            ServerPlayer target = level.getServer().getPlayerList().getPlayer(enc.primaryPlayerId);
+            if (target == null || !DeathNoteGate.canSync(target)) return;
+            long seconds = Math.max(0L, (level.getGameTime() - enc.spawnTick) / 20L);
+            DeathNoteReporter.reportEncounter(enc.deathNoteId,
+                    CursedEncounterPayload.outcomeFor(reason),
+                    CursedEncounterPayload.build(beatNames(enc), enc.bestItems, enc.acquiredItems,
+                            reason, seconds));
+            LOGGER.info("[DungeonTrain] Death Note echo (note {}) encounter ended ({}) — story reported for the author.",
+                    enc.deathNoteId, reason);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Death Note encounter report failed: {}", t.toString());
+        }
+    }
+
+    /** The journal's beats as plain names, in the order they first happened. */
+    private static List<String> beatNames(EchoEncounter enc) {
+        List<String> names = new ArrayList<>(enc.beats().size());
+        for (EchoEvent beat : enc.beats()) names.add(beat.name());
+        return names;
     }
 
     /** Build the story and post it (best-effort) to Discord; never throws into the caller. */
