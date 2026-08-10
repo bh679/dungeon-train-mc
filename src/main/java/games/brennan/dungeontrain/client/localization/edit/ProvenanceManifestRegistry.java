@@ -101,6 +101,27 @@ public final class ProvenanceManifestRegistry {
         return flagged == null || flagged.contains(key); // null = the "*" whole-body marker
     }
 
+    /**
+     * Whether {@code key} is AI-unreviewed in ANY namespace of {@code locale}.
+     *
+     * <p>For callers holding a bare lang key with no namespace to go with it — the override layers,
+     * which are keyed the way Minecraft's flattened lang map is (see {@link TranslationEdits}).
+     * Cheap: a handful of set lookups, no catalog build, which is what lets the language list ask
+     * this per row.</p>
+     */
+    public static synchronized boolean isAiUnreviewedLangAnyNamespace(String locale, String key) {
+        Map<String, Set<String>> byNamespace = LANG.get(normalize(locale));
+        if (byNamespace == null) {
+            return false;
+        }
+        for (Set<String> flagged : byNamespace.values()) {
+            if (flagged == null || flagged.contains(key)) { // null = the "*" whole-body marker
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Whether the book at {@code bookPath} (e.g. {@code random_books/deathnote}) is AI-unreviewed. */
     public static synchronized boolean isAiUnreviewedBook(String locale, String bookPath) {
         String code = normalize(locale);

@@ -77,14 +77,35 @@ public final class TranslationOverrides {
     }
 
     /**
-     * Relay-approved overrides for {@code locale} — the live layer, or read from disk if detached.
+     * Every relay-approved override for {@code locale}, whatever build it was written for — the
+     * editor's "a human has been here" signal.
      *
-     * <p>This is the editor's "a human has been here" signal: the provenance manifest baked into the
-     * jar only knows what was true at build time, while an approval means an operator has since
-     * released a player's fix for that exact string. Detached (dev-target) reads come off the cached
-     * APPROVED layer, so the answer survives an offline launch.</p>
+     * <p>The jar's provenance manifest only knows what was true when the build was cut; an approval
+     * means an operator has since released a player's fix for that exact string. Reads the
+     * APPROVED_ALL layer rather than the applied one on purpose: the editor always runs off the
+     * latest, so a translation written for a newer build still counts as reviewed and still leaves
+     * the queue, even on a client not entitled to display it. Falls back to the applied layer for a
+     * cache written before that layer existed.</p>
      */
     public static TranslationEdits approvedFor(String locale) {
+        TranslationEdits all =
+            TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED_ALL, locale);
+        if (!all.isEmpty()) {
+            return all;
+        }
+        return isLive(locale)
+            ? approved()
+            : TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED, locale);
+    }
+
+    /**
+     * The approved overrides this build actually APPLIES for {@code locale} — the version-gated
+     * layer, as opposed to {@link #approvedFor}'s everything-the-editor-should-know set.
+     *
+     * <p>What the credits count against: the AI ring describes the text the player is reading, so a
+     * translation withheld from this build has not made their reading any less machine-generated.</p>
+     */
+    public static TranslationEdits appliedApprovedFor(String locale) {
         return isLive(locale)
             ? approved()
             : TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED, locale);
@@ -209,13 +230,26 @@ public final class TranslationOverrides {
      */
     public static void reload(String newLocale) {
         String target = newLocale == null ? "" : newLocale;
+        boolean changed;
         synchronized (TranslationOverrides.class) {
+            changed = !target.equals(locale);
             locale = target;
             local = TranslationOverrideStore.load(TranslationOverrideStore.Layer.LOCAL, target);
             approved = TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED, target);
             merged = approved.mergedWith(local);
         }
         install();
+        // Re-check the relay for this language. This method is the single funnel every language
+        // change and every startup already passes through (LanguageManagerReapplyMixin), so the
+        // fetch hangs off it rather than off a second watcher that could disagree about when a
+        // language changed. A real CHANGE always re-fetches — the player may have had work approved
+        // since they were last in this language; a plain resource reload (F3+T, a pack toggle) is
+        // deduped by the once-per-locale guard so it costs nothing.
+        if (changed) {
+            ApprovedTranslationsFetcher.fetchAsync(target);
+        } else {
+            ApprovedTranslationsFetcher.fetchOnceFor(target);
+        }
     }
 
     /** Re-read both layers for whatever locale the client is currently set to. */

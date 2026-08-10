@@ -5,6 +5,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.client.localization.RelayReviewedCount;
 import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
 
@@ -13,7 +15,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -73,8 +77,17 @@ public final class ApprovedTranslationsFetcher {
         fetchAsync(locale);
     }
 
-    /** Force a fetch for {@code locale}, ignoring the once-per-session guard. No-throw. */
+    /**
+     * Force a fetch for {@code locale}, ignoring the once-per-session guard — the language just
+     * changed, or the editor just opened, and either is a moment worth paying a request for.
+     * No-throw. Locales with nothing to translate (English, or one the mod does not ship) are
+     * skipped here so no caller has to remember to check.
+     */
     public static void fetchAsync(String locale) {
+        if (!TranslationScreen.isEditable(locale)) {
+            return;
+        }
+        FETCHED.add(locale); // a later fetchOnceFor for the same locale is then a no-op
         try {
             String url = DungeonTrain.relayBaseUrl() + "/translations/pool?locale=" + locale;
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
@@ -96,9 +109,16 @@ public final class ApprovedTranslationsFetcher {
                     locale, err != null ? err.toString() : "HTTP " + (resp == null ? "?" : resp.statusCode()));
                 return;
             }
-            TranslationEdits approved = parse(locale, resp.body());
-            if (approved == null) {
+            ApprovedPool pool = parse(locale, resp.body(), VersionInfo.VERSION);
+            if (pool == null) {
                 return;
+            }
+            TranslationEdits approved = pool.applicable();
+            int withheld = pool.all().size() - approved.size();
+            if (withheld > 0) {
+                LOGGER.debug("[DungeonTrain] Translations: {} approved override(s) for {} were "
+                    + "written for a newer build than {} and are not applied.",
+                    withheld, locale, VersionInfo.VERSION);
             }
             // Installing touches the language, which is render-thread state.
             Minecraft mc = Minecraft.getInstance();
@@ -106,6 +126,11 @@ public final class ApprovedTranslationsFetcher {
                 return;
             }
             mc.execute(() -> {
+                // The editor's set: every approval, whatever build it was written for. Written
+                // before the applied layer so a translator never sees a string as "needs a human"
+                // that the overlay has just been handed.
+                TranslationOverrideStore.save(TranslationOverrideStore.Layer.APPROVED_ALL, pool.all());
+                RelayTranslationCredits.put(locale, pool.contributors());
                 // The locale can have changed while the request was in flight; applying a stale
                 // locale's overrides would put German text on a French client.
                 boolean stored;
@@ -133,6 +158,8 @@ public final class ApprovedTranslationsFetcher {
                 if (!approved.isEmpty()) {
                     TranslationCatalog.invalidate();
                 }
+                // The ring and the full-vs-faded logo are derived from these layers — recount.
+                RelayReviewedCount.invalidate();
                 // The editor may be open on this very locale — drop the newly-approved rows out of
                 // its queue now rather than making the translator reopen the screen to find out.
                 if (mc.screen instanceof TranslationScreen editor) {
@@ -144,8 +171,15 @@ public final class ApprovedTranslationsFetcher {
         }
     }
 
-    /** Parse {@code {ok, locale, overrides:{lang:{},books:{}}}}, or null when malformed. */
-    static TranslationEdits parse(String locale, String body) {
+    /**
+     * Parse {@code {ok, locale, overrides:{lang,books}, versions:{lang,books}, contributors[]}},
+     * or null when malformed.
+     *
+     * <p>{@code versions} and {@code contributors} are optional: a relay that predates them yields
+     * an unversioned pool, which {@link PoolVersionGate} lets through wholesale — the behaviour
+     * before the gate existed.</p>
+     */
+    static ApprovedPool parse(String locale, String body, String clientVersion) {
         JsonElement root = JsonParser.parseString(body);
         if (!root.isJsonObject()) {
             return null;
@@ -156,7 +190,63 @@ public final class ApprovedTranslationsFetcher {
             return null;
         }
         JsonObject overrides = obj.getAsJsonObject("overrides");
-        return new TranslationEdits(locale, readMap(overrides, "lang"), readMap(overrides, "books"));
+        TranslationEdits all = new TranslationEdits(locale,
+            readMap(overrides, "lang"), readMap(overrides, "books"));
+        JsonObject versions = obj.has("versions") && obj.get("versions").isJsonObject()
+            ? obj.getAsJsonObject("versions") : null;
+        return ApprovedPool.gate(all,
+            versions == null ? Map.of() : readPlainMap(versions, "lang"),
+            versions == null ? Map.of() : readPlainMap(versions, "books"),
+            clientVersion,
+            readNames(obj, "contributors"));
+    }
+
+    /**
+     * A plain {@code {key: string}} object — the version maps. Deliberately NOT {@link #readMap}:
+     * that normalises translation TEXT (rewriting {@code %d}, capping length), which is the wrong
+     * treatment for a version and would quietly hide a malformed one instead of leaving it to
+     * {@link PoolVersionGate} to judge.
+     */
+    private static Map<String, String> readPlainMap(JsonObject obj, String field) {
+        Map<String, String> out = new LinkedHashMap<>();
+        if (!obj.has(field) || !obj.get(field).isJsonObject()) {
+            return out;
+        }
+        for (Map.Entry<String, JsonElement> entry : obj.getAsJsonObject(field).entrySet()) {
+            if (out.size() >= TranslationEdits.MAX_ENTRIES) {
+                break;
+            }
+            JsonElement value = entry.getValue();
+            if (entry.getKey().isEmpty() || !value.isJsonPrimitive()
+                || !value.getAsJsonPrimitive().isString()) {
+                continue;
+            }
+            out.put(entry.getKey(), value.getAsString());
+        }
+        return out;
+    }
+
+    /** A JSON array of names, blanks and non-strings skipped. Bounded like the override bodies. */
+    private static List<String> readNames(JsonObject obj, String field) {
+        List<String> out = new ArrayList<>();
+        if (!obj.has(field) || !obj.get(field).isJsonArray()) {
+            return out;
+        }
+        for (JsonElement el : obj.getAsJsonArray(field)) {
+            if (out.size() >= TranslationEdits.MAX_ENTRIES) {
+                break;
+            }
+            if (!el.isJsonPrimitive() || !el.getAsJsonPrimitive().isString()) {
+                continue;
+            }
+            String name = el.getAsString().trim();
+            // A blank name is a translator who declined credit; the relay drops those already, and
+            // this is the second lock on the same door.
+            if (!name.isEmpty() && !out.contains(name)) {
+                out.add(name);
+            }
+        }
+        return out;
     }
 
     /**

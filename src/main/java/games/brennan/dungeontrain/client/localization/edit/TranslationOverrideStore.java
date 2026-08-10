@@ -45,8 +45,18 @@ public final class TranslationOverrideStore {
     public enum Layer {
         /** What this player edited in the in-game editor. */
         LOCAL("local"),
-        /** What the relay has approved for this locale, cached from the last successful fetch. */
+        /**
+         * What the relay has approved for this locale AND this build may apply, cached from the
+         * last successful fetch. The version-gated subset of {@link #APPROVED_ALL} — see
+         * {@link PoolVersionGate}. This is the layer that installs over the game.
+         */
         APPROVED("approved"),
+        /**
+         * Every approved translation for the locale, whatever build it was written in. Never
+         * installed; it exists so the EDITOR can tell which strings a human has already been
+         * through, which is true regardless of whether this particular client may apply them.
+         */
+        APPROVED_ALL("approved-all"),
         /**
          * A snapshot of {@link #LOCAL} as it was when the player last pressed Submit. Not an
          * override layer — it is never applied — but it shares the shape exactly, so comparing it
