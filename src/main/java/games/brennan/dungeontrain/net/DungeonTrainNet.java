@@ -136,6 +136,7 @@ public final class DungeonTrainNet {
         registrar.playToServer(AbandonRunPacket.TYPE, AbandonRunPacket.STREAM_CODEC, AbandonRunPacket::handle);
         registrar.playToServer(BuilderSetupPacket.TYPE, BuilderSetupPacket.STREAM_CODEC, BuilderSetupPacket::handle);
         registrar.playToClient(BuilderBoundsPacket.TYPE, BuilderBoundsPacket.STREAM_CODEC, BuilderBoundsPacket::handle);
+        registrar.playToClient(BuilderCinematicPacket.TYPE, BuilderCinematicPacket.STREAM_CODEC, BuilderCinematicPacket::handle);
 
         // Remote-echo encounter screenshot: server → player at first eye-contact to frame + capture the
         // echo; client → server with the resulting PNG, buffered on the encounter journal for its story embed.
