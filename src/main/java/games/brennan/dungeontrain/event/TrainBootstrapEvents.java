@@ -186,7 +186,12 @@ public final class TrainBootstrapEvents {
         if (!overworld.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
             return;
         }
-        BlockPos spawnPos = BuilderWorldLayout.spawnPos(DungeonTrainWorldData.get(overworld).dims());
+        // On a reopened world the mode is persisted, so the standoff already frames the train
+        // it was stamped with; on a fresh one this is the near fallback and BuilderSetupPacket
+        // re-anchors once the client reports which tile was clicked.
+        BlockPos spawnPos = BuilderWorldLayout.spawnPos(
+                DungeonTrainWorldData.get(overworld).dims(),
+                BuilderCinematicService.carriagesIn(overworld));
         // Face the template rather than vanilla's yaw 0: the spawn is on the +Z side of the
         // track, so yaw 0 (straight down +Z) looks out over empty platform with the build
         // behind you. On a world that hasn't been stamped yet this aims at the track itself,

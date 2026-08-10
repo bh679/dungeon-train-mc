@@ -125,7 +125,7 @@ public final class BuilderCinematic {
      * <em>away</em> from the train parked behind them.</p>
      */
     public static float[] spawnFacing(int carriages, CarriageDims dims) {
-        BlockPos spawn = BuilderWorldLayout.spawnPos(dims);
+        BlockPos spawn = BuilderWorldLayout.spawnPos(dims, carriages);
         Vec3 eye = eyeOf(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
         return faceYawPitch(eye, focus(carriages, dims));
     }

@@ -147,8 +147,14 @@ public final class BuilderCinematicService {
 
     /**
      * How many carriages this world parked. Read back from the persisted mode rather than
-     * recomputed, so a reopened world frames the same template it was stamped with.
+     * recomputed, so a reopened world frames the same template it was stamped with. Zero before
+     * the world has been stamped, which is also the right answer for the two carriage-less
+     * modes.
      */
+    public static int carriagesIn(ServerLevel level) {
+        return carriageCount(DungeonTrainWorldData.get(level));
+    }
+
     private static int carriageCount(DungeonTrainWorldData data) {
         return BuilderMode.fromId(data.builderMode())
                 .map(BuilderMode::carriageCount)

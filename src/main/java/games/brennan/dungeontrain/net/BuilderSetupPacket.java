@@ -75,7 +75,9 @@ public record BuilderSetupPacket(String modeId) implements CustomPacketPayload {
             // before this packet arrived and therefore before there was anything to stand on —
             // so on a fresh builder world the player is currently in mid-air over the void.
             CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-            BlockPos spawn = BuilderWorldLayout.spawnPos(dims);
+            // Far enough back that the whole run fits on screen — a three-carriage train seen
+            // from the old fixed margin was a wall of hull.
+            BlockPos spawn = BuilderWorldLayout.spawnPos(dims, mode.get().carriageCount());
             // Facing the template, not vanilla's yaw 0 — the spawn sits on the +Z side of the
             // train, so yaw 0 (straight down +Z) would put the build squarely behind them.
             float[] facing = BuilderCinematicService.facingFrom(

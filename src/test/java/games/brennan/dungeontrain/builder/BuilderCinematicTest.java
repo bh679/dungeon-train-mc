@@ -81,7 +81,7 @@ final class BuilderCinematicTest {
         double rad = Math.toRadians(yaw);
         double hx = -Math.sin(rad);
         double hz = Math.cos(rad);
-        Vec3 eye = playerEye();
+        Vec3 eye = playerEye(carriages);
         Vec3 focus = BuilderCinematic.focus(carriages, DIMS);
         double dx = focus.x - eye.x;
         double dz = focus.z - eye.z;
@@ -105,6 +105,61 @@ final class BuilderCinematicTest {
         assertEquals(180.0f, Math.abs(BuilderCinematic.faceYawPitch(origin, new Vec3(0, 0, -10))[0]), 1.0e-3f);
         assertEquals(-90.0f, BuilderCinematic.faceYawPitch(origin, new Vec3(10, 0, 0))[0], 1.0e-3f);
         assertEquals(90.0f, BuilderCinematic.faceYawPitch(origin, new Vec3(-10, 0, 0))[0], 1.0e-3f);
+    }
+
+    @Test
+    @DisplayName("The spawn stands back far enough that the whole train fits on screen")
+    void spawnFramesTheWholeTemplate() {
+        // Comfortably inside a default client's horizontal half-FOV (~51° at FOV 70 on 16:9),
+        // with room for a narrower FOV setting or a 4:3 window.
+        assertTrue(halfExtentDegrees(3) < 45.0,
+                "three carriages subtend " + halfExtentDegrees(3) + "° from the spawn");
+        assertTrue(halfExtentDegrees(1) < 45.0,
+                "one carriage subtends " + halfExtentDegrees(1) + "°");
+    }
+
+    @Test
+    @DisplayName("A longer train pushes the spawn further back; a short one keeps a minimum standoff")
+    void standoffScalesWithTrainLength() {
+        double three = BuilderWorldLayout.spawnPos(DIMS, 3).getZ();
+        double one = BuilderWorldLayout.spawnPos(DIMS, 1).getZ();
+        double none = BuilderWorldLayout.spawnPos(DIMS, 0).getZ();
+
+        assertTrue(three > one, "3 carriages stand further back than 1: " + three + " vs " + one);
+        assertTrue(one >= none, "1 carriage is never closer than the carriage-less floor");
+        assertTrue(none > DIMS.width(), "still clear of the corridor");
+        assertTrue(BuilderWorldLayout.inPlatform(0, (int) three), "and still on the platform");
+    }
+
+    /**
+     * Widest horizontal angle, in degrees, between "looking at the template" and any corner of
+     * its footprint — i.e. how much of the screen the train demands.
+     */
+    private static double halfExtentDegrees(int carriages) {
+        List<BoundingBox> boxes = BuilderBounds.buildVolumes(carriages, DIMS);
+        BoundingBox first = boxes.get(0);
+        BoundingBox last = boxes.get(boxes.size() - 1);
+        Vec3 eye = playerEye(carriages);
+        Vec3 focus = BuilderCinematic.focus(carriages, DIMS);
+
+        double worst = 0.0;
+        for (double x : new double[] { first.minX(), last.maxX() + 1 }) {
+            for (double z : new double[] { first.minZ(), last.maxZ() + 1 }) {
+                worst = Math.max(worst, angleBetween(eye, focus, new Vec3(x, focus.y, z)));
+            }
+        }
+        return worst;
+    }
+
+    /** Horizontal angle at {@code eye} between the directions to {@code a} and {@code b}. */
+    private static double angleBetween(Vec3 eye, Vec3 a, Vec3 b) {
+        double ax = a.x - eye.x;
+        double az = a.z - eye.z;
+        double bx = b.x - eye.x;
+        double bz = b.z - eye.z;
+        double cos = (ax * bx + az * bz)
+                / (Math.sqrt(ax * ax + az * az) * Math.sqrt(bx * bx + bz * bz));
+        return Math.toDegrees(Math.acos(Math.max(-1.0, Math.min(1.0, cos))));
     }
 
     @Test
@@ -152,7 +207,11 @@ final class BuilderCinematicTest {
 
     /** Where a player stood at the builder world's spawn actually has their eyes. */
     private static Vec3 playerEye() {
-        BlockPos spawn = BuilderWorldLayout.spawnPos(DIMS);
+        return playerEye(3);
+    }
+
+    private static Vec3 playerEye(int carriages) {
+        BlockPos spawn = BuilderWorldLayout.spawnPos(DIMS, carriages);
         return BuilderCinematic.eyeOf(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
     }
 }
