@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsPlacement;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
+import games.brennan.dungeontrain.editor.PortalRoomContentsAllowStore;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
@@ -1083,7 +1084,7 @@ public final class PortalCarriageBuilder {
         // Contents first, the room's own authored cells second. Where the two overlap the author's
         // explicit entry is the one that should stand — and applyRoomVariants evicts a live block
         // entity before it writes, so a chest this pass just filled cannot spill when it does.
-        applyRoomContents(level, roomOrigin, size, writeMask, variantIndex, pairKey, contents);
+        applyRoomContents(level, roomOrigin, size, roomName, writeMask, variantIndex, pairKey, contents);
         applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex, pairKey, tile,
             liveMobCount);
     }
@@ -1118,7 +1119,8 @@ public final class PortalCarriageBuilder {
      * gate against. Contents with a min/max Diff-Level or phase gate are drawn here as if ungated.</p>
      */
     private static void applyRoomContents(ServerLevel level, BlockPos roomOrigin, Vec3i size,
-                                          PortalCorridorMask writeMask, int variantIndex, int pairKey,
+                                          String roomName, PortalCorridorMask writeMask,
+                                          int variantIndex, int pairKey,
                                           PortalRoomContents contents) {
         PortalRoomContents setting = contents == null ? PortalRoomContents.DEFAULT : contents;
         if (!setting.furnishes()) return;
@@ -1127,10 +1129,22 @@ public final class PortalCarriageBuilder {
         if (interior.getX() <= 0 || interior.getY() <= 0 || interior.getZ() <= 0) return;
         BlockPos interiorOrigin = roomOrigin.offset(1, 1, 1);
 
+        // What this room is allowed to draw. Absent sidecar = everything, which is what a furnished
+        // room did before authors could steer it.
+        CarriageContentsAllowList allow = PortalRoomContentsAllowStore.getOrEmpty(roomName);
+        // An all-excluded list means an empty room, not the built-in default. CarriageContentsRegistry
+        // .pick would fall back to DEFAULT here — right for a carriage, which must never spawn
+        // hollow; wrong for a room whose author turned every template off on purpose.
+        if (!CarriageContentsRegistry.anyAllowed(allow)) {
+            LOGGER.info("[DungeonTrain] Portal room '{}' excludes every contents template — "
+                + "left unfurnished.", roomName);
+            return;
+        }
+
         long worldSeed = level.getSeed();
         long rollSeed = worldSeed ^ (variantIndex * CONTENTS_GOLDEN_GAMMA);
         CarriageContents picked = CarriageContentsRegistry.pick(
-            rollSeed, pairKey, CarriageContentsAllowList.EMPTY, /*gateCtx*/ null);
+            rollSeed, pairKey, allow, /*gateCtx*/ null);
 
         Optional<StructureTemplate> template =
             games.brennan.dungeontrain.editor.CarriageContentsStore.getFitting(level, picked, interior);

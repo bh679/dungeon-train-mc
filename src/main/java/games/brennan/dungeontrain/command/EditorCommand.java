@@ -553,6 +553,19 @@ public final class EditorCommand {
                         .then(Commands.literal("off").executes(ctx -> runCarriageContentsAllow(ctx.getSource(),
                             StringArgumentType.getString(ctx, "variant"),
                             StringArgumentType.getString(ctx, "contents"), false))))))
+            // The same allow-list, for a portal room's furnishing pool. Reached from the plot
+            // panel's Contents button, which only shows while the room's Contents setting is on.
+            .then(Commands.literal("portal-room-contents")
+                .then(Commands.argument("room", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                    .then(Commands.argument("contents", StringArgumentType.word())
+                        .suggests(TOP_LEVEL_CONTENTS_SUGGESTIONS)
+                        .then(Commands.literal("on").executes(ctx -> runPortalRoomContentsAllow(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "room"),
+                            StringArgumentType.getString(ctx, "contents"), true)))
+                        .then(Commands.literal("off").executes(ctx -> runPortalRoomContentsAllow(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "room"),
+                            StringArgumentType.getString(ctx, "contents"), false))))))
             .then(Commands.literal("promote")
                 .then(Commands.literal("all").executes(ctx -> runPromoteAll(ctx.getSource())))
                 .then(Commands.argument("variant", StringArgumentType.word())
@@ -3631,6 +3644,63 @@ public final class EditorCommand {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] editor carriage-contents save failed for {}/{}",
                 variant.id(), contents.id(), e);
+            source.sendFailure(Component.literal(
+                "Failed to update contents allow-list: " + e.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    /**
+     * {@code /dt editor portal-room-contents <room> <contents> on|off} — the portal-room twin of
+     * {@link #runCarriageContentsAllow}, writing the room's own sidecar.
+     *
+     * <p>Deliberately does <b>not</b> check the room's Contents setting. The button that reaches
+     * this is only shown while the setting is on, but an author flipping Contents Off and back on
+     * should find the toggles they set still there — the allow-list and the on/off switch are
+     * separate facts about the room, and the command is also the scripting surface.</p>
+     */
+    private static int runPortalRoomContentsAllow(CommandSourceStack source, String rawRoom,
+                                                  String rawContents, boolean on) {
+        String room = rawRoom == null ? "" : rawRoom.trim();
+        if (room.isEmpty()) {
+            source.sendFailure(Component.literal("Name a portal room."));
+            return 0;
+        }
+        if (!games.brennan.dungeontrain.track.variant.TrackVariantRegistry
+                .namesFor(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM)
+                .contains(room)) {
+            source.sendFailure(Component.literal("Unknown portal room '" + room + "'."));
+            return 0;
+        }
+        CarriageContents contents = parseContents(source, rawContents);
+        if (contents == null) return 0;
+        // Same parent-level rule as the carriage path: a sub-variant is reached through its
+        // parent's resolution and is never consulted against the allow-list directly.
+        if (CarriageContentsGroupStore.allChildIds().contains(contents.id())) {
+            java.util.Optional<String> parentId = CarriageContentsGroupStore.findParentOf(contents.id());
+            source.sendFailure(Component.literal(
+                "'" + contents.id() + "' is a sub-variant"
+                    + parentId.map(p -> " of '" + p + "'").orElse("")
+                    + " — toggle the parent in the allow-list instead. Sub-variants follow their parent's allowance."
+            ).withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        try {
+            CarriageContentsAllowList current =
+                games.brennan.dungeontrain.editor.PortalRoomContentsAllowStore.getOrEmpty(room);
+            CarriageContentsAllowList updated = on
+                ? current.withAllowed(contents.id())
+                : current.withExcluded(contents.id());
+            games.brennan.dungeontrain.editor.PortalRoomContentsAllowStore.save(room, updated);
+            String summary = "Portal room '" + room + "' content '" + contents.id() + "': "
+                + (on ? "ALLOWED" : "EXCLUDED");
+            source.sendSuccess(() -> Component.literal(summary)
+                .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+            return 1;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] editor portal-room-contents save failed for {}/{}",
+                room, contents.id(), e);
             source.sendFailure(Component.literal(
                 "Failed to update contents allow-list: " + e.getMessage()
             ).withStyle(ChatFormatting.RED));

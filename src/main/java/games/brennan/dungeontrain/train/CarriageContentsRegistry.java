@@ -209,6 +209,32 @@ public final class CarriageContentsRegistry {
         return resolveGroup(ctx.picked, ctx.parentRng, safeAllow, gateCtx);
     }
 
+    /**
+     * Whether {@code allow} leaves any top-level content eligible at all — i.e. whether
+     * {@link #pick} would draw a real template rather than hitting its
+     * never-leave-a-carriage-unfurnished fallback to {@link ContentsType#DEFAULT}.
+     *
+     * <p>Exists because that fallback is right for a carriage and wrong for a portal room. A
+     * carriage must always spawn with a coherent interior, so an allow-list that excludes
+     * everything still yields the built-in default. A room whose author switched every template off
+     * means an empty room, and dropping the default into it would be the opposite of the
+     * instruction — so {@code PortalCarriageBuilder.applyRoomContents} asks this first and places
+     * nothing when the answer is no.</p>
+     *
+     * <p>Applies the same two rules {@link #buildPickContext} does — group children never enter the
+     * top-level pool, and the allow-list filters what remains — so the two cannot disagree about
+     * what "empty" means.</p>
+     */
+    public static synchronized boolean anyAllowed(CarriageContentsAllowList allow) {
+        CarriageContentsAllowList safeAllow = (allow == null) ? CarriageContentsAllowList.EMPTY : allow;
+        Set<String> childIds = CarriageContentsGroupStore.allChildIds();
+        for (CarriageContents c : allContents()) {
+            if (childIds.contains(c.id())) continue;
+            if (safeAllow.isAllowed(c.id())) return true;
+        }
+        return false;
+    }
+
     /** Synchronised pool snapshot + top-level weighted pick. */
     private static synchronized PickContext buildPickContext(
         long worldSeed, int carriageIndex, CarriageContentsAllowList allow, GateContext gateCtx

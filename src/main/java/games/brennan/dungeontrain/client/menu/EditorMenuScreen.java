@@ -150,7 +150,18 @@ public final class EditorMenuScreen implements MenuScreen {
         if ("carriages".equals(category) && modelId != null && !modelId.isEmpty()) {
             out.add(new CommandMenuEntry.DrillIn(
                 "Contents",
-                new CarriageContentsAllowScreen(modelId)));
+                CarriageContentsAllowScreen.forCarriage(modelId)));
+        }
+
+        // The same drilldown for a portal room, but only while its Contents setting is on — with it
+        // Off the room draws nothing and the toggles would steer an empty pool. Addressed by room
+        // NAME, not modelId: modelId is the kind tag "portal_room" and is shared by every room.
+        if ("portals".equals(category) && modelName != null && !modelName.isEmpty()
+            && games.brennan.dungeontrain.portal.PortalRoomSettings
+                .parse(EditorStatusHudOverlay.roomMode()).contents().furnishes()) {
+            out.add(new CommandMenuEntry.DrillIn(
+                "Contents",
+                CarriageContentsAllowScreen.forPortalRoom(modelName)));
         }
 
         // Weight — Triple row: [-] / Weight (N) / [+] for every category that
