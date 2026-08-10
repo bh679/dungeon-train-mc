@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
+import games.brennan.dungeontrain.builder.BuilderCinematicService;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -186,8 +187,15 @@ public final class TrainBootstrapEvents {
             return;
         }
         BlockPos spawnPos = BuilderWorldLayout.spawnPos(DungeonTrainWorldData.get(overworld).dims());
-        overworld.setDefaultSpawnPos(spawnPos, 0.0F);
-        LOGGER.info("[DungeonTrain] Builder world — spawn anchored on the platform at {}", spawnPos);
+        // Face the template rather than vanilla's yaw 0: the spawn is on the +Z side of the
+        // track, so yaw 0 (straight down +Z) looks out over empty platform with the build
+        // behind you. On a world that hasn't been stamped yet this aims at the track itself,
+        // which is where the carriages will land.
+        float yaw = BuilderCinematicService.facingFrom(overworld,
+                spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5)[0];
+        overworld.setDefaultSpawnPos(spawnPos, yaw);
+        LOGGER.info("[DungeonTrain] Builder world — spawn anchored on the platform at {} facing {}",
+                spawnPos, String.format("%.0f", yaw));
     }
 
     private static ManagedShip findTrain(ServerLevel level) {

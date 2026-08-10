@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderCinematicService;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.builder.BuilderWorldSetup;
@@ -75,12 +76,19 @@ public record BuilderSetupPacket(String modeId) implements CustomPacketPayload {
             // so on a fresh builder world the player is currently in mid-air over the void.
             CarriageDims dims = DungeonTrainWorldData.get(level).dims();
             BlockPos spawn = BuilderWorldLayout.spawnPos(dims);
-            level.setDefaultSpawnPos(spawn, 0.0F);
+            // Facing the template, not vanilla's yaw 0 — the spawn sits on the +Z side of the
+            // train, so yaw 0 (straight down +Z) would put the build squarely behind them.
+            float[] facing = BuilderCinematicService.facingFrom(
+                level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);
+            level.setDefaultSpawnPos(spawn, facing[0]);
             player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
-                player.getYRot(), player.getXRot());
+                facing[0], facing[1]);
             // The join-time bounds packet was sent before this stamp existed, so resend now that
             // the carriages (and therefore the build volumes) are real.
             BuilderBoundsPacket.sendTo(player, level);
+            // The template exists as of this tick and the player is stood in front of it — show
+            // it to them. (The reopen path is triggered from PlayerJoinEvents instead.)
+            BuilderCinematicService.playNow(player);
         });
     }
 }
