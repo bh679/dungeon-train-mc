@@ -76,6 +76,20 @@ public final class TranslationOverrides {
             : TranslationOverrideStore.load(TranslationOverrideStore.Layer.LOCAL, locale);
     }
 
+    /**
+     * Relay-approved overrides for {@code locale} — the live layer, or read from disk if detached.
+     *
+     * <p>This is the editor's "a human has been here" signal: the provenance manifest baked into the
+     * jar only knows what was true at build time, while an approval means an operator has since
+     * released a player's fix for that exact string. Detached (dev-target) reads come off the cached
+     * APPROVED layer, so the answer survives an offline launch.</p>
+     */
+    public static TranslationEdits approvedFor(String locale) {
+        return isLive(locale)
+            ? approved()
+            : TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED, locale);
+    }
+
     /** Both layers merged for {@code locale}, local winning. */
     public static TranslationEdits mergedFor(String locale) {
         if (isLive(locale)) {

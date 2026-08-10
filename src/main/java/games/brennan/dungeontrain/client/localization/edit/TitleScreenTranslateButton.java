@@ -69,6 +69,11 @@ public final class TitleScreenTranslateButton {
         if (target.isEmpty()) {
             return; // English on a release build — the source language has nothing to translate
         }
+        // ...and again for the language being EDITED, when that is not the one being displayed.
+        // fetchOnce() above only ever covers the display locale, so on a dev build the editor would
+        // otherwise have no idea which of its rows an operator had already approved. Cached, not
+        // installed, when the two differ — see ApprovedTranslationsFetcher#accept.
+        ApprovedTranslationsFetcher.fetchOnceFor(target);
 
         AbstractWidget language = findWidget(event, LANGUAGE_KEY);
         if (language == null) {

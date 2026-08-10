@@ -49,6 +49,8 @@ public final class TranslationListWidget extends AbstractWidget {
     private List<TranslationUnit> units = List.of();
     /** The overrides for the locale being EDITED, which on a dev build is not the one displayed. */
     private TranslationEdits edits = TranslationEdits.empty("");
+    /** Just the relay-approved slice of the above — what the AI badge is decided against. */
+    private TranslationEdits approved = TranslationEdits.empty("");
     private int scroll;
 
     public TranslationListWidget(Font font, int x, int y, int width, int height,
@@ -61,6 +63,15 @@ public final class TranslationListWidget extends AbstractWidget {
     /** The override layer rows render against — set before {@link #setUnits} on every refresh. */
     public void setEdits(TranslationEdits newEdits) {
         this.edits = newEdits == null ? TranslationEdits.empty("") : newEdits;
+    }
+
+    /**
+     * The relay-approved layer, which decides the AI badge — a string an operator has released is
+     * no longer machine translation nobody has read, whatever the jar's provenance said at build
+     * time. Set alongside {@link #setEdits}.
+     */
+    public void setApproved(TranslationEdits newApproved) {
+        this.approved = newApproved == null ? TranslationEdits.empty("") : newApproved;
     }
 
     /** Replace the visible rows, keeping the scroll position where it still makes sense. */
@@ -130,7 +141,7 @@ public final class TranslationListWidget extends AbstractWidget {
         // Line 1: the key, plus the AI badge right-aligned so the eye can scan a column of them.
         g.drawString(font, font.plainSubstrByWidth(unit.label(), textWidth - 16),
             textX, lineY, KEY_COLOUR, false);
-        if (unit.aiUnreviewed()) {
+        if (TranslationFilters.needsHuman(unit, approved)) {
             int tagX = getX() + width - SCROLLBAR_W - 3 - font.width(AI_TAG);
             g.drawString(font, AI_TAG, tagX, lineY, AI_COLOUR, false);
         }

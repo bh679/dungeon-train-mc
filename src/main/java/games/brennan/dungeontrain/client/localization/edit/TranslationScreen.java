@@ -123,6 +123,10 @@ public final class TranslationScreen extends Screen {
 
     @Override
     protected void init() {
+        // Pull the latest approvals for the language on screen every time the editor opens. The
+        // title screen's fetch is once per session, which would mean a translator who just had a
+        // string approved kept being asked to fix it until they restarted the game.
+        ApprovedTranslationsFetcher.fetchAsync(locale);
         int listTop = TOP + ROW_H * 2 + GAP * 3;
         int bottomRow = height - MARGIN - ROW_H;
         int listBottom = bottomRow - GAP;
@@ -298,12 +302,24 @@ public final class TranslationScreen extends Screen {
             .bounds(x, y, buttonWidth, ROW_H).build());
     }
 
+    /**
+     * Re-read the approved layer and repaint — called when a pool fetch lands while this screen is
+     * open, so a string approved a moment ago on the review page leaves the queue without the
+     * translator having to close and reopen the editor.
+     */
+    void onApprovedFetched(String fetchedLocale) {
+        if (locale.equals(fetchedLocale)) {
+            refresh();
+        }
+    }
+
     /** Rebuild the visible rows from the catalog, the current filters and the search text. */
     private void refresh() {
         if (list == null) {
             return;
         }
         list.setEdits(TranslationOverrides.mergedFor(locale));
+        list.setApproved(TranslationOverrides.approvedFor(locale));
         list.setUnits(visibleUnits());
     }
 
@@ -316,9 +332,13 @@ public final class TranslationScreen extends Screen {
             return sentUnitRows(needle);
         }
         TranslationEdits edits = TranslationOverrides.mergedFor(locale);
+        // The approved layer on its own, not folded into `edits`: "needs a human" turns on whether
+        // somebody ELSE has reviewed this string, which this player's own pending edit does not make
+        // true. See TranslationFilters#needsHuman.
+        TranslationEdits approved = TranslationOverrides.approvedFor(locale);
         List<TranslationUnit> out = new ArrayList<>();
         for (TranslationUnit unit : TranslationCatalog.forLocale(locale)) {
-            if (!matchesBody(unit) || !matchesState(unit, edits) || !unit.matches(needle)) {
+            if (!matchesBody(unit) || !matchesState(unit, edits, approved) || !unit.matches(needle)) {
                 continue;
             }
             out.add(unit);
@@ -334,20 +354,19 @@ public final class TranslationScreen extends Screen {
         };
     }
 
-    private boolean matchesState(TranslationUnit unit, TranslationEdits edits) {
+    private boolean matchesState(TranslationUnit unit, TranslationEdits edits,
+                                 TranslationEdits approved) {
         return switch (stateFilter) {
             case ALL -> true;
-            case TODO -> unit.aiUnreviewed() && overrideOf(unit, edits) == null;
+            case TODO -> TranslationFilters.needsHuman(unit, approved) && overrideOf(unit, edits) == null;
             case SENT -> true; // handled in visibleUnits — the rows come from the relay, not the catalog
-            case AI_UNREVIEWED -> unit.aiUnreviewed();
+            case AI_UNREVIEWED -> TranslationFilters.needsHuman(unit, approved);
             case EDITED -> overrideOf(unit, edits) != null;
         };
     }
 
     static String overrideOf(TranslationUnit unit, TranslationEdits edits) {
-        return unit.type() == TranslationUnit.Type.BOOK
-            ? edits.books().get(unit.id())
-            : edits.lang().get(unit.id());
+        return TranslationFilters.overrideOf(unit, edits);
     }
 
     private void openEditor(TranslationUnit unit) {
