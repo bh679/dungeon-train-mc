@@ -1,11 +1,15 @@
 package games.brennan.dungeontrain.builder;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.CarriagePartRegistry;
+import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.EditorPlotSnapshots;
 import games.brennan.dungeontrain.editor.EditorStageSelection;
+import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -13,6 +17,7 @@ import games.brennan.dungeontrain.train.CarriagePartPlacer;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
+import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.train.WholeCarriage;
 import games.brennan.dungeontrain.train.WholeCarriagePlacer;
 import games.brennan.dungeontrain.train.WholeCarriageRegistry;
@@ -392,6 +397,229 @@ public final class BuilderWorldSetup {
             EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(i), level, origin,
                     dims.length(), dims.height(), dims.width());
         }
+    }
+
+    // ---- Open ----
+
+    /**
+     * Load an existing template into this world for editing.
+     *
+     * <p><b>The contract here is the inverse of {@link #applyNew}'s, deliberately.</b> New is
+     * lenient by design: an id that doesn't resolve degrades to a bare shell, which is a perfectly
+     * good thing to start a <em>new</em> build from. Open cannot borrow that leniency, because it
+     * points {@code builderName} at a template that already exists — so "couldn't find it, here's an
+     * empty carriage instead" would mean the next Save writes an empty carriage over the file the
+     * builder was trying to edit.</p>
+     *
+     * <p>So: everything is resolved before a single block moves ({@link #resolveOpen}), and
+     * {@code builderName} is set only once every stamp has reported success. A failure leaves the
+     * world untouched and the build unnamed rather than half-loaded and armed to overwrite.</p>
+     *
+     * <p>It also <em>restores</em> the metadata {@code applyNew} blanks. A new build has no stage or
+     * mirror axes to inherit; an opened one has both already on disk, and dropping them would make
+     * open-then-save quietly strip the mirroring off a template that was authored with it.</p>
+     *
+     * @return true if the world now holds the requested template
+     */
+    public static boolean applyOpen(ServerLevel level, BuilderMode mode, BuilderOpenRequest request) {
+        if (!level.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
+            return false;
+        }
+        if (request == null || request.isEmpty()) {
+            return false;
+        }
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        CarriageDims dims = data.dims();
+
+        int carriages = mode.carriageCount();
+        if (carriages <= 0) {
+            // The track modes park no carriage, so there is no volume to load a template into.
+            // BuilderOpenOptions.isOpenable already says so; this is the server-side backstop.
+            LOGGER.warn("[DungeonTrain] Builder open: mode '{}' has no carriage to open into", mode.id());
+            return false;
+        }
+
+        Optional<Resolved> resolved = resolveOpen(level, dims, request);
+        if (resolved.isEmpty()) {
+            LOGGER.warn("[DungeonTrain] Builder open: could not resolve {} '{}' — world left alone",
+                    request.kind().id(), request.id());
+            return false;
+        }
+        Resolved open = resolved.get();
+
+        BuilderMode previousMode = BuilderMode.fromId(data.builderMode()).orElse(mode);
+        clearTrain(level, dims, previousMode.carriageCount());
+        data.setBuilderMode(mode.id());
+
+        // Before the stamp, for the same reason applyNew does it: CarriagePlacer.placeAt reads
+        // EditorStageSelection.effective() to route the per-stage parts overlay, so a stage chosen
+        // afterwards would have no effect on the blocks that were just laid down.
+        String stageId = open.stageId();
+        if (!stageId.isEmpty()) {
+            EditorStageSelection.select(stageId);
+        }
+
+        stampTrain(level, dims, carriages, open.shell());
+        if (!overlayOpen(level, dims, carriages, request, open)) {
+            LOGGER.error("[DungeonTrain] Builder open: stamping {} '{}' failed after resolving — "
+                    + "leaving the build unnamed so a save cannot overwrite it",
+                    request.kind().id(), request.id());
+            return false;
+        }
+
+        // Only now: the world genuinely holds this template, so Save may point at it.
+        data.setBuilderName(request.id());
+        data.setBuilderStage(stageId);
+        data.setBuilderSubType(request.subType().id(), request.partKindId());
+        data.setBuilderMirror(open.mirror());
+
+        for (int i = 0; i < carriages; i++) {
+            BlockPos origin = carriageOrigin(dims, carriages, i);
+            EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(i), level, origin,
+                    dims.length(), dims.height(), dims.width());
+        }
+        LOGGER.info("[DungeonTrain] Builder open: {} '{}' into mode '{}' on shell '{}', stage '{}'",
+                request.kind().id(), request.id(), mode.id(), open.shell().id(),
+                stageId.isEmpty() ? "<none>" : stageId);
+        return true;
+    }
+
+    /**
+     * Everything {@link #applyOpen} needs, gathered before the world is touched.
+     *
+     * @param shell        the carriage to park — the opened template itself for a carriage, and the
+     *                     thing a room or part is shown on otherwise
+     * @param wholeCarriage the saved build to stamp over the shell, when the opened carriage has one
+     * @param stageId      the stage the template is linked to, empty when it isn't
+     * @param mirror       the mirror axes the template was authored with
+     */
+    private record Resolved(CarriageVariant shell, Optional<WholeCarriage> wholeCarriage,
+                            String stageId, BuilderMirrorFlags mirror) {}
+
+    /**
+     * Look the request up in full, or answer empty.
+     *
+     * <p>This is where Open earns its separate code path. Every lookup that {@code applyNew} would
+     * have shrugged off is fatal here, <em>including the footprint gate</em>: a whole carriage saved
+     * at different {@link CarriageDims} is registered but unreadable, and
+     * {@link WholeCarriagePlacer#placeAt} answers that by returning false — a boolean
+     * {@code applyNew}'s overlay discards. Checking the same gate here, up front, is what turns a
+     * silent bare shell into a refusal.</p>
+     */
+    private static Optional<Resolved> resolveOpen(ServerLevel level, CarriageDims dims,
+                                                  BuilderOpenRequest request) {
+        return switch (request.kind()) {
+            case CARRIAGE -> resolveCarriage(level, dims, request.id());
+            case CONTENTS -> CarriageContentsRegistry.find(request.id()).isPresent()
+                    ? shellOnly(level)
+                    : Optional.empty();
+            case PART -> request.partKind() != null
+                    && CarriagePartRegistry.isKnown(request.partKind(), request.id())
+                    ? shellOnly(level)
+                    : Optional.empty();
+        };
+    }
+
+    /**
+     * Opening a carriage: the saved whole carriage when there is one, the bare shell otherwise.
+     *
+     * <p>A builder Save writes both — a {@code WholeCarriage} holding shell and interior together,
+     * and a {@code CarriageVariant} shell so the thing still spawns in trains (see
+     * {@code BuilderSave.saveWholeCarriage}). Preferring the whole carriage is therefore not a
+     * guess: it is strictly the more complete of the two records of the same build. Built-in
+     * carriages have only the shell, and open perfectly well as one.</p>
+     */
+    private static Optional<Resolved> resolveCarriage(ServerLevel level, CarriageDims dims, String id) {
+        Optional<CarriageVariant> shell = CarriageVariantRegistry.find(id);
+        Optional<WholeCarriage> saved = WholeCarriageRegistry.find(id)
+                // Registered is not the same as readable at this world's dims — filter on the
+                // template the placer would actually get, not on the registry entry.
+                .filter(wc -> WholeCarriageTemplateStore.get(level, wc, dims).isPresent());
+        if (shell.isEmpty() && saved.isEmpty()) {
+            return Optional.empty();
+        }
+        // A whole carriage always has a shell of the same name (Save writes the pair), but fall
+        // back to the parked one rather than failing if that invariant is ever broken on disk.
+        CarriageVariant parked = shell.or(() -> currentSource(level)).or(BuilderWorldSetup::defaultVariant)
+                .orElse(null);
+        if (parked == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new Resolved(parked, saved, stageOf(id), mirrorOf(parked, dims)));
+    }
+
+    /** A room or a part: the template is elsewhere, so only the carriage to show it on is resolved. */
+    private static Optional<Resolved> shellOnly(ServerLevel level) {
+        return currentSource(level).or(BuilderWorldSetup::defaultVariant)
+                // Contents and parts carry no stage link or mirror sidecar of their own — those are
+                // properties of a carriage — so they open with the same defaults New would give.
+                .map(shell -> new Resolved(shell, Optional.empty(), "", BuilderMirrorFlags.DEFAULT));
+    }
+
+    /** The stage a carriage template is linked to, empty when it's Custom or unknown. */
+    private static String stageOf(String variantId) {
+        String stage = CarriageWeights.current().stageIdFor(variantId);
+        return stage == null ? "" : stage;
+    }
+
+    /**
+     * The mirror axes recorded on the template's sidecar — the read side of
+     * {@code BuilderSave.carryMirrorToTemplate}.
+     *
+     * <p>Falls back to {@link BuilderMirrorFlags#DEFAULT} rather than failing: an unreadable sidecar
+     * costs the builder a toggle, and refusing to open a template whose geometry is perfectly fine
+     * would be a far worse trade.</p>
+     */
+    private static BuilderMirrorFlags mirrorOf(CarriageVariant variant, CarriageDims dims) {
+        try {
+            CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+            return new BuilderMirrorFlags(sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
+                    sidecar.mirrorVariants());
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Builder open: could not read mirror flags for {}: {}",
+                    variant.id(), t.toString());
+            return BuilderMirrorFlags.DEFAULT;
+        }
+    }
+
+    /**
+     * Put the opened template onto the parked shell, reporting whether every carriage took it.
+     *
+     * <p>The returned boolean is the whole difference from {@link #overlaySelection}, which drops
+     * {@link WholeCarriagePlacer#placeAt}'s result on the floor. Here it propagates, because the
+     * caller uses it to decide whether this build is allowed to have a name.</p>
+     */
+    private static boolean overlayOpen(ServerLevel level, CarriageDims dims, int carriages,
+                                       BuilderOpenRequest request, Resolved open) {
+        for (int i = 0; i < carriages; i++) {
+            BlockPos origin = carriageOrigin(dims, carriages, i);
+            switch (request.kind()) {
+                case CARRIAGE -> {
+                    if (open.wholeCarriage().isPresent()
+                            && !WholeCarriagePlacer.placeAt(level, origin, open.wholeCarriage().get(), dims)) {
+                        return false;
+                    }
+                    // No whole carriage: stampTrain already laid down the shell, which *is* the build.
+                }
+                case CONTENTS -> {
+                    Optional<CarriageContents> contents = CarriageContentsRegistry.find(request.id());
+                    if (contents.isEmpty()) {
+                        return false;   // resolved a moment ago; a reload between the two is fatal here
+                    }
+                    CarriageContentsPlacer.placeAt(level, origin, contents.get(), dims);
+                }
+                case PART -> {
+                    if (request.partKind() == null) {
+                        return false;
+                    }
+                    // relight = true: a plot you stand and look at, not a train being assembled
+                    // section-local during worldgen.
+                    CarriagePartPlacer.placeAt(level, origin, request.partKind(), request.id(),
+                            dims, 0L, i, true);
+                }
+            }
+        }
+        return true;
     }
 
     /**

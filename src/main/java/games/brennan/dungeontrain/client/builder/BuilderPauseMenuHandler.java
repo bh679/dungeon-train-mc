@@ -278,7 +278,7 @@ public final class BuilderPauseMenuHandler {
         event.addListener(new DarkTintedButton(x, y, halfW, height, NEW,
                 b -> Minecraft.getInstance().setScreen(new BuilderNewScreen(screen))));
         event.addListener(new DarkTintedButton(rightX, y, rightW, height, OPEN,
-                b -> Minecraft.getInstance().setScreen(TrainBuilderScreen.forSwitch(screen))));
+                b -> Minecraft.getInstance().setScreen(new BuilderOpenScreen(screen))));
         y += rowStride;
 
         event.addListener(new BuilderSaveButton(x, y, width, height, SAVE,

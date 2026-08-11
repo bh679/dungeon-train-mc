@@ -74,6 +74,8 @@ public final class RideSnapshotCapture {
     // ── Explicit-pose capture: the caller already knows exactly where the camera goes ──
     private static volatile CinematicCameraController.Pose pendingPose;
     private static volatile Consumer<NativeImage> pendingPoseCallback;
+    /** Earliest {@code System.nanoTime()} the armed pose may fire — see {@link #requestPoseCapture}. */
+    private static volatile long pendingPoseReadyAt;
 
     private RideSnapshotCapture() {}
 
@@ -113,9 +115,37 @@ public final class RideSnapshotCapture {
      * <p>The callback <b>owns the image</b> and must close it.</p>
      */
     public static void requestPoseCapture(CinematicCameraController.Pose pose, Consumer<NativeImage> onImage) {
+        requestPoseCapture(pose, 0, onImage);
+    }
+
+    /**
+     * As above, but hold fire for {@code settleMillis} first.
+     *
+     * <p>For a caller that has just <em>changed the world</em> and wants a picture of the result.
+     * Block data reaches the client almost instantly on an integrated server, but the visible
+     * geometry is rebuilt a beat later — and there is no cheap "section/mesh built" query to wait on,
+     * least of all one that survives Sodium (which Sable bundles) replacing the section renderer. So
+     * readiness is a settle heuristic here, exactly as it is for the arrival shot.</p>
+     *
+     * <p>Without it the shot lands on the frame after the request and photographs the <em>previous</em>
+     * contents of the volume — which, for the Train Builder's Open, meant every template that had no
+     * photo yet got issued a picture of the template it replaced.</p>
+     *
+     * <p>Wall-clock rather than a frame count on purpose: frames are FPS-dependent, and the wait is
+     * for a rebuild whose duration isn't. Nothing is on screen during the wait — the capture is an
+     * extra off-screen pass — so erring long is free.</p>
+     */
+    public static void requestPoseCapture(CinematicCameraController.Pose pose, long settleMillis,
+                                          Consumer<NativeImage> onImage) {
         if (pose == null || onImage == null) return;
         pendingPose = pose;
+        pendingPoseReadyAt = System.nanoTime() + Math.max(0L, settleMillis) * 1_000_000L;
         pendingPoseCallback = onImage;
+    }
+
+    /** Whether an armed pose has finished settling and may fire this frame. */
+    private static boolean poseReady() {
+        return pendingPoseCallback != null && System.nanoTime() >= pendingPoseReadyAt;
     }
 
     /** A gallery shot, a targeted echo capture, or an explicit-pose capture is queued or in flight. */
@@ -144,9 +174,11 @@ public final class RideSnapshotCapture {
         // a gallery shot never sneaks in under it. ──
         Consumer<byte[]> subjectCb = null;
         Consumer<NativeImage> imageCb = null;
-        if (pendingPoseCallback != null) {
-            // First, and unconditionally: an explicit pose is already resolved, so this always arms
-            // and always completes this frame. It can't starve the others by retrying.
+        if (poseReady()) {
+            // First: an explicit pose is already resolved, so once its settle window has passed this
+            // always arms and always completes this frame. It can't starve the others by retrying.
+            // While it is still settling the branch is simply skipped, so a gallery or echo shot may
+            // take the frame — they build their own poses and are unaffected by the wait.
             captureTag = SnapshotTag.SOCIAL;
             capturePose = pendingPose;
             imageCb = pendingPoseCallback;
