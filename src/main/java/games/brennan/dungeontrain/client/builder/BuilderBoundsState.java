@@ -46,6 +46,17 @@ public final class BuilderBoundsState {
         return mirror;
     }
 
+    /**
+     * Set the mirror flags without waiting for the server.
+     *
+     * <p>For {@link BuilderMirrorButton}, which stays open after a click and so has to show the
+     * new state before the round-trip lands. The next {@code BuilderBoundsPacket} — the server
+     * sends one after every mirror toggle — replaces this with the authoritative value.</p>
+     */
+    public static void setMirror(BuilderMirrorFlags flags) {
+        mirror = flags == null ? BuilderMirrorFlags.NONE : flags;
+    }
+
     /** True when the current build has no template yet — Save has to ask for a name. */
     public static boolean isDraft() {
         return buildName.isEmpty();

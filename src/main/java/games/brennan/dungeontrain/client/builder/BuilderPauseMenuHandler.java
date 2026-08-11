@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.client.builder;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.builder.BuilderMirrorFlags;
 import games.brennan.dungeontrain.client.DeathScreenLayoutHandler;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.VersionInfo;
@@ -37,7 +36,6 @@ import org.slf4j.Logger;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Locale;
 
 /**
  * Rebuilds the pause menu for Train Builder worlds.
@@ -101,11 +99,6 @@ public final class BuilderPauseMenuHandler {
     private static final Component RESET_PROMPT = Component.translatable("gui.dungeontrain.builder.confirm.reset");
     private static final Component CLEAR_PROMPT = Component.translatable("gui.dungeontrain.builder.confirm.clear");
     private static final Component DELETE_PROMPT = Component.translatable("gui.dungeontrain.builder.confirm.delete");
-
-    /** A mirrored axis is tinted green; the panel has no room for an "[ON]" suffix. */
-    private static final float MIRROR_ON_R = 0.35F;
-    private static final float MIRROR_ON_G = 1.0F;
-    private static final float MIRROR_ON_B = 0.35F;
 
     /** X, Y, Z are always shown; V (variant mirroring) only while Shift is held. */
     private static final String[] MIRROR_AXES = {"x", "y", "z", "v"};
@@ -307,24 +300,19 @@ public final class BuilderPauseMenuHandler {
     /**
      * {@code count} equal cells spanning the panel, each tinted green while that axis mirrors —
      * the only state readout there's room for at this width.
+     *
+     * <p>These are the one row here that keeps the menu open on click; the state they read and the
+     * reason are {@link BuilderMirrorButton}'s.</p>
      */
     private static void addMirrorCells(ScreenEvent.Init.Post event, int x, int y, int width, int height,
                                        int count, boolean visibleWhenShift) {
-        // From the builder's own state, not EditorStatusHudOverlay: that HUD is only fed above
-        // Y 245, so down here on the platform every cell read as off and every click sent "on".
-        BuilderMirrorFlags flags = BuilderBoundsState.mirror();
-        boolean[] on = { flags.x(), flags.y(), flags.z(), flags.variants() };
         int cellW = BuilderPauseMenuLayout.mirrorCellWidth(width, count);
         for (int i = 0; i < count; i++) {
-            String axis = MIRROR_AXES[i];
-            boolean lit = on[i];
-            event.addListener(new PauseMenuActionButton(
+            event.addListener(new BuilderMirrorButton(
                     BuilderPauseMenuLayout.mirrorCellX(x, width, count, i), y,
                     BuilderPauseMenuLayout.mirrorCellWidthAt(width, count, i), height,
-                    Component.literal(axis.toUpperCase(Locale.ROOT)),
-                    lit ? MIRROR_ON_R : 1.0F, lit ? MIRROR_ON_G : 1.0F, lit ? MIRROR_ON_B : 1.0F,
-                    visibleWhenShift,
-                    b -> runCommand("dungeontrain editor mirror " + axis + (lit ? " off" : " on"))));
+                    MIRROR_AXES[i],
+                    visibleWhenShift));
             if (cellW <= 0) {
                 break;   // defensive: a panel too narrow to divide
             }
