@@ -96,6 +96,8 @@ public final class TranslationScreen extends Screen {
     private BodyFilter bodyFilter = BodyFilter.ALL;
     /** The strings of the submission currently picked in the SENT view. */
     private List<TranslationSubmissionsClient.SentUnit> sentUnits = List.of();
+    /** True when the picked row is the working batch, whose strings come from disk, not the relay. */
+    private boolean showingUnsubmitted;
 
     public TranslationScreen(Screen parent, String locale) {
         super(Component.translatable("gui.dungeontrain.translate.title"));
@@ -153,14 +155,14 @@ public final class TranslationScreen extends Screen {
             .create(MARGIN, TOP + ROW_H + GAP, filterWidth, ROW_H,
                 Component.translatable("gui.dungeontrain.translate.filter"),
                 (button, value) -> {
-                    boolean wasSplit = stateFilter == StateFilter.SENT;
                     stateFilter = value;
-                    if (wasSplit != (value == StateFilter.SENT)) {
-                        // The pane count changed: vanilla's rebuildWidgets re-runs init() for us.
-                        rebuildWidgets();
-                    } else {
-                        refresh();
+                    // Leaving SENT means the left pane is no longer showing the picked submission,
+                    // so the column must stop claiming one — a highlighted row that drives nothing
+                    // is the one way these two can lie to each other.
+                    if (value != StateFilter.SENT && sentList != null) {
+                        sentList.clearSelection();
                     }
+                    refresh();
                 }));
         addRenderableWidget(CycleButton.<BodyFilter>builder(BodyFilter::label)
             .withValues(BodyFilter.values())
@@ -173,42 +175,55 @@ public final class TranslationScreen extends Screen {
                     refresh();
                 }));
 
-        // The SENT view splits the width: submissions down a narrow right column, the picked
-        // one's strings taking the rest. Every other filter gives the whole width to the catalog
-        // list. The strings are what gets read and edited, so they keep the room.
-        boolean split = stateFilter == StateFilter.SENT;
+        // Two panes, always: strings on the left, what you have sent down a narrow right column.
+        // The column used to appear only under the SENT filter, which meant a translator working
+        // through the queue could not see their own history — or, more to the point, how much work
+        // was sitting here unsent. The strings are what gets read and edited, so they keep the room.
         int listHeight = Math.max(ROW_H, listBottom - listTop);
-        int sentWidth = split
-            ? Math.max(SENT_COLUMN_MIN_W, (contentWidth - GAP) * SENT_COLUMN_PERCENT / 100) : 0;
-        int leftWidth = split ? Math.max(ROW_H, contentWidth - GAP - sentWidth) : contentWidth;
+        int sentWidth = Math.max(SENT_COLUMN_MIN_W, (contentWidth - GAP) * SENT_COLUMN_PERCENT / 100);
+        int leftWidth = Math.max(ROW_H, contentWidth - GAP - sentWidth);
 
         list = new TranslationListWidget(font, MARGIN, listTop, leftWidth, listHeight,
             this::openEditor);
         addRenderableWidget(list);
 
-        if (split) {
-            sentList = new TranslationSubmissionList(font, MARGIN + leftWidth + GAP, listTop,
-                sentWidth, listHeight, this::openSubmission);
-            addRenderableWidget(sentList);
-            TranslationSubmissionsClient.fetch(this::onHistory);
-        } else {
-            sentList = null;
-        }
+        sentList = new TranslationSubmissionList(font, MARGIN + leftWidth + GAP, listTop,
+            sentWidth, listHeight, this::openSubmission);
+        addRenderableWidget(sentList);
+        // Paint the working batch immediately from local state; the relay's history lands on top of
+        // it when the fetch returns. The column is never empty while waiting on the network.
+        onHistory(List.of());
+        TranslationSubmissionsClient.fetch(this::onHistory);
 
         layoutBottomRow(bottomRow, contentWidth);
         refresh();
     }
 
-    /** Merge the relay's history with the local outbox, newest first, and open on the newest. */
+    /**
+     * Merge the relay's history with the local outbox, newest first, under the working batch.
+     *
+     * <p>The unsubmitted row is PREPENDED rather than sorted in: it has no submission time, and it
+     * belongs at the top by what it is, not by when it happened. Everything below it is ordered by
+     * date as before.</p>
+     */
     private void onHistory(List<TranslationSubmission> fromRelay) {
         if (sentList == null) {
             return;
         }
-        List<TranslationSubmission> all = new ArrayList<>(TranslationOutbox.get().queued());
-        all.addAll(fromRelay);
-        all.sort((a, b) -> Long.compare(b.submittedAtMs(), a.submittedAtMs()));
+        List<TranslationSubmission> sent = new ArrayList<>(TranslationOutbox.get().queued());
+        sent.addAll(fromRelay);
+        sent.sort((a, b) -> Long.compare(b.submittedAtMs(), a.submittedAtMs()));
+
+        List<TranslationSubmission> all = new ArrayList<>();
+        all.add(TranslationSubmission.unsubmitted(locale,
+            TranslationOverrides.unsubmittedFor(locale).size()));
+        all.addAll(sent);
         sentList.setRows(all);
-        sentList.selectFirst();
+        // Only auto-open a row when the left pane is actually showing one. On every other filter the
+        // left pane belongs to the catalog, and highlighting a row there would claim otherwise.
+        if (stateFilter == StateFilter.SENT && !sentList.hasSelection()) {
+            sentList.selectFirst();
+        }
     }
 
     /**
@@ -217,8 +232,11 @@ public final class TranslationScreen extends Screen {
      */
     private void openSubmission(TranslationSubmission submission) {
         sentUnits = List.of();
+        // Picking a row is a request to read it, so the left pane has to be the one that shows it.
+        stateFilter = StateFilter.SENT;
+        showingUnsubmitted = submission.unsubmitted();
         refresh();
-        if (!submission.queued()) {
+        if (!submission.queued() && !submission.unsubmitted()) {
             TranslationSubmissionsClient.fetchUnits(submission.submittedAtMs(), units -> {
                 sentUnits = units;
                 refresh();
@@ -232,6 +250,9 @@ public final class TranslationScreen extends Screen {
      * faked — there is nothing left to edit.
      */
     private List<TranslationUnit> sentUnitRows(String needle) {
+        if (showingUnsubmitted) {
+            return unsubmittedRows(needle);
+        }
         if (sentUnits.isEmpty()) {
             return List.of();
         }
@@ -243,6 +264,25 @@ public final class TranslationScreen extends Screen {
         for (TranslationSubmissionsClient.SentUnit sent : sentUnits) {
             TranslationUnit unit = byId.get(sent.unitId());
             if (unit != null && unit.matches(needle)) {
+                out.add(unit);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * The working batch's strings — the local edits the relay has not been told about. Read off
+     * disk rather than fetched: this row is the one thing in the column that has never left the
+     * machine, so it is also the only one that reads correctly with no network at all.
+     */
+    private List<TranslationUnit> unsubmittedRows(String needle) {
+        TranslationEdits pending = TranslationOverrides.unsubmittedFor(locale);
+        if (pending.isEmpty()) {
+            return List.of();
+        }
+        List<TranslationUnit> out = new ArrayList<>();
+        for (TranslationUnit unit : TranslationCatalog.forLocale(locale)) {
+            if (TranslationFilters.overrideOf(unit, pending) != null && unit.matches(needle)) {
                 out.add(unit);
             }
         }

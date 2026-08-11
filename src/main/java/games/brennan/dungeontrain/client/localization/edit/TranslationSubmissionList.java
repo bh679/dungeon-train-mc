@@ -73,6 +73,20 @@ public final class TranslationSubmissionList extends AbstractWidget {
         }
     }
 
+    /** Whether a row is currently highlighted. */
+    public boolean hasSelection() {
+        return selected >= 0;
+    }
+
+    /**
+     * Drop the highlight without telling anyone — for when the left pane stops showing the picked
+     * row. Silent on purpose: re-firing {@code onSelect} here would fight the caller that just
+     * changed what the left pane is for.
+     */
+    public void clearSelection() {
+        selected = -1;
+    }
+
     private int rowHeight() {
         return font.lineHeight * ROW_LINES + PAD * 2;
     }
@@ -126,9 +140,12 @@ public final class TranslationSubmissionList extends AbstractWidget {
         int textX = getX() + PAD;
         int lineY = rowY + PAD;
 
-        // Line 1: when, and how much — the two facts that identify a submission at a glance.
-        String head = row.date() + "  ·  "
-            + Component.translatable("gui.dungeontrain.translate.sent.units", row.units()).getString();
+        // Line 1: when, and how much — the two facts that identify a submission at a glance. The
+        // working batch has no date (it has not been sent), so it leads with the count alone rather
+        // than a dangling separator.
+        String count = Component.translatable(
+            "gui.dungeontrain.translate.sent.units", row.units()).getString();
+        String head = row.date().isEmpty() ? count : row.date() + "  ·  " + count;
         g.drawString(font, font.plainSubstrByWidth(head, textWidth), textX, lineY, DATE_COLOUR, false);
         lineY += font.lineHeight;
 

@@ -191,7 +191,7 @@ public final class TranslationSubmissionsClient {
             out.add(new TranslationSubmission(
                 longOf(row, "ts"), stringOf(row, "locale"), stringOf(row, "translator"),
                 intOf(row, "units"), intOf(row, "approved"), intOf(row, "pending"),
-                intOf(row, "flagged"), intOf(row, "rejected"), false));
+                intOf(row, "flagged"), intOf(row, "rejected"), false, false));
         }
         return out;
     }
