@@ -59,6 +59,13 @@ record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
                 originX, topY, bottomY, GAP, maxScroll);
     }
 
+    /** Height of the dark caption strip along the bottom of every cell. */
+    static final int LABEL_STRIP_H = 14;
+
+    /** Padding between the drill-in button and the cell edges it sits in the corner of. */
+    private static final int MORE_INSET = 3;
+    private static final int MORE_MIN_SIZE = 8;
+
     int xFor(int index) {
         return originX + (index % columns) * (cellWidth + gap);
     }
@@ -77,6 +84,42 @@ record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
     boolean isVisible(int index, int scrollY) {
         int y = yFor(index, scrollY);
         return y + cellHeight > topY && y < bottomY;
+    }
+
+    // ---- the drill-in button ----
+    //
+    // A cell that stands for a group of sub-variants carries a small button in the bottom-right of
+    // its picture, just above the caption strip. It is a second hit target inside the cell, so its
+    // geometry lives here beside the cell's own rather than being re-derived by the renderer and the
+    // click handler separately — two copies of this arithmetic drifting apart means a button that
+    // draws in one place and responds in another.
+
+    int moreSize() {
+        return Math.max(MORE_MIN_SIZE, cellHeight / 6);
+    }
+
+    int moreX(int index) {
+        return xFor(index) + cellWidth - moreSize() - MORE_INSET;
+    }
+
+    int moreY(int index, int scrollY) {
+        return yFor(index, scrollY) + cellHeight - LABEL_STRIP_H - moreSize() - MORE_INSET;
+    }
+
+    /**
+     * Whether the point is on {@code index}'s drill-in button.
+     *
+     * <p>Viewport-checked like {@link #indexAt}, so a scrolled-away button can't be clicked through
+     * the chrome above or below the grid.</p>
+     */
+    boolean isOverMore(int index, double mouseX, double mouseY, int scrollY) {
+        if (mouseY < topY || mouseY >= bottomY) {
+            return false;
+        }
+        int bx = moreX(index);
+        int by = moreY(index, scrollY);
+        int size = moreSize();
+        return mouseX >= bx && mouseX < bx + size && mouseY >= by && mouseY < by + size;
     }
 
     /**

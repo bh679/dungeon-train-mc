@@ -62,6 +62,15 @@ public final class BuilderOpenScreen extends Screen {
     private BuilderMode mode;
     private BuilderNewOptions.SubType subType = BuilderNewOptions.SubType.WHOLE_CARRIAGE;
     private String partKind = BuilderNewOptions.PART_KINDS.get(0);
+    /**
+     * The contents group being looked inside, empty at the top level.
+     *
+     * <p>A group's members are real things to open — {@code maze}'s copper room is a room — but they
+     * are not siblings of {@code maze}, and listing them flat beside it (as this screen first did, and
+     * as New's one-cycle-button picker still must) says they are. A grid has somewhere to go, so it
+     * drills in instead.</p>
+     */
+    private String contentsGroup = "";
 
     /** The ids currently on show, rebuilt whenever the type selection changes. */
     private List<String> entries = List.of();
@@ -93,6 +102,7 @@ public final class BuilderOpenScreen extends Screen {
                 () -> null,
                 value -> {
                     mode = value;
+                    contentsGroup = "";
                     scrollY = 0;   // a different mode is a different list; keeping the offset would land mid-nowhere
                     rebuild();
                 }));
@@ -103,9 +113,23 @@ public final class BuilderOpenScreen extends Screen {
             controls.add(BuilderTypeControls.subType(controlX, y, CONTROL_WIDTH, ROW_HEIGHT, subType,
                     value -> {
                         subType = value;
+                        contentsGroup = "";
                         scrollY = 0;
                         rebuild();
                     }));
+            // Looking inside a group: the group sits beside the sub type, sharing its row, and
+            // clicking it comes back out. It reads as a second half of the same choice — "Carriage
+            // Room, the Maze ones" — which is what it is.
+            if (!contentsGroup.isEmpty()) {
+                controls.add(Button.builder(
+                                Component.literal(BuilderLabels.pretty(contentsGroup)),
+                                b -> {
+                                    contentsGroup = "";
+                                    scrollY = 0;
+                                    rebuild();
+                                })
+                        .bounds(controlX, y, CONTROL_WIDTH, ROW_HEIGHT).build());
+            }
             if (BuilderOpenOptions.showsPartKind(mode, subType)) {
                 controls.add(BuilderTypeControls.partKind(controlX, y, CONTROL_WIDTH, ROW_HEIGHT, partKind,
                         value -> {
@@ -146,7 +170,9 @@ public final class BuilderOpenScreen extends Screen {
     private List<String> listEntries() {
         return switch (BuilderOpenOptions.openSourceFor(mode, subType)) {
             case STAGES -> stagesThenSavedBuilds();
-            case CONTENTS -> contentsWithMembers();
+            case CONTENTS -> contentsGroup.isEmpty()
+                    ? EditorTemplateLists.contents()
+                    : EditorTemplateLists.contentsMembers(contentsGroup);
             case PARTS -> EditorTemplateLists.parts(partKindValue());
             case TRACK_TILES -> EditorTemplateLists.tracks();
             case TUNNEL_PORTALS -> EditorTemplateLists.tunnels(TunnelPlacer.TunnelVariant.PORTAL);
@@ -192,13 +218,11 @@ public final class BuilderOpenScreen extends Screen {
     }
 
     /** Top-level contents, each followed by its sub-variants — a group's members are openable too. */
-    private static List<String> contentsWithMembers() {
-        List<String> out = new ArrayList<>();
-        for (String id : EditorTemplateLists.contents()) {
-            out.add(id);
-            out.addAll(EditorTemplateLists.contentsMembers(id));
-        }
-        return out;
+    /** Whether {@code value} is a group the grid can look inside — the drill-in button's condition. */
+    private boolean hasSubVariants(BuilderOpenOptions.OpenSource source, String value) {
+        return source == BuilderOpenOptions.OpenSource.CONTENTS
+                && contentsGroup.isEmpty()
+                && EditorTemplateLists.isContentsGroup(value);
     }
 
     private CarriagePartKind partKindValue() {
@@ -238,6 +262,10 @@ public final class BuilderOpenScreen extends Screen {
                         BuilderOpenOptions.photoKindFor(source, value),
                         BuilderOpenOptions.bareId(source, value), kind, labelFor(source, value),
                         x, y, grid.cellWidth(), grid.cellHeight(), hovered, openable);
+                if (hasSubVariants(source, value)) {
+                    BuilderTemplateTile.renderMore(g, grid.moreX(i), grid.moreY(i, scrollY),
+                            grid.moreSize(), grid.isOverMore(i, mouseX, mouseY, scrollY));
+                }
             }
             g.disableScissor();
         }
@@ -261,12 +289,27 @@ public final class BuilderOpenScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && !entries.isEmpty()
-                && BuilderOpenOptions.isOpenable(mode, subType)) {
-            int index = grid.indexAt(mouseX, mouseY, scrollY, entries.size());
-            if (index >= 0) {
-                activate(entries.get(index));
-                return true;
+        if (button == 0 && !entries.isEmpty()) {
+            BuilderOpenOptions.OpenSource source = BuilderOpenOptions.openSourceFor(mode, subType);
+
+            // The drill-in button first: it sits inside a cell, so testing the cell first would
+            // swallow every click on it and open the group's own template instead.
+            for (int i = 0; i < entries.size(); i++) {
+                String value = entries.get(i);
+                if (hasSubVariants(source, value) && grid.isOverMore(i, mouseX, mouseY, scrollY)) {
+                    contentsGroup = value;
+                    scrollY = 0;
+                    rebuild();
+                    return true;
+                }
+            }
+
+            if (BuilderOpenOptions.isOpenable(source)) {
+                int index = grid.indexAt(mouseX, mouseY, scrollY, entries.size());
+                if (index >= 0) {
+                    activate(entries.get(index));
+                    return true;
+                }
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);

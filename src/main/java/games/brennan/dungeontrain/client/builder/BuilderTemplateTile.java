@@ -37,7 +37,19 @@ final class BuilderTemplateTile {
     /** A tile you can look at but not open. */
     private static final int INACTIVE_DIM = 0xA0000000;
 
-    private static final int LABEL_STRIP_H = 14;
+    private static final int LABEL_STRIP_H = BuilderTemplateGridLayout.LABEL_STRIP_H;
+
+    /** The drill-in button: a chip in the picture's bottom-right corner. */
+    private static final int MORE_BG = 0xC0101010;
+    private static final int MORE_BG_HOVER = 0xF0303030;
+    private static final int MORE_BORDER = 0xFF000000;
+    private static final int MORE_BORDER_HOVER = 0xFFFFFFFF;
+    /**
+     * Guillemet rather than a texture: the builder art is authored screenshots, and adding a GUI
+     * sprite sheet for one 12px glyph would be a lot of machinery for an arrow. Latin-1, so the
+     * font's unicode fallback covers it in every shipped locale.
+     */
+    private static final String MORE_GLYPH = "»";
 
     private BuilderTemplateTile() {}
 
@@ -83,5 +95,23 @@ final class BuilderTemplateTile {
         g.drawCenteredString(mc.font, label, x + width / 2,
                 stripTop + (LABEL_STRIP_H - mc.font.lineHeight) / 2,
                 openable ? LABEL_COLOUR : LABEL_INACTIVE);
+    }
+
+    /**
+     * The drill-in button, for a cell that stands for a group of sub-variants.
+     *
+     * <p>Drawn as a separate call after the cell so the caller — which is the only thing that knows
+     * which entries are groups — decides where it appears, and so the two hit targets inside one cell
+     * stay visibly distinct: the picture opens the group's own template, this opens what's under it.</p>
+     */
+    static void renderMore(GuiGraphics g, int x, int y, int size, boolean hovered) {
+        g.fill(x, y, x + size, y + size, hovered ? MORE_BG_HOVER : MORE_BG);
+        g.renderOutline(x, y, size, size, hovered ? MORE_BORDER_HOVER : MORE_BORDER);
+        Minecraft mc = Minecraft.getInstance();
+        int textWidth = mc.font.width(MORE_GLYPH);
+        g.drawString(mc.font, MORE_GLYPH,
+                x + (size - textWidth) / 2 + 1,
+                y + (size - mc.font.lineHeight) / 2 + 1,
+                LABEL_COLOUR, false);
     }
 }

@@ -152,6 +152,64 @@ final class BuilderTemplateGridLayoutTest {
     }
 
     @Test
+    @DisplayName("The drill-in button sits inside its own cell, clear of the caption strip")
+    void moreButtonIsInsideItsCell() {
+        for (int[] size : VIEWPORTS) {
+            BuilderTemplateGridLayout layout =
+                    BuilderTemplateGridLayout.of(size[0], TOP, BOTTOM, 24);
+            String where = " at width " + size[0];
+            int bx = layout.moreX(1);
+            int by = layout.moreY(1, 0);
+            int s = layout.moreSize();
+            int cellX = layout.xFor(1);
+            int cellY = layout.yFor(1, 0);
+
+            assertTrue(bx >= cellX && bx + s <= cellX + layout.cellWidth(),
+                    "button escapes its cell horizontally" + where);
+            assertTrue(by >= cellY, "button escapes its cell upward" + where);
+            // Above the caption strip, so it never sits on top of the template name.
+            assertTrue(by + s <= cellY + layout.cellHeight() - BuilderTemplateGridLayout.LABEL_STRIP_H,
+                    "button overlaps the caption strip" + where);
+        }
+    }
+
+    @Test
+    @DisplayName("The drill-in button answers for its own cell only, and follows scroll")
+    void moreButtonHitTestIsExact() {
+        BuilderTemplateGridLayout layout = BuilderTemplateGridLayout.of(960, TOP, BOTTOM, 30);
+        int inX = layout.moreX(0) + 1;
+        int inY = layout.moreY(0, 0) + 1;
+
+        assertTrue(layout.isOverMore(0, inX, inY, 0));
+        assertFalse(layout.isOverMore(1, inX, inY, 0), "a neighbour must not claim this click");
+        // The cell's own hit test still answers for that point — the caller resolves the overlap by
+        // testing the button first; both being true here is the thing that makes the order matter.
+        assertEquals(0, layout.indexAt(inX, inY, 0, 30));
+
+        // Just outside on each axis.
+        assertFalse(layout.isOverMore(0, layout.moreX(0) - 1, inY, 0));
+        assertFalse(layout.isOverMore(0, inX, layout.moreY(0, 0) - 1, 0));
+        assertFalse(layout.isOverMore(0, layout.moreX(0) + layout.moreSize(), inY, 0));
+
+        // Scrolled away, the same screen point is no longer over cell 0's button.
+        int oneRow = layout.cellHeight() + BuilderTemplateGridLayout.GAP;
+        assertFalse(layout.isOverMore(0, inX, inY, oneRow));
+        assertTrue(layout.isOverMore(layout.columns(), inX, inY, oneRow),
+                "the cell scrolled into that slot should own the button");
+    }
+
+    @Test
+    @DisplayName("The drill-in button is not clickable through the chrome above the grid")
+    void moreButtonRespectsTheViewport() {
+        BuilderTemplateGridLayout layout = BuilderTemplateGridLayout.of(640, TOP, BOTTOM, 60);
+        // Scroll so a row's button would land above the viewport, then aim at where it would be.
+        int scrolled = layout.maxScroll();
+        int y = layout.moreY(0, scrolled);
+        assertTrue(y < TOP, "expected cell 0's button to be scrolled above the viewport");
+        assertFalse(layout.isOverMore(0, layout.moreX(0) + 1, y + 1, scrolled));
+    }
+
+    @Test
     @DisplayName("Visibility tracks the viewport as the grid scrolls")
     void visibilityFollowsScroll() {
         BuilderTemplateGridLayout layout = BuilderTemplateGridLayout.of(640, TOP, BOTTOM, 60);
