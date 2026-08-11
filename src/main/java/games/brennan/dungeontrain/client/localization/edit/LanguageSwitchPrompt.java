@@ -79,18 +79,26 @@ public final class LanguageSwitchPrompt {
 
     /** The highlighted row's locale, or {@code null} if there is no list or no selection. */
     private static String selectedCode(LanguageSelectScreen screen) {
+        ObjectSelectionList<?> list = languageList(screen);
+        if (list == null) {
+            return null;
+        }
+        // Object, not AbstractSelectionList.Entry — the entry type is protected, and all we want from
+        // it is the code the accessor mixin exposes.
+        Object selected = list.getSelected();
+        return selected instanceof LanguageSelectEntryAccessor entry ? entry.dungeontrain$code() : null;
+    }
+
+    /**
+     * The language list itself, or {@code null} if another mod has replaced it — in which case both
+     * callers fall back to what the button did before there was a list to consult.
+     */
+    static ObjectSelectionList<?> languageList(LanguageSelectScreen screen) {
         for (var child : screen.children()) {
             if (child instanceof ObjectSelectionList<?> list) {
-                // Object, not AbstractSelectionList.Entry — the entry type is protected, and all we
-                // want from it is the code the accessor mixin exposes.
-                Object selected = list.getSelected();
-                if (selected instanceof LanguageSelectEntryAccessor entry) {
-                    return entry.dungeontrain$code();
-                }
-                return null;
+                return list;
             }
         }
-        // Another mod has replaced the list — say nothing and let the button behave as it always has.
         return null;
     }
 
