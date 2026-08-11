@@ -146,6 +146,8 @@ public final class TranslationScreen extends Screen {
     /** The magnifier that reveals the search box, and whether it currently is. */
     private SpriteIconButton searchToggle;
     private boolean searchOpen;
+    /** Folder / export / import — one list so the search toggle has one thing to flip, not three. */
+    private final List<SpriteIconButton> fileIcons = new ArrayList<>();
     /** Column height with and without Submit beneath it; swapped by {@link #setSubmitVisible}. */
     private int fullColumnHeight;
     private int shortColumnHeight;
@@ -210,6 +212,17 @@ public final class TranslationScreen extends Screen {
         searchToggle = addRenderableWidget(new SpriteIconButton(MARGIN, TOP, ROW_H, SEARCH_ICON,
             VANILLA_ICON_PX, Component.translatable("gui.dungeontrain.translate.search"),
             b -> setSearchOpen(!searchOpen)));
+
+        // Working outside the game lives here too, in the gap the open search box wants. The
+        // magnifier keeps the corner: it is the one control that stays put in both states, so it is
+        // what the row reads from.
+        fileIcons.clear();
+        int iconX = searchX;
+        fileIcons.add(iconButton(iconX, TOP, FOLDER_ICON, "open", null, b -> openFolder()));
+        iconX += ROW_H + GAP;
+        fileIcons.add(iconButton(iconX, TOP, EXPORT_ICON, "export", "export.tip", b -> runExport()));
+        iconX += ROW_H + GAP;
+        fileIcons.add(iconButton(iconX, TOP, IMPORT_ICON, "import", "import.tip", b -> runImport()));
 
         search = new EditBox(font, searchX, TOP, searchWidth, ROW_H,
             Component.translatable("gui.dungeontrain.translate.search"));
@@ -386,6 +399,12 @@ public final class TranslationScreen extends Screen {
             search.visible = searchOpen;
             search.active = searchOpen;
         }
+        // The file icons sit exactly where the open box wants to be. One row, two things wanting the
+        // same width — the one just asked for wins, and they come back when it closes.
+        for (SpriteIconButton icon : fileIcons) {
+            icon.visible = !searchOpen;
+            icon.active = !searchOpen;
+        }
         if (searchToggle != null) {
             searchToggle.setTooltip(Tooltip.create(Component.translatable(searchOpen
                 ? "gui.dungeontrain.translate.search.close"
@@ -455,36 +474,26 @@ public final class TranslationScreen extends Screen {
      * doorway, and the row grows as those land.
      */
     private void layoutBottomRow(int y, int contentWidth) {
-        // Submit is not here: it belongs to the working batch and lives under the column that row
-        // heads (see init). Working outside the game is three icons rather than a doorway to a
-        // screen that was only ever these same three buttons — hover names each one.
-        int x = MARGIN;
-        x += iconButton(x, y, FOLDER_ICON, "open", null, b -> openFolder());
-        x += iconButton(x, y, EXPORT_ICON, "export", "export.tip", b -> runExport());
-        x += iconButton(x, y, IMPORT_ICON, "import", "import.tip", b -> runImport());
-
-        // Undo is not here either — it belongs beside Submit, on the batch it throws away. Done gets
-        // what is left.
-        int rest = Math.max(ROW_H, MARGIN + contentWidth - x);
+        // Nothing else lives down here any more: the file icons went up to the control row, Submit
+        // and the bin belong to the working batch under the column, and what is left is the way out.
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-            .bounds(x, y, rest, ROW_H).build());
+            .bounds(MARGIN, y, contentWidth, ROW_H).build());
     }
 
     /**
-     * One square action button carrying a vanilla item, returning the width it consumed.
+     * One square action button carrying a GUI sprite.
      *
      * <p>The tooltip does the labelling an icon cannot: the button's own name, and — where the old
      * Files screen had one — the sentence explaining what it will actually do to your disk.</p>
      */
-    private int iconButton(int x, int y, ResourceLocation icon, String key,
-                           String tipKey, Button.OnPress onPress) {
+    private SpriteIconButton iconButton(int x, int y, ResourceLocation icon, String key,
+                                        String tipKey, Button.OnPress onPress) {
         Component name = Component.translatable("gui.dungeontrain.translate.files." + key);
         SpriteIconButton button = new SpriteIconButton(x, y, ROW_H, icon, OWN_ICON_PX, name, onPress);
         button.setTooltip(Tooltip.create(tipKey == null ? name
             : name.copy().append("\n").append(
                 Component.translatable("gui.dungeontrain.translate.files." + tipKey))));
-        addRenderableWidget(button);
-        return ROW_H + GAP;
+        return addRenderableWidget(button);
     }
 
     // ---- working outside the game (was TranslationFilesScreen) ----------------------------------
