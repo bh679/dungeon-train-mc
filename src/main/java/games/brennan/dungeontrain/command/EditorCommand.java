@@ -914,6 +914,10 @@ public final class EditorCommand {
         }
         try {
             plot.save();
+            // The builder's pause menu lights its X/Y/Z/V cells from the bounds packet, so push a
+            // fresh one — otherwise the cell you just toggled keeps showing the old state until
+            // something else happens to resend it.
+            games.brennan.dungeontrain.net.BuilderBoundsPacket.sendTo(player, player.serverLevel());
             source.sendSuccess(() -> Component.literal(
                 "Editor: mirror " + axis.toUpperCase(Locale.ROOT) + " " + (on ? "on" : "off"))
                 .withStyle(ChatFormatting.GREEN), true);

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.world;
 
+import games.brennan.dungeontrain.builder.BuilderMirrorFlags;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -59,6 +60,12 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE = "breakBlocksOnContactOverride";
     private static final String TAG_USED_CARRIAGE_IDS = "usedSharedCarriageIds";
     private static final String TAG_BUILDER_MODE = "builderMode";
+    private static final String TAG_BUILDER_VARIANT = "builderVariant";
+    private static final String TAG_BUILDER_STAGE = "builderStage";
+    private static final String TAG_BUILDER_NAME = "builderName";
+    private static final String TAG_BUILDER_MIRROR = "builderMirror";
+    private static final String TAG_BUILDER_SUB_TYPE = "builderSubType";
+    private static final String TAG_BUILDER_PART_KIND = "builderPartKind";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -77,6 +84,37 @@ public final class DungeonTrainWorldData extends SavedData {
      * needs to draw the build bounds.</p>
      */
     private String builderMode;
+    /**
+     * The registered carriage variant the builder world was <em>stamped from</em> — the source of
+     * the blocks standing on the track. Recorded so a mode switch can re-stamp the same carriage
+     * even if the registry order changes (a package reload reorders it).
+     *
+     * <p>Deliberately <b>not</b> the name the build will be saved as: see {@link #builderName}.
+     * Conflating the two meant a named build resolved to no registered variant and saved over
+     * whichever template happened to be first.</p>
+     */
+    private String builderVariant;
+    /**
+     * What the current build will be <em>saved as</em>. Empty or null means an unnamed draft — it
+     * exists to build in, and nothing is written to disk until the builder names it.
+     */
+    private String builderName;
+    /** Packed {@code BuilderMirrorFlags} for this build; 0 = no mirroring, which is the default. */
+    private int builderMirror;
+    /**
+     * What kind of thing this build is — {@code whole_carriage}, {@code carriage_room} or
+     * {@code parts}. Save needs it: a room and a part are captured from different regions and
+     * written to different stores, so without it every Save could only ever write a carriage.
+     */
+    private String builderSubType;
+    /** Which part kind, when {@link #builderSubType} is {@code parts}. */
+    private String builderPartKind;
+    /**
+     * The Stage the builder picked when starting this build, or null/empty when they didn't pick
+     * one. Held until the build is saved, at which point the written template is linked to it —
+     * without this the stage choice would only decide which blocks got copied and then evaporate.
+     */
+    private String builderStage;
     /** Per-world override of train-on-contact block breaking; null = use the global COMMON default. */
     private Boolean breakBlocksOnContactOverride;
     /** Per-world one-shot: true once the join-info report (DT version + train seed + mods) has been posted to Discord. */
@@ -248,6 +286,23 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_BUILDER_MODE)) {
             data.builderMode = tag.getString(TAG_BUILDER_MODE);
         }
+        if (tag.contains(TAG_BUILDER_VARIANT)) {
+            data.builderVariant = tag.getString(TAG_BUILDER_VARIANT);
+        }
+        if (tag.contains(TAG_BUILDER_STAGE)) {
+            data.builderStage = tag.getString(TAG_BUILDER_STAGE);
+        }
+        if (tag.contains(TAG_BUILDER_NAME)) {
+            data.builderName = tag.getString(TAG_BUILDER_NAME);
+        }
+        // getInt returns 0 for an absent key, which is exactly "no mirroring".
+        data.builderMirror = tag.getInt(TAG_BUILDER_MIRROR);
+        if (tag.contains(TAG_BUILDER_SUB_TYPE)) {
+            data.builderSubType = tag.getString(TAG_BUILDER_SUB_TYPE);
+        }
+        if (tag.contains(TAG_BUILDER_PART_KIND)) {
+            data.builderPartKind = tag.getString(TAG_BUILDER_PART_KIND);
+        }
         return data;
     }
 
@@ -275,6 +330,24 @@ public final class DungeonTrainWorldData extends SavedData {
         if (builderMode != null) {
             tag.putString(TAG_BUILDER_MODE, builderMode);
         }
+        if (builderVariant != null) {
+            tag.putString(TAG_BUILDER_VARIANT, builderVariant);
+        }
+        if (builderStage != null) {
+            tag.putString(TAG_BUILDER_STAGE, builderStage);
+        }
+        if (builderName != null) {
+            tag.putString(TAG_BUILDER_NAME, builderName);
+        }
+        if (builderMirror != 0) {
+            tag.putInt(TAG_BUILDER_MIRROR, builderMirror);
+        }
+        if (builderSubType != null) {
+            tag.putString(TAG_BUILDER_SUB_TYPE, builderSubType);
+        }
+        if (builderPartKind != null) {
+            tag.putString(TAG_BUILDER_PART_KIND, builderPartKind);
+        }
         return tag;
     }
 
@@ -285,6 +358,62 @@ public final class DungeonTrainWorldData extends SavedData {
 
     public void setBuilderMode(String modeId) {
         this.builderMode = modeId;
+        setDirty();
+    }
+
+    /** Registered variant id the builder world was stamped from, or null outside a builder world. */
+    public String builderVariant() {
+        return builderVariant;
+    }
+
+    public void setBuilderVariant(String variantId) {
+        this.builderVariant = variantId;
+        setDirty();
+    }
+
+    /** What the current build saves as; null/empty for an unnamed draft. */
+    public String builderName() {
+        return builderName;
+    }
+
+    public void setBuilderName(String name) {
+        this.builderName = name;
+        setDirty();
+    }
+
+    /** Mirror setting for the current build. See {@code BuilderMirrorFlags} for why it lives here. */
+    public BuilderMirrorFlags builderMirror() {
+        return BuilderMirrorFlags.unpack(builderMirror);
+    }
+
+    public void setBuilderMirror(BuilderMirrorFlags flags) {
+        this.builderMirror = flags == null ? 0 : flags.pack();
+        setDirty();
+    }
+
+    /** What kind of template this build becomes on Save; null outside a builder world. */
+    public String builderSubType() {
+        return builderSubType;
+    }
+
+    /** Part kind for a parts build, or null/empty when this build isn't a part. */
+    public String builderPartKind() {
+        return builderPartKind;
+    }
+
+    public void setBuilderSubType(String subTypeId, String partKindId) {
+        this.builderSubType = subTypeId;
+        this.builderPartKind = partKindId;
+        setDirty();
+    }
+
+    /** Stage the current build was started for, or null/empty when none was picked. */
+    public String builderStage() {
+        return builderStage;
+    }
+
+    public void setBuilderStage(String stageId) {
+        this.builderStage = stageId;
         setDirty();
     }
 

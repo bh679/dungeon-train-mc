@@ -136,6 +136,12 @@ public final class DungeonTrainNet {
         registrar.playToServer(AbandonRunPacket.TYPE, AbandonRunPacket.STREAM_CODEC, AbandonRunPacket::handle);
         registrar.playToServer(BuilderSetupPacket.TYPE, BuilderSetupPacket.STREAM_CODEC, BuilderSetupPacket::handle);
         registrar.playToClient(BuilderBoundsPacket.TYPE, BuilderBoundsPacket.STREAM_CODEC, BuilderBoundsPacket::handle);
+        registrar.playToServer(BuilderSwitchPacket.TYPE, BuilderSwitchPacket.STREAM_CODEC, BuilderSwitchPacket::handle);
+        registrar.playToServer(BuilderDirtyRequestPacket.TYPE, BuilderDirtyRequestPacket.STREAM_CODEC, BuilderDirtyRequestPacket::handle);
+        registrar.playToClient(BuilderDirtyPacket.TYPE, BuilderDirtyPacket.STREAM_CODEC, BuilderDirtyPacket::handle);
+        registrar.playToServer(BuilderSavePacket.TYPE, BuilderSavePacket.STREAM_CODEC, BuilderSavePacket::handle);
+        registrar.playToServer(BuilderNewPacket.TYPE, BuilderNewPacket.STREAM_CODEC, BuilderNewPacket::handle);
+        registrar.playToServer(BuilderRenamePacket.TYPE, BuilderRenamePacket.STREAM_CODEC, BuilderRenamePacket::handle);
         registrar.playToClient(BuilderCinematicPacket.TYPE, BuilderCinematicPacket.STREAM_CODEC, BuilderCinematicPacket::handle);
 
         // Remote-echo encounter screenshot: server → player at first eye-contact to frame + capture the

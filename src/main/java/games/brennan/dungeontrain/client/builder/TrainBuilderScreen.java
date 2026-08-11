@@ -5,6 +5,8 @@ import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.client.DevQuickWorldHandler;
 import games.brennan.dungeontrain.client.EditorAutoOpenHandler;
 import games.brennan.dungeontrain.editor.EditorDevMode;
+import games.brennan.dungeontrain.net.BuilderSwitchPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -40,10 +42,28 @@ public final class TrainBuilderScreen extends Screen {
     private static final int BACK_BUTTON_BOTTOM_MARGIN = 28;
 
     private final Screen lastScreen;
+    /** True when opened from inside a builder world: tiles re-shape this world instead of making one. */
+    private final boolean switching;
 
     public TrainBuilderScreen(Screen lastScreen) {
+        this(lastScreen, false);
+    }
+
+    private TrainBuilderScreen(Screen lastScreen, boolean switching) {
         super(Component.translatable("gui.dungeontrain.builder.title"));
         this.lastScreen = lastScreen;
+        this.switching = switching;
+    }
+
+    /**
+     * The same picker, reached from the builder pause menu's <b>Open</b>.
+     *
+     * <p>Identical grid, art and labels — only the tile action differs: instead of creating
+     * another world, it asks the server to re-stamp the one you're standing in. The server owns
+     * the unsaved-changes decision and may answer with a confirmation prompt instead.</p>
+     */
+    public static TrainBuilderScreen forSwitch(Screen lastScreen) {
+        return new TrainBuilderScreen(lastScreen, true);
     }
 
     @Override
@@ -78,6 +98,12 @@ public final class TrainBuilderScreen extends Screen {
     }
 
     private void launch(BuilderMode mode) {
+        if (switching) {
+            LOGGER.info("TrainBuilder: '{}' selected — asking the server to re-stamp this world", mode.id());
+            Minecraft.getInstance().setScreen(null);
+            DungeonTrainNet.sendToServer(new BuilderSwitchPacket(mode.id(), false));
+            return;
+        }
         LOGGER.info("TrainBuilder: '{}' selected — launching flat builder world", mode.id());
         // Same one-shot as the editor button: force source-tree write-through on for this
         // session so anything the builder saves lands in the working tree on a dev checkout.

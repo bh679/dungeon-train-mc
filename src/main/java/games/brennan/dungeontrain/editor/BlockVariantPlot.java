@@ -216,6 +216,14 @@ public interface BlockVariantPlot {
      */
     static @Nullable BlockVariantPlot resolveAt(ServerPlayer player, CarriageDims dims) {
         BlockPos pos = player.blockPosition();
+        // A builder world holds one build and has no plot grid, so it answers from world data
+        // instead of from where the player stands — that's what makes mirror work out on the
+        // platform. Checked first, and it costs ordinary worlds one dimension comparison.
+        if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            games.brennan.dungeontrain.builder.BuilderCarriagePlot builderPlot =
+                games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(serverLevel, pos, dims);
+            if (builderPlot != null) return builderPlot;
+        }
         CarriageVariant carriage = CarriageEditor.plotContaining(pos, dims);
         if (carriage != null) {
             BlockPos origin = CarriageEditor.plotOrigin(carriage, dims);
