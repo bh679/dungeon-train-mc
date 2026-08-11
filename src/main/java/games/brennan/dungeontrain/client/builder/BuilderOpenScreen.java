@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderOpenOptions;
 import games.brennan.dungeontrain.builder.BuilderOpenRequest;
+import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.editor.EditorTemplateLists;
 import games.brennan.dungeontrain.net.BuilderDirtyRequestPacket;
 import games.brennan.dungeontrain.net.BuilderNewPacket;
@@ -63,14 +64,18 @@ public final class BuilderOpenScreen extends Screen {
     private BuilderNewOptions.SubType subType = BuilderNewOptions.SubType.WHOLE_CARRIAGE;
     private String partKind = BuilderNewOptions.PART_KINDS.get(0);
     /**
-     * The contents group being looked inside, empty at the top level.
+     * The row being looked inside, empty at the top level.
+     *
+     * <p>Two lists have a second level and they share this one field, because from the screen's side
+     * they are the same gesture: a contents group holding its sub-variants, and a Stage holding the
+     * carriage variants you might build for it.</p>
      *
      * <p>A group's members are real things to open — {@code maze}'s copper room is a room — but they
      * are not siblings of {@code maze}, and listing them flat beside it (as this screen first did, and
      * as New's one-cycle-button picker still must) says they are. A grid has somewhere to go, so it
      * drills in instead.</p>
      */
-    private String contentsGroup = "";
+    private String group = "";
 
     /** The ids currently on show, rebuilt whenever the type selection changes. */
     private List<String> entries = List.of();
@@ -102,7 +107,7 @@ public final class BuilderOpenScreen extends Screen {
                 () -> null,
                 value -> {
                     mode = value;
-                    contentsGroup = "";
+                    group = "";
                     scrollY = 0;   // a different mode is a different list; keeping the offset would land mid-nowhere
                     rebuild();
                 }));
@@ -113,18 +118,18 @@ public final class BuilderOpenScreen extends Screen {
             controls.add(BuilderTypeControls.subType(controlX, y, CONTROL_WIDTH, ROW_HEIGHT, subType,
                     value -> {
                         subType = value;
-                        contentsGroup = "";
+                        group = "";
                         scrollY = 0;
                         rebuild();
                     }));
             // Looking inside a group: the group sits beside the sub type, sharing its row, and
             // clicking it comes back out. It reads as a second half of the same choice — "Carriage
             // Room, the Maze ones" — which is what it is.
-            if (!contentsGroup.isEmpty()) {
+            if (!group.isEmpty()) {
                 controls.add(Button.builder(
-                                Component.literal(BuilderLabels.pretty(contentsGroup)),
+                                Component.literal(BuilderLabels.pretty(group)),
                                 b -> {
-                                    contentsGroup = "";
+                                    group = "";
                                     scrollY = 0;
                                     rebuild();
                                 })
@@ -170,9 +175,14 @@ public final class BuilderOpenScreen extends Screen {
     private List<String> listEntries() {
         return switch (BuilderOpenOptions.openSourceFor(mode, subType)) {
             case STAGES -> stagesThenSavedBuilds();
-            case CONTENTS -> contentsGroup.isEmpty()
+            case CONTENTS -> group.isEmpty()
                     ? EditorTemplateLists.contents()
-                    : EditorTemplateLists.contentsMembers(contentsGroup);
+                    : EditorTemplateLists.contentsMembers(group);
+            // Every carriage under every stage, not the ones linked to it — see
+            // BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE for why the list isn't filtered.
+            case CARRIAGES_BY_STAGE -> group.isEmpty()
+                    ? EditorTemplateLists.stages()
+                    : EditorTemplateLists.carriages();
             case PARTS -> EditorTemplateLists.parts(partKindValue());
             case TRACK_TILES -> EditorTemplateLists.tracks();
             case TUNNEL_PORTALS -> EditorTemplateLists.tunnels(TunnelPlacer.TunnelVariant.PORTAL);
@@ -217,12 +227,20 @@ public final class BuilderOpenScreen extends Screen {
         return Component.literal(BuilderLabels.pretty(bare));
     }
 
-    /** Top-level contents, each followed by its sub-variants — a group's members are openable too. */
-    /** Whether {@code value} is a group the grid can look inside — the drill-in button's condition. */
+    /**
+     * Whether {@code value} is a row the grid can look inside — the drill-in button's condition.
+     *
+     * <p>Only ever true at the top level: neither list nests twice. Which entries qualify is the
+     * difference between the two sources — a contents entry has to actually be a group, while every
+     * entry in the stage list is one, because a Stage's carriage variants are exactly what the arm
+     * exists to show.</p>
+     */
     private boolean hasSubVariants(BuilderOpenOptions.OpenSource source, String value) {
-        return source == BuilderOpenOptions.OpenSource.CONTENTS
-                && contentsGroup.isEmpty()
-                && EditorTemplateLists.isContentsGroup(value);
+        if (!BuilderOpenOptions.drillsIn(source) || !group.isEmpty()) {
+            return false;
+        }
+        return source != BuilderOpenOptions.OpenSource.CONTENTS
+                || EditorTemplateLists.isContentsGroup(value);
     }
 
     private CarriagePartKind partKindValue() {
@@ -259,7 +277,7 @@ public final class BuilderOpenScreen extends Screen {
                         && mouseY >= grid.topY() && mouseY < grid.bottomY();
                 String value = entries.get(i);
                 BuilderTemplateTile.render(g, mode, modeArtAvailable,
-                        BuilderOpenOptions.photoKindFor(source, value),
+                        BuilderOpenOptions.photoKindFor(source, value, !group.isEmpty()),
                         BuilderOpenOptions.bareId(source, value), kind, labelFor(source, value),
                         x, y, grid.cellWidth(), grid.cellHeight(), hovered, openable);
                 if (hasSubVariants(source, value)) {
@@ -297,7 +315,7 @@ public final class BuilderOpenScreen extends Screen {
             for (int i = 0; i < entries.size(); i++) {
                 String value = entries.get(i);
                 if (hasSubVariants(source, value) && grid.isOverMore(i, mouseX, mouseY, scrollY)) {
-                    contentsGroup = value;
+                    group = value;
                     scrollY = 0;
                     rebuild();
                     return true;
@@ -368,12 +386,32 @@ public final class BuilderOpenScreen extends Screen {
      *       load-bearing: it leaves the result an unnamed draft, so New's lenient fallbacks can't
      *       reach a Save that overwrites something.</li>
      * </ul>
+     *
+     * <p>The stage list under Carriage Room splits the same two ways, one level apart: its top-level
+     * tiles are Stages and do the Stage thing, and the carriages underneath them are templates and
+     * are opened.</p>
      */
     private Runnable actionFor(BuilderOpenOptions.OpenSource source, String value, boolean force) {
-        if (source == BuilderOpenOptions.OpenSource.STAGES && !BuilderOpenOptions.isSavedBuild(value)) {
+        boolean stageTile = source == BuilderOpenOptions.OpenSource.STAGES
+                ? !BuilderOpenOptions.isSavedBuild(value)
+                : source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE && group.isEmpty();
+        if (stageTile) {
             String stageId = BuilderOpenOptions.bareId(source, value);
+            // Whole Carriage whichever arm the stage was clicked in: "a fresh carriage for that
+            // stretch of the game" is one action, and it is the only reading BuilderNewPacket has
+            // for a tagged stage — the Carriage Room arm's own sub type would send the id into
+            // CopySource.CARRIAGES, where a stage name resolves to no carriage at all.
             return () -> DungeonTrainNet.sendToServer(new BuilderNewPacket(
-                    mode.id(), subType.id(), partKind, BuilderNewOptions.tagStage(stageId), ""));
+                    mode.id(), BuilderNewOptions.SubType.WHOLE_CARRIAGE.id(), partKind,
+                    BuilderNewOptions.tagStage(stageId), ""));
+        }
+        // Drilled into a stage: a carriage template, opened as one, dressed in the stage being
+        // browsed. forSelection reads Carriage Room as a room — true from inside the wall, not here.
+        if (source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE) {
+            String carriageId = BuilderOpenOptions.bareId(source, value);
+            String stageId = group;
+            return () -> DungeonTrainNet.sendToServer(new BuilderOpenPacket(mode.id(),
+                    BuilderPhotoPaths.Kind.CARRIAGE.id(), carriageId, "", force, stageId));
         }
         BuilderOpenRequest request = BuilderOpenRequest
                 .forSelection(subType, BuilderOpenOptions.bareId(source, value), partKindValue())

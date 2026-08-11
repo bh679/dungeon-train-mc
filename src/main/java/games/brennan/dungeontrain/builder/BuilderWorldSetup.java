@@ -422,6 +422,26 @@ public final class BuilderWorldSetup {
      * @return true if the world now holds the requested template
      */
     public static boolean applyOpen(ServerLevel level, BuilderMode mode, BuilderOpenRequest request) {
+        return applyOpen(level, mode, request, "");
+    }
+
+    /**
+     * As {@link #applyOpen(ServerLevel, BuilderMode, BuilderOpenRequest)}, dressed for one stage.
+     *
+     * <p>{@code browsedStageId} is where the Open grid was standing when the tile was clicked — the
+     * Carriage Room arm lists the stages and the carriage variants under each — and it decides the
+     * <em>parts overlay</em> the carriage is stamped with, nothing else.</p>
+     *
+     * <p>Pointedly not the same thing as the stage recorded on the build. That one stays the
+     * template's own link, because {@code BuilderSave.saveWholeCarriage} feeds it to
+     * {@code linkStage}: writing the browsed stage there would mean looking at {@code windowed} under
+     * {@code desert} and hitting Save re-gates a built-in carriage to desert-only spawning, which is
+     * not something browsing should be able to do.</p>
+     *
+     * @param browsedStageId the stage being browsed, or empty to use the template's own link
+     */
+    public static boolean applyOpen(ServerLevel level, BuilderMode mode, BuilderOpenRequest request,
+                                    String browsedStageId) {
         if (!level.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
             return false;
         }
@@ -455,8 +475,11 @@ public final class BuilderWorldSetup {
         // EditorStageSelection.effective() to route the per-stage parts overlay, so a stage chosen
         // afterwards would have no effect on the blocks that were just laid down.
         String stageId = open.stageId();
-        if (!stageId.isEmpty()) {
-            EditorStageSelection.select(stageId);
+        String shownStage = browsedStageId == null || browsedStageId.isEmpty()
+                ? stageId
+                : browsedStageId;
+        if (!shownStage.isEmpty()) {
+            EditorStageSelection.select(shownStage);
         }
 
         stampTrain(level, dims, carriages, open.shell());
@@ -478,9 +501,11 @@ public final class BuilderWorldSetup {
             EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(i), level, origin,
                     dims.length(), dims.height(), dims.width());
         }
-        LOGGER.info("[DungeonTrain] Builder open: {} '{}' into mode '{}' on shell '{}', stage '{}'",
+        LOGGER.info("[DungeonTrain] Builder open: {} '{}' into mode '{}' on shell '{}', stage '{}'"
+                        + " (shown as '{}')",
                 request.kind().id(), request.id(), mode.id(), open.shell().id(),
-                stageId.isEmpty() ? "<none>" : stageId);
+                stageId.isEmpty() ? "<none>" : stageId,
+                shownStage.isEmpty() ? "<none>" : shownStage);
         return true;
     }
 
