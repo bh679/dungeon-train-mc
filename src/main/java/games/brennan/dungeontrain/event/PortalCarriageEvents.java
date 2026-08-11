@@ -370,6 +370,14 @@ public final class PortalCarriageEvents {
                 int anchorPIdx = group.getKey();
                 ManagedShip ship = group.getValue();
 
+                // Portal groups only, asked before the pose guards rather than per slot below —
+                // not to save the work, which is a lottery draw, but because those guards WARN.
+                // "This pair has no swap plane this tick" is only meaningful about a group that
+                // would otherwise have had one, and most groups on a train are ordinary carriages
+                // that never had a portal in them. Warning for those buries the signal the log
+                // exists to carry. isPortalGroup answers for the whole group from any index in it.
+                if (!PortalCarriageSelection.isPortalGroup(level, anchorPIdx)) continue;
+
                 // knownGroups is a grow-only registry, so a handle in it can outlive its sub-level.
                 // A stale one still answers worldAABB() with its LAST pose (ManagedShip#isResident
                 // says so explicitly), and the carriage frame below is derived straight from that
