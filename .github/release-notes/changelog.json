@@ -6723,6 +6723,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-doorway-stays-with-its-carriage",
+      "version": "0.552.0",
+      "type": "fix",
+      "title": "Portal doorways stay with their carriage instead of being left behind",
+      "summary": "A portal's doorway belongs to the carriage carrying it. If that carriage was set aside while the train rolled on, the doorway could be left behind hanging where the train used to be \u2014 and riding an ordinary carriage through that spot would pull you in and drop you into the empty space beneath the world, without you ever having walked into a portal. A doorway now travels with its carriage or stops existing entirely, and a portal that has nowhere solid on the other side quietly does nothing instead of dropping you.",
+      "highlights": [
+        "Riding an ordinary carriage can no longer pull you through a portal you never walked into",
+        "A portal with nowhere solid to land now does nothing rather than dropping you below the world"
+      ],
+      "pr": 935,
+      "date": "2026-08-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
