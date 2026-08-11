@@ -61,6 +61,27 @@ public final class BuilderWorldLayout {
     /** Keeps the world spawn clear of the corridor so you don't materialise inside the train. */
     private static final int SPAWN_Z_MARGIN = 4;
 
+    /**
+     * Half of the horizontal field of view the spawn standoff is sized for, in degrees.
+     *
+     * <p>Deliberately narrower than what a default client actually has (~51° at FOV 70 on a 16:9
+     * window): FOV is a per-player setting that can go down to 30, and a 4:3 window is narrower
+     * still, so sizing for the default would put the end carriages off-screen for anyone who
+     * isn't on it. Standing a little further back than strictly necessary costs nothing; not
+     * being able to see the ends of your own train is the whole problem.</p>
+     */
+    private static final double FRAMING_HALF_ANGLE_DEG = 38.0;
+
+    /** Blocks of clearance beyond the geometric fit, so the train doesn't touch the screen edges. */
+    private static final double FRAMING_MARGIN = 3.0;
+
+    /**
+     * Closest the spawn ever stands to the track centre. Floors the standoff for a one-carriage
+     * build and for the carriage-less modes, where the geometric fit would otherwise plant you
+     * with your nose against the hull.
+     */
+    private static final double MIN_VIEW_DISTANCE = 9.0;
+
     private BuilderWorldLayout() {}
 
     public static boolean inPlatform(int x, int z) {
@@ -92,9 +113,47 @@ public final class BuilderWorldLayout {
         return (y == Y_TRACK_BED || y == Y_TRACK_RAIL) && inCorridor(pos.getZ(), dims);
     }
 
-    /** World spawn: on the grass, a few blocks clear of the track on Z. */
+    /**
+     * World spawn before the mode is known — the nearest standoff, clear of the corridor.
+     *
+     * <p>Used by the server-start anchor, which runs before the client has said which tile was
+     * clicked. {@code BuilderSetupPacket} re-anchors with {@link #spawnPos(CarriageDims, int)}
+     * once it knows how much train there is.</p>
+     */
     public static BlockPos spawnPos(CarriageDims dims) {
-        return new BlockPos(0, Y_STAND, dims.width() + SPAWN_Z_MARGIN);
+        return spawnPos(dims, 0);
+    }
+
+    /**
+     * World spawn: on the grass, far enough back on Z that the whole template fits in view.
+     *
+     * <p>Standing a fixed few blocks off the corridor was fine for one carriage and useless for
+     * three — a 37-block run seen from 8 blocks away is a wall, and you can't judge a silhouette
+     * you can't fit on screen. The standoff is therefore sized from the train's actual length
+     * against {@link #FRAMING_HALF_ANGLE_DEG}, floored at {@link #MIN_VIEW_DISTANCE} so a short
+     * build doesn't put you inside it.</p>
+     */
+    public static BlockPos spawnPos(CarriageDims dims, int carriages) {
+        int z = (int) Math.ceil(trackCenterZ(dims) + viewDistance(carriages, dims));
+        return new BlockPos(0, Y_STAND, Math.max(z, dims.width() + SPAWN_Z_MARGIN));
+    }
+
+    /**
+     * How far back from the track centre the spawn stands, in blocks. Half the train's length
+     * has to subtend no more than {@link #FRAMING_HALF_ANGLE_DEG}, plus a margin.
+     */
+    public static double viewDistance(int carriages, CarriageDims dims) {
+        if (carriages <= 0) {
+            return MIN_VIEW_DISTANCE;
+        }
+        double halfLength = totalTrainLength(carriages, dims) / 2.0;
+        double fit = halfLength / Math.tan(Math.toRadians(FRAMING_HALF_ANGLE_DEG)) + FRAMING_MARGIN;
+        return Math.max(fit, MIN_VIEW_DISTANCE);
+    }
+
+    /** Centre of the track corridor on Z — the axis the train is centred on. */
+    public static double trackCenterZ(CarriageDims dims) {
+        return dims.width() / 2.0;
     }
 
     /**

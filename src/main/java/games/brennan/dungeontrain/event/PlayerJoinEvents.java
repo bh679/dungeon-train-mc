@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderCinematicService;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.net.BuilderBoundsPacket;
@@ -200,6 +201,10 @@ public final class PlayerJoinEvents {
         // If the intro cinematic will play, open the loading screen + freeze the
         // player from world-entry so they don't fall while the train settles.
         CinematicIntroService.armPreloadIfNeeded(player);
+        // Reopening an already-built Train Builder world: replay the arrival shot over the
+        // template. A freshly created one is still void at this point — BuilderSetupPacket
+        // triggers that one after it stamps.
+        BuilderCinematicService.queueOnJoin(player);
         // Only queue the train-placement retry loop in worlds that actually have a train.
         // Otherwise every join to an editor or builder world burns MAX_RETRY_TICKS (5 s) of
         // per-tick lookups that can never succeed, and ends in a timeout log that reads like
@@ -214,6 +219,7 @@ public final class PlayerJoinEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             PENDING.remove(player.getUUID());
             CinematicIntroService.forget(player.getUUID());
+            BuilderCinematicService.forget(player.getUUID());
             EditorWelcome.forget(player.getUUID());
             DevMessageConsent.forget(player.getUUID());
             NetworkConsentMirror.forget(player.getUUID());
@@ -238,6 +244,8 @@ public final class PlayerJoinEvents {
         // Expire spawn-cinematic invulnerability windows — must run even when
         // no players are queued for placement.
         CinematicIntroService.tick(server);
+        // Fire any Train Builder arrival shot whose post-login delay has elapsed.
+        BuilderCinematicService.tick(server);
         // Deliver any editor welcome whose 2.2s post-entry delay has elapsed.
         EditorWelcome.tick(server);
 
