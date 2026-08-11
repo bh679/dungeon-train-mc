@@ -33,10 +33,21 @@ public final class CreditsIconButton extends Button {
     /** Vanilla item-icon side length in pixels. */
     private static final int ICON = 16;
 
-    private final ItemStack icon = new ItemStack(Items.BOOK);
+    private final ItemStack icon;
 
     public CreditsIconButton(int x, int y, int size, Component narration, OnPress onPress) {
+        this(x, y, size, new ItemStack(Items.BOOK), narration, onPress);
+    }
+
+    /**
+     * The same square button carrying any vanilla item as its glyph — the translation editor's
+     * search toggle uses a spyglass. Parameterised rather than copied because the whole trick here
+     * is "no bespoke texture", and that is worth having once.
+     */
+    public CreditsIconButton(int x, int y, int size, ItemStack icon, Component narration,
+                             OnPress onPress) {
         super(x, y, size, size, narration, onPress, DEFAULT_NARRATION);
+        this.icon = icon;
     }
 
     @Override

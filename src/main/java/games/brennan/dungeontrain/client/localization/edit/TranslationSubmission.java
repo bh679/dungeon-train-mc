@@ -57,8 +57,9 @@ public record TranslationSubmission(long submittedAtMs, String locale, String tr
      * giving it the same shape as the rest is what lets it sit at the top of the same list instead
      * of needing a second widget. It carries no timestamp because it has not happened yet.</p>
      *
-     * <p>Only ever built with real work in it: the screen leaves the row out entirely when there is
-     * nothing unsent, so there is no empty state to render and no zero to explain.</p>
+     * <p>Always present, empty or not: it is where "what am I working on" lives, and a first row
+     * that comes and goes is harder to read than one that always reports. Empty, it says so — and
+     * Submit is what disappears instead, since that is the thing with nothing to do.</p>
      */
     public static TranslationSubmission unsubmitted(String locale, int units) {
         return new TranslationSubmission(0L, locale, "", units, 0, 0, 0, 0, false, true);
@@ -99,7 +100,9 @@ public record TranslationSubmission(long submittedAtMs, String locale, String tr
      */
     public Component statusLine() {
         if (unsubmitted) {
-            return Component.translatable("gui.dungeontrain.translate.sent.unsubmitted");
+            return units > 0
+                ? Component.translatable("gui.dungeontrain.translate.sent.unsubmitted")
+                : Component.translatable("gui.dungeontrain.translate.sent.nothing_to_send");
         }
         if (queued) {
             return Component.translatable("gui.dungeontrain.translate.sent.queued");
@@ -124,7 +127,7 @@ public record TranslationSubmission(long submittedAtMs, String locale, String tr
         if (unsubmitted) {
             // Deliberately not amber: nothing here is waiting on anyone else, and colouring it like
             // work under review would put the translator's own drafts in the reviewer's queue.
-            return ChatFormatting.WHITE;
+            return units > 0 ? ChatFormatting.WHITE : ChatFormatting.DARK_GRAY;
         }
         if (queued) {
             return ChatFormatting.GRAY;

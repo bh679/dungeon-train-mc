@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,14 +41,15 @@ class TranslationSubmissionRowTest {
     }
 
     @Test
-    @DisplayName("the working batch says one thing, whatever it is carrying")
-    void oneWordWhateverTheCount() {
-        // There is no empty state to word: the screen leaves the row out when nothing is unsent
-        // (TranslationScreen#onHistory), so every row that exists has real work in it.
-        assertEquals(TranslationSubmission.unsubmitted("de_de", 1).statusLine(),
-            TranslationSubmission.unsubmitted("de_de", 40).statusLine());
-        assertEquals(TranslationSubmission.unsubmitted("de_de", 1).statusColour(),
-            TranslationSubmission.unsubmitted("de_de", 40).statusColour());
+    @DisplayName("an empty working batch still reports, in its own words")
+    void emptyBatchSaysNothingToSend() {
+        // The row is always there — it is where "what am I working on" lives — so it needs
+        // something honest to say when the answer is "nothing". Submit is what hides instead.
+        TranslationSubmission empty = TranslationSubmission.unsubmitted("de_de", 0);
+        TranslationSubmission full = TranslationSubmission.unsubmitted("de_de", 2);
+        assertNotEquals(empty.statusLine(), full.statusLine());
+        assertNotEquals(empty.statusColour(), full.statusColour());
+        assertEquals(0, empty.units());
     }
 
     @Test

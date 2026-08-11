@@ -1,14 +1,18 @@
 package games.brennan.dungeontrain.client.localization.edit;
 
 import games.brennan.dungeontrain.client.DungeonTrainLanguages;
+import games.brennan.dungeontrain.client.menu.CreditsIconButton;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -109,6 +113,9 @@ public final class TranslationScreen extends Screen {
     /** The two narrowing controls — hidden while the left pane belongs to a finished submission. */
     private CycleButton<StateFilter> stateCycle;
     private CycleButton<BodyFilter> bodyCycle;
+    /** The spyglass that reveals the search box, and whether it currently is. */
+    private CreditsIconButton searchToggle;
+    private boolean searchOpen;
     /** Column height with and without Submit beneath it; swapped by {@link #setSubmitVisible}. */
     private int fullColumnHeight;
     private int shortColumnHeight;
@@ -159,9 +166,18 @@ public final class TranslationScreen extends Screen {
             stateFilter = StateFilter.AI_UNREVIEWED;
         }
         int cycleWidth = Math.min(FILTER_MAX_W, (contentWidth - GAP * 2) / 4);
-        int searchWidth = Math.max(ROW_H, contentWidth - (cycleWidth + GAP) * 2);
+        // Search costs one square until you want it. Both ends of the row are pinned — icon left,
+        // cycles right — so opening the box fills the middle instead of shoving anything sideways.
+        int searchX = MARGIN + ROW_H + GAP;
+        int cyclesX = MARGIN + contentWidth - (cycleWidth + GAP) - cycleWidth;
+        int searchWidth = Math.max(ROW_H, cyclesX - GAP - searchX);
 
-        search = new EditBox(font, MARGIN, TOP, searchWidth, ROW_H,
+        searchToggle = addRenderableWidget(new CreditsIconButton(MARGIN, TOP, ROW_H,
+            new ItemStack(Items.SPYGLASS),
+            Component.translatable("gui.dungeontrain.translate.search"),
+            b -> setSearchOpen(!searchOpen)));
+
+        search = new EditBox(font, searchX, TOP, searchWidth, ROW_H,
             Component.translatable("gui.dungeontrain.translate.search"));
         search.setHint(Component.translatable("gui.dungeontrain.translate.search"));
         search.setMaxLength(100);
@@ -172,7 +188,7 @@ public final class TranslationScreen extends Screen {
             .withValues(states)
             .withInitialValue(stateFilter)
             .displayOnlyValue()
-            .create(MARGIN + searchWidth + GAP, TOP, cycleWidth, ROW_H,
+            .create(cyclesX, TOP, cycleWidth, ROW_H,
                 Component.translatable("gui.dungeontrain.translate.filter"),
                 (button, value) -> {
                     stateFilter = value;
@@ -182,12 +198,13 @@ public final class TranslationScreen extends Screen {
             .withValues(BodyFilter.values())
             .withInitialValue(bodyFilter)
             .displayOnlyValue()
-            .create(MARGIN + searchWidth + GAP + cycleWidth + GAP, TOP, cycleWidth, ROW_H,
+            .create(cyclesX + cycleWidth + GAP, TOP, cycleWidth, ROW_H,
                 Component.translatable("gui.dungeontrain.translate.body"),
                 (button, value) -> {
                     bodyFilter = value;
                     refresh();
                 }));
+        applySearchOpen(); // the box starts collapsed, and survives a resize in whatever state it was
 
         // Two panes, always: strings on the left, what you have sent down a narrow right column.
         // The column is the navigation — what the left pane is showing is whatever it says.
@@ -239,12 +256,11 @@ public final class TranslationScreen extends Screen {
         sent.sort((a, b) -> Long.compare(b.submittedAtMs(), a.submittedAtMs()));
 
         List<TranslationSubmission> all = new ArrayList<>();
-        // No row when there is nothing unsent: an action you cannot take does not deserve a row, and
-        // a permanent "0 changes" at the top is just something to read past every time.
-        int unsent = TranslationOverrides.unsubmittedFor(locale).size();
-        if (unsent > 0) {
-            all.add(TranslationSubmission.unsubmitted(locale, unsent));
-        }
+        // Always the first row, empty or not — it is where "what am I working on" lives, and the
+        // column is the navigation now, so its top entry cannot come and go. Submit is what hides
+        // when there is nothing in it; the row still reports.
+        all.add(TranslationSubmission.unsubmitted(locale,
+            TranslationOverrides.unsubmittedFor(locale).size()));
         all.addAll(sent);
         sentList.setRows(all);
         // setRows drops the selection, so nothing is being read: the left pane is the work still to
@@ -284,7 +300,9 @@ public final class TranslationScreen extends Screen {
         // work still to do and the narrowing controls come back with it.
         picked = submission;
         showingUnsubmitted = submission != null && submission.unsubmitted();
-        setSubmitVisible(showingUnsubmitted);
+        // Selected AND carrying something. The row exists even when empty, so "is it selected" is no
+        // longer the whole question — an empty batch would put back the button that can do nothing.
+        setSubmitVisible(showingUnsubmitted && submission.units() > 0);
         applyFilterVisibility();
         refresh();
         if (submission != null && !submission.queued() && !submission.unsubmitted()) {
@@ -292,6 +310,37 @@ public final class TranslationScreen extends Screen {
                 sentUnits = units;
                 refresh();
             });
+        }
+    }
+
+    /**
+     * Open or close the search box.
+     *
+     * <p>Closing CLEARS the query. A hidden box still holding text is an invisible filter — the list
+     * would show a subset with nothing on screen to explain why — and that is the same class of lie
+     * as a highlighted row driving nothing.</p>
+     */
+    private void setSearchOpen(boolean open) {
+        searchOpen = open;
+        if (!open && search != null && !search.getValue().isEmpty()) {
+            search.setValue(""); // fires the responder, which refreshes
+        }
+        applySearchOpen();
+        if (open && search != null) {
+            setFocused(search);
+            search.setFocused(true);
+        }
+    }
+
+    private void applySearchOpen() {
+        if (search != null) {
+            search.visible = searchOpen;
+            search.active = searchOpen;
+        }
+        if (searchToggle != null) {
+            searchToggle.setTooltip(Tooltip.create(Component.translatable(searchOpen
+                ? "gui.dungeontrain.translate.search.close"
+                : "gui.dungeontrain.translate.search")));
         }
     }
 
