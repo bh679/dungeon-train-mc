@@ -43,7 +43,6 @@
   },
   "labrynth": {
     "weight": 5,
-    "minLevel": 10,
     "mode": "endless_repetition/dynamic"
   },
   "library_dimension": {

@@ -4,7 +4,8 @@
   "variants": [
     {
       "id": "paths",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 10
     },
     {
       "id": "pathsmol",
@@ -12,6 +13,10 @@
     },
     {
       "id": "pathssmol",
+      "weight": 1
+    },
+    {
+      "id": "pathssmall",
       "weight": 1
     }
   ]
