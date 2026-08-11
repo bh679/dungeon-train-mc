@@ -73,10 +73,13 @@ import java.util.concurrent.ThreadLocalRandom;
  * {@link DeathScreenLayoutHandler}).
  *
  * <p>Pages, in order: <b>the fall</b> (this-life headline stats) → <b>the
- * deeds</b> (this-life combat + carried loadout) → <b>all your lives</b>
- * (cross-world lifetime totals) → one page per unanswered feedback-survey
- * question (driven by the bundled Discord Presence survey, submitted through
- * its public API) → <b>the platform</b> (Board anew / Leave). A single centered
+ * deeds</b> (this-life combat + carried loadout) → <b>the cargo</b> (this-life
+ * loot + advancements) → <b>all your lives</b> (cross-world lifetime totals) →
+ * one page per unanswered feedback-survey question (driven by the bundled
+ * Discord Presence survey, submitted through its public API) → <b>support the
+ * line</b> (the donation ledger, flow-gated) → <b>the recommendations</b> (only
+ * when the player runs mods that aren't ours) → <b>the platform</b> (Board anew
+ * / Leave). A single centered
  * <i>Next Screen</i> advances; a bare back-arrow returns; <i>reboard</i> and
  * <i>leave the line</i> sit in the top corner throughout.</p>
  *
@@ -346,15 +349,16 @@ public final class NarrativeDeathScreen extends Screen {
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
             list.add(Page.survey(e));
         }
+        // "Support the line" — the donation ledger. Always in the list (so the "$" chip can always
+        // reach it); whether it appears in the normal Next-Screen flow is gated by donateInFlow
+        // (see shouldShowDonate). advance()/back() find it by kind(), not index, so the pages
+        // after it can move freely.
+        list.add(Page.of(Kind.DONATE));
         // "The recommendations" — only for players running mods that aren't ours. On a clean
         // Dungeon Train / modpack install there is nothing to ask about and the page never exists.
         if (modRec != null && !modRec.isEmpty()) {
             list.add(Page.of(Kind.MODREC));
         }
-        // "Support the line" — the donation ledger, just before the platform send-off. Always in
-        // the list (so the platform button can always reach it); whether it appears in the normal
-        // Next-Screen flow is gated by donateInFlow (see shouldShowDonate).
-        list.add(Page.of(Kind.DONATE));
         list.add(Page.of(Kind.PLATFORM));
         return list;
     }

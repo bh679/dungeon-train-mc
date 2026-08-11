@@ -6454,6 +6454,21 @@
       "released": true,
       "released_in": "v0.551.0",
       "released_at": "2026-08-09T08:49:33Z"
+    },
+    {
+      "id": "death-screen-modrec-after-donate",
+      "version": "0.552.0",
+      "type": "refactor",
+      "title": "Mod recommendations now come after the support page",
+      "summary": "On the death screen, the page asking which of your other mods you'd recommend now appears after the support page, just before you board again. Same pages, new order.",
+      "highlights": [
+        "Mod recommendations moved after 'support the line'"
+      ],
+      "pr": 934,
+      "date": "2026-08-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
