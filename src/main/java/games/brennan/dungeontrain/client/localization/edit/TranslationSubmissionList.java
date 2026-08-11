@@ -69,6 +69,17 @@ public final class TranslationSubmissionList extends AbstractWidget {
     }
 
     /**
+     * Select the first row and report it — the screen opens on the working batch, which is always
+     * row 0, so the column always has a current context to hand the left pane.
+     */
+    public void selectFirst() {
+        if (onSelect != null && !rows.isEmpty()) {
+            selected = 0;
+            onSelect.accept(rows.get(0));
+        }
+    }
+
+    /**
      * Grow or shrink to make room for something below — the Submit button, which only exists while
      * the working batch is picked. Re-clamps the scroll, since a taller list can leave it past the
      * end and a shorter one can leave a gap under the last row.

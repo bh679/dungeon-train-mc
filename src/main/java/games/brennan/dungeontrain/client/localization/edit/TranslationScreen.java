@@ -263,12 +263,11 @@ public final class TranslationScreen extends Screen {
             TranslationOverrides.unsubmittedFor(locale).size()));
         all.addAll(sent);
         sentList.setRows(all);
-        // setRows drops the selection, so nothing is being read: the left pane is the work still to
-        // do, which is the screen's resting state and needs no row picked to get to.
-        picked = null;
-        showingUnsubmitted = false;
-        setSubmitVisible(false);
-        applyFilterVisibility();
+        // Open on the working batch. It is row 0 and always exists, so the column always has a
+        // current context — without this the resting state and the selected state paint the same
+        // pane, told apart only by a highlight, and Submit hides behind a click that looks like it
+        // did nothing.
+        sentList.selectFirst();
     }
 
     /**
@@ -367,9 +366,6 @@ public final class TranslationScreen extends Screen {
      * faked — there is nothing left to edit.
      */
     private List<TranslationUnit> sentUnitRows(String needle) {
-        if (showingUnsubmitted) {
-            return unsubmittedRows(needle);
-        }
         if (sentUnits.isEmpty()) {
             return List.of();
         }
@@ -381,25 +377,6 @@ public final class TranslationScreen extends Screen {
         for (TranslationSubmissionsClient.SentUnit sent : sentUnits) {
             TranslationUnit unit = byId.get(sent.unitId());
             if (unit != null && unit.matches(needle)) {
-                out.add(unit);
-            }
-        }
-        return out;
-    }
-
-    /**
-     * The working batch's strings — the local edits the relay has not been told about. Read off
-     * disk rather than fetched: this row is the one thing in the column that has never left the
-     * machine, so it is also the only one that reads correctly with no network at all.
-     */
-    private List<TranslationUnit> unsubmittedRows(String needle) {
-        TranslationEdits pending = TranslationOverrides.unsubmittedFor(locale);
-        if (pending.isEmpty()) {
-            return List.of();
-        }
-        List<TranslationUnit> out = new ArrayList<>();
-        for (TranslationUnit unit : TranslationCatalog.forLocale(locale)) {
-            if (TranslationFilters.overrideOf(unit, pending) != null && unit.matches(needle)) {
                 out.add(unit);
             }
         }
@@ -472,9 +449,10 @@ public final class TranslationScreen extends Screen {
             return List.of();
         }
         String needle = search == null ? "" : search.getValue().trim().toLowerCase(Locale.ROOT);
-        // The column decides what this pane is showing. Nothing picked → the work still to do,
-        // narrowed by the filters; a row picked → that row's strings.
-        if (picked != null) {
+        // Only a SUBMISSION diverts this pane. The working batch is where translating happens, so it
+        // gets the whole catalog with the filters doing their job — being inside your unsubmitted
+        // work is precisely when "needs a human" and the rest are worth having.
+        if (picked != null && !showingUnsubmitted) {
             return sentUnitRows(needle);
         }
         TranslationEdits edits = TranslationOverrides.mergedFor(locale);
