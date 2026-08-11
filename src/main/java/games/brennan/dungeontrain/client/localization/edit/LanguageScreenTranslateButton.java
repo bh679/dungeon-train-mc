@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.client.localization.edit;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
@@ -71,9 +70,11 @@ public final class LanguageScreenTranslateButton {
         // A labelled button, not an icon. This is a vanilla options screen, whose vocabulary is wide
         // labelled buttons; icons earn their place in the editor, where they save a crowded row, and
         // read as an afterthought pinned to someone else's footer here.
+        // Through the prompt rather than straight into the editor: the list selection here is pending
+        // until Done, so the language you are pointing at and the one you are running in can disagree.
         Button button = Button.builder(
                 Component.translatable("gui.dungeontrain.translate.button"),
-                b -> Minecraft.getInstance().setScreen(new TranslationScreen(screen, target)))
+                b -> LanguageSwitchPrompt.openEditor(screen, target))
             .bounds(0, done.getY(), MIN_WIDTH, done.getHeight())
             .tooltip(Tooltip.create(
                 Component.translatable("gui.dungeontrain.translate.button.tooltip", target)))

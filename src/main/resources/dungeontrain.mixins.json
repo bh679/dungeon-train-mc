@@ -63,6 +63,7 @@
     "client.MinecraftFramerateThrottleMixin",
     "client.SoundEngineMusicFadeMixin",
     "client.LanguageSelectEntryLogoMixin",
+    "client.LanguageSelectEntryAccessor",
     "client.I18nAccessor",
     "client.LanguageManagerReapplyMixin"
   ],
