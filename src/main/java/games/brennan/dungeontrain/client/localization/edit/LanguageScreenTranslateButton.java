@@ -2,8 +2,10 @@ package games.brennan.dungeontrain.client.localization.edit;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.SpriteIconButton;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.options.LanguageSelectScreen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -54,8 +56,26 @@ public final class LanguageScreenTranslateButton {
             return;
         }
 
-        SpriteIconButton button = TranslateButtons.create(screen, target);
-        button.setPosition(done.getX() - TranslateButtons.BUTTON_SIZE - GAP, done.getY());
+        // A labelled button the size of Done, not an icon. This is a vanilla options screen, whose
+        // vocabulary is wide labelled buttons; icons earn their place in the editor, where they save
+        // a crowded row, and read as an afterthought pinned to someone else's footer here.
+        // Measured off Done itself rather than the vanilla 150x20, so it matches whatever this
+        // screen actually laid out — including under another mod's layout.
+        int w = done.getWidth();
+        Button button = Button.builder(
+                Component.translatable("gui.dungeontrain.translate.button"),
+                b -> Minecraft.getInstance().setScreen(new TranslationScreen(screen, target)))
+            .bounds(0, done.getY(), w, done.getHeight())
+            .tooltip(Tooltip.create(
+                Component.translatable("gui.dungeontrain.translate.button.tooltip", target)))
+            .build();
+
+        // Done is centred on its own; a same-width button beside it would leave the two visibly
+        // off-centre, so they are placed as a pair the way vanilla lays out its own Cancel/Done
+        // footers. init() re-runs on resize, so this survives a window change.
+        int left = (screen.width - (w * 2 + GAP)) / 2;
+        button.setX(left);
+        done.setX(left + w + GAP);
         event.addListener(button);
     }
 

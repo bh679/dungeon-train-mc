@@ -5,8 +5,10 @@ import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.SpriteIconButton;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -35,6 +37,15 @@ public final class TitleScreenTranslateButton {
 
     private static final Component LANGUAGE_KEY = Component.translatable("options.language");
     private static final int GAP = 4;
+    /**
+     * Realms' pencil-and-paper icon. Reusing a vanilla sprite rather than shipping our own keeps
+     * this consistent with the menu-chat button, which borrows {@code icon/invite} the same way.
+     */
+    private static final ResourceLocation EDIT_SPRITE =
+        ResourceLocation.withDefaultNamespace("icon/draft_report");
+    private static final int SPRITE_W = 15;
+    private static final int SPRITE_H = 15;
+    private static final int BUTTON_SIZE = 20;
 
     private TitleScreenTranslateButton() {}
 
@@ -71,8 +82,19 @@ public final class TitleScreenTranslateButton {
             return;
         }
 
-        SpriteIconButton button = TranslateButtons.create(titleScreen, target);
-        button.setPosition(language.getX(), language.getY() - TranslateButtons.BUTTON_SIZE - GAP);
+        // An icon here, where a label would crowd the Options row beside it and the localization
+        // credit below. The Language screen's doorway is a full labelled button instead — that
+        // screen has the room and the vocabulary for one.
+        SpriteIconButton button = SpriteIconButton.builder(
+                Component.translatable("gui.dungeontrain.translate.button"),
+                b -> mc.setScreen(new TranslationScreen(titleScreen, target)),
+                true)
+            .width(BUTTON_SIZE)
+            .sprite(EDIT_SPRITE, SPRITE_W, SPRITE_H)
+            .build();
+        button.setPosition(language.getX(), language.getY() - BUTTON_SIZE - GAP);
+        button.setTooltip(Tooltip.create(
+            Component.translatable("gui.dungeontrain.translate.button.tooltip", target)));
         event.addListener(button);
     }
 
