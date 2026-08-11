@@ -12,9 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * What the Open screen lists, and what it will let you click.
  *
  * <p>Whole Carriage matches New exactly — Stages then saved builds, tagged — because the two screens
- * are asking the same question there. The interesting cases are where Open deliberately diverges:
- * the Carriage Room arm, which New makes mode-dependent and Open does not, and the track modes,
- * which New treats as "authors its thing outright" and Open treats as "listed but not editable yet".</p>
+ * are asking the same question there. So does the Carriage Room arm's mode split. The interesting
+ * divergence is the track modes, which New treats as "authors its thing outright" and Open treats as
+ * "listed but not editable yet".</p>
  */
 final class BuilderOpenOptionsTest {
 
@@ -30,18 +30,56 @@ final class BuilderOpenOptionsTest {
     }
 
     @Test
-    @DisplayName("A room is a room from either side of the carriage wall")
-    void carriageRoomIsModeIndependent() {
-        // New's copySourceFor splits here — CONTENTS from inside, CARRIAGES from outside — because
-        // it is asking which carriage a *new* room will belong to. Open is naming the room itself,
-        // and that id lives in one store whichever mode you reached it through. Getting this wrong
-        // is what made the reuse-BuilderNewPacket approach overwrite rooms with empty rooms.
+    @DisplayName("Carriage Room means rooms from inside the wall and carriages from outside it")
+    void carriageRoomSplitsByMode() {
+        // The same split New's copySourceFor makes, for the same reason: from outside the train
+        // there is no room in view to name, only the carriages one would go in.
         assertEquals(BuilderOpenOptions.OpenSource.CONTENTS,
                 BuilderOpenOptions.openSourceFor(BuilderMode.INSIDE_CARRIAGE,
                         BuilderNewOptions.SubType.CARRIAGE_ROOM));
-        assertEquals(BuilderOpenOptions.OpenSource.CONTENTS,
+        assertEquals(BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE,
                 BuilderOpenOptions.openSourceFor(BuilderMode.TRAIN_OUTSIDE,
                         BuilderNewOptions.SubType.CARRIAGE_ROOM));
+    }
+
+    @Test
+    @DisplayName("Both two-level lists drill in; the flat ones do not")
+    void onlyTwoLevelListsDrillIn() {
+        assertTrue(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.CONTENTS));
+        assertTrue(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE));
+
+        assertFalse(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.STAGES));
+        assertFalse(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.PARTS));
+        assertFalse(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.TRACK_TILES));
+        assertFalse(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.TUNNEL_PORTALS));
+    }
+
+    @Test
+    @DisplayName("Under Carriage Room, a Stage has no photo and the carriages under it do")
+    void stageListPhotographsOnlyItsCarriages() {
+        // The level decides, not the value: `desert` at the top is a stretch of the game with no
+        // file behind it, and one level in every entry is a carriage template that has one.
+        assertNull(BuilderOpenOptions.photoKindFor(
+                BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE, "desert", false));
+        assertEquals(BuilderPhotoPaths.Kind.CARRIAGE, BuilderOpenOptions.photoKindFor(
+                BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE, "windowed", true));
+
+        // The 2-arg form is the top level, so the two must agree there.
+        assertNull(BuilderOpenOptions.photoKindFor(
+                BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE, "desert"));
+    }
+
+    @Test
+    @DisplayName("Only CARRIAGES_BY_STAGE cares which level the grid is on")
+    void otherSourcesIgnoreTheLevel() {
+        for (BuilderOpenOptions.OpenSource source : BuilderOpenOptions.OpenSource.values()) {
+            if (source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE) {
+                continue;
+            }
+            assertEquals(BuilderOpenOptions.photoKindFor(source, "maze"),
+                    BuilderOpenOptions.photoKindFor(source, "maze", true),
+                    "drilling in changed the photo store for " + source);
+        }
     }
 
     @Test
@@ -74,6 +112,7 @@ final class BuilderOpenOptionsTest {
         assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.STAGES));
         assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.CONTENTS));
         assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.PARTS));
+        assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE));
 
         // Not a policy choice — there is no stamp or save path for these yet. When one lands, this
         // is the assertion that should fail and tell you to flip it.

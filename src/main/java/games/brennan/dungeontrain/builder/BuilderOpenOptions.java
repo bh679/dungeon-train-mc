@@ -8,11 +8,14 @@ package games.brennan.dungeontrain.builder;
  * may need a client class to understand it.</p>
  *
  * <p>Open and New ask different questions of the same controls. New's picker answers "what should
- * this new thing start <em>from</em>?" — which is why its Whole Carriage arm lists <em>stages</em>,
- * and why its Carriage Room arm changes meaning depending on which side of the carriage wall you
- * came in from. Open answers "which existing file am I editing?", and a room is a room whichever
- * mode you reached it through. So the controls match the New/Save screen exactly while the lists
- * underneath them deliberately do not.</p>
+ * this new thing start <em>from</em>?"; Open answers "which existing thing am I working on?". So the
+ * controls match the New/Save screen exactly while the lists underneath them do not have to.</p>
+ *
+ * <p>Where they <em>do</em> agree is that a room means different things on either side of the
+ * carriage wall, which is the one reading of the controls a builder already has. From inside, a
+ * Carriage Room is the room — a contents template. From outside you cannot see a room at all; you
+ * see carriages, so that arm lists the stretches of the game and the carriage variants under each,
+ * mirroring {@code BuilderNewOptions.copySourceFor}'s mode split rather than contradicting it.</p>
  */
 public final class BuilderOpenOptions {
 
@@ -28,6 +31,17 @@ public final class BuilderOpenOptions {
         STAGES,
         /** Carriage contents templates, groups and their sub-variants alike. */
         CONTENTS,
+        /**
+         * The Stages, with every carriage variant underneath each of them — two levels, drilled into
+         * the way a contents group is.
+         *
+         * <p>Every carriage under every stage, not the ones {@code CarriageWeights} links to it. A
+         * stage link is a spawn-gating decision a builder makes about a finished carriage; browsing
+         * is the step before that, and the shipped {@code templates/weights.json} links none of
+         * them, so filtering would put an empty grid under every stage. What the stage does supply
+         * is the parts overlay the carriage is shown with — see {@code BuilderWorldSetup.applyOpen}.</p>
+         */
+        CARRIAGES_BY_STAGE,
         /** Part templates of the separately-chosen part kind. */
         PARTS,
         /** Track tile templates. Listed for reference only — see {@link #isOpenable}. */
@@ -51,10 +65,11 @@ public final class BuilderOpenOptions {
         }
         return switch (subType) {
             case WHOLE_CARRIAGE -> OpenSource.STAGES;
-            // Unlike New, this does not depend on the mode. New's outside arm lists carriages
-            // because it is asking which carriage a *new* room will belong to; Open is naming the
-            // room itself, and that id lives in one store either way.
-            case CARRIAGE_ROOM -> OpenSource.CONTENTS;
+            // Mode-dependent, the same way New's is: from inside the wall a room is a room, from
+            // outside it there is no room to point at — only the carriages a room would go in.
+            case CARRIAGE_ROOM -> mode == BuilderMode.INSIDE_CARRIAGE
+                    ? OpenSource.CONTENTS
+                    : OpenSource.CARRIAGES_BY_STAGE;
             case PARTS -> OpenSource.PARTS;
         };
     }
@@ -75,7 +90,20 @@ public final class BuilderOpenOptions {
     public static boolean isOpenable(OpenSource source) {
         return source == OpenSource.STAGES
                 || source == OpenSource.CONTENTS
+                || source == OpenSource.CARRIAGES_BY_STAGE
                 || source == OpenSource.PARTS;
+    }
+
+    /**
+     * Whether this source has a second level the grid can look inside.
+     *
+     * <p>Only half the question for {@link OpenSource#CONTENTS}, where it is the individual entry
+     * that is or isn't a group; for {@link OpenSource#CARRIAGES_BY_STAGE} every top-level entry is a
+     * stage and so every one of them drills in. Here rather than in the screen so the rule is
+     * testable without a client.</p>
+     */
+    public static boolean drillsIn(OpenSource source) {
+        return source == OpenSource.CONTENTS || source == OpenSource.CARRIAGES_BY_STAGE;
     }
 
     /** Convenience for the screen: whether anything in this mode/sub type can be opened. */
@@ -95,9 +123,22 @@ public final class BuilderOpenOptions {
      * {@link BuilderPhotoPaths.Kind} deliberately has no entry to return.</p>
      */
     public static BuilderPhotoPaths.Kind photoKindFor(OpenSource source, String value) {
+        return photoKindFor(source, value, false);
+    }
+
+    /**
+     * As {@link #photoKindFor(OpenSource, String)}, for a grid that may be one level in.
+     *
+     * <p>{@link OpenSource#CARRIAGES_BY_STAGE} is the only source where the level changes the
+     * answer, and it changes it completely: at the top the entries are Stages, which are not
+     * templates and have no photo, and one level in they are carriage templates that do.</p>
+     */
+    public static BuilderPhotoPaths.Kind photoKindFor(OpenSource source, String value,
+                                                      boolean insideGroup) {
         return switch (source) {
             case STAGES -> isSavedBuild(value) ? BuilderPhotoPaths.Kind.CARRIAGE : null;
             case CONTENTS -> BuilderPhotoPaths.Kind.CONTENTS;
+            case CARRIAGES_BY_STAGE -> insideGroup ? BuilderPhotoPaths.Kind.CARRIAGE : null;
             case PARTS -> BuilderPhotoPaths.Kind.PART;
             case TRACK_TILES, TUNNEL_PORTALS -> null;
         };

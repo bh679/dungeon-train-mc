@@ -43,8 +43,20 @@ import java.util.Optional;
  * way {@code BuilderSwitchPacket} is guarded — but the dirty count is re-checked here too, because a
  * client can send anything and this one clears the train.</p>
  */
+/**
+ * @param stageId the stage the grid was browsing when the tile was clicked, empty when it wasn't
+ *                browsing one. Deliberately <em>not</em> part of {@link BuilderOpenRequest}: it does
+ *                not name the template being opened, it says which stretch of the game to show it
+ *                dressed for — see {@code BuilderWorldSetup.applyOpen}.
+ */
 public record BuilderOpenPacket(String modeId, String kindId, String id, String partKindId,
-                                boolean force) implements CustomPacketPayload {
+                                boolean force, String stageId) implements CustomPacketPayload {
+
+    /** Back-compat 5-arg form: open with no browsed stage, the template's own link deciding. */
+    public BuilderOpenPacket(String modeId, String kindId, String id, String partKindId,
+                             boolean force) {
+        this(modeId, kindId, id, partKindId, force, "");
+    }
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -59,9 +71,10 @@ public record BuilderOpenPacket(String modeId, String kindId, String id, String 
                 buf.writeUtf(p.id, 64);
                 buf.writeUtf(p.partKindId, 16);
                 buf.writeBoolean(p.force);
+                buf.writeUtf(p.stageId, 32);
             },
             buf -> new BuilderOpenPacket(buf.readUtf(32), buf.readUtf(16), buf.readUtf(64),
-                    buf.readUtf(16), buf.readBoolean())
+                    buf.readUtf(16), buf.readBoolean(), buf.readUtf(32))
         );
 
     @Override
@@ -112,7 +125,7 @@ public record BuilderOpenPacket(String modeId, String kindId, String id, String 
 
             BuilderOpenRequest request = new BuilderOpenRequest(
                     kind.get(), packet.id, CarriagePartKind.fromId(packet.partKindId));
-            if (!BuilderWorldSetup.applyOpen(level, mode.get(), request)) {
+            if (!BuilderWorldSetup.applyOpen(level, mode.get(), request, packet.stageId)) {
                 // Loud on purpose. A failed open is the one case where saying nothing would be
                 // dangerous: the builder would assume their template loaded and keep working.
                 player.sendSystemMessage(Component.translatable(
