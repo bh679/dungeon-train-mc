@@ -1,17 +1,12 @@
 {
   "schemaVersion": 1,
   "excluded": [
-    "armor",
-    "books",
     "cows",
-    "craft",
     "default",
     "ender",
     "features",
-    "fire",
     "narrative",
     "nature",
-    "portal",
-    "shop"
+    "portal"
   ]
 }

@@ -261,6 +261,55 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
+    @DisplayName("A portal room gets the Contents BUTTON only while its Contents setting is on")
+    void contentsButtonFollowsTheSetting() {
+        // Off — the default, and every tag written before the setting existed.
+        assertFalse(EditorPlotLabelsRenderer.hasContentsButton(
+            entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock")));
+        assertFalse(EditorPlotLabelsRenderer.hasContentsButton(
+            entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition/dynamic")));
+        assertFalse(EditorPlotLabelsRenderer.hasContentsButton(
+            entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock/exact/off")));
+
+        // On, in any of its three flavours — there is a pool to steer.
+        for (String value : new String[]{"fit", "exact", "tile"}) {
+            assertTrue(EditorPlotLabelsRenderer.hasContentsButton(
+                entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock/exact/" + value)), value);
+        }
+    }
+
+    @Test
+    @DisplayName("The Contents button still shows on carriages, and never outside a plot")
+    void contentsButtonElsewhereIsUnchanged() {
+        assertTrue(EditorPlotLabelsRenderer.hasContentsButton(
+            entry("CARRIAGES", true, 1, 11, 13, 7, EditorPlotLabelsPacket.NO_MODE)));
+        assertFalse(EditorPlotLabelsRenderer.hasContentsButton(
+            entry("CARRIAGES", false, 1, 11, 13, 7, EditorPlotLabelsPacket.NO_MODE)));
+        // Standing outside the plot hides it even with Contents on.
+        assertFalse(EditorPlotLabelsRenderer.hasContentsButton(
+            entry("PORTALS", false, 1, 11, 13, 7, "bedrock_lock/exact/fit")));
+    }
+
+    @Test
+    @DisplayName("Turning Contents on grows the button row without disturbing the rows above it")
+    void contentsButtonRowOrder() {
+        EditorPlotLabelsPacket.Entry on = entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock/exact/fit");
+        assertArrayEquals(
+            new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.ROOM_CONTENTS, RowKind.ENTER,
+                RowKind.ACTION, RowKind.CONTENTS},
+            EditorPlotLabelsRenderer.rows(on));
+
+        RowKind[] rows = EditorPlotLabelsRenderer.rows(on);
+        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
+        assertEquals(CellKind.BUTTON_CONTENTS, EditorPlotLabelsRenderer.cellAt(on, halfW, 0.0,
+            rowCentreY(on, indexOf(rows, RowKind.CONTENTS))));
+        // The setting row above it still resolves to itself.
+        assertEquals(CellKind.ROOM_CONTENTS_CYCLE, EditorPlotLabelsRenderer.cellAt(on, halfW, 0.0,
+            rowCentreY(on, indexOf(rows, RowKind.ROOM_CONTENTS))));
+    }
+
+    @Test
     @DisplayName("The Contents row reads back what the tag says")
     void roomContentsLabel() {
         assertEquals("Contents: Off", EditorPlotLabelsRenderer.roomContentsLabel("bedrock_lock"));

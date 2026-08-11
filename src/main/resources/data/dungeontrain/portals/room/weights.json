@@ -33,7 +33,8 @@
       "NETHER",
       "VOID",
       "END"
-    ]
+    ],
+    "mode": "bedrock_lock"
   },
   "distantenemies": {
     "weight": 1,

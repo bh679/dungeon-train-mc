@@ -438,16 +438,23 @@ public final class VariantOverlayRenderer {
     }
 
     /**
-     * Sidecar-driven excluded contents set for the active carriage variant
-     * (loaded via {@link CarriageVariantContentsAllowStore}). Empty for any
-     * non-carriage model — the field is meaningless outside carriage editor
-     * plots and the client renders nothing for it.
+     * Sidecar-driven excluded contents set for the model the player is standing in — a carriage
+     * variant ({@link CarriageVariantContentsAllowStore}) or a portal room
+     * ({@link PortalRoomContentsAllowStore}). Empty for every other kind, which has no contents
+     * pool; the client renders nothing for it there.
      */
     private static Set<String> excludedContentsFor(Template model) {
-        if (!(model instanceof Template.Carriage cm)) return Collections.emptySet();
-        CarriageContentsAllowList allow = CarriageVariantContentsAllowStore.get(cm.variant())
-            .orElse(CarriageContentsAllowList.EMPTY);
-        return allow.excluded();
+        if (model instanceof Template.Carriage cm) {
+            return CarriageVariantContentsAllowStore.get(cm.variant())
+                .orElse(CarriageContentsAllowList.EMPTY).excluded();
+        }
+        // Portal rooms draw from the same pool when their Contents setting is on, and steer it with
+        // their own sidecar. The packet field is shared, so the room's Contents screen reads the
+        // excluded set exactly as a carriage's does — no client-side change was needed for this.
+        if (model instanceof Template.PortalRoom pr) {
+            return PortalRoomContentsAllowStore.getOrEmpty(pr.name()).excluded();
+        }
+        return Collections.emptySet();
     }
 
     /**

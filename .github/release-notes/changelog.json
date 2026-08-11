@@ -6705,6 +6705,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-contents-curation",
+      "version": "0.552.0",
+      "type": "content",
+      "title": "Portal room furnishings are curated, and their mobs scale with difficulty",
+      "summary": "Furnished portal rooms now draw from a curated set of furnishings instead of anything the train could offer, so a window room reads as a window room. The default portal room's mobs now scale with the run: low difficulties meet zombies, while witches, vindicators and pillagers only start appearing as the difficulty climbs. Furnishings built for portal rooms no longer turn up in ordinary train carriages.",
+      "highlights": [
+        "Portal room mobs scale with difficulty - zombies early, witches and vindicators later",
+        "Furnished portal rooms draw from a curated set of furnishings",
+        "Portal-only furnishings no longer appear in ordinary carriages",
+        "Window portal rooms now use the bedrock-lock layout"
+      ],
+      "pr": 930,
+      "date": "2026-08-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
