@@ -32,10 +32,8 @@ final class BuilderTemplateGridLayoutTest {
             String where = " at " + size[0] + "x" + size[1];
 
             // Adjacent columns in the same row.
-            if (layout.columns() > 1) {
-                assertTrue(layout.xFor(0) + layout.cellWidth() <= layout.xFor(1),
-                        "columns overlap" + where);
-            }
+            assertTrue(layout.xFor(0) + layout.cellWidth() <= layout.xFor(1),
+                    "columns overlap" + where);
             // The first cell of row 1 sits below the last cell of row 0.
             assertTrue(layout.yFor(0, 0) + layout.cellHeight() <= layout.yFor(layout.columns(), 0),
                     "rows overlap" + where);
@@ -71,18 +69,25 @@ final class BuilderTemplateGridLayoutTest {
     }
 
     @Test
-    @DisplayName("Column count responds to width but stays within bounds")
-    void columnCountIsClamped() {
+    @DisplayName("Always three per row, at every viewport size")
+    void alwaysThreeColumns() {
         for (int[] size : VIEWPORTS) {
-            BuilderTemplateGridLayout layout =
-                    BuilderTemplateGridLayout.of(size[0], TOP, BOTTOM, 24);
-            assertTrue(layout.columns() >= 1, "no columns at width " + size[0]);
-            assertTrue(layout.columns() <= 5, "too many columns at width " + size[0]);
+            assertEquals(3, BuilderTemplateGridLayout.of(size[0], TOP, BOTTOM, 24).columns(),
+                    "not 3 columns at width " + size[0]);
         }
-        // An ultrawide must not turn the library into a single row of postage stamps.
-        assertEquals(5, BuilderTemplateGridLayout.of(3440, TOP, BOTTOM, 40).columns());
-        // A narrow viewport still gets one readable column rather than zero.
-        assertEquals(1, BuilderTemplateGridLayout.of(200, TOP, BOTTOM, 40).columns());
+        // The extremes too: an ultrawide and a viewport narrower than the grid's own minimum.
+        assertEquals(3, BuilderTemplateGridLayout.of(3440, TOP, BOTTOM, 40).columns());
+        assertEquals(3, BuilderTemplateGridLayout.of(200, TOP, BOTTOM, 40).columns());
+    }
+
+    @Test
+    @DisplayName("Cell size is stable once the grid hits its width cap")
+    void cellSizeIsStableOnWideViewports() {
+        // The point of the fixed column count: the same template is the same size on any wide
+        // window, and resizing doesn't reflow the library under the cursor.
+        int at1920 = BuilderTemplateGridLayout.of(1920, TOP, BOTTOM, 24).cellWidth();
+        int at3440 = BuilderTemplateGridLayout.of(3440, TOP, BOTTOM, 24).cellWidth();
+        assertEquals(at1920, at3440, "cell width should be capped, not grow with the window");
     }
 
     @Test

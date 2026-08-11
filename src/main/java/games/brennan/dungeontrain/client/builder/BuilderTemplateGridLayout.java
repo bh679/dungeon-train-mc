@@ -18,10 +18,20 @@ record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
 
     static final int GAP = 6;
 
-    /** Wide enough that a carriage reads at a glance; the column count follows from it. */
-    private static final int TARGET_CELL_WIDTH = 150;
-    private static final int MIN_CELL_WIDTH = 72;
-    private static final int MAX_COLUMNS = 5;
+    /**
+     * Three per row, always.
+     *
+     * <p>Fixed rather than responsive: the grid sits directly under the 200px-wide type controls, and
+     * a column count that changed with the window changed the cell size with it — so the same
+     * template was a different size on two machines, and resizing reflowed the whole library under
+     * the cursor. Three keeps the cells large enough to read a carriage in and the block roughly the
+     * width of the controls above it.</p>
+     */
+    static final int COLUMNS = 3;
+
+    /** Ceiling on the grid's width so cells don't become billboards on an ultrawide. */
+    private static final int MAX_GRID_WIDTH = 480;
+    private static final int MIN_CELL_WIDTH = 56;
     private static final int SIDE_MARGIN = 16;
 
     /**
@@ -31,11 +41,9 @@ record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
      * @param itemCount   how many templates are being shown
      */
     static BuilderTemplateGridLayout of(int screenWidth, int topY, int bottomY, int itemCount) {
-        int available = Math.max(MIN_CELL_WIDTH, screenWidth - 2 * SIDE_MARGIN);
+        int available = Math.min(screenWidth - 2 * SIDE_MARGIN, MAX_GRID_WIDTH);
 
-        // How many TARGET_CELL_WIDTH cells fit, clamped so an ultrawide doesn't produce a row of
-        // twelve thumbnails and a phone-sized viewport still gets one readable column.
-        int columns = Math.max(1, Math.min(MAX_COLUMNS, (available + GAP) / (TARGET_CELL_WIDTH + GAP)));
+        int columns = COLUMNS;
         int cellWidth = Math.max(MIN_CELL_WIDTH, (available - (columns - 1) * GAP) / columns);
         int cellHeight = Math.max(1, cellWidth * 9 / 16);
 

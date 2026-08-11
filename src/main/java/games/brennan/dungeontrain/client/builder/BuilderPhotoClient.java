@@ -33,6 +33,21 @@ public final class BuilderPhotoClient {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /**
+     * How long to let the world redraw before taking the picture.
+     *
+     * <p>Every photo request follows a stamp that has just replaced the carriage volume. The server
+     * sends this packet in the same tick it finished stamping, so the client still has the
+     * <em>previous</em> template on screen: the block updates are in flight, and the sections have to
+     * be rebuilt after they land. Firing on the next frame photographed the outgoing template and
+     * filed it under the incoming one's name — every template opened without a photo got a picture of
+     * whatever it replaced.</p>
+     *
+     * <p>A second is far longer than a handful of sections need on an integrated server, and none of
+     * it is visible — the capture is an extra off-screen pass — so the margin is free.</p>
+     */
+    private static final long MESH_SETTLE_MILLIS = 1000L;
+
     private BuilderPhotoClient() {}
 
     public static void capture(BuilderPhotoPacket packet) {
@@ -58,7 +73,7 @@ public final class BuilderPhotoClient {
         CinematicCameraController.Pose pose =
                 new CinematicCameraController.Pose(cam, aim[0], aim[1]);
 
-        RideSnapshotCapture.requestPoseCapture(pose, image -> {
+        RideSnapshotCapture.requestPoseCapture(pose, MESH_SETTLE_MILLIS, image -> {
             write(image, target.get(), source);
             // The New screen may already have cached "this template has no photo"; without this the
             // thing you just saved keeps showing the fallback until the world is reloaded.
