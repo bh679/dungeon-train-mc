@@ -11,18 +11,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * What the Open screen lists, and what it will let you click.
  *
- * <p>The interesting cases are the two places Open deliberately disagrees with New: the Carriage
- * Room arm, which New makes mode-dependent and Open does not, and the track modes, which New treats
- * as "authors its thing outright" and Open treats as "listed but not yet editable".</p>
+ * <p>Whole Carriage matches New exactly — Stages then saved builds, tagged — because the two screens
+ * are asking the same question there. The interesting cases are where Open deliberately diverges:
+ * the Carriage Room arm, which New makes mode-dependent and Open does not, and the track modes,
+ * which New treats as "authors its thing outright" and Open treats as "listed but not editable yet".</p>
  */
 final class BuilderOpenOptionsTest {
 
     @Test
-    @DisplayName("Whole Carriage lists carriages, from either carriage mode")
-    void wholeCarriageListsCarriages() {
+    @DisplayName("Whole Carriage lists Stages + saved builds, from either carriage mode")
+    void wholeCarriageListsStagesAndSavedBuilds() {
         for (BuilderMode mode : new BuilderMode[] {
                 BuilderMode.TRAIN_OUTSIDE, BuilderMode.INSIDE_CARRIAGE}) {
-            assertEquals(BuilderOpenOptions.OpenSource.CARRIAGES,
+            assertEquals(BuilderOpenOptions.OpenSource.STAGES,
                     BuilderOpenOptions.openSourceFor(mode, BuilderNewOptions.SubType.WHOLE_CARRIAGE),
                     "wrong source for " + mode.id());
         }
@@ -70,7 +71,7 @@ final class BuilderOpenOptionsTest {
     @Test
     @DisplayName("Only the carriage sources are openable today")
     void onlyCarriageSourcesAreOpenable() {
-        assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.CARRIAGES));
+        assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.STAGES));
         assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.CONTENTS));
         assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.PARTS));
 
@@ -96,27 +97,44 @@ final class BuilderOpenOptionsTest {
     @Test
     @DisplayName("Photo kinds line up with the stores, and are absent where no photo is ever written")
     void photoKindsMatchStores() {
-        assertEquals(BuilderPhotoPaths.Kind.CARRIAGE,
-                BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.CARRIAGES));
-        assertEquals(BuilderPhotoPaths.Kind.CONTENTS,
-                BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.CONTENTS));
-        assertEquals(BuilderPhotoPaths.Kind.PART,
-                BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.PARTS));
+        assertEquals(BuilderPhotoPaths.Kind.CONTENTS, BuilderOpenOptions.photoKindFor(
+                BuilderOpenOptions.OpenSource.CONTENTS, "mess_hall"));
+        assertEquals(BuilderPhotoPaths.Kind.PART, BuilderOpenOptions.photoKindFor(
+                BuilderOpenOptions.OpenSource.PARTS, "slatted"));
 
         // Null rather than a new enum constant: nothing photographs a track, so an entry for one
         // would be a path that never has a file behind it.
-        assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.TRACK_TILES));
-        assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.TUNNEL_PORTALS));
+        assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.TRACK_TILES, "default"));
+        assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.TUNNEL_PORTALS, "default"));
     }
 
     @Test
-    @DisplayName("Anything openable can name where its photo lives")
-    void openableSourcesAlwaysHaveAPhotoKind() {
-        for (BuilderOpenOptions.OpenSource source : BuilderOpenOptions.OpenSource.values()) {
-            if (BuilderOpenOptions.isOpenable(source)) {
-                assertTrue(BuilderOpenOptions.photoKindFor(source) != null,
-                        source + " is openable but has no photo kind");
-            }
-        }
+    @DisplayName("In the Whole Carriage list, a saved build has a photo and a Stage does not")
+    void wholeCarriageEntriesSplitByTag() {
+        String saved = BuilderNewOptions.tagWholeCarriage("my_build");
+        String stage = BuilderNewOptions.tagStage("desert");
+
+        assertTrue(BuilderOpenOptions.isSavedBuild(saved));
+        assertFalse(BuilderOpenOptions.isSavedBuild(stage));
+
+        assertEquals(BuilderPhotoPaths.Kind.CARRIAGE,
+                BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.STAGES, saved));
+        // A Stage names a stretch of the game, not a file — there is nothing to photograph.
+        assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.STAGES, stage));
+    }
+
+    @Test
+    @DisplayName("Tagged values resolve back to their bare id; untagged lists pass through")
+    void bareIdUntagsOnlyWhereTagsExist() {
+        assertEquals("my_build", BuilderOpenOptions.bareId(BuilderOpenOptions.OpenSource.STAGES,
+                BuilderNewOptions.tagWholeCarriage("my_build")));
+        assertEquals("desert", BuilderOpenOptions.bareId(BuilderOpenOptions.OpenSource.STAGES,
+                BuilderNewOptions.tagStage("desert")));
+
+        // Only the Whole Carriage list shows two lists at once, so it is the only one that tags.
+        // Stripping a prefix off the others would corrupt any id that happened to contain one.
+        assertEquals("whole:odd_name", BuilderOpenOptions.bareId(
+                BuilderOpenOptions.OpenSource.CONTENTS, "whole:odd_name"));
+        assertEquals("", BuilderOpenOptions.bareId(BuilderOpenOptions.OpenSource.PARTS, null));
     }
 }

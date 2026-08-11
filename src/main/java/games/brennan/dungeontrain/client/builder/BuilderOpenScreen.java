@@ -5,9 +5,9 @@ import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderOpenOptions;
 import games.brennan.dungeontrain.builder.BuilderOpenRequest;
-import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.editor.EditorTemplateLists;
 import games.brennan.dungeontrain.net.BuilderDirtyRequestPacket;
+import games.brennan.dungeontrain.net.BuilderNewPacket;
 import games.brennan.dungeontrain.net.BuilderOpenPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -23,7 +23,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -146,7 +145,7 @@ public final class BuilderOpenScreen extends Screen {
      */
     private List<String> listEntries() {
         return switch (BuilderOpenOptions.openSourceFor(mode, subType)) {
-            case CARRIAGES -> carriagesAndSavedBuilds();
+            case STAGES -> stagesThenSavedBuilds();
             case CONTENTS -> contentsWithMembers();
             case PARTS -> EditorTemplateLists.parts(partKindValue());
             case TRACK_TILES -> EditorTemplateLists.tracks();
@@ -155,19 +154,41 @@ public final class BuilderOpenScreen extends Screen {
     }
 
     /**
-     * Saved whole carriages first, then every other registered shell.
+     * The Stage presets, then every whole carriage already saved.
      *
-     * <p>Both are openable and both are carriages, so they share one list rather than making the
-     * builder pick which register to look in. Saved builds lead because they are the things made
-     * <em>here</em> — the reason someone opened this screen — and because a whole carriage carries
-     * its interior, so opening one gets you back everything you had.</p>
+     * <p>Deliberately the same two lists, in the same order, that New's Whole Carriage picker shows —
+     * {@code BuilderNewScreen.stagesThenSavedBuilds}. The screens ask the same question here, so
+     * offering different answers would make Open a second vocabulary to learn rather than the same
+     * one laid out as pictures. (It briefly listed the registered carriage <em>shells</em> instead,
+     * which is a real list of things but not the one New offers.)</p>
+     *
+     * <p>Values are tagged, because the two halves mean different work: a Stage starts an unnamed
+     * draft shaped for that stretch of the game, a saved build is loaded and named. See
+     * {@link #activate}.</p>
      */
-    private static List<String> carriagesAndSavedBuilds() {
-        // Ordered set: a builder save writes a whole carriage *and* a shell under the same name, so
-        // without the de-duplication every build made here would appear on the screen twice.
-        LinkedHashSet<String> ids = new LinkedHashSet<>(EditorTemplateLists.wholeCarriages());
-        ids.addAll(EditorTemplateLists.carriages());
-        return List.copyOf(ids);
+    private static List<String> stagesThenSavedBuilds() {
+        List<String> out = new ArrayList<>();
+        for (String id : EditorTemplateLists.stages()) {
+            out.add(BuilderNewOptions.tagStage(id));
+        }
+        for (String id : EditorTemplateLists.wholeCarriages()) {
+            out.add(BuilderNewOptions.tagWholeCarriage(id));
+        }
+        return out;
+    }
+
+    /**
+     * The tile's caption. A saved build reads under a heading rather than as a bare name, so it
+     * can't be mistaken for one more Stage the builder hasn't heard of — the same treatment
+     * {@code BuilderNewScreen.pickerLabel} gives it.
+     */
+    private Component labelFor(BuilderOpenOptions.OpenSource source, String value) {
+        String bare = BuilderOpenOptions.bareId(source, value);
+        if (source == BuilderOpenOptions.OpenSource.STAGES && BuilderOpenOptions.isSavedBuild(value)) {
+            return Component.translatable("gui.dungeontrain.builder.new.saved_build",
+                    BuilderLabels.pretty(bare));
+        }
+        return Component.literal(BuilderLabels.pretty(bare));
     }
 
     /** Top-level contents, each followed by its sub-variants — a group's members are openable too. */
@@ -198,7 +219,6 @@ public final class BuilderOpenScreen extends Screen {
 
         BuilderOpenOptions.OpenSource source = BuilderOpenOptions.openSourceFor(mode, subType);
         boolean openable = BuilderOpenOptions.isOpenable(source);
-        BuilderPhotoPaths.Kind photoKind = BuilderOpenOptions.photoKindFor(source);
         CarriagePartKind kind = source == BuilderOpenOptions.OpenSource.PARTS ? partKindValue() : null;
 
         if (!entries.isEmpty()) {
@@ -213,7 +233,10 @@ public final class BuilderOpenScreen extends Screen {
                 boolean hovered = mouseX >= x && mouseX < x + grid.cellWidth()
                         && mouseY >= y && mouseY < y + grid.cellHeight()
                         && mouseY >= grid.topY() && mouseY < grid.bottomY();
-                BuilderTemplateTile.render(g, mode, modeArtAvailable, photoKind, entries.get(i), kind,
+                String value = entries.get(i);
+                BuilderTemplateTile.render(g, mode, modeArtAvailable,
+                        BuilderOpenOptions.photoKindFor(source, value),
+                        BuilderOpenOptions.bareId(source, value), kind, labelFor(source, value),
                         x, y, grid.cellWidth(), grid.cellHeight(), hovered, openable);
             }
             g.disableScissor();
@@ -242,7 +265,7 @@ public final class BuilderOpenScreen extends Screen {
                 && BuilderOpenOptions.isOpenable(mode, subType)) {
             int index = grid.indexAt(mouseX, mouseY, scrollY, entries.size());
             if (index >= 0) {
-                open(entries.get(index));
+                activate(entries.get(index));
                 return true;
             }
         }
@@ -264,32 +287,58 @@ public final class BuilderOpenScreen extends Screen {
     }
 
     /**
-     * Load {@code id}, asking first if there is work on the track that opening would throw away.
+     * Act on a clicked tile, asking first if there is work on the track it would throw away.
      *
-     * <p>The prompt is the same one a mode switch raises, and for the same reason — this re-stamps
-     * the train. Once it has been answered the request goes as {@code force}, because the question
-     * it would otherwise ask the server has just been answered by the player.</p>
+     * <p>The prompt is the one a mode switch raises, and for the same reason — either branch below
+     * re-stamps the train. Once it has been answered the request goes as {@code force}, because the
+     * question the server would otherwise ask has just been answered by the player.</p>
      */
-    private void open(String id) {
-        BuilderOpenRequest request = BuilderOpenRequest
-                .forSelection(subType, id, partKindValue())
-                .orElse(null);
-        if (request == null) {
+    private void activate(String value) {
+        BuilderOpenOptions.OpenSource source = BuilderOpenOptions.openSourceFor(mode, subType);
+        Runnable action = actionFor(source, value, true);
+        if (action == null) {
             return;
         }
         if (BuilderDirtyState.hasUnsavedChanges()) {
             Minecraft.getInstance().setScreen(new BuilderSwitchConfirmScreen(this,
-                    Component.literal(BuilderLabels.pretty(id)),
-                    BuilderDirtyState.dirtyCount(),
-                    () -> send(request, true)));
+                    labelFor(source, value), BuilderDirtyState.dirtyCount(), action));
             return;
         }
         Minecraft.getInstance().setScreen(null);
-        send(request, false);
+        Runnable unforced = actionFor(source, value, false);
+        if (unforced != null) {
+            unforced.run();
+        }
     }
 
-    private void send(BuilderOpenRequest request, boolean force) {
-        DungeonTrainNet.sendToServer(new BuilderOpenPacket(mode.id(), request.kind().id(),
-                request.id(), request.partKindId(), force));
+    /**
+     * What a tile does, or null when it names nothing actionable.
+     *
+     * <p>The Whole Carriage list is the only one with two answers, and the difference matters:</p>
+     * <ul>
+     *   <li>A <b>saved build</b> is <em>opened</em> — loaded, and named, so Save writes back to it.
+     *       That is {@code BuilderOpenPacket}, whose whole contract is to resolve the template before
+     *       touching the world.</li>
+     *   <li>A <b>Stage</b> is not a template and has no file to load. Clicking it means "a fresh
+     *       carriage for that stretch of the game", which is exactly what New does with the same
+     *       pick — so it sends {@code BuilderNewPacket} with an <b>empty name</b>. The empty name is
+     *       load-bearing: it leaves the result an unnamed draft, so New's lenient fallbacks can't
+     *       reach a Save that overwrites something.</li>
+     * </ul>
+     */
+    private Runnable actionFor(BuilderOpenOptions.OpenSource source, String value, boolean force) {
+        if (source == BuilderOpenOptions.OpenSource.STAGES && !BuilderOpenOptions.isSavedBuild(value)) {
+            String stageId = BuilderOpenOptions.bareId(source, value);
+            return () -> DungeonTrainNet.sendToServer(new BuilderNewPacket(
+                    mode.id(), subType.id(), partKind, BuilderNewOptions.tagStage(stageId), ""));
+        }
+        BuilderOpenRequest request = BuilderOpenRequest
+                .forSelection(subType, BuilderOpenOptions.bareId(source, value), partKindValue())
+                .orElse(null);
+        if (request == null) {
+            return null;
+        }
+        return () -> DungeonTrainNet.sendToServer(new BuilderOpenPacket(mode.id(),
+                request.kind().id(), request.id(), request.partKindId(), force));
     }
 }

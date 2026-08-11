@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client.builder;
 
-import games.brennan.dungeontrain.builder.BuilderLabels;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -45,13 +44,17 @@ final class BuilderTemplateTile {
     /**
      * Draw one cell.
      *
-     * @param photoKind which store to look the photo up in; null for the track modes, which never
-     *                  have one
+     * @param photoKind which store to look the photo up in; null when this entry has no photo of its
+     *                  own — a track template, or a Stage, which isn't a template at all
+     * @param id        the bare template id, already untagged
+     * @param label     what the strip reads; passed in rather than derived from {@code id} because a
+     *                  saved build is shown under a heading so it can't be mistaken for a Stage
      * @param openable  false for a listed-but-not-yet-buildable template — drawn dimmed, with a grey
      *                  label and no hover border, so it reads as "shown, not offered"
      */
     static void render(GuiGraphics g, BuilderMode mode, boolean modeArtAvailable,
                        BuilderPhotoPaths.Kind photoKind, String id, CarriagePartKind partKind,
+                       Component label,
                        int x, int y, int width, int height, boolean hovered, boolean openable) {
         BuilderPhotoTextures.Photo photo = photoKind == null
                 ? null
@@ -77,7 +80,6 @@ final class BuilderTemplateTile {
         int stripTop = y + height - LABEL_STRIP_H;
         g.fill(x + 1, stripTop, x + width - 1, y + height - 1, LABEL_STRIP_BG);
         Minecraft mc = Minecraft.getInstance();
-        Component label = Component.literal(BuilderLabels.pretty(id));
         g.drawCenteredString(mc.font, label, x + width / 2,
                 stripTop + (LABEL_STRIP_H - mc.font.lineHeight) / 2,
                 openable ? LABEL_COLOUR : LABEL_INACTIVE);
