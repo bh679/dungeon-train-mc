@@ -6454,6 +6454,22 @@
       "released": true,
       "released_in": "v0.551.0",
       "released_at": "2026-08-09T08:49:33Z"
+    },
+    {
+      "id": "whole-carriage-template",
+      "version": "0.552.0",
+      "type": "feat",
+      "title": "Save a carriage whole \u2014 shell and interior together",
+      "summary": "The Train Builder's Whole Carriage mode now saves what you actually built. Until now the interior you furnished was stored and then covered over by an unrelated room the next time that carriage spawned; a whole carriage is now its own kind of template, holding the shell and everything inside it as one piece. Saved builds also show up in the New screen's picker under the stage presets, so you can start a new carriage from one you already made.",
+      "highlights": [
+        "Whole Carriage builds keep their interior instead of having a random room stamped over it",
+        "Start a new build from a carriage you saved earlier, listed under the stage presets"
+      ],
+      "pr": 932,
+      "date": "2026-08-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

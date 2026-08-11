@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
+import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -40,6 +41,16 @@ public final class EditorTemplateLists {
             ids.add(v.id());
         }
         return ids;
+    }
+
+    /**
+     * Every saved whole carriage, alphabetical.
+     *
+     * <p>Always user-authored, so this list is empty on a fresh install — the Builder's picker
+     * shows the Stage presets alone until someone saves their first one.</p>
+     */
+    public static List<String> wholeCarriages() {
+        return WholeCarriageRegistry.ids();
     }
 
     /**

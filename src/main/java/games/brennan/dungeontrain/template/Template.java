@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.editor.TrackPlotLocator;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
+import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
@@ -31,6 +32,10 @@ import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageWeights;
+// Not importing train.WholeCarriage: the nested record below owns that simple name inside this
+// file, so the identity type is spelled out in full where it appears.
+import games.brennan.dungeontrain.train.WholeCarriagePlacer;
+import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.track.TrackPlacer;
@@ -73,6 +78,7 @@ import java.util.Optional;
 public sealed interface Template
     permits Template.Carriage,
             Template.Contents,
+            Template.WholeCarriage,
             Template.Part,
             Template.Track,
             Template.Pillar,
@@ -363,6 +369,72 @@ public sealed interface Template
         }
         @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
             CarriageContentsPlacer.placeAt(level, origin, contents, dims);
+        }
+    }
+
+    /**
+     * A carriage saved whole — shell and interior in one template, rather than the
+     * {@link Carriage} / {@link Contents} pair the spawn pool rolls against each other.
+     *
+     * <p>Authored in the Train Builder, which is also the only thing that reads them back today:
+     * whole carriages have no editor plot ({@link #editorPlotOrigin} returns null), no bundled
+     * tier, and no weight pool, because the train generator does not pick them yet. The capability
+     * accessors below say so rather than pretending otherwise.</p>
+     */
+    record WholeCarriage(games.brennan.dungeontrain.train.WholeCarriage wholeCarriage) implements Template {
+        public WholeCarriage {
+            Objects.requireNonNull(wholeCarriage, "wholeCarriage");
+        }
+
+        @Override
+        public String id() {
+            return wholeCarriage.id();
+        }
+
+        @Override
+        public String displayName() {
+            return "whole carriage / " + wholeCarriage.id();
+        }
+
+        @Override
+        public TemplateKind kind() {
+            return TemplateKind.WHOLE_CARRIAGE;
+        }
+
+        @Override
+        public boolean isBuiltin() {
+            // The mod ships none — every whole carriage was made by someone in a builder world.
+            return false;
+        }
+
+        @Override
+        public boolean canPromote() {
+            // No bundled tier to promote into, same as Contents.
+            return false;
+        }
+
+        @Override public TemplateStore<WholeCarriage> store() { return WholeCarriageTemplateStore.adapter(); }
+        @Override public TemplateRegistry<WholeCarriage> registry() { return WholeCarriageRegistry.adapter(); }
+
+        @Override public int weight() {
+            // No weight pool: whole carriages don't join the spawn pick yet. Same sentinel Part
+            // uses, so a caller reading a weight off one gets "none" rather than a wrong number.
+            return EditorStatusPacket.NO_WEIGHT;
+        }
+        @Override public String variantName() { return wholeCarriage.id(); }
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return Optional.empty();
+        }
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            // Not registered in the editor world — whole carriages are authored in a builder world,
+            // which holds one volume and has no plot grid to locate them in.
+            return null;
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return new Vec3i(dims.length(), dims.height(), dims.width());
+        }
+        @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
+            WholeCarriagePlacer.placeAt(level, origin, wholeCarriage, dims);
         }
     }
 
