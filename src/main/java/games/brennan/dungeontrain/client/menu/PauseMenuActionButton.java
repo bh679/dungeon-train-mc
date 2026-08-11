@@ -34,7 +34,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * </ul>
  */
 @OnlyIn(Dist.CLIENT)
-public final class PauseMenuActionButton extends Button {
+public class PauseMenuActionButton extends Button {
 
     private static final WidgetSprites SPRITES = new WidgetSprites(
             ResourceLocation.withDefaultNamespace("widget/button"),
@@ -62,10 +62,28 @@ public final class PauseMenuActionButton extends Button {
         return this.visibleWhenShift;
     }
 
+    /**
+     * The tint applied to the button sprite, read once per frame. Fixed at construction for the
+     * pause-menu cluster, but overridable for buttons whose colour <em>is</em> their state readout
+     * — {@link games.brennan.dungeontrain.client.builder.BuilderMirrorButton} relights itself on
+     * click, and no {@code init} pass runs between the click and the next frame.
+     */
+    protected float tintR() {
+        return this.tintR;
+    }
+
+    protected float tintG() {
+        return this.tintG;
+    }
+
+    protected float tintB() {
+        return this.tintB;
+    }
+
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         Minecraft mc = Minecraft.getInstance();
-        g.setColor(this.tintR, this.tintG, this.tintB, this.alpha);
+        g.setColor(this.tintR(), this.tintG(), this.tintB(), this.alpha);
         RenderSystem.enableBlend();
         RenderSystem.enableDepthTest();
         g.blitSprite(SPRITES.get(this.active, this.isHoveredOrFocused()),
