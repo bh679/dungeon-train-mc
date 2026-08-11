@@ -7,10 +7,12 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ObjectSelectionList;
+import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.options.LanguageSelectScreen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -46,6 +48,8 @@ public final class LanguageScreenTranslateButton {
     /** The vanilla button that opens font settings, to the left of Done in the same footer row. */
     private static final Component FONT_KEY = Component.translatable("options.font");
     private static final Component LABEL = Component.translatable("gui.dungeontrain.translate.button");
+    /** Vanilla's accuracy warning above the footer row, which moves with it when the row wraps. */
+    private static final String WARNING_KEY = "options.languageAccuracyWarning";
 
     private LanguageScreenTranslateButton() {}
 
@@ -131,8 +135,14 @@ public final class LanguageScreenTranslateButton {
     }
 
     /**
-     * Our button on a line of its own, in a strip taken from the bottom of the language list, with
-     * vanilla's two buttons sharing the row below it.
+     * Our button on a line of its own, below vanilla's row, in a strip taken from the bottom of the
+     * language list.
+     *
+     * <p>The whole footer stack — warning, vanilla's row, ours — is re-centred in the taller band,
+     * because there is no room for a fourth line inside vanilla's fixed 53px footer. Every number
+     * comes from the layout rather than from where the widgets currently sit: Init.Post fires more
+     * than once per screen, and anything measured off "where it is now" walks up the screen a row
+     * per pass.</p>
      *
      * @return false when there is no list to take the strip from, and the caller should stay on one row
      */
@@ -143,29 +153,49 @@ public final class LanguageScreenTranslateButton {
             return false;
         }
         int rowHeight = done.getHeight();
-        int strip = GAP + rowHeight + GAP;
-
-        // Every measurement comes from the layout, never from how tall the list happens to be right
-        // now. Init.Post fires more than once per screen, and a strip taken off the CURRENT height
-        // would walk the button up the screen a row at a time, leaving it floating over the list.
+        int strip = rowHeight + GAP;
         int contentTop = screen.layout.getHeaderHeight();
         int contentHeight = screen.layout.getContentHeight();
         if (contentHeight - strip < rowHeight) {
             return false; // a window too short to give the line room
         }
-        // Vanilla's row keeps its place at the bottom; the extra line sits in the strip the list
-        // gives back, still anchored to the footer rather than floating in the middle of the screen.
         list.updateSizeAndPosition(list.getWidth(), contentHeight - strip, contentTop);
 
+        AbstractWidget warning = findWarning(screen);
+        int lineHeight = Minecraft.getInstance().font.lineHeight;
+        int stack = (warning != null ? lineHeight + GAP : 0) + rowHeight + GAP + rowHeight;
+        int band = screen.layout.getFooterHeight() + strip;
+        int y = contentTop + contentHeight - strip + Math.max(0, (band - stack) / 2);
+
+        if (warning != null) {
+            warning.setY(y);
+            y += lineHeight + GAP;
+        }
         AbstractWidget[] below = font != null ? new AbstractWidget[] {font, done}
                                               : new AbstractWidget[] {done};
         int w = below.length == 2 ? (span - GAP) / 2 : span;
-        layoutRow(below, w, span(w, below.length, screen.width), screen.width, done.getY());
+        layoutRow(below, w, span(w, below.length, screen.width), screen.width, y);
 
         button.setWidth(span);
         button.setX((screen.width - span) / 2);
-        button.setY(contentTop + contentHeight - strip + GAP);
+        button.setY(y + rowHeight + GAP);
         return true;
+    }
+
+    /**
+     * Vanilla's "translations may not be fully accurate" line, which the taller footer has to move up
+     * with everything else. Matched on the translation key rather than the component, whose style
+     * carries a colour we would have to reproduce exactly.
+     */
+    private static AbstractWidget findWarning(LanguageSelectScreen screen) {
+        for (var child : screen.children()) {
+            if (child instanceof StringWidget widget
+                && widget.getMessage().getContents() instanceof TranslatableContents contents
+                && WARNING_KEY.equals(contents.getKey())) {
+                return widget;
+            }
+        }
+        return null;
     }
 
     /** Whether every label sits inside its cell — vanilla insets the text by 2px on each side. */
