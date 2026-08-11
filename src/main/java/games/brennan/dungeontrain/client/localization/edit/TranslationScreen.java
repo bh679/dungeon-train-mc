@@ -39,8 +39,19 @@ public final class TranslationScreen extends Screen {
     private static final int SENT_COLUMN_PERCENT = 20;
     /** Floor so the column stays legible at a small GUI scale, where 20% is barely a word. */
     private static final int SENT_COLUMN_MIN_W = 90;
+    /**
+     * Cap on each narrowing cycle, so they stay a control beside the search box rather than
+     * competing with it. Wide enough for the longest label; the rest of the row is search.
+     */
+    private static final int FILTER_MAX_W = 110;
 
-    /** Which units the list shows. Declaration order is the order the cycle button offers. */
+    /**
+     * Which of the UNFINISHED strings the list shows. Declaration order is the cycle order.
+     *
+     * <p>Every value here narrows work still to do. "What have I sent?" is not one of them: that is
+     * what the submissions column answers, and having it in here as well was the screen's fifth
+     * overlapping way to choose what you were looking at.</p>
+     */
     private enum StateFilter {
         AI_UNREVIEWED("ai_unreviewed"),
         EDITED("edited"),
@@ -49,13 +60,6 @@ public final class TranslationScreen extends Screen {
          * has already fixed — so a line vanishes from the list once they have corrected it.
          */
         TODO("todo"),
-        /**
-         * Not a filter over the catalog at all: it swaps the screen into a two-pane view of what
-         * this player has sent in, with the submissions down the right and the picked one's
-         * strings on the left. It lives in this cycle because "what have I sent?" is the same
-         * question as "what still needs doing?", asked from the other end.
-         */
-        SENT("sent"),
         ALL("all");
 
         final String key;
@@ -98,8 +102,16 @@ public final class TranslationScreen extends Screen {
     private List<TranslationSubmissionsClient.SentUnit> sentUnits = List.of();
     /** True when the picked row is the working batch, whose strings come from disk, not the relay. */
     private boolean showingUnsubmitted;
+    /** The column row currently being read, or null for "the work still to do" — the default. */
+    private TranslationSubmission picked;
     /** Sits under the column, and only while the working batch is what is selected in it. */
     private Button submit;
+    /** The two narrowing controls — hidden while the left pane belongs to a finished submission. */
+    private CycleButton<StateFilter> stateCycle;
+    private CycleButton<BodyFilter> bodyCycle;
+    /** Column height with and without Submit beneath it; swapped by {@link #setSubmitVisible}. */
+    private int fullColumnHeight;
+    private int shortColumnHeight;
 
     public TranslationScreen(Screen parent, String locale) {
         super(Component.translatable("gui.dungeontrain.translate.title"));
@@ -131,48 +143,46 @@ public final class TranslationScreen extends Screen {
         // title screen's fetch is once per session, which would mean a translator who just had a
         // string approved kept being asked to fix it until they restarted the game.
         ApprovedTranslationsFetcher.fetchAsync(locale);
-        int listTop = TOP + ROW_H * 2 + GAP * 3;
+        // One row of controls, not three tiers of them. Search and the two narrowing cycles sit
+        // together because they do the same job — cutting down what is in front of you — and giving
+        // the cycles a tier of their own made them read as top-level navigation, which the column
+        // now is.
         int bottomRow = height - MARGIN - ROW_H;
         int listBottom = bottomRow - GAP;
         int contentWidth = width - MARGIN * 2;
+        int listTop = TOP + ROW_H + GAP * 2;
 
-        search = new EditBox(font, MARGIN, TOP, contentWidth, ROW_H,
-            Component.translatable("gui.dungeontrain.translate.search"));
-        search.setHint(Component.translatable("gui.dungeontrain.translate.search"));
-        search.setMaxLength(100);
-        search.setResponder(text -> refresh());
-        addRenderableWidget(search);
-
-        int filterWidth = (contentWidth - GAP) / 2;
         List<StateFilter> states = offeredStates();
         if (!states.contains(stateFilter)) {
             // A selection carried over from a session where it was unlocked. Without this the gate
             // is bypassed simply by reopening the screen.
             stateFilter = StateFilter.AI_UNREVIEWED;
         }
-        addRenderableWidget(CycleButton.<StateFilter>builder(StateFilter::label)
+        int cycleWidth = Math.min(FILTER_MAX_W, (contentWidth - GAP * 2) / 4);
+        int searchWidth = Math.max(ROW_H, contentWidth - (cycleWidth + GAP) * 2);
+
+        search = new EditBox(font, MARGIN, TOP, searchWidth, ROW_H,
+            Component.translatable("gui.dungeontrain.translate.search"));
+        search.setHint(Component.translatable("gui.dungeontrain.translate.search"));
+        search.setMaxLength(100);
+        search.setResponder(text -> refresh());
+        addRenderableWidget(search);
+
+        stateCycle = addRenderableWidget(CycleButton.<StateFilter>builder(StateFilter::label)
             .withValues(states)
             .withInitialValue(stateFilter)
             .displayOnlyValue()
-            .create(MARGIN, TOP + ROW_H + GAP, filterWidth, ROW_H,
+            .create(MARGIN + searchWidth + GAP, TOP, cycleWidth, ROW_H,
                 Component.translatable("gui.dungeontrain.translate.filter"),
                 (button, value) -> {
                     stateFilter = value;
-                    // Leaving SENT means the left pane is no longer showing the picked submission,
-                    // so the column must stop claiming one — a highlighted row that drives nothing
-                    // is the one way these two can lie to each other.
-                    if (value != StateFilter.SENT && sentList != null) {
-                        sentList.clearSelection();
-                        showingUnsubmitted = false;
-                        setSubmitVisible(false);
-                    }
                     refresh();
                 }));
-        addRenderableWidget(CycleButton.<BodyFilter>builder(BodyFilter::label)
+        bodyCycle = addRenderableWidget(CycleButton.<BodyFilter>builder(BodyFilter::label)
             .withValues(BodyFilter.values())
             .withInitialValue(bodyFilter)
             .displayOnlyValue()
-            .create(MARGIN + filterWidth + GAP, TOP + ROW_H + GAP, filterWidth, ROW_H,
+            .create(MARGIN + searchWidth + GAP + cycleWidth + GAP, TOP, cycleWidth, ROW_H,
                 Component.translatable("gui.dungeontrain.translate.body"),
                 (button, value) -> {
                     bodyFilter = value;
@@ -180,9 +190,7 @@ public final class TranslationScreen extends Screen {
                 }));
 
         // Two panes, always: strings on the left, what you have sent down a narrow right column.
-        // The column used to appear only under the SENT filter, which meant a translator working
-        // through the queue could not see their own history — or, more to the point, how much work
-        // was sitting here unsent. The strings are what gets read and edited, so they keep the room.
+        // The column is the navigation — what the left pane is showing is whatever it says.
         int listHeight = Math.max(ROW_H, listBottom - listTop);
         int sentWidth = Math.max(SENT_COLUMN_MIN_W, (contentWidth - GAP) * SENT_COLUMN_PERCENT / 100);
         int leftWidth = Math.max(ROW_H, contentWidth - GAP - sentWidth);
@@ -191,22 +199,21 @@ public final class TranslationScreen extends Screen {
             this::openEditor);
         addRenderableWidget(list);
 
-        // The column gives up its last row-height to Submit, which sits directly under it: the
-        // button acts on the working batch at the top of this column, so it belongs to the column
-        // rather than to the screen's action row. The LEFT list keeps its full height — the strings
-        // pane pays nothing for this.
+        // Submit sits under the column, because it acts on the working batch at the top of it. The
+        // column runs full height and only gives up a row when Submit is actually there — an empty
+        // strip held open for a button that is not showing is just wasted column.
         int sentX = MARGIN + leftWidth + GAP;
-        int sentHeight = Math.max(ROW_H, listHeight - ROW_H - GAP);
+        fullColumnHeight = listHeight;
+        shortColumnHeight = Math.max(ROW_H, listHeight - ROW_H - GAP);
         sentList = new TranslationSubmissionList(font, sentX, listTop,
-            sentWidth, sentHeight, this::openSubmission);
+            sentWidth, fullColumnHeight, this::openSubmission);
         addRenderableWidget(sentList);
 
         submit = addRenderableWidget(Button.builder(
             Component.translatable("gui.dungeontrain.translate.submit"),
             b -> minecraft.setScreen(new TranslationSubmitScreen(this, locale)))
-            .bounds(sentX, listTop + sentHeight + GAP, sentWidth, ROW_H).build());
-        // Hidden until the working batch is the selected row — see setSubmitVisible.
-        submit.visible = false;
+            .bounds(sentX, listTop + shortColumnHeight + GAP, sentWidth, ROW_H).build());
+        setSubmitVisible(false); // and with it, the column back to full height
         // Paint the working batch immediately from local state; the relay's history lands on top of
         // it when the fetch returns. The column is never empty while waiting on the network.
         onHistory(List.of());
@@ -240,12 +247,12 @@ public final class TranslationScreen extends Screen {
         }
         all.addAll(sent);
         sentList.setRows(all);
-        setSubmitVisible(false); // setRows drops the selection, so Submit has nothing to belong to
-        // Only auto-open a row when the left pane is actually showing one. On every other filter the
-        // left pane belongs to the catalog, and highlighting a row there would claim otherwise.
-        if (stateFilter == StateFilter.SENT && !sentList.hasSelection()) {
-            sentList.selectFirst();
-        }
+        // setRows drops the selection, so nothing is being read: the left pane is the work still to
+        // do, which is the screen's resting state and needs no row picked to get to.
+        picked = null;
+        showingUnsubmitted = false;
+        setSubmitVisible(false);
+        applyFilterVisibility();
     }
 
     /**
@@ -256,8 +263,14 @@ public final class TranslationScreen extends Screen {
      * built when there IS something to send, so selecting it is the whole condition.</p>
      */
     private void setSubmitVisible(boolean visible) {
-        if (submit != null) {
-            submit.visible = visible;
+        if (submit == null) {
+            return;
+        }
+        submit.visible = visible;
+        // The column takes the space back when the button is not there, rather than holding an
+        // empty strip open for it.
+        if (sentList != null) {
+            sentList.resizeTo(visible ? shortColumnHeight : fullColumnHeight);
         }
     }
 
@@ -267,16 +280,35 @@ public final class TranslationScreen extends Screen {
      */
     private void openSubmission(TranslationSubmission submission) {
         sentUnits = List.of();
-        // Picking a row is a request to read it, so the left pane has to be the one that shows it.
-        stateFilter = StateFilter.SENT;
-        showingUnsubmitted = submission.unsubmitted();
+        // null is the row being put back down: nothing is picked, so the left pane goes back to the
+        // work still to do and the narrowing controls come back with it.
+        picked = submission;
+        showingUnsubmitted = submission != null && submission.unsubmitted();
         setSubmitVisible(showingUnsubmitted);
+        applyFilterVisibility();
         refresh();
-        if (!submission.queued() && !submission.unsubmitted()) {
+        if (submission != null && !submission.queued() && !submission.unsubmitted()) {
             TranslationSubmissionsClient.fetchUnits(submission.submittedAtMs(), units -> {
                 sentUnits = units;
                 refresh();
             });
+        }
+    }
+
+    /**
+     * The narrowing controls exist only over unfinished work.
+     *
+     * <p>A finished submission is a record of what was sent; narrowing it by "needs a human" or
+     * "still to do" asks a question of it that has no meaning. Search stays either way — finding a
+     * string inside something you sent is a fair thing to want, and it is not a filter.</p>
+     */
+    private void applyFilterVisibility() {
+        boolean unfinished = picked == null || picked.unsubmitted();
+        if (stateCycle != null) {
+            stateCycle.visible = unfinished;
+        }
+        if (bodyCycle != null) {
+            bodyCycle.visible = unfinished;
         }
     }
 
@@ -335,8 +367,7 @@ public final class TranslationScreen extends Screen {
      */
     private static List<StateFilter> offeredStates() {
         List<StateFilter> out = new ArrayList<>(
-            List.of(StateFilter.AI_UNREVIEWED, StateFilter.EDITED, StateFilter.TODO,
-                StateFilter.SENT));
+            List.of(StateFilter.AI_UNREVIEWED, StateFilter.EDITED, StateFilter.TODO));
         if (TranslationContributor.hasApprovedTranslation()) {
             out.add(StateFilter.ALL);
         }
@@ -392,7 +423,9 @@ public final class TranslationScreen extends Screen {
             return List.of();
         }
         String needle = search == null ? "" : search.getValue().trim().toLowerCase(Locale.ROOT);
-        if (stateFilter == StateFilter.SENT) {
+        // The column decides what this pane is showing. Nothing picked → the work still to do,
+        // narrowed by the filters; a row picked → that row's strings.
+        if (picked != null) {
             return sentUnitRows(needle);
         }
         TranslationEdits edits = TranslationOverrides.mergedFor(locale);
@@ -423,7 +456,6 @@ public final class TranslationScreen extends Screen {
         return switch (stateFilter) {
             case ALL -> true;
             case TODO -> TranslationFilters.needsHuman(unit, approved) && overrideOf(unit, edits) == null;
-            case SENT -> true; // handled in visibleUnits — the rows come from the relay, not the catalog
             case AI_UNREVIEWED -> TranslationFilters.needsHuman(unit, approved);
             case EDITED -> overrideOf(unit, edits) != null;
         };

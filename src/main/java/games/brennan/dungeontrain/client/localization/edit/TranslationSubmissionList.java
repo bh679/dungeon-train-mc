@@ -38,7 +38,10 @@ public final class TranslationSubmissionList extends AbstractWidget {
     private static final int ROW_HOVER = 0x33FFFFFF;
 
     private final Font font;
-    /** Null when rows are read-only; set when picking a submission opens its contents. */
+    /**
+     * Null when rows are read-only; set when picking a submission opens its contents. Called with
+     * {@code null} when the player clicks the selected row again to put it back down.
+     */
     private final Consumer<TranslationSubmission> onSelect;
 
     private List<TranslationSubmission> rows = List.of();
@@ -65,26 +68,17 @@ public final class TranslationSubmissionList extends AbstractWidget {
         this.scroll = Mth.clamp(scroll, 0, maxScroll());
     }
 
-    /** Select the first row and report it — how the drill-down opens on something to look at. */
-    public void selectFirst() {
-        if (onSelect != null && !rows.isEmpty()) {
-            selected = 0;
-            onSelect.accept(rows.get(0));
-        }
-    }
-
-    /** Whether a row is currently highlighted. */
-    public boolean hasSelection() {
-        return selected >= 0;
-    }
-
     /**
-     * Drop the highlight without telling anyone — for when the left pane stops showing the picked
-     * row. Silent on purpose: re-firing {@code onSelect} here would fight the caller that just
-     * changed what the left pane is for.
+     * Grow or shrink to make room for something below — the Submit button, which only exists while
+     * the working batch is picked. Re-clamps the scroll, since a taller list can leave it past the
+     * end and a shorter one can leave a gap under the last row.
      */
-    public void clearSelection() {
-        selected = -1;
+    public void resizeTo(int newHeight) {
+        if (newHeight == height) {
+            return;
+        }
+        setHeight(Math.max(rowHeight(), newHeight));
+        scroll = Mth.clamp(scroll, 0, maxScroll());
     }
 
     private int rowHeight() {
@@ -179,8 +173,16 @@ public final class TranslationSubmissionList extends AbstractWidget {
         if (index < 0 || index >= rows.size()) {
             return false;
         }
-        selected = index;
         playDownSound(net.minecraft.client.Minecraft.getInstance().getSoundManager());
+        // Clicking the row you are already on puts it down again. Without this there is no way back
+        // out of a submission to the work still to do — the column is the navigation now, so it has
+        // to be able to say "nothing", not just "something else".
+        if (index == selected) {
+            selected = -1;
+            onSelect.accept(null);
+            return true;
+        }
+        selected = index;
         onSelect.accept(rows.get(index));
         return true;
     }
