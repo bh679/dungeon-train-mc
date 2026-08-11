@@ -1,0 +1,295 @@
+package games.brennan.dungeontrain.client.builder;
+
+import games.brennan.dungeontrain.builder.BuilderLabels;
+import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderNewOptions;
+import games.brennan.dungeontrain.builder.BuilderOpenOptions;
+import games.brennan.dungeontrain.builder.BuilderOpenRequest;
+import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.editor.EditorTemplateLists;
+import games.brennan.dungeontrain.net.BuilderDirtyRequestPacket;
+import games.brennan.dungeontrain.net.BuilderOpenPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.train.CarriagePartKind;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+
+/**
+ * The Train Builder's template library: pick a kind of thing, then pick which one to work on.
+ *
+ * <p>The pause menu's <b>Open</b> used to lead to the four-tile mode picker, which re-stamped the
+ * world into a different mode — useful, but not opening anything. There was no way to get back into
+ * a template you had already made, which is most of what a builder does after the first session.</p>
+ *
+ * <p>The head of the screen is {@link BuilderTypeControls} — literally the same controls as New and
+ * Save-as, in the same order — so the three screens read as one vocabulary rather than three. What
+ * hangs underneath is the difference: New follows the type with a name field and a "start from"
+ * picker, and this follows it with every template of that type as a wall of photos.</p>
+ *
+ * <p>Opening discards whatever is on the track, so a click here goes through the same unsaved-work
+ * prompt a mode switch does — see {@link BuilderSwitchConfirmScreen}.</p>
+ */
+@OnlyIn(Dist.CLIENT)
+public final class BuilderOpenScreen extends Screen {
+
+    private static final int TITLE_TOP = 14;
+    private static final int CONTROL_WIDTH = 200;
+    private static final int ROW_HEIGHT = 20;
+    private static final int ROW_GAP = 4;
+    private static final int GRID_TOP_GAP = 8;
+    private static final int BACK_BUTTON_WIDTH = 200;
+    private static final int BACK_BUTTON_BOTTOM_MARGIN = 28;
+    private static final int STATUS_GAP = 14;
+
+    private static final int SCROLL_STEP = 24;
+
+    private static final int NOTE_COLOUR = 0xA0A0A0;
+
+    private final Screen lastScreen;
+
+    private BuilderMode mode;
+    private BuilderNewOptions.SubType subType = BuilderNewOptions.SubType.WHOLE_CARRIAGE;
+    private String partKind = BuilderNewOptions.PART_KINDS.get(0);
+
+    /** The ids currently on show, rebuilt whenever the type selection changes. */
+    private List<String> entries = List.of();
+    private BuilderTemplateGridLayout grid;
+    private int scrollY;
+    private boolean modeArtAvailable;
+
+    public BuilderOpenScreen(Screen lastScreen) {
+        super(Component.translatable("gui.dungeontrain.builder.open.title"));
+        this.lastScreen = lastScreen;
+        this.mode = BuilderMode.fromId(BuilderBoundsState.modeId()).orElse(BuilderMode.TRAIN_OUTSIDE);
+    }
+
+    @Override
+    protected void init() {
+        // Refresh the unsaved-work answer on the way in. The prompt below is only as good as this
+        // value, and the player may have edited since the pause menu last asked.
+        DungeonTrainNet.sendToServer(new BuilderDirtyRequestPacket());
+
+        this.modeArtAvailable = BuilderTileArt.isAvailable(mode);
+        this.entries = listEntries();
+
+        int controlX = this.width / 2 - CONTROL_WIDTH / 2;
+        int y = TITLE_TOP + this.font.lineHeight + ROW_GAP;
+
+        // The mode's own art, not a template preview: the grid below is already showing every
+        // template's photo, so a second picture of one of them would just compete with it.
+        this.addRenderableWidget(BuilderTypeControls.mode(controlX, y, CONTROL_WIDTH, mode,
+                () -> null,
+                value -> {
+                    mode = value;
+                    scrollY = 0;   // a different mode is a different list; keeping the offset would land mid-nowhere
+                    rebuild();
+                }));
+        y += BuilderTypeControls.ART_HEIGHT + ROW_GAP;
+
+        List<AbstractWidget> controls = new ArrayList<>();
+        if (BuilderNewOptions.hasSubTypes(mode)) {
+            controls.add(BuilderTypeControls.subType(controlX, y, CONTROL_WIDTH, ROW_HEIGHT, subType,
+                    value -> {
+                        subType = value;
+                        scrollY = 0;
+                        rebuild();
+                    }));
+            if (BuilderOpenOptions.showsPartKind(mode, subType)) {
+                controls.add(BuilderTypeControls.partKind(controlX, y, CONTROL_WIDTH, ROW_HEIGHT, partKind,
+                        value -> {
+                            partKind = value;
+                            scrollY = 0;   // each kind has its own templates
+                            rebuild();
+                        }));
+            }
+        }
+        y = BuilderTypeControls.layoutRows(controls, controlX, CONTROL_WIDTH, y, ROW_HEIGHT, ROW_GAP);
+        controls.forEach(this::addRenderableWidget);
+
+        int backY = this.height - BACK_BUTTON_BOTTOM_MARGIN;
+        int gridTop = y + GRID_TOP_GAP;
+        int gridBottom = Math.max(gridTop, backY - STATUS_GAP);
+        this.grid = BuilderTemplateGridLayout.of(this.width, gridTop, gridBottom, entries.size());
+        this.scrollY = grid.clampScroll(scrollY);
+
+        this.addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> this.onClose())
+                .bounds((this.width - BACK_BUTTON_WIDTH) / 2, backY, BACK_BUTTON_WIDTH, ROW_HEIGHT)
+                .build());
+    }
+
+    private void rebuild() {
+        this.clearWidgets();
+        this.init();
+    }
+
+    // ---- what the grid shows ----
+
+    /**
+     * The openable ids for the current selection.
+     *
+     * <p>Every list comes from {@link EditorTemplateLists}, the same call the Train Editor's own
+     * template list makes — a template the Builder can't see is a template it would silently fail to
+     * open.</p>
+     */
+    private List<String> listEntries() {
+        return switch (BuilderOpenOptions.openSourceFor(mode, subType)) {
+            case CARRIAGES -> carriagesAndSavedBuilds();
+            case CONTENTS -> contentsWithMembers();
+            case PARTS -> EditorTemplateLists.parts(partKindValue());
+            case TRACK_TILES -> EditorTemplateLists.tracks();
+            case TUNNEL_PORTALS -> EditorTemplateLists.tunnels(TunnelPlacer.TunnelVariant.PORTAL);
+        };
+    }
+
+    /**
+     * Saved whole carriages first, then every other registered shell.
+     *
+     * <p>Both are openable and both are carriages, so they share one list rather than making the
+     * builder pick which register to look in. Saved builds lead because they are the things made
+     * <em>here</em> — the reason someone opened this screen — and because a whole carriage carries
+     * its interior, so opening one gets you back everything you had.</p>
+     */
+    private static List<String> carriagesAndSavedBuilds() {
+        // Ordered set: a builder save writes a whole carriage *and* a shell under the same name, so
+        // without the de-duplication every build made here would appear on the screen twice.
+        LinkedHashSet<String> ids = new LinkedHashSet<>(EditorTemplateLists.wholeCarriages());
+        ids.addAll(EditorTemplateLists.carriages());
+        return List.copyOf(ids);
+    }
+
+    /** Top-level contents, each followed by its sub-variants — a group's members are openable too. */
+    private static List<String> contentsWithMembers() {
+        List<String> out = new ArrayList<>();
+        for (String id : EditorTemplateLists.contents()) {
+            out.add(id);
+            out.addAll(EditorTemplateLists.contentsMembers(id));
+        }
+        return out;
+    }
+
+    private CarriagePartKind partKindValue() {
+        for (CarriagePartKind kind : CarriagePartKind.values()) {
+            if (kind.name().toLowerCase(Locale.ROOT).equals(partKind)) {
+                return kind;
+            }
+        }
+        return CarriagePartKind.values()[0];
+    }
+
+    // ---- render ----
+
+    @Override
+    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        super.render(g, mouseX, mouseY, partialTick);
+        g.drawCenteredString(this.font, this.title, this.width / 2, TITLE_TOP, 0xFFFFFF);
+
+        BuilderOpenOptions.OpenSource source = BuilderOpenOptions.openSourceFor(mode, subType);
+        boolean openable = BuilderOpenOptions.isOpenable(source);
+        BuilderPhotoPaths.Kind photoKind = BuilderOpenOptions.photoKindFor(source);
+        CarriagePartKind kind = source == BuilderOpenOptions.OpenSource.PARTS ? partKindValue() : null;
+
+        if (!entries.isEmpty()) {
+            // Scissored: a scrolled cell must not bleed over the type controls or the Back button.
+            g.enableScissor(0, grid.topY(), this.width, grid.bottomY());
+            for (int i = 0; i < entries.size(); i++) {
+                if (!grid.isVisible(i, scrollY)) {
+                    continue;
+                }
+                int x = grid.xFor(i);
+                int y = grid.yFor(i, scrollY);
+                boolean hovered = mouseX >= x && mouseX < x + grid.cellWidth()
+                        && mouseY >= y && mouseY < y + grid.cellHeight()
+                        && mouseY >= grid.topY() && mouseY < grid.bottomY();
+                BuilderTemplateTile.render(g, mode, modeArtAvailable, photoKind, entries.get(i), kind,
+                        x, y, grid.cellWidth(), grid.cellHeight(), hovered, openable);
+            }
+            g.disableScissor();
+        }
+
+        Component note = statusNote(openable);
+        if (note != null) {
+            g.drawCenteredString(this.font, note, this.width / 2,
+                    this.height - BACK_BUTTON_BOTTOM_MARGIN - STATUS_GAP + 2, NOTE_COLOUR);
+        }
+    }
+
+    /** The line under the grid: why it's empty, or why you can look but not touch. */
+    private Component statusNote(boolean openable) {
+        if (!openable) {
+            return Component.translatable("gui.dungeontrain.builder.open.not_buildable");
+        }
+        return entries.isEmpty() ? Component.translatable("gui.dungeontrain.builder.open.empty") : null;
+    }
+
+    // ---- input ----
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && !entries.isEmpty()
+                && BuilderOpenOptions.isOpenable(mode, subType)) {
+            int index = grid.indexAt(mouseX, mouseY, scrollY, entries.size());
+            if (index >= 0) {
+                open(entries.get(index));
+                return true;
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double deltaY) {
+        if (grid != null && grid.maxScroll() > 0) {
+            this.scrollY = grid.clampScroll(this.scrollY - (int) (deltaY * SCROLL_STEP));
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, deltaY);
+    }
+
+    @Override
+    public void onClose() {
+        Minecraft.getInstance().setScreen(lastScreen);
+    }
+
+    /**
+     * Load {@code id}, asking first if there is work on the track that opening would throw away.
+     *
+     * <p>The prompt is the same one a mode switch raises, and for the same reason — this re-stamps
+     * the train. Once it has been answered the request goes as {@code force}, because the question
+     * it would otherwise ask the server has just been answered by the player.</p>
+     */
+    private void open(String id) {
+        BuilderOpenRequest request = BuilderOpenRequest
+                .forSelection(subType, id, partKindValue())
+                .orElse(null);
+        if (request == null) {
+            return;
+        }
+        if (BuilderDirtyState.hasUnsavedChanges()) {
+            Minecraft.getInstance().setScreen(new BuilderSwitchConfirmScreen(this,
+                    Component.literal(BuilderLabels.pretty(id)),
+                    BuilderDirtyState.dirtyCount(),
+                    () -> send(request, true)));
+            return;
+        }
+        Minecraft.getInstance().setScreen(null);
+        send(request, false);
+    }
+
+    private void send(BuilderOpenRequest request, boolean force) {
+        DungeonTrainNet.sendToServer(new BuilderOpenPacket(mode.id(), request.kind().id(),
+                request.id(), request.partKindId(), force));
+    }
+}

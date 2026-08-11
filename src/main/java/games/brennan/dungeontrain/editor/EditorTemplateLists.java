@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.template.Stage;
 import games.brennan.dungeontrain.template.TemplateGate;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsGroup;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
@@ -110,6 +113,35 @@ public final class EditorTemplateLists {
      */
     public static List<String> parts(CarriagePartKind kind) {
         return kind == null ? List.of() : CarriagePartRegistry.registeredNames(kind);
+    }
+
+    /**
+     * Track tile template names, {@code default} first.
+     *
+     * <p>Here rather than read straight off {@link TrackVariantRegistry} at the call site for the
+     * reason this class exists at all: the Builder's Open grid and the Editor's own track menus have
+     * to agree about which tiles exist. {@code namesFor} already guarantees the synthetic
+     * {@code default} leads the list, which is also the order a picker wants.</p>
+     */
+    public static List<String> tracks() {
+        return TrackVariantRegistry.namesFor(TrackKind.TILE);
+    }
+
+    /**
+     * Tunnel template names for one variant, {@code default} first.
+     *
+     * <p>Tunnels are keyed by variant <em>and</em> name — {@code PORTAL}'s {@code default} and
+     * {@code SECTION}'s {@code default} are different files — so the variant is not optional.</p>
+     */
+    public static List<String> tunnels(TunnelPlacer.TunnelVariant variant) {
+        return variant == null ? List.of() : TrackVariantRegistry.namesFor(tunnelKind(variant));
+    }
+
+    /** Testable core of {@link #tunnels}: the variant-to-store mapping, without a loaded registry. */
+    static TrackKind tunnelKind(TunnelPlacer.TunnelVariant variant) {
+        return variant == TunnelPlacer.TunnelVariant.PORTAL
+                ? TrackKind.TUNNEL_PORTAL
+                : TrackKind.TUNNEL_SECTION;
     }
 
     /** Stage ids, earliest stretch of the game first. */

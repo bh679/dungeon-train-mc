@@ -48,8 +48,6 @@ public final class BuilderNewScreen extends Screen {
     private static final int ROW_GAP = 4;
     private static final int LABEL_GAP = 8;
     private static final int BUTTON_WIDTH = 98;
-    /** Tall enough for the tile screenshot to read as a picture rather than a texture swatch. */
-    private static final int ART_HEIGHT = 44;
 
     /**
      * Which question the screen is asking. Same controls either way — a save is just a New whose
@@ -116,9 +114,7 @@ public final class BuilderNewScreen extends Screen {
         this.hintY = y;
         y += LABEL_GAP + ROW_GAP;
 
-        // The mode as the picture it was on the picker screen, so the two screens read as the same
-        // choice rather than as a list of words that happens to match a wall of images.
-        BuilderModeArtButton art = new BuilderModeArtButton(fieldX, y, FIELD_WIDTH, ART_HEIGHT, mode,
+        BuilderModeArtButton art = BuilderTypeControls.mode(fieldX, y, FIELD_WIDTH, mode,
                 this::selectedPhoto,
                 value -> {
                     mode = value;
@@ -127,27 +123,10 @@ public final class BuilderNewScreen extends Screen {
                 });
         art.active = screenMode == Mode.NEW;
         this.addRenderableWidget(art);
-        y += ART_HEIGHT + ROW_GAP;
+        y += BuilderTypeControls.ART_HEIGHT + ROW_GAP;
 
-        // Two per row. A control with no partner takes the whole row rather than leaving a hole
-        // beside it, which is the common case — only Parts has a second control to pair.
         List<AbstractWidget> options = buildOptionControls(fieldX, y);
-        for (int i = 0; i < options.size(); i += 2) {
-            AbstractWidget left = options.get(i);
-            AbstractWidget right = i + 1 < options.size() ? options.get(i + 1) : null;
-            left.setY(y);
-            if (right == null) {
-                left.setX(fieldX);
-                left.setWidth(FIELD_WIDTH);
-            } else {
-                left.setX(fieldX);
-                left.setWidth(BuilderPauseMenuLayout.leftHalfWidth(FIELD_WIDTH));
-                right.setX(BuilderPauseMenuLayout.rightHalfX(fieldX, FIELD_WIDTH));
-                right.setY(y);
-                right.setWidth(BuilderPauseMenuLayout.rightHalfWidth(FIELD_WIDTH));
-            }
-            y += ROW_HEIGHT + ROW_GAP;
-        }
+        y = BuilderTypeControls.layoutRows(options, fieldX, FIELD_WIDTH, y, ROW_HEIGHT, ROW_GAP);
         if (screenMode == Mode.SAVE_AS) {
             // Prefilled and inert: these describe the build being saved, not choices to remake.
             options.forEach(w -> w.active = false);
@@ -178,30 +157,20 @@ public final class BuilderNewScreen extends Screen {
             return controls;   // track modes: the mode and the name are the whole question
         }
 
-        controls.add(CycleButton.builder(BuilderNewScreen::subTypeLabel)
-                .withValues(BuilderNewOptions.SubType.values())
-                .withInitialValue(subType)
-                .displayOnlyValue()
-                .create(x, y, FIELD_WIDTH, ROW_HEIGHT,
-                        Component.translatable("gui.dungeontrain.builder.new.subtype"),
-                        (button, value) -> {
-                            subType = value;
-                            copyFrom = "";
-                            rebuild();
-                        }));
+        controls.add(BuilderTypeControls.subType(x, y, FIELD_WIDTH, ROW_HEIGHT, subType,
+                value -> {
+                    subType = value;
+                    copyFrom = "";
+                    rebuild();
+                }));
 
         if (BuilderNewOptions.showsPartKind(mode, subType)) {
-            controls.add(CycleButton.builder(BuilderNewScreen::plainLabel)
-                    .withValues(BuilderNewOptions.PART_KINDS)
-                    .withInitialValue(partKind)
-                    .displayOnlyValue()
-                    .create(x, y, FIELD_WIDTH, ROW_HEIGHT,
-                            Component.translatable("gui.dungeontrain.builder.new.part_kind"),
-                            (button, value) -> {
-                                partKind = value;
-                                copyFrom = "";   // each kind has its own templates
-                                rebuild();
-                            }));
+            controls.add(BuilderTypeControls.partKind(x, y, FIELD_WIDTH, ROW_HEIGHT, partKind,
+                    value -> {
+                        partKind = value;
+                        copyFrom = "";   // each kind has its own templates
+                        rebuild();
+                    }));
         }
 
         BuilderNewOptions.CopySource copySource = BuilderNewOptions.copySourceFor(mode, subType);
@@ -370,18 +339,6 @@ public final class BuilderNewScreen extends Screen {
             ids.add(0, current);
         }
         return ids;
-    }
-
-    private static Component subTypeLabel(BuilderNewOptions.SubType value) {
-        return Component.translatable(value.labelKey());
-    }
-
-    /**
-     * Template, stage and part-kind ids are authored strings rather than translation keys, so they
-     * get read rather than looked up — but read as words, not as filenames.
-     */
-    private static Component plainLabel(String value) {
-        return Component.literal(BuilderLabels.pretty(value));
     }
 
     /**
