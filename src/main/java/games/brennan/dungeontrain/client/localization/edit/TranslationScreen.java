@@ -12,6 +12,8 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.options.LanguageSelectScreen;
+import net.minecraft.client.resources.language.LanguageInfo;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -72,6 +74,9 @@ public final class TranslationScreen extends Screen {
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/import");
     private static final ResourceLocation TRASH_ICON =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/trash");
+    /** Vanilla's own globe — the icon Minecraft uses for this exact choice. */
+    private static final ResourceLocation LANGUAGE_ICON =
+        ResourceLocation.withDefaultNamespace("icon/language");
     /** The mod's one green — SupportScreen's direct-donation tint, not a second one like it. */
     private static final float[] SUBMIT_TINT = {0.30F, 0.80F, 0.35F};
     /** Authored sizes, drawn 1:1 — scaling pixel art by a fraction is what makes it look soft. */
@@ -148,8 +153,11 @@ public final class TranslationScreen extends Screen {
     /** The magnifier that reveals the search box, and whether it currently is. */
     private SpriteIconButton searchToggle;
     private boolean searchOpen;
-    /** Folder / export / import — one list so the search toggle has one thing to flip, not three. */
+    /** The row's icons — one list so the search toggle has one thing to flip, not four. */
     private final List<SpriteIconButton> fileIcons = new ArrayList<>();
+    /** Where the current language's name is drawn, right of the globe, and where it must stop. */
+    private int languageLabelX;
+    private int cyclesLeftEdge;
     /** Column height with and without Submit beneath it; swapped by {@link #setSubmitVisible}. */
     private int fullColumnHeight;
     private int shortColumnHeight;
@@ -185,6 +193,15 @@ public final class TranslationScreen extends Screen {
 
     @Override
     protected void init() {
+        // Coming back from the language picker with a different language chosen: this screen's
+        // locale is fixed at construction, so it hands over to one for the new target rather than
+        // going on editing the language you just left. The equality check makes it a no-op on every
+        // other init, and false immediately after the swap, so it cannot recurse.
+        String current = TranslationTarget.resolveForClient();
+        if (!current.isEmpty() && !current.equals(locale)) {
+            minecraft.setScreen(new TranslationScreen(parent, current));
+            return;
+        }
         // Pull the latest approvals for the language on screen every time the editor opens. The
         // title screen's fetch is once per session, which would mean a translator who just had a
         // string approved kept being asked to fix it until they restarted the game.
@@ -209,6 +226,7 @@ public final class TranslationScreen extends Screen {
         // cycles right — so opening the box fills the middle instead of shoving anything sideways.
         int searchX = MARGIN + ROW_H + GAP;
         int cyclesX = MARGIN + contentWidth - (cycleWidth + GAP) - cycleWidth;
+        cyclesLeftEdge = cyclesX;
         int searchWidth = Math.max(ROW_H, cyclesX - GAP - searchX);
 
         searchToggle = addRenderableWidget(spriteButton(MARGIN, TOP, SEARCH_ICON, VANILLA_ICON_PX,
@@ -225,6 +243,16 @@ public final class TranslationScreen extends Screen {
         fileIcons.add(iconButton(iconX, TOP, EXPORT_ICON, "export", "export.tip", b -> runExport()));
         iconX += ROW_H + GAP;
         fileIcons.add(iconButton(iconX, TOP, IMPORT_ICON, "import", "import.tip", b -> runImport()));
+        iconX += ROW_H + GAP;
+        // Which language you are translating, and the way to change it. It belongs here rather than
+        // three screens away in Options: this is the screen where that fact matters.
+        SpriteIconButton language = spriteButton(iconX, TOP, LANGUAGE_ICON, VANILLA_ICON_PX,
+            Component.translatable("options.language"),
+            b -> minecraft.setScreen(new LanguageSelectScreen(this, minecraft.options,
+                minecraft.getLanguageManager())));
+        language.setTooltip(Tooltip.create(Component.translatable("options.language")));
+        fileIcons.add(addRenderableWidget(language));
+        languageLabelX = iconX + ROW_H + GAP;
 
         search = new EditBox(font, searchX, TOP, searchWidth, ROW_H,
             Component.translatable("gui.dungeontrain.translate.search"));
@@ -674,6 +702,26 @@ public final class TranslationScreen extends Screen {
         g.drawCenteredString(font, showStatus ? status : subtitle(), width / 2,
             8 + font.lineHeight + 2,
             showStatus ? (statusIsError ? STATUS_ERROR_COLOUR : STATUS_OK_COLOUR) : SUBTITLE_COLOUR);
+
+        // The language being translated, beside the globe that changes it. A readout, not a widget:
+        // there is nothing to click that the button next to it does not already do. Truncated to the
+        // room left before the filter cycles rather than pushing anything sideways.
+        if (!searchOpen && languageLabelX > 0) {
+            int room = Math.max(0, cyclesLeftEdge - GAP - languageLabelX);
+            g.drawString(font, font.plainSubstrByWidth(languageName(), room),
+                languageLabelX, TOP + (ROW_H - font.lineHeight) / 2, SUBTITLE_COLOUR, false);
+        }
+    }
+
+    /**
+     * The display name of the language being translated — vanilla's own, so there is not a second
+     * table of language names here to fall out of step with the one in the picker this sits beside.
+     * Falls back to the bare code for a locale the client does not know (a localization pack's own).
+     */
+    private String languageName() {
+        LanguageInfo info = minecraft == null || minecraft.getLanguageManager() == null
+            ? null : minecraft.getLanguageManager().getLanguage(locale);
+        return info == null ? locale : info.toComponent().getString();
     }
 
     @Override
