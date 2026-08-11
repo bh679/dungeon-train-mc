@@ -1,8 +1,9 @@
 package games.brennan.dungeontrain.client.localization.edit;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.DungeonTrainLanguages;
-import games.brennan.dungeontrain.client.menu.CreditsIconButton;
+import games.brennan.dungeontrain.client.menu.SpriteIconButton;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -12,8 +13,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -54,6 +54,21 @@ public final class TranslationScreen extends Screen {
      * competing with it. Wide enough for the longest label; the rest of the row is search.
      */
     private static final int FILTER_MAX_W = 110;
+
+    /**
+     * The row's glyphs. Search borrows vanilla's own magnifier — it is the icon Minecraft uses for
+     * searching, which is as standard as this gets. The three file actions ship their own sprites,
+     * because vanilla has no folder and no arrows, and items were the wrong vocabulary for them: a
+     * chest is a block you place in the world, and two kinds of book do not read as a direction.
+     */
+    private static final ResourceLocation SEARCH_ICON =
+        ResourceLocation.withDefaultNamespace("icon/search");
+    private static final ResourceLocation FOLDER_ICON =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/folder");
+    private static final ResourceLocation EXPORT_ICON =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/export");
+    private static final ResourceLocation IMPORT_ICON =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/import");
 
     /**
      * Which of the UNFINISHED strings the list shows. Declaration order is the cycle order.
@@ -119,8 +134,8 @@ public final class TranslationScreen extends Screen {
     /** The two narrowing controls — hidden while the left pane belongs to a finished submission. */
     private CycleButton<StateFilter> stateCycle;
     private CycleButton<BodyFilter> bodyCycle;
-    /** The spyglass that reveals the search box, and whether it currently is. */
-    private CreditsIconButton searchToggle;
+    /** The magnifier that reveals the search box, and whether it currently is. */
+    private SpriteIconButton searchToggle;
     private boolean searchOpen;
     /** Column height with and without Submit beneath it; swapped by {@link #setSubmitVisible}. */
     private int fullColumnHeight;
@@ -183,8 +198,7 @@ public final class TranslationScreen extends Screen {
         int cyclesX = MARGIN + contentWidth - (cycleWidth + GAP) - cycleWidth;
         int searchWidth = Math.max(ROW_H, cyclesX - GAP - searchX);
 
-        searchToggle = addRenderableWidget(new CreditsIconButton(MARGIN, TOP, ROW_H,
-            new ItemStack(Items.SPYGLASS),
+        searchToggle = addRenderableWidget(new SpriteIconButton(MARGIN, TOP, ROW_H, SEARCH_ICON,
             Component.translatable("gui.dungeontrain.translate.search"),
             b -> setSearchOpen(!searchOpen)));
 
@@ -421,9 +435,9 @@ public final class TranslationScreen extends Screen {
         // heads (see init). Working outside the game is three icons rather than a doorway to a
         // screen that was only ever these same three buttons — hover names each one.
         int x = MARGIN;
-        x += iconButton(x, y, Items.CHEST, "open", null, b -> openFolder());
-        x += iconButton(x, y, Items.WRITABLE_BOOK, "export", "export.tip", b -> runExport());
-        x += iconButton(x, y, Items.WRITTEN_BOOK, "import", "import.tip", b -> runImport());
+        x += iconButton(x, y, FOLDER_ICON, "open", null, b -> openFolder());
+        x += iconButton(x, y, EXPORT_ICON, "export", "export.tip", b -> runExport());
+        x += iconButton(x, y, IMPORT_ICON, "import", "import.tip", b -> runImport());
 
         int rest = Math.max(ROW_H, MARGIN + contentWidth - x);
         int buttonWidth = (rest - GAP) / 2;
@@ -441,11 +455,10 @@ public final class TranslationScreen extends Screen {
      * <p>The tooltip does the labelling an icon cannot: the button's own name, and — where the old
      * Files screen had one — the sentence explaining what it will actually do to your disk.</p>
      */
-    private int iconButton(int x, int y, net.minecraft.world.item.Item item, String key,
+    private int iconButton(int x, int y, ResourceLocation icon, String key,
                            String tipKey, Button.OnPress onPress) {
         Component name = Component.translatable("gui.dungeontrain.translate.files." + key);
-        CreditsIconButton button = new CreditsIconButton(x, y, ROW_H, new ItemStack(item),
-            name, onPress);
+        SpriteIconButton button = new SpriteIconButton(x, y, ROW_H, icon, name, onPress);
         button.setTooltip(Tooltip.create(tipKey == null ? name
             : name.copy().append("\n").append(
                 Component.translatable("gui.dungeontrain.translate.files." + tipKey))));
