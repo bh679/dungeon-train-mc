@@ -16,7 +16,8 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.slf4j.Logger;
 
 /**
- * The editor's second doorway: beside Done on the vanilla Language screen.
+ * The editor's second doorway: in the footer row of the vanilla Language screen, between vanilla's
+ * "Font Settings" and Done.
  *
  * <p>This is the screen where someone is already thinking about what language they play in, and —
  * if it is one of the seventeen the mod ships machine-translated — where they are most likely to
@@ -33,7 +34,13 @@ public final class LanguageScreenTranslateButton {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int GAP = 4;
+    /** Vanilla's own spacing between the two footer buttons ({@code LinearLayout.horizontal().spacing(8)}). */
+    private static final int GAP = 8;
+    /** Each button takes 30% of the screen, so the row of three fills 90% plus the gaps. */
+    private static final int WIDTH_PERCENT = 30;
+    private static final int MIN_WIDTH = 60;
+    /** The vanilla button that opens font settings, to the left of Done in the same footer row. */
+    private static final Component FONT_KEY = Component.translatable("options.font");
 
     private LanguageScreenTranslateButton() {}
 
@@ -56,26 +63,42 @@ public final class LanguageScreenTranslateButton {
             return;
         }
 
-        // A labelled button the size of Done, not an icon. This is a vanilla options screen, whose
-        // vocabulary is wide labelled buttons; icons earn their place in the editor, where they save
-        // a crowded row, and read as an afterthought pinned to someone else's footer here.
-        // Measured off Done itself rather than the vanilla 150x20, so it matches whatever this
-        // screen actually laid out — including under another mod's layout.
-        int w = done.getWidth();
+        // Vanilla's footer here is a horizontal row of TWO buttons — "Font Settings" and Done — not
+        // Done alone (LanguageSelectScreen#addFooter). Anchoring to Done and placing ourselves beside
+        // it therefore lands on top of the font button, so the whole row is re-laid-out as three.
+        AbstractWidget font = findWidget(event, FONT_KEY);
+
+        // A labelled button, not an icon. This is a vanilla options screen, whose vocabulary is wide
+        // labelled buttons; icons earn their place in the editor, where they save a crowded row, and
+        // read as an afterthought pinned to someone else's footer here.
         Button button = Button.builder(
                 Component.translatable("gui.dungeontrain.translate.button"),
                 b -> Minecraft.getInstance().setScreen(new TranslationScreen(screen, target)))
-            .bounds(0, done.getY(), w, done.getHeight())
+            .bounds(0, done.getY(), MIN_WIDTH, done.getHeight())
             .tooltip(Tooltip.create(
                 Component.translatable("gui.dungeontrain.translate.button.tooltip", target)))
             .build();
 
-        // Done is centred on its own; a same-width button beside it would leave the two visibly
-        // off-centre, so they are placed as a pair the way vanilla lays out its own Cancel/Done
-        // footers. init() re-runs on resize, so this survives a window change.
-        int left = (screen.width - (w * 2 + GAP)) / 2;
-        button.setX(left);
-        done.setX(left + w + GAP);
+        // Equal thirds, centred as one row, with vanilla's own 8px spacing. Sized off the screen
+        // rather than off Done's 150 so the row scales with the window; clamped so it can never
+        // overflow at a small size or a large GUI scale. init() re-runs on resize, so a window
+        // change re-derives the whole row rather than accumulating offsets.
+        AbstractWidget[] row = font != null
+            ? new AbstractWidget[] {font, button, done}
+            : new AbstractWidget[] {button, done};
+        int w = Math.max(MIN_WIDTH, screen.width * WIDTH_PERCENT / 100);
+        int span = w * row.length + GAP * (row.length - 1);
+        if (span > screen.width) {
+            w = Math.max(1, (screen.width - GAP * (row.length - 1)) / row.length);
+            span = w * row.length + GAP * (row.length - 1);
+        }
+        int x = (screen.width - span) / 2;
+        for (AbstractWidget widget : row) {
+            widget.setWidth(w);
+            widget.setX(x);
+            widget.setY(done.getY());
+            x += w + GAP;
+        }
         event.addListener(button);
     }
 
