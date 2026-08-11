@@ -120,9 +120,23 @@ public final class PaymentLinks {
      * so nothing here has to be trusted downstream.</p>
      */
     public static String tierUrl(SupportTier tier) {
+        return tier == null ? null : checkoutUrl(tier.quantity());
+    }
+
+    /**
+     * The checkout URL for {@code quantity} units of the relay's price, or null when
+     * {@link #tiersAvailable()} is false.
+     *
+     * <p>The shared build behind every named price point — {@link SupportTier} on the donation
+     * surfaces and {@link BookPromoTier} on the book-promotion page. They sell multiples of the same
+     * Stripe unit, so they differ only in the number that lands here; the relay multiplies its unit
+     * price by it when creating the Checkout Session, and clamps it on arrival, so nothing here has
+     * to be trusted downstream.</p>
+     */
+    public static String checkoutUrl(int quantity) {
         String base = OfficialLinks.paymentCheckout();
-        if (base == null || tier == null) return null;
-        return withQuantity(withDisplayName(base, playerName(), stripeLocale(selectedLocale())), tier.quantity());
+        if (base == null) return null;
+        return withQuantity(withDisplayName(base, playerName(), stripeLocale(selectedLocale())), quantity);
     }
 
     /**

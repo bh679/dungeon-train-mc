@@ -53,6 +53,11 @@ public final class UiAnalytics {
     // title_screen so the funnel can tell a mid-run tap from a main-menu one — they are very
     // different moments. Same lock-step rule with ui-events.js SURFACES.
     public static final String SURFACE_PAUSE_MENU = "pause_menu";
+    // The book-promotion page (BookPromoScreen), reachable from the title screen on dev builds only.
+    // Its own surface rather than a page of support_page: a player buying their book a better place
+    // in the pool is not the same act as donating, and folding them together would make the two
+    // indistinguishable in the funnel. Same lock-step rule with ui-events.js SURFACES.
+    public static final String SURFACE_BOOK_PROMO_PAGE = "book_promo_page";
     // Targets
     public static final String TARGET_PAGE = "page";
     public static final String TARGET_SUPPORT = "support";
@@ -74,6 +79,15 @@ public final class UiAnalytics {
     // with the relay's ui-events.js TARGETS whitelist, or these 400 silently.
     public static final String TARGET_CONTENT_MODE_ADULT = "content_mode_adult";
     public static final String TARGET_CONTENT_MODE_KID = "content_mode_kid";
+    // The title-screen doorway into the book-promotion page, and its three price points. Named for
+    // the tier's identity rather than its amount, for the same reason the donation tiers are (see
+    // BookPromoTier): the amount is an operator-re-priceable quantity multiplier, so a target called
+    // "book_promo_30" would quietly start meaning something else the day it changed. Lock-step with
+    // ui-events.js TARGETS.
+    public static final String TARGET_BOOK_PROMO = "book_promo";
+    public static final String TARGET_BOOK_PROMO_PROMOTE = "book_promo_promote";
+    public static final String TARGET_BOOK_PROMO_BOOST = "book_promo_boost";
+    public static final String TARGET_BOOK_PROMO_FEATURE = "book_promo_feature";
     public static final String TARGET_AFFILIATE = "affiliate";
     public static final String TARGET_DISCORD = "discord";
     // Death-screen button targets (see NarrativeDeathScreen). Lock-step with ui-events.js TARGETS.
