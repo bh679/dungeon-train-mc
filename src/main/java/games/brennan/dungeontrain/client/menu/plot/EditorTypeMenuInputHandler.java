@@ -490,6 +490,11 @@ public final class EditorTypeMenuInputHandler {
         CommandRunner.run(cmd);
     }
 
+    /** {@code value} unless it is null or blank, in which case {@code fallback}. */
+    private static String nonEmptyOr(String value, String fallback) {
+        return (value != null && !value.isEmpty()) ? value : fallback;
+    }
+
     private static boolean isSubVariants(EditorTypeMenusPacket.Menu menu) {
         return games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
             .equals(menu.typeName());
@@ -537,15 +542,20 @@ public final class EditorTypeMenuInputHandler {
         // opened this from inside one.
         if (games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
                 .equals(menu.typeName())) {
+            boolean portals = "PORTALS".equals(category);
+            // A portal room's own name rides in modelName: for every track-side kind modelId is the
+            // KIND tag and stays constant across that kind's variants, so it can't name the plot the
+            // author is standing in. Contents put their id in modelId, so currentId is already right.
+            String sourceId = portals
+                ? nonEmptyOr(EditorStatusHudOverlay.modelName(), first.modelId())
+                : currentId;
             LOGGER.debug("[DungeonTrain] EditorTypeMenu New: sub-variant of parent '{}' (source '{}')",
-                first.modelId(), currentId);
-            // A portal room's sub-variant is always seeded from its parent, so there is no source to
-            // pick — the picker collapses to the name row.
-            NewSourcePickerScreen.Category subCategory = "PORTALS".equals(category)
+                first.modelId(), sourceId);
+            NewSourcePickerScreen.Category subCategory = portals
                 ? NewSourcePickerScreen.Category.PORTAL_ROOM_SUB_VARIANT
                 : NewSourcePickerScreen.Category.CONTENTS_SUB_VARIANT;
             CommandMenuState.openAt(new NewSourcePickerScreen(
-                subCategory, null, first.modelId(), currentId));
+                subCategory, null, first.modelId(), sourceId));
             return;
         }
 

@@ -4,7 +4,15 @@
   "variants": [
     {
       "id": "paths",
-      "weight": 51
+      "weight": 1
+    },
+    {
+      "id": "pathsmol",
+      "weight": 1
+    },
+    {
+      "id": "pathssmol",
+      "weight": 1
     }
   ]
 }
