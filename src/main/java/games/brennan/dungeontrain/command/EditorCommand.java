@@ -5077,9 +5077,18 @@ public final class EditorCommand {
                 .then(Commands.argument("parent", StringArgumentType.word())
                     .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
                     .then(Commands.argument("name", StringArgumentType.word())
+                        // Bare form seeds from the room the player is standing in, falling back to
+                        // the parent — same [source] shape as `contents group new` above.
                         .executes(ctx -> runPortalRoomGroupNew(ctx.getSource(),
                             StringArgumentType.getString(ctx, "parent"),
-                            StringArgumentType.getString(ctx, "name"))))))
+                            StringArgumentType.getString(ctx, "name"),
+                            /*sourceRaw*/ null))
+                        .then(Commands.argument("source", StringArgumentType.word())
+                            .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                            .executes(ctx -> runPortalRoomGroupNew(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "parent"),
+                                StringArgumentType.getString(ctx, "name"),
+                                StringArgumentType.getString(ctx, "source")))))))
             .then(Commands.literal("add")
                 .then(Commands.argument("parent", StringArgumentType.word())
                     .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
@@ -5418,11 +5427,18 @@ public final class EditorCommand {
     }
 
     /**
-     * {@code /dt editor portals group new <parent> <name>} — create a brand-new sub-variant of
-     * {@code parent}, seeded from the parent's own room so it starts as a variation on it rather
-     * than an empty box. Falls back to the built-in room when the parent has nothing saved yet.
+     * {@code /dt editor portals group new <parent> <name> [source]} — create a brand-new
+     * sub-variant of {@code parent}, seeded from an existing room in the group so it starts as a
+     * variation on it rather than an empty box. Falls back to the built-in room when the seed has
+     * nothing saved yet.
+     *
+     * <p>The seed is the room the author is standing in, not the parent: hitting "+ New" from
+     * inside a sibling sub-variant is a request to copy <em>that</em>. {@code source} names it
+     * explicitly (what the editor's picker sends); omitted, it is resolved from the player's plot,
+     * and only failing that does it fall back to the parent.</p>
      */
-    private static int runPortalRoomGroupNew(CommandSourceStack source, String parentRaw, String nameRaw) {
+    private static int runPortalRoomGroupNew(CommandSourceStack source, String parentRaw, String nameRaw,
+                                             String sourceRaw) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         String parent = parsePortalRoom(source, parentRaw);
@@ -5456,13 +5472,38 @@ public final class EditorCommand {
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
+        games.brennan.dungeontrain.track.variant.TrackVariantGroup existing =
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent)
+                .orElse(games.brennan.dungeontrain.track.variant.TrackVariantGroup.EMPTY);
+
+        // Which room the new one is seeded from. Explicit argument wins; otherwise the plot the
+        // player is standing in, the same way `tracks new` resolves its source — so "+ New" pressed
+        // inside a sibling sub-variant copies that sibling rather than the group's parent.
+        String seed = parent;
+        if (sourceRaw != null && !sourceRaw.isEmpty()) {
+            seed = parsePortalRoom(source, sourceRaw);
+            if (seed == null) return 0;
+        } else {
+            games.brennan.dungeontrain.editor.TrackPlotLocator.PlotInfo standing =
+                games.brennan.dungeontrain.editor.TrackPlotLocator.locate(player, dims);
+            if (standing != null && standing.kind() == PORTAL_ROOM_KIND) seed = standing.name();
+        }
+        // Only the parent or one of its own sub-variants: seeding across groups would copy a room
+        // whose size and variant blocks have nothing to do with this pool.
+        if (!seed.equals(parent) && existing.member(seed).isEmpty()) {
+            String rejected = seed;
+            source.sendFailure(Component.literal(
+                "'" + rejected + "' is not part of '" + parent + "' — a sub-variant can only be seeded"
+                    + " from its parent or a sibling.").withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        final String seedRoom = seed;
+
         // Membership first: it decides where the new plot lands, so registering the name before the
         // group would stamp it in the top-level row and then move it.
         games.brennan.dungeontrain.track.variant.TrackVariantGroup updated =
-            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent)
-                .orElse(games.brennan.dungeontrain.track.variant.TrackVariantGroup.EMPTY)
-                .withMember(new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(
-                    key, games.brennan.dungeontrain.track.variant.TrackVariantGroup.DEFAULT_WEIGHT));
+            existing.withMember(new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(
+                key, games.brennan.dungeontrain.track.variant.TrackVariantGroup.DEFAULT_WEIGHT));
         try {
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(PORTAL_ROOM_KIND, parent, updated);
         } catch (IOException e) {
@@ -5474,23 +5515,25 @@ public final class EditorCommand {
 
         try {
             java.util.Optional<net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate> src =
-                games.brennan.dungeontrain.editor.PortalRoomTemplateStore.get(overworld, parent, dims);
+                games.brennan.dungeontrain.editor.PortalRoomTemplateStore.get(overworld, seedRoom, dims);
             if (src.isPresent()) {
-                // Save first so the freshly-registered plot stamps the parent's room rather than the
+                // Save first so the freshly-registered plot stamps the seed's room rather than the
                 // built-in one, then register inside a relayout — the new slot shifts the row.
                 games.brennan.dungeontrain.editor.PortalRoomTemplateStore.save(key, src.get());
-                // The geometry alone isn't the room: without the parent's variant-blocks sidecar
+                // The geometry alone isn't the room: without the seed's variant-blocks sidecar
                 // the sub-variant stamps as a plain box, because applyRoomVariants early-outs on
                 // an empty sidecar. Inside this try so a failure rolls the membership back too.
-                copyTrackVariantSidecar(PORTAL_ROOM_KIND, parent, key, dims);
+                copyTrackVariantSidecar(PORTAL_ROOM_KIND, seedRoom, key, dims);
+                // Size follows the seed, not the parent: a copy of a smaller sibling that inherited
+                // the parent's box would stamp short and read back as an undersized template.
                 net.minecraft.core.Vec3i inherited =
-                    games.brennan.dungeontrain.portal.PortalRoomSizes.sizeOf(parent, dims);
+                    games.brennan.dungeontrain.portal.PortalRoomSizes.sizeOf(seedRoom, dims);
                 games.brennan.dungeontrain.editor.PortalRoomEditor.relayout(overworld, dims, () -> {
                     games.brennan.dungeontrain.portal.PortalRoomSizes.pending(key, inherited);
                     games.brennan.dungeontrain.track.variant.TrackVariantRegistry.register(PORTAL_ROOM_KIND, key);
                 });
             } else {
-                games.brennan.dungeontrain.editor.PortalRoomEditor.createFromBuiltIn(overworld, parent, key, dims);
+                games.brennan.dungeontrain.editor.PortalRoomEditor.createFromBuiltIn(overworld, seedRoom, key, dims);
             }
         } catch (IOException e) {
             // Roll the membership back rather than leaving a sub-variant that points at nothing.
@@ -5509,7 +5552,8 @@ public final class EditorCommand {
         games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, key);
         source.sendSuccess(() -> Component.literal(
             "Editor: created portal room sub-variant '" + key + "' under '" + parent
-                + "' — teleported to its plot.").withStyle(ChatFormatting.GREEN), true);
+                + "' (copied from '" + seedRoom + "') — teleported to its plot.")
+            .withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 

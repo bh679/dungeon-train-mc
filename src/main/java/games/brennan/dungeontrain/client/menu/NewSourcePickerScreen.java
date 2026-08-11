@@ -38,11 +38,10 @@ public final class NewSourcePickerScreen implements MenuScreen {
          */
         CONTENTS_SUB_VARIANT,
         /**
-         * Sub-variant of a portal room. {@code currentId} carries the parent room. Single-name shape
-         * like {@link #PORTALS} — there is no source to choose, because the server always seeds the
-         * new room from its parent (falling back to the built-in room when the parent has nothing
-         * saved yet), which is the only sensible start for a variation on it. Dispatches
-         * {@code editor portals group new <parent> <name>}.
+         * Sub-variant of a portal room. {@code currentId} carries the parent room, {@code sourceId}
+         * the room the author is standing in. Same Current / Parent shape as
+         * {@link #CONTENTS_SUB_VARIANT}, collapsing to a single row when the two are the same room.
+         * Dispatches {@code editor portals group new <parent> <name> [source]}.
          */
         PORTAL_ROOM_SUB_VARIANT
     }
@@ -150,10 +149,20 @@ public final class NewSourcePickerScreen implements MenuScreen {
                 }
             }
             case PORTAL_ROOM_SUB_VARIANT -> {
-                // Single row: the server seeds the new room from its parent, so there is nothing to
-                // pick between. The parent is baked into the prefix.
-                out.add(new CommandMenuEntry.TypeArg(
-                    "New", "name", "dungeontrain editor portals group new " + currentId));
+                // Same Current / Parent shape as CONTENTS_SUB_VARIANT. The parent is baked into the
+                // prefix; the source token after the name is the room to copy. No "Blank" row —
+                // a portal room's empty state is the built-in geometry, which the server already
+                // falls back to when the chosen source has nothing saved.
+                String prefix = "dungeontrain editor portals group new " + currentId;
+                if (!sourceId.isEmpty() && !sourceId.equals(currentId)) {
+                    out.add(new CommandMenuEntry.TypeArg(
+                        "Current (" + sourceId + ")", "name", prefix, sourceId));
+                    out.add(new CommandMenuEntry.TypeArg(
+                        "Parent (" + currentId + ")", "name", prefix, currentId));
+                } else {
+                    // Standing in the parent: the two rows would say the same thing.
+                    out.add(new CommandMenuEntry.TypeArg("New", "name", prefix));
+                }
             }
         }
         out.add(new CommandMenuEntry.Back("< Back"));
