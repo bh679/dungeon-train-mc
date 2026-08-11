@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.localization.edit;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.DungeonTrainLanguages;
+import games.brennan.dungeontrain.client.menu.ColorTintedButton;
 import games.brennan.dungeontrain.client.menu.SpriteIconButton;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
@@ -69,6 +70,10 @@ public final class TranslationScreen extends Screen {
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/export");
     private static final ResourceLocation IMPORT_ICON =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/import");
+    private static final ResourceLocation TRASH_ICON =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/trash");
+    /** The mod's one green — SupportScreen's direct-donation tint, not a second one like it. */
+    private static final float[] SUBMIT_TINT = {0.30F, 0.80F, 0.35F};
     /** Authored sizes, drawn 1:1 — scaling pixel art by a fraction is what makes it look soft. */
     private static final int OWN_ICON_PX = 16;
     private static final int VANILLA_ICON_PX = 12;
@@ -132,8 +137,9 @@ public final class TranslationScreen extends Screen {
     private boolean showingUnsubmitted;
     /** The column row currently being read, or null for "the work still to do" — the default. */
     private TranslationSubmission picked;
-    /** Sits under the column, and only while the working batch is what is selected in it. */
+    /** Both sit under the column, and only while the working batch is what is selected in it. */
     private Button submit;
+    private SpriteIconButton revert;
     /** The two narrowing controls — hidden while the left pane belongs to a finished submission. */
     private CycleButton<StateFilter> stateCycle;
     private CycleButton<BodyFilter> bodyCycle;
@@ -254,10 +260,20 @@ public final class TranslationScreen extends Screen {
             sentWidth, fullColumnHeight, this::openSubmission);
         addRenderableWidget(sentList);
 
-        submit = addRenderableWidget(Button.builder(
+        // Submit and Undo are the two things you can do to the working batch — send it, or throw it
+        // away — so they sit together under it rather than at opposite ends of the screen. Green
+        // because it is the one affirmative action here; the trash keeps its words in its tooltip
+        // and its confirm screen.
+        int stripY = listTop + shortColumnHeight + GAP;
+        submit = addRenderableWidget(new ColorTintedButton(sentX, stripY,
+            Math.max(ROW_H, sentWidth - ROW_H - GAP), ROW_H,
             Component.translatable("gui.dungeontrain.translate.submit"),
-            b -> minecraft.setScreen(new TranslationSubmitScreen(this, locale)))
-            .bounds(sentX, listTop + shortColumnHeight + GAP, sentWidth, ROW_H).build());
+            SUBMIT_TINT[0], SUBMIT_TINT[1], SUBMIT_TINT[2],
+            b -> minecraft.setScreen(new TranslationSubmitScreen(this, locale))));
+        Component undoName = Component.translatable("gui.dungeontrain.translate.revert_all");
+        revert = addRenderableWidget(new SpriteIconButton(sentX + sentWidth - ROW_H, stripY, ROW_H,
+            TRASH_ICON, OWN_ICON_PX, undoName, b -> revertAll()));
+        revert.setTooltip(Tooltip.create(undoName));
         setSubmitVisible(false); // and with it, the column back to full height
         // Paint the working batch immediately from local state; the relay's history lands on top of
         // it when the fetch returns. The column is never empty while waiting on the network.
@@ -311,8 +327,13 @@ public final class TranslationScreen extends Screen {
             return;
         }
         submit.visible = visible;
-        // The column takes the space back when the button is not there, rather than holding an
-        // empty strip open for it.
+        // The trash goes with it: both act on the working batch, and a lone bin beside a hidden
+        // Submit would be an action with nothing to act on.
+        if (revert != null) {
+            revert.visible = visible;
+        }
+        // The column takes the space back when the buttons are not there, rather than holding an
+        // empty strip open for them.
         if (sentList != null) {
             sentList.resizeTo(visible ? shortColumnHeight : fullColumnHeight);
         }
@@ -442,14 +463,11 @@ public final class TranslationScreen extends Screen {
         x += iconButton(x, y, EXPORT_ICON, "export", "export.tip", b -> runExport());
         x += iconButton(x, y, IMPORT_ICON, "import", "import.tip", b -> runImport());
 
+        // Undo is not here either — it belongs beside Submit, on the batch it throws away. Done gets
+        // what is left.
         int rest = Math.max(ROW_H, MARGIN + contentWidth - x);
-        int buttonWidth = (rest - GAP) / 2;
-        addRenderableWidget(Button.builder(
-            Component.translatable("gui.dungeontrain.translate.revert_all"), b -> revertAll())
-            .bounds(x, y, buttonWidth, ROW_H).build());
-        x += buttonWidth + GAP;
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-            .bounds(x, y, buttonWidth, ROW_H).build());
+            .bounds(x, y, rest, ROW_H).build());
     }
 
     /**
