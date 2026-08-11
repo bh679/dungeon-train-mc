@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.builder;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * What the Train Builder's <b>New</b> screen offers for a given selection.
@@ -165,21 +166,20 @@ public final class BuilderNewOptions {
     }
 
     /**
+     * The one shape every template identity uses — {@code CarriageVariant.NAME_PATTERN} and the
+     * contents, whole-carriage and part patterns are all this, and a Save turns the name into
+     * whichever of them the sub type calls for. Held in lockstep by {@code BuilderNewOptionsTest}:
+     * the two drifting apart is a crash at Save rather than a message on the screen that asked for
+     * the name.
+     */
+    private static final Pattern NAME_PATTERN = Pattern.compile("^[a-z0-9_]{1,32}$");
+
+    /**
      * A name that can become a template id: lower-case, no spaces or punctuation, matching every
      * id already on disk. Empty is not valid <em>here</em> — New treats an empty name as a draft
      * and never asks this, but the save that eventually names it does.
      */
     public static boolean isValidName(String name) {
-        if (name == null || name.isEmpty() || name.length() > 32) {
-            return false;
-        }
-        for (int i = 0; i < name.length(); i++) {
-            char c = name.charAt(i);
-            boolean ok = (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-';
-            if (!ok) {
-                return false;
-            }
-        }
-        return true;
+        return name != null && NAME_PATTERN.matcher(name).matches();
     }
 }
