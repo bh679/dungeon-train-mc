@@ -30,15 +30,26 @@ public final class SpriteIconButton extends Button {
             ResourceLocation.withDefaultNamespace("widget/button_highlighted")
     );
 
-    /** Glyph side length in pixels — the size the mod's own icon sprites are authored at. */
-    private static final int ICON = 18;
+    /**
+     * Clear space between the glyph and the button's own edge. The button sprite's frame is about a
+     * pixel, so anything less than this puts the icon ON the frame rather than inside it.
+     */
+    private static final int MIN_PADDING = 2;
 
     private final ResourceLocation icon;
+    private final int iconSize;
 
-    public SpriteIconButton(int x, int y, int size, ResourceLocation icon, Component narration,
-                            OnPress onPress) {
+    /**
+     * @param iconSize the sprite's AUTHORED size. Passed rather than derived because sprites differ
+     *                 — vanilla's {@code icon/search} is 12px, the mod's own icons are 16 — and
+     *                 drawing each at its own size is the whole reason they stay crisp. Clamped to
+     *                 leave {@link #MIN_PADDING} on every side, so no caller can crowd the frame.
+     */
+    public SpriteIconButton(int x, int y, int size, ResourceLocation icon, int iconSize,
+                            Component narration, OnPress onPress) {
         super(x, y, size, size, narration, onPress, DEFAULT_NARRATION);
         this.icon = icon;
+        this.iconSize = Math.max(1, Math.min(iconSize, size - MIN_PADDING * 2));
     }
 
     @Override
@@ -48,9 +59,8 @@ public final class SpriteIconButton extends Button {
         g.blitSprite(SPRITES.get(this.active, this.isHoveredOrFocused()),
                 this.getX(), this.getY(), this.getWidth(), this.getHeight());
 
-        int size = Math.min(ICON, Math.min(this.getWidth(), this.getHeight()));
-        int ix = this.getX() + (this.getWidth() - size) / 2;
-        int iy = this.getY() + (this.getHeight() - size) / 2;
-        g.blitSprite(icon, ix, iy, size, size);
+        int ix = this.getX() + (this.getWidth() - iconSize) / 2;
+        int iy = this.getY() + (this.getHeight() - iconSize) / 2;
+        g.blitSprite(icon, ix, iy, iconSize, iconSize);
     }
 }

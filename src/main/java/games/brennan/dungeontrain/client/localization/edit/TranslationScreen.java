@@ -69,6 +69,9 @@ public final class TranslationScreen extends Screen {
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/export");
     private static final ResourceLocation IMPORT_ICON =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/import");
+    /** Authored sizes, drawn 1:1 — scaling pixel art by a fraction is what makes it look soft. */
+    private static final int OWN_ICON_PX = 16;
+    private static final int VANILLA_ICON_PX = 12;
 
     /**
      * Which of the UNFINISHED strings the list shows. Declaration order is the cycle order.
@@ -199,7 +202,7 @@ public final class TranslationScreen extends Screen {
         int searchWidth = Math.max(ROW_H, cyclesX - GAP - searchX);
 
         searchToggle = addRenderableWidget(new SpriteIconButton(MARGIN, TOP, ROW_H, SEARCH_ICON,
-            Component.translatable("gui.dungeontrain.translate.search"),
+            VANILLA_ICON_PX, Component.translatable("gui.dungeontrain.translate.search"),
             b -> setSearchOpen(!searchOpen)));
 
         search = new EditBox(font, searchX, TOP, searchWidth, ROW_H,
@@ -458,7 +461,7 @@ public final class TranslationScreen extends Screen {
     private int iconButton(int x, int y, ResourceLocation icon, String key,
                            String tipKey, Button.OnPress onPress) {
         Component name = Component.translatable("gui.dungeontrain.translate.files." + key);
-        SpriteIconButton button = new SpriteIconButton(x, y, ROW_H, icon, name, onPress);
+        SpriteIconButton button = new SpriteIconButton(x, y, ROW_H, icon, OWN_ICON_PX, name, onPress);
         button.setTooltip(Tooltip.create(tipKey == null ? name
             : name.copy().append("\n").append(
                 Component.translatable("gui.dungeontrain.translate.files." + tipKey))));
