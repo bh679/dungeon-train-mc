@@ -56,6 +56,9 @@ public record TranslationSubmission(long submittedAtMs, String locale, String tr
      * <p>Not a submission at all, strictly — but it is the row a translator looks for first, and
      * giving it the same shape as the rest is what lets it sit at the top of the same list instead
      * of needing a second widget. It carries no timestamp because it has not happened yet.</p>
+     *
+     * <p>Only ever built with real work in it: the screen leaves the row out entirely when there is
+     * nothing unsent, so there is no empty state to render and no zero to explain.</p>
      */
     public static TranslationSubmission unsubmitted(String locale, int units) {
         return new TranslationSubmission(0L, locale, "", units, 0, 0, 0, 0, false, true);
@@ -96,9 +99,7 @@ public record TranslationSubmission(long submittedAtMs, String locale, String tr
      */
     public Component statusLine() {
         if (unsubmitted) {
-            return units > 0
-                ? Component.translatable("gui.dungeontrain.translate.sent.unsubmitted")
-                : Component.translatable("gui.dungeontrain.translate.sent.nothing_to_send");
+            return Component.translatable("gui.dungeontrain.translate.sent.unsubmitted");
         }
         if (queued) {
             return Component.translatable("gui.dungeontrain.translate.sent.queued");
@@ -123,7 +124,7 @@ public record TranslationSubmission(long submittedAtMs, String locale, String tr
         if (unsubmitted) {
             // Deliberately not amber: nothing here is waiting on anyone else, and colouring it like
             // work under review would put the translator's own drafts in the reviewer's queue.
-            return units > 0 ? ChatFormatting.WHITE : ChatFormatting.DARK_GRAY;
+            return ChatFormatting.WHITE;
         }
         if (queued) {
             return ChatFormatting.GRAY;

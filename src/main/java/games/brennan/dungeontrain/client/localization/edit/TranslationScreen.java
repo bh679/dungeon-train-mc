@@ -98,6 +98,8 @@ public final class TranslationScreen extends Screen {
     private List<TranslationSubmissionsClient.SentUnit> sentUnits = List.of();
     /** True when the picked row is the working batch, whose strings come from disk, not the relay. */
     private boolean showingUnsubmitted;
+    /** Sits under the column, and only while the working batch is what is selected in it. */
+    private Button submit;
 
     public TranslationScreen(Screen parent, String locale) {
         super(Component.translatable("gui.dungeontrain.translate.title"));
@@ -161,6 +163,8 @@ public final class TranslationScreen extends Screen {
                     // is the one way these two can lie to each other.
                     if (value != StateFilter.SENT && sentList != null) {
                         sentList.clearSelection();
+                        showingUnsubmitted = false;
+                        setSubmitVisible(false);
                     }
                     refresh();
                 }));
@@ -187,9 +191,22 @@ public final class TranslationScreen extends Screen {
             this::openEditor);
         addRenderableWidget(list);
 
-        sentList = new TranslationSubmissionList(font, MARGIN + leftWidth + GAP, listTop,
-            sentWidth, listHeight, this::openSubmission);
+        // The column gives up its last row-height to Submit, which sits directly under it: the
+        // button acts on the working batch at the top of this column, so it belongs to the column
+        // rather than to the screen's action row. The LEFT list keeps its full height — the strings
+        // pane pays nothing for this.
+        int sentX = MARGIN + leftWidth + GAP;
+        int sentHeight = Math.max(ROW_H, listHeight - ROW_H - GAP);
+        sentList = new TranslationSubmissionList(font, sentX, listTop,
+            sentWidth, sentHeight, this::openSubmission);
         addRenderableWidget(sentList);
+
+        submit = addRenderableWidget(Button.builder(
+            Component.translatable("gui.dungeontrain.translate.submit"),
+            b -> minecraft.setScreen(new TranslationSubmitScreen(this, locale)))
+            .bounds(sentX, listTop + sentHeight + GAP, sentWidth, ROW_H).build());
+        // Hidden until the working batch is the selected row — see setSubmitVisible.
+        submit.visible = false;
         // Paint the working batch immediately from local state; the relay's history lands on top of
         // it when the fetch returns. The column is never empty while waiting on the network.
         onHistory(List.of());
@@ -215,14 +232,32 @@ public final class TranslationScreen extends Screen {
         sent.sort((a, b) -> Long.compare(b.submittedAtMs(), a.submittedAtMs()));
 
         List<TranslationSubmission> all = new ArrayList<>();
-        all.add(TranslationSubmission.unsubmitted(locale,
-            TranslationOverrides.unsubmittedFor(locale).size()));
+        // No row when there is nothing unsent: an action you cannot take does not deserve a row, and
+        // a permanent "0 changes" at the top is just something to read past every time.
+        int unsent = TranslationOverrides.unsubmittedFor(locale).size();
+        if (unsent > 0) {
+            all.add(TranslationSubmission.unsubmitted(locale, unsent));
+        }
         all.addAll(sent);
         sentList.setRows(all);
+        setSubmitVisible(false); // setRows drops the selection, so Submit has nothing to belong to
         // Only auto-open a row when the left pane is actually showing one. On every other filter the
         // left pane belongs to the catalog, and highlighting a row there would claim otherwise.
         if (stateFilter == StateFilter.SENT && !sentList.hasSelection()) {
             sentList.selectFirst();
+        }
+    }
+
+    /**
+     * Submit exists only while the working batch is the selected row.
+     *
+     * <p>One rule in one place, because the alternative — a button that asks separately whether
+     * there is anything to send — can disagree with the row it is sitting under. The row is only
+     * built when there IS something to send, so selecting it is the whole condition.</p>
+     */
+    private void setSubmitVisible(boolean visible) {
+        if (submit != null) {
+            submit.visible = visible;
         }
     }
 
@@ -235,6 +270,7 @@ public final class TranslationScreen extends Screen {
         // Picking a row is a request to read it, so the left pane has to be the one that shows it.
         stateFilter = StateFilter.SENT;
         showingUnsubmitted = submission.unsubmitted();
+        setSubmitVisible(showingUnsubmitted);
         refresh();
         if (!submission.queued() && !submission.unsubmitted()) {
             TranslationSubmissionsClient.fetchUnits(submission.submittedAtMs(), units -> {
@@ -290,16 +326,6 @@ public final class TranslationScreen extends Screen {
     }
 
     /**
-     * The Submit doorway's label, green while there is work the relay has not seen yet — the one
-     * cue that says "you have finished edits sitting on this machine doing nobody any good".
-     */
-    private Component submitLabel() {
-        Component label = Component.translatable("gui.dungeontrain.translate.submit");
-        return TranslationOverrides.hasUnsubmittedChanges(locale)
-            ? label.copy().withStyle(ChatFormatting.GREEN) : label;
-    }
-
-    /**
      * The state filters this player is offered.
      *
      * <p>Browsing every string unfiltered turns the editor into a way to read the game's text out
@@ -322,16 +348,14 @@ public final class TranslationScreen extends Screen {
      * doorway, and the row grows as those land.
      */
     private void layoutBottomRow(int y, int contentWidth) {
-        int buttons = 4;
+        // Submit is not here: it belongs to the working batch and lives under the column that row
+        // heads (see init). What is left is the screen's own three doorways.
+        int buttons = 3;
         int buttonWidth = (contentWidth - GAP * (buttons - 1)) / buttons;
         int x = MARGIN;
         addRenderableWidget(Button.builder(
             Component.translatable("gui.dungeontrain.translate.files"),
             b -> minecraft.setScreen(new TranslationFilesScreen(this, locale)))
-            .bounds(x, y, buttonWidth, ROW_H).build());
-        x += buttonWidth + GAP;
-        addRenderableWidget(Button.builder(submitLabel(),
-            b -> minecraft.setScreen(new TranslationSubmitScreen(this, locale)))
             .bounds(x, y, buttonWidth, ROW_H).build());
         x += buttonWidth + GAP;
         addRenderableWidget(Button.builder(

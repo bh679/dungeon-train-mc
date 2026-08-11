@@ -40,11 +40,14 @@ class TranslationSubmissionRowTest {
     }
 
     @Test
-    @DisplayName("an empty working batch says so rather than showing a count of zero")
-    void emptyBatchSaysNothingToSend() {
-        TranslationSubmission empty = TranslationSubmission.unsubmitted("de_de", 0);
-        TranslationSubmission full = TranslationSubmission.unsubmitted("de_de", 2);
-        assertFalse(empty.statusLine().equals(full.statusLine()));
+    @DisplayName("the working batch says one thing, whatever it is carrying")
+    void oneWordWhateverTheCount() {
+        // There is no empty state to word: the screen leaves the row out when nothing is unsent
+        // (TranslationScreen#onHistory), so every row that exists has real work in it.
+        assertEquals(TranslationSubmission.unsubmitted("de_de", 1).statusLine(),
+            TranslationSubmission.unsubmitted("de_de", 40).statusLine());
+        assertEquals(TranslationSubmission.unsubmitted("de_de", 1).statusColour(),
+            TranslationSubmission.unsubmitted("de_de", 40).statusColour());
     }
 
     @Test
