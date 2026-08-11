@@ -505,7 +505,13 @@ public final class CarriageEditor {
         return true;
     }
 
-    private static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin, CarriageDims dims) {
+    /**
+     * Capture a carriage-sized region as a template.
+     *
+     * <p>Public so the Train Builder's save writes through the same capture the editor does —
+     * two copies of this would be two things to keep in step.</p>
+     */
+    public static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin, CarriageDims dims) {
         StructureTemplate template = new StructureTemplate();
         Vec3i size = new Vec3i(dims.length(), dims.height(), dims.width());
         template.fillFromWorld(level, origin, size, false, Blocks.AIR);

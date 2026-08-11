@@ -29,8 +29,17 @@ import java.util.List;
  *
  * <p>An empty list is meaningful and is sent deliberately: it's how a non-builder world, or a
  * builder mode with no carriages, tells the client to stop washing anything.</p>
+ *
+ * <p>It also carries the build's name and mirror setting — everything the pause menu needs to know
+ * about the current build. Those ride along here rather than on a packet of their own because they
+ * change at exactly the same moments the volumes do (entry, New, mode switch), plus one more: the
+ * mirror command resends this after a toggle.</p>
+ *
+ * @param buildName what the build saves as; empty means an unnamed draft
+ * @param mirrorMask packed {@link games.brennan.dungeontrain.builder.BuilderMirrorFlags}
  */
-public record BuilderBoundsPacket(List<BoundingBox> volumes) implements CustomPacketPayload {
+public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, String buildName, int mirrorMask)
+        implements CustomPacketPayload {
 
     /** Guards against a malformed or hostile payload allocating an unbounded list. */
     private static final int MAX_VOLUMES = 64;
@@ -41,6 +50,9 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes) implements CustomPa
     public static final StreamCodec<FriendlyByteBuf, BuilderBoundsPacket> STREAM_CODEC =
         StreamCodec.of(
             (buf, packet) -> {
+                buf.writeUtf(packet.modeId, 32);
+                buf.writeUtf(packet.buildName, 64);
+                buf.writeVarInt(packet.mirrorMask);
                 buf.writeVarInt(Math.min(packet.volumes.size(), MAX_VOLUMES));
                 for (int i = 0; i < Math.min(packet.volumes.size(), MAX_VOLUMES); i++) {
                     BoundingBox b = packet.volumes.get(i);
@@ -49,6 +61,9 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes) implements CustomPa
                 }
             },
             buf -> {
+                String modeId = buf.readUtf(32);
+                String buildName = buf.readUtf(64);
+                int mirrorMask = buf.readVarInt();
                 int count = Math.min(buf.readVarInt(), MAX_VOLUMES);
                 List<BoundingBox> boxes = new ArrayList<>(count);
                 for (int i = 0; i < count; i++) {
@@ -56,7 +71,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes) implements CustomPa
                         buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
                         buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
                 }
-                return new BuilderBoundsPacket(boxes);
+                return new BuilderBoundsPacket(boxes, modeId, buildName, mirrorMask);
             }
         );
 
@@ -68,14 +83,19 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes) implements CustomPa
     /** Build the packet for a player's current world — empty outside a builder world. */
     public static BuilderBoundsPacket forLevel(ServerLevel overworld) {
         if (!overworld.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
-            return new BuilderBoundsPacket(List.of());
+            return new BuilderBoundsPacket(List.of(), "", "", 0);
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
         int carriages = BuilderMode.fromId(data.builderMode())
             .map(BuilderMode::carriageCount)
             .orElse(0);
         CarriageDims dims = data.dims();
-        return new BuilderBoundsPacket(BuilderBounds.buildVolumes(carriages, dims));
+        String modeId = data.builderMode() == null ? "" : data.builderMode();
+        // Empty name = an unnamed draft; the client uses it to decide whether Save can write
+        // straight away or has to ask for a name first.
+        String buildName = data.builderName() == null ? "" : data.builderName();
+        return new BuilderBoundsPacket(BuilderBounds.buildVolumes(carriages, dims), modeId,
+                buildName, data.builderMirror().pack());
     }
 
     public static void sendTo(ServerPlayer player, ServerLevel overworld) {
@@ -83,6 +103,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes) implements CustomPa
     }
 
     public static void handle(BuilderBoundsPacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> BuilderBoundsState.set(packet.volumes()));
+        ctx.enqueueWork(() -> BuilderBoundsState.set(packet.volumes(), packet.modeId(),
+                packet.buildName(), packet.mirrorMask()));
     }
 }
