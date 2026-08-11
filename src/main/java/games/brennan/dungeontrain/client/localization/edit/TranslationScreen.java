@@ -77,6 +77,8 @@ public final class TranslationScreen extends Screen {
     /** Authored sizes, drawn 1:1 — scaling pixel art by a fraction is what makes it look soft. */
     private static final int OWN_ICON_PX = 16;
     private static final int VANILLA_ICON_PX = 12;
+    /** How long an export/import result holds the subtitle's line: ~8 seconds at 20 ticks/s. */
+    private static final int STATUS_TICKS = 160;
 
     /**
      * Which of the UNFINISHED strings the list shows. Declaration order is the cycle order.
@@ -151,11 +153,11 @@ public final class TranslationScreen extends Screen {
     /** Column height with and without Submit beneath it; swapped by {@link #setSubmitVisible}. */
     private int fullColumnHeight;
     private int shortColumnHeight;
-    /** What the last export/import did, drawn above the bottom row. Empty until one runs. */
+    /** What the last export/import did, shown under the title. Empty until one runs. */
     private Component status = CommonComponents.EMPTY;
     private boolean statusIsError;
-    /** Where that line lands — just above the action row, set during layout. */
-    private int statusY;
+    /** Ticks left before it hands the subtitle's line back. */
+    private int statusTicks;
 
     public TranslationScreen(Screen parent, String locale) {
         super(Component.translatable("gui.dungeontrain.translate.title"));
@@ -259,7 +261,11 @@ public final class TranslationScreen extends Screen {
         int sentWidth = Math.max(SENT_COLUMN_MIN_W, (contentWidth - GAP) * SENT_COLUMN_PERCENT / 100);
         int leftWidth = Math.max(ROW_H, contentWidth - GAP - sentWidth);
 
-        list = new TranslationListWidget(font, MARGIN, listTop, leftWidth, listHeight,
+        // The two panes have different bottoms. Done is only as wide as the column, so nothing sits
+        // under the strings — they run all the way to the margin instead of stopping short for a
+        // button that was never over them.
+        int leftHeight = Math.max(ROW_H, height - MARGIN - listTop);
+        list = new TranslationListWidget(font, MARGIN, listTop, leftWidth, leftHeight,
             this::openEditor);
         addRenderableWidget(list);
 
@@ -293,8 +299,7 @@ public final class TranslationScreen extends Screen {
         onHistory(List.of());
         TranslationSubmissionsClient.fetch(this::onHistory);
 
-        statusY = bottomRow - font.lineHeight - 2; // in the gap the icons sit under
-        layoutBottomRow(bottomRow, contentWidth);
+        layoutBottomRow(bottomRow, sentX, sentWidth);
         refresh();
     }
 
@@ -473,11 +478,13 @@ public final class TranslationScreen extends Screen {
      * The action row along the bottom. Split out because every entry here is one feature's
      * doorway, and the row grows as those land.
      */
-    private void layoutBottomRow(int y, int contentWidth) {
+    private void layoutBottomRow(int y, int x, int width) {
         // Nothing else lives down here any more: the file icons went up to the control row, Submit
         // and the bin belong to the working batch under the column, and what is left is the way out.
+        // Column width, under the column, in line with Submit — so the strings keep the full height
+        // of their own side rather than paying for a button that is not over them.
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-            .bounds(MARGIN, y, contentWidth, ROW_H).build());
+            .bounds(x, y, width, ROW_H).build());
     }
 
     /**
@@ -548,6 +555,7 @@ public final class TranslationScreen extends Screen {
     private void setStatus(Component message, boolean error) {
         this.status = message;
         this.statusIsError = error;
+        this.statusTicks = STATUS_TICKS;
     }
 
     /**
@@ -644,11 +652,20 @@ public final class TranslationScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
         g.drawCenteredString(font, title, width / 2, 8, 0xFFFFFFFF);
-        g.drawCenteredString(font, subtitle(), width / 2, 8 + font.lineHeight + 2, SUBTITLE_COLOUR);
-        // What the last export/import did, left-aligned under the icons that did it.
-        if (status != CommonComponents.EMPTY) {
-            g.drawString(font, status, MARGIN, statusY,
-                statusIsError ? STATUS_ERROR_COLOUR : STATUS_OK_COLOUR, false);
+        // The last export/import takes the subtitle's line while it lasts — right under the icons
+        // that produced it, now that those are in the top row. It hands the line back on its own
+        // (see tick), because the subtitle carries a real warning that cannot be displaced for good.
+        boolean showStatus = status != CommonComponents.EMPTY;
+        g.drawCenteredString(font, showStatus ? status : subtitle(), width / 2,
+            8 + font.lineHeight + 2,
+            showStatus ? (statusIsError ? STATUS_ERROR_COLOUR : STATUS_OK_COLOUR) : SUBTITLE_COLOUR);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (statusTicks > 0 && --statusTicks == 0) {
+            status = CommonComponents.EMPTY;
         }
     }
 
