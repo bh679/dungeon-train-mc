@@ -31,6 +31,7 @@ import games.brennan.dungeontrain.net.PortalRoomFogPacket;
 import games.brennan.dungeontrain.net.PortalSwapPacket;
 import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.ShipAabbs;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.template.GateContext;
 import net.minecraft.util.Mth;
@@ -155,6 +156,40 @@ public final class PortalCarriageEvents {
     private static final Map<UUID, Long> COOLDOWNS = new HashMap<>();
 
     /**
+     * Ticks between repeat warnings about one skipped group.
+     *
+     * <p>A group stays non-resident for a whole cull episode, so an ungated log would fire every
+     * tick for every portal pair — the per-tick chatter {@code TrainCarriageAppender} collapses for
+     * the same reason. 200 ≈ 10s: often enough to show an episode's shape in a test log, quiet
+     * enough to read.</p>
+     */
+    private static final int SKIP_WARN_PERIOD_TICKS = 200;
+
+    /** Group anchor pIdx → game time of the last skip warning logged for it. */
+    private static final Map<Integer, Long> SKIP_WARNED_AT = new HashMap<>();
+
+    /**
+     * Ticks between repeat warnings about one refused landing, on the same throttle rationale as
+     * {@link #SKIP_WARN_PERIOD_TICKS} — a player standing at a midpoint retries every tick.
+     */
+    private static final int LANDING_WARN_PERIOD_TICKS = 100;
+
+    /** Player → game time of the last refused-landing warning logged for them. */
+    private static final Map<UUID, Long> LANDING_WARNED_AT = new HashMap<>();
+
+    /**
+     * How far below a landing a supporting block may be and still count, in blocks.
+     *
+     * <p>A grounded player is placed on the destination's floor surface, so the support sits
+     * exactly one block down and any depth would do. The margin is for the airborne case, where the
+     * carried-across local Y can be most of a corridor's headroom above the floor. Deliberately
+     * shallow: the question being asked is "is there a corridor here at all", and a stamped
+     * corridor's floor is always within its own headroom, while the basement void has nothing for
+     * hundreds of blocks.</p>
+     */
+    private static final int LANDING_SUPPORT_DEPTH = 4;
+
+    /**
      * Pair keys somebody was near this tick, refilled from scratch each time.
      *
      * <p>Collected in the carriage loop, where the approach range is already being measured against
@@ -231,6 +266,62 @@ public final class PortalCarriageEvents {
     }
 
     /**
+     * Note that a group was passed over because its pose could not be trusted.
+     *
+     * <p>Logged rather than swallowed because the skip is invisible from the outside: the pair
+     * simply stops working for as long as the episode lasts, and without a line saying so a report
+     * of "the portal did nothing" has no way to be told apart from one about a portal that was
+     * never there. Throttled per anchor — see {@link #SKIP_WARN_PERIOD_TICKS}.</p>
+     */
+    private static void warnSkippedGroup(ServerLevel level, int anchorPIdx, String reason) {
+        long now = level.getGameTime();
+        Long last = SKIP_WARNED_AT.get(anchorPIdx);
+        if (last != null && now - last < SKIP_WARN_PERIOD_TICKS) return;
+        SKIP_WARNED_AT.put(anchorPIdx, now);
+        LOGGER.warn("[DungeonTrain] Portal: no swap plane for group anchorPIdx={} — it has {}. "
+            + "Its last pose is stale, and running the swap off it would freeze the plane in world space.",
+            anchorPIdx, reason);
+    }
+
+    /**
+     * Whether a landing has anything under it to stand on.
+     *
+     * <p>Reads the world only where it is already loaded and never forces a chunk — a
+     * {@code getChunk(FULL, true)} on the server tick is the shape of the Sable worldgen deadlock
+     * (see {@code WorldgenForceGuard}), and an unloaded destination is one this should be refusing
+     * anyway.</p>
+     *
+     * <p>Support only, with no headroom or suffocation test on purpose. The failure being guarded
+     * is falling out of the world; adding a "is the destination clear" clause would start refusing
+     * legitimate swaps into corridors that happen to have a trapdoor or a carpet where the player
+     * lands, and trade a rare drop for a common dead portal.</p>
+     */
+    private static boolean landingSupported(ServerLevel level, double x, double y, double z) {
+        for (int dy = 1; dy <= LANDING_SUPPORT_DEPTH; dy++) {
+            BlockPos pos = BlockPos.containing(x, y - dy, z);
+            if (!level.isLoaded(pos)) return false;
+            if (!level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Note a swap refused for want of a floor. Throttled per player — see
+     * {@link #LANDING_WARN_PERIOD_TICKS} — because a player standing past the midpoint re-qualifies
+     * every tick, so an ungated log would repeat for as long as they stand there.
+     */
+    private static void warnRefusedLanding(ServerLevel level, ServerPlayer player,
+                                           double x, double y, double z) {
+        long now = level.getGameTime();
+        Long last = LANDING_WARNED_AT.get(player.getUUID());
+        if (last != null && now - last < LANDING_WARN_PERIOD_TICKS) return;
+        LANDING_WARNED_AT.put(player.getUUID(), now);
+        LOGGER.warn("[DungeonTrain] Portal swap refused for player={}: nothing to stand on at "
+            + "({}, {}, {}) — the destination corridor is not stamped there. Leaving them where they are.",
+            player.getName().getString(), fmt(x), fmt(y), fmt(z));
+    }
+
+    /**
      * Forget every structure when the server stops.
      *
      * <p>All three maps are static and would otherwise survive into the next world a single-player
@@ -246,6 +337,8 @@ public final class PortalCarriageEvents {
         LAST_FOG.clear();
         LAST_TRAIN_AUDIO.clear();
         COOLDOWNS.clear();
+        SKIP_WARNED_AT.clear();
+        LANDING_WARNED_AT.clear();
         // Where each player left a room goes with the rooms themselves — a pair key means a different
         // place in the next world opened, so a surviving binding would name a corridor that is not
         // there.
@@ -275,8 +368,28 @@ public final class PortalCarriageEvents {
         for (UUID trainId : Trains.byTrainId(level).keySet()) {
             for (Map.Entry<Integer, ManagedShip> group : Trains.knownGroups(trainId).entrySet()) {
                 int anchorPIdx = group.getKey();
-                AABBdc bb = group.getValue().worldAABB();
-                if (bb == null) continue;
+                ManagedShip ship = group.getValue();
+
+                // knownGroups is a grow-only registry, so a handle in it can outlive its sub-level.
+                // A stale one still answers worldAABB() with its LAST pose (ManagedShip#isResident
+                // says so explicitly), and the carriage frame below is derived straight from that
+                // box — so reading a dead handle freezes the swap plane in world space while the
+                // train rolls on. An ordinary carriage then carries a player through the frozen
+                // plane and the swap fires on somebody who never walked into a portal, which is
+                // exactly the "dropped into the under-bedrock void" report. Every other reader of
+                // this registry already gates the same way; see TrainFluidBarrier and
+                // TrainCarriageAppender.
+                if (!ship.isResident()) {
+                    warnSkippedGroup(level, anchorPIdx, "a culled/removed sub-level");
+                    continue;
+                }
+                // Covers null and the [0,0,0,0,0,0] box Sable hands back for a sub-level that has
+                // not ticked yet: arithmetic on that lands the frame near the world origin.
+                AABBdc bb = ship.worldAABB();
+                if (ShipAabbs.isDegenerate(bb)) {
+                    warnSkippedGroup(level, anchorPIdx, "a degenerate AABB");
+                    continue;
+                }
 
                 for (int slot = 0; slot < groupSize; slot++) {
                     int carriageIndex = anchorPIdx + slot;
@@ -300,7 +413,7 @@ public final class PortalCarriageEvents {
                     double originZ = bb.minZ();
 
                     handlePortalCarriage(level, players, layout, dims, carriageIndex, role, pairKey,
-                        group.getValue(), originX, originY, originZ, groupSize, puppets);
+                        ship, originX, originY, originZ, groupSize, puppets);
                 }
             }
         }
@@ -667,6 +780,30 @@ public final class PortalCarriageEvents {
                 continue;
             }
 
+            // A player who was standing goes to the destination's floor surface rather than to the
+            // carried-across local Y — the two frames' block grids differ by the ship's fractional
+            // pose, and landing a fraction inside a twin that hangs in open air drops them through it.
+            double targetY = player.onGround()
+                ? frames.floorSurfaceY(move.toFrame(), boundTwin)
+                : move.y();
+
+            // Last line of defence: never put anybody where there is nothing to stand on. The
+            // guards above establish that the destination corridor is not severed and its chunks
+            // are present, but "loaded" is not "stamped" — corridorLoaded only asks hasChunk, so a
+            // loaded-but-empty destination sails through it and the player is dropped into the
+            // basement void. Refusing turns that into the portal briefly doing nothing.
+            //
+            // TWIN only, and not because the carriage side is trusted: a carriage corridor's blocks
+            // live in the ship's LevelPlot, not the world, so a world read at those coordinates
+            // reports the empty air the train is passing through and would refuse every legitimate
+            // way back onto the train. The twin is stamped into the world proper, so the read means
+            // what it says there.
+            if (move.toFrame() == PortalFrames.FRAME_TWIN
+                && !landingSupported(level, move.x(), targetY, move.z())) {
+                warnRefusedLanding(level, player, move.x(), targetY, move.z());
+                continue;
+            }
+
             // Coming out: remember which copy of the room they left from. BASE clears the binding,
             // so a trip back through the original twin puts them at the start again — which is what
             // a player who deliberately walked back to it has asked for.
@@ -678,13 +815,6 @@ public final class PortalCarriageEvents {
                 // behind, so by the time it crosses, this player is no longer here to be asked.
                 PortalExitBindings.noteInbound(pairKey, role, player.getUUID(), level.getGameTime());
             }
-
-            // A player who was standing goes to the destination's floor surface rather than to the
-            // carried-across local Y — the two frames' block grids differ by the ship's fractional
-            // pose, and landing a fraction inside a twin that hangs in open air drops them through it.
-            double targetY = player.onGround()
-                ? frames.floorSurfaceY(move.toFrame(), boundTwin)
-                : move.y();
 
             player.connection.teleport(move.x(), targetY, move.z(),
                 player.getYRot(), player.getXRot(), RELATIVE_ALL);
