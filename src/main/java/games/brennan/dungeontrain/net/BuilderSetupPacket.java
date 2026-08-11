@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderCarriageCount;
 import games.brennan.dungeontrain.builder.BuilderCinematicService;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
@@ -77,7 +78,8 @@ public record BuilderSetupPacket(String modeId) implements CustomPacketPayload {
             CarriageDims dims = DungeonTrainWorldData.get(level).dims();
             // Far enough back that the whole run fits on screen — a three-carriage train seen
             // from the old fixed margin was a wall of hull.
-            BlockPos spawn = BuilderWorldLayout.spawnPos(dims, mode.get().carriageCount());
+            BlockPos spawn = BuilderWorldLayout.spawnPos(dims, BuilderCarriageCount.of(
+                mode.get(), DungeonTrainWorldData.get(level).builderSubType()));
             // Facing the template, not vanilla's yaw 0 — the spawn sits on the +Z side of the
             // train, so yaw 0 (straight down +Z) would put the build squarely behind them.
             float[] facing = BuilderCinematicService.facingFrom(

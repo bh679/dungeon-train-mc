@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderBounds;
-import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderCarriageCount;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.client.builder.BuilderBoundsState;
@@ -100,9 +100,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
             return new BuilderBoundsPacket(List.of(), "", "", 0, "", "", "", -1);
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
-        int carriages = BuilderMode.fromId(data.builderMode())
-            .map(BuilderMode::carriageCount)
-            .orElse(0);
+        int carriages = BuilderCarriageCount.of(data.builderMode(), data.builderSubType());
         CarriageDims dims = data.dims();
         String modeId = data.builderMode() == null ? "" : data.builderMode();
         // Empty name = an unnamed draft; the client uses it to decide whether Save can write

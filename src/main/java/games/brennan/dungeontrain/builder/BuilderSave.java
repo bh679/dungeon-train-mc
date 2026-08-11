@@ -72,9 +72,7 @@ public final class BuilderSave {
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
-        int carriages = BuilderMode.fromId(data.builderMode())
-                .map(BuilderMode::carriageCount)
-                .orElse(0);
+        int carriages = BuilderCarriageCount.of(data.builderMode(), data.builderSubType());
         List<BoundingBox> volumes = BuilderBounds.buildVolumes(carriages, dims);
 
         Optional<Integer> target = saveTarget(volumes.size(), BuilderDirtyCheck.dirtyCarriages(level));

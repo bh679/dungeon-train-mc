@@ -1,8 +1,8 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderCarriageCount;
 import games.brennan.dungeontrain.builder.BuilderCinematic;
-import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.client.builder.BuilderPhotoClient;
@@ -81,9 +81,7 @@ public record BuilderPhotoPacket(String kindId, String id, String partKindId, bo
                             BuilderPhotoRequest request, boolean onlyIfMissing) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
-        int carriages = BuilderMode.fromId(data.builderMode())
-                .map(BuilderMode::carriageCount)
-                .orElse(0);
+        int carriages = BuilderCarriageCount.of(data.builderMode(), data.builderSubType());
 
         BlockPos spawn = BuilderWorldLayout.spawnPos(dims, carriages);
         Vec3 cam = BuilderCinematic.eyeOf(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5);

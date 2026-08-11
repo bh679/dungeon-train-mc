@@ -80,7 +80,9 @@ public final class BuilderWorldSetup {
 
         stampPlatform(level);
         stampTrack(level, dims);
-        int carriages = mode.carriageCount();
+        // Nothing has recorded a sub-type on a world this stamp runs on, so this is the mode's
+        // own count today. Routed through the helper anyway so there is one rule, not two.
+        int carriages = BuilderCarriageCount.of(mode, DungeonTrainWorldData.get(level).builderSubType());
         if (carriages > 0) {
             stampTrain(level, dims, carriages);
         }
@@ -106,18 +108,35 @@ public final class BuilderWorldSetup {
     public static void restamp(ServerLevel level, BuilderMode mode) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
-        int previous = BuilderMode.fromId(data.builderMode())
-                .map(BuilderMode::carriageCount)
-                .orElse(0);
+        // The sub-type doesn't change under a mode switch — the build is still the same kind of
+        // thing — so both counts read it, and a carriage room stays one carriage either side.
+        String subTypeId = data.builderSubType();
+        int previous = BuilderCarriageCount.of(data.builderMode(), subTypeId);
 
         clearTrain(level, dims, previous);
-        int carriages = mode.carriageCount();
+        int carriages = BuilderCarriageCount.of(mode, subTypeId);
         if (carriages > 0) {
             stampTrain(level, dims, carriages);
         }
         data.setBuilderMode(mode.id());
         LOGGER.info("[DungeonTrain] Builder world re-stamped: {} carriage(s) -> '{}' ({} carriage(s))",
                 previous, mode.id(), carriages);
+    }
+
+    /**
+     * The footprint {@link #clearTrain} has to erase: the count the world was <em>last stamped
+     * with</em>, from the mode and sub-type still on record.
+     *
+     * <p>Must be called before {@code setBuilderMode} / {@code setBuilderSubType} overwrite either
+     * of them. A whole carriage parks three and a room parks one, so reading the incoming build's
+     * count here would clear the wrong span and leave carriages standing outside the new bounds.</p>
+     *
+     * @param fallback used when the world has no mode on record — an unstamped world in practice,
+     *                 but clearing the incoming mode's span is the safe answer either way
+     */
+    private static int previousCarriages(DungeonTrainWorldData data, BuilderMode fallback) {
+        BuilderMode previous = BuilderMode.fromId(data.builderMode()).orElse(fallback);
+        return BuilderCarriageCount.of(previous, data.builderSubType());
     }
 
     /**
@@ -322,9 +341,10 @@ public final class BuilderWorldSetup {
         CarriageDims dims = data.dims();
         BuilderMode mode = request.mode();
 
-        BuilderMode previousMode = BuilderMode.fromId(data.builderMode()).orElse(mode);
-        int previousCarriages = previousMode.carriageCount();
-        clearTrain(level, dims, previousCarriages);
+        // Read the outgoing sub-type before anything overwrites it: clearTrain erases by
+        // recomputing the old footprint, and a room's one carriage is not where a whole
+        // carriage's three were.
+        clearTrain(level, dims, previousCarriages(data, mode));
         data.setBuilderMode(mode.id());
 
         // A stage doesn't name a carriage — it decides which parts get stamped onto one. Selecting
@@ -336,7 +356,7 @@ public final class BuilderWorldSetup {
             EditorStageSelection.select(request.stageId());
         }
 
-        int carriages = mode.carriageCount();
+        int carriages = BuilderCarriageCount.of(mode, request.subType().id());
         if (carriages > 0) {
             stampTrain(level, dims, carriages, request.shell());
             overlaySelection(level, dims, carriages, request);
@@ -431,7 +451,10 @@ public final class BuilderWorldSetup {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
 
-        int carriages = mode.carriageCount();
+        // A carriage room is the interior of one carriage, so it parks one whatever the mode —
+        // see BuilderCarriageCount. Still zero in the carriage-less modes, which the guard below
+        // is what answers.
+        int carriages = BuilderCarriageCount.of(mode, request.subType().id());
         if (carriages <= 0) {
             // The track modes park no carriage, so there is no volume to load a template into.
             // BuilderOpenOptions.isOpenable already says so; this is the server-side backstop.
@@ -447,8 +470,10 @@ public final class BuilderWorldSetup {
         }
         Resolved open = resolved.get();
 
-        BuilderMode previousMode = BuilderMode.fromId(data.builderMode()).orElse(mode);
-        clearTrain(level, dims, previousMode.carriageCount());
+        // Outgoing footprint, from the sub-type still on record — data.setBuilderSubType below
+        // overwrites it, and clearing three carriages' worth after switching to a room (or one
+        // after switching away from it) would leave blocks standing outside the new bounds.
+        clearTrain(level, dims, previousCarriages(data, mode));
         data.setBuilderMode(mode.id());
 
         // Before the stamp, for the same reason applyNew does it: CarriagePlacer.placeAt reads
