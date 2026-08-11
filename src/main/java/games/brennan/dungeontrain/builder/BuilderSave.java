@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
@@ -11,6 +10,7 @@ import games.brennan.dungeontrain.editor.EditorMirror;
 import games.brennan.dungeontrain.editor.EditorPlotSnapshots;
 import games.brennan.dungeontrain.editor.EditorVariantMirror;
 import games.brennan.dungeontrain.editor.StageStore;
+import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
@@ -19,6 +19,9 @@ import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageWeights;
+import games.brennan.dungeontrain.train.WholeCarriage;
+import games.brennan.dungeontrain.train.WholeCarriagePlacer;
+import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -93,7 +96,7 @@ public final class BuilderSave {
             switch (subType) {
                 case CARRIAGE_ROOM -> saveContents(level, origin, dims, name);
                 case PARTS -> savePart(level, origin, dims, name, data.builderPartKind());
-                case WHOLE_CARRIAGE -> saveCarriage(level, origin, dims, name, data.builderStage());
+                case WHOLE_CARRIAGE -> saveWholeCarriage(level, origin, dims, name, data.builderStage());
             }
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Builder save failed for {}", name, t);
@@ -114,12 +117,35 @@ public final class BuilderSave {
         return Result.ok(name);
     }
 
-    /** The build is the carriage shell: capture the whole volume, exactly as the editor's save does. */
-    private static void saveCarriage(ServerLevel level, BlockPos origin, CarriageDims dims,
-                                     String name, String stageId) throws IOException {
+    /**
+     * The build is a whole carriage: capture the whole volume, exactly as the editor's save does.
+     *
+     * <p>One capture, written twice.</p>
+     *
+     * <p>The <b>whole-carriage</b> copy is what the builder actually made — shell and interior in
+     * one template, kept together, reopenable from the New screen. The <b>carriage-shell</b> copy
+     * is what spawns: the train generator picks from {@code CarriageVariantRegistry} and rolls a
+     * separate room over whatever it picks, and it has no idea whole carriages exist. Writing only
+     * the first would mean every build made here silently stopped appearing in trains.</p>
+     *
+     * <p>So both, under the same name, until whole carriages join the spawn pool — at which point
+     * the shell write and {@link #carryMirrorToTemplate} go with it. The two stores keep separate
+     * subdirs, so sharing a name costs nothing.</p>
+     */
+    private static void saveWholeCarriage(ServerLevel level, BlockPos origin, CarriageDims dims,
+                                          String name, String stageId) throws IOException {
         CarriageVariant variant = variantFor(name)
                 .orElseThrow(() -> new IOException("could not resolve or create carriage '" + name + "'"));
-        StructureTemplate template = CarriageEditor.captureTemplate(level, origin, dims);
+        StructureTemplate template = WholeCarriagePlacer.captureTemplate(level, origin, dims);
+
+        // Whole carriage first: the template has to be on disk before the registry points at it,
+        // or a reload landing in between would leave a registered id with no file.
+        WholeCarriage wholeCarriage = WholeCarriage.of(name);
+        WholeCarriageTemplateStore.save(wholeCarriage, template);
+        if (WholeCarriageRegistry.register(wholeCarriage)) {
+            LOGGER.info("[DungeonTrain] Builder save: registered new whole carriage '{}'", name);
+        }
+
         CarriageTemplateStore.save(variant, template);
         linkStage(variant.id(), stageId);
         carryMirrorToTemplate(level, variant, dims);

@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
+import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -92,17 +93,34 @@ public record BuilderNewPacket(String modeId, String subTypeId,
                 return;
             }
 
-            // A stage pick is the whole selection for a whole carriage: it drives which parts get
-            // stamped, and BuilderSave links the saved template to it.
-            String stage = kind == BuilderNewOptions.CopySource.STAGES ? packet.copyFrom : "";
-            // What goes on top of the shell. A whole carriage has nothing on top — its selection
-            // already resolved to the shell itself.
+            // The Whole Carriage picker holds two lists, so a pick has to say which one it came out
+            // of before either half can be read. Every other CopySource has one list and no tag.
+            BuilderNewOptions.Pick pick = kind == BuilderNewOptions.CopySource.STAGES
+                    ? BuilderNewOptions.parsePick(packet.copyFrom)
+                    : new BuilderNewOptions.Pick(BuilderNewOptions.PickKind.STAGE, "");
+
+            // A stage pick drives which parts get stamped onto a fresh shell, and BuilderSave links
+            // the saved template to it.
+            String stage = pick.kind() == BuilderNewOptions.PickKind.STAGE ? pick.id() : "";
+            // A saved build is stamped back verbatim instead. Resolved here rather than down in
+            // setup so an id with nothing behind it is caught before any blocks move.
+            String wholeCarriage = "";
+            if (pick.kind() == BuilderNewOptions.PickKind.WHOLE_CARRIAGE) {
+                if (WholeCarriageRegistry.find(pick.id()).isEmpty()) {
+                    LOGGER.warn("[DungeonTrain] Builder new: no whole carriage '{}' — starting from the bare shell",
+                            pick.id());
+                } else {
+                    wholeCarriage = pick.id();
+                }
+            }
+            // What goes on top of the shell. A whole carriage has nothing on top — its selection is
+            // either the shell itself or a saved build that replaces the whole volume.
             String picked = switch (kind) {
                 case CONTENTS, PARTS -> packet.copyFrom;
                 default -> "";
             };
             BuilderNewRequest request = new BuilderNewRequest(mode.get(), subType, shell.get(),
-                    picked, CarriagePartKind.fromId(packet.typeId), packet.name, stage);
+                    picked, CarriagePartKind.fromId(packet.typeId), packet.name, stage, wholeCarriage);
             if (!BuilderWorldSetup.applyNew(level, request)) {
                 return;
             }

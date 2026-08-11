@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.builder;
 
 import games.brennan.dungeontrain.builder.BuilderNewOptions.CopySource;
+import games.brennan.dungeontrain.builder.BuilderNewOptions.Pick;
+import games.brennan.dungeontrain.builder.BuilderNewOptions.PickKind;
 import games.brennan.dungeontrain.builder.BuilderNewOptions.SubType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -114,5 +116,47 @@ final class BuilderNewOptionsTest {
         // New accepts it (the screen enables Create); the validator still rejects it, because
         // Save-as needs a real id. Both readings of "valid" have to stay distinguishable.
         assertFalse(BuilderNewOptions.isValidName(""));
+    }
+
+    // ---- tagged picks ----
+
+    @Test
+    @DisplayName("A tagged pick round-trips through the picker and back")
+    void taggedPicksRoundTrip() {
+        assertEquals(new Pick(PickKind.STAGE, "desert"),
+                BuilderNewOptions.parsePick(BuilderNewOptions.tagStage("desert")));
+        assertEquals(new Pick(PickKind.WHOLE_CARRIAGE, "crate_car"),
+                BuilderNewOptions.parsePick(BuilderNewOptions.tagWholeCarriage("crate_car")));
+    }
+
+    @Test
+    @DisplayName("The same name in both lists stays two different picks")
+    void collidingNamesStayDistinct() {
+        // The whole reason for tagging. Ids are only unique within their own store, and the
+        // Whole Carriage picker shows two stores at once — an untagged 'quartz' coming back from
+        // the client could mean either, and guessing wrong stamps the wrong thing.
+        String asStage = BuilderNewOptions.tagStage("quartz");
+        String asBuild = BuilderNewOptions.tagWholeCarriage("quartz");
+        assertFalse(asStage.equals(asBuild), "the two must not collapse to one picker value");
+        assertEquals(PickKind.STAGE, BuilderNewOptions.parsePick(asStage).kind());
+        assertEquals(PickKind.WHOLE_CARRIAGE, BuilderNewOptions.parsePick(asBuild).kind());
+        assertEquals("quartz", BuilderNewOptions.parsePick(asBuild).id());
+    }
+
+    @Test
+    @DisplayName("An untagged value is a Stage — which is what every value used to be")
+    void untaggedParsesAsStage() {
+        assertEquals(new Pick(PickKind.STAGE, "desert"), BuilderNewOptions.parsePick("desert"));
+    }
+
+    @Test
+    @DisplayName("Nothing picked is an empty Stage, not a null")
+    void emptyPickIsEmptyNotNull() {
+        assertTrue(BuilderNewOptions.parsePick("").isEmpty());
+        assertTrue(BuilderNewOptions.parsePick(null).isEmpty());
+        assertEquals(PickKind.STAGE, BuilderNewOptions.parsePick(null).kind());
+        // A tag with nothing after it is still a whole-carriage pick, just an unusable one — the
+        // packet resolves the id against the registry and starts blank when it misses.
+        assertTrue(BuilderNewOptions.parsePick(BuilderNewOptions.tagWholeCarriage("")).isEmpty());
     }
 }
