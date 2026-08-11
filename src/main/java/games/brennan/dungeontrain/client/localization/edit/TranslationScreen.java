@@ -4,12 +4,12 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.DungeonTrainLanguages;
 import games.brennan.dungeontrain.client.menu.ColorTintedButton;
-import games.brennan.dungeontrain.client.menu.SpriteIconButton;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
@@ -211,8 +211,8 @@ public final class TranslationScreen extends Screen {
         int cyclesX = MARGIN + contentWidth - (cycleWidth + GAP) - cycleWidth;
         int searchWidth = Math.max(ROW_H, cyclesX - GAP - searchX);
 
-        searchToggle = addRenderableWidget(new SpriteIconButton(MARGIN, TOP, ROW_H, SEARCH_ICON,
-            VANILLA_ICON_PX, Component.translatable("gui.dungeontrain.translate.search"),
+        searchToggle = addRenderableWidget(spriteButton(MARGIN, TOP, SEARCH_ICON, VANILLA_ICON_PX,
+            Component.translatable("gui.dungeontrain.translate.search"),
             b -> setSearchOpen(!searchOpen)));
 
         // Working outside the game lives here too, in the gap the open search box wants. The
@@ -290,8 +290,8 @@ public final class TranslationScreen extends Screen {
             SUBMIT_TINT[0], SUBMIT_TINT[1], SUBMIT_TINT[2],
             b -> minecraft.setScreen(new TranslationSubmitScreen(this, locale))));
         Component undoName = Component.translatable("gui.dungeontrain.translate.revert_all");
-        revert = addRenderableWidget(new SpriteIconButton(sentX + sentWidth - ROW_H, stripY, ROW_H,
-            TRASH_ICON, OWN_ICON_PX, undoName, b -> revertAll()));
+        revert = addRenderableWidget(spriteButton(sentX + sentWidth - ROW_H, stripY, TRASH_ICON,
+            OWN_ICON_PX, undoName, b -> revertAll()));
         revert.setTooltip(Tooltip.create(undoName));
         setSubmitVisible(false); // and with it, the column back to full height
         // Paint the working batch immediately from local state; the relay's history lands on top of
@@ -488,6 +488,21 @@ public final class TranslationScreen extends Screen {
     }
 
     /**
+     * A square button carrying a GUI sprite, drawn at the sprite's AUTHORED size — vanilla's
+     * icon/search is 12px and ours are 16, and drawing each 1:1 is what keeps them crisp. In a
+     * ROW_H button that leaves the glyph clear of the frame rather than sitting on it.
+     */
+    private SpriteIconButton spriteButton(int x, int y, ResourceLocation icon, int iconPx,
+                                          Component name, Button.OnPress onPress) {
+        SpriteIconButton button = SpriteIconButton.builder(name, onPress, true)
+            .width(ROW_H)
+            .sprite(icon, iconPx, iconPx)
+            .build();
+        button.setPosition(x, y);
+        return button;
+    }
+
+    /**
      * One square action button carrying a GUI sprite.
      *
      * <p>The tooltip does the labelling an icon cannot: the button's own name, and — where the old
@@ -496,7 +511,7 @@ public final class TranslationScreen extends Screen {
     private SpriteIconButton iconButton(int x, int y, ResourceLocation icon, String key,
                                         String tipKey, Button.OnPress onPress) {
         Component name = Component.translatable("gui.dungeontrain.translate.files." + key);
-        SpriteIconButton button = new SpriteIconButton(x, y, ROW_H, icon, OWN_ICON_PX, name, onPress);
+        SpriteIconButton button = spriteButton(x, y, icon, OWN_ICON_PX, name, onPress);
         button.setTooltip(Tooltip.create(tipKey == null ? name
             : name.copy().append("\n").append(
                 Component.translatable("gui.dungeontrain.translate.files." + tipKey))));
