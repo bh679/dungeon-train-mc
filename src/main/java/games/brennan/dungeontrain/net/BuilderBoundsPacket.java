@@ -3,9 +3,12 @@ package games.brennan.dungeontrain.net;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderBounds;
 import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.client.builder.BuilderBoundsState;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageVariantRegistry;
+import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -38,7 +41,9 @@ import java.util.List;
  * @param buildName what the build saves as; empty means an unnamed draft
  * @param mirrorMask packed {@link games.brennan.dungeontrain.builder.BuilderMirrorFlags}
  */
-public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, String buildName, int mirrorMask)
+public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, String buildName,
+                                  int mirrorMask, String subTypeId, String partKindId,
+                                  String stageId, int weight)
         implements CustomPacketPayload {
 
     /** Guards against a malformed or hostile payload allocating an unbounded list. */
@@ -53,6 +58,10 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
                 buf.writeUtf(packet.modeId, 32);
                 buf.writeUtf(packet.buildName, 64);
                 buf.writeVarInt(packet.mirrorMask);
+                buf.writeUtf(packet.subTypeId, 32);
+                buf.writeUtf(packet.partKindId, 16);
+                buf.writeUtf(packet.stageId, 32);
+                buf.writeVarInt(packet.weight + 1);   // -1 = "doesn't apply"; varint wants non-negative
                 buf.writeVarInt(Math.min(packet.volumes.size(), MAX_VOLUMES));
                 for (int i = 0; i < Math.min(packet.volumes.size(), MAX_VOLUMES); i++) {
                     BoundingBox b = packet.volumes.get(i);
@@ -64,6 +73,10 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
                 String modeId = buf.readUtf(32);
                 String buildName = buf.readUtf(64);
                 int mirrorMask = buf.readVarInt();
+                String subTypeId = buf.readUtf(32);
+                String partKindId = buf.readUtf(16);
+                String stageId = buf.readUtf(32);
+                int weight = buf.readVarInt() - 1;
                 int count = Math.min(buf.readVarInt(), MAX_VOLUMES);
                 List<BoundingBox> boxes = new ArrayList<>(count);
                 for (int i = 0; i < count; i++) {
@@ -71,7 +84,8 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
                         buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
                         buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
                 }
-                return new BuilderBoundsPacket(boxes, modeId, buildName, mirrorMask);
+                return new BuilderBoundsPacket(boxes, modeId, buildName, mirrorMask,
+                        subTypeId, partKindId, stageId, weight);
             }
         );
 
@@ -83,7 +97,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
     /** Build the packet for a player's current world — empty outside a builder world. */
     public static BuilderBoundsPacket forLevel(ServerLevel overworld) {
         if (!overworld.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
-            return new BuilderBoundsPacket(List.of(), "", "", 0);
+            return new BuilderBoundsPacket(List.of(), "", "", 0, "", "", "", -1);
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
         int carriages = BuilderMode.fromId(data.builderMode())
@@ -95,7 +109,32 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
         // straight away or has to ask for a name first.
         String buildName = data.builderName() == null ? "" : data.builderName();
         return new BuilderBoundsPacket(BuilderBounds.buildVolumes(carriages, dims), modeId,
-                buildName, data.builderMirror().pack());
+                buildName, data.builderMirror().pack(),
+                orEmpty(data.builderSubType()), orEmpty(data.builderPartKind()),
+                orEmpty(data.builderStage()), weightOf(data));
+    }
+
+    /**
+     * The saved template's pick weight, or {@code -1} when the line doesn't apply.
+     *
+     * <p>Only carriages: a draft has no template to have a weight, and contents and parts keep
+     * theirs in their own stores — reading the carriage weights for a part id would report a number
+     * belonging to something else entirely.</p>
+     */
+    private static int weightOf(DungeonTrainWorldData data) {
+        String name = data.builderName();
+        if (name == null || name.isEmpty()) {
+            return -1;
+        }
+        boolean isCarriage = data.builderSubType() == null
+                || BuilderNewOptions.SubType.WHOLE_CARRIAGE.id().equals(data.builderSubType());
+        return isCarriage && CarriageVariantRegistry.find(name).isPresent()
+                ? CarriageWeights.current().weightFor(name)
+                : -1;
+    }
+
+    private static String orEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     public static void sendTo(ServerPlayer player, ServerLevel overworld) {
@@ -103,7 +142,6 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
     }
 
     public static void handle(BuilderBoundsPacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> BuilderBoundsState.set(packet.volumes(), packet.modeId(),
-                packet.buildName(), packet.mirrorMask()));
+        ctx.enqueueWork(() -> BuilderBoundsState.set(packet));
     }
 }

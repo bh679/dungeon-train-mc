@@ -1,7 +1,12 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderNewOptions;
+import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
 import games.brennan.dungeontrain.builder.BuilderSave;
+import games.brennan.dungeontrain.train.CarriagePartKind;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -47,11 +52,38 @@ public record BuilderSavePacket() implements CustomPacketPayload {
                         .withStyle(ChatFormatting.GREEN));
                 // Snapshots were re-baselined by the save, so the client's green Save can clear.
                 DungeonTrainNet.sendTo(player, BuilderDirtyPacket.state(0));
+                requestPhoto(player, level, result.variantId());
             } else {
                 player.sendSystemMessage(Component.translatable(
                         "gui.dungeontrain.builder.save_failed", result.failure())
                         .withStyle(ChatFormatting.RED));
             }
         });
+    }
+
+    /**
+     * Photograph what was just saved.
+     *
+     * <p>The id is the saved template's own name, not the shell it came from — a save writes the
+     * build, so that's what the picture is of. {@code onlyIfMissing} is false: an explicit save
+     * always re-photographs, because what was just written is by definition not what an existing
+     * picture shows.</p>
+     */
+    private static void requestPhoto(ServerPlayer player, ServerLevel level, String id) {
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        BuilderPhotoRequest request = new BuilderPhotoRequest(
+                kindOf(data.builderSubType()), id, CarriagePartKind.fromId(data.builderPartKind()));
+        BuilderPhotoPacket.send(player, level, request, false);
+    }
+
+    /** Which store the save wrote to — the same branch {@code BuilderSave} took. */
+    private static BuilderPhotoPaths.Kind kindOf(String subTypeId) {
+        if (BuilderNewOptions.SubType.CARRIAGE_ROOM.id().equals(subTypeId)) {
+            return BuilderPhotoPaths.Kind.CONTENTS;
+        }
+        if (BuilderNewOptions.SubType.PARTS.id().equals(subTypeId)) {
+            return BuilderPhotoPaths.Kind.PART;
+        }
+        return BuilderPhotoPaths.Kind.CARRIAGE;
     }
 }

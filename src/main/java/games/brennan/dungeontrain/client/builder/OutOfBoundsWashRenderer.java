@@ -86,6 +86,9 @@ public final class OutOfBoundsWashRenderer {
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         faces = List.of();
         BuilderBoundsState.clear();
+        // Template photos are read from this install's directory; the next world may be a different
+        // one, and a kept entry would show one template's picture beside another's name.
+        BuilderPhotoTextures.clear();
     }
 
     private static void rescan() {

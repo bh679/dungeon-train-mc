@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.builder;
 import games.brennan.dungeontrain.builder.BuilderLabels;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
+import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.editor.EditorTemplateLists;
 import games.brennan.dungeontrain.net.BuilderNewPacket;
@@ -118,6 +119,7 @@ public final class BuilderNewScreen extends Screen {
         // The mode as the picture it was on the picker screen, so the two screens read as the same
         // choice rather than as a list of words that happens to match a wall of images.
         BuilderModeArtButton art = new BuilderModeArtButton(fieldX, y, FIELD_WIDTH, ART_HEIGHT, mode,
+                this::selectedPhoto,
                 value -> {
                     mode = value;
                     copyFrom = "";   // a different mode lists different things
@@ -222,6 +224,32 @@ public final class BuilderNewScreen extends Screen {
     private void rebuild() {
         this.clearWidgets();
         this.init();
+    }
+
+    /**
+     * The photo of whatever the picker currently names, or null so the mode's tile art stands in.
+     *
+     * <p>Asked for every frame rather than resolved once: cycling the picker doesn't rebuild the
+     * screen, so this is what makes the picture follow the selection. {@code BuilderPhotoTextures}
+     * caches both hits and misses, so the repetition costs a map lookup.</p>
+     */
+    private BuilderPhotoTextures.Photo selectedPhoto() {
+        if (copyFrom == null || copyFrom.isEmpty()) {
+            return null;
+        }
+        return switch (BuilderNewOptions.copySourceFor(mode, subType)) {
+            case CARRIAGES -> BuilderPhotoTextures.textureFor(
+                    BuilderPhotoPaths.Kind.CARRIAGE, copyFrom, null);
+            case CONTENTS -> BuilderPhotoTextures.textureFor(
+                    BuilderPhotoPaths.Kind.CONTENTS, copyFrom, null);
+            case PARTS -> BuilderPhotoTextures.textureFor(
+                    BuilderPhotoPaths.Kind.PART, copyFrom, partKindValue());
+            // A stage isn't a template and has no photo of its own. The nearest useful picture is
+            // the build already in the world, once it has a name to have been saved under.
+            case STAGES -> BuilderBoundsState.isDraft() ? null : BuilderPhotoTextures.textureFor(
+                    BuilderPhotoPaths.Kind.CARRIAGE, BuilderBoundsState.buildName(), null);
+            case NONE -> null;
+        };
     }
 
     /**

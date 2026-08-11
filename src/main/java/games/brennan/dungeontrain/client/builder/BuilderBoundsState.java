@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.builder.BuilderMirrorFlags;
+import games.brennan.dungeontrain.net.BuilderBoundsPacket;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -27,13 +28,44 @@ public final class BuilderBoundsState {
     /** Packed mirror flags for this build — what lights the X/Y/Z/V cells in the pause menu. */
     private static volatile BuilderMirrorFlags mirror = BuilderMirrorFlags.NONE;
 
+    /** What the build is and what it's for — everything the info panel reads. */
+    private static volatile String subTypeId = "";
+    private static volatile String partKindId = "";
+    private static volatile String stageId = "";
+    /** Pick weight of the saved template; negative when it doesn't apply (a draft, or a non-carriage). */
+    private static volatile int weight = -1;
+
     private BuilderBoundsState() {}
 
-    public static void set(List<BoundingBox> newVolumes, String newModeId, String newBuildName, int mirrorMask) {
-        volumes = List.copyOf(newVolumes);
-        modeId = newModeId == null ? "" : newModeId;
-        buildName = newBuildName == null ? "" : newBuildName;
-        mirror = BuilderMirrorFlags.unpack(mirrorMask);
+    public static void set(BuilderBoundsPacket packet) {
+        volumes = List.copyOf(packet.volumes());
+        modeId = orEmpty(packet.modeId());
+        buildName = orEmpty(packet.buildName());
+        mirror = BuilderMirrorFlags.unpack(packet.mirrorMask());
+        subTypeId = orEmpty(packet.subTypeId());
+        partKindId = orEmpty(packet.partKindId());
+        stageId = orEmpty(packet.stageId());
+        weight = packet.weight();
+    }
+
+    public static String subTypeId() {
+        return subTypeId;
+    }
+
+    public static String partKindId() {
+        return partKindId;
+    }
+
+    public static String stageId() {
+        return stageId;
+    }
+
+    public static int weight() {
+        return weight;
+    }
+
+    private static String orEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     /** What the build saves as, or empty for an unnamed draft. */
@@ -65,5 +97,9 @@ public final class BuilderBoundsState {
         modeId = "";
         buildName = "";
         mirror = BuilderMirrorFlags.NONE;
+        subTypeId = "";
+        partKindId = "";
+        stageId = "";
+        weight = -1;
     }
 }

@@ -9,6 +9,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * The New screen's first row: which of the four builder modes you're making something for, shown
@@ -37,12 +38,20 @@ final class BuilderModeArtButton extends Button {
     private BuilderMode mode;
     private final boolean[] textureAvailable = new boolean[BuilderMode.values().length];
     private final Consumer<BuilderMode> onChange;
+    private final Supplier<BuilderPhotoTextures.Photo> preview;
 
+    /**
+     * @param preview the selected template's own photo, asked for every frame — the picker changes
+     *                the selection without rebuilding the screen, so a value captured here would go
+     *                stale the moment the list was cycled. Returns null when that template has no
+     *                photo, and the mode's tile art stands in.
+     */
     BuilderModeArtButton(int x, int y, int width, int height, BuilderMode initial,
-                         Consumer<BuilderMode> onChange) {
+                         Supplier<BuilderPhotoTextures.Photo> preview, Consumer<BuilderMode> onChange) {
         super(x, y, width, height, Component.translatable(initial.labelKey()),
                 b -> {}, DEFAULT_NARRATION);
         this.mode = initial;
+        this.preview = preview;
         this.onChange = onChange;
         // Probed once per mode rather than per frame: a screen rebuilds its widgets on resource
         // reload anyway, so art that appears later is still picked up.
@@ -67,7 +76,13 @@ final class BuilderModeArtButton extends Button {
         int h = this.getHeight();
         boolean hovered = this.active && this.isHoveredOrFocused();
 
-        BuilderTileArt.render(g, mode, textureAvailable[mode.ordinal()], x, y, w, h, this.alpha);
+        BuilderPhotoTextures.Photo photo = preview == null ? null : preview.get();
+        if (photo != null) {
+            BuilderTileArt.renderCover(g, photo.texture(), photo.width(), photo.height(),
+                    x, y, w, h, this.alpha);
+        } else {
+            BuilderTileArt.render(g, mode, textureAvailable[mode.ordinal()], x, y, w, h, this.alpha);
+        }
         g.fill(x, y, x + w, y + h, this.active ? (hovered ? 0 : IDLE_DIM) : INACTIVE_DIM);
         g.renderOutline(x, y, w, h, hovered ? BORDER_HOVER : BORDER_IDLE);
 

@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderNewRequest;
+import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -114,6 +115,12 @@ public record BuilderNewPacket(String modeId, String subTypeId,
             BlockPos spawn = BuilderWorldLayout.spawnPos(DungeonTrainWorldData.get(level).dims());
             player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
                     player.getYRot(), player.getXRot());
+
+            // Backfill: the world now holds this template, so if it has never been photographed,
+            // this is a free chance to do it. `onlyIfMissing` keeps it to once — browsing the
+            // library fills it in rather than rewriting the same picture on every visit.
+            BuilderPhotoRequest.forSelection(subType, shell.get().id(), picked, request.partKind())
+                    .ifPresent(photo -> BuilderPhotoPacket.send(player, level, photo, true));
         });
     }
 

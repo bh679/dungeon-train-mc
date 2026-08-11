@@ -20,6 +20,7 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
@@ -155,6 +156,18 @@ public final class BuilderPauseMenuHandler {
         // Ask whether anything is unsaved; the reply tints Save on arrival, a frame or two later.
         DungeonTrainNet.sendToServer(new BuilderDirtyRequestPacket());
 
+        hideVanillaTitle(event, screen);
+
+        // What you're working on, over the main column too — the tools panel is suppressed on a
+        // narrow window, and that's exactly when you can least afford to lose the one line saying
+        // whether this build has been saved. No metrics here: this is identity, not inspection.
+        int mainInfoH = BuilderInfoPanel.heightFor(BuilderInfoPanel.Content.IDENTITY.maxLines());
+        int mainInfoY = firstRowY - BuilderPauseMenuLayout.GAP - mainInfoH;
+        if (mainInfoY >= 0) {
+            event.addListener(new BuilderInfoPanel(slotX, mainInfoY, slotW, mainInfoH,
+                    BuilderInfoPanel.Content.IDENTITY));
+        }
+
         // Row 1: vanilla Options | Open to LAN, moved up into the freed space.
         int y = BuilderPauseMenuLayout.rowY(firstRowY, slotH, 1);
         moveButton(findButton(event, OPTIONS_KEY), slotX, y, halfW);
@@ -257,6 +270,16 @@ public final class BuilderPauseMenuHandler {
         int rowStride = height + BuilderPauseMenuLayout.GAP;
         int y = firstRowY;
 
+        // The build's measurements, above the tools that act on them. Only the measurements: the
+        // name, type and stage are already stated over the main column two panels to the left, and
+        // repeating them here would spend the space saying nothing new.
+        int infoH = BuilderInfoPanel.heightFor(BuilderInfoPanel.Content.METRICS.maxLines());
+        int infoY = firstRowY - BuilderPauseMenuLayout.GAP - infoH;
+        if (infoY >= 0) {
+            event.addListener(new BuilderInfoPanel(x, infoY, width, infoH,
+                    BuilderInfoPanel.Content.METRICS));
+        }
+
         // Do: make something, open something, keep it.
         event.addListener(new DarkTintedButton(x, y, halfW, height, NEW,
                 b -> Minecraft.getInstance().setScreen(new BuilderNewScreen(screen))));
@@ -327,6 +350,27 @@ public final class BuilderPauseMenuHandler {
                     b -> runCommand("dungeontrain editor mirror " + axis + (lit ? " off" : " on"))));
             if (cellW <= 0) {
                 break;   // defensive: a panel too narrow to divide
+            }
+        }
+    }
+
+    /**
+     * Hide the vanilla "Game Menu" heading, whose space the build read-out takes.
+     *
+     * <p>{@code PauseScreen.init} adds the title as a plain {@link StringWidget} at y=40 — a
+     * renderable like any other — so this is a visibility flag rather than the mixin it first looked
+     * like. Matched by identity against {@code screen.getTitle()} instead of by position or by being
+     * the only StringWidget, so another mod adding one of its own can't be hidden by mistake.</p>
+     *
+     * <p>It's also the least useful text on the screen: you know you opened the pause menu, whereas
+     * whether the build has been saved is what you came to find out.</p>
+     */
+    private static void hideVanillaTitle(ScreenEvent.Init.Post event, Screen screen) {
+        for (GuiEventListener listener : event.getScreen().children()) {
+            if (listener instanceof StringWidget widget
+                    && screen.getTitle().equals(widget.getMessage())) {
+                widget.visible = false;
+                return;
             }
         }
     }

@@ -1,13 +1,22 @@
 package games.brennan.dungeontrain.client.builder;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import org.slf4j.Logger;
+
+import java.io.InputStream;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * The screenshot behind a builder mode, drawn wherever a mode needs to be shown as a picture.
@@ -24,15 +33,15 @@ import net.neoforged.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 final class BuilderTileArt {
 
-    /**
-     * Nominal source rect. {@code GuiGraphics.blit} divides u/uWidth by the declared texture size,
-     * so passing the same numbers for both samples the whole image whatever its real pixel
-     * dimensions are — which matters here because the art is authored as screenshots at whatever
-     * resolution the shot was taken.
-     */
-    private static final int SRC = 16;
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final int FALLBACK_BG = 0xFF3A4048;
+
+    /** Pixel size of each mode's art, read once — needed to crop rather than stretch. */
+    private static final Map<BuilderMode, Size> SIZES = new EnumMap<>(BuilderMode.class);
+
+    /** A texture's real pixel dimensions. */
+    record Size(int width, int height) {}
 
     private BuilderTileArt() {}
 
@@ -55,9 +64,72 @@ final class BuilderTileArt {
             g.fill(x, y, x + w, y + h, FALLBACK_BG);
             return;
         }
+        Size size = sizeOf(mode);
+        if (size == null) {
+            g.fill(x, y, x + w, y + h, FALLBACK_BG);
+            return;
+        }
+        renderCover(g, textureFor(mode), size.width(), size.height(), x, y, w, h, alpha);
+    }
+
+    /**
+     * Fill the rect with {@code texture}, scaled uniformly and centre-cropped.
+     *
+     * <p>The tile slots are wide and short while the art is whatever shape the screenshot was, so
+     * mapping the whole image onto the whole rect squashes it — a carriage comes out visibly wrong.
+     * Instead the widest centred sub-rect of the source that matches the destination's aspect ratio
+     * is sampled, so the image keeps its proportions and the overflow is cropped off the long axis
+     * rather than compressed into the short one.</p>
+     */
+    static void renderCover(GuiGraphics g, ResourceLocation texture, int texW, int texH,
+                            int x, int y, int w, int h, float alpha) {
+        if (texW <= 0 || texH <= 0 || w <= 0 || h <= 0) {
+            return;
+        }
+        double dstAspect = w / (double) h;
+        double srcAspect = texW / (double) texH;
+
+        int srcW = texW;
+        int srcH = texH;
+        if (srcAspect > dstAspect) {
+            srcW = Math.max(1, (int) Math.round(texH * dstAspect));   // source too wide — trim the sides
+        } else {
+            srcH = Math.max(1, (int) Math.round(texW / dstAspect));   // source too tall — trim top and bottom
+        }
+        float u = (texW - srcW) / 2.0F;
+        float v = (texH - srcH) / 2.0F;
+
         RenderSystem.enableBlend();
         g.setColor(1.0F, 1.0F, 1.0F, alpha);
-        g.blit(textureFor(mode), x, y, w, h, 0.0F, 0.0F, SRC, SRC, SRC, SRC);
+        g.blit(texture, x, y, w, h, u, v, srcW, srcH, texW, texH);
         g.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+    }
+
+    /**
+     * The mode art's pixel size, read from the resource pack once per mode.
+     *
+     * <p>Cropping needs real dimensions, and a {@code ResourceLocation} carries none — the blit's
+     * "texture size" arguments are whatever the caller claims. Decoding the PNG header is the only
+     * way to know, so it's done once and cached; a resource reload replaces the pack contents but
+     * not the artwork's shape, so a stale entry is not a risk worth a listener for.</p>
+     */
+    private static Size sizeOf(BuilderMode mode) {
+        Size cached = SIZES.get(mode);
+        if (cached != null) {
+            return cached;
+        }
+        Optional<Resource> resource = Minecraft.getInstance().getResourceManager()
+                .getResource(textureFor(mode));
+        if (resource.isEmpty()) {
+            return null;
+        }
+        try (InputStream in = resource.get().open(); NativeImage image = NativeImage.read(in)) {
+            Size size = new Size(image.getWidth(), image.getHeight());
+            SIZES.put(mode, size);
+            return size;
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] Builder tile art unreadable for {}: {}", mode.id(), e.toString());
+            return null;
+        }
     }
 }
