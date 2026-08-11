@@ -45,6 +45,7 @@ public final class LanguageScreenTranslateButton {
     private static final int TEXT_INSET = 6;
     /** The vanilla button that opens font settings, to the left of Done in the same footer row. */
     private static final Component FONT_KEY = Component.translatable("options.font");
+    private static final Component LABEL = Component.translatable("gui.dungeontrain.translate.button");
 
     private LanguageScreenTranslateButton() {}
 
@@ -72,13 +73,18 @@ public final class LanguageScreenTranslateButton {
         // it therefore lands on top of the font button, so the whole row is re-laid-out as three.
         AbstractWidget font = findWidget(event, FONT_KEY);
 
+        // Init.Post can fire more than once for the same screen, and a second button would be one
+        // this pass does not lay out — left wherever the previous pass put it, under the row. So an
+        // existing one is re-used and re-placed rather than joined by a twin.
+        AbstractWidget existing = findWidget(event, LABEL);
+
         // A labelled button, not an icon. This is a vanilla options screen, whose vocabulary is wide
         // labelled buttons; icons earn their place in the editor, where they save a crowded row, and
         // read as an afterthought pinned to someone else's footer here.
         // Through the prompt rather than straight into the editor: the list selection here is pending
         // until Done, so the language you are pointing at and the one you are running in can disagree.
-        Button button = Button.builder(
-                Component.translatable("gui.dungeontrain.translate.button"),
+        Button button = existing instanceof Button reused ? reused : Button.builder(
+                LABEL,
                 b -> LanguageSwitchPrompt.openEditor(screen, target))
             .bounds(0, done.getY(), MIN_WIDTH, done.getHeight())
             .tooltip(Tooltip.create(
@@ -108,7 +114,9 @@ public final class LanguageScreenTranslateButton {
         } else if (!wrapOntoOwnLine(screen, button, font, done, span)) {
             layoutRow(all, w, span, screen.width, done.getY()); // no room to wrap — one row it is
         }
-        event.addListener(button);
+        if (existing == null) {
+            event.addListener(button);
+        }
     }
 
     /** Places widgets left to right as one centred row of equal-width cells. */
