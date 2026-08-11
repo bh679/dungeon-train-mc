@@ -156,8 +156,6 @@ public final class BuilderCinematicService {
     }
 
     private static int carriageCount(DungeonTrainWorldData data) {
-        return BuilderMode.fromId(data.builderMode())
-                .map(BuilderMode::carriageCount)
-                .orElse(0);
+        return BuilderCarriageCount.of(data.builderMode(), data.builderSubType());
     }
 }

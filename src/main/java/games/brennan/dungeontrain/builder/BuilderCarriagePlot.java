@@ -54,9 +54,7 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
             return null;
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        int carriages = BuilderMode.fromId(data.builderMode())
-                .map(BuilderMode::carriageCount)
-                .orElse(0);
+        int carriages = BuilderCarriageCount.of(data.builderMode(), data.builderSubType());
         List<BoundingBox> volumes = BuilderBounds.buildVolumes(carriages, dims);
         if (volumes.isEmpty()) {
             return null;
