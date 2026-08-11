@@ -6470,6 +6470,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-open-template-library",
+      "version": "0.552.0",
+      "type": "feat",
+      "title": "Open a build you already made",
+      "summary": "The Train Builder's Open button now shows your library instead of the mode picker. Choose what you're working on \u2014 the same choices the New and Save screens give you \u2014 and everything of that kind appears below as a wall of pictures, using the photo taken when each one was saved. Click one and it loads into the world already named, so saving writes back to it rather than leaving you with a copy. Carriage rooms that hold sub-variants have a button in the corner to look inside them. Track and tunnel templates are listed too, though editing those here is still to come.",
+      "highlights": [
+        "Open lists every template of the kind you pick, with the photo taken when it was saved",
+        "Opening a build names it, so Save writes back to that template instead of making a copy",
+        "Look inside a carriage room's sub-variants from the corner button on its tile",
+        "Photos filled in for templates that had none now show the right build, not the one before it",
+        "Track and tunnel templates appear for reference \u2014 editing them in the builder is still to come"
+      ],
+      "pr": 937,
+      "date": "2026-08-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
