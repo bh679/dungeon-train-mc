@@ -143,14 +143,19 @@ public final class LanguageScreenTranslateButton {
             return false;
         }
         int rowHeight = done.getHeight();
-        int strip = rowHeight + GAP;
+        int strip = GAP + rowHeight + GAP;
 
-        // Vanilla's row keeps its place; the extra line goes above the footer, in space the list gives
-        // back. repositionElements() restores the list to full height on every init, so this shrinks
-        // from the full height each time rather than compounding.
-        int listBottom = list.getY() + list.getHeight();
-        list.updateSizeAndPosition(list.getWidth(), Math.max(rowHeight, list.getHeight() - strip),
-            list.getY());
+        // Every measurement comes from the layout, never from how tall the list happens to be right
+        // now. Init.Post fires more than once per screen, and a strip taken off the CURRENT height
+        // would walk the button up the screen a row at a time, leaving it floating over the list.
+        int contentTop = screen.layout.getHeaderHeight();
+        int contentHeight = screen.layout.getContentHeight();
+        if (contentHeight - strip < rowHeight) {
+            return false; // a window too short to give the line room
+        }
+        // Vanilla's row keeps its place at the bottom; the extra line sits in the strip the list
+        // gives back, still anchored to the footer rather than floating in the middle of the screen.
+        list.updateSizeAndPosition(list.getWidth(), contentHeight - strip, contentTop);
 
         AbstractWidget[] below = font != null ? new AbstractWidget[] {font, done}
                                               : new AbstractWidget[] {done};
@@ -159,7 +164,7 @@ public final class LanguageScreenTranslateButton {
 
         button.setWidth(span);
         button.setX((screen.width - span) / 2);
-        button.setY(listBottom - strip);
+        button.setY(contentTop + contentHeight - strip + GAP);
         return true;
     }
 

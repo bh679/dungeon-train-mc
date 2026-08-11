@@ -4,7 +4,11 @@ import games.brennan.dungeontrain.mixin.client.LanguageSelectEntryAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.screens.ConfirmScreen;
+import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.options.LanguageSelectScreen;
+import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.client.resources.language.LanguageInfo;
 import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraft.network.chat.Component;
@@ -40,7 +44,7 @@ public final class LanguageSwitchPrompt {
         String picked = selectedCode(screen);
 
         if (picked == null || picked.equals(applied) || !TranslationScreen.isEditable(picked)) {
-            mc.setScreen(new TranslationScreen(screen, target));
+            mc.setScreen(new TranslationScreen(back(mc), target));
             return;
         }
 
@@ -50,9 +54,9 @@ public final class LanguageSwitchPrompt {
             switchLanguage -> {
                 if (switchLanguage) {
                     apply(mc, languages, picked);
-                    mc.setScreen(new TranslationScreen(screen, picked));
+                    mc.setScreen(new TranslationScreen(back(mc), picked));
                 } else {
-                    mc.setScreen(new TranslationScreen(screen, target));
+                    mc.setScreen(new TranslationScreen(back(mc), target));
                 }
             },
             Component.translatable("gui.dungeontrain.translate.switch.title"),
@@ -67,6 +71,20 @@ public final class LanguageSwitchPrompt {
                 mc.setScreen(screen);
             }
         });
+    }
+
+    /**
+     * Where Done in the editor lands — deliberately not the screen it was opened from.
+     *
+     * <p>You come through the language list on your way somewhere; being dropped back into a list of
+     * languages when you finish translating is not "done", it is halfway back to where you started.
+     * So the editor returns to the main menu, or to the options screen when there is a world behind
+     * it, which is where pressing Escape a second time would have taken you anyway.</p>
+     */
+    private static Screen back(Minecraft mc) {
+        return mc.level == null
+            ? new TitleScreen()
+            : new OptionsScreen(new PauseScreen(true), mc.options);
     }
 
     /** Exactly what {@code LanguageSelectScreen#onDone} does, minus its return to the last screen. */
