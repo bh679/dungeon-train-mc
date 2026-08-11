@@ -13,6 +13,9 @@ import games.brennan.dungeontrain.train.CarriagePartPlacer;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
+import games.brennan.dungeontrain.train.WholeCarriage;
+import games.brennan.dungeontrain.train.WholeCarriagePlacer;
+import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
@@ -341,10 +344,11 @@ public final class BuilderWorldSetup {
         // A new build is a new thing to mirror — carrying the last build's axes over would apply
         // them to geometry that was never authored against them.
         data.setBuilderMirror(BuilderMirrorFlags.DEFAULT);
-        LOGGER.info("[DungeonTrain] Builder new: mode '{}', {} '{}' on shell '{}', stage '{}', name '{}'",
+        LOGGER.info("[DungeonTrain] Builder new: mode '{}', {} '{}' on shell '{}', stage '{}', from '{}', name '{}'",
                 mode.id(), request.subType().id(),
                 request.picked().isEmpty() ? "<none>" : request.picked(), request.shell().id(),
                 request.stageId().isEmpty() ? "<none>" : request.stageId(),
+                request.wholeCarriageId().isEmpty() ? "<blank>" : request.wholeCarriageId(),
                 request.name().isEmpty() ? "<draft>" : request.name());
         return true;
     }
@@ -358,11 +362,16 @@ public final class BuilderWorldSetup {
      *
      * <p>Re-baselines the dirty snapshots afterwards: {@code stampTrain} captured them against the
      * bare shell, and leaving them there would make a freshly-stamped build read as edited.</p>
+     *
+     * <p>A whole carriage is the exception to "over the top of the shell": when the builder picked
+     * a saved build rather than a Stage, that build <em>replaces</em> the parked shell — see
+     * {@link WholeCarriagePlacer#placeAt}, which clears the volume before stamping.</p>
      */
     private static void overlaySelection(ServerLevel level, CarriageDims dims, int carriages,
                                          BuilderNewRequest request) {
-        if (request.picked().isEmpty()) {
-            return;   // whole carriage: the shell is the build
+        Optional<WholeCarriage> savedBuild = WholeCarriageRegistry.find(request.wholeCarriageId());
+        if (request.picked().isEmpty() && savedBuild.isEmpty()) {
+            return;   // whole carriage started from a Stage: the bare shell is the build
         }
         for (int i = 0; i < carriages; i++) {
             BlockPos origin = carriageOrigin(dims, carriages, i);
@@ -377,7 +386,8 @@ public final class BuilderWorldSetup {
                                 request.picked(), dims, 0L, i, true);
                     }
                 }
-                case WHOLE_CARRIAGE -> { }
+                case WHOLE_CARRIAGE -> savedBuild.ifPresent(
+                        build -> WholeCarriagePlacer.placeAt(level, origin, build, dims));
             }
             EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(i), level, origin,
                     dims.length(), dims.height(), dims.width());

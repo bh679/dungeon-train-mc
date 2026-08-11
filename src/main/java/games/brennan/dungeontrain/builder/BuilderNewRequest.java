@@ -17,6 +17,9 @@ import games.brennan.dungeontrain.train.CarriageVariant;
  *                {@link BuilderNewOptions.SubType#PARTS}
  * @param name    what the build saves as; empty means an unnamed draft
  * @param stageId the Stage the build is for, empty when none was picked
+ * @param wholeCarriageId a saved whole carriage to start the build from, empty when the builder
+ *                picked a Stage instead. The two are the two halves of one picker, so at most one
+ *                of {@code stageId} and this is ever set
  */
 public record BuilderNewRequest(BuilderMode mode,
                                 BuilderNewOptions.SubType subType,
@@ -24,12 +27,20 @@ public record BuilderNewRequest(BuilderMode mode,
                                 String picked,
                                 CarriagePartKind partKind,
                                 String name,
-                                String stageId) {
+                                String stageId,
+                                String wholeCarriageId) {
 
     public BuilderNewRequest {
         picked = picked == null ? "" : picked;
         name = name == null ? "" : name;
         stageId = stageId == null ? "" : stageId;
+        wholeCarriageId = wholeCarriageId == null ? "" : wholeCarriageId;
+    }
+
+    /** For the callers that never start from a saved build — every sub type but Whole Carriage. */
+    public BuilderNewRequest(BuilderMode mode, BuilderNewOptions.SubType subType, CarriageVariant shell,
+                             String picked, CarriagePartKind partKind, String name, String stageId) {
+        this(mode, subType, shell, picked, partKind, name, stageId, "");
     }
 
     public String partKindId() {

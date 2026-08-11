@@ -307,12 +307,34 @@ public final class BuilderNewScreen extends Screen {
      */
     private List<String> copyCandidates() {
         return switch (BuilderNewOptions.copySourceFor(mode, subType)) {
-            case STAGES -> EditorTemplateLists.stages();
+            case STAGES -> stagesThenSavedBuilds();
             case CARRIAGES -> currentFirst(new ArrayList<>(EditorTemplateLists.carriages()));
             case CONTENTS -> currentFirst(contentsWithMembers());
             case PARTS -> EditorTemplateLists.parts(partKindValue());
             case NONE -> List.of();
         };
+    }
+
+    /**
+     * The Stage presets, then every whole carriage already saved.
+     *
+     * <p>Two answers to "what do I start from?" that a builder holds at once: a stretch of the game
+     * to build <em>for</em>, or a carriage they already made to build <em>from</em>. Stages stay
+     * first, and therefore stay the default, because starting fresh is the common case and because
+     * the saved list is empty until someone has saved something.</p>
+     *
+     * <p>Values are tagged — see {@link BuilderNewOptions#parsePick}. A stage and a saved build can
+     * share a name, and the two mean different work to the server.</p>
+     */
+    private static List<String> stagesThenSavedBuilds() {
+        List<String> out = new ArrayList<>();
+        for (String id : EditorTemplateLists.stages()) {
+            out.add(BuilderNewOptions.tagStage(id));
+        }
+        for (String id : EditorTemplateLists.wholeCarriages()) {
+            out.add(BuilderNewOptions.tagWholeCarriage(id));
+        }
+        return out;
     }
 
     /**
@@ -372,6 +394,16 @@ public final class BuilderNewScreen extends Screen {
      * came from labelled the <em>quartz stage</em> as "Maze › Quartz".</p>
      */
     private static Component pickerLabel(BuilderNewOptions.CopySource source, String value) {
+        if (source == BuilderNewOptions.CopySource.STAGES) {
+            BuilderNewOptions.Pick pick = BuilderNewOptions.parsePick(value);
+            // A saved build reads under a heading rather than as a bare name, so it can't be
+            // mistaken for one more Stage the player hasn't heard of.
+            if (pick.kind() == BuilderNewOptions.PickKind.WHOLE_CARRIAGE) {
+                return Component.translatable("gui.dungeontrain.builder.new.saved_build",
+                        BuilderLabels.pretty(pick.id()));
+            }
+            return Component.literal(BuilderLabels.pretty(pick.id()));
+        }
         if (source == BuilderNewOptions.CopySource.CONTENTS) {
             Optional<String> parent = EditorTemplateLists.contentsParentOf(value);
             if (parent.isPresent()) {

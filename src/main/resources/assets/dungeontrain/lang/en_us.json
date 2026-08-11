@@ -683,6 +683,7 @@
   "gui.dungeontrain.builder.new.copy_from": "Copy from",
   "gui.dungeontrain.builder.new.create": "Create",
   "gui.dungeontrain.builder.new.invalid_name": "Use lower-case letters, numbers, - and _ only.",
+  "gui.dungeontrain.builder.new.saved_build": "Saved: %s",
   "gui.dungeontrain.builder.new.save_title": "Save As",
   "gui.dungeontrain.builder.new.save": "Save",
   "gui.dungeontrain.builder.new.unnamed": "Leave blank to build now and name it when you save.",

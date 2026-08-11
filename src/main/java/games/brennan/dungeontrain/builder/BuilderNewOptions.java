@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.builder;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * What the Train Builder's <b>New</b> screen offers for a given selection.
@@ -101,22 +102,84 @@ public final class BuilderNewOptions {
         return copySourceFor(mode, subType) == CopySource.PARTS;
     }
 
+    // ---- Tagged picks ----
+
+    /**
+     * Which list a picked value came out of. The Whole Carriage picker shows two: the Stage presets
+     * first, then whole carriages already saved. Both are things you can start a build from, and
+     * they mean entirely different work to the server — a stage decides which parts get stamped
+     * onto a fresh shell, a saved build gets stamped back verbatim.
+     */
+    public enum PickKind {
+        /** A named gate preset from {@code StageStore}. */
+        STAGE,
+        /** A saved whole carriage from {@code WholeCarriageRegistry}. */
+        WHOLE_CARRIAGE
+    }
+
+    /** One resolved picker value: which list it came from, and the bare id within that list. */
+    public record Pick(PickKind kind, String id) {
+        public Pick {
+            id = id == null ? "" : id;
+        }
+
+        public boolean isEmpty() {
+            return id.isEmpty();
+        }
+    }
+
+    private static final String WHOLE_CARRIAGE_TAG = "whole:";
+
+    /**
+     * Tag {@code id} as a saved whole carriage for transport through the picker and the New packet.
+     *
+     * <p>Tagged rather than bare because an id is only unique within its own store, and they do
+     * collide across stores — the picker's own label code already has to work around {@code quartz}
+     * being both a Stage and one of {@code maze}'s sub-variants. Two lists in one control makes
+     * that a correctness problem rather than a labelling one: an untagged {@code quartz} coming
+     * back from the client is genuinely ambiguous, and guessing wrong stamps the wrong thing.</p>
+     */
+    public static String tagWholeCarriage(String id) {
+        return WHOLE_CARRIAGE_TAG + id;
+    }
+
+    /** Tag {@code id} as a Stage. Stages are the untagged default — this exists for symmetry. */
+    public static String tagStage(String id) {
+        return id;
+    }
+
+    /**
+     * Read a picker value back into the list it came from.
+     *
+     * <p>Untagged values parse as Stages, which is what every value was before whole carriages had
+     * their own list — so a client that predates the tag, or a stage id typed in by hand, still
+     * lands in the arm it always did.</p>
+     */
+    public static Pick parsePick(String raw) {
+        if (raw == null || raw.isEmpty()) {
+            return new Pick(PickKind.STAGE, "");
+        }
+        if (raw.startsWith(WHOLE_CARRIAGE_TAG)) {
+            return new Pick(PickKind.WHOLE_CARRIAGE, raw.substring(WHOLE_CARRIAGE_TAG.length()));
+        }
+        return new Pick(PickKind.STAGE, raw);
+    }
+
+    /**
+     * The one shape every template identity uses — {@code CarriageVariant.NAME_PATTERN} and the
+     * contents, whole-carriage and part patterns are all this, and a Save turns the name into
+     * whichever of them the sub type calls for. Held in lockstep by {@code BuilderNewOptionsTest}:
+     * the two drifting apart is a crash at Save rather than a message on the screen that asked for
+     * the name.
+     */
+    private static final Pattern NAME_PATTERN = Pattern.compile("^[a-z0-9_]{1,32}$");
+
     /**
      * A name that can become a template id: lower-case, no spaces or punctuation, matching every
      * id already on disk. Empty is not valid <em>here</em> — New treats an empty name as a draft
      * and never asks this, but the save that eventually names it does.
      */
     public static boolean isValidName(String name) {
-        if (name == null || name.isEmpty() || name.length() > 32) {
-            return false;
-        }
-        for (int i = 0; i < name.length(); i++) {
-            char c = name.charAt(i);
-            boolean ok = (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-';
-            if (!ok) {
-                return false;
-            }
-        }
-        return true;
+        return name != null && NAME_PATTERN.matcher(name).matches();
     }
 }
