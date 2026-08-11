@@ -6466,9 +6466,9 @@
       ],
       "pr": 934,
       "date": "2026-08-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.552.0",
+      "released_at": "2026-08-11T14:48:13Z"
     },
     {
       "id": "in-game-translation-editor",
@@ -6487,9 +6487,9 @@
         "Submitting needs network consent, like everything else that carries your name"
       ],
       "date": "2026-08-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.552.0",
+      "released_at": "2026-08-11T14:48:13Z"
     }
   ]
 }
