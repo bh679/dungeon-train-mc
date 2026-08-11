@@ -91,4 +91,32 @@ public final class NarrativeContentLocale {
         return resourceManager.getResource(
             ResourceLocation.fromNamespaceAndPath(baseId.getNamespace(), overlayPath));
     }
+
+    /**
+     * The locale-relative book path for a base content file — {@code random_books/deathnote},
+     * {@code death_lore/default} — or {@code ""} when {@code baseId} is not under {@code dir}.
+     *
+     * <p>The same "strip {@code narratives/}" mapping {@link #localized} applies, exposed so the
+     * translation overrides ({@link NarrativeTranslationOverrides}) and the in-game editor key on
+     * exactly the path the overlay tree uses, rather than each recomputing it.</p>
+     */
+    public static String bookPath(ResourceLocation baseId, String dir) {
+        String path = baseId.getPath();
+        String prefix = dir + "/";
+        if (!path.startsWith(prefix)) return "";
+        String rest = path.substring(prefix.length());
+        String category = dir.startsWith(NARRATIVES_PREFIX) ? dir.substring(NARRATIVES_PREFIX.length()) : dir;
+        return category + "/" + rest;
+    }
+
+    /**
+     * Open a base content file's effective text: the host-locale overlay when one exists, with any
+     * translation-editor overrides folded in. The registries' one-line replacement for
+     * {@code localized(...).orElse(fallback).open()}.
+     */
+    public static java.io.InputStream open(ResourceManager resourceManager, ResourceLocation baseId,
+                                           String dir, Resource fallback) throws java.io.IOException {
+        Resource source = localized(resourceManager, baseId, dir).orElse(fallback);
+        return NarrativeTranslationOverrides.open(source, bookPath(baseId, dir));
+    }
 }

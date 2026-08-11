@@ -62,8 +62,11 @@ public final class StoryRegistry {
             // Overlay the host-locale variant on the English base when one is bundled/shipped
             // (see NarrativeContentLocale); the id stays identical, so seen-book/achievement
             // tracking is unaffected.
-            Resource source = NarrativeContentLocale.localized(resourceManager, id, DIR).orElse(entry.getValue());
-            try (InputStream in = source.open()) {
+            // Overlay the host-locale variant on the English base, then fold in any
+            // translation-editor overrides (integrated server only — see
+            // NarrativeTranslationOverrides). The id stays identical, so pool weights and
+            // variant-count denominators are unaffected.
+            try (InputStream in = NarrativeContentLocale.open(resourceManager, id, DIR, entry.getValue())) {
                 StoryFile story = StoryCodec.parse(in, id);
                 STORIES.put(id, story);
                 loaded++;
