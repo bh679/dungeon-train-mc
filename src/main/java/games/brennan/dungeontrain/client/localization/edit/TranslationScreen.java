@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.localization.edit;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.DungeonTrainLanguages;
 import games.brennan.dungeontrain.client.menu.CreditsIconButton;
 import net.minecraft.ChatFormatting;
@@ -34,11 +35,16 @@ import java.util.Map;
  */
 public final class TranslationScreen extends Screen {
 
+    private static final org.slf4j.Logger LOGGER = LogUtils.getLogger();
+
     private static final int MARGIN = 16;
     private static final int ROW_H = 20;
     private static final int GAP = 4;
     private static final int TOP = 30;
     private static final int SUBTITLE_COLOUR = 0xFFA0A0A0;
+    /** The export/import result line — the same green/red the Files screen reported in. */
+    private static final int STATUS_OK_COLOUR = 0xFF7FDD7F;
+    private static final int STATUS_ERROR_COLOUR = 0xFFDD7F7F;
     /** Share of the width the "sent in" column takes; the strings pane keeps the rest. */
     private static final int SENT_COLUMN_PERCENT = 20;
     /** Floor so the column stays legible at a small GUI scale, where 20% is barely a word. */
@@ -119,6 +125,11 @@ public final class TranslationScreen extends Screen {
     /** Column height with and without Submit beneath it; swapped by {@link #setSubmitVisible}. */
     private int fullColumnHeight;
     private int shortColumnHeight;
+    /** What the last export/import did, drawn above the bottom row. Empty until one runs. */
+    private Component status = CommonComponents.EMPTY;
+    private boolean statusIsError;
+    /** Where that line lands — just above the action row, set during layout. */
+    private int statusY;
 
     public TranslationScreen(Screen parent, String locale) {
         super(Component.translatable("gui.dungeontrain.translate.title"));
@@ -236,6 +247,7 @@ public final class TranslationScreen extends Screen {
         onHistory(List.of());
         TranslationSubmissionsClient.fetch(this::onHistory);
 
+        statusY = bottomRow - font.lineHeight - 2; // in the gap the icons sit under
         layoutBottomRow(bottomRow, contentWidth);
         refresh();
     }
@@ -406,21 +418,93 @@ public final class TranslationScreen extends Screen {
      */
     private void layoutBottomRow(int y, int contentWidth) {
         // Submit is not here: it belongs to the working batch and lives under the column that row
-        // heads (see init). What is left is the screen's own three doorways.
-        int buttons = 3;
-        int buttonWidth = (contentWidth - GAP * (buttons - 1)) / buttons;
+        // heads (see init). Working outside the game is three icons rather than a doorway to a
+        // screen that was only ever these same three buttons — hover names each one.
         int x = MARGIN;
-        addRenderableWidget(Button.builder(
-            Component.translatable("gui.dungeontrain.translate.files"),
-            b -> minecraft.setScreen(new TranslationFilesScreen(this, locale)))
-            .bounds(x, y, buttonWidth, ROW_H).build());
-        x += buttonWidth + GAP;
+        x += iconButton(x, y, Items.CHEST, "open", null, b -> openFolder());
+        x += iconButton(x, y, Items.WRITABLE_BOOK, "export", "export.tip", b -> runExport());
+        x += iconButton(x, y, Items.WRITTEN_BOOK, "import", "import.tip", b -> runImport());
+
+        int rest = Math.max(ROW_H, MARGIN + contentWidth - x);
+        int buttonWidth = (rest - GAP) / 2;
         addRenderableWidget(Button.builder(
             Component.translatable("gui.dungeontrain.translate.revert_all"), b -> revertAll())
             .bounds(x, y, buttonWidth, ROW_H).build());
         x += buttonWidth + GAP;
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
             .bounds(x, y, buttonWidth, ROW_H).build());
+    }
+
+    /**
+     * One square action button carrying a vanilla item, returning the width it consumed.
+     *
+     * <p>The tooltip does the labelling an icon cannot: the button's own name, and — where the old
+     * Files screen had one — the sentence explaining what it will actually do to your disk.</p>
+     */
+    private int iconButton(int x, int y, net.minecraft.world.item.Item item, String key,
+                           String tipKey, Button.OnPress onPress) {
+        Component name = Component.translatable("gui.dungeontrain.translate.files." + key);
+        CreditsIconButton button = new CreditsIconButton(x, y, ROW_H, new ItemStack(item),
+            name, onPress);
+        button.setTooltip(Tooltip.create(tipKey == null ? name
+            : name.copy().append("\n").append(
+                Component.translatable("gui.dungeontrain.translate.files." + tipKey))));
+        addRenderableWidget(button);
+        return ROW_H + GAP;
+    }
+
+    // ---- working outside the game (was TranslationFilesScreen) ----------------------------------
+
+    /** Write this locale's text out to CSV + JSON for editing in a spreadsheet or text editor. */
+    private void runExport() {
+        TranslationExporter.Result result = TranslationExporter.export(locale);
+        if (result.ok()) {
+            setStatus(Component.translatable("gui.dungeontrain.translate.files.exported",
+                result.uiRows() + result.siblingRows(), result.books()), false);
+        } else {
+            setStatus(Component.translatable("gui.dungeontrain.translate.files.failed"), true);
+        }
+    }
+
+    /** Read back whatever is in the import folder and apply it as this player's edits. */
+    private void runImport() {
+        TranslationImporter.Result result = TranslationImporter.importAll(locale);
+        if (!result.ok()) {
+            setStatus(Component.translatable("gui.dungeontrain.translate.files.failed"), true);
+            return;
+        }
+        if (result.changed() == 0) {
+            // Distinct from an error on purpose: the usual cause is an empty import folder, and
+            // "0 changes" plus the folder path is the answer to "why did nothing happen".
+            setStatus(Component.translatable("gui.dungeontrain.translate.files.nothing"), false);
+            return;
+        }
+        setStatus(Component.translatable("gui.dungeontrain.translate.files.imported",
+            result.langChanged(), result.bookChanged()), false);
+        // An import IS an edit, so the list and the working batch both have to catch up.
+        refresh();
+        onHistory(List.of());
+    }
+
+    /**
+     * Open the translations folder in the OS file manager, creating both halves first so the
+     * player lands somewhere that exists and can see where their files should go.
+     */
+    private void openFolder() {
+        try {
+            java.nio.file.Path root = TranslationOverrideStore.root();
+            java.nio.file.Files.createDirectories(TranslationExporter.directoryFor(locale));
+            java.nio.file.Files.createDirectories(TranslationImporter.directoryFor(locale));
+            net.minecraft.Util.getPlatform().openUri(root.toUri());
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] Translations: could not open the folder — {}", e.toString());
+            setStatus(Component.translatable("gui.dungeontrain.translate.files.failed"), true);
+        }
+    }
+
+    private void setStatus(Component message, boolean error) {
+        this.status = message;
+        this.statusIsError = error;
     }
 
     /**
@@ -518,6 +602,11 @@ public final class TranslationScreen extends Screen {
         super.render(g, mouseX, mouseY, partialTick);
         g.drawCenteredString(font, title, width / 2, 8, 0xFFFFFFFF);
         g.drawCenteredString(font, subtitle(), width / 2, 8 + font.lineHeight + 2, SUBTITLE_COLOUR);
+        // What the last export/import did, left-aligned under the icons that did it.
+        if (status != CommonComponents.EMPTY) {
+            g.drawString(font, status, MARGIN, statusY,
+                statusIsError ? STATUS_ERROR_COLOUR : STATUS_OK_COLOUR, false);
+        }
     }
 
     private Component subtitle() {
