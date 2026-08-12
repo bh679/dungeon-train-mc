@@ -57,8 +57,15 @@ import java.util.Set;
  * call the editor uses for its previews. No Sable sub-level, no physics, nothing moving: a builder
  * wants a carriage that holds still, and plain blocks persist across a reload for free.</p>
  *
- * <p>Idempotent, keyed on the grass already being there, so reopening a builder world from the
- * world list is a no-op rather than a second train stamped on top of the first.</p>
+ * <p>Idempotent, keyed on the world having a builder mode recorded, so reopening a builder world
+ * from the world list is a no-op rather than a second train stamped on top of the first.</p>
+ *
+ * <p><b>Train Dimensions gets none of the scenery.</b> A portal room stands in the empty basement
+ * under the world, not on a platform, and the mode parks no train for a track to carry — so the
+ * platform and the track are both skipped and the room hangs in open void. That costs nothing to
+ * generate: the builder preset is a {@code minecraft:flat} with an <em>empty</em> layer list, so
+ * void is what the generator already produces and the platform was only ever a stamp on top of
+ * it.</p>
  */
 public final class BuilderWorldSetup {
 
@@ -85,8 +92,10 @@ public final class BuilderWorldSetup {
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         long t0 = System.nanoTime();
 
-        stampPlatform(level);
-        stampTrack(level, dims);
+        if (hasScenery(mode)) {
+            stampPlatform(level);
+            stampTrack(level, dims);
+        }
         int carriages = mode.carriageCount();
         if (carriages > 0) {
             stampTrain(level, dims, carriages);
@@ -104,8 +113,12 @@ public final class BuilderWorldSetup {
 
     /**
      * Re-shape an existing builder world for a different mode: strip the parked train and stamp
-     * the new one. The platform and the track stay — every mode shares them, and rebuilding
-     * 180 000 blocks to change the carriage count would be absurd.
+     * the new one, adding or removing the scenery if the modes disagree about wanting it.
+     *
+     * <p>The platform and the track used to be left alone unconditionally — every mode shared them,
+     * and rebuilding 180 000 blocks to change a carriage count would be absurd. They are no longer
+     * shared: Train Dimensions builds in open void. So the scenery is now rebuilt only when crossing
+     * that boundary, which is at most once per switch and never on a carriage-to-carriage one.</p>
      *
      * <p>Discards whatever was in the old carriages, so callers own the unsaved-changes
      * conversation (see {@code BuilderSwitchPacket}).</p>
@@ -113,18 +126,77 @@ public final class BuilderWorldSetup {
     public static void restamp(ServerLevel level, BuilderMode mode) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
-        int previous = BuilderMode.fromId(data.builderMode())
-                .map(BuilderMode::carriageCount)
-                .orElse(0);
+        BuilderMode previousMode = BuilderMode.fromId(data.builderMode()).orElse(null);
+        int previous = previousMode == null ? 0 : previousMode.carriageCount();
 
         clearTrain(level, dims, previous);
+        // Whatever room was standing goes too: it belongs to the mode being left, and leaving it
+        // would strand an unowned volume in the middle of the next mode's train.
+        clearPreviousRoom(level, data, dims);
+
+        // The scenery, only when the two modes disagree about wanting it. A null previous mode is a
+        // world whose mode was never recorded, which by definition predates the void mode and so
+        // has scenery already.
+        boolean had = previousMode == null || hasScenery(previousMode);
+        boolean wants = hasScenery(mode);
+        if (wants && !had) {
+            stampPlatform(level);
+            stampTrack(level, dims);
+        } else if (!wants && had) {
+            clearScenery(level);
+        }
+
         int carriages = mode.carriageCount();
         if (carriages > 0) {
             stampTrain(level, dims, carriages);
         }
         data.setBuilderMode(mode.id());
-        LOGGER.info("[DungeonTrain] Builder world re-stamped: {} carriage(s) -> '{}' ({} carriage(s))",
-                previous, mode.id(), carriages);
+        // The name and sub type belonged to the build being discarded. Leaving them would point Save
+        // at a template the world no longer holds — the one thing applyOpen's ordering exists to
+        // prevent.
+        data.setBuilderName("");
+        data.setBuilderSubType("", "");
+        LOGGER.info("[DungeonTrain] Builder world re-stamped: {} carriage(s) -> '{}' ({} carriage(s)),"
+                        + " scenery {}",
+                previous, mode.id(), carriages,
+                wants == had ? "unchanged" : (wants ? "restored" : "removed"));
+    }
+
+    /**
+     * Strip the platform and the track back to air, for a mode that builds in void.
+     *
+     * <p>The exact inverse of {@link #stampPlatform} plus {@link #stampTrack}, and written the same
+     * way — section-local over the same 300 × 300 box. Clears the track rows as well as the two
+     * platform courses, because the track sits above the grass rather than in it.</p>
+     */
+    private static void clearScenery(ServerLevel level) {
+        BlockState air = Blocks.AIR.defaultBlockState();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        int minChunk = BuilderWorldLayout.MIN_XZ >> 4;
+        int maxChunk = BuilderWorldLayout.MAX_XZ >> 4;
+
+        for (int cx = minChunk; cx <= maxChunk; cx++) {
+            for (int cz = minChunk; cz <= maxChunk; cz++) {
+                WorldgenForceGuard.forceChunk(level, cx, cz);
+                LevelChunk chunk = level.getChunk(cx, cz);
+
+                int xLo = Math.max(BuilderWorldLayout.MIN_XZ, cx << 4);
+                int xHi = Math.min(BuilderWorldLayout.MAX_XZ, (cx << 4) + 15);
+                int zLo = Math.max(BuilderWorldLayout.MIN_XZ, cz << 4);
+                int zHi = Math.min(BuilderWorldLayout.MAX_XZ, (cz << 4) + 15);
+
+                for (int x = xLo; x <= xHi; x++) {
+                    for (int z = zLo; z <= zHi; z++) {
+                        for (int y = BuilderWorldLayout.Y_BEDROCK;
+                             y <= BuilderWorldLayout.Y_TRACK_RAIL; y++) {
+                            SilentBlockOps.setBlockSectionLocal(level, chunk,
+                                    pos.set(x, y, z).immutable(), air);
+                        }
+                    }
+                }
+                chunk.setUnsaved(true);
+            }
+        }
     }
 
     /**
@@ -166,7 +238,32 @@ public final class BuilderWorldSetup {
         }
     }
 
+    /**
+     * Whether the mode wants the platform and the track under it.
+     *
+     * <p>False for Train Dimensions alone. Everything else is a train being looked at from
+     * somewhere, and needs a floor to stand on and a line for the train to sit on; a portal room is
+     * the whole scene.</p>
+     */
+    public static boolean hasScenery(BuilderMode mode) {
+        return mode != BuilderMode.TRAIN_DIMENSIONS;
+    }
+
+    /**
+     * Has this world already been stamped?
+     *
+     * <p>Keyed on the recorded builder mode rather than on a grass block at the origin. The grass
+     * probe was a fine marker while every mode laid grass; a Train Dimensions world has none, so it
+     * would answer "not set up" forever and re-stamp the room's surroundings on every load.</p>
+     *
+     * <p>The probe stays as the fallback. A world stamped before the mode was persisted has grass
+     * and no mode, and reporting it unstamped would park a second train on top of the first.</p>
+     */
     private static boolean isAlreadySetUp(ServerLevel level) {
+        String recorded = DungeonTrainWorldData.get(level).builderMode();
+        if (recorded != null && !recorded.isEmpty()) {
+            return true;
+        }
         BlockPos probe = new BlockPos(0, BuilderWorldLayout.Y_GRASS, 0);
         WorldgenForceGuard.forceChunk(level, probe.getX() >> 4, probe.getZ() >> 4);
         return level.getBlockState(probe).is(Blocks.GRASS_BLOCK);

@@ -48,14 +48,13 @@ public final class BuilderCinematic {
     private BuilderCinematic() {}
 
     /**
-     * The point the camera holds its aim on.
+     * The point the camera holds its aim on, given the volumes actually being authored.
      *
-     * <p>Centre of the union of the build volumes when this mode parks carriages. With none —
-     * Tracks &amp; Tunnels, Train Dimensions — it falls back to the track at the origin, a block
-     * above the rails so the shot frames the line rather than staring into the bed.</p>
+     * <p>Centre of their union. The overload below derives them from a carriage count, which is the
+     * only thing this could read before a build volume stopped always being a carriage — a portal
+     * room's box has to be passed in, because no carriage count describes it.</p>
      */
-    public static Vec3 focus(int carriages, CarriageDims dims) {
-        List<BoundingBox> volumes = BuilderBounds.buildVolumes(carriages, dims);
+    public static Vec3 focus(List<BoundingBox> volumes, CarriageDims dims) {
         if (volumes.isEmpty()) {
             TrackGeometry g = TrackGeometry.from(dims, BuilderWorldLayout.TRAIN_Y);
             return new Vec3(0.5, g.railY() + 1.0, g.trackCenterZ() + 0.5);
@@ -66,6 +65,18 @@ public final class BuilderCinematic {
                 (first.minX() + last.maxX() + 1) / 2.0,
                 (first.minY() + first.maxY() + 1) / 2.0,
                 (first.minZ() + first.maxZ() + 1) / 2.0);
+    }
+
+    /**
+     * The aim point for a mode that parks carriages.
+     *
+     * <p>With none — Tracks &amp; Tunnels, or Train Dimensions before a room is opened — it falls
+     * back to the track at the origin, a block above the rails so the shot frames the line rather
+     * than staring into the bed. In a void world there is no line to frame, but the origin is also
+     * where the room will stand, so the camera is already pointing at the right place.</p>
+     */
+    public static Vec3 focus(int carriages, CarriageDims dims) {
+        return focus(BuilderBounds.buildVolumes(carriages, dims), dims);
     }
 
     /** Where the camera comes to rest: the player's eye, so the release blend has nothing to do. */

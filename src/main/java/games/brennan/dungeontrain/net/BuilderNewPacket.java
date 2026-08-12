@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderNewRequest;
 import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
+import games.brennan.dungeontrain.builder.BuilderSpawn;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -130,7 +131,7 @@ public record BuilderNewPacket(String modeId, String subTypeId,
 
             // Stand the player clear of whatever was just stamped — a shorter mode would otherwise
             // leave them inside solid blocks.
-            BlockPos spawn = BuilderWorldLayout.spawnPos(DungeonTrainWorldData.get(level).dims());
+            BlockPos spawn = BuilderSpawn.forLevel(level);
             player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
                     player.getYRot(), player.getXRot());
 

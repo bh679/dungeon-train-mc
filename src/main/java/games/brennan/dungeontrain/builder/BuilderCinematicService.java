@@ -95,7 +95,9 @@ public final class BuilderCinematicService {
         CarriageDims dims = data.dims();
         int carriages = carriageCount(data);
 
-        Vec3 focus = BuilderCinematic.focus(carriages, dims);
+        // The volumes rather than the carriage count: an open portal room is a build volume no
+        // carriage count describes, and framing the rails instead would aim at empty void.
+        Vec3 focus = BuilderCinematic.focus(BuilderBounds.volumesFor(level), dims);
         Vec3 eye = BuilderCinematic.eyeOf(player.getX(), player.getY(), player.getZ());
         Vec3 camStart = BuilderCinematic.cameraStart(focus, eye, carriages, dims);
 
@@ -119,7 +121,7 @@ public final class BuilderCinematicService {
      */
     public static float[] facingFrom(ServerLevel level, double x, double y, double z) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        Vec3 focus = BuilderCinematic.focus(carriageCount(data), data.dims());
+        Vec3 focus = BuilderCinematic.focus(BuilderBounds.volumesFor(level), data.dims());
         return BuilderCinematic.faceYawPitch(BuilderCinematic.eyeOf(x, y, z), focus);
     }
 

@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderOpenRequest;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
+import games.brennan.dungeontrain.builder.BuilderSpawn;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -139,7 +140,7 @@ public record BuilderOpenPacket(String modeId, String kindId, String id, String 
 
             // Stand the player clear of what was just stamped — the opened template may be a
             // different height from whatever was parked here before.
-            BlockPos spawn = BuilderWorldLayout.spawnPos(DungeonTrainWorldData.get(level).dims());
+            BlockPos spawn = BuilderSpawn.forLevel(level);
             player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
                     player.getYRot(), player.getXRot());
 

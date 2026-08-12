@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderBounds;
+import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -101,6 +102,7 @@ public final class OutOfBoundsWashRenderer {
 
         Level level = mc.level;
         CarriageDims dims = CarriageDims.DEFAULT; // only used for the protection test's corridor width
+        BuilderMode mode = BuilderMode.fromId(BuilderBoundsState.modeId()).orElse(null);
         BlockPos centre = mc.player.blockPosition();
 
         int minX = centre.getX() - SCAN_RADIUS_XZ;
@@ -108,8 +110,11 @@ public final class OutOfBoundsWashRenderer {
         int minZ = centre.getZ() - SCAN_RADIUS_XZ;
         int maxZ = centre.getZ() + SCAN_RADIUS_XZ;
         // Y is bounded by the build band rather than the player: there is nothing above the
-        // scaffold headroom and nothing below the track worth washing.
-        int minY = BuilderWorldLayout.TRAIN_Y - 1;
+        // scaffold headroom and nothing below the build worth washing. Taken from the volumes rather
+        // than from TRAIN_Y, which is where a carriage sits — a portal room stands two blocks lower,
+        // so a fixed floor here would leave its bottom row out of the sweep.
+        int minY = volumes.stream().mapToInt(BoundingBox::minY).min()
+                .orElse(BuilderWorldLayout.TRAIN_Y) - 1;
         int maxY = volumes.stream().mapToInt(BoundingBox::maxY).max().orElse(BuilderWorldLayout.TRAIN_Y)
                 + SCAN_HEADROOM;
 
@@ -125,7 +130,7 @@ public final class OutOfBoundsWashRenderer {
                     if (level.getBlockState(pos).isAir()) continue;
                     if (BuilderBounds.isInsideBuild(pos, volumes)) continue;
                     // The platform and the track are scenery, not something the builder placed.
-                    if (BuilderWorldLayout.isProtected(pos, dims)) continue;
+                    if (BuilderWorldLayout.isProtected(pos, dims, mode)) continue;
 
                     for (Direction dir : Direction.values()) {
                         neighbour.set(x + dir.getStepX(), y + dir.getStepY(), z + dir.getStepZ());

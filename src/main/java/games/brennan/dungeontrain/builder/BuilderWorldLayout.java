@@ -102,8 +102,18 @@ public final class BuilderWorldLayout {
      * The scenery is not yours to edit: the platform you stand on and the track the train sits on
      * are fixed, so a build can't accidentally start by digging a hole in the floor or pulling up
      * a rail. Everything from the train floor up stays editable — that is the build.
+     *
+     * <p><b>The mode is not optional, and used not to be asked.</b> Train Dimensions has no scenery
+     * at all — a portal room stands in open void — and the rows this protects overlap the room
+     * itself: {@link #Y_TRACK_BED} is 2, which is also {@link #Y_STAND}, the row a room's floor sits
+     * on, and {@link #inCorridor} spans {@code z ∈ [0, width)}, which a room centred on the origin
+     * straddles. Without the mode, part of an open room's own floor is unbreakable and the author
+     * cannot edit the thing they opened.</p>
      */
-    public static boolean isProtected(BlockPos pos, CarriageDims dims) {
+    public static boolean isProtected(BlockPos pos, CarriageDims dims, BuilderMode mode) {
+        if (mode != null && !BuilderWorldSetup.hasScenery(mode)) {
+            return false;   // nothing there to protect
+        }
         int y = pos.getY();
         if (!inPlatform(pos.getX(), pos.getZ())) {
             return false;
@@ -198,5 +208,21 @@ public final class BuilderWorldLayout {
         int x = -size.getX() / 2;
         int z = -size.getZ() / 2;
         return new BlockPos(x, Y_STAND, z);
+    }
+
+    /**
+     * Where to stand a player who is editing a room of {@code size} — inside it, one block above its
+     * floor, at the middle.
+     *
+     * <p>Not {@link #spawnPos}, which stands off the track at platform level looking at a train.
+     * There is no platform in this mode: spawning at that position would drop the player through
+     * open void from the first tick. Inside the room is also simply where the work is.</p>
+     */
+    public static BlockPos portalRoomSpawn(Vec3i size) {
+        BlockPos origin = portalRoomOrigin(size);
+        return new BlockPos(
+                origin.getX() + size.getX() / 2,
+                origin.getY() + 1,
+                origin.getZ() + size.getZ() / 2);
     }
 }
