@@ -73,6 +73,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
+    public static final ModConfigSpec.BooleanValue PROGRESS_SYNC_ON_REMOTE_SERVERS;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
      * GLOBAL client-side read history — persists across worlds and servers (unlike the retired per-world
@@ -139,6 +140,7 @@ public final class ClientDisplayConfig {
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
+        PROGRESS_SYNC_ON_REMOTE_SERVERS = pair.getLeft().progressSyncOnRemoteServers;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
@@ -245,6 +247,18 @@ public final class ClientDisplayConfig {
                 .define("deleteOnReboard", true);
         b.pop();
 
+        b.push("progress");
+        ModConfigSpec.BooleanValue progressSyncOnRemoteServers = b
+                .comment("Whether to hand your relay progress credential to REMOTE multiplayer servers, so your",
+                        "relay-backed Ender Chest and progress follow you onto them. Default false, and the default is the",
+                        "cautious one on purpose: the credential is a bearer secret, so a server holding it could read or",
+                        "overwrite your Ender Chest, and your chest would also carry items between unrelated servers.",
+                        "Single-player and worlds you host on LAN are unaffected by this — there the credential never",
+                        "leaves your own machine. The server must also allow it (progressSyncOnDedicatedServers in the",
+                        "server config); both sides have to agree.")
+                .define("syncOnRemoteServers", false);
+        b.pop();
+
         b.push("sharedBooks");
         ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead = b
                 .comment("Relay pool ids (as strings) of community player-written books you've read. GLOBAL read",
@@ -294,7 +308,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, deleteWorldOnReboard, sharedBooksRead,
+                framerateThrottleEnabled, framerateThrottleFps, deleteWorldOnReboard, progressSyncOnRemoteServers, sharedBooksRead,
                 deathScreenLastNps, politicalFilter, contentMode);
     }
 
@@ -577,6 +591,15 @@ public final class ClientDisplayConfig {
      * {@code false} pre-load: {@link #isLoaded()} is already checked by the mixin, and defaulting
      * off here means a config that never loads simply leaves vanilla's behaviour alone.
      */
+    /**
+     * Whether this client is willing to hand its relay progress credential to a REMOTE server. Default
+     * false — see the config comment. Single-player and LAN hosting don't consult this, because there
+     * the credential never leaves the player's machine.
+     */
+    public static boolean isProgressSyncOnRemoteServers() {
+        return isLoaded() && PROGRESS_SYNC_ON_REMOTE_SERVERS.get();
+    }
+
     public static boolean isFramerateThrottleEnabled() {
         return isLoaded() && FRAMERATE_THROTTLE_ENABLED.get();
     }
@@ -724,6 +747,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
+            ModConfigSpec.BooleanValue progressSyncOnRemoteServers,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,

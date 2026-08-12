@@ -138,6 +138,8 @@ public final class DungeonTrainConfig {
      * after the update — an existing save keeps whatever its toml already says.</p>
      */
     public static final boolean DEFAULT_SHARED_CARRIAGES_ENABLED = true;
+    public static final boolean DEFAULT_PROGRESS_SYNC_ENABLED = true;
+    public static final boolean DEFAULT_PROGRESS_SYNC_ON_DEDICATED_SERVERS = false;
     /**
      * A shared-carriage slot splits three ways: a relay build by anyone (pool), a relay build by a
      * player in this world (own), and a fresh unbuilt template (the remainder). Defaults are
@@ -252,6 +254,8 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGES_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_POOL_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_OWN_CHANCE;
+    public static final ModConfigSpec.BooleanValue PROGRESS_SYNC_ENABLED;
+    public static final ModConfigSpec.BooleanValue PROGRESS_SYNC_ON_DEDICATED_SERVERS;
     public static final ModConfigSpec.BooleanValue DISCOVER_NARRATIVES_ENABLED;
     public static final ModConfigSpec.DoubleValue NARRATIVE_DISCOVERY_RAMP_THRESHOLD;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
@@ -302,6 +306,8 @@ public final class DungeonTrainConfig {
         SHARED_CARRIAGES_ENABLED = pair.getLeft().sharedCarriagesEnabled;
         SHARED_CARRIAGE_POOL_CHANCE = pair.getLeft().sharedCarriagePoolChance;
         SHARED_CARRIAGE_OWN_CHANCE = pair.getLeft().sharedCarriageOwnChance;
+        PROGRESS_SYNC_ENABLED = pair.getLeft().progressSyncEnabled;
+        PROGRESS_SYNC_ON_DEDICATED_SERVERS = pair.getLeft().progressSyncOnDedicatedServers;
         DISCOVER_NARRATIVES_ENABLED = pair.getLeft().discoverNarrativesEnabled;
         NARRATIVE_DISCOVERY_RAMP_THRESHOLD = pair.getLeft().narrativeDiscoveryRampThreshold;
         DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = pair.getLeft().difficultyLevelNoticeToDiscord;
@@ -563,6 +569,24 @@ public final class DungeonTrainConfig {
                         "start the cinematic immediately on spawn as before.")
                 .define("introCinematicChunkPreloadEnabled", DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED);
         b.pop();
+        b.push("progress");
+        ModConfigSpec.BooleanValue progressSyncEnabled = b
+                .comment("Relay-backed player progress. When true, a player's Ender Chest and their earned advancements /",
+                        "lifetime stats are stored on the Dungeon Train relay and restored on login, so progress survives a",
+                        "reinstall, a wiped config folder, or a move to another machine — the local files under",
+                        "config/enderchestpersistence and config/dungeontrain-achievements become a cache of it. Requires the",
+                        "player's client to have granted network consent (Discord Presence's 'use the internet?' prompt).",
+                        "Free Play (cheated) runs are never synced. False keeps progress entirely local, exactly as before.")
+                .define("progressSyncEnabled", DEFAULT_PROGRESS_SYNC_ENABLED);
+        ModConfigSpec.BooleanValue progressSyncOnDedicatedServers = b
+                .comment("Whether progress sync also runs on a REMOTE dedicated server. Default false, and think before",
+                        "turning it on: it has two consequences. The server is handed each player's relay credential, which it",
+                        "could use to read or write their account; and because the Ender Chest then follows the player between",
+                        "unrelated servers, items can be ferried from one server's economy into another's. On single-player and",
+                        "a LAN host the credential never leaves the player's own machine, which is why those are unaffected by",
+                        "this setting.")
+                .define("progressSyncOnDedicatedServers", DEFAULT_PROGRESS_SYNC_ON_DEDICATED_SERVERS);
+        b.pop();
         return new Holder(configVersion, numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
                 difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
                 difficultyScaleHostileGearPastCap,
@@ -575,7 +599,7 @@ public final class DungeonTrainConfig {
                 sharedBookLootMaxChance, sharedBookRepeatGroups, discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriagePoolChance,
-                sharedCarriageOwnChance);
+                sharedCarriageOwnChance, progressSyncEnabled, progressSyncOnDedicatedServers);
     }
 
     /**
@@ -590,6 +614,20 @@ public final class DungeonTrainConfig {
     /** Master toggle for the shared-carriage feature (relay-sourced carriages). */
     public static boolean isSharedCarriagesEnabled() {
         return isLoaded() ? SHARED_CARRIAGES_ENABLED.get() : DEFAULT_SHARED_CARRIAGES_ENABLED;
+    }
+
+    /** Master toggle for relay-backed player progress (Ender Chest + advancements/stats). */
+    public static boolean progressSyncEnabled() {
+        return isLoaded() ? PROGRESS_SYNC_ENABLED.get() : DEFAULT_PROGRESS_SYNC_ENABLED;
+    }
+
+    /**
+     * Whether progress sync is permitted on a REMOTE dedicated server. Off by default — see the config
+     * comment: it hands the server a player credential and lets the Ender Chest ferry items between
+     * unrelated servers.
+     */
+    public static boolean progressSyncOnDedicatedServers() {
+        return isLoaded() ? PROGRESS_SYNC_ON_DEDICATED_SERVERS.get() : DEFAULT_PROGRESS_SYNC_ON_DEDICATED_SERVERS;
     }
 
     /** Probability a shared-carriage slot leases a build by any author from the relay pool. */
@@ -970,6 +1008,8 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue introCinematicChunkPreloadEnabled,
             ModConfigSpec.BooleanValue sharedCarriagesEnabled,
             ModConfigSpec.DoubleValue sharedCarriagePoolChance,
-            ModConfigSpec.DoubleValue sharedCarriageOwnChance
+            ModConfigSpec.DoubleValue sharedCarriageOwnChance,
+            ModConfigSpec.BooleanValue progressSyncEnabled,
+            ModConfigSpec.BooleanValue progressSyncOnDedicatedServers
     ) {}
 }
