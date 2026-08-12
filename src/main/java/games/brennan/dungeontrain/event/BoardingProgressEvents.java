@@ -8,6 +8,8 @@ import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.discord.DifficultyLevelReport;
 import games.brennan.dungeontrain.net.BoardingProgressPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.SnapshotCue;
+import games.brennan.dungeontrain.net.SnapshotCuePacket;
 import games.brennan.dungeontrain.player.PlayerBiomeProgress;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
@@ -26,6 +28,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.joml.primitives.AABBdc;
 
 import javax.annotation.Nullable;
@@ -391,9 +394,19 @@ public final class BoardingProgressEvents {
             if (moved > 0.0) accumulatePortalRoomDistance(player, moved);
 
             // "Train inside a train?" — five seconds in the room body, not the doorway.
+            boolean wasSatisfied = PortalTripTracker.dwellSatisfied(
+                PortalTripTracker.dwell(player.getUUID()));
             if (PortalTripTracker.dwellSatisfied(
                     PortalTripTracker.tickDwell(player.getUUID(), true))) {
                 AchievementEvents.notifyEnteredPortalRoom(player);
+                // The same threshold, but only on the scan it is first crossed: the player has walked
+                // in, looked around, and the room has had time to render. Photographing the teleport
+                // itself would catch the arrival stall instead of the room. Every later scan is the
+                // same visit, and would ask for the same photo over and over.
+                if (!wasSatisfied) {
+                    PacketDistributor.sendToPlayer(player,
+                        new SnapshotCuePacket(SnapshotCue.THRESHOLD, "entered a train dimension"));
+                }
             }
         }
     }

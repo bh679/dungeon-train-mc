@@ -109,6 +109,11 @@ public final class SnapshotCamera {
             case GEAR   -> new double[] { 4.0, 1.8 };
             case LORE   -> new double[] { 3.5, 2.2 };
             case SOCIAL -> new double[] { 4.0, 1.6 };
+            // Close enough that the blocks the player just set are readable, high enough to show
+            // the room around them rather than a wall.
+            case BUILDING -> new double[] { 4.0, 2.0 };
+            // Nearly as wide as SCENIC: the subject is the room they have just walked into.
+            case THRESHOLD -> new double[] { 6.5, 3.0 };
             case SCENIC -> new double[] { 7.0, 3.5 };
         };
     }
@@ -124,6 +129,11 @@ public final class SnapshotCamera {
             case GEAR   -> new double[][] { {1, 0}, {0.7, 0.7}, {0.7, -0.7}, {0, 1}, {0, -1}, {-0.7, 0.7}, {-0.7, -0.7} };
             case LORE   -> new double[][] { {0, 1}, {0, -1}, {-0.7, 0.7}, {-0.7, -0.7}, {-1, 0} };
             case SOCIAL -> new double[][] { {0, 1}, {0, -1}, {0.7, 0.7}, {0.7, -0.7}, {-0.7, 0.7}, {-0.7, -0.7}, {1, 0} };
+            // Side-on first, like GEAR: a carriage interior is long and narrow, so a broadside
+            // angle sees the most of what the player has changed.
+            case BUILDING -> new double[][] { {0, 1}, {0, -1}, {0.7, 0.7}, {0.7, -0.7}, {-0.7, 0.7}, {-0.7, -0.7}, {1, 0} };
+            // Behind first, so the shot looks past the player INTO the room they have just entered.
+            case THRESHOLD -> new double[][] { {-1, 0}, {-0.7, 0.7}, {-0.7, -0.7}, {0, 1}, {0, -1}, {0.7, 0.7}, {0.7, -0.7} };
             case SCENIC -> new double[][] { {-1, 0}, {-0.7, 0.7}, {-0.7, -0.7}, {0, 1}, {0, -1}, {0.7, 0.7}, {0.7, -0.7} };
         };
     }

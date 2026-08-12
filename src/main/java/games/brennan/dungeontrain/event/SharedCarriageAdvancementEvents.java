@@ -6,6 +6,8 @@ import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.net.SnapshotCue;
+import games.brennan.dungeontrain.net.SnapshotCuePacket;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
@@ -22,6 +24,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Map;
 import java.util.UUID;
@@ -61,6 +64,12 @@ public final class SharedCarriageAdvancementEvents {
      */
     private static final Map<UUID, OpenContainer> OPEN_CONTAINER = new ConcurrentHashMap<>();
 
+    /** Minimum wall-clock gap between two ride-photo cues for one player. */
+    static final long CUE_THROTTLE_MS = 5000L;
+
+    /** Player → when they were last cued for a {@link SnapshotCue#BUILDING} photo. */
+    private static final Map<UUID, Long> LAST_CUE_MS = new ConcurrentHashMap<>();
+
     /**
      * A container a player has open: where it is, which carriage it belongs to, and what was in it.
      * The level is carried explicitly — a carriage's blocks live in the plot level, which is not
@@ -87,9 +96,13 @@ public final class SharedCarriageAdvancementEvents {
     /** Fire whichever edit advancement this carriage warrants, or nothing if it isn't a drifting one. */
     private static void creditEdit(ServerPlayer player, net.minecraft.world.level.LevelAccessor levelAccess, BlockPos pos) {
         if (!(levelAccess instanceof ServerLevel level)) return;
-        if (!SharedCarriageGate.canContribute(player)) return;
         SharedCarriageRegistry.Instance inst = resolveCarriage(level, pos);
         if (inst == null || inst.isCulled()) return;
+        // Ahead of the consent gate on purpose: a ride photo never leaves this machine, so the
+        // player gets their record of building in a drifting carriage whether or not the build
+        // itself is allowed to travel. Only the advancements below promise a stranger will see it.
+        cuePhoto(player, "changed a drifting carriage");
+        if (!SharedCarriageGate.canContribute(player)) return;
         // A fresh local build has no author yet — this player is about to become its first. A pooled
         // build they authored themselves is neither: changing your own work back is not a milestone.
         String actionId = !inst.leasedFromPool ? "drift_edit_new"
@@ -152,6 +165,7 @@ public final class SharedCarriageAdvancementEvents {
         inst.enqueue(opened.pos());
         LOGGER.debug("[DungeonTrain] gift left in drifting carriage pIdx={} at {} by {} (queued for upload).",
                 inst.pIdx, opened.pos(), player.getGameProfile().getName());
+        cuePhoto(player, "left a gift in a drifting carriage");
         if (SharedCarriageGate.canContribute(player)) trigger(player, "drift_gift_left");
     }
 
@@ -166,6 +180,7 @@ public final class SharedCarriageAdvancementEvents {
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         OPEN_CONTAINER.remove(event.getEntity().getUUID());
+        LAST_CUE_MS.remove(event.getEntity().getUUID());
     }
 
     // ---------------- Helpers ----------------
@@ -203,5 +218,32 @@ public final class SharedCarriageAdvancementEvents {
 
     private static void trigger(ServerPlayer player, String actionId) {
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, actionId);
+    }
+
+    // ---------------- Ride photo ----------------
+
+    /**
+     * Ask {@code player}'s client for a {@link SnapshotCue#BUILDING} ride photo, at most once per
+     * {@link #CUE_THROTTLE_MS}.
+     *
+     * <p>The throttle is about the wire, not the photo: building means setting blocks several times
+     * a second, and every one of them reaches {@code creditEdit}. The client's own per-tag cooldown
+     * decides whether a shot is actually taken — this only stops a packet riding along with each
+     * block. Deliberately generous: a builder's session yields a photo of the work, not a burst.</p>
+     */
+    private static void cuePhoto(ServerPlayer player, String reason) {
+        long now = System.currentTimeMillis();
+        if (!cueDue(LAST_CUE_MS.get(player.getUUID()), now)) return;
+        LAST_CUE_MS.put(player.getUUID(), now);
+        PacketDistributor.sendToPlayer(player, new SnapshotCuePacket(SnapshotCue.BUILDING, reason));
+    }
+
+    /**
+     * Has {@code player}'s cue throttle elapsed? {@code lastMs} is null when they have not been cued
+     * this session. A {@code now} before the last stamp means the wall clock moved backwards, which
+     * counts as due rather than locking the player out until it catches up.
+     */
+    static boolean cueDue(Long lastMs, long nowMs) {
+        return lastMs == null || nowMs < lastMs || nowMs - lastMs >= CUE_THROTTLE_MS;
     }
 }
