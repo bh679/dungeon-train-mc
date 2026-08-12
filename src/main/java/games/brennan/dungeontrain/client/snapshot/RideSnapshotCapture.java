@@ -61,6 +61,8 @@ public final class RideSnapshotCapture {
     private static final int SUBJECT_CAPTURE_RETRY_FRAMES = 80;
 
     private static volatile boolean capturing = false;
+    /** Set for the duration of an explicit-pose pass only — see {@link #isHidingPlayers()}. */
+    private static volatile boolean hidingPlayers = false;
     private static CinematicCameraController.Pose capturePose;
     private static SnapshotTag captureTag;
 
@@ -82,6 +84,15 @@ public final class RideSnapshotCapture {
     // ── Mixin hooks (camera override) ────────────────────────────────────
     public static boolean isCapturing() { return capturing; }
     public static CinematicCameraController.Pose capturePose() { return capturePose; }
+
+    /**
+     * Whether players must be left out of the pass being rendered right now — read by
+     * {@code SnapshotPlayerHider}, which cancels their render event while it is set.
+     *
+     * <p>True for an explicit-pose capture and nothing else. A gallery shot and an echo portrait are
+     * pictures <em>of</em> somebody and keep their subject; a pose capture frames a place.</p>
+     */
+    public static boolean isHidingPlayers() { return hidingPlayers; }
 
     // ── Director API ─────────────────────────────────────────────────────
     /** Queue a shot of this tag; the pose is built at render time. */
@@ -111,6 +122,12 @@ public final class RideSnapshotCapture {
      * goes — the Train Builder's template photo reuses the very pose its opening cinematic ends on —
      * and a "no clean angle found" answer would silently drop a shot the user explicitly asked for.
      * A fixed pose can't fail, so this arms and fires on the next render frame.</p>
+     *
+     * <p><b>Players are not rendered in this pass.</b> A pose capture frames a <em>place</em> — the
+     * Train Builder photographs the template you just opened — and the camera it was handed sits
+     * roughly where the person who asked for the picture is standing, so their head, or their whole
+     * body and nameplate, would land in front of the thing being photographed. Everywhere else the
+     * player belongs in the shot, which is why this is scoped to the explicit-pose path.</p>
      *
      * <p>The callback <b>owns the image</b> and must close it.</p>
      */
@@ -174,6 +191,7 @@ public final class RideSnapshotCapture {
         // a gallery shot never sneaks in under it. ──
         Consumer<byte[]> subjectCb = null;
         Consumer<NativeImage> imageCb = null;
+        boolean hidePlayers = false;
         if (poseReady()) {
             // First: an explicit pose is already resolved, so once its settle window has passed this
             // always arms and always completes this frame. It can't starve the others by retrying.
@@ -184,6 +202,7 @@ public final class RideSnapshotCapture {
             imageCb = pendingPoseCallback;
             pendingPoseCallback = null;
             pendingPose = null;
+            hidePlayers = true;   // see requestPoseCapture — this pass photographs a place, not a person
         } else if (pendingSubjectCallback != null) {
             Entity subject = level.getEntity(pendingSubjectId);
             CinematicCameraController.Pose pose = (subject != null && subject.isAlive())
@@ -216,6 +235,7 @@ public final class RideSnapshotCapture {
 
         CameraType savedCameraType = mc.options.getCameraType();
         capturing = true;
+        hidingPlayers = hidePlayers;
         // Third-person camera type → detached view (no hand) at the player's normal FOV.
         mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
         gr.setRenderBlockOutline(false);
@@ -229,6 +249,9 @@ public final class RideSnapshotCapture {
             LOGGER.warn("[DungeonTrain] Ride snapshot capture failed", e);
         } finally {
             capturing = false;
+            // In the finally with the rest of the restore: a pass that threw must not leave players
+            // hidden in the real view that renders immediately after this.
+            hidingPlayers = false;
             mc.options.setCameraType(savedCameraType);
             gr.setRenderBlockOutline(true);
             // Re-bind the main target so the original renderLevel pass draws the real view cleanly.
