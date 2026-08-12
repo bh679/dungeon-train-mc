@@ -4,6 +4,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderMirrorFlags;
+import games.brennan.dungeontrain.builder.BuilderOpenRequest;
+import games.brennan.dungeontrain.builder.BuilderRoomResize;
 import games.brennan.dungeontrain.client.DeathScreenLayoutHandler;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.VersionInfo;
@@ -302,12 +304,40 @@ public final class BuilderPauseMenuHandler {
         event.addListener(new BuilderGhostButton(x, y, width, height, GHOST_TRAIN));
         y += rowStride + BuilderPauseMenuLayout.GROUP_GAP;
 
+        // Size, for the one thing the builder edits that has one worth changing. Added only when a
+        // room is open rather than added-and-hidden: the panel's rows are laid out once at init and
+        // a hidden row would still hold its slot, leaving a gap on every other build. Nothing can
+        // open a room while this menu is up, so the condition cannot go stale under it.
+        if (BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(BuilderBoundsState.subTypeId())) {
+            addRoomSizeRow(event, x, y, width, height);
+            y += rowStride + BuilderPauseMenuLayout.GROUP_GAP;
+        }
+
         // Manage.
         event.addListener(new DarkTintedButton(x, y, halfW, height, RENAME,
                 b -> openMenu(new CategoryTemplatesScreen(EditorStatusHudOverlay.category()))));
         event.addListener(new DarkTintedButton(rightX, y, rightW, height, DELETE,
                 b -> confirm(screen, DELETE_PROMPT,
                         "dungeontrain editor reset " + EditorStatusHudOverlay.modelId())));
+    }
+
+    /**
+     * The open room's footprint: three equal cells reading {@code L 21}, {@code H 7}, {@code W 13}.
+     *
+     * <p>Sized and placed exactly like the mirror row above it, because it is the same shape of
+     * control — a row of per-axis cells that acts immediately and leaves the menu open.</p>
+     */
+    private static void addRoomSizeRow(ScreenEvent.Init.Post event, int x, int y, int width, int height) {
+        BuilderRoomResize.Axis[] axes = {
+                BuilderRoomResize.Axis.LENGTH,
+                BuilderRoomResize.Axis.HEIGHT,
+                BuilderRoomResize.Axis.WIDTH};
+        for (int i = 0; i < axes.length; i++) {
+            event.addListener(new BuilderRoomSizeButton(
+                    BuilderPauseMenuLayout.mirrorCellX(x, width, axes.length, i), y,
+                    BuilderPauseMenuLayout.mirrorCellWidthAt(width, axes.length, i), height,
+                    axes[i]));
+        }
     }
 
     /**

@@ -26,6 +26,10 @@ import org.slf4j.Logger;
  *       to {@code 0} at {@code MAX_RANGE}.</li>
  *   <li>No carriages loaded, or all out of range → volume {@code 0} (sound
  *       stays alive but silent so we avoid start/stop churn).</li>
+ *   <li>Inside a hallway portal structure → {@link ClientPortalTrainAudio} owns the volume
+ *       instead: full in the twin corridor, fading out just past its mouth. The corridor is
+ *       stamped world blocks rather than a sub-level, so the curve above has nothing to
+ *       measure there.</li>
  * </ul>
  *
  * <p>Carriages are discovered through the same Sable client-API path used by
@@ -137,6 +141,18 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
         // by page (and rising on back), independent of where the player died.
         if (deathScreenActive) {
             this.volume = Math.max(0.0001f, deathFade);
+            return;
+        }
+
+        // Inside a hallway portal the distance curve below has nothing useful to measure: the twin
+        // corridor the player is walking through is stamped world blocks, not a sub-level, and the
+        // real train is directly overhead in another Y lane. The server hands the client the
+        // structure's geometry instead, and that rule REPLACES the curve rather than being maxed with
+        // it — the whole point is that the engine goes quiet in the room, and the train overhead is
+        // well inside MAX_RANGE.
+        float portal = ClientPortalTrainAudio.volumeAt(player.getX(), player.getY(), player.getZ());
+        if (portal != ClientPortalTrainAudio.NOT_APPLICABLE) {
+            this.volume = Math.max(0.0001f, portal);
             return;
         }
 

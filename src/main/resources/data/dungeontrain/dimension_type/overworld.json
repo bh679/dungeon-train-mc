@@ -17,8 +17,8 @@
   },
   "monster_spawn_block_light_limit": 0,
   "logical_height": 288,
-  "min_y": 32,
-  "height": 288,
+  "min_y": -48,
+  "height": 368,
   "infiniburn": "#minecraft:infiniburn_overworld",
   "effects": "minecraft:overworld"
 }

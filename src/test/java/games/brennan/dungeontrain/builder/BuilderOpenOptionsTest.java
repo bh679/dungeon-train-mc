@@ -50,6 +50,7 @@ final class BuilderOpenOptionsTest {
     void onlyTwoLevelListsDrillIn() {
         assertTrue(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.CONTENTS));
         assertTrue(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE));
+        assertTrue(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.PORTAL_ROOMS));
         // Kinds, then one kind's templates — the same two levels, for the groups that have them.
         assertTrue(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.TRACK_KINDS));
 
@@ -76,9 +77,10 @@ final class BuilderOpenOptionsTest {
     @DisplayName("Only the two-level sources care which level the grid is on")
     void otherSourcesIgnoreTheLevel() {
         for (BuilderOpenOptions.OpenSource source : BuilderOpenOptions.OpenSource.values()) {
-            // The two sources whose levels hold different kinds of thing: stages then carriages,
-            // and track kinds then their templates. Everything else lists one thing throughout.
+            // The sources whose top level is a heading with no file behind it — a stage, a room
+            // mode, a track kind — and whose second level is templates that do have one.
             if (source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE
+                    || source == BuilderOpenOptions.OpenSource.PORTAL_ROOMS
                     || source == BuilderOpenOptions.OpenSource.TRACK_KINDS) {
                 continue;
             }
@@ -107,7 +109,7 @@ final class BuilderOpenOptionsTest {
         for (BuilderNewOptions.SubType subType : BuilderNewOptions.SubType.values()) {
             assertEquals(BuilderOpenOptions.OpenSource.TRACK_KINDS,
                     BuilderOpenOptions.openSourceFor(BuilderMode.TRACKS_TUNNELS, subType));
-            assertEquals(BuilderOpenOptions.OpenSource.TRACK_KINDS,
+            assertEquals(BuilderOpenOptions.OpenSource.PORTAL_ROOMS,
                     BuilderOpenOptions.openSourceFor(BuilderMode.TRAIN_DIMENSIONS, subType));
         }
     }
@@ -161,6 +163,12 @@ final class BuilderOpenOptionsTest {
                 BuilderOpenOptions.OpenSource.CONTENTS, "mess_hall"));
         assertEquals(BuilderPhotoPaths.Kind.PART, BuilderOpenOptions.photoKindFor(
                 BuilderOpenOptions.OpenSource.PARTS, "slatted"));
+
+        // A room mode is a heading with nothing to photograph; the rooms under it are templates
+        // with a picture beside them, taken when the room was last saved.
+        assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.PORTAL_ROOMS, "bedrock_lock"));
+        assertEquals(BuilderPhotoPaths.Kind.PORTAL_ROOM, BuilderOpenOptions.photoKindFor(
+                BuilderOpenOptions.OpenSource.PORTAL_ROOMS, "labrynth", true));
 
         // A track kind is a category rather than a file, so the top level has no photo; one level in
         // the same cells are templates and do.

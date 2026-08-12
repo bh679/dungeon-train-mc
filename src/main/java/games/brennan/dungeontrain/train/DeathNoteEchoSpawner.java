@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.event.DeathNoteEchoController;
 import games.brennan.dungeontrain.narrative.NoteKind;
+import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.playermob.compat.TrainConfinement;
 import games.brennan.playermob.entity.FeelingLedger;
 import games.brennan.playermob.entity.PlayerMobEntity;
@@ -72,12 +73,20 @@ public final class DeathNoteEchoSpawner {
      * at the carriage's SHIPYARD interior floor so Sable binds it to the moving carriage. A world-
      * space position (e.g. the player's live coords) leaves the mob off the moving deck and invisible.
      * Returns false (leaving the note to retry next scan) if the target isn't on a resolvable
-     * carriage group yet.
+     * carriage group yet, or if the group they are standing in holds a portal.
      *
      * <p>{@code noteId} is the relay note this echo came from; it is stamped into the echo's
      * persistent data ({@link #KEY_NOTE_ID}) so the outcome of the fight can be reported back
      * against the right curse — see {@code DeathNoteEvents}. Pass {@code 0} for an echo with no
      * relay note behind it (the dev {@code /dtechotest} spawn); no outcome is then reported.</p>
+     *
+     * <p><b>A portal group defers the curse rather than dropping it.</b> No PlayerMob belongs in a
+     * portal group — the cart between the corridors is sealed and the corridors are twinned transit
+     * copies (see {@link PlayerMobGroupSpawner}'s class javadoc) — but a vengeance echo is owed to the
+     * author, not merely rolled for. Returning false is the existing "not placeable yet" signal:
+     * {@code DeathNoteRefreshEvents.spawnArrivedEchoes} leaves the note in the pool and tries again on
+     * the next scan, so the echo simply waits until the target has walked out of the portal. Nothing
+     * is consumed and no curse is lost.</p>
      */
     public static boolean spawnForTarget(ServerLevel level, ServerPlayer target,
                                          String authorUuid, String authorName, int deathCarriage,
@@ -94,6 +103,11 @@ public final class DeathNoteEchoSpawner {
         // Spawn in the player's own carriage; clamp into this group's range so the slot is valid.
         int pidx = TrainConfinement.carriageIndex(target);
         if (pidx < anchor || pidx >= anchor + groupSize) pidx = anchor;
+        if (PortalCarriageSelection.isPortalGroup(level, pidx)) {
+            LOGGER.debug("[DungeonTrain] DeathNote echo: {} is in a portal group (pIdx={}) — deferring.",
+                    target.getGameProfile().getName(), pidx);
+            return false;
+        }
         BlockPos floorPos = interiorFloorPos(provider, pidx);
         return spawn(level, floorPos, deathCarriage, authorUuid, authorName, target, noteId, kind);
     }

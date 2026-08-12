@@ -33,6 +33,12 @@ import java.util.Optional;
  *   <li>{@link #TRACKS} — the open-air track tile, then pillars
  *       ({@code bottom → middle → top}), then tunnels
  *       ({@code section → portal}).</li>
+ *   <li>{@link #PORTALS} — the pocket room a portal carriage group's two
+ *       corridors open into. Its own category because it is the one piece of
+ *       a portal that is not carriage-shaped: the corridor
+ *       ({@code portal}) and the cart between the corridors
+ *       ({@code portal_middle}) are both carriage variants and live under
+ *       {@link #CARRIAGES}.</li>
  *   <li>{@link #ARCHITECTURE} — placeholder, no models yet (walls, floor,
  *       roof coming later).</li>
  * </ul>
@@ -41,6 +47,7 @@ public enum EditorCategory {
     CARRIAGES("Carriages"),
     CONTENTS("Contents"),
     TRACKS("Tracks"),
+    PORTALS("Portals"),
     ARCHITECTURE("Architecture");
 
     private final String displayName;
@@ -64,6 +71,7 @@ public enum EditorCategory {
             case CARRIAGES -> carriageModels();
             case CONTENTS -> contentsModels();
             case TRACKS -> trackModels();
+            case PORTALS -> portalModels();
             case ARCHITECTURE -> List.of();
         };
     }
@@ -128,6 +136,10 @@ public enum EditorCategory {
         if (tunnelLoc != null) {
             return Optional.of(new Located(TRACKS,
                 new Template.Tunnel(tunnelLoc.variant(), tunnelLoc.name())));
+        }
+        String roomName = PortalRoomEditor.plotContaining(pos, dims);
+        if (roomName != null) {
+            return Optional.of(new Located(PORTALS, new Template.PortalRoom(roomName)));
         }
         return Optional.empty();
     }
@@ -200,6 +212,19 @@ public enum EditorCategory {
         return out;
     }
 
+    /**
+     * Every registered portal room, {@code default} first — the same
+     * {@link TrackVariantRegistry} name ordering the track-side kinds use.
+     */
+    private static List<Template> portalModels() {
+        List<String> names = TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM);
+        List<Template> out = new ArrayList<>(names.size());
+        for (String name : names) {
+            out.add(new Template.PortalRoom(name));
+        }
+        return out;
+    }
+
     /** A category + which specific model the player is standing in. */
     public record Located(EditorCategory category, Template model) {}
 
@@ -232,6 +257,7 @@ public enum EditorCategory {
         for (TunnelVariant t : TunnelVariant.values()) {
             TunnelEditor.clearPlot(overworld, t);
         }
+        PortalRoomEditor.clearAllPlots(overworld, dims);
         // Parts live adjacent to carriages (Z=80+ rows) but span no other
         // category, so we clear them alongside everything else when switching.
         CarriagePartEditor.clearAllPlots(overworld, dims);

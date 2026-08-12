@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderCinematicService;
 import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderSpawn;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -79,7 +80,7 @@ public record BuilderSetupPacket(String modeId) implements CustomPacketPayload {
             // Far enough back that the whole run fits on screen — a three-carriage train seen
             // from the old fixed margin was a wall of hull. Read back off the world rather than
             // off the mode, so the framing follows whatever setupIfNeeded actually parked.
-            BlockPos spawn = BuilderWorldLayout.spawnPos(dims, BuilderWorldSetup.parkedCarriages(data));
+            BlockPos spawn = BuilderSpawn.forLevel(level);
             // Facing the template, not vanilla's yaw 0 — the spawn sits on the +Z side of the
             // train, so yaw 0 (straight down +Z) would put the build squarely behind them.
             float[] facing = BuilderCinematicService.facingFrom(
@@ -87,6 +88,9 @@ public record BuilderSetupPacket(String modeId) implements CustomPacketPayload {
             level.setDefaultSpawnPos(spawn, facing[0]);
             player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
                 facing[0], facing[1]);
+            // First entry, and the case this exists for: in Train Dimensions there is no platform
+            // under that spot at all.
+            BuilderSpawn.startFlying(player);
             // The join-time bounds packet was sent before this stamp existed, so resend now that
             // the carriages (and therefore the build volumes) are real.
             BuilderBoundsPacket.sendTo(player, level);

@@ -64,6 +64,7 @@ public final class EditorTypeMenus {
             case CARRIAGES -> carriageMenus(dims);
             case CONTENTS -> contentsMenus(dims);
             case TRACKS -> trackMenus(dims);
+            case PORTALS -> portalMenus(dims);
             case ARCHITECTURE -> Collections.emptyList();
         };
     }
@@ -205,18 +206,56 @@ public final class EditorTypeMenus {
         return out;
     }
 
+    private static List<EditorTypeMenusPacket.Menu> portalMenus(CarriageDims dims) {
+        List<EditorTypeMenusPacket.Menu> out = new ArrayList<>();
+        List<EditorTypeMenusPacket.CategoryButton> categoryBar = buildCategoryBar();
+        List<EditorTypeMenusPacket.TypeTab> typeStrip = buildPortalsTypeStrip();
+        String activeId = EditorCategory.PORTALS.id();
+
+        addTrackKindMenu(out, TrackKind.PORTAL_ROOM, "Portal Room", dims, activeId,
+            categoryBar, typeStrip, EditorCategory.PORTALS);
+        return out;
+    }
+
+    /**
+     * Type tabs for the PORTALS category. One row today — the pocket room. The corridor and the
+     * cart between the corridors are carriage variants and live under CARRIAGES.
+     */
+    private static List<EditorTypeMenusPacket.TypeTab> buildPortalsTypeStrip() {
+        List<EditorTypeMenusPacket.TypeTab> strip = new ArrayList<>();
+        List<String> names = TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM);
+        if (names.isEmpty()) return strip;
+        strip.add(new EditorTypeMenusPacket.TypeTab(
+            "Portal Room", EditorCategory.PORTALS.name(),
+            TrackKind.PORTAL_ROOM.id(), names.get(0)));
+        return strip;
+    }
+
     private static void addTrackKindMenu(
         List<EditorTypeMenusPacket.Menu> out, TrackKind kind, String typeName, CarriageDims dims,
         String activeId,
         List<EditorTypeMenusPacket.CategoryButton> categoryBar,
         List<EditorTypeMenusPacket.TypeTab> typeStrip
     ) {
-        List<String> names = TrackVariantRegistry.namesFor(kind);
+        addTrackKindMenu(out, kind, typeName, dims, activeId, categoryBar, typeStrip,
+            EditorCategory.TRACKS);
+    }
+
+    private static void addTrackKindMenu(
+        List<EditorTypeMenusPacket.Menu> out, TrackKind kind, String typeName, CarriageDims dims,
+        String activeId,
+        List<EditorTypeMenusPacket.CategoryButton> categoryBar,
+        List<EditorTypeMenusPacket.TypeTab> typeStrip,
+        EditorCategory owner
+    ) {
+        // Sub-variants render as the inline row beside their parent (see subVariantsFor), so they
+        // are filtered out of the top-level list here — same rule the CONTENTS menu follows.
+        List<String> names = TrackVariantGroupStore.topLevelNames(kind);
         if (names.isEmpty()) return;
         BlockPos firstOrigin = TrackSidePlots.plotOrigin(kind, names.get(0), dims);
-        Vec3i footprint = TrackSidePlots.footprint(kind, dims);
+        Vec3i footprint = TrackSidePlots.footprint(kind, names.get(0), dims);
         BlockPos anchor = anchorForZRow(firstOrigin, footprint);
-        String cat = EditorCategory.TRACKS.name();
+        String cat = owner.name();
         String modelId = kind.id();
         List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
         for (String name : names) {
@@ -228,7 +267,7 @@ public final class EditorTypeMenus {
                 name, TrackVariantWeights.weightFor(kind, name),
                 g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
                 cat, modelId, name, p.isUser(), p.isImported(),
-                stageId == null ? "" : stageId));
+                subVariantsFor(kind, name, cat, modelId), stageId == null ? "" : stageId));
         }
         out.add(new EditorTypeMenusPacket.Menu(
             anchor, typeName, rows, false,
@@ -328,6 +367,42 @@ public final class EditorTypeMenus {
             out.add(new EditorTypeMenusPacket.Variant(
                 m.id(), m.weight(), category, m.id(), m.id(),
                 prov.isUser(), prov.isImported()));
+        }
+        return out;
+    }
+
+    /**
+     * Sub-variants of a track-side variant as packet-shaped rows — the horizontal row beside its
+     * parent in the nav menu, the same affordance the CONTENTS rows use. Empty when the name has no
+     * group.
+     *
+     * <p>Cells carry the parent's {@code modelId} (the kind) with the member's own name as the
+     * model name, which is what the click router needs to teleport into the member's plot.</p>
+     */
+    private static List<EditorTypeMenusPacket.Variant> subVariantsFor(
+        TrackKind kind, String parentName, String category, String modelId
+    ) {
+        java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> group =
+            TrackVariantGroupStore.get(kind, parentName);
+        if (group.isEmpty() || group.get().isEmpty()) return Collections.emptyList();
+        List<games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member> members = group.get().members();
+        List<EditorTypeMenusPacket.Variant> out = new ArrayList<>(members.size());
+        for (games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member m : members) {
+            EditorPlotLabels.Provenance prov = EditorPlotLabels.provenanceOf(
+                games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, m.id()));
+            // Same gate + Stage fields the Sub-Variants companion sends for these members, so the two
+            // row builders cannot drift apart. The nav strip draws them as name chips today; the
+            // fields cost nothing and are what a chip would need to show a Stage tint later.
+            String primaryStage = m.stageIds().isEmpty() ? null : m.stageIds().get(0);
+            games.brennan.dungeontrain.template.TemplateGate g =
+                StageStore.effectiveGate(m.gate(), primaryStage);
+            out.add(new EditorTypeMenusPacket.Variant(
+                m.id(), m.weight(),
+                g.minLevel(), g.maxLevel(),
+                games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
+                category, modelId, m.id(),
+                prov.isUser(), prov.isImported(),
+                java.util.List.of(), m.stageIds()));
         }
         return out;
     }

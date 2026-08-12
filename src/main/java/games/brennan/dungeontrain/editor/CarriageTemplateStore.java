@@ -115,40 +115,65 @@ public final class CarriageTemplateStore {
         CACHE.clear();
     }
 
+    /**
+     * The template for {@code variant}, if one exists <b>and</b> it is the size {@code dims}
+     * describes.
+     *
+     * <p><b>The cache holds what is on disk; the dims question is answered per call.</b> The cache is
+     * keyed by variant id alone, so it must not record one caller's dims verdict. It used to: a
+     * lookup at the wrong dims failed the size gate during the load, and the resulting
+     * {@code Optional.empty()} was cached under that id — which then defeated every later lookup at
+     * the <i>right</i> dims for the rest of the session. That is not a hypothetical. The portal
+     * corridor's template is deliberately longer than a carriage
+     * ({@code PortalCorridorSize}), and {@code CarriagePlacer.warmTemplateCaches} sweeps every
+     * registered variant at plain carriage dims on {@code ServerStartedEvent} — so every world load
+     * poisoned the corridor's entry before anything else ran, and the editor showed built-in
+     * geometry however many times you saved.</p>
+     *
+     * <p>Callers should still ask at the right size — {@code CarriagePlacer.variantDims} is the
+     * single answer to what that is — but getting it wrong is now a miss for that caller rather than
+     * a session-long outage for everyone.</p>
+     */
     public static synchronized Optional<StructureTemplate> get(ServerLevel level, CarriageVariant variant, CarriageDims dims) {
         String key = variant.id();
         Optional<StructureTemplate> cached = CACHE.get(key);
-        if (cached != null) return filterForDims(variant, cached, dims);
-        Optional<StructureTemplate> loaded = loadFromConfig(level, variant, dims);
-        if (loaded.isEmpty()) {
-            // Bundled fallback applies to both built-ins and any custom ids
-            // declared in the shipped customs manifest. For built-ins the jar
-            // always ships a default; for customs the jar may ship a default.
-            // If neither tier has the template, the caller falls back to the
-            // hardcoded generator (built-ins only) or no-ops (customs).
-            loaded = loadFromResource(level, variant, dims);
+        if (cached == null) {
+            cached = loadFromConfig(level, variant);
+            if (cached.isEmpty()) {
+                // Bundled fallback applies to both built-ins and any custom ids
+                // declared in the shipped customs manifest. For built-ins the jar
+                // always ships a default; for customs the jar may ship a default.
+                // If neither tier has the template, the caller falls back to the
+                // hardcoded generator (built-ins only) or no-ops (customs).
+                cached = loadFromResource(level, variant);
+            }
+            if (cached.isEmpty()) {
+                LOGGER.warn("[DungeonTrain] No template found for variant={} in config or bundled — caller will fall back (legacy for built-ins, empty for customs).",
+                    variant.id());
+            }
+            CACHE.put(key, cached);
         }
-        if (loaded.isEmpty()) {
-            LOGGER.warn("[DungeonTrain] No template found for variant={} in config or bundled — caller will fall back (legacy for built-ins, empty for customs).",
-                variant.id());
-        }
-        CACHE.put(key, loaded);
-        return loaded;
+        return filterForDims(variant, cached, dims);
     }
 
     /**
-     * Re-check a cached template against the caller's dims — the cache is
-     * populated once per world but a hot-reloaded world could in principle
-     * change dims mid-session (future editor feature). Returning empty if
-     * the dims no longer match falls the caller back to {@code legacyPlaceAt}
-     * for built-ins, or to a no-op for customs.
+     * The size gate — <b>the only place</b> a template is judged against a caller's dims.
+     *
+     * <p>Deliberately not applied during the load: the cache is keyed by variant id and shared by
+     * every caller, so a verdict that depends on the caller's dims must not be baked into it. See
+     * {@link #get}.</p>
+     *
+     * <p>Returning empty falls the caller back to {@code legacyPlaceAt} for built-ins, or to a no-op
+     * for customs.</p>
      */
     private static Optional<StructureTemplate> filterForDims(CarriageVariant variant, Optional<StructureTemplate> cached, CarriageDims dims) {
         if (cached.isEmpty()) return cached;
         if (CarriagePlacer.sizeMatches(cached.get().getSize(), dims)) return cached;
+        Vec3i size = cached.get().getSize();
         LOGGER.warn(
-            "[DungeonTrain] Cached template {} no longer matches dims {}x{}x{} — falling back.",
-            variant.id(), dims.length(), dims.width(), dims.height());
+            "[DungeonTrain] Template {} has bounds {}x{}x{}, caller expected {}x{}x{} — falling back.",
+            variant.id(), size.getX(), size.getY(), size.getZ(),
+            dims.length(), dims.height(), dims.width());
         return Optional.empty();
     }
 
@@ -261,7 +286,7 @@ public final class CarriageTemplateStore {
      * always, and built-ins that have never been promoted.</p>
      */
     public static Optional<StructureTemplate> getBundled(ServerLevel level, CarriageVariant variant, CarriageDims dims) {
-        return loadFromResource(level, variant, dims);
+        return filterForDims(variant, loadFromResource(level, variant), dims);
     }
 
     /**
@@ -293,49 +318,46 @@ public final class CarriageTemplateStore {
         return true;
     }
 
-    private static Optional<StructureTemplate> loadFromConfig(ServerLevel level, CarriageVariant variant, CarriageDims dims) {
+    private static Optional<StructureTemplate> loadFromConfig(ServerLevel level, CarriageVariant variant) {
         // Look in user/templates/ first, then each imported/<pkg>/templates/
         // alphabetically — same precedence as UserContentPaths.findFile.
         Path file = UserContentPaths.findFile(SUBDIR, variant.id() + EXT);
         if (file == null) return Optional.empty();
         try {
             CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
-            return loadAndValidate(level, variant.id(), dims, tag, "config " + file);
+            return load(level, variant.id(), tag, "config " + file);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read config template {} at {}: {}", variant.id(), file, e.toString());
             return Optional.empty();
         }
     }
 
-    private static Optional<StructureTemplate> loadFromResource(ServerLevel level, CarriageVariant variant, CarriageDims dims) {
+    private static Optional<StructureTemplate> loadFromResource(ServerLevel level, CarriageVariant variant) {
         String resource = RESOURCE_PREFIX + variant.id() + EXT;
         try (InputStream in = CarriageTemplateStore.class.getResourceAsStream(resource)) {
             if (in == null) return Optional.empty();
             CompoundTag tag = NbtIo.readCompressed(in, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
-            return loadAndValidate(level, variant.id(), dims, tag, "bundled " + resource);
+            return load(level, variant.id(), tag, "bundled " + resource);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled template {} at {}: {}", variant.id(), resource, e.toString());
             return Optional.empty();
         }
     }
 
-    private static Optional<StructureTemplate> loadAndValidate(
-        ServerLevel level, String id, CarriageDims dims, CompoundTag tag, String origin
+    /**
+     * Read a template off disk. <b>No size check</b> — that belongs to
+     * {@link #filterForDims}, per caller, because this result is shared through an id-keyed cache.
+     */
+    private static Optional<StructureTemplate> load(
+        ServerLevel level, String id, CompoundTag tag, String origin
     ) {
         StructureTemplate template = new StructureTemplate();
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
         template.load(blocks, tag);
 
         Vec3i size = template.getSize();
-        if (!CarriagePlacer.sizeMatches(size, dims)) {
-            LOGGER.warn(
-                "[DungeonTrain] Template {} ({}) has bounds {}x{}x{}, expected {}x{}x{} — ignoring.",
-                id, origin, size.getX(), size.getY(), size.getZ(),
-                dims.length(), dims.height(), dims.width()
-            );
-            return Optional.empty();
-        }
-        LOGGER.info("[DungeonTrain] Loaded template {} from {}", id, origin);
+        LOGGER.info("[DungeonTrain] Loaded template {} from {} ({}x{}x{})",
+            id, origin, size.getX(), size.getY(), size.getZ());
         return Optional.of(template);
     }
 

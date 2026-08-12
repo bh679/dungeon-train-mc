@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "excluded": [
+    "cows",
+    "default",
+    "ender",
+    "features",
+    "narrative",
+    "nature",
+    "portal"
+  ]
+}

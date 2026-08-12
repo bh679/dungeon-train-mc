@@ -31,6 +31,9 @@ import java.util.Optional;
 public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, CarriagePartKind partKind,
                                  TrackKind trackKind) {
 
+    /** The token {@link #subTypeToken} records for a portal room. */
+    public static final String PORTAL_ROOM_SUB_TYPE = "portal_room";
+
     public BuilderOpenRequest {
         id = id == null ? "" : id;
     }
@@ -69,6 +72,17 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
     }
 
     /**
+     * A portal room, which no sub type names.
+     *
+     * <p>Its own factory rather than an arm of {@link #forSelection}, because that method reads a
+     * {@link BuilderNewOptions.SubType} and Train Dimensions has none — the mode's Open arm maps
+     * straight off the mode. See {@code BuilderOpenOptions.openSourceFor}.</p>
+     */
+    public static BuilderOpenRequest forPortalRoom(String id) {
+        return new BuilderOpenRequest(BuilderPhotoPaths.Kind.PORTAL_ROOM, id, null);
+    }
+
+    /**
      * A track template, named by its kind.
      *
      * <p>Separate from {@link #forSelection} because a track build has no
@@ -88,19 +102,56 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
     }
 
     /**
-     * The sub type this request saves back as, so the server records what {@code BuilderSave} needs.
+     * The sub-type token recorded on the world, so a later Save knows what it is looking at.
      *
-     * <p>Null for a track template: the sub types describe what part of a <em>carriage</em> a build
-     * is, and a track build is not one. Callers must gate on {@link #isTrack()} first —
-     * {@code BuilderWorldSetup.applyOpen} branches to its track arm well before it asks this.</p>
+     * <p>A token rather than a {@link BuilderNewOptions.SubType}, because a portal room is not one
+     * and must not become one: that enum is the New screen's cycle control, so a fourth value would
+     * offer "Portal Room" on a screen that cannot make one. The field on the world has always been a
+     * free string, so the three readers that parse it — {@code BuilderSave.subTypeOf},
+     * {@code BuilderSavePacket.kindOf}, {@code BuilderBoundsPacket} — each answer for this token
+     * explicitly.</p>
+     */
+    public String subTypeToken() {
+        return switch (kind) {
+            case CARRIAGE -> BuilderNewOptions.SubType.WHOLE_CARRIAGE.id();
+            case CONTENTS -> BuilderNewOptions.SubType.CARRIAGE_ROOM.id();
+            case PART -> BuilderNewOptions.SubType.PARTS.id();
+            case PORTAL_ROOM -> PORTAL_ROOM_SUB_TYPE;
+            // A track build records no sub type — see subType(), and BuilderWorldSetup's track arm,
+            // which sets the field itself.
+            case TRACK -> "";
+        };
+    }
+
+    /**
+     * Which sub type this request's template belongs to, or <b>null</b> for a portal room.
+     *
+     * <p>Read for one thing: how much train to park around what was opened
+     * ({@code BuilderWorldLayout.parkedCarriages}). Null rather than a stand-in, because a room is
+     * not stamped on a carriage at all — {@code applyOpen} takes the room path before any of that
+     * arithmetic, and {@code parkedCarriages} already reads null as "the mode's own count". Naming
+     * some sub type here instead would be a quiet claim that a room is a kind of carriage build.</p>
+     *
+     * <p>Not the same question as {@link #subTypeToken}, which is what gets recorded on the world so
+     * a later Save knows which store to write.</p>
+     *
+     * <p>Null for a track template too, and for the same reason: the sub types describe what part of
+     * a <em>carriage</em> a build is, and neither a rail nor a room is one. Callers gate on
+     * {@link #isTrack()} / {@link #isPortalRoom()} first — {@code BuilderWorldSetup.applyOpen}
+     * branches to both arms well before it asks this.</p>
      */
     public BuilderNewOptions.SubType subType() {
         return switch (kind) {
             case CARRIAGE -> BuilderNewOptions.SubType.WHOLE_CARRIAGE;
             case CONTENTS -> BuilderNewOptions.SubType.CARRIAGE_ROOM;
             case PART -> BuilderNewOptions.SubType.PARTS;
-            case TRACK -> null;
+            case TRACK, PORTAL_ROOM -> null;
         };
+    }
+
+    /** Whether this request is for a portal room rather than something on a carriage. */
+    public boolean isPortalRoom() {
+        return kind == BuilderPhotoPaths.Kind.PORTAL_ROOM;
     }
 
     public String partKindId() {

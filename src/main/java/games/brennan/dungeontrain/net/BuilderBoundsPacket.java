@@ -106,17 +106,14 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
             return new BuilderBoundsPacket(List.of(), "", "", 0, "", "", "", -1, "");
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
-        int carriages = BuilderWorldSetup.parkedCarriages(data);
-        CarriageDims dims = data.dims();
         String modeId = data.builderMode() == null ? "" : data.builderMode();
         // Empty name = an unnamed draft; the client uses it to decide whether Save can write
         // straight away or has to ask for a name first.
         String buildName = data.builderName() == null ? "" : data.builderName();
         // volumesFor rather than buildVolumes: a track mode parks no carriage but does have a plot,
         // and sending the empty list for it is what left the wash and the info panel dead there.
-        List<BoundingBox> volumes =
-                BuilderBounds.volumesFor(carriages, BuilderTrackBuild.kindOf(data), dims);
-        return new BuilderBoundsPacket(volumes, modeId,
+        // The level-reading form, so an open portal room's own box comes through too.
+        return new BuilderBoundsPacket(BuilderBounds.volumesFor(overworld), modeId,
                 buildName, data.builderMirror().pack(),
                 orEmpty(data.builderSubType()), orEmpty(data.builderPartKind()),
                 orEmpty(data.builderStage()), weightOf(data), orEmpty(data.builderTrackKind()));

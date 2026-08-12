@@ -53,11 +53,7 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
         if (!level.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
             return null;
         }
-        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        int carriages = BuilderMode.fromId(data.builderMode())
-                .map(BuilderMode::carriageCount)
-                .orElse(0);
-        List<BoundingBox> volumes = BuilderBounds.buildVolumes(carriages, dims);
+        List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
         if (volumes.isEmpty()) {
             return null;
         }
@@ -65,9 +61,9 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
                 .filter(b -> pos != null && b.isInside(pos))
                 .findFirst()
                 .orElse(volumes.get(0));
-        return new BuilderCarriagePlot(level,
-                new BlockPos(box.minX(), box.minY(), box.minZ()),
-                new Vec3i(dims.length(), dims.height(), dims.width()));
+        // Size from the box, not from dims: a portal room volume is the author's size and only
+        // matches the carriage figures by coincidence.
+        return new BuilderCarriagePlot(level, BuilderBounds.originOf(box), BuilderBounds.sizeOf(box));
     }
 
     @Override

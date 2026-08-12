@@ -31,7 +31,13 @@ public final class BuilderPhotoPaths {
          * <p>Needs a {@link TrackKind} the way {@link #PART} needs a {@link CarriagePartKind}: the
          * eight kinds each have their own directory, and {@code default} exists in all of them.</p>
          */
-        TRACK("track");
+        TRACK("track"),
+        /**
+         * A portal room. Also a track-side template on disk — {@code portals/room} — but its own kind
+         * rather than a {@link #TRACK} with a kind attached, because the Open grid browses rooms by
+         * what they do at their walls and never by the eight track kinds.
+         */
+        PORTAL_ROOM("portal_room");
 
         private final String id;
 
@@ -86,6 +92,8 @@ public final class BuilderPhotoPaths {
             case TRACK -> trackKind == null
                     ? Optional.empty()
                     : Optional.of(withPng(TrackVariantStore.fileFor(trackKind, id)));
+            case PORTAL_ROOM -> Optional.of(withPng(
+                    TrackVariantStore.fileFor(TrackKind.PORTAL_ROOM, id)));
         };
     }
 
@@ -112,6 +120,9 @@ public final class BuilderPhotoPaths {
                     : Optional.empty();
             case TRACK -> trackKind != null && TrackVariantStore.sourceTreeAvailable()
                     ? Optional.of(withPng(TrackVariantStore.sourceFileFor(trackKind, id)))
+                    : Optional.empty();
+            case PORTAL_ROOM -> TrackVariantStore.sourceTreeAvailable()
+                    ? Optional.of(withPng(TrackVariantStore.sourceFileFor(TrackKind.PORTAL_ROOM, id)))
                     : Optional.empty();
         };
     }

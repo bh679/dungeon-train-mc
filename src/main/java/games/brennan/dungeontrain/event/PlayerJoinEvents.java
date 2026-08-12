@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderCinematicService;
+import games.brennan.dungeontrain.builder.BuilderSpawn;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.net.BuilderBoundsPacket;
@@ -22,6 +23,7 @@ import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
+import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -198,6 +200,9 @@ public final class PlayerJoinEvents {
         DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(), bandData.startsWithTrain(), bandData.getTrainY()));
         // Train Builder build volumes — empty (and therefore inert) in every ordinary world.
         BuilderBoundsPacket.sendTo(player, player.serverLevel().getServer().overworld());
+        // Reopening a builder world: no setup packet fires for one that is already stamped, so this
+        // is the only chance to leave the player hovering rather than dropping into the void.
+        BuilderSpawn.startFlying(player);
         // If the intro cinematic will play, open the loading screen + freeze the
         // player from world-entry so they don't fall while the train settles.
         CinematicIntroService.armPreloadIfNeeded(player);
@@ -815,12 +820,16 @@ public final class PlayerJoinEvents {
      * Walk down from the world ceiling through air/fluid/leaves/vines until
      * a solid block is hit. Returns the Y of that block (ground Y); caller
      * stands the player at {@code groundY + 1}. Returns
-     * {@code level.getMinBuildHeight() - 1} (sentinel: no ground found) if
-     * every scanned block is passable.
+     * {@code WorldFloor.bedrockY(level) - 1} (sentinel: no ground found) if
+     * every scanned block is passable. The scan stops at the world's bedrock
+     * rather than the level's build floor, so it never descends into the
+     * portal basement below it.
      */
     private static int findGroundY(ServerLevel level, int x, int z, boolean allowWater) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int minY = level.getMinBuildHeight();
+        // Stop at the world's floor, not the level's: below the bedrock is the portal system's
+        // basement, and a twin structure's roof is not ground to stand a player on.
+        int minY = WorldFloor.bedrockY(level);
         int startY = level.getMaxBuildHeight() - 1;
         for (int y = startY; y >= minY; y--) {
             pos.set(x, y, z);
@@ -863,7 +872,7 @@ public final class PlayerJoinEvents {
      * ice spikes lands the player at snow-Y but inside a tall ice column).
      */
     private static boolean isSafePlayerPos(ServerLevel level, int x, int y, int z, boolean allowWater) {
-        if (y < level.getMinBuildHeight() + VOID_CLEARANCE) return false;
+        if (y < WorldFloor.bedrockY(level) + VOID_CLEARANCE) return false;
         if (y > level.getMaxBuildHeight() - CEILING_CLEARANCE) return false;
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();

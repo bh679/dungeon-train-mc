@@ -73,7 +73,13 @@
     },
     {
       "id": "acientcity",
-      "weight": 1
+      "weight": 1,
+      "stages": [
+        "nether",
+        "obsidian",
+        "quartz",
+        "deepdark"
+      ]
     },
     {
       "id": "savana",

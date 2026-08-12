@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderOpenRequest;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
+import games.brennan.dungeontrain.builder.BuilderSpawn;
 import games.brennan.dungeontrain.builder.BuilderTrackPlot;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.builder.BuilderWorldSetup;
@@ -198,17 +199,19 @@ public record BuilderOpenPacket(String modeId, String kindId, String id, String 
 
             // Stand the player clear of what was just stamped — the opened template may be a
             // different height from whatever was parked here before, and a different *length*:
-            // opening a room parks one carriage where a whole carriage parks three, so the standoff
-            // is sized from what is actually out there rather than from the bare-minimum floor. A
-            // track plot gets its own standoff instead — that framing is the train's length, and a
-            // track build has no train.
-            DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+            // opening a room parks one carriage where a whole carriage parks three. A track plot
+            // gets its own standoff — that framing is the train's length, and a track build has no
+            // train. Everything else goes through BuilderSpawn, which sizes the standoff off what is
+            // actually parked and stands you inside the room when the thing opened is one.
             BlockPos spawn = request.isTrack()
-                    ? BuilderTrackPlot.viewPos(request.trackKind(), data.dims())
-                    : BuilderWorldLayout.spawnPos(data.dims(),
-                            BuilderWorldSetup.parkedCarriages(data));
+                    ? BuilderTrackPlot.viewPos(request.trackKind(),
+                            DungeonTrainWorldData.get(level).dims())
+                    : BuilderSpawn.forLevel(level);
             player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
                     player.getYRot(), player.getXRot());
+            // Hovering, not falling: the spot above may be open void, and creative removes fall
+            // damage without stopping the fall.
+            BuilderSpawn.startFlying(player);
 
             // Backfill the library: this template is now in the world, so if it has never been
             // photographed this is a free chance to take the picture. Built from the *opened* id

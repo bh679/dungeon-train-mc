@@ -19,6 +19,8 @@
     "NoiseBasedChunkGeneratorMixin",
     "ChunkGeneratorDecorationMixin",
     "ChunkGeneratorStructureStateMixin",
+    "WorldGenRegionFloorMixin",
+    "StructureBasementMixin",
     "ChunkStatusSpawnMixin",
     "RandomStateMixin",
     "ServerGamePacketListenerImplSignBookMixin",
@@ -62,7 +64,9 @@
     "client.ModelBlockRendererUpsideDownMixin",
     "client.MinecraftFramerateThrottleMixin",
     "client.SoundEngineMusicFadeMixin",
-    "client.LanguageSelectEntryLogoMixin"
+    "client.LanguageSelectEntryLogoMixin",
+    "client.SectionOcclusionGraphPortalSwapMixin",
+    "client.LevelRendererPortalSwapCompileMixin"
   ],
   "server": [],
   "injectors": {

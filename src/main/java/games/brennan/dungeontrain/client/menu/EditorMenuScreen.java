@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.net.EditorStatusPacket;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +21,16 @@ import java.util.Locale;
  * teleports the player back to where they entered the editor from.
  */
 public final class EditorMenuScreen implements MenuScreen {
+
+    /**
+     * Panel width while the Walls row is showing, in world units.
+     *
+     * <p>Sized for the longest mode label, "Walls: Endless Repetition", at
+     * {@link CommandMenuLayout#TEXT_SCALE} — the shared default fits about fifteen characters and
+     * that is twenty-five. A constant rather than a measurement because {@code entries()} has no
+     * {@code Font} to hand, and the set of modes is fixed and small.</p>
+     */
+    private static final double WALLS_ROW_PANEL_WIDTH = 2.6;
 
     @Override public String title() { return "Editor"; }
 
@@ -139,7 +150,18 @@ public final class EditorMenuScreen implements MenuScreen {
         if ("carriages".equals(category) && modelId != null && !modelId.isEmpty()) {
             out.add(new CommandMenuEntry.DrillIn(
                 "Contents",
-                new CarriageContentsAllowScreen(modelId)));
+                CarriageContentsAllowScreen.forCarriage(modelId)));
+        }
+
+        // The same drilldown for a portal room, but only while its Contents setting is on — with it
+        // Off the room draws nothing and the toggles would steer an empty pool. Addressed by room
+        // NAME, not modelId: modelId is the kind tag "portal_room" and is shared by every room.
+        if ("portals".equals(category) && modelName != null && !modelName.isEmpty()
+            && games.brennan.dungeontrain.portal.PortalRoomSettings
+                .parse(EditorStatusHudOverlay.roomMode()).contents().furnishes()) {
+            out.add(new CommandMenuEntry.DrillIn(
+                "Contents",
+                CarriageContentsAllowScreen.forPortalRoom(modelName)));
         }
 
         // Weight — Triple row: [-] / Weight (N) / [+] for every category that
@@ -149,6 +171,34 @@ public final class EditorMenuScreen implements MenuScreen {
         // tick rebuild as the HUD picks up the new value.
         CommandMenuEntry weightRow = weightTripleFor(category, modelId, modelName, currentWeight);
         if (weightRow != null) out.add(weightRow);
+
+        // Size — portals only. A portal room is the one plot whose box the author chooses: length
+        // outright (it is the distance walked underneath a portal, not a footprint) and width and
+        // height above the floor the corridor mouth sets. Position-resolved (no model id in the
+        // command), so these need the player inside the plot.
+        if ("portals".equals(category)) {
+            CommandMenuEntry lengthRow = sizeTripleFor("length", "Length",
+                EditorStatusHudOverlay.roomLength());
+            if (lengthRow != null) out.add(lengthRow);
+            CommandMenuEntry widthRow = sizeTripleFor("width", "Width",
+                EditorStatusHudOverlay.roomWidth());
+            if (widthRow != null) out.add(widthRow);
+            CommandMenuEntry heightRow = sizeTripleFor("height", "Height",
+                EditorStatusHudOverlay.roomHeight());
+            if (heightRow != null) out.add(heightRow);
+            CommandMenuEntry modeRow = wallsModeRowFor(EditorStatusHudOverlay.roomMode());
+            if (modeRow != null) out.add(modeRow);
+            CommandMenuEntry copiesRow = copiesRowFor(EditorStatusHudOverlay.roomMode());
+            if (copiesRow != null) out.add(copiesRow);
+            CommandMenuEntry contentsRow = roomContentsRowFor(EditorStatusHudOverlay.roomMode());
+            if (contentsRow != null) out.add(contentsRow);
+            CommandMenuEntry exitsRow = exitsRowFor(EditorStatusHudOverlay.roomMode());
+            if (exitsRow != null) out.add(exitsRow);
+            CommandMenuEntry exitEveryRow = exitEveryTripleFor(EditorStatusHudOverlay.roomMode());
+            if (exitEveryRow != null) out.add(exitEveryRow);
+            CommandMenuEntry exitMoveRow = exitMoveTripleFor(EditorStatusHudOverlay.roomMode());
+            if (exitMoveRow != null) out.add(exitMoveRow);
+        }
 
         // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases
         // drilldown to the OW/Nether/Void/End checkbox popup. Only shown for weighted, addressable
@@ -183,7 +233,8 @@ public final class EditorMenuScreen implements MenuScreen {
         // Editor mirror toggles — author one octant, the editor mirrors live
         // (and rebuilds on save) across the enabled axes. Available in every
         // template plot (off by default outside tunnels).
-        if (("carriages".equals(category) || "contents".equals(category) || "tracks".equals(category))
+        if (("carriages".equals(category) || "contents".equals(category) || "tracks".equals(category)
+             || "portals".equals(category))
             && modelName != null && !modelName.isEmpty()) {
             addMirrorToggles(out);
         }
@@ -256,6 +307,10 @@ public final class EditorMenuScreen implements MenuScreen {
                 if (modelName == null || modelName.isEmpty()) return null;
                 prefix = "dungeontrain editor tracks weight " + modelId + " " + modelName;
             }
+            case "portals" -> {
+                if (modelName == null || modelName.isEmpty()) return null;
+                prefix = "dungeontrain editor portals weight " + modelId + " " + modelName;
+            }
             case "contents" -> prefix = "dungeontrain editor contents weight " + modelId;
             default -> { return null; }
         }
@@ -264,6 +319,152 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry weight = new CommandMenuEntry.TypeArg(label, "0-100", prefix);
         CommandMenuEntry plus   = new CommandMenuEntry.Stay("+", prefix + " inc");
         return new CommandMenuEntry.Triple(minus, weight, plus, 0.10, 0.90);
+    }
+
+    /**
+     * Build a {@link CommandMenuEntry.Triple} stepper for one axis of a portal room's box, or null
+     * when the server hasn't reported a size (i.e. this isn't a portal room plot).
+     *
+     * <p>Same shape as {@link #weightTripleFor}: side cells nudge by one and keep the menu open so
+     * the player can tap; the middle cell drops into typing mode for an exact value. The command is
+     * position-resolved — the server reads which plot the player is standing in — so no model id is
+     * spliced in and there is nothing to go stale.</p>
+     *
+     * <p>Values are clamped server-side: width and height cannot go below what the corridor mouth
+     * needs to stay sealed, and height cannot reach into the next portal pair's Y lane. Tapping
+     * {@code −} past the floor simply stops.</p>
+     */
+    /**
+     * The row that says what a portal room does at its walls, or null outside a portal room plot.
+     *
+     * <p>One cycling button rather than a stepper or a drilldown: there are three modes, so any of
+     * them is at most two taps away, and staying open lets the player tap past the one they do not
+     * want. Position-resolved like the size rows — the server reads which plot they are standing
+     * in.</p>
+     */
+    static CommandMenuEntry wallsModeRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.modeLabel(currentMode),
+            "dungeontrain editor portals mode next");
+    }
+
+    /**
+     * Wider than the shared default while a Walls row is showing.
+     *
+     * <p>{@link CommandMenuLayout#PANEL_WIDTH} fits about fifteen characters, which covered every
+     * row this menu had until "Walls: Endless Repetition" — twenty-five — ran off both edges.
+     * Widening only this screen, and only while the row is present, keeps every other menu in the
+     * game at the width it was tuned at; the renderer and the raycast both read
+     * {@code CommandMenuState.panelWidth()}, so they cannot disagree about it.</p>
+     */
+    @Override
+    public double panelWidth() {
+        String mode = EditorStatusHudOverlay.roomMode();
+        if (mode == null || EditorStatusPacket.NO_MODE.equals(mode)) {
+            return CommandMenuLayout.PANEL_WIDTH;
+        }
+        return Math.max(CommandMenuLayout.PANEL_WIDTH, WALLS_ROW_PANEL_WIDTH);
+    }
+
+    /**
+     * The Copies row, or null unless the walls are set to repeat the whole room — the only mode that
+     * makes copies for the setting to describe.
+     */
+    static CommandMenuEntry copiesRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        if (!games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode).copiesApply()) {
+            return null;
+        }
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.copiesLabel(currentMode),
+            "dungeontrain editor portals copies next");
+    }
+
+    /**
+     * The Contents row — whether the room is furnished from the ordinary contents pool, and how a
+     * furnishing smaller than the room is fitted into it.
+     *
+     * <p>Shown for every portal room, unlike Copies: furnishing is not a property of the walls, so a
+     * sealed room can take one as readily as a repeating one.</p>
+     */
+    static CommandMenuEntry roomContentsRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.roomContentsLabel(currentMode),
+            "dungeontrain editor portals contents next");
+    }
+
+    /**
+     * The Exits row, or null unless the walls repeat — only an endless room has anywhere to put an
+     * extra way back to the train.
+     *
+     * <p>Shown for <b>both</b> endless modes, unlike Copies. What Copies describes is what an
+     * appended tile contains, which Endless Open decides for itself; getting lost is not a property
+     * of the walls, so an Endless Open room is asked the question too — it just answers Off by
+     * default.</p>
+     */
+    static CommandMenuEntry exitsRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        if (!games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode).exitsApply()) {
+            return null;
+        }
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.exitsLabel(currentMode),
+            "dungeontrain editor portals exits next");
+    }
+
+    /**
+     * The stepper for the {@code X} in "every X tiles" / "one tile in X", or null when Exits is not
+     * showing or is set to Off.
+     *
+     * <p>Hidden rather than greyed out at Off, because a spacing for corridors that are not being
+     * laid is a control with nothing on the other end of it — the same reason the Copies row is
+     * absent rather than dimmed under a mode that makes no copies.</p>
+     */
+    static CommandMenuEntry exitEveryTripleFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode);
+        if (!settings.exitsApply() || !settings.exits().lays()) return null;
+
+        String prefix = "dungeontrain editor portals exitevery";
+        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
+        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
+            EditorPlotLabelsRenderer.exitEveryLabel(currentMode), "tiles", prefix);
+        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
+        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+    }
+
+    /**
+     * The moved-exit stepper, or null unless Exits is set to Random.
+     *
+     * <p>Random alone: walling off the way straight back out is only fair when there is something
+     * unpredictable to go and find. Under the lattice a player could work out the walk in advance,
+     * and under Off it would wall the only way onward there is.</p>
+     */
+    static CommandMenuEntry exitMoveTripleFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(currentMode);
+        if (!settings.exitsApply() || !settings.exits().movesApply()) return null;
+
+        String prefix = "dungeontrain editor portals exitmove";
+        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
+        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
+            EditorPlotLabelsRenderer.exitMoveLabel(currentMode), "0-10", prefix);
+        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
+        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+    }
+
+    static CommandMenuEntry sizeTripleFor(String axis, String label, int current) {
+        if (current == EditorStatusPacket.NO_SIZE) return null;
+        String prefix = "dungeontrain editor portals " + axis;
+        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
+        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
+            label + " (" + current + ")", "blocks", prefix);
+        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
+        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
     }
 
     /**
@@ -287,6 +488,10 @@ public final class EditorMenuScreen implements MenuScreen {
             case "tracks" -> {
                 if (modelName == null || modelName.isEmpty()) return null;
                 prefix = "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName;
+            }
+            case "portals" -> {
+                if (modelName == null || modelName.isEmpty()) return null;
+                prefix = "dungeontrain editor portals " + sub + " " + modelId + " " + modelName;
             }
             case "contents" -> prefix = "dungeontrain editor contents " + sub + " " + modelId;
             default -> { return null; }
@@ -329,6 +534,12 @@ public final class EditorMenuScreen implements MenuScreen {
                     "New", "name",
                     "dungeontrain editor tracks new " + modelId);
             }
+            case "portals" -> {
+                if (modelId == null || modelId.isEmpty()) yield null;
+                yield new CommandMenuEntry.TypeArg(
+                    "New", "name",
+                    "dungeontrain editor portals new " + modelId);
+            }
             default -> null;
         };
     }
@@ -363,6 +574,10 @@ public final class EditorMenuScreen implements MenuScreen {
                 "Remove",
                 new ConfirmScreen("Remove the current variant for '" + model + "'?",
                     "dungeontrain editor tracks reset " + modelId));
+            case "portals" -> new CommandMenuEntry.DrillIn(
+                "Remove",
+                new ConfirmScreen("Remove the current variant for '" + model + "'?",
+                    "dungeontrain editor portals reset " + modelId));
             default -> null;
         };
     }
@@ -377,7 +592,7 @@ public final class EditorMenuScreen implements MenuScreen {
     private static CommandMenuEntry clearEntryFor(String category, String model) {
         if (model == null || model.isEmpty()) return null;
         return switch (category) {
-            case "carriages", "contents", "parts" -> new CommandMenuEntry.DrillIn(
+            case "carriages", "contents", "parts", "portals" -> new CommandMenuEntry.DrillIn(
                 "Clear",
                 new ConfirmScreen("Clear all blocks in '" + model + "'?",
                     "dungeontrain editor clear"));

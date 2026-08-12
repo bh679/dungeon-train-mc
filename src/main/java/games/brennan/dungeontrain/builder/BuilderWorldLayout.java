@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -143,26 +144,50 @@ public final class BuilderWorldLayout {
      * The scenery is not yours to edit: the platform you stand on and the track the train sits on
      * are fixed, so a build can't accidentally start by digging a hole in the floor or pulling up
      * a rail. Everything from the train floor up stays editable — that is the build.
+     *
+     * <p><b>The mode is not optional, and used not to be asked.</b> Train Dimensions has no scenery
+     * at all — a portal room stands in open void — and the rows this protects overlap the room
+     * itself: {@link #Y_TRACK_BED} is 2, which is also {@link #Y_STAND}, the row a room's floor sits
+     * on, and {@link #inCorridor} spans {@code z ∈ [0, width)}, which a room centred on the origin
+     * straddles. Without the mode, part of an open room's own floor is unbreakable and the author
+     * cannot edit the thing they opened.</p>
      */
     public static boolean isProtected(BlockPos pos, CarriageDims dims) {
-        return isProtected(pos, dims, false);
+        return isProtected(pos, dims, null, false);
     }
 
     /**
-     * As above, for a world that may be holding a track-side build.
+     * As above, for a world that may be holding a track-side build or building in void.
      *
-     * <p>The track rows stop being protected while one is open, because by then they are not the
-     * track: opening a track template erases the corridor so the line can be drawn as ghosts, and
-     * the scene puts the build itself down there — a pillar column stands from {@link #Y_STAND},
-     * which is the bed row. Protecting those rows then defends nothing and locks the bottom of
-     * every column the builder is trying to author, which is exactly what it did.</p>
+     * <p>Two ways the track rows stop being protected, and they are different reasons:</p>
+     * <ul>
+     *   <li><b>A track build is open.</b> By then those rows are not the track — opening a track
+     *       template erases the corridor so the line can be drawn as ghosts, and the build itself
+     *       goes down there; a pillar column stands from {@link #Y_STAND}, which is the bed row.
+     *       Protecting them defends nothing and locks the bottom of every column being authored.</li>
+     *   <li><b>The mode has no scenery at all.</b> Train Dimensions builds in open void, and
+     *       {@link #Y_TRACK_BED} is also {@link #Y_STAND}, the row a portal room's floor sits on,
+     *       over a z-range a room centred on the origin straddles — so part of an open room's own
+     *       floor was unbreakable.</li>
+     * </ul>
      *
-     * <p>The floor and the grass stay protected regardless. Nothing is ever authored there, and a
-     * hole in the world floor of a builder dimension is not a recoverable mistake.</p>
+     * <p>The floor and the grass stay protected in the track case. Nothing is ever authored there,
+     * and a hole in the world floor of a builder dimension is not a recoverable mistake — but in a
+     * void mode there is no floor to hole.</p>
      *
+     * @param mode           the builder mode, or null when it isn't known
      * @param trackBuildOpen whether a track-side template is currently open in this world
      */
+    /** As above, for a caller that knows about a track build but not about the mode. */
     public static boolean isProtected(BlockPos pos, CarriageDims dims, boolean trackBuildOpen) {
+        return isProtected(pos, dims, null, trackBuildOpen);
+    }
+
+    public static boolean isProtected(BlockPos pos, CarriageDims dims, BuilderMode mode,
+                                      boolean trackBuildOpen) {
+        if (mode != null && !BuilderWorldSetup.hasScenery(mode)) {
+            return false;   // nothing there to protect
+        }
         int y = pos.getY();
         if (!inPlatform(pos.getX(), pos.getZ())) {
             return false;
@@ -239,5 +264,42 @@ public final class BuilderWorldLayout {
     /** Pads wrap a run of more than one carriage, exactly as {@code spawnGroup} does. */
     public static boolean usesPads(int carriages) {
         return carriages > 1;
+    }
+
+    /**
+     * Lowest corner of the portal room the Train Dimensions mode opens, for a room of {@code size}.
+     *
+     * <p>Centred on the origin on both horizontal axes and standing on the grass, so the room sits
+     * where the train would and the spawn framing already points at it. The mode parks no carriages
+     * ({@link BuilderMode#carriageCount()} is zero), so nothing is in the way.</p>
+     *
+     * <p>The floor row is at {@link #Y_STAND} rather than {@link #Y_GRASS}: a room template carries
+     * its own floor, so laying it on the grass would bury that floor one block deep and leave the
+     * author standing on the wrong surface.</p>
+     *
+     * <p>The biggest room the game allows is {@code PortalRoomLayout.MAX_LENGTH} × {@code MAX_HEIGHT}
+     * × {@code MAX_WIDTH} — 48 × 11 × 48 — against a {@link #SIZE}-block platform 96 tall, so even
+     * the largest sits inside the world with room to walk around it.</p>
+     */
+    public static BlockPos portalRoomOrigin(Vec3i size) {
+        int x = -size.getX() / 2;
+        int z = -size.getZ() / 2;
+        return new BlockPos(x, Y_STAND, z);
+    }
+
+    /**
+     * Where to stand a player who is editing a room of {@code size} — inside it, one block above its
+     * floor, at the middle.
+     *
+     * <p>Not {@link #spawnPos}, which stands off the track at platform level looking at a train.
+     * There is no platform in this mode: spawning at that position would drop the player through
+     * open void from the first tick. Inside the room is also simply where the work is.</p>
+     */
+    public static BlockPos portalRoomSpawn(Vec3i size) {
+        BlockPos origin = portalRoomOrigin(size);
+        return new BlockPos(
+                origin.getX() + size.getX() / 2,
+                origin.getY() + 1,
+                origin.getZ() + size.getZ() / 2);
     }
 }
