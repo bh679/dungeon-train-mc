@@ -81,6 +81,17 @@ public final class VariantHoverHudOverlay {
         hoverStacks = Collections.emptyList();
     }
 
+    /**
+     * True when the crosshair is on a cell the server has pushed variants for.
+     * The hover push is editor-plot-only, so this doubles as the client-side
+     * "this block is a variant cell" test used by {@link VariantCopyPickClient}
+     * to decide whether middle-click copies variants or falls through to
+     * vanilla pick-block.
+     */
+    public static boolean hasHover() {
+        return !hoverStacks.isEmpty();
+    }
+
     @SubscribeEvent
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         LayeredDraw.Layer overlay = (graphics, deltaTracker) -> {

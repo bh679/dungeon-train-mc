@@ -58,6 +58,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_JOIN_REPORT_POSTED = "joinReportPosted";
     private static final String TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE = "breakBlocksOnContactOverride";
     private static final String TAG_USED_CARRIAGE_IDS = "usedSharedCarriageIds";
+    private static final String TAG_DIFFICULTY_TRAVELLED_OFFSET = "difficultyTravelledOffset";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -72,6 +73,14 @@ public final class DungeonTrainWorldData extends SavedData {
     private Boolean breakBlocksOnContactOverride;
     /** Per-world one-shot: true once the join-info report (DT version + train seed + mods) has been posted to Discord. */
     private boolean joinReportPosted;
+    /**
+     * Per-world admin difficulty travelled-offset (carriages) — the authoritative copy of
+     * {@code DungeonTrainConfig.DIFFICULTY_TRAVELLED_OFFSET}, which is a GLOBAL server-config
+     * value and would otherwise leak an offset set in one world into every other world.
+     * Written through {@code DifficultyOffset.set}; mirrored back into the config on world load
+     * by {@code DifficultyOffsetLifecycle}. 0 = fully automatic.
+     */
+    private int difficultyTravelledOffset;
 
     /**
      * Transient scheduling set of chunk keys ({@link net.minecraft.world.level.ChunkPos#toLong}) whose
@@ -186,7 +195,7 @@ public final class DungeonTrainWorldData extends SavedData {
         readyMirrorChunks.remove(chunkKey);
     }
 
-    private static DungeonTrainWorldData createDefault() {
+    static DungeonTrainWorldData createDefault() {
         return new DungeonTrainWorldData(
                 DungeonTrainConfig.getTrainY(),
                 true,
@@ -196,7 +205,7 @@ public final class DungeonTrainWorldData extends SavedData {
         );
     }
 
-    private static DungeonTrainWorldData load(CompoundTag tag) {
+    static DungeonTrainWorldData load(CompoundTag tag) {
         int y = tag.contains(TAG_TRAIN_Y)
             ? clampY(tag.getInt(TAG_TRAIN_Y))
             : DungeonTrainConfig.getTrainY();
@@ -232,6 +241,11 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_JOIN_REPORT_POSTED)) {
             data.joinReportPosted = tag.getBoolean(TAG_JOIN_REPORT_POSTED);
         }
+        // Absent on worlds saved before the offset became per-world → 0 → fully automatic,
+        // which is exactly the reset those worlds should get.
+        if (tag.contains(TAG_DIFFICULTY_TRAVELLED_OFFSET)) {
+            data.difficultyTravelledOffset = clampDifficultyOffset(tag.getInt(TAG_DIFFICULTY_TRAVELLED_OFFSET));
+        }
         // getIntArray returns an empty array for an absent key, so worlds saved before shared carriages
         // simply start having placed nothing.
         data.usedCarriageIds.loadFrom(tag.getIntArray(TAG_USED_CARRIAGE_IDS));
@@ -258,6 +272,7 @@ public final class DungeonTrainWorldData extends SavedData {
             tag.putBoolean(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE, breakBlocksOnContactOverride);
         }
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
+        tag.putInt(TAG_DIFFICULTY_TRAVELLED_OFFSET, difficultyTravelledOffset);
         tag.putIntArray(TAG_USED_CARRIAGE_IDS, usedCarriageIds.toIntArray());
         return tag;
     }
@@ -286,6 +301,28 @@ public final class DungeonTrainWorldData extends SavedData {
         if (d == null || this.startingDimension == d) return;
         this.startingDimension = d;
         setDirty();
+    }
+
+    /**
+     * This world's admin difficulty travelled-offset in carriages; 0 = fully automatic.
+     * Mirrored into the global server config on world load — read it through
+     * {@code DungeonTrainConfig.getDifficultyTravelledOffset()} everywhere else.
+     */
+    public int getDifficultyTravelledOffset() {
+        return difficultyTravelledOffset;
+    }
+
+    /** Store the world's difficulty travelled-offset (clamped to the config's range). */
+    public void setDifficultyTravelledOffset(int value) {
+        int clamped = clampDifficultyOffset(value);
+        if (this.difficultyTravelledOffset == clamped) return;
+        this.difficultyTravelledOffset = clamped;
+        setDirty();
+    }
+
+    private static int clampDifficultyOffset(int value) {
+        return Math.max(DungeonTrainConfig.MIN_DIFFICULTY_TRAVELLED_OFFSET,
+                Math.min(DungeonTrainConfig.MAX_DIFFICULTY_TRAVELLED_OFFSET, value));
     }
 
     /** This world's PlayerMob 1-in-N override, or null when the world follows the global default. */
