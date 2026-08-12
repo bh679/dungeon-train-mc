@@ -6503,6 +6503,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-open-single-carriage",
+      "version": "0.552.0",
+      "type": "fix",
+      "title": "Open the one thing you picked, and see the train around it",
+      "summary": "Opening a carriage room from outside the train used to fill the track with a whole run of carriages, which made it hard to tell whether the template you clicked had loaded at all. Now the builder parks exactly the one thing you opened, and draws the rest of the train \u2014 the carriages either side and the flatbed ends that cap them \u2014 as faint ghosts, so you can still judge how your build reads in a run without being able to edit anything but your own. Clicking a stage now opens the carriages inside it instead of starting an unrelated new build, browsing a carriage under one stage no longer leaves the next thing you open wearing that stage's parts, and from inside a carriage the builder offers only what you can actually author in there. There's a Ghost Train toggle in the pause menu if you'd rather see just your build.",
+      "highlights": [
+        "Opening a carriage room or a part parks that one carriage, not a full run",
+        "The rest of the train is drawn as ghost blocks, flatbed ends included \u2014 toggle it from the pause menu",
+        "Clicking a stage opens the carriages under it instead of starting a new build",
+        "A carriage browsed under one stage no longer dresses the next build you open in that stage's parts",
+        "Inside a carriage, the builder offers rooms and parts \u2014 not the carriage shell you're standing in",
+        "Opening a saved carriage that can't be read at this world's size now says so instead of quietly loading an empty one"
+      ],
+      "pr": 946,
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
