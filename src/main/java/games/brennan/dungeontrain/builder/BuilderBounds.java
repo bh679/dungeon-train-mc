@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.builder;
 
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
@@ -53,10 +54,10 @@ public final class BuilderBounds {
     /**
      * The one box a portal room occupies, or empty when {@code size} is null.
      *
-     * <p>The second shape this class has to describe, and it differs from a carriage run on both
-     * counts that matter: there is exactly one box, and its size is the <b>author's</b> rather than
-     * {@link CarriageDims}'. Every consumer of this list therefore has to take a volume's extent
-     * from the box it was handed and not from {@code dims} — see {@link #sizeOf}.</p>
+     * <p>A third shape beside the carriage run and the track plot, and it differs from both on the
+     * count that matters: its size is the <b>author's</b> rather than {@link CarriageDims}'. Every
+     * consumer therefore has to take a volume's extent from the box it was handed and not from
+     * {@code dims} — see {@link #sizeOf}.</p>
      */
     public static List<BoundingBox> roomVolume(Vec3i size) {
         if (size == null) {
@@ -71,19 +72,47 @@ public final class BuilderBounds {
     }
 
     /**
-     * What this builder world is authoring right now: a portal room's box, or the carriage run.
+     * The single box a track-side build is authored in, or empty when this isn't one.
      *
-     * <p>The single seam the whole feature turns on. {@code BuilderSave}, {@code BuilderDirtyCheck},
-     * {@code BuilderBoundsPacket}, the cinematic and the plot lookup all ask this one question, so
-     * teaching it the room shape is what makes Save, the dirty light and the out-of-bounds wash
-     * follow a room without any of them knowing what a portal room is.</p>
+     * <p>One box where a carriage build gets one per carriage, because a track template is one
+     * template — you open a tunnel, not a run of three. Same list type all the same, so every
+     * downstream consumer (the wash renderer, the dirty check, the bounds packet) keeps taking the
+     * same shape and needs no track-specific arm of its own.</p>
+     */
+    public static List<BoundingBox> trackVolumes(TrackKind kind, CarriageDims dims) {
+        return kind == null ? List.of() : List.of(BuilderTrackPlot.volume(kind, dims));
+    }
+
+    /**
+     * The volumes this builder world is authoring right now, whichever kind of build it holds.
+     *
+     * <p>The one call every consumer should make: a track build and a carriage build differ in where
+     * the boxes come from and in nothing else, and spreading that fork across four callers is how
+     * they drift.</p>
+     *
+     * <p>Takes the count that was actually parked rather than deriving one from the mode. Those are
+     * different questions — opening a room parks one carriage where its mode would park three — and
+     * cutting three boxes out of a one-carriage world reads two templates' worth of empty air.</p>
+     */
+    public static List<BoundingBox> volumesFor(int parkedCarriages, TrackKind trackKind,
+                                               CarriageDims dims) {
+        if (parkedCarriages > 0) {
+            return buildVolumes(parkedCarriages, dims);
+        }
+        return trackVolumes(trackKind, dims);
+    }
+
+    /**
+     * The same question, read off the world — including the one answer the pure form cannot give.
+     *
+     * <p>A portal room's box is sized by the room, so it cannot be derived from a carriage count or a
+     * track kind; it needs the open room's name and {@link PortalRoomSizes}. Everything else defers
+     * to {@link #volumesFor(int, TrackKind, CarriageDims)}.</p>
      */
     public static List<BoundingBox> volumesFor(ServerLevel level) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
-        BuilderMode mode = BuilderMode.fromId(data.builderMode()).orElse(null);
-        if (mode == BuilderMode.TRAIN_DIMENSIONS
-                && BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(data.builderSubType())) {
+        if (BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(data.builderSubType())) {
             String name = data.builderName();
             // No name means no room is open — an empty list, which every consumer already reads as
             // "nothing to save, nothing in bounds".
@@ -91,10 +120,8 @@ public final class BuilderBounds {
                     ? List.of()
                     : roomVolume(PortalRoomSizes.sizeOf(name, dims));
         }
-        // What is actually parked, not what the mode would park for a whole carriage: opening a room
-        // or a part parks one carriage, and asking the mode would cut three volumes out of a
-        // one-carriage world.
-        return buildVolumes(BuilderWorldSetup.parkedCarriages(data), dims);
+        return volumesFor(BuilderWorldSetup.parkedCarriages(data),
+                BuilderTrackBuild.kindOf(data), dims);
     }
 
     /**

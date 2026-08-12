@@ -32,6 +32,8 @@ public final class BuilderBoundsState {
     private static volatile String subTypeId = "";
     private static volatile String partKindId = "";
     private static volatile String stageId = "";
+    /** Which track-side kind is on the plot; empty for a carriage build. */
+    private static volatile String trackKindId = "";
     /** Pick weight of the saved template; negative when it doesn't apply (a draft, or a non-carriage). */
     private static volatile int weight = -1;
 
@@ -45,7 +47,12 @@ public final class BuilderBoundsState {
         subTypeId = orEmpty(packet.subTypeId());
         partKindId = orEmpty(packet.partKindId());
         stageId = orEmpty(packet.stageId());
+        trackKindId = orEmpty(packet.trackKindId());
         weight = packet.weight();
+
+        // The ghosts are drawn rather than meshed, so this is all it takes — no chunk rebuild, and
+        // nothing to keep in step with the world's own geometry.
+        ClientTrackGhost.update(trackKindId, volumes);
     }
 
     public static String subTypeId() {
@@ -58,6 +65,10 @@ public final class BuilderBoundsState {
 
     public static String stageId() {
         return stageId;
+    }
+
+    public static String trackKindId() {
+        return trackKindId;
     }
 
     public static int weight() {
@@ -111,6 +122,8 @@ public final class BuilderBoundsState {
         subTypeId = "";
         partKindId = "";
         stageId = "";
+        trackKindId = "";
         weight = -1;
+        ClientTrackGhost.clear();
     }
 }

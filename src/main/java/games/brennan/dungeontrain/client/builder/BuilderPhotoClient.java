@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.client.CinematicCameraController;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshotCapture;
 import games.brennan.dungeontrain.net.BuilderPhotoPacket;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -57,7 +58,9 @@ public final class BuilderPhotoClient {
             return;
         }
         CarriagePartKind partKind = CarriagePartKind.fromId(packet.partKindId());
-        Optional<Path> target = BuilderPhotoPaths.photoFor(kind.get(), packet.id(), partKind);
+        TrackKind trackKind = TrackKind.fromId(packet.trackKindId());
+        Optional<Path> target =
+                BuilderPhotoPaths.photoFor(kind.get(), packet.id(), partKind, trackKind);
         if (target.isEmpty()) {
             LOGGER.warn("[DungeonTrain] Builder photo: no path for {} '{}'", packet.kindId(), packet.id());
             return;
@@ -65,7 +68,8 @@ public final class BuilderPhotoClient {
         if (packet.onlyIfMissing() && Files.isRegularFile(target.get())) {
             return;   // backfill only — this template already has its picture
         }
-        Optional<Path> source = BuilderPhotoPaths.sourcePhotoFor(kind.get(), packet.id(), partKind);
+        Optional<Path> source =
+                BuilderPhotoPaths.sourcePhotoFor(kind.get(), packet.id(), partKind, trackKind);
 
         Vec3 cam = new Vec3(packet.camX(), packet.camY(), packet.camZ());
         Vec3 focus = new Vec3(packet.focusX(), packet.focusY(), packet.focusZ());
@@ -77,7 +81,7 @@ public final class BuilderPhotoClient {
             write(image, target.get(), source);
             // The New screen may already have cached "this template has no photo"; without this the
             // thing you just saved keeps showing the fallback until the world is reloaded.
-            BuilderPhotoTextures.invalidate(kind.get(), packet.id(), partKind);
+            BuilderPhotoTextures.invalidate(kind.get(), packet.id(), partKind, trackKind);
         });
     }
 

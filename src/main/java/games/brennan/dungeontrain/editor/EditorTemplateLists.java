@@ -131,6 +131,17 @@ public final class EditorTemplateLists {
     }
 
     /**
+     * Template names for any track-side kind, {@code default} first.
+     *
+     * <p>The general form of {@link #tracks()} and {@link #tunnels}, for callers that hold a
+     * {@link TrackKind} rather than knowing which one they want — the Builder's Open grid browses
+     * all eight, so naming them one method at a time would mean eight near-identical methods.</p>
+     */
+    public static List<String> trackVariants(TrackKind kind) {
+        return kind == null ? List.of() : TrackVariantRegistry.namesFor(kind);
+    }
+
+    /**
      * Tunnel template names for one variant, {@code default} first.
      *
      * <p>Tunnels are keyed by variant <em>and</em> name — {@code PORTAL}'s {@code default} and

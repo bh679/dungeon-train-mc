@@ -6,12 +6,14 @@ import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderOpenOptions;
 import games.brennan.dungeontrain.builder.BuilderOpenRequest;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.builder.BuilderTrackGroup;
 import games.brennan.dungeontrain.editor.EditorTemplateLists;
 import games.brennan.dungeontrain.net.BuilderDirtyRequestPacket;
 import games.brennan.dungeontrain.net.BuilderNewPacket;
 import games.brennan.dungeontrain.net.BuilderOpenPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.portal.PortalRoomMode;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -67,9 +69,9 @@ public final class BuilderOpenScreen extends Screen {
     /**
      * The row being looked inside, empty at the top level.
      *
-     * <p>Two lists have a second level and they share this one field, because from the screen's side
-     * they are the same gesture: a contents group holding its sub-variants, and a Stage holding the
-     * carriage variants you might build for it.</p>
+     * <p>Three lists have a second level and they share this one field, because from the screen's
+     * side they are the same gesture: a contents group holding its sub-variants, a Stage holding the
+     * carriage variants you might build for it, and a track kind holding its named templates.</p>
      *
      * <p>A group's members are real things to open — {@code maze}'s copper room is a room — but they
      * are not siblings of {@code maze}, and listing them flat beside it (as this screen first did, and
@@ -77,6 +79,17 @@ public final class BuilderOpenScreen extends Screen {
      * drills in instead.</p>
      */
     private String group = "";
+
+    /**
+     * Which part of the line is being looked inside, null at the top level.
+     *
+     * <p>The track modes browse three levels deep where the carriage ones browse two — type, then
+     * kind, then template — so they need a second field to say how far in they are. It is a level
+     * rather than a control because the four types are the first real choice this mode offers, and
+     * the Open screen answers a choice with a wall of pictures. Behind a cycle button they were
+     * something you had to already know were there.</p>
+     */
+    private BuilderTrackGroup trackGroup;
 
     /** The ids currently on show, rebuilt whenever the type selection changes. */
     private List<String> entries = List.of();
@@ -119,6 +132,18 @@ public final class BuilderOpenScreen extends Screen {
         y += BuilderTypeControls.ART_HEIGHT + ROW_GAP;
 
         List<AbstractWidget> controls = new ArrayList<>();
+        // The chosen type comes back out the same way a group does, and sits in the same row — so
+        // two levels deep the controls read "Tunnels · Tunnel Section", which is where you are.
+        if (trackGroup != null) {
+            controls.add(Button.builder(Component.translatable(trackGroup.labelKey()),
+                            b -> {
+                                trackGroup = null;
+                                group = "";   // the kind under it goes with the type
+                                scrollY = 0;
+                                rebuild();
+                            })
+                    .bounds(controlX, y, CONTROL_WIDTH, ROW_HEIGHT).build());
+        }
         if (BuilderNewOptions.hasSubTypes(mode)) {
             controls.add(BuilderTypeControls.subType(controlX, y, CONTROL_WIDTH, ROW_HEIGHT, mode, subType,
                     value -> {
@@ -127,32 +152,27 @@ public final class BuilderOpenScreen extends Screen {
                         scrollY = 0;
                         rebuild();
                     }));
-            if (BuilderOpenOptions.showsPartKind(mode, subType)) {
-                controls.add(BuilderTypeControls.partKind(controlX, y, CONTROL_WIDTH, ROW_HEIGHT, partKind,
-                        value -> {
-                            partKind = value;
-                            scrollY = 0;   // each kind has its own templates
-                            rebuild();
-                        }));
-            }
         }
-        // Looking inside a group: the group sits under the type controls, and clicking it comes back
-        // out. It reads as a second half of the same choice — "Carriage Room, the Maze ones" — which
-        // is what it is.
-        //
-        // Outside the sub-type block, not inside it, because it is the only way back out of a drill-in
-        // and Train Dimensions has no sub type to hang it off: while this lived in there, drilling
-        // into a room mode left the four mode tiles unreachable short of cycling the mode away and
-        // back.
+        // Looking inside a group: it sits beside whichever control chose the list — the sub type for
+        // a carriage, the track group for a rail — sharing its row, and clicking it comes back out.
+        // It reads as a second half of the same choice — "Carriage Room, the Maze ones", "Tunnels,
+        // the Section ones" — which is what it is.
         if (!group.isEmpty()) {
-            controls.add(Button.builder(
-                            groupLabel(),
+            controls.add(Button.builder(groupLabel(),
                             b -> {
                                 group = "";
                                 scrollY = 0;
                                 rebuild();
                             })
                     .bounds(controlX, y, CONTROL_WIDTH, ROW_HEIGHT).build());
+        }
+        if (BuilderOpenOptions.showsPartKind(mode, subType)) {
+            controls.add(BuilderTypeControls.partKind(controlX, y, CONTROL_WIDTH, ROW_HEIGHT, partKind,
+                    value -> {
+                        partKind = value;
+                        scrollY = 0;   // each kind has its own templates
+                        rebuild();
+                    }));
         }
         y = BuilderTypeControls.layoutRows(controls, controlX, CONTROL_WIDTH, y, ROW_HEIGHT, ROW_GAP);
         controls.forEach(this::addRenderableWidget);
@@ -194,7 +214,14 @@ public final class BuilderOpenScreen extends Screen {
                     ? EditorTemplateLists.stages()
                     : EditorTemplateLists.carriages();
             case PARTS -> EditorTemplateLists.parts(partKindValue());
-            case TRACK_TILES -> EditorTemplateLists.tracks();
+            // Either the kinds in this group, or one kind's templates — see activeTrackKind.
+            case TRACK_KINDS -> {
+                TrackKind kind = activeTrackKind();
+                if (kind != null) {
+                    yield EditorTemplateLists.trackVariants(kind);
+                }
+                yield trackGroup == null ? trackGroupIds() : trackKindIds();
+            }
             // All four modes at the top, whether or not anything is authored for them — see
             // BuilderOpenOptions.OpenSource.PORTAL_ROOMS.
             case PORTAL_ROOMS -> group.isEmpty()
@@ -218,6 +245,93 @@ public final class BuilderOpenScreen extends Screen {
             out.add(m.id());
         }
         return out;
+    }
+
+    /**
+     * Which track kind's templates the grid is showing, or null when it is showing the kinds
+     * themselves.
+     *
+     * <p>Three ways to land on a kind, and the first two are what "sub options where appropriate"
+     * means: a mode with no group choice at all has exactly one kind, a group holding one kind has
+     * nothing to choose between, and only a group holding several needs the extra level. Skipping it
+     * where it would offer a single tile is the difference between a menu and a maze.</p>
+     */
+    private TrackKind activeTrackKind() {
+        if (BuilderOpenOptions.trackGroupsFor(mode).isEmpty()) {
+            return BuilderOpenOptions.defaultTrackKind(mode);
+        }
+        if (trackGroup == null) {
+            return null;   // still choosing which part of the line
+        }
+        if (trackGroup.isSingleKind()) {
+            return trackGroup.soleKind();
+        }
+        return group.isEmpty() ? null : TrackKind.fromId(group);
+    }
+
+    /** The types this mode offers as grid values. The screen's first question. */
+    private List<String> trackGroupIds() {
+        List<BuilderTrackGroup> groups = BuilderOpenOptions.trackGroupsFor(mode);
+        List<String> ids = new ArrayList<>(groups.size());
+        for (BuilderTrackGroup value : groups) {
+            ids.add(value.id());
+        }
+        return ids;
+    }
+
+    /** Whether the grid is showing the types themselves rather than anything inside one. */
+    private boolean showingTrackGroups() {
+        return trackGroup == null && !BuilderOpenOptions.trackGroupsFor(mode).isEmpty();
+    }
+
+    /** The current group's kinds as grid values — ids, because every entry in the grid is one. */
+    private List<String> trackKindIds() {
+        List<String> ids = new ArrayList<>(trackGroup.kinds().size());
+        for (TrackKind kind : trackGroup.kinds()) {
+            ids.add(kind.id());
+        }
+        return ids;
+    }
+
+    /**
+     * The label on the come-back-out button.
+     *
+     * <p>A track kind is a fixed thing the mod ships and so has a translated name; a contents group
+     * or a Stage is an authored id, which gets read as words rather than looked up.</p>
+     */
+    private Component groupLabel() {
+        BuilderOpenOptions.OpenSource source = BuilderOpenOptions.openSourceFor(mode, subType);
+        if (source == BuilderOpenOptions.OpenSource.PORTAL_ROOMS) {
+            // Not BuilderLabels.pretty: a room mode's id would come back as "Bedrock Lock", which is
+            // not what the tile the player clicked said.
+            return portalModeLabel(group);
+        }
+        TrackKind kind = TrackKind.fromId(group);
+        return kind != null && source == BuilderOpenOptions.OpenSource.TRACK_KINDS
+                ? Component.translatable(trackKindLabelKey(kind))
+                : Component.literal(BuilderLabels.pretty(group));
+    }
+
+    /**
+     * Step into a type tile.
+     *
+     * <p>Navigation, not an action, which is why it is handled here rather than through
+     * {@link #activate}: a type names no template, so there is nothing for the server to open and
+     * nothing for the unsaved-work prompt to warn about.</p>
+     */
+    private boolean enterTrackGroup(String value) {
+        return BuilderTrackGroup.fromId(value).map(picked -> {
+            trackGroup = picked;
+            group = "";
+            scrollY = 0;
+            rebuild();
+            return true;
+        }).orElse(false);
+    }
+
+    /** Translation key for a track kind's tile caption and its come-back-out button. */
+    private static String trackKindLabelKey(TrackKind kind) {
+        return "gui.dungeontrain.builder.track_kind." + kind.id();
     }
 
     /**
@@ -258,6 +372,19 @@ public final class BuilderOpenScreen extends Screen {
         if (source == BuilderOpenOptions.OpenSource.PORTAL_ROOMS && group.isEmpty()) {
             return portalModeLabel(bare);
         }
+        // A type or kind tile names something the mod ships, not something a builder authored, so it
+        // reads out of the language file. One more level in, these same cells are template names.
+        if (source == BuilderOpenOptions.OpenSource.TRACK_KINDS && activeTrackKind() == null) {
+            if (showingTrackGroups()) {
+                return BuilderTrackGroup.fromId(bare)
+                        .map(g -> Component.translatable(g.labelKey()))
+                        .orElseGet(() -> Component.literal(BuilderLabels.pretty(bare)));
+            }
+            TrackKind kind = TrackKind.fromId(bare);
+            if (kind != null) {
+                return Component.translatable(trackKindLabelKey(kind));
+            }
+        }
         return Component.literal(BuilderLabels.pretty(bare));
     }
 
@@ -281,23 +408,25 @@ public final class BuilderOpenScreen extends Screen {
      * <p>Not {@code BuilderLabels.pretty(group)} for every source: a room mode's id would come back
      * as "Bedrock Lock", which is not what the tile the player clicked said.</p>
      */
-    private Component groupLabel() {
-        return BuilderOpenOptions.openSourceFor(mode, subType) == BuilderOpenOptions.OpenSource.PORTAL_ROOMS
-                ? portalModeLabel(group)
-                : Component.literal(BuilderLabels.pretty(group));
-    }
-
     /**
      * Whether {@code value} is a row the grid can look inside — the drill-in button's condition.
      *
-     * <p>Only ever true at the top level: neither list nests twice. Which entries qualify is the
-     * difference between the two sources — a contents entry has to actually be a group, while every
+     * <p>Only ever true at the top level: no list nests twice. Which entries qualify is the
+     * difference between the sources — a contents entry has to actually be a group, while every
      * entry in the stage list is one, because a Stage's carriage variants are exactly what the arm
-     * exists to show.</p>
+     * exists to show. A track entry qualifies while the grid is showing kinds; once it is showing
+     * one kind's templates there is nothing further down.</p>
      */
     private boolean hasSubVariants(BuilderOpenOptions.OpenSource source, String value) {
         if (!BuilderOpenOptions.drillsIn(source) || !group.isEmpty()) {
             return false;
+        }
+        if (source == BuilderOpenOptions.OpenSource.TRACK_KINDS) {
+            // Both levels above the templates — a type has kinds under it and a kind has templates
+            // under it. Every other tile in this grid that holds something advertises it with the
+            // chip, and a tile that quietly behaves differently is a rule you can only learn by
+            // clicking it.
+            return activeTrackKind() == null;
         }
         return source != BuilderOpenOptions.OpenSource.CONTENTS
                 || EditorTemplateLists.isContentsGroup(value);
@@ -322,6 +451,9 @@ public final class BuilderOpenScreen extends Screen {
         BuilderOpenOptions.OpenSource source = BuilderOpenOptions.openSourceFor(mode, subType);
         boolean openable = BuilderOpenOptions.isOpenable(source);
         CarriagePartKind kind = source == BuilderOpenOptions.OpenSource.PARTS ? partKindValue() : null;
+        TrackKind trackKind = source == BuilderOpenOptions.OpenSource.TRACK_KINDS
+                ? activeTrackKind() : null;
+        boolean showingTemplates = showingTemplates(source);
 
         if (!entries.isEmpty()) {
             // Scissored: a scrolled cell must not bleed over the type controls or the Back button.
@@ -337,8 +469,9 @@ public final class BuilderOpenScreen extends Screen {
                         && mouseY >= grid.topY() && mouseY < grid.bottomY();
                 String value = entries.get(i);
                 BuilderTemplateTile.render(g, mode, modeArtAvailable,
-                        BuilderOpenOptions.photoKindFor(source, value, !group.isEmpty()),
-                        BuilderOpenOptions.bareId(source, value), kind, labelFor(source, value),
+                        BuilderOpenOptions.photoKindFor(source, value, showingTemplates),
+                        BuilderOpenOptions.bareId(source, value), kind, trackKind,
+                        labelFor(source, value),
                         x, y, grid.cellWidth(), grid.cellHeight(), hovered, openable);
                 if (hasSubVariants(source, value)) {
                     BuilderTemplateTile.renderMore(g, grid.moreX(i), grid.moreY(i, scrollY),
@@ -353,6 +486,40 @@ public final class BuilderOpenScreen extends Screen {
             g.drawCenteredString(this.font, note, this.width / 2,
                     this.height - BACK_BUTTON_BOTTOM_MARGIN - STATUS_GAP + 2, NOTE_COLOUR);
         }
+    }
+
+    /**
+     * What a track tile does.
+     *
+     * <p>Two answers, one level apart, and the split is the same one the stage list makes. A
+     * <b>kind</b> tile is a category rather than a file, so clicking it opens that kind's
+     * {@code default} — the template every kind is guaranteed to have, and the one a builder means
+     * when they click "Tunnel Section" rather than a name under it. A <b>template</b> tile is a file
+     * and is opened as itself.</p>
+     */
+    private Runnable trackActionFor(String value, boolean force) {
+        TrackKind active = activeTrackKind();
+        TrackKind kind = active != null ? active : TrackKind.fromId(value);
+        if (kind == null) {
+            return null;
+        }
+        String name = active != null ? value : TrackKind.DEFAULT_NAME;
+        return () -> DungeonTrainNet.sendToServer(
+                BuilderOpenPacket.forTrack(mode.id(), kind, name, force));
+    }
+
+    /**
+     * Whether the cells are templates rather than categories — which is what decides they have
+     * photos of their own.
+     *
+     * <p>Not simply "drilled into something": a single-kind track group shows templates at the top
+     * level, because there was no kind level worth showing. Reading {@code group} directly here is
+     * what left those tiles wearing the mode art with their photos sitting unused on disk.</p>
+     */
+    private boolean showingTemplates(BuilderOpenOptions.OpenSource source) {
+        return source == BuilderOpenOptions.OpenSource.TRACK_KINDS
+                ? activeTrackKind() != null
+                : !group.isEmpty();
     }
 
     /** The line under the grid: why it's empty, or why you can look but not touch. */
@@ -375,9 +542,20 @@ public final class BuilderOpenScreen extends Screen {
 
             // The drill-in button first: it sits inside a cell, so testing the cell first would
             // swallow every click on it and open the group's own template instead.
+            boolean typeLevel = source == BuilderOpenOptions.OpenSource.TRACK_KINDS
+                    && showingTrackGroups();
             for (int i = 0; i < entries.size(); i++) {
                 String value = entries.get(i);
                 if (hasSubVariants(source, value) && grid.isOverMore(i, mouseX, mouseY, scrollY)) {
+                    // At the type level the value is a group id, not the kind id `group` holds —
+                    // assigning it there would leave the screen looking for a TrackKind called
+                    // "tunnels" and showing an empty grid.
+                    if (typeLevel) {
+                        if (enterTrackGroup(value)) {
+                            return true;
+                        }
+                        continue;
+                    }
                     group = value;
                     scrollY = 0;
                     rebuild();
@@ -399,6 +577,15 @@ public final class BuilderOpenScreen extends Screen {
                     group = entries.get(index);
                     scrollY = 0;
                     rebuild();
+                    return true;
+                }
+            }
+
+            // Same reading one list over: a track type names a family, not a template, so the whole
+            // cell is the way in.
+            if (source == BuilderOpenOptions.OpenSource.TRACK_KINDS && showingTrackGroups()) {
+                int index = grid.indexAt(mouseX, mouseY, scrollY, entries.size());
+                if (index >= 0 && enterTrackGroup(entries.get(index))) {
                     return true;
                 }
             }
@@ -483,6 +670,9 @@ public final class BuilderOpenScreen extends Screen {
             BuilderOpenRequest request = BuilderOpenRequest.forPortalRoom(value);
             return () -> DungeonTrainNet.sendToServer(new BuilderOpenPacket(mode.id(),
                     request.kind().id(), request.id(), "", force));
+        }
+        if (source == BuilderOpenOptions.OpenSource.TRACK_KINDS) {
+            return trackActionFor(value, force);
         }
         // Only the Whole Carriage list, where a Stage is a leaf and starting a fresh carriage for
         // that stretch of the game is the only thing clicking it could mean. In the carriage list a

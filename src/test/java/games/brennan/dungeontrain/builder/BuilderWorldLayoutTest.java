@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -58,19 +60,19 @@ final class BuilderWorldLayoutTest {
     @Test
     @DisplayName("The platform floor is locked")
     void platformIsProtected() {
-        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, 0, 0), DIMS, CARRIAGE_MODE));
-        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, 1, 0), DIMS, CARRIAGE_MODE));
-        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(-150, 1, 149), DIMS, CARRIAGE_MODE));
+        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, 0, 0), DIMS, CARRIAGE_MODE, false));
+        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, 1, 0), DIMS, CARRIAGE_MODE, false));
+        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(-150, 1, 149), DIMS, CARRIAGE_MODE, false));
     }
 
     @Test
     @DisplayName("The track bed and rails are locked, but only inside the corridor")
     void trackIsProtectedWithinTheCorridor() {
-        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, 2, 0), DIMS, CARRIAGE_MODE));
-        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, 3, DIMS.width() - 1), DIMS, CARRIAGE_MODE));
-        assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, 3, DIMS.width()), DIMS, CARRIAGE_MODE),
+        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, 2, 0), DIMS, CARRIAGE_MODE, false));
+        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, 3, DIMS.width() - 1), DIMS, CARRIAGE_MODE, false));
+        assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, 3, DIMS.width()), DIMS, CARRIAGE_MODE, false),
                 "one block past the corridor is open ground at track height");
-        assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, 2, -1), DIMS, CARRIAGE_MODE));
+        assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, 2, -1), DIMS, CARRIAGE_MODE, false));
     }
 
     @Test
@@ -81,11 +83,11 @@ final class BuilderWorldLayoutTest {
         // origin straddles. Protecting those rows here makes part of the room the author just opened
         // unbreakable.
         assertFalse(BuilderWorldLayout.isProtected(
-                new BlockPos(0, BuilderWorldLayout.Y_STAND, 0), DIMS, BuilderMode.TRAIN_DIMENSIONS));
+                new BlockPos(0, BuilderWorldLayout.Y_STAND, 0), DIMS, BuilderMode.TRAIN_DIMENSIONS, false));
         assertFalse(BuilderWorldLayout.isProtected(
-                new BlockPos(0, BuilderWorldLayout.Y_BEDROCK, 0), DIMS, BuilderMode.TRAIN_DIMENSIONS));
+                new BlockPos(0, BuilderWorldLayout.Y_BEDROCK, 0), DIMS, BuilderMode.TRAIN_DIMENSIONS, false));
         assertFalse(BuilderWorldLayout.isProtected(
-                new BlockPos(0, BuilderWorldLayout.Y_GRASS, 0), DIMS, BuilderMode.TRAIN_DIMENSIONS));
+                new BlockPos(0, BuilderWorldLayout.Y_GRASS, 0), DIMS, BuilderMode.TRAIN_DIMENSIONS, false));
     }
 
     @Test
@@ -95,7 +97,7 @@ final class BuilderWorldLayoutTest {
         // than as an unbreakable block in-game.
         assertEquals(BuilderWorldLayout.Y_STAND, BuilderWorldLayout.Y_TRACK_BED);
         assertTrue(BuilderWorldLayout.isProtected(
-                new BlockPos(0, BuilderWorldLayout.Y_STAND, 0), DIMS, CARRIAGE_MODE),
+                new BlockPos(0, BuilderWorldLayout.Y_STAND, 0), DIMS, CARRIAGE_MODE, false),
                 "that row is still the track bed in a carriage mode");
     }
 
@@ -104,29 +106,52 @@ final class BuilderWorldLayoutTest {
     void unknownModeKeepsTheProtection() {
         // A null mode is a world whose mode was never recorded, which predates the void mode — so it
         // has a platform, and unlocking it would let someone dig through their own floor.
-        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, 0, 0), DIMS, null));
+        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, 0, 0), DIMS, null, false));
+    }
+
+    @Test
+    @DisplayName("An open track build unlocks the track rows — the column stands in them")
+    void trackRowsUnlockForATrackBuild() {
+        // The regression this exists to stop: the scene stands its columns from Y_STAND, which is
+        // the bed row, so the old rule locked the bottom two blocks of every pillar the builder was
+        // trying to author. By then the corridor has been erased anyway, so it defended nothing.
+        BlockPos bed = new BlockPos(0, BuilderWorldLayout.Y_TRACK_BED, 1);
+        BlockPos rail = new BlockPos(0, BuilderWorldLayout.Y_TRACK_RAIL, 1);
+        assertTrue(BuilderWorldLayout.isProtected(bed, DIMS, false));
+        assertTrue(BuilderWorldLayout.isProtected(rail, DIMS, false));
+        assertFalse(BuilderWorldLayout.isProtected(bed, DIMS, true));
+        assertFalse(BuilderWorldLayout.isProtected(rail, DIMS, true));
+    }
+
+    @Test
+    @DisplayName("The world floor stays locked even mid track build")
+    void theFloorIsNeverUnlocked() {
+        // A hole in the floor of a builder dimension is not a recoverable mistake, and nothing is
+        // ever authored down there.
+        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, BuilderWorldLayout.Y_BEDROCK, 1), DIMS, true));
+        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, BuilderWorldLayout.Y_GRASS, 1), DIMS, true));
     }
 
     @Test
     @DisplayName("Everything from the train floor up is editable — that's the build")
     void carriageHeightIsEditable() {
-        assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, BuilderWorldLayout.TRAIN_Y, 0), DIMS, CARRIAGE_MODE));
-        assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, 40, 0), DIMS, CARRIAGE_MODE));
+        assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, BuilderWorldLayout.TRAIN_Y, 0), DIMS, CARRIAGE_MODE, false));
+        assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, 40, 0), DIMS, CARRIAGE_MODE, false));
     }
 
     @Test
     @DisplayName("Nothing outside the platform is protected — the void is yours")
     void outsideThePlatformIsUnprotected() {
-        assertFalse(BuilderWorldLayout.isProtected(new BlockPos(500, 1, 0), DIMS, CARRIAGE_MODE));
-        assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, 2, 500), DIMS, CARRIAGE_MODE));
+        assertFalse(BuilderWorldLayout.isProtected(new BlockPos(500, 1, 0), DIMS, CARRIAGE_MODE, false));
+        assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, 2, 500), DIMS, CARRIAGE_MODE, false));
     }
 
     @Test
     @DisplayName("A wider carriage widens the locked corridor with it")
     void corridorFollowsCarriageWidth() {
         CarriageDims wide = CarriageDims.clamp(9, 12, 7);
-        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, 3, 11), wide, CARRIAGE_MODE));
-        assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, 3, 11), DIMS, CARRIAGE_MODE),
+        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, 3, 11), wide, CARRIAGE_MODE, false));
+        assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, 3, 11), DIMS, CARRIAGE_MODE, false),
                 "the default 7-wide corridor stops well before z=11");
     }
 

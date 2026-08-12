@@ -9,6 +9,11 @@ import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
+import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.track.variant.TrackVariantStore;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
@@ -35,6 +40,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
 
 import java.util.HashSet;
@@ -162,6 +169,9 @@ public final class BuilderWorldSetup {
         // Whatever room was standing goes too: it belongs to the mode being left, and leaving it
         // would strand an unowned volume in the middle of the next mode's train.
         clearPreviousRoom(level, data, dims);
+        // A track template left standing would be scenery nobody asked for in a carriage build —
+        // and a tunnel is tall enough to swallow the train.
+        clearTrackPlot(level, data, dims);
 
         // The scenery, only when the two modes disagree about wanting it. A null previous mode is a
         // world whose mode was never recorded, which by definition predates the void mode and so
@@ -464,6 +474,7 @@ public final class BuilderWorldSetup {
         // actually out there, and after setBuilderSubType the world data describes the new build.
         int previousCarriages = parkedCarriages(data);
         clearTrain(level, dims, previousCarriages);
+        clearTrackPlot(level, data, dims);
         data.setBuilderMode(mode.id());
 
         // A stage doesn't name a carriage — it decides which parts get stamped onto one. Selecting
@@ -602,8 +613,13 @@ public final class BuilderWorldSetup {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
 
-        // A portal room is not stamped on a carriage — it is the volume — so it takes its own path
-        // before the carriage arithmetic below, which would reject it for parking no train.
+        // A track-side template goes on its own plot, not into a carriage — different volume,
+        // different store, different save arm. Branch before anything counts carriages.
+        if (request.isTrack()) {
+            return applyOpenTrack(level, mode, data, dims, request);
+        }
+        // A portal room is not stamped on a carriage either — it *is* the volume — so it takes its
+        // own path before the carriage arithmetic below, which would reject it for parking no train.
         if (request.isPortalRoom()) {
             return openPortalRoom(level, data, dims, mode, request);
         }
@@ -611,8 +627,7 @@ public final class BuilderWorldSetup {
         int carriages = BuilderWorldLayout.parkedCarriages(mode,
                 viewSubType == null ? request.subType() : viewSubType);
         if (carriages <= 0) {
-            // The remaining carriage-less mode (Tracks & Tunnels) parks nothing to load a template
-            // into. BuilderOpenOptions.isOpenable already says so; this is the server-side backstop.
+            // A carriage-side template in a mode that parks no carriage: nothing to load it into.
             LOGGER.warn("[DungeonTrain] Builder open: mode '{}' has no carriage to open into", mode.id());
             return false;
         }
@@ -627,6 +642,7 @@ public final class BuilderWorldSetup {
 
         // Read before setBuilderSubType below rewrites it — see applyNew.
         clearTrain(level, dims, parkedCarriages(data));
+        clearTrackPlot(level, data, dims);
         data.setBuilderMode(mode.id());
 
         // Before the stamp, for the same reason applyNew does it: CarriagePlacer.placeAt reads
@@ -672,6 +688,203 @@ public final class BuilderWorldSetup {
                 stageId.isEmpty() ? "<none>" : stageId,
                 shownStage.isEmpty() ? "<none>" : shownStage);
         return true;
+    }
+
+    // ---- track-side templates ----
+
+    /**
+     * Open a track tile, pillar section, tunnel or stairs adjunct onto its plot.
+     *
+     * <p>The carriage arm's shape, with the carriage taken out of it: resolve first and refuse if
+     * the template isn't there, then clear, stamp, snapshot, and only then let {@code builderName}
+     * point at the file — so a failed open can never arm a Save that overwrites what it failed to
+     * load.</p>
+     *
+     * <p>What it does <em>not</em> do is re-lay the corridor around the plot. The track outside the
+     * plot is scenery that every mode shares and {@code stampTrack} already put there; a track tile
+     * opened at the tile grid lines up with it by construction (see {@link BuilderTrackPlot}).</p>
+     */
+    private static boolean applyOpenTrack(ServerLevel level, BuilderMode mode,
+                                          DungeonTrainWorldData data, CarriageDims dims,
+                                          BuilderOpenRequest request) {
+        TrackKind kind = request.trackKind();
+        String name = request.id();
+        if (kind == null || !TrackVariantRegistry.contains(kind, name)) {
+            LOGGER.warn("[DungeonTrain] Builder open: no {} template named '{}'",
+                    kind == null ? "<no kind>" : kind.id(), name);
+            return false;
+        }
+
+        // Whatever was here before goes first — a parked train from a carriage mode, and the last
+        // track plot, which may be a different kind with a different footprint.
+        BuilderMode previousMode = BuilderMode.fromId(data.builderMode()).orElse(mode);
+        clearTrain(level, dims, previousMode.carriageCount());
+        clearTrackPlot(level, data, dims);
+        data.setBuilderMode(mode.id());
+
+        // The rest of the line stops being blocks. Everything outside the plot is drawn as ghosts
+        // from here on (BuilderTrackGhostShape), and a ghost that is also a real block is not a
+        // ghost — it can be broken, walked on, and saved into the wrong template. Erasing is what
+        // makes the drawn version the only version.
+        eraseCorridorTrack(level, dims);
+
+        BlockPos origin = BuilderTrackPlot.origin(kind, dims);
+        Vec3i size = BuilderTrackPlot.footprint(kind, dims);
+        forceChunksFor(level, origin, size);
+        erase(level, origin, size);
+
+        if (!stampTrackTemplate(level, kind, name, origin, dims)) {
+            LOGGER.error("[DungeonTrain] Builder open: stamping {} '{}' failed — leaving the build "
+                    + "unnamed so a save cannot overwrite it", kind.id(), name);
+            return false;
+        }
+
+        data.setBuilderName(name);
+        data.setBuilderTrackKind(kind.id());
+        data.setBuilderStage("");
+        data.setBuilderMirror(trackMirrorOf(kind, name, size));
+        EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(kind, name), level, origin,
+                size.getX(), size.getY(), size.getZ());
+        LOGGER.info("[DungeonTrain] Builder open: track {} '{}' into mode '{}' at {}",
+                kind.id(), name, mode.id(), origin);
+        return true;
+    }
+
+    /**
+     * Lay the named template down at {@code origin}.
+     *
+     * <p>Tunnels go through {@link TunnelPlacer}'s named placers rather than the store directly,
+     * because those carry the procedural fallback for a variant whose NBT is missing — a tunnel
+     * painted from code is still a tunnel, where a bare hole is nothing. Every other kind ships a
+     * bundled {@code default.nbt}, so the store resolves and the fallback would be dead code.</p>
+     */
+    private static boolean stampTrackTemplate(ServerLevel level, TrackKind kind, String name,
+                                              BlockPos origin, CarriageDims dims) {
+        if (kind == TrackKind.TUNNEL_SECTION) {
+            TunnelPlacer.placeSectionNamed(level, origin, name);
+            return true;
+        }
+        if (kind == TrackKind.TUNNEL_PORTAL) {
+            TunnelPlacer.placePortalNamed(level, origin, false, name);
+            return true;
+        }
+        Optional<StructureTemplate> stored = TrackVariantStore.get(level, kind, name, dims);
+        if (stored.isEmpty()) {
+            return false;
+        }
+        stored.get().placeInWorld(level, origin, origin,
+                new StructurePlaceSettings().setIgnoreEntities(true), level.getRandom(), 3);
+        return true;
+    }
+
+    /**
+     * The mirror axes this template was authored with, off its own sidecar.
+     *
+     * <p>Track templates keep their mirror flags per {@code (kind, name)} in the
+     * {@code .variants.json} beside the NBT, where a carriage keeps them on the variant. Reading the
+     * template's own answer is what stops opening a tunnel from inheriting the mirror you last used
+     * on a pillar.</p>
+     */
+    private static BuilderMirrorFlags trackMirrorOf(TrackKind kind, String name, Vec3i size) {
+        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, size);
+        return new BuilderMirrorFlags(sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
+                sidecar.mirrorVariants());
+    }
+
+    /**
+     * Erase the previous track plot back to air, and drop its baseline with it.
+     *
+     * <p>Same reasoning as {@link #clearTrain}: a baseline for a plot that no longer holds what it
+     * described would have the next dirty check comparing against a ghost. Skipped entirely when
+     * the world wasn't holding a track build, which is the common case.</p>
+     *
+     * <p>A plot that sat <em>in</em> the corridor takes a stretch of the shared track with it when
+     * it goes — a tunnel is ten blocks long and the tile that replaces it is four, so the erase
+     * would leave the line with holes either side of the new plot. So the corridor is re-laid
+     * afterwards, by the same {@link #stampTrack} call that put it there in the first place. The
+     * caller stamps its own template after this returns, so it wins over the restored track where
+     * the two overlap.</p>
+     */
+    private static void clearTrackPlot(ServerLevel level, DungeonTrainWorldData data,
+                                       CarriageDims dims) {
+        TrackKind previous = BuilderTrackBuild.kindOf(data);
+        if (previous == null) {
+            return;
+        }
+        BlockPos origin = BuilderTrackPlot.origin(previous, dims);
+        Vec3i size = BuilderTrackPlot.footprint(previous, dims);
+        forceChunksFor(level, origin, size);
+        erase(level, origin, size);
+        EditorPlotSnapshots.clear(BuilderDirtyCheck.snapshotKey(previous, data.builderName()));
+        data.setBuilderTrackKind("");
+        // Unconditional: opening any track template erases the whole corridor, so leaving one has
+        // to put all of it back, whichever kind was on the plot.
+        stampTrack(level, dims);
+    }
+
+    /**
+     * Take the corridor track out of the world — both rows, the full length of the platform.
+     *
+     * <p>Only ever called on the way into a track build, and always followed by either the template
+     * being stamped on the plot or {@link #stampTrack} putting the line back. The line the builder
+     * sees in between is {@code BuilderTrackGhostRenderer}'s, which is drawn.</p>
+     */
+    private static void eraseCorridorTrack(ServerLevel level, CarriageDims dims) {
+        BlockState air = Blocks.AIR.defaultBlockState();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        int minZ = 0;
+        int maxZ = dims.width() - 1;
+
+        for (int cx = BuilderWorldLayout.MIN_XZ >> 4; cx <= BuilderWorldLayout.MAX_XZ >> 4; cx++) {
+            for (int cz = minZ >> 4; cz <= maxZ >> 4; cz++) {
+                WorldgenForceGuard.forceChunk(level, cx, cz);
+                LevelChunk chunk = level.getChunk(cx, cz);
+                int xLo = Math.max(BuilderWorldLayout.MIN_XZ, cx << 4);
+                int xHi = Math.min(BuilderWorldLayout.MAX_XZ, (cx << 4) + 15);
+                int zLo = Math.max(minZ, cz << 4);
+                int zHi = Math.min(maxZ, (cz << 4) + 15);
+                for (int x = xLo; x <= xHi; x++) {
+                    for (int z = zLo; z <= zHi; z++) {
+                        for (int y = BuilderWorldLayout.Y_TRACK_BED;
+                                y <= BuilderWorldLayout.Y_TRACK_RAIL; y++) {
+                            SilentBlockOps.setBlockSectionLocal(level, chunk,
+                                    pos.set(x, y, z).immutable(), air);
+                        }
+                    }
+                }
+                chunk.setUnsaved(true);
+            }
+        }
+    }
+
+    /** Force every chunk a plot touches, so the stamp below never sync-loads mid-write. */
+    private static void forceChunksFor(ServerLevel level, BlockPos origin, Vec3i size) {
+        int maxX = origin.getX() + size.getX() - 1;
+        int maxZ = origin.getZ() + size.getZ() - 1;
+        for (int cx = origin.getX() >> 4; cx <= maxX >> 4; cx++) {
+            for (int cz = origin.getZ() >> 4; cz <= maxZ >> 4; cz++) {
+                WorldgenForceGuard.forceChunk(level, cx, cz);
+            }
+        }
+    }
+
+    /**
+     * Clear a box back to air.
+     *
+     * <p>Plain {@code setBlock} rather than {@link SilentBlockOps}: a track plot is at most a few
+     * thousand blocks and sits at ground level under open sky, where the carriage clear is 180 000
+     * blocks — and unlike that one, this box holds rails and torches whose neighbours genuinely need
+     * telling.</p>
+     */
+    private static void erase(ServerLevel level, BlockPos origin, Vec3i size) {
+        BlockState air = Blocks.AIR.defaultBlockState();
+        for (int dx = 0; dx < size.getX(); dx++) {
+            for (int dy = 0; dy < size.getY(); dy++) {
+                for (int dz = 0; dz < size.getZ(); dz++) {
+                    level.setBlock(origin.offset(dx, dy, dz), air, 3);
+                }
+            }
+        }
     }
 
     /**
@@ -781,9 +994,10 @@ public final class BuilderWorldSetup {
                     && CarriagePartRegistry.isKnown(request.partKind(), request.id())
                     ? shellOnly(level)
                     : Optional.empty();
-            // A room resolves nothing here: there is no shell to stand it on, and it never reaches
-            // this method — openPortalRoom takes its own path out of applyOpen well before this.
-            case PORTAL_ROOM -> Optional.empty();
+            // Unreachable, both of them: applyOpen branches to applyOpenTrack and openPortalRoom
+            // before it resolves anything, because neither needs a carriage to sit in. Empty rather
+            // than a throw — a refusal is what every other unresolvable arm answers.
+            case TRACK, PORTAL_ROOM -> Optional.empty();
         };
     }
 

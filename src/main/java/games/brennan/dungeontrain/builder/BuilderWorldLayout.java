@@ -152,7 +152,39 @@ public final class BuilderWorldLayout {
      * straddles. Without the mode, part of an open room's own floor is unbreakable and the author
      * cannot edit the thing they opened.</p>
      */
-    public static boolean isProtected(BlockPos pos, CarriageDims dims, BuilderMode mode) {
+    public static boolean isProtected(BlockPos pos, CarriageDims dims) {
+        return isProtected(pos, dims, null, false);
+    }
+
+    /**
+     * As above, for a world that may be holding a track-side build or building in void.
+     *
+     * <p>Two ways the track rows stop being protected, and they are different reasons:</p>
+     * <ul>
+     *   <li><b>A track build is open.</b> By then those rows are not the track — opening a track
+     *       template erases the corridor so the line can be drawn as ghosts, and the build itself
+     *       goes down there; a pillar column stands from {@link #Y_STAND}, which is the bed row.
+     *       Protecting them defends nothing and locks the bottom of every column being authored.</li>
+     *   <li><b>The mode has no scenery at all.</b> Train Dimensions builds in open void, and
+     *       {@link #Y_TRACK_BED} is also {@link #Y_STAND}, the row a portal room's floor sits on,
+     *       over a z-range a room centred on the origin straddles — so part of an open room's own
+     *       floor was unbreakable.</li>
+     * </ul>
+     *
+     * <p>The floor and the grass stay protected in the track case. Nothing is ever authored there,
+     * and a hole in the world floor of a builder dimension is not a recoverable mistake — but in a
+     * void mode there is no floor to hole.</p>
+     *
+     * @param mode           the builder mode, or null when it isn't known
+     * @param trackBuildOpen whether a track-side template is currently open in this world
+     */
+    /** As above, for a caller that knows about a track build but not about the mode. */
+    public static boolean isProtected(BlockPos pos, CarriageDims dims, boolean trackBuildOpen) {
+        return isProtected(pos, dims, null, trackBuildOpen);
+    }
+
+    public static boolean isProtected(BlockPos pos, CarriageDims dims, BuilderMode mode,
+                                      boolean trackBuildOpen) {
         if (mode != null && !BuilderWorldSetup.hasScenery(mode)) {
             return false;   // nothing there to protect
         }
@@ -162,6 +194,9 @@ public final class BuilderWorldLayout {
         }
         if (y == Y_BEDROCK || y == Y_GRASS) {
             return true;
+        }
+        if (trackBuildOpen) {
+            return false;
         }
         return (y == Y_TRACK_BED || y == Y_TRACK_RAIL) && inCorridor(pos.getZ(), dims);
     }

@@ -1,5 +1,9 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.track.variant.TrackKind;
+
+import java.util.List;
+
 /**
  * What the Train Builder's <b>Open</b> screen lists for a given selection.
  *
@@ -44,8 +48,17 @@ public final class BuilderOpenOptions {
         CARRIAGES_BY_STAGE,
         /** Part templates of the separately-chosen part kind. */
         PARTS,
-        /** Track tile templates. Listed for reference only — see {@link #isOpenable}. */
-        TRACK_TILES,
+        /**
+         * Track-side templates, under the separately-chosen {@link BuilderTrackGroup}.
+         *
+         * <p>Two levels wherever the group has more than one {@link games.brennan.dungeontrain.track.variant.TrackKind}
+         * — the kinds first, then one kind's named templates — drilled into exactly as a contents
+         * group is. A single-kind group has nothing to choose at the first level, so it skips it.</p>
+         *
+         * <p>Replaces the old {@code TRACK_TILES} / {@code TUNNEL_PORTALS} pair, which named two of
+         * the eight kinds and left the other six unreachable.</p>
+         */
+        TRACK_KINDS,
         /**
          * The four {@code PortalRoomMode}s, with the portal rooms of each underneath — two levels,
          * drilled into the way a contents group is. A room one level in opens.
@@ -63,12 +76,12 @@ public final class BuilderOpenOptions {
     /**
      * What this selection lists.
      *
-     * <p>The two track modes have no sub type, so they map straight off the mode — Tracks &amp;
-     * Tunnels to the track tiles, Train Dimensions to the rooms behind a portal, matching the
-     * mapping {@link BuilderMode} documents.</p>
+     * <p>Neither carriage-less mode has a sub type, so both map straight off the mode. Tracks &amp;
+     * Tunnels goes to the track-side templates, and which of those it shows is the
+     * {@link BuilderTrackGroup}'s business rather than this method's — see {@link #trackGroupsFor}.</p>
      *
-     * <p>Train Dimensions used to list the tunnel portal <em>facades</em> ({@code default},
-     * {@code darkportal}) — the arch the train drives through, which is a piece of track. What
+     * <p>Train Dimensions goes to the rooms instead. It used to list the tunnel portal
+     * <em>facades</em> — the arch the train drives through, which is a piece of track. What
      * {@link BuilderMode#TRAIN_DIMENSIONS} names is the room on the other side of it, and those did
      * not exist as authorable templates when this screen was written. They do now, so the arm lists
      * what it always said it listed.</p>
@@ -77,7 +90,7 @@ public final class BuilderOpenOptions {
         if (!BuilderNewOptions.hasSubTypes(mode)) {
             return mode == BuilderMode.TRAIN_DIMENSIONS
                     ? OpenSource.PORTAL_ROOMS
-                    : OpenSource.TRACK_TILES;
+                    : OpenSource.TRACK_KINDS;
         }
         return switch (subType) {
             case WHOLE_CARRIAGE -> OpenSource.STAGES;
@@ -93,26 +106,15 @@ public final class BuilderOpenOptions {
     /**
      * Whether clicking a tile from this source can actually load it.
      *
-     * <p>False for track tiles alone now. Not an oversight and not a permission check — there is
-     * genuinely nothing to open into: {@link BuilderWorldSetup#applyNew} stamps nothing when the
-     * mode's {@code carriageCount()} is zero, {@link BuilderNewRequest} has no field that could name
-     * a track kind, and {@code BuilderSave} has no arm that would write one back.</p>
-     *
-     * <p>They are still <em>listed</em>, because "this mode has eleven templates and you can't edit
-     * them here yet" is a true and useful thing for the screen to say, and an empty grid would say
-     * something false.</p>
-     *
-     * <p>{@link OpenSource#PORTAL_ROOMS} used to sit beside them and no longer does. A room is not
-     * stamped on a carriage — it <em>is</em> the volume — so it needed none of the three things
-     * above, only its own arm through {@code applyOpen} and {@code BuilderSave}. Those exist, so the
-     * tiles are live.</p>
+     * <p>Now true of every source. It was false for the track sources, and then for portal rooms,
+     * for as long as there was genuinely nothing to open into — no stamp arm, no request field that
+     * could name one, no save arm — and this method was where that gap was recorded. Both sets have
+     * since landed ({@link BuilderTrackPlot} / {@link BuilderOpenRequest#trackKind()} /
+     * {@code BuilderSave.saveTrack}, and {@code openPortalRoom} / {@code savePortalRoom}), so the
+     * exception went with them.</p>
      */
     public static boolean isOpenable(OpenSource source) {
-        return source == OpenSource.STAGES
-                || source == OpenSource.CONTENTS
-                || source == OpenSource.CARRIAGES_BY_STAGE
-                || source == OpenSource.PARTS
-                || source == OpenSource.PORTAL_ROOMS;
+        return true;
     }
 
     /**
@@ -121,13 +123,39 @@ public final class BuilderOpenOptions {
      * <p>Only half the question for {@link OpenSource#CONTENTS}, where it is the individual entry
      * that is or isn't a group; for {@link OpenSource#CARRIAGES_BY_STAGE} and
      * {@link OpenSource#PORTAL_ROOMS} every top-level entry is a heading — a stage, a room mode —
-     * and so every one of them drills in. Here rather than in the screen so the rule is testable
-     * without a client.</p>
+     * and so every one of them drills in. {@link OpenSource#TRACK_KINDS} is the fourth case again:
+     * it drills in only when the chosen group has more than one kind, which is the group's question
+     * and so is asked of {@link BuilderTrackGroup#isSingleKind()} rather than here. Here rather than
+     * in the screen so the rule is testable without a client.</p>
      */
     public static boolean drillsIn(OpenSource source) {
         return source == OpenSource.CONTENTS
                 || source == OpenSource.CARRIAGES_BY_STAGE
-                || source == OpenSource.PORTAL_ROOMS;
+                || source == OpenSource.PORTAL_ROOMS
+                || source == OpenSource.TRACK_KINDS;
+    }
+
+    /**
+     * The groups the track modes offer, in menu order.
+     *
+     * <p>Tracks &amp; Tunnels authors the line and everything bolted to it, so it offers all four.
+     * Train Dimensions is the rooms behind a portal, which is one kind of thing, so it offers no
+     * choice at all — an empty list, and the screen shows no group row.</p>
+     */
+    public static List<BuilderTrackGroup> trackGroupsFor(BuilderMode mode) {
+        return mode == BuilderMode.TRACKS_TUNNELS
+                ? List.of(BuilderTrackGroup.values())
+                : List.of();
+    }
+
+    /**
+     * The kind a track mode lands on when no group has been chosen — what Train Dimensions always
+     * shows, and what Tracks &amp; Tunnels shows before the builder touches the group control.
+     */
+    public static TrackKind defaultTrackKind(BuilderMode mode) {
+        return mode == BuilderMode.TRAIN_DIMENSIONS
+                ? TrackKind.TUNNEL_PORTAL
+                : BuilderTrackGroup.TRACKS.soleKind();
     }
 
     /** Convenience for the screen: whether anything in this mode/sub type can be opened. */
@@ -143,8 +171,6 @@ public final class BuilderOpenOptions {
      * it names a stretch of the game, so there is no file to photograph and the tile falls back to
      * the mode art.</p>
      *
-     * <p>Null for the track sources too: nothing ever writes those photos, which is why
-     * {@link BuilderPhotoPaths.Kind} deliberately has no entry to return.</p>
      */
     public static BuilderPhotoPaths.Kind photoKindFor(OpenSource source, String value) {
         return photoKindFor(source, value, false);
@@ -153,9 +179,11 @@ public final class BuilderOpenOptions {
     /**
      * As {@link #photoKindFor(OpenSource, String)}, for a grid that may be one level in.
      *
-     * <p>{@link OpenSource#CARRIAGES_BY_STAGE} is the only source where the level changes the
-     * answer, and it changes it completely: at the top the entries are Stages, which are not
-     * templates and have no photo, and one level in they are carriage templates that do.</p>
+     * <p>{@link OpenSource#CARRIAGES_BY_STAGE} is the source where the level changes the answer, and
+     * it changes it completely: at the top the entries are Stages, which are not templates and have
+     * no photo, and one level in they are carriage templates that do. {@link OpenSource#TRACK_KINDS}
+     * splits the same way when its group has a kind level — a {@code TrackKind} is a category, not a
+     * file, so only the named templates under it have a picture.</p>
      */
     public static BuilderPhotoPaths.Kind photoKindFor(OpenSource source, String value,
                                                       boolean insideGroup) {
@@ -164,10 +192,10 @@ public final class BuilderOpenOptions {
             case CONTENTS -> BuilderPhotoPaths.Kind.CONTENTS;
             case CARRIAGES_BY_STAGE -> insideGroup ? BuilderPhotoPaths.Kind.CARRIAGE : null;
             case PARTS -> BuilderPhotoPaths.Kind.PART;
-            // Like CARRIAGES_BY_STAGE, the level changes the answer: a mode is a heading with no
-            // file to photograph, and one level in the entries are room templates that have one.
+            // Like CARRIAGES_BY_STAGE, the level changes the answer: a heading has no file to
+            // photograph, and one level in the entries are templates that have one.
             case PORTAL_ROOMS -> insideGroup ? BuilderPhotoPaths.Kind.PORTAL_ROOM : null;
-            case TRACK_TILES -> null;
+            case TRACK_KINDS -> insideGroup ? BuilderPhotoPaths.Kind.TRACK : null;
         };
     }
 

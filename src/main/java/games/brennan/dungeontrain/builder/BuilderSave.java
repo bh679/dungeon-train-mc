@@ -13,6 +13,11 @@ import games.brennan.dungeontrain.editor.EditorVariantMirror;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.editor.StageStore;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
+import games.brennan.dungeontrain.editor.BlockVariantPlot;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
+import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
@@ -28,6 +33,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -73,6 +79,13 @@ public final class BuilderSave {
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
+        // A track-side build is written to a different store from a different volume, and the
+        // carriage arm below has no reading of it — the sub type it switches on names parts of a
+        // carriage, and a rail is not one. Branch before any of that.
+        TrackKind trackKind = BuilderTrackBuild.kindOf(data);
+        if (trackKind != null) {
+            return saveTrack(level, data, dims, trackKind);
+        }
         List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
 
         Optional<Integer> target = saveTarget(volumes.size(), BuilderDirtyCheck.dirtyCarriages(level));
@@ -124,6 +137,82 @@ public final class BuilderSave {
                 portalRoom ? BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE : subType.id(),
                 name, target.get());
         return Result.ok(name);
+    }
+
+    /**
+     * The build is a track tile, pillar section, tunnel or stairs adjunct.
+     *
+     * <p>Shaped on {@code TrackEditor.save} rather than on the carriage arms above, because that is
+     * the code that already knows how to write one of these: mirror from the template's own
+     * {@code .variants.json} sidecar, capture the kind's footprint, write the NBT, then register the
+     * name. The editor's version resolves a plot from where the player is standing; here the plot is
+     * known, which is the only difference.</p>
+     *
+     * <p>No {@code saveTarget} dance and no name-from-a-draft case. A track build always has exactly
+     * one volume and always has a name, because there is no way into one except by opening a
+     * template — the track modes have no New arm that could leave an unnamed draft on the plot.</p>
+     */
+    private static Result saveTrack(ServerLevel level, DungeonTrainWorldData data, CarriageDims dims,
+                                    TrackKind kind) {
+        String name = data.builderName();
+        if (name == null || name.isEmpty()) {
+            return Result.failed("this build has no name yet");
+        }
+        BlockPos origin = BuilderTrackPlot.origin(kind, dims);
+        Vec3i footprint = BuilderTrackPlot.footprint(kind, dims);
+        try {
+            TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
+            mirrorTrackBeforeCapture(level, kind, name, origin, footprint, sidecar);
+
+            StructureTemplate template = new StructureTemplate();
+            // Tunnels capture against STRUCTURE_VOID, everything else against AIR — the tunnel
+            // templates use void to mean "leave whatever the world had here", and capturing one
+            // against AIR would bake the builder-world sky into the arch's corner pockets. Same
+            // split TunnelEditor.save makes, for the same reason.
+            template.fillFromWorld(level, origin, footprint, false, ignoreBlockFor(kind));
+            TrackVariantStore.save(kind, name, template);
+            if (TrackVariantRegistry.register(kind, name)) {
+                LOGGER.info("[DungeonTrain] Builder save: registered new {} '{}'", kind.id(), name);
+            }
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] Builder save failed for {} '{}'", kind.id(), name, t);
+            return Result.failed(t.getMessage() == null ? t.toString() : t.getMessage());
+        }
+
+        EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(kind, name), level, origin,
+                footprint.getX(), footprint.getY(), footprint.getZ());
+        LOGGER.info("[DungeonTrain] Builder save: wrote track {} '{}'", kind.id(), name);
+        return Result.ok(name);
+    }
+
+    /** What a capture of this kind treats as "not part of the template". See {@link #saveTrack}. */
+    private static Block ignoreBlockFor(TrackKind kind) {
+        return kind == TrackKind.TUNNEL_SECTION || kind == TrackKind.TUNNEL_PORTAL
+                ? Blocks.STRUCTURE_VOID
+                : Blocks.AIR;
+    }
+
+    /**
+     * The track equivalent of {@link #mirrorBeforeCapture}.
+     *
+     * <p>Two differences from the carriage version, both taken from the editors' track save. The
+     * plot is a {@code BlockVariantPlot.TrackPlot} rather than a builder carriage plot, since that
+     * is what the variant mirror knows how to walk for a track kind. And the structural pass is
+     * given the sidecar's markers rather than an empty set — {@code BuilderCarriagePlot}'s call
+     * passes {@code Set.of()}, but a track template's sidecar is exactly where its markers live, and
+     * dropping them would mirror over the cells that were meant to be left alone.</p>
+     */
+    private static void mirrorTrackBeforeCapture(ServerLevel level, TrackKind kind, String name,
+                                                 BlockPos origin, Vec3i footprint,
+                                                 TrackVariantBlocks sidecar) {
+        if (!sidecar.mirrorX() && !sidecar.mirrorY() && !sidecar.mirrorZ()) {
+            return;
+        }
+        EditorVariantMirror.rebuildFromMaster(level,
+                new BlockVariantPlot.TrackPlot(kind, name, origin, footprint));
+        EditorMirror.rebuildFromMaster(level, origin, footprint,
+                sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
+                EditorMirror.markersOf(sidecar.entries()));
     }
 
     /**

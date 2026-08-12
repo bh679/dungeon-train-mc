@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderTrackBuild;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -53,6 +54,7 @@ public final class BuilderProtectionEvents {
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         BuilderMode mode = BuilderMode.fromId(data.builderMode()).orElse(null);
-        return BuilderWorldLayout.isProtected(pos, data.dims(), mode);
+        return BuilderWorldLayout.isProtected(pos, data.dims(), mode,
+                BuilderTrackBuild.isActive(level));
     }
 }

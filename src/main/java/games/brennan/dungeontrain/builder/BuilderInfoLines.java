@@ -27,11 +27,21 @@ public final class BuilderInfoLines {
      * @param name      what the build saves as; empty for a draft
      * @param dirty     unsaved changes since the last stamp or save
      * @param dims      length, height, width — null when the mode parks no carriage
-     * @param weight    how often the template rolls in a run; negative when it doesn't apply
+     * @param weight      how often the template rolls in a run; negative when it doesn't apply
+     * @param trackKindId which track-side kind this build is, empty for a carriage build — the
+     *                    track modes' counterpart to {@code subType}
      */
     public record Data(String name, boolean dirty, BuilderMode mode,
                        BuilderNewOptions.SubType subType, String partKindId,
-                       String stageId, int[] dims, int weight) {}
+                       String stageId, int[] dims, int weight, String trackKindId) {
+
+        /** The eight-arg form, from before the track modes had anything to open. */
+        public Data(String name, boolean dirty, BuilderMode mode,
+                    BuilderNewOptions.SubType subType, String partKindId,
+                    String stageId, int[] dims, int weight) {
+            this(name, dirty, mode, subType, partKindId, stageId, dims, weight, "");
+        }
+    }
 
     /** Separator between the pieces of a one-row readout. */
     public static final String JOIN = "  ·  ";
@@ -93,7 +103,14 @@ public final class BuilderInfoLines {
     private static String typeLine(Data data, UnaryOperator<String> translate) {
         String mode = translate.apply(data.mode().labelKey());
         if (!BuilderNewOptions.hasSubTypes(data.mode())) {
-            return mode;   // tracks and portals have no sub type to qualify
+            // The track kind does the qualifying here that a sub type does for a carriage, and it
+            // is the one thing worth saying: eight kinds share the name `default`, so the name line
+            // above cannot tell you which of them is on the plot.
+            String trackKindId = data.trackKindId();
+            return trackKindId == null || trackKindId.isEmpty()
+                    ? mode
+                    : translate.apply("gui.dungeontrain.builder.track_kind." + trackKindId)
+                            + " — " + mode;
         }
         String subType = translate.apply(data.subType().labelKey());
         if (data.subType() == BuilderNewOptions.SubType.PARTS
