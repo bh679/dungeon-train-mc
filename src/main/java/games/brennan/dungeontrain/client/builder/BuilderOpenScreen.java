@@ -431,8 +431,12 @@ public final class BuilderOpenScreen extends Screen {
         if (source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE) {
             String carriageId = BuilderOpenOptions.bareId(source, value);
             String stageId = group;
+            // The sub type rides along because the store this came out of can't imply it: a carriage
+            // browsed under a Stage is a carriage template, so Save must write it as a whole
+            // carriage, but it was opened as one room-sized build and stands alone on the track.
             return () -> DungeonTrainNet.sendToServer(new BuilderOpenPacket(mode.id(),
-                    BuilderPhotoPaths.Kind.CARRIAGE.id(), carriageId, "", force, stageId));
+                    BuilderPhotoPaths.Kind.CARRIAGE.id(), carriageId, "", force, stageId,
+                    subType.id()));
         }
         BuilderOpenRequest request = BuilderOpenRequest
                 .forSelection(subType, BuilderOpenOptions.bareId(source, value), partKindValue())
@@ -441,6 +445,6 @@ public final class BuilderOpenScreen extends Screen {
             return null;
         }
         return () -> DungeonTrainNet.sendToServer(new BuilderOpenPacket(mode.id(),
-                request.kind().id(), request.id(), request.partKindId(), force));
+                request.kind().id(), request.id(), request.partKindId(), force, "", subType.id()));
     }
 }

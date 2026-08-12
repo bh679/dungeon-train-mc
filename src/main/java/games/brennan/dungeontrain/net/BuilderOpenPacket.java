@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderDirtyCheck;
 import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderOpenRequest;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
@@ -48,14 +49,27 @@ import java.util.Optional;
  *                browsing one. Deliberately <em>not</em> part of {@link BuilderOpenRequest}: it does
  *                not name the template being opened, it says which stretch of the game to show it
  *                dressed for — see {@code BuilderWorldSetup.applyOpen}.
+ * @param subTypeId which arm of the Open screen the tile was clicked in, empty when the request's
+ *                own reading should stand. Browse context like {@code stageId}, and out of
+ *                {@link BuilderOpenRequest} for the same reason — it decides how much train to park,
+ *                not what is being opened. The request's sub type comes from the store the template
+ *                lives in, which is the right answer for Save and the wrong one for the count: a
+ *                carriage browsed under a Stage saves as a whole carriage but stands alone.
  */
 public record BuilderOpenPacket(String modeId, String kindId, String id, String partKindId,
-                                boolean force, String stageId) implements CustomPacketPayload {
+                                boolean force, String stageId, String subTypeId)
+        implements CustomPacketPayload {
+
+    /** Back-compat 6-arg form: open with no browsing arm recorded. */
+    public BuilderOpenPacket(String modeId, String kindId, String id, String partKindId,
+                             boolean force, String stageId) {
+        this(modeId, kindId, id, partKindId, force, stageId, "");
+    }
 
     /** Back-compat 5-arg form: open with no browsed stage, the template's own link deciding. */
     public BuilderOpenPacket(String modeId, String kindId, String id, String partKindId,
                              boolean force) {
-        this(modeId, kindId, id, partKindId, force, "");
+        this(modeId, kindId, id, partKindId, force, "", "");
     }
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -72,9 +86,10 @@ public record BuilderOpenPacket(String modeId, String kindId, String id, String 
                 buf.writeUtf(p.partKindId, 16);
                 buf.writeBoolean(p.force);
                 buf.writeUtf(p.stageId, 32);
+                buf.writeUtf(p.subTypeId, 32);
             },
             buf -> new BuilderOpenPacket(buf.readUtf(32), buf.readUtf(16), buf.readUtf(64),
-                    buf.readUtf(16), buf.readBoolean(), buf.readUtf(32))
+                    buf.readUtf(16), buf.readBoolean(), buf.readUtf(32), buf.readUtf(32))
         );
 
     @Override
@@ -125,7 +140,8 @@ public record BuilderOpenPacket(String modeId, String kindId, String id, String 
 
             BuilderOpenRequest request = new BuilderOpenRequest(
                     kind.get(), packet.id, CarriagePartKind.fromId(packet.partKindId));
-            if (!BuilderWorldSetup.applyOpen(level, mode.get(), request, packet.stageId)) {
+            if (!BuilderWorldSetup.applyOpen(level, mode.get(), request, packet.stageId,
+                    BuilderNewOptions.SubType.fromId(packet.subTypeId).orElse(null))) {
                 // Loud on purpose. A failed open is the one case where saying nothing would be
                 // dangerous: the builder would assume their template loaded and keep working.
                 player.sendSystemMessage(Component.translatable(
