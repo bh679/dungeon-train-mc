@@ -119,6 +119,9 @@ public final class BuilderWorldSetup {
                 .orElse(0);
 
         clearTrain(level, dims, previous);
+        // A track template left standing would be scenery nobody asked for in a carriage build —
+        // and a tunnel is tall enough to swallow the train.
+        clearTrackPlot(level, data, dims);
         int carriages = mode.carriageCount();
         if (carriages > 0) {
             stampTrain(level, dims, carriages);
@@ -333,6 +336,7 @@ public final class BuilderWorldSetup {
         BuilderMode previousMode = BuilderMode.fromId(data.builderMode()).orElse(mode);
         int previousCarriages = previousMode.carriageCount();
         clearTrain(level, dims, previousCarriages);
+        clearTrackPlot(level, data, dims);
         data.setBuilderMode(mode.id());
 
         // A stage doesn't name a carriage — it decides which parts get stamped onto one. Selecting
@@ -482,6 +486,7 @@ public final class BuilderWorldSetup {
 
         BuilderMode previousMode = BuilderMode.fromId(data.builderMode()).orElse(mode);
         clearTrain(level, dims, previousMode.carriageCount());
+        clearTrackPlot(level, data, dims);
         data.setBuilderMode(mode.id());
 
         // Before the stamp, for the same reason applyNew does it: CarriagePlacer.placeAt reads
@@ -623,6 +628,13 @@ public final class BuilderWorldSetup {
      * <p>Same reasoning as {@link #clearTrain}: a baseline for a plot that no longer holds what it
      * described would have the next dirty check comparing against a ghost. Skipped entirely when
      * the world wasn't holding a track build, which is the common case.</p>
+     *
+     * <p>A plot that sat <em>in</em> the corridor takes a stretch of the shared track with it when
+     * it goes — a tunnel is ten blocks long and the tile that replaces it is four, so the erase
+     * would leave the line with holes either side of the new plot. So the corridor is re-laid
+     * afterwards, by the same {@link #stampTrack} call that put it there in the first place. The
+     * caller stamps its own template after this returns, so it wins over the restored track where
+     * the two overlap.</p>
      */
     private static void clearTrackPlot(ServerLevel level, DungeonTrainWorldData data,
                                        CarriageDims dims) {
@@ -636,6 +648,9 @@ public final class BuilderWorldSetup {
         erase(level, origin, size);
         EditorPlotSnapshots.clear(BuilderDirtyCheck.snapshotKey(previous, data.builderName()));
         data.setBuilderTrackKind("");
+        if (BuilderTrackPlot.inCorridor(previous)) {
+            stampTrack(level, dims);
+        }
     }
 
     /** Force every chunk a plot touches, so the stamp below never sync-loads mid-write. */
