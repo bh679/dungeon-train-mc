@@ -6807,6 +6807,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "impossible-room-advancements",
+      "version": "0.554.0",
+      "type": "feat",
+      "title": "The rooms beyond the corridors count toward your journey, and two new advancements",
+      "summary": "Step through a carriage corridor into one of the rooms that could never fit inside it and the train keeps rolling without you \u2014 but until now, everything you travelled while you were in there counted for nothing. It counts now: you cover as much ground as the train does while you look around. Two new advancements come with it, one for going inside at all, and one for finding your way out somewhere far from where you came in.",
+      "highlights": [
+        "Time and distance now keep counting while you are inside one of the impossible rooms",
+        "New advancement: 'Train inside a train?' for stepping out of a corridor into a room that could never have fitted in the carriage",
+        "New advancement: 'A new way out' for leaving one of those rooms by a corridor at least 50 blocks from the one you entered through"
+      ],
+      "pr": 953,
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
