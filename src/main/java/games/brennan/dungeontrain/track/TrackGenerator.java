@@ -151,7 +151,8 @@ public final class TrackGenerator {
      * flat terrain lands on a multiple of this value (otherwise stairs never
      * appear). 40 blocks ≈ 5 flat-terrain pillar slots.
      */
-    private static final int MIN_STAIRS_SPACING = 100;
+    /** Public so the builder's ghost preview spaces its staircases the way the world does. */
+    public static final int MIN_STAIRS_SPACING = 100;
 
     private TrackGenerator() {}
 
@@ -204,10 +205,13 @@ public final class TrackGenerator {
 
     /**
      * Pure helper: {@code height < 5} → 8 (base), else {@code height + 8}
-     * clamped to {@link #MAX_PILLAR_SPACING}. Exposed package-private for unit
-     * tests.
+     * clamped to {@link #MAX_PILLAR_SPACING}.
+     *
+     * <p>Public because the Train Builder's ghost preview lays its columns out with it. A preview
+     * that copied the formula would be a second source of truth for the thing it exists to be
+     * faithful to, and the two would drift the first time this one was tuned.</p>
      */
-    static int computeSpacing(int height) {
+    public static int computeSpacing(int height) {
         if (height < TALL_PILLAR_HEIGHT_THRESHOLD) return BASE_PILLAR_SPACING;
         int spacing = height + BASE_PILLAR_SPACING;
         return Math.min(spacing, MAX_PILLAR_SPACING);
@@ -215,10 +219,12 @@ public final class TrackGenerator {
 
     /**
      * Pure helper: one pillar-block of thickness per 6 blocks of spacing,
-     * minimum 1. 8→1, 13→2, 18→3, 24→4, 30→5. Exposed package-private for
-     * unit tests.
+     * minimum 1. 8→1, 13→2, 18→3, 24→4, 30→5.
+     *
+     * <p>Public for the same reason as {@link #computeSpacing} — the builder's ghost preview
+     * measures its columns with it.</p>
      */
-    static int computeThickness(int spacing) {
+    public static int computeThickness(int spacing) {
         return Math.max(1, spacing / 6);
     }
 
@@ -237,10 +243,11 @@ public final class TrackGenerator {
      *
      * <p>Index 0 is the column immediately beside the pillar's footprint edge;
      * higher indices step further into the gap. The same profile is mirrored
-     * onto both X sides. Pure + package-private for unit testing, matching
-     * {@link #computeSpacing}/{@link #computeThickness}.</p>
+     * onto both X sides. Pure and public, matching
+     * {@link #computeSpacing}/{@link #computeThickness} — the builder's ghost preview draws the
+     * arch from this very profile rather than from a copy of it.</p>
      */
-    static int[] archProfile(int height) {
+    public static int[] archProfile(int height) {
         if (height < TALL_PILLAR_HEIGHT_THRESHOLD) return new int[0];
         if (height >= TALL_ARCH_HEIGHT_THRESHOLD) return new int[] {5, 3, 2, 1, 1, 1};
         return new int[] {3, 2, 1, 1};
@@ -1065,7 +1072,7 @@ public final class TrackGenerator {
      * in-chunk deviation preserve the ≥60 spacing floor. Splitmix64 finalizer, same constants
      * as {@code DungeonTrainWorldData.deriveGenerationSeed}.
      */
-    static int stairsAnchorPhase(long worldSeed) {
+    public static int stairsAnchorPhase(long worldSeed) {
         long h = worldSeed ^ 0x5741A1525354A952L; // "STAIRS" salt
         h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
         h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
@@ -1078,7 +1085,7 @@ public final class TrackGenerator {
      * range contains none. Ranges narrower than MIN_STAIRS_SPACING (a 16-wide chunk) contain
      * at most one anchor. Pure function of (worldSeed, range) — every run agrees.
      */
-    static int stairsAnchorInRange(long worldSeed, int minX, int maxX) {
+    public static int stairsAnchorInRange(long worldSeed, int minX, int maxX) {
         int phase = stairsAnchorPhase(worldSeed);
         int k = Math.floorDiv(minX - phase + MIN_STAIRS_SPACING - 1, MIN_STAIRS_SPACING);
         int anchor = k * MIN_STAIRS_SPACING + phase;
@@ -1090,7 +1097,7 @@ public final class TrackGenerator {
      * the line, preserving the pre-determinism aesthetic) XOR one seed-derived world bit so
      * different worlds don't all start on the same side. {@code true} = -Z.
      */
-    static boolean stairsSideForAnchor(long worldSeed, int anchorX) {
+    public static boolean stairsSideForAnchor(long worldSeed, int anchorX) {
         int slot = Math.floorDiv(anchorX - stairsAnchorPhase(worldSeed), MIN_STAIRS_SPACING);
         long h = worldSeed ^ 0x53494445B17L; // "SIDE" salt
         h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;

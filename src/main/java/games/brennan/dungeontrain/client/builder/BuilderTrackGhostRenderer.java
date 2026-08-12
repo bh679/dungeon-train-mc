@@ -3,8 +3,6 @@ package games.brennan.dungeontrain.client.builder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.builder.BuilderTrackGhostShape;
-import games.brennan.dungeontrain.builder.BuilderTrackPlot;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.client.Minecraft;
@@ -42,7 +40,8 @@ import java.util.Map;
  *
  * <p>A track tile is four blocks of a line that runs three hundred, and a pillar section is a slab
  * whose whole job is to hold a line up. Neither tells you much on its own; what you are judging is
- * the join. So the surroundings are drawn back in, and the plot is left as the only solid thing.</p>
+ * the join. So the whole stretch of line is drawn back in around it, and the plot is left as the
+ * only solid thing in it.</p>
  *
  * <p><b>Drawn, never stamped</b> — the corridor is erased on the way into a track build
  * ({@code BuilderWorldSetup.applyOpenTrack}), so a ghost cannot be broken, walked on, or saved into
@@ -62,11 +61,9 @@ import java.util.Map;
  *       a ghost still shows through the blend.</li>
  * </ul>
  *
- * <p>Two sources of geometry, for one reason. A tile or a tunnel is authored <em>in</em> the
- * corridor, so the real thing is on the plot and the line either side is that plot repeated — the
- * template tessellating, which is exactly what you want to judge a seam by. A pillar or a staircase
- * is authored beside the corridor with no line near it, so the line and the rest of the column are
- * modelled by {@link BuilderTrackGhostShape}.</p>
+ * <p>The scene itself is {@link BuilderTrackSceneGhosts}' — the line, the columns under it, the arch
+ * between them and the staircases climbing to it, laid out by the generator's own rules and built
+ * from the authored templates rather than from a stand-in palette.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class BuilderTrackGhostRenderer {
@@ -75,10 +72,8 @@ public final class BuilderTrackGhostRenderer {
     private static final RenderType GHOST = RenderType.entityTranslucentCull(InventoryMenu.BLOCK_ATLAS);
 
     private static final int RESCAN_INTERVAL_TICKS = 10;
-    /** How many plot-lengths of repeat to draw either side, for the corridor kinds. */
-    private static final int REPEATS_EACH_WAY = 12;
     /** Hard ceiling so a pathological build can't stall a frame. */
-    private static final int MAX_CELLS = 8_192;
+    private static final int MAX_CELLS = 40_000;
 
     /** Pale blue over the block's own texture, so a ghost still reads as a ghost. */
     private static final float TINT_R = 0.80F;
@@ -115,56 +110,26 @@ public final class BuilderTrackGhostRenderer {
             cells = Map.of();
             return;
         }
-        if (BuilderTrackPlot.inCorridor(kind)) {
-            cells = repeatedPlotCells(mc.level, plot);
-            return;
-        }
-        Map<BlockPos, BlockState> modelled = new LinkedHashMap<>();
-        for (BuilderTrackGhostShape.Cell cell
-                : BuilderTrackGhostShape.cells(kind, plot, CarriageDims.DEFAULT)) {
-            modelled.put(cell.pos(), cell.state());
-            if (modelled.size() >= MAX_CELLS) {
-                break;
-            }
-        }
-        cells = modelled;
+        // Resolved here rather than in the render pass: the first read of a template does file I/O
+        // and NBT decompression inside a synchronized store, which is not a thing to do per frame.
+        Map<BlockPos, BlockState> scene = BuilderTrackSceneGhosts.build(
+                BuilderGhostTemplates.worldSeed(), CarriageDims.DEFAULT, plot);
+        cells = scene.size() <= MAX_CELLS ? scene : trimmed(scene);
     }
 
     /**
-     * The plot's own solid blocks, repeated along X at plot-length intervals.
+     * Drop the far end of an over-large scene.
      *
-     * <p>The template tessellating down the line — the real one, states and all, read out of the
-     * world rather than modelled, because for these kinds it is right there on the plot. The same
-     * trick the carriage ghosts use to fill empty slots from the one parked carriage.</p>
+     * <p>The cap is a frame-time guard, and the cells worth keeping are the ones nearest the plot —
+     * which is where the builder is standing and what the whole preview is about.</p>
      */
-    private static Map<BlockPos, BlockState> repeatedPlotCells(Level level, BoundingBox plot) {
-        Map<BlockPos, BlockState> local = new LinkedHashMap<>();
-        BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
-        for (int x = plot.minX(); x <= plot.maxX(); x++) {
-            for (int y = plot.minY(); y <= plot.maxY(); y++) {
-                for (int z = plot.minZ(); z <= plot.maxZ(); z++) {
-                    BlockState state = level.getBlockState(probe.set(x, y, z));
-                    if (!state.isAir()) {
-                        local.put(new BlockPos(x, y, z), state);
-                    }
-                }
-            }
-        }
-        Map<BlockPos, BlockState> out = new LinkedHashMap<>();
-        int step = plot.getXSpan();
-        for (int repeat = -REPEATS_EACH_WAY; repeat <= REPEATS_EACH_WAY; repeat++) {
-            if (repeat == 0) {
-                continue;   // the plot itself is real; ghosting it would double it
-            }
-            int offset = repeat * step;
-            for (Map.Entry<BlockPos, BlockState> entry : local.entrySet()) {
-                out.put(entry.getKey().offset(offset, 0, 0), entry.getValue());
-                if (out.size() >= MAX_CELLS) {
-                    return out;
-                }
-            }
-        }
-        return out;
+    private static Map<BlockPos, BlockState> trimmed(Map<BlockPos, BlockState> scene) {
+        BoundingBox plot = ClientTrackGhost.plot();
+        int centreX = plot == null ? 0 : (plot.minX() + plot.maxX()) / 2;
+        return scene.entrySet().stream()
+                .sorted(Comparator.comparingInt(e -> Math.abs(e.getKey().getX() - centreX)))
+                .limit(MAX_CELLS)
+                .collect(LinkedHashMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
     }
 
     @SubscribeEvent

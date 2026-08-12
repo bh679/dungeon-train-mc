@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.track.PillarSection;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.track.TrackPlacer;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -60,27 +62,60 @@ public final class BuilderTrackPlot {
     }
 
     /**
-     * The lowest-corner block the template is stamped at.
+     * The lowest-corner block the template is stamped at — its real place in the scene.
      *
-     * <p>Corridor plots are aligned to the {@link TrackPlacer#TILE_LENGTH} grid the runtime track
-     * painter uses. That alignment is load-bearing for the tile: {@code TrackGenerator} re-stamps
-     * every {@code worldX mod TILE_LENGTH}, so a plot off the grid would sit half a tile out of
-     * phase with the track running away from it on both sides, and the seam you were judging would
-     * be a lie.</p>
+     * <p>Every kind lands where that kind actually lives on a line: a tile is four blocks of the
+     * bed, a tunnel wraps it, a pillar section is its own rows of a column, a staircase hangs off
+     * the side of one. The point is that the piece you edit is <em>in</em> the picture the ghosts
+     * draw around it rather than parked beside it — you are judging a join, and a join you cannot
+     * see is the thing this whole preview exists to fix.</p>
+     *
+     * <p>X is aligned to the {@link TrackPlacer#TILE_LENGTH} grid the runtime painter uses, and for
+     * the column kinds to a real column centre. Both are load-bearing: {@code TrackGenerator}
+     * re-stamps every {@code worldX mod TILE_LENGTH}, so a tile off the grid would sit half a tile
+     * out of phase with the line running away from it, and a column off centre would have the arch
+     * reaching from somewhere its pillar isn't.</p>
      */
     public static BlockPos origin(TrackKind kind, CarriageDims dims) {
         Vec3i size = footprint(kind, dims);
-        if (inCorridor(kind)) {
-            // Centred on the track's Z axis, which for the tile is the corridor exactly (its width
-            // is the corridor's) and for a tunnel is the arch sitting symmetrically over it.
-            int z = (int) Math.round(BuilderWorldLayout.trackCenterZ(dims) - size.getZ() / 2.0);
-            return new BlockPos(alignedX(size.getX()), BuilderWorldLayout.Y_TRACK_BED, z);
-        }
-        // Clear of the corridor on +Z — the side the builder spawns on, so it is in front of them
-        // rather than behind the track.
-        return new BlockPos(alignedX(size.getX()),
-                BuilderWorldLayout.Y_STAND,
-                dims.width() + OFF_CORRIDOR_MARGIN);
+        TrackGeometry g = BuilderTrackScene.geometry(dims);
+        return switch (kind) {
+            // In the line itself, centred on the corridor: the tile is the bed's own width, and a
+            // tunnel is the arch sitting symmetrically over it.
+            case TILE, TUNNEL_SECTION, TUNNEL_PORTAL -> new BlockPos(
+                    alignedX(size.getX()),
+                    BuilderTrackScene.bedY(),
+                    (int) Math.round(g.trackCenterZ() - size.getZ() / 2.0 + 0.5));
+            // Its own rows of the edited column, counted the way placePillarSlice stacks them:
+            // bottom from the ground up, top hanging from the cap, middles filling between.
+            case PILLAR_BOTTOM -> columnOrigin(g, BuilderTrackScene.groundY());
+            case PILLAR_MIDDLE -> columnOrigin(g,
+                    BuilderTrackScene.groundY() + PillarSection.BOTTOM.height());
+            case PILLAR_TOP -> columnOrigin(g,
+                    BuilderTrackScene.bedY() - PillarSection.TOP.height());
+            // Beside the column, flush against the corridor, reaching deck height — the generator's
+            // own origin for an up-staircase.
+            case ADJUNCT_STAIRS, ADJUNCT_STAIRS_ENTRANCE -> new BlockPos(
+                    editedColumnCentreX() - 1,
+                    BuilderTrackScene.stairsTopY() - size.getY() + 1,
+                    BuilderTrackScene.stairsMinZ(false, dims));
+        };
+    }
+
+    /**
+     * The column the builder edits and the ghosts are drawn around.
+     *
+     * <p>The one nearest the origin, so you arrive looking at it rather than hunting down the line
+     * for it.</p>
+     */
+    public static int editedColumnCentreX() {
+        int spacing = BuilderTrackScene.spacing();
+        return Math.floorDiv(0, spacing) * spacing;
+    }
+
+    /** A pillar section's origin: the edited column's low corner, at the row that section occupies. */
+    private static BlockPos columnOrigin(TrackGeometry g, int y) {
+        return new BlockPos(BuilderTrackScene.columnMinX(editedColumnCentreX()), y, g.trackZMin());
     }
 
     /**
@@ -111,16 +146,17 @@ public final class BuilderTrackPlot {
     }
 
     /**
-     * Where to stand to look at this plot: back off the far side of it on Z, on the grass.
+     * Where to stand to look at this plot: back off it on Z, level with it.
      *
-     * <p>Far enough to fit the whole footprint in frame, using the same framing arithmetic the
-     * carriage spawn uses so a tunnel and a train are judged from comparable distances.</p>
+     * <p>Level with rather than on the grass, because the scene is in the air — a builder dropped on
+     * the platform under a column twelve blocks up would be looking at the underside of a bridge and
+     * wondering where their template went. Far enough back to fit the footprint in frame.</p>
      */
     public static BlockPos viewPos(TrackKind kind, CarriageDims dims) {
         BoundingBox box = volume(kind, dims);
         int centreX = (box.minX() + box.maxX()) / 2;
         double standoff = Math.max(box.getXSpan(), box.getYSpan());
         int z = box.maxZ() + (int) Math.ceil(standoff) + OFF_CORRIDOR_MARGIN;
-        return new BlockPos(centreX, BuilderWorldLayout.Y_STAND, z);
+        return new BlockPos(centreX, box.minY(), z);
     }
 }
