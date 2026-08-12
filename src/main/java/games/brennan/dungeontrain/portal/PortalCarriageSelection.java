@@ -82,6 +82,17 @@ public final class PortalCarriageSelection {
      * {@code minLevel} and the stage presets. At the default twenty carriages a level and a one-level
      * progression delay, level two begins sixty carriages out — see {@link #firstEligibleGroup()},
      * which is where this is turned into a group ordinal.</p>
+     *
+     * <p><b>This is the position frame, and the boarding HUD is not.</b> The HUD's Diff-Level comes
+     * from {@code BoardingProgressData.travelledCarriageIndex} — carriages counted from wherever the
+     * player <em>boarded</em> — while this counts from the train's origin. A player who chased the
+     * train and got on nine carriages in therefore runs nine carriages behind the track, and can
+     * reach the first portal while their HUD still reads level one. That gap is not a bug to close
+     * here: the position frame is the only one a portal verdict may read. The player frame is
+     * per-world mutable and depends on who is online, and a verdict that moved with it would turn a
+     * corridor into an ordinary carriage under whoever was standing in it — see the class note above.
+     * Raising this constant to paper over the boarding lag was considered and declined; the gate is
+     * about where the <em>track</em> is, and every other template gate reads the same frame.</p>
      */
     public static final int MIN_PORTAL_LEVEL = 2;
 
