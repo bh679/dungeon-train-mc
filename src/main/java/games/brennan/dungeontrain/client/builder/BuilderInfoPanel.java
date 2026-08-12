@@ -124,7 +124,8 @@ final class BuilderInfoPanel extends AbstractWidget {
                 BuilderBoundsState.partKindId(),
                 BuilderBoundsState.stageId(),
                 dims(),
-                BuilderBoundsState.weight());
+                BuilderBoundsState.weight(),
+                BuilderBoundsState.trackKindId());
     }
 
     /** True while the name line should be drawn as a draft — shared with the HUD's colouring. */

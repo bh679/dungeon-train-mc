@@ -4,6 +4,8 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
+import games.brennan.dungeontrain.builder.BuilderTrackBuild;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.builder.BuilderSave;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -71,8 +73,17 @@ public record BuilderSavePacket() implements CustomPacketPayload {
      */
     private static void requestPhoto(ServerPlayer player, ServerLevel level, String id) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        BuilderPhotoRequest request = new BuilderPhotoRequest(
-                kindOf(data.builderSubType()), id, CarriagePartKind.fromId(data.builderPartKind()));
+        // The track kind first, because it is the branch BuilderSave itself takes first: a track
+        // build has no sub type at all, so asking kindOf about it would answer CARRIAGE and file a
+        // tunnel's photo in the carriage directory.
+        TrackKind trackKind = BuilderTrackBuild.kindOf(data);
+        BuilderPhotoRequest request = trackKind != null
+                ? BuilderPhotoRequest.forTrack(trackKind, id).orElse(null)
+                : new BuilderPhotoRequest(kindOf(data.builderSubType()), id,
+                        CarriagePartKind.fromId(data.builderPartKind()));
+        if (request == null) {
+            return;
+        }
         BuilderPhotoPacket.send(player, level, request, false);
     }
 

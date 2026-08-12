@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -68,6 +70,30 @@ final class BuilderWorldLayoutTest {
         assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, 3, DIMS.width()), DIMS),
                 "one block past the corridor is open ground at track height");
         assertFalse(BuilderWorldLayout.isProtected(new BlockPos(0, 2, -1), DIMS));
+    }
+
+    @Test
+    @DisplayName("An open track plot is a hole in the protection, and only that plot")
+    void theTrackPlotIsEditable() {
+        BoundingBox plot = BuilderTrackPlot.volume(TrackKind.TILE, DIMS);
+        BlockPos inside = new BlockPos(plot.minX(), BuilderWorldLayout.Y_TRACK_RAIL, plot.minZ());
+        // Authoring a track tile *is* editing the rail rows; without this you could open one and
+        // then not touch it.
+        assertFalse(BuilderWorldLayout.isProtected(inside, DIMS, plot));
+        assertTrue(BuilderWorldLayout.isProtected(inside, DIMS),
+                "the same block is still scenery when no track build is open");
+
+        // One block past the plot the corridor is scenery again.
+        BlockPos beyond = new BlockPos(plot.maxX() + 1, BuilderWorldLayout.Y_TRACK_RAIL, plot.minZ());
+        assertTrue(BuilderWorldLayout.isProtected(beyond, DIMS, plot));
+    }
+
+    @Test
+    @DisplayName("The bedrock floor stays protected even under an open plot")
+    void bedrockIsNeverCarvedOut() {
+        // A plot that somehow reached Y=0 must not be able to open a hole in the world floor.
+        BoundingBox wholeWorld = new BoundingBox(-150, 0, -150, 149, 40, 149);
+        assertTrue(BuilderWorldLayout.isProtected(new BlockPos(0, 0, 0), DIMS, wholeWorld));
     }
 
     @Test

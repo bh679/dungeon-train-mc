@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.builder;
 import games.brennan.dungeontrain.builder.BuilderLabels;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
+import games.brennan.dungeontrain.builder.BuilderTrackGroup;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.network.chat.Component;
@@ -58,6 +59,26 @@ final class BuilderTypeControls {
                 .displayOnlyValue()
                 .create(x, y, width, height,
                         Component.translatable("gui.dungeontrain.builder.new.subtype"),
+                        (button, value) -> onChange.accept(value));
+    }
+
+    /**
+     * Which part of the line is being authored. The track modes' answer to {@link #subType}.
+     *
+     * <p>Same control in the same slot as the sub type, because it is the same question one level
+     * over: having picked Tracks &amp; Tunnels, what within it? Only the words differ.</p>
+     */
+    static CycleButton<BuilderTrackGroup> trackGroup(int x, int y, int width, int height,
+                                                     List<BuilderTrackGroup> values,
+                                                     BuilderTrackGroup initial,
+                                                     Consumer<BuilderTrackGroup> onChange) {
+        return CycleButton.<BuilderTrackGroup>builder(
+                        value -> Component.translatable(value.labelKey()))
+                .withValues(values)
+                .withInitialValue(initial)
+                .displayOnlyValue()
+                .create(x, y, width, height,
+                        Component.translatable("gui.dungeontrain.builder.track_group"),
                         (button, value) -> onChange.accept(value));
     }
 

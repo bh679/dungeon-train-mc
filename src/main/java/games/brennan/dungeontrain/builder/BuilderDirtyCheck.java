@@ -1,9 +1,11 @@
 package games.brennan.dungeontrain.builder;
 
 import games.brennan.dungeontrain.editor.EditorPlotSnapshots;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -36,23 +38,47 @@ public final class BuilderDirtyCheck {
         return EditorPlotSnapshots.key("builder", "carriage:" + carriageIndex);
     }
 
-    /** Indices of the carriages whose blocks differ from their post-stamp baseline. */
+    /**
+     * The baseline key for a track plot.
+     *
+     * <p>Keyed on kind <em>and</em> name because {@code default} exists under every one of the eight
+     * kinds — a single {@code track} key would have a pillar's baseline answering for a tunnel, and
+     * the comparison would report the whole thing dirty the moment you opened the second one.</p>
+     */
+    public static String snapshotKey(TrackKind kind, String name) {
+        return EditorPlotSnapshots.key("builder",
+                "track:" + (kind == null ? "" : kind.id()) + ":" + (name == null ? "" : name));
+    }
+
+    /**
+     * Indices of the build volumes whose blocks differ from their post-stamp baseline.
+     *
+     * <p>Carriages when the mode parks a train, and the single track plot when it doesn't — the
+     * indices are into {@link BuilderBounds#volumesFor}, so a track build reports {@code [0]} for
+     * "the one thing on the plot has been edited". Callers only ever ask how many there are and
+     * whether the list is empty, which reads the same either way.</p>
+     */
     public static List<Integer> dirtyCarriages(ServerLevel level) {
         List<Integer> dirty = new ArrayList<>();
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        int carriages = BuilderMode.fromId(data.builderMode())
-                .map(BuilderMode::carriageCount)
-                .orElse(0);
-        if (carriages <= 0) {
+        BuilderMode mode = BuilderMode.fromId(data.builderMode()).orElse(null);
+        CarriageDims dims = data.dims();
+        TrackKind trackKind = BuilderTrackBuild.kindOf(data);
+        List<BoundingBox> volumes = BuilderBounds.volumesFor(mode, trackKind, dims);
+        if (volumes.isEmpty()) {
             return dirty;
         }
-        CarriageDims dims = data.dims();
-        List<BoundingBox> volumes = BuilderBounds.buildVolumes(carriages, dims);
+        boolean track = trackKind != null && (mode == null || mode.carriageCount() <= 0);
+        Vec3i size = track
+                ? BuilderTrackPlot.footprint(trackKind, dims)
+                : new Vec3i(dims.length(), dims.height(), dims.width());
+
         for (int i = 0; i < volumes.size(); i++) {
             BoundingBox box = volumes.get(i);
-            Map<BlockPos, BlockState> baseline = EditorPlotSnapshots.get(snapshotKey(i));
+            String key = track ? snapshotKey(trackKind, data.builderName()) : snapshotKey(i);
+            Map<BlockPos, BlockState> baseline = EditorPlotSnapshots.get(key);
             BlockPos origin = new BlockPos(box.minX(), box.minY(), box.minZ());
-            if (isDirty(baseline, dims, local -> level.getBlockState(origin.offset(local)))) {
+            if (isDirty(baseline, size, local -> level.getBlockState(origin.offset(local)))) {
                 dirty.add(i);
             }
         }
@@ -73,12 +99,27 @@ public final class BuilderDirtyCheck {
      */
     public static boolean isDirty(Map<BlockPos, BlockState> baseline, CarriageDims dims,
                                   Function<BlockPos, BlockState> liveAt) {
+        return isDirty(baseline, new Vec3i(dims.length(), dims.height(), dims.width()), liveAt);
+    }
+
+    /**
+     * As above, over an arbitrary footprint.
+     *
+     * <p>The volume is a parameter rather than carriage dims because a track plot is not
+     * carriage-shaped — a tunnel is 10×14×13 and a pillar section is one block wide. Walking the
+     * carriage box over a pillar would compare mostly-empty air either side of it and call every
+     * pillar clean.</p>
+     *
+     * @param size the plot's footprint in blocks
+     */
+    public static boolean isDirty(Map<BlockPos, BlockState> baseline, Vec3i size,
+                                  Function<BlockPos, BlockState> liveAt) {
         if (baseline == null) {
             return false;
         }
-        for (int dx = 0; dx < dims.length(); dx++) {
-            for (int dy = 0; dy < dims.height(); dy++) {
-                for (int dz = 0; dz < dims.width(); dz++) {
+        for (int dx = 0; dx < size.getX(); dx++) {
+            for (int dy = 0; dy < size.getY(); dy++) {
+                for (int dz = 0; dz < size.getZ(); dz++) {
                     BlockPos local = new BlockPos(dx, dy, dz);
                     BlockState expected = baseline.get(local);
                     BlockState live = liveAt.apply(local);

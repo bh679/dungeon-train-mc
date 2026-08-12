@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 
 import java.util.Optional;
@@ -19,15 +20,24 @@ import java.util.Optional;
  * bare id means, and no arm where an unresolved id quietly becomes something else — see
  * {@link BuilderWorldSetup#applyOpen}, whose contract is the opposite of {@code applyNew}'s.</p>
  *
- * @param kind     which store owns the template, and therefore where its photo lives
- * @param id       the template id within that store
- * @param partKind which part is being opened; null for every kind but {@link BuilderPhotoPaths.Kind#PART},
- *                 where it is required because a part id is only unique within its kind
+ * @param kind      which store owns the template, and therefore where its photo lives
+ * @param id        the template id within that store
+ * @param partKind  which part is being opened; null for every kind but {@link BuilderPhotoPaths.Kind#PART},
+ *                  where it is required because a part id is only unique within its kind
+ * @param trackKind which track-side kind is being opened; null for every kind but
+ *                  {@link BuilderPhotoPaths.Kind#TRACK}, and required there for the same reason —
+ *                  {@code default} is a track tile, a pillar section, a tunnel and a staircase
  */
-public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, CarriagePartKind partKind) {
+public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, CarriagePartKind partKind,
+                                 TrackKind trackKind) {
 
     public BuilderOpenRequest {
         id = id == null ? "" : id;
+    }
+
+    /** The three-arg form, for the carriage-side kinds that have no track kind to carry. */
+    public BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, CarriagePartKind partKind) {
+        this(kind, id, partKind, null);
     }
 
     /**
@@ -58,17 +68,47 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
         };
     }
 
-    /** The sub type this request saves back as, so the server records what {@code BuilderSave} needs. */
+    /**
+     * A track template, named by its kind.
+     *
+     * <p>Separate from {@link #forSelection} because a track build has no
+     * {@link BuilderNewOptions.SubType} to route on — the carriage sub types are the three things
+     * you can author inside a carriage, and none of them is a rail.</p>
+     */
+    public static Optional<BuilderOpenRequest> forTrack(TrackKind trackKind, String id) {
+        if (trackKind == null || id == null || id.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(new BuilderOpenRequest(BuilderPhotoPaths.Kind.TRACK, id, null, trackKind));
+    }
+
+    /** Whether this is a track-side template rather than something inside a carriage. */
+    public boolean isTrack() {
+        return kind == BuilderPhotoPaths.Kind.TRACK;
+    }
+
+    /**
+     * The sub type this request saves back as, so the server records what {@code BuilderSave} needs.
+     *
+     * <p>Null for a track template: the sub types describe what part of a <em>carriage</em> a build
+     * is, and a track build is not one. Callers must gate on {@link #isTrack()} first —
+     * {@code BuilderWorldSetup.applyOpen} branches to its track arm well before it asks this.</p>
+     */
     public BuilderNewOptions.SubType subType() {
         return switch (kind) {
             case CARRIAGE -> BuilderNewOptions.SubType.WHOLE_CARRIAGE;
             case CONTENTS -> BuilderNewOptions.SubType.CARRIAGE_ROOM;
             case PART -> BuilderNewOptions.SubType.PARTS;
+            case TRACK -> null;
         };
     }
 
     public String partKindId() {
         return partKind == null ? "" : partKind.id();
+    }
+
+    public String trackKindId() {
+        return trackKind == null ? "" : trackKind.id();
     }
 
     public boolean isEmpty() {

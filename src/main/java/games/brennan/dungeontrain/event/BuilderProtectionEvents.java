@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderTrackBuild;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -51,6 +52,8 @@ public final class BuilderProtectionEvents {
             return false;
         }
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        return BuilderWorldLayout.isProtected(pos, dims);
+        // A track build's plot is a hole in the protection: authoring a rail template means editing
+        // the bed and rail rows the rule otherwise defends.
+        return BuilderWorldLayout.isProtected(pos, dims, BuilderTrackBuild.activePlot(level));
     }
 }

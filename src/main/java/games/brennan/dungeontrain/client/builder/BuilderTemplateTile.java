@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -57,7 +58,7 @@ final class BuilderTemplateTile {
      * Draw one cell.
      *
      * @param photoKind which store to look the photo up in; null when this entry has no photo of its
-     *                  own — a track template, or a Stage, which isn't a template at all
+     *                  own — a Stage or a track kind, neither of which is a template at all
      * @param id        the bare template id, already untagged
      * @param label     what the strip reads; passed in rather than derived from {@code id} because a
      *                  saved build is shown under a heading so it can't be mistaken for a Stage
@@ -66,11 +67,11 @@ final class BuilderTemplateTile {
      */
     static void render(GuiGraphics g, BuilderMode mode, boolean modeArtAvailable,
                        BuilderPhotoPaths.Kind photoKind, String id, CarriagePartKind partKind,
-                       Component label,
+                       TrackKind trackKind, Component label,
                        int x, int y, int width, int height, boolean hovered, boolean openable) {
         BuilderPhotoTextures.Photo photo = photoKind == null
                 ? null
-                : BuilderPhotoTextures.textureFor(photoKind, id, partKind);
+                : BuilderPhotoTextures.textureFor(photoKind, id, partKind, trackKind);
 
         if (photo != null) {
             BuilderTileArt.renderCover(g, photo.texture(), photo.width(), photo.height(),

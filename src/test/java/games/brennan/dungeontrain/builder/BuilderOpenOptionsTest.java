@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -7,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
 
 /**
  * What the Open screen lists, and what it will let you click.
@@ -43,15 +46,15 @@ final class BuilderOpenOptionsTest {
     }
 
     @Test
-    @DisplayName("Both two-level lists drill in; the flat ones do not")
+    @DisplayName("The two-level lists drill in; the flat ones do not")
     void onlyTwoLevelListsDrillIn() {
         assertTrue(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.CONTENTS));
         assertTrue(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE));
+        // Kinds, then one kind's templates — the same two levels, for the groups that have them.
+        assertTrue(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.TRACK_KINDS));
 
         assertFalse(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.STAGES));
         assertFalse(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.PARTS));
-        assertFalse(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.TRACK_TILES));
-        assertFalse(BuilderOpenOptions.drillsIn(BuilderOpenOptions.OpenSource.TUNNEL_PORTALS));
     }
 
     @Test
@@ -70,10 +73,13 @@ final class BuilderOpenOptionsTest {
     }
 
     @Test
-    @DisplayName("Only CARRIAGES_BY_STAGE cares which level the grid is on")
+    @DisplayName("Only the two-level sources care which level the grid is on")
     void otherSourcesIgnoreTheLevel() {
         for (BuilderOpenOptions.OpenSource source : BuilderOpenOptions.OpenSource.values()) {
-            if (source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE) {
+            // The two sources whose levels hold different kinds of thing: stages then carriages,
+            // and track kinds then their templates. Everything else lists one thing throughout.
+            if (source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE
+                    || source == BuilderOpenOptions.OpenSource.TRACK_KINDS) {
                 continue;
             }
             assertEquals(BuilderOpenOptions.photoKindFor(source, "maze"),
@@ -99,25 +105,40 @@ final class BuilderOpenOptionsTest {
     void trackModesIgnoreSubType() {
         // They have no sub type control at all, so whatever the screen last held must not leak in.
         for (BuilderNewOptions.SubType subType : BuilderNewOptions.SubType.values()) {
-            assertEquals(BuilderOpenOptions.OpenSource.TRACK_TILES,
+            assertEquals(BuilderOpenOptions.OpenSource.TRACK_KINDS,
                     BuilderOpenOptions.openSourceFor(BuilderMode.TRACKS_TUNNELS, subType));
-            assertEquals(BuilderOpenOptions.OpenSource.TUNNEL_PORTALS,
+            assertEquals(BuilderOpenOptions.OpenSource.TRACK_KINDS,
                     BuilderOpenOptions.openSourceFor(BuilderMode.TRAIN_DIMENSIONS, subType));
         }
     }
 
     @Test
-    @DisplayName("Only the carriage sources are openable today")
-    void onlyCarriageSourcesAreOpenable() {
-        assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.STAGES));
-        assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.CONTENTS));
-        assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.PARTS));
-        assertTrue(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE));
+    @DisplayName("Tracks & Tunnels offers all four groups; Train Dimensions offers none")
+    void trackGroupsBelongToTracksAndTunnels() {
+        assertEquals(List.of(BuilderTrackGroup.values()),
+                BuilderOpenOptions.trackGroupsFor(BuilderMode.TRACKS_TUNNELS));
+        // One kind of thing, so there is nothing to choose between and no group row to show.
+        assertTrue(BuilderOpenOptions.trackGroupsFor(BuilderMode.TRAIN_DIMENSIONS).isEmpty());
+        assertTrue(BuilderOpenOptions.trackGroupsFor(BuilderMode.TRAIN_OUTSIDE).isEmpty());
+    }
 
-        // Not a policy choice — there is no stamp or save path for these yet. When one lands, this
-        // is the assertion that should fail and tell you to flip it.
-        assertFalse(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.TRACK_TILES));
-        assertFalse(BuilderOpenOptions.isOpenable(BuilderOpenOptions.OpenSource.TUNNEL_PORTALS));
+    @Test
+    @DisplayName("Each track mode lands on the kind it is about")
+    void trackModesHaveTheirOwnDefaultKind() {
+        assertEquals(TrackKind.TUNNEL_PORTAL,
+                BuilderOpenOptions.defaultTrackKind(BuilderMode.TRAIN_DIMENSIONS));
+        assertEquals(TrackKind.TILE,
+                BuilderOpenOptions.defaultTrackKind(BuilderMode.TRACKS_TUNNELS));
+    }
+
+    @Test
+    @DisplayName("Every source is openable, tracks included")
+    void everySourceIsOpenable() {
+        // The track sources were the exception for as long as there was no stamp or save path for
+        // them. Both landed with BuilderTrackPlot, so the exception went with them.
+        for (BuilderOpenOptions.OpenSource source : BuilderOpenOptions.OpenSource.values()) {
+            assertTrue(BuilderOpenOptions.isOpenable(source), source + " should be openable");
+        }
     }
 
     @Test
@@ -141,10 +162,12 @@ final class BuilderOpenOptionsTest {
         assertEquals(BuilderPhotoPaths.Kind.PART, BuilderOpenOptions.photoKindFor(
                 BuilderOpenOptions.OpenSource.PARTS, "slatted"));
 
-        // Null rather than a new enum constant: nothing photographs a track, so an entry for one
-        // would be a path that never has a file behind it.
-        assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.TRACK_TILES, "default"));
-        assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.TUNNEL_PORTALS, "default"));
+        // A track kind is a category rather than a file, so the top level has no photo; one level in
+        // the same cells are templates and do.
+        assertNull(BuilderOpenOptions.photoKindFor(
+                BuilderOpenOptions.OpenSource.TRACK_KINDS, "tunnel_section"));
+        assertEquals(BuilderPhotoPaths.Kind.TRACK, BuilderOpenOptions.photoKindFor(
+                BuilderOpenOptions.OpenSource.TRACK_KINDS, "nethertracks", true));
     }
 
     @Test

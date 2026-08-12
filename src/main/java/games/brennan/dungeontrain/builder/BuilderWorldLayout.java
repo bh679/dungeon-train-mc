@@ -8,6 +8,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.dimension.DimensionType;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 /**
  * Where everything sits in a Train Builder world.
@@ -103,11 +104,35 @@ public final class BuilderWorldLayout {
      * a rail. Everything from the train floor up stays editable — that is the build.
      */
     public static boolean isProtected(BlockPos pos, CarriageDims dims) {
+        return isProtected(pos, dims, null);
+    }
+
+    /**
+     * As {@link #isProtected(BlockPos, CarriageDims)}, with the track plot carved out of it.
+     *
+     * <p>Authoring a track tile means editing rails on the track bed, which the rule above exists to
+     * forbid — and rightly, for every other build. So the plot is an explicit hole in it: inside
+     * {@code trackPlot} the bed and rail rows are the build and are yours, and one block outside
+     * them they are scenery again.</p>
+     *
+     * <p>The bedrock floor is never carved out, whatever the plot says. Nothing is authored at
+     * {@link #Y_BEDROCK} — no track kind's footprint reaches it — and a hole in the world floor of a
+     * builder dimension is not a recoverable mistake.</p>
+     *
+     * @param trackPlot the volume of the open track template, or null when this build isn't one
+     */
+    public static boolean isProtected(BlockPos pos, CarriageDims dims, BoundingBox trackPlot) {
         int y = pos.getY();
         if (!inPlatform(pos.getX(), pos.getZ())) {
             return false;
         }
-        if (y == Y_BEDROCK || y == Y_GRASS) {
+        if (y == Y_BEDROCK) {
+            return true;
+        }
+        if (trackPlot != null && trackPlot.isInside(pos)) {
+            return false;
+        }
+        if (y == Y_GRASS) {
             return true;
         }
         return (y == Y_TRACK_BED || y == Y_TRACK_RAIL) && inCorridor(pos.getZ(), dims);

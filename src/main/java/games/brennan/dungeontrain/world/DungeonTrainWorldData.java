@@ -66,6 +66,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_BUILDER_MIRROR = "builderMirror";
     private static final String TAG_BUILDER_SUB_TYPE = "builderSubType";
     private static final String TAG_BUILDER_PART_KIND = "builderPartKind";
+    private static final String TAG_BUILDER_TRACK_KIND = "builderTrackKind";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -109,6 +110,17 @@ public final class DungeonTrainWorldData extends SavedData {
     private String builderSubType;
     /** Which part kind, when {@link #builderSubType} is {@code parts}. */
     private String builderPartKind;
+    /**
+     * Which {@code TrackKind} this build is, when it is a track-side template rather than part of a
+     * carriage — {@code tile}, {@code pillar_middle}, {@code tunnel_portal} and so on. Null or empty
+     * for a carriage build.
+     *
+     * <p>The track modes have no {@link #builderSubType}, because the sub types name the parts of a
+     * carriage and a rail is not one. This is the track equivalent, and it is what Save reads to
+     * decide which of the eight directories the template belongs in — {@code default} exists in all
+     * of them, so the name alone can't say.</p>
+     */
+    private String builderTrackKind;
     /**
      * The Stage the builder picked when starting this build, or null/empty when they didn't pick
      * one. Held until the build is saved, at which point the written template is linked to it —
@@ -300,6 +312,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_BUILDER_SUB_TYPE)) {
             data.builderSubType = tag.getString(TAG_BUILDER_SUB_TYPE);
         }
+        if (tag.contains(TAG_BUILDER_TRACK_KIND)) {
+            data.builderTrackKind = tag.getString(TAG_BUILDER_TRACK_KIND);
+        }
         if (tag.contains(TAG_BUILDER_PART_KIND)) {
             data.builderPartKind = tag.getString(TAG_BUILDER_PART_KIND);
         }
@@ -344,6 +359,9 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         if (builderSubType != null) {
             tag.putString(TAG_BUILDER_SUB_TYPE, builderSubType);
+        }
+        if (builderTrackKind != null) {
+            tag.putString(TAG_BUILDER_TRACK_KIND, builderTrackKind);
         }
         if (builderPartKind != null) {
             tag.putString(TAG_BUILDER_PART_KIND, builderPartKind);
@@ -401,9 +419,34 @@ public final class DungeonTrainWorldData extends SavedData {
         return builderPartKind;
     }
 
+    /** Record what kind of carriage template this build is. Clears any track kind — see the twin below. */
     public void setBuilderSubType(String subTypeId, String partKindId) {
         this.builderSubType = subTypeId;
         this.builderPartKind = partKindId;
+        if (subTypeId != null && !subTypeId.isEmpty()) {
+            this.builderTrackKind = "";
+        }
+        setDirty();
+    }
+
+    /** Track kind for a track build, or null/empty when this build is part of a carriage. */
+    public String builderTrackKind() {
+        return builderTrackKind;
+    }
+
+    /**
+     * Record which track kind is on the plot.
+     *
+     * <p>Clears the carriage sub type at the same time, because the two are alternatives and a build
+     * that is both would be read as whichever the caller asked about first — the exact ambiguity
+     * that would have Save write a tunnel into the carriage store.</p>
+     */
+    public void setBuilderTrackKind(String trackKindId) {
+        this.builderTrackKind = trackKindId;
+        if (trackKindId != null && !trackKindId.isEmpty()) {
+            this.builderSubType = "";
+            this.builderPartKind = "";
+        }
         setDirty();
     }
 
