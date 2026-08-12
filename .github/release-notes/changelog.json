@@ -6791,6 +6791,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-min-difficulty-gate",
+      "version": "0.552.0",
+      "type": "feat",
+      "title": "Portals stay out of your opening carriages",
+      "summary": "Hallway portals no longer turn up in the first stretch of the train. Nothing before difficulty level 2 \u2014 around sixty carriages in \u2014 holds a portal, so you get to know the train before something that plainly isn't part of it opens up in the middle of it. Past that point portals arrive on their usual sporadic cadence, counted from where they start rather than from the station, so the first one doesn't keep you waiting twice.",
+      "highlights": [
+        "Portals no longer generate before difficulty level 2 (~60 carriages in)",
+        "The first portal past that point arrives on the normal cadence, not after a second wait"
+      ],
+      "pr": 944,
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
