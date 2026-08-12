@@ -198,10 +198,18 @@ public final class BuilderOpenScreen extends Screen {
         };
     }
 
-    /** The four room modes, in enum order, as the ids the grid carries around. */
+    /**
+     * The four room modes as the ids the grid carries around, most enclosed first.
+     *
+     * <p>Sealed in rock, then sealed in nothing, then a floor that runs out of sight, then the room
+     * itself repeating forever — a reader going along the row is walking the walls outwards. Not
+     * {@code PortalRoomMode.values()}, whose order is the order the modes were written and puts
+     * Repeating second, between the two sealed ones.</p>
+     */
     private static List<String> portalRoomModeIds() {
         List<String> out = new ArrayList<>();
-        for (PortalRoomMode m : PortalRoomMode.values()) {
+        for (PortalRoomMode m : List.of(PortalRoomMode.BEDROCK_LOCK, PortalRoomMode.BEDROCKLESS,
+                PortalRoomMode.ENDLESS_OPEN, PortalRoomMode.ENDLESS_REPETITION)) {
             out.add(m.id());
         }
         return out;
