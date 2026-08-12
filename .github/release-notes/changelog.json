@@ -6500,6 +6500,7 @@
       "highlights": [
         "Your Ender Chest is now per-difficulty, and so is the inventory and XP carried between runs when keepInventory is on.",
         "An Ender Chest that isn't your default one says so in its title — \"Ender Chest (Hard)\", \"(Adventure · Hard)\" or \"(Free Play)\" — so an empty chest never looks like lost items.",
+        "Advancements split by kind: ones earned over many lives (lifetime distance, total time aboard, books read, story deeds) stay yours on every difficulty, while ones that must be done in a single life (carriages in a run, chest streaks, roof runs, pacifist runs) are earned separately per difficulty.",
         "Echoes only return on the difficulty they died on, so a Hard run never meets a Peaceful ghost.",
         "Changing difficulty in-game tells you in chat which profile you moved to and where your gear is waiting.",
         "Normal keeps everything you already have \u2014 existing Ender Chests and past lives all belong to Normal, so nothing goes missing."
