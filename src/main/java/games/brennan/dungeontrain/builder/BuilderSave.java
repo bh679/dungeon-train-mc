@@ -105,10 +105,16 @@ public final class BuilderSave {
         BuilderNewOptions.SubType subType = subTypeOf(subTypeToken);
         try {
             if (portalRoom) {
-                // No mirrorBeforeCapture: a portal room's mirror is rebuilt by the editor's own
-                // save path, off the room's variant sidecar rather than the builder's flags — see
-                // PortalRoomEditor.saveRoomFrom, which is the same body the Train Editor runs.
-                savePortalRoom(level, origin, BuilderBounds.sizeOf(box), name);
+                Vec3i roomSize = BuilderBounds.sizeOf(box);
+                // The builder's own mirror flags, not the room's sidecar. The sidecar records how the
+                // room was authored in the Train Editor — one master octant, the rest generated — and
+                // applying that here would regenerate three quarters of the room over whatever was
+                // placed by hand in the builder, where you stand in the whole thing and edit all of
+                // it. Off by default (openPortalRoom sets DEFAULT), so this does nothing unless the
+                // pause menu's mirror row was actually used.
+                mirrorBeforeCapture(level, origin, roomSize,
+                        new BlockVariantPlot.TrackPlot(TrackKind.PORTAL_ROOM, name, origin, roomSize));
+                savePortalRoom(level, origin, roomSize, name);
             } else {
                 // Mirror first, capture second — the same order every editor save() uses. Without it
                 // a build with mirroring on saves only the half that was actually placed by hand.
@@ -397,16 +403,31 @@ public final class BuilderSave {
      * live mirroring can miss edits made before the toggle went on.</p>
      */
     private static void mirrorBeforeCapture(ServerLevel level, BlockPos origin, CarriageDims dims) {
+        mirrorBeforeCapture(level, origin, new Vec3i(dims.length(), dims.height(), dims.width()),
+                BuilderCarriagePlot.of(level, origin, dims));
+    }
+
+    /**
+     * As above, over an arbitrary volume and variant plot.
+     *
+     * <p>The volume is a parameter because a portal room's is the author's rather than
+     * {@link CarriageDims}, and the plot because the variant mirror has to name the store the cells
+     * live in — a carriage plot for a carriage, a {@code PORTAL_ROOM} track plot for a room.</p>
+     *
+     * <p>Whichever it is, the axes come from the <b>builder's</b> flags, and none set means nothing
+     * happens. That is the whole contract: mirroring is a thing the builder switches on, not
+     * something a template's own history does to their work.</p>
+     */
+    private static void mirrorBeforeCapture(ServerLevel level, BlockPos origin, Vec3i size,
+                                            BlockVariantPlot plot) {
         BuilderMirrorFlags flags = DungeonTrainWorldData.get(level).builderMirror();
         if (!flags.anyAxis()) {
             return;
         }
-        BuilderCarriagePlot plot = BuilderCarriagePlot.of(level, origin, dims);
         if (plot != null) {
             EditorVariantMirror.rebuildFromMaster(level, plot);
         }
-        EditorMirror.rebuildFromMaster(level, origin,
-                new Vec3i(dims.length(), dims.height(), dims.width()),
+        EditorMirror.rebuildFromMaster(level, origin, size,
                 flags.x(), flags.y(), flags.z(), Set.of());
     }
 

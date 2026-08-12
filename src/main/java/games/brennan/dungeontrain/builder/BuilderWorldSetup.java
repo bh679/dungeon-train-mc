@@ -962,12 +962,19 @@ public final class BuilderWorldSetup {
                                           CarriageDims dims, BuilderMode mode,
                                           BuilderOpenRequest request) {
         String name = request.id();
+        // Start from what is on disk. A resize made with the size steppers and never saved is a
+        // change to the world, not to the template — PortalRoomSizes keeps it pending until a save
+        // spends it, and without this it would follow the room into its next open and read as a
+        // save that never happened.
+        PortalRoomSizes.clearPending(name);
         PortalRoomTemplateStore.get(level, name, dims);
         Vec3i size = PortalRoomSizes.sizeOf(name, dims);
 
         // Everything standing goes, whatever it was — a parked train from a carriage mode, the
         // outgoing room (rooms differ in size, so a small one stamped where a large one stood used
-        // to leave the old shell around it), and any stray build on the platform.
+        // to leave the old shell around it), and any stray build on the platform. It also resets
+        // builderTrackKind, which is what stops a track template opened earlier from being written
+        // over this room by Save — BuilderSave tests that field before the portal-room token.
         wipeScene(level, data, dims, hasScenery(mode));
         data.setBuilderMode(mode.id());
 
