@@ -1,4 +1,8 @@
 {
+  "backrooms": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
   "beam": {
     "weight": 2,
     "minLevel": 1,

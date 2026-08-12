@@ -20,6 +20,9 @@ import net.neoforged.api.distmarker.OnlyIn;
  *
  * <p>Mirrors {@link DarkTintedButton}'s sprite approach; sits in the otherwise
  * empty top-right corner of the title screen (top-left is the version widget).</p>
+ *
+ * <p>For a UI concept rather than a thing in the world — a folder, a magnifier — use
+ * {@link SpriteIconButton} instead, which carries a GUI sprite as its glyph.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class CreditsIconButton extends Button {

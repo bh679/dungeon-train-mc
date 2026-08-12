@@ -133,8 +133,11 @@ public final class DeathLoreStore {
             // (see NarrativeContentLocale). Tier 2 (filesystem overrides, below) is untouched.
             ResourceLocation baseId = ResourceLocation.fromNamespaceAndPath(
                 file.getNamespace(), file.getPath().substring(0, file.getPath().length() - EXT.length()));
-            Resource source = NarrativeContentLocale.localized(resourceManager, baseId, SUBDIR).orElse(entry.getValue());
-            try (InputStream in = source.open();
+            // Overlay the host-locale variant on the English base, then fold in any
+            // translation-editor overrides (integrated server only — see
+            // NarrativeTranslationOverrides). The id stays identical, so pool weights and
+            // variant-count denominators are unaffected.
+            try (InputStream in = NarrativeContentLocale.open(resourceManager, baseId, SUBDIR, entry.getValue());
                  Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
                 parseInto(r, file.toString());
             } catch (Exception e) {
