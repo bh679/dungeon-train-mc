@@ -6499,7 +6499,7 @@
       "summary": "Peaceful, Easy, Normal and Hard each keep their own gear, XP, Ender Chest and echoes. Switch difficulty and you switch profiles \u2014 what you were carrying is waiting for you when you switch back, and nothing you farmed on an easier setting comes with you.",
       "highlights": [
         "Your Ender Chest is now per-difficulty, and so is the inventory and XP carried between runs when keepInventory is on.",
-        "An Ender Chest that isn't your default one says so in its title — \"Ender Chest (Hard)\", \"(Adventure · Hard)\" or \"(Free Play)\" — so an empty chest never looks like lost items.",
+        "An Ender Chest that isn't your default one says so in its title \u2014 \"Ender Chest (Hard)\", \"(Adventure \u00b7 Hard)\" or \"(Free Play)\" \u2014 so an empty chest never looks like lost items.",
         "Echoes only return on the difficulty they died on, so a Hard run never meets a Peaceful ghost.",
         "Changing difficulty in-game tells you in chat which profile you moved to and where your gear is waiting.",
         "Normal keeps everything you already have \u2014 existing Ender Chests and past lives all belong to Normal, so nothing goes missing."
@@ -6537,6 +6537,23 @@
         "Reloading the world you set it in keeps the difficulty you set",
         "On a server with other players still riding, one player's death leaves the difficulty alone"
       ],
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "middleclick-copy-block-variants",
+      "version": "0.556.0",
+      "type": "feat",
+      "title": "Editor: middle-click copies a cell's block variants",
+      "summary": "In the block-variant editor, middle-clicking a cell that has variants now puts that cell's whole variant list in your hand as a clipboard item \u2014 no opening the Z menu, no hunting through your backpack for it. If the same clipboard is already on your hotbar it just switches to that slot, and middle-clicking anything else still does a normal pick-block.",
+      "highlights": [
+        "Middle-click a variant cell to copy it straight to your hotbar",
+        "Switches to the matching clipboard when you already have one",
+        "Vanilla pick-block still works on every other block"
+      ],
+      "pr": 959,
       "date": "2026-08-12",
       "released": false,
       "released_in": null,
