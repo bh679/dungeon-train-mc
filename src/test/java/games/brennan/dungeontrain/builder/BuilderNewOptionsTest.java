@@ -200,4 +200,81 @@ final class BuilderNewOptionsTest {
         // packet resolves the id against the registry and starts blank when it misses.
         assertTrue(BuilderNewOptions.parsePick(BuilderNewOptions.tagWholeCarriage("")).isEmpty());
     }
+
+    @Test
+    @DisplayName("Whole Carriage is offered from outside the train only")
+    void wholeCarriageIsNotOfferedInside() {
+        // From inside, the shell is the room you're standing in — the thing around the work, not
+        // the work — so the picker offers what you can actually author from in there.
+        assertEquals(List.of(BuilderNewOptions.SubType.CARRIAGE_ROOM, BuilderNewOptions.SubType.PARTS),
+                BuilderNewOptions.subTypesFor(BuilderMode.INSIDE_CARRIAGE));
+        assertEquals(List.of(BuilderNewOptions.SubType.WHOLE_CARRIAGE,
+                        BuilderNewOptions.SubType.CARRIAGE_ROOM, BuilderNewOptions.SubType.PARTS),
+                BuilderNewOptions.subTypesFor(BuilderMode.TRAIN_OUTSIDE));
+        // The track modes author outright, so there is no sub type row at all.
+        assertTrue(BuilderNewOptions.subTypesFor(BuilderMode.TRACKS_TUNNELS).isEmpty());
+        assertTrue(BuilderNewOptions.subTypesFor(BuilderMode.TRAIN_DIMENSIONS).isEmpty());
+    }
+
+    @Test
+    @DisplayName("A mode starts on something it can actually author")
+    void defaultSubTypeIsOffered() {
+        for (BuilderMode mode : BuilderMode.values()) {
+            List<BuilderNewOptions.SubType> offered = BuilderNewOptions.subTypesFor(mode);
+            BuilderNewOptions.SubType start = BuilderNewOptions.defaultSubTypeFor(mode);
+            // CycleButton throws on an initial value outside its list, so this is load-bearing.
+            assertTrue(offered.isEmpty() || offered.contains(start),
+                    mode + " starts on " + start + ", which it doesn't offer");
+        }
+        assertEquals(BuilderNewOptions.SubType.CARRIAGE_ROOM,
+                BuilderNewOptions.defaultSubTypeFor(BuilderMode.INSIDE_CARRIAGE));
+    }
+
+    @Test
+    @DisplayName("A mode change keeps the selection when it survives, and moves it when it can't")
+    void clampKeepsWhatItCanAndMovesWhatItCannot() {
+        // Carriage Room and Parts exist on both sides of the wall, so switching keeps your place.
+        assertEquals(BuilderNewOptions.SubType.PARTS, BuilderNewOptions.clampSubType(
+                BuilderMode.INSIDE_CARRIAGE, BuilderNewOptions.SubType.PARTS));
+        // Whole Carriage does not, and carrying it in would leave the cycle showing a value it
+        // has no way to reach again.
+        assertEquals(BuilderNewOptions.SubType.CARRIAGE_ROOM, BuilderNewOptions.clampSubType(
+                BuilderMode.INSIDE_CARRIAGE, BuilderNewOptions.SubType.WHOLE_CARRIAGE));
+        assertEquals(BuilderNewOptions.SubType.WHOLE_CARRIAGE, BuilderNewOptions.clampSubType(
+                BuilderMode.TRAIN_OUTSIDE, BuilderNewOptions.SubType.WHOLE_CARRIAGE));
+        assertEquals(BuilderNewOptions.SubType.CARRIAGE_ROOM, BuilderNewOptions.clampSubType(
+                BuilderMode.INSIDE_CARRIAGE, null));
+    }
+
+    @Test
+    @DisplayName("The server still answers for a pair the picker no longer offers")
+    void staleWorldsStillResolve() {
+        // Mode and sub type persist as independent strings, so a world saved before the restriction
+        // can hold this pair. Rejecting it here would turn a stale world into a failure.
+        assertEquals(BuilderNewOptions.CopySource.STAGES, BuilderNewOptions.copySourceFor(
+                BuilderMode.INSIDE_CARRIAGE, BuilderNewOptions.SubType.WHOLE_CARRIAGE));
+    }
+
+    @Test
+    @DisplayName("Every sub type round-trips through its stored id")
+    void subTypeIdsRoundTrip() {
+        // The world data keeps the id string, and the parked carriage count is read back off it —
+        // a sub type that didn't round-trip would silently fall back to the mode's own count.
+        for (BuilderNewOptions.SubType subType : BuilderNewOptions.SubType.values()) {
+            assertEquals(subType, BuilderNewOptions.SubType.fromId(subType.id()).orElse(null));
+        }
+    }
+
+    @Test
+    @DisplayName("An absent or unknown sub type is empty, not a guess")
+    void unknownSubTypeIsEmpty() {
+        // Null is a real state: a world stamped straight off the title screen has never had a New
+        // or an Open run in it. Callers own the default, so this must not pick one for them.
+        assertTrue(BuilderNewOptions.SubType.fromId(null).isEmpty());
+        assertTrue(BuilderNewOptions.SubType.fromId("").isEmpty());
+        assertTrue(BuilderNewOptions.SubType.fromId("carriage").isEmpty());
+        // Tolerant of case and stray whitespace, the way BuilderMode.fromId is.
+        assertEquals(BuilderNewOptions.SubType.CARRIAGE_ROOM,
+                BuilderNewOptions.SubType.fromId(" Carriage_Room ").orElse(null));
+    }
 }

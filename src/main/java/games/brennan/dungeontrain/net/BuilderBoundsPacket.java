@@ -2,10 +2,10 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderBounds;
-import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderTrackBuild;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
+import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.client.builder.BuilderBoundsState;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
@@ -106,7 +106,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
             return new BuilderBoundsPacket(List.of(), "", "", 0, "", "", "", -1, "");
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
-        BuilderMode mode = BuilderMode.fromId(data.builderMode()).orElse(null);
+        int carriages = BuilderWorldSetup.parkedCarriages(data);
         CarriageDims dims = data.dims();
         String modeId = data.builderMode() == null ? "" : data.builderMode();
         // Empty name = an unnamed draft; the client uses it to decide whether Save can write
@@ -115,7 +115,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
         // volumesFor rather than buildVolumes: a track mode parks no carriage but does have a plot,
         // and sending the empty list for it is what left the wash and the info panel dead there.
         List<BoundingBox> volumes =
-                BuilderBounds.volumesFor(mode, BuilderTrackBuild.kindOf(data), dims);
+                BuilderBounds.volumesFor(carriages, BuilderTrackBuild.kindOf(data), dims);
         return new BuilderBoundsPacket(volumes, modeId,
                 buildName, data.builderMirror().pack(),
                 orEmpty(data.builderSubType()), orEmpty(data.builderPartKind()),

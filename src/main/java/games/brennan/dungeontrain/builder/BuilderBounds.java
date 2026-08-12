@@ -65,11 +65,15 @@ public final class BuilderBounds {
      * <p>The one call every consumer should make: a track build and a carriage build differ in where
      * the boxes come from and in nothing else, and spreading that fork across four callers is how
      * they drift.</p>
+     *
+     * <p>Takes the count that was actually parked rather than deriving one from the mode. Those are
+     * different questions — opening a room parks one carriage where its mode would park three — and
+     * cutting three boxes out of a one-carriage world reads two templates' worth of empty air.</p>
      */
-    public static List<BoundingBox> volumesFor(BuilderMode mode, TrackKind trackKind,
+    public static List<BoundingBox> volumesFor(int parkedCarriages, TrackKind trackKind,
                                                CarriageDims dims) {
-        if (mode != null && mode.carriageCount() > 0) {
-            return buildVolumes(mode.carriageCount(), dims);
+        if (parkedCarriages > 0) {
+            return buildVolumes(parkedCarriages, dims);
         }
         return trackVolumes(trackKind, dims);
     }

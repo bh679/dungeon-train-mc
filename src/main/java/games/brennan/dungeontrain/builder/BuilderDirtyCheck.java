@@ -61,14 +61,14 @@ public final class BuilderDirtyCheck {
     public static List<Integer> dirtyCarriages(ServerLevel level) {
         List<Integer> dirty = new ArrayList<>();
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        BuilderMode mode = BuilderMode.fromId(data.builderMode()).orElse(null);
         CarriageDims dims = data.dims();
+        int carriages = BuilderWorldSetup.parkedCarriages(data);
         TrackKind trackKind = BuilderTrackBuild.kindOf(data);
-        List<BoundingBox> volumes = BuilderBounds.volumesFor(mode, trackKind, dims);
+        List<BoundingBox> volumes = BuilderBounds.volumesFor(carriages, trackKind, dims);
         if (volumes.isEmpty()) {
             return dirty;
         }
-        boolean track = trackKind != null && (mode == null || mode.carriageCount() <= 0);
+        boolean track = trackKind != null && carriages <= 0;
         Vec3i size = track
                 ? BuilderTrackPlot.footprint(trackKind, dims)
                 : new Vec3i(dims.length(), dims.height(), dims.width());

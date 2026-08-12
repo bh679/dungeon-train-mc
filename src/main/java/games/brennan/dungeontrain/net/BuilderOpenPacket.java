@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderDirtyCheck;
 import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderOpenRequest;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
@@ -52,6 +53,13 @@ import java.util.Optional;
  *                     {@link BuilderOpenRequest}: it does not name the template being opened, it
  *                     says which stretch of the game to show it dressed for — see
  *                     {@code BuilderWorldSetup.applyOpen}.
+ * @param subTypeId    which arm of the Open screen the tile was clicked in, empty when the request's
+ *                     own reading should stand. Browse context like {@code stageId}, and out of
+ *                     {@link BuilderOpenRequest} for the same reason — it decides how much train to
+ *                     park, not what is being opened. The request's sub type comes from the store the
+ *                     template lives in, which is the right answer for Save and the wrong one for the
+ *                     count: a carriage browsed under a Stage saves as a whole carriage but stands
+ *                     alone.
  * @param trackKindId  which of the eight track-side kinds, when {@code kindId} is {@code track};
  *                     empty otherwise. Its own field rather than a second reading of
  *                     {@code partKindId}: the two name different enums, and one slot holding either
@@ -60,26 +68,32 @@ import java.util.Optional;
  *                     {@code adjunct_stairs_entrance} does not fit in {@code partKindId}'s 16.
  */
 public record BuilderOpenPacket(String modeId, String kindId, String id, String partKindId,
-                                boolean force, String stageId, String trackKindId)
+                                boolean force, String stageId, String subTypeId, String trackKindId)
         implements CustomPacketPayload {
 
-    /** Back-compat 6-arg form: a carriage-side open, with no track kind to name. */
+    /** Back-compat 7-arg form: a carriage-side open, with no track kind to name. */
+    public BuilderOpenPacket(String modeId, String kindId, String id, String partKindId,
+                             boolean force, String stageId, String subTypeId) {
+        this(modeId, kindId, id, partKindId, force, stageId, subTypeId, "");
+    }
+
+    /** Back-compat 6-arg form: open with no browsing arm recorded. */
     public BuilderOpenPacket(String modeId, String kindId, String id, String partKindId,
                              boolean force, String stageId) {
-        this(modeId, kindId, id, partKindId, force, stageId, "");
+        this(modeId, kindId, id, partKindId, force, stageId, "", "");
     }
 
     /** Back-compat 5-arg form: open with no browsed stage, the template's own link deciding. */
     public BuilderOpenPacket(String modeId, String kindId, String id, String partKindId,
                              boolean force) {
-        this(modeId, kindId, id, partKindId, force, "", "");
+        this(modeId, kindId, id, partKindId, force, "", "", "");
     }
 
     /** A track-side open: the kind and the template name are the whole request. */
     public static BuilderOpenPacket forTrack(String modeId, TrackKind trackKind, String id,
                                              boolean force) {
         return new BuilderOpenPacket(modeId, BuilderPhotoPaths.Kind.TRACK.id(), id, "",
-                force, "", trackKind == null ? "" : trackKind.id());
+                force, "", "", trackKind == null ? "" : trackKind.id());
     }
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -96,10 +110,12 @@ public record BuilderOpenPacket(String modeId, String kindId, String id, String 
                 buf.writeUtf(p.partKindId, 16);
                 buf.writeBoolean(p.force);
                 buf.writeUtf(p.stageId, 32);
+                buf.writeUtf(p.subTypeId, 32);
                 buf.writeUtf(p.trackKindId, 32);
             },
             buf -> new BuilderOpenPacket(buf.readUtf(32), buf.readUtf(16), buf.readUtf(64),
-                    buf.readUtf(16), buf.readBoolean(), buf.readUtf(32), buf.readUtf(32))
+                    buf.readUtf(16), buf.readBoolean(), buf.readUtf(32), buf.readUtf(32),
+                    buf.readUtf(32))
         );
 
     @Override
@@ -165,7 +181,10 @@ public record BuilderOpenPacket(String modeId, String kindId, String id, String 
                 request = new BuilderOpenRequest(
                         kind.get(), packet.id, CarriagePartKind.fromId(packet.partKindId));
             }
-            if (!BuilderWorldSetup.applyOpen(level, mode.get(), request, packet.stageId)) {
+            // The browsing arm rides along for the carriage side, where it decides how much train
+            // to park. A track open branches inside applyOpen before it is read.
+            if (!BuilderWorldSetup.applyOpen(level, mode.get(), request, packet.stageId,
+                    BuilderNewOptions.SubType.fromId(packet.subTypeId).orElse(null))) {
                 // Loud on purpose. A failed open is the one case where saying nothing would be
                 // dangerous: the builder would assume their template loaded and keep working.
                 player.sendSystemMessage(Component.translatable(
@@ -178,12 +197,16 @@ public record BuilderOpenPacket(String modeId, String kindId, String id, String 
             DungeonTrainNet.sendTo(player, BuilderDirtyPacket.state(0));
 
             // Stand the player clear of what was just stamped — the opened template may be a
-            // different height from whatever was parked here before. A track plot gets its own
-            // standoff: the carriage spawn is framed on the train's length, and there is no train.
-            CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+            // different height from whatever was parked here before, and a different *length*:
+            // opening a room parks one carriage where a whole carriage parks three, so the standoff
+            // is sized from what is actually out there rather than from the bare-minimum floor. A
+            // track plot gets its own standoff instead — that framing is the train's length, and a
+            // track build has no train.
+            DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
             BlockPos spawn = request.isTrack()
-                    ? BuilderTrackPlot.viewPos(request.trackKind(), dims)
-                    : BuilderWorldLayout.spawnPos(dims);
+                    ? BuilderTrackPlot.viewPos(request.trackKind(), data.dims())
+                    : BuilderWorldLayout.spawnPos(data.dims(),
+                            BuilderWorldSetup.parkedCarriages(data));
             player.teleportTo(level, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
                     player.getYRot(), player.getXRot());
 

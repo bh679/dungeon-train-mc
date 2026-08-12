@@ -85,9 +85,10 @@ public final class BuilderSave {
         if (trackKind != null) {
             return saveTrack(level, data, dims, trackKind);
         }
-        int carriages = BuilderMode.fromId(data.builderMode())
-                .map(BuilderMode::carriageCount)
-                .orElse(0);
+        // What is parked, not what the mode would park for a whole carriage: opening a room or a
+        // part parks one carriage, and cutting three volumes out of a one-carriage world would read
+        // two templates' worth of empty air off the track.
+        int carriages = BuilderWorldSetup.parkedCarriages(data);
         List<BoundingBox> volumes = BuilderBounds.buildVolumes(carriages, dims);
 
         Optional<Integer> target = saveTarget(volumes.size(), BuilderDirtyCheck.dirtyCarriages(level));
