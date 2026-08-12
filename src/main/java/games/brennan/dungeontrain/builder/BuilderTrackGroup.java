@@ -20,6 +20,9 @@ import java.util.Optional;
  * recorded here rather than derived from {@link TrackKind#subdir()}: stairs live under
  * {@code pillars/} on disk because they bolt onto a pillar, but you author them as stairs.</p>
  *
+ * <p>Declaration order is the menu's order — these are the tiles the Open grid opens on, read
+ * left to right. Nothing reads the enum positionally, so it is safe to arrange for reading.</p>
+ *
  * <p>Pure — no client imports, no registry reads — because the Open screen picks the group and the
  * server has to read the kind back off the wire without either side importing the other.</p>
  */
@@ -28,14 +31,14 @@ public enum BuilderTrackGroup {
     /** The open-air line the train runs on. One kind, so its grid lists templates directly. */
     TRACKS("tracks", List.of(TrackKind.TILE)),
 
-    /** The columns that carry the line, ground-up — the order they stack in the world. */
-    PILLARS("pillars", List.of(TrackKind.PILLAR_BOTTOM, TrackKind.PILLAR_MIDDLE, TrackKind.PILLAR_TOP)),
-
     /** What the line runs through, then the mouth it runs through to get there. */
     TUNNELS("tunnels", List.of(TrackKind.TUNNEL_SECTION, TrackKind.TUNNEL_PORTAL)),
 
     /** The climb up a pillar, and the doorway at the bottom of it. */
-    STAIRS("stairs", List.of(TrackKind.ADJUNCT_STAIRS, TrackKind.ADJUNCT_STAIRS_ENTRANCE));
+    STAIRS("stairs", List.of(TrackKind.ADJUNCT_STAIRS, TrackKind.ADJUNCT_STAIRS_ENTRANCE)),
+
+    /** The columns that carry the line, ground-up — the order they stack in the world. */
+    PILLARS("pillars", List.of(TrackKind.PILLAR_BOTTOM, TrackKind.PILLAR_MIDDLE, TrackKind.PILLAR_TOP));
 
     private final String id;
     private final List<TrackKind> kinds;

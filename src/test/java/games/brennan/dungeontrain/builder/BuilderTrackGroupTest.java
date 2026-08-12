@@ -57,6 +57,17 @@ final class BuilderTrackGroupTest {
     }
 
     @Test
+    @DisplayName("The groups are in menu order — these are the Open grid's first four tiles")
+    void declarationOrderIsMenuOrder() {
+        // Deliberate rather than incidental: values() feeds the grid directly, so reordering the
+        // enum reorders what a builder sees. Tracks first because it is the thing most often opened.
+        assertEquals(
+                List.of(BuilderTrackGroup.TRACKS, BuilderTrackGroup.TUNNELS,
+                        BuilderTrackGroup.STAIRS, BuilderTrackGroup.PILLARS),
+                List.of(BuilderTrackGroup.values()));
+    }
+
+    @Test
     @DisplayName("Pillars read ground-up, the order they stack in the world")
     void pillarsAreOrderedGroundUp() {
         assertEquals(

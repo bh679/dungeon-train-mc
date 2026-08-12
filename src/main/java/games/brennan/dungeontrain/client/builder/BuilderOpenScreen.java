@@ -78,8 +78,16 @@ public final class BuilderOpenScreen extends Screen {
      */
     private String group = "";
 
-    /** Which part of the line the track modes are showing. Ignored by the carriage modes. */
-    private BuilderTrackGroup trackGroup = BuilderTrackGroup.TRACKS;
+    /**
+     * Which part of the line is being looked inside, null at the top level.
+     *
+     * <p>The track modes browse three levels deep where the carriage ones browse two — type, then
+     * kind, then template — so they need a second field to say how far in they are. It is a level
+     * rather than a control because the four types are the first real choice this mode offers, and
+     * the Open screen answers a choice with a wall of pictures. Behind a cycle button they were
+     * something you had to already know were there.</p>
+     */
+    private BuilderTrackGroup trackGroup;
 
     /** The ids currently on show, rebuilt whenever the type selection changes. */
     private List<String> entries = List.of();
@@ -118,16 +126,17 @@ public final class BuilderOpenScreen extends Screen {
         y += BuilderTypeControls.ART_HEIGHT + ROW_GAP;
 
         List<AbstractWidget> controls = new ArrayList<>();
-        List<BuilderTrackGroup> trackGroups = BuilderOpenOptions.trackGroupsFor(mode);
-        if (!trackGroups.isEmpty()) {
-            controls.add(BuilderTypeControls.trackGroup(controlX, y, CONTROL_WIDTH, ROW_HEIGHT,
-                    trackGroups, trackGroup,
-                    value -> {
-                        trackGroup = value;
-                        group = "";   // a different part of the line is a different list of kinds
-                        scrollY = 0;
-                        rebuild();
-                    }));
+        // The chosen type comes back out the same way a group does, and sits in the same row — so
+        // two levels deep the controls read "Tunnels · Tunnel Section", which is where you are.
+        if (trackGroup != null) {
+            controls.add(Button.builder(Component.translatable(trackGroup.labelKey()),
+                            b -> {
+                                trackGroup = null;
+                                group = "";   // the kind under it goes with the type
+                                scrollY = 0;
+                                rebuild();
+                            })
+                    .bounds(controlX, y, CONTROL_WIDTH, ROW_HEIGHT).build());
         }
         if (BuilderNewOptions.hasSubTypes(mode)) {
             controls.add(BuilderTypeControls.subType(controlX, y, CONTROL_WIDTH, ROW_HEIGHT, subType,
@@ -202,7 +211,10 @@ public final class BuilderOpenScreen extends Screen {
             // Either the kinds in this group, or one kind's templates — see activeTrackKind.
             case TRACK_KINDS -> {
                 TrackKind kind = activeTrackKind();
-                yield kind == null ? trackKindIds() : EditorTemplateLists.trackVariants(kind);
+                if (kind != null) {
+                    yield EditorTemplateLists.trackVariants(kind);
+                }
+                yield trackGroup == null ? trackGroupIds() : trackKindIds();
             }
         };
     }
@@ -220,10 +232,28 @@ public final class BuilderOpenScreen extends Screen {
         if (BuilderOpenOptions.trackGroupsFor(mode).isEmpty()) {
             return BuilderOpenOptions.defaultTrackKind(mode);
         }
+        if (trackGroup == null) {
+            return null;   // still choosing which part of the line
+        }
         if (trackGroup.isSingleKind()) {
             return trackGroup.soleKind();
         }
         return group.isEmpty() ? null : TrackKind.fromId(group);
+    }
+
+    /** The types this mode offers as grid values. The screen's first question. */
+    private List<String> trackGroupIds() {
+        List<BuilderTrackGroup> groups = BuilderOpenOptions.trackGroupsFor(mode);
+        List<String> ids = new ArrayList<>(groups.size());
+        for (BuilderTrackGroup value : groups) {
+            ids.add(value.id());
+        }
+        return ids;
+    }
+
+    /** Whether the grid is showing the types themselves rather than anything inside one. */
+    private boolean showingTrackGroups() {
+        return trackGroup == null && !BuilderOpenOptions.trackGroupsFor(mode).isEmpty();
     }
 
     /** The current group's kinds as grid values — ids, because every entry in the grid is one. */
@@ -247,6 +277,23 @@ public final class BuilderOpenScreen extends Screen {
                         == BuilderOpenOptions.OpenSource.TRACK_KINDS
                 ? Component.translatable(trackKindLabelKey(kind))
                 : Component.literal(BuilderLabels.pretty(group));
+    }
+
+    /**
+     * Step into a type tile.
+     *
+     * <p>Navigation, not an action, which is why it is handled here rather than through
+     * {@link #activate}: a type names no template, so there is nothing for the server to open and
+     * nothing for the unsaved-work prompt to warn about.</p>
+     */
+    private boolean enterTrackGroup(String value) {
+        return BuilderTrackGroup.fromId(value).map(picked -> {
+            trackGroup = picked;
+            group = "";
+            scrollY = 0;
+            rebuild();
+            return true;
+        }).orElse(false);
     }
 
     /** Translation key for a track kind's tile caption and its come-back-out button. */
@@ -289,9 +336,14 @@ public final class BuilderOpenScreen extends Screen {
             return Component.translatable("gui.dungeontrain.builder.new.saved_build",
                     BuilderLabels.pretty(bare));
         }
-        // A kind tile names something the mod ships, not something a builder authored, so it reads
-        // out of the language file. One level in these same cells are template names again.
+        // A type or kind tile names something the mod ships, not something a builder authored, so it
+        // reads out of the language file. One more level in, these same cells are template names.
         if (source == BuilderOpenOptions.OpenSource.TRACK_KINDS && activeTrackKind() == null) {
+            if (showingTrackGroups()) {
+                return BuilderTrackGroup.fromId(bare)
+                        .map(g -> Component.translatable(g.labelKey()))
+                        .orElseGet(() -> Component.literal(BuilderLabels.pretty(bare)));
+            }
             TrackKind kind = TrackKind.fromId(bare);
             if (kind != null) {
                 return Component.translatable(trackKindLabelKey(kind));
@@ -314,7 +366,9 @@ public final class BuilderOpenScreen extends Screen {
             return false;
         }
         if (source == BuilderOpenOptions.OpenSource.TRACK_KINDS) {
-            return activeTrackKind() == null;
+            // Only the kind level. A type tile has nothing to open of its own — the whole tile is
+            // the way in — so a chip beside it would be a second button doing the same thing.
+            return activeTrackKind() == null && !showingTrackGroups();
         }
         return source != BuilderOpenOptions.OpenSource.CONTENTS
                 || EditorTemplateLists.isContentsGroup(value);
@@ -433,6 +487,14 @@ public final class BuilderOpenScreen extends Screen {
                     group = value;
                     scrollY = 0;
                     rebuild();
+                    return true;
+                }
+            }
+
+            // A type tile is a way in rather than a thing to open, so the whole cell drills.
+            if (source == BuilderOpenOptions.OpenSource.TRACK_KINDS && showingTrackGroups()) {
+                int index = grid.indexAt(mouseX, mouseY, scrollY, entries.size());
+                if (index >= 0 && enterTrackGroup(entries.get(index))) {
                     return true;
                 }
             }
