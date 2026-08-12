@@ -6842,6 +6842,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-3d-template-tiles",
+      "version": "0.552.0",
+      "type": "feat",
+      "title": "Train Builder shows saved builds as 3D models",
+      "summary": "The Open screen's grid used to show a screenshot of each saved build, taken from wherever the camera happened to be pointing. Each tile now shows the build itself as a turntable model, framed to fit, built from the blocks the template actually contains.",
+      "highlights": [
+        "Tiles show the real build instead of a photo of it, so nothing is cut off or shot from a bad angle.",
+        "Hover a tile to turn the model and see the other side.",
+        "A template edited outside the builder shows its new shape straight away."
+      ],
+      "pr": 956,
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

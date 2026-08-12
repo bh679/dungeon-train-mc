@@ -65,6 +65,16 @@ public final class TrackVariantStore {
         return kind.bundledResourcePrefix() + name + TrackKind.NBT_EXT;
     }
 
+    /**
+     * This variant's raw NBT, with no dims gate — for showing the template rather than stamping
+     * it. See {@link games.brennan.dungeontrain.editor.TemplateNbt} for why the gate is skipped.
+     */
+    public static Optional<CompoundTag> rawTag(TrackKind kind, String name) {
+        return games.brennan.dungeontrain.editor.TemplateNbt.read(
+            kind.subdir(), name + TrackKind.NBT_EXT, bundledResourceFor(kind, name),
+            "track template " + kind.id() + ":" + name);
+    }
+
     public static Path sourceFileFor(TrackKind kind, String name) {
         return sourceDirectory(kind).resolve(name + TrackKind.NBT_EXT);
     }

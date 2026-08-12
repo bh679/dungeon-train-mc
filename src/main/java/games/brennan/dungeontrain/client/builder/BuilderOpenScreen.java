@@ -60,6 +60,9 @@ public final class BuilderOpenScreen extends Screen {
 
     private static final int NOTE_COLOUR = 0xA0A0A0;
 
+    /** Longest timestep the tile spin will accept, so a stalled frame doesn't fling it round. */
+    private static final float MAX_FRAME_SECONDS = 0.1F;
+
     private final Screen lastScreen;
 
     private BuilderMode mode;
@@ -97,6 +100,18 @@ public final class BuilderOpenScreen extends Screen {
     private int scrollY;
     private boolean modeArtAvailable;
 
+    /** How far each tile's 3D model has turned. Reset whenever the list changes under it. */
+    private final BuilderTileSpin spin = new BuilderTileSpin();
+
+    /**
+     * Wall-clock of the last frame, for the spin's timestep.
+     *
+     * <p>Real time rather than {@code partialTick}: this screen sits over a paused single-player
+     * world, where the tick clock stops and {@code partialTick} stops advancing with it. A preview
+     * that froze whenever the game paused would freeze exactly while you were looking at it.</p>
+     */
+    private long lastFrameNanos;
+
     public BuilderOpenScreen(Screen lastScreen) {
         super(Component.translatable("gui.dungeontrain.builder.open.title"));
         this.lastScreen = lastScreen;
@@ -112,6 +127,8 @@ public final class BuilderOpenScreen extends Screen {
 
         this.modeArtAvailable = BuilderTileArt.isAvailable(mode);
         this.entries = listEntries();
+        this.spin.clear();
+        this.lastFrameNanos = 0L;
 
         int controlX = this.width / 2 - CONTROL_WIDTH / 2;
         int y = TITLE_TOP + this.font.lineHeight + ROW_GAP;
@@ -456,6 +473,8 @@ public final class BuilderOpenScreen extends Screen {
         boolean showingTemplates = showingTemplates(source);
 
         if (!entries.isEmpty()) {
+            float seconds = frameSeconds();
+            BuilderTileMeshCache.beginFrame();
             // Scissored: a scrolled cell must not bleed over the type controls or the Back button.
             g.enableScissor(0, grid.topY(), this.width, grid.bottomY());
             for (int i = 0; i < entries.size(); i++) {
@@ -468,11 +487,13 @@ public final class BuilderOpenScreen extends Screen {
                         && mouseY >= y && mouseY < y + grid.cellHeight()
                         && mouseY >= grid.topY() && mouseY < grid.bottomY();
                 String value = entries.get(i);
+                String bareId = BuilderOpenOptions.bareId(source, value);
                 BuilderTemplateTile.render(g, mode, modeArtAvailable,
                         BuilderOpenOptions.photoKindFor(source, value, showingTemplates),
-                        BuilderOpenOptions.bareId(source, value), kind, trackKind,
+                        bareId, kind, trackKind,
                         labelFor(source, value),
-                        x, y, grid.cellWidth(), grid.cellHeight(), hovered, openable);
+                        x, y, grid.cellWidth(), grid.cellHeight(), hovered, openable,
+                        spin.advance(value, hovered && openable, seconds));
                 if (hasSubVariants(source, value)) {
                     BuilderTemplateTile.renderMore(g, grid.moreX(i), grid.moreY(i, scrollY),
                             grid.moreSize(), grid.isOverMore(i, mouseX, mouseY, scrollY));
@@ -486,6 +507,35 @@ public final class BuilderOpenScreen extends Screen {
             g.drawCenteredString(this.font, note, this.width / 2,
                     this.height - BACK_BUTTON_BOTTOM_MARGIN - STATUS_GAP + 2, NOTE_COLOUR);
         }
+    }
+
+    /**
+     * Real seconds since the last frame, for the tile spin.
+     *
+     * <p>Clamped: the first frame has nothing to measure against, and a frame after a stall — a
+     * world save, a resource reload — would otherwise snap every hovered tile through a random
+     * angle.</p>
+     */
+    private float frameSeconds() {
+        long now = System.nanoTime();
+        long previous = lastFrameNanos;
+        lastFrameNanos = now;
+        if (previous == 0L) {
+            return 0.0F;
+        }
+        return Math.min((now - previous) / 1.0E9F, MAX_FRAME_SECONDS);
+    }
+
+    /**
+     * Drop the baked meshes on the way out.
+     *
+     * <p>They are GPU buffers, and the next screen has no use for them. Coming back rebuilds what
+     * is on screen within a few frames.</p>
+     */
+    @Override
+    public void removed() {
+        super.removed();
+        BuilderTileMeshCache.clear();
     }
 
     /**
