@@ -4,8 +4,11 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderCinematicService;
 import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderTrackBuild;
+import games.brennan.dungeontrain.builder.BuilderTrackPlot;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.builder.BuilderWorldSetup;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
@@ -79,7 +82,14 @@ public record BuilderSetupPacket(String modeId) implements CustomPacketPayload {
             // Far enough back that the whole run fits on screen — a three-carriage train seen
             // from the old fixed margin was a wall of hull. Read back off the world rather than
             // off the mode, so the framing follows whatever setupIfNeeded actually parked.
-            BlockPos spawn = BuilderWorldLayout.spawnPos(dims, BuilderWorldSetup.parkedCarriages(data));
+            //
+            // A track mode gets its own standoff instead, the way BuilderOpenPacket does: that
+            // framing is sized from the train's length, and a track build has no train — it would
+            // stand you back off an empty corridor with the plot somewhere behind you.
+            TrackKind trackKind = BuilderTrackBuild.kindOf(data);
+            BlockPos spawn = trackKind != null
+                ? BuilderTrackPlot.viewPos(trackKind, dims)
+                : BuilderWorldLayout.spawnPos(dims, BuilderWorldSetup.parkedCarriages(data));
             // Facing the template, not vanilla's yaw 0 — the spawn sits on the +Z side of the
             // train, so yaw 0 (straight down +Z) would put the build squarely behind them.
             float[] facing = BuilderCinematicService.facingFrom(
