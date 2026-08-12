@@ -60,6 +60,24 @@ public final class PortalRoomSizes {
         PENDING.put(name, size);
     }
 
+    /**
+     * Drop an unsaved resize, keeping what the template last said.
+     *
+     * <p>The Train Builder calls this when it opens a room, so a footprint changed with the size
+     * steppers and then walked away from does not follow the room into its next open. In the editor
+     * the plot <em>is</em> the working copy and a pending size is meant to outlive a restamp; in the
+     * builder the template is the working copy and the Save button is what commits to it, so a
+     * resize that survived without one read as a save that never happened.</p>
+     *
+     * <p>{@link #PENDING} is process-wide and shared with the editor, so this also drops an editor's
+     * in-flight resize of the same room. A builder world and an editor session are not live at the
+     * same time, but the coupling is real and worth knowing about rather than discovering.</p>
+     */
+    public static void clearPending(String name) {
+        if (name == null) return;
+        PENDING.remove(name);
+    }
+
     /** Drop everything known about {@code name} — it has been deleted. */
     public static void forget(String name) {
         if (name == null) return;

@@ -491,6 +491,12 @@ public final class PortalRoomEditor {
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
 
+        // The editor's own rule, applied here rather than inside saveRoomFrom: an author edits one
+        // master octant and the rest of the room is generated from it, so the stored template has to
+        // be rebuilt before it is captured. The Train Builder deliberately does not do this — see
+        // BuilderSave.savePortalRoom.
+        rebuildMirrorFromSidecar(overworld, origin, size, name);
+
         SaveResult result = saveRoomFrom(overworld, origin, size, name);
         captureSnapshot(overworld, origin, size, name);
 
@@ -503,25 +509,19 @@ public final class PortalRoomEditor {
      * Capture the box at {@code origin} as {@code name}'s template — the body {@link #save} used to
      * be, with the editor's plot column and its player no longer assumed.
      *
-     * <p>Split out for the Train Builder, and the reason it is shared rather than rewritten is the
-     * mirror rebuild below. An author edits one master octant and the rest of the room is generated
-     * from it; a save that captured the world without rebuilding first would store a half-built room
-     * that looks nothing like what the author was standing in. That is exactly the step a second
-     * implementation forgets, and the failure is silent.</p>
+     * <p>Split out for the Train Builder, which writes the same file from a builder world.</p>
+     *
+     * <p><b>Captures the world as it stands.</b> No mirror rebuild — that is the caller's, because
+     * the two surfaces disagree about it and the disagreement is the point. In the editor an author
+     * works one master octant on purpose and the rest is generated from it
+     * ({@link #rebuildMirrorFromSidecar}); in the builder they are standing in the whole room
+     * editing all of it, and regenerating three quarters of it from one corner would throw away what
+     * they just placed.</p>
      *
      * <p>Does not snapshot, for the reason {@link #stampRoomInto} gives.</p>
      */
     public static SaveResult saveRoomFrom(ServerLevel level, BlockPos origin, Vec3i size, String name)
             throws IOException {
-        // Author edits one master octant; rebuild the rest in-world before capture, so the stored
-        // template (and every room stamped from it) matches what the author sees.
-        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size);
-        EditorVariantMirror.rebuildFromMaster(level,
-            new BlockVariantPlot.TrackPlot(TrackKind.PORTAL_ROOM, name, origin, size));
-        EditorMirror.rebuildFromMaster(level, origin, size,
-            sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
-            EditorMirror.markersOf(sidecar.entries()));
-
         StructureTemplate template = new StructureTemplate();
         template.fillFromWorld(level, origin, size, false, Blocks.STRUCTURE_VOID);
 
@@ -543,6 +543,23 @@ public final class PortalRoomEditor {
                 name, e.toString());
             return SaveResult.failed(e.getMessage());
         }
+    }
+
+    /**
+     * Regenerate the room from its master octant, using the axes its own sidecar was authored with.
+     *
+     * <p>The editor's half of what {@code saveRoomFrom} used to do. Kept a separate call so the
+     * builder can decline it: a room's sidecar mirror is a statement about how that room was
+     * <em>authored</em>, and it is only true of the surface that authors it one octant at a time.</p>
+     */
+    public static void rebuildMirrorFromSidecar(ServerLevel level, BlockPos origin, Vec3i size,
+                                                String name) {
+        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, size);
+        EditorVariantMirror.rebuildFromMaster(level,
+            new BlockVariantPlot.TrackPlot(TrackKind.PORTAL_ROOM, name, origin, size));
+        EditorMirror.rebuildFromMaster(level, origin, size,
+            sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
+            EditorMirror.markersOf(sidecar.entries()));
     }
 
     /**
