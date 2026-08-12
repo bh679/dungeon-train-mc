@@ -79,6 +79,8 @@ public final class DungeonTrainConfig {
     public static final boolean DEFAULT_FIRST_LEVEL_NO_HOSTILES = true;
     public static final boolean DEFAULT_FIRST_LEVEL_EASY_MOBS = true;
     public static final boolean DEFAULT_FIRST_LEVEL_STARTER_LOOT = true;
+    /** Each vanilla difficulty is its own profile — separate Ender Chest and carried loadout. */
+    public static final boolean DEFAULT_DIFFICULTY_ISOLATED_STASH = true;
     // Onboarding stage lengths in carriages of player progress (independent of carriagesPerTier).
     public static final int MIN_ONBOARDING_STAGE_CARRIAGES = 0;
     public static final int MAX_ONBOARDING_STAGE_CARRIAGES = 1000;
@@ -235,6 +237,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_EASY_MOBS;
     public static final ModConfigSpec.IntValue FIRST_LEVEL_EASY_MOBS_CARRIAGES;
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_STARTER_LOOT;
+    public static final ModConfigSpec.BooleanValue DIFFICULTY_ISOLATED_STASH;
     public static final ModConfigSpec.IntValue RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN;
     public static final ModConfigSpec.BooleanValue DEATH_REPORT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue FREE_PLAY_NOTICE_TO_DISCORD;
@@ -285,6 +288,7 @@ public final class DungeonTrainConfig {
         FIRST_LEVEL_EASY_MOBS = pair.getLeft().firstLevelEasyMobs;
         FIRST_LEVEL_EASY_MOBS_CARRIAGES = pair.getLeft().firstLevelEasyMobsCarriages;
         FIRST_LEVEL_STARTER_LOOT = pair.getLeft().firstLevelStarterLoot;
+        DIFFICULTY_ISOLATED_STASH = pair.getLeft().difficultyIsolatedStash;
         RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN = pair.getLeft().randomBookFromBookshelfOneIn;
         DEATH_REPORT_TO_DISCORD = pair.getLeft().deathReportToDiscord;
         FREE_PLAY_NOTICE_TO_DISCORD = pair.getLeft().freePlayNoticeToDiscord;
@@ -362,6 +366,9 @@ public final class DungeonTrainConfig {
         ModConfigSpec.BooleanValue difficultyScaleHostileGearPastCap = b
                 .comment("When true, hostile carriage mobs keep gaining gear strength after their armor/weapon material caps at netherite (difficulty level 50): each rolled equipment piece gets a flat per-tier primary-stat bonus (attack damage on weapons, armor on armor) scaled by how far the tier is past the cap, so difficulty keeps climbing beyond ~level 50 instead of plateauing. Tiers 50 and below are unchanged. Reuses the same AIS stat-scaling PlayerMobs already receive. Default true; set false to restore the original behavior where hostile gear stops improving at netherite.")
                 .define("difficultyScaleHostileGearPastCap", DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP);
+        ModConfigSpec.BooleanValue difficultyIsolatedStash = b
+                .comment("When true, each vanilla difficulty (Peaceful/Easy/Normal/Hard) is its own self-contained profile: it has its own Ender Chest, and — with keepInventory on — its own carried inventory + XP, so gear farmed on an easy run can't be brought to a hard one. Changing difficulty in-game swaps both (the old difficulty's are stored, the new difficulty's are loaded) and tells the player in chat. Normal keeps using the existing un-suffixed storage, so no current stash moves or disappears; the other three difficulties start empty. Companion to the echo partition in PlayerMob (reincarnationDifficultyIsolation), which keeps each difficulty's echoes to itself. Set false to share one stash and one loadout across all difficulties, as builds before this did.")
+                .define("difficultyIsolatedStash", DEFAULT_DIFFICULTY_ISOLATED_STASH);
         ModConfigSpec.BooleanValue villagerTradeScalingEnabled = b
                 .comment("When true, items SOLD by train villagers scale with the villager's own carriage position: sold gear is (re-)enchanted with power that steps up every villagerTradeScalingTiersPerStep difficulty tiers once the carriage is at least villagerTradeScalingMinCarriage from spawn, receives AIS stat bonuses matching the carriage's difficulty tier (same scaling as mob gear and chest loot), and emerald costs grow with the enchant value (2^(level-1) emeralds per enchant, paid in emerald blocks past 64). Trades bought FROM players and non-emerald costs are unaffected.")
                 .define("villagerTradeScalingEnabled", DEFAULT_VILLAGER_TRADE_SCALING_ENABLED);
@@ -565,7 +572,7 @@ public final class DungeonTrainConfig {
         b.pop();
         return new Holder(configVersion, numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
                 difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
-                difficultyScaleHostileGearPastCap,
+                difficultyScaleHostileGearPastCap, difficultyIsolatedStash,
                 villagerTradeScalingEnabled, villagerTradeScalingMinCarriage, villagerTradeScalingTiersPerStep,
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
@@ -701,6 +708,14 @@ public final class DungeonTrainConfig {
     /** Length (carriages of player progress) of the slimes stage, following the no-hostiles stage. */
     public static int getFirstLevelEasyMobsCarriages() {
         return isLoaded() ? FIRST_LEVEL_EASY_MOBS_CARRIAGES.get() : DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES;
+    }
+
+    /**
+     * When true, each vanilla difficulty gets its own Ender Chest and its own carried loadout — see
+     * {@code DifficultyPartition}. Normal keeps the pre-partition storage keys.
+     */
+    public static boolean getDifficultyIsolatedStash() {
+        return isLoaded() ? DIFFICULTY_ISOLATED_STASH.get() : DEFAULT_DIFFICULTY_ISOLATED_STASH;
     }
 
     /** When true, rich loot/loot_irongold carriage chests roll the starter prefab during the gentle opening window. */
@@ -940,6 +955,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue difficultyAffectsBabyMobs,
             ModConfigSpec.IntValue progressionLevelDelay,
             ModConfigSpec.BooleanValue difficultyScaleHostileGearPastCap,
+            ModConfigSpec.BooleanValue difficultyIsolatedStash,
             ModConfigSpec.BooleanValue villagerTradeScalingEnabled,
             ModConfigSpec.IntValue villagerTradeScalingMinCarriage,
             ModConfigSpec.IntValue villagerTradeScalingTiersPerStep,
