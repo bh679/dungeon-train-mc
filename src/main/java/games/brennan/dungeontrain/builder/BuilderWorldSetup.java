@@ -385,8 +385,8 @@ public final class BuilderWorldSetup {
         // A new build is a new thing to mirror — carrying the last build's axes over would apply
         // them to geometry that was never authored against them.
         data.setBuilderMirror(BuilderMirrorFlags.DEFAULT);
-        LOGGER.info("[DungeonTrain] Builder new: mode '{}', {} '{}' on shell '{}', stage '{}', from '{}', name '{}'",
-                mode.id(), request.subType().id(),
+        LOGGER.info("[DungeonTrain] Builder new: mode '{}' ({} carriage(s)), {} '{}' on shell '{}', stage '{}', from '{}', name '{}'",
+                mode.id(), carriages, request.subType().id(),
                 request.picked().isEmpty() ? "<none>" : request.picked(), request.shell().id(),
                 request.stageId().isEmpty() ? "<none>" : request.stageId(),
                 request.wholeCarriageId().isEmpty() ? "<blank>" : request.wholeCarriageId(),
@@ -549,9 +549,14 @@ public final class BuilderWorldSetup {
             EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(i), level, origin,
                     dims.length(), dims.height(), dims.width());
         }
-        LOGGER.info("[DungeonTrain] Builder open: {} '{}' into mode '{}' on shell '{}', stage '{}'"
-                        + " (shown as '{}')",
-                request.kind().id(), request.id(), mode.id(), open.shell().id(),
+        // The carriage count is in here because it is the one thing about an open you cannot see
+        // from the outcome without counting blocks — and it is decided by the browsing arm rather
+        // than by anything else on this line, so a wrong count looks like a correct open.
+        LOGGER.info("[DungeonTrain] Builder open: {} '{}' into mode '{}' as '{}' ({} carriage(s))"
+                        + " on shell '{}', stage '{}' (shown as '{}')",
+                request.kind().id(), request.id(), mode.id(),
+                viewSubType == null ? request.subType().id() : viewSubType.id(), carriages,
+                open.shell().id(),
                 stageId.isEmpty() ? "<none>" : stageId,
                 shownStage.isEmpty() ? "<none>" : shownStage);
         return true;
