@@ -322,6 +322,24 @@ public final class BuilderOpenScreen extends Screen {
                 }
             }
 
+            // A Stage in the carriage list is a folder, not a leaf: it names a stretch of the game,
+            // and the templates are the carriages underneath it. So the whole tile drills in and the
+            // chevron is only the affordance saying so — clicking the picture of a stage and getting
+            // a brand-new whole carriage instead is not a thing anyone was asking for.
+            //
+            // Not the same for CONTENTS, where a group tile is itself a real template: `maze` is a
+            // room you can open as well as a folder you can look inside, so there the two clicks
+            // genuinely differ and the chevron has to be aimed at.
+            if (source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE && group.isEmpty()) {
+                int index = grid.indexAt(mouseX, mouseY, scrollY, entries.size());
+                if (index >= 0) {
+                    group = entries.get(index);
+                    scrollY = 0;
+                    rebuild();
+                    return true;
+                }
+            }
+
             if (BuilderOpenOptions.isOpenable(source)) {
                 int index = grid.indexAt(mouseX, mouseY, scrollY, entries.size());
                 if (index >= 0) {
@@ -387,14 +405,17 @@ public final class BuilderOpenScreen extends Screen {
      *       reach a Save that overwrites something.</li>
      * </ul>
      *
-     * <p>The stage list under Carriage Room splits the same two ways, one level apart: its top-level
-     * tiles are Stages and do the Stage thing, and the carriages underneath them are templates and
-     * are opened.</p>
+     * <p>The stage list under Carriage Room only ever reaches here one level in, where every tile is
+     * a carriage template and is opened. Its top-level Stage tiles are navigation — see
+     * {@link #mouseClicked} — because a Stage there has carriages underneath it to get to, which is
+     * a better answer to clicking one than silently starting an unrelated new build.</p>
      */
     private Runnable actionFor(BuilderOpenOptions.OpenSource source, String value, boolean force) {
+        // Only the Whole Carriage list, where a Stage is a leaf and starting a fresh carriage for
+        // that stretch of the game is the only thing clicking it could mean. In the carriage list a
+        // Stage is a folder and never reaches here — mouseClicked drills into it instead.
         boolean stageTile = source == BuilderOpenOptions.OpenSource.STAGES
-                ? !BuilderOpenOptions.isSavedBuild(value)
-                : source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE && group.isEmpty();
+                && !BuilderOpenOptions.isSavedBuild(value);
         if (stageTile) {
             String stageId = BuilderOpenOptions.bareId(source, value);
             // Whole Carriage whichever arm the stage was clicked in: "a fresh carriage for that
