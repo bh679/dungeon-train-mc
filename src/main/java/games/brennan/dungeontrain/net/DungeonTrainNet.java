@@ -173,6 +173,9 @@ public final class DungeonTrainNet {
 
         // Per-part editor-grid visibility (hidden set) — S2C mirror for the part-list ☑/☐ glyphs.
         registrar.playToClient(PartVisibilityPacket.TYPE, PartVisibilityPacket.STREAM_CODEC, PartVisibilityPacket::handle);
+
+        // Editor middle-click: copy the looked-at cell's variants into the hotbar (C2S).
+        registrar.playToServer(BlockVariantCopyPickPacket.TYPE, BlockVariantCopyPickPacket.STREAM_CODEC, BlockVariantCopyPickPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

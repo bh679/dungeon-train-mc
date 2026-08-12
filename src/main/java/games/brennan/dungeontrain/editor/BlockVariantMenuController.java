@@ -737,12 +737,70 @@ public final class BlockVariantMenuController {
      * instead of resetting to empty on the new cell.
      */
     private static void handleCopy(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
+        ItemStack stack = buildClipboardStack(player, plot, localPos);
+        if (stack == null) return;
+        boolean placed = player.getInventory().add(stack);
+        if (!placed) player.drop(stack, false);
+    }
+
+    /**
+     * Middle-click shortcut for {@link #handleCopy}: resolve the plot + cell
+     * the player is looking at (same preamble {@link #toggle} uses — no open
+     * menu required) and deliver the clipboard item straight to the hotbar.
+     *
+     * <p>Driven by {@link games.brennan.dungeontrain.net.BlockVariantCopyPickPacket},
+     * whose client half only fires when the crosshair is on a cell that
+     * actually has variants — so vanilla pick-block keeps working everywhere
+     * else in the editor.</p>
+     */
+    public static void copyAtCrosshair(ServerPlayer player) {
+        if (!player.hasPermissions(2)) {
+            actionBar(player, "Block variant copy requires OP", ChatFormatting.RED);
+            return;
+        }
+        ServerLevel level = player.serverLevel();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) {
+            actionBar(player, "Not in a block-variant editor plot", ChatFormatting.YELLOW);
+            return;
+        }
+
+        HitResult hit = player.pick(TOGGLE_REACH, 1.0f, false);
+        if (!(hit instanceof BlockHitResult bhit) || bhit.getType() == HitResult.Type.MISS) {
+            actionBar(player, "Look at a block to copy its variants", ChatFormatting.YELLOW);
+            return;
+        }
+        BlockPos localPos = bhit.getBlockPos().subtract(plot.origin());
+        if (!plot.inBounds(localPos)) {
+            actionBar(player, "Block is outside the editor plot", ChatFormatting.YELLOW);
+            return;
+        }
+
+        ItemStack stack = buildClipboardStack(player, plot, localPos);
+        if (stack == null) return;
+        giveToHotbar(player, stack);
+    }
+
+    /**
+     * Build the clipboard {@link ItemStack} for {@code localPos} — the cell's
+     * candidate list + lock-id + (when authored) its container contents pool,
+     * read from the same {@link ContainerContentsStore} the loot menu writes
+     * to, so a chest cell's hand-tuned drop pool round-trips through paste
+     * instead of resetting to empty on the new cell.
+     *
+     * <p>Sends the "nothing to copy" / "copied N" action bars itself; returns
+     * {@code null} when the cell has too few candidates to be worth copying.</p>
+     */
+    private static @Nullable ItemStack buildClipboardStack(ServerPlayer player, BlockVariantPlot plot,
+                                                           BlockPos localPos) {
         List<VariantState> current = plot.statesAt(localPos);
         if (current == null || current.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
             actionBar(player, "Nothing to copy — cell needs at least "
                 + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " variants",
                 ChatFormatting.YELLOW);
-            return;
+            return null;
         }
         int lockId = plot.lockIdAt(localPos);
         ContainerContentsPool pool = ContainerContentsStore.loadFor(plot.key()).poolAt(localPos);
@@ -751,12 +809,34 @@ public final class BlockVariantMenuController {
         CompoundTag tag = VariantClipboardItem.encodeStates(current, lockId,
             poolCaptured ? pool : null);
         VariantClipboardItem.writeClipboardTag(stack, tag);
-        boolean placed = player.getInventory().add(stack);
-        if (!placed) player.drop(stack, false);
         String lockSuffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
         String poolSuffix = poolCaptured ? " +pool(" + pool.size() + ")" : "";
         actionBar(player, "Copied " + current.size() + " variants" + lockSuffix + poolSuffix,
             ChatFormatting.GREEN);
+        return stack;
+    }
+
+    /**
+     * Put {@code stack} in the player's hand. Slot choice is vanilla's
+     * {@link net.minecraft.world.entity.player.Inventory#getSuitableHotbarSlot()}:
+     * the selected slot when it's empty, else the first empty hotbar slot,
+     * else the selected slot — i.e. a full hotbar means the held stack is
+     * displaced. The displaced stack goes back into the inventory and is
+     * only dropped when there's nowhere left to put it, so nothing is
+     * silently destroyed.
+     */
+    private static void giveToHotbar(ServerPlayer player, ItemStack stack) {
+        net.minecraft.world.entity.player.Inventory inv = player.getInventory();
+        int slot = inv.getSuitableHotbarSlot();
+        ItemStack displaced = inv.getItem(slot);
+        inv.setItem(slot, stack);
+        inv.selected = slot;
+        // Server-set held slot — tell the client so its hotbar selection follows.
+        player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(slot));
+        if (!displaced.isEmpty() && !inv.add(displaced)) {
+            player.drop(displaced, false);
+        }
+        player.inventoryMenu.broadcastChanges();
     }
 
     /**
