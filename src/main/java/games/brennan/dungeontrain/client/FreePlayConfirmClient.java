@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.FreePlayConfirmResponsePacket;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 
 /**
  * Client-side entry point for the Free Play confirmation prompt. The server holds
@@ -15,7 +16,7 @@ public final class FreePlayConfirmClient {
 
     private FreePlayConfirmClient() {}
 
-    public static void onShow(String label) {
+    public static void onShow(Component label) {
         if (ClientDisplayConfig.isFreePlayConfirmOptedOut()) {
             DungeonTrainNet.sendToServer(new FreePlayConfirmResponsePacket(true));
             return;

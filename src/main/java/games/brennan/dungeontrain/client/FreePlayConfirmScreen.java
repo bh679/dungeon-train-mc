@@ -44,7 +44,7 @@ public final class FreePlayConfirmScreen extends Screen {
     private static final int BUTTON_GAP = 4;
     private static final int CHECKBOX_H = 20;
 
-    private final String triggerLabel;
+    private final Component triggerLabel;
     private Checkbox dontShowBox;
     private boolean responded = false;
 
@@ -57,7 +57,7 @@ public final class FreePlayConfirmScreen extends Screen {
     private List<FormattedCharSequence> conseq3 = List.of();
     private FormattedCharSequence triggerLine = FormattedCharSequence.EMPTY;
 
-    public FreePlayConfirmScreen(String triggerLabel) {
+    public FreePlayConfirmScreen(Component triggerLabel) {
         super(Component.translatable("gui.dungeontrain.free_play.confirm.title"));
         this.triggerLabel = triggerLabel;
     }
