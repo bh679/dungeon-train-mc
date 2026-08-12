@@ -6489,6 +6489,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-no-welcome-book",
+      "version": "0.552.0",
+      "type": "fix",
+      "title": "No welcome lightning in the Train Builder",
+      "summary": "Stepping into the Train Builder no longer greets you with a lightning strike and a welcome book. That opening belongs to a run, not to a workspace \u2014 the bolt was landing on the build platform and the book was dropping as a loose item on top of whatever you were building. The Builder now starts quiet. Normal runs still open the way they always have.",
+      "highlights": [
+        "The welcome lightning strike and starting book no longer fire in the Train Builder, on entering or after respawning"
+      ],
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
