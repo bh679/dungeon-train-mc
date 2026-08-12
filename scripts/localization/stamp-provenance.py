@@ -20,10 +20,16 @@ Names passed to --author / --reviewer must exist in ``localization/authors.json`
 (reviewers must be registered as human) — register a new model or translator there
 first, so the AI-vs-human measurement in check-provenance.py stays computable.
 
-Every run also refreshes the GENERATED count fields (total_keys / ai_authored /
-ai_unreviewed) in the shipped ``localization_credits/<locale>.json`` assets — the
-data behind the AI-fraction ring in the language list. check-provenance.py fails
-hard when those counts drift from the sidecars, so never hand-edit them.
+Every run also refreshes two sets of GENERATED, SHIPPED files from the sidecars —
+check-provenance.py fails hard when either drifts, so never hand-edit them:
+
+  * the count fields (total_keys / ai_authored / ai_unreviewed) in
+    ``localization_credits/<locale>.json``, behind the AI-fraction ring in the
+    language list; and
+  * ``localization_provenance/<locale>.json``, the per-unit manifest of which lines
+    are AI-authored-and-unreviewed, which the in-game translation editor filters on.
+    Those manifests span the narrative books too, so they are rebuilt globally
+    regardless of any --namespace / --locale filter.
 
 There is no --dry-run: sidecars are git-tracked, so ``git diff`` is the dry run.
 
@@ -240,6 +246,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--authors-file", type=Path, default=provenance_io.DEFAULT_AUTHORS_FILE)
     parser.add_argument("--credits-dir", type=Path, default=None)
     parser.add_argument("--contributors-file", type=Path, default=None)
+    parser.add_argument("--manifest-dir", type=Path, default=None,
+                        help="where to write the shipped localization_provenance manifests "
+                             "(default: the assets dir; ignored on an explicit --lang-dir run)")
+    parser.add_argument("--narrative-provenance-dir", type=Path,
+                        default=provenance_io.DEFAULT_NARRATIVE_PROVENANCE_DIR,
+                        help="narrative sidecars behind each manifest's 'books' field")
     parser.add_argument("--namespace", action="append",
                         help="restrict to namespace(s); default all "
                              "(dungeontrain + siblings)")
@@ -301,6 +313,24 @@ def main(argv: list[str] | None = None) -> int:
     rc = 0
     for ns in ns_list:
         rc = run_namespace(ns, args, authors, urls) or rc
+
+    # The shipped manifests are global: one file per locale covering every lang namespace
+    # plus the books, so they are rebuilt from the full table regardless of --namespace /
+    # --locale. Skipped on the explicit single-dir path (the tests) unless --manifest-dir
+    # says where to put them, so a test run can never write into the real assets tree.
+    if rc == 0 and (args.manifest_dir is not None or not args.single_namespace):
+        changed = provenance_io.refresh_manifests(
+            authors,
+            # An explicit --lang-dir run is self-contained (the tests): it manifests only that
+            # workspace's namespace. Otherwise the FULL table, never the --namespace-filtered
+            # subset, because one manifest covers all of them.
+            lang_dir=ns_list[0].lang_dir if args.single_namespace
+            else provenance_io.DEFAULT_LANG_DIR,
+            ns_list=ns_list if args.single_namespace else None,
+            narrative_prov_dir=args.narrative_provenance_dir,
+            manifest_dir=args.manifest_dir or provenance_io.DEFAULT_MANIFEST_DIR)
+        if changed:
+            print(f"OK: refreshed {len(changed)} localization_provenance manifest(s).")
     return rc
 
 

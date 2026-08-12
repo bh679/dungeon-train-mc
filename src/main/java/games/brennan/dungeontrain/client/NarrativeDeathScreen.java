@@ -73,10 +73,13 @@ import java.util.concurrent.ThreadLocalRandom;
  * {@link DeathScreenLayoutHandler}).
  *
  * <p>Pages, in order: <b>the fall</b> (this-life headline stats) → <b>the
- * deeds</b> (this-life combat + carried loadout) → <b>all your lives</b>
- * (cross-world lifetime totals) → one page per unanswered feedback-survey
- * question (driven by the bundled Discord Presence survey, submitted through
- * its public API) → <b>the platform</b> (Board anew / Leave). A single centered
+ * deeds</b> (this-life combat + carried loadout) → <b>the cargo</b> (this-life
+ * loot + advancements) → <b>all your lives</b> (cross-world lifetime totals) →
+ * one page per unanswered feedback-survey question (driven by the bundled
+ * Discord Presence survey, submitted through its public API) → <b>support the
+ * line</b> (the donation ledger, flow-gated) → <b>the recommendations</b> (only
+ * when the player runs mods that aren't ours) → <b>the platform</b> (Board anew
+ * / Leave). A single centered
  * <i>Next Screen</i> advances; a bare back-arrow returns; <i>reboard</i> and
  * <i>leave the line</i> sit in the top corner throughout.</p>
  *
@@ -292,8 +295,14 @@ public final class NarrativeDeathScreen extends Screen {
     // DONATE page: the in-body Contribute button (opens the Revolut donate link), the per-tile
     // hover-tooltip regions, and the scrollable supporter-name list state.
     private Rect donateRect;
-    // Top-bar "$" chip — always present (every page), jumps to the donation page.
+    // Top-bar "$" chip — final (platform) page only, jumps to the donation page. It is what
+    // keeps the ledger reachable on the deaths where donateInFlow gated the page out of the
+    // normal flow.
     private Rect dollarRect;
+    // Ticks since the screen opened, for the respawn hold-off (see runEndReady).
+    private int ticksOpen;
+    /** Vanilla's death-screen button delay — one second before an exit control may fire. */
+    private static final int RESPAWN_DELAY_TICKS = 20;
     // Whether the donation page appears in the normal Next-Screen flow this death (the gate). When
     // false it's skipped in-flow but still reachable via the top-bar "$" chip.
     private boolean donateInFlow;
@@ -346,15 +355,16 @@ public final class NarrativeDeathScreen extends Screen {
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
             list.add(Page.survey(e));
         }
+        // "Support the line" — the donation ledger. Always in the list (so the "$" chip can always
+        // reach it); whether it appears in the normal Next-Screen flow is gated by donateInFlow
+        // (see shouldShowDonate). advance()/back() find it by kind(), not index, so the pages
+        // after it can move freely.
+        list.add(Page.of(Kind.DONATE));
         // "The recommendations" — only for players running mods that aren't ours. On a clean
         // Dungeon Train / modpack install there is nothing to ask about and the page never exists.
         if (modRec != null && !modRec.isEmpty()) {
             list.add(Page.of(Kind.MODREC));
         }
-        // "Support the line" — the donation ledger, just before the platform send-off. Always in
-        // the list (so the platform button can always reach it); whether it appears in the normal
-        // Next-Screen flow is gated by donateInFlow (see shouldShowDonate).
-        list.add(Page.of(Kind.DONATE));
         list.add(Page.of(Kind.PLATFORM));
         return list;
     }
@@ -531,11 +541,45 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public void tick() {
+        ticksOpen++;
         // The death packet + survey questions arrive a tick or two after the
         // screen opens. If the survey set changed, rebuild so the pages match.
         if (SurveyClientState.questions().size() != lastSurveyCount) {
             this.rebuildWidgets();
         }
+    }
+
+    /** True when this death is on a remote (LAN / dedicated) server rather than our own. */
+    private static boolean remote() {
+        return Minecraft.getInstance().getSingleplayerServer() == null;
+    }
+
+    /**
+     * The run-ending control's label. On our own world it reboards — a fresh run in a fresh
+     * save. On a server the world isn't ours to recreate, so it becomes vanilla's own respawn
+     * action, borrowing vanilla's strings (already translated everywhere, and the wording a
+     * player expects from a server death). {@code shortForm} picks the top-bar chip's label.
+     */
+    private static Component runEndLabel(boolean shortForm) {
+        if (!remote()) {
+            return Component.translatable(shortForm
+                    ? "gui.dungeontrain.death.reboard"
+                    : "gui.dungeontrain.death.board_anew");
+        }
+        Minecraft mc = Minecraft.getInstance();
+        boolean hardcore = mc.level != null && mc.level.getLevelData().isHardcore();
+        return Component.translatable(hardcore ? "deathScreen.spectate" : "deathScreen.respawn");
+    }
+
+    /**
+     * Whether the run-ending control may fire yet. Vanilla holds its death-screen exit buttons
+     * inactive for the first second ({@code DeathScreen.delayTicker}) so a click already in
+     * flight when the player died can't skip the screen entirely; the same reasoning applies
+     * to a respawn, which here IS that exit. Reboard is unaffected — it hands off to a world
+     * load that the player can't have queued a click for.
+     */
+    private boolean runEndReady() {
+        return !remote() || ticksOpen >= RESPAWN_DELAY_TICKS;
     }
 
     @Override
@@ -1619,13 +1663,14 @@ public final class NarrativeDeathScreen extends Screen {
         y += 14;
         // Board anew — the prominent action, front and centre under the epitaph. Hold
         // Shift to preserve the current game mode instead of forcing Survival — the
-        // button turns blue to signal that.
+        // button turns blue to signal that. On a server it is vanilla's Respawn instead,
+        // where Shift means nothing (see runEndLabel).
         boolean shiftHeld = Screen.hasShiftDown();
+        boolean shiftReboard = shiftHeld && !remote();
         int baW = 180, baH = 22;
-        boardAnewRect = drawBevel(g, cx - baW / 2, y, baW, baH,
-                Component.translatable("gui.dungeontrain.death.board_anew"),
-                shiftHeld ? BTN_PRI_SHIFT_BG : BTN_PRI_BG,
-                shiftHeld ? BTN_PRI_SHIFT_LIGHT : BTN_PRI_LIGHT,
+        boardAnewRect = drawBevel(g, cx - baW / 2, y, baW, baH, runEndLabel(false),
+                shiftReboard ? BTN_PRI_SHIFT_BG : BTN_PRI_BG,
+                shiftReboard ? BTN_PRI_SHIFT_LIGHT : BTN_PRI_LIGHT,
                 BTN_DARK, 0xFFFFFFFF);
         y += baH + 8;
         // Leave the line — smaller, secondary, beneath it. Hold Shift to convert it
@@ -1651,8 +1696,11 @@ public final class NarrativeDeathScreen extends Screen {
         // and turns the reboard chip blue — signalling reboard will preserve the current
         // game mode instead of forcing Survival.
         boolean shiftHeld = Screen.hasShiftDown();
+        // Shift's reboard meaning (preserve the current game mode) belongs to launchWorld, which
+        // only runs locally — on a server the chip respawns and Shift must not restyle it.
+        boolean shiftReboard = shiftHeld && !remote();
         Component leave = Component.translatable(shiftHeld ? "menu.quit" : "gui.dungeontrain.death.leave");
-        Component reboard = Component.translatable("gui.dungeontrain.death.reboard");
+        Component reboard = runEndLabel(true);
         int leaveW = this.font.width(leave) + 16;
         int reboardW = this.font.width(reboard) + 16;
         int leaveX = this.width - 10 - leaveW;
@@ -1660,17 +1708,24 @@ public final class NarrativeDeathScreen extends Screen {
         leaveRect = shiftHeld
                 ? drawChip(g, leaveX, 8, leave, CHIP_LV_QUIT_BG, CHIP_LV_QUIT_BORDER, CHIP_LV_QUIT_TEXT)
                 : drawChip(g, leaveX, 8, leave, CHIP_LV_BORDER, CHIP_LV_TEXT);
-        reboardRect = shiftHeld
+        reboardRect = shiftReboard
                 ? drawChip(g, reboardX, 8, reboard, CHIP_RB_SHIFT_BORDER, CHIP_RB_SHIFT_TEXT)
                 : drawChip(g, reboardX, 8, reboard, CHIP_RB_BORDER, CHIP_RB_TEXT);
 
         // Trash toggle immediately left of reboard: delete the old world's save
         // when reboarding? On (default) draws in the reboard accent; off draws
-        // muted with a strike. Persists to the client config on click.
-        boolean deleteOn = ClientDisplayConfig.isDeleteWorldOnReboard();
-        int trashW = 14;
-        int trashX = reboardX - 6 - trashW;
-        deleteWorldRect = drawTrashChip(g, trashX, 8, deleteOn);
+        // muted with a strike. Persists to the client config on click. Absent on a
+        // server, where there is no save of ours to delete and nothing reboards.
+        // Left edge of the leftmost chip so far — what the photos / "$" chips hang off, so they
+        // close the gap themselves when the trash toggle isn't drawn.
+        int chipLeftX = reboardX;
+        deleteWorldRect = null;
+        if (!remote()) {
+            boolean deleteOn = ClientDisplayConfig.isDeleteWorldOnReboard();
+            int trashW = 14;
+            chipLeftX = reboardX - 6 - trashW;
+            deleteWorldRect = drawTrashChip(g, chipLeftX, 8, deleteOn);
+        }
 
         // "photos" → ride-photo gallery. Only on the final platform page, and only
         // when this run actually captured photos to browse.
@@ -1679,15 +1734,16 @@ public final class NarrativeDeathScreen extends Screen {
         if (onPlatform && !RideSnapshotGallery.isEmpty()) {
             Component photos = Component.translatable("gui.dungeontrain.death.narr.photos", RideSnapshotGallery.size());
             int photosW = this.font.width(photos) + 16;
-            int photosX = trashX - 6 - photosW;
+            int photosX = chipLeftX - 6 - photosW;
             photosRect = drawChip(g, photosX, 8, photos, CHIP_PH_BORDER, CHIP_PH_TEXT);
         }
 
         // "$" → the donation page (the engine room). Final (platform) page only, same chip style,
-        // immediately left of the photos chip (or the trash chip when no photos were captured).
+        // immediately left of the photos chip (or of whatever chip precedes it when no photos
+        // were captured).
         dollarRect = null;
         if (onPlatform) {
-            int anchorX = photosRect != null ? photosRect.x() : trashX;
+            int anchorX = photosRect != null ? photosRect.x() : chipLeftX;
             Component dollar = Component.literal("$");
             int dollarW = this.font.width(dollar) + 16;
             dollarRect = drawChip(g, anchorX - 6 - dollarW, 8, dollar, CHIP_PH_BORDER, CHIP_PH_TEXT);
@@ -1981,11 +2037,34 @@ public final class NarrativeDeathScreen extends Screen {
         BugLogReporter.maybeReport(e, score);
     }
 
+    /**
+     * The run-ending action. Locally that means a fresh world; on a server, where the world
+     * isn't ours to recreate, it means vanilla's respawn — the same funnel step either way
+     * ({@code TARGET_BOARD_ANEW}: the player ended the run from this screen), so the death
+     * funnel stays comparable across both.
+     */
     private void boardAnew() {
+        if (!runEndReady()) return;
         UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_BOARD_ANEW);
         leavePageAnalytics(); // terminal exit — close the current page's dwell
+        if (remote()) {
+            respawn();
+            return;
+        }
         boolean keepMode = Screen.hasShiftDown();
         DeathScreenLayoutHandler.launchWorld(this, false, !keepMode);
+    }
+
+    /**
+     * Respawn on a server: vanilla's own action, then close the screen. In hardcore the server
+     * answers by putting the player into spectator rather than respawning them — which is what
+     * vanilla's Spectate button does too, since it calls exactly this.
+     */
+    private void respawn() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        mc.player.respawn();
+        mc.setScreen(null);
     }
 
     private void leave() {

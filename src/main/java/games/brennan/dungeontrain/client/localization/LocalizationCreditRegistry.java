@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.localization.edit.RelayTranslationCredits;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -76,7 +77,14 @@ public final class LocalizationCreditRegistry {
         return CREDITS.size();
     }
 
-    /** Every credit for {@code localeCode} (e.g. {@code "es_es"}), sorted by name. Empty if none. */
+    /**
+     * Every credit for {@code localeCode} (e.g. {@code "es_es"}), sorted by name. Empty if none.
+     *
+     * <p>Includes the in-game translators whose approved work this client is applying, on top of the
+     * ones baked into the build. Their fix is being read by everyone in the language today; making
+     * them wait for the next release to be named would be crediting the release process rather than
+     * the person.</p>
+     */
     public static synchronized List<LocalizationCredit> creditsFor(String localeCode) {
         if (localeCode == null || localeCode.isEmpty()) {
             return List.of();
@@ -87,8 +95,38 @@ public final class LocalizationCreditRegistry {
                 out.add(credit);
             }
         }
+        appendRelayContributors(out, localeCode);
         out.sort(Comparator.comparing(LocalizationCredit::name));
         return out;
+    }
+
+    /**
+     * Add a credit per relay contributor not already named by a baked one.
+     *
+     * <p>Never {@code humanReviewed}: being credited is not a claim that the whole locale has been
+     * proofread — that stays the coverage maths in {@link #isHumanReviewed}, which these approvals
+     * feed through {@link #withRelayApprovals} rather than short-circuiting.</p>
+     */
+    private static void appendRelayContributors(List<LocalizationCredit> out, String localeCode) {
+        List<String> names = RelayTranslationCredits.forLocale(localeCode);
+        if (names.isEmpty()) {
+            return;
+        }
+        for (String name : names) {
+            boolean already = out.stream().anyMatch((c) -> c.name().equalsIgnoreCase(name));
+            if (already) {
+                continue;
+            }
+            out.add(new LocalizationCredit(
+                ResourceLocation.fromNamespaceAndPath("dungeontrain", "relay/" + slug(name)),
+                localeCode, name, Optional.empty(), false, Optional.empty()));
+        }
+    }
+
+    /** A ResourceLocation-safe id for a translator name that may be in any script at all. */
+    private static String slug(String name) {
+        String cleaned = name.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9_.-]", "");
+        return cleaned.isEmpty() ? Integer.toHexString(name.hashCode()) : cleaned;
     }
 
     /** Which generated count feeds {@link #aiFraction} — a one-line switch. */
@@ -111,12 +149,52 @@ public final class LocalizationCreditRegistry {
      * the language-selection list.
      */
     public static synchronized OptionalDouble aiFraction(String localeCode) {
-        LocalizationCredit.AiCounts best = bestCounts(localeCode);
+        LocalizationCredit.AiCounts best = withRelayApprovals(localeCode, bestCounts(localeCode));
         if (best == null) {
             return OptionalDouble.empty();
         }
         return OptionalDouble.of(RING_METRIC == Metric.AI_UNREVIEWED
             ? best.unreviewedFraction() : best.authoredFraction());
+    }
+
+    /**
+     * The baked counts brought up to date with the approved translations this client has since
+     * downloaded and is applying.
+     *
+     * <p>{@code localization_credits/*.json} is stamped when the build is cut, so it describes a
+     * language as it was then. Every approval released since has put a human on a line that file
+     * still counts as machine-translated and unread — leaving the ring at its build-time size would
+     * be telling the player their language is less reviewed than the text in front of them actually
+     * is, and would keep a locale that volunteers have since finished off from ever earning the full
+     * logo without a release.</p>
+     *
+     * <p>Counts the APPLIED layer, not every approval known: a translation withheld from this build
+     * by {@link games.brennan.dungeontrain.client.localization.edit.PoolVersionGate} is not what the
+     * player is reading, so it cannot make their reading less machine-generated.</p>
+     */
+    static LocalizationCredit.AiCounts withRelayApprovals(String localeCode,
+                                                          LocalizationCredit.AiCounts baked) {
+        return adjust(baked, RelayReviewedCount.forLocale(localeCode));
+    }
+
+    /**
+     * The arithmetic half of {@link #withRelayApprovals}, split out so it is testable without a
+     * {@code ResourceManager} or a relay — the same reason {@link #meetsReviewedCoverage} is split.
+     *
+     * <p>{@code reviewed} comes off BOTH counts: an approved override is not machine translation a
+     * human merely looked at, it is a human's own words in place of it, so the line is no longer
+     * AI-authored either. The denominator never moves — the language still has as many lines as it
+     * had.</p>
+     */
+    static LocalizationCredit.AiCounts adjust(LocalizationCredit.AiCounts baked, int reviewed) {
+        if (baked == null || reviewed <= 0) {
+            return baked;
+        }
+        // Never below zero: a locale can carry more approvals than the manifest ever flagged (a key
+        // the stamp never saw, a pack of its own), and a negative would invert the ring.
+        int unreviewed = Math.max(0, baked.aiUnreviewed() - reviewed);
+        int authored = Math.max(unreviewed, baked.aiAuthored() - reviewed);
+        return new LocalizationCredit.AiCounts(baked.totalKeys(), authored, unreviewed);
     }
 
     /**
@@ -171,7 +249,7 @@ public final class LocalizationCreditRegistry {
                 return true;
             }
         }
-        return meetsReviewedCoverage(bestCounts(localeCode));
+        return meetsReviewedCoverage(withRelayApprovals(localeCode, bestCounts(localeCode)));
     }
 
     /**

@@ -22,7 +22,7 @@ machine-translated and which a human has checked.
 
 Nothing in this directory ships in the jar (only `src/main/resources` and
 `src/main/templates` enter the build). This is repo-side bookkeeping; the shipped,
-player-visible counterparts live in
+player-visible counterparts are the [manifests](#shipped-manifests) and
 `src/main/resources/assets/dungeontrain/localization_credits/<locale>.json`:
 
 - the locale-LEVEL `human_reviewed` flag (hand-maintained judgment call) that drives
@@ -59,6 +59,37 @@ file** (so provenance diffs align line-for-line with lang-file diffs), raw UTF-8
   restamps.)
 - `en_us` is the source language, not a translation — it has no sidecar, and CI
   rejects one.
+
+## Shipped manifests
+
+The credit counts above answer *how much* of a locale is machine-translated. The in-game
+translation editor needs *which lines* — so `stamp-provenance.py` also generates
+`src/main/resources/assets/dungeontrain/localization_provenance/<locale>.json`, the one
+part of this per-line system that enters the jar:
+
+```json
+{
+  "_note": "Generated from … — do not hand-edit. \"*\" = every unit in that body is AI-authored and unreviewed.",
+  "locale": "de_de",
+  "lang": { "dungeontrain": "*", "adventureitemnames": "*", "playermob": "*", "discordpresence": "*" },
+  "books": "*"
+}
+```
+
+- One manifest per locale spans **both** bodies — every lang namespace plus the narrative
+  books — because the editor lists them in one screen.
+- Each value is `"*"` (every unit in that body is AI-authored and unreviewed), `[]`, or an
+  explicit list of keys / book paths. `"*"` is what keeps these small: 17 locales are wholly
+  machine-translated, so they collapse to a few hundred bytes; only zh_cn and zh_tw carry
+  real lists.
+- A body with **no sidecar** for that locale is omitted entirely, so "absent" (DiscordPresence
+  has no `zh_cn` here) stays distinguishable from "nothing needs review".
+- Generated, like the credit counts — **never hand-edit**. Both `stamp-provenance.py` and
+  `stamp-narrative-provenance.py` rebuild every manifest on every run, whatever their
+  `--locale`/`--namespace` filter, and `check-provenance.py` **hard-fails** on drift, a
+  missing manifest, or an orphan. It checks both bodies (`check-narrative-provenance.py`
+  has no view of the lang namespaces, so it cannot be the one to do it).
+- Build/compact rules are tested in `scripts/localization/test_provenance_io.py`.
 
 ## Author registry — `authors.json`
 
