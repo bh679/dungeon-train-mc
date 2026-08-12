@@ -366,9 +366,11 @@ public final class BuilderOpenScreen extends Screen {
             return false;
         }
         if (source == BuilderOpenOptions.OpenSource.TRACK_KINDS) {
-            // Only the kind level. A type tile has nothing to open of its own — the whole tile is
-            // the way in — so a chip beside it would be a second button doing the same thing.
-            return activeTrackKind() == null && !showingTrackGroups();
+            // Both levels above the templates — a type has kinds under it and a kind has templates
+            // under it. Every other tile in this grid that holds something advertises it with the
+            // chip, and a tile that quietly behaves differently is a rule you can only learn by
+            // clicking it.
+            return activeTrackKind() == null;
         }
         return source != BuilderOpenOptions.OpenSource.CONTENTS
                 || EditorTemplateLists.isContentsGroup(value);
@@ -481,9 +483,20 @@ public final class BuilderOpenScreen extends Screen {
 
             // The drill-in button first: it sits inside a cell, so testing the cell first would
             // swallow every click on it and open the group's own template instead.
+            boolean typeLevel = source == BuilderOpenOptions.OpenSource.TRACK_KINDS
+                    && showingTrackGroups();
             for (int i = 0; i < entries.size(); i++) {
                 String value = entries.get(i);
                 if (hasSubVariants(source, value) && grid.isOverMore(i, mouseX, mouseY, scrollY)) {
+                    // At the type level the value is a group id, not the kind id `group` holds —
+                    // assigning it there would leave the screen looking for a TrackKind called
+                    // "tunnels" and showing an empty grid.
+                    if (typeLevel) {
+                        if (enterTrackGroup(value)) {
+                            return true;
+                        }
+                        continue;
+                    }
                     group = value;
                     scrollY = 0;
                     rebuild();

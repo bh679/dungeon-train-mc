@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.builder.BuilderMirrorFlags;
 import games.brennan.dungeontrain.net.BuilderBoundsPacket;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -49,6 +51,16 @@ public final class BuilderBoundsState {
         stageId = orEmpty(packet.stageId());
         trackKindId = orEmpty(packet.trackKindId());
         weight = packet.weight();
+
+        // Ghosting is baked into the chunk mesh, so a change to what's ghosted is only visible once
+        // the chunks are rebuilt. This is the one moment it can change — opening or closing a track
+        // template — and it is rare, so a full rebuild is the honest cost.
+        if (ClientTrackGhost.update(trackKindId, volumes)) {
+            LevelRenderer renderer = Minecraft.getInstance().levelRenderer;
+            if (renderer != null) {
+                renderer.allChanged();
+            }
+        }
     }
 
     public static String subTypeId() {
@@ -120,5 +132,6 @@ public final class BuilderBoundsState {
         stageId = "";
         trackKindId = "";
         weight = -1;
+        ClientTrackGhost.clear();
     }
 }
