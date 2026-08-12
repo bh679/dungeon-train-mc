@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.cheat.AisDataIntegrity;
 import games.brennan.dungeontrain.cheat.CheatModIntegrity;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.cheat.WorldSettingsIntegrity;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.ShowFreePlayConfirmPacket;
@@ -14,8 +15,10 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.protocol.game.ClientboundChangeDifficultyPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.GameType;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -23,6 +26,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.CommandEvent;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.Map;
 import java.util.UUID;
@@ -47,9 +51,17 @@ import java.util.concurrent.ConcurrentHashMap;
  *       cancels, so the cinematographer's internal {@code setGameMode} isn't
  *       broken; a command-driven switch is already {@code isCheated} by the time
  *       it runs, so this no-ops.</li>
+ *   <li>{@link #holdDifficultyChange} — the pause-menu difficulty slider, routed here
+ *       from {@code ServerGamePacketListenerImplDifficultyMixin} because it never goes
+ *       through a command. Below-default difficulties are held and confirmed exactly
+ *       like a cheat command; on confirm the change is applied.</li>
  *   <li>{@link PlayerEvent.PlayerLoggedInEvent} — a world joined directly in
- *       creative/spectator marks Free Play (nothing to back out of); and the
- *       run-scoped effect is re-applied if already Free Play.</li>
+ *       creative/spectator marks Free Play (nothing to back out of), as does one
+ *       <em>created</em> with {@code keepInventory} on or below-default difficulty
+ *       ({@link WorldSettingsIntegrity}); and the run-scoped effect is re-applied if
+ *       already Free Play.</li>
+ *   <li>{@link ServerTickEvent.Post} — a throttled world-settings backstop for the
+ *       paths nothing intercepts ({@code /execute}, another mod, a datapack).</li>
  *   <li>{@link PlayerEvent.PlayerRespawnEvent} — re-applies the effect after a
  *       death clears it, while the run is still Free Play.</li>
  * </ul>
@@ -60,8 +72,34 @@ import java.util.concurrent.ConcurrentHashMap;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CheatDetectionEvents {
 
-    /** A tainting command held per-player while its Free Play confirmation is open. */
-    private record Pending(String rawCommand, String label) {}
+    /** Re-check cadence for the world-settings backstop, in server ticks (20 = 1 s). */
+    private static final int SETTINGS_CHECK_PERIOD_TICKS = 20;
+
+    private static int settingsTickCounter = 0;
+
+    /** A tainting action held per-player while its Free Play confirmation is open. */
+    private sealed interface Pending permits PendingCommand, PendingDifficulty {
+        /** The soft cause phrase recorded when the player confirms. */
+        Component cause();
+        /** The short trigger label shown on the confirm screen. */
+        Component label();
+    }
+
+    /** A non-allowlisted command, canceled and re-dispatched on confirm. */
+    private record PendingCommand(String rawCommand, Component label) implements Pending {
+        @Override
+        public Component cause() {
+            return Component.translatable("chat.dungeontrain.free_play.cause.command", label);
+        }
+    }
+
+    /** A below-default difficulty change, canceled and applied on confirm. */
+    private record PendingDifficulty(Difficulty difficulty, Component label) implements Pending {
+        @Override
+        public Component cause() {
+            return WorldSettingsIntegrity.causeDifficulty(difficulty);
+        }
+    }
 
     private static final Map<UUID, Pending> PENDING = new ConcurrentHashMap<>();
 
@@ -89,26 +127,73 @@ public final class CheatDetectionEvents {
         // Hold the command, ask the player to confirm Free Play first.
         event.setCanceled(true);
         String raw = event.getParseResults().getReader().getString();
-        String label = CommandAllowlist.label(event.getParseResults());
-        PENDING.put(player.getUUID(), new Pending(raw, label));
-        DungeonTrainNet.sendTo(player, new ShowFreePlayConfirmPacket(label));
+        Component label = Component.literal(CommandAllowlist.label(event.getParseResults()));
+        hold(player, new PendingCommand(raw, label));
+    }
+
+    /**
+     * The difficulty slider in the pause menu bypasses the command path entirely,
+     * so {@code ServerGamePacketListenerImplDifficultyMixin} routes it here.
+     * Dropping below {@link WorldSettingsIntegrity#DEFAULT_DIFFICULTY} gets the same
+     * hold-and-confirm treatment as a cheat command; anything at or above it, or a
+     * run that is already permanently cheated, passes straight through.
+     *
+     * @return true when the change was held (the caller must cancel it) — on confirm
+     *         it is re-applied by {@link #onConfirmResponse}.
+     */
+    public static boolean holdDifficultyChange(ServerPlayer player, Difficulty difficulty) {
+        if (!WorldSettingsIntegrity.isFreePlayDifficulty(difficulty)) return false;
+        if (RunIntegrity.isPermanentlyCheated(player)) return false;
+
+        if (AisDataIntegrity.isSessionFreePlay() || CheatModIntegrity.isSessionFreePlay()) {
+            // Already visibly Free Play this session — nothing to confirm or back
+            // out of. Record the permanent taint quietly and let the change through.
+            RunIntegrity.markCheated(player, WorldSettingsIntegrity.causeDifficulty(difficulty));
+            return false;
+        }
+
+        hold(player, new PendingDifficulty(difficulty, difficulty.getDisplayName()));
+        return true;
+    }
+
+    /** Park a held action and ask the player to confirm Free Play first. */
+    private static void hold(ServerPlayer player, Pending pending) {
+        PENDING.put(player.getUUID(), pending);
+        DungeonTrainNet.sendTo(player, new ShowFreePlayConfirmPacket(pending.label()));
     }
 
     /** Called from {@code FreePlayConfirmResponsePacket} on the server thread. */
     public static void onConfirmResponse(ServerPlayer player, boolean confirmed) {
         Pending pending = PENDING.remove(player.getUUID());
         if (pending == null) return;
-        if (!confirmed) return; // backed out — the command stayed canceled
-        RunIntegrity.markCheated(player, Component.translatable(
-            "chat.dungeontrain.free_play.cause.command", pending.label()));
-        // Lock the live Ender Chest onto the Free Play (creative) slot now, before
-        // the held command runs — the legit chest is hidden the instant the run trips.
-        EnderChestLockBridge.engage(player);
-        // Re-run the held command. isCheated is now true, so onCommand won't re-gate it.
-        MinecraftServer server = player.getServer();
-        if (server != null) {
-            server.getCommands().performPrefixedCommand(player.createCommandSourceStack(), pending.rawCommand());
+        if (!confirmed) {
+            // Backed out — the held action stayed canceled. Re-assert the true
+            // difficulty on the client, whose options widget optimistically showed
+            // the value it sent.
+            if (pending instanceof PendingDifficulty) resyncDifficulty(player);
+            return;
         }
+        RunIntegrity.markCheated(player, pending.cause());
+        // Lock the live Ender Chest onto the Free Play (creative) slot now, before
+        // the held action runs — the legit chest is hidden the instant the run trips.
+        EnderChestLockBridge.engage(player);
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
+        switch (pending) {
+            // Re-run the held command. isCheated is now true, so onCommand won't re-gate it.
+            case PendingCommand cmd ->
+                server.getCommands().performPrefixedCommand(player.createCommandSourceStack(), cmd.rawCommand());
+            // Apply the held difficulty. The mixin won't re-gate it — the run is now cheated.
+            case PendingDifficulty diff -> server.setDifficulty(diff.difficulty(), false);
+        }
+    }
+
+    /** Push the server's actual difficulty back to one player's client. */
+    private static void resyncDifficulty(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
+        player.connection.send(new ClientboundChangeDifficultyPacket(
+            server.getWorldData().getDifficulty(), server.getWorldData().isDifficultyLocked()));
     }
 
     @SubscribeEvent
@@ -169,6 +254,24 @@ public final class CheatDetectionEvents {
         // AchievementEvents' default-priority sidecar absorb/replay reads it).
         // During a session taint this still records the permanent flag, quietly.
         markGameModeFreePlay(player, player.gameMode.getGameModeForPlayer());
+        // Same for a world *created* with keepInventory on or below-default
+        // difficulty (the world-creation Game Rules / difficulty screens never
+        // reach the command or packet gates).
+        WorldSettingsIntegrity.sweep(player.getServer());
+    }
+
+    /**
+     * The world-settings backstop, throttled to ~1&nbsp;s. The difficulty slider is
+     * intercepted with a confirm prompt and {@code /gamerule} goes through the
+     * command gate, so this exists for the paths nothing intercepts: {@code /execute},
+     * another mod, a datapack, a LAN "allow cheats" toggle. Two field reads per
+     * second, and a no-op once the run is already tainted.
+     */
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (++settingsTickCounter < SETTINGS_CHECK_PERIOD_TICKS) return;
+        settingsTickCounter = 0;
+        WorldSettingsIntegrity.sweep(event.getServer());
     }
 
     @SubscribeEvent
