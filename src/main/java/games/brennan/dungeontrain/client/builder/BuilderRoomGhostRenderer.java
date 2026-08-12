@@ -64,8 +64,16 @@ public final class BuilderRoomGhostRenderer {
     private static final float R = 0.72F;
     private static final float G = 0.84F;
     private static final float B = 1.00F;
-    /** 12% at the nearest ring — enough to read the shape, never enough to look like a block. */
-    private static final float A = 0.12F;
+    /**
+     * 75% at the room's own boundary — the Bedrock skin and the first ring of copies.
+     *
+     * <p>Nearly solid on purpose. These ghosts are not a hint that something is there; they are the
+     * answer to "what does this room do at its walls", and at the faint tint the wash uses the
+     * difference between a sealed room and a repeating one was a shimmer you had to look for.
+     * Distance is what carries "this isn't real" instead — {@link BuilderRoomGhosts#fadeFor} takes
+     * it down from here to nothing at the outer ring.</p>
+     */
+    private static final float A = 0.75F;
 
     /** Faces of the room in <b>local</b> coordinates, so one sweep serves every tile. */
     private static volatile List<Face> faces = List.of();
