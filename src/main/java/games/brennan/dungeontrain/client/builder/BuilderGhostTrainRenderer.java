@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.builder.BuilderGhostSlots;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriagePlacer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -30,8 +32,10 @@ import java.util.List;
  *
  * <p>Opening a carriage room or a part parks a single carriage — one template is one carriage — but
  * a carriage on its own doesn't tell you how it reads in a run, which is most of the point of the
- * outside view. The empty slots either side are filled in at {@value #A} opacity so the whole train
- * is still legible while what you can actually edit stays unambiguous.</p>
+ * outside view. The rest of the group is drawn back in at {@value #A} opacity — the empty carriage
+ * slots <em>and</em> the flatbed pads that cap it, since a group's silhouette is the pads' whole
+ * reason for existing — so the whole train stays legible while what you can actually edit stays
+ * unambiguous.</p>
  *
  * <p><b>Drawn, never stamped.</b> The ghosts are quads; no block is placed for them. That is what
  * keeps them out of the saved template, out of the dirty check, and out of reach of the block
@@ -73,9 +77,12 @@ public final class BuilderGhostTrainRenderer {
      * Replaced wholesale, so a render pass never sees a partial sweep.
      */
     private static volatile List<Face> faces = List.of();
-    /** World position the local faces are measured from, and the slot offsets to repeat them at. */
+    /** Faces of one flatbed pad, likewise local — a different shape, so it can't share the sweep. */
+    private static volatile List<Face> padFaces = List.of();
+    /** World position the local faces are measured from, and the slots to repeat them at. */
     private static volatile BlockPos origin = BlockPos.ZERO;
-    private static volatile List<Integer> slotOffsets = List.of();
+    private static volatile BuilderGhostSlots.Ghosts ghosts =
+            new BuilderGhostSlots.Ghosts(List.of(), List.of(), 0);
 
     private static int tickCounter = 0;
 
@@ -99,7 +106,8 @@ public final class BuilderGhostTrainRenderer {
 
     private static void clear() {
         faces = List.of();
-        slotOffsets = List.of();
+        padFaces = List.of();
+        ghosts = new BuilderGhostSlots.Ghosts(List.of(), List.of(), 0);
     }
 
     /**
@@ -121,9 +129,15 @@ public final class BuilderGhostTrainRenderer {
         int full = BuilderMode.fromId(BuilderBoundsState.modeId())
                 .map(BuilderMode::carriageCount)
                 .orElse(0);
-        List<Integer> offsets = BuilderGhostSlots.offsets(volumes.size(), full,
-                parked.maxX() - parked.minX() + 1);
-        if (offsets.isEmpty()) {
+        // The build volume is one carriage, so its own extents are this world's CarriageDims —
+        // no need to be told them, and no way for the two to disagree.
+        int length = parked.maxX() - parked.minX() + 1;
+        int width = parked.maxZ() - parked.minZ() + 1;
+        int height = parked.maxY() - parked.minY() + 1;
+        CarriageDims dims = new CarriageDims(length, width, height);
+        BuilderGhostSlots.Ghosts slots = BuilderGhostSlots.of(parked.minX(), volumes.size(), full,
+                length, CarriagePlacer.halfPadLen(dims));
+        if (slots.isEmpty()) {
             clear();
             return;
         }
@@ -153,16 +167,55 @@ public final class BuilderGhostTrainRenderer {
         }
 
         origin = min;
-        slotOffsets = offsets;
+        padFaces = padSlabFaces(slots.padLength(), width);
+        ghosts = slots;
         faces = found;
+    }
+
+    /**
+     * One flatbed pad, as the flat bed it is: a single course of floor over the pad footprint.
+     *
+     * <p>Modelled rather than read, because the real pad is a half-slice of the FLATBED structure
+     * template and templates live behind {@code ServerLevel} — the client cannot see one. The shape
+     * modelled is {@code CarriagePlacer.legacyHalfFlatbedFloor}'s, which is the mod's own answer to
+     * "what is a half pad when the template is unavailable", so the ghost matches what a pad is for:
+     * the continuous bed that carries the eye across the seam.</p>
+     *
+     * <p>The honest limit of that: if the authored FLATBED template ever grows anything above its
+     * floor, the ghost will not show it. It is a silhouette aid, so under-drawing is the safe
+     * direction to be wrong in — a ghost that claimed geometry the real group doesn't have would be
+     * worse than one that stops at the floor.</p>
+     */
+    private static List<Face> padSlabFaces(int padLength, int width) {
+        List<Face> pad = new ArrayList<>();
+        if (padLength <= 0 || width <= 0) {
+            return pad;
+        }
+        for (int x = 0; x < padLength; x++) {
+            for (int z = 0; z < width; z++) {
+                for (Direction dir : Direction.values()) {
+                    int nx = x + dir.getStepX();
+                    int nz = z + dir.getStepZ();
+                    // Skip faces onto another slab cell: an interior face is invisible in a solid
+                    // pad and, at 10% alpha, a second layer of it reads as a darker stripe.
+                    boolean insideSlab = dir.getStepY() == 0
+                            && nx >= 0 && nx < padLength && nz >= 0 && nz < width;
+                    if (!insideSlab) {
+                        pad.add(new Face(new BlockPos(x, 0, z), dir));
+                    }
+                }
+            }
+        }
+        return pad;
     }
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
         List<Face> snapshot = faces;
-        List<Integer> offsets = slotOffsets;
-        if (snapshot.isEmpty() || offsets.isEmpty()) return;
+        List<Face> pad = padFaces;
+        BuilderGhostSlots.Ghosts slots = ghosts;
+        if (slots.isEmpty() || (snapshot.isEmpty() && pad.isEmpty())) return;
 
         Minecraft mc = Minecraft.getInstance();
         PoseStack ps = event.getPoseStack();
@@ -173,10 +226,21 @@ public final class BuilderGhostTrainRenderer {
 
         ps.pushPose();
         ps.translate(-cam.x, -cam.y, -cam.z);
-        for (int offset : offsets) {
+        // The empty carriage slots, each a copy of the one on the track.
+        for (int slotX : slots.carriageMinX()) {
             for (Face face : snapshot) {
                 drawFace(ps, vc,
-                        base.getX() + offset + face.local().getX(),
+                        slotX + face.local().getX(),
+                        base.getY() + face.local().getY(),
+                        base.getZ() + face.local().getZ(),
+                        face.dir());
+            }
+        }
+        // The flatbed pads capping the group, sitting on the train floor like the real ones.
+        for (int padX : slots.padMinX()) {
+            for (Face face : pad) {
+                drawFace(ps, vc,
+                        padX + face.local().getX(),
                         base.getY() + face.local().getY(),
                         base.getZ() + face.local().getZ(),
                         face.dir());
