@@ -6490,6 +6490,22 @@
       "released": true,
       "released_in": "v0.552.0",
       "released_at": "2026-08-11T14:48:13Z"
+    },
+    {
+      "id": "multiplayer-death-screen",
+      "version": "0.553.0",
+      "type": "feat",
+      "title": "The death screen recap now works in multiplayer",
+      "summary": "Dying on a server used to give you Minecraft's plain death screen. Now you get the same end-of-run recap singleplayer gets \u2014 your fall, your deeds, your cargo, your ride photos and the rest \u2014 with Respawn in place of the board-a-new-train button, since a server world isn't yours to restart.",
+      "highlights": [
+        "The narrative death screen now appears on LAN and dedicated servers",
+        "Respawn replaces Board anew there, and the delete-world toggle is hidden"
+      ],
+      "pr": 948,
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
