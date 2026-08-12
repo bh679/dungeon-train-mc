@@ -42,10 +42,17 @@ import java.util.UUID;
  *       one seq-guarded last-writer-wins blob.</li>
  * </ul>
  *
- * <p><b>Deliberately not synced:</b> {@link games.brennan.dungeontrain.player.PlayerBiomeProgress}.
- * Despite living beside the other progress state, it is <em>current-run</em> state that
- * {@code AchievementEvents} resets on death — restoring it from the relay would resurrect a dead run's
- * biomes and hand out exploration advancements the player didn't earn this life.</p>
+ * <p><b>Deliberately not synced — two stores that look like they belong here and don't:</b></p>
+ *
+ * <ul>
+ *   <li>{@link games.brennan.dungeontrain.player.PlayerBiomeProgress} is <em>current-run</em> state
+ *       that {@code AchievementEvents} resets on death. Restoring it from the relay would resurrect a
+ *       dead run's biomes and hand out exploration advancements the player didn't earn this life.</li>
+ *   <li>{@link games.brennan.dungeontrain.advancement.GlobalNarrativeProgress} is keyed per
+ *       <em>install</em>, not per player (one {@code global.json}, no uuid). There is no principled
+ *       answer to whose account it belongs to on a shared world, so syncing it would either invent an
+ *       owner or leak one player's story progress onto another's account.</li>
+ * </ul>
  */
 public final class ProgressBlobs {
 

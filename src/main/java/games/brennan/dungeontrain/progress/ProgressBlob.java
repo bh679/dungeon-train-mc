@@ -25,10 +25,15 @@ import java.util.Map;
  */
 public record ProgressBlob(String kind, int seq, List<String> ids, Map<String, Double> fields, String data) {
 
-    /** The kinds the mod syncs. Kept here so the mod and the relay never drift on spelling. */
+    /**
+     * The kinds the mod syncs. Kept here so the mod and the relay never drift on spelling.
+     *
+     * <p>Two neighbouring stores are deliberately absent. {@code PlayerBiomeProgress} is current-run
+     * state that resets on death, so restoring it would resurrect a dead run's biomes.
+     * {@code GlobalNarrativeProgress} is keyed per-install rather than per-player, so it has no
+     * well-defined owner to sync it to — see {@link ProgressBlobs}.</p>
+     */
     public static final String ADVANCEMENTS = "set:advancements";
-    public static final String NARRATIVE = "set:narrative";
-    public static final String BIOMES = "set:biomes";
     public static final String STATS = "max:stats";
     public static final String BOOK_BURNS = "max:bookburns";
 
