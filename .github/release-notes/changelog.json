@@ -6506,6 +6506,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "difficulty-offset-world-scoped",
+      "version": "0.554.0",
+      "type": "fix",
+      "title": "Difficulty set by command no longer follows you into a new world or a new life",
+      "summary": "Setting the difficulty by command \u2014 /dungeontrain difficulty, or the difficulty /dtp applies when it drops you somewhere far down the line \u2014 used to be written once and left everywhere: start a brand-new world and it opened at whatever tier you last set, and dying didn't undo it either, so a fresh run carried on at a difficulty it never earned. That setting now belongs to the world you set it in. A new world starts on automatic, dying puts you back on automatic, and the world you set it in still remembers it when you come back.",
+      "highlights": [
+        "A newly created world no longer inherits a difficulty set in another world",
+        "Dying resets the difficulty back to automatic \u2014 the new run scales from real travel again",
+        "Reloading the world you set it in keeps the difficulty you set",
+        "On a server with other players still riding, one player's death leaves the difficulty alone"
+      ],
+      "date": "2026-08-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
