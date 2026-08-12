@@ -6,6 +6,8 @@ import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.track.TrackPlacer;
+import games.brennan.dungeontrain.tunnel.TunnelGeometry;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
@@ -49,23 +51,34 @@ final class BuilderTrackSceneGhosts {
      * then the line over them, then the staircases. That ordering is not cosmetic: the real feature
      * runs the same way, and it is what decides who wins where two of them meet.</p>
      */
-    static Map<BlockPos, BlockState> build(long worldSeed, CarriageDims dims, BoundingBox plot) {
+    static Map<BlockPos, BlockState> build(long worldSeed, CarriageDims dims, BoundingBox plot,
+                                           TrackKind openKind, String openName,
+                                           Map<BlockPos, BlockState> livePlot) {
         Map<BlockPos, BlockState> cells = new LinkedHashMap<>();
         TrackGeometry g = BuilderTrackScene.geometry(dims);
+        Live live = new Live(worldSeed, dims, openKind, openName, livePlot);
         int editedX = BuilderTrackPlot.editedColumnCentreX();
 
         for (int centreX : BuilderTrackScene.pillarCentresX()) {
             if (Math.abs(centreX - editedX) > SCENE_RADIUS_X) {
                 continue;
             }
-            appendColumn(cells, worldSeed, dims, g, centreX);
-            appendArch(cells, worldSeed, dims, g, centreX);
+            appendColumn(cells, live, g, centreX);
+            appendArch(cells, live, g, centreX);
         }
-        appendLine(cells, worldSeed, dims, g, editedX);
+        appendLine(cells, live, g, editedX);
         for (BuilderTrackScene.Stairs stairs : BuilderTrackScene.stairs(worldSeed)) {
             if (Math.abs(stairs.x() - editedX) <= SCENE_RADIUS_X) {
-                appendStairs(cells, worldSeed, dims, stairs);
+                appendStairs(cells, live, dims, stairs.x(), stairs.minusZ());
             }
+        }
+        // The piece being edited brings its own surroundings: a staircase needs the rest of itself
+        // running down to the ground, and a tunnel needs the run it sits in.
+        if (BuilderTrackGhostShapes.isAdjunct(openKind)) {
+            appendStairs(cells, live, dims, BuilderTrackPlot.editedColumnCentreX(), false);
+        }
+        if (BuilderTrackGhostShapes.isTunnel(openKind)) {
+            appendTunnelRun(cells, live, g, plot);
         }
 
         if (plot != null) {
@@ -75,23 +88,52 @@ final class BuilderTrackSceneGhosts {
     }
 
     /**
+     * Where a ghost's blocks come from.
+     *
+     * <p>Off disk for every piece except the ones showing the template the builder currently has
+     * open — those read the plot's <em>live</em> blocks instead, so placing a block on your tile
+     * changes every other copy of that tile down the line as you place it. Without this the ghosts
+     * would show the last save, which is the one thing a preview must never do: quietly disagree
+     * with the work in front of you.</p>
+     */
+    private record Live(long worldSeed, CarriageDims dims, TrackKind openKind, String openName,
+                        Map<BlockPos, BlockState> plotCells) {
+
+        /** The blocks for a piece of {@code kind} at the generator's {@code index}. */
+        Map<BlockPos, BlockState> cells(TrackKind kind, long index) {
+            if (kind == openKind && !plotCells.isEmpty()
+                    && BuilderGhostTemplates.pickedName(kind, worldSeed, index).equals(openName)) {
+                return plotCells;
+            }
+            return BuilderGhostTemplates.cellsForPick(kind, worldSeed, index, dims);
+        }
+
+        /** The blocks for the open template itself, whatever index it would have rolled at. */
+        Map<BlockPos, BlockState> open(TrackKind kind) {
+            return plotCells.isEmpty()
+                    ? BuilderGhostTemplates.cells(kind, openName, dims)
+                    : plotCells;
+        }
+    }
+
+    /**
      * One column, stacked the way {@code placePillarSlice} stacks it.
      *
      * <p>Bottom from the ground up, top hanging from the cap, middles repeating between — and the
      * variant for each section picked on the pillar's world X, which is the key the generator uses,
      * so two adjacent columns can legitimately differ.</p>
      */
-    private static void appendColumn(Map<BlockPos, BlockState> cells, long worldSeed,
-                                     CarriageDims dims, TrackGeometry g, int centreX) {
+    private static void appendColumn(Map<BlockPos, BlockState> cells, Live live,
+                                     TrackGeometry g, int centreX) {
         int groundY = BuilderTrackScene.groundY();
         int capY = BuilderTrackScene.bedY() - 1;
         int botH = PillarSection.BOTTOM.height();
         int topH = PillarSection.TOP.height();
         int midH = BuilderTrackScene.COLUMN_HEIGHT - botH - topH;
 
-        Map<BlockPos, BlockState> bottom = sectionCells(TrackKind.PILLAR_BOTTOM, worldSeed, centreX, dims);
-        Map<BlockPos, BlockState> middle = sectionCells(TrackKind.PILLAR_MIDDLE, worldSeed, centreX, dims);
-        Map<BlockPos, BlockState> top = sectionCells(TrackKind.PILLAR_TOP, worldSeed, centreX, dims);
+        Map<BlockPos, BlockState> bottom = live.cells(TrackKind.PILLAR_BOTTOM, centreX);
+        Map<BlockPos, BlockState> middle = live.cells(TrackKind.PILLAR_MIDDLE, centreX);
+        Map<BlockPos, BlockState> top = live.cells(TrackKind.PILLAR_TOP, centreX);
 
         for (int x = BuilderTrackScene.columnMinX(centreX); x <= BuilderTrackScene.columnMaxX(centreX); x++) {
             for (int row = 0; row < botH; row++) {
@@ -113,16 +155,16 @@ final class BuilderTrackSceneGhosts {
      * downward, then the middle's row repeating — which is why an authored pillar carries its own
      * look into the arch instead of the arch being a separate template.</p>
      */
-    private static void appendArch(Map<BlockPos, BlockState> cells, long worldSeed,
-                                   CarriageDims dims, TrackGeometry g, int centreX) {
+    private static void appendArch(Map<BlockPos, BlockState> cells, Live live,
+                                   TrackGeometry g, int centreX) {
         int[] profile = BuilderTrackScene.archProfile();
         if (profile.length == 0) {
             return;
         }
         int capY = BuilderTrackScene.bedY() - 1;
         int topH = PillarSection.TOP.height();
-        Map<BlockPos, BlockState> middle = sectionCells(TrackKind.PILLAR_MIDDLE, worldSeed, centreX, dims);
-        Map<BlockPos, BlockState> top = sectionCells(TrackKind.PILLAR_TOP, worldSeed, centreX, dims);
+        Map<BlockPos, BlockState> middle = live.cells(TrackKind.PILLAR_MIDDLE, centreX);
+        Map<BlockPos, BlockState> top = live.cells(TrackKind.PILLAR_TOP, centreX);
 
         int minX = BuilderTrackScene.columnMinX(centreX);
         int maxX = BuilderTrackScene.columnMaxX(centreX);
@@ -161,16 +203,15 @@ final class BuilderTrackSceneGhosts {
      * <p>Rolled per tile index rather than fixed, because that is what the generator does — a line
      * of one repeated tile would be a preview of something the game never builds.</p>
      */
-    private static void appendLine(Map<BlockPos, BlockState> cells, long worldSeed,
-                                   CarriageDims dims, TrackGeometry g, int editedX) {
+    private static void appendLine(Map<BlockPos, BlockState> cells, Live live,
+                                   TrackGeometry g, int editedX) {
         int from = editedX - SCENE_RADIUS_X;
         int to = editedX + SCENE_RADIUS_X;
         long firstTile = Math.floorDiv((long) from, (long) TrackPlacer.TILE_LENGTH);
         long lastTile = Math.floorDiv((long) to, (long) TrackPlacer.TILE_LENGTH);
 
         for (long tile = firstTile; tile <= lastTile; tile++) {
-            Map<BlockPos, BlockState> template =
-                    BuilderGhostTemplates.cellsForPick(TrackKind.TILE, worldSeed, tile, dims);
+            Map<BlockPos, BlockState> template = live.cells(TrackKind.TILE, tile);
             int originX = (int) (tile * TrackPlacer.TILE_LENGTH);
             for (Map.Entry<BlockPos, BlockState> entry : template.entrySet()) {
                 BlockPos local = entry.getKey();
@@ -186,19 +227,24 @@ final class BuilderTrackSceneGhosts {
      * A staircase beside its column, repeated downward to the ground.
      *
      * <p>The generator stamps the 8-tall template over and over from deck height until it reaches
-     * the floor, which is how one template becomes a staircase of any height. The mirror on the
-     * {@code +Z} side is skipped here: a ghost is read as a silhouette, and a mirrored copy of the
-     * same blocks in the same footprint reads identically at this alpha.</p>
+     * the floor, which is how one template becomes a staircase of any height — so a preview that
+     * drew a single stamp would show a flight ending in mid-air. The mirror on the {@code +Z} side
+     * is skipped: at this alpha a mirrored copy of the same blocks in the same footprint reads
+     * identically.</p>
      */
-    private static void appendStairs(Map<BlockPos, BlockState> cells, long worldSeed,
-                                     CarriageDims dims, BuilderTrackScene.Stairs stairs) {
-        Map<BlockPos, BlockState> template = BuilderGhostTemplates.cellsForPick(
-                TrackKind.ADJUNCT_STAIRS, worldSeed, stairs.x(), dims);
+    private static void appendStairs(Map<BlockPos, BlockState> cells, Live live, CarriageDims dims,
+                                     int centreX, boolean minusZ) {
+        // Live blocks only when the staircase itself is what's open. An entrance is a 5×8×5 pavilion
+        // that happens to share the family — repeating it as a flight of stairs would draw a tower
+        // of doorways down to the ground.
+        Map<BlockPos, BlockState> template = live.openKind() == TrackKind.ADJUNCT_STAIRS
+                ? live.open(TrackKind.ADJUNCT_STAIRS)
+                : live.cells(TrackKind.ADJUNCT_STAIRS, centreX);
         if (template.isEmpty()) {
             return;
         }
-        int originX = stairs.x() - 1;
-        int originZ = BuilderTrackScene.stairsMinZ(stairs.minusZ(), dims);
+        int originX = centreX - 1;
+        int originZ = BuilderTrackScene.stairsMinZ(minusZ, dims);
         int floorY = BuilderTrackScene.groundY();
         int height = PillarAdjunct.STAIRS.ySize();
 
@@ -216,9 +262,49 @@ final class BuilderTrackSceneGhosts {
         }
     }
 
-    /** A pillar section's template, rolled on the column's world X the way the generator keys it. */
-    private static Map<BlockPos, BlockState> sectionCells(TrackKind kind, long worldSeed,
-                                                          int centreX, CarriageDims dims) {
-        return BuilderGhostTemplates.cellsForPick(kind, worldSeed, centreX, dims);
+    /**
+     * The tunnel run the open section sits in: one section either side, capped by portals.
+     *
+     * <p>A tunnel is only ever seen as part of a run, and the two things worth judging are the seam
+     * between consecutive sections and the mouth you come out of — so the preview is
+     * {@code portal | section | you | section | portal}. The exit portal is mirrored on X the way
+     * the generator mirrors it, because a portal is not symmetrical and an unmirrored copy at the
+     * far end would show the wrong face.</p>
+     */
+    private static void appendTunnelRun(Map<BlockPos, BlockState> cells, Live live,
+                                        TrackGeometry g, BoundingBox plot) {
+        if (plot == null) {
+            return;
+        }
+        TunnelGeometry tg = TunnelGeometry.from(g);
+        int length = TunnelPlacer.LENGTH;
+        int originZ = tg.wallMinZ() + 1;
+        int plotMinX = plot.minX();
+
+        Map<BlockPos, BlockState> section = live.openKind() == TrackKind.TUNNEL_SECTION
+                ? live.open(TrackKind.TUNNEL_SECTION)
+                : BuilderGhostTemplates.cells(TrackKind.TUNNEL_SECTION, TrackKind.DEFAULT_NAME,
+                        live.dims());
+        Map<BlockPos, BlockState> portal = live.openKind() == TrackKind.TUNNEL_PORTAL
+                ? live.open(TrackKind.TUNNEL_PORTAL)
+                : BuilderGhostTemplates.cells(TrackKind.TUNNEL_PORTAL, TrackKind.DEFAULT_NAME,
+                        live.dims());
+
+        putTunnel(cells, section, plotMinX - length, tg.floorY(), originZ, length, false);
+        putTunnel(cells, section, plotMinX + length, tg.floorY(), originZ, length, false);
+        // Entrance at the low-X mouth, exit at the high-X one — mirrored, as the generator stamps it.
+        putTunnel(cells, portal, plotMinX - 2 * length, tg.floorY(), originZ, length, false);
+        putTunnel(cells, portal, plotMinX + 2 * length, tg.floorY(), originZ, length, true);
     }
+
+    private static void putTunnel(Map<BlockPos, BlockState> cells, Map<BlockPos, BlockState> template,
+                                  int originX, int originY, int originZ, int length, boolean mirrorX) {
+        for (Map.Entry<BlockPos, BlockState> entry : template.entrySet()) {
+            BlockPos local = entry.getKey();
+            int x = mirrorX ? length - 1 - local.getX() : local.getX();
+            cells.put(new BlockPos(originX + x, originY + local.getY(), originZ + local.getZ()),
+                    entry.getValue());
+        }
+    }
+
 }

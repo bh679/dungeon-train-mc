@@ -71,7 +71,14 @@ public final class BuilderTrackGhostRenderer {
     /** Textured, translucent, culled and depth-writing — see the class note. */
     private static final RenderType GHOST = RenderType.entityTranslucentCull(InventoryMenu.BLOCK_ATLAS);
 
-    private static final int RESCAN_INTERVAL_TICKS = 10;
+    /**
+     * Ticks between sweeps.
+     *
+     * <p>Short, because the ghosts of the open template are built from the plot's live blocks and a
+     * builder placing one expects the copies down the line to follow. A quarter of a second reads as
+     * immediate; a full second reads as broken.</p>
+     */
+    private static final int RESCAN_INTERVAL_TICKS = 5;
     /** Hard ceiling so a pathological build can't stall a frame. */
     private static final int MAX_CELLS = 40_000;
 
@@ -100,6 +107,9 @@ public final class BuilderTrackGhostRenderer {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         cells = Map.of();
+        // The next world reads its templates from its own config directory, and a kept entry would
+        // ghost one world's track into another's.
+        BuilderGhostTemplates.clear();
     }
 
     private static void rescan() {
@@ -113,8 +123,34 @@ public final class BuilderTrackGhostRenderer {
         // Resolved here rather than in the render pass: the first read of a template does file I/O
         // and NBT decompression inside a synchronized store, which is not a thing to do per frame.
         Map<BlockPos, BlockState> scene = BuilderTrackSceneGhosts.build(
-                BuilderGhostTemplates.worldSeed(), CarriageDims.DEFAULT, plot);
+                BuilderGhostTemplates.worldSeed(), CarriageDims.DEFAULT, plot,
+                kind, BuilderBoundsState.buildName(), livePlotCells(mc.level, plot));
         cells = scene.size() <= MAX_CELLS ? scene : trimmed(scene);
+    }
+
+    /**
+     * The plot's blocks as they are right now, local to its own origin.
+     *
+     * <p>This is what makes the preview live: every ghost showing the same template reads these
+     * rather than the copy on disk, so breaking a block on your tile breaks it in every tile down
+     * the line as you do it. Reading the saved file instead would show the last save, which is the
+     * one thing a preview must never do — quietly disagree with the work in front of you.</p>
+     */
+    private static Map<BlockPos, BlockState> livePlotCells(Level level, BoundingBox plot) {
+        Map<BlockPos, BlockState> local = new LinkedHashMap<>();
+        BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
+        for (int x = plot.minX(); x <= plot.maxX(); x++) {
+            for (int y = plot.minY(); y <= plot.maxY(); y++) {
+                for (int z = plot.minZ(); z <= plot.maxZ(); z++) {
+                    BlockState state = level.getBlockState(probe.set(x, y, z));
+                    if (!state.isAir()) {
+                        local.put(new BlockPos(x - plot.minX(), y - plot.minY(), z - plot.minZ()),
+                                state);
+                    }
+                }
+            }
+        }
+        return local;
     }
 
     /**

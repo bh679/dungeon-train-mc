@@ -43,7 +43,14 @@ public final class BuilderGhostTemplates {
 
     private BuilderGhostTemplates() {}
 
-    /** Forget everything. Template files can change under a running client via the editor. */
+    /**
+     * Forget everything.
+     *
+     * <p>Template files change under a running client — the editor writes them, and a builder Save
+     * rewrites the very one being previewed. The unsaved case is handled without this, by reading
+     * the plot's live blocks (see {@code BuilderTrackSceneGhosts}); this is for when what is on
+     * disk has genuinely moved on.</p>
+     */
     public static void clear() {
         synchronized (CACHE) {
             CACHE.clear();
@@ -73,6 +80,18 @@ public final class BuilderGhostTemplates {
             CACHE.put(key, loaded);
         }
         return loaded;
+    }
+
+    /**
+     * The name the world would roll for this kind at this index.
+     *
+     * <p>Exposed so a caller can tell whether a given ghost piece is showing the template the
+     * builder currently has open — which is what decides between the copy on disk and the live
+     * blocks on the plot.</p>
+     */
+    public static String pickedName(TrackKind kind, long worldSeed, long index) {
+        return kind == null ? TrackKind.DEFAULT_NAME
+                : TrackVariantRegistry.pickName(kind, worldSeed, index);
     }
 
     /**
