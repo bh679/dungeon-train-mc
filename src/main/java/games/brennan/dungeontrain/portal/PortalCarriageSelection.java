@@ -44,6 +44,10 @@ import java.util.List;
  * <p>Two portals are never closer than {@link #MIN_GROUP_GAP} groups, so the lottery reads as
  * sporadic rather than clumpy — an unconstrained draw puts two back to back often enough to notice.</p>
  *
+ * <p><b>The lottery does not start at the origin.</b> Nothing before Diff-Level
+ * {@link #MIN_PORTAL_LEVEL} holds a portal, and the draw begins counting at that boundary rather
+ * than running from the origin and discarding what it drew — see {@link #firstEligibleGroup()}.</p>
+ *
  * <p>The one exception is a dev build with everyone in creative, which keeps the old every-2nd
  * cadence so a portal is always a short ride away while testing — see {@link #rateFor}.</p>
  */
@@ -64,6 +68,22 @@ public final class PortalCarriageSelection {
 
     /** Value meaning "no group holds a portal". */
     public static final int CARRIAGE_EVERY_OFF = 0;
+
+    /**
+     * The Diff-Level a stretch of track must be at before any of it holds a portal.
+     *
+     * <p>Portals are not an opening-minutes surprise. A player who meets one in the first few
+     * carriages meets it before they have any read on what the train is — while the onboarding ramp
+     * is still holding hostiles back — and the portal stops being the thing the run grows into and
+     * becomes the second thing that happened. Two levels in, they know the train, and a corridor that
+     * is plainly not part of it lands as one.</p>
+     *
+     * <p>Zero-based, the same scale as {@link games.brennan.dungeontrain.template.TemplateGate}'s
+     * {@code minLevel} and the stage presets. At the default twenty carriages a level and a one-level
+     * progression delay, level two begins sixty carriages out — see {@link #firstEligibleGroup()},
+     * which is where this is turned into a group ordinal.</p>
+     */
+    public static final int MIN_PORTAL_LEVEL = 2;
 
     /**
      * Groups two portals must be apart, at the least.
@@ -141,28 +161,62 @@ public final class PortalCarriageSelection {
      * {@link #DEV_CREATIVE_EVERY} for the one case that uses it.</p>
      */
     public static boolean isPortalGroup(int carriageIndex, int groupSize, Rate rate, long worldSeed) {
+        return isPortalGroup(carriageIndex, groupSize, rate, worldSeed, 0);
+    }
+
+    /**
+     * As {@link #isPortalGroup(int, int, Rate, long)}, but with the opening stretch of the track shut
+     * out: no group nearer the origin than {@code firstEligibleGroup} holds a portal, and the draw
+     * <b>starts counting there</b> rather than running from the origin and having its early results
+     * thrown away.
+     *
+     * <p><b>Why the draw is re-indexed rather than merely filtered.</b> A filtered draw burns its
+     * first {@code firstEligibleGroup} results against dead track, so the first portal lands one in
+     * {@code every} groups after the gate <em>by luck</em> — at the shipped rate that is a long ride
+     * past the gate as often as not, and the player who has finally earned portals gets nothing to
+     * show for it. Re-indexing makes the gate the draw's own origin, so the wait past it is the
+     * ordinary between-portals wait.</p>
+     *
+     * <p>The gate is measured in group ordinals from the origin and applies to both directions of
+     * travel, since {@link games.brennan.dungeontrain.difficulty.DifficultyProgression#positionTier}
+     * likewise reads the distance behind the origin as a magnitude.</p>
+     *
+     * @param firstEligibleGroup groups nearer the origin than this hold no portal; {@code 0} for no
+     *                           gate, which reproduces the ungated draw exactly
+     */
+    public static boolean isPortalGroup(int carriageIndex, int groupSize, Rate rate, long worldSeed,
+                                        int firstEligibleGroup) {
         if (rate.isOff()) return false;
         // A group too short to hold entry, cart and exit gets no portal at all rather than half of
         // one — an entry corridor whose exit landed in the next group would strand anyone using it.
         if (groupSize < PORTAL_GROUP_SPAN) return false;
-        // Every group, without troubling the hash — and the case the group-arithmetic tests use.
-        if (rate.every() == 1) return true;
 
         long groupIndex = Math.floorDiv((long) carriageIndex, Math.max(1, groupSize));
 
         // The dev-creative cadence is deliberately dense and already evenly spaced, so it skips the
-        // gap rule outright — five apart is the opposite of what it is for.
+        // gap rule outright — five apart is the opposite of what it is for. It skips the difficulty
+        // gate with it: the point of that cadence is a portal a short ride from spawn while testing,
+        // and a tester who had to travel to Diff-Level MIN_PORTAL_LEVEL first would not have one.
         if (rate.periodic()) return Math.floorMod(groupIndex, (long) rate.every()) == 0L;
+
+        long gate = Math.max(0, firstEligibleGroup);
+        if (Math.abs(groupIndex) < gate) return false;
+        // The gate is the draw's origin. Shifting toward zero on each side rather than subtracting a
+        // signed offset keeps the track behind the origin drawing outward like the track ahead.
+        long drawIndex = groupIndex >= 0 ? groupIndex - gate : groupIndex + gate;
+
+        // Every group, without troubling the hash — and the case the group-arithmetic tests use.
+        if (rate.every() == 1) return true;
 
         // Denser than the gap can carry, so the draw is a certainty — and a certainty cannot go
         // through the suppression below, where every group would be knocked out by the one behind it
         // and the train would end up with no portals at all. Space them by the gap directly instead:
         // the densest arrangement the constraint permits, which is what such a rate is asking for.
         if (drawThreshold(rate.every()) >= DRAW_PRECISION) {
-            return Math.floorMod(groupIndex, (long) MIN_GROUP_GAP) == 0L;
+            return Math.floorMod(drawIndex, (long) MIN_GROUP_GAP) == 0L;
         }
 
-        if (!drewHit(worldSeed, groupIndex, rate.every())) return false;
+        if (!drewHit(worldSeed, drawIndex, rate.every())) return false;
 
         // Suppressed by any hit in the four groups behind it, so two portals can never land within
         // MIN_GROUP_GAP: were they to, the earlier one's hit would sit inside the later one's window
@@ -172,9 +226,48 @@ public final class PortalCarriageSelection {
         // chosen — that would recurse back down the train with no floor, and this has to answer
         // from the group's own ordinal alone, the same on every reload and for every reader.
         for (long back = 1; back < MIN_GROUP_GAP; back++) {
-            if (drewHit(worldSeed, groupIndex - back, rate.every())) return false;
+            // Nothing to be too close to on the far side of the gate: the groups there hold no
+            // portal, so letting their raw hits suppress the first eligible ones would push the
+            // first portal back past the gate for no reason. Ungated (gate 0) the draw is one
+            // unbroken line through the origin and keeps looking straight through it, as before.
+            if (gate > 0 && drawIndex - back < 0) break;
+            if (drewHit(worldSeed, drawIndex - back, rate.every())) return false;
         }
         return true;
+    }
+
+    /**
+     * The first group ordinal a portal may land on: the one whose anchor carriage sits at
+     * {@code minLevel} on the position-derived Diff-Level scale, which is
+     * {@code (minLevel + delay) * carriagesPerTier} carriages out, rounded up to a whole group.
+     *
+     * <p>Pure (params in) so it is unit-testable without a NeoForge config bootstrap, in the same
+     * shape as {@link games.brennan.dungeontrain.difficulty.DifficultyProgression#effectiveTier}.
+     * A {@code minLevel} of zero or less gates nothing.</p>
+     */
+    static int firstEligibleGroup(int minLevel, int groupSize, int carriagesPerTier, int delay) {
+        if (minLevel <= 0) return 0;
+        long boundaryCarriage = (long) (minLevel + Math.max(0, delay)) * Math.max(1, carriagesPerTier);
+        long span = Math.max(1, groupSize);
+        return (int) Math.min(Integer.MAX_VALUE, (boundaryCarriage + span - 1) / span);
+    }
+
+    /**
+     * {@link #firstEligibleGroup(int, int, int, int)} at {@link #MIN_PORTAL_LEVEL} and the configured
+     * progression shape.
+     *
+     * <p><b>Read from the config alone, never from {@code DifficultyProgression.positionTier}.</b>
+     * That method folds in the {@code /dungeontrain difficulty} admin offset, which a player can move
+     * mid-session — and a portal verdict that moves is exactly what the class note above rules out:
+     * a corridor re-stamped after the offset changed would come back an ordinary carriage under
+     * whoever was standing in it. The offset re-themes what generates ahead; it does not decide
+     * whether a portal is there.</p>
+     */
+    public static int firstEligibleGroup() {
+        return firstEligibleGroup(MIN_PORTAL_LEVEL,
+                DungeonTrainConfig.getGroupSize(),
+                DungeonTrainConfig.getCarriagesPerTier(),
+                DungeonTrainConfig.getProgressionLevelDelay());
     }
 
     /**
@@ -263,12 +356,14 @@ public final class PortalCarriageSelection {
 
     /** True if this carriage is one of a portal's two corridors. */
     public static boolean isPortalCarriage(ServerLevel level, int carriageIndex) {
-        return isPortalCarriage(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level));
+        return isPortalCarriage(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level),
+                firstEligibleGroup());
     }
 
     /** True if this carriage is the cart between a portal's two corridors. */
     public static boolean isPortalMiddle(ServerLevel level, int carriageIndex) {
-        return isPortalMiddle(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level));
+        return isPortalMiddle(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level),
+                firstEligibleGroup());
     }
 
     /**
@@ -280,7 +375,8 @@ public final class PortalCarriageSelection {
      * match its twin block-for-block, and the cart between two corridors is sealed space.</p>
      */
     public static boolean isPortalPart(ServerLevel level, int carriageIndex) {
-        return isPortalPart(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level));
+        return isPortalPart(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level),
+                firstEligibleGroup());
     }
 
     /**
@@ -295,23 +391,39 @@ public final class PortalCarriageSelection {
      * marches along the train and walks itself into the corridor regardless.</p>
      */
     public static boolean isPortalGroup(ServerLevel level, int carriageIndex) {
-        return isPortalGroup(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level));
+        return isPortalGroup(carriageIndex, DungeonTrainConfig.getGroupSize(), rateFor(level), seed(level),
+                firstEligibleGroup());
     }
 
     public static boolean isPortalCarriage(int carriageIndex, int groupSize, Rate rate, long worldSeed) {
-        if (!isPortalGroup(carriageIndex, groupSize, rate, worldSeed)) return false;
+        return isPortalCarriage(carriageIndex, groupSize, rate, worldSeed, 0);
+    }
+
+    public static boolean isPortalCarriage(int carriageIndex, int groupSize, Rate rate, long worldSeed,
+                                           int firstEligibleGroup) {
+        if (!isPortalGroup(carriageIndex, groupSize, rate, worldSeed, firstEligibleGroup)) return false;
         int slot = slotOf(carriageIndex, groupSize);
         return slot == SLOT_ENTRY || slot == SLOT_EXIT;
     }
 
     public static boolean isPortalMiddle(int carriageIndex, int groupSize, Rate rate, long worldSeed) {
-        if (!isPortalGroup(carriageIndex, groupSize, rate, worldSeed)) return false;
+        return isPortalMiddle(carriageIndex, groupSize, rate, worldSeed, 0);
+    }
+
+    public static boolean isPortalMiddle(int carriageIndex, int groupSize, Rate rate, long worldSeed,
+                                         int firstEligibleGroup) {
+        if (!isPortalGroup(carriageIndex, groupSize, rate, worldSeed, firstEligibleGroup)) return false;
         return slotOf(carriageIndex, groupSize) == SLOT_MIDDLE;
     }
 
     public static boolean isPortalPart(int carriageIndex, int groupSize, Rate rate, long worldSeed) {
-        return isPortalCarriage(carriageIndex, groupSize, rate, worldSeed)
-            || isPortalMiddle(carriageIndex, groupSize, rate, worldSeed);
+        return isPortalPart(carriageIndex, groupSize, rate, worldSeed, 0);
+    }
+
+    public static boolean isPortalPart(int carriageIndex, int groupSize, Rate rate, long worldSeed,
+                                       int firstEligibleGroup) {
+        return isPortalCarriage(carriageIndex, groupSize, rate, worldSeed, firstEligibleGroup)
+            || isPortalMiddle(carriageIndex, groupSize, rate, worldSeed, firstEligibleGroup);
     }
 
     /**
