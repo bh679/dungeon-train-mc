@@ -61,7 +61,8 @@ public final class BuilderOpenScreen extends Screen {
     private final Screen lastScreen;
 
     private BuilderMode mode;
-    private BuilderNewOptions.SubType subType = BuilderNewOptions.SubType.WHOLE_CARRIAGE;
+    /** Set in the constructor, once the mode is known — what a mode starts on is the mode's answer. */
+    private BuilderNewOptions.SubType subType;
     private String partKind = BuilderNewOptions.PART_KINDS.get(0);
     /**
      * The row being looked inside, empty at the top level.
@@ -87,6 +88,7 @@ public final class BuilderOpenScreen extends Screen {
         super(Component.translatable("gui.dungeontrain.builder.open.title"));
         this.lastScreen = lastScreen;
         this.mode = BuilderMode.fromId(BuilderBoundsState.modeId()).orElse(BuilderMode.TRAIN_OUTSIDE);
+        this.subType = BuilderNewOptions.defaultSubTypeFor(this.mode);
     }
 
     @Override
@@ -107,6 +109,9 @@ public final class BuilderOpenScreen extends Screen {
                 () -> null,
                 value -> {
                     mode = value;
+                    // A mode that can't author what was selected has to land somewhere it can —
+                    // Whole Carriage means nothing once you're inside the carriage.
+                    subType = BuilderNewOptions.clampSubType(value, subType);
                     group = "";
                     scrollY = 0;   // a different mode is a different list; keeping the offset would land mid-nowhere
                     rebuild();
@@ -115,7 +120,7 @@ public final class BuilderOpenScreen extends Screen {
 
         List<AbstractWidget> controls = new ArrayList<>();
         if (BuilderNewOptions.hasSubTypes(mode)) {
-            controls.add(BuilderTypeControls.subType(controlX, y, CONTROL_WIDTH, ROW_HEIGHT, subType,
+            controls.add(BuilderTypeControls.subType(controlX, y, CONTROL_WIDTH, ROW_HEIGHT, mode, subType,
                     value -> {
                         subType = value;
                         group = "";

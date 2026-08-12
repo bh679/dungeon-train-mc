@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderGhostSlots;
 import games.brennan.dungeontrain.builder.BuilderMode;
+import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -126,9 +127,10 @@ public final class BuilderGhostTrainRenderer {
         }
 
         BoundingBox parked = volumes.get(0);
-        int full = BuilderMode.fromId(BuilderBoundsState.modeId())
-                .map(BuilderMode::carriageCount)
-                .orElse(0);
+        // How much train to draw, not how much is parked — Inside Carriage parks one by definition,
+        // so reading the parked count here left it with no slots to fill and no ghosts at all.
+        int full = BuilderWorldLayout.ghostGroupCarriages(
+                BuilderMode.fromId(BuilderBoundsState.modeId()).orElse(null));
         // The build volume is one carriage, so its own extents are this world's CarriageDims —
         // no need to be told them, and no way for the two to disagree.
         int length = parked.maxX() - parked.minX() + 1;

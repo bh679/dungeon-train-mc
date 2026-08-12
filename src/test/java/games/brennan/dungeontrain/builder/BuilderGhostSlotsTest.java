@@ -60,6 +60,20 @@ final class BuilderGhostSlotsTest {
     }
 
     @Test
+    @DisplayName("An inside build is ghosted the same run an outside one is")
+    void insideCarriageGetsTheWholeGroup() {
+        // Inside Carriage parks one carriage and used to feed that count in as the group size, so
+        // there was never a slot left over and no ghost was drawn at all.
+        int full = BuilderWorldLayout.ghostGroupCarriages(BuilderMode.INSIDE_CARRIAGE);
+        int parked = BuilderWorldLayout.parkedCarriages(BuilderMode.INSIDE_CARRIAGE, null);
+        BuilderGhostSlots.Ghosts g = BuilderGhostSlots.of(parkedMinX(), parked, full, LENGTH, PAD);
+
+        assertEquals(2, g.carriageMinX().size(), "a carriage ghosted either side of the room");
+        assertEquals(2, g.padMinX().size(), "and the flatbed ends capping them");
+        assertFalse(g.carriageMinX().contains(parkedMinX()), "never over the room you're standing in");
+    }
+
+    @Test
     @DisplayName("Nothing is ghosted when nothing is missing")
     void fullRunGhostsNothing() {
         // A whole carriage parks the mode's full count, so there is no empty slot to fill.

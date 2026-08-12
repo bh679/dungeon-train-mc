@@ -48,13 +48,21 @@ final class BuilderTypeControls {
         return new BuilderModeArtButton(x, y, width, ART_HEIGHT, initial, preview, onChange);
     }
 
-    /** What you're authoring within that mode. Absent for the track modes, which have no sub types. */
+    /**
+     * What you're authoring within that mode. Absent for the track modes, which have no sub types.
+     *
+     * <p>The values are the mode's own — {@code BuilderNewOptions.subTypesFor} — not every sub type
+     * there is, because Whole Carriage means nothing from inside a carriage. The initial value is
+     * clamped for the same reason: the screens carry one selection across a mode change, and
+     * {@code CycleButton} throws on an initial value that isn't in its list.</p>
+     */
     static CycleButton<BuilderNewOptions.SubType> subType(int x, int y, int width, int height,
+                                                          BuilderMode mode,
                                                           BuilderNewOptions.SubType initial,
                                                           Consumer<BuilderNewOptions.SubType> onChange) {
         return CycleButton.builder(BuilderTypeControls::subTypeLabel)
-                .withValues(BuilderNewOptions.SubType.values())
-                .withInitialValue(initial)
+                .withValues(BuilderNewOptions.subTypesFor(mode))
+                .withInitialValue(BuilderNewOptions.clampSubType(mode, initial))
                 .displayOnlyValue()
                 .create(x, y, width, height,
                         Component.translatable("gui.dungeontrain.builder.new.subtype"),

@@ -108,6 +108,24 @@ public final class BuilderWorldLayout {
         return 1;
     }
 
+    /**
+     * How long a run the ghosts draw around the build — how much train there is to <em>see</em>,
+     * which is a different question from how much of it is real.
+     *
+     * <p>{@link #parkedCarriages} answers the second one, and answers it small on purpose: one
+     * template is one carriage, and inside a carriage there is only ever one you can stand in. But a
+     * train reads the same from either side of the wall, so both carriage modes show the same run —
+     * from outside you are looking along it, and from inside you are looking out of the middle of
+     * it. Sizing the ghosts from the parked count instead is why Inside Carriage drew none at all:
+     * its count is 1, so there was never a slot left to fill.</p>
+     */
+    public static int ghostGroupCarriages(BuilderMode mode) {
+        if (mode == null || mode.carriageCount() <= 0) {
+            return 0;   // the track and portal modes have no train to imply one around
+        }
+        return OUTSIDE_CARRIAGES;
+    }
+
     public static boolean inPlatform(int x, int z) {
         return x >= MIN_XZ && x <= MAX_XZ && z >= MIN_XZ && z <= MAX_XZ;
     }

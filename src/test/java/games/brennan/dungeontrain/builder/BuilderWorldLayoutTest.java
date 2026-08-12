@@ -159,6 +159,28 @@ final class BuilderWorldLayoutTest {
     }
 
     @Test
+    @DisplayName("Both carriage modes ghost the same run, however much of it is real")
+    void ghostGroupIsTheSameTrainFromEitherSide() {
+        // A train reads the same from either side of the wall. Sizing the ghosts from the parked
+        // count instead is what left Inside Carriage — which parks one by definition — drawing none.
+        assertEquals(BuilderWorldLayout.OUTSIDE_CARRIAGES,
+                BuilderWorldLayout.ghostGroupCarriages(BuilderMode.TRAIN_OUTSIDE));
+        assertEquals(BuilderWorldLayout.OUTSIDE_CARRIAGES,
+                BuilderWorldLayout.ghostGroupCarriages(BuilderMode.INSIDE_CARRIAGE));
+        assertTrue(BuilderWorldLayout.ghostGroupCarriages(BuilderMode.INSIDE_CARRIAGE)
+                > BuilderWorldLayout.parkedCarriages(BuilderMode.INSIDE_CARRIAGE, null),
+                "an inside build has to have slots left over, or there is nothing to ghost");
+    }
+
+    @Test
+    @DisplayName("The carriage-less modes imply no train around them")
+    void ghostGroupIsZeroForTheTrackModes() {
+        assertEquals(0, BuilderWorldLayout.ghostGroupCarriages(BuilderMode.TRACKS_TUNNELS));
+        assertEquals(0, BuilderWorldLayout.ghostGroupCarriages(BuilderMode.TRAIN_DIMENSIONS));
+        assertEquals(0, BuilderWorldLayout.ghostGroupCarriages(null));
+    }
+
+    @Test
     @DisplayName("Spawn is on the grass and clear of the track corridor")
     void spawnIsClearOfTheTrain() {
         BlockPos spawn = BuilderWorldLayout.spawnPos(DIMS);
