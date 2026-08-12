@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/train_inside_a_train",
+  "display": {
+    "icon": { "id": "minecraft:oak_door" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.a_new_way_out.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.a_new_way_out.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "distant_exit": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "distant_portal_exit" }
+    }
+  },
+  "requirements": [["distant_exit"]]
+}
