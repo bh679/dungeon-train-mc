@@ -82,9 +82,14 @@ final class BuilderTileModelRenderer {
     /**
      * Centre the build in the cell, scale it to fit, and turn it.
      *
-     * <p>Y is negated because GUI space counts downwards and block space counts up. The scale is
-     * driven by the model's longest horizontal diagonal rather than its width, so a long carriage
-     * and a squat room both stay inside the cell through a full rotation.</p>
+     * <p>GUI space counts Y downwards and block space counts it up, and the obvious fix — a
+     * negative Y scale — is wrong: it mirrors the model, which reverses triangle winding, and
+     * backface culling then shows you the inside of every block. A half turn about X flips Y the
+     * same way while staying a proper rotation, so the tilt is folded into it as
+     * {@code π − pitch} and the winding survives.</p>
+     *
+     * <p>The scale is driven by the model's longest horizontal diagonal rather than its width, so a
+     * long carriage and a squat room both stay inside the cell through a full rotation.</p>
      */
     private static void applyTransform(PoseStack pose, Vec3i size, Vec3i min, int x, int y,
                                        int width, int height, float yaw) {
@@ -103,8 +108,8 @@ final class BuilderTileModelRenderer {
                 height * FILL / Math.max(occupiedY, 1.0F));
 
         pose.translate(centreX, centreY, Z_OFFSET);
-        pose.scale(scale, -scale, scale);
-        pose.mulPose(new Quaternionf().rotateX(pitchRadians));
+        pose.scale(scale, scale, scale);
+        pose.mulPose(new Quaternionf().rotateX((float) Math.PI - pitchRadians));
         pose.mulPose(new Quaternionf().rotateY((float) Math.toRadians(yaw)));
         // The mesh is built in the template's own coordinates, so shift the middle of the occupied
         // box — not of the file's declared bounds — onto the pivot.

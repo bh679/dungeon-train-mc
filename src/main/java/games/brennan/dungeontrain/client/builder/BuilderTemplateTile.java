@@ -82,7 +82,9 @@ final class BuilderTemplateTile {
             // A flat ground behind the model: the mode art under a 3D build is visual noise, and a
             // build needs something to sit against or it reads as cut out.
             g.fill(x, y, x + width, y + height, MODEL_BACKDROP);
-            BuilderTileModelRenderer.render(g, mesh, x, y, width, height, yaw);
+            // Framed in the picture, not the whole cell: the label strip is opaque and painted over
+            // the bottom afterwards, so a model centred on the cell would sit visibly low behind it.
+            BuilderTileModelRenderer.render(g, mesh, x, y, width, height - LABEL_STRIP_H, yaw);
         } else {
             renderFlat(g, mode, modeArtAvailable, photoKind, id, partKind, trackKind,
                     x, y, width, height);
