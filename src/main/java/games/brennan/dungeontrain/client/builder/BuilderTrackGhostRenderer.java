@@ -24,6 +24,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -55,6 +56,13 @@ public final class BuilderTrackGhostRenderer {
 
     /** Half opacity — present enough to line the plot up against, faint enough to never be mistaken for it. */
     private static final float GHOST_ALPHA = 0.5F;
+
+    /**
+     * Culled and depth-writing, so only the surface facing the camera is drawn and nothing ghosted
+     * renders behind anything else ghosted. See {@link BuilderRenderStates#ghostBlock}.
+     */
+    private static final RenderType GHOST = BuilderRenderStates.ghostBlock(
+            DungeonTrain.MOD_ID + ":builder_track_ghost");
 
     /** Cached ghost positions, replaced wholesale so a render pass never sees a partial sweep. */
     private static volatile List<BlockPos> ghosts = List.of();
@@ -141,14 +149,22 @@ public final class BuilderTrackGhostRenderer {
         Vec3 cam = event.getCamera().getPosition();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
         BlockRenderDispatcher blocks = mc.getBlockRenderer();
-        // Every quad the block model emits goes through here and comes out at half alpha. Wrapping
-        // the buffer rather than tinting afterwards is what lets the model keep its own textures and
-        // shape — the ghost is the block, faded, not a coloured stand-in for it.
-        MultiBufferSource ghosted = type -> new GhostVertexConsumer(buffer.getBuffer(type));
+        // Every quad the model emits is forced into GHOST — the type is ignored deliberately, since
+        // a model that asked for the cutout or solid layer would otherwise escape the depth-write
+        // rule that stops ghosts stacking. Wrapping the buffer rather than tinting afterwards is
+        // what lets the model keep its own texture and shape: the ghost is the block, faded, not a
+        // coloured stand-in for it.
+        MultiBufferSource ghosted = type -> new GhostVertexConsumer(buffer.getBuffer(GHOST));
+
+        // Front-to-back. GHOST writes depth, so whichever fragment lands first wins the pixel and
+        // everything behind it is dropped — which is only the answer you want if the nearest one
+        // got there first. Sorted per frame because the ordering is the camera's, not the world's.
+        List<BlockPos> ordered = new ArrayList<>(snapshot);
+        ordered.sort(Comparator.comparingDouble(p -> p.distToCenterSqr(cam)));
 
         ps.pushPose();
         ps.translate(-cam.x, -cam.y, -cam.z);
-        for (BlockPos pos : snapshot) {
+        for (BlockPos pos : ordered) {
             BlockState state = level.getBlockState(pos);
             if (state.isAir()) {
                 continue;   // the sweep is up to ten ticks old; the builder may have dug it out
@@ -160,7 +176,7 @@ public final class BuilderTrackGhostRenderer {
             ps.popPose();
         }
         ps.popPose();
-        buffer.endBatch();
+        buffer.endBatch(GHOST);
     }
 
     /**
