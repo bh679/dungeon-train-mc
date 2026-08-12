@@ -38,11 +38,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <h2>Scope: {@link TrackKind}s only</h2>
  * <p>Carriages ({@code data/dungeontrain/templates/weights.json}, read by {@code CarriageWeights})
- * and contents ({@code data/dungeontrain/contents/weights.json}) are deliberately <b>not</b> checked
- * here. They are not {@code TrackKind}s and their names do not come from {@code .nbt} basenames
- * alone — carriages carry built-ins such as {@code portal_middle} that ship no template file, so
- * this test's rule would report false orphans there. Covering them needs each registry's own name
- * source, not this scan.</p>
+ * and contents ({@code data/dungeontrain/contents/weights.json}) are <b>not</b> checked here. They
+ * are not {@code TrackKind}s and their names do not come from {@code .nbt} basenames alone —
+ * carriages carry code-registered names such as {@code portal_middle} that ship no template file,
+ * and contents names include {@code .group.json} parents, so this test's rule would report false
+ * orphans on both. They get the same guard against each registry's own name source in
+ * {@code games.brennan.dungeontrain.train.BundledCarriageAndContentsWeightsTest}.</p>
  */
 final class BundledTrackWeightsTest {
 
