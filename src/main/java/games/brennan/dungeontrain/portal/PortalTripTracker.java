@@ -33,10 +33,16 @@ public final class PortalTripTracker {
     /**
      * How far from the entry corridor a way out has to be to count as a new one, in blocks.
      *
-     * <p>Chosen so an ordinary trip cannot earn it. {@link PortalRoomLayout#MAX_LENGTH} and
-     * {@code MAX_WIDTH} are both 48, so the walk from the entry twin to the pair's own exit twin —
-     * one corridor plus one room — cannot reach this even in the largest authored room. Only a
-     * corridor the endless modes stood somewhere else can.</p>
+     * <p>Chosen to clear an ordinary trip. The walk from the entry twin to the pair's own exit twin
+     * is one corridor plus one room ({@code PortalStructure.exitTwinOffsetX}); across every room
+     * shipped in {@code data/dungeontrain/portals/room} that is 19–34 blocks at the default carriage
+     * dims, so the pair's own way out never earns this and only a corridor an endless mode stood
+     * elsewhere ({@link PortalExitSites}) does.</p>
+     *
+     * <p><b>Not a proof, a margin.</b> {@link PortalRoomLayout#MAX_LENGTH} is 48, so a room authored
+     * longer than about 37 would put its own exit past this line and earn the advancement on a
+     * straight walk through. That is a fair reading of "at least 50 blocks from the entrance" rather
+     * than a bug — but it is the thing to re-check if a much longer room is ever authored.</p>
      */
     public static final double EXIT_DISTANCE_BLOCKS = 50.0;
 
