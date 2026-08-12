@@ -6,7 +6,6 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderOpenRequest;
 import games.brennan.dungeontrain.builder.BuilderRoomGhosts;
-import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.portal.PortalRoomMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -51,27 +50,21 @@ public final class BuilderRoomGhostRenderer {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final RenderType GHOST_QUAD = MenuRenderStates.translucentQuad(
-            DungeonTrain.MOD_ID + ":builder_room_ghost");
+    private static final RenderType GHOST_QUAD = BuilderGhostQuads.renderType("builder_room_ghost");
 
     private static final int RESCAN_INTERVAL_TICKS = 10;
     /** Hard ceiling on the copied faces, matching the wash's, so a big room can't stall a frame. */
     private static final int MAX_FACES = 16_384;
 
-    /** Pulls the quad just clear of the neighbouring face so the two don't z-fight. */
-    private static final double EXPAND = 0.002;
-
-    private static final float R = 0.72F;
-    private static final float G = 0.84F;
-    private static final float B = 1.00F;
     /**
      * 75% at the room's own boundary — the Bedrock skin and the first ring of copies.
      *
-     * <p>Nearly solid on purpose. These ghosts are not a hint that something is there; they are the
-     * answer to "what does this room do at its walls", and at the faint tint the wash uses the
-     * difference between a sealed room and a repeating one was a shimmer you had to look for.
-     * Distance is what carries "this isn't real" instead — {@link BuilderRoomGhosts#fadeFor} takes
-     * it down from here to nothing at the outer ring.</p>
+     * <p>Nearly solid on purpose, and the one thing this renderer does not take from
+     * {@link BuilderGhostQuads}, whose {@link BuilderGhostQuads#A 10%} is right for context you
+     * glance past. These are not a hint that something is there; they are the answer to "what does
+     * this room do at its walls", and at that tint the difference between a sealed room and a
+     * repeating one was a shimmer you had to look for. Distance carries "this isn't real" instead —
+     * {@link BuilderRoomGhosts#fadeFor} takes it from here down to nothing at the outer ring.</p>
      */
     private static final float A = 0.75F;
 
@@ -225,7 +218,7 @@ public final class BuilderRoomGhostRenderer {
 
         // Bedrock Lock: a one-block skin hugging the room, drawn as the box one block out.
         if (slots.shell()) {
-            drawBox(ps, vc, base.offset(-1, -1, -1),
+            BuilderGhostQuads.drawBox(ps, vc, base.offset(-1, -1, -1),
                     new Vec3i(size.getX() + 2, size.getY() + 2, size.getZ() + 2), A);
         }
 
@@ -237,7 +230,7 @@ public final class BuilderRoomGhostRenderer {
 
             if (tile.detail() == BuilderRoomGhosts.Detail.FULL) {
                 for (Face face : snapshot) {
-                    drawFace(ps, vc,
+                    BuilderGhostQuads.drawFace(ps, vc,
                             base.getX() + ox + face.local().getX(),
                             base.getY() + face.local().getY(),
                             base.getZ() + oz + face.local().getZ(),
@@ -245,62 +238,15 @@ public final class BuilderRoomGhostRenderer {
                 }
             } else if (slots.planesOnly()) {
                 // The distant silhouette of an open plain is its floor and roof, not a box.
-                drawBox(ps, vc, base.offset(ox, 0, oz), new Vec3i(size.getX(), 1, size.getZ()), alpha);
-                drawBox(ps, vc, base.offset(ox, size.getY() - 1, oz),
+                BuilderGhostQuads.drawBox(ps, vc, base.offset(ox, 0, oz), new Vec3i(size.getX(), 1, size.getZ()), alpha);
+                BuilderGhostQuads.drawBox(ps, vc, base.offset(ox, size.getY() - 1, oz),
                         new Vec3i(size.getX(), 1, size.getZ()), alpha);
             } else {
-                drawBox(ps, vc, base.offset(ox, 0, oz), size, alpha);
+                BuilderGhostQuads.drawBox(ps, vc, base.offset(ox, 0, oz), size, alpha);
             }
         }
 
         ps.popPose();
         buffer.endBatch(GHOST_QUAD);
-    }
-
-    /** The six outer faces of a box at {@code min} spanning {@code size}. */
-    private static void drawBox(PoseStack ps, VertexConsumer vc, BlockPos min, Vec3i size, float a) {
-        double x0 = min.getX() - EXPAND;
-        double y0 = min.getY() - EXPAND;
-        double z0 = min.getZ() - EXPAND;
-        double x1 = min.getX() + size.getX() + EXPAND;
-        double y1 = min.getY() + size.getY() + EXPAND;
-        double z1 = min.getZ() + size.getZ() + EXPAND;
-
-        quad(ps, vc, a, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);   // down
-        quad(ps, vc, a, x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, y1, z0);   // up
-        quad(ps, vc, a, x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0);   // north
-        quad(ps, vc, a, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1);   // south
-        quad(ps, vc, a, x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0);   // west
-        quad(ps, vc, a, x1, y0, z1, x1, y0, z0, x1, y1, z0, x1, y1, z1);   // east
-    }
-
-    /** One outset unit square on the given side of a block. */
-    private static void drawFace(PoseStack ps, VertexConsumer vc, int bx, int by, int bz,
-                                 Direction dir, float a) {
-        double x0 = bx - EXPAND;
-        double y0 = by - EXPAND;
-        double z0 = bz - EXPAND;
-        double x1 = bx + 1.0 + EXPAND;
-        double y1 = by + 1.0 + EXPAND;
-        double z1 = bz + 1.0 + EXPAND;
-
-        switch (dir) {
-            case DOWN -> quad(ps, vc, a, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);
-            case UP -> quad(ps, vc, a, x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, y1, z0);
-            case NORTH -> quad(ps, vc, a, x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0);
-            case SOUTH -> quad(ps, vc, a, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1);
-            case WEST -> quad(ps, vc, a, x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0);
-            case EAST -> quad(ps, vc, a, x1, y0, z1, x1, y0, z0, x1, y1, z0, x1, y1, z1);
-        }
-    }
-
-    private static void quad(PoseStack ps, VertexConsumer vc, float a,
-                             double ax, double ay, double az, double bx, double by, double bz,
-                             double cx, double cy, double cz, double dx, double dy, double dz) {
-        org.joml.Matrix4f m = ps.last().pose();
-        vc.addVertex(m, (float) ax, (float) ay, (float) az).setColor(R, G, B, a);
-        vc.addVertex(m, (float) bx, (float) by, (float) bz).setColor(R, G, B, a);
-        vc.addVertex(m, (float) cx, (float) cy, (float) cz).setColor(R, G, B, a);
-        vc.addVertex(m, (float) dx, (float) dy, (float) dz).setColor(R, G, B, a);
     }
 }
