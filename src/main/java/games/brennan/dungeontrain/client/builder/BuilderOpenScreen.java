@@ -61,7 +61,8 @@ public final class BuilderOpenScreen extends Screen {
     private final Screen lastScreen;
 
     private BuilderMode mode;
-    private BuilderNewOptions.SubType subType = BuilderNewOptions.SubType.WHOLE_CARRIAGE;
+    /** Set in the constructor, once the mode is known — what a mode starts on is the mode's answer. */
+    private BuilderNewOptions.SubType subType;
     private String partKind = BuilderNewOptions.PART_KINDS.get(0);
     /**
      * The row being looked inside, empty at the top level.
@@ -87,6 +88,7 @@ public final class BuilderOpenScreen extends Screen {
         super(Component.translatable("gui.dungeontrain.builder.open.title"));
         this.lastScreen = lastScreen;
         this.mode = BuilderMode.fromId(BuilderBoundsState.modeId()).orElse(BuilderMode.TRAIN_OUTSIDE);
+        this.subType = BuilderNewOptions.defaultSubTypeFor(this.mode);
     }
 
     @Override
@@ -107,6 +109,9 @@ public final class BuilderOpenScreen extends Screen {
                 () -> null,
                 value -> {
                     mode = value;
+                    // A mode that can't author what was selected has to land somewhere it can —
+                    // Whole Carriage means nothing once you're inside the carriage.
+                    subType = BuilderNewOptions.clampSubType(value, subType);
                     group = "";
                     scrollY = 0;   // a different mode is a different list; keeping the offset would land mid-nowhere
                     rebuild();
@@ -115,7 +120,7 @@ public final class BuilderOpenScreen extends Screen {
 
         List<AbstractWidget> controls = new ArrayList<>();
         if (BuilderNewOptions.hasSubTypes(mode)) {
-            controls.add(BuilderTypeControls.subType(controlX, y, CONTROL_WIDTH, ROW_HEIGHT, subType,
+            controls.add(BuilderTypeControls.subType(controlX, y, CONTROL_WIDTH, ROW_HEIGHT, mode, subType,
                     value -> {
                         subType = value;
                         group = "";
@@ -322,6 +327,24 @@ public final class BuilderOpenScreen extends Screen {
                 }
             }
 
+            // A Stage in the carriage list is a folder, not a leaf: it names a stretch of the game,
+            // and the templates are the carriages underneath it. So the whole tile drills in and the
+            // chevron is only the affordance saying so — clicking the picture of a stage and getting
+            // a brand-new whole carriage instead is not a thing anyone was asking for.
+            //
+            // Not the same for CONTENTS, where a group tile is itself a real template: `maze` is a
+            // room you can open as well as a folder you can look inside, so there the two clicks
+            // genuinely differ and the chevron has to be aimed at.
+            if (source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE && group.isEmpty()) {
+                int index = grid.indexAt(mouseX, mouseY, scrollY, entries.size());
+                if (index >= 0) {
+                    group = entries.get(index);
+                    scrollY = 0;
+                    rebuild();
+                    return true;
+                }
+            }
+
             if (BuilderOpenOptions.isOpenable(source)) {
                 int index = grid.indexAt(mouseX, mouseY, scrollY, entries.size());
                 if (index >= 0) {
@@ -387,14 +410,17 @@ public final class BuilderOpenScreen extends Screen {
      *       reach a Save that overwrites something.</li>
      * </ul>
      *
-     * <p>The stage list under Carriage Room splits the same two ways, one level apart: its top-level
-     * tiles are Stages and do the Stage thing, and the carriages underneath them are templates and
-     * are opened.</p>
+     * <p>The stage list under Carriage Room only ever reaches here one level in, where every tile is
+     * a carriage template and is opened. Its top-level Stage tiles are navigation — see
+     * {@link #mouseClicked} — because a Stage there has carriages underneath it to get to, which is
+     * a better answer to clicking one than silently starting an unrelated new build.</p>
      */
     private Runnable actionFor(BuilderOpenOptions.OpenSource source, String value, boolean force) {
+        // Only the Whole Carriage list, where a Stage is a leaf and starting a fresh carriage for
+        // that stretch of the game is the only thing clicking it could mean. In the carriage list a
+        // Stage is a folder and never reaches here — mouseClicked drills into it instead.
         boolean stageTile = source == BuilderOpenOptions.OpenSource.STAGES
-                ? !BuilderOpenOptions.isSavedBuild(value)
-                : source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE && group.isEmpty();
+                && !BuilderOpenOptions.isSavedBuild(value);
         if (stageTile) {
             String stageId = BuilderOpenOptions.bareId(source, value);
             // Whole Carriage whichever arm the stage was clicked in: "a fresh carriage for that
@@ -410,8 +436,12 @@ public final class BuilderOpenScreen extends Screen {
         if (source == BuilderOpenOptions.OpenSource.CARRIAGES_BY_STAGE) {
             String carriageId = BuilderOpenOptions.bareId(source, value);
             String stageId = group;
+            // The sub type rides along because the store this came out of can't imply it: a carriage
+            // browsed under a Stage is a carriage template, so Save must write it as a whole
+            // carriage, but it was opened as one room-sized build and stands alone on the track.
             return () -> DungeonTrainNet.sendToServer(new BuilderOpenPacket(mode.id(),
-                    BuilderPhotoPaths.Kind.CARRIAGE.id(), carriageId, "", force, stageId));
+                    BuilderPhotoPaths.Kind.CARRIAGE.id(), carriageId, "", force, stageId,
+                    subType.id()));
         }
         BuilderOpenRequest request = BuilderOpenRequest
                 .forSelection(subType, BuilderOpenOptions.bareId(source, value), partKindValue())
@@ -420,6 +450,6 @@ public final class BuilderOpenScreen extends Screen {
             return null;
         }
         return () -> DungeonTrainNet.sendToServer(new BuilderOpenPacket(mode.id(),
-                request.kind().id(), request.id(), request.partKindId(), force));
+                request.kind().id(), request.id(), request.partKindId(), force, "", subType.id()));
     }
 }

@@ -66,6 +66,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_BUILDER_MIRROR = "builderMirror";
     private static final String TAG_BUILDER_SUB_TYPE = "builderSubType";
     private static final String TAG_BUILDER_PART_KIND = "builderPartKind";
+    private static final String TAG_BUILDER_CARRIAGES = "builderCarriages";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -109,6 +110,23 @@ public final class DungeonTrainWorldData extends SavedData {
     private String builderSubType;
     /** Which part kind, when {@link #builderSubType} is {@code parts}. */
     private String builderPartKind;
+    /**
+     * How many carriages are actually parked on the track, or {@code -1} when nothing has recorded
+     * it yet.
+     *
+     * <p>A recorded fact, not a re-derived decision, and that distinction is the point. The count
+     * was briefly computed from {@link #builderMode} and {@link #builderSubType} at each of the six
+     * places that needed it — but those two answer "what is this build for" and "what does it save
+     * as", and neither is the same question as "how many carriages did we stamp". They diverge
+     * exactly where the Open screen's carriage list does: browsing rooms from outside the train
+     * opens a <em>carriage</em> template, which has to save as a whole carriage while standing
+     * alone on the track.</p>
+     *
+     * <p>Written by every path that stamps or clears the train, so the build volumes, the dirty
+     * check, the save cut, the cinematic framing and the spawn standoff all read the same number
+     * the stamp used.</p>
+     */
+    private int builderCarriages = -1;
     /**
      * The Stage the builder picked when starting this build, or null/empty when they didn't pick
      * one. Held until the build is saved, at which point the written template is linked to it —
@@ -303,6 +321,12 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_BUILDER_PART_KIND)) {
             data.builderPartKind = tag.getString(TAG_BUILDER_PART_KIND);
         }
+        // Absent in every builder world saved before the count was recorded. Left at -1 rather than
+        // read as 0, so callers can tell "no train" from "nobody wrote it down" and fall back to
+        // the mode's own count — which is what those worlds were in fact stamped with.
+        if (tag.contains(TAG_BUILDER_CARRIAGES)) {
+            data.builderCarriages = tag.getInt(TAG_BUILDER_CARRIAGES);
+        }
         return data;
     }
 
@@ -347,6 +371,9 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         if (builderPartKind != null) {
             tag.putString(TAG_BUILDER_PART_KIND, builderPartKind);
+        }
+        if (builderCarriages >= 0) {
+            tag.putInt(TAG_BUILDER_CARRIAGES, builderCarriages);
         }
         return tag;
     }
@@ -404,6 +431,17 @@ public final class DungeonTrainWorldData extends SavedData {
     public void setBuilderSubType(String subTypeId, String partKindId) {
         this.builderSubType = subTypeId;
         this.builderPartKind = partKindId;
+        setDirty();
+    }
+
+    /** Carriages parked on the track, or {@code -1} when no stamp has recorded a count yet. */
+    public int builderCarriages() {
+        return builderCarriages;
+    }
+
+    /** Record what was just stamped. Callers pass the count they actually laid down, including 0. */
+    public void setBuilderCarriages(int carriages) {
+        this.builderCarriages = Math.max(0, carriages);
         setDirty();
     }
 

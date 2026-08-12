@@ -60,7 +60,8 @@ public final class BuilderNewScreen extends Screen {
     private final Mode screenMode;
 
     private BuilderMode mode;
-    private BuilderNewOptions.SubType subType = BuilderNewOptions.SubType.WHOLE_CARRIAGE;
+    /** Set in the constructor, once the mode is known — what a mode starts on is the mode's answer. */
+    private BuilderNewOptions.SubType subType;
     /** Only meaningful for the Parts sub type; travels as the packet's {@code typeId}. */
     private String partKind = BuilderNewOptions.PART_KINDS.get(0);
     private String copyFrom = "";
@@ -82,6 +83,14 @@ public final class BuilderNewScreen extends Screen {
         this.screenMode = screenMode;
         this.mode = BuilderMode.fromId(BuilderBoundsState.modeId())
                 .orElse(BuilderMode.TRAIN_OUTSIDE);
+        // Save-as describes a build that already exists, so it reads what that build actually is
+        // rather than starting somewhere and locking it — its controls are disabled, and a disabled
+        // control that says the wrong thing is worse than no control at all. New has nothing to read
+        // yet, so it starts on whatever this mode leads with.
+        this.subType = screenMode == Mode.SAVE_AS
+                ? BuilderNewOptions.SubType.fromId(BuilderBoundsState.subTypeId())
+                        .orElseGet(() -> BuilderNewOptions.defaultSubTypeFor(this.mode))
+                : BuilderNewOptions.defaultSubTypeFor(this.mode);
     }
 
     /**
@@ -118,6 +127,9 @@ public final class BuilderNewScreen extends Screen {
                 this::selectedPhoto,
                 value -> {
                     mode = value;
+                    // A mode that can't author what was selected has to land somewhere it can —
+                    // Whole Carriage means nothing once you're inside the carriage.
+                    subType = BuilderNewOptions.clampSubType(value, subType);
                     copyFrom = "";   // a different mode lists different things
                     rebuild();
                 });
@@ -157,7 +169,7 @@ public final class BuilderNewScreen extends Screen {
             return controls;   // track modes: the mode and the name are the whole question
         }
 
-        controls.add(BuilderTypeControls.subType(x, y, FIELD_WIDTH, ROW_HEIGHT, subType,
+        controls.add(BuilderTypeControls.subType(x, y, FIELD_WIDTH, ROW_HEIGHT, mode, subType,
                 value -> {
                     subType = value;
                     copyFrom = "";

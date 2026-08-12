@@ -42,6 +42,27 @@ public final class BuilderNewOptions {
         public String labelKey() {
             return "gui.dungeontrain.builder.new.subtype." + id;
         }
+
+        /**
+         * The sub type behind a stored id, or empty when there isn't one.
+         *
+         * <p>The read side of {@code DungeonTrainWorldData.builderSubType()}, which keeps the id
+         * string rather than the enum. Empty for a world that has never had a New or an Open run in
+         * it — that is a real state, not a corrupt one, and callers are expected to have a default
+         * for it.</p>
+         */
+        public static java.util.Optional<SubType> fromId(String raw) {
+            if (raw == null) {
+                return java.util.Optional.empty();
+            }
+            String needle = raw.trim().toLowerCase(java.util.Locale.ROOT);
+            for (SubType value : values()) {
+                if (value.id.equals(needle)) {
+                    return java.util.Optional.of(value);
+                }
+            }
+            return java.util.Optional.empty();
+        }
     }
 
     /**
@@ -70,6 +91,49 @@ public final class BuilderNewOptions {
      */
     public static boolean hasSubTypes(BuilderMode mode) {
         return mode == BuilderMode.TRAIN_OUTSIDE || mode == BuilderMode.INSIDE_CARRIAGE;
+    }
+
+    /**
+     * What this mode lets you author, in the order the picker cycles them.
+     *
+     * <p><b>Whole Carriage is a Train Outside answer only.</b> From inside, the carriage shell is the
+     * room you are standing in — the thing around the work, not the work — so offering it there asks
+     * you to edit the walls from a position where you can only see their inside faces. What you
+     * author from inside is the room and the parts that dress it.</p>
+     *
+     * <p>A restriction on what the screens <em>offer</em>, deliberately not a new invariant. Mode and
+     * sub type are persisted as independent strings in {@code DungeonTrainWorldData}, so a world
+     * saved before this can hold Inside Carriage + Whole Carriage; every server-side reader still
+     * answers for that pair, because turning a stale world into a failure would be a far worse trade
+     * than showing one combination the picker no longer proposes.</p>
+     */
+    public static List<SubType> subTypesFor(BuilderMode mode) {
+        if (!hasSubTypes(mode)) {
+            return List.of();
+        }
+        return mode == BuilderMode.INSIDE_CARRIAGE
+                ? List.of(SubType.CARRIAGE_ROOM, SubType.PARTS)
+                : List.of(SubType.WHOLE_CARRIAGE, SubType.CARRIAGE_ROOM, SubType.PARTS);
+    }
+
+    /**
+     * What this mode starts on, and what an out-of-range selection falls back to.
+     *
+     * <p>Both jobs, because they are the same question: the screens carry one sub type across a mode
+     * change, and a mode that cannot show the carried value has to land somewhere. Answering
+     * {@link SubType#WHOLE_CARRIAGE} for a mode with no sub types at all keeps the old field
+     * initialiser's behaviour for the track modes, whose controls are hidden either way.</p>
+     */
+    public static SubType defaultSubTypeFor(BuilderMode mode) {
+        List<SubType> offered = subTypesFor(mode);
+        return offered.isEmpty() ? SubType.WHOLE_CARRIAGE : offered.get(0);
+    }
+
+    /** The selection to hold after a mode change: the current one when it survives, else the default. */
+    public static SubType clampSubType(BuilderMode mode, SubType current) {
+        return current != null && subTypesFor(mode).contains(current)
+                ? current
+                : defaultSubTypeFor(mode);
     }
 
     /**

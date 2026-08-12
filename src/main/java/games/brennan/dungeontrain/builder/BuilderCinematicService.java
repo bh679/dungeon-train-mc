@@ -156,8 +156,8 @@ public final class BuilderCinematicService {
     }
 
     private static int carriageCount(DungeonTrainWorldData data) {
-        return BuilderMode.fromId(data.builderMode())
-                .map(BuilderMode::carriageCount)
-                .orElse(0);
+        // What is parked rather than what the mode would park: the camera frames the build, and a
+        // single opened room framed for a three-carriage run would sit too far back to see it.
+        return BuilderWorldSetup.parkedCarriages(data);
     }
 }
